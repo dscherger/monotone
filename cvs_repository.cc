@@ -369,7 +369,7 @@ bool cvs_edge::operator<(cvs_edge const & other) const
      && changelog < other.changelog);
 }
 
-void cvs_repository::store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum)
+void cvs_repository::store_contents(const std::string &contents, hexenc<id> &sha1sum)
 {
   data dat(contents);
   calculate_ident(dat,sha1sum);
@@ -398,7 +398,7 @@ extern void rcs_put_raw_manifest_edge(hexenc<id> const & old_id,
                           base64< gzip<delta> > const & del,
                           database & db);
 
-void cvs_repository::store_delta(app_state &app, const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
+void cvs_repository::store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
 {
   data dat(new_contents);
   calculate_ident(dat,to);
@@ -480,7 +480,7 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
   }
 }
 
-void cvs_repository::prime(app_state &app)
+void cvs_repository::prime()
 { for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
   }
@@ -526,7 +526,7 @@ void cvs_repository::prime(app_state &app)
 //    I(c.mod_time==?);
       const_cast<bool&>(s2->dead)=c.dead;
       if (!c.dead)
-      { store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      { store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
         index_deltatext(c.contents,file_contents);
       }
@@ -543,7 +543,7 @@ void cvs_repository::prime(app_state &app)
       { cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
         I(!c.dead); // dead->dead is no change, so shouldn't get a number
         I(!s2->dead);
-        store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+        store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
         index_deltatext(c.contents,file_contents);
       }
@@ -571,7 +571,7 @@ void cvs_repository::prime(app_state &app)
           if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
               reinterpret_cast<byte const *>(contents.c_str()),
               contents.size()))
-          { store_delta(app, contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+          { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
           }
           else
           { throw oops("MD5 sum wrong");
@@ -579,7 +579,7 @@ void cvs_repository::prime(app_state &app)
         }
         else
         {
-          store_contents(app, u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+          store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=u.contents.size();
           index_deltatext(u.contents,file_contents);
         }
@@ -691,7 +691,7 @@ void cvs_repository::prime(app_state &app)
     cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
     cert_revision_changelog(child_rid, e->changelog, app, dbw);
     cert_revision_date_time(child_rid, e->time, app, dbw);
-    cert_cvs(*e, app, dbw);
+    cert_cvs(*e, dbw);
 
     // now apply same change set to parent_map, making parent_map == child_map
     apply_change_set(cs, parent_map);
@@ -703,7 +703,7 @@ void cvs_repository::prime(app_state &app)
 //  debug();
 }
 
-void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc)
+void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
 { std::string content=host+":"+root+"/"+module+"\n";
   for (cvs_manifest::const_iterator i=e.files.begin(); i!=e.files.end(); ++i)
   { content+=i->second->cvs_version+" "+shorten_path(i->first)+"\n";
@@ -715,8 +715,8 @@ void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consume
 //  put_simple_revision_cert(e.revision, "cvs_revisions", content, app, pc);
 }
 
-cvs_repository::cvs_repository(const std::string &repository, const std::string &module)
-      : cvs_client(repository,module), file_id_ticker(), revision_ticker()
+cvs_repository::cvs_repository(app_state &_app, const std::string &repository, const std::string &module)
+      : cvs_client(repository,module), app(_app), file_id_ticker(), revision_ticker()
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
   revision_ticker.reset(new ticker("revisions", "R", 3));
@@ -743,7 +743,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
     require_password(app.lua, key, pub, priv);
   }
   
-  cvs_sync::cvs_repository repo(repository,module);
+  cvs_sync::cvs_repository repo(app,repository,module);
 // DEBUGGING
   repo.GzipStream(3);
   transaction_guard guard(app.db);
@@ -757,7 +757,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   if (repo.empty()) 
   { /*const cvs_sync::cvs_repository::tree_state_t &n=*/ repo.now();
   
-    repo.prime(app);
+    repo.prime();
   }
 //  else repo.update(app);
   
@@ -781,7 +781,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       cvs_edge e;
       // get author + date 
       std::vector< revision<cert> > edge_certs;
-      get_revision_certs(i->inner().ident,edge_certs);
+      app.db.get_revision_certs(i->inner().ident,edge_certs);
       for (std::vector< revision<cert> >::const_iterator c=edge_certs.begin();
                 c!=edge_certs.end();++c)
       { if (c->inner().name()==date_cert_name)

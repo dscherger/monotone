@@ -100,15 +100,16 @@ private:
 //  unsigned files_inserted;
 //  unsigned revisions_created;
 
+  app_state &app;
   std::auto_ptr<ticker> file_id_ticker;
   std::auto_ptr<ticker> revision_ticker;
 
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
 public:  
-  void prime(app_state &app);
+  void prime();
 public:  
-  cvs_repository(const std::string &repository, const std::string &module);
+  cvs_repository(app_state &app, const std::string &repository, const std::string &module);
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
@@ -118,11 +119,11 @@ public:
   const tree_state_t &next(const tree_state_t &m) const;
   
   void debug() const;
-  void store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum);
+  void store_contents(const std::string &contents, hexenc<id> &sha1sum);
 //  void apply_delta(std::string &contents, const std::string &patch);
-  void store_delta(app_state &app, const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
+  void store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
-  void cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc);
+  void cert_cvs(const cvs_edge &e, packet_consumer & pc);
   
   bool empty() const { return edges.empty() && files.empty(); }
   void process_certs(const std::vector< revision<cert> > &certs);
