@@ -30,6 +30,7 @@ EOF
 if [ $? -ne 0 ] ; then exit ; fi
 echo -- cvs_test_setup2
 ./cvs_test_setup2  || exit
+if [ "$stop_at" = "cvs_test_setup2" ] ; then exit 0 ; fi
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
         $PWD/test.cvsroot test <<EOF
 x

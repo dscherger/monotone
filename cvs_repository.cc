@@ -274,6 +274,26 @@ void debug_manifest(const cvs_manifest &mf)
   }
 }
 
+void debug_files(const std::map<std::string,file_history> &files)
+{ std::ostream &os=std::cerr;
+  for (std::map<std::string,file_history>::const_iterator i=files.begin();
+      i!=files.end();++i)
+  { os << i->first;
+    os << " (";
+    for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
+          j!=i->second.known_states.end();)
+    { os << (j->since_when%1000) << ':' << j->cvs_version << '=';
+      if (j->dead) os << "dead";
+      else if (j->size) os << j->size;
+      else if (j->patchsize) os << 'p' << j->patchsize;
+      else if (!j->sha1sum().empty()) os << j->sha1sum().substr(0,4) << j->keyword_substitution;
+      ++j;
+      if (j!=i->second.known_states.end()) os << ',';
+    }
+    os << ")\n";
+  }
+}
+
 void cvs_repository::debug() const
 { std::ostream &os=std::cerr;
 
@@ -296,13 +316,13 @@ void cvs_repository::debug() const
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
   { os << shorten_path(i->first);
-    os << "(";
+    os << " (";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
     { if (j->dead) os << "dead";
       else if (j->size) os << j->size;
       else if (j->patchsize) os << 'p' << j->patchsize;
-      else if (!j->sha1sum().empty()) os << j->sha1sum().substr(0,3) << j->keyword_substitution;
+      else if (!j->sha1sum().empty()) os << j->sha1sum().substr(0,4) << j->keyword_substitution;
       ++j;
       if (j!=i->second.known_states.end()) os << ',';
     }
