@@ -921,7 +921,7 @@ cvs_client::update cvs_client::Update(const std::string &file,
             const std::string &old_revision, const std::string &new_revision,
             const std::string &keyword_expansion)
 {
-#if 0
+#if 1
   struct update result;
   std::vector<update_args> file_revision;
   file_revision.push_back(update_args(file,old_revision,new_revision,keyword_expansion));
@@ -1044,14 +1044,16 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
 // @@ "-r",new_revision.c_str() ... ,bname.c_str()
   if (file_revisions.size()==1 && !file_revisions.begin()->new_revision.empty())
   { 
-    SendCommand("update","-d","-C","-u","-r",file_revisions.begin()->new_revision,
-      "--",file_revisions.begin()->file,0);
+    SendCommand("update","-d","-C","-u",
+      "-r",file_revisions.begin()->new_revision.c_str(),
+      "--",file_revisions.begin()->file.c_str(),0);
   }
   else SendCommand("update","-d","-C","-u","--",0);
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile,file;
   enum { st_normal, st_merge } state=st_normal;
 // 2do: filename storing
+  std::vector<update_args> bugged;
   while (fetch_result(lresult))
   { I(!lresult.empty());
     unsigned len=0;
@@ -1060,6 +1062,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       { I(lresult.size()==7);
         I(lresult[6].first=="data");
         dir=lresult[1].second;
+        file=lresult[2].second;
         result.contents=lresult[6].second;
         cb(file,result);
         result=update();
@@ -1070,6 +1073,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       { I(lresult.size()==7);
         I(lresult[6].first=="data");
         dir=lresult[1].second;
+        file=lresult[2].second;
         result.patch=lresult[6].second;
         cb(file,result);
         result=update();
@@ -1094,6 +1098,24 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       }
       else if (lresult[0].second=="Merged")
       { I(state==st_merge);
+        I(lresult.size()==7);
+        I(lresult[6].first=="data");
+        dir=lresult[1].second;
+        file=lresult[2].second;
+        result.contents=lresult[6].second; // unnecessary ...
+        std::vector<std::string> parts;
+        stringtok(parts,lresult[3].second,"/");
+        I(parts.size()==5);
+        std::string new_revision=parts[2];
+        result.keyword_substitution=parts[4];
+//        cb(file,result);
+        // old revision is not needed ...
+        W(F("Update %s->%s of %s exposed CVS bug\n") 
+            % "?" % new_revision % file);
+        bugged.push_back(update_args(file,std::string(),new_revision,result.keyword_substitution));
+        result=update();
+        state=st_normal;
+        file.clear();
       }
       else if (lresult[0].second=="error  ")
       { I(state==st_merge);
@@ -1105,6 +1127,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     }
     else if (lresult[0].second=="+updated")
     { // std::cerr << combine_result(lresult) << '\n';
+      state=st_normal;
     }
     else if (lresult[0].second=="P ")
     { // std::cerr << combine_result(lresult) << '\n';
@@ -1135,15 +1158,16 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     { std::cerr << "unrecognized response " << lresult[0].second << '\n';
     }
   }
-#if 0  
-  if (state==st_merge)
-  { W(F("Update %s->%s of %s exposed CVS bug\n") % old_revision % new_revision % file);
-    checkout result2=CheckOut(file,new_revision);
+
+// cater for encountered bugs ...
+  for (std::vector<update_args>::const_iterator i=bugged.begin();
+                                                  i!=bugged.end();++i)
+  { checkout result2=CheckOut(i->file,i->new_revision);
     result.contents=result2.contents;
     result.patch=std::string();
     result.checksum=std::string();
     result.removed=result2.dead;
+    result.keyword_substitution=result2.keyword_substitution;
+    cb(i->file,result);
   }
-#endif  
-//  return result;
 }

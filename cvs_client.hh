@@ -18,6 +18,7 @@ class cvs_client
     std::string checksum;
     std::string patch;
     std::string keyword_substitution;
+    std::string new_revision;
     bool removed;
     update() : removed() {}
   };

@@ -828,8 +828,10 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
 struct cvs_repository::update_cb : cvs_client::update_callbacks
 { cvs_repository &repo;
   update_cb(cvs_repository &r) : repo(r) {}
-  virtual void operator()(const std::string &,const cvs_client::update &) const
-  {
+  virtual void operator()(const std::string &file,const cvs_client::update &u) const
+  { std::cerr << "file " << file << ": " << u.new_revision << ' ' 
+        << u.contents.size() << ' ' << u.patch.size() 
+        << (u.removed ? " dead" : "") << '\n';
   }
 };
 
