@@ -1151,5 +1151,54 @@ void cvs_client::parse_entry(const std::string &line, std::string &new_revision,
 std::map<std::string,std::string>
          cvs_client::Commit(const std::string &changelog, time_t when, 
                     const std::map<std::string,commit_arg> &commits)
-{ return std::map<std::string,std::string>();
+{ 
+  std::string olddir;
+  writestr("Command-prep commit\n");
+  for (std::map<std::string,update_arg>::const_iterator i=commits.begin(); 
+                        i!=commits.end(); ++i)
+  { if (!i->second.changed && !i->second.added && !i->second.removed)
+      continue;
+    if (dirname(i->first)!=olddir)
+    { olddir=dirname(i->first);
+      std::string shortpath=shorten_path(olddir);
+      if (shortpath.empty()) shortpath=".";
+      writestr("Directory "+shortpath+"\n"+root+"/"+olddir+"\n");
+    }
+    std::string bname=basename(i->first);
+    writestr("Entry /"+bname+"/"+(i->second.removed?"-":"")
+          +(i->second.added?std::string("0"):i->second.old_revision)
+          +"//"+i->second.keyword_substitution+"/\n");
+    if (!i->second.removed)
+    { writestr("Modified "+bname+"\n");
+      writestr("u=rw,g=r,o=r\n"); // standard mode
+      writestr((F("%d\n") % i->second.new_content.size()).str());
+      writestr(i->second.new_content);
+    }
+  }
+  writestr("Directory .\n"+root+"/"+module+"\n");
+  SendCommand("Argument -m\n");
+  SendArgument(changelog);
+  SendCommand("Argument --\n");
+  for (std::map<std::string,update_arg>::const_iterator i=commits.begin(); 
+                        i!=commits.end(); ++i)
+  { if (!i->second.changed && !i->second.added && !i->second.removed)
+      continue;
+    writestr("Argument "+i->first+"\n");
+  }
+  writestr("ci");
+  std::map<std::string,std::string> result;
+  // process result
+  return result;
+}
+
+void cvs_client::SendArgument(const std::string &a)
+{ // send each line separately (Argument,[Argumentx[,...]])
+  std::string::size_type newline=0,start=0;
+  std::string::size_type size_of_a=a.size();
+  while ((newline=a.find('\n',start))!=std::string::npos)
+  { writestr("Argument"+(start?"x":"")+" "+a.substr(start,newline-start)+"\n");
+    start=newline+1;
+    if (start==size_of_a) break;
+  }
+  writestr(
 }

@@ -62,7 +62,9 @@ class cvs_client
   };
   struct commit_arg
   { std::string old_revision;
-    bool changed;
+    std::string keyword_substitution;
+//    std::string file; later substitute the map by a vector
+    bool changed; // unneeded
     bool removed;
     bool added;
     std::string new_content;
@@ -104,6 +106,7 @@ public:
 //  void ticker(bool newline=true) const;
   void SendCommand(const char *cmd,...);
   void SendCommand(const char *cmd, va_list ap);
+  void SendArgument(const std::string &a);
   // false if none available
   bool fetch_result(std::string &result);
   // semi internal helper to get one result line from a list
