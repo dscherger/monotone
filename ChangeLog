@@ -1,3 +1,448 @@
+2005-03-30  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc (automate_leaves): New function.
+	(automate_command): Add it.
+	* commands.cc (automate): Synopsify it.
+	* monotone.1: Add it.
+	* monotone.texi (Automation, Commands): Likewise.
+	
+	* tests/t_automate_leaves.at: New test.
+	* testsuite.at: Add it.
+
+2005-03-30  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Automation): Make newly added sample outputs
+	verbatim also.
+
+2005-03-30  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_automate_toposort.at: New test.
+	* tests/t_automate_ancestry_difference.at: New test.
+	* tests/t_diff_first_rev.at: New test.
+	* testsuite.at: Add them.
+	
+	* revision.cc (calculate_ancestors_from_graph): Do not keep an
+	"interesting" set and return only ancestors from this set;
+	instead, simply return all ancestors.  Returning a limited set of
+	ancestors does not speed things up, nor reduce memory usage in
+	common cases.  (The only time it would reduce memory usage is when
+	examining only a small ancestor set, which the important case,
+	'heads', does not; even then, erase_ancestors would need to intern
+	the interesting revisions first so they got low numbers, which it
+	doesn't.)
+	(erase_ancestors): Adjust accordingly.
+	(toposort, ancestry_difference): New functions.
+	* revision.hh (toposort, ancestry_difference): Declare.
+	* automate.cc (automate_toposort, automate_ancestry_difference):
+	New functions.
+	(automate_command): Add them.
+	All functions: clarify in description whether output is sorted
+	alphabetically or topologically.
+	* commands.cc (automate): Synopsify them.
+	* monotone.1: Add them.
+	* monotone.texi (Commands): Likewise.
+	(Automation): Likewise.  Also, clarify for each command whether
+	its output is alphabetically or topologically sorted.
+	
+2005-03-29  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (CMD(ls)): Update with the same information as
+	CMD(list)
+
+	* monotone.texi (Automation): Make the sample output verbatim
+
+2005-03-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc (automate_erase_ancestors): New function.
+	(automate_command): Use it.
+	* commands.cc (automate): Document it.
+
+	* tests/t_automate_erase_ancestors.at: New test.
+	* testsuite.at: Add it.
+
+	* monotone.texi (Automation, Commands): Document automate
+	erase_ancestors.
+	* monotone.1: Document automate erase_ancestors.
+
+2005-03-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc (interface_version): Bump to 0.1.
+	(automate_descendents): New function.
+	(automate_command): Call it.
+	* commands.cc (automate): Add it to help text.
+
+	* tests/t_automate_descendents.at: New test.
+	* testsuite.at: Add it.
+	
+	* monotone.texi (Automation, Commands): Document automate
+	descendents.
+	* monotone.1: Document automate descendents, and vars stuff.
+
+2005-03-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_attr.at: No longer a bug report.
+	* tests/t_rename_attr.at: New test.
+	* testsuite.at: Add it.
+
+2005-03-26  Joel Crisp  <jcrisp@s-r-s.co.uk>
+
+	* contrib/Log2Gxl.java: New file.
+
+2005-03-26  Nathaniel Smith  <njs@pobox.com>
+
+	* contrib/README: New file.
+
+2005-03-25  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (user_log_file_name): Remove unused variable
+	again.  Hopefully it will take this time...
+
+2005-03-25  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (user_log_file_name): Remove unused variable.
+
+2005-03-25  Matt Johnston  <matt@ucc.asn.au>
+
+        * {unix,win32}/platform_netsync.cc, platform.hh, Makefile.am: new
+        functions to disable and enable sigpipe.
+        * netsync.cc, main.cc: call the functions from netsync rather than
+        globally, so that sigpipe still works for piping output of commands
+        such as 'log'.
+        * tests/t_netsync_sigpipe.at: test it.
+        * testsuite.at: add it.
+
+2005-03-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* monotone.cc: add short options -r, -b, -k, and -m
+	for --revision, --branch, --key, and --message respectively.
+	* monotone.texi, monotone.1: document them
+	* tests/t_short_opts.at: test them
+	* testsuite.at: add it
+
+2005-03-24  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_empty_env.at: New test.
+	* testsuite.at: Add it.  Absolutify path to monotone so it will
+	work.
+	
+	* unix/have_smart_terminal.cc (have_smart_terminal): Handle the
+	case where TERM is unset or empty.
+
+2005-03-24  Nathaniel Smith  <njs@codesourcery.com>
+
+	* ui.hh (tick_write_nothing): New class.
+	* monotone.cc (cpp_main): Enable it.
+
+2005-03-24  Nathaniel Smith  <njs@codesourcery.com>
+
+	* work.cc (build_deletions, build_additions): Fixup after merge.
+
+2005-03-23  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_cat_file_by_name.at: Check for attempting to cat
+	non-existent files.
+	* tests/t_empty_id_completion.at: New test.
+	* tests/t_empty_path.at: New test.
+	* testsuite.at: Add them.
+	
+	* database.cc (complete): Always generate some sort of limit term,
+	even a degenerate one.
+	
+	* app_state.cc (create_working_copy): Check for null directory.
+
+	* work.cc (build_deletion, build_addition, build_rename): Check
+	for null paths.
+
+2005-03-23  Derek Scherger  <derek@echologic.com>
+
+	* Makefile.am UNIX_PLATFORM_SOURCES:
+	WIN32_PLATFORM_SOURCES: add have_smart_terminal.cc
+	* platform.hh (have_smart_terminal): prototype
+	* ui.cc (user_interface): set ticker to dot/count based on
+	have_smart_terminal
+	* unix/have_smart_terminal.cc: 
+	* win32/have_smart_terminal.cc: new file
+	
+2005-03-23  Derek Scherger  <derek@echologic.com>
+
+	* commands.cc (add): pass list of prefixed file_path's to
+	build_additions
+	(drop): pass list of prefixed file_path's to build_deletions
+	(attr): pass attr_path as a 1 element vector to build_additions
+	* work.{cc,hh} (build_addition): rename to...
+	(build_additions): this, and accept a vector of paths to be added
+	in a single path_rearrangement
+	(build_deletion): rename to ...
+	(build_deletions): this, and accept a vector of paths to be
+	dropped in a single path_rearrangement
+	(known_preimage_path): replace manifest and path_rearrangement
+	args with a path_set to avoid extracting paths for every file
+	(build_rename): adjust for change to known_preimage_path
+
+2005-03-23  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.cc (my_poptFreeContext, cpp_main): Apparently
+	poptFreeContext silently changed its return type at some unknown
+	time.  Hack around this.
+
+2005-03-23  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.cc (cpp_main): Remove the special code to dump before
+	printing exception information, since we no longer dump to the
+	screen, so it's always better to have the little status message
+	saying what happened to the log buffer at the end of everything.
+	* sanity.cc (dump_buffer): Give a hint on how to get debug
+	information, when discarding it.
+	* work.{hh,cc} (get_local_dump_path): New function.
+	* app_state.cc (allow_working_copy): Use it for default
+	global_sanity dump path.
+	* monotone.texi (Reserved Files): Document MT/debug.
+	(Network): Capitalize Bob and Alice (sorry graydon).
+	Document new defaulting behavior.
+
+2005-03-23  Nathaniel Smith  <njs@codesourcery.com>
+
+	* work.cc, sanity.cc: Remove tabs.
+
+2005-03-23  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Network Service): Mention that monotone remembers
+	your server/collection.
+	(Vars): New section.
+	* netsync.cc (process_hello_cmd): Touch more cleaning.
+	* tests/t_merge_5.at: More commentary.
+	
+2005-03-23  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/t_merge_5.at: new test for a merge which ends up with
+	duplicate lines.
+	* testsuite.at: add it
+
+2005-03-22  Nathaniel Smith  <njs@codesourcery.com>
+
+	* vocab_terms.hh: Declare base64<var_name>.
+	* database.cc (clear_var, set_var, get_vars): base64-encode
+	var_names in the database.
+	* monotone.texi (Internationalization): Update description of
+	vars.
+	* transforms.{cc,hh} ({in,ex}ternalize_var_name): Remove.
+	* commands.cc (set, unset, ls_vars): Update accordingly.
+	(unset): Error out if the variable doesn't exist.
+	* tests/t_vars.at: Verify this works.
+
+	* netcmd.cc (test_netcmd_functions): Properly type arguments to
+	{read,write}_hello_cmd_payload.
+	(write_hello_cmd_payload): Properly type arguments.
+	* netcmd.hh (write_hello_cmd_payload):
+	* netsync.cc (queue_hello_cmd): Adjust accordingly.
+	(process_hello_cmd): More cleaning.  Also, save new server keys to
+	a var, and check old server keys against the var.
+	
+	* tests/t_netsync_checks_server_key.at: New test.
+	* testsuite.at: Add it.  Better docs for some netsync macros,
+	while I'm here...
+	* tests/t_netsync_absorbs.at: Add 'netsync' keyword.
+	
+2005-03-22  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_netsync_absorbs.at: New test.
+	* testsuite.at: Add it.
+
+	* netcmd.{cc,hh} (read_hello_cmd_payload): Properly type
+	arguments.
+	* netsync.cc (dispatch_payload): Adjust accordingly.  Move some
+	logic into process_hello_cmd.
+	(known_servers_domain): New constant.
+	(process_hello_cmd): Tweak arguments appropriately.  Include logic
+	formerly in dispatch_payload.  Cleanup.
+
+	No semantic changes.
+	
+2005-03-21  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Starting a New Project): Tweak phrasing.
+
+2005-03-21  Nathaniel Smith  <njs@codesourcery.com>
+
+	* commands.cc (process_netsync_client_args): If user specifies
+	server/collection and there is no default, set the default.
+	* tests/t_netsync_set_defaults.at: New test.
+	* testsuite.at: Add it.
+
+2005-03-21  Nathaniel Smith  <njs@codesourcery.com>
+
+	* vocab.hh (var_key): New typedef.
+	* database.{cc,hh}: Use it.  Make most var commands take it.
+	* commands.cc (set, unset): Adjust accordingly.
+	(default_server_key, default_collection_key): New constants.
+	(process_netsync_client_args): New function.
+	(push, pull, sync): Use it.
+
+	* tests/t_netsync_defaults.at: New test.
+	* testsuite.at: Add it.
+
+2005-03-21  Matt Johnston  <matt@ucc.asn.au>
+
+	* change_set.cc: use std::map rather than smap for 
+	confirm_unique_entries_in_directories() and confirm_proper_tree()
+	since they perform a lot of insert()s.
+
+2005-03-21  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (list tags, list vars, set, unset): Document.
+	(Internationalization): Document vars.
+
+2005-03-21  Nathaniel Smith  <njs@codesourcery.com>
+
+	* transforms.{hh,cc} ({in,ex}ternalize_var_{name,domain}): New
+	functions.
+	* vocab_terms.hh (base64<var_value>): Declare template.
+	* database.hh (get_vars): Simplify API.
+	* database.cc (get_vars, get_var, var_exists, set_var, clear_var):
+	Implement.
+	* commands.cc (set, unset): New commands.
+	(ls): New "vars" subcommand.
+	* tests/t_vars.at: Fix.  Un-XFAIL.
+	
+2005-03-21  Nathaniel Smith  <njs@codesourcery.com>
+
+	* transforms.{cc,hh}: Remove tabs.
+
+2005-03-20  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_vars.at: New test.
+	* testsuite.at: Add it.
+
+2005-03-20  Nathaniel Smith  <njs@codesourcery.com>
+
+	* schema.sql (db_vars): New table.
+	* database.cc (database::database): Update schema id.
+	* schema_migration.cc (migrate_client_to_vars): New function.
+	(migrate_monotone_schema): Use it.
+	* tests/t_migrate_schema.at: Another schema, another test...
+	
+	* vocab_terms.hh (var_domain, var_name, var_value): New types.
+	* database.hh (get_vars, get_var, var_exists, set_var, clear_var):
+	Prototype new functions.
+	
+2005-03-20  Derek Scherger  <derek@echologic.com>
+
+	* file_io.cc (book_keeping_file): return true only if first
+	element of path is MT, allowing embedded MT elements
+	(walk_tree_recursive): check relative paths for ignoreable book
+	keeping files, rather than absolute paths
+	(test_book_keeping_file): add fs::path tests for book keeping
+	files
+	* tests/t_add_intermediate_MT_path.at: un-XFAIL, fix some problems
+	with commas, add tests for renames and deletes with embedded MT
+	path elements.
+
+2005-03-20  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi: Add some missing @sc{}'s.
+	* cryptopp/config.h: Use "mt-stdint.h", not <stdint.h>, for
+	portability.
+
+2005-03-19  Nathaniel Smith  <njs@codesourcery.com>
+
+	* Makefile.am (EXTRA_DIST): Add UPGRADE and README.changesets.
+	* debian/files: Auto-updated by dpkg-buildpackage.
+
+	* This is the 0.17 release.
+	
+2005-03-18  Nathaniel Smith  <njs@codesourcery.com>
+
+	* Makefile.am (MOST_SOURCES): Add package_{full_,}revision.h.
+	* NEWS: Fill in date.
+	* debian/copyright: Update from AUTHORS.
+	* configure.ac: Bump version number to 0.17.
+	* debian/changelog, monotone.spec: Update for release.
+	* po/monotone.pot: Auto-updated by distcheck.
+
+2005-03-18  Christof Petig <christof@petig-baender.de>
+
+	* sqlite/*: Imported sqlite version 3.1.6 tree
+
+2005-03-18  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.1, commands.cc, Makefile.am: Fixup after merge.
+
+2005-03-18  Nathaniel Smith  <njs@codesourcery.com>
+
+	* path_component (split_path): Fix bug.
+	Also, add unit tests for file.
+	* unit_tests.{hh,cc}: Add path_component unit tests.
+	
+2005-03-18  Nathaniel Smith  <njs@codesourcery.com>
+
+	* Makefile.am: Fixup after merge.
+	
+2005-03-18  Nathaniel Smith  <njs@codesourcery.com>
+
+	* change_set.cc: Move path_component stuff to...
+	* path_component.{hh,cc}: ...these new files.
+	* Makefile.am: Add them.
+
+2005-03-18  Matt Johnston  <matt@ucc.asn.au>
+
+	* txt2c.cc: add --no-static option
+	* Makefile.am, package_revision.h, package_full_revision.h:
+	create revision info files as standalone .c files to speed
+	compilation (mt_version.cc doesn't need to recompile each time)
+
+2005-03-17  Derek Scherger  <derek@echologic.com>
+
+	* INSTALL: add note about creating a ./configure script
+
+2005-03-16  Nathaniel Smith  <njs@codesourcery.com>
+
+	* UPGRADE: Finish, hopefully.
+	* monotone.texi (db check): Be more clear about what is normally
+	checked, and when 'db check' is useful.
+
+2005-03-16  Patrick Mauritz <oxygene@studentenbude.ath.cx>
+
+	* monotone.texi (Hook Reference): Typo.
+
+2005-03-16  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi: Add Derek Scherger to the copyright list.
+	Various tweaks.
+	(Starting a New Project): Rewrite to clarify that only Jim runs
+	"setup", and explain why.
+	(Network Service): Add a note that most people do use a central
+	server, since people on the mailing list seem to perhaps be
+	getting the wrong idea.
+	(Making Changes): Expand a little on what the "." in "checkout ."
+	means, since people seem to accidentally checkout stuff into real
+	directories.
+	(db check): Add much verbiage on the implications
+	of various problems, and how to fix them.  Also clarify some
+	wording.
+	* NEWS: Small tweaks.
+	* UPGRADE: More instructions, not done yet...
+	
+2005-03-15  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc, monotone.texi, monotone.1: mention that agraph
+          output is in VCG format.
+
+2005-03-14  Nathaniel Smith  <njs@codesourcery.com>
+
+	* commands.cc (cat): 'cat file REV PATH'.
+	* monotone.texi: Mention it.
+	* tests/t_cat_file_by_name.at: New test.
+	* testsuite.at: Add it.
+
+2005-03-11  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc (automate_heads): Remove app.initialize call.
+	* revision.cc, revision.hh (calculate_arbitrary_change_set): New
+	function.
+	(calculate_composite_change_set): Touch more sanity checking.
+
+	* commands.cc (update): Use it.
+
 2005-03-10  Derek Scherger  <derek@echologic.com>
 
 	* app_state.cc (set_restriction): adjust bad path error message
@@ -104,6 +549,162 @@
 
 	* tests/t_diff_restrict.at: New test.
 	* testsuite.at: Add it.
+
+2005-03-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* netsync.cc (encountered_error, error): New variable and method.
+	(session::session): Initialize encountered_error.
+	(write_netcmd_and_try_flush, read_some, write_some): Check it.
+	(queue_error_cmd): Consider it like sending a goodbye.
+	(process_error_cmd): Throw an exception instead of considering it
+	a goodbye.
+	(process_data_cmd): Call error() if epochs don't match.
+	* tests/t_epoch.at, tests/t_epoch_server.at: More minor tweaks.
+	Expect failed pulls to exit with status 0.  This isn't really
+	correct, but looks complicated to fix...
+
+2005-03-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* testsuite.at (NETSYNC_SERVE_N_START): New macro.
+	* tests/t_epoch_server.at: Misc. fixes.
+
+	* netsync.cc (session::session): Don't open valve yet.
+	(maybe_note_epochs_finished): New method to open
+	valve.
+	(process_done_cmd, process_data_cmd): Call it.
+	(rebuild_merkle_trees): Actually calculate hashes for epoch merkle
+	trees.  Also, only include epochs that meet the branch mask.
+	(session): Remove unused id_to_epoch map.
+	
+2005-03-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* netcmd.cc (read_netcmd_item_type): Handle epoch_item.
+	(test_netcmd_functions): Update for new confirm_cmd_payload
+	format.
+	* netsync.cc (process_confirm_cmd): Cut and paste error.
+
+2005-03-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* constants.{cc,hh}: Add new epochlen, epochlen_bytes constants.
+	* vocab_terms.hh, vocab.hh: Add new epoch_data type.  Add predeclarations
+	for it.
+	* commands.cc (ls_epochs):
+	* revision.cc (
+	* database.hh:
+	* database.cc: Update for epoch_data.  Add get_epoch, epoch_exists
+	methods.
+	* epoch.{cc,hh}: New files.
+	* netsync.cc: Actually implement epochs-via-merkle code.
+
+2005-03-04  Nathaniel Smith  <njs@codesourcery.com>
+
+	* schema.sql (branch_epochs): Add 'hash' field.
+	* schema_migration.cc: Fixup for.
+	* database.cc (database): Change schemas.
+	* tests/t_migrate_schema.at: Replace epoch db test case with one
+	with new schema.
+
+2005-03-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* netsync.cc (session::id_to_epoch): New variable.
+	(session::session): Create refinement and requested item tables
+	for epochs.
+	(rebuild_merkle_trees): Fill epoch merkle tree and id_to_epoch
+	table.
+
+	* netsync.cc (queue_confirm_cmd, process_confirm_cmd) 
+	(dispatch_payload, rebuild_merkle_trees): 
+	* netcmd.hh:
+	* netcmd.cc (read_confirm_cmd_payload, write_confirm_cmd_payload):
+	Remove epochs.
+
+2005-02-27  Nathaniel Smith  <njs@codesourcery.com>
+
+	* constants.cc:
+	* revision.cc:
+	* testsuite.at: 
+	* commands.cc:
+	* ChangeLog: Fixup after merge.
+
+2005-02-27  Nathaniel Smith  <njs@codesourcery.com>
+
+	* merkle_tree.hh (netcmd_item_type): Add epoch_item.
+	* merkle_tree.cc (netcmd_item_type_to_string): Handle epoch_item.
+
+	* packet.hh, packet.cc (struct packet_db_valve): New class.
+	* netsync.cc (session): Use a valved writer.
+
+2005-02-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* merkle_tree.hh: Fix comment.
+	Remove prototypes for non-existing functions.
+
+2005-02-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_epoch_unidirectional.at: New test.
+	* testsuite.at: Add it.
+
+2005-02-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_epoch.at: Even more paranoid.
+	* tests/t_epoch_server.at: New test.
+	* testsuite.at: Add it.
+	
+2005-02-21  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_epoch.at: Check that netsync only sends relevant
+	epochs, and be a little more paranoid.
+
+2005-02-19  Nathaniel Smith  <njs@codesourcery.com>
+
+	* revision.cc (struct anc_graph): Fixup after merge.
+
+2005-02-18  graydon hoare  <graydon@pobox.com>
+
+	* database.cc (set_epoch): Fix SQL.
+	* monotone.texi (Rebuilding ancestry): Reword a bit.
+	* netcmd.{cc,hh} 
+	({read,write}_hello_cmd_payload): Transfer server key with hello.
+	({read,write}_confirm_cmd_payload): Transfer epoch list with confirm.
+	* netsync.cc: Adapt to changes in netcmd.
+	(rebuild_merkle_trees): Set nonexistent epochs to zero before sync.
+	* revision.cc (anc_graph): Randomize epochs on rebuild.
+	* tests/t_epoch.at: Fix up to test slightly new semantics.
+
+2005-02-07  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.1: Add more db commands.
+	* monotone.texi: Document db rebuild.  Add section on rebuilding
+	ancestry and epochs.
+
+2005-02-06  graydon hoare  <graydon@pobox.com>
+
+	* commands.cc (db): Add epoch commands.
+	(list): Likewise.
+	Also remove some unneeded transaction guards.
+	* database.{cc,hh} (get_epochs): New function.
+	(set_epoch): Likewise.
+	(clear_epoch): Likewise.
+	Also remove all persistent merkle trie stuff.
+	* schema.sql: Add epochs, remove tries.
+	* schema_migration.cc: Update.
+	* tests/t_epoch.at: New test.
+	* tests/t_migrate_schema.at: Update.
+	* testsuite.at: Add some new helpers, call t_epoch.at.
+	* vocab.hh (epoch_id): Define.
+	* vocab_terms.hh (epoch): Define.
+
+2005-02-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* merkle_tree.hh: Remove mcert_item and fcert_item, rename
+	rcert_item to cert_item, renumber to remove gaps left.
+	* merkle_tree.cc (netcmd_item_type_to_string):
+	* netcmd.cc (read_netcmd_item_type): 
+	* netsync.cc: Adjust accordingly.
+	
+2005-02-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* constants.cc (constants): Bump netsync protocol version.
 
 2005-03-07  Nathaniel Smith  <njs@codesourcery.com>
 
