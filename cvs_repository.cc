@@ -164,8 +164,8 @@ void cvs_repository::debug() const
 
 struct cvs_repository::prime_log_cb : rlog_callbacks
 { cvs_repository &repo;
-  std::map<std::string,struct ::file>::iterator i;
-  prime_log_cb(cvs_repository &r,const std::map<std::string,struct ::file>::iterator &_i) 
+  std::map<std::string,struct cvs_sync::file>::iterator i;
+  prime_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file>::iterator &_i) 
       : repo(r), i(_i) {}
   virtual void tag(const std::string &file,const std::string &tag, 
         const std::string &revision) const;

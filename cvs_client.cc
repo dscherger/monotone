@@ -311,8 +311,15 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
       const char *newargv[newsize];
       unsigned newargc=0;
       if (host.empty())
-      { newargv[newargc++]="cvs";
+      { 
+#if 0      
+        newargv[newargc++]="cvs";
         newargv[newargc++]="server";
+#else        
+        newargv[newargc++]="sh";
+        newargv[newargc++]="-c";
+        newargv[newargc++]="tee cvs_server.log | cvs server";
+#endif
       }
       else
       { const char *rsh=getenv("CVS_RSH");
