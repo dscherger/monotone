@@ -10,30 +10,6 @@
 #include <zlib.h>
 #include "ui.hh"
 
-struct rlog_callbacks
-{ // virtual void file(const std::string &file,)=0;
-  virtual void file(const std::string &file,
-        const std::string &head_rev) const=0;
-  virtual void tag(const std::string &file,const std::string &tag, 
-        const std::string &revision) const=0;
-  virtual void revision(const std::string &file,time_t checkin_date,
-        const std::string &rev,const std::string &author,
-        const std::string &state,const std::string &log) const=0;
-};
-
-struct rlist_callbacks
-{ virtual void file(const std::string &name, time_t last_change,
-        const std::string &last_rev, bool dead) const=0;
-};
-
-struct checkout
-{ time_t mod_time;
-  std::string contents;
-  std::string mode;
-  bool dead;
-  
-  checkout() : mod_time(-1), dead() {}
-};
 
 class cvs_client
 {public:
@@ -44,9 +20,33 @@ class cvs_client
     bool removed;
     update() : removed() {}
   };
-  typedef struct checkout checkout;
-  typedef struct rlist_callbacks rlist_callbacks;
-  typedef struct rlog_callbacks rlog_callbacks;
+  struct rlog_callbacks
+  { // virtual void file(const std::string &file,)=0;
+    virtual void file(const std::string &file,
+          const std::string &head_rev) const=0;
+    virtual void tag(const std::string &file,const std::string &tag, 
+          const std::string &revision) const=0;
+    virtual void revision(const std::string &file,time_t checkin_date,
+          const std::string &rev,const std::string &author,
+          const std::string &state,const std::string &log) const=0;
+  };
+
+  struct rlist_callbacks
+  { virtual void file(const std::string &name, time_t last_change,
+          const std::string &last_rev, bool dead) const=0;
+  };
+
+  struct checkout
+  { time_t mod_time;
+    std::string contents;
+    std::string mode;
+    bool dead;
+    
+    checkout() : mod_time(-1), dead() {}
+  };
+  struct update_callbacks
+  { virtual void operator()(const std::string &,const update &) const=0;
+  };
 
 private:
   int readfd,writefd;
@@ -101,6 +101,10 @@ public:
   static std::string pserver_password(const std::string &root);
   
   std::string shorten_path(const std::string &p) const;
-  void Status(const std::vector<std::pair<std::string,std::string> > &file_revisions);
+  void Update(const std::vector<std::pair<std::string,std::string> > &file_revisions,
+      const update_callbacks &cb);
 };
 
+typedef cvs_client::checkout checkout;
+typedef cvs_client::rlist_callbacks rlist_callbacks;
+typedef cvs_client::rlog_callbacks rlog_callbacks;

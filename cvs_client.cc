@@ -776,7 +776,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
   }
 }
 
-struct checkout cvs_client::CheckOut(const std::string &file, const std::string &revision)
+cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::string &revision)
 { struct checkout result;
   writestr("Directory .\n"+root+"\n");
   SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",file.c_str(),0);
@@ -851,7 +851,7 @@ static std::string dirname(const std::string &s)
   return s.substr(0,lastslash);
 }
 
-struct cvs_client::update cvs_client::Update(const std::string &file, 
+cvs_client::update cvs_client::Update(const std::string &file, 
             const std::string &old_revision, const std::string &new_revision)
 { struct update result;
   writestr("Directory .\n"+root+"/"+dirname(file)+"\n");
@@ -995,7 +995,9 @@ std::string cvs_client::rcs_file2path(std::string file) const
   return file;
 }
 
-void cvs_client::Status(const std::vector<std::pair<std::string,std::string> > &file_revisions)
-{ // we have to update, status will give us only strange strings (and uses too
-  // much bandwidth?) [is too verbose]
+// we have to update, status will give us only strange strings (and uses too
+// much bandwidth?) [is too verbose]
+void cvs_client::Update(const std::vector<std::pair<std::string,std::string> > &file_revisions,
+    const update_callbacks &cb)
+{ 
 }

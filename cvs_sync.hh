@@ -91,6 +91,7 @@ public:
   struct prime_log_cb;
   struct get_all_files_log_cb;
   struct get_all_files_list_cb;
+  struct update_cb;
 
 private:
   std::set<cvs_edge> edges;

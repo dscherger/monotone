@@ -823,6 +823,14 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
   debug();
 }
 
+struct cvs_repository::update_cb : cvs_client::update_callbacks
+{ cvs_repository &repo;
+  update_cb(cvs_repository &r) : repo(r) {}
+  virtual void operator()(const std::string &,const cvs_client::update &) const
+  {
+  }
+};
+
 void cvs_repository::update()
 { I(!edges.empty());
   const cvs_edge &now=*(edges.rbegin());
@@ -831,5 +839,5 @@ void cvs_repository::update()
   file_revisions.reserve(now.files.size());
   for (cvs_manifest::const_iterator i=now.files.begin();i!=now.files.end();++i)
     file_revisions.push_back(std::make_pair(i->first,i->second->cvs_version));
-  Status(file_revisions); //,
+  Update(file_revisions,update_cb(*this));
 }
