@@ -501,6 +501,7 @@ void cvs_repository::prime()
   // get the contents
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { vector<piece> file_contents;
+    std::string keyword_substitution;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
       std::string revision=s2->cvs_version;
@@ -511,6 +512,7 @@ void cvs_repository::prime()
       { store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
         index_deltatext(c.contents,file_contents);
+        keyword_substitution=c.keyword_substitution;
       }
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
@@ -533,7 +535,7 @@ void cvs_repository::prime()
       { L(F("file %s: revision %s already known to be dead\n") % i->first % s2->cvs_version);
       }
       else
-      { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
+      { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version,keyword_substitution);
         if (u.removed)
         { const_cast<bool&>(s2->dead)=true;
         }

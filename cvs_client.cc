@@ -918,12 +918,13 @@ struct store_here : cvs_client::update_callbacks
 }
 
 cvs_client::update cvs_client::Update(const std::string &file, 
-            const std::string &old_revision, const std::string &new_revision)
+            const std::string &old_revision, const std::string &new_revision,
+            const std::string &keyword_expansion)
 {
-#if 0 // hmmm und wie übergebe ich jetzt die Zielversion?
+#if 0
   struct update result;
-  std::vector<std::pair<std::string,std::string> > file_revision;
-  file_revision.push_back(std::make_pair(file,old_revision));
+  std::vector<update_args> file_revision;
+  file_revision.push_back(update_args(file,old_revision,new_revision,keyword_expansion));
   Update(file_revision,store_here(result));
   return result;
 #else
@@ -1022,25 +1023,31 @@ cvs_client::update cvs_client::Update(const std::string &file,
 
 // we have to update, status will give us only strange strings (and uses too
 // much bandwidth?) [is too verbose]
-void cvs_client::Update(const std::vector<std::pair<std::string,std::string> > &file_revisions,
+void cvs_client::Update(const std::vector<update_args> &file_revisions,
     const update_callbacks &cb)
 { 
   struct update result;
   I(!file_revisions.empty());
   std::string olddir;
-  for (std::vector<std::pair<std::string,std::string> >::const_iterator i
-                    =file_revisions.begin(); i!=file_revisions.end(); ++i)
-  { if (dirname(i->first)!=olddir)
-    { olddir=dirname(i->first);
+  for (std::vector<update_args>::const_iterator i=file_revisions.begin(); 
+                        i!=file_revisions.end(); ++i)
+  { if (dirname(i->file)!=olddir)
+    { olddir=dirname(i->file);
+// @@ replace . with decent directory
       writestr("Directory .\n"+root+"/"+olddir+"\n");
     }
-    std::string bname=basename(i->first);
-    writestr("Entry /"+bname+"/"+i->second+"///\n");
+    std::string bname=basename(i->file);
+    writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
     writestr("Unchanged "+bname+"\n");
   }
   // @@ perhaps pass -C to work around cvs bug
 // @@ "-r",new_revision.c_str() ... ,bname.c_str()
-  SendCommand("update","-d","-C","-u","--",0);
+  if (file_revisions.size()==1 && !file_revisions.begin()->new_revision.empty())
+  { 
+    SendCommand("update","-d","-C","-u","-r",file_revisions.begin()->new_revision,
+      "--",file_revisions.begin()->file,0);
+  }
+  else SendCommand("update","-d","-C","-u","--",0);
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile,file;
   enum { st_normal, st_merge } state=st_normal;

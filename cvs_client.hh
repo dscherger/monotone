@@ -49,6 +49,12 @@ class cvs_client
   struct update_callbacks
   { virtual void operator()(const std::string &,const update &) const=0;
   };
+  struct update_args
+  { std::string file, old_revision, new_revision, keyword_substitution;
+    update_args(const std::string &f, const std::string &o, 
+                  const std::string &n,const std::string &k)
+    : file(f), old_revision(o), new_revision(n), keyword_substitution(k) {}
+  };
 
 private:
   int readfd,writefd;
@@ -96,17 +102,19 @@ public:
   void RList(const rlist_callbacks &cb,bool dummy,...);
   struct checkout CheckOut(const std::string &file, const std::string &revision);
   struct update Update(const std::string &file, 
-            const std::string &old_revision, const std::string &new_revision);
+            const std::string &old_revision, const std::string &new_revision,
+            const std::string &keyword_substitution);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
   static std::string pserver_password(const std::string &root);
   
   std::string shorten_path(const std::string &p) const;
-  void Update(const std::vector<std::pair<std::string,std::string> > &file_revisions,
-      const update_callbacks &cb);
+  void Update(const std::vector<update_args> &args, const update_callbacks &cb);
 };
 
+#if 0
 typedef cvs_client::checkout checkout;
 typedef cvs_client::rlist_callbacks rlist_callbacks;
 typedef cvs_client::rlog_callbacks rlog_callbacks;
+#endif
