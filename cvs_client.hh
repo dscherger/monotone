@@ -134,5 +134,6 @@ public:
   std::string shorten_path(const std::string &p) const;
   static void parse_entry(const std::string &line, std::string &new_revision, 
                             std::string &keyword_substitution);
+  void Directory(const std::string &path);
 };
 

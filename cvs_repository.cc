@@ -847,6 +847,7 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
 std::set<cvs_edge>::iterator cvs_repository::commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid)
 { // check that it's the last one
+  L(F("commit %s -> %s\n") % parent->revision % rid);
   { std::set<cvs_edge>::iterator test=parent;
     ++test;
     I(test==edges.end());
@@ -856,104 +857,124 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
 
   revision_set rs;
   app.db.get_revision(rid, rs);
-  change_set &cs=rs.edges[rid].second;
-  N(cs.rearrangement.renamed_dirs.empty(),
-      F("I can't commit directory renames yet\n"));
-  N(cs.rearrangement.deleted_dirs.empty(),
-      F("I can't commit directory deletions yet\n"));
   std::vector<commit_arg> commits;
-
-  for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
-          i!=cs.rearrangement.deleted_files.end(); ++i)
-  { commit_arg a;
-    a.file=(*i)();
-    cvs_manifest::const_iterator old=parent->files.find(a.file);
-    I(old!=parent->files.end());
-    a.removed=true;
-    a.old_revision=old->second->cvs_version;
-    a.keyword_substitution=old->second->keyword_substitution;
-    commits.push_back(a);
-  }
-
-  for (std::map<file_path,file_path>::const_iterator i
-                          =cs.rearrangement.renamed_files.begin();
-          i!=cs.rearrangement.renamed_files.end(); ++i)
-  { commit_arg a; // remove
-    a.file=i->first();
-    cvs_manifest::const_iterator old=parent->files.find(a.file);
-    I(old!=parent->files.end());
-    a.removed=true;
-    a.old_revision=old->second->cvs_version;
-    a.keyword_substitution=old->second->keyword_substitution;
-    commits.push_back(a);
-    
-    a=commit_arg(); // add
-    a.file=i->second();
-    I(!old->second->sha1sum().empty());
-    file_data dat;
-    app.db.get_file_version(old->second->sha1sum,dat);
-    data unpacked;
-    unpack(dat.inner(), unpacked);
-    a.new_content=unpacked();
-    commits.push_back(a);
-  }
   
-  // added files also have a delta, so we can ignore this list
+  for (edge_map::const_iterator j = rs.edges.begin(); 
+       j != rs.edges.end();
+       ++j)
+  { if (!(edge_old_revision(j) == parent->revision)) 
+    { L(F("%s != %s\n") % edge_old_revision(j) % parent->revision);
+      continue;
+    }
+    const change_set &cs=edge_changes(j);
+    N(cs.rearrangement.renamed_dirs.empty(),
+        F("I can't commit directory renames yet\n"));
+    N(cs.rearrangement.deleted_dirs.empty(),
+        F("I can't commit directory deletions yet\n"));
 
-  for (change_set::delta_map::const_iterator i=cs.deltas.begin();
-          i!=cs.deltas.end(); ++i)
-  { 
-    commit_arg a;
-    a.file=i->first();
-    cvs_manifest::const_iterator old=parent->files.find(a.file);
-    if (old!=parent->files.end())
-    { a.old_revision=old->second->cvs_version;
+    for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
+            i!=cs.rearrangement.deleted_files.end(); ++i)
+    { commit_arg a;
+      a.file=module+"/"+(*i)();
+      cvs_manifest::const_iterator old=parent->files.find((*i)());
+      I(old!=parent->files.end());
+      a.removed=true;
+      a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
+      commits.push_back(a);
+      L(F("delete %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
     }
-    file_data dat;
-    app.db.get_file_version(i->second.second,dat);
-    data unpacked;
-    unpack(dat.inner(), unpacked);
-    a.new_content=unpacked();
-    commits.push_back(a);
-  }
 
-  std::map<std::string,std::pair<std::string,std::string> > result
-    =Commit(e.changelog,e.time,commits);
-  if (result.empty()) return edges.end();
-  e.files=parent->files;
-  
-  for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
-          i=result.begin(); i!=result.end(); ++i)
-  { cvs_manifest::iterator manifestiter=e.files.find(i->first);
-    if (i->second.first.empty())
-    { I(manifestiter!=e.files.end());
-      e.files.erase(manifestiter);
+    for (std::map<file_path,file_path>::const_iterator i
+                            =cs.rearrangement.renamed_files.begin();
+            i!=cs.rearrangement.renamed_files.end(); ++i)
+    { commit_arg a; // remove
+      a.file=module+"/"+i->first();
+      cvs_manifest::const_iterator old=parent->files.find(i->first());
+      I(old!=parent->files.end());
+      a.removed=true;
+      a.old_revision=old->second->cvs_version;
+      a.keyword_substitution=old->second->keyword_substitution;
+      commits.push_back(a);
+      L(F("rename from %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
+      
+      a=commit_arg(); // add
+      a.file=module+"/"+i->second();
+      I(!old->second->sha1sum().empty());
+      file_data dat;
+      app.db.get_file_version(old->second->sha1sum,dat);
+      data unpacked;
+      unpack(dat.inner(), unpacked);
+      a.new_content=unpacked();
+      commits.push_back(a);
+      L(F("rename to %s %d\n") % a.file % a.new_content.size());
     }
-    else
-    { file_state fs(e.time,i->second.first);
-      fs.log_msg=e.changelog;
-      fs.keyword_substitution=i->second.second;
-      fs.sha1sum=cs.deltas[i->first].second.inner();
-      std::pair<std::set<file_state>::iterator,bool> newelem=
-          files[i->first].known_states.insert(fs);
-      I(!newelem.second);
-      manifestiter->second=newelem.first;
+    
+    // added files also have a delta, so we can ignore this list
+
+    for (change_set::delta_map::const_iterator i=cs.deltas.begin();
+            i!=cs.deltas.end(); ++i)
+    { 
+      commit_arg a;
+      a.file=module+"/"+i->first();
+      cvs_manifest::const_iterator old=parent->files.find(i->first());
+      if (old!=parent->files.end())
+      { a.old_revision=old->second->cvs_version;
+        a.keyword_substitution=old->second->keyword_substitution;
+      }
+      file_data dat;
+      app.db.get_file_version(i->second.second,dat);
+      data unpacked;
+      unpack(dat.inner(), unpacked);
+      a.new_content=unpacked();
+      commits.push_back(a);
+      L(F("delta %s %s %s %d\n") % a.file % a.old_revision % a.keyword_substitution
+          % a.new_content.size());
     }
+
+    I(!commits.empty());
+    std::map<std::string,std::pair<std::string,std::string> > result
+      =Commit(e.changelog,e.time,commits);
+    if (result.empty()) return edges.end();
+    e.files=parent->files;
+    
+    for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
+            i=result.begin(); i!=result.end(); ++i)
+    { cvs_manifest::iterator manifestiter=e.files.find(shorten_path(i->first));
+      if (i->second.first.empty())
+      { I(manifestiter!=e.files.end());
+        e.files.erase(manifestiter);
+      }
+      else
+      { file_state fs(e.time,i->second.first);
+        fs.log_msg=e.changelog;
+        fs.keyword_substitution=i->second.second;
+        change_set::delta_map::const_iterator mydelta=cs.deltas.find(shorten_path(i->first));
+        I(mydelta!=cs.deltas.end());
+        fs.sha1sum=mydelta->second.second.inner();
+        std::pair<std::set<file_state>::iterator,bool> newelem=
+            files[i->first].known_states.insert(fs);
+        I(newelem.second);
+        manifestiter->second=newelem.first;
+      }
+    }
+    packet_db_writer dbw(app);
+    cert_cvs(e, dbw);
+    edges.insert(e);
+    return --(edges.end());
   }
-  packet_db_writer dbw(app);
-  cert_cvs(e, dbw);
-  edges.insert(e);
-  return --(edges.end());
+  W(F("no matching parent found\n"));
+  return edges.end();
 }
 
 void cvs_repository::commit()
 {
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
-  while (now_iter!=edges.end());
+  while (now_iter!=edges.end())
   { const cvs_edge &now=*now_iter;
     I(!now.revision().empty());
     
+    L(F("looking for children of revision %s\n") % now.revision);
     std::set<revision_id> children;
     app.db.get_revision_children(now.revision, children);
     
@@ -999,7 +1020,7 @@ void cvs_sync::push(const std::string &repository, const std::string &module,
     repo.process_certs(certs);
   }
   
-  N(repo.empty(),
+  N(!repo.empty(),
     F("no revision certs for this repository/module\n"));
 
   repo.commit();

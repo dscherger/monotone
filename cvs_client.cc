@@ -522,7 +522,7 @@ loop:
     return true;
   }
   if (x=="error  ")
-  { result.push_back(std::make_pair("CMD",x));
+  { result.push_back(std::make_pair("CMD","error"));
     return true;
   }
   
@@ -638,6 +638,17 @@ static std::string time_t2rfc822(time_t t)
   return (F("%02d %s %d %02d:%02d:%02d +0000") 
     % tm->tm_mday % months[tm->tm_mon] % (tm->tm_year+1900)
     % tm->tm_hour % tm->tm_min % tm->tm_sec).str();
+}
+
+void cvs_client::Directory(const std::string &path)
+{ if (path.empty()) // ???
+  { writestr("Directory .\n"+root+"\n");
+  }
+  else
+  { std::string shortpath=shorten_path(path);
+    if (shortpath.empty()) shortpath=".";
+    writestr("Directory "+shortpath+"\n"+root+"/"+path+"\n");
+  }
 }
 
 void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
@@ -837,7 +848,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
 
 cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::string &revision)
 { struct checkout result;
-  writestr("Directory .\n"+root+"\n");
+  Directory("");
   SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",file.c_str(),0);
   enum { st_co
        } state=st_co;
@@ -996,9 +1007,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
                         i!=file_revisions.end(); ++i)
   { if (dirname(i->file)!=olddir)
     { olddir=dirname(i->file);
-      std::string shortpath=shorten_path(olddir);
-      if (shortpath.empty()) shortpath=".";
-      writestr("Directory "+shortpath+"\n"+root+"/"+olddir+"\n");
+      Directory(olddir);
     }
     std::string bname=basename(i->file);
     writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
@@ -1012,7 +1021,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   }
   else 
   { // needed for 1.11
-    writestr("Directory .\n"+root+"/"+module+"\n");
+    Directory(module);
     SendCommand("update","-d","-C","-u",0);
   }
   std::vector<std::pair<std::string,std::string> > lresult;
@@ -1093,7 +1102,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         result=update();
         state=st_normal;
       }
-      else if (lresult[0].second=="error  ")
+      else if (lresult[0].second=="error")
       { I(state==st_merge);
         break;
       }
@@ -1168,14 +1177,13 @@ std::map<std::string,std::pair<std::string,std::string> >
                     const std::vector<commit_arg> &commits)
 { 
   std::string olddir;
-  writestr("Command-prep commit\n");
+  I(!commits.empty());
+  if (CommandValid("Command-prep")) writestr("Command-prep commit\n");
   for (std::vector<commit_arg>::const_iterator i=commits.begin(); 
                         i!=commits.end(); ++i)
   { if (dirname(i->file)!=olddir)
     { olddir=dirname(i->file);
-      std::string shortpath=shorten_path(olddir);
-      if (shortpath.empty()) shortpath=".";
-      writestr("Directory "+shortpath+"\n"+root+"/"+olddir+"\n");
+      Directory(olddir);
     }
     std::string bname=basename(i->file);
     writestr("Entry /"+bname+"/"+(i->removed?"-":"")
@@ -1188,14 +1196,14 @@ std::map<std::string,std::pair<std::string,std::string> >
       writestr(i->new_content);
     }
   }
-  writestr("Directory .\n"+root+"/"+module+"\n");
-  SendCommand("Argument -m\n");
+  Directory(module);
+  writestr("Argument -m\n");
   SendArgument(changelog);
-  SendCommand("Argument --\n");
+  writestr("Argument --\n");
   for (std::vector<commit_arg>::const_iterator i=commits.begin(); 
                         i!=commits.end(); ++i)
-    writestr("Argument "+i->file+"\n");
-  writestr("ci");
+    writestr("Argument "+shorten_path(i->file)+"\n");
+  writestr("ci\n");
   std::map<std::string,std::pair<std::string,std::string> > result;
   // process result
   std::vector<std::pair<std::string,std::string> > lresult;
