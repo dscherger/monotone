@@ -531,7 +531,11 @@ calculate_restricted_revision(app_state & app,
   get_path_rearrangement(included, excluded, app);
 
   extract_path_set(m_old, old_paths);
+  for (path_set::const_iterator i = old_paths.begin(); i != old_paths.end(); ++i)
+    L(F("old_paths: %s\n") % (*i));
   apply_path_rearrangement(old_paths, included, new_paths);
+  for (path_set::const_iterator i = new_paths.begin(); i != new_paths.end(); ++i)
+    L(F("new_paths: %s\n") % (*i));
 
   cs.rearrangement = included;
   restricted_work = excluded;
@@ -3565,7 +3569,8 @@ log_certs(app_state & app, revision_id id, cert_name name, string label, bool mu
     }     
 }
 
-CMD(log, "informative", "[ID] [file]", "print history in reverse order starting from 'ID' (filtering by 'file')")
+CMD(log, "informative", "[ID] [file]",
+    "print history in reverse order starting from 'ID' (filtering by 'file')")
 {
   revision_set rev;
   revision_id rid;

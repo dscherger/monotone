@@ -46,9 +46,10 @@ REVERT_TO($BASE_R)
 # Boom.
 AT_CHECK(MONOTONE drop groundzero, [], [ignore], [ignore])
 COMMIT(testbranch)
+#AT_CHECK(MONOTONE --debug commit --branch=testbranch --message=foo, [], [ignore], [ignore])
 DIR_DELETE_R=`BASE_REVISION`
 
-AT_CHECK(MONOTONE merge, [], [ignore], [ignore])
+AT_CHECK(MONOTONE merge --debug, [], [ignore], [ignore])
 
 AT_CHECK(MONOTONE checkout $BASE_R clean, [], [ignore], [ignore])
 AT_CHECK(cd clean && MONOTONE --branch=testbranch update, [], [ignore], [ignore])

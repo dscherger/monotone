@@ -247,8 +247,9 @@ path_state_item(path_state::const_iterator i)
 
 
 // structure dumping 
-/*
 
+/* DEBUG
+ */
 static void
 dump_renumbering(std::string const & s,
                  state_renumbering const & r)
@@ -289,7 +290,6 @@ dump_analysis(std::string const & s,
   dump_state(s + " second", t.second);
   L(F("END dumping tree '%s'\n") % s);
 }
-*/
 
 
 //  sanity checking 
@@ -343,23 +343,43 @@ extract_first(std::map<file_path, file_path> const & in,
 }
 
 
+static void
+extract_second(std::map<file_path, file_path> const & in,
+              std::set<file_path> & out)
+{
+  out.clear();
+  for (std::map<file_path, file_path>::const_iterator i = in.begin();
+       i != in.end(); ++i)
+    {
+      out.insert(i->second);
+    }
+}
+
+
 void 
 change_set::path_rearrangement::check_sane() const
 {
   // FIXME: extend this as you manage to think of more invariants
   // which are cheap enough to check at this level.
-  std::set<file_path> renamed_file_set, renamed_dir_set;
-  extract_first(renamed_files, renamed_file_set);
-  extract_first(renamed_dirs, renamed_dir_set);
+  std::set<file_path> renamed_file_src_set, renamed_dir_src_set;
+  extract_first(renamed_files, renamed_file_src_set);
+  extract_first(renamed_dirs, renamed_dir_src_set);
 
   check_sets_disjoint(deleted_files, deleted_dirs);
-  check_sets_disjoint(deleted_files, renamed_file_set);
-  check_sets_disjoint(deleted_files, renamed_dir_set);
+  check_sets_disjoint(deleted_files, renamed_file_src_set);
+  check_sets_disjoint(deleted_files, renamed_dir_src_set);
 
-  check_sets_disjoint(deleted_dirs, renamed_file_set);
-  check_sets_disjoint(deleted_dirs, renamed_dir_set);
+  check_sets_disjoint(deleted_dirs, renamed_file_src_set);
+  check_sets_disjoint(deleted_dirs, renamed_dir_src_set);
 
-  check_sets_disjoint(renamed_file_set, renamed_dir_set);
+  check_sets_disjoint(renamed_file_src_set, renamed_dir_src_set);
+
+  std::set<file_path> renamed_file_dst_set, renamed_dir_dst_set;
+  extract_second(renamed_files, renamed_file_dst_set);
+  extract_second(renamed_dirs, renamed_dir_dst_set);
+  check_sets_disjoint(renamed_file_dst_set, renamed_dir_dst_set);
+  check_sets_disjoint(renamed_file_dst_set, added_files);
+  check_sets_disjoint(renamed_dir_dst_set, added_files);
 }
 
 change_set::change_set(change_set const & other)
@@ -565,6 +585,19 @@ dnode(directory_map & dir, tid t)
 }
 
 
+// This function takes a vector of path components and joins them into a
+// single file_path.  Valid input may be a single-element vector whose sole
+// element is ""; this represents the null path, which we use to represent
+// non-existent files.  Alternatively, input may be a multi-element vector, in
+// which case all elements of the vector are required to be non-null.  The
+// following are valid inputs:
+//    - [""]
+//    - ["foo"]
+//    - ["foo", "bar"]
+// The following are not:
+//    - []
+//    - ["foo", ""]
+//    - ["", "bar"]
 static void 
 compose_path(std::vector<file_path> const & names,
              file_path & path)
@@ -574,9 +607,16 @@ compose_path(std::vector<file_path> const & names,
       std::vector<file_path>::const_iterator i = names.begin();
       I(i != names.end());
       fs::path p = mkpath((*i)());
-      ++i;
-      for ( ; i != names.end(); ++i)
-        p /= mkpath((*i)());
+      if (names.size() > 1)
+        {
+          I(!null_name(*i));
+          ++i;
+          for ( ; i != names.end(); ++i)
+            {
+              I(!null_name(*i));
+              p /= mkpath((*i)());
+            }
+        }
       path = file_path(p.string());
     }
   catch (std::runtime_error &e)
@@ -649,17 +689,31 @@ compose_rearrangement(path_analysis const & pa,
       path_item new_item(path_state_item(j));
 
       // compose names
-      if (!null_name(path_item_name(old_item)))
+      // note that old_path and new_path may not actually be valid, if this
+      // item is being added or deleted
+      get_full_path(pa.first, curr, old_name);
+
+      get_full_path(pa.second, curr, new_name);
+
+      // look for null items in the directory part of the new path
+      // we _don't_ look at the last component, the basename, here
+      bool parent_deleted = false;
+      for (unsigned int i = 0; i + 1 < new_name.size(); ++i)
         {
-          get_full_path(pa.first, curr, old_name);
-          compose_path(old_name, old_path);
+          if (null_name(idx(new_name, i)))
+            parent_deleted = true;
+        }
+      if (parent_deleted)
+        {
+          I(old_name != new_name);
+          L(F("skipping %s %d; it's now in a deleted directory\n")
+            % (path_item_type(old_item) == ptype_directory ? "directory" :"file")
+            % curr);
+          continue;
         }
 
-      if (!null_name(path_item_name(new_item)))      
-        {
-          get_full_path(pa.second, curr, new_name);
-          compose_path(new_name, new_path);
-        }
+      compose_path(new_name, new_path);
+      compose_path(old_name, old_path);
 
       if (old_path == new_path)
         {
@@ -672,7 +726,7 @@ compose_rearrangement(path_analysis const & pa,
       L(F("analyzing %s %d : '%s' -> '%s'\n")
         % (path_item_type(old_item) == ptype_directory ? "directory" : "file")
         % curr % old_path % new_path);
-      
+          
       if (null_name(path_item_name(old_item)))
         {
           // an addition (which must be a file, not a directory)
@@ -711,6 +765,29 @@ compose_rearrangement(path_analysis const & pa,
 }
 
 
+/* DEBUG
+ */
+static void
+dump_path_rearrangement(std::string const & s,
+                        change_set::path_rearrangement const & pa)
+{
+  if (global_sanity.debug)
+    {
+      std::cerr << (F("BEGIN dumping path_rearrangment '%s'") % s) << std::endl;
+      basic_io::printer printer = basic_io::printer(std::cerr);
+      print_path_rearrangement(printer, pa);
+      std::cerr << (F("END dumping path_rearrangment '%s'") % s) << std::endl;
+    }
+}
+
+static void
+dump_analysis_as_rearrangement(std::string const & s,
+                               path_analysis const & t)
+{
+  change_set::path_rearrangement pa;
+  compose_rearrangement(t, pa);
+  dump_path_rearrangement(s, pa);
+}
 
   
 //
@@ -718,8 +795,7 @@ compose_rearrangement(path_analysis const & pa,
 //
 //  "p[0]/p[1]/.../p[n-1]/p[n]"
 //
-// and fills in a vector of paths corresponding to p[0] ... p[n-1],
-// along with a separate "leaf path" for element p[n]. 
+// and fills in a vector of paths corresponding to p[0] ... p[n].
 //
 
 static void 
@@ -730,6 +806,15 @@ split_path(file_path const & p,
   fs::path tmp = mkpath(p());
   std::copy(tmp.begin(), tmp.end(), std::inserter(components, components.begin()));
 }
+
+//
+// this takes a path of the form
+//
+//  "p[0]/p[1]/.../p[n-1]/p[n]"
+//
+// and fills in a vector of paths corresponding to p[0] ... p[n-1],
+// along with a separate "leaf path" for element p[n]. 
+//
 
 static void 
 split_path(file_path const & p,
@@ -1340,15 +1425,7 @@ concatenate_change_sets(change_set const & a,
       // it doesn't make sense if the revision has a delta with a deleted file
       // (unless there's also a corresponding add for a new file)
       
-      if ( a.rearrangement.has_deleted_file(delta_entry_path(del))
-        && !a.rearrangement.has_added_file(delta_entry_path(del))
-        && !a.rearrangement.has_renamed_file_dst(delta_entry_path(del)) )
-          // FIXME: this should really be an invariant, but some
-          // revisions in monotone's tree have patches with deletions.
-          // (54b9be0d60633ca2941edd02b9b7cfe8da90cc3a for example)
-          W(F("delta [%s]->[%s] for deleted file %s\n")
-            % delta_entry_src(del) % delta_entry_dst(del) % delta_entry_path(del));
-      else if (b.rearrangement.has_deleted_file(delta_entry_path(del)))
+      if (b.rearrangement.has_deleted_file(delta_entry_path(del)))
         // the delta should be removed if the file is going to be deleted
         L(F("discarding delta [%s]->[%s] for deleted file '%s'\n")
             % delta_entry_src(del) % delta_entry_dst(del) % delta_entry_path(del));
@@ -1382,17 +1459,7 @@ concatenate_change_sets(change_set const & a,
       else
         {
           L(F("delta on %s in second changeset copied forward\n") % del_pth);
-          // in general don't want deltas on deleted files. however if a
-          // file has been deleted then re-added, then a delta is valid
-          // (it applies to the newly-added file)
-          if (!b.rearrangement.has_deleted_file(del_pth)
-              || b.rearrangement.has_added_file(del_pth)
-              || b.rearrangement.has_renamed_file_dst(del_pth))
-            concatenated.deltas.insert(*del);
-          else
-            // FIXME: this should be an invariant, see fixme above.
-            W(F("delta [%s]->[%s] for deleted file %s\n")
-              % delta_entry_src(del) % delta_entry_dst(del) % del_pth);
+          concatenated.deltas.insert(*del);
         }
     }
 
@@ -1798,6 +1865,12 @@ merge_disjoint_analyses(path_analysis const & a,
     concatenate_disjoint_analyses(anc_b_check, b_merge_check, b_check);
     compose_rearrangement(a_check, a_re);
     compose_rearrangement(b_check, b_re);
+    dump_analysis_as_rearrangement("a", a);
+    dump_analysis_as_rearrangement("b", b);
+    dump_analysis_as_rearrangement("a_merged", a_merged);
+    dump_analysis_as_rearrangement("b", b_merged);
+    dump_path_rearrangement("a_re", a_re);  // DEBUG
+    dump_path_rearrangement("b_re", b_re);  // DEBUG
     I(a_re == b_re);
   }
 
