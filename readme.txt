@@ -13,12 +13,17 @@ Batick - SVG library from the Apache project http://xml.apache.org as: batik/bat
 Run using:
 
 d:\> java -Xmx512m -classpath monotree.jar GXLViewer
+ (the Xmx512m gives it lots of memory for big ancestor graphs, run it on monotone.db for branch net.venge.monotone and you'll see why)
 
 The GXL converter can also be run stand-alone:
 
 d:\> monotone log <id> | java -classpath monotree.jar Log2Gxl | gxl2dot -d | dot -Tps2
 
 This will produce a postscript file suitable for converting into PDF 
+
+You can set the fill color for authors using a file called authors.map with one line per author in java properties format, e.g
+jcrisp@s-r-s.co.uk=blue
+njs@pobox.com=green
 
 The code is copyright as follows:
 

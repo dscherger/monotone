@@ -1,3 +1,6 @@
+# Map file from author identifier to background color
+#
+# each line should look like graydon@dub.venge.net=gray50
 njs@pobox.com=orange
 matt+rez@ucc.asn.au=aliceblue
 graydon@dub.venge.net=gray50

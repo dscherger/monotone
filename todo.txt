@@ -1,0 +1,8 @@
+1) Cull by date to show only revisions newer than a certain date. Useful on big graphs, essential on huge ones
+2) Cull by file - this is currently broken due to gaps in the log file output ancestory linking. Either query database directly or change log output - this may not be regarded as an error in the log output by some
+3) Cleanup legacy code mess in GXLViewer
+4) Hotspot for hover and click on revision nodes for changelog, node selection and diff
+5) Highlighting for branches on revision nodes
+6) Cull by branch/revision
+7) Multi-headed graph showing all revisions of all branches
+
