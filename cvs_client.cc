@@ -232,7 +232,8 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 { return s.substr(0,sub.size())==sub;
 }
 
-cvs_client::cvs_client(const std::string &repository, const std::string &_module)
+cvs_client::cvs_client(const std::string &repository, const std::string &_module,
+        bool do_connect)
     : readfd(-1), writefd(-1), byte_in_ticker(), byte_out_ticker(),
       gzip_level(), module(_module)
 { bool pserver=false;
@@ -265,7 +266,8 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
 
   memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
-  if (pserver)
+  if (!do_connect) return;
+  else if (pserver)
   { // it looks like I run into the same problems on Win32 again and again:
     //  pipes and sockets, so this is not portable except by using the
     //  Netxx::PipeStream from the ssh branch ... postponed

@@ -828,8 +828,9 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
   pc.consume_revision_cert(cc);
 }
 
-cvs_repository::cvs_repository(app_state &_app, const std::string &repository, const std::string &module)
-      : cvs_client(repository,module), app(_app), file_id_ticker(), 
+cvs_repository::cvs_repository(app_state &_app, const std::string &repository, 
+            const std::string &module, bool connect)
+      : cvs_client(repository,module,connect), app(_app), file_id_ticker(), 
         revision_ticker(), cvs_edges_ticker(), remove_state()
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
@@ -1339,3 +1340,24 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
   }
   return e.xfiles;
 }
+
+void cvs_sync::admin(const std::string &command, const std::string &arg, 
+            app_state &app)
+{ test_key_availability(app);
+
+  if (command=="compact")
+  { std::string::size_type slash=arg.rfind('/');
+    I(slash!=std::string::npos);
+    cvs_sync::cvs_repository repo(app,arg.substr(0,slash),arg.substr(slash+1),false);
+    transaction_guard guard(app.db);
+
+    { std::vector< revision<cert> > certs;
+      app.db.get_revision_certs(cvs_cert_name, certs);
+      // erase_bogus_certs ?
+      repo.process_certs(certs);
+    }
+    
+    guard.commit();
+  }
+}
+

@@ -94,7 +94,7 @@ protected:
   std::string host; // for author certification
   
 public:  
-  cvs_client(const std::string &repository, const std::string &module);
+  cvs_client(const std::string &repository, const std::string &module, bool connect=true);
   ~cvs_client();
              
   void writestr(const std::string &s, bool flush=false);

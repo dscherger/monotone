@@ -147,7 +147,7 @@ public: // semi public interface for push/pull
   bool empty() const { return edges.empty() && files.empty(); }
 
 public:  
-  cvs_repository(app_state &app, const std::string &repository, const std::string &module);
+  cvs_repository(app_state &app, const std::string &repository, const std::string &module, bool connect=true);
 
   void debug() const;
   
@@ -163,4 +163,5 @@ void pull(const std::string &repository, const std::string &module,
             app_state &app);
 void push(const std::string &repository, const std::string &module,
             app_state &app);
+void admin(const std::string &command, const std::string &arg, app_state &app);
 } // end namespace cvs_sync
