@@ -12,12 +12,14 @@
 #include <cassert>
 #include <stdexcept>
 #include <set>
-#include <boost/tokenizer.hpp>
+//#include <boost/tokenizer.hpp>
+//#include "rcs_file.hh"
 
 class cvs_client
 { int readfd,writefd;
   size_t bytes_read,bytes_written;
-  std::set<std::string> Valid_requests;
+  typedef std::set<std::string> stringset_t;
+  stringset_t Valid_requests;
   
 public:  
   cvs_client(const std::string &host, const std::string &root,
@@ -35,13 +37,69 @@ public:
   }
 };
 
+struct cvs_file_state
+{ std::string revision;
+  time_t last_changed;
+};
+
+struct cvs_changeset // == cvs_key ?? rcs_delta+rcs_deltatext
+{ typedef std::map<std::string,cvs_file_state> tree_state_t;
+
+//  cvs_client::stringset_t tags; ???
+  tree_state_t tree_state; // dead files do not occur here
+};
+
+namespace { // cvs_key?
+namespace constants
+{ const static int cvs_window=5; }
+struct cvs_edge // careful!
+{ // std::string branch;
+  std::string changelog;
+  std::string author;
+  time_t time; //  std::string time;
+ 
+  inline bool similar_enough(cvs_edge const & other) const
+  {
+    if (changelog != other.changelog)
+      return false;
+    if (author != other.author)
+      return false;
+    if (labs(time - other.time) > constants::cvs_window)
+      return false;
+    return true;
+  }
+
+  inline bool operator==(cvs_edge const & other) const
+  {
+    return // branch == other.branch &&
+      changelog == other.changelog &&
+      author == other.author &&
+      time == other.time;
+  }
+
+  inline bool operator<(cvs_edge const & other) const
+  {
+    // nb: this must sort as > to construct the edges in the right direction
+    return time > other.time ||
+
+      (time == other.time 
+       && author > other.author) ||
+
+      (time == other.time 
+       && author == other.author 
+       && changelog > other.changelog);
+  }
+};}
+
 class cvs_repository : public cvs_client
 { 
 public:
-  typedef std::map<std::string,std::string> cvsmanifest; // file,rev
+  typedef cvs_changeset::tree_state_t tree_state_t;
+
 private:
+  std::list<tree_state_t> tree_states;
   // zusammen mit changelog, date, author(?)
-  std::map<cvsmanifest*,cvsmanifest*> successor;
+  std::map<tree_state_t*,tree_state_t*> successor;
 public:  
   cvs_repository(const std::string &host, const std::string &root,
              const std::string &user=std::string(), 
@@ -50,9 +108,9 @@ public:
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
-  const cvsmanifest &now();
-  const cvsmanifest &find(const std::string &date,const std::string &changelog);
-  const cvsmanifest &next(const cvsmanifest &m) const;
+  const tree_state_t &now();
+  const tree_state_t &find(const std::string &date,const std::string &changelog);
+  const tree_state_t &next(const tree_state_t &m) const;
 };
 
 // copied from netsync.cc from the ssh branch
@@ -182,21 +240,22 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
               "Set-static-directory Clear-static-directory Set-sticky "
               "Clear-sticky Template Clear-template Notified Module-expansion "
               "Wrapper-rcsOption M Mbinary E F MT\n");
+
   writestr(writefd,"valid-requests\n");
   std::string answer=readline(readfd);
-//  std::cerr << answer << '\n';
   assert(answer.substr(0,15)=="Valid-requests ");
+  // boost::tokenizer does not provide the needed functionality (preserve -)  
   stringtok(Valid_requests,answer.substr(15));
-#if 0 // boost does not provide the needed functionality (preserve -)  
-  typedef boost::tokenizer<char_delimiters_separator<char> > tokenizer;
-  tokenizer tok(answer.substr(15));
-  for(tokenizer::iterator i=tok.begin(); i!=tok.end();++i)
-  { Valid_requests.insert(*i);
-    std::cerr << *i << ' ';
-  }
-#endif  
+#if 0  
+  for (stringset_t::const_iterator i=Valid_requests.begin();
+         i!=Valid_requests.end();++i)
+    std::cout << *i << ':';
+#endif    
+  assert(Valid_requests.find("UseUnchanged")!=Valid_requests.end());
+
   writestr(writefd,"UseUnchanged\n"); // ???
   ticker();
+  
 //  writestr(writefd,"Directory .\n");
 //  do
 //  { std::string answer=readline(readfd);
@@ -204,15 +263,17 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
 //  }
 }
 
-const cvs_repository::cvsmanifest &cvs_repository::now()
-{ static cvsmanifest res;
-  return res;
+const cvs_repository::tree_state_t &cvs_repository::now()
+{ if (tree_states.empty())
+  { // rlist -Red
+  }
+  return tree_states.back(); // wrong of course
 }
 
 #if 1
 int main()
 { cvs_repository cl("localhost","/usr/local/cvsroot","","christof");
-  const cvs_repository::cvsmanifest &n=cl.now();
+  const cvs_repository::tree_state_t &n=cl.now();
   return 0;
 }
 #endif
