@@ -160,7 +160,7 @@ rannotate noop version
 
 size_t const cvs_edge::cvs_window;
 
-cvs_revision::cvs_revision(const std::string &x)
+cvs_revision_nr::cvs_revision_nr(const std::string &x)
 { std::string::size_type begin=0;
   do
   { std::string::size_type end=x.find(".",begin);
@@ -172,12 +172,12 @@ cvs_revision::cvs_revision(const std::string &x)
   } while(begin!=std::string::npos);
 };
 
-void cvs_revision::operator++(int)
+void cvs_revision_nr::operator++(int)
 { if (parts.empty()) return;
   parts.back()++;
 }
 
-std::string cvs_revision::get_string() const
+std::string cvs_revision_nr::get_string() const
 { std::string result;
   for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();)
   { result+= (F("%d") % *i).str();
@@ -187,7 +187,7 @@ std::string cvs_revision::get_string() const
   return result;
 }
 
-bool cvs_revision::is_parent_of(const cvs_revision &child) const
+bool cvs_revision_nr::is_parent_of(const cvs_revision_nr &child) const
 { unsigned cps=child.parts.size();
   unsigned ps=parts.size();
   if (cps<ps) return false;
@@ -208,7 +208,7 @@ bool cvs_revision::is_parent_of(const cvs_revision &child) const
 }
 
 // impair number of numbers => branch tag
-bool cvs_revision::is_branch() const 
+bool cvs_revision_nr::is_branch() const 
 { return parts.size()&1;
 }
 
@@ -418,7 +418,7 @@ void cvs_repository::prime(app_state &app)
     I(j!=edges.end());
     I(j->time==i->time);
     I(i->files.empty());
-    I(i->revision.empty());
+//    I(i->revision.empty());
     edges.erase(i);
     i=j; 
   }
@@ -464,7 +464,7 @@ void cvs_repository::prime(app_state &app)
       ++s2;
       if (s2==i->second.known_states.end()) break;
       // s2 gets changed
-      cvs_revision srev(s->cvs_version);
+      cvs_revision_nr srev(s->cvs_version);
       I(srev.is_parent_of(s2->cvs_version));
       if (s->dead)
       { cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);

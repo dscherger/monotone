@@ -13,19 +13,19 @@
 #include "app_state.hh"
 
 namespace cvs_sync {
-struct cvs_revision
+struct cvs_revision_nr
 { std::vector<int> parts;
 
-  cvs_revision(const std::string &x);
+  cvs_revision_nr(const std::string &x);
   void operator++(int);
   std::string get_string() const;
   bool is_branch() const;
-  bool is_parent_of(const cvs_revision &child) const;
+  bool is_parent_of(const cvs_revision_nr &child) const;
 };
 
 struct file_state
 { time_t since_when;
-  std::string cvs_version;
+  std::string cvs_version; // cvs_revision_nr ?
   unsigned size;
   unsigned patchsize;
 //  std::string rcs_patch;
@@ -57,14 +57,13 @@ struct cvs_manifest // state of the files at a specific point in history
 };
 
 struct cvs_edge // careful this name is also used in cvs_import
-{ // std::string branch;
+{
   std::string changelog;
   bool changelog_valid;
   std::string author;
   time_t time,time2;
-  cvs_manifest::tree_state_t files; // this should be a state change!
-//  std::string manifest; // monotone manifest
-  std::string revision; // monotone revision
+  cvs_manifest::tree_state_t files; // manifest (or use cvs_manifest)
+  hexenc<id> revision; // monotone revision
 
   // I do not want this to be 3 hours (how comes?)
   static size_t const cvs_window = 5;
@@ -95,9 +94,6 @@ public:
   struct now_list_cb;
 
 private:
-//  std::list<tree_state_t> tree_states;
-  // zusammen mit changelog, date, author(?)
-//  std::map<tree_state_t*,tree_state_t*> successor;
   std::set<cvs_edge> edges;
   std::map<std::string,file_history> files;
   // tag,file,rev
