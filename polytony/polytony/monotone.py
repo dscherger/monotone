@@ -156,7 +156,7 @@ class Monotone(object):
         if not version.in_db():
             return "<working directory>"
 
-        stdout, stderr = self._run_monotone("ls", "certs", "manifest",
+        stdout, stderr = self._run_monotone("ls", "certs",
                                             version.hex_version())
         return polytony.bibblefilter.filter_string(stdout)
 
