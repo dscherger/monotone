@@ -1,3 +1,4 @@
+
 // copyright (C) 2005 Christof Petig <christof@petig-baender.de>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -9,13 +10,13 @@
 #include <string>
 #include <list>
 #include <iostream>
-#include <cassert>
 #include <stdexcept>
+#include <vector>
 #include <set>
 #include <stdarg.h>
 #include <zlib.h>
 #include <fcntl.h>
-#include <vector>
+#include <cassert>
 //#include <boost/tokenizer.hpp>
 //#include "rcs_file.hh"
 
@@ -51,6 +52,10 @@ public:
   void SendCommand(const char *cmd,...);
   // false if none available
   bool fetch_result(std::string &result);
+  // semi internal helper to get one result line from a list
+  std::string combine_result(const std::list<std::pair<std::string,std::string> > &result);
+  // MT style
+  bool fetch_result(std::list<std::pair<std::string,std::string> > &result);
   void GzipStream(int level);
 };
 
@@ -299,6 +304,16 @@ stringtok (Container &container, std::string const &in,
     }
 }
 
+// "  AA  " s=2 e=3
+std::string trim(const std::string &s)
+{ std::string::size_type start=s.find_first_not_of(" ");
+  if (start==std::string::npos) return std::string();
+  std::string::size_type end=s.find_last_not_of(" ");
+  if (end==std::string::npos) end=s.size();
+  else ++end;
+  return s.substr(start,end-start);
+}
+
 cvs_client::cvs_client(const std::string &host, const std::string &root, 
                     const std::string &user, const std::string &_module)
     : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0),
@@ -361,7 +376,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   ticker();
 
 //  writestr("Global_option -q\n"); // -Q?
-  GzipStream(3);
+//  GzipStream(3);
 }
 
 void cvs_client::InitZipStream(int level)
@@ -382,7 +397,24 @@ void cvs_client::GzipStream(int level)
 }
 
 bool cvs_client::fetch_result(std::string &result)
-{loop:
+{ std::list<std::pair<std::string,std::string> > res;
+  if (!fetch_result(res) || res.empty()) return false;
+  result=combine_result(res);
+  return true;
+}
+
+std::string cvs_client::combine_result(const std::list<std::pair<std::string,std::string> > &res)
+{ if (res.empty()) return std::string();
+  // optimized for the single entry case
+  std::list<std::pair<std::string,std::string> >::const_iterator i=res.begin();
+  std::string result=i->second;
+  for (++i;i!=res.end();++i) result+=i->second;
+  return result;
+}
+
+bool cvs_client::fetch_result(std::list<std::pair<std::string,std::string> > &result)
+{ result.clear();
+loop:
   std::string x=readline();
   if (x.size()<2) goto error;
   if (x.substr(0,2)=="E ") 
@@ -390,8 +422,17 @@ bool cvs_client::fetch_result(std::string &result)
     goto loop;
   }
   if (x.substr(0,2)=="M ") 
-  { result=x.substr(2);
+  { result.push_back(std::make_pair(std::string(),x.substr(2)));
     return true;
+  }
+  if (x=="MT newline") return true;
+  if (x.substr(0,3)=="MT ") 
+  { std::string::size_type sep=x.find_first_of(" ",3);
+    if (sep==std::string::npos) 
+      result.push_back(std::make_pair(std::string(),x.substr(3)));
+    else
+      result.push_back(std::make_pair(x.substr(3,sep-3),x.substr(sep+1)));
+    goto loop;
   }
   if (x=="ok") return false;
 error:
@@ -401,39 +442,51 @@ error:
 
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (tree_states.empty())
-  { SendCommand("rlist","-e","-R","-d","--",module.c_str(),0);
-    std::string result;
-//    std::list<std::string> l;
+  { SendCommand("rlist","-l","-R","-d","--",module.c_str(),0);
+    std::list<std::pair<std::string,std::string> > lresult;
     enum { st_dir, st_file } state=st_dir;
     std::string directory;
-    while (fetch_result(result))
+    while (fetch_result(lresult))
     { switch(state)
       { case st_dir:
+        { std::string result=combine_result(lresult);
           assert(result.size()>=2);
           assert(result[result.size()-1]==':');
           directory=result.substr(0,result.size()-1);
           state=st_file;
           ticker();
           break;
+        }
         case st_file:
-          if (result.empty()) state=st_dir;
+          if (lresult.empty() || lresult.begin()->second.empty()) state=st_dir;
           else
-          { std::vector<std::string> fields;
-            stringtok(fields,result,"/");
-            // 0: directory == 'D'
-            // 1: name
-            // 2: revision
-            // 3: date
-            // 4: keyword substitution
-            // 5: tags
-            // if the last one was empty it is not generated
-            if (fields.size()==5) fields.push_back(std::string());
-//std::cerr << fields.size() << '\n';
-            assert(fields.size()==6);
-            if (fields[0].empty()) // not a dir
-            { std::cerr << (directory+"/"+fields[1]) << " V" 
-                << fields[2] << " from " << fields[3] << " " << fields[4]
-                << " " << fields[5] << '\n';
+          { assert(lresult.size()==3);
+            std::list<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
+            std::list<std::pair<std::string,std::string> >::const_iterator i1=i0;
+            ++i1;
+            std::list<std::pair<std::string,std::string> >::const_iterator i2=i1;
+            ++i2;
+            assert(i0->first=="text");
+            assert(i1->first=="date");
+            assert(i2->first=="text");
+            std::string keyword=trim(i0->second);
+            std::string date=trim(i1->second);
+            std::string version=trim(i2->second.substr(1,10));
+            std::string dead=trim(i2->second.substr(12,4));
+            std::string name=i2->second.substr(17);
+            
+            assert(keyword[0]=='-' || keyword[0]=='d');
+            assert(date[4]=='-' && date[7]=='-');
+            assert(date[10]==' ' && date[13]==':');
+            assert(date[16]==':' && date[19]==' ');
+            assert(date[20]=='+' || date[20]=='-');
+            assert(dead.empty() || dead=="dead");
+            assert(!name.empty());
+            
+            if (keyword!="d---")
+            { std::cerr << (directory+"/"+name) << " V" 
+                << version << " from " << date << " " << dead
+                << " " << keyword << '\n';
             }
           }
           break;
@@ -445,9 +498,47 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 }
 
 #if 1
-int main()
-{ try
-  { cvs_repository cl("","/usr/local/cvsroot","","christof/java");
+#include <getopt.h>
+
+int main(int argc,char **argv)
+{ std::string repository="/usr/local/cvsroot";
+  std::string module="christof/java";
+  std::string host="";
+  std::string user="";
+  int compress_level=3;
+  int c;
+  while ((c=getopt(argc,argv,"zd"))!=-1)
+  { switch(c)
+    { case 'z': compress_level=atoi(optarg);
+        break;
+      case 'd': 
+        { std::string d_arg=optarg;
+          std::string::size_type at=d_arg.find('@');
+          std::string::size_type host_start=at;
+          if (at!=std::string::npos) 
+          { user=d_arg.substr(0,at); 
+            ++host_start; 
+          }
+          else host_start=0;
+          std::string::size_type colon=d_arg.find(':',host_start);
+          std::string::size_type repo_start=colon;
+          if (colon!=std::string::npos) 
+          { host=d_arg.substr(host_start,colon-host_start); 
+            ++repo_start; 
+          }
+          else repo_start=0;
+          repository=d_arg.substr(repo_start);
+        }
+      default: 
+        std::cerr << "USAGE: cvs_client [-z level] [-d repo] [module]\n";
+        exit(1);
+        break;
+    }
+  }
+  if (optind+1<=argc) module=argv[optind];
+  try
+  { cvs_repository cl(host,repository,user,module);
+    cl.GzipStream(compress_level);
     const cvs_repository::tree_state_t &n=cl.now();
   } catch (std::exception &e)
   { std::cerr << e.what() << '\n';
