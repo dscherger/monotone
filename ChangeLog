@@ -1,3 +1,55 @@
+2005-02-06  graydon hoare  <graydon@pobox.com>
+
+	* change_set.cc: Use hash_map in a few places.
+	(confirm_unique_entries_in_directories): Fix invariants.
+	* constants.{cc,hh} (db_version_cache_sz): New constant.
+	* database.cc (version_cache): New structure.
+	(get_version): Use it.
+	* interner.hh: Rewrite to use hash_map and vector.
+	* tests/t_no_rename_overwrite.at: Tweak return codes.
+
+2005-02-06  Nathaniel Smith  <njs@codesourcery.com>
+
+	* ui.hh (ensure_clean_line): New method.
+	* ui.cc (inform): Use it.
+	* keys.cc (get_passphrase): Call it before prompting for passphrase.
+
+2005-02-06  Nathaniel Smith  <njs@codesourcery.com>
+
+	* database.cc (info): Report more statistics.
+
+	* ROADMAP: Remove finished items.
+
+	* revision.cc (analyze_manifest_changes): Childs cannot be null,
+	that makes no sense.
+	(add_node_for_old_manifest): Log node names, don't print it.
+	(construct_revision_from_ancestry): Partially rewrite to handle
+	root nodes explicitly.
+	(build_changesets_from_existing_revs): Don't put the null revision
+	in the ancestry graph, to match changesetify logic.
+	(add_node_for_old_revision): Enforce decision that the ancestry
+	graph not contain the null revision.
+
+	(anc_graph::heads): Remove.
+	(add_node_ancestry): Don't try creating it; logic was broken
+	anyway.
+	(rebuild_from_heads): Rename to...
+	(rebuild_ancestry): ...this.  Calculate head set correctly.
+
+2005-02-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* change_set.cc (compose_path): Add more invariants.
+
+2005-02-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.cc (cpp_main): Log command line, to help interpret the
+	logs people send in.
+
+2005-02-05  Nathaniel Smith  <njs@codesourcery.com>
+
+	* revision.cc (check_sane): Turn off this invariant when
+	global_sanity.relaxed.
+
 2005-02-03  Nathaniel Smith  <njs@codesourcery.com>
 
 	* tests/t_load_into_existing.at: Oops, really add it too, sigh.
