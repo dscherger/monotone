@@ -15,11 +15,13 @@
 #include "cvs_client.hh"
 #include <boost/lexical_cast.hpp>
 
+#if 0
 void cvs_client::ticker(bool newline) const
 { std::cerr << "[bytes in: " << bytes_read << " out: " 
           << bytes_written << "]";
   if (newline) std::cerr << '\n';
 }
+#endif
 
 // copied from netsync.cc from the ssh branch
 static pid_t pipe_and_fork(int *fd1,int *fd2)
@@ -59,7 +61,8 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
 void cvs_client::writestr(const std::string &s, bool flush)
 { if (s.size()) L(F("writestr(%s") % s); // s mostly contains the \n char
   if (!gzip_level)
-  { if (s.size()) bytes_written+=write(writefd,s.c_str(),s.size());
+  { if (s.size() && byte_out_ticker.get())
+      (*byte_out_ticker)+=write(writefd,s.c_str(),s.size());
     return;
   }
   char outbuf[1024];
@@ -74,7 +77,8 @@ void cvs_client::writestr(const std::string &s, bool flush)
     { throw oops("deflate error "+ boost::lexical_cast<std::string>(err));
     }
     unsigned written=sizeof(outbuf)-compress.avail_out;
-    if (written) bytes_written+=write(writefd,outbuf,written);
+    if (written && byte_out_ticker.get())
+      (*byte_out_ticker)+=write(writefd,outbuf,written);
     else break;
   }
 }
@@ -131,7 +135,8 @@ try_again:
   ssize_t avail_in=read(readfd,buf,sizeof buf);
   if (avail_in<1) 
     throw oops("read error "+std::string(strerror(errno)));
-  bytes_read+=avail_in;
+  if (byte_in_ticker.get())
+    (*byte_in_ticker)+=avail_in;
   if (!gzip_level)
   { inputbuffer+=std::string(buf,buf+avail_in);
     return;
@@ -236,10 +241,12 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 }
 
 cvs_client::cvs_client(const std::string &repository, const std::string &_module)
-    : readfd(-1), writefd(-1), bytes_read(), bytes_written(),
+    : readfd(-1), writefd(-1), byte_in_ticker(), byte_out_ticker(),
       gzip_level(), module(_module)
 { bool pserver=false;
   std::string user;
+  byte_in_ticker.reset(new ticker("bytes in", ">", 256));
+  byte_out_ticker.reset(new ticker("bytes out", "<", 256));
   { unsigned len;
     std::string d_arg=repository;
     if (begins_with(d_arg,":pserver:",len))
@@ -384,7 +391,6 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
   I(CommandValid("UseUnchanged"));
 
   writestr("UseUnchanged\n"); // ???
-  ticker();
 
 //  writestr("Global_option -q\n"); // -Q?
 }
@@ -600,7 +606,6 @@ void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
         I(result[result.size()-1]==':');
         directory=result.substr(0,result.size()-1);
         state=st_file;
-        ticker();
         break;
       }
       case st_file:

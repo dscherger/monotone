@@ -97,21 +97,22 @@ private:
   std::map<std::string,file_history> files;
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
-  unsigned files_inserted;
-  unsigned revisions_created;
+//  unsigned files_inserted;
+//  unsigned revisions_created;
+
+  std::auto_ptr<ticker> file_id_ticker;
+  std::auto_ptr<ticker> revision_ticker;
 
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
 public:  
   void prime(app_state &app);
 public:  
-  cvs_repository(const std::string &repository, const std::string &module)
-      : cvs_client(repository,module), files_inserted(), revisions_created()
-  {}
+  cvs_repository(const std::string &repository, const std::string &module);
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
-  void ticker() const;
+//  void ticker() const;
   const tree_state_t &now();
   const tree_state_t &find(const std::string &date,const std::string &changelog);
   const tree_state_t &next(const tree_state_t &m) const;

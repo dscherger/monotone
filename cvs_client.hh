@@ -8,6 +8,7 @@
 #include <set>
 #include <stdarg.h>
 #include <zlib.h>
+#include "ui.hh"
 
 struct rlog_callbacks
 { // virtual void file(const std::string &file,)=0;
@@ -49,7 +50,9 @@ class cvs_client
 
 private:
   int readfd,writefd;
-  size_t bytes_read,bytes_written;
+//  size_t bytes_read,bytes_written;
+  std::auto_ptr<ticker> byte_in_ticker;
+  std::auto_ptr<ticker> byte_out_ticker;
   typedef std::set<std::string> stringset_t;
   stringset_t Valid_requests;
   int gzip_level;
@@ -74,9 +77,7 @@ public:
   std::string readline();
   std::string read_n(unsigned size);
   
-  size_t get_bytes_read() const { return bytes_read; }
-  size_t get_bytes_written() const { return bytes_written; }
-  void ticker(bool newline=true) const;
+//  void ticker(bool newline=true) const;
   void SendCommand(const char *cmd,...);
   void SendCommand(const char *cmd, va_list ap);
   // false if none available

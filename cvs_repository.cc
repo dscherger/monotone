@@ -220,6 +220,7 @@ bool cvs_revision_nr::is_branch() const
 
 // cvs_repository ----------------------
 
+#if 0
 void cvs_repository::ticker() const
 { cvs_client::ticker(false);
   if (revisions_created)
@@ -229,6 +230,7 @@ void cvs_repository::ticker() const
   std::cerr << "[edges: " << edges.size() << "] "
       "[tags: "  << tags.size() << "]\n";
 }
+#endif
 
 struct cvs_repository::now_log_cb : rlog_callbacks
 { cvs_repository &repo;
@@ -261,7 +263,6 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     { I(CommandValid("rlog"));
       RLog(now_log_cb(*this),false,"-N","-h","--",module.c_str(),0);
     }
-    ticker();
     // prime
 //    prime();
   }
@@ -377,7 +378,7 @@ void cvs_repository::store_contents(app_state &app, const std::string &contents,
     pack(dat, packed);
     file_data fdat=packed;
     app.db.put_file(sha1sum, fdat);
-    ++files_inserted;
+    if (file_id_ticker.get()) ++(*file_id_ticker);
   }
 }
 
@@ -415,7 +416,7 @@ void cvs_repository::store_delta(app_state &app, const std::string &new_contents
     // yes, rcs has it the other way round (new and old are switched)
     rcs_put_raw_file_edge(to,from,packed,app.db);
 #endif    
-    ++files_inserted;
+    if (file_id_ticker.get()) ++(*file_id_ticker);
   }
 }
 
@@ -482,7 +483,6 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
 void cvs_repository::prime(app_state &app)
 { for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
-    ticker();
   }
   // remove duplicate states
   for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
@@ -496,7 +496,6 @@ void cvs_repository::prime(app_state &app)
     edges.erase(i);
     i=j; 
   }
-  ticker();
   
   // join adjacent check ins (same author, same changelog)
   for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
@@ -586,9 +585,7 @@ void cvs_repository::prime(app_state &app)
         }
       }
     }
-    ticker();
   }
-  ticker();
   // fill in file states at given point
   debug();
 
@@ -632,7 +629,6 @@ void cvs_repository::prime(app_state &app)
     }
     e->files=current_manifest;
   }
-  ticker();
   // commit them all
   cvs_manifest empty;
   revision_id parent_rid;
@@ -689,7 +685,7 @@ void cvs_repository::prime(app_state &app)
     e->revision=child_rid.inner();
     if (! app.db.revision_exists(child_rid))
     { app.db.put_revision(child_rid, rev);
-      ++revisions_created;
+      if (revision_ticker.get()) ++(*revision_ticker);
     }
     cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
     cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
@@ -702,7 +698,6 @@ void cvs_repository::prime(app_state &app)
     parent_mid = child_mid;
     parent_rid = child_rid;
     oldmanifestp=&e->files;
-    ticker();
   }
   
   debug();
@@ -719,6 +714,13 @@ void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consume
   revision<cert> cc(t);
   pc.consume_revision_cert(cc);
 //  put_simple_revision_cert(e.revision, "cvs_revisions", content, app, pc);
+}
+
+cvs_repository::cvs_repository(const std::string &repository, const std::string &module)
+      : cvs_client(repository,module), file_id_ticker(), revision_ticker()
+{
+  file_id_ticker.reset(new ticker("file ids", "F", 10));
+  revision_ticker.reset(new ticker("revisions", "R", 3));
 }
 
 void cvs_sync::sync(const std::string &repository, const std::string &module,
@@ -753,12 +755,13 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   { // populate data structure using these certs
     cert_value name;
     decode_base64(i->inner().value, name);
+    std::cerr << name().substr(0,70) << '\n';
 //    import_cvs_cert(*i);
     // name()
   }
   
   // initial checkout
-  if (repo.empty()) 
+  if (false && repo.empty()) 
   { /*const cvs_sync::cvs_repository::tree_state_t &n=*/ repo.now();
   
     repo.prime(app);
