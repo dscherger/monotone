@@ -9,16 +9,17 @@ then
   echo "Test monotone checkout directory already there."
   exit 1
 fi
-../monotone --branch test --db test.db checkout test.mt
+../monotone --branch test --db test.db checkout test.mt || exit
 
 cd test.mt
 
 echo "added by monotone" >dir/E
-../../monotone add dir/E
+../../monotone add dir/E || exit
 ../../monotone --key test@localhost --branch test --db ../test.db commit \
 	--message "dir/E added" << EOF
 x
 EOF
+if [ $? -ne 0 ] ; then exit ; fi
 
 echo "changed by monotone" >dir/C
 sleep 2
@@ -26,6 +27,7 @@ sleep 2
 	--message "dir/C changed" << EOF
 x
 EOF
+if [ $? -ne 0 ] ; then exit ; fi
 
 ../../monotone drop A
 sleep 2
@@ -33,3 +35,4 @@ sleep 2
 	--message "A removed" << EOF
 x
 EOF
+if [ $? -ne 0 ] ; then exit ; fi

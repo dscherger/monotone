@@ -283,7 +283,7 @@ void cvs_repository::debug() const
       i!=edges.end();++i)
   { os << "[" << i->time;
     if (i->time!=i->time2) os << '+' << (i->time2-i->time);
-    if (!i->revision().empty()) os << ',' << i->revision();
+    if (!i->revision().empty()) os << ',' << i->revision().substr(0,4);
     if (!i->xfiles.empty()) 
       os << ',' << i->xfiles.size() 
          << (i->delta_base.inner()().empty()?"files":"deltas");

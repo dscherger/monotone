@@ -1,41 +1,45 @@
 #!/bin/sh
-./cleanup
+./cleanup || exit
 echo ----------------------------------
 echo full checkin
-./cvs_test_setup
-./cvs_test_setup2
-./cvs_test_setup3
-./db_setup
+./cvs_test_setup || exit
+./cvs_test_setup2 || exit
+./cvs_test_setup3 || exit
+./db_setup || exit
 
 echo ----------------------------------
 echo incremental update
-./cleanup
-./cvs_test_setup import
-./db_setup
-rm -rf  test.cvsroot
-./cvs_test_setup 
+./cleanup || exit
+./cvs_test_setup import || exit
+./db_setup || exit
+rm -rf  test.cvsroot || exit
+./cvs_test_setup || exit 
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
         $PWD/test.cvsroot test <<EOF
 x
 EOF
-./cvs_test_setup2
+if [ $? -ne 0 ] ; then exit ; fi
+./cvs_test_setup2  || exit
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
         $PWD/test.cvsroot test <<EOF
 x
 EOF
-./cvs_test_setup3
+if [ $? -ne 0 ] ; then exit ; fi
+./cvs_test_setup3  || exit
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
         $PWD/test.cvsroot test <<EOF
 x
 EOF
+if [ $? -ne 0 ] ; then exit ; fi
 
 echo ---------------------------------
 echo checkin
-./db_setup2
+./db_setup2 || exit
 ../monotone --branch test --key test@localhost --db test.db cvs_push \
 	$PWD/test.cvsroot test <<EOF
 x
 EOF
+if [ $? -ne 0 ] ; then exit ; fi
 
 echo ---------------------------------
 echo done
