@@ -1,0 +1,38 @@
+#!/bin/sh
+if -e test.cvsroot
+then
+  echo "Test CVS root Directory already there."
+  exit 1
+fi
+
+mkdir test.cvsroot || exit 1
+CVSROOT=$PWD/test.cvsroot
+cvs -d $CVSROOT init
+mkdir $CVSROOT/test.cvsimport || exit 1
+cd $CVSROOT/test.cvsimport
+echo "initial import" >A
+cvs -d $CVSROOT/test.cvsroot import test vendor_tag initial_import -m "initial import"
+
+cd $CVSROOT
+mkdir $CVSROOT/test.checkedout
+cd $CVSROOT/test.checkedout
+cvs -d $CVSROOT co test
+cd test
+echo "file added" >B
+cvs add B
+sleep 2
+cvs ci -m "B added"
+
+cvs delete -f A
+sleep 2
+cvs ci -m "A removed"
+
+echo "something different" >B
+sleep 2
+cvs ci -m "B changed"
+
+echo "revived" >A
+cvs add A
+sleep 2
+cvs ci -m "A readded"
+

@@ -585,6 +585,9 @@ static time_t rls_l2time_t(const std::string &t)
 // 19 Nov 1996 11:22:50 -0000
 // 4 Jun 1999 12:00:41 -0000
 // 19 Jul 2002 07:33:26 -0000
+static time_t mod_time2time_t(const std::string &t)
+{
+}
 
 void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
 { { va_list ap;
