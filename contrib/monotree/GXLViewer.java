@@ -123,7 +123,7 @@ public class GXLViewer {
 		    System.exit(0);
 		}
 	    });
-        f.setSize(400, 400);
+        f.setSize(800, 600);
         f.setVisible(true);
 	String defaultDb=findDefaultDB(new File(".").getAbsoluteFile());
 	if(defaultDb!=null) { 
@@ -264,10 +264,13 @@ public class GXLViewer {
         p.add(label);
 
 	properties=new JPanel();
+	//	properties.setMinimumSize(new Dimension(400,400));
+	//	properties.setLayout(new BorderLayout());
+	
 	tree.setModel(new DefaultTreeModel(new DefaultMutableTreeNode()));
-	JSplitPane splitter=new JSplitPane(JSplitPane.VERTICAL_SPLIT,new JScrollPane(tree),new JScrollPane(properties));
+	JSplitPane splitter=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(tree),new JScrollPane(properties));
 	splitter.setDividerLocation(200);
-	splitter=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,splitter,new JSVGScrollPane(svgCanvas));
+	splitter=new JSplitPane(JSplitPane.VERTICAL_SPLIT,splitter,new JSVGScrollPane(svgCanvas));
         panel.add("North", p);
         panel.add("Center",splitter); 
 	splitter.setDividerLocation(200);
@@ -549,42 +552,58 @@ public class GXLViewer {
 		c.anchor=GridBagConstraints.WEST;
 		c.gridx=1;
 		c.gridwidth=GridBagConstraints.REMAINDER;
+		c.fill=GridBagConstraints.HORIZONTAL;
 		JLabel value=new JLabel(((GXLString)set.getValueAt(I)).getValue());
 		info.add(value,c);
 	    }
 	}
 
 	public void handleEvent(Event evt) {
-	    // System.err.println(evt);
+
+	    // Extract the SVG element which was determined to the the target of the click
 	    MouseEvent mouseEvent=(MouseEvent)evt;
 	    EventTarget where=mouseEvent.getTarget();
 	    Element element=(Element)where; // This seems intuitative, but doesn't appear to be documented as legal
+
+	    // Recurse up the tree to the closest containing group. Should really check for class="node" here as well
 	    while(element.getTagName()!="g") {
 		Node parent=element.getParentNode();
 		if(parent==null) return;
 		if(!(parent instanceof Element)) return;
 		element=(Element)parent;
 	    }
+
+	    // Get the title elements. Have to use a nodelist as there isn't a getSingleElementByTagName..
 	    NodeList titles=element.getElementsByTagName("title");
 	    if(titles.getLength()==0) return;
 	    Element title=(Element)titles.item(0);
 	    String id=((Text)title.getFirstChild()).getData(); // Fragile - should check node type
-	    // System.err.println("["+id+"]");
-	    JPanel info=new JPanel();
+
+	    // Generate the info and lay it out
+	    final JPanel info=new JPanel();
 	    info.setLayout(new GridBagLayout());
 	    GridBagConstraints c=new GridBagConstraints();
 	    c.gridwidth=GridBagConstraints.REMAINDER;
 	    c.anchor=GridBagConstraints.CENTER;
-	    JLabel property=new JLabel(id);
+	    JTextField property=new JTextField(id);
+	    property.setEditable(false);
 	    info.add(property,c);
 	    GXLNode gxlNode=(GXLNode)database.log2gxl.gxlDocument.getElement(id);
 	    addInfo(info,gxlNode,"Authors");
 	    addInfo(info,gxlNode,"Branches");
 	    addInfo(info,gxlNode,"Tags");
 	    addInfo(info,gxlNode,"ChangeLog");
-	    properties.removeAll();
-	    properties.add(BorderLayout.CENTER,info);
-	    properties.revalidate();
+	    JPanel pad=new JPanel();
+	    pad.setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
+	    info.add(pad,c);
+	    c=new GridBagConstraints();
+	    c.gridwidth=GridBagConstraints.REMAINDER;
+	    c.fill=GridBagConstraints.BOTH;
+	    SwingUtilities.invokeLater(new Runnable() { public void run() {
+		properties.removeAll();
+		properties.add(info);
+		properties.revalidate();
+	    }});
 	}
     }
 }
