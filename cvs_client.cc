@@ -122,12 +122,15 @@ std::string cvs_client::read_n(unsigned len)
 void cvs_client::underflow()
 { char buf[1024],buf2[1024];
 try_again:
-  if (read(readfd,buf,1)!=1) throw std::runtime_error("read error");
-  unsigned avail_in=1;
-  fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
-  avail_in+=read(readfd,buf+1,sizeof(buf)-1);
-  I(avail_in!=0); // make sure we did not get -1
-  fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)&~O_NONBLOCK);
+  fd_set rfds;
+  
+  FD_ZERO(&rfds);
+  FD_SET(readfd, &rfds);
+  if (select(readfd+1, &rfds, 0, 0, 0)!=1)
+    throw std::runtime_error("select error");
+  ssize_t avail_in=read(readfd,buf,sizeof buf);
+  if (avail_in<1) 
+    throw std::runtime_error("read error");
   bytes_read+=avail_in;
   if (!gzip_level)
   { inputbuffer+=std::string(buf,buf+avail_in);
@@ -285,6 +288,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
       throw std::runtime_error("connect failed");
     }
     readfd=writefd;
+    fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
     writestr("BEGIN AUTH REQUEST\n");
     writestr(root+"\n");
     writestr(user+"\n");
@@ -329,6 +333,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     }
     readfd=fd1[0];
     writefd=fd2[1];
+    fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
   }
   
   InitZipStream(0);

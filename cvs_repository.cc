@@ -116,8 +116,6 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     ticker();
     // prime
     prime();
-    ticker();
-    debug();
   }
   return (--edges.end())->files; // wrong of course
 }
@@ -224,9 +222,10 @@ void cvs_repository::prime()
     if (j==edges.end()) break;
     
     I(j->time2==j->time); // make sure we only do this once
-    I(j->time2<j->time); // should be sorted ...
+    I(i->time2<=j->time); // should be sorted ...
     if (!i->similar_enough(*j)) 
       continue;
+    I(i->time2<j->time); // should be non overlapping ...
     const_cast<time_t&>(i->time2)=j->time;
     edges.erase(j);
   }
@@ -270,6 +269,8 @@ void cvs_repository::prime()
     }
     ticker();
   }
+  ticker();
+  debug();
 }
 
 #if 0
