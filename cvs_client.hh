@@ -60,6 +60,17 @@ class cvs_client
     update_args(const std::string &f, const std::string &o)
     : file(f), old_revision(o) {}
   };
+  struct commit_arg
+  { std::string old_revision;
+    bool changed;
+    bool removed;
+    bool added;
+    std::string new_content;
+    
+    commit_arg() : changed(), removed(), added() {}
+    commit_arg(const std::string &rev) 
+    : old_revision(rev), changed(), removed(), added() {}
+  };
 
 private:
   int readfd,writefd;
@@ -110,6 +121,10 @@ public:
             const std::string &old_revision, const std::string &new_revision,
             const std::string &keyword_substitution);
   void Update(const std::vector<update_args> &args, const update_callbacks &cb);
+  // returns <filename, revision>
+  std::map<std::string,std::string>
+         Commit(const std::string &changelog, time_t when, 
+                    const std::map<std::string,commit_arg> &commits);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }

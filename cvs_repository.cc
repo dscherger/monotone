@@ -48,17 +48,6 @@ construct_version(vector< piece > const & source_lines,
                   vector< piece > & dest_lines,
                   string const & deltatext);
 
-struct commit_arg
-{ std::string old_revision;
-  bool changed;
-  bool removed;
-  bool added;
-  std::string new_content;
-  
-  commit_arg() : changed(), removed(), added() {}
-  commit_arg(const std::string &rev) 
-  : old_revision(rev), changed(), removed(), added() {}
-};
 }
 
 using namespace cvs_sync;
@@ -879,36 +868,36 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
   
   for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
           i!=cs.rearrangement.deleted_files.end(); ++i)
-    commits[*i].removed=true;
+    commits[(*i)()].removed=true;
 
   for (std::map<file_path,file_path>::const_iterator i
                           =cs.rearrangement.renamed_files.begin();
           i!=cs.rearrangement.renamed_files.end(); ++i)
-  { commits[i->first].removed=true;
-    commits[i->second].added=true;
-    cvs_manifest::const_iterator oldfilep=parent->files.find(i->first);
+  { commits[i->first()].removed=true;
+    commits[i->second()].added=true;
+    cvs_manifest::const_iterator oldfilep=parent->files.find(i->first());
     I(oldfilep!=parent->files.end());
-    I(!oldfilep->sha1sum().empty());
+    I(!oldfilep->second->sha1sum().empty());
     file_data dat;
-    app.db.get_file_version(oldfilep->sha1sum,dat);
+    app.db.get_file_version(oldfilep->second->sha1sum,dat);
     data unpacked;
     unpack(dat.inner(), unpacked);
-    commits[i->second].new_content=unpacked();
+    commits[i->second()].new_content=unpacked();
   }
 
   for (std::set<file_path>::const_iterator i
                           =cs.rearrangement.added_files.begin();
           i!=cs.rearrangement.added_files.end(); ++i)
-    commits[*i].added=true;
+    commits[(*i)()].added=true;
 
-  for (delta_map::const_iterator i=cs.deltas.begin();
+  for (change_set::delta_map::const_iterator i=cs.deltas.begin();
           i!=cs.deltas.end(); ++i)
-  { commits[i->first].changed=true;
+  { commits[i->first()].changed=true;
     file_data dat;
     app.db.get_file_version(i->second.second,dat);
     data unpacked;
     unpack(dat.inner(), unpacked);
-    commits[i->first].new_content=unpacked();
+    commits[i->first()].new_content=unpacked();
   }
 
   Commit(e.changelog,e.time,commits);
