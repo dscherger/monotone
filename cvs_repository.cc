@@ -276,7 +276,7 @@ void cvs_repository::debug() const
     if (i->time!=i->time2) std::cerr << '+' << (i->time2-i->time);
     if (!i->xfiles.empty()) 
       std::cerr << ',' << i->xfiles.size() 
-         << (i->delta_base().empty()?"files":"deltas");
+         << (i->delta_base.inner()().empty()?"files":"deltas");
     std::cerr << ',' << i->author << ',';
     std::string::size_type nlpos=i->changelog.find_first_of("\n\r");
     if (nlpos>50) nlpos=50;
@@ -642,14 +642,14 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 }
 
 void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
-{ cvs_manifest empty;
+{ cvs_manifest parent_manifest;
   revision_id parent_rid;
   manifest_id parent_mid;
   manifest_map parent_map;
   manifest_map child_map=parent_map;
   packet_db_writer dbw(app);
   
-  const cvs_manifest *oldmanifestp=&empty;
+//  const cvs_manifest *oldmanifestp=&empty;
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
     --before;
@@ -658,31 +658,26 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     app.db.get_revision_manifest(parent_rid,parent_mid);
     app.db.get_manifest(parent_mid,parent_map);
     child_map=parent_map;
-    oldmanifestp=get_files(before);
+    parent_manifest=get_files(*before);
   }
   for (; e!=edges.end(); ++e)
   { boost::shared_ptr<change_set> cs(new change_set());
-    I(!e.delta_base().empty()); // no delta yet
-    if (build_change_set(*this,*oldmanifestp,e->xfiles,*cs,remove_state))
-      e.delta_base=parent_rid;
-    if (cs.empty())
+    I(!e->delta_base.inner()().empty()); // no delta yet
+    cvs_manifest child_manifest=get_files(*e);
+    if (build_change_set(*this,parent_manifest,e->xfiles,*cs,remove_state))
+      e->delta_base=parent_rid;
+    if (cs->empty())
     { W(F("null edge (empty cs) @%ld skipped\n") % e->time);
       continue;
     }
-    I(!e.xfiles.empty());
-#if 0    
-    if (*oldmanifestp==e->xfiles) 
-    { W(F("null edge (no changed files) @%ld skipped\n") % e->time);
-      continue;
-    }
-#endif
-    apply_change_set(cs, child_map);
+    I(!e->xfiles.empty());
+    apply_change_set(*cs, child_map);
     if (child_map.empty()) 
     { W(F("empty edge (no files in manifest) @%ld skipped\n") % e->time);
       // perhaps begin a new tree:
       // parent_rid=revision_id();
       // parent_mid=manifest_id();
-      oldmanifestp=&empty;
+//      parent_manifest=cvs_manifest();
       continue;
     }
     manifest_id child_mid;
@@ -722,14 +717,13 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
     cert_revision_changelog(child_rid, e->changelog, app, dbw);
     cert_revision_date_time(child_rid, e->time, app, dbw);
-#warning make this use a delta
     cert_cvs(*e, dbw);
 
     // now apply same change set to parent_map, making parent_map == child_map
     apply_change_set(*cs, parent_map);
     parent_mid = child_mid;
     parent_rid = child_rid;
-    oldmanifestp=get_files(e); // undelta it again :-(
+    parent_manifest=child_manifest;
   }
 }
 
@@ -748,7 +742,7 @@ void cvs_repository::prime()
     j++;
     I(j!=edges.end());
     I(j->time==i->time);
-    I(i->files.empty());
+    I(i->xfiles.empty());
 //    I(i->revision.empty());
     edges.erase(i);
     if (cvs_edges_ticker.get()) --(*cvs_edges_ticker);
@@ -787,12 +781,12 @@ void cvs_repository::prime()
 
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
 { std::string content=host+":"+root+"/"+module+"\n";
-  if (!e.delta_base().empty()) 
-  { hexenc<revision_id> h;
-    encode_hexenc(e.delta_base,h);
-    content+="+"+h()+"\n";
+  if (!e.delta_base.inner()().empty()) 
+  { //hexenc<id> h;
+//    encode_hexenc(e.delta_base.inner(),h);
+    content+="+"+e.delta_base.inner()()+"\n";
   }
-  for (cvs_manifest::const_iterator i=e.filesx.begin(); i!=e.filesx.end(); ++i)
+  for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
   { content+=i->second->cvs_version;
     if (!i->second->keyword_substitution.empty())
       content+="/"+i->second->keyword_substitution;
@@ -906,13 +900,14 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
         F("I can't commit directory renames yet\n"));
     N(cs.rearrangement.deleted_dirs.empty(),
         F("I can't commit directory deletions yet\n"));
+    cvs_manifest parent_manifest=get_files(*parent);
 
     for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
             i!=cs.rearrangement.deleted_files.end(); ++i)
     { commit_arg a;
       a.file=module+"/"+(*i)();
-      cvs_manifest::const_iterator old=parent->files.find(a.file);
-      I(old!=parent->files.end());
+      cvs_manifest::const_iterator old=parent_manifest.find(a.file);
+      I(old!=parent_manifest.end());
       a.removed=true;
       a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
@@ -925,8 +920,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
             i!=cs.rearrangement.renamed_files.end(); ++i)
     { commit_arg a; // remove
       a.file=module+"/"+i->first();
-      cvs_manifest::const_iterator old=parent->files.find(a.file);
-      I(old!=parent->files.end());
+      cvs_manifest::const_iterator old=parent_manifest.find(a.file);
+      I(old!=parent_manifest.end());
       a.removed=true;
       a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
@@ -952,12 +947,12 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     { 
       commit_arg a;
       a.file=module+"/"+i->first();
-      cvs_manifest::const_iterator old=parent->files.find(a.file);
-      if (old!=parent->files.end())
+      cvs_manifest::const_iterator old=parent_manifest.find(a.file);
+      if (old!=parent_manifest.end())
       { a.old_revision=old->second->cvs_version;
         a.keyword_substitution=old->second->keyword_substitution;
       }
-// else std::cerr << parent->files << '\n';
+// else std::cerr << parent_manifest << '\n';
       file_data dat;
       app.db.get_file_version(i->second.second,dat);
       data unpacked;
@@ -1132,8 +1127,10 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       //      manifest;
       std::vector<piece>::const_iterator p=pieces.begin()+1;
       if ((**p)[0]=='+') // this is a delta encoded manifest
-      { hexenc<revision_id> h=**p.substr(1);
-        decode_hexenc(h,e.delta_base);
+      { hexenc<id> h=(**p).substr(1);
+        id rid;
+        decode_hexenc(h,rid);
+        e.delta_base=revision_id(rid);
         ++p;
       }
       for (;p!=pieces.end();++p)
@@ -1158,7 +1155,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         if (space!=slash) 
           fs.keyword_substitution=line.substr(slash+1,space-(slash+1));
         if (fs.cvs_version=="-") // delta encoded: remove
-        { I(!e.delta_base().empty());
+        { I(!e.delta_base.inner()().empty());
           e.xfiles.insert(std::make_pair(path,remove_state));
         }
         else
@@ -1194,7 +1191,7 @@ void cvs_repository::update()
   I(!now.revision().empty());
   std::vector<update_args> file_revisions;
   std::vector<cvs_client::update> results;
-  cvs_manifest &m=get_files(now);
+  const cvs_manifest &m=get_files(now);
   file_revisions.reserve(m.size());
   for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
     file_revisions.push_back(update_args(i->first,i->second->cvs_version,
@@ -1279,25 +1276,25 @@ static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
   { if (i->second->dead)
     { cvs_manifest::iterator to_remove=base.find(i->first);
       I(to_remove!=base.end());
-      base.remove(to_remove);
+      base.erase(to_remove);
     }
     else
       base[i->first]=i->second;
   }
 }
 
-const cvs_manifest &get_files(const cvs_edge &e)
-{ if (!e.delta_base().empty())
+const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
+{ if (!e.delta_base.inner()().empty())
   { cvs_manifest calculated_manifest;
     // this is non-recursive by reason ...
     const cvs_edge *current=&e;
     std::vector<const cvs_edge *> deltas;
-    while (!current->delta_base().empty())
+    while (!current->delta_base.inner()().empty())
     { deltas.push_back(current);
       std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
         cache_item=revision_lookup.find(current->delta_base);
       I(cache_item!=revision_lookup.end());
-      current=&*cache_item;
+      current=&*(cache_item->second);
     }
     for (std::vector<const cvs_edge *>::const_iterator i=deltas.begin();
           i!=deltas.end();++i)
