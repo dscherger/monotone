@@ -29,8 +29,9 @@ struct checkout
 { time_t mod_time;
   std::string contents;
   std::string mode;
+  bool dead;
   
-  checkout() : mod_time(-1) {}
+  checkout() : mod_time(-1), dead() {}
 };
 
 class cvs_client

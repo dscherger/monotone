@@ -281,7 +281,8 @@ void cvs_repository::debug() const
     std::cerr << "(";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
-    { if (!j->contents.empty()) std::cerr << j->contents.size();
+    { if (j->dead) std::cerr << "dead";
+      else if (!j->contents.empty()) std::cerr << j->contents.size();
       else if (!j->rcs_patch.empty()) std::cerr << 'p' << j->rcs_patch.size();
       ++j;
       if (j!=i->second.known_states.end()) std::cerr << ',';
@@ -355,27 +356,39 @@ void cvs_repository::prime()
   // get the contents
   for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { I(!i->second.known_states.empty());
-    std::string revision=i->second.known_states.begin()->cvs_version;
-    struct checkout c=CheckOut(i->first,revision);
+    { std::set<file_state>::iterator s2=i->second.known_states.begin();
+      std::string revision=s2->cvs_version;
+      cvs_client::checkout c=CheckOut(i->first,revision);
 //    I(c.mod_time==?);
-    const_cast<std::string &>(i->second.known_states.begin()->contents)=c.contents;
+      const_cast<std::string &>(s2->contents)=c.contents;
+      const_cast<bool&>(s2->dead)=c.dead;
+    }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
           s!=i->second.known_states.end();++s)
     { std::set<file_state>::iterator s2=s;
       ++s2;
       if (s2==i->second.known_states.end()) break;
+      // s2 gets changed
       cvs_revision srev(s->cvs_version);
       I(srev.is_parent_of(s2->cvs_version));
-      cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
-      if (u.removed)
-      { // ???
-      }
-      else if (!u.checksum.empty())
-      { const_cast<std::string&>(s2->rcs_patch)=u.patch;
-        const_cast<std::string&>(s2->sha1sum)=u.checksum;
+      if (s->dead)
+      { cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
+        I(!c.dead); // dead->dead is no change, so shouldn't get a number
+        // if (c.dead) const_cast<bool&>(s2->dead)=true;
+        const_cast<std::string &>(s2->contents)=c.contents;
       }
       else
-        const_cast<std::string&>(s2->contents)=u.contents;
+      { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
+        if (u.removed)
+        { const_cast<bool&>(s2->dead)=true;
+        }
+        else if (!u.checksum.empty())
+        { const_cast<std::string&>(s2->rcs_patch)=u.patch;
+          const_cast<std::string&>(s2->sha1sum)=u.checksum;
+        }
+        else
+          const_cast<std::string&>(s2->contents)=u.contents;
+      }
     }
     ticker();
   }

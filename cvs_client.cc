@@ -409,7 +409,8 @@ loop:
   // more complex results
   if (begins_with(x,"Clear-sticky ",len) 
       || begins_with(x,"Set-static-directory ",len)
-      || begins_with(x,"Removed ",len))
+      || begins_with(x,"Removed ",len)
+      || begins_with(x,"Remove-entry",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("dir",x.substr(len)));
     result.push_back(std::make_pair("rcs",readline()));
@@ -748,6 +749,10 @@ struct checkout cvs_client::CheckOut(const std::string &file, const std::string 
           { I(lresult.size()==3);
             I(lresult[1].first=="dir");
             dir2=lresult[1].second;
+          }
+          else if (lresult[0].second=="Remove-entry")
+          { I(lresult.size()==3);
+            result.dead=true;
           }
           else if (lresult[0].second=="Mod-time")
           { I(lresult.size()==2);
