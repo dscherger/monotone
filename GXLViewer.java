@@ -1,3 +1,11 @@
+
+/*
+ * Copyright (C) 2005 Joel Crisp <jcrisp@s-r-s.co.uk>
+ * Licensed under the MIT license:
+ *    http://www.opensource.org/licenses/mit-license.html
+ * I.e., do what you like, but keep copyright and there's NO WARRANTY.
+ */
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -19,6 +27,12 @@ import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.util.XMLResourceDescriptor;
 import org.w3c.dom.svg.SVGDocument;
 
+/**
+ * Somewhat misnamed class to provide a simple GUI against a monotone database
+ * NOTE: This class requires the Batick SVG library from the Apache project http://xml.apache.org
+ *
+ * @author Joel Crisp, loosely based on the example from the Batik library documentation
+ */
 public class GXLViewer {
 
     public static void main(String[] args) {
@@ -41,12 +55,24 @@ public class GXLViewer {
     JSVGCanvas svgCanvas = new JSVGCanvas();
     JTree tree=new JTree();
     Monotone database=null;
+    JDialog progress;
+    
+    public void finishJob(String message) {
+	label.setText(message);
+	progress.setVisible(false);
+    }
 
     public GXLViewer(JFrame f) {
         frame = f;
     }
 
-    JDialog progress;
+    public JTree getBranchTree() {
+	return tree;
+    }
+
+    public Monotone getDatabase() { 
+	return database;
+    }
 
     private void setProgressWindow() {
 	progress=new JDialog(frame,"Processing...",true);
@@ -65,6 +91,7 @@ public class GXLViewer {
         p.add(button);
         p.add(label);
 
+	tree.setModel(new DefaultTreeModel(new DefaultMutableTreeNode()));
 	JSplitPane splitter=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(tree),new JSVGScrollPane(svgCanvas));
         panel.add("North", p);
         panel.add("Center",splitter); 
@@ -80,40 +107,7 @@ public class GXLViewer {
 		    int choice = fc.showOpenDialog(panel);
 		    if (choice == JFileChooser.APPROVE_OPTION) {
 			database = new Monotone(fc.getSelectedFile());
-			new Thread(new Runnable() { public void run() { 
-			DefaultMutableTreeNode root=new DefaultMutableTreeNode("Monotone "+database.getName());
-			try { 
-			    //			    System.err.println("Reading branches...");
-			    List<String> branches=database.listBranches();
-			    for(String branch: branches) {
-				//				System.err.println(branch);
-				DefaultMutableTreeNode node=new DefaultMutableTreeNode(branch);
-				root.add(node);
-				try {
-				    List<String>heads=database.listHeads(branch);
-				    for(String head: heads) {
-					if(head.startsWith("monotone")) continue; // Skip header if it exists
-					DefaultMutableTreeNode leaf=new DefaultMutableTreeNode(head);
-					node.add(leaf);
-				    }
-
-				}
-				catch(IOException ioe) {
-				    ioe.printStackTrace();
-				    return;
-				}
-			    }
-
-			}
-			catch(IOException ioe) {
-			    ioe.printStackTrace();
-			    return;
-			}
-			DefaultTreeModel model=new DefaultTreeModel(root);
-			tree.setModel(model);
-			label.setText("Select identifier from tree");
-			progress.setVisible(false);
-			}}).start();
+			new ReadBranches(GXLViewer.this);
 			setProgressWindow();
 		    }
 		}
@@ -183,5 +177,49 @@ public class GXLViewer {
 	    });
 
         return panel;
+    }
+
+    class ReadBranches extends Thread {
+	GXLViewer parent;
+
+	public ReadBranches(GXLViewer parent) {
+	    this.parent=parent;
+	    start();
+	}
+
+	public void run() {
+	    Monotone database=parent.getDatabase();
+	    DefaultMutableTreeNode root=new DefaultMutableTreeNode("Monotone "+database.getName());
+	    try { 
+		//			    System.err.println("Reading branches...");
+		List<String> branches=database.listBranches();
+		for(String branch: branches) {
+		    // System.err.println(branch);
+		    DefaultMutableTreeNode node=new DefaultMutableTreeNode(branch);
+		    root.add(node);
+		    try {
+			List<String>heads=database.listHeads(branch);
+			for(String head: heads) {
+			    DefaultMutableTreeNode leaf=new DefaultMutableTreeNode(head);
+			    node.add(leaf);
+			}
+			
+		    }
+		    catch(IOException ioe) {
+			ioe.printStackTrace();
+			return;
+		    }
+		}
+		
+	    }
+	    catch(IOException ioe) {
+		ioe.printStackTrace();
+		return;
+	    }
+
+	    DefaultTreeModel model=new DefaultTreeModel(root);
+	    parent.getBranchTree().setModel(model);
+	    parent.finishJob("Select identifier from tree");
+	}
     }
 }

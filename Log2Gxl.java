@@ -1,5 +1,12 @@
 //package uk.co.srs.monotree;
 
+/*
+ * Copyright (C) 2005 Joel Crisp <jcrisp@s-r-s.co.uk>
+ * Licensed under the MIT license:
+ *    http://www.opensource.org/licenses/mit-license.html
+ * I.e., do what you like, but keep copyright and there's NO WARRANTY.
+ */
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.FileInputStream;
@@ -28,8 +35,6 @@ import net.sourceforge.gxl.GXL;
 
 /**
  * Simple filter to convert a monotone log output into a GXL graph
- *
- * This file is licensed under the artistic license - do with it what you will
  *
  * NOTE: This file requires the GXL Java API from http://www.gupro.de/GXL/index.html
  * NOTE: Optionally you can get Graphviz from ATT and use the gxl2dot program to generate a dot file (input to graphviz)
