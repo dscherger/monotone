@@ -559,6 +559,10 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
           if (result[len+root.size()]=='/') ++len;
           file=result.substr(len+root.size());
           if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
+          std::string::size_type lastslash=file.rfind('/');
+          if (lastslash!=std::string::npos && lastslash>=5
+                  && file.substr(lastslash-5,6)=="Attic/")
+            file.erase(lastslash-5,6);
         }
         else if (begins_with(result,"head: ",len))
         { head_rev=result.substr(len);
@@ -780,4 +784,5 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
     { std::cerr << "unrecognized response " << lresult[0].second << '\n';
     }
   }
+  return result;
 }
