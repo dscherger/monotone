@@ -644,6 +644,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     parent_rid=before->revision;
     app.db.get_revision_manifest(parent_rid,parent_mid);
     app.db.get_manifest(parent_mid,parent_map);
+    child_map=parent_map;
     oldmanifestp=&before->files;
   }
   for (; e!=edges.end(); ++e)
