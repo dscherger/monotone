@@ -390,6 +390,10 @@ extern void rcs_put_raw_file_edge(hexenc<id> const & old_id,
                       hexenc<id> const & new_id,
                       base64< gzip<delta> > const & del,
                       database & db);
+extern void rcs_put_raw_manifest_edge(hexenc<id> const & old_id,
+                          hexenc<id> const & new_id,
+                          base64< gzip<delta> > const & del,
+                          database & db);
 
 void cvs_repository::store_delta(app_state &app, const std::string &new_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
 {
@@ -404,6 +408,45 @@ void cvs_repository::store_delta(app_state &app, const std::string &new_contents
     rcs_put_raw_file_edge(to,from,packed,app.db);
     ++files_inserted;
   }
+}
+
+static void 
+build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
+                 change_set & cs)
+{
+  cs = change_set();
+
+  for (cvs_manifest::const_iterator f = oldm.begin(); f != oldm.end(); ++f)
+    {
+      cvs_manifest::const_iterator fn = newm.find(f->first);
+      if (fn==newm.end())
+      {  
+        L(F("deleting file '%s'\n") % f->first);              
+        cs.delete_file(f->first);
+      }
+      else 
+        { if (f->second->sha1sum == fn->second->sha1sum)
+            {
+              L(F("skipping preserved entry state '%s' on '%s'\n")
+                % fn->second->sha1sum % fn->first);         
+            }
+          else
+            {
+              L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
+                % fn->first % f->second->sha1sum % fn->second->sha1sum);          
+              cs.apply_delta(fn->first, f->second->sha1sum, fn->second->sha1sum);
+            }
+        }  
+    }
+  for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
+    {
+      cvs_manifest::const_iterator fo = oldm.find(f->first);
+      if (f==oldm.end())
+      {  
+        L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);              
+        cs.add_file(f->first, f->second->sha1sum);
+      }
+    }
 }
 
 void cvs_repository::prime(app_state &app)
@@ -550,9 +593,74 @@ void cvs_repository::prime(app_state &app)
   }
   ticker();
   // commit them all
-  //for 
+  cvs_manifest empty;
+  revision_id parent_rid;
+  manifest_id parent_mid;
+  manifest_map parent_map;
+  manifest_map child_map=parent_map;
+  packet_db_writer dbw(app);
+  
+  const cvs_manifest *oldmanifestp=&empty;
+  for (std::set<cvs_edge>::iterator e=edges.begin(); e!=edges.end();
+      oldmanifestp=&e->files,++e)
+  { change_set cs;
+    build_change_set(*oldmanifestp,e->files,cs);
+    apply_change_set(cs, child_map);
+    manifest_id child_mid;
+    calculate_ident(child_map, child_mid);
+
+    revision_set rev;
+    rev.new_manifest = child_mid;
+    rev.edges.insert(make_pair(parent_rid, make_pair(parent_mid, cs)));
+    revision_id child_rid;
+    calculate_ident(rev, child_rid);
+
+    if (app.db.manifest_version_exists(child_mid))
+    {
+        L(F("existing path to %s found, skipping\n") % child_mid);
+    }
+    else if (e==edges.begin())
+    {
+      manifest_data mdat;
+      write_manifest_map(child_map, mdat);
+      app.db.put_manifest(child_mid, mdat);
+    }
+    else
+    { 
+      base64< gzip<delta> > del;              
+      diff(child_map, parent_map, del);
+      // we can't put a delta in to the db using the public interface
+      rcs_put_raw_manifest_edge(parent_mid.inner(), child_mid.inner(), del, app.db);
+    }
+    const_cast<hexenc<id>&>(e->revision)=child_rid.inner();
+    if (! app.db.revision_exists(child_rid))
+      app.db.put_revision(child_rid, rev);
+    cert_revision_in_branch(child_rid, monotone_branch, app, dbw); 
+    cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
+    cert_revision_changelog(child_rid, e->changelog, app, dbw);
+    cert_revision_date_time(child_rid, e->time, app, dbw);
+    cert_cvs(*e, app, dbw);
+
+    // now apply same change set to parent_map, making parent_map == child_map
+    apply_change_set(cs, parent_map);
+    parent_mid = child_mid;
+    parent_rid = child_rid;
+  }
   
   debug();
+}
+
+void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc)
+{ std::string content;
+  content+=host+":"+module+"\n";
+  for (cvs_manifest::const_iterator i=e.files.begin(); i!=e.files.end(); ++i)
+  { content+=i->second->cvs_version+" "+i->first+"\n";
+  }
+  cert t;
+  make_simple_cert(e.revision, cert_name("cvs_revisions"), content, app, t);
+  revision<cert> cc(t);
+  pc.consume_revision_cert(cc);
+//  put_simple_revision_cert(e.revision, "cvs_revisions", content, app, pc);
 }
 
 void cvs_sync::sync(const std::string &repository, const std::string &module,
@@ -576,7 +684,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
     require_password(app.lua, key, pub, priv);
   }
   
-  cvs_sync::cvs_repository repo(repository,module);
+  cvs_sync::cvs_repository repo(repository,module,branch);
   repo.GzipStream(3);
   transaction_guard guard(app.db);
 

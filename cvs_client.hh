@@ -63,6 +63,7 @@ protected:
   std::string root;
   std::string module;
   std::string rcs_root; // the real directory of the root (ask cvs.gnome.org)
+  std::string host; // for author certification
   
 public:  
   cvs_client(const std::string &repository, const std::string &module);

@@ -239,7 +239,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     : readfd(-1), writefd(-1), bytes_read(), bytes_written(),
       gzip_level(), module(_module)
 { bool pserver=false;
-  std::string host,user;
+  std::string user;
   { unsigned len;
     std::string d_arg=repository;
     if (begins_with(d_arg,":pserver:",len))
@@ -320,6 +320,19 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
         newargv[newargc++]="-c";
         newargv[newargc++]="tee cvs_server.log | cvs server";
 #endif
+        // set host name for author qualification
+        char domainname[1024];
+        *domainname=0;
+        getdomainname(domainname,sizeof domainname);
+        domainname[sizeof(domainname)-1]=0;
+        unsigned len=strlen(domainname);
+        if (len && len<sizeof(domainname)-2)
+        { domainname[len]='.';
+          domainname[++len]=0;
+        }
+        gethostname(domainname+len,sizeof(domainname)-len);
+        domainname[sizeof(domainname)-1]=0;
+        host=domainname;
       }
       else
       { const char *rsh=getenv("CVS_RSH");

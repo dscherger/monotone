@@ -11,6 +11,7 @@
 #include "cvs_client.hh"
 #include "constants.hh"
 #include "app_state.hh"
+#include "packet.hh"
 
 namespace cvs_sync {
 struct cvs_revision_nr
@@ -96,12 +97,15 @@ private:
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
   unsigned files_inserted;
+  std::string monotone_branch;
 
 public:  
   void prime(app_state &app);
 public:  
-  cvs_repository(const std::string &repository, const std::string &module)
-      : cvs_client(repository,module), files_inserted() {}
+  cvs_repository(const std::string &repository, const std::string &module,
+        const std::string &mbranch)
+      : cvs_client(repository,module), files_inserted(), monotone_branch(mbranch)
+  {}
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
@@ -114,6 +118,8 @@ public:
   void store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum);
 //  void apply_delta(std::string &contents, const std::string &patch);
   void store_delta(app_state &app, const std::string &new_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
+  
+  void cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc);
 };
 
 void sync(const std::string &repository, const std::string &module,
