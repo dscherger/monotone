@@ -245,6 +245,8 @@ void cvs_repository::prime(app_state &app)
       std::string revision=s2->cvs_version;
       cvs_client::checkout c=CheckOut(i->first,revision);
 //    I(c.mod_time==?);
+      insert_contents_into_db(app.db,c.contents);
+      const_cast<std::string&>(s2->sha1sum)=?
       const_cast<std::string &>(s2->contents)=c.contents;
       const_cast<bool&>(s2->dead)=c.dead;
     }
