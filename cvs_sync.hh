@@ -117,7 +117,7 @@ public:
   void debug() const;
   void store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum);
 //  void apply_delta(std::string &contents, const std::string &patch);
-  void store_delta(app_state &app, const std::string &new_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
+  void store_delta(app_state &app, const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
   void cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc);
 };

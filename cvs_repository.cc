@@ -395,17 +395,24 @@ extern void rcs_put_raw_manifest_edge(hexenc<id> const & old_id,
                           base64< gzip<delta> > const & del,
                           database & db);
 
-void cvs_repository::store_delta(app_state &app, const std::string &new_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
+void cvs_repository::store_delta(app_state &app, const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
 {
   data dat(new_contents);
   calculate_ident(dat,to);
   if (!app.db.file_version_exists(to))
   { 
+#if 1
+    base64< gzip<delta> > del;
+    diff(data(old_contents), data(new_contents), del);
+    app.db.put_file_version(from,to,del);
+std::cerr << patch << "----\n" << del << '\n';
+#else
     base64<gzip<delta> > packed;
     pack(delta(patch), packed);
     // app.db.put_delta(from, to, packed, "file_deltas");
     // yes, rcs has it the other way round (new and old are switched)
     rcs_put_raw_file_edge(to,from,packed,app.db);
+#endif    
     ++files_inserted;
   }
 }
@@ -416,6 +423,8 @@ build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
 {
   cs = change_set();
 
+  L(F("build_change_set(%d,%d,)\n") % oldm.size() % newm.size());
+  
   for (cvs_manifest::const_iterator f = oldm.begin(); f != oldm.end(); ++f)
     {
       cvs_manifest::const_iterator fn = newm.find(f->first);
@@ -427,8 +436,8 @@ build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
       else 
         { if (f->second->sha1sum == fn->second->sha1sum)
             {
-              L(F("skipping preserved entry state '%s' on '%s'\n")
-                % fn->second->sha1sum % fn->first);         
+//              L(F("skipping preserved entry state '%s' on '%s'\n")
+//                % fn->second->sha1sum % fn->first);         
             }
           else
             {
@@ -441,7 +450,7 @@ build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
     {
       cvs_manifest::const_iterator fo = oldm.find(f->first);
-      if (f==oldm.end())
+      if (fo==oldm.end())
       {  
         L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);              
         cs.add_file(f->first, f->second->sha1sum);
@@ -527,6 +536,8 @@ void cvs_repository::prime(app_state &app)
         { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
           const_cast<std::string&>(s2->md5sum)=u.checksum;
           const_cast<unsigned&>(s2->patchsize)=u.patch.size();
+          std::string old_contents;
+          build_string(file_contents, old_contents);
           apply_delta(file_contents, u.patch);
           std::string contents;
           build_string(file_contents, contents);
@@ -537,7 +548,7 @@ void cvs_repository::prime(app_state &app)
           if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
               reinterpret_cast<byte const *>(contents.c_str()),
               contents.size()))
-          { store_delta(app, contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+          { store_delta(app, contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
           }
           else
           { throw oops("MD5 sum wrong");
@@ -619,7 +630,7 @@ void cvs_repository::prime(app_state &app)
     {
         L(F("existing path to %s found, skipping\n") % child_mid);
     }
-    else if (e==edges.begin())
+    else if (true || e==edges.begin())
     {
       manifest_data mdat;
       write_manifest_map(child_map, mdat);
@@ -630,7 +641,7 @@ void cvs_repository::prime(app_state &app)
       base64< gzip<delta> > del;              
       diff(child_map, parent_map, del);
       // we can't put a delta in to the db using the public interface
-      rcs_put_raw_manifest_edge(parent_mid.inner(), child_mid.inner(), del, app.db);
+      rcs_put_raw_manifest_edge(child_mid.inner(), parent_mid.inner(), del, app.db);
     }
     const_cast<hexenc<id>&>(e->revision)=child_rid.inner();
     if (! app.db.revision_exists(child_rid))
@@ -645,6 +656,7 @@ void cvs_repository::prime(app_state &app)
     apply_change_set(cs, parent_map);
     parent_mid = child_mid;
     parent_rid = child_rid;
+//break;
   }
   
   debug();
@@ -657,7 +669,7 @@ void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consume
   { content+=i->second->cvs_version+" "+i->first+"\n";
   }
   cert t;
-  make_simple_cert(e.revision, cert_name("cvs_revisions"), content, app, t);
+  make_simple_cert(e.revision, cert_name("cvs-revisions"), content, app, t);
   revision<cert> cc(t);
   pc.consume_revision_cert(cc);
 //  put_simple_revision_cert(e.revision, "cvs_revisions", content, app, pc);

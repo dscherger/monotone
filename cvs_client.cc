@@ -323,14 +323,16 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
         // set host name for author qualification
         char domainname[1024];
         *domainname=0;
-        getdomainname(domainname,sizeof domainname);
+        if (getdomainname(domainname,sizeof domainname))
+          throw oops("getdomainname "+std::string(strerror(errno)));
         domainname[sizeof(domainname)-1]=0;
         unsigned len=strlen(domainname);
         if (len && len<sizeof(domainname)-2)
         { domainname[len]='.';
           domainname[++len]=0;
         }
-        gethostname(domainname+len,sizeof(domainname)-len);
+        if (gethostname(domainname+len,sizeof(domainname)-len))
+          throw oops("gethostname "+std::string(strerror(errno)));
         domainname[sizeof(domainname)-1]=0;
         host=domainname;
       }
