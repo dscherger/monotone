@@ -58,7 +58,8 @@ private:
 
   void InitZipStream(int level);
   void underflow(); // fetch new characters from stream
-  bool begins_with(const std::string &s, const std::string &sub);
+  static bool begins_with(const std::string &s, const std::string &sub);
+  std::string rcs_file2path(std::string s) const;
 protected:
   std::string root;
   std::string module;
@@ -97,5 +98,7 @@ public:
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
   static std::string pserver_password(const std::string &root);
+  
+  std::string shorten_path(const std::string &p) const;
 };
 

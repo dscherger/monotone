@@ -651,27 +651,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
         { cb.file(file,head_rev);
         }
         else if (begins_with(result,"RCS file: ",len))
-        { file=result.substr(len);
-          // try to guess a sane file name (e.g. on cvs.gnome.org)
-          if (file.substr(0,rcs_root.size())!=rcs_root)
-          { std::string::size_type modpos=file.find(module);
-            if (modpos!=std::string::npos) // else ... who knows where to put it
-            { I(modpos>=1);
-              I(file[modpos-1]=='/');
-              std::string oldroot=rcs_root;
-              rcs_root=file.substr(0,modpos-1);
-              W(F("changing rcs root dir from %s to %s\n") % oldroot % rcs_root);
-              file.erase(0,rcs_root.size());
-            }
-          }
-          else file.erase(0,rcs_root.size());
-          I(file[0]=='/');
-          file.erase(0,1);
-          if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
-          std::string::size_type lastslash=file.rfind('/');
-          if (lastslash!=std::string::npos && lastslash>=5
-                  && file.substr(lastslash-5,6)=="Attic/")
-            file.erase(lastslash-5,6);
+        { file=rcs_file2path(result.substr(len));
         }
         else if (begins_with(result,"head: ",len))
         { head_rev=result.substr(len);
@@ -922,4 +902,37 @@ std::string cvs_client::pserver_password(const std::string &root)
     }
   }
   return "A"; // empty password
+}
+
+std::string cvs_client::shorten_path(const std::string &p) const
+{ unsigned len=0;
+  if (cvs_client::begins_with(p,module,len))
+  { if (p[len]=='/') ++len;
+    return p.substr(len);
+  }
+  return p;
+}
+
+std::string cvs_client::rcs_file2path(std::string file) const
+{ // try to guess a sane file name (e.g. on cvs.gnome.org)
+  if (file.substr(0,rcs_root.size())!=rcs_root)
+  { std::string::size_type modpos=file.find(module);
+    if (modpos!=std::string::npos) // else ... who knows where to put it
+    { I(modpos>=1);
+      I(file[modpos-1]=='/');
+      std::string oldroot=rcs_root;
+      const_cast<std::string&>(rcs_root)=file.substr(0,modpos-1);
+      W(F("changing rcs root dir from %s to %s\n") % oldroot % rcs_root);
+      file.erase(0,rcs_root.size());
+    }
+  }
+  else file.erase(0,rcs_root.size());
+  I(file[0]=='/');
+  file.erase(0,1);
+  if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
+  std::string::size_type lastslash=file.rfind('/');
+  if (lastslash!=std::string::npos && lastslash>=5
+          && file.substr(lastslash-5,6)=="Attic/")
+    file.erase(lastslash-5,6);
+  return file;
 }

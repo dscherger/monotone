@@ -280,12 +280,7 @@ void cvs_repository::debug() const
   std::cerr << "Files :\n";
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
-  { unsigned len=0;
-    if (cvs_client::begins_with(i->first,module,len))
-    { if (i->first[len]=='/') ++len;
-      std::cerr << i->first.substr(len);
-    }
-    else std::cerr << i->first;
+  { std::cerr << shorten_path(i->first);
     std::cerr << "(";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
@@ -418,7 +413,7 @@ std::cerr << patch << "----\n" << del << '\n';
 }
 
 static void 
-build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
+build_change_set(const cvs_client &c, const cvs_manifest &oldm, const cvs_manifest &newm,
                  change_set & cs)
 {
   cs = change_set();
@@ -430,8 +425,8 @@ build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
       cvs_manifest::const_iterator fn = newm.find(f->first);
       if (fn==newm.end())
       {  
-        L(F("deleting file '%s'\n") % f->first);              
-        cs.delete_file(f->first);
+        L(F("deleting file '%s'\n") % c.shorten_path(f->first));              
+        cs.delete_file(c.shorten_path(f->first));
       }
       else 
         { if (f->second->sha1sum == fn->second->sha1sum)
@@ -442,8 +437,8 @@ build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
           else
             {
               L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % fn->first % f->second->sha1sum % fn->second->sha1sum);          
-              cs.apply_delta(fn->first, f->second->sha1sum, fn->second->sha1sum);
+                % c.shorten_path(fn->first) % f->second->sha1sum % fn->second->sha1sum);          
+              cs.apply_delta(c.shorten_path(fn->first), f->second->sha1sum, fn->second->sha1sum);
             }
         }  
     }
@@ -452,8 +447,8 @@ build_change_set(const cvs_manifest &oldm, const cvs_manifest &newm,
       cvs_manifest::const_iterator fo = oldm.find(f->first);
       if (fo==oldm.end())
       {  
-        L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);              
-        cs.add_file(f->first, f->second->sha1sum);
+        L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % c.shorten_path(f->first));
+        cs.add_file(c.shorten_path(f->first), f->second->sha1sum);
       }
     }
 }
@@ -615,7 +610,7 @@ void cvs_repository::prime(app_state &app)
   for (std::set<cvs_edge>::iterator e=edges.begin(); e!=edges.end();
       oldmanifestp=&e->files,++e)
   { change_set cs;
-    build_change_set(*oldmanifestp,e->files,cs);
+    build_change_set(*this,*oldmanifestp,e->files,cs);
     apply_change_set(cs, child_map);
     manifest_id child_mid;
     calculate_ident(child_map, child_mid);
@@ -630,7 +625,7 @@ void cvs_repository::prime(app_state &app)
     {
         L(F("existing path to %s found, skipping\n") % child_mid);
     }
-    else if (true || e==edges.begin())
+    else if (e==edges.begin())
     {
       manifest_data mdat;
       write_manifest_map(child_map, mdat);
@@ -639,9 +634,8 @@ void cvs_repository::prime(app_state &app)
     else
     { 
       base64< gzip<delta> > del;              
-      diff(child_map, parent_map, del);
-      // we can't put a delta in to the db using the public interface
-      rcs_put_raw_manifest_edge(child_mid.inner(), parent_mid.inner(), del, app.db);
+      diff(parent_map, child_map, del);
+      app.db.put_manifest_version(parent_mid, child_mid, del);
     }
     const_cast<hexenc<id>&>(e->revision)=child_rid.inner();
     if (! app.db.revision_exists(child_rid))
@@ -656,7 +650,6 @@ void cvs_repository::prime(app_state &app)
     apply_change_set(cs, parent_map);
     parent_mid = child_mid;
     parent_rid = child_rid;
-//break;
   }
   
   debug();
@@ -666,7 +659,7 @@ void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consume
 { std::string content;
   content+=host+":"+module+"\n";
   for (cvs_manifest::const_iterator i=e.files.begin(); i!=e.files.end(); ++i)
-  { content+=i->second->cvs_version+" "+i->first+"\n";
+  { content+=i->second->cvs_version+" "+shorten_path(i->first)+"\n";
   }
   cert t;
   make_simple_cert(e.revision, cert_name("cvs-revisions"), content, app, t);
