@@ -513,6 +513,10 @@ loop:
     result.push_back(std::make_pair("data",read_n(atol(length.c_str()))));
     return true;
   }
+  if (x=="error  ")
+  { result.push_back(std::make_pair("CMD",x));
+    return true;
+  }
   
 error:
   std::cerr << "unrecognized response \"" << x << "\"\n";
@@ -865,15 +869,15 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
     unsigned len=0;
     if (lresult[0].first=="CMD")
     { if (lresult[0].second=="Update-existing")
-      { dir=lresult[1].second;
-        I(lresult.size()==7);
+      { I(lresult.size()==7);
         I(lresult[6].first=="data");
+        dir=lresult[1].second;
         result.contents=lresult[6].second;
       }
       else if (lresult[0].second=="Rcs-diff")
-      { dir=lresult[1].second;
-        I(lresult.size()==7);
+      { I(lresult.size()==7);
         I(lresult[6].first=="data");
+        dir=lresult[1].second;
         result.patch=lresult[6].second;
       }
       else if (lresult[0].second=="Checksum")
@@ -891,6 +895,10 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
       else if (lresult[0].second=="Merged")
       { I(state==st_merge);
       }
+      else if (lresult[0].second=="error")
+      { I(state==st_merge);
+        break;
+      }
       else
       { std::cerr << "unrecognized response " << lresult[0].second << '\n';
       }
@@ -900,8 +908,8 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
     }
     else if (lresult[0].second=="P ")
     { // std::cerr << combine_result(lresult) << '\n';
-      I(lresult[1].first=="fname");
       I(lresult.size()==2);
+      I(lresult[1].first=="fname");
     }
     else if (begins_with(lresult[0].second,"RCS file: ",len))
     { I(state==st_normal);
@@ -914,9 +922,9 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
     { I(state==st_merge);
     }
     else if (begins_with(lresult[0].second,"C ",len))
-    { I(state==st_merge);
-      I(lresult[1].first=="fname");
+    { state=st_merge;
       I(lresult.size()==2);
+      I(lresult[1].first=="fname");
     }
     else 
     { std::cerr << "unrecognized response " << lresult[0].second << '\n';

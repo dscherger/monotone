@@ -97,14 +97,16 @@ private:
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
   unsigned files_inserted;
-  std::string monotone_branch;
+  unsigned revisions_created;
+  std::string monotone_branch; // replace with app.branch_name
 
 public:  
   void prime(app_state &app);
 public:  
   cvs_repository(const std::string &repository, const std::string &module,
         const std::string &mbranch)
-      : cvs_client(repository,module), files_inserted(), monotone_branch(mbranch)
+      : cvs_client(repository,module), files_inserted(), revisions_created(),
+        monotone_branch(mbranch)
   {}
 
   std::list<std::string> get_modules();
