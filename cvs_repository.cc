@@ -280,7 +280,7 @@ void cvs_repository::debug() const
     { if (j->dead) std::cerr << "dead";
       else if (j->size) std::cerr << j->size;
       else if (j->patchsize) std::cerr << 'p' << j->patchsize;
-      else if (!j->sha1sum().empty()) std::cerr << j->sha1sum().substr(0,3);
+      else if (!j->sha1sum().empty()) std::cerr << j->sha1sum().substr(0,3) << j->keyword_substitution;
       ++j;
       if (j!=i->second.known_states.end()) std::cerr << ',';
     }
@@ -876,6 +876,7 @@ void cvs_repository::update()
   std::vector<update_args> file_revisions;
   file_revisions.reserve(now.files.size());
   for (cvs_manifest::const_iterator i=now.files.begin();i!=now.files.end();++i)
-    file_revisions.push_back(update_args(i->first,i->second->cvs_version));
+    file_revisions.push_back(update_args(i->first,i->second->cvs_version,
+                            std::string(),i->second->keyword_substitution));
   Update(file_revisions,update_cb(*this));
 }
