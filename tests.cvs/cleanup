@@ -1,0 +1,2 @@
+#!/bin/sh
+rm -rf *~ test.cvsroot test.db

@@ -975,6 +975,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         I(lresult[6].first=="data");
         dir=lresult[1].second;
         result.file=lresult[2].second;
+        I(!result.file.empty());
+        if (result.file[0]=='/') result.file=rcs_file2path(result.file);
         result.contents=lresult[6].second;
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         cb(result);
@@ -986,6 +988,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         I(lresult[6].first=="data");
         dir=lresult[1].second;
         result.file=lresult[2].second;
+        I(!result.file.empty());
+        if (result.file[0]=='/') result.file=rcs_file2path(result.file);
         result.patch=lresult[6].second;
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         cb(result);

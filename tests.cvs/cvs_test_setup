@@ -19,6 +19,10 @@ cd $CVSROOT/../test.cvstemp/import
 echo "initial import" >A
 cvs -d $CVSROOT import -m "initial import" test vendor_tag initial_import 
 
+if [ "$1" = "import" ] 
+then exit 0 
+fi
+
 cd $CVSROOT/../test.cvstemp
 cvs -d $CVSROOT co test
 cd test
@@ -47,3 +51,5 @@ cvs add A
 sleep 2
 cvs ci -m "A readded"
 
+cd $CVSROOT/..
+rm -rf test.cvstemp || exit 1
