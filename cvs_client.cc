@@ -802,7 +802,8 @@ struct checkout cvs_client::CheckOut(const std::string &file, const std::string 
             I(lresult[1].first=="dir");
             dir2=lresult[1].second;
           }
-          else if (lresult[0].second=="Remove-entry")
+          else if (lresult[0].second=="Remove-entry"
+              || lresult[0].second=="Removed")
           { I(lresult.size()==3);
             result.dead=true;
           }
