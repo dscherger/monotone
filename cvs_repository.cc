@@ -240,6 +240,30 @@ void cvs_repository::store_contents(app_state &app, const std::string &contents,
   }
 }
 
+void cvs_repository::apply_delta(std::string &contents, const std::string &patch)
+{
+}
+
+// a hackish way to reuse code ...
+extern void rcs_put_raw_file_edge(hexenc<id> const & old_id,
+                      hexenc<id> const & new_id,
+                      base64< gzip<delta> > const & del,
+                      database & db);
+
+void cvs_repository::store_delta(app_state &app, const std::string &new_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
+{
+  data dat(new_contents);
+  calculate_ident(dat,to);
+  if (!app.db.file_version_exists(to))
+  { 
+    base64<gzip<delta> > packed;
+    pack(delta(patch), packed);
+    // app.db.put_delta(from, to, packed, "file_deltas");
+    rcs_put_raw_file_edge(from,to,packed,app.db);
+    ++files_inserted;
+  }
+}
+
 void cvs_repository::prime(app_state &app)
 { for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
@@ -280,7 +304,8 @@ void cvs_repository::prime(app_state &app)
   
   // get the contents
   for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
-  { I(!i->second.known_states.empty());
+  { std::string file_contents;
+    I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
       std::string revision=s2->cvs_version;
       cvs_client::checkout c=CheckOut(i->first,revision);
@@ -289,6 +314,7 @@ void cvs_repository::prime(app_state &app)
       if (!c.dead)
       { store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
+        file_contents=c.contents;
       }
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
@@ -305,6 +331,7 @@ void cvs_repository::prime(app_state &app)
         I(!s2->dead);
         store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
+        file_contents=c.contents;
       }
       else
       { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
@@ -315,11 +342,15 @@ void cvs_repository::prime(app_state &app)
         { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
           const_cast<std::string&>(s2->md5sum)=u.checksum;
           const_cast<unsigned&>(s2->patchsize)=u.patch.size();
+          apply_delta(file_contents, u.patch);
+          // check md5
+          store_delta(app, file_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
         }
         else
         {
           store_contents(app, u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=u.contents.size();
+          file_contents=u.contents;
         }
       }
     }
