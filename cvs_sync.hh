@@ -59,9 +59,10 @@ struct cvs_edge // careful this name is also used in cvs_import
   std::string changelog;
   bool changelog_valid;
   std::string author;
-  time_t time,time2;
-  cvs_manifest files; // manifest (or use cvs_manifest)
-  hexenc<id> revision; // monotone revision
+  time_t time;
+  mutable time_t time2;
+  mutable cvs_manifest files; // manifest (or use cvs_manifest)
+  mutable hexenc<id> revision; // monotone revision
 
   // I do not want this to be 3 hours (how comes?)
   static size_t const cvs_window = 5;
@@ -99,6 +100,8 @@ private:
   unsigned files_inserted;
   unsigned revisions_created;
 
+  void check_split(const cvs_file_state &s, const cvs_file_state &end, 
+          const std::set<cvs_edge>::iterator &e);
 public:  
   void prime(app_state &app);
 public:  

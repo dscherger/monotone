@@ -463,6 +463,23 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, const cvs_manife
     }
 }
 
+void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &end, 
+          const std::set<cvs_edge>::iterator &e)
+{ cvs_file_state s2=s;
+  ++s2;
+  if (s2==end) return;
+  I(s->since_when!=s2->since_when);
+  // check ins must not overlap (next revision must lie beyond edge)
+  if (s!=end && s->since_when <= e->time2)
+  { W(F("splitting edge %ld-%ld at %ld\n") % e->time % e->time2 % s->since_when);
+    cvs_edge new_edge=*e;
+    I(s->since_when-1>=e->time);
+    e->time2=s->since_when-1;
+    new_edge.time=s->since_when;
+    edges.insert(new_edge);
+  }
+}
+
 void cvs_repository::prime(app_state &app)
 { for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
@@ -497,7 +514,7 @@ void cvs_repository::prime(app_state &app)
     I(i->changelog==j->changelog);
     I(i->time2<j->time); // should be non overlapping ...
     L(F("joining %ld-%ld+%ld\n") % i->time % i->time2 % j->time);
-    const_cast<time_t&>(i->time2)=j->time;
+    i->time2=j->time;
     edges.erase(j);
   }
   
@@ -598,9 +615,7 @@ void cvs_repository::prime(app_state &app)
         if (s->since_when <= e->time2 && !s->dead)
         { current_manifest[f->first]=s;
           I(!s->sha1sum().empty());
-          ++s;
-          // check ins must not overlap (next revision must lie beyond edge)
-          I(s==f->second.known_states.end() || s->since_when > e->time2);
+          check_split(s,f->second.known_states.end(),e);
         }
       }
       else // file was present in last manifest, check next revision
@@ -612,13 +627,11 @@ void cvs_repository::prime(app_state &app)
           { mi->second=s;
             I(!s->sha1sum().empty());
           }
-          ++s;
-          // check ins must not overlap (next revision must lie beyond edge)
-          I(s==f->second.known_states.end() || s->since_when > e->time2);
+          check_split(s,f->second.known_states.end(),e);
         }
       }
     }
-    const_cast<cvs_manifest&>(e->files)=current_manifest;
+    e->files=current_manifest;
   }
   ticker();
   // commit them all
@@ -674,7 +687,7 @@ void cvs_repository::prime(app_state &app)
       diff(parent_map, child_map, del);
       app.db.put_manifest_version(parent_mid, child_mid, del);
     }
-    const_cast<hexenc<id>&>(e->revision)=child_rid.inner();
+    e->revision=child_rid.inner();
     if (! app.db.revision_exists(child_rid))
     { app.db.put_revision(child_rid, rev);
       ++revisions_created;
