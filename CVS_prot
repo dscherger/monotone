@@ -1,0 +1,23 @@
+Root /usr/local/cvsroot
+Valid-responses ok error Valid-requests Checked-in New-entry Checksum Copy-file Updated Created Update-existing Merged Patched Rcs-diff Mode Mod-time Removed Remove-entry Set-static-directory Clear-static-directory Set-sticky Clear-sticky Template Clear-template Notified Module-expansion Wrapper-rcsOption M Mbinary E F MT
+valid-requests
+UseUnchanged
+Argument -d
+Argument -P
+Argument -u
+Argument --
+Directory .
+/usr/local/cvsroot/christof/tex
+Entry /.cvsignore/1.1.1.1///
+Unchanged .cvsignore
+Entry /c....tgz/1.1//-ko/
+Unchanged c...s.tgz
+Directory a...um
+/usr/local/cvsroot/christof/tex/a...um
+Entry /te....tex/1.21///
+Modified te....tex
+u=rw,g=rw,o=r
+1762
+...
+Questionable F...nst.txt
+update
