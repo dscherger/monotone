@@ -85,6 +85,14 @@ function ignore_file(name)
 	return false
 end
 
+function delete_dropped_file(name)
+   return true;
+end
+
+function replace_existing_file(name)
+   return true;
+end
+
 if (attr_functions == nil) then
   attr_functions = {}
 end

@@ -580,31 +580,31 @@ lua_hooks::hook_ignore_file(file_path const & p)
 }
 
 bool
-lua_hooks::hook_clobber_existing_file(file_path const & p)
+lua_hooks::hook_delete_dropped_file(file_path const & p)
 {
-  bool clobber_it = false;
+  bool delete_it = false;
   bool exec_ok = Lua(st)
-    .push_str("clobber_existing_file")
+    .push_str("delete_dropped_file")
     .get_fn()
     .push_str(p())
     .call(1,1)
-    .extract_bool(clobber_it)
+    .extract_bool(delete_it)
     .ok();
-  return exec_ok && clobber_it;
+  return exec_ok && delete_it;
 }
 
 bool
-lua_hooks::hook_preserve_existing_file(file_path const & p)
+lua_hooks::hook_replace_existing_file(file_path const & p)
 {
-  bool preserve_it = false;
+  bool replace_it = false;
   bool exec_ok = Lua(st)
-    .push_str("preserve_existing_file")
+    .push_str("replace_existing_file")
     .get_fn()
     .push_str(p())
     .call(1,1)
-    .extract_bool(preserve_it)
+    .extract_bool(replace_it)
     .ok();
-  return exec_ok && preserve_it;
+  return exec_ok && replace_it;
 }
 
 bool 

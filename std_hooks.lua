@@ -53,12 +53,16 @@ function ignore_file(name)
    return false;
 end
 
-function clobber_existing_file(name)
+-- used by update to decide whether dropped files are removed or not
+
+function delete_dropped_file(name)
    return true;
 end
 
-function preserve_existing_file(name)
-   return false;
+-- used by update and checkout to decide whether existing files are replaced or not
+
+function replace_existing_file(name)
+   return true;
 end
 
 function edit_comment(basetext)

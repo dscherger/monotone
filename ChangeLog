@@ -1,3 +1,12 @@
+2004-08-14  Derek Scherger  <derek@echologic.com>
+
+	* tests/t_noclobber.at: new test
+	* testsuite.at: call it * lua.{cc,hh} (hook_delete_dropped_file,
+	hook_replace_existing_file): new hooks * std_hooks.lua
+	(delete_dropped_file, replace_existing_file): default to delete
+	dropped files and replace exsiting files
+	* commands.cc (update,checkout): call new hooks
+
 2004-06-07  graydon hoare  <graydon@pobox.com>
 
 	* cryptopp/algebra.cpp:
