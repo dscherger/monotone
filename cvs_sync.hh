@@ -104,6 +104,7 @@ private:
   app_state &app;
   std::auto_ptr<ticker> file_id_ticker;
   std::auto_ptr<ticker> revision_ticker;
+  std::auto_ptr<ticker> cvs_edges_ticker;
 
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);

@@ -19,6 +19,7 @@ class cvs_client
     std::string patch;
     std::string keyword_substitution;
     std::string new_revision;
+    std::string file;
     bool removed;
     update() : removed() {}
   };
@@ -48,7 +49,7 @@ class cvs_client
     checkout() : mod_time(-1), dead() {}
   };
   struct update_callbacks
-  { virtual void operator()(const std::string &,const update &) const=0;
+  { virtual void operator()(const update &) const=0;
   };
   struct update_args
   { std::string file, old_revision, new_revision, keyword_substitution;
@@ -116,8 +117,3 @@ public:
   void Update(const std::vector<update_args> &args, const update_callbacks &cb);
 };
 
-#if 0
-typedef cvs_client::checkout checkout;
-typedef cvs_client::rlist_callbacks rlist_callbacks;
-typedef cvs_client::rlog_callbacks rlog_callbacks;
-#endif

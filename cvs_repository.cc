@@ -342,7 +342,9 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
   // set iterators are read only to prevent you from destroying the order
   file_state &fs=const_cast<file_state &>(*(iter.first));
   fs.log_msg=message;
-  repo.edges.insert(cvs_edge(message,checkin_time,author));
+  std::pair<std::set<cvs_edge>::iterator,bool> iter2=
+    repo.edges.insert(cvs_edge(message,checkin_time,author));
+  if (iter2.second && repo.cvs_edges_ticker.get()) ++(*repo.cvs_edges_ticker);
 }
 
 bool cvs_edge::similar_enough(cvs_edge const & other) const
@@ -463,6 +465,8 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
 
 void cvs_repository::prime()
 { get_all_files();
+  revision_ticker.reset(0);
+  cvs_edges_ticker.reset(new ticker("edges", "E", 10));
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
   }
@@ -476,6 +480,7 @@ void cvs_repository::prime()
     I(i->files.empty());
 //    I(i->revision.empty());
     edges.erase(i);
+    if (cvs_edges_ticker.get()) --(*cvs_edges_ticker);
     i=j; 
   }
   
@@ -613,6 +618,9 @@ void cvs_repository::prime()
     e->files=current_manifest;
   }
   // commit them all
+  
+  cvs_edges_ticker.reset(0);
+  revision_ticker.reset(new ticker("revisions", "R", 3));
   cvs_manifest empty;
   revision_id parent_rid;
   manifest_id parent_mid;
@@ -697,7 +705,8 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
 }
 
 cvs_repository::cvs_repository(app_state &_app, const std::string &repository, const std::string &module)
-      : cvs_client(repository,module), app(_app), file_id_ticker(), revision_ticker()
+      : cvs_client(repository,module), app(_app), file_id_ticker(), 
+        revision_ticker(), cvs_edges_ticker()
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
   revision_ticker.reset(new ticker("revisions", "R", 3));
@@ -828,8 +837,8 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
 struct cvs_repository::update_cb : cvs_client::update_callbacks
 { cvs_repository &repo;
   update_cb(cvs_repository &r) : repo(r) {}
-  virtual void operator()(const std::string &file,const cvs_client::update &u) const
-  { std::cerr << "file " << file << ": " << u.new_revision << ' ' 
+  virtual void operator()(const cvs_client::update &u) const
+  { std::cerr << "file " << u.file << ": " << u.new_revision << ' ' 
         << u.contents.size() << ' ' << u.patch.size() 
         << (u.removed ? " dead" : "") << '\n';
   }

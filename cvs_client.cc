@@ -819,7 +819,8 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
             I(lresult[3].first=="new entries line");
             { std::vector<std::string> parts;
               stringtok(parts,lresult[3].second,"/");
-              I(parts.size()==5);
+              I(parts.size()==6);
+//              result.new_revision=parts[2]
               result.keyword_substitution=parts[4];
             }
             result.mode=lresult[4].second;
@@ -828,14 +829,14 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
                 % revision % lresult[6].second.size());
           }
           else
-          { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+          { std::cerr << "CheckOut: unrecognized CMD " << lresult[0].second << '\n';
           }
         }
         else if (lresult[0].second=="+updated")
         { // std::cerr << combine_result(lresult) << '\n';
         }
         else 
-        { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+        { std::cerr << "CheckOut: unrecognized response " << lresult[0].second << '\n';
         }
         break;
       }
@@ -911,7 +912,7 @@ namespace {
 struct store_here : cvs_client::update_callbacks
 { cvs_client::update &store;
   store_here(cvs_client::update &s) : store(s) {}
-  virtual void operator()(const std::string &f,const cvs_client::update &u) const
+  virtual void operator()(const cvs_client::update &u) const
   { const_cast<cvs_client::update&>(store)=u;
   }
 };
@@ -921,104 +922,11 @@ cvs_client::update cvs_client::Update(const std::string &file,
             const std::string &old_revision, const std::string &new_revision,
             const std::string &keyword_expansion)
 {
-#if 1
   struct update result;
   std::vector<update_args> file_revision;
   file_revision.push_back(update_args(file,old_revision,new_revision,keyword_expansion));
   Update(file_revision,store_here(result));
   return result;
-#else
-  struct update result;
-  writestr("Directory .\n"+root+"/"+dirname(file)+"\n");
-  std::string bname=basename(file);
-  writestr("Entry /"+bname+"/"+old_revision+"///\n");
-  writestr("Unchanged "+bname+"\n");
-  // @@ perhaps pass -C to work around cvs bug
-  SendCommand("update","-r",new_revision.c_str(),"-u","--",bname.c_str(),0);
-  std::vector<std::pair<std::string,std::string> > lresult;
-  std::string dir,dir2,rcsfile;
-  enum { st_normal, st_merge } state=st_normal;
-  while (fetch_result(lresult))
-  { I(!lresult.empty());
-    unsigned len=0;
-    if (lresult[0].first=="CMD")
-    { if (lresult[0].second=="Update-existing")
-      { I(lresult.size()==7);
-        I(lresult[6].first=="data");
-        dir=lresult[1].second;
-        result.contents=lresult[6].second;
-      }
-      else if (lresult[0].second=="Rcs-diff")
-      { I(lresult.size()==7);
-        I(lresult[6].first=="data");
-        dir=lresult[1].second;
-        result.patch=lresult[6].second;
-      }
-      else if (lresult[0].second=="Checksum")
-      { I(lresult.size()==2);
-        I(lresult[1].first=="data");
-        result.checksum=lresult[1].second;
-      }
-      else if (lresult[0].second=="Removed")
-      { I(lresult.size()==3);
-        result.removed=true;
-      }
-      else if (lresult[0].second=="Copy-file")
-      { I(state==st_merge);
-      }
-      else if (lresult[0].second=="Merged")
-      { I(state==st_merge);
-      }
-      else if (lresult[0].second=="error  ")
-      { I(state==st_merge);
-        break;
-      }
-      else
-      { std::cerr << "unrecognized response " << lresult[0].second << '\n';
-      }
-    }
-    else if (lresult[0].second=="+updated")
-    { // std::cerr << combine_result(lresult) << '\n';
-    }
-    else if (lresult[0].second=="P ")
-    { // std::cerr << combine_result(lresult) << '\n';
-      I(lresult.size()==2);
-      I(lresult[1].first=="fname");
-    }
-    else if (lresult[0].second=="M ")
-    { I(lresult.size()==2);
-      I(lresult[1].first=="fname");
-      state=st_merge;
-    }
-    else if (begins_with(lresult[0].second,"RCS file: ",len))
-    { I(state==st_normal);
-      state=st_merge;
-    }
-    else if (begins_with(lresult[0].second,"retrieving revision ",len))
-    { I(state==st_merge);
-    }
-    else if (begins_with(lresult[0].second,"Merging ",len))
-    { I(state==st_merge);
-    }
-    else if (begins_with(lresult[0].second,"C ",len))
-    { state=st_merge;
-      I(lresult.size()==2);
-      I(lresult[1].first=="fname");
-    }
-    else 
-    { std::cerr << "unrecognized response " << lresult[0].second << '\n';
-    }
-  }
-  if (state==st_merge)
-  { W(F("Update %s->%s of %s exposed CVS bug\n") % old_revision % new_revision % file);
-    checkout result2=CheckOut(file,new_revision);
-    result.contents=result2.contents;
-    result.patch=std::string();
-    result.checksum=std::string();
-    result.removed=result2.dead;
-  }
-  return result;
-#endif
 }
 
 // we have to update, status will give us only strange strings (and uses too
@@ -1040,8 +948,6 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
     writestr("Unchanged "+bname+"\n");
   }
-  // @@ perhaps pass -C to work around cvs bug
-// @@ "-r",new_revision.c_str() ... ,bname.c_str()
   if (file_revisions.size()==1 && !file_revisions.begin()->new_revision.empty())
   { 
     SendCommand("update","-d","-C","-u",
@@ -1050,7 +956,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   }
   else SendCommand("update","-d","-C","-u","--",0);
   std::vector<std::pair<std::string,std::string> > lresult;
-  std::string dir,dir2,rcsfile,file;
+  std::string dir,dir2,rcsfile;
   enum { st_normal, st_merge } state=st_normal;
 // 2do: filename storing
   std::vector<update_args> bugged;
@@ -1058,27 +964,35 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   { I(!lresult.empty());
     unsigned len=0;
     if (lresult[0].first=="CMD")
-    { if (lresult[0].second=="Update-existing")
+    { if (lresult[0].second=="Created" || lresult[0].second=="Update-existing")
       { I(lresult.size()==7);
         I(lresult[6].first=="data");
         dir=lresult[1].second;
-        file=lresult[2].second;
+        result.file=lresult[2].second;
         result.contents=lresult[6].second;
-        cb(file,result);
+        std::vector<std::string> parts;
+        stringtok(parts,lresult[3].second,"/");
+        I(parts.size()==6);
+        result.new_revision=parts[2];
+        result.keyword_substitution=parts[4];
+        cb(result);
         result=update();
         state=st_normal;
-        file.clear();
       }
       else if (lresult[0].second=="Rcs-diff")
       { I(lresult.size()==7);
         I(lresult[6].first=="data");
         dir=lresult[1].second;
-        file=lresult[2].second;
+        result.file=lresult[2].second;
         result.patch=lresult[6].second;
-        cb(file,result);
+        std::vector<std::string> parts;
+        stringtok(parts,lresult[3].second,"/");
+        I(parts.size()==6);
+        result.new_revision=parts[2];
+        result.keyword_substitution=parts[4];
+        cb(result);
         result=update();
         state=st_normal;
-        file.clear();
       }
       else if (lresult[0].second=="Checksum")
       { I(lresult.size()==2);
@@ -1087,11 +1001,11 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       }
       else if (lresult[0].second=="Removed")
       { I(lresult.size()==3);
+        result.file=rcs_file2path(lresult[2].second);
         result.removed=true;
-        cb(file,result);
+        cb(result);
         result=update();
         state=st_normal;
-        file.clear();
       }
       else if (lresult[0].second=="Copy-file")
       { I(state==st_merge);
@@ -1101,21 +1015,21 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         I(lresult.size()==7);
         I(lresult[6].first=="data");
         dir=lresult[1].second;
-        file=lresult[2].second;
+        result.file=lresult[2].second;
         result.contents=lresult[6].second; // unnecessary ...
         std::vector<std::string> parts;
         stringtok(parts,lresult[3].second,"/");
-        I(parts.size()==5);
-        std::string new_revision=parts[2];
+        I(parts.size()==6);
+        result.new_revision=parts[2];
         result.keyword_substitution=parts[4];
 //        cb(file,result);
         // old revision is not needed ...
         W(F("Update %s->%s of %s exposed CVS bug\n") 
-            % "?" % new_revision % file);
-        bugged.push_back(update_args(file,std::string(),new_revision,result.keyword_substitution));
+            % "?" % result.new_revision % result.file);
+        bugged.push_back(update_args(result.file,std::string(),
+                          result.new_revision,result.keyword_substitution));
         result=update();
         state=st_normal;
-        file.clear();
       }
       else if (lresult[0].second=="error  ")
       { I(state==st_merge);
@@ -1162,12 +1076,15 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
 // cater for encountered bugs ...
   for (std::vector<update_args>::const_iterator i=bugged.begin();
                                                   i!=bugged.end();++i)
-  { checkout result2=CheckOut(i->file,i->new_revision);
+  { result=update();
+    checkout result2=CheckOut(i->file,i->new_revision);
     result.contents=result2.contents;
     result.patch=std::string();
     result.checksum=std::string();
     result.removed=result2.dead;
+    result.new_revision=i->new_revision;
     result.keyword_substitution=result2.keyword_substitution;
-    cb(i->file,result);
+    result.file=i->file;
+    cb(result);
   }
 }
