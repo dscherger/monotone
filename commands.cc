@@ -2534,6 +2534,13 @@ CMD(debug, "debug", "SQL", "issue SQL queries directly (dangerous)")
   app.db.debug(idx(args, 0)(), cout);
 }
 
+CMD(sqlite, "debug", "SQL", "enter interactive SQL shell (dangerous)")
+{
+  if (args.size() != 0)
+    throw usage(name);
+  app.db.run_shell();
+}
+
 CMD(db, "database", "init\ninfo\nversion\ndump\nload\nmigrate", "manipulate database state")
 {
   if (args.size() != 1)

@@ -385,6 +385,22 @@ database::ensure_open()
   I(s != NULL);
 }
 
+extern "C" int sqlite_main(int argc, char const** argv);
+void
+database::run_shell()
+{
+  // We force the database open, to get the usual error checking.
+  ensure_open();
+  // And then we close it again, because the sqlite tool will re-open it.
+  if (__sql)
+    {
+      sqlite_close(__sql);
+      __sql = 0;
+    }
+  char const* argv[] = { "monotone", filename.native_file_string().c_str(), 0 };
+  sqlite_main(2, argv);
+}
+
 database::~database() 
 {
   if (__sql)

@@ -1,5 +1,14 @@
 2004-05-13  Nathaniel Smith  <njs@codesourcery.com>
 
+	* sqlite/shell.c: Copy from SQLite 2.8.13 distribution.  Rename
+	'main' to 'sqlite_main'.
+	* Makefile.am (SQLITE_SOURCES): Add sqlite/shell.c.
+	* commands.cc (sqlite): New command.
+	* database.cc (database::run_shell): New function.
+	* database.hh (database): Prototype it.
+	
+2004-05-13  Nathaniel Smith  <njs@codesourcery.com>
+
 	* testsuite.at (test_hooks.lua): Add a 'test_attr' attribute
 	hook.  Add tests t_attributes and t_single_char_filenames.
 	* tests/t_attributes.at: New test.

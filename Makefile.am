@@ -77,7 +77,7 @@ SQLITE_SOURCES = \
         sqlite/pager.c sqlite/parse.c sqlite/pragma.c sqlite/printf.c \
         sqlite/random.c sqlite/select.c sqlite/table.c sqlite/tokenize.c \
         sqlite/trigger.c sqlite/update.c sqlite/util.c sqlite/vacuum.c \
-        sqlite/vdbe.c sqlite/vdbeaux.c sqlite/where.c \
+        sqlite/vdbe.c sqlite/vdbeaux.c sqlite/where.c sqlite/shell.c \
 	\
         sqlite/btree.h sqlite/config.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h \
         sqlite/parse.h sqlite/sqlite.h sqlite/sqliteInt.h sqlite/vdbe.h sqlite/vdbeInt.h \
