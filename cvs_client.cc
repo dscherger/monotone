@@ -3,24 +3,50 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
+//#include <sys/types.h>
 #include <unistd.h>
 #include <map>
 #include <string>
 #include <list>
 #include <iostream>
+#include <cassert>
+#include <stdexcept>
+#include <set>
 
 class cvs_client
 { int readfd,writefd;
+  size_t bytes_read,bytes_written;
+  std::set<std::string> Valid_requests;
+  
+public:  
+  cvs_client(const std::string &host, const std::string &root,
+             const std::string &user=std::string(), 
+             const std::string &module=std::string());
+             
+  void writestr(int fd, const std::string &s);
+  std::string readline(int fd);
+  
+  size_t get_bytes_read() const { return bytes_read; }
+  size_t get_bytes_written() const { return bytes_written; }
+  void ticker()
+  { std::cerr << "[bytes sent " << bytes_written << "] [bytes received "
+      << bytes_read << "]\n";
+  }
+};
+
+class cvs_repository : public cvs_client
+{ 
 public:
   typedef std::map<std::string,std::string> cvsmanifest; // file,rev
 private:
   // zusammen mit changelog, date, author(?)
   std::map<cvsmanifest*,cvsmanifest*> successor;
-
 public:  
-  cvs_client(const std::string &host, const std::string &root,
+  cvs_repository(const std::string &host, const std::string &root,
              const std::string &user=std::string(), 
-             const std::string &module=std::string());
+             const std::string &module=std::string())
+      : cvs_client(host,root,user,module) {}
+
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
   const cvsmanifest &now();
@@ -63,16 +89,17 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
   return result;
 }
 
-static void writestr(int fd, const std::string &s)
-{ write(fd,s.c_str(),s.size());
+void cvs_client::writestr(int fd, const std::string &s)
+{ bytes_written+=write(fd,s.c_str(),s.size());
 }
 
 // TODO: optimize
-static std::string readline(int fd)
-{ std::string &result;
+std::string cvs_client::readline(int fd)
+{ std::string result;
   while (true)
   { char c;
-    if (read(fd,&c,1)!=1) throw std::exception("read error");
+    if (read(fd,&c,1)!=1) throw std::runtime_error("read error");
+    ++bytes_read;
     if (c=='\n') return result;
     result+=c;
   }
@@ -80,11 +107,11 @@ static std::string readline(int fd)
 
 cvs_client::cvs_client(const std::string &host, const std::string &root, 
                     const std::string &user, const std::string &module)
-    : readfd(-1), writefd(-1)
+    : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0)
 { int fd1[2],fd2[2];
   pid_t child=pipe_and_fork(fd1,fd2);
   if (child<0) 
-  {  throw std::exception("pipe/fork failed");
+  {  throw std::runtime_error("pipe/fork failed");
   }
   else if (!child)
   { const unsigned newsize=64;
@@ -123,8 +150,9 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   writestr(writefd,"valid-requests\n");
   std::string answer=readline(readfd);
   std::cerr << answer << '\n';
-  assert(answer.substr(0,2)=="M ");
+  assert(answer.substr(0,15)=="Valid-requests ");
   writestr(writefd,"UseUnchanged\n"); // ???
+  ticker();
 //  writestr(writefd,"Directory .\n");
 //  do
 //  { std::string answer=readline(readfd);
@@ -132,13 +160,15 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
 //  }
 }
 
-const cvs_client::cvsmanifest &cvs_client::now()
-{ return cvsmanifest();
+const cvs_repository::cvsmanifest &cvs_repository::now()
+{ static cvsmanifest res;
+  return res;
 }
 
 #if 1
-void main()
-{ cvs_client cl("localhost","/usr/local/cvsroot","","christof");
-  const cvsmanifest &n=cl.now();
+int main()
+{ cvs_repository cl("localhost","/usr/local/cvsroot","","christof");
+  const cvs_repository::cvsmanifest &n=cl.now();
+  return 0;
 }
 #endif
