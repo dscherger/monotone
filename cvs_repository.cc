@@ -220,7 +220,7 @@ void cvs_repository::prime(app_state &app)
   ticker();
   
   // join adjacent check ins (same author, same changelog)
-  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();++i)
+  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
   { std::set<cvs_edge>::iterator j=i;
     j++; // next one
     if (j==edges.end()) break;
@@ -228,7 +228,7 @@ void cvs_repository::prime(app_state &app)
     I(j->time2==j->time); // make sure we only do this once
     I(i->time2<=j->time); // should be sorted ...
     if (!i->similar_enough(*j)) 
-      continue;
+    { ++i; continue; }
     I((j->time-i->time2)<=cvs_edge::cvs_window); // just to be sure
     I(i->time2<j->time); // should be non overlapping ...
     const_cast<time_t&>(i->time2)=j->time;
