@@ -33,6 +33,7 @@ struct file_state
   std::string md5sum;
   hexenc<id> sha1sum;
   std::string log_msg;
+  std::string keyword_substitution;
 
   file_state() : since_when(), size(), patchsize(), dead() {}  
   file_state(time_t sw,const std::string &rev,bool d=false) 

@@ -222,18 +222,6 @@ bool cvs_revision_nr::is_branch() const
 
 // cvs_repository ----------------------
 
-#if 0
-void cvs_repository::ticker() const
-{ cvs_client::ticker(false);
-  if (revisions_created)
-    std::cerr << "[new revisions: " << revisions_created << "] ";
-  else if (files_inserted) std::cerr << "[new file ids: " << files_inserted << "] ";
-  else std::cerr << "[files: " << files.size() << "] ";
-  std::cerr << "[edges: " << edges.size() << "] "
-      "[tags: "  << tags.size() << "]\n";
-}
-#endif
-
 struct cvs_repository::get_all_files_log_cb : rlog_callbacks
 { cvs_repository &repo;
   get_all_files_log_cb(cvs_repository &r) : repo(r) {}
@@ -282,8 +270,6 @@ void cvs_repository::debug() const
     if (nlpos>50) nlpos=50;
     std::cerr << i->changelog.substr(0,nlpos) << "]\n";
   }
-//  std::cerr << '\n';
-  // files map<string,file_history>
   std::cerr << "Files :\n";
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
@@ -300,14 +286,11 @@ void cvs_repository::debug() const
     }
     std::cerr << ")\n";
   }
-//  std::cerr << '\n';
-  // tags map<string,map<string,string> >
   std::cerr << "Tags :\n";
   for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
       i!=tags.end();++i)
   { std::cerr << i->first << "(" << i->second.size() << " files)\n";
   }
-//  std::cerr << '\n';
 }
 
 struct cvs_repository::prime_log_cb : rlog_callbacks
@@ -837,18 +820,10 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         fs.log_msg=e.changelog;
         cvs_file_state cfs=remember(files[path].known_states,fs);
         e.files.insert(std::make_pair(path,cfs));
-#if 0        
-        // this is grossly inefficient because I store a file_state per
-        // monotone revision instead of per rcs/file revision
-        std::pair<cvs_file_state,bool> res=files[path].known_states.insert(fs);
-        I(res.second);
-        e.files.insert(std::make_pair(path,res.first));
-#endif        
       }
       edges.insert(e);
     }
   }
-//  compact_files();
   debug();
 }
 

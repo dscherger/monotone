@@ -434,7 +434,7 @@ loop:
   unsigned len=0;
   if (x.size()<2) goto error;
   if (begins_with(x,"E ",len)) 
-  { std::cerr << x.substr(len) << '\n';
+  { W(F("%s\n") % x.substr(len));
     goto loop;
   }
   if (begins_with(x,"M ",len))
@@ -519,7 +519,7 @@ loop:
   }
   
 error:
-  std::cerr << "unrecognized response \"" << x << "\"\n";
+  W(F("unhandled server response \"%s\"\n") % x);
   exit(1);
 }
 
@@ -685,7 +685,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
         else if (result=="symbolic names:")
           state=st_tags;
         else
-        { std::cerr << "unknown rcs head '" << result << "'\n";
+        { W(F("unknown rcs head '%s'\n") % result);
         }
         break;
       }
@@ -827,14 +827,14 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
                 % revision % lresult[6].second.size());
           }
           else
-          { std::cerr << "CheckOut: unrecognized CMD " << lresult[0].second << '\n';
+          { W(F("CheckOut: unrecognized CMD %s\n") % lresult[0].second);
           }
         }
         else if (lresult[0].second=="+updated")
         { // std::cerr << combine_result(lresult) << '\n';
         }
         else 
-        { std::cerr << "CheckOut: unrecognized response " << lresult[0].second << '\n';
+        { W(F("CheckOut: unrecognized response %s\n") % lresult[0].second);
         }
         break;
       }
@@ -1031,7 +1031,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         break;
       }
       else
-      { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+      { W(F("Update: unrecognized CMD %s\n") % lresult[0].second);
       }
     }
     else if (lresult[0].second=="+updated")
@@ -1064,7 +1064,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       I(lresult[1].first=="fname");
     }
     else 
-    { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+    { W(F("Update: unrecognized response %s\n") % lresult[0].second);
     }
   }
 
