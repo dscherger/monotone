@@ -641,6 +641,10 @@ std::cerr << '\n';
       oldmanifestp=&e->files,++e)
   { change_set cs;
     build_change_set(*this,*oldmanifestp,e->files,cs);
+    if (*oldmanifestp==e->files) 
+    { W(F("null edge (no changed files) @%ld skipped\n") % e->time);
+      continue;
+    }
     I(!(*oldmanifestp==e->files));
     apply_change_set(cs, child_map);
     if (child_map.empty()) 
