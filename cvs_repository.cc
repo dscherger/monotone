@@ -269,8 +269,10 @@ void cvs_repository::debug() const
       i!=edges.end();++i)
   { std::cerr << "[" << i->time;
     if (i->time!=i->time2) std::cerr << '+' << (i->time2-i->time);
-    std::cerr << ',' << i->author << ',' 
-      << i->changelog.size() << "]\n";
+    std::cerr << ',' << i->author << ',';
+    std::string::size_type nlpos=i->changelog.find_first_of("\n\r");
+    if (nlpos>60) nlpos=60;
+    std::cerr << i->changelog.substr(0,nlpos) << "]\n";
   }
 //  std::cerr << '\n';
   // files map<string,file>
