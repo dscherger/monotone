@@ -59,19 +59,16 @@ public:
   void GzipStream(int level);
 };
 
-void cvs_client::SendCommand(const char *cmd,...)
-{ va_list ap;
-  va_start(ap, cmd);
-  const char *arg;
-  while ((arg=va_arg(ap,const char *)))
-  { writestr("Argument "+std::string(arg)+"\n");
-  }
-  writestr(cmd+std::string("\n"));
-}
-
 struct cvs_file_state
 { std::string revision;
   time_t last_changed;
+#if 0
+  bool dead;
+  std::string log_message;
+  cvs_file_state() : last_changed(), dead() {}
+  cvs_file_state(const std::string &r, time_t lc, bool d, const std::string &lm) 
+    : revision(r), last_changed(lc), dead(d), log_message(lm) {}
+#endif
 };
 
 struct cvs_changeset // == cvs_key ?? rcs_delta+rcs_deltatext
@@ -88,6 +85,7 @@ struct file_state
   std::string contents;
   std::string sha1sum;
   bool dead;
+  std::string log_msg;
 
   file_state() : since_when(), dead() {}  
   file_state(time_t sw,const std::string &rev,bool d=false) 
@@ -162,6 +160,10 @@ private:
 //  std::map<tree_state_t*,tree_state_t*> successor;
   std::set<cvs_edge> edges;
   std::map<std::string,file> files;
+  // tag,file,rev
+  std::map<std::string,std::pair<std::string,std::string> > tags;
+  
+  void prime();
 public:  
   cvs_repository(const std::string &host, const std::string &root,
              const std::string &user=std::string(), 
@@ -175,6 +177,8 @@ public:
   const tree_state_t &find(const std::string &date,const std::string &changelog);
   const tree_state_t &next(const tree_state_t &m) const;
 };
+
+//--------------------- implementation -------------------------------
 
 void cvs_repository::ticker()
 { cvs_client::ticker(false);
@@ -351,6 +355,20 @@ std::string trim(const std::string &s)
   return s.substr(start,end-start);
 }
 
+void cvs_client::SendCommand(const char *cmd,...)
+{ va_list ap;
+  va_start(ap, cmd);
+  const char *arg;
+  while ((arg=va_arg(ap,const char *)))
+  { writestr("Argument "+std::string(arg)+"\n");
+  }
+  writestr(cmd+std::string("\n"));
+}
+
+static bool begins_with(const std::string &s, const std::string &sub)
+{ return s.substr(0,sub.size())==sub;
+}
+
 cvs_client::cvs_client(const std::string &host, const std::string &root, 
                     const std::string &user, const std::string &_module)
     : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0),
@@ -401,7 +419,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
 
   writestr("valid-requests\n");
   std::string answer=readline();
-  I(answer.substr(0,15)=="Valid-requests ");
+  I(begins_with(answer,"Valid-requests "));
   // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
   stringtok(push_back2insert(Valid_requests),answer.substr(15));
   answer=readline();
@@ -459,16 +477,16 @@ bool cvs_client::fetch_result(std::list<std::pair<std::string,std::string> > &re
 loop:
   std::string x=readline();
   if (x.size()<2) goto error;
-  if (x.substr(0,2)=="E ") 
+  if (begins_with(x,"E ")) 
   { std::cerr << x.substr(2) << '\n';
     goto loop;
   }
-  if (x.substr(0,2)=="M ") 
+  if (begins_with(x,"M "))
   { result.push_back(std::make_pair(std::string(),x.substr(2)));
     return true;
   }
   if (x=="MT newline") return true;
-  if (x.substr(0,3)=="MT ") 
+  if (begins_with(x,"MT ")) 
   { std::string::size_type sep=x.find_first_of(" ",3);
     if (sep==std::string::npos) 
       result.push_back(std::make_pair(std::string(),x.substr(3)));
@@ -484,6 +502,10 @@ error:
 
 static time_t rls_l2time_t(const std::string &t)
 { // 2003-11-26 09:20:57 +0000
+  I(t[4]=='-' && t[7]=='-');
+  I(t[10]==' ' && t[13]==':');
+  I(t[16]==':' && t[19]==' ');
+  I(t[20]=='+' || t[20]=='-');
   struct tm tm;
   memset(&tm,0,sizeof tm);
   tm.tm_year=atoi(t.substr(0,4).c_str());
@@ -539,22 +561,23 @@ const cvs_repository::tree_state_t &cvs_repository::now()
             std::string name=i2->second.substr(17);
             
             I(keyword[0]=='-' || keyword[0]=='d');
-            I(date[4]=='-' && date[7]=='-');
-            I(date[10]==' ' && date[13]==':');
-            I(date[16]==':' && date[19]==' ');
-            I(date[20]=='+' || date[20]=='-');
             I(dead.empty() || dead=="dead");
             I(!name.empty());
             
             if (keyword=="----") keyword=std::string();
             if (keyword!="d---")
-            { std::cerr << (directory+"/"+name) << " V" 
-                << version << " from " << date << " " << dead
-                << " " << keyword << '\n';
+            { //std::cerr << (directory+"/"+name) << " V" 
+              //  << version << " from " << date << " " << dead
+              //  << " " << keyword << '\n';
               time_t t=rls_l2time_t(date);
               files[directory+"/"+name].known_states.insert(file_state(t,version,!dead.empty()));
               edges.insert(cvs_edge(t));
             }
+            // construct manifest
+            // search for a matching revision
+            
+            // prime
+            prime();
           }
           break;
       }
@@ -562,6 +585,120 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     ticker();
   }
   return (--edges.end())->files; // wrong of course
+}
+
+void cvs_repository::prime()
+{ for (cvs_changeset::tree_state_t::iterator i=files.begin();i!=files.end();++i)
+  { SendCommand("rlog","-b",i->first.c_str(),0);
+    enum { st_head, st_tags, st_desc, st_rev, st_msg, st_date_author 
+         } state=st_head;
+    std::list<std::pair<std::string,std::string> > lresult;
+    std::string revision;
+    std::string message;
+    std::string author;
+    std::string description;
+    std::string dead;
+    time_t checkin_time=0;
+    while (fetch_result(lresult))
+    {reswitch:
+      switch(state)
+      { case st_head:
+        { std::string result=combine_result(lresult);
+          if (begins_with(result,"RCS file: ") ||
+              begins_with(result,"head: ") ||
+              begins_with(result,"branch:") ||
+              begins_with(result,"locks: ") ||
+              begins_with(result,"access list:") ||
+              begins_with(result,"keyword substitution: ") ||
+              begins_with(result,"total revisions: "))
+            ;
+          else if (result=="description:")
+            state=st_desc;
+          else if (result=="symbolic names:")
+            state=st_tags;
+          else
+          { std::cerr << "unknown rcs head '" << result << "'\n";
+          }
+          break;
+        }
+        case st_tags:
+        { std::string result=combine_result(lresult);
+          if (result[0]!=' ') { state=st_head; goto reswitch; }
+          I(result.find_first_not_of(" ")==6);
+          std::string::size_type colon=result.find(':');
+          I(colon!=std::string::npos);
+          std::pair<std::string,std::string> &tagslot=tags[result.substr(6,colon-6)];
+          tagslot.first=i->first;
+          tagslot.second=result.substr(colon+2);
+          break;
+        }
+        case st_desc:
+        { std::string result=combine_result(lresult);
+          if (result=="----------------------------")
+          { state=st_rev;
+            // i->second.= ???
+          }
+          else
+          { if (!description.empty()) description+='\n';
+            description+=result;
+          }
+          break;
+        }
+        case st_rev:
+        { std::string result=combine_result(lresult);
+          I(begins_with(result,"revision "));
+          revision=result.substr(9);
+          state=st_date_author;
+          break;
+        }
+        case st_date_author:
+        { I(lresult.size()==10);
+          std::list<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
+          std::list<std::pair<std::string,std::string> >::const_iterator i1=i0;
+          ++i1;
+          std::list<std::pair<std::string,std::string> >::const_iterator i2=i1;
+          ++i2;
+          std::list<std::pair<std::string,std::string> >::const_iterator i3=i2;
+          ++i3;
+          std::list<std::pair<std::string,std::string> >::const_iterator i4=i3;
+          ++i4;
+          std::list<std::pair<std::string,std::string> >::const_iterator i5=i4;
+          ++i5;
+          I(i0->first=="text");
+          I(i0->second=="date: ");
+          I(i1->first=="date");
+          checkin_time=rls_l2time_t(i1->second);
+          I(i2->first=="text");
+          I(i2->second==";  author: ");
+          I(i3->first=="text");
+          author=i3->second;
+          I(i4->first=="text");
+          I(i4->second==";  state: ");
+          I(i5->first=="text");
+          dead=i5->second;
+          state=st_msg;
+          break;
+        }
+        case st_msg:
+        { std::string result=combine_result(lresult);
+          // evtl überprüfen, ob das nicht nur ein fake war ...
+          if (result=="----------------------------" ||
+              result=="=============================================================================")
+          { state=st_rev;
+            std::pair<std::set<file_state>::iterator,bool> iter=
+            i->second.known_states.insert(checkin_time,revision,dead=="dead");
+            I(iter.second==false);
+            iter.first->log_msg=message;
+          }
+          else
+          { if (!message.empty()) message+='\n';
+            message+=result;
+          }
+          break;
+        }
+      }
+    }
+  }
 }
 
 #if 1
