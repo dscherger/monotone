@@ -232,12 +232,36 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 { return s.substr(0,sub.size())==sub;
 }
 
-cvs_client::cvs_client(const std::string &host, const std::string &_root, 
-                    const std::string &user, const std::string &_module,
-                    bool pserver)
-    : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0),
-      gzip_level(0), root(_root), module(_module), rcs_root(_root)
-{ memset(&compress,0,sizeof compress);
+cvs_client::cvs_client(const std::string &repository, const std::string &_module)
+    : readfd(-1), writefd(-1), bytes_read(), bytes_written(),
+      gzip_level(), module(_module)
+{ bool pserver=false;
+  std::string host,user;
+  { unsigned len;
+    std::string d_arg=repository;
+    if (begins_with(d_arg,":pserver:",len))
+    { pserver=true;
+      d_arg.erase(0,len);
+    }
+    std::string::size_type at=d_arg.find('@');
+    std::string::size_type host_start=at;
+    if (at!=std::string::npos) 
+    { user=d_arg.substr(0,at); 
+      ++host_start; 
+    }
+    else host_start=0;
+    std::string::size_type colon=d_arg.find(':',host_start);
+    std::string::size_type root_start=colon;
+    if (colon!=std::string::npos) 
+    { host=d_arg.substr(host_start,colon-host_start); 
+      ++root_start; 
+    }
+    else root_start=0;
+    root=d_arg.substr(root_start);
+  }
+  rcs_root=root;
+
+  memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
   if (pserver)
   { // it looks like I run into the same problems on Win32 again and again:

@@ -129,11 +129,8 @@ private:
   
   void prime();
 public:  
-  cvs_repository(const std::string &host, const std::string &root,
-             const std::string &user=std::string(), 
-             const std::string &module=std::string(), 
-             bool pserver=false)
-      : cvs_client(host,root,user,module,pserver) {}
+  cvs_repository(const std::string &repository, const std::string &module)
+      : cvs_client(repository,module) {}
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);

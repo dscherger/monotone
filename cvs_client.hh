@@ -65,9 +65,7 @@ protected:
   std::string rcs_root; // the real directory of the root (ask cvs.gnome.org)
   
 public:  
-  cvs_client(const std::string &host, const std::string &_root,
-             const std::string &user=std::string(), 
-             const std::string &module=std::string(), bool pserver=false);
+  cvs_client(const std::string &repository, const std::string &module);
   ~cvs_client();
              
   void writestr(const std::string &s, bool flush=false);
