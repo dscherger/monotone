@@ -317,7 +317,9 @@ void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string
 void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
         const std::string &revision,const std::string &author,
         const std::string &dead,const std::string &message) const
-{ I(i->first==file);
+{ L(F("prime_log_cb %s:%s %d %s %d %s\n") % file % revision % checkin_time
+        % author % message.size() % dead);
+  I(i->first==file);
   std::pair<std::set<file_state>::iterator,bool> iter=
     i->second.known_states.insert
       (file_state(checkin_time,revision,dead=="dead"));
@@ -459,29 +461,8 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
   }
 }
 
-void cvs_repository::prime()
-{ get_all_files();
-  revision_ticker.reset(0);
-  cvs_edges_ticker.reset(new ticker("edges", "E", 10));
-  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
-  { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
-  }
-  // remove duplicate states
-  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
-  { if (i->changelog_valid || i->author.size()) { ++i; continue; }
-    std::set<cvs_edge>::iterator j=i;
-    j++;
-    I(j!=edges.end());
-    I(j->time==i->time);
-    I(i->files.empty());
-//    I(i->revision.empty());
-    edges.erase(i);
-    if (cvs_edges_ticker.get()) --(*cvs_edges_ticker);
-    i=j; 
-  }
-  
-  // join adjacent check ins (same author, same changelog)
-  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
+void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
+{ for (;i!=edges.end();)
   { std::set<cvs_edge>::iterator j=i;
     j++; // next one
     if (j==edges.end()) break;
@@ -498,20 +479,109 @@ void cvs_repository::prime()
     i->time2=j->time;
     edges.erase(j);
   }
+}
+
+// s2 gets changed
+void cvs_repository::update(std::set<file_state>::const_iterator s,
+        std::set<file_state>::iterator s2,const std::string &file,
+        std::string &contents)
+{
+  cvs_revision_nr srev(s->cvs_version);
+  I(srev.is_parent_of(s2->cvs_version));
+  if (s->dead)
+  { cvs_client::checkout c=CheckOut(file,s2->cvs_version);
+    I(!c.dead); // dead->dead is no change, so shouldn't get a number
+    I(!s2->dead);
+    I(s2->since_when==c.mod_time);
+    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    const_cast<unsigned&>(s2->size)=c.contents.size();
+    contents=c.contents;
+    const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+  }
+  else if (s2->dead) // short circuit if we already know it's dead
+  { L(F("file %s: revision %s already known to be dead\n") % file % s2->cvs_version);
+  }
+  else
+  { cvs_client::update u=Update(file,s->cvs_version,s2->cvs_version,s->keyword_substitution);
+    if (u.removed)
+    { const_cast<bool&>(s2->dead)=true;
+    }
+    else if (!u.checksum.empty())
+    { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
+      const_cast<std::string&>(s2->md5sum)=u.checksum;
+      const_cast<unsigned&>(s2->patchsize)=u.patch.size();
+      const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
+      I(s2->since_when==u.mod_time);
+      std::string old_contents=contents;
+      { std::vector<piece> file_contents;
+        index_deltatext(contents,file_contents);
+        apply_delta(file_contents, u.patch);
+        build_string(file_contents, contents);
+      }
+      // check md5
+      CryptoPP::MD5 hash;
+      std::string md5sum=xform<CryptoPP::HexDecoder>(u.checksum);
+      I(md5sum.size()==CryptoPP::MD5::DIGESTSIZE);
+      if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
+          reinterpret_cast<byte const *>(contents.c_str()),
+          contents.size()))
+      { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+      }
+      else
+      { throw oops("MD5 sum wrong");
+      }
+    }
+    else
+    { if (!s->sha1sum().empty()) 
+      // we default to patch if it's at all possible
+        store_delta(u.contents, contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+      else
+        store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      const_cast<unsigned&>(s2->size)=u.contents.size();
+      contents=u.contents;
+      const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
+    }
+  }
+}
+
+void cvs_repository::prime()
+{ get_all_files();
+  revision_ticker.reset(0);
+  cvs_edges_ticker.reset(new ticker("edges", "E", 10));
+  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
+  { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
+  }
+  // remove duplicate states (because some edges were added by the 
+  // get_all_files method
+  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
+  { if (i->changelog_valid || i->author.size()) { ++i; continue; }
+    std::set<cvs_edge>::iterator j=i;
+    j++;
+    I(j!=edges.end());
+    I(j->time==i->time);
+    I(i->files.empty());
+//    I(i->revision.empty());
+    edges.erase(i);
+    if (cvs_edges_ticker.get()) --(*cvs_edges_ticker);
+    i=j; 
+  }
+  
+  // join adjacent check ins (same author, same changelog)
+  join_edge_parts(edges.begin());
   
   // get the contents
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
-  { vector<piece> file_contents;
+  { std::string file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
       std::string revision=s2->cvs_version;
       cvs_client::checkout c=CheckOut(i->first,revision);
-//    I(c.mod_time==?);
       const_cast<bool&>(s2->dead)=c.dead;
       if (!c.dead)
-      { store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      { I(c.mod_time==s2->since_when);
+        store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
-        index_deltatext(c.contents,file_contents);
+        file_contents=c.contents;
         const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
       }
     }
@@ -520,63 +590,7 @@ void cvs_repository::prime()
     { std::set<file_state>::iterator s2=s;
       ++s2;
       if (s2==i->second.known_states.end()) break;
-      // s2 gets changed
-      cvs_revision_nr srev(s->cvs_version);
-      I(srev.is_parent_of(s2->cvs_version));
-      if (s->dead)
-      { cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
-        I(!c.dead); // dead->dead is no change, so shouldn't get a number
-        I(!s2->dead);
-        store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
-        const_cast<unsigned&>(s2->size)=c.contents.size();
-        index_deltatext(c.contents,file_contents);
-        const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
-      }
-      else if (s2->dead) // short circuit if we already know it's dead
-      { L(F("file %s: revision %s already known to be dead\n") % i->first % s2->cvs_version);
-      }
-      else
-      { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version,s->keyword_substitution);
-        if (u.removed)
-        { const_cast<bool&>(s2->dead)=true;
-        }
-        else if (!u.checksum.empty())
-        { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
-          const_cast<std::string&>(s2->md5sum)=u.checksum;
-          const_cast<unsigned&>(s2->patchsize)=u.patch.size();
-          const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
-          std::string old_contents;
-          build_string(file_contents, old_contents);
-          apply_delta(file_contents, u.patch);
-          std::string contents;
-          build_string(file_contents, contents);
-          // check md5
-          CryptoPP::MD5 hash;
-          std::string md5sum=xform<CryptoPP::HexDecoder>(u.checksum);
-          I(md5sum.size()==CryptoPP::MD5::DIGESTSIZE);
-          if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
-              reinterpret_cast<byte const *>(contents.c_str()),
-              contents.size()))
-          { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
-          }
-          else
-          { throw oops("MD5 sum wrong");
-          }
-        }
-        else
-        { if (!s->sha1sum().empty()) 
-          // we default to patch if it's at all possible
-          { std::string old_contents;
-            build_string(file_contents, old_contents);
-            store_delta(u.contents, old_contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
-          }
-          else
-            store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
-          const_cast<unsigned&>(s2->size)=u.contents.size();
-          index_deltatext(u.contents,file_contents);
-          const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
-        }
-      }
+      update(s,s2,i->first,file_contents);
     }
   }
 
@@ -861,22 +875,97 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
 
 struct cvs_repository::update_cb : cvs_client::update_callbacks
 { cvs_repository &repo;
-  update_cb(cvs_repository &r) : repo(r) {}
+  std::vector<cvs_client::update> &results;
+  
+  update_cb(cvs_repository &r, std::vector<cvs_client::update> &re) 
+  : repo(r), results(re) {}
   virtual void operator()(const cvs_client::update &u) const
-  { std::cerr << "file " << u.file << ": " << u.new_revision << ' ' 
+  { results.push_back(u);
+    // perhaps store the file contents into the db
+#if 0  
+     std::cerr << "file " << u.file << ": " << u.new_revision << ' ' 
         << u.contents.size() << ' ' << u.patch.size() 
         << (u.removed ? " dead" : "") << '\n';
+#endif        
   }
 };
 
+#if 0
+struct cvs_repository::update_log_cb : rlog_callbacks
+{ cvs_repository &repo;
+  std::map<std::string,struct cvs_sync::file_history>::iterator i;
+  update_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file_history>::iterator &_i) 
+      : repo(r), i(_i) {}
+  virtual void tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const 
+  {}
+  virtual void revision(const std::string &file,time_t t,
+        const std::string &rev,const std::string &author,
+        const std::string &state,const std::string &log) const;
+  virtual void file(const std::string &file,const std::string &head_rev) const
+  {}
+};
+
+void cvs_repository::update_log_cb::revision(const std::string &file,time_t checkin_time,
+        const std::string &revision,const std::string &author,
+        const std::string &dead,const std::string &message) const
+{ I(i->first==file);
+  std::pair<std::set<file_state>::iterator,bool> iter=
+    i->second.known_states.insert
+      (file_state(checkin_time,revision,dead=="dead"));
+  // I(iter.second==false);
+  // set iterators are read only to prevent you from destroying the order
+  file_state &fs=const_cast<file_state &>(*(iter.first));
+  fs.log_msg=message;
+  std::pair<std::set<cvs_edge>::iterator,bool> iter2=
+    repo.edges.insert(cvs_edge(message,checkin_time,author));
+  if (iter2.second && repo.cvs_edges_ticker.get()) ++(*repo.cvs_edges_ticker);
+}
+#endif
+
 void cvs_repository::update()
 { I(!edges.empty());
-  const cvs_edge &now=*(edges.rbegin());
+  std::set<cvs_edge>::iterator now_iter=edges.end();
+  --now_iter;
+  const cvs_edge &now=*now_iter;
   I(!now.revision().empty());
   std::vector<update_args> file_revisions;
+  std::vector<cvs_client::update> results;
   file_revisions.reserve(now.files.size());
   for (cvs_manifest::const_iterator i=now.files.begin();i!=now.files.end();++i)
     file_revisions.push_back(update_args(i->first,i->second->cvs_version,
                             std::string(),i->second->keyword_substitution));
-  Update(file_revisions,update_cb(*this));
+  Update(file_revisions,update_cb(*this,results));
+  for (std::vector<cvs_client::update>::const_iterator i=results.begin();i!=results.end();++i)
+  { // 2do: use tags
+    cvs_manifest::const_iterator now_file=now.files.find(i->file);
+    std::string last_known_revision;
+    
+    if (now_file!=now.files.end())
+      last_known_revision=now_file->second->cvs_version;
+    else // the file is not present in our last import
+    // e.g. the file is currently dead but we know an old revision
+    { std::map<std::string,file_history>::iterator f=files.find(i->file);
+      if (f!=files.end() // we know anything about this file
+            && !f->second.known_states.empty()) // we have at least one known file revision
+      { std::set<file_state>::const_iterator last=f->second.known_states.end();
+        --last;
+        last_known_revision=last->cvs_version;
+      }
+      else files[i->file]; // generate entry
+    }
+    if (last_known_revision=="1.1.1.1") 
+      last_known_revision="1.1";
+    if (last_known_revision.empty())
+      RLog(prime_log_cb(*this,files.find(i->file)),false,"-b","-N",
+        "--",i->file.c_str(),0);
+    else
+      // -b causes -r to get ignored on 0.12
+      RLog(prime_log_cb(*this,files.find(i->file)),false,/*"-b",*/"-N",
+        ("-r"+last_known_revision+"::").c_str(),"--",i->file.c_str(),0);
+  }
+  std::set<cvs_edge>::iterator dummy_iter=now_iter;
+  join_edge_parts(++dummy_iter);
+
+  debug();
 }

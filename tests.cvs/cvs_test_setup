@@ -20,7 +20,10 @@ echo "initial import" >A
 cvs -d $CVSROOT import -m "initial import" test vendor_tag initial_import 
 
 if [ "$1" = "import" ] 
-then exit 0 
+then 
+  cd $CVSROOT/..
+  rm -rf test.cvstemp || exit 1
+  exit 0 
 fi
 
 cd $CVSROOT/../test.cvstemp

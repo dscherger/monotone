@@ -545,6 +545,24 @@ static time_t cvs111date2time_t(const std::string &t)
   return result;
 }
 
+static time_t timezone2time_t(const struct tm &tm, int offset_min)
+{ I(!offset_min);
+  time_t result=-1;
+#if 0 // non portable
+  result=timegm(&tm);
+#else // ugly
+  const char *tz=getenv("TZ");
+  setenv("TZ","",true);
+  tzset();
+  result=mktime(const_cast<struct tm*>(&tm));
+  if (tz) setenv("TZ", tz, true);
+  else unsetenv("TZ");
+  tzset();
+#endif
+//  L(F("result %ld\n") % result);
+  return result;
+}
+
 static time_t rls_l2time_t(const std::string &t)
 { // 2003-11-26 09:20:57 +0000
   I(t.size()==25);
@@ -564,29 +582,48 @@ static time_t rls_l2time_t(const std::string &t)
 //  L(F("%d-%d-%d %d:%02d:%02d %04d") % tm.tm_year % tm.tm_mon % tm.tm_mday 
 //    % tm.tm_hour % tm.tm_min % tm.tm_sec % dst_offs );
   tm.tm_isdst=0;
-  I(!dst_offs);
-  time_t result=-1;
-#if 0 // non portable
-  result=timegm(&tm);
-#else // ugly
-  const char *tz=getenv("TZ");
-  setenv("TZ","",true);
-  tzset();
-  result=mktime(&tm);
-  if (tz) setenv("TZ", tz, true);
-  else unsetenv("TZ");
-  tzset();
-#endif
-//  L(F("result %ld\n") % result);
-  return result;
+  return timezone2time_t(tm,dst_offs);
 }
 
 // third format:
 // 19 Nov 1996 11:22:50 -0000
 // 4 Jun 1999 12:00:41 -0000
 // 19 Jul 2002 07:33:26 -0000
+
+// Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
+// Apr,Aug,Dec,Feb,Jan,Jul,Jun,Mar,May,Nov,Oct,Sep
+static time_t monname2month(const std::string &x)
+{ I(x.size()==3);
+  // I hope this will never get internationalized
+  if (x[0]=='O') return 10;
+  if (x[0]=='S') return 9;
+  if (x[0]=='D') return 12;
+  if (x[0]=='F') return 2;
+  if (x[0]=='N') return 11;
+  if (x[0]=='A') return x[1]=='p'?4:8;
+  if (x[0]=='M') return x[2]=='r'?3:5;
+  I(x[0]=='J');
+  return x[1]=='a'?1:(x[2]=='n'?6:7);
+  return 0;
+}
+
 static time_t mod_time2time_t(const std::string &t)
-{
+{ std::vector<std::string> parts;
+  stringtok(parts,t);
+  I(parts.size()==5);
+  struct tm tm;
+  memset(&tm,0,sizeof tm);
+  I(parts[3][2]==':' && parts[3][5]==':');
+  I(parts[4][0]=='+' || parts[4][0]=='-');
+  tm.tm_year=atoi(parts[2].c_str())-1900;
+  tm.tm_mon=monname2month(parts[1])-1;
+  tm.tm_mday=atoi(parts[0].c_str());
+  tm.tm_hour=atoi(parts[3].substr(0,2).c_str());
+  tm.tm_min=atoi(parts[3].substr(3,2).c_str());
+  tm.tm_sec=atoi(parts[3].substr(6,2).c_str());
+  int dst_offs=atoi(parts[4].c_str());
+  tm.tm_isdst=0;
+  return timezone2time_t(tm,dst_offs);
 }
 
 void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
@@ -816,7 +853,7 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
           { I(lresult.size()==2);
             I(lresult[1].first=="date");
             // this is 18 Nov 1996 14:39:40 -0000 format - strange ...
-            // result.mod_time=xyz2time_t(lresult[1].second);
+            result.mod_time=mod_time2time_t(lresult[1].second);
           }
           else if (lresult[0].second=="Created"
               || lresult[0].second=="Update-existing")
@@ -945,7 +982,6 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
                         i!=file_revisions.end(); ++i)
   { if (dirname(i->file)!=olddir)
     { olddir=dirname(i->file);
-// @@ replace . with decent directory
       std::string shortpath=shorten_path(olddir);
       if (shortpath.empty()) shortpath=".";
       writestr("Directory "+shortpath+"\n"+root+"/"+olddir+"\n");
@@ -1018,8 +1054,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       { I(state==st_merge);
       }
       else if (lresult[0].second=="Mod-time")
-      { // @@ parse it and use it
-        // result.mod_time=
+      { result.mod_time=mod_time2time_t(lresult[1].second);
       }
       else if (lresult[0].second=="Merged")
       { I(state==st_merge);

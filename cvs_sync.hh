@@ -106,11 +106,15 @@ private:
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
   void get_all_files();
+  void update(std::set<file_state>::const_iterator s,
+              std::set<file_state>::iterator s2,const std::string &file,
+              std::string &contents);
 public:  
   void prime();
   void update();
 //  void compact_files();
   cvs_file_state remember(std::set<file_state> &s,const file_state &fs);
+  void join_edge_parts(std::set<cvs_edge>::iterator i);
   
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module);
