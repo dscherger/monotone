@@ -262,7 +262,7 @@ std::string cvs_client::readline()
   { if (inputbuffer.empty()) underflow(); 
     if (inputbuffer.empty()) throw std::runtime_error("no data avail");
     char c=inputbuffer[0];
-    inputbuffer=inputbuffer.substr(1);
+    inputbuffer.erase(0,1); // =inputbuffer.substr(1);
     if (c=='\n') 
     { L(F("readline result '%s'\n") % result);
 //std::cerr << "readline: \"" <<  result << "\"\n";
@@ -281,6 +281,7 @@ std::string cvs_client::read_n(unsigned len)
     unsigned avail=inputbuffer.size();
     if (len<avail) avail=len;
     result+=inputbuffer.substr(0,avail);
+    inputbuffer.erase(0,avail);
     len-=avail;
   }
   return result;
