@@ -1,3 +1,67 @@
+2005-02-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_checkout_dir.at: Also check that checkout to unwriteable
+	directory fails.
+	* tests/t_branch_checkout.at: New test.
+	* testsuite.at: Add it.
+
+	* app_state.cc (initialize): Simplify working directory
+	initialization, and improve error handling.
+	
+	* keys.cc (get_passphrase): Disallow empty passphrases early
+	(before they trigger an invariant down the line...).
+
+2005-02-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* update.cc (pick_update_candidates): Add I().
+	* commands.cc (calculate_base_revision): Remove 'rev' argument,
+	which was never set and callers never used.
+	(calculate_base_manifest, calculate_current_revision) 
+	(calculate_restricted_revision, revert): Update correspondingly.
+	(update): Check for null old revision.
+
+	* main.cc (main): Make exit status 3 if we caught an unhandled
+	exception, in particular so the testsuite can tell the difference
+	between an error handled cleanly and an error caught by an
+	invariant.
+	* tests/t_update_null_revision.at: New test.
+	* testsuite.at: Add it.
+
+2005-02-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* main.cc: Remove tabs.
+
+2005-02-02  Nathaniel Smith  <njs@codesourcery.com>
+
+	* change_set.cc (extract_first): Rename to...
+	(extract_pairs_and_insert): ...this.
+	(path_rearrangement::check_sane): Use it to add additional
+	checks.
+
+	* work.hh: Update comments (MT/manifest doesn't exist
+	anymore...).
+
+	* tests/t_need_mt_revision.at: New test.
+	* testsuite.at: Add it.
+	* commands.cc (get_revision_id): Require MT/revision to exist.
+	(setup): Create MT/revision.
+
+2005-02-02  Nathaniel Smith  <njs@codesourcery.com>
+
+	* work.hh: Remove tabs.
+
+2005-02-03  graydon hoare  <graydon@pobox.com>
+
+	* tests/t_i18n_changelog.at: New test.
+	* testsuite.at: Run it.
+	* lua/lposix.c: New file.
+	* lua/modemuncher.c: New file
+	* lua.cc: Load posix library.
+	* lua/liolib.c: Disable execute and popen.
+	* std_hooks.lua: Remove io.execute uses.
+	* AUTHORS: Update to mention lposix.c, modemuncher.c.
+	* Makefile.am: Likewise.
+
 2005-02-01  Nathaniel Smith  <njs@codesourcery.com>
 
 	* tests/t_rebuild.at: Beef up test in response to possible
@@ -15,6 +79,11 @@
 
 	* database.{cc,hh}: More netsync speed tweaks.
 	* netsync.cc: Likewise.
+
+2005-01-27  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_restrictions_warn_on_unknown.at: New test.
+	* testsuite.at: Add it.
 
 2005-01-27  Derek Scherger  <derek@echologic.com>
 

@@ -253,17 +253,14 @@ get_revision_id(revision_id & c)
   c = revision_id();
   local_path c_path;
   get_revision_path(c_path);
-  if(file_exists(c_path))
-    {
-      data c_data;
-      L(F("loading revision id from %s\n") % c_path);
-      read_data(c_path, c_data);
-      c = revision_id(remove_ws(c_data()));
-    }
-  else
-    {
-      L(F("no revision id file %s\n") % c_path);
-    }
+
+  N(file_exists(c_path),
+    F("working copy is corrupt: %s does not exist\n") % c_path);
+
+  data c_data;
+  L(F("loading revision id from %s\n") % c_path);
+  read_data(c_path, c_data);
+  c = revision_id(remove_ws(c_data()));
 }
 
 static void 
@@ -418,16 +415,14 @@ update_any_attrs(app_state & app)
 static void
 calculate_base_revision(app_state & app, 
                         revision_id & rid,
-                        revision_set & rev,
                         manifest_id & mid,
                         manifest_map & man)
 {
-  rev.edges.clear();
   man.clear();
 
   get_revision_id(rid);
 
-  if (! rid.inner()().empty())
+  if (!null_id(rid))
     {
 
       N(app.db.revision_exists(rid),
@@ -451,8 +446,7 @@ calculate_base_manifest(app_state & app,
 {
   revision_id rid;
   manifest_id mid;
-  revision_set rev;
-  calculate_base_revision(app, rid, rev, mid, man);
+  calculate_base_revision(app, rid, mid, man);
 }
 
 static void
@@ -471,7 +465,7 @@ calculate_current_revision(app_state & app,
   m_new.clear();
 
   calculate_base_revision(app, 
-                          old_revision_id, rev, 
+                          old_revision_id,
                           old_manifest_id, m_old);
   
 
@@ -505,7 +499,7 @@ calculate_restricted_revision(app_state & app,
   m_new.clear();
 
   calculate_base_revision(app, 
-                          old_revision_id, rev, 
+                          old_revision_id,
                           old_manifest_id, m_old);
 
   change_set::path_rearrangement included, excluded;
@@ -2898,11 +2892,11 @@ CMD(update, "working copy", "\nREVISION", "update working copy to be based off a
   app.initialize(true);
   calculate_current_revision(app, r_working, m_old, m_working);
   
-  I(r_working.edges.size() == 1 || r_working.edges.size() == 0);
-  if (r_working.edges.size() == 1)
-    {
-      r_old_id = edge_old_revision(r_working.edges.begin());
-    }
+  I(r_working.edges.size() == 1);
+  r_old_id = edge_old_revision(r_working.edges.begin());
+
+  N(!null_id(r_old_id),
+    F("this working directory is a new project; cannot update"));
 
   if (args.size() == 0)
     {
@@ -3374,7 +3368,6 @@ CMD(revert, "working copy", "[PATH]...",
   manifest_map m_old;
   revision_id old_revision_id;
   manifest_id old_manifest_id;
-  revision_set rev;
   change_set::path_rearrangement included, excluded;
  
   app.initialize(true);
@@ -3383,7 +3376,7 @@ CMD(revert, "working copy", "[PATH]...",
     app.add_restriction((*i)());
 
   calculate_base_revision(app, 
-                          old_revision_id, rev, 
+                          old_revision_id,
                           old_manifest_id, m_old);
 
   get_path_rearrangement(included, excluded, app);
@@ -3615,6 +3608,8 @@ CMD(setup, "tree", "DIRECTORY", "setup a new working copy directory")
 
   dir = idx(args,0)();
   app.initialize(dir);
+  revision_id null;
+  put_revision_id(null);
 }
 
 
