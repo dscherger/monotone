@@ -116,6 +116,7 @@ private:
         std::set<file_state>::iterator s2,const cvs_client::update &u,
         std::string &file_contents);
   void fill_manifests(std::set<cvs_edge>::iterator e);
+  void commit_revisions(std::set<cvs_edge>::iterator e);
 public:  
   void prime();
   void update();

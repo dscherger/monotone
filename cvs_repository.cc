@@ -628,55 +628,8 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   }
 }
 
-void cvs_repository::prime()
-{ get_all_files();
-  revision_ticker.reset(0);
-  cvs_edges_ticker.reset(new ticker("edges", "E", 10));
-  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
-  { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
-  }
-  // remove duplicate states (because some edges were added by the 
-  // get_all_files method
-  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
-  { if (i->changelog_valid || i->author.size()) { ++i; continue; }
-    std::set<cvs_edge>::iterator j=i;
-    j++;
-    I(j!=edges.end());
-    I(j->time==i->time);
-    I(i->files.empty());
-//    I(i->revision.empty());
-    edges.erase(i);
-    if (cvs_edges_ticker.get()) --(*cvs_edges_ticker);
-    i=j; 
-  }
-  
-  // join adjacent check ins (same author, same changelog)
-  join_edge_parts(edges.begin());
-  
-  // get the contents
-  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
-  { std::string file_contents;
-    I(!i->second.known_states.empty());
-    { std::set<file_state>::iterator s2=i->second.known_states.begin();
-      cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
-      store_checkout(s2,c,file_contents);
-    }
-    for (std::set<file_state>::iterator s=i->second.known_states.begin();
-          s!=i->second.known_states.end();++s)
-    { std::set<file_state>::iterator s2=s;
-      ++s2;
-      if (s2==i->second.known_states.end()) break;
-      update(s,s2,i->first,file_contents);
-    }
-  }
-
-  // fill in file states at given point
-  fill_manifests(edges.begin());
-  // commit them all
-  
-  cvs_edges_ticker.reset(0);
-  revision_ticker.reset(new ticker("revisions", "R", 3));
-  cvs_manifest empty;
+void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
+{ cvs_manifest empty;
   revision_id parent_rid;
   manifest_id parent_mid;
   manifest_map parent_map;
@@ -684,7 +637,16 @@ void cvs_repository::prime()
   packet_db_writer dbw(app);
   
   const cvs_manifest *oldmanifestp=&empty;
-  for (std::set<cvs_edge>::iterator e=edges.begin(); e!=edges.end(); ++e)
+  if (e!=edges.begin())
+  { std::set<cvs_edge>::const_iterator before=e;
+    --before;
+    I(!before->revision().empty());
+    parent_rid=before->revision;
+    app.db.get_revision_manifest(parent_rid,parent_mid);
+    app.db.get_manifest(parent_mid,parent_map);
+    oldmanifestp=&before->files;
+  }
+  for (; e!=edges.end(); ++e)
   { change_set cs;
     build_change_set(*this,*oldmanifestp,e->files,cs);
     if (*oldmanifestp==e->files) 
@@ -745,6 +707,58 @@ void cvs_repository::prime()
     parent_rid = child_rid;
     oldmanifestp=&e->files;
   }
+}
+
+void cvs_repository::prime()
+{ get_all_files();
+  revision_ticker.reset(0);
+  cvs_edges_ticker.reset(new ticker("edges", "E", 10));
+  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
+  { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
+  }
+  // remove duplicate states (because some edges were added by the 
+  // get_all_files method
+  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
+  { if (i->changelog_valid || i->author.size()) { ++i; continue; }
+    std::set<cvs_edge>::iterator j=i;
+    j++;
+    I(j!=edges.end());
+    I(j->time==i->time);
+    I(i->files.empty());
+//    I(i->revision.empty());
+    edges.erase(i);
+    if (cvs_edges_ticker.get()) --(*cvs_edges_ticker);
+    i=j; 
+  }
+  
+  // join adjacent check ins (same author, same changelog)
+  join_edge_parts(edges.begin());
+  
+  // get the contents
+  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
+  { std::string file_contents;
+    I(!i->second.known_states.empty());
+    { std::set<file_state>::iterator s2=i->second.known_states.begin();
+      cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
+      store_checkout(s2,c,file_contents);
+    }
+    for (std::set<file_state>::iterator s=i->second.known_states.begin();
+          s!=i->second.known_states.end();++s)
+    { std::set<file_state>::iterator s2=s;
+      ++s2;
+      if (s2==i->second.known_states.end()) break;
+      update(s,s2,i->first,file_contents);
+    }
+  }
+
+  // fill in file states at given point
+  fill_manifests(edges.begin());
+  // commit them all
+  
+  cvs_edges_ticker.reset(0);
+  revision_ticker.reset(new ticker("revisions", "R", 3));
+
+  commit_revisions(edges.begin());
 }
 
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
@@ -918,47 +932,9 @@ struct cvs_repository::update_cb : cvs_client::update_callbacks
   : repo(r), results(re) {}
   virtual void operator()(const cvs_client::update &u) const
   { results.push_back(u);
-    // perhaps store the file contents into the db
-#if 0  
-     std::cerr << "file " << u.file << ": " << u.new_revision << ' ' 
-        << u.contents.size() << ' ' << u.patch.size() 
-        << (u.removed ? " dead" : "") << '\n';
-#endif        
+    // perhaps store the file contents into the db to save storage
   }
 };
-
-#if 0
-struct cvs_repository::update_log_cb : rlog_callbacks
-{ cvs_repository &repo;
-  std::map<std::string,struct cvs_sync::file_history>::iterator i;
-  update_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file_history>::iterator &_i) 
-      : repo(r), i(_i) {}
-  virtual void tag(const std::string &file,const std::string &tag, 
-        const std::string &revision) const 
-  {}
-  virtual void revision(const std::string &file,time_t t,
-        const std::string &rev,const std::string &author,
-        const std::string &state,const std::string &log) const;
-  virtual void file(const std::string &file,const std::string &head_rev) const
-  {}
-};
-
-void cvs_repository::update_log_cb::revision(const std::string &file,time_t checkin_time,
-        const std::string &revision,const std::string &author,
-        const std::string &dead,const std::string &message) const
-{ I(i->first==file);
-  std::pair<std::set<file_state>::iterator,bool> iter=
-    i->second.known_states.insert
-      (file_state(checkin_time,revision,dead=="dead"));
-  // I(iter.second==false);
-  // set iterators are read only to prevent you from destroying the order
-  file_state &fs=const_cast<file_state &>(*(iter.first));
-  fs.log_msg=message;
-  std::pair<std::set<cvs_edge>::iterator,bool> iter2=
-    repo.edges.insert(cvs_edge(message,checkin_time,author));
-  if (iter2.second && repo.cvs_edges_ticker.get()) ++(*repo.cvs_edges_ticker);
-}
-#endif
 
 void cvs_repository::update()
 { I(!edges.empty());
@@ -1043,6 +1019,6 @@ void cvs_repository::update()
   join_edge_parts(dummy_iter);
   
   fill_manifests(dummy_iter);
-
   debug();
+  commit_revisions(dummy_iter);
 }
