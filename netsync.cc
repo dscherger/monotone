@@ -2480,7 +2480,6 @@ call_server(protocol_role role,
      }
      server=PipeStream(fd1[0],fd2[1],timeout);
   }
-#if 1
   else if (address().substr(0,4)=="ssh:")
   {  int fd1[2],fd2[2];
      std::string user,host,port,db_path;
@@ -2519,7 +2518,6 @@ call_server(protocol_role role,
      }
      server=PipeStream(fd1[0],fd2[1],timeout);
   }
-#endif  
   else server=PipeStream(address().c_str(), default_port, timeout); 
   session sess(role, client_voice, collections, all_collections, app, 
 	       address(),
