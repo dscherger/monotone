@@ -657,7 +657,7 @@ void cvs_repository::prime(app_state &app)
 
 void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc)
 { std::string content;
-  content+=host+":"+module+"\n";
+  content+=host+":"+root+"/"+module+"\n";
   for (cvs_manifest::const_iterator i=e.files.begin(); i!=e.files.end(); ++i)
   { content+=i->second->cvs_version+" "+shorten_path(i->first)+"\n";
   }

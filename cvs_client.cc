@@ -320,21 +320,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
         newargv[newargc++]="-c";
         newargv[newargc++]="tee cvs_server.log | cvs server";
 #endif
-        // set host name for author qualification
-        char domainname[1024];
-        *domainname=0;
-        if (getdomainname(domainname,sizeof domainname))
-          throw oops("getdomainname "+std::string(strerror(errno)));
-        domainname[sizeof(domainname)-1]=0;
-        unsigned len=strlen(domainname);
-        if (len && len<sizeof(domainname)-2)
-        { domainname[len]='.';
-          domainname[++len]=0;
-        }
-        if (gethostname(domainname+len,sizeof(domainname)-len))
-          throw oops("gethostname "+std::string(strerror(errno)));
-        domainname[sizeof(domainname)-1]=0;
-        host=domainname;
+
       }
       else
       { const char *rsh=getenv("CVS_RSH");
@@ -356,6 +342,26 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     readfd=fd1[0];
     writefd=fd2[1];
     fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
+    
+    if (host.empty())
+    {
+      // set host name for author qualification
+      char domainname[1024];
+      *domainname=0;
+      if (gethostname(domainname,sizeof domainname))
+        throw oops("gethostname "+std::string(strerror(errno)));
+      domainname[sizeof(domainname)-1]=0;
+      unsigned len=strlen(domainname);
+      if (len && len<sizeof(domainname)-2)
+      { domainname[len]='.';
+        domainname[++len]=0;
+      }
+      if (getdomainname(domainname+len,sizeof(domainname)-len))
+        throw oops("getdomainname "+std::string(strerror(errno)));
+      domainname[sizeof(domainname)-1]=0;
+      host=domainname;
+      L(F("hostname %s\n") % host);
+    }
   }
   
   InitZipStream(0);
