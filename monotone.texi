@@ -3448,11 +3448,16 @@ to files changed within the current subdirectory of the working copy.
 
 
 @item monotone log
+@itemx monotone log --depth=@var{n}
 @itemx monotone log @var{id}
+@itemx monotone log --depth=@var{n} @var{id}
+@itemx monotone log @var{id} @var{file}
+@itemx monotone log --depth=@var{n} @var{id} @var{file}
 
 This command prints out a log, in reverse-ancestry order, of small
 history summaries.  Each summary contains author, date, changelog and
-comment information associated with a revision. If @var{id} is given,
+comment information associated with a revision.  If @var{n} is given,
+at most that many log entries will be given.  If @var{id} is given,
 the command starts tracing back through history from the revision
 @var{id}, otherwise it starts from the base revision of your working
 copy.
@@ -4135,7 +4140,7 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item monotone automate erase_ancestors @var{rev1} [@var{rev2} [...]]
+@item monotone automate erase_ancestors [@var{rev1} [@var{rev2} [...]]]
 
 @table @strong
 @item Arguments:
@@ -4152,7 +4157,8 @@ Prints all arguments, except those that are an ancestor of some other
 argument.  One way to think about this is that it prints the minimal
 elements of the given set, under the ordering imposed by the ``child
 of'' relation.  Another way to think of it is if the arguments formed a
-branch branch, then we would print the heads of that branch.
+branch branch, then we would print the heads of that branch.  If there
+are no arguments, prints nothing.
 
 @item Sample output:
 
@@ -4176,7 +4182,7 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item monotone automate toposort @var{rev1} [@var{rev2} [...]]
+@item monotone automate toposort [@var{rev1} [@var{rev2} [...]]]
 
 @table @strong
 @item Arguments:
@@ -4193,7 +4199,8 @@ Prints all arguments, topologically sorted.  I.e., if @var{rev1} is an
 ancestor of @var{rev2}, then @var{rev1} will appear before @var{rev2} in
 the output; if @var{rev2} is an ancestor of @var{rev1}, then @var{rev2}
 will appear before @var{rev1} in the output; and if neither is an
-ancestor of the other, then they may appear in either order.
+ancestor of the other, then they may appear in either order.  If there
+are no arguments, prints nothing.
 
 @item Sample output:
 

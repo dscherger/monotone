@@ -3660,8 +3660,9 @@ CMD(log, "informative", "[ID] [file]", "print history in reverse order starting 
   cert_name comment_name(comment_cert_name);
 
   set<revision_id> seen;
+  long depth = app.depth;
 
-  while(! frontier.empty())
+  while(! frontier.empty() && (depth == -1 || depth > 0))
     {
       set< pair<file_path, revision_id> > next_frontier;
       for (set< pair<file_path, revision_id> >::const_iterator i = frontier.begin();
@@ -3751,6 +3752,10 @@ CMD(log, "informative", "[ID] [file]", "print history in reverse order starting 
           }
         }
       frontier = next_frontier;
+      if (depth > 0)
+        {
+          depth--;
+        }
     }
 }
 
@@ -3808,8 +3813,8 @@ CMD(automate, "automation",
     "interface_version\n"
     "heads BRANCH\n"
     "descendents REV1 [REV2 [REV3 [...]]]\n"
-    "erase_ancestors REV1 [REV2 [REV3 [...]]]\n"
-    "toposort REV1 [REV2 [REV3 [...]]]\n"
+    "erase_ancestors [REV1 [REV2 [REV3 [...]]]]\n"
+    "toposort [REV1 [REV2 [REV3 [...]]]]\n"
     "ancestry_difference NEW_REV [OLD_REV1 [OLD_REV2 [...]]]\n"
     "leaves",
     "automation interface")

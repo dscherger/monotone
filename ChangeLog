@@ -1,3 +1,38 @@
+2005-03-31  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_log_depth.at: Cleanupy tweaks.
+
+2005-03-31  Richard Levitte  <richard@levitte.org>
+
+	* monotone.cc: Add the --depth option...
+	* app_state.hh (class app_state),
+	  app_state.cc (app_state::set_depth): ... and the field and
+	  method to store and set it.
+	* commands.cc (CMD(log)): ... then handle it.
+
+2005-03-31  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc (automate_erase_ancestors): Accept zero arguments,
+	and in such case print nothing.  (Important for scripting.)
+	* commands.cc (automate):
+	* monotone.texi (Automation):
+	* tests/t_automate_erase_ancestors.at: Update accordingly.
+
+2005-03-31  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc (automate_toposort): Accept zero arguments, and in
+	such case print nothing.  (Important for scripting.)
+	* commands.cc (automate):
+	* monotone.texi (Automation):
+	* tests/t_automate_toposort.at: Update accordingly.
+
+2005-03-30  Richard Levitte  <richard@levitte.org>
+
+	* contrib/Notify.pl: A new Perl hack to send change logs by
+	email.
+
+	* contrib/README: Add a quick description.
+
 2005-03-30  Nathaniel Smith  <njs@codesourcery.com>
 
 	* automate.cc (automate_leaves): New function.
@@ -2058,7 +2093,7 @@
 	* AUTHORS: Mention Wojciech and Neil.
 	* revision.cc (calculate_ancestors_from_graph): Make non-recursive.
 
-2005-01-17  Wojciech MiÅ√ÖÅ¬Çkowski  <wmilkowski@interia.pl>
+2005-01-17  Wojciech MiÅÅ√ÖÅÅ¬Çkowski  <wmilkowski@interia.pl>
 
 	* std_hooks.lua: Teach about meld.
 
