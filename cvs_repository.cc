@@ -571,6 +571,54 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
   }
 }
 
+void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
+{ cvs_manifest current_manifest;
+  if (e!=edges.begin())
+  { std::set<cvs_edge>::const_iterator before=e;
+    --before;
+    current_manifest=before->files;
+  }
+  for (;e!=edges.end();++e)
+  { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
+    { I(!f->second.known_states.empty());
+      if (f->second.known_states.begin()->since_when > e->time2)
+        continue; // the file does not exist yet
+      cvs_manifest::iterator mi=current_manifest.find(f->first);
+      if (mi==current_manifest.end()) // the file is currently dead
+      { cvs_file_state s=f->second.known_states.begin();
+        // find next revision _within_ edge timespan
+        for (;s!=f->second.known_states.end();)
+        { cvs_file_state s2=s;
+          ++s2;
+          if (s2==f->second.known_states.end() || s2->since_when > e->time2)
+            break;
+          s=s2;
+        }
+        I(s!=f->second.known_states.end());
+        // a live revision was found
+        if (s->since_when <= e->time2 && !s->dead)
+        { current_manifest[f->first]=s;
+          I(!s->sha1sum().empty());
+          check_split(s,f->second.known_states.end(),e);
+        }
+      }
+      else // file was present in last manifest, check next revision
+      { cvs_file_state s=mi->second;
+        ++s;
+        if (s!=f->second.known_states.end() && s->since_when <= e->time2)
+        { if (s->dead) current_manifest.erase(mi);
+          else 
+          { mi->second=s;
+            I(!s->sha1sum().empty());
+          }
+          check_split(s,f->second.known_states.end(),e);
+        }
+      }
+    }
+    e->files=current_manifest;
+  }
+}
+
 void cvs_repository::prime()
 { get_all_files();
   revision_ticker.reset(0);
@@ -614,46 +662,7 @@ void cvs_repository::prime()
   }
 
   // fill in file states at given point
-  cvs_manifest current_manifest;
-  for (std::set<cvs_edge>::iterator e=edges.begin();e!=edges.end();++e)
-  { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
-    { I(!f->second.known_states.empty());
-      if (f->second.known_states.begin()->since_when > e->time2)
-        continue; // the file does not exist yet
-      cvs_manifest::iterator mi=current_manifest.find(f->first);
-      if (mi==current_manifest.end()) // the file is currently dead
-      { cvs_file_state s=f->second.known_states.begin();
-        // find next revision _within_ edge timespan
-        for (;s!=f->second.known_states.end();)
-        { cvs_file_state s2=s;
-          ++s2;
-          if (s2==f->second.known_states.end() || s2->since_when > e->time2)
-            break;
-          s=s2;
-        }
-        I(s!=f->second.known_states.end());
-        // a live revision was found
-        if (s->since_when <= e->time2 && !s->dead)
-        { current_manifest[f->first]=s;
-          I(!s->sha1sum().empty());
-          check_split(s,f->second.known_states.end(),e);
-        }
-      }
-      else // file was present in last manifest, check next revision
-      { cvs_file_state s=mi->second;
-        ++s;
-        if (s!=f->second.known_states.end() && s->since_when <= e->time2)
-        { if (s->dead) current_manifest.erase(mi);
-          else 
-          { mi->second=s;
-            I(!s->sha1sum().empty());
-          }
-          check_split(s,f->second.known_states.end(),e);
-        }
-      }
-    }
-    e->files=current_manifest;
-  }
+  fill_manifests(edges.begin());
   // commit them all
   
   cvs_edges_ticker.reset(0);
@@ -1021,7 +1030,10 @@ void cvs_repository::update()
     }
   }
   std::set<cvs_edge>::iterator dummy_iter=now_iter;
-  join_edge_parts(++dummy_iter);
+  ++dummy_iter;
+  join_edge_parts(dummy_iter);
+  
+  fill_manifests(dummy_iter);
 
   debug();
 }
