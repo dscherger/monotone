@@ -29,8 +29,6 @@ struct file_state
   std::string cvs_version; // cvs_revision_nr ?
   unsigned size;
   unsigned patchsize;
-//  std::string rcs_patch;
-//  std::string contents;
   bool dead;
   std::string md5sum;
   hexenc<id> sha1sum;
@@ -98,8 +96,6 @@ private:
   std::map<std::string,file_history> files;
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
-//  unsigned files_inserted;
-//  unsigned revisions_created;
 
   app_state &app;
   std::auto_ptr<ticker> file_id_ticker;
@@ -112,7 +108,9 @@ private:
 public:  
   void prime();
   void update();
-
+//  void compact_files();
+  cvs_file_state remember(std::set<file_state> &s,const file_state &fs);
+  
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module);
 

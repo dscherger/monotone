@@ -940,7 +940,9 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   { if (dirname(i->file)!=olddir)
     { olddir=dirname(i->file);
 // @@ replace . with decent directory
-      writestr("Directory .\n"+root+"/"+olddir+"\n");
+      std::string shortpath=shorten_path(olddir);
+      if (shortpath.empty()) shortpath=".";
+      writestr("Directory "+shortpath+"\n"+root+"/"+olddir+"\n");
     }
     std::string bname=basename(i->file);
     writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
@@ -998,11 +1000,16 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         state=st_normal;
       }
       else if (lresult[0].second=="Clear-static-directory"
-          || lresult[0].second=="Clear-template")
+          || lresult[0].second=="Clear-template"
+          || lresult[0].second=="Clear-sticky")
       { 
       }
       else if (lresult[0].second=="Copy-file")
       { I(state==st_merge);
+      }
+      else if (lresult[0].second=="Mod-time")
+      { // @@ parse it and use it
+        // result.mod_time=
       }
       else if (lresult[0].second=="Merged")
       { I(state==st_merge);

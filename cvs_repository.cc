@@ -752,6 +752,19 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   guard.commit();      
 }
 
+cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state &fs)
+{ for (std::set<file_state>::iterator i=s.begin();i!=s.end();++i)
+  { if (i->cvs_version==fs.cvs_version)
+    { if (i->since_when>fs.since_when) 
+        const_cast<time_t&>(i->since_when)=fs.since_when;
+      return i;
+    }
+  }
+  std::pair<cvs_file_state,bool> iter=s.insert(fs);
+  I(iter.second);
+  return iter.first;
+}
+
 void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
 { 
   std::auto_ptr<ticker> cert_ticker;
@@ -822,15 +835,20 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         I(iter_file_id!=manifest.end());
         fs.sha1sum=iter_file_id->second.inner();
         fs.log_msg=e.changelog;
+        cvs_file_state cfs=remember(files[path].known_states,fs);
+        e.files.insert(std::make_pair(path,cfs));
+#if 0        
         // this is grossly inefficient because I store a file_state per
         // monotone revision instead of per rcs/file revision
         std::pair<cvs_file_state,bool> res=files[path].known_states.insert(fs);
         I(res.second);
         e.files.insert(std::make_pair(path,res.first));
+#endif        
       }
       edges.insert(e);
     }
   }
+//  compact_files();
   debug();
 }
 

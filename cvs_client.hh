@@ -20,8 +20,9 @@ class cvs_client
     std::string keyword_substitution;
     std::string new_revision;
     std::string file;
+    time_t mod_time;
     bool removed;
-    update() : removed() {}
+    update() : mod_time(-1),removed() {}
   };
   struct rlog_callbacks
   { // virtual void file(const std::string &file,)=0;
