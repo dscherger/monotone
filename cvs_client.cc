@@ -1001,3 +1001,7 @@ std::string cvs_client::rcs_file2path(std::string file) const
     file.erase(lastslash-5,6);
   return file;
 }
+
+void cvs_client::Status(const std::vector<std::pair<std::string,std::string> > &file_revisions)
+{
+}

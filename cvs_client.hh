@@ -101,5 +101,6 @@ public:
   static std::string pserver_password(const std::string &root);
   
   std::string shorten_path(const std::string &p) const;
+  void Status(const std::vector<std::pair<std::string,std::string> > &file_revisions);
 };
 

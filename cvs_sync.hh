@@ -109,6 +109,8 @@ private:
   void get_all_files();
 public:  
   void prime();
+  void update();
+
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module);
 
