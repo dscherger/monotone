@@ -258,11 +258,11 @@ struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 void cvs_repository::get_all_files()
 { if (edges.empty())
   { if (CommandValid("rlist"))
-    { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),0);
+    { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),(void*)0);
     }
     else // less efficient? ...
     { I(CommandValid("rlog"));
-      RLog(get_all_files_log_cb(*this),false,"-N","-h","--",module.c_str(),0);
+      RLog(get_all_files_log_cb(*this),false,"-N","-h","--",module.c_str(),(void*)0);
     }
   }
 }
@@ -779,12 +779,12 @@ void cvs_repository::prime()
     if (sync_since!=-1) 
     { RLog(prime_log_cb(*this,i,sync_since),false,
           "-d",(time_t2rfc822(sync_since)).c_str(),
-          "-b",i->first.c_str(),0);
+          "-b",i->first.c_str(),(void*)0);
       RLog(prime_log_cb(*this,i),false,
           "-d",(time_t2rfc822(sync_since)+"<").c_str(),
-          "-b",i->first.c_str(),0);
+          "-b",i->first.c_str(),(void*)0);
     }
-    else RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
+    else RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),(void*)0);
   }
   // remove duplicate states (because some edges were added by the 
   // get_all_files method
@@ -1280,11 +1280,11 @@ void cvs_repository::update()
     
     if (last_known_revision.empty())
       RLog(prime_log_cb(*this,f),false,"-b","-N",
-        "--",i->file.c_str(),0);
+        "--",i->file.c_str(),(void*)0);
     else
       // -b causes -r to get ignored on 0.12
       RLog(prime_log_cb(*this,f),false,/*"-b",*/"-N",
-        ("-r"+last_known_revision+"::").c_str(),"--",i->file.c_str(),0);
+        ("-r"+last_known_revision+"::").c_str(),"--",i->file.c_str(),(void*)0);
     
     std::string file_contents,initial_contents;
     if(last==f->second.known_states.end())

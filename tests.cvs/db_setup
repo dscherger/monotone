@@ -1,6 +1,6 @@
 #!/bin/sh
-monotone --db test.db db init
-monotone --db test.db read <<EOF
+../monotone --db test.db db init
+../monotone --db test.db read <<EOF
 [privkey test@localhost]
 NCw0bMURU+YD6Uok23PySO80ttpwTTC71eetjFL8uikxNzA2FmpicfHpvfo1uVtUqRts52fd
 XIqMVqIwRTQn8mvvz7WFIpf3OyiuV40A5GC28DavPFlmro60vD3jNq40BLbU8a1NtM8tKQtX

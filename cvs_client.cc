@@ -863,7 +863,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
 cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::string &revision)
 { struct checkout result;
   Directory("");
-  SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",file.c_str(),0);
+  SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",file.c_str(),(void*)0);
   enum { st_co
        } state=st_co;
   std::vector<std::pair<std::string,std::string> > lresult;
@@ -1031,12 +1031,12 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   { 
     SendCommand("update","-d","-C","-u",
       "-r",file_revisions.begin()->new_revision.c_str(),
-      "--",basename(file_revisions.begin()->file).c_str(),0);
+      "--",basename(file_revisions.begin()->file).c_str(),(void*)0);
   }
   else 
   { // needed for 1.11
     Directory(module);
-    SendCommand("update","-d","-C","-u",0);
+    SendCommand("update","-d","-C","-u",(void*)0);
   }
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile;
