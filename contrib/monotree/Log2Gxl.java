@@ -358,6 +358,18 @@ public class Log2Gxl extends Thread {
     }
 
     /**
+     * Parse the renamed directories section of a log entry from a monotone log output
+     * Optionally pass the list of directories to GXL (Don't do this is you're using dot as dxl2dot chokes on it)
+     * @throws IOException if there is a read error on the input stream or the input stream runs dry
+     * @throws IllegalStateException if the header lines aren't as expected     
+     */
+    private void parseRenamedDirectories() throws IOException,IllegalStateException {
+	String files=readFileBlock("Renamed directories:");
+	if(includeFiles) currentNode.setAttr("Renamed directories",new GXLString(files));
+    }
+
+
+    /**
      * Parse a block of file names from one of the files sections of a log entry from a monotone log output
      * @throws IOException if there is a read error on the input stream or the input stream runs dry
      */
@@ -423,6 +435,8 @@ public class Log2Gxl extends Thread {
 	if(line.length()>0) throw new IOException(source.getLineNumber()+": Unexpected data ["+line+"]");
         line=lookahead();
         if(line.startsWith("Renamed files:")) parseRenamedFiles();
+        line=lookahead();
+        if(line.startsWith("Renamed directories:")) parseRenamedDirectories();
         line=lookahead();
         if(line.startsWith("Deleted files:")) parseDeletedFiles();
         line=lookahead();
