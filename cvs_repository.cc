@@ -625,8 +625,7 @@ void cvs_repository::prime(app_state &app)
   packet_db_writer dbw(app);
   
   const cvs_manifest *oldmanifestp=&empty;
-  for (std::set<cvs_edge>::iterator e=edges.begin(); e!=edges.end();
-      oldmanifestp=&e->files,++e)
+  for (std::set<cvs_edge>::iterator e=edges.begin(); e!=edges.end(); ++e)
   { change_set cs;
     build_change_set(*this,*oldmanifestp,e->files,cs);
     if (*oldmanifestp==e->files) 
@@ -683,6 +682,7 @@ void cvs_repository::prime(app_state &app)
     apply_change_set(cs, parent_map);
     parent_mid = child_mid;
     parent_rid = child_rid;
+    oldmanifestp=&e->files;
   }
   
   debug();

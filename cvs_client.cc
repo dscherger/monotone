@@ -895,7 +895,7 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
       else if (lresult[0].second=="Merged")
       { I(state==st_merge);
       }
-      else if (lresult[0].second=="error")
+      else if (lresult[0].second=="error  ")
       { I(state==st_merge);
         break;
       }
