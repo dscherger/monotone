@@ -219,6 +219,7 @@ public class GXLViewer {
 	JSplitPane splitter=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(tree),new JSVGScrollPane(svgCanvas));
         panel.add("North", p);
         panel.add("Center",splitter); 
+	splitter.setDividerLocation(200);
 	JLabel help=new JLabel();
 	panel.add("South",help);
 	help.setText("C-LMB = drag zoom, S-RMB = move zoom, S-LMB = pan, C-S-RMB = reset");
@@ -239,31 +240,20 @@ public class GXLViewer {
        	
 
 	tree.addTreeSelectionListener(new TreeSelectionListener() {
+		/**
+		 * Listen for selection changes on the tree and if a head revision is selected
+		 * draw the ancestor graph for it
+		 *
+		 * @param e the tree selection event from the branch tree
+		 */
 		public void valueChanged(TreeSelectionEvent e) {
-		    if(progress!=null) return; // another job in progress
 		    Object node=e.getPath().getLastPathComponent();
+		    // Check that our selection is a leaf node (all heads are leaf nodes) and ignore if not
 		    if(!((DefaultMutableTreeNode)node).isLeaf()) return;
+		    // Extract the id from the leaf node (should really use a proper user object for this!)
 		    final String id=node.toString().substring(0,node.toString().indexOf(' ')-1);
-		    
-		    new Thread(new Runnable() { public void run() {
-		    try {
-			//			if(e.getPaths().length==1) return; // Root node.
-			logger.fine("Getting log for "+id);
-			label.setText("Reading log...");
-			final InputStream svgStream=database.getSVGLog(id);
-			SAXSVGDocumentFactory factory=new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
-			SVGDocument doc=factory.createSVGDocument("http://local",svgStream);
-			svgCanvas.setSVGDocument(doc);
-			svgCanvas.setDocumentState(JSVGComponent.ALWAYS_DYNAMIC);
-			svgCanvas.setEnableZoomInteractor(true);
-			InputMap keys=svgCanvas.getInputMap();
-			keys.put(KeyStroke.getKeyStroke("="),JSVGCanvas.ZOOM_IN_ACTION);
-			keys.put(KeyStroke.getKeyStroke("-"),JSVGCanvas.ZOOM_OUT_ACTION);
-			svgCanvas.setInputMap(JComponent.WHEN_FOCUSED,keys);
-		    } catch (IOException ex) {
-			ex.printStackTrace();
-		    }
-		    }}).start();
+		    label.setText("Reading log...");
+		    new DisplayLog(GXLViewer.this,id);
 		    setProgressWindow("Reading log for revision");
 		}
 	    });
@@ -284,7 +274,6 @@ public class GXLViewer {
 		}
 		public void gvtBuildCompleted(GVTTreeBuilderEvent e) {
 		    label.setText("Build Done.");
-		    //                frame.pack();
 		}
 	    });
 
@@ -293,26 +282,74 @@ public class GXLViewer {
 		    label.setText("Rendering Started...");
 		}
 		public void gvtRenderingCompleted(GVTTreeRendererEvent e) {
-		    label.setText("");
-		    svgCanvas.requestFocusInWindow();
-		    progress.setVisible(false);
-		    progress.dispose();
-		    progress=null;
+		    finishJob("");
 		}
 	    });
-
+	
+	svgCanvas.setEnableZoomInteractor(true);
+	InputMap keys=svgCanvas.getInputMap();
+	keys.put(KeyStroke.getKeyStroke("="),JSVGCanvas.ZOOM_IN_ACTION);
+	keys.put(KeyStroke.getKeyStroke("-"),JSVGCanvas.ZOOM_OUT_ACTION);
+	svgCanvas.setInputMap(JComponent.WHEN_FOCUSED,keys);
+	
 	button.setEnabled(true);
         return panel;
     }
 
     /**
-     * Background thread to read the branche list from a monotone datababase
+     * Background thread to read the log for a revision and display the ancestry graph in SVG
+     */
+    class DisplayLog extends Thread {
+	/**
+	 * The revision id for which the ancestor graph should be drawn
+	 */
+	private final String id;
+
+	/**
+	 * The parent viewer for this thread
+	 */
+	private final GXLViewer parent;
+
+	/**
+	 * Create and start a new background thread to read the log for a revision 
+	 * and display the ancestry graph in SVG
+	 *
+	 * @param parent the parent viewer to populate 
+	 * @param id the revision identifier for which the ancestor graph should be drawn
+	 */
+	public DisplayLog(final GXLViewer parent,final String id) {
+	    this.parent=parent;
+	    this.id=id;
+	    start();
+	}
+	
+	/** 
+	 * Thread to read the log for a revision and display the ancestry graph in SVG
+	 */
+	public void run() {
+	    try {
+		logger.fine("Getting log for "+id);
+		final InputStream svgStream=database.getSVGLog(id);
+		SAXSVGDocumentFactory factory=new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
+		final SVGDocument doc=factory.createSVGDocument("http://local",svgStream);
+		SwingUtilities.invokeLater(new Runnable() { public void run() {
+		    svgCanvas.setSVGDocument(doc);
+		    svgCanvas.setDocumentState(JSVGComponent.ALWAYS_DYNAMIC);
+		}});
+	    } catch (IOException ex) {
+		ex.printStackTrace();
+	    }
+	}
+    }
+
+    /**
+     * Background thread to read the branch list from a monotone datababase
      */
     class ReadBranches extends Thread {
 	/**
 	 * The parent viewer for this thread
 	 */
-	final GXLViewer parent;
+	private final GXLViewer parent;
 
 	/**
 	 * Create and start a new thread to read the branches from the specified viewer's database in the background
@@ -325,6 +362,14 @@ public class GXLViewer {
 	    start();
 	}
 
+	/**
+	 * Recurse down from the root of the tree building nodes for each fragment in the branch name
+	 * unless the node already exists. Fragments are separated by '.'
+	 *
+	 * @param root the root of the tree
+	 * @param branch the name of the branch
+	 * @return the terminal node representing the full branch name
+	 */
 	private DefaultMutableTreeNode buildTree(DefaultMutableTreeNode root,String branch) {
 	    String[] path=branch.split("\\.");
 	    DefaultMutableTreeNode currentNode=root;
@@ -347,9 +392,12 @@ public class GXLViewer {
 	    return currentNode;
 	}
 
+	/** 
+	 * Thread to build a tree from the branches in the database
+	 */
 	public void run() {
 	    Monotone database=parent.getDatabase();
-	    DefaultMutableTreeNode root=new DefaultMutableTreeNode("Monotone "+database.getName());
+	    DefaultMutableTreeNode root=new DefaultMutableTreeNode("Monotone: "+database.getName());
 	    try { 
 		logger.fine("Reading branches...");
 		List<String> branches=database.listBranches();
@@ -357,6 +405,7 @@ public class GXLViewer {
 		    logger.finest(branch);
 		    
 		    DefaultMutableTreeNode node=buildTree(root,branch);
+		    // Now create leaf nodes for each head in the monotone branch
 		    try {
 			List<String>heads=database.listHeads(branch);
 			for(String head: heads) {
