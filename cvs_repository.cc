@@ -6,6 +6,49 @@
 #include "cvs_sync.hh"
 #include "keys.hh"
 #include "transforms.hh"
+#include <vector>
+
+// since the piece methods in rcs_import depend on rcs_file I cannot reuse them
+namespace cvs_sync
+{
+struct piece;
+
+struct 
+piece_store
+{ 
+  void index_deltatext(const std::string & dt,
+                       vector<piece> & pieces);
+  void build_string(vector<piece> const & pieces,
+                    string & out);
+//  void reset() { texts.clear(); }
+};
+
+// FIXME: kludge, I was lazy and did not make this
+// a properly scoped variable. 
+
+static piece_store global_pieces;
+
+
+struct 
+piece
+{
+  piece(string::size_type p, string::size_type l, unsigned long id) :
+    pos(p), len(l), string_id(id) {}
+  string::size_type pos;
+  string::size_type len;
+  unsigned long string_id;
+  string operator*() const
+  {
+    return string(global_pieces.texts.at(string_id)->text.data() + pos, len);
+  }
+};
+
+void 
+process_one_hunk(vector< piece > const & source,
+                 vector< piece > & dest,
+                 vector< piece >::const_iterator & i,
+                 int & cursor);
+}
 
 using namespace cvs_sync;
 
