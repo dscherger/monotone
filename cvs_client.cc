@@ -654,7 +654,7 @@ void cvs_repository::prime()
           break;
         }
         case st_date_author:
-        { I(lresult.size()==11);
+        { I(lresult.size()==11 || lresult.size()==7);
           std::list<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
           std::list<std::pair<std::string,std::string> >::const_iterator i1=i0;
           ++i1;
