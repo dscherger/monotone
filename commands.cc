@@ -35,6 +35,7 @@
 #include "update.hh"
 #include "vocab.hh"
 #include "work.hh"
+#include "cvs_sync.hh"
 
 //
 // this file defines the task-oriented "top level" commands which can be
@@ -3724,6 +3725,34 @@ CMD(setup, "tree", "DIRECTORY", "setup a new working copy directory")
   app.initialize(dir);
 }
 
+
+// missing: compression level (-z), cvs-branch (-r), since (-D)
+CMD(cvs_pull, "network", "CVS-REPOSITORY CVS-MODULE DEST-BRANCH",
+    "import a module from a remote cvs repository")
+{
+
+  if (args.size() != 3) throw usage(name);
+
+  app.initialize(false);
+
+  string repository = idx(args, 0)(),
+      module = idx(args, 1)(),
+      branch = idx(args, 2)();
+  
+  cvs_sync::cvs_repository repo(repository,module);
+  // repo.GzipStream(3); ?
+  transaction_guard guard(app.db);
+
+  const cvs_sync::cvs_repository::tree_state_t &n=repo.now();
+  
+//  packet_db_writer dbw(app);
+  
+//  cert_revision_in_branch(merged, branch, app, dbw);
+//  cert_revision_changelog(merged, log, app, dbw);
+  
+  guard.commit();      
+//  P(F("[merged] %s\n") % merged);
+}
 
 
 }; // namespace commands

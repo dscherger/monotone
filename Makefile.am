@@ -117,11 +117,9 @@ WIN32_PLATFORM_SOURCES = \
 bin_PROGRAMS = monotone
 check_PROGRAMS = unit_tests
 noinst_PROGRAMS = txt2c 
-EXTRA_PROGRAMS = cvs_client
 
-monotone_SOURCES = $(MOST_SOURCES) monotone.cc main.cc
+monotone_SOURCES = $(MOST_SOURCES) cvs_client.cc cvs_repository.cc monotone.cc main.cc 
 unit_tests_SOURCES = $(MOST_SOURCES) unit_tests.cc
-cvs_client_SOURCES = $(MOST_SOURCES) cvs_client.cc cvs_repository.cc
 
 txt2c_SOURCES = txt2c.cc
 
@@ -131,7 +129,6 @@ lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(CRYPTOPP_SOURCES) \
 			$(IDNA_SOURCES) \
 			$(NETXX_SOURCES)
-cvs_client_LDADD=-lz $(unit_tests_LDADD)
 
 # flags
 
@@ -172,7 +169,7 @@ else
   unit_tests_LDADD = lib3rdparty.a -lboost_unit_test_framework
 endif
 
-monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
+monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
 unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
 
 if WIN32_PLATFORM
