@@ -1,4 +1,3 @@
-
 // copyright (C) 2005 Christof Petig <christof@petig-baender.de>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -39,6 +38,7 @@ public:
   cvs_client(const std::string &host, const std::string &root,
              const std::string &user=std::string(), 
              const std::string &module=std::string());
+  ~cvs_client();
              
   void writestr(const std::string &s, bool flush=false);
   std::string readline();
@@ -378,6 +378,11 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
 
 //  writestr("Global_option -q\n"); // -Q?
 //  GzipStream(3);
+}
+
+cvs_client::~cvs_client()
+{ deflateEnd(&compress);
+  inflateEnd(&uncompress);
 }
 
 void cvs_client::InitZipStream(int level)
