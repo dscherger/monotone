@@ -88,14 +88,17 @@ std::string cvs_client::readline()
   for (;;)
   { if (inputbuffer.empty()) underflow(); 
     if (inputbuffer.empty()) throw std::runtime_error("no data avail");
-    char c=inputbuffer[0];
-    inputbuffer.erase(0,1); // =inputbuffer.substr(1);
-    if (c=='\n') 
-    { L(F("readline result '%s'\n") % result);
-//std::cerr << "readline: \"" <<  result << "\"\n";
+    std::string::size_type eol=inputbuffer.find('\n');
+    if (eol==std::string::npos)
+    { result+=inputbuffer;
+      inputbuffer.clear();
+    }
+    else
+    { result+=inputbuffer.substr(0,eol);
+      inputbuffer.erase(0,eol+1);
+      L(F("readline result '%s'\n") % result);
       return result;
     }
-    else result+=c;
   }
 }
 
@@ -548,7 +551,7 @@ void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
           I(dead.empty() || dead=="dead");
           I(!name.empty());
           
-          if (keyword=="----") keyword=std::string();
+          if (keyword=="----") keyword.clear();
           if (keyword!="d---")
           { //std::cerr << (directory+"/"+name) << " V" 
             //  << version << " from " << date << " " << dead
@@ -629,7 +632,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
           ;
         else if (result=="description:")
         { state=st_desc;
-          description=std::string();
+          description.clear();
         }
         else if (result=="symbolic names:")
           state=st_tags;
@@ -703,7 +706,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
           dead=lresult[5].second;
         }
         state=st_msg;
-        message=std::string();
+        message.clear();
         break;
       }
       case st_msg:
