@@ -1,0 +1,222 @@
+#! /usr/bin/python2.2
+
+from gtk.compat import *
+import sys
+sys.path.insert(0, 'lib')
+import revtree
+#import gtk
+from gtk import TRUE, FALSE
+#import GDK
+import gladebase
+
+class FlipviewUI(gladebase.UI):
+    def __init__(self):
+        gladebase.UI.__init__(self, "lib/flipview.glade", "top")
+
+        fixfontstyle = self.changelog.get_style()
+        try:
+            fixfont = gtk.load_font(
+                "-jmk-neep alt-medium-r-normal--15-140-75-75-c-80-iso8859-1")
+        except RuntimeError:
+            fixfont = gtk.load_font("fixed")
+
+        fixfontstyle = fixfontstyle.copy()
+        fixfontstyle.font = fixfont
+        self.changelog.set_style(fixfontstyle)
+        self.fixfontstyle = fixfontstyle
+
+        # Force the width of the widgets to be something useful.
+        em = gtk.gdk_char_width(fixfont, 'M')
+        self.colwidth_collapsed = em
+        self.colwidth = em * 80
+        self.changelog.set_usize(em * 80, 10)
+
+        tagstyle = self.tags.get_style()
+        em = gtk.gdk_char_width(tagstyle.font, 'M')
+        self.tags.set_usize(em * 20, 10)
+
+        self.current_rev = None
+        self.graph_pixmap = None
+
+        colormap = self.top.get_colormap()
+        self.colors = [colormap.alloc("gray" + c)
+                       for c in ['100', '95', '90', '87', '85',
+                                 '83', '80', '77', '75', '73']]
+
+    def prepare_to_display(self, model, controller):
+        self.model = model
+
+        self.top.set_title(model.filename)
+
+        # The clist widget is depressingly inflexible.
+        ncols = len(model.revisions) + 1
+
+        blanks = [''] * ncols
+        revtable = gtk.GtkCList(ncols, blanks)
+        revtable.set_style(self.fixfontstyle)
+        revtable.column_titles_active()
+        revtable.connect("click_column", controller.on_revtable_click_column)
+        revtable.unset_flags(gtk.CAN_FOCUS)
+
+        for i in xrange(ncols-1):
+            revtable.set_column_resizeable(i, 0)
+            revtable.set_column_width(i, self.colwidth_collapsed)
+            revtable.set_column_visibility(i, model.revisions[i].selected)
+        i += 1
+        revtable.set_column_visibility(i, 1)
+        revtable.set_column_resizeable(i, 0)
+        revtable.column_title_passive(i)
+
+        for i in xrange(model.nlines):
+            revtable.append([rev.diff_column[i] for rev in model.revisions]
+                            + [''])
+            revtable.set_selectable(i, FALSE)
+
+        # Because Ghod forbid you provide USEFUL ways to control
+        # widget sizing.
+        revtable.set_usize(self.colwidth, 100)
+
+        revtable.show()
+        self.tableport.add(revtable)
+        self.revtable = revtable
+        self.top.set_default_size(-1, gtk.screen_height() - 50)
+
+    def update_selected_branch(self):
+        revs = self.model.revisions
+        revtable = self.revtable
+        for i in xrange(len(revs)):
+            revtable.set_column_visibility(i, revs[i].selected)
+
+    def configure_graph(self, width, height):
+        pixmap = self.graph_pixmap
+        if (pixmap and pixmap.width == width and pixmap.height == height):
+            return
+
+        window = self.graph.get_window()
+        style = self.graph.get_style()
+
+        pixmap = gtk.create_pixmap(window, width, height, -1)
+        self.graph_pixmap = pixmap
+        self.model.draw_tree(pixmap, style)
+
+    def expose_graph(self, area):
+        graph = self.graph
+        pixmap = self.graph_pixmap
+        x, y, width, height = area
+        gc = graph.get_style().fg_gc[gtk.STATE_NORMAL]
+
+        graph.draw_pixmap(gc, pixmap, x, y, x, y, width, height)
+
+    def paint_graph(self):
+        self.model.draw_tree(self.graph_pixmap, self.graph.get_style())
+        self.graph.draw(self.graph.get_allocation())
+
+    def show_revision(self, rev):
+        self.revtable.freeze()
+        if self.current_rev:
+            self.current_rev.collapse_your_column(self)
+            self.current_rev.current = 0
+
+        self.current_rev = rev
+        rev.current = 1
+        rev.expand_your_column(self)
+
+        self.revtable.thaw()
+
+        self.tags.clear()
+        for row in rev.tags: self.tags.append([row])
+
+        self.changelog.delete_text(0, -1)
+        self.changelog.insert_defaults(rev.log)
+
+        if self.graph_pixmap:
+            self.paint_graph()
+        rev.make_visible_on(self.grafport)
+
+class FlipviewController(gladebase.Controller):
+    def __init__(self, ui, model):
+        self.model = model
+        gladebase.Controller.__init__(self, ui)
+        model.place_tree(ui.graph)
+
+        ui.prepare_to_display(model, self)
+        ui.show_revision(model.head)
+
+    def bailout(self, *ignored):
+        self.ui.top.hide()
+        gtk.mainquit()
+        return FALSE
+
+    on_top_destroy = bailout
+    on_quit_clicked = bailout
+
+    def on_top_key_press_event(self, window, event):
+        if event.keyval == GDK.q:
+            return self.bailout()
+
+        if event.keyval == GDK.space:
+            # Have to implement this by hand.  Feh.
+            adj = self.ui.changelog.get_vadjustment()
+            adj.set_value(adj.value + adj.page_increment)
+            return FALSE
+
+        if event.keyval == GDK.Left:
+            c = self.ui.current_rev
+            if c.parent:
+                self.ui.show_revision(c.parent)
+            return FALSE
+
+        if event.keyval == GDK.Right:
+            c = self.ui.current_rev
+            for k in c.children:
+                if k.selected:
+                    self.ui.show_revision(k)
+                    break
+            return FALSE
+
+        # pass the event along to the text widget
+        return self.ui.changelog.event(event)
+
+    def on_showtags_toggled(self, widget):
+        if widget.active: self.ui.tagwindow.show()
+        else: self.ui.tagwindow.hide()
+
+    def on_prunelogs_toggled(self, widget):
+        pass
+
+    def on_graph_button_release_event(self, graph, event):
+        revtree = self.model
+        rev = revtree.clicked_revision(event.x, event.y)
+        if rev:
+            revtree.select_branch_of(rev)
+            self.ui.update_selected_branch()
+            self.ui.show_revision(rev)
+        return TRUE
+
+    def on_graph_configure_event(self, graph, event):
+        self.ui.configure_graph(event.width, event.height)
+        return TRUE
+
+    def on_graph_expose_event(self, graph, event):
+        self.ui.expose_graph(event.area)
+        return FALSE
+
+    def on_revtable_click_column(self, revtable, column):
+        self.ui.show_revision(self.model.revisions[column])
+
+def main():
+    if len(sys.argv) != 2:
+        print >> sys.stderr, "usage: flipview rcsfile,v"
+        sys.exit(1)
+    model = revtree.RevtreeBuilderRCS().read(sys.argv[1])
+    ui = FlipviewUI()
+    controller = FlipviewController(ui, model)
+
+    ui.top.show()
+    ui.current_rev.make_visible_on(ui.grafport)
+    gtk.mainloop()
+
+#import profile
+#profile.run('main()', 'flipview.stats')
+main()
+

@@ -1,0 +1,2266 @@
+head	1.19;
+access;
+symbols
+	gcc_latest_snapshot:1.19
+	gcc_ss_20020506:1.19
+	ast-optimizer-merge-20020505:1.19
+	ra-merge-initial:1.19
+	pch-merge-20020430:1.19
+	cfg-merge-20023004:1.19
+	gcc_ss_20020429:1.19
+	ast-optimizer-merge-20020427:1.19
+	cfg-merge-20022404:1.19
+	dfa-merge_20020423_1:1.19
+	gcc_ss_20020422:1.19
+	gcc_ss_20020415:1.19
+	cfg-merge-20021404:1.19
+	dfa-merge_20020412:1.19
+	gcc_ss_20020408:1.19
+	cfg-merge-20020204:1.19
+	ast-optimizer-merge-20020401:1.19
+	gcc_ss_20020401:1.19
+	x86-64-merge-2002-03-28:1.19
+	gcc_ss_20020325:1.19
+	cfg-merge-20022203:1.19
+	gcc_ss_20020318:1.19
+	x86-64-merge-2002-03-18:1.19
+	pch-merge-20020313:1.19
+	cfg-merge-20021203:1.19
+	gcc_ss_20020311:1.19
+	gcc_ss_20020309:1.19
+	cfg-merge-20020503:1.19
+	gcc_ss_20020304:1.19
+	ast-optimizer-merge-20020304:1.19
+	x86-64-merge-2002-03-04:1.19
+	cfg-merge-20022802:1.19
+	gcc-3_1-branch:1.19.0.6
+	gcc-3_1-branchpoint:1.19
+	gcc_ss_20020225:1.19
+	gcc_ss_20020223:1.19
+	cfg-merge-20022102:1.19
+	x86-64-merge-2002-02-21:1.19
+	gcc_3_0_4_release:1.11.6.1
+	gcc_ss_20020218:1.19
+	dfa-branch_after_merge_20020213:1.17.2.1
+	dfa-branch_before_merge_20020213:1.17
+	dfa-merge_20020213:1.19
+	gcc_ss_20020211:1.19
+	pch-merge-20020211:1.19
+	cfg-merge-20020902:1.19
+	gcc_ss_20020204:1.19
+	gcc_ss_20020128:1.19
+	ast-optimizer-merge-20020125:1.19
+	cfg-merge-20022301:1.19
+	gcc_ss_20020121:1.19
+	gcc_ss_20020114:1.19
+	pch-branch:1.19.0.4
+	pch-branchpoint:1.19
+	cfg-merge-20021401:1.19
+	x86-64-merge-2002-01-14:1.19
+	cfg-merge-20021001:1.19
+	x86-64-branch:1.19
+	x86-64-branchpoint:1.19
+	gcc_ss_20020107:1.19
+	cfg-postmerger-20020701:1.18.2.1
+	cfg-merge-20020701:1.19
+	gcc_ss_20011231:1.19
+	ast-optimizer-merge-20011229:1.19
+	cfg-merge-20011229:1.19
+	gcc_ss_20011224:1.19
+	gcc_3_0_3_release:1.11.6.1
+	gcc_ss_20011219:1.19
+	gcc_ss_20011217:1.19
+	ast-optimizer-merge-20011217:1.19
+	cfg-merge-20011214:1.19
+	gcc_ss_20011210:1.19
+	gcc_ss_20011203:1.19
+	cfg-merger-20011130:1.19
+	gcc_ss_20011126:1.19
+	cfg-merge-20011122:1.19
+	gcc_ss_20011119:1.19
+	cfg-branchpoint:1.18
+	gcc_ss_20011112:1.18
+	cfg-branch:1.18.0.2
+	gcc_ss_20011105:1.18
+	gcc_ss_20011031:1.18
+	dfa-merge_20011025:1.17
+	gcc_ss_20011023:1.17
+	gcc_3_0_2_release:1.11.6.1
+	gcc_ss_20011007:1.11.6.1
+	pchmerge-branch:1.17.0.6
+	gcc_ss_20011001:1.11.6.1
+	pchmerge-branchpoint:1.17
+	dfa-merge_20010928:1.17
+	gcc_ss_20010924:1.11.6.1
+	gcc_ss_20010917:1.11.6.1
+	gcc_ss_20010910:1.11.6.1
+	tree-serialize-branch:1.17.0.4
+	tree-serialize-branchpoint:1.17
+	gcc_ss_20010903:1.11.6.1
+	dfa-branch:1.17.0.2
+	dfa-branchpoint:1.17
+	gcc_ss_20010827:1.11.6.1
+	gcc_ss_20010820:1.11.6.1
+	gcc_3_0_1_release:1.11.6.1
+	cp-parser-merge-1:1.13
+	gcc_ss_20010813:1.11.6.1
+	gcc_ss_20010806:1.11.6.1
+	gcc_ss_20010730:1.11.6.1
+	gcc_ss_20010723:1.11.6.1
+	ast-optimizer-branch:1.13.0.6
+	ast-optimizer-branchpoint:1.13
+	gcc_ss_20010716:1.11.6.1
+	gcc_ss_20010709:1.11.6.1
+	gcc_ss_20010702:1.11.6.1
+	cp-parser-branch:1.13.0.4
+	cp-parser-branchpoint:1.13
+	gcc_ss_20010625:1.11.6.1
+	gcc_ss_20010618:1.11.6.1
+	gcc_3_0_release:1.11.6.1
+	gcc_ss_20010611:1.11.6.1
+	gcc_ss_20010604:1.11.6.1
+	gcc_ss_20010528:1.11.6.1
+	gcc_3_0_pre_20010527:1.11.6.1
+	gcc-3_0_pre_20010525:1.11.6.1
+	gcc_ss_20010521:1.11.6.1
+	pchgc-branch:1.13.0.2
+	pchgc-branchpoint:1.13
+	gcc_ss_20010514:1.11.6.1
+	gcc_ss_20010507:1.11.6.1
+	gcc_ss_20010430:1.11.6.1
+	gcc_ss_20010423:1.11.6.1
+	gcc_ss_20010416:1.11.6.1
+	gcc_ss_20010409:1.11.6.1
+	gcc_ss_20010402:1.11.6.1
+	gcc_ss_20010326:1.11.6.1
+	gcc_ss_20010320:1.11.6.1
+	gcc_ss_20010319:1.11.6.1
+	gcc_ss_20010312:1.11.6.1
+	gcc_ss_20010305:1.11.6.1
+	gcc-3_0-branch:1.11.0.6
+	gcc-3_0-branchpoint:1.11
+	gcc_ss_20010205:1.11
+	gcc_ss_20010129:1.11
+	new-regalloc-branch:1.11.0.4
+	new-regalloc-branchpoint:1.11
+	gcc_ss_20010122:1.11
+	gcc_ss_20010115:1.11
+	gcc_ss_20010108:1.11
+	bounded-pointers-merge-20010106:1.11
+	gcc_ss_20010101:1.11
+	gcc_ss_20001225:1.11
+	gcc_ss_20001218:1.11
+	gcc_ss_20001211:1.11
+	gcc_ss_20001204:1.11
+	gcc_ss_20001127:1.11
+	gcc_ss_20001120:1.11
+	gcc_ss_20001113:1.11
+	gcc_ss_20001106:1.11
+	gcc_ss_20001101:1.11
+	gcc_ss_20001030:1.11
+	gcc_ss_20001023:1.11
+	gcc_ss_20001016:1.11
+	bounded-pointers-merge-20001014:1.11
+	gcc_ss_20001009:1.11
+	gcc_ss_20001002:1.11
+	gcc_ss_20000925:1.11
+	subreg-byte-branch:1.11.0.2
+	subreg-byte-branchpoint:1.11
+	bounded-pointers-merge-20000924:1.11
+	gcc_ss_20000918:1.11
+	bounded-pointers-merge-20000918:1.11
+	bounded-pointers-merge-20000914:1.11
+	gcc_ss_20000911:1.11
+	bounded-pointers-merge-20000907:1.11
+	gcc_ss_20000904:1.10
+	bounded-pointers-merge-20000829:1.9
+	gcc_ss_20000828:1.9
+	bounded-pointers-merge-20000824:1.9
+	gcc_ss_20000821:1.9
+	gcc_ss_20000814:1.9
+	bounded-pointers-merge-20000811:1.9
+	gcc_ss_20000807:1.9
+	bounded-pointers-ss-20000730:1.3.4.4
+	gcc_ss_20000731:1.9
+	bounded-pointers-merge-20000730:1.9
+	gcc_ss_20000724:1.9
+	bounded-pointers-merge-20000718:1.9
+	gcc_ss_20000717:1.9
+	gcc_ss_20000710:1.9
+	gcc_ss_20000703:1.8
+	bounded-pointers-merge-20000630:1.8
+	gcc_ss_20000626:1.6
+	bounded-pointers-merge-20000619:1.6
+	gcc_ss_20000619:1.6
+	gcc_ss_20000612:1.6
+	gcc_ss_20000605:1.5
+	gcc_ss_20000604:1.5
+	bounded-pointers-merge-20000530:1.5
+	gcc_ss_20000530:1.5
+	bounded-pointers-merge-20000519:1.5
+	gcc_ss_20000508:1.5
+	bounded-pointers-branch:1.3.0.4
+	bounded-pointers-merge-20000501:1.3
+	gcc_ss_20000501:1.3
+	condexec_merge_20000430:1.3
+	condexec-branch:1.3.0.2
+	condexec_merge_20000428:1.3;
+locks; strict;
+comment	@ * @;
+
+
+1.19
+date	2001.11.16.02.36.39;	author kenner;	state Exp;
+branches;
+next	1.18;
+
+1.18
+date	2001.10.29.22.13.41;	author jsm28;	state Exp;
+branches
+	1.18.2.1;
+next	1.17;
+
+1.17
+date	2001.08.22.14.35.48;	author gerald;	state Exp;
+branches
+	1.17.2.1;
+next	1.16;
+
+1.16
+date	2001.08.18.23.10.22;	author rth;	state Exp;
+branches;
+next	1.15;
+
+1.15
+date	2001.08.17.21.23.12;	author kazu;	state Exp;
+branches;
+next	1.14;
+
+1.14
+date	2001.08.17.01.27.49;	author zack;	state Exp;
+branches;
+next	1.13;
+
+1.13
+date	2001.04.20.23.06.55;	author zack;	state Exp;
+branches
+	1.13.6.1;
+next	1.12;
+
+1.12
+date	2001.03.02.21.41.36;	author danglin;	state Exp;
+branches;
+next	1.11;
+
+1.11
+date	2000.09.06.07.02.40;	author zack;	state Exp;
+branches
+	1.11.4.1
+	1.11.6.1;
+next	1.10;
+
+1.10
+date	2000.08.29.20.57.11;	author zack;	state Exp;
+branches;
+next	1.9;
+
+1.9
+date	2000.07.06.09.36.52;	author hp;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	2000.06.29.17.31.03;	author zack;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	2000.06.28.23.46.27;	author pthomas;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	2000.06.09.16.23.44;	author jason;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	2000.05.04.12.16.27;	author hubicka;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2000.05.03.11.16.35;	author hubicka;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2000.04.28.13.51.55;	author ghazi;	state Exp;
+branches
+	1.3.2.1
+	1.3.4.1;
+next	1.2;
+
+1.2
+date	2000.04.28.06.18.14;	author samuel;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2000.04.28.00.59.39;	author samuel;	state Exp;
+branches;
+next	;
+
+1.3.2.1
+date	2000.04.28.23.07.16;	author rth;	state Exp;
+branches;
+next	;
+
+1.3.4.1
+date	2000.05.03.10.38.10;	author gkm;	state Exp;
+branches;
+next	1.3.4.2;
+
+1.3.4.2
+date	2000.06.21.01.55.37;	author gkm;	state Exp;
+branches;
+next	1.3.4.3;
+
+1.3.4.3
+date	2000.07.18.18.05.49;	author gkm;	state Exp;
+branches;
+next	1.3.4.4;
+
+1.3.4.4
+date	2000.07.19.13.36.50;	author gkm;	state Exp;
+branches;
+next	1.3.4.5;
+
+1.3.4.5
+date	2000.09.14.09.00.49;	author gkm;	state Exp;
+branches;
+next	;
+
+1.11.4.1
+date	2001.07.17.21.41.21;	author dberlin;	state Exp;
+branches;
+next	1.11.4.2;
+
+1.11.4.2
+date	2002.05.03.19.52.44;	author matz;	state Exp;
+branches;
+next	;
+
+1.11.6.1
+date	2001.03.02.19.51.59;	author danglin;	state Exp;
+branches;
+next	;
+
+1.13.6.1
+date	2001.12.22.19.56.50;	author dnovillo;	state Exp;
+branches;
+next	;
+
+1.17.2.1
+date	2002.02.15.20.30.06;	author vmakarov;	state Exp;
+branches;
+next	;
+
+1.18.2.1
+date	2001.11.22.16.04.40;	author hubicka;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.19
+log
+@	* timevar.c (rtl.h): Include so get fancy abort.
+@
+text
+@/* Timing variables for measuring compiler performance.
+   Copyright (C) 2000 Free Software Foundation, Inc.
+   Contributed by Alex Samuel <samuel@@codesourcery.com>
+
+This file is part of GCC.
+
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
+
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
+
+#include "config.h"
+#include "system.h"
+#include "intl.h"
+#include "rtl.h"
+
+#ifdef HAVE_SYS_TIMES_H
+# include <sys/times.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
+#ifndef HAVE_CLOCK_T
+typedef int clock_t;
+#endif
+
+#ifndef HAVE_STRUCT_TMS
+struct tms
+{
+  clock_t tms_utime;
+  clock_t tms_stime;
+  clock_t tms_cutime;
+  clock_t tms_cstime;
+};
+#endif
+
+#if defined HAVE_DECL_GETRUSAGE && !HAVE_DECL_GETRUSAGE
+extern int getrusage PARAMS ((int, struct rusage *));
+#endif
+#if defined HAVE_DECL_TIMES && !HAVE_DECL_TIMES
+extern clock_t times PARAMS ((struct tms *));
+#endif
+#if defined HAVE_DECL_CLOCK && !HAVE_DECL_CLOCK
+extern clock_t clock PARAMS ((void));
+#endif
+
+#ifndef RUSAGE_SELF
+# define RUSAGE_SELF 0
+#endif
+
+/* Calculation of scale factor to convert ticks to microseconds.
+   We mustn't use CLOCKS_PER_SEC except with clock().  */
+#if HAVE_SYSCONF && defined _SC_CLK_TCK
+# define TICKS_PER_SECOND sysconf (_SC_CLK_TCK) /* POSIX 1003.1-1996 */
+#else
+# ifdef CLK_TCK
+#  define TICKS_PER_SECOND CLK_TCK /* POSIX 1003.1-1988; obsolescent */
+# else
+#  ifdef HZ
+#   define TICKS_PER_SECOND HZ  /* traditional UNIX */
+#  else
+#   define TICKS_PER_SECOND 100 /* often the correct value */
+#  endif
+# endif
+#endif
+
+/* Prefer times to getrusage to clock (each gives successively less
+   information).  */
+#ifdef HAVE_TIMES
+# define USE_TIMES
+# define HAVE_USER_TIME
+# define HAVE_SYS_TIME
+# define HAVE_WALL_TIME
+#else
+#ifdef HAVE_GETRUSAGE
+# define USE_GETRUSAGE
+# define HAVE_USER_TIME
+# define HAVE_SYS_TIME
+#else
+#ifdef HAVE_CLOCK
+# define USE_CLOCK
+# define HAVE_USER_TIME
+#endif
+#endif
+#endif
+
+/* libc is very likely to have snuck a call to sysconf() into one of
+   the underlying constants, and that can be very slow, so we have to
+   precompute them.  Whose wonderful idea was it to make all those
+   _constants_ variable at run time, anyway?  */
+#ifdef USE_TIMES
+static float ticks_to_msec;
+#define TICKS_TO_MSEC (1 / (float)TICKS_PER_SECOND)
+#endif
+
+#ifdef USE_CLOCK
+static float clocks_to_msec;
+#define CLOCKS_TO_MSEC (1 / (float)CLOCKS_PER_SEC)
+#endif
+
+#include "flags.h"
+#include "timevar.h"
+
+/* See timevar.h for an explanation of timing variables.  */
+
+/* This macro evaluates to non-zero if timing variables are enabled.  */
+#define TIMEVAR_ENABLE (time_report)
+
+/* A timing variable.  */
+
+struct timevar_def
+{
+  /* Elapsed time for this variable.  */
+  struct timevar_time_def elapsed;
+
+  /* If this variable is timed independently of the timing stack,
+     using timevar_start, this contains the start time.  */
+  struct timevar_time_def start_time;
+
+  /* The name of this timing variable.  */
+  const char *name;
+
+  /* Non-zero if this timing variable is running as a standalone
+     timer.  */
+  unsigned standalone : 1;
+
+  /* Non-zero if this timing variable was ever started or pushed onto
+     the timing stack.  */
+  unsigned used : 1;
+};
+
+/* An element on the timing stack.  Elapsed time is attributed to the
+   topmost timing variable on the stack.  */
+
+struct timevar_stack_def
+{
+  /* The timing variable at this stack level.  */
+  struct timevar_def *timevar;
+
+  /* The next lower timing variable context in the stack.  */
+  struct timevar_stack_def *next;
+};
+
+/* Declared timing variables.  Constructed from the contents of
+   timevar.def.  */
+static struct timevar_def timevars[TIMEVAR_LAST];
+
+/* The top of the timing stack.  */
+static struct timevar_stack_def *stack;
+
+/* A list of unused (i.e. allocated and subsequently popped)
+   timevar_stack_def instances.  */
+static struct timevar_stack_def *unused_stack_instances;
+
+/* The time at which the topmost element on the timing stack was
+   pushed.  Time elapsed since then is attributed to the topmost
+   element.  */
+static struct timevar_time_def start_time;
+
+static void get_time
+  PARAMS ((struct timevar_time_def *));
+static void timevar_accumulate
+  PARAMS ((struct timevar_time_def *, struct timevar_time_def *, 
+	   struct timevar_time_def *));
+
+/* Fill the current times into TIME.  The definition of this function
+   also defines any or all of the HAVE_USER_TIME, HAVE_SYS_TIME, and
+   HAVA_WALL_TIME macros.  */
+
+static void
+get_time (now)
+     struct timevar_time_def *now;
+{
+  now->user = 0;
+  now->sys  = 0;
+  now->wall = 0;
+
+  if (!TIMEVAR_ENABLE)
+    return;
+
+  {
+#ifdef USE_TIMES
+    struct tms tms;
+    now->wall = times (&tms)  * ticks_to_msec;
+    now->user = tms.tms_utime * ticks_to_msec;
+    now->sys  = tms.tms_stime * ticks_to_msec;
+#endif
+#ifdef USE_GETRUSAGE
+    struct rusage rusage;
+    getrusage (RUSAGE_SELF, &rusage);
+    now->user = rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec * 1e-6;
+    now->sys  = rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec * 1e-6;
+#endif
+#ifdef USE_CLOCK
+    now->user = clock () * clocks_to_msec;
+#endif
+  }
+}
+
+/* Add the difference between STOP_TIME and START_TIME to TIMER.  */
+
+static void 
+timevar_accumulate (timer, start_time, stop_time)
+  struct timevar_time_def *timer;
+  struct timevar_time_def *start_time;
+  struct timevar_time_def *stop_time;
+{
+  timer->user += stop_time->user - start_time->user;
+  timer->sys += stop_time->sys - start_time->sys;
+  timer->wall += stop_time->wall - start_time->wall;
+}
+
+/* Initialize timing variables.  */
+
+void
+init_timevar ()
+{
+  if (!TIMEVAR_ENABLE)
+    return;
+
+  /* Zero all elapsed times.  */
+  memset ((void *) timevars, 0, sizeof (timevars));
+
+  /* Initialize the names of timing variables.  */
+#define DEFTIMEVAR(identifier__, name__) \
+  timevars[identifier__].name = name__;
+#include "timevar.def"
+#undef DEFTIMEVAR
+
+#ifdef USE_TIMES
+  ticks_to_msec = TICKS_TO_MSEC;
+#endif
+#ifdef USE_CLOCK
+  clocks_to_msec = CLOCKS_TO_MSEC;
+#endif
+}
+
+/* Push TIMEVAR onto the timing stack.  No further elapsed time is
+   attributed to the previous topmost timing variable on the stack;
+   subsequent elapsed time is attributed to TIMEVAR, until it is
+   popped or another element is pushed on top. 
+
+   TIMEVAR cannot be running as a standalone timer.  */
+
+void
+timevar_push (timevar)
+     timevar_id_t timevar;
+{
+  struct timevar_def *tv = &timevars[timevar];
+  struct timevar_stack_def *context;
+  struct timevar_time_def now;
+
+  if (!TIMEVAR_ENABLE)
+    return;
+
+  /* Mark this timing variable as used.  */
+  tv->used = 1;
+
+  /* Can't push a standalone timer.  */
+  if (tv->standalone)
+    abort ();
+
+  /* What time is it?  */
+  get_time (&now);
+
+  /* If the stack isn't empty, attribute the current elapsed time to
+     the old topmost element.  */
+  if (stack)
+    timevar_accumulate (&stack->timevar->elapsed, &start_time, &now);
+
+  /* Reset the start time; from now on, time is attributed to
+     TIMEVAR.  */
+  start_time = now;
+
+  /* See if we have a previously-allocated stack instance.  If so,
+     take it off the list.  If not, malloc a new one.  */
+  if (unused_stack_instances != NULL) 
+    {
+      context = unused_stack_instances;
+      unused_stack_instances = unused_stack_instances->next;
+    }
+  else
+    context = (struct timevar_stack_def *) 
+      xmalloc (sizeof (struct timevar_stack_def));
+
+  /* Fill it in and put it on the stack.  */
+  context->timevar = tv;
+  context->next = stack;
+  stack = context;
+}
+
+/* Pop the topmost timing variable element off the timing stack.  The
+   popped variable must be TIMEVAR.  Elapsed time since the that
+   element was pushed on, or since it was last exposed on top of the
+   stack when the element above it was popped off, is credited to that
+   timing variable.  */
+
+void
+timevar_pop (timevar)
+     timevar_id_t timevar;
+{
+  struct timevar_time_def now;
+  struct timevar_stack_def *popped = stack;
+
+  if (!TIMEVAR_ENABLE)
+    return;
+
+  if (&timevars[timevar] != stack->timevar)
+    abort ();
+
+  /* What time is it?  */
+  get_time (&now);
+
+  /* Attribute the elapsed time to the element we're popping.  */
+  timevar_accumulate (&popped->timevar->elapsed, &start_time, &now);
+
+  /* Reset the start time; from now on, time is attributed to the
+     element just exposed on the stack.  */
+  start_time = now;
+
+  /* Take the item off the stack.  */
+  stack = stack->next;
+
+  /* Don't delete the stack element; instead, add it to the list of
+     unused elements for later use.  */
+  popped->next = unused_stack_instances;
+  unused_stack_instances = popped;
+}
+
+/* Start timing TIMEVAR independently of the timing stack.  Elapsed
+   time until timevar_stop is called for the same timing variable is
+   attributed to TIMEVAR.  */
+
+void
+timevar_start (timevar)
+     timevar_id_t timevar;
+{
+  struct timevar_def *tv = &timevars[timevar];
+
+  if (!TIMEVAR_ENABLE)
+    return;
+
+  /* Mark this timing variable as used.  */
+  tv->used = 1;
+
+  /* Don't allow the same timing variable to be started more than
+     once.  */
+  if (tv->standalone)
+    abort ();
+  tv->standalone = 1;
+
+  get_time (&tv->start_time);
+}
+
+/* Stop timing TIMEVAR.  Time elapsed since timevar_start was called
+   is attributed to it.  */
+
+void
+timevar_stop (timevar)
+     timevar_id_t timevar;
+{
+  struct timevar_def *tv = &timevars[timevar];
+  struct timevar_time_def now;
+
+  if (!TIMEVAR_ENABLE)
+    return;
+
+  /* TIMEVAR must have been started via timevar_start.  */
+  if (!tv->standalone)
+    abort ();
+
+  get_time (&now);
+  timevar_accumulate (&tv->elapsed, &tv->start_time, &now);
+}
+
+/* Fill the elapsed time for TIMEVAR into ELAPSED.  Returns
+   update-to-date information even if TIMEVAR is currently running.  */
+
+void
+timevar_get (timevar, elapsed)
+     timevar_id_t timevar;
+     struct timevar_time_def *elapsed;
+{
+  struct timevar_def *tv = &timevars[timevar];
+  struct timevar_time_def now;
+
+  *elapsed = tv->elapsed;
+  
+  /* Is TIMEVAR currently running as a standalone timer?  */
+  if (tv->standalone)
+    {
+      get_time (&now);
+      timevar_accumulate (elapsed, &tv->start_time, &now);
+    }
+  /* Or is TIMEVAR at the top of the timer stack?  */
+  else if (stack->timevar == tv)
+    {
+      get_time (&now);
+      timevar_accumulate (elapsed, &start_time, &now);
+    }
+}
+
+/* Summarize timing variables to FP.  The timing variable TV_TOTAL has
+   a special meaning -- it's considered to be the total elapsed time,
+   for normalizing the others, and is displayed last.  */
+
+void
+timevar_print (fp)
+     FILE *fp;
+{
+  /* Only print stuff if we have some sort of time information.  */
+#if defined (HAVE_USER_TIME) || defined (HAVE_SYS_TIME) || defined (HAVE_WALL_TIME)
+  unsigned int /* timevar_id_t */ id;
+  struct timevar_time_def *total = &timevars[TV_TOTAL].elapsed;
+  struct timevar_time_def now;
+
+  if (!TIMEVAR_ENABLE)
+    return;
+
+  /* Update timing information in case we're calling this from GDB.  */
+
+  if (fp == 0)
+    fp = stderr;
+
+  /* What time is it?  */
+  get_time (&now);
+
+  /* If the stack isn't empty, attribute the current elapsed time to
+     the old topmost element.  */
+  if (stack)
+    timevar_accumulate (&stack->timevar->elapsed, &start_time, &now);
+
+  /* Reset the start time; from now on, time is attributed to
+     TIMEVAR.  */
+  start_time = now;
+
+  fputs (_("\nExecution times (seconds)\n"), fp);
+  for (id = 0; id < (unsigned int) TIMEVAR_LAST; ++id)
+    {
+      struct timevar_def *tv = &timevars[(timevar_id_t) id];
+      const float tiny = 5e-3;
+
+      /* Don't print the total execution time here; that goes at the
+	 end.  */
+      if ((timevar_id_t) id == TV_TOTAL)
+	continue;
+
+      /* Don't print timing variables that were never used.  */
+      if (!tv->used)
+	continue;
+
+      /* Don't print timing variables if we're going to get a row of
+         zeroes.  */
+      if (tv->elapsed.user < tiny
+	  && tv->elapsed.sys < tiny
+	  && tv->elapsed.wall < tiny)
+	continue;
+
+      /* The timing variable name.  */
+      fprintf (fp, " %-22s:", tv->name);
+
+#ifdef HAVE_USER_TIME
+      /* Print user-mode time for this process.  */
+      fprintf (fp, "%7.2f (%2.0f%%) usr", 
+	       tv->elapsed.user,
+	       (total->user == 0 ? 0 : tv->elapsed.user / total->user) * 100);
+#endif /* HAVE_USER_TIME */
+
+#ifdef HAVE_SYS_TIME
+      /* Print system-mode time for this process.  */
+      fprintf (fp, "%7.2f (%2.0f%%) sys", 
+	       tv->elapsed.sys,
+	       (total->sys == 0 ? 0 : tv->elapsed.sys / total->sys) * 100);
+#endif /* HAVE_SYS_TIME */
+
+#ifdef HAVE_WALL_TIME
+      /* Print wall clock time elapsed.  */
+      fprintf (fp, "%7.2f (%2.0f%%) wall", 
+	       tv->elapsed.wall,
+	       (total->wall == 0 ? 0 : tv->elapsed.wall / total->wall) * 100);
+#endif /* HAVE_WALL_TIME */
+
+      putc ('\n', fp);
+    }
+
+  /* Print total time.  */
+  fputs (_(" TOTAL                 :"), fp);
+#ifdef HAVE_USER_TIME
+  fprintf (fp, "%7.2f          ", total->user);
+#endif 
+#ifdef HAVE_SYS_TIME
+  fprintf (fp, "%7.2f          ", total->sys);
+#endif
+#ifdef HAVE_WALL_TIME
+  fprintf (fp, "%7.2f\n", total->wall);
+#endif
+  
+#endif /* defined (HAVE_USER_TIME) || defined (HAVE_SYS_TIME) 
+	  || defined (HAVE_WALL_TIME) */
+}
+
+/* Returns time (user + system) used so far by the compiler process,
+   in microseconds.  */
+
+long
+get_run_time ()
+{
+  struct timevar_time_def total_elapsed;
+  timevar_get (TV_TOTAL, &total_elapsed);
+  return total_elapsed.user + total_elapsed.sys;
+}
+
+/* Prints a message to stderr stating that time elapsed in STR is
+   TOTAL (given in microseconds).  */
+
+void
+print_time (str, total)
+     const char *str;
+     long total;
+{
+  long all_time = get_run_time ();
+  fprintf (stderr,
+	   _("time in %s: %ld.%06ld (%ld%%)\n"),
+	   str, total / 1000000, total % 1000000,
+ 	   all_time == 0 ? 0
+ 	   : (long) (((100.0 * (double) total) / (double) all_time) + .5));
+}
+@
+
+
+1.18
+log
+@	* loop.h (struct induction): Rename ext_dependant to
+	ext_dependent.
+	* loop.c: Change all uses.
+	(check_ext_dependant_givs): Rename to check_ext_dependent_givs.
+	All callers changed.
+	* timevar.c (DEFTIMEVAR): Fix spelling of identifier__ parameter.
+@
+text
+@d5 1
+a5 1
+   This file is part of GCC.
+d7 4
+a10 4
+   GCC is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+d12 4
+a15 4
+   GCC is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
+d17 4
+a20 4
+   You should have received a copy of the GNU General Public License
+   along with GCC; see the file COPYING.  If not, write to the Free
+   Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+   02111-1307, USA.  */
+d25 1
+@
+
+
+1.18.2.1
+log
+@	Mainline merger (cfg-merger-20011122 tag).
+@
+text
+@d5 1
+a5 1
+This file is part of GCC.
+d7 4
+a10 4
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
+d12 4
+a15 4
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+d17 4
+a20 4
+You should have received a copy of the GNU General Public License
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
+a24 1
+#include "rtl.h"
+@
+
+
+1.17
+log
+@	* Makefile.in, alias.c, basic-block.h, bb-reorder.c, bitmap.c,
+	bitmap.h, builtin-types.def, builtins.c, builtins.def,
+	c-aux-info.c, c-common.c, c-common.def, c-common.h,
+	c-convert.c, c-decl.c, c-dump.c, c-dump.h, c-errors.c,
+	c-format.c, c-lang.c, c-lex.c, c-lex.h, c-parse.in,
+	c-pragma.c, c-pragma.h, c-semantics.c, c-tree.h, c-typeck.c,
+	caller-save.c, calls.c, collect2.c, collect2.h, combine.c,
+	conditions.h, config.gcc, configure.frag, configure.in,
+	conflict.c, convert.c, convert.h, cppspec.c, crtstuff.c,
+	cse.c, cselib.c, cselib.h, dbxout.c, dbxout.h, defaults.h,
+	dependence.c, df.c, df.h, diagnostic.c, diagnostic.h,
+	doloop.c, dominance.c, dwarf.h, dwarf2.h, dwarf2asm.c,
+	dwarf2asm.h, dwarf2out.c, dwarf2out.h, dwarfout.c,
+	emit-rtl.c, errors.c, errors.h, except.c, except.h,
+	exgettext, explow.c, expmed.c, expr.c, expr.h, final.c,
+	fixproto, flags.h, flow.c, fold-const.c, fp-test.c,
+	function.c, function.h, gbl-ctors.h, gcc.c, gcc.h, gcc.hlp,
+	gccspec.c, gcov-io.h, gcse.c, genattr.c, genattrtab.c,
+	gencheck.c, gencodes.c, genconfig.c, genemit.c,
+	genextract.c, genflags.c, gengenrtl.c, genmultilib,
+	genopinit.c, genoutput.c, genpeep.c, genrecog.c,
+	gensupport.c, gensupport.h, ggc-callbacks.c, ggc-common.c,
+	ggc-none.c, ggc-page.c, ggc-simple.c, ggc.h, global.c,
+	graph.c, graph.h, gthr-aix.h, gthr-dce.h, gthr-posix.h,
+	gthr-rtems.h, gthr-single.h, gthr-solaris.h, gthr-vxworks.h,
+	gthr-win32.h, gthr.h, haifa-sched.c, halfpic.c, halfpic.h,
+	hard-reg-set.h, hwint.h, ifcvt.c, input.h, insn-addr.h,
+	integrate.c, integrate.h, jump.c, lcm.c, libgcc2.c,
+	libgcc2.h, lists.c, local-alloc.c, loop.c, loop.h,
+	machmode.def, machmode.h, main.c, mbchar.c, mbchar.h,
+	mips-tdump.c, mips-tfile.c, mklibgcc.in, mkmap-flat.awk,
+	mkmap-symver.awk, optabs.c, output.h, params.c, params.def,
+	params.h, predict.c, predict.def, predict.h, prefix.c,
+	prefix.h, print-rtl.c, print-tree.c, profile.c, protoize.c,
+	read-rtl.c, real.c, real.h, recog.c, recog.h, reg-stack.c,
+	regclass.c, regmove.c, regrename.c, regs.h, reload.c,
+	reload.h, reload1.c, reorg.c, resource.c, resource.h, rtl.c,
+	rtl.def, rtl.h, rtlanal.c, sbitmap.c, sbitmap.h,
+	sched-deps.c, sched-ebb.c, sched-int.h, sched-rgn.c,
+	sched-vis.c, sdbout.c, sdbout.h, sibcall.c, simplify-rtx.c,
+	ssa-ccp.c, ssa-dce.c, ssa.c, ssa.h, stmt.c, stor-layout.c,
+	stringpool.c, system.h, timevar.c, timevar.def, timevar.h,
+	tlink.c, toplev.c, toplev.h, tree.c, tree.def, tree.h,
+	tsystem.h, unroll.c, unwind-dw2-fde.c, unwind-dw2-fde.h,
+	unwind-dw2.c, unwind-pe.h, unwind-sjlj.c, unwind.h,
+	unwind.inc, varasm.c, varray.c, varray.h, xcoffout.c,
+	xcoffout.h: replace "GNU CC" with "GCC".
+@
+text
+@d235 2
+a236 2
+#define DEFTIMEVAR(identifer__, name__) \
+  timevars[identifer__].name = name__;
+@
+
+
+1.17.2.1
+log
+@Merging from the trunk
+@
+text
+@d5 1
+a5 1
+This file is part of GCC.
+d7 14
+a20 14
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
+
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
+a24 1
+#include "rtl.h"
+d235 2
+a236 2
+#define DEFTIMEVAR(identifier__, name__) \
+  timevars[identifier__].name = name__;
+@
+
+
+1.16
+log
+@        * timevar.h (struct timevar_time_def): Change element type to float.
+        (ticks_to_msec, clocks_to_msec): Likewise.
+        (TICKS_TO_MSEC, CLOCKS_TO_MSEC): Rescale to seconds; use type float.
+        (get_time): Likewise.
+        (timevar_print): Adjust zero check and printing to match.
+@
+text
+@d5 1
+a5 1
+   This file is part of GNU CC.
+d7 2
+a8 2
+   GNU CC is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+d12 4
+a15 4
+   GNU CC is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+d18 3
+a20 3
+   along with GNU CC; see the file COPYING.  If not, write to
+   the Free Software Foundation, 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
+@
+
+
+1.15
+log
+@	* sbitmap.c: Fix comment formatting.
+	* sched-deps.c: Likewise.
+	* sibcall.c: Likewise.
+	* simplify-rtx.c: Likewise.
+	* ssa.c: Likewise.
+	* ssa-ccp.c: Likewise.
+	* stor-layout.c: Likewise.
+	* timevar.c: Likewise.
+	* toplev.c: Likewise.
+	* unwind-dw2.c: Likewise.
+	* unwind-dw2-fde.c: Likewise.
+	* varasm.c: Likewise.
+@
+text
+@d102 2
+a103 2
+static int ticks_to_msec;
+#define TICKS_TO_MSEC (1000 / TICKS_PER_SECOND)
+d107 2
+a108 2
+static int clocks_to_msec;
+#define CLOCKS_TO_MSEC (1000 / CLOCKS_PER_SEC)
+d201 2
+a202 2
+    now->user = rusage.ru_utime.tv_sec * 1000 + rusage.ru_utime.tv_usec / 1000;
+    now->sys  = rusage.ru_stime.tv_sec * 1000 + rusage.ru_stime.tv_usec / 1000;
+d451 1
+d464 3
+a466 2
+      if (tv->elapsed.user < 10 && tv->elapsed.sys < 10
+	  && tv->elapsed.wall < 10)
+d474 3
+a476 4
+      fprintf (fp, "%4ld.%02ld (%2.0f%%) usr", 
+	       tv->elapsed.user / 1000, (tv->elapsed.user % 1000) / 10,
+	       (total->user == 0) ? 0.0
+	       : (100.0 * tv->elapsed.user / (double) total->user));
+d481 3
+a483 4
+      fprintf (fp, "%4ld.%02ld (%2.0f%%) sys", 
+	       tv->elapsed.sys / 1000, (tv->elapsed.sys % 1000) / 10,
+	       (total->sys == 0) ? 0.0
+	       : (100.0 * tv->elapsed.sys / (double) total->sys));
+d488 3
+a490 4
+      fprintf (fp, "%4ld.%02ld (%2.0f%%) wall", 
+	       tv->elapsed.wall / 1000, (tv->elapsed.wall % 1000) / 10,
+	       (total->wall == 0) ? 0.0
+	       : (100.0 * tv->elapsed.wall / (double) total->wall));
+d499 1
+a499 2
+  fprintf (fp, "%4ld.%02ld          ", 
+	   total->user / 1000, (total->user % 1000) / 10);
+d502 1
+a502 2
+  fprintf (fp, "%4ld.%02ld          ", 
+	   total->sys  / 1000, (total->sys  % 1000) / 10);
+d505 1
+a505 2
+  fprintf (fp, "%4ld.%02ld\n",
+	   total->wall / 1000, (total->wall % 1000) / 10);
+@
+
+
+1.14
+log
+@	* final.c (shorten_branches): Clear the end of the label_align
+	array only if we made it larger.  Break up messy expressions
+	for clarity.
+
+	* diagnostic.c (internal_error): Check for error recursion
+	before doing ICE suppression.
+
+	* timevar.c: Timing variables now count in milliseconds.
+	(init_timevar): Set up ticks_to_msec and clocks_to_msec here.
+	(get_time): Not here.
+	(timevar_print): Don't print any timer whose user, cpu, and
+	wall times are all zero as displayed.
+	* timevar.h: Update comment aboout units.  Make timevar
+	counters unsigned.
+@
+text
+@d116 1
+a116 1
+/* This macro evaluates to non-zero if timing variables are enabled. */
+d282 1
+a282 1
+     TIMEVAR. */
+d444 1
+a444 1
+     TIMEVAR. */
+@
+
+
+1.13
+log
+@	* configure.in: Probe for times, clock, struct tms, and clock_t.
+	* configure, config.in: Regenerate.
+	* timevar.c: Replace ifdef forest in get_time with (relatively)
+	straightforward series of checks based on autoconf's probes.
+@
+text
+@a76 3
+#define TICKS_TO_USEC (1000000 / TICKS_PER_SECOND)
+#define CLOCKS_TO_USEC (1000000 / CLOCKS_PER_SEC)
+
+d97 14
+a192 5
+    /* libc is very likely to have snuck a call to sysconf() into one
+       of the underlying constants, and that can make system calls, so
+       we have to precompute the value.  Whose wonderful idea was it
+       to make all those _constants_ variable at run time, anyway?  */
+    static int ticks_to_usec;
+d194 3
+a196 6
+    if (ticks_to_usec == 0)
+      ticks_to_usec = TICKS_TO_USEC;
+
+    now->wall = times (&tms) * ticks_to_usec;
+    now->user = tms.tms_utime * ticks_to_usec;
+    now->sys = tms.tms_stime * ticks_to_usec;
+d201 2
+a202 4
+    now->user 
+      = rusage.ru_utime.tv_sec * 1000000 + rusage.ru_utime.tv_usec;
+    now->sys 
+      = rusage.ru_stime.tv_sec * 1000000 + rusage.ru_stime.tv_usec;
+d205 1
+a205 4
+    static int clocks_to_usec;
+    if (clocks_to_usec == 0)
+      clocks_to_usec = CLOCKS_TO_USEC;
+    now->user = clock () * clocks_to_usec;
+d239 7
+d447 1
+a447 1
+  fprintf (fp, _("\nExecution times (seconds)\n"));
+d461 6
+d473 2
+a474 3
+	       tv->elapsed.user / 1000000, 
+	       (tv->elapsed.user % 1000000) / 10000,
+	       (total->user == 0) ? 0.0 
+d481 2
+a482 3
+	       tv->elapsed.sys / 1000000, 
+	       (tv->elapsed.sys % 1000000) / 10000,
+	       (total->sys == 0) ? 0.0 
+d489 2
+a490 3
+	       tv->elapsed.wall / 1000000, 
+	       (tv->elapsed.wall % 1000000) / 10000,
+	       (total->wall == 0) ? 0.0 
+d494 1
+a494 1
+      fprintf (fp, "\n");
+d498 1
+a498 1
+  fprintf (fp, _(" TOTAL                 :"));
+d501 1
+a501 1
+	   total->user / 1000000, (total->user % 1000000) / 10000);
+d505 1
+a505 1
+	   total->sys  / 1000000, (total->sys  % 1000000) / 10000);
+d509 1
+a509 1
+	   total->wall / 1000000, (total->wall % 1000000) / 10000);
+@
+
+
+1.13.6.1
+log
+@
+Merge with trunk as of 2001-12-17.
+@
+text
+@d5 1
+a5 1
+This file is part of GCC.
+d7 14
+a20 14
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
+
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
+a24 1
+#include "rtl.h"
+d77 3
+a99 14
+/* libc is very likely to have snuck a call to sysconf() into one of
+   the underlying constants, and that can be very slow, so we have to
+   precompute them.  Whose wonderful idea was it to make all those
+   _constants_ variable at run time, anyway?  */
+#ifdef USE_TIMES
+static float ticks_to_msec;
+#define TICKS_TO_MSEC (1 / (float)TICKS_PER_SECOND)
+#endif
+
+#ifdef USE_CLOCK
+static float clocks_to_msec;
+#define CLOCKS_TO_MSEC (1 / (float)CLOCKS_PER_SEC)
+#endif
+
+d105 1
+a105 1
+/* This macro evaluates to non-zero if timing variables are enabled.  */
+d182 5
+d188 6
+a193 3
+    now->wall = times (&tms)  * ticks_to_msec;
+    now->user = tms.tms_utime * ticks_to_msec;
+    now->sys  = tms.tms_stime * ticks_to_msec;
+d198 4
+a201 2
+    now->user = rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec * 1e-6;
+    now->sys  = rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec * 1e-6;
+d204 4
+a207 1
+    now->user = clock () * clocks_to_msec;
+d237 2
+a238 2
+#define DEFTIMEVAR(identifier__, name__) \
+  timevars[identifier__].name = name__;
+a240 7
+
+#ifdef USE_TIMES
+  ticks_to_msec = TICKS_TO_MSEC;
+#endif
+#ifdef USE_CLOCK
+  clocks_to_msec = CLOCKS_TO_MSEC;
+#endif
+d277 1
+a277 1
+     TIMEVAR.  */
+d439 1
+a439 1
+     TIMEVAR.  */
+d442 1
+a442 1
+  fputs (_("\nExecution times (seconds)\n"), fp);
+a445 1
+      const float tiny = 5e-3;
+a455 7
+      /* Don't print timing variables if we're going to get a row of
+         zeroes.  */
+      if (tv->elapsed.user < tiny
+	  && tv->elapsed.sys < tiny
+	  && tv->elapsed.wall < tiny)
+	continue;
+
+d461 5
+a465 3
+      fprintf (fp, "%7.2f (%2.0f%%) usr", 
+	       tv->elapsed.user,
+	       (total->user == 0 ? 0 : tv->elapsed.user / total->user) * 100);
+d470 5
+a474 3
+      fprintf (fp, "%7.2f (%2.0f%%) sys", 
+	       tv->elapsed.sys,
+	       (total->sys == 0 ? 0 : tv->elapsed.sys / total->sys) * 100);
+d479 5
+a483 3
+      fprintf (fp, "%7.2f (%2.0f%%) wall", 
+	       tv->elapsed.wall,
+	       (total->wall == 0 ? 0 : tv->elapsed.wall / total->wall) * 100);
+d486 1
+a486 1
+      putc ('\n', fp);
+d490 1
+a490 1
+  fputs (_(" TOTAL                 :"), fp);
+d492 2
+a493 1
+  fprintf (fp, "%7.2f          ", total->user);
+d496 2
+a497 1
+  fprintf (fp, "%7.2f          ", total->sys);
+d500 2
+a501 1
+  fprintf (fp, "%7.2f\n", total->wall);
+@
+
+
+1.12
+log
+@	* print-rtl.c (print_rtx): Cast enums to int for comparison.
+	* c-decl.c (grokdeclarator): Cast enums to int for comparison and
+	shifts.
+	* c-format.c (C_STD_VER): Cast to int for comparisons.
+	(check_function_format): Cast various enums to int for &.
+	(maybe_read_dollar_number): Likewise.
+	(check_format_info): Likewise.
+	(check_format_info_main): Likewise.
+	* expr.c (emit_move_insn_1): Cast enums to unsigned int for comparison.
+	(safe_from_p): Likewise.
+	* varasm.c (const_hash): Cast enum to int for %.
+	* emit-rtl.c (init_emit_once): Use int loop variable to work around
+	pcc enum problems with < and ++ operators.
+	* regclass.c (init_reg_sets_1): Cast enums for comparison.
+	(choose_hard_reg_mode): Use unsigned int to iterate over CCmodes.
+	(regclass_init): Change enum class to int to iterate over reg_classes.
+	* genrecog.c (merge_trees): Cast enums for comparison.
+	* rtl.h (GET_CODE): Cast to enum rtx_code.
+	(PUT_CODE): Cast to ENUM_BITFIELD(rtx_code).
+	(GET_MODE): Cast to enum machine_mode.
+	(PUT_MODE): Cast to ENUM_BITFIELD(machine_mode).
+	(GET_NOTE_INSN_NAME): Cast enum to int.
+	* tree.h (TREE_CODE): Cast to enum tree_code.
+	(TREE_SET_CODE): Cast VALUE to ENUM_BITFIELD(tree_code).
+        * timevar.c (timevar_print): Change loop variable id from enum to
+	unsigned int.
+	* fixinc/fixincl.c (VLEVEL): Cast enums in comparison to unsigned int.
+	* config/i386/i386.md: Use PUT_MODE for mode assignment.
+	* toplev.c (compile_file): Cast enum DFI to int.
+	(decode_d_option): Likewise.
+@
+text
+@a28 1
+
+d32 16
+a47 1
+#ifdef NEED_DECLARATION_GETRUSAGE
+d50 49
+a179 10
+#ifdef __BEOS__
+  /* Nothing.  */
+#else /* not BeOS */
+#if defined (_WIN32) && !defined (__CYGWIN__)
+  if (clock () >= 0)
+    now->user = clock () * 1000;
+#define HAVE_USER_TIME
+
+#else /* not _WIN32 */
+#ifdef _SC_CLK_TCK
+d181 6
+a186 1
+    static int tick;
+d188 2
+a189 9
+    if (tick == 0)
+      tick = 1000000 / sysconf (_SC_CLK_TCK);
+    now->wall = times (&tms) * tick;
+    now->user = tms.tms_utime * tick;
+    now->sys = tms.tms_stime * tick;
+  }
+#define HAVE_USER_TIME
+#define HAVE_SYS_TIME
+#define HAVE_WALL_TIME
+d191 5
+a195 24
+#else
+#ifdef USG
+  {
+    struct tms tms;
+#   if HAVE_SYSCONF && defined _SC_CLK_TCK
+#    define TICKS_PER_SECOND sysconf (_SC_CLK_TCK) /* POSIX 1003.1-1996 */
+#   else
+#    ifdef CLK_TCK
+#     define TICKS_PER_SECOND CLK_TCK /* POSIX 1003.1-1988; obsolescent */
+#    else
+#     define TICKS_PER_SECOND HZ /* traditional UNIX */
+#    endif
+#   endif
+    now->wall = times (&tms) * (1000000 / TICKS_PER_SECOND);
+    now->user = tms.tms_utime * (1000000 / TICKS_PER_SECOND);
+    now->sys = tms.tms_stime * (1000000 / TICKS_PER_SECOND);
+  }
+#define HAVE_USER_TIME
+#define HAVE_SYS_TIME
+#define HAVE_WALL_TIME
+
+#else
+#ifndef VMS
+  {
+d197 1
+a197 1
+    getrusage (0, &rusage);
+d202 7
+d210 1
+a210 26
+#define HAVE_USER_TIME
+#define HAVE_SYS_TIME
+
+#else /* VMS */
+  {
+    struct
+      {
+        int proc_user_time;
+        int proc_system_time;
+        int child_user_time;
+        int child_system_time;
+      } vms_times;
+    now->wall = times ((void *) &vms_times) * 10000;
+    now->user = vms_times.proc_user_time * 10000;
+    now->sys = vms_times.proc_system_time * 10000;
+  }
+#define HAVE_USER_TIME
+#define HAVE_SYS_TIME
+#define HAVE_WALL_TIME
+
+#endif	/* VMS */
+#endif	/* USG */
+#endif  /* _SC_CLK_TCK */
+#endif	/* _WIN32 */
+#endif	/* __BEOS__ */
+}  
+@
+
+
+1.11
+log
+@	* timevar.c (timevar_add): Delete.
+	(timevar_get): Also count time since the selected timer was
+	last updated.  Do not examine the timevar stack if the
+	selected timer is standalone.
+@
+text
+@d404 1
+a404 1
+  timevar_id_t id;
+d429 1
+a429 1
+  for (id = 0; id < TIMEVAR_LAST; ++id)
+d431 1
+a431 1
+      struct timevar_def *tv = &timevars[id];
+d435 1
+a435 1
+      if (id == TV_TOTAL)
+@
+
+
+1.11.4.1
+log
+@
+Merge from mainline 07-17-2001
+(Hold still, this might tickle)
+@
+text
+@d29 1
+d33 1
+a33 16
+
+#ifndef HAVE_CLOCK_T
+typedef int clock_t;
+#endif
+
+#ifndef HAVE_STRUCT_TMS
+struct tms
+{
+  clock_t tms_utime;
+  clock_t tms_stime;
+  clock_t tms_cutime;
+  clock_t tms_cstime;
+};
+#endif
+
+#if defined HAVE_DECL_GETRUSAGE && !HAVE_DECL_GETRUSAGE
+a35 49
+#if defined HAVE_DECL_TIMES && !HAVE_DECL_TIMES
+extern clock_t times PARAMS ((struct tms *));
+#endif
+#if defined HAVE_DECL_CLOCK && !HAVE_DECL_CLOCK
+extern clock_t clock PARAMS ((void));
+#endif
+
+#ifndef RUSAGE_SELF
+# define RUSAGE_SELF 0
+#endif
+
+/* Calculation of scale factor to convert ticks to microseconds.
+   We mustn't use CLOCKS_PER_SEC except with clock().  */
+#if HAVE_SYSCONF && defined _SC_CLK_TCK
+# define TICKS_PER_SECOND sysconf (_SC_CLK_TCK) /* POSIX 1003.1-1996 */
+#else
+# ifdef CLK_TCK
+#  define TICKS_PER_SECOND CLK_TCK /* POSIX 1003.1-1988; obsolescent */
+# else
+#  ifdef HZ
+#   define TICKS_PER_SECOND HZ  /* traditional UNIX */
+#  else
+#   define TICKS_PER_SECOND 100 /* often the correct value */
+#  endif
+# endif
+#endif
+
+#define TICKS_TO_USEC (1000000 / TICKS_PER_SECOND)
+#define CLOCKS_TO_USEC (1000000 / CLOCKS_PER_SEC)
+
+/* Prefer times to getrusage to clock (each gives successively less
+   information).  */
+#ifdef HAVE_TIMES
+# define USE_TIMES
+# define HAVE_USER_TIME
+# define HAVE_SYS_TIME
+# define HAVE_WALL_TIME
+#else
+#ifdef HAVE_GETRUSAGE
+# define USE_GETRUSAGE
+# define HAVE_USER_TIME
+# define HAVE_SYS_TIME
+#else
+#ifdef HAVE_CLOCK
+# define USE_CLOCK
+# define HAVE_USER_TIME
+#endif
+#endif
+#endif
+d117 25
+a142 6
+#ifdef USE_TIMES
+    /* libc is very likely to have snuck a call to sysconf() into one
+       of the underlying constants, and that can make system calls, so
+       we have to precompute the value.  Whose wonderful idea was it
+       to make all those _constants_ variable at run time, anyway?  */
+    static int ticks_to_usec;
+d144 16
+a159 2
+    if (ticks_to_usec == 0)
+      ticks_to_usec = TICKS_TO_USEC;
+d161 3
+a163 5
+    now->wall = times (&tms) * ticks_to_usec;
+    now->user = tms.tms_utime * ticks_to_usec;
+    now->sys = tms.tms_stime * ticks_to_usec;
+#endif
+#ifdef USE_GETRUSAGE
+d165 1
+a165 1
+    getrusage (RUSAGE_SELF, &rusage);
+a169 7
+#endif
+#ifdef USE_CLOCK
+    static int clocks_to_usec;
+    if (clocks_to_usec == 0)
+      clocks_to_usec = CLOCKS_TO_USEC;
+    now->user = clock () * clocks_to_usec;
+#endif
+d171 26
+a196 1
+}
+d404 1
+a404 1
+  unsigned int /* timevar_id_t */ id;
+d429 1
+a429 1
+  for (id = 0; id < (unsigned int) TIMEVAR_LAST; ++id)
+d431 1
+a431 1
+      struct timevar_def *tv = &timevars[(timevar_id_t) id];
+d435 1
+a435 1
+      if ((timevar_id_t) id == TV_TOTAL)
+@
+
+
+1.11.4.2
+log
+@merged with ra-merge-initial
+@
+text
+@d5 1
+a5 1
+This file is part of GCC.
+d7 14
+a20 14
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
+
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
+a24 1
+#include "rtl.h"
+d77 3
+a99 14
+/* libc is very likely to have snuck a call to sysconf() into one of
+   the underlying constants, and that can be very slow, so we have to
+   precompute them.  Whose wonderful idea was it to make all those
+   _constants_ variable at run time, anyway?  */
+#ifdef USE_TIMES
+static float ticks_to_msec;
+#define TICKS_TO_MSEC (1 / (float)TICKS_PER_SECOND)
+#endif
+
+#ifdef USE_CLOCK
+static float clocks_to_msec;
+#define CLOCKS_TO_MSEC (1 / (float)CLOCKS_PER_SEC)
+#endif
+
+d105 1
+a105 1
+/* This macro evaluates to non-zero if timing variables are enabled.  */
+d182 5
+d188 6
+a193 3
+    now->wall = times (&tms)  * ticks_to_msec;
+    now->user = tms.tms_utime * ticks_to_msec;
+    now->sys  = tms.tms_stime * ticks_to_msec;
+d198 4
+a201 2
+    now->user = rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec * 1e-6;
+    now->sys  = rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec * 1e-6;
+d204 4
+a207 1
+    now->user = clock () * clocks_to_msec;
+d237 2
+a238 2
+#define DEFTIMEVAR(identifier__, name__) \
+  timevars[identifier__].name = name__;
+a240 7
+
+#ifdef USE_TIMES
+  ticks_to_msec = TICKS_TO_MSEC;
+#endif
+#ifdef USE_CLOCK
+  clocks_to_msec = CLOCKS_TO_MSEC;
+#endif
+d277 1
+a277 1
+     TIMEVAR.  */
+d439 1
+a439 1
+     TIMEVAR.  */
+d442 1
+a442 1
+  fputs (_("\nExecution times (seconds)\n"), fp);
+a445 1
+      const float tiny = 5e-3;
+a455 7
+      /* Don't print timing variables if we're going to get a row of
+         zeroes.  */
+      if (tv->elapsed.user < tiny
+	  && tv->elapsed.sys < tiny
+	  && tv->elapsed.wall < tiny)
+	continue;
+
+d461 5
+a465 3
+      fprintf (fp, "%7.2f (%2.0f%%) usr", 
+	       tv->elapsed.user,
+	       (total->user == 0 ? 0 : tv->elapsed.user / total->user) * 100);
+d470 5
+a474 3
+      fprintf (fp, "%7.2f (%2.0f%%) sys", 
+	       tv->elapsed.sys,
+	       (total->sys == 0 ? 0 : tv->elapsed.sys / total->sys) * 100);
+d479 5
+a483 3
+      fprintf (fp, "%7.2f (%2.0f%%) wall", 
+	       tv->elapsed.wall,
+	       (total->wall == 0 ? 0 : tv->elapsed.wall / total->wall) * 100);
+d486 1
+a486 1
+      putc ('\n', fp);
+d490 1
+a490 1
+  fputs (_(" TOTAL                 :"), fp);
+d492 2
+a493 1
+  fprintf (fp, "%7.2f          ", total->user);
+d496 2
+a497 1
+  fprintf (fp, "%7.2f          ", total->sys);
+d500 2
+a501 1
+  fprintf (fp, "%7.2f\n", total->wall);
+@
+
+
+1.11.6.1
+log
+@	* print-rtl.c (print_rtx): Cast enums to int for comparison.
+	* c-decl.c (grokdeclarator): Cast enums to int for comparison and
+	shifts.
+	* c-format.c (C_STD_VER): Cast to int for comparisons.
+	(check_function_format): Cast various enums to int for &.
+	(maybe_read_dollar_number): Likewise.
+	(check_format_info): Likewise.
+	(check_format_info_main): Likewise.
+	* expr.c (emit_move_insn_1): Cast enums to unsigned int for comparison.
+	(safe_from_p): Likewise.
+	* varasm.c (const_hash): Cast enum to int for %.
+	* emit-rtl.c (init_emit_once): Use int loop variable to work around
+	pcc enum problems with < and ++ operators.
+	* regclass.c (init_reg_sets_1): Cast enums for comparison.
+	(choose_hard_reg_mode): Use unsigned int to iterate over CCmodes.
+	(regclass_init): Change enum class to int to iterate over reg_classes.
+	* genrecog.c (merge_trees): Cast enums for comparison.
+	* rtl.h (GET_CODE): Cast to enum rtx_code.
+	(PUT_CODE): Cast to ENUM_BITFIELD(rtx_code).
+	(GET_MODE): Cast to enum machine_mode.
+	(PUT_MODE): Cast to ENUM_BITFIELD(machine_mode).
+	(GET_NOTE_INSN_NAME): Cast enum to int.
+	* tree.h (TREE_CODE): Cast to enum tree_code.
+	(TREE_SET_CODE): Cast VALUE to ENUM_BITFIELD(tree_code).
+	* simplify-rtx.c (hash_rtx): Cast enums to unsigned unt.
+	* timevar.c (timevar_print): Change loop variable id from enum to
+	unsigned int.
+	* fixinc/fixincl.c (VLEVEL): Cast enums in comparison to unsigned int.
+	* config/i386/i386.md: Use PUT_MODE for mode assignment.
+	* toplev.c (compile_file): Cast enum DFI to int.
+	(decode_d_option): Likewise.
+@
+text
+@d404 1
+a404 1
+  unsigned int /* timevar_id_t */ id;
+d429 1
+a429 1
+  for (id = 0; id < (unsigned int) TIMEVAR_LAST; ++id)
+d431 1
+a431 1
+      struct timevar_def *tv = &timevars[(timevar_id_t) id];
+d435 1
+a435 1
+      if ((timevar_id_t) id == TV_TOTAL)
+@
+
+
+1.10
+log
+@	* flags.h (time_report, mem_report): New global flags.
+	* toplev.c: Define time_report and mem_report.
+	(f_options): Add -ftime-report and -fmem-report.
+	(compile_file): Turn on time_report if quiet_flag is off.
+	Call ggc_print_statistics at very end if mem_report is on.
+	* timevar.c (TIMEVAR_ENABLE): Examine time_report, not quiet_flag.
+
+	* ggc-common.c (ggc_print_statistics): Rename to
+	ggc_print_common_statistics; all callers changed.  Scale
+	quantities above 10K to kilobytes and above 10M to megabytes.
+	* ggc-page.c (ggc_page_print_statistics): Rename to
+	ggc_print_statistics.  Report memory consumed by internal data
+	structures for each allocation bucket.  Scale quantities above
+	10K to kilobytes and above 10M to megabytes.
+	* ggc-simple.c: Prototype debug_ggc_tree to avoid warning.
+	Cast PTR_KEY(p) to unsigned long in fprintf call to avoid warning.
+	Define tally_leaves always.
+	(ggc_print_statistics): New function.
+	* ggc.h: Adjust for renamed functions.
+@
+text
+@a97 2
+static void timevar_add
+  PARAMS ((struct timevar_time_def *, struct timevar_time_def *));
+a197 12
+/* Add ELAPSED to TIMER.  */
+
+static void
+timevar_add (timer, elapsed)
+     struct timevar_time_def *timer;
+     struct timevar_time_def *elapsed;
+{
+  timer->user += elapsed->user;
+  timer->sys += elapsed->sys;
+  timer->wall += elapsed->wall;
+}
+
+d376 1
+d379 1
+a379 1
+
+d382 10
+a391 7
+    /* Add the time elapsed since the it was started.  */
+    timevar_add (elapsed, &tv->start_time);
+
+  /* Is TIMEVAR at the top of the timer stack?  */
+  if (stack->timevar == tv)
+    /* Add the elapsed time since it was pushed.  */
+    timevar_add (elapsed, &start_time);
+@
+
+
+1.9
+log
+@	* timevar.c: [HAVE_SYS_RESOURCE_H]: Include <sys/resource.h>.
+	[NEED_DECLARATION_GETRUSAGE]: Declare getrusage.
+@
+text
+@d43 1
+a43 1
+#define TIMEVAR_ENABLE (!quiet_flag)
+@
+
+
+1.8
+log
+@	* c-decl.c, timevar.c, tlink.c: Include intl.h.
+	* Makefile.in: Update deps.
+@
+text
+@d30 7
+@
+
+
+1.7
+log
+@2000-06-28  Philipp Thomas  <pthomas@@suse.de>
+
+	* c-decl.c : Mark strings for translation.
+	(parmlist_tags_warning): Use distinct messages instead
+	of conditional expressions.
+	* diagnostic.c (v_message_with_decl): Mark string for translation.
+	* gcc.c: Mark messages for translation.
+	(display_help): Combine messages into one string where necessary.
+	* mips-tfile.c: Add intl.h. Mark messages for translation.
+	* rtl.c (fatal_with_file_and_line): Modify function for NLS. Mark
+	messages for translation.
+	* timevar.c: Mark messages for translation.
+	* tlink.c: Likewise.
+	* toplev.c: Likewise.
+@
+text
+@d24 1
+@
+
+
+1.6
+log
+@        * timevar.def: Add TV_EXPAND.
+        * timevar.c (timevar_print): Update timing information.
+        * calls.c (try_to_integrate): Push to TV_INTEGRATION for inlining.
+
+        * stmt.c (expand_return): Check for error_mark_node.
+
+cp/:
+        * semantics.c (expand_body): Push to TV_EXPAND.
+        * optimize.c (optimize_function): Push to TV_INTEGRATION.
+        * decl.c (start_function): Always call announce_function.
+
+        * tinfo2.cc: Just declare abort.
+@
+text
+@d430 1
+a430 1
+  fprintf (fp, "\nExecution times (seconds)\n");
+d478 1
+a478 1
+  fprintf (fp, " TOTAL                 :");
+d517 1
+a517 1
+	   "time in %s: %ld.%06ld (%ld%%)\n",
+@
+
+
+1.5
+log
+@Undo my accidental checkin.
+@
+text
+@d408 1
+d412 17
+@
+
+
+1.4
+log
+@	* ifcvt.c (noce_try_cmove_arith):  Use may_trap_p to thest
+	whether address may trap.
+@
+text
+@a23 1
+#include <sys/resource.h>
+@
+
+
+1.3
+log
+@       * timevar.c (init_timevar): DeANSIfy function definition.
+@
+text
+@d24 1
+@
+
+
+1.3.4.1
+log
+@merge with mainline at tag bounded-pointers-merge-20000501
+@
+text
+@@
+
+
+1.3.4.2
+log
+@merge from mainline at tag bounded-pointers-merge-20000619
+@
+text
+@a407 1
+  struct timevar_time_def now;
+a410 17
+
+  /* Update timing information in case we're calling this from GDB.  */
+
+  if (fp == 0)
+    fp = stderr;
+
+  /* What time is it?  */
+  get_time (&now);
+
+  /* If the stack isn't empty, attribute the current elapsed time to
+     the old topmost element.  */
+  if (stack)
+    timevar_accumulate (&stack->timevar->elapsed, &start_time, &now);
+
+  /* Reset the start time; from now on, time is attributed to
+     TIMEVAR. */
+  start_time = now;
+@
+
+
+1.3.4.3
+log
+@merge from mainline at tag bounded-pointers-merge-20000630
+@
+text
+@a23 1
+#include "intl.h"
+d430 1
+a430 1
+  fprintf (fp, _("\nExecution times (seconds)\n"));
+d478 1
+a478 1
+  fprintf (fp, _(" TOTAL                 :"));
+d517 1
+a517 1
+	   _("time in %s: %ld.%06ld (%ld%%)\n"),
+@
+
+
+1.3.4.4
+log
+@merge from mainline at tag bounded-pointers-merge-20000718
+@
+text
+@a29 7
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+#ifdef NEED_DECLARATION_GETRUSAGE
+extern int getrusage PARAMS ((int, struct rusage *));
+#endif
+
+@
+
+
+1.3.4.5
+log
+@merge from mainline at tag bounded-pointers-merge-20000907
+@
+text
+@d43 1
+a43 1
+#define TIMEVAR_ENABLE (time_report)
+d98 2
+d200 12
+a389 1
+  struct timevar_time_def now;
+d392 1
+a392 1
+  
+d395 7
+a401 10
+    {
+      get_time (&now);
+      timevar_accumulate (elapsed, &tv->start_time, &now);
+    }
+  /* Or is TIMEVAR at the top of the timer stack?  */
+  else if (stack->timevar == tv)
+    {
+      get_time (&now);
+      timevar_accumulate (elapsed, &start_time, &now);
+    }
+@
+
+
+1.3.2.1
+log
+@Merge from mainline
+@
+text
+@@
+
+
+1.2
+log
+@	* Makefile.in (timevar.o): Depend on flags.h.
+	* timevar.c (unused_stack_instances): New variable.
+	(timevar_push): Take a timevar_stack_def from
+	unused_stack_instances if available.
+	(timevar_pop): Push the popped timevar_stack_def onto
+	unused_stack_instances.
+	(TIMEVAR_ENABLE): New macro.
+	(timevar_def): Make standalone a 1-bit field.  Add field used.
+	(get_time): Rename parameter to now.  Return after clearing it if
+	not TIMEVAR_ENABLE.
+	(init_timevar): Do nothing if not TIMEVAR_ENABLE.
+	(timevar_pop): Likewise.
+	(timevar_stop): Likewise.
+	(timevar_push): Likewise.  Mark the timing variable as used.
+	(timevar_start): Likewise.
+	(timevar_print): Do nothing if not TIMEVAR_ENABLE.  Don't print
+	timevars that were never used.
+@
+text
+@d220 1
+a220 1
+init_timevar (void)
+@
+
+
+1.1
+log
+@hangeLog:
+
+	* Makefile.in (OBJS): Add timevar.o.
+	(toplev.o): Depend on timevar.h.
+	(ggc-simple.o): Likewise.
+	(ggc-page.o): Likewise.
+	(timevar.o): New rule.
+	(timevar.h): New rule.
+
+	* timevar.h: New file.
+	* timevar.c: Likewise.
+	* timevar.def: Likewise.
+
+	* toplev.h (gc_time, parse_time, varconst_time): Remove.
+	* toplev.c: Use timevar_push and timevar_pop instead of TIMEVAR
+	throughout.
+	(TIMEVAR): Remove macro.
+	(gc_time, parse_time, varconst_time, integration_time, jump_time,
+	cse_time, gcse_time, loop_time, cse2_time, branch_prob_time,
+	flow_time, combine_time, regmove_time, sched_time,
+	local_alloc_time, global_alloc_time, flow2_time, peephole2_time,
+	sched2_time, dbr_sched_time, reorder_blocks_time,
+	rename_registers_time, shorten_branch_time, stack_reg_time,
+	to_ssa_time, from_ssa_time, final_time, symout_time, dump_time,
+	all_time): Remove.
+	(compile_file): Don't initialize time variables.  Call
+	init_timevar and start TV_TOTAL timer.  Call timevar_print instead
+	of many calls to print_time.
+	(rest_of_compilation): Add timing for reload_cse_regs.
+	(get_run_time): Removed to timevar.c.
+	(print_time): Likewise.
+	(get_run_time): Implement using TV_TOTAL time variable.
+	(print_time): Get total run time from get_run_time.
+	* ggc-page.c (ggc_collect): Push and pop TV_GC instead of
+	computing elapsed time explicitly.
+	* ggc-simple.c (ggc_collect): Likewise.
+	(gc_time): Remove declaration.
+
+
+cp/ChangeLog:
+
+	* lex.c (my_get_run_time): Remove.
+	(init_filename_times): Use get_run_time instead of my_get_run_time.
+	(check_newline): Likewise.
+	(dump_time_statistics): Likewise.
+	* decl2.c (finish_file): Push and pop timevar TV_VARCONST instead
+	of computing elapsed time explicitly.
+@
+text
+@d29 1
+d34 3
+d48 3
+d53 1
+a53 1
+  int standalone;
+d55 3
+a57 2
+  /* The name of this timing variable.  */
+  const char *name;
+d79 4
+d101 2
+a102 2
+get_time (time)
+     struct timevar_time_def *time;
+d104 6
+a109 3
+  time->user = 0;
+  time->sys  = 0;
+  time->wall = 0;
+d116 1
+a116 1
+    time->user = clock () * 1000;
+d126 3
+a128 3
+    time->wall = times (&tms) * tick;
+    time->user = tms.tms_utime * tick;
+    time->sys = tms.tms_stime * tick;
+d147 3
+a149 3
+    time->wall = times (&tms) * (1000000 / TICKS_PER_SECOND);
+    time->user = tms.tms_utime * (1000000 / TICKS_PER_SECOND);
+    time->sys = tms.tms_stime * (1000000 / TICKS_PER_SECOND);
+d160 1
+a160 1
+    time->user 
+d162 1
+a162 1
+    time->sys 
+d177 3
+a179 3
+    time->wall = times ((void *) &vms_times) * 10000;
+    time->user = vms_times.proc_user_time * 10000;
+    time->sys = vms_times.proc_system_time * 10000;
+d222 3
+d250 6
+d272 12
+a283 3
+  /* Create a new stack element, and push it.  */
+  context = (struct timevar_stack_def *) 
+    xmalloc (sizeof (struct timevar_stack_def));
+d300 4
+a303 1
+  struct timevar_stack_def *next = stack->next;
+d312 1
+a312 1
+  timevar_accumulate (&stack->timevar->elapsed, &start_time, &now);
+d318 7
+a324 3
+  /* Remove the stack element.  */
+  free (stack);
+  stack = next;
+d337 6
+d362 3
+d409 3
+d422 4
+a503 1
+
+@
+

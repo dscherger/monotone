@@ -1,0 +1,82 @@
+May 8, 2002
+
+This is a usability test prototype of the Flipviewer, a utility for
+browsing the revision history of source code.
+
+You will need Python 2.1, PyGTK, and the python-glade adaptor module,
+plus of course all their dependencies (which are unfortunately
+legion).  On a Debian 'unstable' system, it suffices to do
+
+# apt-get install python-glade
+
+to load up everything necessary.  If you can't or don't want to
+install a ton of extra stuff, please look at the screenshot provided
+in this tarball and give your reactions to that.
+
+Assuming you have all the necessary software, you can run the
+flipviewer thus:
+
+$ ./flipview timevar.c,v
+
+(An X11 display is required.)
+
+It takes about thirty seconds to start up on my computer; the initial
+calculations are quite expensive.  If it doesn't work, the most
+probable cause is that the Python interpreter is not installed where
+it expects; try
+
+$ python -O ./flipview timevar.c,v
+
+instead.
+
+You may substitute any RCS ,v file you happen to have around, but be
+warned that large files will take hours to load and demand hundreds of
+megabytes of memory.
+
+Due to b/r/a/i/n d/a/m/a/g/e unfortunate limitations of Gtk, the
+window comes up with all its panes awkwardly sized.  You'll need to
+adjust them.  Please look at SCREENSHOT.png in this directory for a
+suggested arrangement.  It is very important that you make the window
+wide enough that the horizontal scrollbar on the middle pane goes
+away.  Otherwise, you will encounter a bug which makes the middle pane
+become garbled and stop working.
+
+The topmost pane has a graph of the revision history of the file.  You
+can click on individual revisions to select them.  Also, the left and
+right arrow key move the selected revision along the path drawn in bold.
+
+The bottom pane shows the RCS log entry associated with the currently
+selected revision, and any tags attached to that revision.
+
+The middle pane shows the text of the currently selected revision.  On
+either side of the text are indications of changes made to each line.
+A letter C indicates that the line was modified in some revision; a
+plus sign that it was inserted; a minus, that it was deleted.  The
+program inserts blank lines so that any given line is always on the
+same row of the display.  (This is what takes so long to calculate at
+startup.)
+
+The background to each line becomes darker the longer it has been
+since that line was last modified, from the point of view of the
+revision you are currently looking at.
+
+That should be enough information to get you started.  Experiment with
+the program for awhile, get a feel for what it does.  When you are
+satisfied, I would appreciate your answers to the following questions.
+
+1. How comprehensible did you find the overall display?
+
+2. In particular, how easy was it to understand the history
+   indications in the middle pane?
+
+3. Do you think this tool or a similar one would be useful to you?
+   Why or why not?
+
+4. What would you like to have added to the information presented?
+
+5. What would you like to have removed?
+
+6. Do you have any other suggestions for improvements?  Please be
+   specific.
+
+

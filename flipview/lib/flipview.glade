@@ -1,0 +1,255 @@
+<?xml version="1.0"?>
+<GTK-Interface>
+
+<project>
+  <name>flipview</name>
+  <program_name>flipview</program_name>
+  <directory></directory>
+  <source_directory>src</source_directory>
+  <pixmaps_directory>pixmaps</pixmaps_directory>
+  <language>C</language>
+  <gnome_support>False</gnome_support>
+  <gettext_support>False</gettext_support>
+</project>
+
+<widget>
+  <class>GtkWindow</class>
+  <name>top</name>
+  <visible>False</visible>
+  <signal>
+    <name>destroy</name>
+    <handler>on_top_destroy</handler>
+    <last_modification_time>Thu, 02 May 2002 23:32:42 GMT</last_modification_time>
+  </signal>
+  <signal>
+    <name>key_press_event</name>
+    <handler>on_top_key_press_event</handler>
+    <last_modification_time>Thu, 02 May 2002 23:32:49 GMT</last_modification_time>
+  </signal>
+  <title>top</title>
+  <type>GTK_WINDOW_TOPLEVEL</type>
+  <position>GTK_WIN_POS_NONE</position>
+  <modal>False</modal>
+  <allow_shrink>False</allow_shrink>
+  <allow_grow>True</allow_grow>
+  <auto_shrink>False</auto_shrink>
+
+  <widget>
+    <class>GtkVBox</class>
+    <name></name>
+    <homogeneous>False</homogeneous>
+    <spacing>0</spacing>
+
+    <widget>
+      <class>GtkHBox</class>
+      <name></name>
+      <homogeneous>False</homogeneous>
+      <spacing>20</spacing>
+      <child>
+	<padding>0</padding>
+	<expand>False</expand>
+	<fill>False</fill>
+      </child>
+
+      <widget>
+	<class>GtkButton</class>
+	<name>quit</name>
+	<signal>
+	  <name>clicked</name>
+	  <handler>on_quit_clicked</handler>
+	  <last_modification_time>Thu, 02 May 2002 23:32:08 GMT</last_modification_time>
+	</signal>
+	<label>Quit</label>
+	<relief>GTK_RELIEF_NORMAL</relief>
+	<child>
+	  <padding>0</padding>
+	  <expand>False</expand>
+	  <fill>False</fill>
+	</child>
+      </widget>
+
+      <widget>
+	<class>GtkCheckButton</class>
+	<name>showtags</name>
+	<visible>False</visible>
+	<signal>
+	  <name>toggled</name>
+	  <handler>on_showtags_toggled</handler>
+	  <last_modification_time>Thu, 02 May 2002 23:31:49 GMT</last_modification_time>
+	</signal>
+	<label>Show Tags</label>
+	<active>True</active>
+	<draw_indicator>True</draw_indicator>
+	<child>
+	  <padding>0</padding>
+	  <expand>False</expand>
+	  <fill>False</fill>
+	</child>
+      </widget>
+
+      <widget>
+	<class>GtkCheckButton</class>
+	<name>prunelogs</name>
+	<visible>False</visible>
+	<signal>
+	  <name>toggled</name>
+	  <handler>on_prunelogs_toggled</handler>
+	  <last_modification_time>Thu, 02 May 2002 23:31:59 GMT</last_modification_time>
+	</signal>
+	<label>Prune change logs</label>
+	<active>False</active>
+	<draw_indicator>True</draw_indicator>
+	<child>
+	  <padding>0</padding>
+	  <expand>False</expand>
+	  <fill>False</fill>
+	</child>
+      </widget>
+    </widget>
+
+    <widget>
+      <class>GtkVPaned</class>
+      <name></name>
+      <handle_size>10</handle_size>
+      <gutter_size>10</gutter_size>
+      <position>0</position>
+      <child>
+	<padding>0</padding>
+	<expand>True</expand>
+	<fill>True</fill>
+      </child>
+
+      <widget>
+	<class>GtkScrolledWindow</class>
+	<name></name>
+	<hscrollbar_policy>GTK_POLICY_AUTOMATIC</hscrollbar_policy>
+	<vscrollbar_policy>GTK_POLICY_AUTOMATIC</vscrollbar_policy>
+	<hupdate_policy>GTK_UPDATE_CONTINUOUS</hupdate_policy>
+	<vupdate_policy>GTK_UPDATE_CONTINUOUS</vupdate_policy>
+	<child>
+	  <shrink>False</shrink>
+	  <resize>False</resize>
+	</child>
+
+	<widget>
+	  <class>GtkViewport</class>
+	  <name>grafport</name>
+	  <shadow_type>GTK_SHADOW_IN</shadow_type>
+
+	  <widget>
+	    <class>GtkDrawingArea</class>
+	    <name>graph</name>
+	    <events>GDK_EXPOSURE_MASK | GDK_BUTTON_RELEASE_MASK</events>
+	    <signal>
+	      <name>button_release_event</name>
+	      <handler>on_graph_button_release_event</handler>
+	      <last_modification_time>Thu, 02 May 2002 23:36:26 GMT</last_modification_time>
+	    </signal>
+	    <signal>
+	      <name>configure_event</name>
+	      <handler>on_graph_configure_event</handler>
+	      <last_modification_time>Thu, 02 May 2002 23:36:36 GMT</last_modification_time>
+	    </signal>
+	    <signal>
+	      <name>expose_event</name>
+	      <handler>on_graph_expose_event</handler>
+	      <last_modification_time>Thu, 02 May 2002 23:36:51 GMT</last_modification_time>
+	    </signal>
+	  </widget>
+	</widget>
+      </widget>
+
+      <widget>
+	<class>GtkVPaned</class>
+	<name></name>
+	<handle_size>10</handle_size>
+	<gutter_size>10</gutter_size>
+	<position>0</position>
+	<child>
+	  <shrink>True</shrink>
+	  <resize>True</resize>
+	</child>
+
+	<widget>
+	  <class>GtkScrolledWindow</class>
+	  <name>tableport</name>
+	  <hscrollbar_policy>GTK_POLICY_AUTOMATIC</hscrollbar_policy>
+	  <vscrollbar_policy>GTK_POLICY_ALWAYS</vscrollbar_policy>
+	  <hupdate_policy>GTK_UPDATE_CONTINUOUS</hupdate_policy>
+	  <vupdate_policy>GTK_UPDATE_CONTINUOUS</vupdate_policy>
+	  <child>
+	    <shrink>False</shrink>
+	    <resize>True</resize>
+	  </child>
+
+	  <widget>
+	    <class>Placeholder</class>
+	  </widget>
+	</widget>
+
+	<widget>
+	  <class>GtkHPaned</class>
+	  <name></name>
+	  <handle_size>10</handle_size>
+	  <gutter_size>10</gutter_size>
+	  <position>0</position>
+	  <child>
+	    <shrink>True</shrink>
+	    <resize>False</resize>
+	  </child>
+
+	  <widget>
+	    <class>GtkScrolledWindow</class>
+	    <name></name>
+	    <hscrollbar_policy>GTK_POLICY_NEVER</hscrollbar_policy>
+	    <vscrollbar_policy>GTK_POLICY_ALWAYS</vscrollbar_policy>
+	    <hupdate_policy>GTK_UPDATE_CONTINUOUS</hupdate_policy>
+	    <vupdate_policy>GTK_UPDATE_CONTINUOUS</vupdate_policy>
+	    <child>
+	      <shrink>False</shrink>
+	      <resize>True</resize>
+	    </child>
+
+	    <widget>
+	      <class>GtkText</class>
+	      <name>changelog</name>
+	      <editable>False</editable>
+	      <text></text>
+	    </widget>
+	  </widget>
+
+	  <widget>
+	    <class>GtkScrolledWindow</class>
+	    <name>tagwindow</name>
+	    <hscrollbar_policy>GTK_POLICY_AUTOMATIC</hscrollbar_policy>
+	    <vscrollbar_policy>GTK_POLICY_AUTOMATIC</vscrollbar_policy>
+	    <hupdate_policy>GTK_UPDATE_CONTINUOUS</hupdate_policy>
+	    <vupdate_policy>GTK_UPDATE_CONTINUOUS</vupdate_policy>
+	    <child>
+	      <shrink>True</shrink>
+	      <resize>True</resize>
+	    </child>
+
+	    <widget>
+	      <class>GtkCList</class>
+	      <name>tags</name>
+	      <sensitive>False</sensitive>
+	      <columns>1</columns>
+	      <column_widths>80</column_widths>
+	      <selection_mode>GTK_SELECTION_SINGLE</selection_mode>
+	      <show_titles>False</show_titles>
+	      <shadow_type>GTK_SHADOW_IN</shadow_type>
+
+	      <widget>
+		<class>Placeholder</class>
+		<child_name>CList:title</child_name>
+	      </widget>
+	    </widget>
+	  </widget>
+	</widget>
+      </widget>
+    </widget>
+  </widget>
+</widget>
+
+</GTK-Interface>

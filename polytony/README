@@ -1,0 +1,26 @@
+This is Polytony, an experimental GUI interface to Monotone histories.
+Copyright (C) 2003 Nathaniel Smith <njs@pobox.com>.  Consider it
+licensed under the FSF's GPLv2+.
+
+There's quite a bit of kluging in it, but I still find it quite useful.
+So far it can do (really stupid) layout of ancestry, and then let you
+view certs, diff different versions, and checkout particular versions
+directly on the graphical representation.  (Try left-clicking and
+right-clicking on the nodes.  To diff two nodes, you right click on
+one, select "diff", then click on another.  You click them in the
+same order you would list them on the command line.  To cancel, just
+click on the background.)
+
+The diffing won't work properly unless you have a version of monotone
+with my patch to the 'diff' command, which you can get from my depot.
+(in version 7a30b8b8ee780d49fcf66729f30591c14902b848 /
+tawaf-edamo-owido-dedak-upado-pifek-udoso-wenuk-lokel-eboze)
+
+There are a lot of ways it could be improved; see TODO.
+
+To run it, for now do 
+   python run.py <path to monotone> <path to monotone db>
+in this directory.
+
+You probably need Python 2.3, and you definitely need wxWindows.
+I'm using wxGTK+ v2.4.1; not sure which other versions work.

@@ -1,0 +1,25 @@
+monotone GUI projects
+=====================
+
+this is a scratch space for working on potential GUI tools
+for monotone. it has the following directories:
+
+  - polytony/
+
+    this is nathaniel smith's early work which shows a queryable ancestry
+    graph of a given database. it has its own instructions.
+
+  - lattice/
+
+    this is graydon hoare's later, less complete but more MVC-ish
+    work which shows a multi-pane view of things; it is intended
+    to incorporate some of polytone's code in the ancestry pane,
+    and (hopefully) to grow into a "standard" GUI for monotone.
+
+  - flipview/
+
+    this is some work zack weinberg did in this area, for viewing
+    RCS files. it might or might not be of interest in developing
+    the "file" view in lattice.
+
+

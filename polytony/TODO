@@ -1,0 +1,72 @@
+* Real program, general cleanup.  This run.py thing is lame.
+
+* Figure out why strings copied to the clipboard get a null byte stuck
+   on the end.
+
+* Switch to the new 'wx' package.  (Only polytony/interface/main.py
+   needs this.)
+
+* Better auto-layout.  Current algorithm is, stratify the graph into
+   generations, then lay out each generation in a row, in random
+   order.  No attention is paid to edge crossings at all...
+
+* Working directory support -- should be able to put working directory
+   in graph as a node.  Diff should work automatically; add a "commit"
+   command with magic committooly goodness?  Add an "update" command?
+   Possibly a two-node "update from" command?  (Update is really just
+   merge using different heuristics to choose the target...  this
+   requires a number of changes to monotone first, though.  Simpler
+   case is to require the update target to be a child of our current
+   base revision.)
+
+* Better cert support.  Currently we can't easily get at certs in a
+   programmatic way, so dumping the stdout into a window is about the
+   best we can do...
+- Trust visualization -- show tree with trusted/untrusted ancestry
+   certs both included but colored differently, etc.
+
+* "Diff to parent" - very common operation, should be supported
+   directly (with maybe a UI that displayed the changelog along with
+   the diff, say).  Of course it won't work for merges, but that's ok.
+
+* Better display of diff's.
+- use wxStyledTextControl to do highlighting, allow collapsing, etc.?
+
+- click on sha1 -> view file in database (esp. useful when files have
+   been added that don't show up in the diff output)
+   
+- Friendlier controls on the diff viewer window... keyboard should
+   work for scrolling _without_ having to click first (why doesn't
+   calling SetFocus() do this?).  Enter should close the window
+   without having to select the "close" button first.  Maybe keyboard
+   controls for jump to next/prev hunk/file...
+
+- Could do the super-fancy side-by-side-style viewing, I suppose.
+
+* Keyboard bindings for ancestry window.
+
+* Multi-branch support -- should be able to put multiple branches up
+   together, color code nodes to show which branch they're on...
+
+* "Merge" as an operation with UI like "diff".  (Requires support from
+   monotone.)
+
+* Similar gui for browsing within tree versions... "view history of
+   this file", etc.
+
+* Tools to apply certs to given versions -- "tag this version as part
+   of the head branch" after reviewing the changes,
+   approve/disapprove, tag, ...
+
+* Steal stuff from www.bitkeeper.com ;-)
+
+- http://www.bitkeeper.com/UG/Reporting.Code.html : describes code
+   review interface
+
+- http://www.bitkeeper.com/Products.Graphical.html : describes
+   graphical tools generally.
+
+* Steal Zack's file history browser GUI, make it work right, make it a
+   tree history browser...
+
+* Add your own...
