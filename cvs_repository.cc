@@ -287,7 +287,9 @@ void cvs_repository::prime(app_state &app)
 //    I(c.mod_time==?);
       const_cast<bool&>(s2->dead)=c.dead;
       if (!c.dead)
-        store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      { store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+        const_cast<unsigned&>(s2->size)=c.contents.size();
+      }
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
           s!=i->second.known_states.end();++s)
@@ -302,6 +304,7 @@ void cvs_repository::prime(app_state &app)
         I(!c.dead); // dead->dead is no change, so shouldn't get a number
         I(!s2->dead);
         store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+        const_cast<unsigned&>(s2->size)=c.contents.size();
       }
       else
       { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
@@ -311,9 +314,13 @@ void cvs_repository::prime(app_state &app)
         else if (!u.checksum.empty())
         { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
           const_cast<std::string&>(s2->md5sum)=u.checksum;
+          const_cast<unsigned&>(s2->patchsize)=u.patch.size();
         }
         else
+        {
           store_contents(app, u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+          const_cast<unsigned&>(s2->size)=u.contents.size();
+        }
       }
     }
     ticker();
