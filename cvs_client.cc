@@ -995,7 +995,11 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       "-r",file_revisions.begin()->new_revision.c_str(),
       "--",basename(file_revisions.begin()->file).c_str(),0);
   }
-  else SendCommand("update","-d","-C","-u","--",0);
+  else 
+  { // needed for 1.11
+    writestr("Directory .\n"+root+"/"+module+"\n");
+    SendCommand("update","-d","-C","-u",0);
+  }
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile;
   enum { st_normal, st_merge } state=st_normal;
