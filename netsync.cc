@@ -2953,8 +2953,10 @@ run_netsync_protocol(protocol_voice voice,
   try 
     {
       if (voice == server_voice)
-	{
-	  serve_connections(role, collections, all_collections, app,
+	{ if (addr==utf8("-"))
+	     serve_stdio(role,collections,all_collections, app,constants::netsync_timeout_seconds);
+	  else
+	     serve_connections(role, collections, all_collections, app,
 			    addr, static_cast<Netxx::port_type>(constants::netsync_default_port), 
 			    static_cast<unsigned long>(constants::netsync_timeout_seconds), 
 			    static_cast<unsigned long>(constants::netsync_connection_limit));
