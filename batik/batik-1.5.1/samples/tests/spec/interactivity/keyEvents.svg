@@ -1,0 +1,146 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Tests support for the DOMFocusIn, DOMFocusOut, DOMActivate                -->
+<!--                                                                           -->
+<!-- @author tkormann@ilog.fr                                                  -->
+<!-- @author vincent.hardy@sun.com                                             -->
+<!-- @version $Id: keyEvents.svg,v 1.3 2003/08/08 11:39:32 vhardy Exp $ -->
+<!-- ========================================================================= -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" 
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     id="body" width="450" height="500" viewBox="0 0 450 500">
+
+    <text class="title" x="50%" y="50">KeyEvents test<tspan x="50%" dy="1.3em">(type an upper case 'A' on each color)</tspan></text>
+
+<g id="body-content">
+
+<rect onkeypress="set('orange', 'keypress')" onkeydown="set('orange', 'keydown')" onkeyup="set('orange', 'keypress')"
+      x="100" y="100" width="100" height="100" style="fill:orange" />
+
+<rect onkeypress="set('crimson', 'keypress')" onkeydown="set('crimson', 'keydown')" onkeyup="set('crimson', 'keypress')"
+      x="250" y="100" width="100" height="100" style="fill:crimson" />
+
+<rect onkeypress="set('gold', 'keypress')" onkeydown="set('gold', 'keydown')" onkeyup="set('gold', 'keypress')"
+      x="100" y="250" width="100" height="100" style="fill:gold" />
+
+<rect onkeypress="set('aaa', 'keypress')" onkeydown="set('aaa', 'keydown')" onkeyup="set('aaa', 'keypress')"
+      x="250" y="250" width="100" height="100" style="fill:#aaa" />
+
+<circle onkeypress="set('eee', 'keypress')" onkeydown="set('eee', 'keydown')" onkeyup="set('eee', 'keypress')"
+        cx="225" cy="225" r="75" style="fill:#eee" />
+
+</g>
+
+    <script type="text/ecmascript"><![CDATA[
+function set(color, state) {
+    var elt = document.getElementById(color + "." + state);
+    elt.setAttribute("fill", "green");
+}
+
+function onDone() {
+    if (!(regardTestInstance == null)) {
+        regardTestInstance.scriptDone();   
+    } else {
+        alert("This button only works when run in the regard framework");
+    }
+}
+    ]]></script>
+
+    <g fill="red" stroke="black" transform="translate(40, 420)">
+        <g transform="translate(0,0)">
+            <rect id="orange.keypress" width="20" height="20" />
+            <rect id="orange.keydown" x="25" width="20" height="20" />
+            <rect id="orange.keyup" x="50" width="20" height="20" />
+        </g>
+
+        <g transform="translate(75,0)">
+            <rect id="crimson.keypress" width="20" height="20" />
+            <rect id="crimson.keydown" x="25" width="20" height="20" />
+            <rect id="crimson.keyup" x="50" width="20" height="20" />
+        </g>
+
+        <g transform="translate(150,0)">
+            <rect id="gold.keypress" width="20" height="20" />
+            <rect id="gold.keydown" x="25" width="20" height="20" />
+            <rect id="gold.keyup" x="50" width="20" height="20" />
+        </g>
+
+        <g transform="translate(225,0)">
+            <rect id="aaa.keypress" width="20" height="20" />
+            <rect id="aaa.keydown" x="25" width="20" height="20" />
+            <rect id="aaa.keyup" x="50" width="20" height="20" />
+        </g>
+
+        <g transform="translate(300,0)">
+            <rect id="eee.keypress" width="20" height="20" />
+            <rect id="eee.keydown" x="25" width="20" height="20" />
+            <rect id="eee.keyup" x="50" width="20" height="20" />
+        </g>
+
+
+    </g>
+
+    <g id="done" transform="translate(195, 458)" cursor="pointer" onclick="onDone()">
+        <rect rx="5" ry="5" width="60" height="25" fill="#eeeeee" stroke="black" />
+        <text x="30" y="18" font-size="14" font-weight="bold" text-anchor="middle">Done</text>
+    </g>
+
+
+</svg>

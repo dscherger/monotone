@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!-- attributes schema 05.02.2002  -->
+<gxl xmlns:xlink="http://www.w3.org/1999/xlink">
+	<graph id="attributes-schema" edgeids="true">
+		<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#gxl-1.0"/>
+		<node id="attributesSchema">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#GraphClass"/>
+			<attr name="name">
+				<string>attributesSchema</string>
+			</attr>
+		</node>
+		<edge id="c1" from="attributesSchema" to="Prog">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Prog">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Prog</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="file">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#AttributeClass"/>
+			<attr name="name">
+				<string>file</string>
+			</attr>
+		</node>
+		<node id="domainSeq">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#Seq"/>
+		</node>
+		<node id="domainString">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#String"/>
+		</node>
+		<edge id="e1" from="Prog" to="file">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAttribute"/>
+		</edge>
+		<edge id="e2" from="file" to="domainSeq">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasDomain"/>
+		</edge>
+		<edge id="e3" from="domainSeq" to="domainString">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasComponent"/>
+		</edge>
+	</graph>
+</gxl>

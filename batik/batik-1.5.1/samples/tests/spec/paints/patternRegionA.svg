@@ -1,0 +1,259 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- This test file checks that the various combinations of units and viewbox  -->
+<!-- work in Batik for patternRegions                                          -->
+<!--                                                                           -->
+<!-- @author vhardy@eng.sun.com                                                -->
+<!-- @version $Id: patternRegionA.svg,v 1.3 2003/08/08 11:39:33 vhardy Exp $  -->
+<!-- ========================================================================= -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="body" width="450" height="500" viewBox="0 0 450 500">
+<title>Pattern Region Test, A</title>
+
+    <text x="225" y="50" class="title">
+        patternRegion, x, y, width, height
+    </text>
+
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+    <g id="testContent" >
+        <defs>
+        
+        <!-- ============================================== -->
+        <!-- The patterns in this test is always the same,  -->
+        <!-- and the various values for the patternRegion   -->
+        <!-- select different areas for that pattern.       -->
+        <!-- ============================================== -->
+        <g id="patternContent" stroke="none" opacity="1">
+            <rect x="0" y="0" width="20" height="20" fill="black" />
+
+            <g fill="crimson">
+                <rect width="5" height="5" />
+                <rect x="5" y="5" width="5" height="5" />
+            </g>
+            <g fill="yellow" transform="translate(10, 0)">
+                <rect width="5" height="5" />
+                <rect x="5" y="5" width="5" height="5" />
+            </g>
+            <g fill="white" transform="translate(0, 10)">
+                <rect width="5" height="5" />
+                <rect x="5" y="5" width="5" height="5" />
+            </g>
+            <g fill="rgb(100, 100, 255)" transform="translate(10, 10)">
+                <rect width="5" height="5" />
+                <rect x="5" y="5" width="5" height="5" />
+            </g>
+        </g>
+
+
+        <!-- ============================================== -->
+        <!-- For all the following patterns:                -->
+        <!--                                                -->
+        <!-- patternUnits : default (objectBoundingBox)     -->
+        <!-- patternContentUnits : default (userSpaceOnUse) -->
+        <!-- patternTransform: default (identity)           -->
+        <!-- viewBox : default (none)                       -->
+        <!-- preserveAspectRatio: default                   -->
+        <!-- overflow : default (hidden)                    -->
+        <!-- ============================================== -->
+
+        <!-- ============================================== -->
+        <!-- The pattern content fits exactly in the        -->
+        <!-- pattern region.                                -->
+        <!-- .2 * 100 = 20 userSpaceUnits                   -->
+        <!-- .4 * 50  = 20 userSpaceUnits                   -->
+        <!-- ============================================== -->
+        <pattern id="patternExactFit" x="0" y="0" width=".2" height=".4">
+            <use xlink:href="#patternContent" />
+        </pattern>
+
+        <!-- ============================================== -->
+        <!-- The pattern content is offset along the x axis -->
+        <!-- .2 * 100 = 20 userSpaceUnits                   -->
+        <!-- .4 * 50  = 20 userSpaceUnits                   -->
+        <!-- ============================================== -->
+        <pattern id="patternTranslateRegionX" 
+                 x="-.05" y="0" 
+                 width=".2" height=".4" >
+            <use xlink:href="#patternContent" />
+        </pattern>
+
+        <!-- ============================================== -->
+        <!-- The pattern content is offset along the y axis -->
+        <!-- .2 * 100 = 20 userSpaceUnits                   -->
+        <!-- .4 * 50  = 20 userSpaceUnits                   -->
+        <!-- ============================================== -->
+        <pattern id="patternTranslateRegionY" 
+                 x="0" y="-.1" 
+                 width=".2" height=".4" >
+            <use xlink:href="#patternContent" />
+        </pattern>
+
+        <!-- ============================================== -->
+        <!-- The pattern content is offset along the both   -->
+        <!-- both axis.                                     -->
+        <!-- .2 * 100 = 20 userSpaceUnits                   -->
+        <!-- .4 * 50  = 20 userSpaceUnits                   -->
+        <!-- ============================================== -->
+        <pattern id="patternTranslateRegionXY" 
+                 x=".1" y=".2" 
+                 width=".2" height=".4" >
+            <use xlink:href="#patternContent" />
+        </pattern>
+
+        <!-- ============================================== -->
+        <!-- The pattern content width smaller width than   -->
+        <!-- pattern region.                                -->
+        <!-- .4 * 100 = 40 userSpaceUnits                   -->
+        <!-- .4 * 50  = 20 userSpaceUnits                   -->
+        <!-- ============================================== -->
+        <pattern id="patternWiderRegion" 
+                 x="0" y="0" 
+                 width=".4" height=".4" >
+            <use xlink:href="#patternContent" />
+        </pattern>
+
+        <!-- ============================================== -->
+        <!-- The pattern content height smaller than        -->
+        <!-- pattern region.                                -->
+        <!-- .2 * 100 = 20 userSpaceUnits                   -->
+        <!-- .8 * 50  = 40 userSpaceUnits                   -->
+        <!-- ============================================== -->
+        <pattern id="patternHigherRegion" 
+                 x="0" y="0" 
+                 width=".2" height=".8" >
+            <use xlink:href="#patternContent" />
+        </pattern>
+
+        <!-- ============================================== -->
+        <!-- The pattern content width and height smaller   -->
+        <!-- than pattern region.                           -->
+        <!-- .4 * 100 = 40 userSpaceUnits                   -->
+        <!-- .8 * 50  = 40 userSpaceUnits                   -->
+        <!-- ============================================== -->
+        <pattern id="patternWiderHigherRegion" 
+                 x="0" y="0" 
+                 width=".4" height=".8" >
+            <use xlink:href="#patternContent" />
+        </pattern>
+
+        </defs>
+
+        <g transform="translate(30, 90)" >
+            <text class="legend" style="text-anchor:start" x="0" y="-5">Pattern (4 times actual size)</text>
+            <use xlink:href="#patternContent" transform="scale(4, 4)" />
+        </g>
+
+        <g transform="translate(30, 200)">
+
+            <g>
+                <text class="legend" style="text-anchor:start" x="0" y="-5">Exact Fit in patternRegion</text>
+                <rect x="0" y="0" width="100" height="50" fill="url(#patternExactFit)" stroke="black"/>
+                <rect x="0" y="0" width="20" height="20" stroke="white" fill-opacity=".12" />
+            </g>
+
+            <g transform="translate(0, 70)">
+                <text class="legend" style="text-anchor:start" x="0" y="-5">patternRegion offset to the left</text>
+                <rect x="0" y="0" width="100" height="50" fill="url(#patternTranslateRegionX)" stroke="black"/>
+                <rect x="-5" y="0" width="20" height="20" stroke="white" fill-opacity=".12"/>
+            </g>
+
+            <g transform="translate(0, 140)">
+                <text class="legend" style="text-anchor:start" x="0" y="-5">patternRegion offset to the top</text>
+                <rect x="0" y="0" width="100" height="50" fill="url(#patternTranslateRegionY)" stroke="black"/>
+                <rect x="0" y="-5" width="20" height="20" stroke="white" fill-opacity=".12" />
+            </g>
+
+            <g transform="translate(0, 210)">
+                <text class="legend" style="text-anchor:start" x="0" y="-5">patternRegion offset to the top/left</text>
+                <rect x="0" y="0" width="100" height="50" fill="url(#patternTranslateRegionXY)" stroke="black"/>
+                <rect x="10" y="10" width="20" height="20" stroke="white" fill-opacity=".12" />
+            </g>
+
+        </g>
+
+        <g transform="translate(255, 200)">
+
+            <g>
+                <text class="legend" style="text-anchor:start" x="0" y="-5">patternRegion wider than content</text>
+                <rect x="0" y="0" width="100" height="50" fill="url(#patternWiderRegion)" stroke="black"/>
+                <rect x="0" y="0" width="40" height="20" stroke="white" fill-opacity=".12" />
+            </g>
+
+            <g transform="translate(0, 70)">
+                <text class="legend" style="text-anchor:start" x="0" y="-5">patternRegion higher than content</text>
+                <rect x="0" y="0" width="100" height="50" fill="url(#patternHigherRegion)" stroke="black"/>
+                <rect x="0" y="0" width="20" height="40" stroke="white" fill-opacity=".12" />
+            </g>
+
+            <g transform="translate(0, 140)">
+                <text class="legend" style="text-anchor:start" x="0" y="-5">patternRegion higher than content</text>
+                <rect x="0" y="0" width="100" height="50" fill="url(#patternWiderHigherRegion)" stroke="black"/>
+                <rect x="0" y="0" width="40" height="40" stroke="white" fill-opacity=".12" />
+            </g>
+        </g>
+
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

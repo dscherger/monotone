@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!-- nested graphs 05.02.2002  -->
+<gxl xmlns:xlink="http://www.w3.org/1999/xlink">
+	<graph id="crossing-instance" edgeids="true">
+		<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#crossingSchema"/>
+		<node id="t">
+			<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#T"/>
+			<graph id="graph2" edgeids="true">
+				<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#innerGraph"/>
+				<node id="u">
+					<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#U"/>
+				</node>
+				<node id="v">
+					<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#V"/>
+				</node>
+				<edge id="e1" from="u" to="v">
+					<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#E"/>
+				</edge>
+				<edge id="e3" from="w" to="v">
+					<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#G"/>
+				</edge>
+			</graph>
+		</node>
+		<node id="w">
+			<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#W"/>
+		</node>
+		<edge id="e2" from="t" to="w">
+			<type xlink:href="../../../schema/gxl/crossing/crossingSchema.gxl#F"/>
+		</edge>
+	</graph>
+</gxl>

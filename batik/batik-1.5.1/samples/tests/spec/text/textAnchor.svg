@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" 
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ====================================================================== -->
+<!-- Tests text-anchor on tspan elements                                    -->
+<!--                                                                        -->
+<!-- @author tkormann@ilog.fr                                               -->
+<!-- @version $Id: textAnchor.svg,v 1.2 2003/08/08 11:39:36 vhardy Exp $                                                          -->
+<!-- ====================================================================== -->
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>  
+
+<svg width="450" height="500" viewBox="0 0 450 500" >
+
+    <text class="title" x="50%" y="40">text-anchor on &lt;tspan&gt;</text>
+
+    <g id="testContent" transform="translate(56.25, 82.5) scale(.75,.75)">
+
+        <g transform="translate(0,0)">
+            <rect width="450" height="167" fill="black" opacity=".1" />
+            <rect y="167" width="450" height="167" fill="white" />
+            <rect y="334" width="450" height="166" fill="black" opacity=".1" />
+
+            <line x1="150" y1="0" x2="150" y2="500" style="stroke:red; fill:none" />
+            <line x1="320" y1="0" x2="320" y2="500" style="stroke:red; fill:none" />
+            <rect width="450" height="500" stroke="red" fill="none" />
+        </g>
+
+        <g transform="translate(0, 0)">
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:start  -->
+        <!-- textChunk2: text-anchor:start  -->
+        <!-- ############################## -->
+        <g transform="translate(0, 0)">
+    
+            <text y="50">
+                <tspan x="150" style="text-anchor:start">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:start">another text chunk</tspan>
+            </text>
+
+        </g>
+
+
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:middle -->
+        <!-- textChunk2: text-anchor:start  -->
+        <!-- ############################## -->
+        <g transform="translate(0 40)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:middle">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:start">another text chunk</tspan>
+            </text>
+
+        </g>
+
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:end    -->
+        <!-- textChunk2: text-anchor:start  -->
+        <!-- ############################## -->
+        <g transform="translate(0 80)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:end">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:start">another text chunk</tspan>
+            </text>
+
+        </g>
+        </g>
+
+        <!-- ############################################################################ -->
+        <!-- ############################################################################ -->
+
+        <g transform="translate(0 50)">
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:start  -->
+        <!-- textChunk2: text-anchor:middle -->
+        <!-- ############################## -->
+        <g transform="translate(0 120)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:start">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:middle">another text chunk</tspan>
+            </text>
+
+        </g>
+
+
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:middle -->
+        <!-- textChunk2: text-anchor:middle -->
+        <!-- ############################## -->
+        <g transform="translate(0 160)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:middle">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:middle">another text chunk</tspan>
+            </text>
+
+        </g>
+
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:end    -->
+        <!-- textChunk2: text-anchor:middle -->
+        <!-- ############################## -->
+        <g transform="translate(0 200)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:end">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:middle">another text chunk</tspan>
+            </text>
+
+        </g>
+        </g>
+
+        <!-- ############################################################################ -->
+        <!-- ############################################################################ -->
+        <g transform="translate(0, 80)">
+
+        <!-- ############################# -->
+        <!-- textChunk1: text-anchor:start -->
+        <!-- textChunk2: text-anchor:end   -->
+        <!-- ############################# -->
+        <g transform="translate(0 260)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:start">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:end">another text chunk</tspan>
+                </text>
+
+        </g>
+
+
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:middle -->
+        <!-- textChunk2: text-anchor:end    -->
+        <!-- ############################## -->
+        <g transform="translate(0 300)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:middle">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:end">another text chunk</tspan>
+            </text>
+
+        </g>
+
+        <!-- ############################## -->
+        <!-- textChunk1: text-anchor:end    -->
+        <!-- textChunk2: text-anchor:end    -->
+        <!-- ############################## -->
+        <g transform="translate(0 340)">
+
+            <text y="50">
+                <tspan x="150" style="text-anchor:end">I am the</tspan>
+                <tspan style="fill:red"> same text chunk</tspan>
+                <tspan x="320" y="30" style="text-anchor:end">another text chunk</tspan>
+            </text>
+
+        </g>
+        </g>
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+</svg>

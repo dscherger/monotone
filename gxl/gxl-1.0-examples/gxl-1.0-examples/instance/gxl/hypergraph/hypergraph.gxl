@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!--hypergraphs 05.02.2002  -->
+<gxl xmlns:xlink="http://www.w3.org/1999/xlink">
+	<graph id="hypergraph-instance" hypergraph="true">
+		<type xlink:href="../../../schema/gxl/hypergraph/hypergraphSchema.gxl#hypergraphSchema"/>
+		<node id="u">
+			<type xlink:href="../../../schema/gxl/hypergraph/hypergraphSchema.gxl#U"/>
+		</node>
+		<node id="v">
+			<type xlink:href="../../../schema/gxl/hypergraph/hypergraphSchema.gxl#V"/>
+		</node>
+		<node id="w">
+			<type xlink:href="../../../schema/gxl/hypergraph/hypergraphSchema.gxl#W"/>
+		</node>
+		<rel id="r">
+			<type xlink:href="../../../schema/gxl/hypergraph/hypergraphSchema.gxl#R"/>
+			<relend target="v" direction="in" role="theV"/>
+			<relend target="w" direction="out" role="theW"/>
+			<relend target="u" direction="out" role="theFirstU"/>
+			<relend target="u" direction="out" role="theSecondU"/>
+		</rel>
+	</graph>
+</gxl>

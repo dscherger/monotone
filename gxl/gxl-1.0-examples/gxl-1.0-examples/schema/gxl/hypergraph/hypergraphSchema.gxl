@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!-- hypergraph schema 05.02.2002  -->
+<gxl xmlns:xlink="http://www.w3.org/1999/xlink">
+	<graph id="hypergraph-schema" edgeids="true">
+		<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#gxl-1.0"/>
+		<node id="hypergraphSchema">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#GraphClass"/>
+			<attr name="name">
+				<string>hypergraphSchema</string>
+			</attr>
+		</node>
+		<edge id="c1" from="hypergraphSchema" to="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>V</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="c2" from="hypergraphSchema" to="W">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="W">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>W</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="c3" from="hypergraphSchema" to="U">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="U">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>U</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="c4" from="hypergraphSchema" to="R">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="R">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationClass"/>
+			<attr name="name">
+				<string>R</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Re1">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="directedto">
+				<enum>relation</enum>
+			</attr>
+			<attr name="role">
+				<string>theV</string>
+			</attr>
+		</node>
+		<node id="Re2">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="directedto">
+				<enum>target</enum>
+			</attr>
+			<attr name="role">
+				<string>theW</string>
+			</attr>
+		</node>
+		<node id="Re3">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="directedto">
+				<enum>target</enum>
+			</attr>
+			<attr name="role">
+				<string>theFirstU</string>
+			</attr>
+		</node>
+		<node id="Re4">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="directedto">
+				<enum>target</enum>
+			</attr>
+			<attr name="role">
+				<string>theSecondU</string>
+			</attr>
+		</node>
+		<edge id="e1" from="R" to="Re1">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="e2" from="R" to="Re2">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="e3" from="R" to="Re3">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="e4" from="R" to="Re4">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="e5" from="Re1" to="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+		</edge>
+		<edge id="e6" from="Re2" to="W">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+		</edge>
+		<edge id="e7" from="Re3" to="U">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+		</edge>
+		<edge id="e8" from="Re4" to="U">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+		</edge>
+	</graph>
+</gxl>

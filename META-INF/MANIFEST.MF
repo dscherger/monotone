@@ -1,2 +1,2 @@
 Main-Class: GXLViewer
-Class-Path: batik/batik-1.5.1/batik.jar gxl/gxl-0.92/gxl-0.92/gxl.jar
+Class-Path: batik/batik-1.5.1/batik.jar gxl/gxl-0.92/gxl.jar

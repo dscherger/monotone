@@ -1,0 +1,146 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Multiple use combined (external and internal)                             -->
+<!--                                                                           -->
+<!-- @author tkormann@ilog.fr                                                  -->
+<!-- @version $Id: useMultipleURI.svg,v 1.3 2003/08/08 11:39:36 vhardy Exp $ -->
+<!-- ========================================================================= -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="450" height="500" viewBox="0 0 450 500">
+<title>Multiple &lt;use> with CSS property values: URIs</title>
+
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+    <g id="testContent">
+    <text x="225" y="50" class="title">Multiple &lt;use> with CSS property values: URIs</text>
+    <text x="225" y="70" style="text-anchor:middle; font-size:12; font-style:italic">This file is using the defs.svg file to get the external resources</text>
+
+<!-- ############################### -->
+<g id="board" style="fill:none; stroke:black;">
+
+	<rect x="75" y="100" width="150" height="20" style="fill:#eee"/>
+	<rect x="225" y="100" width="150" height="20" style="fill:#eee"/>
+
+	<rect x="55" y="120" width="20" height="150" style="fill:#eee"/>
+	<rect x="55" y="270" width="20" height="150" style="fill:#eee"/>
+
+	<rect x="75" y="120" width="150" height="300"/>
+	<rect x="225" y="120" width="150" height="300"/>
+
+	<line x1="75" y1="270" x2="375" y2="270" />
+
+	<g style="font-size:12; text-anchor:middle; fill:black; stroke:none">
+		<text x="150" y="114">&lt;use></text>
+		<text x="300" y="114">External &lt;use></text>
+
+		<text x="0" y="0" transform="translate(70 195) rotate(-90)">&lt;use></text>
+		<text x="0" y="0" transform="translate(70 345) rotate(-90)">External &lt;use></text>
+	</g>
+</g>
+
+<defs>
+
+<linearGradient id="crimson">
+	<stop style="stop-color:crimson" offset="0" />
+	<stop style="stop-color:white" offset="1" />
+</linearGradient>
+
+<linearGradient id="orange">
+	<stop style="stop-color:orange" offset="0" />
+	<stop style="stop-color:white" offset="1" />
+</linearGradient>
+
+<linearGradient id="gold">
+	<stop style="stop-color:gold" offset="0" />
+	<stop style="stop-color:white" offset="1" />
+</linearGradient>
+
+<rect id="r1" x="0" y="0" width="80" height="80" />
+
+<g id="uu11" style="fill:url(#orange)">
+	<rect x="0" y="0" width="80" height="80" fill="url(#crimson)" />
+	<use xlink:href="#r1" x="20" y="20" width="80" height="80" />
+	<use xlink:href="#r1" x="40" y="40" width="80" height="80" style="fill:url(../../resources/svg/defs.svg#extGold)" />
+</g>
+
+<g id="uu12" style="fill:url(#orange)">
+	<rect x="0" y="0" width="80" height="80" fill="url(#crimson)" />
+	<use xlink:href="../../resources/svg/defs.svg#extR1" x="20" y="20" width="80" height="80" />
+	<use xlink:href="../../resources/svg/defs.svg#extR1" x="40" y="40" width="80" height="80" style="fill:url(../../resources/svg/defs.svg#extGold)" />
+</g>
+
+</defs>
+
+<use xlink:href="#uu11" x="90" y="130" />
+
+<use xlink:href="../../resources/svg/defs.svg#uu21" x="240" y="130" />
+
+<use xlink:href="#uu12" x="90" y="280" />
+
+<use xlink:href="../../resources/svg/defs.svg#uu22" x="240" y="280" />
+
+
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

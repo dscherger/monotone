@@ -1,0 +1,140 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Test the x,dx and y,dy attributes                                         -->
+<!--                                                                           -->
+<!-- @author tkormann@ilog.fr                                                  -->
+<!-- @version $Id: textPosition.svg,v 1.3 2003/08/08 11:39:37 vhardy Exp $ -->
+<!-- ========================================================================= -->
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="450" height="500" viewBox="0 0 450 500">
+<title>Text Position</title>
+
+  <style type="text/css"><![CDATA[
+    .info {
+      font-family: Arial;
+      font-size: 10;
+    }
+  ]]>
+  </style>
+
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+
+<text class="title" x="50%" y="30">Text Position</text>
+
+<g id="testContent" style="font-family:Arial; font-size:24">
+
+<!-- ################################################################ -->
+
+<text x="50" y="80">Batik</text>
+<text x="50" y="100" class="info">&lt;text x="100" y="80"></text>
+
+<text x="240" y="80" style="letter-spacing:20">Batik</text>
+<text x="240" y="100" class="info">&lt;text x="240" y="80" letter-spacing="20"></text>
+
+
+<text x="50 70 90 110 130" y="140">Batik</text>
+<text x="50" y="160" class="info">&lt;text x="50 70 90 110 130" y="140"></text>
+
+<text dx="240 20 20 20 20" y="140">Batik</text>
+<text x="240" y="160" class="info">&lt;text dx="240 20 20 20 20" y="140"></text>
+
+<!-- ################################################################ -->
+
+<text><tspan x="50" y="200">Batik</tspan></text>
+<text x="50" y="220" class="info">&lt;tspan x="50" y="200"></text>
+
+<text><tspan x="240" y="200" style="letter-spacing:20">Batik</tspan></text>
+<text><tspan x="240" y="220" class="info">&lt;tspan x="240" y="200" letter-spacing="20"></tspan></text>
+
+
+<text><tspan x="50 70 90 110 130" y="260">Batik</tspan></text>
+<text x="50" y="280" class="info">&lt;tspan x="50 70 90 110 130" y="260"></text>
+
+<text><tspan dx="240 20 20 20 20" y="260">Batik</tspan></text>
+<text x="240" y="280" class="info">&lt;tspan dx="240 20 20 20 20" y="260"></text>
+
+<!-- ################################################################ -->
+
+<text><tspan x="50 60 70 80 90" dx="0 10 20 30 40" y="320">Batik</tspan></text>
+<text x="50" y="340" class="info">&lt;tspan x="50 60 70 80 90" <tspan x="83" dy="1.1em">dx="0 10 20 30 40" y="320"></tspan></text>
+
+
+<text><tspan x="240" dx="0 10 10 10 10" y="320" style="letter-spacing:10">Batik</tspan></text>
+<text x="240" y="340" class="info">&lt;tspan x="240" dx="0 10 10 10 10" <tspan x="273" dy="1.1em">y="320" style="letter-spacing:10"></tspan></text>
+
+
+<!-- ################################################################ -->
+
+<text><tspan x="50" letter-spacing="10" y="380">Batik</tspan><tspan x="10" y="380"/></text>
+<text x="50" y="400" class="info">Empty Trailing tspan</text>
+
+
+<text><tspan x="200" y="380"/><tspan x="240" letter-spacing="20" y="380">Batik</tspan></text>
+<text x="240" y="400" class="info">Empty Preceeding tspan</text>
+
+
+</g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>
+

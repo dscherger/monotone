@@ -1,0 +1,162 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ====================================================================== -->
+<!-- regularPoly extension tag test                                         -->
+<!--                                                                        -->
+<!-- @author Thomas.DeWeese@Kodak.com                                       -->
+<!-- @version $Id: colorSwitch.svg,v 1.4 2003/08/08 11:39:30 vhardy Exp $ -->
+<!-- ====================================================================== -->
+
+<?xml-stylesheet type="text/css" href="extension.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="body" width="450" height="500" xml:space="preserve" 
+     viewBox="0 0 450 500"
+     xmlns:svg="http://www.w3.org/2000/svg"
+     xmlns:batik="http://xml.apache.org/batik/ext">
+
+    <title>Star Extension Tag</title>
+  
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+    <g id="testContent" class="legend" style="text-anchor:middle">
+        <text x="225" y="40" class="title">
+            Color Switch Paint Server
+        </text>
+  
+        <path d="M25,135 c50,-50 50,50 100,0 c50,-50 50,50 100,0 
+                 c50,-50 50,50 100,0c50,-50 50,50 100,0" 
+              fill="none" stroke="black" stroke-width="10"/> 
+  
+        <path d="M25,275 c50,-50 50,50 100,0 c50,-50 50,50 100,0 
+                 c50,-50 50,50 100,0c50,-50 50,50 100,0" 
+              fill="none" stroke="black" stroke-width="10"/> 
+  
+        <path d="M25,415 c50,-50 50,50 100,0 c50,-50 50,50 100,0 
+                 c50,-50 50,50 100,0c50,-50 50,50 100,0" 
+              fill="none" stroke="black" stroke-width="10"/> 
+  
+        <switch>
+          <g requiredExtensions="http://xml.apache.org/batik/ext/colorSwitch/1.0"
+             fill="#0D0" stroke="#88F" stroke-width="2">
+
+            <batik:colorSwitch id="TransPurple">
+                <batik:solidColor solid-color="red" 
+                       requiredExtensions="NonExistantExtension"/>
+                <batik:solidColor solid-color="#FF00FF" solid-opacity=".5"
+                       requiredExtensions="http://xml.apache.org/batik/ext/solidColor/1.0"/>
+                <linearGradient>
+                    <stop offset="0" stop-color="#FF0000" stop-opacity="0.5"/>
+                </linearGradient>
+            </batik:colorSwitch>
+
+            <batik:colorSwitch id="SolidPurple">
+                <batik:solidColor solid-color="#FF00FF" 
+                       requiredExtensions="http://xml.apache.org/batik/ext/solidColor/1.0"/>
+                <linearGradient>
+                    <stop offset="0" stop-color="#FFFF00" />
+                </linearGradient>
+            </batik:colorSwitch>
+
+            <batik:colorSwitch id="orange">
+                <batik:solidColor solid-color="orange" solid-opacity="1"
+                       requiredExtensions="NonExistantExtension" />
+                <linearGradient y2="100%">
+                    <stop offset=".1" stop-color="crimson" />
+                    <stop offset=".5" stop-color="gold" stop-opacity="0.5"/>
+                    <stop offset=".9" stop-color="crimson" />
+                </linearGradient>
+            </batik:colorSwitch>
+
+
+            <circle fill="url(#SolidPurple)"   cx="85"  cy="135" r="50"/>
+            <circle fill="url(#TransPurple)"   cx="225" cy="135" r="50"/>
+            <circle fill="url(#orange)"        cx="365" cy="135" r="50"/>
+                                            
+            <g stroke-width="5" fill="none">
+                <circle stroke="url(#SolidPurple)" cx="85"  cy="275" r="50"/>
+                <circle stroke="url(#TransPurple)" cx="225" cy="275" r="50"/>
+                <circle stroke="url(#orange)"      cx="365" cy="275" r="50"/>
+            </g>
+
+            <circle fill="url(#SolidPurple)"  fill-opacity="0.5" 
+                    cx="85"  cy="415" r="50"/>
+            <circle fill="url(#TransPurple)"  fill-opacity="0.5" 
+                    cx="225" cy="415" r="50"/>
+            <circle fill="url(#orange)"       fill-opacity="0.5" 
+                    cx="365" cy="415" r="50"/>
+          </g>
+         
+          <g fill="red">
+            <circle cx="85"  cy="135" r="50"/>
+            <circle cx="225" cy="135" r="50"/>
+            <circle cx="365" cy="135" r="50"/>
+                                            
+            <circle cx="85"  cy="275" r="50"/>
+            <circle cx="225" cy="275" r="50"/>
+            <circle cx="365" cy="275" r="50"/>
+      
+            <circle cx="85"  cy="415" r="50"/>
+            <circle cx="225" cy="415" r="50"/>
+            <circle cx="365" cy="415" r="50"/>
+          </g>
+        </switch>
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../batikLogo.svg#Batik_Tag_Box" />
+</svg>

@@ -1,0 +1,1335 @@
+<?xml version="1.0"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!-- gxl-1.0 (metaschema) 05.02.2002-->
+<gxl xmlns:xlink="http://www.w3.org/1999/xlink">
+	<graph id="gxl-1.0-metaschema" edgeids="true" edgemode="defaultdirected">
+		<type xlink:href="#gxl-1.0"/>
+		<!-- +                 + -->
+		<!--  GRAPH Part  -->
+		<!-- +                 + -->
+		<!--      nodes       -->
+		<node id="gxl-1.0">
+			<type xlink:href="#GraphClass"/>
+			<attr name="name">
+				<string>gxl-1.0</string>
+			</attr>
+		</node>
+		<node id="AttributedElementClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>AttributedElementClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="AttributeClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>AttributeClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="GraphElementClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>GraphElementClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="RelationClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>RelationClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="RelationEndClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>RelationEndClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="NodeClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>NodeClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="EdgeClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>EdgeClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="AggregationClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>AggregationClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="CompositionClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>CompositionClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="GraphClass">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>GraphClass</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<!--      edges       -->
+		<node id="hasAttribute">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>hasAttribute</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<node id="hasRelationEnd">
+			<type xlink:href="#CompositionClass"/>
+			<attr name="name">
+				<string>hasRelationEnd</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<node id="relatesTo">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>relatesTo</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<node id="from">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>from</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<node id="to">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>to</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<node id="isA">
+			<type xlink:href="#EdgeClass"/>
+			<attr name="name">
+				<string>isA</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="contains">
+			<type xlink:href="#CompositionClass"/>
+			<attr name="name">
+				<string>contains</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<node id="hasAsComponentGraph">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>hasAsComponentGraph</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<!--      attribs       -->
+		<node id="name">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>name</string>
+			</attr>
+		</node>
+		<node id="isabstract">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>isabstract</string>
+			</attr>
+		</node>
+		<node id="directedto">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>directedto</string>
+			</attr>
+		</node>
+		<node id="role">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>role</string>
+			</attr>
+		</node>
+		<node id="limits">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>limits</string>
+			</attr>
+		</node>
+		<node id="isordered">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>isordered</string>
+			</attr>
+		</node>
+		<node id="isdirected">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>isdirected</string>
+			</attr>
+		</node>
+		<node id="aggregate">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>aggregate</string>
+			</attr>
+		</node>
+		<!--    domains     -->
+		<node id="domainBool">
+			<type xlink:href="#Bool"/>
+		</node>
+		<node id="domainInt">
+			<type xlink:href="#Int"/>
+		</node>
+		<node id="domainString">
+			<type xlink:href="#String"/>
+		</node>
+		<node id="domainTupIntInt">
+			<type xlink:href="#Tup"/>
+		</node>
+		<node id="domainEnum">
+			<type xlink:href="#Enum"/>
+		</node>
+		<node id="domainEnum2">
+			<type xlink:href="#Enum"/>
+		</node>
+		<!--     literals      -->
+		<node id="valueRelation">
+			<type xlink:href="#EnumVal"/>
+			<attr name="value">
+				<string>relation</string>
+			</attr>
+		</node>
+		<node id="valueTarget">
+			<type xlink:href="#EnumVal"/>
+			<attr name="value">
+				<string>target</string>
+			</attr>
+		</node>
+		<node id="valueUndirected">
+			<type xlink:href="#EnumVal"/>
+			<attr name="value">
+				<string>undirected</string>
+			</attr>
+		</node>
+		<node id="valueFrom">
+			<type xlink:href="#EnumVal"/>
+			<attr name="value">
+				<string>from</string>
+			</attr>
+		</node>
+		<node id="valueTo">
+			<type xlink:href="#EnumVal"/>
+			<attr name="value">
+				<string>to</string>
+			</attr>
+		</node>
+		<!--    relations     -->
+		<edge id="e1" from="gxl-1.0" to="AttributedElementClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e2" from="gxl-1.0" to="AttributeClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e3" from="gxl-1.0" to="hasAttribute">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e4" from="gxl-1.0" to="RelationClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e5" from="gxl-1.0" to="RelationEndClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e6" from="gxl-1.0" to="hasRelationEnd">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e7" from="gxl-1.0" to="relatesTo">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e8" from="gxl-1.0" to="NodeClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e9" from="gxl-1.0" to="EdgeClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e10" from="gxl-1.0" to="from">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e11" from="gxl-1.0" to="to">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e12" from="gxl-1.0" to="AggregationClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e13" from="gxl-1.0" to="CompositionClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e14" from="gxl-1.0" to="isA">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e15" from="gxl-1.0" to="GraphClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e16" from="gxl-1.0" to="contains">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e17" from="gxl-1.0" to="hasAsComponentGraph">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e18" from="gxl-1.0" to="GraphElementClass">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e19" from="AttributeClass" to="name">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e20" from="GraphElementClass" to="isabstract">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e21" from="GraphElementClass" to="name">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e22" from="RelationEndClass" to="directedto">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e23" from="RelationEndClass" to="role">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e24" from="relatesTo" to="limits">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e25" from="relatesTo" to="isordered">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e26" from="EdgeClass" to="isdirected">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e27" from="AggregationClass" to="aggregate">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e28" from="GraphClass" to="name">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e29" from="hasAsComponentGraph" to="role">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e30" from="name" to="domainString">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e31" from="isabstract" to="domainBool">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e32" from="directedto" to="domainEnum">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e33" from="role" to="domainString">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e34" from="limits" to="domainTupIntInt">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e35" from="isordered" to="domainBool">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e36" from="isdirected" to="domainBool">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e37" from="aggregate" to="domainEnum2">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e38" from="AttributeClass" to="AttributedElementClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e39" from="GraphElementClass" to="AttributedElementClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e40" from="RelationClass" to="GraphElementClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e41" from="RelationEndClass" to="AttributedElementClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e42" from="NodeClass" to="GraphElementClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e43" from="EdgeClass" to="GraphElementClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<!-- isA-relations between theese are not allowed, so they were deleted -->
+		<!--edge id="e44" from="from" to="relatesTo">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e45" from="to" to="relatesTo">
+			<type xlink:href="#isA"/>
+		</edge-->
+		<edge id="e441" from="from" to="limits">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e451" from="from" to="isordered">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e442" from="to" to="limits">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e452" from="to" to="isordered">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e46" from="AggregationClass" to="EdgeClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e47" from="CompositionClass" to="AggregationClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e48" from="GraphClass" to="AttributedElementClass">
+			<type xlink:href="#isA"/>
+		</edge>
+		<!-- isA-relations between theese are not allowed, so they were deleted -->
+		<!--edge id="e49" from="hasAsComponentGraph" to="relatesTo">
+			<type xlink:href="#isA"/>
+		</edge-->
+		<edge id="e443" from="hasAsComponentGraph" to="limits">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e453" from="hasAsComponentGraph" to="isordered">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e50" from="domainEnum" to="valueRelation">
+			<type xlink:href="#containsValue"/>
+		</edge>
+		<edge id="e51" from="domainEnum" to="valueTarget">
+			<type xlink:href="#containsValue"/>
+		</edge>
+		<edge id="e52" from="domainEnum" to="valueUndirected">
+			<type xlink:href="#containsValue"/>
+		</edge>
+		<edge id="e53" from="domainEnum2" to="valueFrom">
+			<type xlink:href="#containsValue"/>
+		</edge>
+		<edge id="e54" from="domainEnum2" to="valueTo">
+			<type xlink:href="#containsValue"/>
+		</edge>
+		<edge id="e55" from="domainTupIntInt" to="domainInt">
+			<type xlink:href="#hasComponent"/>
+		</edge>
+		<edge id="e56" from="domainTupIntInt" to="domainInt">
+			<type xlink:href="#hasComponent"/>
+		</edge>
+		<edge id="e57" from="hasAttribute" to="AttributedElementClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e58" from="hasAttribute" to="AttributeClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e59" from="hasRelationEnd" to="RelationClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e60" from="hasRelationEnd" to="RelationEndClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e61" from="relatesTo" to="RelationEndClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e62" from="relatesTo" to="GraphElementClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e63" from="from" to="EdgeClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e64" from="from" to="GraphElementClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e65" from="to" to="EdgeClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e66" from="to" to="GraphElementClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e67" from="isA" to="GraphElementClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e68" from="isA" to="GraphElementClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e69" from="contains" to="GraphClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e70" from="contains" to="GraphElementClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e71" from="hasAsComponentGraph" to="GraphElementClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e72" from="hasAsComponentGraph" to="GraphClass">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<!--  +                      +  -->
+		<!--  ATTRIBUTE Part  -->
+		<!--  +                      +  -->
+		<!--          nodes          -->
+		<node id="Domain">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Domain</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="CompositeDomain">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>CompositeDomain</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="Bag">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Bag</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Set">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Set</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Seq">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Seq</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Tup">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Tup</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Locator">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Locator</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="AtomicDomain">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>AtomicDomain</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="Bool">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Bool</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Float">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Float</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Int">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Int</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="String">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>String</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="Enum">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Enum</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="EnumVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>EnumVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<!--          edges          -->
+		<node id="hasDomain">
+			<type xlink:href="#EdgeClass"/>
+			<attr name="name">
+				<string>hasDomain</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="hasComponent">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>hasComponent</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<node id="containsValue">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>containsValue</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<!--          attribs          -->
+		<node id="value">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>value</string>
+			</attr>
+		</node>
+		<!--        relations        -->
+		<edge id="e73" from="gxl-1.0" to="Domain">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e74" from="gxl-1.0" to="hasDomain">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e75" from="gxl-1.0" to="CompositeDomain">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e77" from="gxl-1.0" to="hasComponent">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e78" from="gxl-1.0" to="Bag">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e79" from="gxl-1.0" to="Set">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e80" from="gxl-1.0" to="Seq">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e81" from="gxl-1.0" to="Tup">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e82" from="gxl-1.0" to="Locator">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e83" from="gxl-1.0" to="AtomicDomain">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e84" from="gxl-1.0" to="Bool">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e85" from="gxl-1.0" to="Float">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e86" from="gxl-1.0" to="Int">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e87" from="gxl-1.0" to="String">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e88" from="gxl-1.0" to="Enum">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e89" from="gxl-1.0" to="EnumVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e90" from="gxl-1.0" to="containsValue">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e91" from="gxl-1.0" to="Value">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e93" from="value" to="domainString">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e94" from="Bag" to="CompositeDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e95" from="Set" to="CompositeDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e96" from="Seq" to="CompositeDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e97" from="Tup" to="CompositeDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e98" from="Locator" to="Domain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e99" from="AtomicDomain" to="Domain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e100" from="Bool" to="AtomicDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e101" from="Float" to="AtomicDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e102" from="Int" to="AtomicDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e103" from="String" to="AtomicDomain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e104" from="Enum" to="Domain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e148" from="CompositeDomain" to="Domain">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e105" from="hasDomain" to="AttributeClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e106" from="hasDomain" to="Domain">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e107" from="hasComponent" to="CompositeDomain">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e108" from="hasComponent" to="Domain">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+		<edge id="e109" from="containsValue" to="Enum">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e110" from="containsValue" to="EnumVal">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<!--  +               +  -->
+		<!--  VALUE Part  -->
+		<!--  +               +  -->
+		<!--      nodes       -->
+		<node id="Value">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>Value</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="CompositeVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>CompositeVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="BagVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>BagVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="SetVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>SetVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="SeqVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>SeqVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="TupVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>TupVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="LocatorVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>LocatorVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="AtomicVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>AtomicVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="BoolVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>BoolVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="FloatVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>FloatVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="IntVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>IntVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="StringVal">
+			<type xlink:href="#NodeClass"/>
+			<attr name="name">
+				<string>StringVal</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<!--      edges       -->
+		<node id="hasDefaultValue">
+			<type xlink:href="#EdgeClass"/>
+			<attr name="name">
+				<string>hasDefaultValue</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<node id="hasComponentValue">
+			<type xlink:href="#AggregationClass"/>
+			<attr name="name">
+				<string>hasComponentValue</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<!--      attribs       -->
+		<node id="uri">
+			<type xlink:href="#AttributeClass"/>
+			<attr name="name">
+				<string>uri</string>
+			</attr>
+		</node>
+		<!--    relations     -->
+		<edge id="e111" from="gxl-1.0" to="hasDefaultValue">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e112" from="gxl-1.0" to="CompositeVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e113" from="gxl-1.0" to="BagVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e114" from="gxl-1.0" to="SetVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e115" from="gxl-1.0" to="SeqVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e116" from="gxl-1.0" to="TupVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e117" from="gxl-1.0" to="hasComponentValue">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e120" from="gxl-1.0" to="LocatorVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e121" from="gxl-1.0" to="AtomicVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e122" from="gxl-1.0" to="BoolVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e123" from="gxl-1.0" to="FloatVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e124" from="gxl-1.0" to="IntVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e125" from="gxl-1.0" to="StringVal">
+			<type xlink:href="#contains"/>
+		</edge>
+		<edge id="e126" from="EnumVal" to="value">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e127" from="LocatorVal" to="uri">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e128" from="AtomicVal" to="value">
+			<type xlink:href="#hasAttribute"/>
+		</edge>
+		<edge id="e129" from="uri" to="domainString">
+			<type xlink:href="#hasDomain"/>
+		</edge>
+		<edge id="e130" from="CompositeVal" to="Value">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e131" from="BagVal" to="CompositeVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e132" from="SetVal" to="CompositeVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e133" from="SeqVal" to="CompositeVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e134" from="TupVal" to="CompositeVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e135" from="EnumVal" to="Value">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e136" from="LocatorVal" to="Value">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e137" from="AtomicVal" to="Value">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e138" from="BoolVal" to="AtomicVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e139" from="FloatVal" to="AtomicVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e140" from="IntVal" to="AtomicVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e141" from="StringVal" to="AtomicVal">
+			<type xlink:href="#isA"/>
+		</edge>
+		<edge id="e142" from="hasDefaultValue" to="AttributeClass">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e143" from="hasDefaultValue" to="Value">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e144" from="hasComponentValue" to="CompositeVal">
+			<type xlink:href="#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e145" from="hasComponentValue" to="Value">
+			<type xlink:href="#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+	</graph>
+</gxl>

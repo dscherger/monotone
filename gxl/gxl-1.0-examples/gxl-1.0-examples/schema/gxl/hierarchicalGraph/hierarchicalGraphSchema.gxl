@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!-- hierarchical graph schema 05.02.2002  -->
+<gxl>
+	<graph id="hierarchicalGraph-schema" edgeids="true">
+		<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#gxl-1.0"/>
+		<node id="hierarchicalGraphSchema">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#GraphClass"/>
+			<attr name="name">
+				<string>hierarchicalGraphSchema</string>
+			</attr>
+		</node>
+		<edge id="c1" from="hierarchicalGraphSchema" to="Function">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Function">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Function</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="e22" from="Function" to="name">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAttribute"/>
+		</edge>
+		<node id="Asg">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#GraphClass"/>
+			<attr name="name">
+				<string>asg</string>
+			</attr>
+		</node>
+		<edge id="e1" from="Function" to="Asg">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAsComponentGraph"/>
+			<attr name="role">
+				<string/>
+			</attr>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c3" from="Asg" to="Stmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Stmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Stmt</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="c4" from="Asg" to="IfStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="IfStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>IfStmt</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="i2" from="IfStmt" to="Stmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#isA"/>
+		</edge>
+		<edge id="c5" from="Asg" to="ReturnStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="ReturnStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>ReturnStmt</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="i1" from="ReturnStmt" to="Stmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#isA"/>
+		</edge>
+		<edge id="c6" from="Asg" to="Expression">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Expression">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Expression</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="c7" from="Asg" to="isReturnValue">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isReturnValue">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#EdgeClass"/>
+			<attr name="name">
+				<string>isReturnValue</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="e5" from="isReturnValue" to="Expression">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e6" from="isReturnValue" to="ReturnStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c8" from="Asg" to="OpExpr">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="OpExpr">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>OpExpr</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="i3" from="OpExpr" to="Expression">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#isA"/>
+		</edge>
+		<edge id="c9" from="Asg" to="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Variable</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="name">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#AttributeClass"/>
+			<attr name="name">
+				<string>name</string>
+			</attr>
+		</node>
+		<node id="domain_string">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#String"/>
+		</node>
+		<edge id="e3" from="Variable" to="name">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAttribute"/>
+		</edge>
+		<edge id="e4" from="name" to="domain_string">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasDomain"/>
+		</edge>
+		<edge id="i4" from="Variable" to="Expression">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#isA"/>
+		</edge>
+		<edge id="c10" from="Asg" to="Interface">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Interface">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Interface</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="c11" from="Asg" to="isFormalOutput">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isFormalOutput">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#EdgeClass"/>
+			<attr name="name">
+				<string>isFormalOutput</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="e11" from="isFormalOutput" to="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e8" from="isFormalOutput" to="Interface">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c12" from="Asg" to="isFormalInput">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isFormalInput">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#EdgeClass"/>
+			<attr name="name">
+				<string>isFormalInput</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="e10" from="isFormalInput" to="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+		<edge id="e9" from="isFormalInput" to="Interface">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c13" from="Asg" to="Operator">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Operator">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Operator</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="e7" from="Operator" to="name">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAttribute"/>
+		</edge>
+		<edge id="c14" from="Asg" to="isOperator">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isOperator">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#CompositionClass"/>
+			<attr name="name">
+				<string>isOperator</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<edge id="e20" from="isOperator" to="Operator">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e18" from="isOperator" to="OpExpr">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c15" from="Asg" to="isOperand">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isOperand">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#CompositionClass"/>
+			<attr name="name">
+				<string>isOperand</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<edge id="e21" from="isOperand" to="Expression">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e19" from="isOperand" to="OpExpr">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c16" from="Asg" to="isFalseStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isFalseStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#CompositionClass"/>
+			<attr name="name">
+				<string>isFalseStmt</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<edge id="e13" from="isFalseStmt" to="Stmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e15" from="isFalseStmt" to="IfStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c17" from="Asg" to="isTrueStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isTrueStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#CompositionClass"/>
+			<attr name="name">
+				<string>isTrueStmt</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<edge id="e12" from="isTrueStmt" to="Stmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e16" from="isTrueStmt" to="IfStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="c18" from="Asg" to="isPredicate">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="isPredicate">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#CompositionClass"/>
+			<attr name="name">
+				<string>isPredicate</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+			<attr name="aggregate">
+				<enum>from</enum>
+			</attr>
+		</node>
+		<edge id="e14" from="isPredicate" to="OpExpr">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e17" from="isPredicate" to="IfStmt">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+	</graph>
+</gxl>

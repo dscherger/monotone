@@ -1,0 +1,184 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000802//EN"
+"http://www.w3.org/TR/2000/CR-SVG-20000802/DTD/svg-20000802.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ====================================================================== -->
+<!-- Modification of tspan children                                          -->
+<!--                                                                        -->
+<!-- @author nicolas.socheleau@bitflash.com                                 -->
+<!-- @version $Id: tspan_children1.svg,v 1.2 2003/08/08 11:39:33 vhardy Exp $                                                          -->
+<!-- ====================================================================== -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>  
+
+<svg id="body" width="450" height="500" viewBox="0 0 450 500">
+    <title>&lt;tspan&gt; children 'onload'</title>
+
+    <text x="50%" y="45" class="title">&lt;tspan&gt; children in 'onload'</text>
+
+    <script type="text/ecmascript"><![CDATA[
+    function addText(evt){
+        insertText(evt,'the quick ','tspan1');
+        appendText(evt,'fox');
+    }
+
+    function addCDATAText(evt){
+        insertCDATAText(evt,'the quick ','tspan2');
+        appendCDATAText(evt,'fox');
+    }
+
+    function insertText(evt,text,nextsiblingID) {
+
+        var elt = evt.target;
+        var doc = elt.getOwnerDocument();
+
+        var next = doc.getElementById(nextsiblingID);
+
+        var textnode = doc.createTextNode(text);
+
+        elt.insertBefore(textnode,next);
+    }
+
+    function insertCDATAText(evt,text,nextsiblingID) {
+
+        var elt = evt.target;
+        var doc = elt.getOwnerDocument();
+
+        var next = doc.getElementById(nextsiblingID);
+
+        var textnode = doc.createCDATASection(text);
+
+        elt.insertBefore(textnode,next);
+    }
+
+    function appendText(evt, text){
+        var elt = evt.target;
+        var doc = elt.getOwnerDocument();
+
+        var textnode = doc.createTextNode(text);
+
+        elt.appendChild(textnode);
+    }
+
+    function appendCDATAText(evt, text){
+        var elt = evt.target;
+        var doc = elt.getOwnerDocument();
+
+        var textnode = doc.createCDATASection(text);
+
+        elt.appendChild(textnode);
+    }
+
+    function removeText(evt) {
+        var elt = evt.target;
+
+        while ( elt.hasChildNodes() ){
+
+           var child = elt.getFirstChild();
+
+           elt.removeChild( child )
+        }
+    }
+    
+    ]]>
+    </script>
+
+    <g id="test-content">
+        <g style="font-size:40" >
+
+          <text><tspan x="70" y="135" style="fill:orange" 
+                onload="addText(evt)" >
+            <tspan id="tspan1" onload="appendText(evt,'brown')" style="fill:brown"></tspan>
+          </tspan></text>
+
+          <text><tspan x="70" y="175" style="fill:orange" 
+                onload="addCDATAText(evt)" >
+            <tspan id="tspan2" onload="appendCDATAText(evt,'brown')" style="fill:brown"></tspan>
+          </tspan></text>
+
+          <text><tspan x="70" y="335" style="fill:gold" 
+                onload="removeText(evt)" >
+            the quick brown fox
+          </tspan></text>
+          <text><tspan x="70" y="375" style="fill:gold" 
+                onload="removeText(evt)" ><![CDATA[
+            the quick brown fox
+          ]]></tspan></text>
+
+        </g>
+
+        <g style="stroke:black;fill:none;stroke-width:1;font-size:40">
+          <text><tspan x="70" y="135">
+            the quick <tspan>brown</tspan> fox
+          </tspan></text>
+          <text><tspan x="70" y="175">
+            the quick <tspan>brown</tspan> fox
+          </tspan></text>
+          <text><tspan x="70" y="335">
+            the quick brown fox
+          </tspan></text>
+          <text><tspan x="70" y="375">
+            the quick brown fox
+          </tspan></text>
+        </g>
+
+        <g style="fill:black; stroke:none; text-anchor:middle">
+                <text x="225" y="230" >insert nodes 
+                   <tspan style="font-size:8">( TEXT_NODE and CDATA_SECTION_NODE )</tspan>
+                </text>
+                <text x="225" y="430" >remove nodes 
+                   <tspan style="font-size:8">( TEXT_NODE and CDATA_SECTION_NODE )</tspan>
+                </text>
+        </g>
+    </g>
+</svg>

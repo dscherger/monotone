@@ -1,0 +1,144 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Test description here                                                     -->
+<!--                                                                           -->
+<!-- @author vincent.hardy@eng.sun.com                                         -->
+<!-- @version $Id: feTurbulence.svg,v 1.3 2003/08/08 11:39:31 vhardy Exp $     -->
+<!-- ========================================================================= -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="body" width="450" height="500" viewBox="0 0 450 500">
+<title>Filter Effect: feTurbulence</title>
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+    <g id="testContent">
+
+<g>
+  <text x="225" y="50" class="title">
+    Filter Effect: feTurbulence
+  </text>
+  <g transform="translate(0,62.5)">
+    <defs>
+      <filter id="Turb1" filterUnits="objectBoundingBox" 
+              x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2"/>
+      </filter>
+      <filter id="Turb2" filterUnits="objectBoundingBox" 
+              x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="turbulence" baseFrequency="0.1" numOctaves="2"/>
+      </filter>
+      <filter id="Turb3" filterUnits="objectBoundingBox" 
+              x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="8"/>
+      </filter>
+      <filter id="Turb4" filterUnits="objectBoundingBox" 
+              x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="4"/>
+      </filter>
+      <filter id="Turb5" filterUnits="objectBoundingBox" 
+              x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="4"/>
+      </filter>
+      <filter id="Turb6" filterUnits="objectBoundingBox" 
+              x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="1"/>
+      </filter>
+    </defs>
+    <g class="legend">
+    <rect x="25" y="25" width="100" height="75" style="filter:url(#Turb1)" />
+    <text x="75" y="117">type=turbulence</text>
+    <text x="75" y="129">baseFrequency=0.05</text>
+    <text x="75" y="141">numOctaves=2</text>
+
+    <rect x="175" y="25" width="100" height="75" style="filter:url(#Turb2)" />
+    <text x="225" y="117">type=turbulence</text>
+    <text x="225" y="129">baseFrequency=0.1</text>
+    <text x="225" y="141">numOctaves=2</text>
+
+    <rect x="325" y="25" width="100" height="75" style="filter:url(#Turb3)" />
+    <text x="375" y="117">type=turbulence</text>
+    <text x="375" y="129">baseFrequency=0.05</text>
+    <text x="375" y="141">numOctaves=8</text>
+
+    <rect x="25" y="180" width="100" height="75" style="filter:url(#Turb4)" />
+    <text x="75" y="272">type=fractalNoise</text>
+    <text x="75" y="284">baseFrequency=0.1</text>
+    <text x="75" y="296">numOctaves=4</text>
+
+    <rect x="175" y="180" width="100" height="75" style="filter:url(#Turb5)" />
+    <text x="225" y="272">type=fractalNoise</text>
+    <text x="225" y="284">baseFrequency=0.4</text>
+    <text x="225" y="296">numOctaves=4</text>
+
+    <rect x="325" y="180" width="100" height="75" style="filter:url(#Turb6)" />
+    <text x="375" y="272">type=fractalNoise</text>
+    <text x="375" y="284">baseFrequency=0.1</text>
+    <text x="375" y="296">numOctaves=1</text>
+   </g>
+  </g>
+
+</g>
+
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

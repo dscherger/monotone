@@ -1,0 +1,192 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Drill down test on feImage                                                -->
+<!--                                                                           -->
+<!-- @author vincent.hardy@sun.com                                             -->
+<!-- @version $Id $  -->
+<!-- ========================================================================= -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="body" width="450" height="500" viewBox="0 0 450 500">
+<title>feImage Test</title>
+    
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+    <g id="testContent">
+
+        <text x="225" y="40" class="title">
+            feImage Test
+        </text>
+        
+        <defs>
+
+            <symbol id="symbol" viewBox="0 0 1 1">
+                <circle cx="0.5" cy="0.5" r="0.5" fill="orange" />
+            </symbol>
+
+            <svg id="svg" viewBox="0 0 1 1">
+                <circle cx="0.5" cy="0.5" r="0.5" fill="crimson" />
+            </svg>
+
+            <g id="common">
+                <circle cx="20" cy="20" r="20" fill="gold" />
+            </g>
+
+            <g id="commonBB">
+                <circle cx="0.5" cy="0.5" r="0.5" fill="gold" />
+            </g>
+
+            <filter id="symbolFilter" filterUnits="userSpaceOnUse" x="40" y="40" width="40" height="40">
+                <feImage xlink:href="#symbol" result="image"/>
+            </filter>
+
+            <filter id="svgFilter" filterUnits="userSpaceOnUse" x="40" y="40" width="40" height="40">
+                <feImage xlink:href="#svg" result="image"/>
+            </filter>
+
+            <filter id="commonFilter" filterUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+                <feImage xlink:href="#common" result="image"/>
+            </filter>
+
+            <filter id="symbolFilterBB" primitiveUnits="objectBoundingBox" 
+                    filterUnits="userSpaceOnUse" x="40" y="40" width="40" height="40">
+                <feImage xlink:href="#symbol" result="image" x="1" y="1" width="1" height="1"/>
+            </filter>
+
+            <filter id="svgFilterBB" primitiveUnits="objectBoundingBox" 
+                    filterUnits="userSpaceOnUse" x="40" y="40" width="40" height="40">
+                <feImage xlink:href="#svg" result="image" x="1" y="1" width="1" height="1"/>
+            </filter>
+
+            <filter id="commonFilterBB" primitiveUnits="objectBoundingBox" 
+                    filterUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+                <feImage xlink:href="#commonBB" result="image" x="0" y="0" width="1" height="1"/>
+            </filter>
+
+        </defs>
+
+        <g transform="translate(0,50)">
+            <g transform="translate(50, 50)">
+                <use id="useSymbol" xlink:href="#symbol" x="40" y="40" width="40" height="40" />
+                <text x="60" y="30" text-anchor="middle">&lt;symbol&gt;</text>
+            </g>
+
+            <g transform="translate(150, 50)">
+                <use id="useSvg" xlink:href="#svg" x="40" y="40" width="40" height="40" />
+                <text x="60" y="30" text-anchor="middle">&lt;svg&gt;</text>
+            </g>
+
+            <g transform="translate(250, 50)">
+                <use xlink:href="#common" x="40" y="40"/>
+                <text x="60" y="30" text-anchor="middle">&lt;g&gt;</text>
+            </g>
+        </g>
+
+        <g transform="translate(0, 150)">
+            <g transform="translate(50, 50)">
+                <g filter="url(#symbolFilter)" />
+                <text x="60" y="30" text-anchor="middle"><tspan x="60" y="15">feImage</tspan>
+                                                         <tspan x="60" y="30">&lt;symbol&gt;</tspan></text>
+            </g>
+            <g transform="translate(150, 50)">
+                <g filter="url(#svgFilter)" />
+                <text x="60" y="30" text-anchor="middle"><tspan x="60" y="15">feImage</tspan>
+                                                         <tspan x="60" y="30">&lt;svg&gt;</tspan></text>
+            </g>
+            <g transform="translate(250, 50)">
+                <g transform="translate(40, 40)" filter="url(#commonFilter)" />
+                <text x="60" y="30" text-anchor="middle"><tspan x="60" y="15">feImage</tspan>
+                                                         <tspan x="60" y="30">&lt;g&gt;</tspan></text>
+            </g>
+        </g>
+
+        <g transform="translate(0, 250)">
+            <g transform="translate(50, 50)">
+                <g filter="url(#symbolFilterBB)">
+                    <rect width="40" height="40" />
+                </g>
+                <text x="60" y="30" text-anchor="middle"><tspan x="60" y="15">feImage ObjBBox</tspan>
+                                                         <tspan x="60" y="30">&lt;symbol&gt;</tspan></text>
+            </g>
+
+            <g transform="translate(150, 50)">
+                <g filter="url(#svgFilterBB)">
+                    <rect width="40" height="40" />
+                </g>
+                <text x="60" y="30" text-anchor="middle"><tspan x="60" y="15">feImage ObjBBox</tspan>
+                                                         <tspan x="60" y="30">&lt;svg&gt;</tspan></text>
+            </g>
+
+            <g transform="translate(250, 50)">
+                <g transform="translate(40, 40)" filter="url(#commonFilterBB)">
+                    <rect width="40" height="40" />
+                </g>
+                <text x="60" y="30" text-anchor="middle"><tspan x="60" y="15">feImage ObjBBox</tspan>
+                                                         <tspan x="60" y="30">&lt;g&gt;</tspan></text>
+            </g>
+
+        </g>
+
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

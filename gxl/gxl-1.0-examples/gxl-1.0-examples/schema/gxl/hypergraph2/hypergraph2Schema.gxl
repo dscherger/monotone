@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!-- hypergraph II schema 05.02.2002  -->
+<gxl>
+	<graph id="hypergraph2-schema" edgeids="true" edgemode="defaultdirected">
+		<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#gxl-1.0"/>
+		<node id="hypergraph2Schema">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#GraphClass"/>
+			<attr name="name">
+				<string>hypergraph2Schema</string>
+			</attr>
+		</node>
+		<edge id="c1" from="hypergraph2Schema" to="Function">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Function">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Function</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="name">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#AttributeClass"/>
+			<attr name="name">
+				<string>name</string>
+			</attr>
+		</node>
+		<node id="domain_string">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#String"/>
+		</node>
+		<edge id="e3" from="Function" to="name">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAttribute"/>
+		</edge>
+		<edge id="e1" from="name" to="domain_string">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasDomain"/>
+		</edge>
+		<edge id="c2" from="hypergraph2Schema" to="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>Variable</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="e5" from="Variable" to="name">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAttribute"/>
+		</edge>
+		<edge id="c3" from="hypergraph2Schema" to="FunctionCall">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="FunctionCall">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationClass"/>
+			<attr name="name">
+				<string>FunctionCall</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<node id="line">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#AttributeClass"/>
+			<attr name="name">
+				<string>line</string>
+			</attr>
+		</node>
+		<node id="domain_int">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#Int"/>
+		</node>
+		<edge id="e4" from="FunctionCall" to="line">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasAttribute"/>
+		</edge>
+		<edge id="e2" from="line" to="domain_int">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasDomain"/>
+		</edge>
+		<node id="caller">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="role">
+				<string>caller</string>
+			</attr>
+			<attr name="directedto">
+				<enum>undirected</enum>
+			</attr>
+		</node>
+		<edge id="e7" from="FunctionCall" to="caller">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="rt1" from="caller" to="Function">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<node id="callee">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="role">
+				<string>callee</string>
+			</attr>
+			<attr name="directedto">
+				<enum>undirected</enum>
+			</attr>
+		</node>
+		<edge id="e6" from="FunctionCall" to="callee">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="rt2" from="callee" to="Function">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<node id="input">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="role">
+				<string>input</string>
+			</attr>
+			<attr name="directedto">
+				<enum>undirected</enum>
+			</attr>
+		</node>
+		<edge id="e8" from="FunctionCall" to="input">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="rt3" from="input" to="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+		<node id="output">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#RelationEndClass"/>
+			<attr name="role">
+				<string>output</string>
+			</attr>
+			<attr name="directedto">
+				<enum>undirected</enum>
+			</attr>
+		</node>
+		<edge id="e9" from="FunctionCall" to="output">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#hasRelationEnd"/>
+		</edge>
+		<edge id="rt4" from="output" to="Variable">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#relatesTo"/>
+			<attr name="limits">
+				<tup>
+					<int>1</int>
+					<int>1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+	</graph>
+</gxl>

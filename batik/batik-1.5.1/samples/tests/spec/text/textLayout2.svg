@@ -1,0 +1,131 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Test description here                                                     -->
+<!--                                                                           -->
+<!-- @author bill.haneman@ireland.sun.com                                      -->
+<!-- @version $Id: textLayout2.svg,v 1.4 2003/08/08 11:39:36 vhardy Exp $                                                             -->
+<!-- ========================================================================= -->
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="450" height="500" viewBox="0 0 450 500">
+<title>Text Layout Properties</title>
+
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+
+    <defs>
+     <style type="text/css"><![CDATA[
+       .Caption { font-size: 8; font-family: dialog; font-weight: normal;
+                  font-style: normal; stroke: none; stroke-width: 0; 
+                  fill: black } ]]>
+     </style>
+
+     <style type="text/css"><![CDATA[
+       .SerifPlain { font-size: 24; font-family: Serif; font-weight: normal;
+                  font-style: normal; stroke: none; stroke-width: 0; 
+                  fill: black } ]]>
+     </style>
+
+     <text x="0" y="0" text-anchor="start" id="sample">sample</text>
+
+    </defs>
+
+    <g id="testContent" text-anchor="start" font-size="30" class="SerifPlain">
+        <text text-anchor="middle" class="title" x="50%" y="10%" font-size="15" >
+            Text Layout Properties (2)</text>
+
+        <text x="50%" y="15%" text-anchor="middle" font-size="10">Baseline Properties</text>
+
+        <g text-anchor="middle">
+            <text x="225" y="110" font-size="15"><tspan baseline-shift="super" fill="blue">super</tspan> and <tspan baseline-shift="sub" fill="green">sub</tspan>scripts</text>
+            <text x="225" y="135" class="Caption">baseline-shift="super"/baseline-shift="sub"</text>
+        </g>
+
+        <g text-anchor="middle">
+            <text x="225" y="165" font-size="15"><tspan baseline-shift="+20%" fill="blue">positive</tspan> and <tspan baseline-shift="-20%" fill="green">negative </tspan>baseline-shift</text>
+            <text x="225" y="180" class="Caption">baseline-shift="+/-20%"</text>
+        </g>
+        <text x="50%" y="42%" text-anchor="middle" font-size="10">Multi-line Text Selection</text>
+
+        <text x="50%" y="45%" text-anchor="middle" font-size="7.5" font-style="italic">(Try selecting the following text regions)</text>
+
+        <text text-anchor="start" font-size="15">
+	    <tspan x="120" y="50%">Text selections can span multiple</tspan>
+          <tspan x="120" y="53%">lines via &lt;tspan&gt; elements.</tspan>
+        </text>
+
+        <text text-anchor="start" fill="blue" font-size="20" transform="translate(90, 360)">
+          <tspan x="0 10 25 50 75 90 100 90 75 50 25 10 0" 
+                 y="0 -25 -40 -50 -40 -25 0 25 40 50 40 25 10 0">Text-circle.</tspan>
+        </text>
+
+        <text fill="green" font-size="20" transform="translate(250, 320)"
+            x="0 20 40 60 80 80 80 80 80 60 40 20 0 0 0 0" 
+            y="0 0 0 0 0 20 40 60 80 80 80 80 80 60 40 20">
+            Text-in-a-square
+        </text>
+
+        <text font-size="15" x="225" y="450" text-anchor="middle">Text with <tspan rotate="10 -10 10 -10 10 -10 10" fill="red">rotated</tspan> glyphs</text>
+        <text font-size="15" x="225" y="465" text-anchor="middle" rotate="15">More rotated glyphs</text>
+
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

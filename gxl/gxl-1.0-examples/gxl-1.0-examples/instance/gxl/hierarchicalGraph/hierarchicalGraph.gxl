@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!--hierarchical garhp II 05.02.2002  -->
+<gxl>
+	<graph id="hierarchicalGraph-instance">
+		<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#hierarchicalGraphSchema"/>
+		<node id="v4">
+			<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#Function"/>
+			<attr name="name">
+				<string>max</string>
+			</attr>
+			<graph id="max" edgeids="true">
+				<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#Asg"/>
+				<node id="v4.1">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#Interface"/>
+				</node>
+				<node id="v4.2">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#IfStmt"/>
+				</node>
+				<node id="v4.3">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#OpExpr"/>
+				</node>
+				<node id="v4.4">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#ReturnStmt"/>
+				</node>
+				<node id="v4.5">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#ReturnStmt"/>
+				</node>
+				<node id="v4.6">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#Variable"/>
+					<attr name="name">
+						<string>x</string>
+					</attr>
+				</node>
+				<node id="v4.7">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#Variable"/>
+					<attr name="name">
+						<string>y</string>
+					</attr>
+				</node>
+				<node id="v4.8">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#Operator"/>
+					<attr name="name">
+						<string>&lt;</string>
+					</attr>
+				</node>
+				<edge id="e4.1" from="v4.6" to="v4.1" toorder="1">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isFormalInput"/>
+				</edge>
+				<edge id="e4.2" from="v4.7" to="v4.1" toorder="2">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isFormalInput"/>
+				</edge>
+				<edge id="e4.3" from="v4.6" to="v4.1">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isFormalOutput"/>
+				</edge>
+				<edge id="e4.4" from="v4.7" to="v4.1">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isFormalOutput"/>
+				</edge>
+				<edge id="e4.5" from="v4.4" to="v4.2">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isTrueStmt"/>
+				</edge>
+				<edge id="e4.6" from="v4.5" to="v4.2">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isFalseStmt"/>
+				</edge>
+				<edge id="e4.7" from="v4.3" to="v4.2">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isPredicate"/>
+				</edge>
+				<edge id="e4.8" from="v4.6" to="v4.3" toorder="1">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isOperand"/>
+				</edge>
+				<edge id="e4.9" from="v4.7" to="v4.3" toorder="2">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isOperand"/>
+				</edge>
+				<edge id="e4.10" from="v4.8" to="v4.3">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isOperator"/>
+				</edge>
+				<edge id="e4.11" from="v4.6" to="v4.4">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isReturnValue"/>
+				</edge>
+				<edge id="e4.12" from="v4.7" to="v4.5">
+					<type xlink:href="../../../schema/gxl/hierarchicalGraph/hierarchicalGraphSchema.gxl#isReturnValue"/>
+				</edge>
+			</graph>
+		</node>
+	</graph>
+</gxl>

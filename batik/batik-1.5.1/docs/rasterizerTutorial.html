@@ -1,0 +1,571 @@
+<HTML><HEAD><SCRIPT language="JavaScript" src="resources/script.js" type="text/javascript"></SCRIPT><TITLE>Image Transcoder Tutorial</TITLE></HEAD><BODY alink="#cc0000" bgcolor="#ffffff" leftmargin="4" link="#039acc" marginheight="4" marginwidth="4" text="#000000" topmargin="4" vlink="#0086b2"><TABLE border="0" cellpadding="0" cellspacing="0" width="100%"><TR><TD align="left" height="60" rowspan="3" valign="top" width="135"><IMG border="0" height="60" hspace="0" src="resources/logo.gif" vspace="0" width="135"></TD><TD align="left" background="resources/line.gif" colspan="2" height="5" valign="top" width="100%"><IMG align="left" border="0" height="5" hspace="0" src="resources/line.gif" vspace="0" width="1"></TD><TD align="left" height="60" rowspan="3" valign="top" width="29"><IMG border="0" height="60" hspace="0" src="resources/right.gif" vspace="0" width="29"></TD></TR><TR><TD align="left" bgcolor="#0086b2" colspan="2" height="35" valign="top" width="100%"><IMG align="right" alt="" border="0" height="35" hspace="0" src="graphics/rasterizerTutorial-header.jpg" vspace="0" width="456"></TD></TR><TR><TD align="left" background="resources/bottom.gif" bgcolor="#0086b2" height="20" valign="top" width="100%"><IMG align="left" border="0" height="20" hspace="0" src="resources/bottom.gif" vspace="0" width="3"></TD><TD align="right" background="resources/bottom.gif" bgcolor="#0086b2" height="20" valign="top" width="288"><TABLE border="0" cellpadding="0" cellspacing="0" width="288"><TR><TD align="left" height="20" valign="top" width="96"><A href="http://xml.apache.org/" onMouseOut="rolloverOff('xml');" onMouseOver="rolloverOn('xml');" target="new"><IMG alt="http://xml.apache.org/" border="0" height="20" hspace="0" name="xml" onLoad="rolloverLoad('xml','resources/button-xml-hi.gif','resources/button-xml-lo.gif');" src="resources/button-xml-lo.gif" vspace="0" width="96"></A></TD><TD align="left" height="20" valign="top" width="96"><A href="http://www.apache.org/" onMouseOut="rolloverOff('asf');" onMouseOver="rolloverOn('asf');" target="new"><IMG alt="http://www.apache.org/" border="0" height="20" hspace="0" name="asf" onLoad="rolloverLoad('asf','resources/button-asf-hi.gif','resources/button-asf-lo.gif');" src="resources/button-asf-lo.gif" vspace="0" width="96"></A></TD><TD align="left" height="20" valign="top" width="96"><A href="http://www.w3.org/" onMouseOut="rolloverOff('w3c');" onMouseOver="rolloverOn('w3c');" target="new"><IMG alt="http://www.w3.org/" border="0" height="20" hspace="0" name="w3c" onLoad="rolloverLoad('w3c','resources/button-w3c-hi.gif','resources/button-w3c-lo.gif');" src="resources/button-w3c-lo.gif" vspace="0" width="96"></A></TD></TR></TABLE></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="100%"><TR><TD align="left" valign="top" width="120"><IMG border="0" height="14" hspace="0" src="resources/join.gif" vspace="0" width="120"><BR>
+    
+    
+    
+    <A href="http://xml.apache.org/" onMouseOut="rolloverOff('side-ext-8');" onMouseOver="rolloverOn('side-ext-8');"><IMG alt="Home" border="0" height="12" hspace="0" name="side-ext-8" onLoad="rolloverLoad('side-ext-8','graphics/ext-8-label-2.jpg','graphics/ext-8-label-3.jpg');" src="graphics/ext-8-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="index.html" onMouseOut="rolloverOff('side-index');" onMouseOver="rolloverOn('side-index');"><IMG alt="Overview" border="0" height="12" hspace="0" name="side-index" onLoad="rolloverLoad('side-index','graphics/index-label-2.jpg','graphics/index-label-3.jpg');" src="graphics/index-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="faqs.html" onMouseOut="rolloverOff('side-faqs');" onMouseOver="rolloverOn('side-faqs');"><IMG alt="FAQ" border="0" height="12" hspace="0" name="side-faqs" onLoad="rolloverLoad('side-faqs','graphics/faqs-label-2.jpg','graphics/faqs-label-3.jpg');" src="graphics/faqs-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="license.html" onMouseOut="rolloverOff('side-license');" onMouseOver="rolloverOn('side-license');"><IMG alt="License" border="0" height="12" hspace="0" name="side-license" onLoad="rolloverLoad('side-license','graphics/license-label-2.jpg','graphics/license-label-3.jpg');" src="graphics/license-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="http://www.apache.org/dyn/closer.cgi/xml/batik" onMouseOut="rolloverOff('side-ext-24');" onMouseOver="rolloverOn('side-ext-24');"><IMG alt="Download" border="0" height="12" hspace="0" name="side-ext-24" onLoad="rolloverLoad('side-ext-24','graphics/ext-24-label-2.jpg','graphics/ext-24-label-3.jpg');" src="graphics/ext-24-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="install.html" onMouseOut="rolloverOff('side-install');" onMouseOver="rolloverOn('side-install');"><IMG alt="Install" border="0" height="12" hspace="0" name="side-install" onLoad="rolloverLoad('side-install','graphics/install-label-2.jpg','graphics/install-label-3.jpg');" src="graphics/install-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="batikDemo.html" onMouseOut="rolloverOff('side-batikDemo');" onMouseOver="rolloverOn('side-batikDemo');"><IMG alt="Demo" border="0" height="12" hspace="0" name="side-batikDemo" onLoad="rolloverLoad('side-batikDemo','graphics/batikDemo-label-2.jpg','graphics/batikDemo-label-3.jpg');" src="graphics/batikDemo-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="pr.html" onMouseOut="rolloverOff('side-pr');" onMouseOver="rolloverOn('side-pr');"><IMG alt="In the news" border="0" height="12" hspace="0" name="side-pr" onLoad="rolloverLoad('side-pr','graphics/pr-label-2.jpg','graphics/pr-label-3.jpg');" src="graphics/pr-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="toolsAndApps.html" onMouseOut="rolloverOff('side-toolsAndApps');" onMouseOver="rolloverOn('side-toolsAndApps');"><IMG alt="Tools and Apps" border="0" height="12" hspace="0" name="side-toolsAndApps" onLoad="rolloverLoad('side-toolsAndApps','graphics/toolsAndApps-label-2.jpg','graphics/toolsAndApps-label-3.jpg');" src="graphics/toolsAndApps-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svgviewer.html" onMouseOut="rolloverOff('side-svgviewer');" onMouseOver="rolloverOn('side-svgviewer');"><IMG alt="Browser" border="0" height="12" hspace="0" name="side-svgviewer" onLoad="rolloverLoad('side-svgviewer','graphics/svgviewer-label-2.jpg','graphics/svgviewer-label-3.jpg');" src="graphics/svgviewer-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svgrasterizer.html" onMouseOut="rolloverOff('side-svgrasterizer');" onMouseOver="rolloverOn('side-svgrasterizer');"><IMG alt="Rasterizer" border="0" height="12" hspace="0" name="side-svgrasterizer" onLoad="rolloverLoad('side-svgrasterizer','graphics/svgrasterizer-label-2.jpg','graphics/svgrasterizer-label-3.jpg');" src="graphics/svgrasterizer-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="ttf2svg.html" onMouseOut="rolloverOff('side-ttf2svg');" onMouseOver="rolloverOn('side-ttf2svg');"><IMG alt="Font Converter" border="0" height="12" hspace="0" name="side-ttf2svg" onLoad="rolloverLoad('side-ttf2svg','graphics/ttf2svg-label-2.jpg','graphics/ttf2svg-label-3.jpg');" src="graphics/ttf2svg-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svgpp.html" onMouseOut="rolloverOff('side-svgpp');" onMouseOver="rolloverOn('side-svgpp');"><IMG alt="Pretty-printer" border="0" height="12" hspace="0" name="side-svgpp" onLoad="rolloverLoad('side-svgpp','graphics/svgpp-label-2.jpg','graphics/svgpp-label-3.jpg');" src="graphics/svgpp-label-3.jpg" vspace="0" width="120"></A><BR>
+
+    
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="architecture.html" onMouseOut="rolloverOff('side-architecture');" onMouseOver="rolloverOn('side-architecture');"><IMG alt="Architecture" border="0" height="12" hspace="0" name="side-architecture" onLoad="rolloverLoad('side-architecture','graphics/architecture-label-2.jpg','graphics/architecture-label-3.jpg');" src="graphics/architecture-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="javadoc/index.html" onMouseOut="rolloverOff('side-ext-70');" onMouseOver="rolloverOn('side-ext-70');"><IMG alt="API (Javadoc)" border="0" height="12" hspace="0" name="side-ext-70" onLoad="rolloverLoad('side-ext-70','graphics/ext-70-label-2.jpg','graphics/ext-70-label-3.jpg');" src="graphics/ext-70-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svggen.html" onMouseOut="rolloverOff('side-svggen');" onMouseOver="rolloverOn('side-svggen');"><IMG alt="Generator" border="0" height="12" hspace="0" name="side-svggen" onLoad="rolloverLoad('side-svggen','graphics/svggen-label-2.jpg','graphics/svggen-label-3.jpg');" src="graphics/svggen-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="domapi.html" onMouseOut="rolloverOff('side-domapi');" onMouseOver="rolloverOn('side-domapi');"><IMG alt="DOM API" border="0" height="12" hspace="0" name="side-domapi" onLoad="rolloverLoad('side-domapi','graphics/domapi-label-2.jpg','graphics/domapi-label-3.jpg');" src="graphics/domapi-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svgcanvas.html" onMouseOut="rolloverOff('side-svgcanvas');" onMouseOver="rolloverOn('side-svgcanvas');"><IMG alt="JSVGCanvas" border="0" height="12" hspace="0" name="side-svgcanvas" onLoad="rolloverLoad('side-svgcanvas','graphics/svgcanvas-label-2.jpg','graphics/svgcanvas-label-3.jpg');" src="graphics/svgcanvas-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG alt="Transcoder API" border="0" height="12" hspace="0" src="graphics/rasterizerTutorial-label-1.jpg" vspace="0" width="120"><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="scripting.html" onMouseOut="rolloverOff('side-scripting');" onMouseOver="rolloverOn('side-scripting');"><IMG alt="Scripting Intro" border="0" height="12" hspace="0" name="side-scripting" onLoad="rolloverLoad('side-scripting','graphics/scripting-label-2.jpg','graphics/scripting-label-3.jpg');" src="graphics/scripting-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="scriptingFeatures.html" onMouseOut="rolloverOff('side-scriptingFeatures');" onMouseOver="rolloverOn('side-scriptingFeatures');"><IMG alt="Scripting Features" border="0" height="12" hspace="0" name="side-scriptingFeatures" onLoad="rolloverLoad('side-scriptingFeatures','graphics/scriptingFeatures-label-2.jpg','graphics/scriptingFeatures-label-3.jpg');" src="graphics/scriptingFeatures-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="javaScripting.html" onMouseOut="rolloverOff('side-javaScripting');" onMouseOver="rolloverOn('side-javaScripting');"><IMG alt="Java Scripting" border="0" height="12" hspace="0" name="side-javaScripting" onLoad="rolloverLoad('side-javaScripting','graphics/javaScripting-label-2.jpg','graphics/javaScripting-label-3.jpg');" src="graphics/javaScripting-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="security.html" onMouseOut="rolloverOff('side-security');" onMouseOver="rolloverOn('side-security');"><IMG alt="Security" border="0" height="12" hspace="0" name="side-security" onLoad="rolloverLoad('side-security','graphics/security-label-2.jpg','graphics/security-label-3.jpg');" src="graphics/security-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="extendingBatik.html" onMouseOut="rolloverOff('side-extendingBatik');" onMouseOver="rolloverOn('side-extendingBatik');"><IMG alt="Extensions" border="0" height="12" hspace="0" name="side-extendingBatik" onLoad="rolloverLoad('side-extendingBatik','graphics/extendingBatik-label-2.jpg','graphics/extendingBatik-label-3.jpg');" src="graphics/extendingBatik-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="test.html" onMouseOut="rolloverOff('side-test');" onMouseOver="rolloverOn('side-test');"><IMG alt="Testing" border="0" height="12" hspace="0" name="side-test" onLoad="rolloverLoad('side-test','graphics/test-label-2.jpg','graphics/test-label-3.jpg');" src="graphics/test-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="whoAreWe.html" onMouseOut="rolloverOff('side-whoAreWe');" onMouseOver="rolloverOn('side-whoAreWe');"><IMG alt="Contributors" border="0" height="12" hspace="0" name="side-whoAreWe" onLoad="rolloverLoad('side-whoAreWe','graphics/whoAreWe-label-2.jpg','graphics/whoAreWe-label-3.jpg');" src="graphics/whoAreWe-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="mailList.html" onMouseOut="rolloverOff('side-mailList');" onMouseOver="rolloverOn('side-mailList');"><IMG alt="Mail Lists" border="0" height="12" hspace="0" name="side-mailList" onLoad="rolloverLoad('side-mailList','graphics/mailList-label-2.jpg','graphics/mailList-label-3.jpg');" src="graphics/mailList-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="cvs.html" onMouseOut="rolloverOff('side-cvs');" onMouseOver="rolloverOn('side-cvs');"><IMG alt="CVS Repository" border="0" height="12" hspace="0" name="side-cvs" onLoad="rolloverLoad('side-cvs','graphics/cvs-label-2.jpg','graphics/cvs-label-3.jpg');" src="graphics/cvs-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="http://issues.apache.org/bugzilla" onMouseOut="rolloverOff('side-ext-120');" onMouseOver="rolloverOn('side-ext-120');"><IMG alt="Bug Database" border="0" height="12" hspace="0" name="side-ext-120" onLoad="rolloverLoad('side-ext-120','graphics/ext-120-label-2.jpg','graphics/ext-120-label-3.jpg');" src="graphics/ext-120-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="status.html" onMouseOut="rolloverOff('side-status');" onMouseOver="rolloverOn('side-status');"><IMG alt="Status" border="0" height="12" hspace="0" name="side-status" onLoad="rolloverLoad('side-status','graphics/status-label-2.jpg','graphics/status-label-3.jpg');" src="graphics/status-label-3.jpg" vspace="0" width="120"></A><BR>
+    
+    
+
+    
+    
+    
+    
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="glossary.html" onMouseOut="rolloverOff('side-glossary');" onMouseOver="rolloverOn('side-glossary');"><IMG alt="Glossary" border="0" height="12" hspace="0" name="side-glossary" onLoad="rolloverLoad('side-glossary','graphics/glossary-label-2.jpg','graphics/glossary-label-3.jpg');" src="graphics/glossary-label-3.jpg" vspace="0" width="120"></A><BR>
+
+<IMG border="0" height="14" hspace="0" src="resources/close.gif" vspace="0" width="120"><BR></TD><TD align="left" valign="top" width="*"><TABLE border="0" cellpadding="3" cellspacing="0"><TR><TD><BR>
+    
+
+    
+
+
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Introduction</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+  <P align="left">
+    The goal of the transcoder API (package
+    <CODE><FONT face="courier, monospaced">org.apache.batik.transcoder</FONT></CODE>) is to provide a generic
+    API for transcoding an input to an output. First, this document
+    explains the basic transcoder API that <CODE><FONT face="courier, monospaced">Transcoder</FONT></CODE>,
+    <CODE><FONT face="courier, monospaced">TranscoderInput</FONT></CODE> and <CODE><FONT face="courier, monospaced">TranscoderOutput</FONT></CODE>
+    define -- and thus all transcoders have in common. Next, it
+    describes how to use the image transcoder API (package
+    <CODE><FONT face="courier, monospaced">org.apache.batik.transcoder.image</FONT></CODE>) which lets you
+    rasterize an SVG document fragment to a raster image such as JPEG,
+    PNG or Tiff.
+  </P>
+  
+  		<BLOCKQUOTE><UL>
+                  <LI><A href="#transcoderAPI">The Transcoder API</A></LI>
+                  <LI><A href="#howtousetranscoderAPI">How to Use the Image Transcoder API</A></LI>
+                  <BLOCKQUOTE><UL>
+                  	<LI><A href="#createImage">Creating an Image</A></LI>
+                  	<LI><A href="#definSizeOfImage">Defining the Size of the Image</A></LI>
+                  	<LI><A href="#selectAreaOfIntrest">Selecting an Area of Interest</A></LI>
+                  	<LI><A href="#otherTransHints">Other Transcoding Hints</A></LI>
+                  	<LI><A href="#genImagefromSVGDOM">Generating an Image from an SVG DOM Tree</A></LI>
+                  </UL></BLOCKQUOTE>
+            </UL></BLOCKQUOTE>
+            
+</FONT></TD></TR></TABLE></DIV><BR>
+
+<A name="transcoderAPI"><!--anchor--></A>
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>The Transcoder API</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+<P align="left">
+The <CODE><FONT face="courier, monospaced">org.apache.batik.transcoder</FONT></CODE> package defines 5 major classes:
+</P>
+<BLOCKQUOTE><DL>
+<LI><STRONG>Transcoder</STRONG> - </LI>
+
+Defines the interface that all transcoders implement. You can
+transcode a specific input using a specific output by invoking the
+<CODE><FONT face="courier, monospaced">transcode</FONT></CODE> method. Although there is no assumption on the
+input and output format, a specific transcoder may or may not support
+a particular type of input or output. For example, the image
+transcoders accept an SVG <CODE><FONT face="courier, monospaced">org.w3c.dom.Document</FONT></CODE>, a
+<CODE><FONT face="courier, monospaced">Reader</FONT></CODE>, an <CODE><FONT face="courier, monospaced">InputStream</FONT></CODE>, or a
+<CODE><FONT face="courier, monospaced">URI</FONT></CODE> as an input but only supports a byte stream for the 
+output.
+<BR><BR>
+
+
+<LI><STRONG>TranscoderInput</STRONG> - </LI>
+
+Defines the input of a transcoder. There are various ways to create an
+input and the most commons are already part of the API. The default
+implementation lets you create an input using a
+<CODE><FONT face="courier, monospaced">org.w3c.dom.Document</FONT></CODE>, a <CODE><FONT face="courier, monospaced">Reader</FONT></CODE>, an
+<CODE><FONT face="courier, monospaced">InputStream</FONT></CODE>, a <CODE><FONT face="courier, monospaced">org.xml.sax.XMLReader</FONT></CODE>, or a
+<CODE><FONT face="courier, monospaced">URI</FONT></CODE>.
+<BR><BR>
+
+
+<LI><STRONG>TranscoderOutput</STRONG> - </LI>
+
+Defines the output of a transcoder. There are various ways to create an
+output and the most commons are already part of the API. The default
+implementation lets you create an output using a
+<CODE><FONT face="courier, monospaced">org.w3c.dom.Document</FONT></CODE>, a <CODE><FONT face="courier, monospaced">Writer</FONT></CODE>, an
+<CODE><FONT face="courier, monospaced">OutputStream</FONT></CODE>, a <CODE><FONT face="courier, monospaced">org.xml.sax.XMLFilter</FONT></CODE>, or a
+<CODE><FONT face="courier, monospaced">URI</FONT></CODE>.
+<BR><BR>
+
+
+<LI><STRONG>TranscodingHints</STRONG> - </LI>
+
+The <CODE><FONT face="courier, monospaced">TranscodingHints</FONT></CODE> class contains different hints which can
+be used to control the various options or parameters of a
+transcoder. Each transcoder provides its own set of hints. A hint is
+specified by (key, value) pair. For example, the
+<CODE><FONT face="courier, monospaced">JPEGTranscoder</FONT></CODE> provides a hint to control the encoding quality.
+<BR><BR>
+
+
+<LI><STRONG>ErrorHandler</STRONG> - </LI>
+
+This class provides a way to get the errors and/or warnings that might
+occur while transcoding. A default implementation is provided but
+you can, for example, implement your own handler that display a dialog
+instead of stack trace.
+
+</DL></BLOCKQUOTE>
+</FONT></TD></TR></TABLE></DIV><BR>
+
+
+<A name="howousetranscoderAPI"><!--anchor--></A>
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>How to Use the Image Transcoder API</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+<P align="left">
+The <CODE><FONT face="courier, monospaced">org.apache.batik.transcoder.image</FONT></CODE> package provides an
+easy way to transcode an SVG document to a raster image such as JPEG,
+PNG or Tiff. Additional raster image formats can be added by subclassing the
+<CODE><FONT face="courier, monospaced">ImageTranscoder</FONT></CODE> and implementing the
+<CODE><FONT face="courier, monospaced">writeImage</FONT></CODE> method. Although, in next sections, the
+examples will use the JPEG transcoder, the PNG transcoder works the
+same way.
+</P>
+
+<A name="createImage"><!--anchor--></A>
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Creating an Image</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+<P align="left">
+The following example, using the <CODE><FONT face="courier, monospaced">JPEGTranscoder</FONT></CODE> shows how to
+trasnform an SVG document to a JPEG image.
+</P>
+<DIV align="center"><TABLE border="0" cellpadding="0" cellspacing="4"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff"><PRE>
+SaveAsJpeg.java
+===============
+
+import java.io.*;
+import org.apache.batik.transcoder.image.JPEGTranscoder;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+
+public class SaveAsJPEG {
+
+    public static void main(String [] args) throws Exception {
+
+        // create a JPEG transcoder
+        <B>JPEGTranscoder t = new JPEGTranscoder();</B>
+        // set the transcoding hints
+        <B>t.addTranscodingHint(JPEGTranscoder.KEY_QUALITY,
+                             new Float(.8));</B>
+        // create the transcoder input
+        String svgURI = new File(args[0]).toURL().toString();
+        <B>TranscoderInput input = new TranscoderInput(svgURI);</B>
+        // create the transcoder output
+        OutputStream ostream = new FileOutputStream(&quot;out.jpg&quot;);
+        <B>TranscoderOutput output = new TranscoderOutput(ostream);</B>
+        // save the image
+        <B>t.transcode(input, output);</B>
+        // flush and close the stream then exit
+        ostream.flush();
+        ostream.close();
+        System.exit(0);
+    }
+}
+</PRE></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+<P align="left">
+The code creates a <CODE><FONT face="courier, monospaced">JPEGTranscoder</FONT></CODE> and sets the
+transcoding hints. The first hint indicates the XML parser to use. The
+second hint sets the encoding quality. Then, an input and an output
+are created. The input is created using the first command line
+argument which should represent a URI. The output is a byte stream
+representing a file called &quot;out.jpg&quot;. Finally, the
+<CODE><FONT face="courier, monospaced">transcode</FONT></CODE> method is invoked and the byte stream is
+closed.
+</P>
+<P align="left">
+Although not shown above, the program might have specified additional
+hints to indicate a user style sheet, the preferred language of the
+document or the background color.
+</P>
+<P align="left">
+<B>Try this:</B>
+</P>
+<BLOCKQUOTE><OL>
+<LI>Compile and run the program: SaveAsJPEG.java. You will need an SVG document.<BR>
+<CODE><FONT face="courier, monospaced">% java SaveAsJPEG &lt;filename&gt;.svg</FONT></CODE></LI>
+<LI>Take a look at: out.jpg</LI>
+</OL></BLOCKQUOTE>
+</FONT></TD></TR></TABLE></DIV><BR>
+
+<A name="definSizeOfImage"><!--anchor--></A>
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Defining the Size of the Image</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+<P align="left">
+By adding the following line of code to the previous example, you will
+specify the raster image size (in pixels). The new transcoding hint
+<CODE><FONT face="courier, monospaced">KEY_WIDTH</FONT></CODE> lets you specify the raster image width. As the
+raster image height is not provided (using the
+<CODE><FONT face="courier, monospaced">KEY_HEIGHT</FONT></CODE>), the transcoder will compute the raster image
+dimension by keeping the aspect ratio of the SVG document.
+</P>
+<DIV align="center"><TABLE border="0" cellpadding="0" cellspacing="4"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff"><PRE>
+t.addTranscodingHint(JPEGTranscoder.KEY_WIDTH, new Integer(100));
+</PRE></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+<P align="left">
+The transcoder will have the same behavior if you specify the
+<CODE><FONT face="courier, monospaced">KEY_HEIGHT</FONT></CODE> without initializing the
+<CODE><FONT face="courier, monospaced">KEY_WIDTH</FONT></CODE>. In all cases (though both keys are provided),
+the transcoder will preserve the apsect ratio of the SVG document.
+</P>
+</FONT></TD></TR></TABLE></DIV><BR>
+
+<A name="selectAreaOfIntrest"><!--anchor--></A>
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Selecting an Area of Interest</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+<P align="left">
+The image transcoder lets you specify an area of interest (ie. a part
+of the SVG document). The key <CODE><FONT face="courier, monospaced">KEY_AOI</FONT></CODE> enables to select
+the region of the SVG document to render. The value of this key must
+be a <CODE><FONT face="courier, monospaced">java.awt.Rectangle</FONT></CODE> specified in pixels and described
+in the SVG document's space. The following example shows how you can
+split an SVG document into 4 tiles.
+</P>
+<DIV align="center"><TABLE border="0" cellpadding="0" cellspacing="4"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff"><PRE>
+SaveAsJPEGTiles.java
+====================
+
+import java.io.*;
+import java.awt.*;
+import org.apache.batik.transcoder.image.JPEGTranscoder;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+
+public class SaveAsJPEGTiles {
+
+    JPEGTranscoder trans = new JPEGTranscoder();
+
+    public SaveAsJPEGTiles() {
+        trans.addTranscodingHint(JPEGTranscoder.KEY_QUALITY,
+                                 new Float(.8));
+    }
+
+    public void tile(String inputFilename,
+                     String outputFilename,
+                     Rectangle aoi) throws Exception {
+        <B>trans.addTranscodingHint(JPEGTranscoder.KEY_WIDTH,
+                                 new Float(aoi.width));</B>
+        <B>trans.addTranscodingHint(JPEGTranscoder.KEY_HEIGHT,
+                                 new Float(aoi.height));</B>
+        <B>trans.addTranscodingHint(JPEGTranscoder.KEY_AOI, aoi);</B>
+        String svgURI = new File(inputFilename).toURL().toString();
+        TranscoderInput input = new TranscoderInput(svgURI);
+        OutputStream ostream = new FileOutputStream(outputFilename);
+        TranscoderOutput output = new TranscoderOutput(ostream);
+        trans.transcode(input, output);
+        ostream.flush();
+        ostream.close();
+    }
+
+    public static void main(String [] args) throws Exception {
+        SaveAsJPEGTiles p = new SaveAsJPEGTiles();
+        <B>String in = &quot;samples/anne.svg&quot;;
+        int documentWidth = 450;
+        int documentHeight = 500;</B>
+        int dw2 = documentWidth / 2;
+        int dh2 = documentHeight / 2;
+        p.tile(in, &quot;tileTopLeft.jpg&quot;, new Rectangle(0, 0, dw2, dh2));
+        p.tile(in, &quot;tileTopRight.jpg&quot;, new Rectangle(dw2, 0, dw2, dh2));
+        p.tile(in, &quot;tileBottomLeft.jpg&quot;, new Rectangle(0, dh2, dw2, dh2));
+        p.tile(in, &quot;tileBottomRight.jpg&quot;, new Rectangle(dw2, dh2, dw2, dh2));
+        System.exit(0);
+    }
+}
+</PRE></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+<P align="left">
+This code splits the same document &quot;anne.svg&quot; into four tiles of the
+same size. Considering the document and its original size, we can
+determine four regions. Then we rasterize each region using the
+<CODE><FONT face="courier, monospaced">KEY_AOI</FONT></CODE> key. Note that we also specify the image width
+and height to be the same as the area of interest width and height (so
+we keep a 1:1 zoom factor). You can of course combine the
+<CODE><FONT face="courier, monospaced">KEY_WIDTH</FONT></CODE>, <CODE><FONT face="courier, monospaced">KEY_HEIGHT</FONT></CODE> keys with the
+<CODE><FONT face="courier, monospaced">KEY_AOI</FONT></CODE>. In that case, first the area of interest will
+determine which part of the SVG document has to be rendered - then
+that part could be zoom in or out depending on the specified raster
+image size.
+</P>
+<P align="left">
+<B>Try this:</B>
+</P>
+<BLOCKQUOTE><OL>
+<LI>Compile and run the program: SaveAsJPEGTiles.java. You will need the &quot;anne.svg&quot; document.<BR>
+<CODE><FONT face="courier, monospaced">% java SaveAsJPEGTiles</FONT></CODE></LI>
+<LI>Take a look at: tileTopRight.jpg, tileTopRight.jpg, tileBottomRight.jpg
+ and tileBottomLeft.jpg</LI>
+</OL></BLOCKQUOTE>
+</FONT></TD></TR></TABLE></DIV><BR>
+
+<A name="otherTransHints"><!--anchor--></A>
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Other Transcoding Hints</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+<P align="left">
+
+The <CODE><FONT face="courier, monospaced">ImageTranscoder</FONT></CODE> provides additional
+<CODE><FONT face="courier, monospaced">TranscodingHints</FONT></CODE> that lets you customize the generated
+images.
+</P>
+
+<BLOCKQUOTE><DL>
+<LI><STRONG>ImageTranscoder.KEY_MEDIA</STRONG> - </LI>
+
+
+This hint lets you choose the CSS medium to use. The author of the SVG document
+to transcode can control CSS media using the <A href="http://www.w3.org/TR/REC-CSS2/media.html">CSS media rule</A>. Example:
+
+<BR>
+<BR>
+<CODE><FONT face="courier, monospaced">
+trans.addTranscodingHint(ImageTranscoder.KEY_MEDIA, &quot;print&quot;);
+</FONT></CODE>
+<BR>
+<BR>
+
+
+<LI><STRONG>ImageTranscoder.KEY_ALTERNATE_STYLESHEET</STRONG> - </LI>
+
+
+This hint lets you choose an alternate stylesheet the author of the SVG
+document to transcode might have provided using the <A href="http://www.w3.org/TR/xml-stylesheet/">xml-stylesheet</A> processing
+instruction. Example:
+
+<BR>
+<BR>
+<CODE><FONT face="courier, monospaced">
+trans.addTranscodingHint(ImageTranscoder.KEY_ALTERNATE_STYLESHEET, alternateStylesheetName);
+</FONT></CODE>
+<BR>
+<BR>
+
+
+<LI><STRONG>ImageTranscoder.KEY_USER_STYLESHEET_URI</STRONG> - </LI>
+
+
+This hint lets you use a user stylesheet. User stylesheet can override some
+styles of the SVG document to transcode. Example:
+
+<BR>
+<BR>
+<CODE><FONT face="courier, monospaced">
+trans.addTranscodingHint(ImageTranscoder.KEY_USER_STYLESHEET_URI, &quot;http://...&quot;);
+</FONT></CODE>
+<BR>
+<BR>
+
+
+<LI><STRONG>ImageTranscoder.KEY_PIXEL_TO_MM</STRONG> - </LI>
+
+
+This hint lets you use the pixel to millimeter conversion factor. This factor
+is used to determine how units are converted into pixels. Example:
+
+<BR>
+<BR>
+<CODE><FONT face="courier, monospaced">// 96dpi</FONT></CODE>
+<BR>
+<CODE><FONT face="courier, monospaced">
+trans.addTranscodingHint(ImageTranscoder.KEY_PIXEL_TO_MM, new Float(0.2645833f));
+</FONT></CODE>
+<BR>
+or
+<BR>
+<CODE><FONT face="courier, monospaced">// 72dpi</FONT></CODE>
+<BR>
+<CODE><FONT face="courier, monospaced">
+trans.addTranscodingHint(ImageTranscoder.KEY_PIXEL_TO_MM, new Float(0.3528f));
+</FONT></CODE>
+<BR>
+<BR>
+
+
+<LI><STRONG>ImageTranscoder.KEY_BACKGROUND_COLOR</STRONG> - </LI>
+
+
+This hint lets you choose a background color. Example:
+
+<BR>
+<BR>
+<CODE><FONT face="courier, monospaced">
+trans.addTranscodingHint(ImageTranscoder.KEY_BACKGROUND_COLOR, Color.white);
+</FONT></CODE>
+<BR>
+<BR>
+
+
+</DL></BLOCKQUOTE>
+
+
+</FONT></TD></TR></TABLE></DIV><BR>
+
+<A name="genImagefromSVGDOM"><!--anchor--></A>
+<DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Generating an Image from an SVG DOM Tree</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+<P align="left">
+The following code creates and saves an SVG DOM tree.
+</P>
+<DIV align="center"><TABLE border="0" cellpadding="0" cellspacing="4"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff"><PRE>
+DOMRasterizer.java
+==================
+
+import java.io.*;
+import org.apache.batik.transcoder.image.JPEGTranscoder;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.dom.svg.SVGDOMImplementation;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.DOMImplementation;
+
+public class DOMRasterizer {
+
+    public Document createDocument() {
+        <B>DOMImplementation impl = SVGDOMImplementation.getDOMImplementation();
+        String svgNS = SVGDOMImplementation.SVG_NAMESPACE_URI;
+        Document document =
+            impl.createDocument(svgNS, &quot;svg&quot;, null);
+        Element root = document.getDocumentElement();</B>
+        root.setAttributeNS(null, &quot;width&quot;, &quot;450&quot;);
+        root.setAttributeNS(null, &quot;height&quot;, &quot;500&quot;);
+
+        Element e;
+        e = document.createElementNS(svgNS, &quot;rect&quot;);
+        e.setAttributeNS(null, &quot;x&quot;, &quot;10&quot;);
+        e.setAttributeNS(null, &quot;y&quot;, &quot;10&quot;);
+        e.setAttributeNS(null, &quot;width&quot;, &quot;200&quot;);
+        e.setAttributeNS(null, &quot;height&quot;, &quot;300&quot;);
+        e.setAttributeNS(null, &quot;style&quot;, &quot;fill:red;stroke:black;stroke-width:4&quot;);
+        root.appendChild(e);
+
+        e = document.createElementNS(svgNS, &quot;circle&quot;);
+        e.setAttributeNS(null, &quot;cx&quot;, &quot;225&quot;);
+        e.setAttributeNS(null, &quot;cy&quot;, &quot;250&quot;);
+        e.setAttributeNS(null, &quot;r&quot;, &quot;100&quot;);
+        e.setAttributeNS(null, &quot;style&quot;, &quot;fill:green;fill-opacity:.5&quot;);
+        root.appendChild(e);
+
+        return document;
+    }
+
+    public void save(Document document) throws Exception {
+        JPEGTranscoder t = new JPEGTranscoder();
+        t.addTranscodingHint(JPEGTranscoder.KEY_QUALITY,
+                             new Float(.8));
+        <B>TranscoderInput input = new TranscoderInput(document);</B>
+        OutputStream ostream = new FileOutputStream(&quot;out.jpg&quot;);
+        TranscoderOutput output = new TranscoderOutput(ostream);
+        t.transcode(input, output);
+        ostream.flush();
+        ostream.close();
+    }
+
+    public static void main(String [] args) throws Exception {
+        DOMRasterizer rasterizer = new DOMRasterizer();
+        Document document = rasterizer.createDocument();
+        rasterizer.save(document);
+        System.exit(0);
+    }
+}
+</PRE></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+<P align="left">
+This code is divided into two distinct parts. 
+</P>
+<BLOCKQUOTE><DL>
+<LI><STRONG>Creating an SVG DOM tree</STRONG> - </LI>
+
+<BR>See the <CODE><FONT face="courier, monospaced">createDocument</FONT></CODE> method<BR> Three steps are
+required at this time. The first one consists on getting the Batik SVG
+DOM implementation (via the SVGDOMImplementation class). Then, you can
+create a <CODE><FONT face="courier, monospaced">org.w3c.dom.Document</FONT></CODE> (which is an SVG Document by
+the way) by invoking the <CODE><FONT face="courier, monospaced">createDocument</FONT></CODE> method with the
+svg namespace URI and the &quot;svg&quot; document element. At last, you can get
+the document element and start building your DOM tree.  <BR><BR>
+
+<LI><STRONG>Rasterizing your DOM</STRONG> - </LI>
+
+<BR>See the <CODE><FONT face="courier, monospaced">save</FONT></CODE> method<BR> Similar to the previous
+examples, you can transcode an SVG document to a raster image by
+creating a <CODE><FONT face="courier, monospaced">TranscoderInput</FONT></CODE> with this time, the SVG Document.
+<BR><BR>
+
+</DL></BLOCKQUOTE>
+<P align="left">
+<B>Try this:</B>
+</P>
+<BLOCKQUOTE><OL>
+<LI>Compile and run the program: DOMRasterizer.java.<BR>
+<CODE><FONT face="courier, monospaced">% java DOMRasterizer</FONT></CODE></LI>
+<LI>Take a look at: out.jpg</LI>
+</OL></BLOCKQUOTE>
+</FONT></TD></TR></TABLE></DIV><BR>
+
+</FONT></TD></TR></TABLE></DIV><BR>
+
+
+    
+</TD></TR></TABLE></TD></TR></TABLE><BR><TABLE border="0" cellpadding="0" cellspacing="0" width="100%"><TR><TD bgcolor="#0086b2"><IMG height="1" src="images/dot.gif" width="1"></TD></TR><TR><TD align="center"><FONT color="#0086b2" face="arial,helvetica,sanserif" size="-1"><I>
+              Copyright &copy; 2000-2002 The Apache Software Foundation.
+              All Rights Reserved.
+            </I></FONT></TD></TR></TABLE></BODY></HTML>

@@ -1,0 +1,18 @@
+2004-04-25: GXL version 0.92
+1.	The XML parser now reads a local copy of the GXL DTD, so as not to require
+	an internet connection.
+
+2004-03-20: GXL version 0.91
+1. Methods for easier manipulation of attributes have been added.
+2. A DOCTYPE is now added to new documents, pointing to the GXL DTD.
+3. An Adapter has been provided for the GXLDocumentListener interface.
+
+2003-12-27: GXL version 0.9
+1. API documentation has been improved.
+2. Validation is more rigid, although dangling tentacles has been allowed.
+3. Accessor methods has been added to simplify and reveal
+functionality.
+4. Class hierarchy has been expanded to mimic GXL graph schema.
+
+2003-09-25: GXL version 0.8
+Initial Release. Should be fully functional, albeit fairly untested. More and better documentation is also needed.

@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<!DOCTYPE gxl SYSTEM "http://www.gupro.de/GXL/gxl-1.0.dtd">
+<!-- ordering schema 05.02.2002  -->
+<gxl xmlns:xlink="http://www.w3.org/1999/xlink">
+	<graph id="ordering-schema" edgeids="true">
+		<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#gxl-1.0"/>
+		<node id="orderingSchema">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#GraphClass"/>
+			<attr name="name">
+				<string>orderingSchema</string>
+			</attr>
+		</node>
+		<edge id="c1" from="orderingSchema" to="U">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="U">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>U</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="c2" from="orderingSchema" to="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>V</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="c3" from="orderingSchema" to="W">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="W">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#NodeClass"/>
+			<attr name="name">
+				<string>W</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+		</node>
+		<edge id="c4" from="orderingSchema" to="E">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="E">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#EdgeClass"/>
+			<attr name="name">
+				<string>E</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="c5" from="orderingSchema" to="F">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="F">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#EdgeClass"/>
+			<attr name="name">
+				<string>F</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="c6" from="orderingSchema" to="G">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#contains"/>
+		</edge>
+		<node id="G">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#EdgeClass"/>
+			<attr name="name">
+				<string>G</string>
+			</attr>
+			<attr name="isabstract">
+				<bool>false</bool>
+			</attr>
+			<attr name="isdirected">
+				<bool>true</bool>
+			</attr>
+		</node>
+		<edge id="e5" from="E" to="U">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e6" from="E" to="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+		<edge id="e3" from="F" to="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+		<edge id="e4" from="F" to="W">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>false</bool>
+			</attr>
+		</edge>
+		<edge id="e1" from="G" to="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#to"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+		<edge id="e2" from="G" to="V">
+			<type xlink:href="../../../metaschema/gxl/gxl-1.0.gxl#from"/>
+			<attr name="limits">
+				<tup>
+					<int>0</int>
+					<int>-1</int>
+				</tup>
+			</attr>
+			<attr name="isordered">
+				<bool>true</bool>
+			</attr>
+		</edge>
+	</graph>
+</gxl>

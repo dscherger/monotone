@@ -1,0 +1,145 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000802//EN"
+"http://www.w3.org/TR/2000/CR-SVG-20000802/DTD/svg-20000802.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ====================================================================== -->
+<!-- Modification of a transform attribute                                  -->
+<!--                                                                        -->
+<!-- @author tkormann@ilog.fr                                               -->
+<!-- @version $Id: transform.svg,v 1.3 2003/08/08 11:39:33 vhardy Exp $ -->
+<!-- ====================================================================== -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>  
+
+<svg id="body" width="450" height="500" viewBox="0 0 450 500">
+    <title>transform attribute in 'onload'</title>
+
+    <text x="50%" y="45" class="title">transform attributes in 'onload'</text>
+
+    <script type="text/ecmascript">
+
+    function transform(evt, transform) {
+        var elt = evt.target;
+        elt.setAttribute("transform", transform)
+    }
+
+    </script>
+
+    <g id="test-content" >
+
+
+<g>
+
+      <rect x="0" y="0" width="100" height="100" style="fill:crimson"
+        onload="transform(evt, 'translate(20 100)')"/>
+
+      <circle cx="0" cy="0" r="50" style="fill:orange"
+        onload="transform(evt, 'translate(220 150)')"/>
+
+      <ellipse cx="0" cy="0" rx="50" ry="25" style="fill:gold"
+        onload="transform(evt, 'translate(370 150)')"/>
+
+      <polygon points="50 0 100 100 0 100" style="fill:crimson"
+        onload="transform(evt, 'translate(20 250)')"/>
+
+      <polyline points="50 0 100 100 0 100 50 0" style="fill:orange"
+        onload="transform(evt, 'translate(170 250)')"/>
+
+      <path d="M50 0 L100 100 L0 100Z" style="fill:gold"
+        onload="transform(evt, 'translate(320 250)')"/>
+
+      <line x1="0" y1="0" x2="100" y2="50" 
+        style="stroke:crimson; stroke-width:8; fill:none"
+        onload="transform(evt, 'translate(20 400)')"/>
+
+      <text x="0" y="0" 
+         style="fill:orange; text-anchor:middle;font-size:48" 
+         onload="transform(evt, 'translate(220 420)')">Batik</text>
+
+      <image x="0" y="0" width="50" height="50" 
+         xlink:href="../../resources/images/png2.png"
+         onload="transform(evt, 'translate(320 400)')" />
+      <image x="0" y="0" width="50" height="50" 
+         xlink:href="../../resources/images/svg.svg"
+         onload="transform(evt, 'translate(370 400)')" />
+</g>
+
+<g style="fill:none; stroke:black">
+
+      <rect x="0" y="0" width="100" height="100" transform="translate(20 100)"/>
+
+      <circle cx="0" cy="0" r="50" transform="translate(220 150)"/>
+
+      <ellipse cx="0" cy="0" rx="50" ry="25" transform="translate(370 150)"/>
+
+      <polygon points="50 0 100 100 0 100" transform="translate(20 250)"/>
+
+      <polyline points="50 0 100 100 0 100 50 0" transform="translate(170 250)"/>
+
+      <path d="M50 0 L100 100 L0 100Z" transform="translate(320 250)"/>
+
+      <line x1="0" y1="0" x2="100" y2="50" transform="translate(20 400)"/>
+
+      <text x="0" y="0" 
+             style="stroke:black; fill:none; text-anchor:middle;font-size:48" 
+             transform="translate(220 420)">Batik</text>
+      <rect x="0" y="0" width="50" height="50" transform="translate(320 400)" 
+            style="stroke:black; fill:none;"/>
+      <rect x="0" y="0" width="50" height="50" transform="translate(370 400)"
+            style="stroke:black; fill:none;"/>
+
+</g>
+
+</g>
+
+</svg>

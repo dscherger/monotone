@@ -1,0 +1,147 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Test description here                                                     -->
+<!--                                                                           -->
+<!-- @author bill.haneman@ireland.sun.com                                      -->
+<!-- @version $Id: textFeatures.svg,v 1.5 2003/08/08 11:39:36 vhardy Exp $                                                             -->
+<!-- ========================================================================= -->
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="450" height="500" viewBox="0 0 450 500">
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+
+    <defs>
+        <filter id="blur"  filterUnits="userSpaceOnUse" x="0" y="-80" width="200" height="100" filterRes="200">
+            <feGaussianBlur stdDeviation="2 2" x="0" y="-80" width="200" height="100"/> 
+        </filter>
+    </defs>
+
+    <g id="testContent">
+        <text class="title" x="50%" y="10%" font-size="15" text-anchor="middle" >
+            Text Element Features</text>
+      <g font-family="dialog" font-size="15" 
+                  text-anchor="start" fill="MidnightBlue">
+        <text x="10%" y="20%">
+        Text can change 
+        <tspan font-size="30">size,</tspan>
+        <tspan font-size="20" font-family="Serif">typeface,</tspan> 
+        <tspan fill="green">color,</tspan>
+        or 
+        <tspan fill="none" font-style="oblique" stroke="red" stroke-width="1">style</tspan>
+        </text>
+        <text fill="MidnightBlue" x="10%" y="25%"> 
+        within a single text element.
+        </text> 
+        <text x="10%" y="35%">Styling features include 
+            <tspan font-weight="bold">weight,</tspan> 
+            <tspan font-style="oblique">posture,</tspan> and 
+            <tspan font-family="serif">typeface.</tspan>
+        </text>
+        <rect x="10%" y="40%" width="45%" height="10%" fill="DodgerBlue"/>
+        <text x="10%" y="45%">
+        Graphics attributes such as 
+            <tspan fill="red" opacity="0.3">opacity</tspan> can be applied.
+        </text>
+        <text x="10%" y="55%">"text decoration" can include 
+            <tspan text-decoration="underline">underline,</tspan>
+            <tspan text-decoration="overline">overline,</tspan> and
+        </text> 
+        <text x="10%" y="60%">
+        <tspan text-decoration="line-through">strikethrough.</tspan>
+        <tspan baseline-shift="super" font-size="75%">super</tspan>-and-
+        <tspan baseline-shift="sub" font-size="75%">sub</tspan>-scripts 
+	are available.</text>
+        <text x="10%" y="65%">Baseline can also be shifted
+        <tspan baseline-shift="50%" font-size="75%">up</tspan> and
+        <tspan baseline-shift="-50%" font-size="75%">down</tspan> 
+	by percentage.</text>
+        <text x="10%" y="75%" stroke-linecap="round" stroke-linejoin="round">
+            Various 
+            <tspan stroke="red" fill="none" stroke-width="0.5">outline
+            </tspan>styles, 
+            <tspan stroke="red" stroke-width="0.5" fill="blue" >fill colors
+            </tspan>and
+            <tspan stroke="red" stroke-width="1" fill="blue" >thicknesses
+            </tspan>can be
+        </text>
+        <text x="10%" y="80%">used, and the outline stroke can be 
+            <tspan stroke="black" fill="none" stroke-width="0.5" 
+               stroke-linecap="round" stroke-linejoin="round">rounded</tspan>
+            or 
+            <tspan stroke="black" fill="none" stroke-width="0.5" 
+               stroke-linecap="square" stroke-linejoin="miter">mitered.</tspan>
+        </text>
+        <text x="10%" y="90%">Text elements also can be</text>
+        <text x="10%" y="95%">filtered and transformed.</text>
+        <g font-size="40" transform="translate(250, 475)">  
+        <text x="0" y="0" filter="url(#blur)" fill="black" opacity="0.7"
+         transform="skewX(40) translate(-6,-6)">
+            Shadow
+        </text>
+        <text x="0" y="0" stroke="black" stroke-width="0.2" fill="white">
+            Shadow
+        </text>
+        </g>
+      </g>
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

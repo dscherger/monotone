@@ -1,0 +1,137 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Image element references an SVG file                                      -->
+<!--                                                                           -->
+<!-- @author Thierry.Kormann@sophia.inria.fr                                   -->
+<!-- @version $Id: alert.svg,v 1.4 2003/08/08 11:39:33 vhardy Exp $ -->
+<!-- ========================================================================= -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+    width="450" height="500" viewBox="0 0 450 500" onmouseover="alert('Hello')">
+<title>Alert on mouse events</title>
+
+<defs>
+	<script type="text/ecmascript">
+
+	function showDialog(msg) {
+		alert(msg);
+	}
+
+	</script>
+</defs>
+
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+    <g id="testContent" onmouseover="alert('Hello')">
+        <text x="225" y="30" class="title">Alert on mouse events</text>
+    </g>
+
+
+	<!-- ########## board ############ -->
+	<g style="stroke:black">
+		<g>
+			<rect x="50" y="60" width="350" height="20" style="fill:#eee"/>
+			<rect x="50" y="80" width="350" height="60" style="fill:none"/>
+		</g>
+		<g transform="translate(0 80)">
+			<rect x="50" y="60" width="350" height="20" style="fill:#eee"/>
+			<rect x="50" y="80" width="350" height="60" style="fill:none"/>
+		</g>
+		<g transform="translate(0 160)">
+			<rect x="50" y="60" width="350" height="20" style="fill:#eee"/>
+			<rect x="50" y="80" width="350" height="60" style="fill:none"/>
+		</g>
+		<line x1="225" y1="60" x2="225" y2="300" />
+	</g>
+	<g style="fill:black; stroke:none; text-anchor:middle; font-size:14">
+		<g>
+			<text x="137.5" y="75">mousedown</text>
+			<text x="312.5" y="75">mouseup</text>
+		</g>
+		<g transform="translate(0 80)">
+			<text x="137.5" y="75">mouseover</text>
+			<text x="312.5" y="75">mouseout</text>
+		</g>
+		<g transform="translate(0 160)">
+			<text x="137.5" y="75">mousemove</text>
+			<text x="312.5" y="75">onclick</text>
+		</g>
+	</g>
+
+	<!-- ########## content ############ -->
+	<g>
+		<circle cx="137.5" cy="110" r="20" style="fill:crimson" onmousedown="showDialog('onmousedown')"/>
+		<circle cx="312.5" cy="110" r="20" style="fill:crimson" onmouseup="showDialog('onmouseup')"/>
+	</g>
+	<g transform="translate(0 80)">
+		<circle cx="137.5" cy="110" r="20" style="fill:crimson" onmouseover="showDialog('onmouseover')"/>
+		<circle cx="312.5" cy="110" r="20" style="fill:crimson" onmouseout="showDialog('onmouseout')"/>
+	</g>
+	<g transform="translate(0 160)">
+		<circle cx="137.5" cy="110" r="20" style="fill:crimson" onmousemove="showDialog('onmousemove')"/>
+		<circle cx="312.5" cy="110" r="20" style="fill:crimson" onclick="showDialog('onclick')"/>
+	</g>
+
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

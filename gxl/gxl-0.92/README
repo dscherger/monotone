@@ -1,0 +1,38 @@
+GXL - Reading and manipulating GXL (Graph eXchange Language) in Java.
+
+Erik Larsson
+
+
+TABLE OF CONTENTS
+*****************
+
+1. Disclaimer
+2. License
+3. Requirements
+4. How do I ...?
+
+
+
+
+1. Disclaimer
+-------------
+This program and/or program code comes with ABSOLUTELY NO WARRANTY.
+
+
+2. License
+----------
+For legal and licensing issues, please read the LICENSE file.
+
+
+3. Requirements
+----------------
+The classes in this package has been compiled using Java 1.4.1, any earlier
+version may or may not be compatible.
+
+The most recent version of Java can be obtained from http://java.sun.com/j2se/
+
+
+4. How do I ...?
+-----------------
+For information on installation, usage or any other question, please refer
+to http://gxl.sourceforge.net

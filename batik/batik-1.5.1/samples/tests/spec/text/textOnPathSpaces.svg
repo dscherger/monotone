@@ -1,0 +1,205 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Tests various text on a path                                              -->
+<!--                                                                           -->
+<!-- @author bella.robinson@cmis.csiro.au                                      -->
+<!-- @version $Id: textOnPathSpaces.svg,v 1.3 2003/08/08 11:39:36 vhardy Exp $        -->
+<!-- ========================================================================= -->
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>  
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="body" width="450" height="500" viewBox="0 0 450 500">
+<title>Text on a path with spaces test</title>
+
+    <style type="text/css"><![CDATA[
+        
+    ]]></style>
+
+    <g id="content">
+
+        <text class="title" x="50%" y="40">Text on a path with adjusted spacing</text>
+
+        <defs>
+	      <path id="Path1" style="fill:none; stroke:blue;" transform="scale(0.15,0.15)"
+                  d="M 100 200 C 200 100 300 0 400 100 C 500 200 600 300 700 200 C 800 100 900 100 900 100"/>
+            <path id="Path2" style="fill:none; stroke:blue;" transform="scale(0.30,0.50)"
+                  d="M 100 100 C100 0 400 00 400 100"/>
+
+        </defs>
+
+
+        <g transform="translate(0,70)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1"><tspan>sample</tspan></textPath>
+            </text>
+		<text font-size="10" x="35" y="60">default spacing</text>
+         </g>
+
+	  <g transform="translate(150,70)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1"><tspan x="10,30,50,75,95,110" y="110">sample</tspan></textPath>
+            </text>
+            <text font-size="10" x="15" y="60">tspan x="10,30,50,75,95,110"</text>
+            <text font-size="10" x="35" y="70">y="110"</text>
+         </g>
+        
+         <g transform="translate(300,70)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1"><tspan dx="0,10,10,10,10,10">sample</tspan></textPath>
+            </text>
+		<text font-size="10" x="15" y="60">tspan dx="0,10,10,10,10,10"</text>
+         </g>
+
+
+         <g transform="translate(0,160)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" textLength="140">sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">textLength="140"</text>
+         </g>
+
+
+         <g transform="translate(150,160)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" textLength="70">sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">textLength="70"</text>
+         </g>
+
+         <g transform="translate(300,160)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" kerning="10">sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">kerning="10"</text>
+         </g>
+
+
+        <g transform="translate(0,250)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" textLength="140" lengthAdjust="spacingAndGlyphs">sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">textLength="140"</text>
+            <text font-size="10" x="35" y="70">lengthAdjust=</text>
+            <text font-size="10" x="35" y="80">"spacingAndGlyphs"</text>
+         </g>
+
+         <g transform="translate(150,250)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" textLength="50" lengthAdjust="spacingAndGlyphs">sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">textLength="50"</text>
+            <text font-size="10" x="35" y="70">lengthAdjust=</text>
+            <text font-size="10" x="35" y="80">"spacingAndGlyphs"</text>
+         </g>
+
+          <g transform="translate(300,250)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" textLength="140" lengthAdjust="spacingAndGlyphs" kerning="10">sample</textPath>
+            </text>
+            <text font-size="10" x="5" y="60">textLength="140", kerning="10"</text>
+            <text font-size="10" x="5" y="70">lengthAdjust=</text>
+            <text font-size="10" x="5" y="80">"spacingAndGlyphs"</text>
+         </g>
+       
+         <g transform="translate(0,350)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" letter-spacing="-3">sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">letter-spacing="-3"</text>
+         </g>
+
+         <g transform="translate(150,350)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" textLength="140" word-spacing="2em">sample sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">textLength="140"</text>
+            <text font-size="10" x="35" y="70">word-spacing="2em"</text>
+         </g>
+
+          <g transform="translate(300,350)">
+            <use xlink:href="#Path1" style="fill:none; stroke:blue; stroke-width:2"/>
+	      <text font-size="20">
+                <textPath xlink:href="#Path1" textLength="140" lengthAdjust="spacingAndGlyphs" word-spacing="-5">sample sample</textPath>
+            </text>
+            <text font-size="10" x="35" y="60">textLength="140"</text>
+            <text font-size="10" x="35" y="70">word-spacing="-5"</text>
+            <text font-size="10" x="35" y="80">lengthAdjust=</text>
+            <text font-size="10" x="35" y="90">"spacingAndGlyphs"</text>
+         </g>
+
+
+
+
+
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+
+</svg>
+

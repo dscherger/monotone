@@ -1,0 +1,289 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- This interactive test validates that the pointer-events property          -->
+<!--                                                                           -->
+<!-- @author tkormann@ilog.fr                                                  -->
+<!-- @version $Id: pointerEvents2.svg,v 1.2 2003/08/08 11:39:32 vhardy Exp $ -->
+<!-- ========================================================================= -->
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>  
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="body" width="450" height="500" viewBox="0 0 450 500">
+<title>Pointer Events Test</title>
+
+    <g id="content">
+
+        <text class="title" x="50%" y="40">'pointer-events' Test
+        <desc>Click in any of the links in the 
+              table. You should see a smilley.</desc></text>
+
+        <defs>
+            <g id="smilley">
+                <g  transform="scale(.8, .8) translate(-15,-15)">
+                    <circle cx="15" cy="15" r="10"/>
+                    <circle cx="12" cy="12" r="1.5" fill="black"/>
+                    <circle cx="17" cy="12" r="1.5" fill="black"/>
+                    <path d="M 10 19 A 8 8 0 0 0 20 19" stroke="black" stroke-width="1"/>
+                </g>
+            </g>
+
+            <g id="success" fill="rgb(0,255,0)">
+                <use xlink:href="#smilley" />
+            </g>
+	<g id="cell">
+		<rect x="20" y="60" width="120" height="20" style="fill:#eee; stroke:black"/>
+		<rect x="20" y="80" width="120" height="100" style="fill:none; stroke:black"/>
+
+		<g style="fill:#aaa">
+			<rect x="35" y="90" width="35" height="14.5" />
+			<rect x="90" y="90" width="35" height="14.5" />
+			<rect x="25" y="120" width="50" height="28" />
+			<rect x="80" y="120" width="50" height="28" />
+			<rect x="35" y="158" width="30" height="16" />
+			<rect x="90" y="158" width="30" height="16" />
+		</g>
+	</g>
+
+        </defs>
+
+        <g transform="translate(5, 5) scale(.2)">
+            <use xlink:href="#success"/>
+            <a xlink:href="#svgView(viewBox(0,0,450,500))">
+                <text y="-11" font-size="2" fill="blue" text-decoration="underline" text-anchor="middle">Return to test</text>
+            </a>
+        </g>
+
+<!-- ######################################### -->
+
+
+<g style="text-anchor:middle;">
+
+<g transform="translate(0 0)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">visiblePainted</text>
+</g>
+
+<g transform="translate(140 0)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">visibleFill</text>
+</g>
+
+<g transform="translate(280 0)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">visibleStroke</text>
+</g>
+
+<g transform="translate(0 130)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">visible</text>
+</g>
+
+<g transform="translate(140 130)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">painted</text>
+</g>
+
+<g transform="translate(280 130)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">fill</text>
+</g>
+
+<g transform="translate(0 260)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">stroke</text>
+</g>
+
+<g transform="translate(140 260)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">all</text>
+</g>
+
+<g transform="translate(280 260)">
+	<use xlink:href="#cell" />
+	<text x="80" y="74">none</text>
+</g>
+
+<!-- ######################################### -->
+
+<g transform="translate(0 0)" style="pointer-events:visiblePainted">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(140 0)" style="pointer-events:visibleFill">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(280 0)" style="pointer-events:visibleStroke">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(0 130)" style="pointer-events:visible">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(140 130)" style="pointer-events:painted">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(280 130)" style="pointer-events:fill">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(0 260)" style="pointer-events:stroke">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(140 260)" style="pointer-events:all">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+<g transform="translate(280 260)" style="pointer-events:none">
+        <a xlink:href="#svgView(viewBox(3,2.5,4,4))">
+		<image xlink:href="../../resources/images/tde.jpg" x="35" y="90" width="35" height="14.5" />
+		<image xlink:href="../../resources/images/tde.jpg" x="90" y="90" width="35" height="14.5" style="visibility:hidden"/>
+
+		<image xlink:href="../../resources/images/svg.svg" x="25" y="120" width="50" height="28" />
+		<image xlink:href="../../resources/images/svg.svg" x="80" y="120" width="50" height="28" style="visibility:hidden"/>
+
+		<text x="50" y="170">Batik</text>
+		<text x="105" y="170" style="visibility:hidden">Batik</text>
+	</a>
+</g>
+
+</g>
+
+
+
+
+    </g><!-- "content" -->
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+
+</svg>

@@ -1,0 +1,146 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ====================================================================== -->
+<!-- Test of getting/setting current Scale and Translate.                   -->
+<!--                                                                        -->
+<!-- @author deweese@apache.org                                             -->
+<!-- @version $Id: currentScaleTranslate.svg,v 1.3 2003/08/13 11:01:16 deweese Exp $ -->
+<!-- ====================================================================== -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>  
+
+<svg id="body" width="450" height="500" viewBox="0 0 450 500"
+     onload="setScaleTrans(2, 50, 50), update()"
+     xmlns="http://www.w3.org/2000/svg" 
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+
+    <title>svg current scale/translate modification</title>
+
+    <script type="text/ecmascript"><![CDATA[
+	var count = 1;
+	function setScaleTrans(scale, newX, newY) {
+	   document.getRootElement().currentScale = scale;
+	   var pt = document.getRootElement().currentTranslate;
+	   pt.x = newX;
+	   pt.y = newX;
+	}
+	 
+	function update() {
+	   if ((count%10) == 0) {
+	      var scale = 1+((count/10)%10)/4;
+              document.getRootElement().currentScale = scale;
+	   }
+
+	var t;
+	var mat;
+           t = document.getElementById('cnt');
+	   t.firstChild.data = ("Count: " + count);
+
+	   mat = t.getScreenCTM();
+           t = document.getElementById('foo');
+	   t.firstChild.data = 
+	       "The ScrnCTM is: (" + mat.a +","+ mat.b +","+ mat.c +","+ mat.d +","+ mat.e +","+ mat.f +")";
+
+	   mat = t.getCTM();
+           t = document.getElementById('bar');
+	   t.firstChild.data = 
+	       "The CTM is: (" + mat.a +","+ mat.b +","+ mat.c +","+ mat.d +","+ mat.e +","+ mat.f +")";
+
+	   var scale = document.getRootElement().currentScale;
+           t = document.getElementById('baz');
+	   t.firstChild.data = "The Scale is: "+scale;
+
+	   var trans = document.getRootElement().currentTranslate;
+           t = document.getElementById('bat');
+	   t.firstChild.data = "The Trans is ["+trans.x+", " +trans.y+"]";
+
+           t = document.getElementById('vp');
+	   var vp = document.rootElement.viewport;
+	   t.firstChild.data = ("Viewport: ["+ vp.x+", " +vp.y+", " +
+	                        vp.width+", " +vp.height+"]");
+
+	   count++;
+	  setTimeout('update()', 1000);
+	}
+
+	function mouseOver(evt) {
+	   t = document.getElementById('rec');
+	   var x = evt.getClientX();
+	   var y = evt.getClientY();
+	   mat = t.getScreenCTM();
+	   imat = mat.inverse();
+	   var pt = document.getRootElement().createSVGPoint();
+ 	   pt.x = x;
+	   pt.y = y;
+	   pt = pt.matrixTransform(imat);
+	   t.firstChild.data = ("Loc: [" + evt.getClientX() + ", " + 
+	                        evt.getClientY() + "] [" + 
+	                        pt.x + ", " + pt.y + "]");
+	}
+    ]]></script>
+
+    <g id="test-content">
+       <rect x="0" y="0" width="450" height="500" 
+             fill="lightgrey" stroke="black"
+             onmousemove="mouseOver(evt)"/>
+       <text id="cnt" x="10" y=" 80">test</text>
+       <text id="foo" x="10" y="100">test</text>
+       <text id="bar" x="10" y="120">test</text>
+       <text id="baz" x="10" y="140">test</text>
+       <text id="bat" x="10" y="160">test</text>
+       <text id="vp"  x="10" y="180">test</text>
+       <text id="rec" x="10" y="200">test</text>
+   </g>
+</svg>

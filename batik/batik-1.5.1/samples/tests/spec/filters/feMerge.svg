@@ -1,0 +1,266 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ========================================================================= -->
+<!-- Test description here                                                     -->
+<!--                                                                           -->
+<!-- @author deweese@kodak.com                                                 -->
+<!-- @version $Id $  -->
+<!-- ========================================================================= -->
+
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="body" width="450" height="500" viewBox="0 0 450 500">
+<title>feMerge Test</title>
+
+    <!-- ============================================================= -->
+    <!-- Test content                                                  -->
+    <!-- ============================================================= -->
+    <g id="testContent">
+
+      <text x="225" y="40" class="title">
+    	feMerge Test
+      </text>
+  
+      <g transform="translate(0, 50)">
+      <defs>
+
+       
+       <circle id="Circle1" cx="40" cy="65" r="25" style="fill:yellowGreen" />
+  
+       <circle id="Circle2" cx="80" cy="55" r="25" style="fill:darkBlue" />
+  
+       <rect   id="Rect1"   x="40" y="35" width="30" height="70" 
+	       style="fill:dodgerBlue" />
+  
+       <rect   id="Rect2"   x="60" y="15" width="30" height="70" 
+	       rx="10" ry="10"
+	       style="fill:Green" />
+
+    	<filter id="Merge1" x="0" y="0" width="1" height="1">
+	        <feImage xlink:href="#Circle1" result="Circle1" />
+	        <feImage xlink:href="#Circle2" result="Circle2" />
+	        <feImage xlink:href="#Rect1"   result="Rect1" />
+	        <feImage xlink:href="#Rect2"   result="Rect2" />
+    	    <feMerge>
+	            <feMergeNode in="Circle1"/>
+	            <feMergeNode in="Circle2"/>
+	            <feMergeNode in="Rect1"/>
+	            <feMergeNode in="Rect2"/>
+	        </feMerge>
+    	</filter>
+  
+    	<filter id="Merge2" x="0" y="0" width="1" height="1">
+	  <feImage xlink:href="#Circle1" result="Circle1" />
+	  <feImage xlink:href="#Circle2" result="Circle2" />
+	  <feImage xlink:href="#Rect1"   result="Rect1" />
+	  <feImage xlink:href="#Rect2"   result="Rect2" />
+
+    	  <feMerge>
+	    <feMergeNode in="Circle1"/>
+	    <feMergeNode in="Rect1"/>
+	    <feMergeNode in="Circle2"/>
+	    <feMergeNode in="Rect2"/>
+	  </feMerge>
+    	</filter>
+  
+    	<filter id="Merge3" x="0" y="0" width="1" height="1">
+	  <feImage xlink:href="#Circle1" result="Circle1" />
+	  <feImage xlink:href="#Circle2" result="Circle2" />
+	  <feImage xlink:href="#Rect1"   result="Rect1" />
+	  <feImage xlink:href="#Rect2"   result="Rect2" />
+
+    	  <feMerge>
+	    <feMergeNode in="Circle1"/>
+	    <feMergeNode in="Rect1"/>
+	    <feMergeNode in="Rect2"/>
+	    <feMergeNode in="Circle2"/>
+	  </feMerge>
+    	</filter>
+  
+    	<filter id="Merge4" x="0" y="0" width="1" height="1">
+	  <feImage xlink:href="#Circle1" result="Circle1" />
+	  <feImage xlink:href="#Circle2" result="Circle2" />
+	  <feImage xlink:href="#Rect1"   result="Rect1" />
+	  <feImage xlink:href="#Rect2"   result="Rect2" />
+
+    	  <feMerge>
+	    <feMergeNode in="Rect1"/>
+	    <feMergeNode in="Rect2"/>
+	    <feMergeNode in="Circle1"/>
+	    <feMergeNode in="Circle2"/>
+	  </feMerge>
+    	</filter>
+  
+    	<filter id="Merge5" x="0" y="0" width="1" height="1">
+	  <feImage xlink:href="#Circle1" result="Circle1" />
+	  <feImage xlink:href="#Circle2" result="Circle2" />
+	  <feImage xlink:href="#Rect1"   result="Rect1" />
+	  <feImage xlink:href="#Rect2"   result="Rect2" />
+
+    	  <feMerge>
+	    <feMergeNode in="Rect1"/>
+	    <feMergeNode in="Circle1"/>
+	    <feMergeNode in="Rect2"/>
+	    <feMergeNode in="Circle2"/>
+	  </feMerge>
+    	</filter>
+  
+    	<filter id="Merge6" x="0" y="0" width="1" height="1">
+	  <feImage xlink:href="#Circle1" result="Circle1" />
+	  <feImage xlink:href="#Circle2" result="Circle2" />
+	  <feImage xlink:href="#Rect1"   result="Rect1" />
+	  <feImage xlink:href="#Rect2"   result="Rect2" />
+
+    	  <feMerge>
+	    <feMergeNode in="Rect2"/>
+	    <feMergeNode in="Circle2"/>
+	    <feMergeNode in="Rect1"/>
+	    <feMergeNode in="Circle1"/>
+	  </feMerge>
+    	</filter>
+  
+      </defs>
+  
+      <g transform="translate(0 40)" class="legend">
+
+        <!-- ============================================== -->
+        <!-- Composite_1_*                                  -->
+        <!-- ============================================== -->
+        <g transform="translate(0 20)" class="row1" >
+    	  <g  transform="translate(20 0)">
+              <rect x="0" y="0" width="120" height="120" style="fill:WhiteSmoke"/>
+    	      <rect x="0" y="0" width="120" height="120" 
+    	            style="fill:FireBrick;  filter:url(#Merge1)"/>
+      
+              <g transform="translate(60, 130)">
+               <text x="0" y="0" style="text-anchor:middle">
+	        lt green/blue/lt blue/green
+               </text>
+             </g>
+    	  </g>
+             
+    	  <g  transform="translate(160 0)">
+              <rect x="0" y="0" width="120" height="120" style="fill:WhiteSmoke"/>
+    	      <rect x="0" y="0" width="120" height="120" 
+    	       style="fill:FireBrick;  filter:url(#Merge2)" />
+              <g transform="translate(60, 130)">
+               <text x="0" y="0" style="text-anchor:middle">
+                lt green/lt blue/blue/green
+               </text>
+             </g>
+    	  </g>
+  
+  
+    	  <g  transform="translate(300 0)">
+              <rect x="0" y="0" width="120" height="120" style="fill:WhiteSmoke"/>
+    	      <rect x="0" y="0" width="120" height="120" 
+    	       style="fill:FireBrick;  filter:url(#Merge3)" />
+              <g transform="translate(60, 130)">
+               <text x="0" y="0" style="text-anchor:middle">
+                lt green/lt blue/green/blue
+               </text>
+             </g>
+    	  </g>
+    	</g>
+
+        <!-- ============================================== -->
+        <!-- Composite_2_*                                  -->
+        <!-- ============================================== -->
+        <g transform="translate(0 160)" class="row2" >
+    	  <g transform="translate(20 0)">
+              <rect x="0" y="0" width="120" height="120" style="fill:WhiteSmoke"/>
+    	      <rect x="0" y="0" width="120" height="120" 
+    	       style="fill:FireBrick;  filter:url(#Merge4)"/>
+              <g transform="translate(60, 130)">
+               <text x="0" y="0" style="text-anchor:middle">
+                lt blue/green/lt green/blue
+               </text>
+             </g>
+    	  </g>
+
+    	  <g  transform="translate(160 0)">
+              <rect x="0" y="0" width="120" height="120" style="fill:WhiteSmoke"/>
+    	      <rect x="0" y="0" width="120" height="120" 
+    	       style="fill:FireBrick;  filter:url(#Merge5)"/>
+              <g transform="translate(60, 130)">
+               <text x="0" y="0" style="text-anchor:middle">
+                lt blue/lt green/green/blue
+               </text>
+             </g>
+    	  </g>
+
+    	  <g  transform="translate(300 0)">
+              <rect x="0" y="0" width="120" height="120" style="fill:WhiteSmoke"/>
+    	      <rect x="0" y="0" width="120" height="120" 
+    	       style="fill:FireBrick;  filter:url(#Merge6)"/>
+              <g transform="translate(60, 130)">
+               <text x="0" y="0" style="text-anchor:middle">
+                green/blue/lt blue/lt green
+               </text>
+             </g>
+    	  </g>
+      
+    	</g>
+
+      </g>
+      </g>
+    </g>
+
+    <!-- ============================================================= -->
+    <!-- Batik sample mark                                             -->
+    <!-- ============================================================= -->
+    <use xlink:href="../../../batikLogo.svg#Batik_Tag_Box" />
+    
+</svg>

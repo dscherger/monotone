@@ -1,0 +1,535 @@
+<HTML><HEAD><SCRIPT language="JavaScript" src="resources/script.js" type="text/javascript"></SCRIPT><TITLE>Batik - SVG Rasterizer</TITLE></HEAD><BODY alink="#cc0000" bgcolor="#ffffff" leftmargin="4" link="#039acc" marginheight="4" marginwidth="4" text="#000000" topmargin="4" vlink="#0086b2"><TABLE border="0" cellpadding="0" cellspacing="0" width="100%"><TR><TD align="left" height="60" rowspan="3" valign="top" width="135"><IMG border="0" height="60" hspace="0" src="resources/logo.gif" vspace="0" width="135"></TD><TD align="left" background="resources/line.gif" colspan="2" height="5" valign="top" width="100%"><IMG align="left" border="0" height="5" hspace="0" src="resources/line.gif" vspace="0" width="1"></TD><TD align="left" height="60" rowspan="3" valign="top" width="29"><IMG border="0" height="60" hspace="0" src="resources/right.gif" vspace="0" width="29"></TD></TR><TR><TD align="left" bgcolor="#0086b2" colspan="2" height="35" valign="top" width="100%"><IMG align="right" alt="" border="0" height="35" hspace="0" src="graphics/svgrasterizer-header.jpg" vspace="0" width="456"></TD></TR><TR><TD align="left" background="resources/bottom.gif" bgcolor="#0086b2" height="20" valign="top" width="100%"><IMG align="left" border="0" height="20" hspace="0" src="resources/bottom.gif" vspace="0" width="3"></TD><TD align="right" background="resources/bottom.gif" bgcolor="#0086b2" height="20" valign="top" width="288"><TABLE border="0" cellpadding="0" cellspacing="0" width="288"><TR><TD align="left" height="20" valign="top" width="96"><A href="http://xml.apache.org/" onMouseOut="rolloverOff('xml');" onMouseOver="rolloverOn('xml');" target="new"><IMG alt="http://xml.apache.org/" border="0" height="20" hspace="0" name="xml" onLoad="rolloverLoad('xml','resources/button-xml-hi.gif','resources/button-xml-lo.gif');" src="resources/button-xml-lo.gif" vspace="0" width="96"></A></TD><TD align="left" height="20" valign="top" width="96"><A href="http://www.apache.org/" onMouseOut="rolloverOff('asf');" onMouseOver="rolloverOn('asf');" target="new"><IMG alt="http://www.apache.org/" border="0" height="20" hspace="0" name="asf" onLoad="rolloverLoad('asf','resources/button-asf-hi.gif','resources/button-asf-lo.gif');" src="resources/button-asf-lo.gif" vspace="0" width="96"></A></TD><TD align="left" height="20" valign="top" width="96"><A href="http://www.w3.org/" onMouseOut="rolloverOff('w3c');" onMouseOver="rolloverOn('w3c');" target="new"><IMG alt="http://www.w3.org/" border="0" height="20" hspace="0" name="w3c" onLoad="rolloverLoad('w3c','resources/button-w3c-hi.gif','resources/button-w3c-lo.gif');" src="resources/button-w3c-lo.gif" vspace="0" width="96"></A></TD></TR></TABLE></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="100%"><TR><TD align="left" valign="top" width="120"><IMG border="0" height="14" hspace="0" src="resources/join.gif" vspace="0" width="120"><BR>
+    
+    
+    
+    <A href="http://xml.apache.org/" onMouseOut="rolloverOff('side-ext-8');" onMouseOver="rolloverOn('side-ext-8');"><IMG alt="Home" border="0" height="12" hspace="0" name="side-ext-8" onLoad="rolloverLoad('side-ext-8','graphics/ext-8-label-2.jpg','graphics/ext-8-label-3.jpg');" src="graphics/ext-8-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="index.html" onMouseOut="rolloverOff('side-index');" onMouseOver="rolloverOn('side-index');"><IMG alt="Overview" border="0" height="12" hspace="0" name="side-index" onLoad="rolloverLoad('side-index','graphics/index-label-2.jpg','graphics/index-label-3.jpg');" src="graphics/index-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="faqs.html" onMouseOut="rolloverOff('side-faqs');" onMouseOver="rolloverOn('side-faqs');"><IMG alt="FAQ" border="0" height="12" hspace="0" name="side-faqs" onLoad="rolloverLoad('side-faqs','graphics/faqs-label-2.jpg','graphics/faqs-label-3.jpg');" src="graphics/faqs-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="license.html" onMouseOut="rolloverOff('side-license');" onMouseOver="rolloverOn('side-license');"><IMG alt="License" border="0" height="12" hspace="0" name="side-license" onLoad="rolloverLoad('side-license','graphics/license-label-2.jpg','graphics/license-label-3.jpg');" src="graphics/license-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="http://www.apache.org/dyn/closer.cgi/xml/batik" onMouseOut="rolloverOff('side-ext-24');" onMouseOver="rolloverOn('side-ext-24');"><IMG alt="Download" border="0" height="12" hspace="0" name="side-ext-24" onLoad="rolloverLoad('side-ext-24','graphics/ext-24-label-2.jpg','graphics/ext-24-label-3.jpg');" src="graphics/ext-24-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="install.html" onMouseOut="rolloverOff('side-install');" onMouseOver="rolloverOn('side-install');"><IMG alt="Install" border="0" height="12" hspace="0" name="side-install" onLoad="rolloverLoad('side-install','graphics/install-label-2.jpg','graphics/install-label-3.jpg');" src="graphics/install-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="batikDemo.html" onMouseOut="rolloverOff('side-batikDemo');" onMouseOver="rolloverOn('side-batikDemo');"><IMG alt="Demo" border="0" height="12" hspace="0" name="side-batikDemo" onLoad="rolloverLoad('side-batikDemo','graphics/batikDemo-label-2.jpg','graphics/batikDemo-label-3.jpg');" src="graphics/batikDemo-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="pr.html" onMouseOut="rolloverOff('side-pr');" onMouseOver="rolloverOn('side-pr');"><IMG alt="In the news" border="0" height="12" hspace="0" name="side-pr" onLoad="rolloverLoad('side-pr','graphics/pr-label-2.jpg','graphics/pr-label-3.jpg');" src="graphics/pr-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="toolsAndApps.html" onMouseOut="rolloverOff('side-toolsAndApps');" onMouseOver="rolloverOn('side-toolsAndApps');"><IMG alt="Tools and Apps" border="0" height="12" hspace="0" name="side-toolsAndApps" onLoad="rolloverLoad('side-toolsAndApps','graphics/toolsAndApps-label-2.jpg','graphics/toolsAndApps-label-3.jpg');" src="graphics/toolsAndApps-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svgviewer.html" onMouseOut="rolloverOff('side-svgviewer');" onMouseOver="rolloverOn('side-svgviewer');"><IMG alt="Browser" border="0" height="12" hspace="0" name="side-svgviewer" onLoad="rolloverLoad('side-svgviewer','graphics/svgviewer-label-2.jpg','graphics/svgviewer-label-3.jpg');" src="graphics/svgviewer-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG alt="Rasterizer" border="0" height="12" hspace="0" src="graphics/svgrasterizer-label-1.jpg" vspace="0" width="120"><BR>
+    <A href="ttf2svg.html" onMouseOut="rolloverOff('side-ttf2svg');" onMouseOver="rolloverOn('side-ttf2svg');"><IMG alt="Font Converter" border="0" height="12" hspace="0" name="side-ttf2svg" onLoad="rolloverLoad('side-ttf2svg','graphics/ttf2svg-label-2.jpg','graphics/ttf2svg-label-3.jpg');" src="graphics/ttf2svg-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svgpp.html" onMouseOut="rolloverOff('side-svgpp');" onMouseOver="rolloverOn('side-svgpp');"><IMG alt="Pretty-printer" border="0" height="12" hspace="0" name="side-svgpp" onLoad="rolloverLoad('side-svgpp','graphics/svgpp-label-2.jpg','graphics/svgpp-label-3.jpg');" src="graphics/svgpp-label-3.jpg" vspace="0" width="120"></A><BR>
+
+    
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="architecture.html" onMouseOut="rolloverOff('side-architecture');" onMouseOver="rolloverOn('side-architecture');"><IMG alt="Architecture" border="0" height="12" hspace="0" name="side-architecture" onLoad="rolloverLoad('side-architecture','graphics/architecture-label-2.jpg','graphics/architecture-label-3.jpg');" src="graphics/architecture-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="javadoc/index.html" onMouseOut="rolloverOff('side-ext-70');" onMouseOver="rolloverOn('side-ext-70');"><IMG alt="API (Javadoc)" border="0" height="12" hspace="0" name="side-ext-70" onLoad="rolloverLoad('side-ext-70','graphics/ext-70-label-2.jpg','graphics/ext-70-label-3.jpg');" src="graphics/ext-70-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svggen.html" onMouseOut="rolloverOff('side-svggen');" onMouseOver="rolloverOn('side-svggen');"><IMG alt="Generator" border="0" height="12" hspace="0" name="side-svggen" onLoad="rolloverLoad('side-svggen','graphics/svggen-label-2.jpg','graphics/svggen-label-3.jpg');" src="graphics/svggen-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="domapi.html" onMouseOut="rolloverOff('side-domapi');" onMouseOver="rolloverOn('side-domapi');"><IMG alt="DOM API" border="0" height="12" hspace="0" name="side-domapi" onLoad="rolloverLoad('side-domapi','graphics/domapi-label-2.jpg','graphics/domapi-label-3.jpg');" src="graphics/domapi-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="svgcanvas.html" onMouseOut="rolloverOff('side-svgcanvas');" onMouseOver="rolloverOn('side-svgcanvas');"><IMG alt="JSVGCanvas" border="0" height="12" hspace="0" name="side-svgcanvas" onLoad="rolloverLoad('side-svgcanvas','graphics/svgcanvas-label-2.jpg','graphics/svgcanvas-label-3.jpg');" src="graphics/svgcanvas-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="rasterizerTutorial.html" onMouseOut="rolloverOff('side-rasterizerTutorial');" onMouseOver="rolloverOn('side-rasterizerTutorial');"><IMG alt="Transcoder API" border="0" height="12" hspace="0" name="side-rasterizerTutorial" onLoad="rolloverLoad('side-rasterizerTutorial','graphics/rasterizerTutorial-label-2.jpg','graphics/rasterizerTutorial-label-3.jpg');" src="graphics/rasterizerTutorial-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="scripting.html" onMouseOut="rolloverOff('side-scripting');" onMouseOver="rolloverOn('side-scripting');"><IMG alt="Scripting Intro" border="0" height="12" hspace="0" name="side-scripting" onLoad="rolloverLoad('side-scripting','graphics/scripting-label-2.jpg','graphics/scripting-label-3.jpg');" src="graphics/scripting-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="scriptingFeatures.html" onMouseOut="rolloverOff('side-scriptingFeatures');" onMouseOver="rolloverOn('side-scriptingFeatures');"><IMG alt="Scripting Features" border="0" height="12" hspace="0" name="side-scriptingFeatures" onLoad="rolloverLoad('side-scriptingFeatures','graphics/scriptingFeatures-label-2.jpg','graphics/scriptingFeatures-label-3.jpg');" src="graphics/scriptingFeatures-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="javaScripting.html" onMouseOut="rolloverOff('side-javaScripting');" onMouseOver="rolloverOn('side-javaScripting');"><IMG alt="Java Scripting" border="0" height="12" hspace="0" name="side-javaScripting" onLoad="rolloverLoad('side-javaScripting','graphics/javaScripting-label-2.jpg','graphics/javaScripting-label-3.jpg');" src="graphics/javaScripting-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="security.html" onMouseOut="rolloverOff('side-security');" onMouseOver="rolloverOn('side-security');"><IMG alt="Security" border="0" height="12" hspace="0" name="side-security" onLoad="rolloverLoad('side-security','graphics/security-label-2.jpg','graphics/security-label-3.jpg');" src="graphics/security-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="extendingBatik.html" onMouseOut="rolloverOff('side-extendingBatik');" onMouseOver="rolloverOn('side-extendingBatik');"><IMG alt="Extensions" border="0" height="12" hspace="0" name="side-extendingBatik" onLoad="rolloverLoad('side-extendingBatik','graphics/extendingBatik-label-2.jpg','graphics/extendingBatik-label-3.jpg');" src="graphics/extendingBatik-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="test.html" onMouseOut="rolloverOff('side-test');" onMouseOver="rolloverOn('side-test');"><IMG alt="Testing" border="0" height="12" hspace="0" name="side-test" onLoad="rolloverLoad('side-test','graphics/test-label-2.jpg','graphics/test-label-3.jpg');" src="graphics/test-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="whoAreWe.html" onMouseOut="rolloverOff('side-whoAreWe');" onMouseOver="rolloverOn('side-whoAreWe');"><IMG alt="Contributors" border="0" height="12" hspace="0" name="side-whoAreWe" onLoad="rolloverLoad('side-whoAreWe','graphics/whoAreWe-label-2.jpg','graphics/whoAreWe-label-3.jpg');" src="graphics/whoAreWe-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="mailList.html" onMouseOut="rolloverOff('side-mailList');" onMouseOver="rolloverOn('side-mailList');"><IMG alt="Mail Lists" border="0" height="12" hspace="0" name="side-mailList" onLoad="rolloverLoad('side-mailList','graphics/mailList-label-2.jpg','graphics/mailList-label-3.jpg');" src="graphics/mailList-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="cvs.html" onMouseOut="rolloverOff('side-cvs');" onMouseOver="rolloverOn('side-cvs');"><IMG alt="CVS Repository" border="0" height="12" hspace="0" name="side-cvs" onLoad="rolloverLoad('side-cvs','graphics/cvs-label-2.jpg','graphics/cvs-label-3.jpg');" src="graphics/cvs-label-3.jpg" vspace="0" width="120"></A><BR>
+    <A href="http://issues.apache.org/bugzilla" onMouseOut="rolloverOff('side-ext-120');" onMouseOver="rolloverOn('side-ext-120');"><IMG alt="Bug Database" border="0" height="12" hspace="0" name="side-ext-120" onLoad="rolloverLoad('side-ext-120','graphics/ext-120-label-2.jpg','graphics/ext-120-label-3.jpg');" src="graphics/ext-120-label-3.jpg" vspace="0" width="120"></A><BR>
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+    <A href="status.html" onMouseOut="rolloverOff('side-status');" onMouseOver="rolloverOn('side-status');"><IMG alt="Status" border="0" height="12" hspace="0" name="side-status" onLoad="rolloverLoad('side-status','graphics/status-label-2.jpg','graphics/status-label-3.jpg');" src="graphics/status-label-3.jpg" vspace="0" width="120"></A><BR>
+    
+    
+
+    
+    
+    
+    
+    <IMG border="0" height="6" hspace="0" src="resources/separator.gif" vspace="0" width="120"><BR>
+
+    
+    
+    
+    <A href="glossary.html" onMouseOut="rolloverOff('side-glossary');" onMouseOver="rolloverOn('side-glossary');"><IMG alt="Glossary" border="0" height="12" hspace="0" name="side-glossary" onLoad="rolloverLoad('side-glossary','graphics/glossary-label-2.jpg','graphics/glossary-label-3.jpg');" src="graphics/glossary-label-3.jpg" vspace="0" width="120"></A><BR>
+
+<IMG border="0" height="14" hspace="0" src="resources/close.gif" vspace="0" width="120"><BR></TD><TD align="left" valign="top" width="*"><TABLE border="0" cellpadding="3" cellspacing="0"><TR><TD><BR>
+    
+
+    
+        <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Introduction</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+
+        
+
+        <P align="left">
+        This page describes the features of the SVG Rasterizer utility that
+        comes with the Batik distribution. It discusses the following:</P>
+        <BLOCKQUOTE><UL>
+            <LI><A href="#downloading">Downloading the rasterizer</A></LI>
+            <LI><A href="#using">Rasterizing one or several SVG files</A></LI>
+            <LI><A href="#task">The rasterizer Ant task</A></LI>
+        </UL></BLOCKQUOTE>            
+        <P align="left">
+            The SVG Rasterizer is a utility that can convert SVG files to a
+            raster format. The tool can convert individual files or sets of
+            files, making it easy to convert entire directories of SVG
+            files. The provided formats are JPEG, PNG, and Tiff, however the
+            design allows new formats to be added easily.
+        </P>
+
+        </FONT></TD></TR></TABLE></DIV><BR>
+
+        <A name="downloading"><!--anchor--></A>
+        <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Downloading the rasterizer</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+
+            <P align="left">Refer to the <A href="install.html">install
+            page</A> and the <A href="http://www.apache.org/dyn/closer.cgi/xml/batik">download
+            area</A> to find out what to download and how to
+            install it. Remember that you can get either the <A href="install.html#distributions">source
+            distribution</A> or the <A href="install.html#distributions">binary
+            distribution</A>.</P>
+        </FONT></TD></TR></TABLE></DIV><BR>
+
+        <A name="using"><!--anchor--></A>
+        <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Rasterizing one or several SVG files</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+            <P align="left">The method for starting the rasterizer depends on the distribution of Batik 
+            that you chose to download. The following describes how to start the viewer
+            for each distribution.</P>
+
+            <A name="usingBinary"><!--anchor--></A>
+            <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Using the binary distribution</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+
+                <P align="left">If you downloaded the binary distribution of Batik, you should have
+                gotten a file called <I>batik-1.5beta4.zip</I>, and, after expanding that
+                file, a JAR (Java ARchive) file called <CODE><FONT face="courier, monospaced">batik-rasterizer.jar</FONT></CODE>. 
+                To start the rasterizer, open a console, go to the directory where you 
+                expanded the distribution (and where <CODE><FONT face="courier, monospaced">batik-rasterizer.jar</FONT></CODE> is located) and
+                simply type the following at the command prompt :</P>
+                <P align="left"><CODE><FONT face="courier, monospaced">java -jar batik-rasterizer.jar </FONT></CODE><I>[@files]</I></P>
+                <P align="left">For example, if you type:</P>
+                <P align="left"><CODE><FONT face="courier, monospaced">java -jar batik-rasterizer.jar samples/batikFX.svg</FONT></CODE></P>
+                <P align="left">you will see the following printout:</P>
+                <P align="left"><CODE><FONT face="courier, monospaced">Converting file: samples/BatikFX.svg to samples/BatikFX.png</FONT></CODE></P>
+                <P align="left">Once the conversion is complete, you will find a <CODE><FONT face="courier, monospaced">batikFX.png</FONT></CODE> file in the samples
+                directory</P>
+                <P align="left">You can pass options to the command line:</P>
+                <P align="left"><CODE><FONT face="courier, monospaced">java -jar batik-rasterizer.jar </FONT></CODE><I>[options] [@files]</I></P>
+                <P align="left">Where the options are:</P>
+                <BLOCKQUOTE><UL>
+                <LI><CODE><FONT face="courier, monospaced">-d</FONT></CODE><I> &lt;dir|file&gt;</I>. Output directory. If there is a single input file, this can be a file.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-m</FONT></CODE><I> &lt;mimeType&gt;</I>. Output mime type, one of image/png, image/jpeg, application/pdf, image/tiff.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-w</FONT></CODE><I> &lt;width&gt;</I>. Output width. This is a floating point value.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-h</FONT></CODE><I> &lt;height&gt;</I>. Output height. This is a floating point value.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-maxw</FONT></CODE><I> &lt;width&gt;</I>. Maximum output width. This is a floating point value.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-maxh</FONT></CODE><I> &lt;height&gt;</I>. Maximum output height. This is a floating point value.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-a</FONT></CODE><I> &lt;area&gt;</I>. Output area. The format for &lt;area&gt; is x,y,w,h, where x, y, w and h
+                are floating point values.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-bg</FONT></CODE><I> &lt;color&gt;</I>. Uuput color. The format for &lt;color&gt; is a.r.g.b, where a, r, g and b
+                are integer values.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-cssMedia</FONT></CODE><I> &lt;media&gt;</I>.CSS media type for which the source SVG files should be
+                converted.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-cssAlternate</FONT></CODE><I> &lt;alternate&gt;</I>. CSS alternate stylesheet to use when converting the source
+                SVG files.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-cssUser</FONT></CODE><I>&lt;userStylesheet&gt;</I>. CSS user stylesheet URI to apply to converted SVG documents
+                in addition to any other referened or embeded stylesheets.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-lang</FONT></CODE><I> &lt;userLanguage&gt;</I>. User language to use when converting SVG documents.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-q</FONT></CODE><I> &lt;quality&gt;</I>. Quality for the output image. This is only relevant for the
+                image/jpeg mime type.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-dpi</FONT></CODE><I> &lt;resolution&gt;</I>. Resolution for the ouptut image.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-validate</FONT></CODE> Controls whether the source SVG files should be validated.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-onload</FONT></CODE> Controls if the source SVG files must be rasterize after dispatching the 'onload' event.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-scriptSecurityOff</FONT></CODE> Removes any security check on the scripts running as a result of dispatching the onload event.</LI>
+                <LI><CODE><FONT face="courier, monospaced">-scripts</FONT></CODE><I>&lt;listOfAllowedScripts&gt;</I> List of script types (i.e., values for the type attribute in the <CODE><FONT face="courier, monospaced">&lt;script&gt;</FONT></CODE> tag) which should be loaded.</LI>
+                </UL></BLOCKQUOTE>
+               	
+                <P align="left">For example:</P>
+                <BLOCKQUOTE><UL>
+                    <LI><CODE><FONT face="courier, monospaced">java -jar batik-rasterizer.jar -d myDir -m image/jpeg samples/*.svg</FONT></CODE> will generate JPEG images
+                    for all the SVG files found in the samples directory.</LI>
+                </UL></BLOCKQUOTE>
+                <P align="left"><B>NOTE:</B> to run MIME type <CODE><FONT face="courier, monospaced">application/pdf</FONT></CODE> need to have (see <A href="http://xml.apache.org/fop/index.html">FOP</A>) installed.</P>
+            </FONT></TD></TR></TABLE></DIV><BR>
+
+            <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Using the source distribution</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+            
+                <P align="left">If you downloaded the <A href="install.html#distributions">source distribution</A>
+                of Batik, you 
+                got a zip or tar file that expanded into a directory called <CODE><FONT face="courier, monospaced">xml-batik</FONT></CODE> directory. 
+                In that directory, you can find <CODE><FONT face="courier, monospaced">build</FONT></CODE> scripts for the platform you are running on. 
+                For example, there is a build.bat script for users of the Windows platform and there is a 
+                <CODE><FONT face="courier, monospaced">build.sh</FONT></CODE> script
+                for UNIX users.</P>
+                <P align="left">To start the rasterizer you should:</P><BLOCKQUOTE><UL>
+                    <LI>Make sure the <CODE><FONT face="courier, monospaced">xml-batik</FONT></CODE> directory is in your PATH environment variable</LI>
+                    <LI>Make sure the <CODE><FONT face="courier, monospaced">ANT_HOME</FONT></CODE> environment variable is set to the xml-batik directory</LI>
+                    <LI>Make sure that your <CODE><FONT face="courier, monospaced">JAVA_HOME</FONT></CODE> environment variable is set to your JDK installation 
+                        directory</LI>
+                    <LI>Open a command line window and go to the <CODE><FONT face="courier, monospaced">xml-batik</FONT></CODE> directory where the Batik
+                        distribution was expanded</LI>
+                    <LI>At the command prompt, type: <BR>
+                        <B>Windows: </B><CODE><FONT face="courier, monospaced">build svgrasterizer</FONT></CODE>.<BR>
+                        <B>UNIX: </B><CODE><FONT face="courier, monospaced">build.sh svgrasterizer</FONT></CODE>.<BR>
+                        This will printout a
+                        help message for the rasterizer</LI>
+                </UL></BLOCKQUOTE>
+                <P align="left">You can pass options to the rasterizer as follows:</P>
+                <P align="left"><B>Windows: </B><CODE><FONT face="courier, monospaced">build svgrasterizer </FONT></CODE><I>[options] [@files]</I></P>
+                <P align="left"><B>UNIX: </B><CODE><FONT face="courier, monospaced">build.sh svgrasterizer </FONT></CODE><I>[options] [@files]</I></P>
+                <P align="left">Refer to <A href="#usingBinary">&quot;Using the binary distribution&quot; </A>for an explanation of these
+                options</P>
+            </FONT></TD></TR></TABLE></DIV><BR>
+
+        </FONT></TD></TR></TABLE></DIV><BR>
+
+
+        <A name="task"><!--anchor--></A>
+        <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="+1"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Rasterizer Ant Task</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="98%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+            <P align="left">Rasterizer task is an 
+            <A href="http://jakarta.apache.org/ant/index.html">Ant</A> 
+            version of the rasterizer utility. It fulfills the same basic 
+            purpose as the utility but has a different syntax and a 
+            little different set of features.</P>
+
+            <P align="left">The task is able to produce four raster formats: PNG, JPEG, Tiff 
+            and PDF. You need to have 
+            <A href="http://xml.apache.org/fop/">FOP</A> installed (versions after 
+            0.20.2 should work) in your <I>CLASSPATH</I> if you want to 
+            produce result images in PDF format.</P>
+
+            <A name="initTask"><!--anchor--></A>
+            <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Taking rasterizer task in use</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+
+                <P align="left">The first thing to do is to compile rasterizer task classes. 
+                Download <A href="install.html#distributions">source distribution</A> 
+                of Batik and see <CODE><FONT face="courier, monospaced">README</FONT></CODE> file in <CODE><FONT face="courier, monospaced">xml-batik\contrib\rasterizertask</FONT></CODE> 
+                directory for more instructions. The build procedure works the same way as when building 
+                Batik itself.</P>
+
+                <P align="left"> After building set <CODE><FONT face="courier, monospaced">batik-rasterizer.jar</FONT></CODE> and 
+                classes (or JAR) of the rasterizer task to your 
+                <I>CLASSPATH</I>.</P>
+
+                <P align="left">Next you have to define the task in your Ant 
+                project. To do this, add the following line either after the 
+                <CODE><FONT face="courier, monospaced">project</FONT></CODE> start tag or after the <CODE><FONT face="courier, monospaced">target</FONT></CODE> 
+                start tag in the target you are using the rasterizer task:</P>
+
+<DIV align="center"><TABLE border="0" cellpadding="0" cellspacing="4"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff"><PRE>
+&lt;taskdef name=&quot;rasterize&quot; 
+classname=&quot;org.apache.tools.ant.taskdefs.optional.RasterizerTask&quot; /&gt;
+</PRE></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+
+                <P align="left">Now you can use the rasterizer task in your project! See the 
+                <A href="taskParameters">parameters section</A> for an 
+                explanation of the available parameters or 
+                <A href="taskExamples">examples section</A> to see few 
+                usage examples.</P>
+            </FONT></TD></TR></TABLE></DIV><BR>
+
+            <A name="taskParameters"><!--anchor--></A>
+            <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Parameters of the task</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+                <TABLE border="0" cellpadding="2" cellspacing="2" width="100%"><CAPTION></CAPTION>
+                    <TR>
+                        <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Attribute</B>&nbsp;
+      </FONT></TD>
+                        <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Description</B>&nbsp;
+      </FONT></TD>
+                        <TD align="center" bgcolor="#039acc" colspan="1" rowspan="1" valign="center"><FONT color="#ffffff" face="arial,helvetica,sanserif" size="-1"><B>Required</B>&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">result&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sets the type of the result image. Only one the 
+                        following values are allowed: <CODE><FONT face="courier, monospaced">image/png</FONT></CODE>, 
+                        <CODE><FONT face="courier, monospaced">image/jpeg</FONT></CODE>, <CODE><FONT face="courier, monospaced">image/tiff</FONT></CODE> or 
+                        <CODE><FONT face="courier, monospaced">application/pdf</FONT></CODE>. The value have to be in 
+                        lowercase letters.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Yes&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">height&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sets the height of the result image in pixels. Task 
+                        calculates the height from the SVG file if this 
+                        parameter has not been set. The rasterizer keeps the 
+                        aspect ratio of the SVG file even if the both 
+                        <CODE><FONT face="courier, monospaced">height</FONT></CODE> and <CODE><FONT face="courier, monospaced">width</FONT></CODE> has been set. 
+                        &nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">width&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sets the width of the result image in pixels. Task 
+                        calculates the width from the SVG file if this 
+                        parameter has not been set. The rasterizer keeps the 
+                        aspect ratio of the SVG file even if the both 
+                        <CODE><FONT face="courier, monospaced">height</FONT></CODE> and <CODE><FONT face="courier, monospaced">width</FONT></CODE> has been set. 
+                        &nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">maxheight&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sets the maximum height of the result image in pixels.
+                        The image won't be higher than defined in this parameter, 
+                        regardless of the size set in the image itself or in other parameters.
+                        This is a floating point value.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">maxwidth&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sets the maximum width of the result image in pixels.
+                        The image won't be wider than defined in this parameter, 
+                        regardless of the size set in the image itself or in other parameters.
+                        This is a floating point value.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">quality&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sets the quality of the produced image. The value 
+                        have to be greater than 0 but smaller than 1. A bigger 
+                        number means better quality. Quality value is used 
+                        only with JPEG images. 
+                        The default quality value is 0.99.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">area&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Defines the area in the SVG file which will be 
+                        rasterized. Parts outside this area are discarded and 
+                        don't show in the result image. The area attribute value 
+                        has four integers separated with commas. 
+                        The first two integers set the x and y coordinates of 
+                        the upper left corner of the area, respectively. The 
+                        last two integers set the width and height of the area, 
+                        respectively. For example, 
+                        <CODE><FONT face="courier, monospaced">&quot;10, 20, 100, 200&quot;</FONT></CODE> sets the 
+                        rectangular area from point 10,10 to point 110, 220. 
+                        The specified area is applied to all images if more 
+                        than one file is rasterized during one task.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">bg&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Sets the background color of the result image. 
+                        The <CODE><FONT face="courier, monospaced">bg</FONT></CODE> attribute value is either three 
+                        or four integers separated with commas. 
+                        The four values are alpha channel, red, 
+                        green, and blue, respectively. If only three values 
+                        are given, then the values are red, green, and blue and 
+                        the alpha channel is automatically set to 255 (opaque). 
+                        All values have to between 0 and 255.
+                        The default value is none which means that background 
+                        is transparent and not filled with any color.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">media&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">CSS media type which is used to select CSS 
+                        stylesheet. The selected stylesheet is then used to
+                        rasterize the SVG files. Only visual media group is 
+                        supported (see 
+                        <A href="http://www.w3.org/TR/REC-CSS2/">CSS2 specification</A>
+                        for more information about media groups). 
+                        The default value is <CODE><FONT face="courier, monospaced">screen</FONT></CODE>.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">dpi&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Resolution for the result image. The attribute 
+                        value is used to compute the &quot;pixel to millimeter&quot; 
+                        ratio used when processing SVG files. 
+                        The default value is 96.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">lang&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Language which is used select language specific 
+                        areas from the SVG file during the rasterizing 
+                        process. The valid values are defined in RFC3066. 
+                        The default value is <CODE><FONT face="courier, monospaced">en</FONT></CODE>.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">src&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Name of a one input file. Use this parameter to 
+                        convert just one file which name and location are known. 
+                        <CODE><FONT face="courier, monospaced">dest</FONT></CODE> parameter have to be set, too.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">One of the following is required: <CODE><FONT face="courier, monospaced">src</FONT></CODE> 
+                        attribute, <CODE><FONT face="courier, monospaced">srcdir</FONT></CODE> attribute or 
+                        <CODE><FONT face="courier, monospaced">fileset</FONT></CODE> element(s).&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">dest&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Name of a one output file. Use this with 
+                        <CODE><FONT face="courier, monospaced">src</FONT></CODE> parameter only. Output directory is 
+                        created if it doesn't exist.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Required if <CODE><FONT face="courier, monospaced">src</FONT></CODE> is used.&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">srcdir&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Name of the input directory. <CODE><FONT face="courier, monospaced">srcdir</FONT></CODE> and 
+                        <CODE><FONT face="courier, monospaced">fileset</FONT></CODE> elements can be combined and 
+                        <CODE><FONT face="courier, monospaced">srcdir</FONT></CODE> can be left out if there are at 
+                        least one <CODE><FONT face="courier, monospaced">fileset</FONT></CODE> child element. 
+                        <CODE><FONT face="courier, monospaced">srcdir</FONT></CODE> file selection can be controlled 
+                        with <CODE><FONT face="courier, monospaced">include</FONT></CODE>, <CODE><FONT face="courier, monospaced">exclude</FONT></CODE>, etc. 
+                        child elements. Note that without control parameters 
+                        the task tries to rasterize <I>all</I> files in 
+                        the given directory.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">One of the following is required: <CODE><FONT face="courier, monospaced">src</FONT></CODE> 
+                        attribute, <CODE><FONT face="courier, monospaced">srcdir</FONT></CODE> attribute or 
+                        <CODE><FONT face="courier, monospaced">fileset</FONT></CODE> element(s).&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">destdir&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Name of an output directory. Use this with 
+                        <CODE><FONT face="courier, monospaced">srcdir</FONT></CODE> parameter or <CODE><FONT face="courier, monospaced">fileset</FONT></CODE> 
+                        elements. The task generates the names of the output 
+                        images by changing the suffix of the input file names to 
+                        correspond the result image type. A suffix is added if 
+                        the input file doesn't have one. Output directories are 
+                        created if they don't exist.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Required if <CODE><FONT face="courier, monospaced">srcdir</FONT></CODE> attribute or 
+                        <CODE><FONT face="courier, monospaced">fileset</FONT></CODE> elements are used.&nbsp;
+      </FONT></TD>
+                    </TR>
+                    <TR>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">classname&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">Classname of the XML parser used to parse SVG images.
+                        The value can be either complete classname with package 
+                        information included or <CODE><FONT face="courier, monospaced">jaxp</FONT></CODE>, 
+                        which means any available parser in the <CODE><FONT face="courier, monospaced">CLASSPATH</FONT></CODE> 
+                        that supports JAXP. See the Batik code for the default value.&nbsp;
+      </FONT></TD>
+                        <TD align="left" bgcolor="#a0ddf0" colspan="1" rowspan="1" valign="top"><FONT color="#000000" face="arial,helvetica,sanserif" size="-1">No&nbsp;
+      </FONT></TD>
+                    </TR>
+                </TABLE>
+                <P align="left">You can use <CODE><FONT face="courier, monospaced">fileset</FONT></CODE> elements to select input 
+                files and directories. See the <A href="http://jakarta.apache.org/ant/index.html">Ant</A>
+                documentation to learn how to use 
+                <A href="http://jakarta.apache.org/ant/manual/CoreTypes/fileset.html">filesets</A>.</P>
+            </FONT></TD></TR></TABLE></DIV><BR>
+
+            <A name="taskExamples"><!--anchor--></A>
+            <DIV align="right"><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD align="right" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-top.gif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="7" valign="bottom" width="9"><IMG border="0" height="7" hspace="0" src="resources/bar-top-right.gif" vspace="0" width="9"></TD></TR><TR><TD background="resources/bar-border-left.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD><TD bgcolor="#0086b2" width="100%"><FONT color="#ffffff" face="arial,helvetica,sanserif"><IMG border="0" height="5" hspace="0" src="resources/void.gif" vspace="0" width="5"><B>Examples of using the rasterizer task</B></FONT></TD><TD background="resources/bar-border-right.gif" width="9"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="9"></TD></TR><TR><TD align="right" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-left.gif" vspace="0" width="9"></TD><TD background="resources/bar-border-bottom.gif"><IMG border="0" height="12" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD align="left" height="12" valign="top" width="9"><IMG border="0" height="12" hspace="0" src="resources/bar-bottom-right.gif" vspace="0" width="9"></TD></TR></TABLE><TABLE border="0" cellpadding="0" cellspacing="0" width="95%"><TR><TD><FONT color="#000000" face="arial,helvetica,sanserif">
+
+                <P align="left">The following example is the complete Ant
+                project which converts SVG image (called <I>input.svg</I>) to PNG image 
+                (called <I>output.png</I>):</P>
+
+<DIV align="center"><TABLE border="0" cellpadding="0" cellspacing="4"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff"><PRE>
+&lt;?xml version=&quot;1.0&quot;?&gt;
+
+&lt;project name=&quot;RasterizerExample&quot; default=&quot;main&quot; basedir=&quot;.&quot;&gt;
+
+    &lt;taskdef name=&quot;rasterize&quot; 
+        classname=&quot;org.apache.tools.ant.taskdefs.optional.RasterizerTask&quot; /&gt;
+
+    &lt;target name=&quot;main&quot;&gt;
+        &lt;rasterize result=&quot;image/png&quot;
+            src=&quot;input.svg&quot;
+            dest=&quot;output.png&quot; /&gt;
+    &lt;/target&gt;
+&lt;/project&gt;
+</PRE></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+
+                <P align="left">The next example is just a one task in a project. It 
+                converts all files with <CODE><FONT face="courier, monospaced">.svg</FONT></CODE> suffix in 
+                <I>images</I> directory and all files in <I>images2</I> 
+                directory to Tiff images. The resulting image files are placed 
+                in the <I>results</I> directory.</P>
+
+<DIV align="center"><TABLE border="0" cellpadding="0" cellspacing="4"><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#ffffff"><PRE>
+&lt;rasterize 
+    result=&quot;image/tiff&quot;
+    destdir=&quot;results&quot;&gt;
+    &lt;fileset dir=&quot;images&quot;&gt;
+        &lt;include name=&quot;**/*.svg&quot; /&gt;
+    &lt;/fileset&gt;
+    &lt;fileset dir=&quot;images2&quot; /&gt;
+&lt;/rasterize&gt;
+</PRE></TD><TD bgcolor="#0086b2" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR><TR><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD><TD bgcolor="#0086b2" height="1" width="1"><IMG border="0" height="1" hspace="0" src="resources/void.gif" vspace="0" width="1"></TD></TR></TABLE></DIV>
+
+            </FONT></TD></TR></TABLE></DIV><BR>
+        </FONT></TD></TR></TABLE></DIV><BR>
+
+
+    
+</TD></TR></TABLE></TD></TR></TABLE><BR><TABLE border="0" cellpadding="0" cellspacing="0" width="100%"><TR><TD bgcolor="#0086b2"><IMG height="1" src="images/dot.gif" width="1"></TD></TR><TR><TD align="center"><FONT color="#0086b2" face="arial,helvetica,sanserif" size="-1"><I>
+              Copyright &copy; 2000-2002 The Apache Software Foundation.
+              All Rights Reserved.
+            </I></FONT></TD></TR></TABLE></BODY></HTML>

@@ -1,0 +1,84 @@
+2004-04-25: GXL version 0.92
+----------------------------
+1.	The XML parser now reads a local copy of the GXL DTD, so as not to require
+	an internet connection. A new validation exception type is also thrown if
+	an XML document pointing to a different DTD is read, warning the user of
+	a non-GXL 1.0 document.
+
+2004-03-20: GXL version 0.91
+----------------------------
+1. Implemented Feature request #890993, resulting in a few more methods (see below).
+2. Fixed bug #889050 Bug in GXLTup, disallowing (legal) duplicate value types.
+3. Fixed bug #891398 DOCTYPE not written, so that unless specified otherwise, 
+   the DOCTYPE element, pointing to the GXL DTD, will be written.
+4. Added the GXLDocumentAdapter class, providing empty methods to the 
+   GXLDocumentListener interface.
+
+ADDED CLASSES:
+--------------
+GXLAttrValueModificationEvent
+GXLDocumentAdapter
+
+ADDED METHODS:
+--------------
+GXLAttr.setValue(GXLValue value)
+GXLAttributedElement.getAttr(String name)
+GXLAttributedElement.setAttr(String name, GXLValue value)
+GXLDocumentListener.gxlAttrValueChanged(GXLAttrValueModificationEvent e)
+
+
+
+2003-12-27: GXL version 0.9
+----------------------------------------------------------------
+1. API documentation has been improved.
+2. Validation is more rigid, although dangling tentacles has been allowed.
+3. Accessor methods has been added to simplify and reveal
+functionality.
+4. Class hierarchy has been expanded to mimic GXL graph schema.
+
+NOTE: some classes and methods has been removed without using the deprecation mechanism, which might cause code using the earlier version to not compile. I've taken this liberty to quickly make the classes and interfaces better and cleaner while there aren't many people using them. For a full list of removed things see below. In all cases there should be no problem in finding an alternative.
+
+REMOVED CLASSES:
+----------------
+GXLAttributeModification
+GXLDocumentModification
+GXLTreeModification
+GXLValueModification
+(These have really just been hidden, since they shouldn't be used directly)
+
+REMOVED CONSTRUCTORS:
+---------------------
+GXL.GXL()
+GXLAttr.GXLAttr()
+GXLEdge.GXLEdge()
+GXLGraph.GXLGraph()
+GXLLocator.GXLLocator()
+GXLNode.GXLNode()
+GXLRelend.GXLRelend()
+GXLType.GXLType()
+(Apart from GXL.GXL(), the above constructors has all been
+ removed so as to force required attributes to be set at
+ creation)
+
+REMOVED METHODS:
+----------------
+GXL.contains(Object[], Object)
+GXL.indexOf(Object[], Object)
+GXLBool.setValue(boolean)
+GXLDocument.setFile(File)
+GXLDocument.write()
+GXLElement.getIndex()
+GXLElement.remove()
+GXLFloat.setValue(float)
+GXLInt.setValue(int)
+GXLNode.getConnectedEdges()
+GXLNode.isReferenced()
+GXLNode.remove()
+(Apart from the first two, all the above methods has been
+ modified so as to be more consistent or more accessible
+ and a new method with a similar name should easily be found)
+
+
+2003-09-25: GXL version 0.8
+--------------------------------------------------------------
+Initial Release. Should be fully functional, albeit fairly untested. More and better documentation is also needed.

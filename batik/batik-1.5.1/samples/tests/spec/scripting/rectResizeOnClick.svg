@@ -1,0 +1,112 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000802//EN"
+"http://www.w3.org/TR/2000/CR-SVG-20000802/DTD/svg-20000802.dtd">
+
+<!--
+
+ ============================================================================
+                   The Apache Software License, Version 1.1
+ ============================================================================
+
+ Copyright (C) 1999-2003 The Apache Software Foundation. All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modifica-
+ tion, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of  source code must  retain the above copyright  notice,
+    this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if any, must
+    include  the following  acknowledgment:  "This product includes  software
+    developed  by the  Apache Software Foundation  (http://www.apache.org/)."
+    Alternately, this  acknowledgment may  appear in the software itself,  if
+    and wherever such third-party acknowledgments normally appear.
+
+ 4. The names "Batik" and  "Apache Software Foundation" must  not  be
+    used to  endorse or promote  products derived from  this software without
+    prior written permission. For written permission, please contact
+    apache@apache.org.
+
+ 5. Products  derived from this software may not  be called "Apache", nor may
+    "Apache" appear  in their name,  without prior written permission  of the
+    Apache Software Foundation.
+
+ THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS  FOR A PARTICULAR  PURPOSE ARE  DISCLAIMED.  IN NO  EVENT SHALL  THE
+ APACHE SOFTWARE  FOUNDATION  OR ITS CONTRIBUTORS  BE LIABLE FOR  ANY DIRECT,
+ INDIRECT, INCIDENTAL, SPECIAL,  EXEMPLARY, OR CONSEQUENTIAL  DAMAGES (INCLU-
+ DING, BUT NOT LIMITED TO, PROCUREMENT  OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR  PROFITS; OR BUSINESS  INTERRUPTION)  HOWEVER CAUSED AND ON
+ ANY  THEORY OF LIABILITY,  WHETHER  IN CONTRACT,  STRICT LIABILITY,  OR TORT
+ (INCLUDING  NEGLIGENCE OR  OTHERWISE) ARISING IN  ANY WAY OUT OF THE  USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ This software  consists of voluntary contributions made  by many individuals
+ on  behalf of the Apache Software  Foundation. For more  information on the
+ Apache Software Foundation, please see <http://www.apache.org/>.
+
+-->
+
+<!-- ====================================================================== -->
+<!-- Modification of a rect's x,y,width and height attributes in an         -->
+<!-- 'onclick' event handler. This is actually mostly testing a change in   -->
+<!-- the documents size.                                                    -->
+<!--                                                                        -->
+<!-- @author deweese@apache.org                                             -->
+<!-- @version $Id: rectResizeOnClick.svg,v 1.3 2003/08/08 11:39:33 vhardy Exp $  -->
+<!-- ========================================================================= -->
+<?xml-stylesheet type="text/css" href="../../resources/style/test.css" ?>  
+<svg id="body" width="450" height="500" viewBox="0 0 450 500">
+   <title>&lt;rect&gt; width &amp; hieght modification in 'onclick'</title>
+
+   <script type="text/ecmascript">
+
+    function setRect(target, valX, valY, valW, valH){
+        var t = document.getElementById(target);
+        t.setAttribute('x', valX);
+        t.setAttribute('y', valY);
+        t.setAttribute('width', valW);
+        t.setAttribute('height', valH);
+    }
+
+    // This function is only called if test is run from regard.
+    function regardStart() {
+       setRect('targetRect', '5', '5', '440', '490');
+       regardTestInstance.scriptDone();
+    }
+   </script>
+
+   <text x="50%" y="45" class="title">&lt;rect&gt; width &amp; height modification in 'onclick'</text>
+
+
+   <g id="test-content" >
+      <rect style="fill:none; stroke:black" 
+            x="182" y="97" width="86" height="46" />
+      <text class="legend" x="225" y="160">Position A</text>
+
+      <rect style="fill:none; stroke:black" 
+            x="182" y="177" width="86" height="46" />
+      <text class="legend" x="225" y="240">Click Target</text>
+
+      <g stroke="black"
+         onclick="setRect('targetRect', '5', '5', '440', '490')" >
+         <circle cx="225" cy="200"  r="10"           fill="crimson"/>
+         <line   x1="225" x2="225" y1="185" y2="215" fill="none" />
+         <line   x1="210" x2="240" y1="200" y2="200" fill="none" />
+      </g>
+
+      <rect id="targetRect" fill="crimson" 
+            x="185" y="100" width="80" height="40" />
+
+      <text class="legend">
+         <tspan x="225" y="270">Click on the Click Target (crimson circle)</tspan>
+         <tspan x="225" y="285">to resize the rectangle to fill the viewport.</tspan>
+         <tspan x="225" y="300">Hiding everything but this text.</tspan>
+      </text>
+   </g>
+</svg>
