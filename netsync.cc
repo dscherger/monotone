@@ -207,6 +207,7 @@ struct PipeStream : Netxx::Stream
       typedef Netxx::Stream Parent;
 // override write and other methods ...
   Netxx::signed_size_type write(const void *buffer, Netxx::size_type length);
+  Netxx::signed_size_type read (void *buffer, Netxx::size_type length);
   void close();
   const Netxx::ProbeInfo* get_probe_info() const;
 // ctors
@@ -222,6 +223,10 @@ private:
 Netxx::signed_size_type PipeStream::write(const void *buffer, Netxx::size_type length)
 {  if (fd_write==get_socketfd()) return Parent::write(buffer,length);
    else return ::write(fd_write, buffer, length);
+}
+Netxx::signed_size_type PipeStream::read (void *buffer, Netxx::size_type length) 
+{  if (fd_write==get_socketfd()) return Parent::read(buffer,length);
+   else return ::read(get_socketfd(), buffer, length);
 }
 void PipeStream::close()
 {  Parent::close();
@@ -280,7 +285,7 @@ session :
 	  std::pair<Netxx::socket_type,Netxx::socket_type> sock, 
 	  Netxx::Timeout const & to);
 
-  virtual ~session() {}
+  virtual ~session() {} //  if (str_p) delete str_p; }
 
   id mk_nonce();
   void mark_recent_io();
