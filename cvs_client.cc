@@ -1247,7 +1247,8 @@ std::map<std::string,std::pair<std::string,std::string> >
         || begins_with(lresult[0].second,"initial revision:",len)
         || begins_with(lresult[0].second,"RCS file:",len)
         || begins_with(lresult[0].second,"done",len)
-        || begins_with(lresult[0].second,"Checking in",len))
+        || begins_with(lresult[0].second,"Removing ",len)
+        || begins_with(lresult[0].second,"Checking in ",len))
     { L(F("%s\n") % lresult[0].second);
     }
     else 

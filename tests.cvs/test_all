@@ -30,4 +30,12 @@ x
 EOF
 
 echo ---------------------------------
+echo checkin
+./db_setup2
+../monotone --branch test --key test@localhost --db test.db cvs_push \
+	$PWD/test.cvsroot test <<EOF
+x
+EOF
+
+echo ---------------------------------
 echo done
