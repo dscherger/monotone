@@ -749,6 +749,25 @@ void cvs_repository::prime()
       }
     }
   }
+  // remove duplicate states
+  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
+  { if (i->changelog_valid || i->author.size()) { ++i; continue; }
+    std::set<cvs_edge>::iterator j=i;
+    I(j!=edges.begin());
+    --j;
+    I(j->time==i->time);
+    I(i->files.empty());
+    I(i->revision.empty());
+    j=i; // why does erase not return the next iter :-(
+    ++i;
+    edges.erase(j); 
+  }
+  // join adjacent check ins (same author, same changelog)
+  
+  // get the contents
+  for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
+  { 
+  }
 }
 
 #if 1
