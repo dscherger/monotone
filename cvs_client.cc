@@ -588,7 +588,7 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 }
 
 void cvs_repository::prime()
-{ for (cvs_changeset::tree_state_t::iterator i=files.begin();i!=files.end();++i)
+{ for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { SendCommand("rlog","-b",i->first.c_str(),0);
     enum { st_head, st_tags, st_desc, st_rev, st_msg, st_date_author 
          } state=st_head;
@@ -686,9 +686,12 @@ void cvs_repository::prime()
               result=="=============================================================================")
           { state=st_rev;
             std::pair<std::set<file_state>::iterator,bool> iter=
-            i->second.known_states.insert(checkin_time,revision,dead=="dead");
+              i->second.known_states.insert
+                (file_state(checkin_time,revision,dead=="dead"));
             I(iter.second==false);
-            iter.first->log_msg=message;
+            // set iterators are read only to prevent you from destroying the order
+            file_state &fs=const_cast<file_state &>(*(iter.first));
+            fs.log_msg=message;
           }
           else
           { if (!message.empty()) message+='\n';
