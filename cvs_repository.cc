@@ -234,9 +234,9 @@ void cvs_repository::ticker() const
 }
 #endif
 
-struct cvs_repository::now_log_cb : rlog_callbacks
+struct cvs_repository::get_all_files_log_cb : rlog_callbacks
 { cvs_repository &repo;
-  now_log_cb(cvs_repository &r) : repo(r) {}
+  get_all_files_log_cb(cvs_repository &r) : repo(r) {}
   virtual void file(const std::string &file,const std::string &head_rev) const
   { repo.files[file]; }
   virtual void tag(const std::string &file,const std::string &tag, 
@@ -246,9 +246,9 @@ struct cvs_repository::now_log_cb : rlog_callbacks
         const std::string &state,const std::string &log) const {}
 };
 
-struct cvs_repository::now_list_cb : rlist_callbacks
+struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 { cvs_repository &repo;
-  now_list_cb(cvs_repository &r) : repo(r) {}
+  get_all_files_list_cb(cvs_repository &r) : repo(r) {}
   virtual void file(const std::string &name, time_t last_change,
         const std::string &last_rev, bool dead) const
   { repo.files[name].known_states.insert(file_state(last_change,last_rev,dead));
@@ -256,20 +256,17 @@ struct cvs_repository::now_list_cb : rlist_callbacks
   }
 };
 
-const cvs_repository::tree_state_t &cvs_repository::now()
+// get all available files and their newest revision
+void cvs_repository::get_all_files()
 { if (edges.empty())
   { if (CommandValid("rlist"))
-    { RList(now_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),0);
+    { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),0);
     }
     else // less efficient? ...
     { I(CommandValid("rlog"));
-      RLog(now_log_cb(*this),false,"-N","-h","--",module.c_str(),0);
+      RLog(get_all_files_log_cb(*this),false,"-N","-h","--",module.c_str(),0);
     }
-    // prime
-//    prime();
   }
-  static cvs_repository::tree_state_t dummy_result;
-  return dummy_result; // wrong of course
 }
 
 void cvs_repository::debug() const
@@ -391,34 +388,15 @@ static void apply_delta(vector<piece> &contents, const std::string &patch)
   std::swap(contents,after);
 }
 
-// a hackish way to reuse code ...
-extern void rcs_put_raw_file_edge(hexenc<id> const & old_id,
-                      hexenc<id> const & new_id,
-                      base64< gzip<delta> > const & del,
-                      database & db);
-extern void rcs_put_raw_manifest_edge(hexenc<id> const & old_id,
-                          hexenc<id> const & new_id,
-                          base64< gzip<delta> > const & del,
-                          database & db);
-
 void cvs_repository::store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
 {
   data dat(new_contents);
   calculate_ident(dat,to);
   if (!app.db.file_version_exists(to))
   { 
-#if 1
     base64< gzip<delta> > del;
     diff(data(old_contents), data(new_contents), del);
     app.db.put_file_version(from,to,del);
-//std::cerr << patch << "----\n" << del << '\n';
-#else
-    base64<gzip<delta> > packed;
-    pack(delta(patch), packed);
-    // app.db.put_delta(from, to, packed, "file_deltas");
-    // yes, rcs has it the other way round (new and old are switched)
-    rcs_put_raw_file_edge(to,from,packed,app.db);
-#endif    
     if (file_id_ticker.get()) ++(*file_id_ticker);
   }
 }
@@ -484,7 +462,8 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
 }
 
 void cvs_repository::prime()
-{ for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
+{ get_all_files();
+  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
   }
   // remove duplicate states
@@ -589,9 +568,8 @@ void cvs_repository::prime()
       }
     }
   }
-  // fill in file states at given point
-//  debug();
 
+  // fill in file states at given point
   cvs_manifest current_manifest;
   for (std::set<cvs_edge>::iterator e=edges.begin();e!=edges.end();++e)
   { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
@@ -702,8 +680,6 @@ void cvs_repository::prime()
     parent_rid = child_rid;
     oldmanifestp=&e->files;
   }
-  
-//  debug();
 }
 
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
@@ -759,11 +735,8 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   
   // initial checkout
   if (repo.empty()) 
-  { /*const cvs_sync::cvs_repository::tree_state_t &n=*/ repo.now();
-  
     repo.prime();
-  }
-//  else repo.update(app);
+  else repo.update();
   
   guard.commit();      
 }
@@ -838,6 +811,8 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         I(iter_file_id!=manifest.end());
         fs.sha1sum=iter_file_id->second.inner();
         fs.log_msg=e.changelog;
+        // this is grossly inefficient because I store a file_state per
+        // monotone revision instead of per rcs/file revision
         std::pair<cvs_file_state,bool> res=files[path].known_states.insert(fs);
         I(res.second);
         e.files.insert(std::make_pair(path,res.first));

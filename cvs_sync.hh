@@ -89,8 +89,8 @@ class cvs_repository : public cvs_client
 public:
   typedef cvs_manifest tree_state_t;
   struct prime_log_cb;
-  struct now_log_cb;
-  struct now_list_cb;
+  struct get_all_files_log_cb;
+  struct get_all_files_list_cb;
 
 private:
   std::set<cvs_edge> edges;
@@ -106,6 +106,7 @@ private:
 
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
+  void get_all_files();
 public:  
   void prime();
 public:  
@@ -113,8 +114,6 @@ public:
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
-//  void ticker() const;
-  const tree_state_t &now();
   const tree_state_t &find(const std::string &date,const std::string &changelog);
   const tree_state_t &next(const tree_state_t &m) const;
   
