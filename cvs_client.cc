@@ -394,7 +394,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
 //  writestr("Global_option -q\n"); // -Q?
 }
 
-void drop_connection()
+void cvs_client::drop_connection()
 { byte_in_ticker.reset();
   byte_out_ticker.reset();
   deflateEnd(&compress);

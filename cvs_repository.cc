@@ -1020,7 +1020,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     packet_db_writer dbw(app);
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
-    if (sanity.debug) debug();
+    if (global_sanity.debug) debug();
     return --(edges.end());
   }
   W(F("no matching parent found\n"));
@@ -1197,7 +1197,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       revision_lookup[e.revision]=edges.insert(e).first;
     }
   }
-  if (sanity.debug) debug();
+  if (global_sanity.debug) debug();
 }
 
 struct cvs_repository::update_cb : cvs_client::update_callbacks
@@ -1296,7 +1296,7 @@ void cvs_repository::update()
   join_edge_parts(dummy_iter);
   
   fill_manifests(dummy_iter);
-  if (sanity.debug) debug();
+  if (global_sanity.debug) debug();
   commit_revisions(dummy_iter);
 }
 
