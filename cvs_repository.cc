@@ -257,7 +257,9 @@ struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 // get all available files and their newest revision
 void cvs_repository::get_all_files()
 { if (edges.empty())
-  { if (CommandValid("rlist"))
+  { if (
+// @@
+false && CommandValid("rlist"))
     { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),0);
     }
     else // less efficient? ...
@@ -338,8 +340,10 @@ void cvs_repository::debug() const
 struct cvs_repository::prime_log_cb : rlog_callbacks
 { cvs_repository &repo;
   std::map<std::string,struct cvs_sync::file_history>::iterator i;
-  prime_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file_history>::iterator &_i) 
-      : repo(r), i(_i) {}
+  time_t override_time;
+  prime_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file_history>::iterator &_i
+          ,time_t overr_time=-1) 
+      : repo(r), i(_i), override_time(overr_time) {}
   virtual void tag(const std::string &file,const std::string &tag, 
         const std::string &revision) const;
   virtual void revision(const std::string &file,time_t t,
@@ -357,11 +361,18 @@ void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string
 }
 
 void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
-        const std::string &revision,const std::string &author,
-        const std::string &dead,const std::string &message) const
+        const std::string &revision,const std::string &_author,
+        const std::string &dead,const std::string &_message) const
 { L(F("prime_log_cb %s:%s %d %s %d %s\n") % file % revision % checkin_time
-        % author % message.size() % dead);
+        % _author % _message.size() % dead);
+  std::string author=_author;
+  std::string message=_message;
   I(i->first==file);
+  if (override_time!=-1)
+  { checkin_time=override_time;
+    message="initial state for cvs_pull --since";
+    author=repo.app.signing_key();
+  }
   std::pair<std::set<file_state>::iterator,bool> iter=
     i->second.known_states.insert
       (file_state(checkin_time,revision,dead=="dead"));
@@ -766,9 +777,13 @@ void cvs_repository::prime()
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { // -d D< (sync_since)
     if (sync_since!=-1) 
-      RLog(prime_log_cb(*this,i),false,
-          "-d",(time_t2rfc822(sync_since)+"<=").c_str(),
+    { RLog(prime_log_cb(*this,i,sync_since),false,
+          "-d",(time_t2rfc822(sync_since)).c_str(),
           "-b",i->first.c_str(),0);
+      RLog(prime_log_cb(*this,i),false,
+          "-d",(time_t2rfc822(sync_since)+"<").c_str(),
+          "-b",i->first.c_str(),0);
+    }
     else RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
   }
   // remove duplicate states (because some edges were added by the 
@@ -807,12 +822,14 @@ void cvs_repository::prime()
   }
   drop_connection();
 
+#if 0
   if (sync_since!=-1 && edges.empty() && !files.empty())
     // no change happened since sync_since, so we didn't see an edge,
     // fake one
   { cvs_edge new_edge("initial state for cvs_pull --since",sync_since,app.signing_key());
     edges.insert(new_edge);
   }
+#endif  
   // fill in file states at given point
   fill_manifests(edges.begin());
   
