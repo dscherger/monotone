@@ -15,14 +15,6 @@
 #include "cvs_client.hh"
 #include <boost/lexical_cast.hpp>
 
-#if 0
-void cvs_client::ticker(bool newline) const
-{ std::cerr << "[bytes in: " << bytes_read << " out: " 
-          << bytes_written << "]";
-  if (newline) std::cerr << '\n';
-}
-#endif
-
 // copied from netsync.cc from the ssh branch
 static pid_t pipe_and_fork(int *fd1,int *fd2)
 { pid_t result=-1;
@@ -866,6 +858,7 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
   std::string bname=basename(file);
   writestr("Entry /"+bname+"/"+old_revision+"///\n");
   writestr("Unchanged "+bname+"\n");
+  // @@ perhaps pass -C to work around cvs bug
   SendCommand("update","-r",new_revision.c_str(),"-u","--",bname.c_str(),0);
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile;
@@ -1003,5 +996,6 @@ std::string cvs_client::rcs_file2path(std::string file) const
 }
 
 void cvs_client::Status(const std::vector<std::pair<std::string,std::string> > &file_revisions)
-{
+{ // we have to update, status will give us only strange strings (and uses too
+  // much bandwidth?) [is too verbose]
 }
