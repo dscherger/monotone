@@ -17,6 +17,8 @@ using namespace std;
 //  -> investigate under which conditions a string gets copied
 namespace cvs_sync
 {
+static std::string const cvs_cert_name="cvs-revisions";
+
 struct 
 piece
 {
@@ -662,7 +664,7 @@ void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consume
   { content+=i->second->cvs_version+" "+shorten_path(i->first)+"\n";
   }
   cert t;
-  make_simple_cert(e.revision, cert_name("cvs-revisions"), content, app, t);
+  make_simple_cert(e.revision, cert_name(cvs_cert_name), content, app, t);
   revision<cert> cc(t);
   pc.consume_revision_cert(cc);
 //  put_simple_revision_cert(e.revision, "cvs_revisions", content, app, pc);
@@ -693,13 +695,22 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   repo.GzipStream(3);
   transaction_guard guard(app.db);
 
-  const cvs_sync::cvs_repository::tree_state_t &n=repo.now();
+  vector< revision<cert> > certs;
+  app.db.get_revision_certs(cvs_cert_name, certs);
+  for (vector<revision<cert> >::const_iterator i=certs.begin(); i!=certs.end(); ++i)
+  { // populate data structure using these certs
+    cert_value name;
+    decode_base64(i->inner().value, name);
+//    import_cvs_cert(*i);
+    // name()
+  }
   
-  repo.prime(app);
+  // initial checkout
+  if (repo.empty()) 
+  { const cvs_sync::cvs_repository::tree_state_t &n=repo.now();
   
-//  cert_revision_in_branch(merged, branch, app, dbw);
-//  cert_revision_changelog(merged, log, app, dbw);
+    repo.prime(app);
+  }
   
   guard.commit();      
-//  P(F("[merged] %s\n") % merged);
 }

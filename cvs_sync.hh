@@ -120,6 +120,8 @@ public:
   void store_delta(app_state &app, const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
   void cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc);
+  
+  bool empty() const { return edges.empty() && files.empty(); }
 };
 
 void sync(const std::string &repository, const std::string &module,
