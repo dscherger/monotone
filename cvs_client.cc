@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include "sanity.hh"
 #include "cvs_client.hh"
+#include <boost/lexical_cast.hpp>
 
 void cvs_client::ticker(bool newline) const
 { std::cerr << "[bytes in: " << bytes_read << "] [bytes out: " 
@@ -70,8 +71,7 @@ void cvs_client::writestr(const std::string &s, bool flush)
     compress.avail_out=sizeof outbuf;
     int err=deflate(&compress,flush?Z_SYNC_FLUSH:Z_NO_FLUSH);
     if (err!=Z_OK && err!=Z_BUF_ERROR) 
-    { std::cerr << "deflate err " << err << '\n';
-      throw std::runtime_error("deflate");
+    { throw oops("deflate error "+ boost::lexical_cast<std::string>(err));
     }
     unsigned written=sizeof(outbuf)-compress.avail_out;
     if (written) bytes_written+=write(writefd,outbuf,written);
@@ -87,7 +87,7 @@ std::string cvs_client::readline()
   std::string result;
   for (;;)
   { if (inputbuffer.empty()) underflow(); 
-    if (inputbuffer.empty()) throw std::runtime_error("no data avail");
+    if (inputbuffer.empty()) throw oops("no data avail");
     std::string::size_type eol=inputbuffer.find('\n');
     if (eol==std::string::npos)
     { result+=inputbuffer;
@@ -127,10 +127,10 @@ try_again:
   FD_ZERO(&rfds);
   FD_SET(readfd, &rfds);
   if (select(readfd+1, &rfds, 0, 0, 0)!=1)
-    throw std::runtime_error("select error");
+    throw oops("select error "+std::string(strerror(errno)));
   ssize_t avail_in=read(readfd,buf,sizeof buf);
   if (avail_in<1) 
-    throw std::runtime_error("read error");
+    throw oops("read error "+std::string(strerror(errno)));
   bytes_read+=avail_in;
   if (!gzip_level)
   { inputbuffer+=std::string(buf,buf+avail_in);
@@ -143,8 +143,7 @@ try_again:
     decompress.avail_out=sizeof(buf2);
     int err=inflate(&decompress,Z_NO_FLUSH);
     if (err!=Z_OK && err!=Z_BUF_ERROR) 
-    { std::cerr << "inflate err " << err << '\n';
-      throw std::runtime_error("inflate");
+    { throw oops("inflate error "+boost::lexical_cast<std::string>(err));
     }
     unsigned bytes_in=sizeof(buf2)-decompress.avail_out;
     if (bytes_in) inputbuffer+=std::string(buf2,buf2+bytes_in);
@@ -277,7 +276,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     struct hostent *ptHost = gethostbyname(host.c_str());
     if (!ptHost)
     { L(F("Can't find address for host %s\n") % host);
-      throw std::runtime_error("gethostbyname failed");
+      throw oops("gethostbyname " + host + " failed");
     }
     struct sockaddr_in tAddr;
     tAddr.sin_family = AF_INET;
@@ -285,7 +284,8 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     tAddr.sin_addr = *(struct in_addr *)(ptHost->h_addr);
     if (connect(writefd, (struct sockaddr*)&tAddr, sizeof(tAddr)))
     { L(F("Can't connect to port %d on %s\n") % pserver_port % host);
-      throw std::runtime_error("connect failed");
+      throw oops("connect to port "+boost::lexical_cast<std::string>(pserver_port)
+              +" on "+host+" failed");
     }
     readfd=writefd;
     fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
@@ -297,14 +297,14 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     std::string answer=readline();
     if (answer!="I LOVE YOU")
     { L(F("pserver Authentification failed\n"));
-      throw std::runtime_error("pserver auth failed");
+      throw oops("pserver auth failed: "+answer);
     }
   }
   else // rsh
   { int fd1[2],fd2[2];
     pid_t child=pipe_and_fork(fd1,fd2);
     if (child<0) 
-    {  throw std::runtime_error("pipe/fork failed");
+    {  throw oops("pipe/fork failed "+std::string(strerror(errno)));
     }
     else if (!child)
     { const unsigned newsize=64;
@@ -375,9 +375,9 @@ cvs_client::~cvs_client()
 
 void cvs_client::InitZipStream(int level)
 { int error=deflateInit(&compress,level);
-  if (error!=Z_OK) throw std::runtime_error("deflateInit");
+  if (error!=Z_OK) throw oops("deflateInit "+boost::lexical_cast<std::string>(error));
   error=inflateInit(&decompress);
-  if (error!=Z_OK) throw std::runtime_error("inflateInit");
+  if (error!=Z_OK) throw oops("inflateInit "+boost::lexical_cast<std::string>(error));
 }
 
 void cvs_client::GzipStream(int level)
@@ -387,7 +387,7 @@ void cvs_client::GzipStream(int level)
   cmd+='\n';
   writestr(cmd);
   int error=deflateParams(&compress,level,Z_DEFAULT_STRATEGY);
-  if (error!=Z_OK) throw std::runtime_error("deflateParams");
+  if (error!=Z_OK) throw oops("deflateParams "+boost::lexical_cast<std::string>(error));
   gzip_level=level;
 }
 

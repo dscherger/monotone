@@ -7,51 +7,142 @@
 #include "keys.hh"
 #include "transforms.hh"
 #include <vector>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
 // since the piece methods in rcs_import depend on rcs_file I cannot reuse them
+// I rely on string handling reference counting (which is not that bad IIRC)
+//  -> investigate under which conditions a string gets copied
 namespace cvs_sync
 {
 struct 
 piece
 {
-  piece(string::size_type p, string::size_type l, unsigned long id) :
-    pos(p), len(l), string_id(id) {}
+  piece(string::size_type p, string::size_type l, const std::string &_s) :
+    pos(p), len(l), s(_s) {}
   string::size_type pos;
   string::size_type len;
-  unsigned long string_id;
-  string operator*() const;
+  string s;
+  const string operator*() const
+  { return s.substr(pos,len); }
 };
 
-struct 
-piece_store
-{ 
-  void index_deltatext(const std::string & dt,
-                       vector<piece> & pieces);
-  void build_string(vector<piece> const & pieces,
-                    string & out);
-//  void reset() { texts.clear(); }
-};
 
-// FIXME: kludge, I was lazy and did not make this
-// a properly scoped variable. 
-
-static piece_store global_pieces;
-
-string piece::operator*() const
-{
-//  return string(global_pieces.texts.at(string_id)->text.data() + pos, len);
-}
-
-void 
+static void 
+index_deltatext(std::string const & dt, vector<piece> & pieces);
+static void 
 process_one_hunk(vector< piece > const & source,
                  vector< piece > & dest,
                  vector< piece >::const_iterator & i,
                  int & cursor);
+static void 
+build_string(vector<piece> const & pieces, string & out);
+static void
+construct_version(vector< piece > const & source_lines,
+                  vector< piece > & dest_lines,
+                  string const & deltatext);
 }
 
 using namespace cvs_sync;
+
+static void cvs_sync::process_one_hunk(vector< piece > const & source,
+                 vector< piece > & dest,
+                 vector< piece >::const_iterator & i,
+                 int & cursor)
+{
+  string directive = **i;
+  assert(directive.size() > 1);
+  ++i;
+
+  char code;
+  int pos, len;
+  sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len);
+
+  try 
+    {
+      if (code == 'a')
+        {
+          // 'ax y' means "copy from source to dest until cursor == x, then
+          // copy y lines from delta, leaving cursor where it is"
+          while (cursor < pos)
+            dest.push_back(source.at(cursor++));
+          I(cursor == pos);
+          while (len--)
+            dest.push_back(*i++);
+        }
+      else if (code == 'd')
+        {      
+          // 'dx y' means "copy from source to dest until cursor == x-1,
+          // then increment cursor by y, ignoring those y lines"
+          while (cursor < (pos - 1))
+            dest.push_back(source.at(cursor++));
+          I(cursor == pos - 1);
+          cursor += len;
+        }
+      else 
+        throw oops("unknown directive '" + directive + "'");
+    } 
+  catch (std::out_of_range & oor)
+    {
+      throw oops("std::out_of_range while processing " + directive 
+                 + " with source.size() == " 
+                 + boost::lexical_cast<string>(source.size())
+                 + " and cursor == "
+                 + boost::lexical_cast<string>(cursor));
+    }  
+}
+
+static void 
+cvs_sync::build_string(vector<piece> const & pieces, string & out)
+{
+  out.clear();
+  out.reserve(pieces.size() * 60);
+  for(vector<piece>::const_iterator i = pieces.begin();
+      i != pieces.end(); ++i)
+    out.append(i->s, i->pos, i->len);
+}
+
+static void 
+cvs_sync::index_deltatext(std::string const & dt, vector<piece> & pieces)
+{
+  pieces.clear();
+  pieces.reserve(dt.size() / 30);  
+  string::size_type begin = 0;
+  string::size_type end = dt.find('\n');
+  while(end != string::npos)
+    {
+      // nb: the piece includes the '\n'
+      pieces.push_back(piece(begin, (end - begin) + 1, dt));
+      begin = end + 1;
+      end = dt.find('\n', begin);
+    }
+  if (begin != dt.size())
+    {
+      // the text didn't end with '\n', so neither does the piece
+      end = dt.size();
+      pieces.push_back(piece(begin, end - begin, dt));
+    }
+}
+
+static void
+cvs_sync::construct_version(vector< piece > const & source_lines,
+                  vector< piece > & dest_lines,
+                  string const & deltatext)
+{
+  dest_lines.clear();
+  dest_lines.reserve(source_lines.size());
+
+  vector<piece> deltalines;
+  index_deltatext(deltatext, deltalines);
+  
+  int cursor = 0;
+  for (vector<piece>::const_iterator i = deltalines.begin(); 
+       i != deltalines.end(); )
+    process_one_hunk(source_lines, dest_lines, i, cursor);
+  while (cursor < static_cast<int>(source_lines.size()))
+    dest_lines.push_back(source_lines[cursor++]);
+}
 
 /* supported by the woody version:
 Root Valid-responses valid-requests Repository Directory Max-dotdot
