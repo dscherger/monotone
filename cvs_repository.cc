@@ -1,0 +1,705 @@
+// copyright (C) 2005 Christof Petig <christof@petig-baender.de>
+// all rights reserved.
+// licensed to the public under the terms of the GNU GPL (>= 2)
+// see the file COPYING for details
+
+#include "cvs_sync.hh"
+#include "keys.hh"
+#include "transforms.hh"
+#include <vector>
+#include <boost/lexical_cast.hpp>
+#include "cryptopp/md5.h"
+
+using namespace std;
+
+// since the piece methods in rcs_import depend on rcs_file I cannot reuse them
+// I rely on string handling reference counting (which is not that bad IIRC)
+//  -> investigate under which conditions a string gets copied
+namespace cvs_sync
+{
+struct 
+piece
+{
+  piece(string::size_type p, string::size_type l, const std::string &_s) :
+    pos(p), len(l), s(_s) {}
+  string::size_type pos;
+  string::size_type len;
+  string s;
+  const string operator*() const
+  { return s.substr(pos,len); }
+};
+
+
+static void 
+index_deltatext(std::string const & dt, vector<piece> & pieces);
+static void 
+process_one_hunk(vector< piece > const & source,
+                 vector< piece > & dest,
+                 vector< piece >::const_iterator & i,
+                 int & cursor);
+static void 
+build_string(vector<piece> const & pieces, string & out);
+static void
+construct_version(vector< piece > const & source_lines,
+                  vector< piece > & dest_lines,
+                  string const & deltatext);
+}
+
+using namespace cvs_sync;
+
+static void cvs_sync::process_one_hunk(vector< piece > const & source,
+                 vector< piece > & dest,
+                 vector< piece >::const_iterator & i,
+                 int & cursor)
+{
+  string directive = **i;
+  assert(directive.size() > 1);
+  ++i;
+
+  char code;
+  int pos, len;
+  sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len);
+
+  try 
+    {
+      if (code == 'a')
+        {
+          // 'ax y' means "copy from source to dest until cursor == x, then
+          // copy y lines from delta, leaving cursor where it is"
+          while (cursor < pos)
+            dest.push_back(source.at(cursor++));
+          I(cursor == pos);
+          while (len--)
+            dest.push_back(*i++);
+        }
+      else if (code == 'd')
+        {      
+          // 'dx y' means "copy from source to dest until cursor == x-1,
+          // then increment cursor by y, ignoring those y lines"
+          while (cursor < (pos - 1))
+            dest.push_back(source.at(cursor++));
+          I(cursor == pos - 1);
+          cursor += len;
+        }
+      else 
+        throw oops("unknown directive '" + directive + "'");
+    } 
+  catch (std::out_of_range & oor)
+    {
+      throw oops("std::out_of_range while processing " + directive 
+                 + " with source.size() == " 
+                 + boost::lexical_cast<string>(source.size())
+                 + " and cursor == "
+                 + boost::lexical_cast<string>(cursor));
+    }  
+}
+
+static void 
+cvs_sync::build_string(vector<piece> const & pieces, string & out)
+{
+  out.clear();
+  out.reserve(pieces.size() * 60);
+  for(vector<piece>::const_iterator i = pieces.begin();
+      i != pieces.end(); ++i)
+    out.append(i->s, i->pos, i->len);
+}
+
+static void 
+cvs_sync::index_deltatext(std::string const & dt, vector<piece> & pieces)
+{
+  pieces.clear();
+  pieces.reserve(dt.size() / 30);  
+  string::size_type begin = 0;
+  string::size_type end = dt.find('\n');
+  while(end != string::npos)
+    {
+      // nb: the piece includes the '\n'
+      pieces.push_back(piece(begin, (end - begin) + 1, dt));
+      begin = end + 1;
+      end = dt.find('\n', begin);
+    }
+  if (begin != dt.size())
+    {
+      // the text didn't end with '\n', so neither does the piece
+      end = dt.size();
+      pieces.push_back(piece(begin, end - begin, dt));
+    }
+}
+
+static void
+cvs_sync::construct_version(vector< piece > const & source_lines,
+                  vector< piece > & dest_lines,
+                  string const & deltatext)
+{
+  dest_lines.clear();
+  dest_lines.reserve(source_lines.size());
+
+  vector<piece> deltalines;
+  index_deltatext(deltatext, deltalines);
+  
+  int cursor = 0;
+  for (vector<piece>::const_iterator i = deltalines.begin(); 
+       i != deltalines.end(); )
+    process_one_hunk(source_lines, dest_lines, i, cursor);
+  while (cursor < static_cast<int>(source_lines.size()))
+    dest_lines.push_back(source_lines[cursor++]);
+}
+
+/* supported by the woody version:
+Root Valid-responses valid-requests Repository Directory Max-dotdot
+Static-directory Sticky Checkin-prog Update-prog Entry Kopt Checkin-time
+Modified Is-modified UseUnchanged Unchanged Notify Questionable Case
+Argument Argumentx Global_option Gzip-stream wrapper-sendme-rcsOptions Set
+expand-modules ci co update diff log rlog add remove update-patches
+gzip-file-contents status rdiff tag rtag import admin export history release
+watch-on watch-off watch-add watch-remove watchers editors annotate
+rannotate noop version
+*/
+
+//--------------------- implementation -------------------------------
+
+size_t const cvs_edge::cvs_window;
+
+cvs_revision_nr::cvs_revision_nr(const std::string &x)
+{ std::string::size_type begin=0;
+  do
+  { std::string::size_type end=x.find(".",begin);
+    std::string::size_type len=end-begin;
+    if (end==std::string::npos) len=std::string::npos;
+    parts.push_back(atoi(x.substr(begin,len).c_str()));
+    begin=end;
+    if (begin!=std::string::npos) ++begin;
+  } while(begin!=std::string::npos);
+};
+
+void cvs_revision_nr::operator++(int)
+{ if (parts.empty()) return;
+  parts.back()++;
+}
+
+std::string cvs_revision_nr::get_string() const
+{ std::string result;
+  for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();)
+  { result+= (F("%d") % *i).str();
+    ++i;
+    if (i!=parts.end()) result+",";
+  }
+  return result;
+}
+
+bool cvs_revision_nr::is_parent_of(const cvs_revision_nr &child) const
+{ unsigned cps=child.parts.size();
+  unsigned ps=parts.size();
+  if (cps<ps) return false;
+  if (is_branch() || child.is_branch()) return false;
+  unsigned diff=0;
+  for (;diff<ps;++diff) if (child.parts[diff]!=parts[diff]) break;
+  if (cps==ps)
+  { if (diff+1!=cps) return false;
+    if (parts[diff]+1 != child.parts[diff]) return false;
+  }
+  else // ps < cps
+  { if (diff!=ps) return false;
+    if (ps+2!=cps) return false;
+    if (child.parts[diff]&1 || !child.parts[diff]) return false;
+    if (child.parts[diff+1]!=1) return false;
+  }
+  return true;
+}
+
+// impair number of numbers => branch tag
+bool cvs_revision_nr::is_branch() const 
+{ return parts.size()&1;
+}
+
+// cvs_repository ----------------------
+
+void cvs_repository::ticker() const
+{ cvs_client::ticker(false);
+  if (files_inserted) std::cerr << "[file ids added: " << files_inserted;
+  else std::cerr << " [files: " << files.size();
+  std::cerr << "] [edges: " << edges.size() 
+          << "] [tags: "  << tags.size() 
+          << "]\n";
+}
+
+struct cvs_repository::now_log_cb : rlog_callbacks
+{ cvs_repository &repo;
+  now_log_cb(cvs_repository &r) : repo(r) {}
+  virtual void file(const std::string &file,const std::string &head_rev) const
+  { repo.files[file]; }
+  virtual void tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const {}
+  virtual void revision(const std::string &file,time_t t,
+        const std::string &rev,const std::string &author,
+        const std::string &state,const std::string &log) const {}
+};
+
+struct cvs_repository::now_list_cb : rlist_callbacks
+{ cvs_repository &repo;
+  now_list_cb(cvs_repository &r) : repo(r) {}
+  virtual void file(const std::string &name, time_t last_change,
+        const std::string &last_rev, bool dead) const
+  { repo.files[name].known_states.insert(file_state(last_change,last_rev,dead));
+    repo.edges.insert(cvs_edge(last_change));
+  }
+};
+
+const cvs_repository::tree_state_t &cvs_repository::now()
+{ if (edges.empty())
+  { if (CommandValid("rlist"))
+    { RList(now_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),0);
+    }
+    else // less efficient? ...
+    { I(CommandValid("rlog"));
+      RLog(now_log_cb(*this),false,"-N","-h","--",module.c_str(),0);
+    }
+    ticker();
+    // prime
+//    prime();
+  }
+  static cvs_repository::tree_state_t dummy_result;
+  return dummy_result; // wrong of course
+}
+
+void cvs_repository::debug() const
+{ // edges set<cvs_edge>
+  std::cerr << "Edges :\n";
+  for (std::set<cvs_edge>::const_iterator i=edges.begin();
+      i!=edges.end();++i)
+  { std::cerr << "[" << i->time;
+    if (i->time!=i->time2) std::cerr << '+' << (i->time2-i->time);
+    if (!i->files.empty()) std::cerr << ',' << i->files.size() << "files";
+    std::cerr << ',' << i->author << ',';
+    std::string::size_type nlpos=i->changelog.find_first_of("\n\r");
+    if (nlpos>50) nlpos=50;
+    std::cerr << i->changelog.substr(0,nlpos) << "]\n";
+  }
+//  std::cerr << '\n';
+  // files map<string,file_history>
+  std::cerr << "Files :\n";
+  for (std::map<std::string,file_history>::const_iterator i=files.begin();
+      i!=files.end();++i)
+  { std::cerr << shorten_path(i->first);
+    std::cerr << "(";
+    for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
+          j!=i->second.known_states.end();)
+    { if (j->dead) std::cerr << "dead";
+      else if (j->size) std::cerr << j->size;
+      else if (j->patchsize) std::cerr << 'p' << j->patchsize;
+      ++j;
+      if (j!=i->second.known_states.end()) std::cerr << ',';
+    }
+    std::cerr << ")\n";
+  }
+//  std::cerr << '\n';
+  // tags map<string,map<string,string> >
+  std::cerr << "Tags :\n";
+  for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
+      i!=tags.end();++i)
+  { std::cerr << i->first << "(" << i->second.size() << " files)\n";
+  }
+//  std::cerr << '\n';
+}
+
+struct cvs_repository::prime_log_cb : rlog_callbacks
+{ cvs_repository &repo;
+  std::map<std::string,struct cvs_sync::file_history>::iterator i;
+  prime_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file_history>::iterator &_i) 
+      : repo(r), i(_i) {}
+  virtual void tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const;
+  virtual void revision(const std::string &file,time_t t,
+        const std::string &rev,const std::string &author,
+        const std::string &state,const std::string &log) const;
+  virtual void file(const std::string &file,const std::string &head_rev) const
+  { }
+};
+
+void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const
+{ I(i->first==file);
+  std::map<std::string,std::string> &tagslot=repo.tags[tag];
+  tagslot[file]=revision;
+}
+
+void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
+        const std::string &revision,const std::string &author,
+        const std::string &dead,const std::string &message) const
+{ I(i->first==file);
+  std::pair<std::set<file_state>::iterator,bool> iter=
+    i->second.known_states.insert
+      (file_state(checkin_time,revision,dead=="dead"));
+  // I(iter.second==false);
+  // set iterators are read only to prevent you from destroying the order
+  file_state &fs=const_cast<file_state &>(*(iter.first));
+  fs.log_msg=message;
+  repo.edges.insert(cvs_edge(message,checkin_time,author));
+}
+
+bool cvs_edge::similar_enough(cvs_edge const & other) const
+{
+  if (changelog != other.changelog)
+    return false;
+  if (author != other.author)
+    return false;
+  if (labs(time - other.time) > cvs_window
+      && labs(time2 - other.time) > cvs_window)
+    return false;
+  return true;
+}
+
+bool cvs_edge::operator<(cvs_edge const & other) const
+{
+  return time < other.time ||
+
+    (time == other.time 
+     && author < other.author) ||
+
+    (time == other.time 
+     && author == other.author 
+     && changelog < other.changelog);
+}
+
+void cvs_repository::store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum)
+{
+  data dat(contents);
+  calculate_ident(dat,sha1sum);
+  if (!app.db.file_version_exists(sha1sum))
+  { base64<gzip<data> > packed;
+    pack(dat, packed);
+    file_data fdat=packed;
+    app.db.put_file(sha1sum, fdat);
+    ++files_inserted;
+  }
+}
+
+static void apply_delta(vector<piece> &contents, const std::string &patch)
+{ vector<piece> after;
+  construct_version(contents,after,patch);
+  std::swap(contents,after);
+}
+
+// a hackish way to reuse code ...
+extern void rcs_put_raw_file_edge(hexenc<id> const & old_id,
+                      hexenc<id> const & new_id,
+                      base64< gzip<delta> > const & del,
+                      database & db);
+extern void rcs_put_raw_manifest_edge(hexenc<id> const & old_id,
+                          hexenc<id> const & new_id,
+                          base64< gzip<delta> > const & del,
+                          database & db);
+
+void cvs_repository::store_delta(app_state &app, const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
+{
+  data dat(new_contents);
+  calculate_ident(dat,to);
+  if (!app.db.file_version_exists(to))
+  { 
+#if 1
+    base64< gzip<delta> > del;
+    diff(data(old_contents), data(new_contents), del);
+    app.db.put_file_version(from,to,del);
+std::cerr << patch << "----\n" << del << '\n';
+#else
+    base64<gzip<delta> > packed;
+    pack(delta(patch), packed);
+    // app.db.put_delta(from, to, packed, "file_deltas");
+    // yes, rcs has it the other way round (new and old are switched)
+    rcs_put_raw_file_edge(to,from,packed,app.db);
+#endif    
+    ++files_inserted;
+  }
+}
+
+static void 
+build_change_set(const cvs_client &c, const cvs_manifest &oldm, const cvs_manifest &newm,
+                 change_set & cs)
+{
+  cs = change_set();
+
+  L(F("build_change_set(%d,%d,)\n") % oldm.size() % newm.size());
+  
+  for (cvs_manifest::const_iterator f = oldm.begin(); f != oldm.end(); ++f)
+    {
+      cvs_manifest::const_iterator fn = newm.find(f->first);
+      if (fn==newm.end())
+      {  
+        L(F("deleting file '%s'\n") % c.shorten_path(f->first));              
+        cs.delete_file(c.shorten_path(f->first));
+      }
+      else 
+        { if (f->second->sha1sum == fn->second->sha1sum)
+            {
+//              L(F("skipping preserved entry state '%s' on '%s'\n")
+//                % fn->second->sha1sum % fn->first);         
+            }
+          else
+            {
+              L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
+                % c.shorten_path(fn->first) % f->second->sha1sum % fn->second->sha1sum);          
+              cs.apply_delta(c.shorten_path(fn->first), f->second->sha1sum, fn->second->sha1sum);
+            }
+        }  
+    }
+  for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
+    {
+      cvs_manifest::const_iterator fo = oldm.find(f->first);
+      if (fo==oldm.end())
+      {  
+        L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % c.shorten_path(f->first));
+        cs.add_file(c.shorten_path(f->first), f->second->sha1sum);
+      }
+    }
+}
+
+void cvs_repository::prime(app_state &app)
+{ for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
+  { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
+    ticker();
+  }
+  // remove duplicate states
+  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
+  { if (i->changelog_valid || i->author.size()) { ++i; continue; }
+    std::set<cvs_edge>::iterator j=i;
+    j++;
+    I(j!=edges.end());
+    I(j->time==i->time);
+    I(i->files.empty());
+//    I(i->revision.empty());
+    edges.erase(i);
+    i=j; 
+  }
+  ticker();
+  
+  // join adjacent check ins (same author, same changelog)
+  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
+  { std::set<cvs_edge>::iterator j=i;
+    j++; // next one
+    if (j==edges.end()) break;
+    
+    I(j->time2==j->time); // make sure we only do this once
+    I(i->time2<=j->time); // should be sorted ...
+    if (!i->similar_enough(*j)) 
+    { ++i; continue; }
+    I((j->time-i->time2)<=time_t(cvs_edge::cvs_window)); // just to be sure
+    I(i->author==j->author);
+    I(i->changelog==j->changelog);
+    I(i->time2<j->time); // should be non overlapping ...
+    L(F("joining %ld-%ld+%ld\n") % i->time % i->time2 % j->time);
+    const_cast<time_t&>(i->time2)=j->time;
+    edges.erase(j);
+  }
+  
+  // get the contents
+  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
+  { vector<piece> file_contents;
+    I(!i->second.known_states.empty());
+    { std::set<file_state>::iterator s2=i->second.known_states.begin();
+      std::string revision=s2->cvs_version;
+      cvs_client::checkout c=CheckOut(i->first,revision);
+//    I(c.mod_time==?);
+      const_cast<bool&>(s2->dead)=c.dead;
+      if (!c.dead)
+      { store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+        const_cast<unsigned&>(s2->size)=c.contents.size();
+        index_deltatext(c.contents,file_contents);
+      }
+    }
+    for (std::set<file_state>::iterator s=i->second.known_states.begin();
+          s!=i->second.known_states.end();++s)
+    { std::set<file_state>::iterator s2=s;
+      ++s2;
+      if (s2==i->second.known_states.end()) break;
+      // s2 gets changed
+      cvs_revision_nr srev(s->cvs_version);
+      I(srev.is_parent_of(s2->cvs_version));
+      if (s->dead)
+      { cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
+        I(!c.dead); // dead->dead is no change, so shouldn't get a number
+        I(!s2->dead);
+        store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+        const_cast<unsigned&>(s2->size)=c.contents.size();
+        index_deltatext(c.contents,file_contents);
+      }
+      else
+      { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
+        if (u.removed)
+        { const_cast<bool&>(s2->dead)=true;
+        }
+        else if (!u.checksum.empty())
+        { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
+          const_cast<std::string&>(s2->md5sum)=u.checksum;
+          const_cast<unsigned&>(s2->patchsize)=u.patch.size();
+          std::string old_contents;
+          build_string(file_contents, old_contents);
+          apply_delta(file_contents, u.patch);
+          std::string contents;
+          build_string(file_contents, contents);
+          // check md5
+          CryptoPP::MD5 hash;
+          std::string md5sum=xform<CryptoPP::HexDecoder>(u.checksum);
+          I(md5sum.size()==CryptoPP::MD5::DIGESTSIZE);
+          if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
+              reinterpret_cast<byte const *>(contents.c_str()),
+              contents.size()))
+          { store_delta(app, contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+          }
+          else
+          { throw oops("MD5 sum wrong");
+          }
+        }
+        else
+        {
+          store_contents(app, u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+          const_cast<unsigned&>(s2->size)=u.contents.size();
+          index_deltatext(u.contents,file_contents);
+        }
+      }
+    }
+    ticker();
+  }
+  ticker();
+  // fill in file states at given point
+  cvs_manifest current_manifest;
+  for (std::set<cvs_edge>::iterator e=edges.begin();e!=edges.end();++e)
+  { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
+    { I(!f->second.known_states.empty());
+      if (f->second.known_states.begin()->since_when > e->time2)
+        continue; // the file does not exist yet
+      cvs_manifest::iterator mi=current_manifest.find(f->first);
+      if (mi==current_manifest.end()) // the file is currently dead
+      { for (cvs_file_state s=f->second.known_states.begin();
+            s!=f->second.known_states.end();++s)
+        { if (s->since_when <= e->time2)
+          { if (!s->dead) current_manifest[f->first]=s;
+            ++s;
+            // check ins must not overlap
+            I(s==f->second.known_states.end()
+              || s->since_when > e->time2);
+            goto continue_f;
+          }
+        }
+      }
+      else // file was present in last manifest
+      { cvs_file_state st=mi->second;
+        ++st;
+        if (st==f->second.known_states.end()) goto continue_f;
+        if (st->since_when <= e->time2)
+        { mi->second=st;
+          ++st;
+          // check ins must not overlap
+          I(st==f->second.known_states.end()
+            || st->since_when > e->time2);
+        }
+      }
+     continue_f: ;
+    }
+    const_cast<cvs_manifest&>(e->files)=current_manifest;
+  }
+  ticker();
+  // commit them all
+  cvs_manifest empty;
+  revision_id parent_rid;
+  manifest_id parent_mid;
+  manifest_map parent_map;
+  manifest_map child_map=parent_map;
+  packet_db_writer dbw(app);
+  
+  const cvs_manifest *oldmanifestp=&empty;
+  for (std::set<cvs_edge>::iterator e=edges.begin(); e!=edges.end();
+      oldmanifestp=&e->files,++e)
+  { change_set cs;
+    build_change_set(*this,*oldmanifestp,e->files,cs);
+    apply_change_set(cs, child_map);
+    manifest_id child_mid;
+    calculate_ident(child_map, child_mid);
+
+    revision_set rev;
+    rev.new_manifest = child_mid;
+    rev.edges.insert(make_pair(parent_rid, make_pair(parent_mid, cs)));
+    revision_id child_rid;
+    calculate_ident(rev, child_rid);
+
+    if (app.db.manifest_version_exists(child_mid))
+    {
+        L(F("existing path to %s found, skipping\n") % child_mid);
+    }
+    else if (e==edges.begin())
+    {
+      manifest_data mdat;
+      write_manifest_map(child_map, mdat);
+      app.db.put_manifest(child_mid, mdat);
+    }
+    else
+    { 
+      base64< gzip<delta> > del;              
+      diff(parent_map, child_map, del);
+      app.db.put_manifest_version(parent_mid, child_mid, del);
+    }
+    const_cast<hexenc<id>&>(e->revision)=child_rid.inner();
+    if (! app.db.revision_exists(child_rid))
+      app.db.put_revision(child_rid, rev);
+    cert_revision_in_branch(child_rid, monotone_branch, app, dbw); 
+    cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
+    cert_revision_changelog(child_rid, e->changelog, app, dbw);
+    cert_revision_date_time(child_rid, e->time, app, dbw);
+    cert_cvs(*e, app, dbw);
+
+    // now apply same change set to parent_map, making parent_map == child_map
+    apply_change_set(cs, parent_map);
+    parent_mid = child_mid;
+    parent_rid = child_rid;
+  }
+  
+  debug();
+}
+
+void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc)
+{ std::string content;
+  content+=host+":"+module+"\n";
+  for (cvs_manifest::const_iterator i=e.files.begin(); i!=e.files.end(); ++i)
+  { content+=i->second->cvs_version+" "+shorten_path(i->first)+"\n";
+  }
+  cert t;
+  make_simple_cert(e.revision, cert_name("cvs-revisions"), content, app, t);
+  revision<cert> cc(t);
+  pc.consume_revision_cert(cc);
+//  put_simple_revision_cert(e.revision, "cvs_revisions", content, app, pc);
+}
+
+void cvs_sync::sync(const std::string &repository, const std::string &module,
+            const std::string &branch, app_state &app)
+{
+  {
+    // early short-circuit to avoid failure after lots of work
+    rsa_keypair_id key;
+    N(guess_default_key(key,app),
+      F("no unique private key for cert construction"));
+    N(priv_key_exists(app, key),
+      F("no private key '%s' found in database or get_priv_key hook") % key);
+    // Require the password early on, so that we don't do lots of work
+    // and then die.
+    N(app.db.public_key_exists(key),
+      F("no public key '%s' found in database") % key);
+    base64<rsa_pub_key> pub;
+    app.db.get_key(key, pub);
+    base64< arc4<rsa_priv_key> > priv;
+    load_priv_key(app, key, priv);
+    require_password(app.lua, key, pub, priv);
+  }
+  
+  cvs_sync::cvs_repository repo(repository,module,branch);
+  repo.GzipStream(3);
+  transaction_guard guard(app.db);
+
+  const cvs_sync::cvs_repository::tree_state_t &n=repo.now();
+  
+  repo.prime(app);
+  
+//  cert_revision_in_branch(merged, branch, app, dbw);
+//  cert_revision_changelog(merged, log, app, dbw);
+  
+  guard.commit();      
+//  P(F("[merged] %s\n") % merged);
+}
