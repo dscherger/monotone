@@ -662,7 +662,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   }
   for (; e!=edges.end(); ++e)
   { boost::shared_ptr<change_set> cs(new change_set());
-    I(!e->delta_base.inner()().empty()); // no delta yet
+    I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
     if (build_change_set(*this,parent_manifest,e->xfiles,*cs,remove_state))
       e->delta_base=parent_rid;
