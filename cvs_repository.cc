@@ -115,7 +115,7 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     }
     ticker();
     // prime
-    prime();
+//    prime();
   }
   return (--edges.end())->files; // wrong of course
 }
@@ -197,7 +197,7 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
   repo.edges.insert(cvs_edge(message,checkin_time,author));
 }
 
-void cvs_repository::prime()
+void cvs_repository::prime(app_state &app)
 { for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
     ticker();
@@ -271,6 +271,24 @@ void cvs_repository::prime()
   }
   ticker();
   debug();
+}
+
+void cvs_sync::sync(const std::string &repository, const std::string &module,
+            const std::string &branch, app_state &app)
+{
+  cvs_sync::cvs_repository repo(repository,module);
+  // repo.GzipStream(3); ?
+  transaction_guard guard(app.db);
+
+  const cvs_sync::cvs_repository::tree_state_t &n=repo.now();
+  
+  repo.prime(app);
+  
+//  cert_revision_in_branch(merged, branch, app, dbw);
+//  cert_revision_changelog(merged, log, app, dbw);
+  
+  guard.commit();      
+//  P(F("[merged] %s\n") % merged);
 }
 
 #if 0

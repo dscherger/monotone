@@ -10,6 +10,7 @@
 #include "sanity.hh"
 #include "cvs_client.hh"
 #include "constants.hh"
+#include "app_state.hh"
 
 namespace cvs_sync {
 struct cvs_revision
@@ -128,8 +129,9 @@ private:
   std::map<std::string,file> files;
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
-  
-  void prime();
+
+public:  
+  void prime(app_state &app);
 public:  
   cvs_repository(const std::string &repository, const std::string &module)
       : cvs_client(repository,module) {}
@@ -143,4 +145,7 @@ public:
   
   void debug() const;
 };
+
+void sync(const std::string &repository, const std::string &module,
+            const std::string &branch, app_state &app);
 } // end namespace cvs_sync

@@ -3738,20 +3738,8 @@ CMD(cvs_pull, "network", "CVS-REPOSITORY CVS-MODULE DEST-BRANCH",
   string repository = idx(args, 0)(),
       module = idx(args, 1)(),
       branch = idx(args, 2)();
-  
-  cvs_sync::cvs_repository repo(repository,module);
-  // repo.GzipStream(3); ?
-  transaction_guard guard(app.db);
-
-  const cvs_sync::cvs_repository::tree_state_t &n=repo.now();
-  
-//  packet_db_writer dbw(app);
-  
-//  cert_revision_in_branch(merged, branch, app, dbw);
-//  cert_revision_changelog(merged, log, app, dbw);
-  
-  guard.commit();      
-//  P(F("[merged] %s\n") % merged);
+      
+  cvs_sync::sync(repository,module,branch,app);
 }
 
 
