@@ -45,6 +45,42 @@ public class GXLViewer {
      */
     private static Logger logger=Logger.getLogger("GXLViewer");
 
+    /**
+     * GUI Frame to hold the main window
+     */
+    private JFrame frame;
+
+    /**
+     * Button to allow a user to select a database
+     * TODO: This should be an action dammit Jim!
+     */
+    private JButton button = new JButton("Choose Database...");
+
+    /**
+     * Label which is used to display the status of some operations and some hints
+     */
+    private JLabel label = new JLabel();
+
+    /**
+     * Canvas which displays the actual SVG version of the ancestor tree
+     */
+    private JSVGCanvas svgCanvas = new JSVGCanvas();
+
+    /**
+     * Tree used to display the branches and heads
+     */
+    private JTree tree=new JTree();
+
+    /**
+     * The interface to the current monotone database
+     */
+    private Monotone database=null;
+
+    /**
+     * A dialog used to display a progress bar
+     */
+    private JDialog progress;
+    
     public static void main(String[] args) throws IOException {
         JFrame f = new JFrame("GXL Viewer");
         GXLViewer app = new GXLViewer(f);
@@ -62,9 +98,17 @@ public class GXLViewer {
 	    logger.info("Found default database ["+defaultDb+"]");
 	    app.setDatabase(new File(defaultDb));
 	}
-
     }
 
+    /**
+     * Recurse up the directory tree from the directory specified and check to see if we
+     * can find an MT directory. If so, read the options file and use the database specified
+     * as the default database.
+     *
+     * @param candidate the directory to begin the search at
+     * @return the name of the default database or null if one can't be found
+     * @throws IOException if an IO exception occurs
+     */
     private static String findDefaultDB(File candidate) throws IOException {
 	logger.finer("Searching for default database in "+candidate); 
 	if(!candidate.isDirectory()) throw new IOException("Current candidate "+candidate+" is not a directory.");
@@ -74,6 +118,17 @@ public class GXLViewer {
 	    if(candidate.getParentFile()==null) return null;
 	    return findDefaultDB(candidate.getParentFile());
 	}
+	return readDatabaseFromOptionsFile(mt);
+    }
+
+    /**
+     * Read the options file and return the database name from it
+     *
+     * @param mt a file pointing to the MT directory containing the options file
+     * @return the database name from the options file.
+     * @throws IOException if an IO exception occurs
+     */
+    private static String readDatabaseFromOptionsFile(File mt) throws IOException{
 	File options=new File(mt,"options");
 	FileInputStream rawSource=null;
 	try {
@@ -81,7 +136,9 @@ public class GXLViewer {
 	    LineNumberReader source=new LineNumberReader(new InputStreamReader(rawSource));
 	    String line=null;
 	    while((line=source.readLine())!=null) {
-		if(line.startsWith("database")) return line.substring("database".length()+2,line.length()-1);
+		if(line.startsWith("database")) {
+		    return line.substring("database".length()+2,line.length()-1);
+		}
 	    }
 	    return null;
 	}
@@ -90,16 +147,14 @@ public class GXLViewer {
 	}
     }
 
-    JFrame frame;
-    JButton button = new JButton("Choose Database...");
-    JLabel label = new JLabel();
-    JSVGCanvas svgCanvas = new JSVGCanvas();
-    JTree tree=new JTree();
-    Monotone database=null;
-    JDialog progress;
-    
+    /**
+     * Finish a background job, remove the progress meter, display the message
+     * 
+     * @param message the message to display in the status bar
+     */
     public void finishJob(String message) {
 	label.setText(message);
+	if(progress==null) return;
 	progress.setVisible(false);
 	progress.dispose();
 	progress=null;
@@ -117,14 +172,19 @@ public class GXLViewer {
 	return database;
     }
 
-    private void setProgressWindow() {
-	progress=new JDialog(frame,"Processing...",true);
+    /**
+     * Open the modal progress window with an indeterminate progress bar
+     *
+     * @param message the message to display in the label and title of the dialog
+     */
+    private void setProgressWindow(String message) {
+	progress=new JDialog(frame,message,true);
 	JProgressBar bar=new JProgressBar();
 	bar.setIndeterminate(true);
 	JPanel box=new JPanel();
 	progress.add("Center",box);
 	box.setBorder(new LineBorder(SystemColor.windowBorder,3,true));
-	box.add("North",new JLabel("Processing.."));
+	box.add("North",new JLabel(message));
 	box.add("Center",bar);
 	progress.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         progress.setUndecorated(true);
@@ -133,13 +193,22 @@ public class GXLViewer {
 	progress.setVisible(true);
     }
 
-    public void setDatabase(File file) {
+    /**
+     * Change the database file to use
+     * This must be called on the GUI thread once the GUI has been initialised
+     * 
+     * @param file a pointer to the database file to use
+     */
+    private void setDatabase(File file) {
 	database = new Monotone(file);
 	new ReadBranches(GXLViewer.this);
-	setProgressWindow();
+	setProgressWindow("Reading branches..");
     }
 
-    public JComponent createComponents() {
+    /**
+     * Make the GUI
+     */
+    private JComponent createComponents() {
         final JPanel panel = new JPanel(new BorderLayout());
 
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -155,6 +224,7 @@ public class GXLViewer {
 	help.setText("C-LMB = drag zoom, S-RMB = move zoom, S-LMB = pan, C-S-RMB = reset");
 	label.setText("Select database");
 
+	button.setEnabled(false);
         // Set the button action.
         button.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent ae) {
@@ -194,7 +264,7 @@ public class GXLViewer {
 			ex.printStackTrace();
 		    }
 		    }}).start();
-		    setProgressWindow();
+		    setProgressWindow("Reading log for revision");
 		}
 	    });
 
@@ -231,15 +301,50 @@ public class GXLViewer {
 		}
 	    });
 
+	button.setEnabled(true);
         return panel;
     }
 
+    /**
+     * Background thread to read the branche list from a monotone datababase
+     */
     class ReadBranches extends Thread {
-	GXLViewer parent;
+	/**
+	 * The parent viewer for this thread
+	 */
+	final GXLViewer parent;
 
-	public ReadBranches(GXLViewer parent) {
+	/**
+	 * Create and start a new thread to read the branches from the specified viewer's database in the background
+	 * and populate the viewer's branch tree
+	 *
+	 * @param parent the parent viewer to populate 
+	 */
+	public ReadBranches(final GXLViewer parent) {
 	    this.parent=parent;
 	    start();
+	}
+
+	private DefaultMutableTreeNode buildTree(DefaultMutableTreeNode root,String branch) {
+	    String[] path=branch.split("\\.");
+	    DefaultMutableTreeNode currentNode=root;
+	    for(String fragment: path) {
+		int children=currentNode.getChildCount();
+		DefaultMutableTreeNode next=null;
+		for(int I=0;I<children;I++) {
+		    DefaultMutableTreeNode candidate=(DefaultMutableTreeNode)currentNode.getChildAt(I);
+		    if(fragment.equals(candidate.getUserObject())) {
+			next=candidate;
+                        break;
+		    }
+		}
+		if(next==null) {
+		    next=new DefaultMutableTreeNode(fragment);
+		    currentNode.add(next);
+		}
+		currentNode=next;
+	    }
+	    return currentNode;
 	}
 
 	public void run() {
@@ -250,8 +355,8 @@ public class GXLViewer {
 		List<String> branches=database.listBranches();
 		for(String branch: branches) {
 		    logger.finest(branch);
-		    DefaultMutableTreeNode node=new DefaultMutableTreeNode(branch);
-		    root.add(node);
+		    
+		    DefaultMutableTreeNode node=buildTree(root,branch);
 		    try {
 			List<String>heads=database.listHeads(branch);
 			for(String head: heads) {
@@ -272,9 +377,11 @@ public class GXLViewer {
 		return;
 	    }
 
-	    DefaultTreeModel model=new DefaultTreeModel(root);
-	    parent.getBranchTree().setModel(model);
-	    parent.finishJob("Select identifier from tree");
+	    final DefaultTreeModel model=new DefaultTreeModel(root);
+	    SwingUtilities.invokeLater(new Runnable() { public void run() { 
+		parent.getBranchTree().setModel(model); 
+		parent.finishJob("Select identifier from tree");
+	    }});
 	}
     }
 
