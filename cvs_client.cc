@@ -901,7 +901,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
           author=result.substr(authorbegin,statepos-authorbegin);
           dead=result.substr(statebegin,linespos-statebegin);
         }
-        else // cvs 1.12.9
+        else // MT ... (cvs 1.12.9)
         { I(lresult.size()==11 || lresult.size()==7);
           I(lresult[0].first=="text");
           I(lresult[0].second=="date: ");
