@@ -335,6 +335,7 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
 void cvs_repository::prime()
 { for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
+    ticker();
   }
   // remove duplicate states
   for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
@@ -375,6 +376,7 @@ void cvs_repository::prime()
       else
         const_cast<std::string&>(s2->contents)=u.contents;
     }
+    ticker();
   }
 }
 
