@@ -871,19 +871,14 @@ static void test_key_availability(app_state &app)
 {
   // early short-circuit to avoid failure after lots of work
   rsa_keypair_id key;
-  N(guess_default_key(key,app),
-    F("no unique private key for cert construction"));
-  N(priv_key_exists(app, key),
-    F("no private key '%s' found in database or get_priv_key hook") % key);
+  N(guess_default_key(key,app), F("could not guess default signing key"));
   // Require the password early on, so that we don't do lots of work
   // and then die.
-  N(app.db.public_key_exists(key),
-    F("no public key '%s' found in database") % key);
-  base64<rsa_pub_key> pub;
-  app.db.get_key(key, pub);
-  base64< arc4<rsa_priv_key> > priv;
-  load_priv_key(app, key, priv);
-  require_password(app.lua, key, pub, priv);
+  app.signing_key = key;
+
+  N(app.lua.hook_persist_phrase_ok(),
+    F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
+  require_password(key, app);
 }
 
 std::set<cvs_edge>::iterator cvs_repository::last_known_revision()
