@@ -9,6 +9,8 @@
 #include <vector>
 #include <boost/lexical_cast.hpp>
 #include "cryptopp/md5.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/greg_date.hpp>
 
 using namespace std;
 
@@ -750,6 +752,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
 
   { std::vector< revision<cert> > certs;
     app.db.get_revision_certs(cvs_cert_name, certs);
+    // erase_bogus_certs ?
     repo.process_certs(certs);
   }
   
@@ -772,33 +775,42 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
   std::string needed_cert=host+":"+root+"/"+module+"\n";
   for (vector<revision<cert> >::const_iterator i=certs.begin(); i!=certs.end(); ++i)
   { // populate data structure using these certs
-    cert_value value;
-    decode_base64(i->inner().value, value);
-    if (value().size()>needed_cert.size() 
-      && value().substr(0,needed_cert.size())==needed_cert)
+    cert_value cvs_revisions;
+    decode_base64(i->inner().value, cvs_revisions);
+    if (cvs_revisions().size()>needed_cert.size() 
+      && cvs_revisions().substr(0,needed_cert.size())==needed_cert)
     { // parse and add the cert
       ++(*cert_ticker);
       cvs_edge e;
+      e.revision=i->inner().ident;
       // get author + date 
       std::vector< revision<cert> > edge_certs;
       app.db.get_revision_certs(i->inner().ident,edge_certs);
+      // erase_bogus_certs ?
       for (std::vector< revision<cert> >::const_iterator c=edge_certs.begin();
                 c!=edge_certs.end();++c)
-      { if (c->inner().name()==date_cert_name)
-        {
+      { cert_value value;
+        decode_base64(i->inner().value, value);   
+        if (c->inner().name()==date_cert_name)
+        { boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(value());
+          boost::posix_time::time_duration dur= tmp
+              -boost::posix_time::ptime(boost::gregorian::date(1970,1,1),
+                              boost::posix_time::time_duration(0,0,0,0));
+          e.time=e.time2=dur.total_seconds();
         }
         else if (c->inner().name()==author_cert_name)
-        {
+        { e.author=value();
         }
         else if (c->inner().name()==changelog_cert_name)
-        {
+        { e.changelog=value();
+          e.changelog_valid=true;
         }
-        // tag?
       }
       
       std::vector<piece> pieces;
-      index_deltatext(value(),pieces);
+      index_deltatext(cvs_revisions(),pieces);
       I(!pieces.empty());
+//      manifest;
       for (std::vector<piece>::const_iterator p=pieces.begin()+1;p!=pieces.end();++p)
       { std::string line=**p;
         I(!line.empty());
@@ -807,12 +819,18 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         std::string::size_type space=line.find(' ');
         I(space!=std::string::npos);
         std::string path=module+"/"+line.substr(space+1);
-#if 0
-        files[path].insert( );
-        cvs_file_state s=files[path].?
-        e.files.insert(std::make_pair(path,s));
-#endif        
+
+        file_state fs;
+        fs.since_when=e.time;
+        fs.cvs_version=line.substr(0,space);
+// könnte man im Manifest nachsehen (sollte man auch)
+//        fs.sha1sum=?
+        fs.log_msg=e.changelog;
+        std::pair<cvs_file_state,bool> res=files[path].known_states.insert(fs);
+        I(res.second);
+        e.files.insert(std::make_pair(path,res.first));
       }
+      edges.insert(e);
     }
   }
 }
