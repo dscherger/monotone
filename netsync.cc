@@ -214,9 +214,9 @@ struct PipeStream : Netxx::Stream
   explicit PipeStream (Netxx::socket_type socketfd, Netxx::socket_type writefd, const Netxx::Timeout &timeout=Netxx::Timeout())
     : Netxx::Stream(socketfd,timeout), fd_write(writefd)
   {}
-
-private:
-    struct pimpl; pimpl *pimpl_;
+  explicit PipeStream(const char *uri, Netxx::port_type default_port, const Netxx::Timeout &timeout=Netxx::Timeout())
+    : Netxx::Stream(uri,default_port,timeout), fd_write(get_socketfd())
+  {}
 };
 
 // pass them through ... for now
@@ -229,7 +229,8 @@ Netxx::signed_size_type PipeStream::read (void *buffer, Netxx::size_type length)
    else return ::read(get_socketfd(), buffer, length);
 }
 void PipeStream::close()
-{  Parent::close();
+{  if (fd_write!=get_socketfd()) ::close(fd_write);
+   Parent::close();
 }
 const Netxx::ProbeInfo* PipeStream::get_probe_info() const
 {  return Parent::get_probe_info();
@@ -2385,10 +2386,35 @@ call_server(protocol_role role,
   // FIXME: split into labels and convert to ace here.
 
   P(F("connecting to %s\n") % address());
-  Netxx::Stream server(address().c_str(), default_port, timeout); 
+  PipeStream *server=0;
+  if (address().substr(0,4)=="ssh:")
+  {  int fd1[2],fd2[2];
+     pipe(fd1);
+     pipe(fd2);
+     if (!fork())
+     {  // fd1[1] for writing, fd2[0] for reading
+        close(fd1[0]);
+        close(fd2[1]);
+        dup2(fd2[0],0);
+        dup2(fd1[1],1);
+        dup2(open("server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
+        close(fd1[1]);
+        close(fd2[0]);
+        execlp("monotone",
+            "monotone","--verbose","--db","/tmp/temp.db",
+            "--","serve","-",collections[0]().c_str(),0);
+        perror("monotone");
+        exit(errno);
+     }
+     // fd1[0] for reading, fd2[1] for writing
+     close(fd1[1]);
+     close(fd2[0]);
+     server=new PipeStream(fd1[0],fd2[1],timeout);
+  }
+  else server=new PipeStream(address().c_str(), default_port, timeout); 
   session sess(role, client_voice, collections, all_collections, app, 
 	       address(), 
-	       std::make_pair(server.get_socketfd(),server.get_socketfd()), 
+	       std::make_pair(server->get_socketfd(),server->fd_write), 
 	       timeout);
 
   ticker input("bytes in"), output("bytes out");
@@ -2482,6 +2508,8 @@ call_server(protocol_role role,
 	  return;
 	}	  
     }  
+  // well, honestly we leak this object all of the time ...
+   delete server;
 }
 
 static void 
