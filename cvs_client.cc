@@ -188,14 +188,16 @@ void cvs_client::writestr(const std::string &s, bool flush)
   { compress.next_out=(Bytef*)outbuf;
     compress.avail_out=sizeof outbuf;
     int err=deflate(&compress,flush?Z_SYNC_FLUSH:Z_NO_FLUSH);
-    if (err!=Z_OK) throw std::runtime_error("deflate");
+    if (err!=Z_OK && err!=Z_BUF_ERROR) 
+    { std::cerr << "deflate err " << err << '\n';
+      throw std::runtime_error("deflate");
+    }
     unsigned written=sizeof(outbuf)-compress.avail_out;
     if (written) bytes_written+=write(writefd,outbuf,written);
     else break;
   }
 }
 
-// TODO: optimize
 std::string cvs_client::readline()
 { // flush
   writestr(std::string(),true);
@@ -225,6 +227,7 @@ std::cerr << "readline: \"" <<  result << "\"\n";
 // get as much as possible
 void cvs_client::underflow()
 { char buf[1024],buf2[1024];
+try_again:
   if (read(readfd,buf,1)!=1) throw std::runtime_error("read error");
   unsigned avail_in=1;
   fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
@@ -241,11 +244,15 @@ void cvs_client::underflow()
   { decompress.next_out=(Bytef*)buf2;
     decompress.avail_out=sizeof(buf2);
     int err=inflate(&decompress,Z_NO_FLUSH);
-    if (err!=Z_OK) throw std::runtime_error("inflate");
+    if (err!=Z_OK && err!=Z_BUF_ERROR) 
+    { std::cerr << "inflate err " << err << '\n';
+      throw std::runtime_error("inflate");
+    }
     unsigned bytes_in=sizeof(buf2)-decompress.avail_out;
     if (bytes_in) inputbuffer+=std::string(buf2,buf2+bytes_in);
     else break;
   }
+  if (inputbuffer.empty()) goto try_again;
 }
 
 // this was contributed by Marcelo E. Magallon <mmagallo@debian.org>
@@ -348,7 +355,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
 //  assert(readline()=="ok");
   ticker();
 
-//  GzipStream(3);
+  GzipStream(3);
 
 //  writestr("Directory .\n");
 //  do
@@ -379,6 +386,7 @@ void cvs_client::GzipStream(int level)
 bool cvs_client::fetch_result(std::string &result)
 {loop:
   std::string x=readline();
+  if (x.size()<2) goto error;
   if (x.substr(0,2)=="E ") 
   { std::cerr << x.substr(2) << '\n';
     goto loop;
@@ -388,6 +396,7 @@ bool cvs_client::fetch_result(std::string &result)
     return true;
   }
   if (x=="ok") return false;
+error:
   std::cerr << "unrecognized result \"" << x << "\"\n";
   exit(1);
 }
