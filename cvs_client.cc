@@ -19,6 +19,17 @@
 #include "sanity.hh"
 //#include "rcs_file.hh"
 
+/* supported by the woody version:
+Root Valid-responses valid-requests Repository Directory Max-dotdot
+Static-directory Sticky Checkin-prog Update-prog Entry Kopt Checkin-time
+Modified Is-modified UseUnchanged Unchanged Notify Questionable Case
+Argument Argumentx Global_option Gzip-stream wrapper-sendme-rcsOptions Set
+expand-modules ci co update diff log rlog add remove update-patches
+gzip-file-contents status rdiff tag rtag import admin export history release
+watch-on watch-off watch-add watch-remove watchers editors annotate
+rannotate noop version
+*/
+
 class cvs_client
 { int readfd,writefd;
   size_t bytes_read,bytes_written;
@@ -59,6 +70,9 @@ public:
   // MT style
   bool fetch_result(std::vector<std::pair<std::string,std::string> > &result);
   void GzipStream(int level);
+  
+  bool CommandValid(const std::string &cmd) const
+  { return Valid_requests.find(cmd)!=Valid_requests.end(); }
 };
 
 struct cvs_file_state
@@ -453,7 +467,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &_root,
   answer=readline();
   I(answer=="ok");
   
-  I(Valid_requests.find("UseUnchanged")!=Valid_requests.end());
+  I(CommandValid("UseUnchanged"));
 
   writestr("UseUnchanged\n"); // ???
   ticker();
@@ -474,7 +488,8 @@ void cvs_client::InitZipStream(int level)
 }
 
 void cvs_client::GzipStream(int level)
-{ std::string cmd="Gzip-stream ";
+{ if (!CommandValid("Gzip-stream")) return;
+  std::string cmd="Gzip-stream ";
   cmd+=char('0'+level);
   cmd+='\n';
   writestr(cmd);
@@ -604,53 +619,60 @@ static time_t rls_l2time_t(const std::string &t)
 
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (edges.empty())
-  { SendCommand("rlist","-l","-R","-d","--",module.c_str(),0);
-    std::vector<std::pair<std::string,std::string> > lresult;
-    enum { st_dir, st_file } state=st_dir;
-    std::string directory;
-    while (fetch_result(lresult))
-    { switch(state)
-      { case st_dir:
-        { std::string result=combine_result(lresult);
-          I(result.size()>=2);
-          I(result[result.size()-1]==':');
-          directory=result.substr(0,result.size()-1);
-          state=st_file;
-          ticker();
-          break;
-        }
-        case st_file:
-          if (lresult.empty() || lresult[0].second.empty()) state=st_dir;
-          else
-          { I(lresult.size()==3);
-            I(lresult[0].first=="text");
-            I(lresult[1].first=="date");
-            I(lresult[2].first=="text");
-            std::string keyword=trim(lresult[0].second);
-            std::string date=trim(lresult[1].second);
-            std::string version=trim(lresult[2].second.substr(1,10));
-            std::string dead=trim(lresult[2].second.substr(12,4));
-            std::string name=lresult[2].second.substr(17);
-            
-            I(keyword[0]=='-' || keyword[0]=='d');
-            I(dead.empty() || dead=="dead");
-            I(!name.empty());
-            
-            if (keyword=="----") keyword=std::string();
-            if (keyword!="d---")
-            { //std::cerr << (directory+"/"+name) << " V" 
-              //  << version << " from " << date << " " << dead
-              //  << " " << keyword << '\n';
-              time_t t=rls_l2time_t(date);
-              files[directory+"/"+name].known_states.insert(file_state(t,version,!dead.empty()));
-              edges.insert(cvs_edge(t));
-            }
-            // construct manifest
-            // search for a matching revision 
-            // - do that later when all files are known ???
+  { if (CommandValid("rlist"))
+    { SendCommand("rlist","-l","-R","-d","--",module.c_str(),0);
+      std::vector<std::pair<std::string,std::string> > lresult;
+      enum { st_dir, st_file } state=st_dir;
+      std::string directory;
+      while (fetch_result(lresult))
+      { switch(state)
+        { case st_dir:
+          { std::string result=combine_result(lresult);
+            I(result.size()>=2);
+            I(result[result.size()-1]==':');
+            directory=result.substr(0,result.size()-1);
+            state=st_file;
+            ticker();
+            break;
           }
-          break;
+          case st_file:
+            if (lresult.empty() || lresult[0].second.empty()) state=st_dir;
+            else
+            { I(lresult.size()==3);
+              I(lresult[0].first=="text");
+              I(lresult[1].first=="date");
+              I(lresult[2].first=="text");
+              std::string keyword=trim(lresult[0].second);
+              std::string date=trim(lresult[1].second);
+              std::string version=trim(lresult[2].second.substr(1,10));
+              std::string dead=trim(lresult[2].second.substr(12,4));
+              std::string name=lresult[2].second.substr(17);
+              
+              I(keyword[0]=='-' || keyword[0]=='d');
+              I(dead.empty() || dead=="dead");
+              I(!name.empty());
+              
+              if (keyword=="----") keyword=std::string();
+              if (keyword!="d---")
+              { //std::cerr << (directory+"/"+name) << " V" 
+                //  << version << " from " << date << " " << dead
+                //  << " " << keyword << '\n';
+                time_t t=rls_l2time_t(date);
+                files[directory+"/"+name].known_states.insert(file_state(t,version,!dead.empty()));
+                edges.insert(cvs_edge(t));
+              }
+              // construct manifest
+              // search for a matching revision 
+              // - do that later when all files are known ???
+            }
+            break;
+        }
       }
+    }
+    else // less efficient ...
+    { I(CommandValid("rlog"));
+      SendCommand("rlog","-N","-h","--",module.c_str(),0);
+      std::vector<std::pair<std::string,std::string> > lresult;
     }
     ticker();
     // prime
