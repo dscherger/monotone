@@ -991,7 +991,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       }
       else if (lresult[0].second=="Removed")
       { I(lresult.size()==3);
-        result.file=rcs_file2path(lresult[2].second);
+        result.file=lresult[2].second;
         result.removed=true;
         cb(result);
         result=update();
