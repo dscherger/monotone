@@ -16,7 +16,7 @@
 #include <boost/lexical_cast.hpp>
 
 void cvs_client::ticker(bool newline) const
-{ std::cerr << "[bytes in: " << bytes_read << "] [bytes out: " 
+{ std::cerr << "[bytes in: " << bytes_read << " out: " 
           << bytes_written << "]";
   if (newline) std::cerr << '\n';
 }
