@@ -1,3 +1,28 @@
+FUTURE  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (CMD(db)): Check the number of arguments correctly.
+
+	* monotone.texi (Hook Reference): Mention that if get_passphrase
+	returns false, the user will be prompted for a pass phrase as
+	well.
+
+FUTURE  Richard Levitte  <richard@levitte.org>
+
+	* rcs_import.cc, interner.hh: Changes to add CVS tags in the
+	monotone database.  The changes are:
+
+	* rcs_import.cc (struct cvs_key): Add a vector of ingeters to
+	represent all the tags present in this key.
+	(struct cvs_history): Add an interner for all the tags.
+	(find_tags_for_version): New function to find all the tags
+	associated with a CVS revision.
+	(cvs_key::cvs_key): Intern all the tags we found.
+	(store_auxiliary_certs): Store all the CVS tags in the manifest.
+
+	* interner.hh (struct intern): A functor to intern strings in
+	container using STL iterator algorithms.
+
+
 2004-12-22  Julio M. Merino Vidal  <jmmv@menta.net>
 
 	* commands.cc: Verify that the key identifier passed to the pubkey

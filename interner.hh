@@ -8,6 +8,7 @@
 
 #include <map>
 #include <string>
+#include <functional>
 
 #include "sanity.hh"
 
@@ -39,6 +40,14 @@ interner
     else
       return i->second;
   }
+};
+
+template <typename T>
+struct intern : public std::unary_function<std::string, T>
+{
+  interner<T> & _interner;
+  intern(interner<T> & i) : _interner(i) {}
+  T operator()(std::string const & s) { return _interner.intern(s); }
 };
 
 #endif // __INTERNER_HH__
