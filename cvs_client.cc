@@ -261,7 +261,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &_root,
     writestr(root+"\n");
     writestr(user+"\n");
     writestr(pserver_password(":pserver:"+user+"@"+host+":"+root)+"\n");
-    writestr("END AUTH REQUEST");
+    writestr("END AUTH REQUEST\n");
     std::string answer=readline();
     if (answer!="I LOVE YOU")
     { L(F("pserver Authentification failed\n"));
