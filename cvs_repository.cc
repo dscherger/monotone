@@ -1127,7 +1127,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       //      manifest;
       std::vector<piece>::const_iterator p=pieces.begin()+1;
       if ((**p)[0]=='+') // this is a delta encoded manifest
-      { hexenc<id> h=(**p).substr(1);
+      { hexenc<id> h=(**p).substr(1,40); // remember to omit the trailing \n
         id rid;
         decode_hexenc(h,rid);
         e.delta_base=revision_id(rid);
