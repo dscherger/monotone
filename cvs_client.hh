@@ -39,6 +39,8 @@ class cvs_client
   { std::string contents;
     std::string checksum;
     std::string patch;
+    bool removed;
+    update() : removed() {}
   };
   typedef struct checkout checkout;
   typedef struct rlist_callbacks rlist_callbacks;

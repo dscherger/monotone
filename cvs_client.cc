@@ -369,7 +369,8 @@ loop:
   if (!result.empty()) goto error;
   // more complex results
   if (begins_with(x,"Clear-sticky ",len) 
-      || begins_with(x,"Set-static-directory ",len))
+      || begins_with(x,"Set-static-directory ",len)
+      || begins_with(x,"Removed ",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("dir",x.substr(len)));
     result.push_back(std::make_pair("rcs",readline()));
@@ -767,6 +768,10 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
       { I(lresult.size()==2);
         I(lresult[1].first=="data");
         result.checksum=lresult[1].second;
+      }
+      else if (lresult[0].second=="Removed")
+      { I(lresult.size()==3);
+        result.removed=true;
       }
       else
       { std::cerr << "unrecognized response " << lresult[0].second << '\n';

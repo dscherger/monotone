@@ -365,7 +365,10 @@ void cvs_repository::prime()
       cvs_revision srev(s->cvs_version);
       I(srev.is_parent_of(s2->cvs_version));
       cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
-      if (!u.checksum.empty())
+      if (u.removed)
+      { // ???
+      }
+      else if (!u.checksum.empty())
       { const_cast<std::string&>(s2->rcs_patch)=u.patch;
         const_cast<std::string&>(s2->sha1sum)=u.checksum;
       }
