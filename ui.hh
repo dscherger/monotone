@@ -26,6 +26,7 @@ struct ticker
   ticker(std::string const & n, std::string const & s, size_t mod = 64);
   void operator++();
   void operator+=(size_t t);
+  void operator--();
   ~ticker();
 };
 

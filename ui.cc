@@ -50,6 +50,17 @@ ticker::operator++()
 }
 
 void 
+ticker::operator--()
+{
+  I(ui.tickers.find(name) != ui.tickers.end());
+  I(ticks);
+  ticks--;
+  ui.some_tick_is_dirty = true;
+  if (ticks % mod == 0)
+    ui.write_ticks();
+}
+
+void 
 ticker::operator+=(size_t t)
 {
   I(ui.tickers.find(name) != ui.tickers.end());
