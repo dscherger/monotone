@@ -125,17 +125,17 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 
 void cvs_repository::debug() const
 { // edges set<cvs_edge>
-  std::cerr << "Edges : ";
+  std::cerr << "Edges :\n";
   for (std::set<cvs_edge>::const_iterator i=edges.begin();
       i!=edges.end();++i)
   { std::cerr << "[" << i->time;
     if (i->time!=i->time2) std::cerr << '+' << (i->time2-i->time);
     std::cerr << ',' << i->author << ',' 
-      << i->changelog.size() << "] ";
+      << i->changelog.size() << "]\n";
   }
-  std::cerr << '\n';
+//  std::cerr << '\n';
   // files map<string,file>
-  std::cerr << "Files : ";
+  std::cerr << "Files :\n";
   for (std::map<std::string,file>::const_iterator i=files.begin();
       i!=files.end();++i)
   { unsigned len=0;
@@ -153,16 +153,16 @@ void cvs_repository::debug() const
       ++j;
       if (j!=i->second.known_states.end()) std::cerr << ',';
     }
-    std::cerr << ") ";
+    std::cerr << ")\n";
   }
-  std::cerr << '\n';
+//  std::cerr << '\n';
   // tags map<string,map<string,string> >
-  std::cerr << "Tags : ";
+  std::cerr << "Tags :\n";
   for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
       i!=tags.end();++i)
-  { std::cerr << i->first << "(" << i->second.size() << " files) ";
+  { std::cerr << i->first << "(" << i->second.size() << " files)";
   }
-  std::cerr << '\n';
+//  std::cerr << '\n';
 }
 
 struct cvs_repository::prime_log_cb : rlog_callbacks
@@ -230,7 +230,10 @@ void cvs_repository::prime(app_state &app)
     if (!i->similar_enough(*j)) 
     { ++i; continue; }
     I((j->time-i->time2)<=cvs_edge::cvs_window); // just to be sure
+    I(i->author==j->author);
+    I(i->changelog==j->changelog);
     I(i->time2<j->time); // should be non overlapping ...
+    L(F("joining %ld-%ld+%ld\n") % i->time % i->time2 % j->time);
     const_cast<time_t&>(i->time2)=j->time;
     edges.erase(j);
   }
