@@ -481,6 +481,50 @@ void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
   }
 }
 
+void cvs_repository::store_update(std::set<file_state>::const_iterator s,
+        std::set<file_state>::iterator s2,const cvs_client::update &u,
+        std::string &contents)
+{
+  if (u.removed)
+  { const_cast<bool&>(s2->dead)=true;
+  }
+  else if (!u.checksum.empty())
+  { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
+    const_cast<std::string&>(s2->md5sum)=u.checksum;
+    const_cast<unsigned&>(s2->patchsize)=u.patch.size();
+    const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
+    I(s2->since_when==u.mod_time);
+    std::string old_contents=contents;
+    { std::vector<piece> file_contents;
+      index_deltatext(contents,file_contents);
+      apply_delta(file_contents, u.patch);
+      build_string(file_contents, contents);
+    }
+    // check md5
+    CryptoPP::MD5 hash;
+    std::string md5sum=xform<CryptoPP::HexDecoder>(u.checksum);
+    I(md5sum.size()==CryptoPP::MD5::DIGESTSIZE);
+    if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
+        reinterpret_cast<byte const *>(contents.c_str()),
+        contents.size()))
+    { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+    }
+    else
+    { throw oops("MD5 sum wrong");
+    }
+  }
+  else
+  { if (!s->sha1sum().empty()) 
+    // we default to patch if it's at all possible
+      store_delta(u.contents, contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+    else
+      store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    const_cast<unsigned&>(s2->size)=u.contents.size();
+    contents=u.contents;
+    const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
+  }
+}
+
 // s2 gets changed
 void cvs_repository::update(std::set<file_state>::const_iterator s,
         std::set<file_state>::iterator s2,const std::string &file,
@@ -503,44 +547,19 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   }
   else
   { cvs_client::update u=Update(file,s->cvs_version,s2->cvs_version,s->keyword_substitution);
-    if (u.removed)
-    { const_cast<bool&>(s2->dead)=true;
-    }
-    else if (!u.checksum.empty())
-    { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
-      const_cast<std::string&>(s2->md5sum)=u.checksum;
-      const_cast<unsigned&>(s2->patchsize)=u.patch.size();
-      const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
-      I(s2->since_when==u.mod_time);
-      std::string old_contents=contents;
-      { std::vector<piece> file_contents;
-        index_deltatext(contents,file_contents);
-        apply_delta(file_contents, u.patch);
-        build_string(file_contents, contents);
-      }
-      // check md5
-      CryptoPP::MD5 hash;
-      std::string md5sum=xform<CryptoPP::HexDecoder>(u.checksum);
-      I(md5sum.size()==CryptoPP::MD5::DIGESTSIZE);
-      if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
-          reinterpret_cast<byte const *>(contents.c_str()),
-          contents.size()))
-      { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
-      }
-      else
-      { throw oops("MD5 sum wrong");
-      }
-    }
-    else
-    { if (!s->sha1sum().empty()) 
-      // we default to patch if it's at all possible
-        store_delta(u.contents, contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
-      else
-        store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
-      const_cast<unsigned&>(s2->size)=u.contents.size();
-      contents=u.contents;
-      const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
-    }
+    store_update(s,s2,u,contents);
+  }
+}
+
+void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
+        const cvs_client::checkout &c, std::string &file_contents)
+{ const_cast<bool&>(s2->dead)=c.dead;
+  if (!c.dead)
+  { I(c.mod_time==s2->since_when);
+    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    const_cast<unsigned&>(s2->size)=c.contents.size();
+    file_contents=c.contents;
+    const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
   }
 }
 
@@ -574,16 +593,8 @@ void cvs_repository::prime()
   { std::string file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
-      std::string revision=s2->cvs_version;
-      cvs_client::checkout c=CheckOut(i->first,revision);
-      const_cast<bool&>(s2->dead)=c.dead;
-      if (!c.dead)
-      { I(c.mod_time==s2->since_when);
-        store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
-        const_cast<unsigned&>(s2->size)=c.contents.size();
-        file_contents=c.contents;
-        const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
-      }
+      cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
+      store_checkout(s2,c,file_contents);
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
           s!=i->second.known_states.end();++s)
@@ -940,29 +951,66 @@ void cvs_repository::update()
   { // 2do: use tags
     cvs_manifest::const_iterator now_file=now.files.find(i->file);
     std::string last_known_revision;
+    std::map<std::string,file_history>::iterator f=files.find(i->file);
     
     if (now_file!=now.files.end())
-      last_known_revision=now_file->second->cvs_version;
+    { last_known_revision=now_file->second->cvs_version;
+      I(f!=files.end());
+    }
     else // the file is not present in our last import
     // e.g. the file is currently dead but we know an old revision
-    { std::map<std::string,file_history>::iterator f=files.find(i->file);
-      if (f!=files.end() // we know anything about this file
+    { if (f!=files.end() // we know anything about this file
             && !f->second.known_states.empty()) // we have at least one known file revision
       { std::set<file_state>::const_iterator last=f->second.known_states.end();
         --last;
         last_known_revision=last->cvs_version;
       }
-      else files[i->file]; // generate entry
+      else f=files.insert(std::make_pair(i->file,file_history())).first;
     }
     if (last_known_revision=="1.1.1.1") 
       last_known_revision="1.1";
+    std::set<file_state>::const_iterator last=f->second.known_states.end();
+    if (last!=f->second.known_states.begin()) --last;
+    
     if (last_known_revision.empty())
-      RLog(prime_log_cb(*this,files.find(i->file)),false,"-b","-N",
+      RLog(prime_log_cb(*this,f),false,"-b","-N",
         "--",i->file.c_str(),0);
     else
       // -b causes -r to get ignored on 0.12
-      RLog(prime_log_cb(*this,files.find(i->file)),false,/*"-b",*/"-N",
+      RLog(prime_log_cb(*this,f),false,/*"-b",*/"-N",
         ("-r"+last_known_revision+"::").c_str(),"--",i->file.c_str(),0);
+    
+    std::string file_contents,initial_contents;
+    if(last==f->second.known_states.end())
+    { last=f->second.known_states.begin();
+      I(last!=f->second.known_states.end());
+      std::set<file_state>::iterator s2=last;
+      cvs_client::checkout c=CheckOut(i->file,s2->cvs_version);
+      store_checkout(s2,c,file_contents);
+    }
+    else
+    { I(!last->sha1sum().empty());
+      file_data dat;
+      app.db.get_file_version(last->sha1sum,dat);
+      data unpacked;
+      unpack(dat.inner(), unpacked);
+      file_contents=unpacked();
+      initial_contents=file_contents;
+    }
+    for (std::set<file_state>::const_iterator s=last;
+                  s!=f->second.known_states.end();++s)
+    { std::set<file_state>::const_iterator s2=s;
+      ++s2;
+      if (s2==f->second.known_states.end()) break;
+      if (s2->cvs_version==i->new_revision)
+      { // we do not need to ask the host, we already did ...
+        store_update(last,s2,*i,initial_contents);
+        break;
+      }
+      else
+      { update(s,s2,i->file,file_contents);
+      }
+    }
   }
   std::set<cvs_edge>::iterator dummy_iter=now_iter;
   join_edge_parts(++dummy_iter);
