@@ -24,7 +24,7 @@ cvs ci -m "module setup"
 cd ..
 
 cvs -d $CVSROOT co test3
-cd test2
+cd test3
 
 echo >AA initial AA
 cvs add AA
