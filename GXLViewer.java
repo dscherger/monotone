@@ -15,6 +15,8 @@ import javax.swing.tree.*;
 import javax.swing.event.*;
 import java.awt.SystemColor;
 import javax.swing.border.LineBorder;
+import javax.swing.filechooser.FileFilter;
+import java.util.logging.Logger;
 
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.svg.JSVGComponent;
@@ -37,6 +39,11 @@ import org.w3c.dom.svg.SVGDocument;
  */
 public class GXLViewer {
 
+    /**
+     * Log sink
+     */
+    private static Logger logger=Logger.getLogger("GXLViewer");
+
     public static void main(String[] args) throws IOException {
         JFrame f = new JFrame("GXL Viewer");
         GXLViewer app = new GXLViewer(f);
@@ -51,7 +58,7 @@ public class GXLViewer {
         f.setVisible(true);
 	String defaultDb=findDefaultDB(new File("."));
 	if(defaultDb!=null) { 
-	    System.err.println("Found default database ["+defaultDb+"]");
+	    logger.info("Found default database ["+defaultDb+"]");
 	    app.setDatabase(new File(defaultDb));
 	}
 
@@ -150,6 +157,7 @@ public class GXLViewer {
         button.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent ae) {
 		    JFileChooser fc = new JFileChooser(".");
+		    fc.setFileFilter(new MonotoneFileFilter());
 		    int choice = fc.showOpenDialog(panel);
 		    if (choice == JFileChooser.APPROVE_OPTION) {
 			setDatabase(fc.getSelectedFile());
@@ -168,7 +176,7 @@ public class GXLViewer {
 		    new Thread(new Runnable() { public void run() {
 		    try {
 			//			if(e.getPaths().length==1) return; // Root node.
-			// System.err.println("Getting log for "+id);
+			logger.fine("Getting log for "+id);
 			label.setText("Reading log...");
 			final InputStream svgStream=database.getSVGLog(id);
 			SAXSVGDocumentFactory factory=new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
@@ -236,10 +244,10 @@ public class GXLViewer {
 	    Monotone database=parent.getDatabase();
 	    DefaultMutableTreeNode root=new DefaultMutableTreeNode("Monotone "+database.getName());
 	    try { 
-		//			    System.err.println("Reading branches...");
+		logger.fine("Reading branches...");
 		List<String> branches=database.listBranches();
 		for(String branch: branches) {
-		    // System.err.println(branch);
+		    logger.finest(branch);
 		    DefaultMutableTreeNode node=new DefaultMutableTreeNode(branch);
 		    root.add(node);
 		    try {
@@ -265,6 +273,33 @@ public class GXLViewer {
 	    DefaultTreeModel model=new DefaultTreeModel(root);
 	    parent.getBranchTree().setModel(model);
 	    parent.finishJob("Select identifier from tree");
+	}
+    }
+
+    /**
+     * File filter which only displays monotone .db files
+     * Note: It actually displays all files which end in .db 
+     */
+    private class MonotoneFileFilter extends FileFilter {
+
+	/**
+	 * Return true for directories and monotone database files
+	 *
+	 * @param file the file to test
+	 * @return true if the file is a directory or ends in .db
+	 */
+	public boolean accept(File file) {
+	    if(file.isDirectory()) return true;
+	    return file.getName().endsWith(".db");
+	}
+
+	/**
+	 * Return the description of this filter
+	 *
+	 * @param return a non-internationalised description of this filter
+	 */
+	public String getDescription() {
+	    return "Monotone Database Files";
 	}
     }
 }

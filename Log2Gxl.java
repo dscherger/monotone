@@ -22,6 +22,7 @@ import java.util.Properties;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.logging.Logger;
 import net.sourceforge.gxl.GXLDocument;
 import net.sourceforge.gxl.GXLGraph;
 import net.sourceforge.gxl.GXLNode;
@@ -45,7 +46,12 @@ import net.sourceforge.gxl.GXL;
 public class Log2Gxl extends Thread {
 
     /**
-     * Main class. 
+     * Log sink
+     */
+    private static Logger logger=Logger.getLogger("Log2Gxl");
+
+    /**
+     * Main method
      * Invoke via: monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | gxl2dot >log.dot
      * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | gxl2dot | dot -Tsvg >log.svg
      * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl --authorfile <file> | gxl2dot | dot -Tsvg >log.svg
@@ -1238,19 +1244,19 @@ public class Log2Gxl extends Thread {
 		throw new IOException(source.getLineNumber()+": Input ["+line+"] doesn't look like output of monotone log");
 	    }
 	    parseHeader();
-	    // System.err.println(currentNode.getID());
+	    logger.finest(currentNode.getID());
 	    parseFiles();
 	    parseChangeLog();
 	    commitNode();
 	}
 
-	System.err.print("Writing GXL graph..");
+	logger.info("Writing GXL graph..");
 
 	// Write the graph to std out
 	gxlDocument.write(sink);
 	sink.flush();
 
-	System.err.println("done");
+	logger.info("Wrote GXL graph.");
 	// Note: Don't close rawSource or sink as they may be stdin/out
     }
 }

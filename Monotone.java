@@ -19,6 +19,7 @@ import java.io.PipedOutputStream;
 import java.io.OutputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedInputStream;
+import java.util.logging.Logger;
 
 /**
  * Interface class to control an inferior Monotone process and return information from it
@@ -26,6 +27,11 @@ import java.io.BufferedInputStream;
  * @author Joel Crisp
  */
 public class Monotone {
+
+    /**
+     * Log sink
+     */
+    private static Logger logger=Logger.getLogger("Monotone");
 
     /**
      * Pointer to the database file for monotone (the .db file)
@@ -174,7 +180,7 @@ public class Monotone {
 		String line;
 		while((line=source.readLine())!=null) {
 		    errors.add(line);
-		    System.err.println(line);
+		    logger.warning(line);
 		}
 	    }
 	    catch(IOException ioe) {
