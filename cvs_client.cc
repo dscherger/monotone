@@ -182,9 +182,8 @@ void cvs_client::writestr(const std::string &s, bool flush)
   char outbuf[1024];
   compress.next_in=(Bytef*)s.c_str();
   compress.avail_in=s.size();
-  while (compress.avail_in || flush)
-  // the zlib headers say that avail_out is the only criterion for 
-  // looping, I find testing avail_in more logical
+  for (;;)
+  // the zlib headers say that avail_out is the only criterion for looping
   { compress.next_out=(Bytef*)outbuf;
     compress.avail_out=sizeof outbuf;
     int err=deflate(&compress,flush?Z_SYNC_FLUSH:Z_NO_FLUSH);
@@ -205,18 +204,13 @@ std::string cvs_client::readline()
   // read input
   std::string result;
   for (;;)
-  { if (inputbuffer.empty()) 
-    { underflow(); 
-//std::cerr << inputbuffer.size() << " bytes available\n";
-    }
-    else
-//std::cerr << inputbuffer.size() << " bytes still left\n";
+  { if (inputbuffer.empty()) underflow(); 
     if (inputbuffer.empty()) throw std::runtime_error("no data avail");
     char c=inputbuffer[0];
     inputbuffer=inputbuffer.substr(1);
     if (c=='\n') 
     {
-std::cerr << "readline: \"" <<  result << "\"\n";
+//std::cerr << "readline: \"" <<  result << "\"\n";
       return result;
     }
     else result+=c;
@@ -304,20 +298,21 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   { const unsigned newsize=64;
     const char *newargv[newsize];
     unsigned newargc=0;
-#if 0    
-    const char *rsh=getenv("CVS_RSH");
-    if (!rsh) rsh="rsh";
-    newargv[newargc++]=rsh;
-    if (!user.empty())
-    { newargv[newargc++]="-l";
-      newargv[newargc++]=user.c_str();
+    if (host.empty())
+    { newargv[newargc++]="cvs";
+      newargv[newargc++]="server";
     }
-    newargv[newargc++]=host.c_str();
-    newargv[newargc++]="cvs server";
-#else // try locally for testing
-    newargv[newargc++]="cvs";
-    newargv[newargc++]="server";
-#endif    
+    else
+    { const char *rsh=getenv("CVS_RSH");
+      if (!rsh) rsh="rsh";
+      newargv[newargc++]=rsh;
+      if (!user.empty())
+      { newargv[newargc++]="-l";
+        newargv[newargc++]=user.c_str();
+      }
+      newargv[newargc++]=host.c_str();
+      newargv[newargc++]="cvs server";
+    }
     newargv[newargc]=0;
     
     execvp(newargv[0],const_cast<char*const*>(newargv));
@@ -339,29 +334,17 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   writestr("valid-requests\n");
   std::string answer=readline();
   assert(answer.substr(0,15)=="Valid-requests ");
-  // boost::tokenizer does not provide the needed functionality (preserve -)  
+  // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
   stringtok(Valid_requests,answer.substr(15));
-#if 0  
-  for (stringset_t::const_iterator i=Valid_requests.begin();
-         i!=Valid_requests.end();++i)
-    std::cout << *i << ':';
-#endif
   answer=readline();
   assert(answer=="ok");
   
   assert(Valid_requests.find("UseUnchanged")!=Valid_requests.end());
 
   writestr("UseUnchanged\n"); // ???
-//  assert(readline()=="ok");
   ticker();
 
   GzipStream(3);
-
-//  writestr("Directory .\n");
-//  do
-//  { std::string answer=readline(readfd);
-//    
-//  }
 }
 
 void cvs_client::InitZipStream(int level)
@@ -378,8 +361,6 @@ void cvs_client::GzipStream(int level)
   writestr(cmd);
   int error=deflateParams(&compress,level,Z_DEFAULT_STRATEGY);
   if (error!=Z_OK) throw std::runtime_error("deflateParams");
-//  error=inflateInit(&decompress); ??
-//  if (error!=Z_OK) throw std::runtime_error("inflateInit"); ??
   gzip_level=level;
 }
 
@@ -401,11 +382,9 @@ error:
   exit(1);
 }
 
-// CVS_RSH=rsh cvs -z0 -d localhost:/usr/local/cvsroot rlist -Red christof
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (tree_states.empty())
-  { // rlist -Red
-    SendCommand("rlist","-e","-R","-d","--",module.c_str(),0);
+  { SendCommand("rlist","-e","-R","-d","--",module.c_str(),0);
     std::string result;
     std::list<std::string> l;
     while (fetch_result(result))
@@ -421,7 +400,7 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 #if 1
 int main()
 { try
-  { cvs_repository cl("localhost","/usr/local/cvsroot","","christof/java");
+  { cvs_repository cl("","/usr/local/cvsroot","","christof/java");
     const cvs_repository::tree_state_t &n=cl.now();
   } catch (std::exception &e)
   { std::cerr << e.what() << '\n';
