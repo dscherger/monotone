@@ -39,6 +39,8 @@
 #include "netxx/streamserver.h"
 #include "netxx/timeout.h"
 
+#include <fcntl.h>
+
 //
 // this is the "new" network synchronization (netsync) system in
 // monotone. it is based on synchronizing a pair of merkle trees over an
@@ -203,7 +205,7 @@ done_marker
 };
 
 struct PipeStream : Netxx::Stream
-{	Netxx::socket_type fd_write;
+{	int fd_write;
       typedef Netxx::Stream Parent;
 // override write and other methods ...
   Netxx::signed_size_type write(const void *buffer, Netxx::size_type length);
@@ -215,21 +217,22 @@ struct PipeStream : Netxx::Stream
     : Netxx::Stream(socketfd,timeout), fd_write(writefd)
   {}
   explicit PipeStream(const char *uri, Netxx::port_type default_port, const Netxx::Timeout &timeout=Netxx::Timeout())
-    : Netxx::Stream(uri,default_port,timeout), fd_write(get_socketfd())
+    : Netxx::Stream(uri,default_port,timeout), fd_write(-1)
   {}
+  explicit PipeStream() : Netxx::Stream(-1), fd_write(-1) {}
 };
 
 // pass them through ... for now
 Netxx::signed_size_type PipeStream::write(const void *buffer, Netxx::size_type length)
-{  if (fd_write==get_socketfd()) return Parent::write(buffer,length);
+{  if (fd_write==-1) return Parent::write(buffer,length);
    else return ::write(fd_write, buffer, length);
 }
 Netxx::signed_size_type PipeStream::read (void *buffer, Netxx::size_type length) 
-{  if (fd_write==get_socketfd()) return Parent::read(buffer,length);
+{  if (fd_write==-1) return Parent::read(buffer,length);
    else return ::read(get_socketfd(), buffer, length);
 }
 void PipeStream::close()
-{  if (fd_write!=get_socketfd()) ::close(fd_write);
+{  if (fd_write!=-1) ::close(fd_write);
    Parent::close();
 }
 const Netxx::ProbeInfo* PipeStream::get_probe_info() const
@@ -2386,7 +2389,7 @@ call_server(protocol_role role,
   // FIXME: split into labels and convert to ace here.
 
   P(F("connecting to %s\n") % address());
-  PipeStream *server=0;
+  PipeStream server;
   if (address().substr(0,4)=="ssh:")
   {  int fd1[2],fd2[2];
      pipe(fd1);
@@ -2409,12 +2412,12 @@ call_server(protocol_role role,
      // fd1[0] for reading, fd2[1] for writing
      close(fd1[1]);
      close(fd2[0]);
-     server=new PipeStream(fd1[0],fd2[1],timeout);
+     server=PipeStream(fd1[0],fd2[1],timeout);
   }
-  else server=new PipeStream(address().c_str(), default_port, timeout); 
+  else server=PipeStream(address().c_str(), default_port, timeout); 
   session sess(role, client_voice, collections, all_collections, app, 
-	       address(), 
-	       std::make_pair(server->get_socketfd(),server->fd_write), 
+	       address(),
+	       std::make_pair(server.get_socketfd(),server.fd_write), 
 	       timeout);
 
   ticker input("bytes in"), output("bytes out");
@@ -2508,8 +2511,6 @@ call_server(protocol_role role,
 	  return;
 	}	  
     }  
-  // well, honestly we leak this object all of the time ...
-   delete server;
 }
 
 static void 
@@ -2569,8 +2570,7 @@ handle_new_connection(Netxx::Address & addr,
       shared_ptr<session> sess(new session(role, server_voice, collections, 
 					   all_collections, app,
 					   lexical_cast<string>(client), 
-					   std::make_pair(client.get_socketfd(),
-					       client.get_socketfd()),
+					   std::make_pair(client.get_socketfd(),-1),
 					   timeout));
       sess->begin_service();
       sessions.insert(make_pair(client.get_socketfd(), sess));
@@ -2788,8 +2788,8 @@ serve_stdio(protocol_role role,
   set<Netxx::socket_type> armed_sessions;
   map<Netxx::socket_type, shared_ptr<session> > sessions;
   
-  sessions[0]=sess;
-  sessions[1]=sess;
+  sessions[sess->str.get_socketfd()]=sess;
+  sessions[sess->str.fd_write]=sess;
   
   // no addr, no server
   bool live_p = true;
@@ -2798,15 +2798,28 @@ serve_stdio(protocol_role role,
       fd_set rfds,wfds;
       struct timeval tv;
       int retval;
+      
+      armed_sessions.clear();
+      
+      try 
+      {  if (sess->arm()) 
+         {  L(F("stdin is armed\n"));
+            armed_sessions.insert(sess->str.get_socketfd());
+         }
+      } catch (bad_decode & bd)
+      {   W(F("caught bad_decode exception decoding input from stdin: '%s', exiting\n") 
+	    % bd.what);
+	  break;
+      }
 
       FD_ZERO(&rfds);
-      if (sess->which_events()&Netxx::Probe::ready_read) FD_SET(0, &rfds);
+      if (sess->which_events()&Netxx::Probe::ready_read) FD_SET(sess->str.get_socketfd(), &rfds);
       FD_ZERO(&wfds);
-      if (sess->which_events()&Netxx::Probe::ready_write) FD_SET(1, &wfds);
+      if (sess->which_events()&Netxx::Probe::ready_write) FD_SET(sess->str.fd_write, &wfds);
       tv.tv_sec = timeout_seconds;
       tv.tv_usec = 0;
       
-      retval = select(2, &rfds, &wfds, NULL, &tv);
+      retval = select(sess->str.fd_write+1, &rfds, &wfds, NULL, &tv);
       
       if (retval == -1)
       {  P(F("select: errno %d\n") % errno);
@@ -2817,11 +2830,11 @@ serve_stdio(protocol_role role,
          live_p=false;
       }
       else
-      {  if (FD_ISSET(0, &rfds))
-	    handle_read_available(0, sess, sessions, armed_sessions, live_p);
+      {  if (FD_ISSET(sess->str.get_socketfd(), &rfds))
+	    handle_read_available(sess->str.get_socketfd(), sess, sessions, armed_sessions, live_p);
 		
-         if (live_p && FD_ISSET(1, &wfds))
-	    handle_write_available(1, sess, sessions, live_p);
+         if (live_p && FD_ISSET(sess->str.fd_write, &wfds))
+	    handle_write_available(sess->str.fd_write, sess, sessions, live_p);
       }
 		
     }
