@@ -620,22 +620,17 @@ const cvs_repository::tree_state_t &cvs_repository::now()
           break;
         }
         case st_file:
-          if (lresult.empty() || lresult.begin()->second.empty()) state=st_dir;
+          if (lresult.empty() || lresult[0].second.empty()) state=st_dir;
           else
           { I(lresult.size()==3);
-            std::vector<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
-            std::vector<std::pair<std::string,std::string> >::const_iterator i1=i0;
-            ++i1;
-            std::vector<std::pair<std::string,std::string> >::const_iterator i2=i1;
-            ++i2;
-            I(i0->first=="text");
-            I(i1->first=="date");
-            I(i2->first=="text");
-            std::string keyword=trim(i0->second);
-            std::string date=trim(i1->second);
-            std::string version=trim(i2->second.substr(1,10));
-            std::string dead=trim(i2->second.substr(12,4));
-            std::string name=i2->second.substr(17);
+            I(lresult[0].first=="text");
+            I(lresult[1].first=="date");
+            I(lresult[2].first=="text");
+            std::string keyword=trim(lresult[0].second);
+            std::string date=trim(lresult[1].second);
+            std::string version=trim(lresult[2].second.substr(1,10));
+            std::string dead=trim(lresult[2].second.substr(12,4));
+            std::string name=lresult[2].second.substr(17);
             
             I(keyword[0]=='-' || keyword[0]=='d');
             I(dead.empty() || dead=="dead");
@@ -760,29 +755,18 @@ void cvs_repository::prime()
         }
         case st_date_author:
         { I(lresult.size()==11 || lresult.size()==7);
-          std::vector<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
-          std::vector<std::pair<std::string,std::string> >::const_iterator i1=i0;
-          ++i1;
-          std::vector<std::pair<std::string,std::string> >::const_iterator i2=i1;
-          ++i2;
-          std::vector<std::pair<std::string,std::string> >::const_iterator i3=i2;
-          ++i3;
-          std::vector<std::pair<std::string,std::string> >::const_iterator i4=i3;
-          ++i4;
-          std::vector<std::pair<std::string,std::string> >::const_iterator i5=i4;
-          ++i5;
-          I(i0->first=="text");
-          I(i0->second=="date: ");
-          I(i1->first=="date");
-          checkin_time=rls_l2time_t(i1->second);
-          I(i2->first=="text");
-          I(i2->second==";  author: ");
-          I(i3->first=="text");
-          author=i3->second;
-          I(i4->first=="text");
-          I(i4->second==";  state: ");
-          I(i5->first=="text");
-          dead=i5->second;
+          I(lresult[0].first=="text");
+          I(lresult[0].second=="date: ");
+          I(lresult[1].first=="date");
+          checkin_time=rls_l2time_t(lresult[1].second);
+          I(lresult[2].first=="text");
+          I(lresult[2].second==";  author: ");
+          I(lresult[3].first=="text");
+          author=lresult[3].second;
+          I(lresult[4].first=="text");
+          I(lresult[4].second==";  state: ");
+          I(lresult[5].first=="text");
+          dead=lresult[5].second;
           state=st_msg;
           break;
         }
@@ -835,7 +819,8 @@ void cvs_repository::prime()
     enum { st_co
          } state=st_co;
     std::vector<std::pair<std::string,std::string> > lresult;
-    std::string dir,dir2,dir3,dir4,rcsfile,mode;
+    std::string dir,dir2,rcsfile,mode;
+    time_t stamp=-1;
     while (fetch_result(lresult))
     { switch(state)
       { case st_co:
@@ -851,14 +836,25 @@ void cvs_repository::prime()
               I(lresult[1].first=="dir");
               dir2=lresult[1].second;
             }
+            else if (lresult[0].second=="Mod-time")
+            { I(lresult.size()==2);
+              I(lresult[1].first=="date");
+              // this is 18 Nov 1996 14:39:40 -0000 format - strange ...
+              // stamp=rls_l2time_t(lresult[1].second);
+            }
             else if (lresult[0].second=="Created")
-            { std::cerr << combine_result(lresult) << '\n';
+            { // std::cerr << combine_result(lresult) << '\n';
+              I(lresult.size()==7);
+              I(lresult[6].first=="data");
+              const_cast<std::string &>(i->second.known_states.begin()->contents)=lresult[6].second;
+              L(F("file %s revision %s: %d bytes\n") % i->first 
+                  % revision % lresult[6].second.size());
             }
             else
             { std::cerr << "unrecognized response " << lresult[0].second << '\n';
             }
           }
-          else if (lresult.begin()->first=="+updated")
+          else if (lresult[0].second=="+updated")
           { std::cerr << combine_result(lresult) << '\n';
           }
           else 
