@@ -3630,7 +3630,21 @@ CMD(cvs_pull, "network", "CVS-REPOSITORY CVS-MODULE",
       module = idx(args, 1)();
   N(!app.branch_name().empty(), F("no destination branch specified\n"));
       
-  cvs_sync::sync(repository,module,app);
+  cvs_sync::pull(repository,module,app);
+}
+
+
+CMD(cvs_push, "network", "CVS-REPOSITORY CVS-MODULE",
+    "commit changes in local database to a remote cvs repository")
+{
+
+  if (args.size() != 2) throw usage(name);
+
+  app.initialize(false);
+
+  string repository = idx(args, 0)(), module = idx(args, 1)();
+      
+  cvs_sync::push(repository,module,app);
 }
 
 

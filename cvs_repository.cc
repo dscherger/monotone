@@ -784,26 +784,101 @@ cvs_repository::cvs_repository(app_state &_app, const std::string &repository, c
   revision_ticker.reset(new ticker("revisions", "R", 3));
 }
 
-void cvs_sync::sync(const std::string &repository, const std::string &module,
-            app_state &app)
+static void test_key_availability(app_state &app)
 {
-  {
-    // early short-circuit to avoid failure after lots of work
-    rsa_keypair_id key;
-    N(guess_default_key(key,app),
-      F("no unique private key for cert construction"));
-    N(priv_key_exists(app, key),
-      F("no private key '%s' found in database or get_priv_key hook") % key);
-    // Require the password early on, so that we don't do lots of work
-    // and then die.
-    N(app.db.public_key_exists(key),
-      F("no public key '%s' found in database") % key);
-    base64<rsa_pub_key> pub;
-    app.db.get_key(key, pub);
-    base64< arc4<rsa_priv_key> > priv;
-    load_priv_key(app, key, priv);
-    require_password(app.lua, key, pub, priv);
+  // early short-circuit to avoid failure after lots of work
+  rsa_keypair_id key;
+  N(guess_default_key(key,app),
+    F("no unique private key for cert construction"));
+  N(priv_key_exists(app, key),
+    F("no private key '%s' found in database or get_priv_key hook") % key);
+  // Require the password early on, so that we don't do lots of work
+  // and then die.
+  N(app.db.public_key_exists(key),
+    F("no public key '%s' found in database") % key);
+  base64<rsa_pub_key> pub;
+  app.db.get_key(key, pub);
+  base64< arc4<rsa_priv_key> > priv;
+  load_priv_key(app, key, priv);
+  require_password(app.lua, key, pub, priv);
+}
+
+std::set<cvs_edge>::iterator cvs_repository::last_known_revision()
+{ I(!edges.empty());
+  std::set<cvs_edge>::iterator now_iter=edges.end();
+  --now_iter;
+  return now_iter;
+}
+
+std::set<cvs_edge>::iterator cvs_repository::commit(
+      std::set<cvs_edge>::iterator parent, const revision_id &rid)
+{
+  return edges.end();
+}
+
+void cvs_repository::commit()
+{
+  std::set<cvs_edge>::iterator now_iter=last_known_revision();
+  while (now_iter!=edges.end());
+  { const cvs_edge &now=*now_iter;
+    I(!now.revision().empty());
+    
+    std::set<revision_id> children;
+    app.db.get_revision_children(now.revision, children);
+    
+    if (!app.branch_name().empty())
+    { base64<cert_value> value;
+      encode_base64(cert_value(app.branch_name()), value);
+      // ignore revisions not belonging to the specified branch
+      for (std::set<revision_id>::iterator i=children.begin();
+                    i!=children.end();)
+      { std::vector< revision<cert> > certs;
+        app.db.get_revision_certs(*i,branch_cert_name,value,certs);
+        std::set<revision_id>::iterator help=i;
+        ++help;
+        if (certs.empty()) children.erase(i);
+        i=help;
+      }
+    }
+    if (children.empty()) return;
+    if (children.size()>1)
+    { W(F("several children found for %s:\n") % now.revision);
+      for (std::set<revision_id>::const_iterator i=children.begin();
+                    i!=children.end();++i)
+      { W(F("%s\n") % *i);
+      }
+      return;
+    }
+    now_iter=commit(now_iter,*children.begin());
   }
+}
+
+void cvs_sync::push(const std::string &repository, const std::string &module,
+            app_state &app)
+{ test_key_availability(app);
+  cvs_sync::cvs_repository repo(app,repository,module);
+// turned off for DEBUGGING
+  if (!getenv("CVS_CLIENT_LOG"))
+    repo.GzipStream(3);
+  transaction_guard guard(app.db);
+
+  { std::vector< revision<cert> > certs;
+    app.db.get_revision_certs(cvs_cert_name, certs);
+    // erase_bogus_certs ?
+    repo.process_certs(certs);
+  }
+  
+  N(repo.empty(),
+    F("no revision certs for this repository/module\n"));
+
+  repo.commit();
+  
+  guard.commit();      
+}
+
+void cvs_sync::pull(const std::string &repository, const std::string &module,
+            app_state &app)
+{ test_key_availability(app);
   
   cvs_sync::cvs_repository repo(app,repository,module);
 // turned off for DEBUGGING
@@ -938,9 +1013,7 @@ struct cvs_repository::update_cb : cvs_client::update_callbacks
 };
 
 void cvs_repository::update()
-{ I(!edges.empty());
-  std::set<cvs_edge>::iterator now_iter=edges.end();
-  --now_iter;
+{ std::set<cvs_edge>::iterator now_iter=last_known_revision();
   const cvs_edge &now=*now_iter;
   I(!now.revision().empty());
   std::vector<update_args> file_revisions;

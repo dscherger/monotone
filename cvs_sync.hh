@@ -117,32 +117,40 @@ private:
         std::string &file_contents);
   void fill_manifests(std::set<cvs_edge>::iterator e);
   void commit_revisions(std::set<cvs_edge>::iterator e);
-public:  
-  void prime();
-  void update();
-//  void compact_files();
-  cvs_file_state remember(std::set<file_state> &s,const file_state &fs);
-  void join_edge_parts(std::set<cvs_edge>::iterator i);
-  
-public:  
-  cvs_repository(app_state &app, const std::string &repository, const std::string &module);
 
-  std::list<std::string> get_modules();
-  void set_branch(const std::string &tag);
-  const tree_state_t &find(const std::string &date,const std::string &changelog);
-  const tree_state_t &next(const tree_state_t &m) const;
-  
-  void debug() const;
   void store_contents(const std::string &contents, hexenc<id> &sha1sum);
 //  void apply_delta(std::string &contents, const std::string &patch);
   void store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
   void cert_cvs(const cvs_edge &e, packet_consumer & pc);
+  cvs_file_state remember(std::set<file_state> &s,const file_state &fs);
+  void join_edge_parts(std::set<cvs_edge>::iterator i);
+  std::set<cvs_edge>::iterator last_known_revision();
+  std::set<cvs_edge>::iterator commit(
+      std::set<cvs_edge>::iterator parent, const revision_id &rid);
   
-  bool empty() const { return edges.empty() && files.empty(); }
+public: // semi public interface for push/pull
+  void prime();
+  void update();
+  void commit();
   void process_certs(const std::vector< revision<cert> > &certs);
+  bool empty() const { return edges.empty() && files.empty(); }
+
+public:  
+  cvs_repository(app_state &app, const std::string &repository, const std::string &module);
+
+  void debug() const;
+  
+#if 0 // yet unimplemented and unneeded ~nice~ API ideas
+  std::list<std::string> get_modules();
+  void set_branch(const std::string &tag);
+  const tree_state_t &find(const std::string &date,const std::string &changelog);
+  const tree_state_t &next(const tree_state_t &m) const;
+#endif  
 };
 
-void sync(const std::string &repository, const std::string &module,
+void pull(const std::string &repository, const std::string &module,
+            app_state &app);
+void push(const std::string &repository, const std::string &module,
             app_state &app);
 } // end namespace cvs_sync
