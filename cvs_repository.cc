@@ -117,7 +117,8 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     // prime
 //    prime();
   }
-  return (--edges.end())->files; // wrong of course
+  static cvs_repository::tree_state_t dummy_result;
+  return dummy_result; // wrong of course
 }
 
 void cvs_repository::debug() const
