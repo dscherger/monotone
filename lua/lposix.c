@@ -8,17 +8,23 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <grp.h>
 #include <pwd.h>
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/times.h>
 #include <sys/types.h>
+#ifndef WIN32
+#include <sys/times.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
+#else
+#include <windows.h>
+#endif
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
@@ -33,7 +39,14 @@
 #define MYBUFSIZ 512
 #endif
 
+#ifndef WIN32
 #include "modemuncher.c"
+#else
+#define S_ISLNK(x) 0
+#define S_ISSOCK(x) 0
+#define mkdir(a,b) mkdir(a)
+#define lstat stat
+#endif
 
 static const char *filetype(mode_t m)
 {
@@ -118,6 +131,7 @@ static void badoption(lua_State *L, int i, const char *what, int option)
 		lua_pushfstring(L, "unknown %s option `%c'", what, option));
 }
 
+#ifndef WIN32
 static uid_t mygetuid(lua_State *L, int i)
 {
 	if (lua_isnone(L, i))
@@ -147,7 +161,7 @@ static gid_t mygetgid(lua_State *L, int i)
 	else
 		return luaL_typerror(L, i, "string or number");
 }
-
+#endif
 
 
 static int Perrno(lua_State *L)			/** errno() */
@@ -258,7 +272,7 @@ static int Punlink(lua_State *L)		/** unlink(path) */
 	return pushresult(L, unlink(path), path);
 }
 
-
+#ifndef WIN32
 static int Plink(lua_State *L)			/** link(oldpath,newpath) */
 {
 	const char *oldpath = luaL_checkstring(L, 1);
@@ -284,7 +298,7 @@ static int Preadlink(lua_State *L)		/** readlink(path) */
 	lua_pushlstring(L, buf, n);
 	return 1;
 }
-
+#endif
 
 static int Paccess(lua_State *L)		/** access(path,[mode]) */
 {
@@ -304,31 +318,11 @@ static int Paccess(lua_State *L)		/** access(path,[mode]) */
 	return pushresult(L, access(path, mode), path);
 }
 
-
+#ifndef WIN32
 static int Pmkfifo(lua_State *L)		/** mkfifo(path) */
 {
 	const char *path = luaL_checkstring(L, 1);
 	return pushresult(L, mkfifo(path, 0777), path);
-}
-
-
-static int Pexec(lua_State *L)			/** exec(path,[args]) */
-{
-	const char *path = luaL_checkstring(L, 1);
-	int i,n=lua_gettop(L);
-	char **argv = malloc((n+1)*sizeof(char*));
-	if (argv==NULL) luaL_error(L,"not enough memory");
-	argv[0] = (char*)path;
-	for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(L, i+1);
-	argv[i] = NULL;
-	execvp(path,argv);
-	return pusherror(L, path);
-}
-
-
-static int Pfork(lua_State *L)			/** fork() */
-{
-	return pushresult(L, fork(), NULL);
 }
 
 
@@ -359,7 +353,149 @@ static int Psleep(lua_State *L)			/** sleep(seconds) */
 	lua_pushnumber(L, sleep(seconds));
 	return 1;
 }
+#else
 
+/* Note: For the Win32 version of wait(), pid is not optional. */
+static int Pwait(lua_State *L)			/** wait(pid) */
+{
+	HANDLE hProcess = (HANDLE)luaL_checkint(L, 1);
+	DWORD res;
+	if (WaitForSingleObject(hProcess, INFINITE)==WAIT_FAILED)
+		return pushresult(L, -1, NULL);
+	if (GetExitCodeProcess(hProcess, &res)==0)
+		res = -1;
+	CloseHandle(hProcess); /* Let the process die */
+	lua_pushnumber(L, res);
+	return 1 + pushresult(L, (int)hProcess, NULL);
+}
+
+
+static int Pkill(lua_State *L)			/** kill(pid,[sig]) */
+{
+	HANDLE hProcess = (HANDLE)luaL_checkint(L, 1);
+	int sig = luaL_optint(L, 2, SIGTERM); /* No meaning on Win32 */
+	if (TerminateProcess(hProcess, 1)==0)
+		return pushresult(L, -1, NULL);
+	return pushresult(L, 0, NULL);
+}
+
+
+static int Psleep(lua_State *L)			/** sleep(seconds) */
+{
+	unsigned int seconds = luaL_checkint(L, 1);
+	Sleep(seconds*1000);
+	lua_pushnumber(L, 0);
+	return 1;
+}
+
+#endif
+
+#ifndef WIN32
+
+static int Pspawn(lua_State *L)			/** spawn(path,[args]) */
+{
+	const char *path = luaL_checkstring(L, 1);
+	int i,n=lua_gettop(L);
+	char **argv = malloc((n+1)*sizeof(char*));
+	pid_t pid;
+	if (argv==NULL) luaL_error(L,"not enough memory");
+	argv[0] = (char*)path;
+	for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(L, i+1);
+	argv[i] = NULL;
+	pid = fork();
+	free(argv);
+	switch (pid)
+	{
+		case -1: /* Error */
+			return pushresult(L, -1, NULL);
+		case 0: /* Child */
+			execvp(path,argv);
+			return pushresult(L, -1, NULL);
+		default: /* Parent */
+			return pushresult(L, pid, NULL);
+	}
+}
+
+
+static int Piswin32(lua_State *L)		/** iswin32() */
+{
+	return pushresult(L, 0, NULL);
+}
+
+#else
+
+static int Pexistsonpath(lua_State *L)		/** existsonpath(exe) */
+{
+	const char *exe = luaL_checkstring(L, 1);
+	if (SearchPath(NULL, exe, ".exe", 0, NULL, NULL)==0)
+		return pushresult(L, -1, NULL);
+	return pushresult(L, 0, NULL);
+}
+
+static int Pspawn(lua_State *L)			/** spawn(path,[args]) */
+{
+	const char *exe = luaL_checkstring(L, 1);
+	int i,n=lua_gettop(L);
+	char **argv = malloc(n*sizeof(char*));
+	int totlen = 0;
+	char *cmdline;
+	char *realexe,*filepart;
+	int realexelen;
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	if (argv==NULL) luaL_error(L,"not enough memory");
+	realexelen = strlen(exe)+1+MAX_PATH;
+	realexe = malloc(realexelen);
+	if (realexe==NULL) luaL_error(L,"not enough memory");
+	if (SearchPath(NULL, exe, ".exe", realexelen, realexe, &filepart)==0)
+	{
+		free(realexe);
+		free(argv);
+		return pushresult(L, -1, NULL);
+	}
+	argv[0] = (char*)realexe;
+	for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(L, i+1);
+	for (i=0; i<n; i++) totlen += strlen(argv[i])+1;
+	totlen += 2; /* The quotes around the command */
+	cmdline = malloc(totlen);
+	if (cmdline==NULL) luaL_error(L,"not enough memory");
+	totlen = 0;
+	cmdline[totlen++] = '\"';
+	for (i=0; i<n; i++)
+	{
+		strcpy(cmdline+totlen, argv[i]);
+		totlen += strlen(argv[i]);
+		if (i==0)
+		{
+			cmdline[totlen++] = '\"';
+			cmdline[totlen] = '\0';
+		}
+		if (i<n-1)
+			cmdline[totlen++] = ' ';
+	}
+	free(argv);
+	memset(&si, 0, sizeof(si));
+	si.cb = sizeof(STARTUPINFO);
+	/* We don't need to set any of the STARTUPINFO members */
+	if (CreateProcess(realexe, cmdline, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)==0)
+	{
+		free(realexe);
+		free(cmdline);
+		return pushresult(L, -1, NULL);
+	}
+	free(realexe);
+	free(cmdline);
+	CloseHandle(pi.hThread);
+	return pushresult(L, (int)pi.hProcess, NULL);
+}
+
+
+static int Piswin32(lua_State *L)		/** iswin32() */
+{
+	return pushresult(L, 1, NULL);
+}
+
+#endif
 
 static int Pputenv(lua_State *L)		/** putenv(string) */
 {
@@ -418,7 +554,7 @@ static int Pgetenv(lua_State *L)		/** getenv([name]) */
 	return 1;
 }
 
-
+#ifndef WIN32
 static int Pumask(lua_State *L)			/** umask([mode]) */
 {
 	char m[10];
@@ -461,7 +597,7 @@ static int Pchown(lua_State *L)			/** chown(path,uid,gid) */
 	gid_t gid = mygetgid(L, 3);
 	return pushresult(L, chown(path, uid, gid), path);
 }
-
+#endif
 
 static int Putime(lua_State *L)			/** utime(path,[mtime,atime]) */
 {
@@ -473,7 +609,7 @@ static int Putime(lua_State *L)			/** utime(path,[mtime,atime]) */
 	return pushresult(L, utime(path, &times), path);
 }
 
-
+#ifndef WIN32
 static int FgetID(lua_State *L, int i, const void *data)
 {
 	switch (i)
@@ -488,6 +624,7 @@ static int FgetID(lua_State *L, int i, const void *data)
 	}
 	return 1;
 }
+
 
 static const char *const SgetID[] =
 {
@@ -634,12 +771,15 @@ static int Ptimes(lua_State *L)			/** times() */
 	t.elapsed = times(&t.t);
 	return doselection(L, 1, Stimes, Ftimes, &t);
 }
+#endif
 
 
 struct mystat
 {
 	struct stat s;
+#ifndef WIN32
 	char mode[10];
+#endif
 	const char *type;
 };
 
@@ -648,26 +788,31 @@ static int Fstat(lua_State *L, int i, const void *data)
 	const struct mystat *s=data;
 	switch (i)
 	{
-		case 0: lua_pushstring(L, s->mode); break;
-		case 1: lua_pushnumber(L, s->s.st_ino); break;
-		case 2: lua_pushnumber(L, s->s.st_dev); break;
-		case 3: lua_pushnumber(L, s->s.st_nlink); break;
-		case 4: lua_pushnumber(L, s->s.st_uid); break;
-		case 5: lua_pushnumber(L, s->s.st_gid); break;
-		case 6: lua_pushnumber(L, s->s.st_size); break;
-		case 7: lua_pushnumber(L, s->s.st_atime); break;
-		case 8: lua_pushnumber(L, s->s.st_mtime); break;
-		case 9: lua_pushnumber(L, s->s.st_ctime); break;
-		case 10:lua_pushstring(L, s->type); break;
-		case 11:lua_pushnumber(L, s->s.st_mode); break;
+		case 0: lua_pushnumber(L, s->s.st_ino); break;
+		case 1: lua_pushnumber(L, s->s.st_dev); break;
+		case 2: lua_pushnumber(L, s->s.st_nlink); break;
+		case 3: lua_pushnumber(L, s->s.st_uid); break;
+		case 4: lua_pushnumber(L, s->s.st_gid); break;
+		case 5: lua_pushnumber(L, s->s.st_size); break;
+		case 6: lua_pushnumber(L, s->s.st_atime); break;
+		case 7: lua_pushnumber(L, s->s.st_mtime); break;
+		case 8: lua_pushnumber(L, s->s.st_ctime); break;
+		case 9:lua_pushstring(L, s->type); break;
+		case 10:lua_pushnumber(L, s->s.st_mode); break;
+#ifndef WIN32
+		case 11: lua_pushstring(L, s->mode); break;
+#endif
 	}
 	return 1;
 }
 
 static const char *const Sstat[] =
 {
-	"mode", "ino", "dev", "nlink", "uid", "gid",
+	"ino", "dev", "nlink", "uid", "gid",
 	"size", "atime", "mtime", "ctime", "type", "_mode",
+#ifndef WIN32
+	"mode", 
+#endif
 	NULL
 };
 
@@ -677,11 +822,13 @@ static int Pstat(lua_State *L)			/** stat(path,[selector]) */
 	const char *path=luaL_checkstring(L, 1);
 	if (lstat(path,&s.s)==-1) return pusherror(L, path);
 	s.type=filetype(s.s.st_mode);
+#ifndef WIN32
 	modechopper(s.s.st_mode, s.mode);
+#endif
 	return doselection(L, 2, Sstat, Fstat, &s);
 }
 
-
+#ifndef WIN32
 static int Puname(lua_State *L)			/** uname([string]) */
 {
 	struct utsname u;
@@ -759,48 +906,52 @@ static int Psysconf(lua_State *L)		/** sysconf([selector]) */
 {
 	return doselection(L, 1, Ssysconf, Fsysconf, NULL);
 }
-
+#endif
 
 static const luaL_reg R[] =
 {
 	{"access",		Paccess},
 	{"chdir",		Pchdir},
+	{"dir",			Pdir},
+	{"errno",		Perrno},
+	{"files",		Pfiles},
+	{"getcwd",		Pgetcwd},
+	{"getenv",		Pgetenv},
+	{"iswin32",		Piswin32},
+	{"kill",		Pkill},
+	{"mkdir",		Pmkdir},
+	{"putenv",		Pputenv},
+	{"rmdir",		Prmdir},
+	{"sleep",		Psleep},
+	{"spawn",		Pspawn},
+	{"stat",		Pstat},
+	{"unlink",		Punlink},
+	{"utime",		Putime},
+	{"wait",		Pwait},
+
+#ifndef WIN32
 	{"chmod",		Pchmod},
 	{"chown",		Pchown},
 	{"ctermid",		Pctermid},
-	{"dir",			Pdir},
-	{"errno",		Perrno},
-	{"exec",		Pexec},
-	{"files",		Pfiles},
-	{"fork",		Pfork},
-	{"getcwd",		Pgetcwd},
-	{"getenv",		Pgetenv},
 	{"getgroup",		Pgetgroup},
 	{"getlogin",		Pgetlogin},
 	{"getpasswd",		Pgetpasswd},
 	{"getprocessid",	Pgetprocessid},
-	{"kill",		Pkill},
 	{"link",		Plink},
-	{"mkdir",		Pmkdir},
 	{"mkfifo",		Pmkfifo},
 	{"pathconf",		Ppathconf},
-	{"putenv",		Pputenv},
 	{"readlink",		Preadlink},
-	{"rmdir",		Prmdir},
 	{"setgid",		Psetgid},
 	{"setuid",		Psetuid},
-	{"sleep",		Psleep},
-	{"stat",		Pstat},
 	{"symlink",		Psymlink},
 	{"sysconf",		Psysconf},
 	{"times",		Ptimes},
 	{"ttyname",		Pttyname},
 	{"umask",		Pumask},
 	{"uname",		Puname},
-	{"unlink",		Punlink},
-	{"utime",		Putime},
-	{"wait",		Pwait},
-
+#else
+	{"existsonpath",	Pexistsonpath},
+#endif
 #ifdef linux
 	{"setenv",		Psetenv},
 	{"unsetenv",		Punsetenv},
