@@ -807,8 +807,15 @@ void cvs_repository::prime()
   }
   drop_connection();
 
+  if (sync_since!=-1 && edges.empty() && !files.empty())
+    // no change happened since sync_since, so we didn't see an edge,
+    // fake one
+  { cvs_edge new_edge("initial state for cvs_pull --since",sync_since,app.signing_key());
+    edges.insert(new_edge);
+  }
   // fill in file states at given point
   fill_manifests(edges.begin());
+  
   // commit them all
   commit_revisions(edges.begin());
 }
