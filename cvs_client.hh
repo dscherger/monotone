@@ -25,6 +25,14 @@ struct rlist_callbacks
         const std::string &last_rev, bool dead) const=0;
 };
 
+struct checkout
+{ time_t mod_time;
+  std::string contents;
+  std::string mode;
+  
+  checkout() : mod_time(-1) {}
+};
+
 class cvs_client
 { int readfd,writefd;
   size_t bytes_read,bytes_written;
@@ -68,6 +76,7 @@ public:
   
   void RLog(const rlog_callbacks &cb,bool dummy,...);
   void RList(const rlist_callbacks &cb,bool dummy,...);
+  struct checkout CheckOut(const std::string &file, const std::string &revision);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }

@@ -451,6 +451,11 @@ static time_t rls_l2time_t(const std::string &t)
   return result;
 }
 
+// third format:
+// 19 Nov 1996 11:22:50 -0000
+// 4 Jun 1999 12:00:41 -0000
+// 19 Jul 2002 07:33:26 -0000
+
 void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
 { { va_list ap;
     va_start(ap,dummy);
@@ -647,3 +652,57 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
   }
 }
 
+struct checkout cvs_client::CheckOut(const std::string &file, const std::string &revision)
+{ struct checkout result;
+  writestr("Directory .\n"+root+"\n");
+  SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",file.c_str(),0);
+  enum { st_co
+       } state=st_co;
+  std::vector<std::pair<std::string,std::string> > lresult;
+  std::string dir,dir2,rcsfile;
+  while (fetch_result(lresult))
+  { switch(state)
+    { case st_co:
+      { I(!lresult.empty());
+        if (lresult[0].first=="CMD")
+        { if (lresult[0].second=="Clear-sticky")
+          { I(lresult.size()==3);
+            I(lresult[1].first=="dir");
+            dir=lresult[1].second;
+          }
+          else if (lresult[0].second=="Set-static-directory")
+          { I(lresult.size()==3);
+            I(lresult[1].first=="dir");
+            dir2=lresult[1].second;
+          }
+          else if (lresult[0].second=="Mod-time")
+          { I(lresult.size()==2);
+            I(lresult[1].first=="date");
+            // this is 18 Nov 1996 14:39:40 -0000 format - strange ...
+            // result.mod_time=xyz2time_t(lresult[1].second);
+          }
+          else if (lresult[0].second=="Created")
+          { // std::cerr << combine_result(lresult) << '\n';
+            I(lresult.size()==7);
+            I(lresult[6].first=="data");
+//            result.mode=?
+            result.contents=lresult[6].second;
+            L(F("file %s revision %s: %d bytes\n") % file 
+                % revision % lresult[6].second.size());
+          }
+          else
+          { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+          }
+        }
+        else if (lresult[0].second=="+updated")
+        { // std::cerr << combine_result(lresult) << '\n';
+        }
+        else 
+        { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+        }
+        break;
+      }
+    }
+  }
+  return result;
+}

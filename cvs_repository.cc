@@ -292,57 +292,9 @@ void cvs_repository::prime()
   for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { I(!i->second.known_states.empty());
     std::string revision=i->second.known_states.begin()->cvs_version;
-    SendCommand("Directory .",/*"-N","-P",*/"-r",revision.c_str(),"--",i->first.c_str(),0);
-    writestr(root+"\n");
-    writestr("co\n");
-    enum { st_co
-         } state=st_co;
-    std::vector<std::pair<std::string,std::string> > lresult;
-    std::string dir,dir2,rcsfile,mode;
-    time_t stamp=-1;
-    while (fetch_result(lresult))
-    { switch(state)
-      { case st_co:
-        { I(!lresult.empty());
-          if (lresult[0].first=="CMD")
-          { if (lresult[0].second=="Clear-sticky")
-            { I(lresult.size()==3);
-              I(lresult[1].first=="dir");
-              dir=lresult[1].second;
-            }
-            else if (lresult[0].second=="Set-static-directory")
-            { I(lresult.size()==3);
-              I(lresult[1].first=="dir");
-              dir2=lresult[1].second;
-            }
-            else if (lresult[0].second=="Mod-time")
-            { I(lresult.size()==2);
-              I(lresult[1].first=="date");
-              // this is 18 Nov 1996 14:39:40 -0000 format - strange ...
-              // stamp=rls_l2time_t(lresult[1].second);
-            }
-            else if (lresult[0].second=="Created")
-            { // std::cerr << combine_result(lresult) << '\n';
-              I(lresult.size()==7);
-              I(lresult[6].first=="data");
-              const_cast<std::string &>(i->second.known_states.begin()->contents)=lresult[6].second;
-              L(F("file %s revision %s: %d bytes\n") % i->first 
-                  % revision % lresult[6].second.size());
-            }
-            else
-            { std::cerr << "unrecognized response " << lresult[0].second << '\n';
-            }
-          }
-          else if (lresult[0].second=="+updated")
-          { // std::cerr << combine_result(lresult) << '\n';
-          }
-          else 
-          { std::cerr << "unrecognized response " << lresult[0].second << '\n';
-          }
-          break;
-        }
-      }
-    }
+    struct checkout c=CheckOut(i->first,revision);
+//    I(c.mod_time==?);
+    const_cast<std::string &>(i->second.known_states.begin()->contents)=c.contents;
   }
 }
 
