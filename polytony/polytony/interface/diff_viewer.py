@@ -5,6 +5,7 @@ class DiffDisplayText(wx.TextCtrl):
     def __init__(self, parent, id, diff_text):
 
         wx.TextCtrl.__init__(self, parent, id, "",
+                             size=(800,600),
                              style=wx.TE_MULTILINE
                              # It's not actually possible to prevent GTK+ from
                              # wrapping, apparently...
