@@ -41,6 +41,7 @@
 #define OPT_REVISION 14
 #define OPT_MESSAGE 15
 #define OPT_ROOT 16
+#define OPT_SINCE 17
 
 // main option processing and exception handling code
 
@@ -66,6 +67,7 @@ struct poptOption options[] =
     {"revision", 0, POPT_ARG_STRING, &argstr, OPT_REVISION, "select revision id for operation", NULL},
     {"message", 0, POPT_ARG_STRING, &argstr, OPT_MESSAGE, "set commit changelog message", NULL},
     {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, "limit search for working copy to specified root", NULL},
+    {"since", 0, POPT_ARG_STRING, &argstr, OPT_SINCE, "set history start for CVS sync", NULL},
     { NULL, 0, 0, NULL, 0 }
   };
 
@@ -261,6 +263,10 @@ cpp_main(int argc, char ** argv)
 
             case OPT_ROOT:
               app.set_root(string(argstr));
+              break;
+
+            case OPT_SINCE:
+              app.set_since(string(argstr));
               break;
 
             case OPT_HELP:
