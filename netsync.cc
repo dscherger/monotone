@@ -2373,6 +2373,27 @@ bool session::process()
     }
 }
 
+// TODO: we should check for errors
+static pid_t pipe_and_fork(int *fd1,int *fd2)
+{  pid_t result=-1;
+   pipe(fd1);
+   pipe(fd2);
+   if (!(result=fork()))
+   {  // fd1[1] for writing, fd2[0] for reading
+      close(fd1[0]);
+      close(fd2[1]);
+      dup2(fd2[0],0);
+      dup2(fd1[1],1);
+      close(fd1[1]);
+      close(fd2[0]);
+   }
+   else
+   { // fd1[0] for reading, fd2[1] for writing
+     close(fd1[1]);
+     close(fd2[0]);
+   }
+   return result;
+}
 
 static void 
 call_server(protocol_role role,
@@ -2390,30 +2411,45 @@ call_server(protocol_role role,
 
   P(F("connecting to %s\n") % address());
   PipeStream server;
-  if (address().substr(0,4)=="ssh:")
+  if (address().substr(0,5)=="file:")
   {  int fd1[2],fd2[2];
-     pipe(fd1);
-     pipe(fd2);
-     if (!fork())
-     {  // fd1[1] for writing, fd2[0] for reading
-        close(fd1[0]);
-        close(fd2[1]);
-        dup2(fd2[0],0);
-        dup2(fd1[1],1);
+     if (!pipe_and_fork(fd1,fd2))
+     {  std::string db_path=address().substr(5);
+        const unsigned newsize=64;
+        const char *newargv[newsize];
+        unsigned newargc=0;
+        newargv[newargc++]="monotone";
+        newargv[newargc++]="--verbose";
+        newargv[newargc++]="--db";
+        newargv[newargc++]=db_path.c_str();
+        newargv[newargc++]="--";
+        newargv[newargc++]="serve";
+        newargv[newargc++]="-";
+        for (unsigned i=0; i<newsize-newargc-2 && i<collections.size(); ++i)
+          newargv[newargc++]=collections[i]().c_str();
+        newargv[newargc]=0;
+        
         dup2(open("server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-        close(fd1[1]);
-        close(fd2[0]);
+        execvp("monotone",(char*const*)newargv);
+        perror("monotone");
+        exit(errno);
+     }
+     server=PipeStream(fd1[0],fd2[1],timeout);
+  }
+#if 0  
+  else if (address().substr(0,4)=="ssh:")
+  {  int fd1[2],fd2[2];
+     if (!pipe_and_fork(fd1,fd2))
+     {  dup2(open("server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
         execlp("monotone",
             "monotone","--verbose","--db","/tmp/temp.db",
             "--","serve","-",collections[0]().c_str(),0);
         perror("monotone");
         exit(errno);
      }
-     // fd1[0] for reading, fd2[1] for writing
-     close(fd1[1]);
-     close(fd2[0]);
      server=PipeStream(fd1[0],fd2[1],timeout);
   }
+#endif  
   else server=PipeStream(address().c_str(), default_port, timeout); 
   session sess(role, client_voice, collections, all_collections, app, 
 	       address(),
@@ -2835,6 +2871,12 @@ serve_stdio(protocol_role role,
 		
          if (live_p && FD_ISSET(sess->str.fd_write, &wfds))
 	    handle_write_available(sess->str.fd_write, sess, sessions, live_p);
+      }
+      if (!sess->process())
+      {
+         P(F("stdin processing finished, disconnecting\n"));
+	 sessions.erase(sessions.begin());
+	 break;
       }
 		
     }
