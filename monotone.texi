@@ -1086,12 +1086,18 @@ tasks involve only one member.
 
 The first step Jim, Abe and Beth each need to perform is to create a
 new database. This is done with the @code{monotone db init} command,
-providing a @option{--db} option to speficy the location of the new
+providing a @option{--db} option to specify the location of the new
 database. Each programmer creates their own database, which will
 reside in their home directory and store all the revisions, files and
 manifests they work on. Monotone requires this step as an explicit
 command, to prevent spurious creation of databases when an invalid
 @option{--db} option is given.
+
+In real life, most people prefer to keep one database for each project
+they work on.  If we followed that convention here in the tutorial,
+though, then all the databases would be called @code{juicebot.db}, and
+that would make things more confusing to read.  So instead, we'll have
+them each name their database after themselves.
 
 Thus Jim issues the command:
 
@@ -1181,7 +1187,7 @@ $ monotone --db=~/jim.db list keys
 @end group
 @end smallexample
 
-The hexidecimal string printed out before each key name is a
+The hexadecimal string printed out before each key name is a
 @emph{fingerprint} of the key, and can be used to verify that the key
 you have stored under a given name is the one you intended to
 store. Monotone will never permit one database to store two keys with
@@ -1198,13 +1204,18 @@ need to repeatedly be prompted for it:
 
 @smallexample
 @group
-$ cat >~/.monotonerc
+$ cat >>~/.monotonerc
 function get_passphrase(keypair_id)
   return "jimsekret"
 end
 ^D
 @end group
 @end smallexample
+
+Note that we are appending the new hook to the (possibly existing) file.
+We do this to avoid loosing other changes by mistake; therefore, be sure
+to check that no other @code{get_passphrase} function appears in the
+configuration file.
 
 Abe and Beth do the same, with their secret passphrases.
 
@@ -2118,6 +2129,7 @@ familiarize yourself with its operation.
 @menu
 * Selectors::              Selecting revisions by certificate.
 * Restrictions::           Limit working copy changes to specified files.
+* Scripting::              Running monotone from other programs.
 * Quality Assurance::      Integrating testing and review with development.
 * Reserved Files::         File names with special meanings.
 * Reserved Certs::         Certificate names with special meanings.
@@ -2133,7 +2145,7 @@ familiarize yourself with its operation.
 @section Selectors
 
 Revisions can be specified on the monotone command line, precisely, by
-entering the entire 40-character hexidecimal @sc{sha1} code. This can
+entering the entire 40-character hexadecimal @sc{sha1} code. This can
 be cumbersome, so monotone also allows a more general syntax called
 ``selectors'' which is less precise but more ``human friendly''. Any
 command which expects a precise revision ID can also accept a selector
@@ -2300,20 +2312,45 @@ working copy. Because of this, a search is done to find the @file{MT}
 directory in case a command is executed from within a subdirectory of a
 working copy. Before a command is executed, the search for a working
 copy directory is done by traversing parent directories until an
-@file{MT} directory is found. Upon finding an @file{MT} directory, the
-@file{MT/options} file is read for default options.
+@file{MT} directory is found or the filesystem root is reached. Upon
+finding an @file{MT} directory, the @file{MT/options} file is read for
+default options. The @option{--root} option may be used to stop the 
+search early, before reaching the root of the physical filesystem.
 
 Many monotone commands don't require a working copy and will simply
 proceed with no default options if no @file{MT} directory is found.
 However, some monotone commands do require a working copy and will fail
 if no @file{MT} directory can be found.
 
-The @command{checkout} and @command{setup} commands currently do not
-search for a working copy. These commands create a @i{new working copy}
-and initialize the @file{MT/options} file based on their command line
-options. These commands may be changed to search for a working copy and
-read default options in the future.
+The @command{checkout} and @command{setup} commands create a @i{new
+working copy} and initialize a new @file{MT/options} file based on their
+current option settings.
 
+
+@page
+@node    Scripting
+@section Scripting
+
+People often want to write programs that call monotone --- for example,
+to create a graphical interface to monotone's functionality, or to
+automate some task.  For most programs, if you want to do this sort of
+thing, you just call the command line interface, and do some sort of
+parsing of the output.  Monotone's output, however, is designed for
+humans: it's localized, it tries to prompt the user with helpful
+information depending on their request, if it detects that something
+unusual is happening it may give different output in an attempt to make
+this clear to the user, and so on.  As a result, it is not particularly
+suitable for programs to parse.
+
+Rather than trying to design output to work for both humans and
+computers, and serving neither audience well, we elected to create a
+separate interface to make programmatically extracting information from
+monotone easier.  The command line interface has a command
+@code{automate}; this command has subcommands that print various sorts
+of information on standard output, in simple, consistent, and easily
+parseable form.
+
+For details of this interface, see @ref{Automation}.
 
 @page
 @node    Quality Assurance
@@ -2953,6 +2990,7 @@ all, commands are grouped into logical categories.
 * Certificate::      Special operations on certificates
 * Packet I/O::       Production or consumption of packets
 * Database::         Manipulation of your database as a whole
+* Automation::       Running monotone from other programs
 * RCS::              Importing legacy version control files
 @end menu
 
@@ -3718,6 +3756,84 @@ help diagnose failures.
 
 
 @page
+@node    Automation
+@section Automation
+
+This section contains subcommands of the @code{monotone automate}
+command, used for scripting monotone.  All give output on stdout; they
+may also give useful chatter on stderr, including warnings and error
+messages.
+
+@ftable @command
+@item monotone automate interface_version
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+0.0
+
+@item Purpose:
+
+Prints version of the automation interface.  Major number increments
+whenever a backwards incompatible change is made to the @code{automate}
+command; minor number increments whenever any change is made (but is
+reset when major number increments).
+
+@item Sample output:
+
+1.2
+
+@item Output format:
+
+A decimal number, followed by ``.'' (full stop/period), followed by a
+decimal number, followed by a newline, followed by end-of-file.  The
+first decimal number is the major version, the second is the minor version.
+
+@item Error conditions:
+
+None.
+
+@end table
+
+@item monotone automate heads @var{branch}
+
+@table @strong
+@item Arguments:
+
+One argument @var{branch}, a branch name.
+
+@item Added in:
+
+0.0
+
+@item Purpose:
+
+Prints the heads of branch @var{branch}.
+
+@item Sample output:
+
+28ce076c69eadb9b1ca7bdf9d40ce95fe2f29b61
+75156724e0e2e3245838f356ec373c50fa469f1f
+
+@item Output format:
+
+Zero or more lines, each giving the id of one head of the given branch.
+Each line consists of a revision id, in hexadecimal, followed by a
+newline.  The lines are printed in sorted order.
+
+@item Error conditions:
+
+If the given branch contains no members, then no lines are printed.
+
+@end table
+
+@end ftable
+
+@page
 @node    RCS
 @section RCS
 
@@ -3727,7 +3843,8 @@ help diagnose failures.
 This command imports all the file versions in each RCS file listed in
 @var{filename...}.  These files should be raw RCS files, ending in
 @code{,v}. Monotone parses them directly and inserts them into your
-database.
+database.  Note that this does not do any revision reconstruction, and
+is only useful for debugging.
 
 @item monotone cvs_import @var{pathname...}
 
@@ -5034,6 +5151,9 @@ Sync contents of @i{<collection>} with database on @i{<host>}
 Serve contents of @i{<collection>} at network address @i{<host>}
 @comment TROFF INPUT: .SH DESCRIPTION
 
+@item @b{automate} @i{(interface_version|heads)}
+Scripting interface.
+
 @item @b{db} @i{(init|info|version|dump|load|migrate|execute <sql>)}
 Manipulate database state.
 @comment TROFF INPUT: .SH DESCRIPTION
@@ -5136,6 +5256,11 @@ Use the given message as the changelog when committing a new revision
 rather than invoking the log message editor. Currently this option only
 applies to the commit command but it may also apply to the comment
 command in the future.
+
+@item @b{--root=}@i{<root dir>}
+Stop the search for a working copy (containing the @file{MT} directory)
+at the specified root directory rather than at the physical root of the
+filesystem.
 
 @comment TROFF INPUT: .SH ENVIRONMENT
 

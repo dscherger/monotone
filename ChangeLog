@@ -1,3 +1,153 @@
+2005-02-17  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* testsuite.at:
+	* tests/t_change_empty_file.at: Verify that modifying an empty file
+	creates a patch revision rather than an add/delete sequence.  The
+	incorrect behavior was reported in bug #9964.
+
+2005-02-17  Derek Scherger  <derek@echologic.com>
+
+	* app_state.{cc,hh} (app_state): initialize search root
+	(initialize): boolean signature variant renamed to ...
+	(allow_working_copy): this; add explicit search root; move
+	requirement for working copy to ...
+	(require_working_copy): this new method
+	(initialize): string signature variant renamed to ...
+	(create_working_copy): this
+	(set_root): new method
+	* commands.cc: remove app.initialize(false) calls; replace
+	app.initialize(true) with app.require_working_copy(); replace
+	app.initialize(dir) with app.create_working_copy(dir)
+	(checkout): ensure revision is member of specified branch
+	* file_io.{cc,hh} (find_working_copy): stop search at --root if
+	specified
+	* monotone.cc (OPT_ROOT): new option
+	(cpp_main): call app.allow_working_copy() before executing
+	commands to always read default options
+	* monotone.1: add --root option
+	* monotone.texi: add --root option
+	* tests/t_checkout_noop_on_fail.at: un-XFAIL
+	* tests/t_checkout_options.at: un-XFAIL, add check for specified
+	revision not in specified branch
+	* testsuite.at: add --root option to MONOTONE to prevent searching
+	above test dir
+	* vocab.cc: remove redundant forward declaration
+	
+2005-02-16  Derek Scherger  <derek@echologic.com>
+
+	* commands.cc (revert): don't rewrite unchanged files
+	* tests/t_revert_unchanged.at: new test
+	* testsuite.at: call it
+
+2005-02-12  Derek Scherger  <derek@echologic.com>
+
+	* database.cc (sqlite3_unpack_fn): new function for viewing
+	base64, gzipped data
+	(install_functions): install it
+	(rehash): remove unused obsolete fcerts ticker
+
+2005-02-17  Nathaniel Smith  <njs@codesourcery.com>
+
+	* debian/changelog: s/graydon@mogo/graydon@pobox.com/, to make
+	lintian happy.
+	* debian/rules (config.status): Remove --with-bundled-adns.
+	* debian/control (Build-Depends): Don't Build-Depend on libpopt,
+	only libpopt-dev.
+	* .mt-attrs (debian/control): Make executable.
+	
+2005-02-17  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_undo_update.at: Stupid typo.
+	* tests/t_largish_file.at: New test.
+	* testsuite.at: Add it.
+	
+	* commands.cc (push, pull, sync): Remove misleading "..." from
+	help text.
+
+2005-02-16  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* Makefile.am: Append $(BOOST_SUFFIX) to -lboost_unit_test_framework
+	to fix 'make check' on systems where boost libraries can only be
+	found by passing the exact suffix as part of the name.
+
+2005-02-16  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* monotone.texi: Fix a typo (hexidecimal to hexadecimal).  Also
+	change an example command to append stuff to ~/.monotonerc, instead
+	of completely destroying the possibily existing file.  Addresses
+	bug #11136.
+
+2005-02-16  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* cryptopp/config.h: Use uint{8,16,32,64}_t as size types instead of
+	trying to match them to unsigned char/int/long/long long respectively.
+	Should fix build on FreeBSD/sparc64, as seen in bug #10203.
+
+2005-02-16  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* INSTALL:
+	* Makefile.am:
+	* configure.ac: Add the --disable-large-file option to manually
+	disable large file support from the builtin sqlite (compatibility
+	with old systems and FAT).  Addresses bug #8380.
+
+2005-02-16  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_undo_update.at: New todo.
+	* testsuite.at: Add it.
+
+2005-02-15  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.1: Add cursory note about "automate".
+	* monotone.texi: Synchronize with manpage.
+
+2005-02-15  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc: Add "Error conditions" to the standard comment
+	sections.
+	
+	* monotone.texi (Scripting): New section.
+	(Automation): New section.
+	
+	* tests/t_automate_heads.at: Test behavior with nonexistent
+	branch.
+
+2005-02-14  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_merge_normalization_edge_case.at: New test.
+	* testsuite.at: Add it.
+
+	* diff_patch.cc (normalize_extents): Soften the warning message
+	now that we have one test case.
+
+2005-02-14  Matthew A. Nicholson  <mnicholson@digium.com>
+
+	* std_hooks.lua: Add vimdiff merge hooks.
+	
+2005-02-14  Nathaniel Smith  <njs@codesourcery.com>
+
+	* std_hooks.lua: Remove tabs.
+
+2005-02-14  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_automate_heads.at: New test.
+	* tests/t_automate_version.at: New test.
+	* testsuite.at: Add then.
+	
+	* commands.cc (automate): Fix documentation string.
+	* automate.cc: Much more structured documentation comments.
+
+2005-02-13  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.{cc,hh}: New files.
+	* commands.cc: New command "automate".
+
+2005-02-13  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Creating a Database): Fix typo, clarify
+	conventions for database management following question on mailing
+	list.
+
 2005-02-12  graydon hoare  <graydon@pobox.com>
 
 	* change_set.{cc,hh}: Correct code to pass newly-added unit tests.
@@ -693,7 +843,7 @@
 	* AUTHORS: Mention Wojciech and Neil.
 	* revision.cc (calculate_ancestors_from_graph): Make non-recursive.
 
-2005-01-17  Wojciech MiÅkowski  <wmilkowski@interia.pl>
+2005-01-17  Wojciech MiÃÂkowski  <wmilkowski@interia.pl>
 
 	* std_hooks.lua: Teach about meld.
 
