@@ -136,3 +136,4 @@ correct < when calculating manifests
 push: changelog on merge
 faster initial db-access (multimap? without timestamp access?)
 prepare --direction 
+$Id$ !
