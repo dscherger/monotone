@@ -54,6 +54,8 @@ class cvs_client
     update_args(const std::string &f, const std::string &o, 
                   const std::string &n,const std::string &k)
     : file(f), old_revision(o), new_revision(n), keyword_substitution(k) {}
+    update_args(const std::string &f, const std::string &o)
+    : file(f), old_revision(o) {}
   };
 
 private:

@@ -837,9 +837,9 @@ void cvs_repository::update()
 { I(!edges.empty());
   const cvs_edge &now=*(edges.rbegin());
   I(!now.revision().empty());
-  std::vector<std::pair<std::string,std::string> > file_revisions;
+  std::vector<update_args> file_revisions;
   file_revisions.reserve(now.files.size());
   for (cvs_manifest::const_iterator i=now.files.begin();i!=now.files.end();++i)
-    file_revisions.push_back(std::make_pair(i->first,i->second->cvs_version));
+    file_revisions.push_back(update_args(i->first,i->second->cvs_version));
   Update(file_revisions,update_cb(*this));
 }
