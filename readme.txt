@@ -7,8 +7,8 @@ Whilst not as complete or functional as monotone-viz, it does run on windows.
 
 In addition to these files and java 1.5 you also need:
 
-GXL Java API - http://www.gupro.de/GXL/index.html as: batik/batick-1.5.1/batik.jar & batick/batik-1.5.1/lib relative to monotree.jar
-Batick - SVG library from the Apache project http://xml.apache.org as: gxl/gxl-0.92/gxl.jar to monotee.jar
+GXL Java API - http://www.gupro.de/GXL/index.html as: gxl/gxl-0.92/gxl.jar to monotree.jar
+Batick - SVG library from the Apache project http://xml.apache.org as: batik/batick-1.5.1/batik.jar & batick/batik-1.5.1/lib relative to monotree.jar
 
 Run using:
 
