@@ -297,6 +297,7 @@ void cvs_repository::debug() const
     { if (j->dead) std::cerr << "dead";
       else if (j->size) std::cerr << j->size;
       else if (j->patchsize) std::cerr << 'p' << j->patchsize;
+      else if (!j->sha1sum.empty()) std::cerr << j->sha1sum.substr(0,3);
       ++j;
       if (j!=i->second.known_states.end()) std::cerr << ',';
     }
@@ -790,9 +791,14 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       for (std::vector< revision<cert> >::const_iterator c=edge_certs.begin();
                 c!=edge_certs.end();++c)
       { cert_value value;
-        decode_base64(i->inner().value, value);   
+        decode_base64(c->inner().value, value);   
         if (c->inner().name()==date_cert_name)
-        { boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(value());
+        { L(F("date cert %s\n")%value());
+          std::string posix_format=value();
+          std::string::size_type next_illegal=0;
+          while ((next_illegal=posix_format.find_first_of("-:"))!=std::string::npos)
+            posix_format.erase(next_illegal,1);
+          boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(posix_format);
           boost::posix_time::time_duration dur= tmp
               -boost::posix_time::ptime(boost::gregorian::date(1970,1,1),
                               boost::posix_time::time_duration(0,0,0,0));
@@ -810,6 +816,10 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       std::vector<piece> pieces;
       index_deltatext(cvs_revisions(),pieces);
       I(!pieces.empty());
+      manifest_id mid;
+      app.db.get_revision_manifest(i->inner().ident,mid);
+      manifest_map manifest;
+      app.db.get_manifest(mid,manifest);
 //      manifest;
       for (std::vector<piece>::const_iterator p=pieces.begin()+1;p!=pieces.end();++p)
       { std::string line=**p;
@@ -818,13 +828,15 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         line.erase(line.size()-1,1);
         std::string::size_type space=line.find(' ');
         I(space!=std::string::npos);
-        std::string path=module+"/"+line.substr(space+1);
+        std::string monotone_path=line.substr(space+1);
+        std::string path=module+"/"+monotone_path;
 
         file_state fs;
         fs.since_when=e.time;
         fs.cvs_version=line.substr(0,space);
-// könnte man im Manifest nachsehen (sollte man auch)
-//        fs.sha1sum=?
+        manifest_map::const_iterator iter_file_id=manifest.find(monotone_path);
+        I(iter_file_id!=manifest.end());
+        fs.sha1sum=iter_file_id->second.inner();
         fs.log_msg=e.changelog;
         std::pair<cvs_file_state,bool> res=files[path].known_states.insert(fs);
         I(res.second);
@@ -833,4 +845,5 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       edges.insert(e);
     }
   }
+  debug();
 }
