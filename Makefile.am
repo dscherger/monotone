@@ -121,7 +121,7 @@ EXTRA_PROGRAMS = cvs_client
 
 monotone_SOURCES = $(MOST_SOURCES) monotone.cc main.cc
 unit_tests_SOURCES = $(MOST_SOURCES) unit_tests.cc
-cvs_client_SOURCES = $(MOST_SOURCES) cvs_client.cc
+cvs_client_SOURCES = $(MOST_SOURCES) cvs_client.cc cvs_repository.cc
 
 txt2c_SOURCES = txt2c.cc
 
