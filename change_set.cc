@@ -474,6 +474,11 @@ confirm_proper_tree(path_state const & ps)
               curr = path_item_parent(item);
               path_state::const_iterator j = ps.find(curr);
               I(j != ps.end());
+
+              // if we're null, our parent must also be null
+              if (null_name(item.name))
+                I(null_name(path_state_item(j).name));
+
               item = path_state_item(j);
               I(path_item_type(item) == ptype_directory);
             }
@@ -688,57 +693,39 @@ compose_rearrangement(path_analysis const & pa,
       path_item old_item(path_state_item(i));
       path_item new_item(path_state_item(j));
 
-      // compose names
-      // note that old_path and new_path may not actually be valid, if this
-      // item is being added or deleted
-      get_full_path(pa.first, curr, old_name);
-
-      get_full_path(pa.second, curr, new_name);
-
-      // look for null items in the directory part of the new path
-      // we _don't_ look at the last component, the basename, here
-      bool parent_deleted = false;
-      for (unsigned int i = 0; i + 1 < new_name.size(); ++i)
+      if (old_item == new_item)
         {
-          if (null_name(idx(new_name, i)))
-            parent_deleted = true;
-        }
-      if (parent_deleted)
-        {
-          I(old_name != new_name);
-          L(F("skipping %s %d; it's now in a deleted directory\n")
-            % (path_item_type(old_item) == ptype_directory ? "directory" :"file")
+          L(F("skipping preserved %s %d\n")
+            % (path_item_type(old_item) == ptype_directory ? "directory" : "file")
             % curr);
           continue;
         }
 
-      compose_path(new_name, new_path);
-      compose_path(old_name, old_path);
+      // note that old_name and new_name may not actually be valid, if this
+      // item is being added or deleted
 
-      if (old_path == new_path)
-        {
-          L(F("skipping preserved %s %d : '%s'\n")
-            % (path_item_type(old_item) == ptype_directory ? "directory" : "file")
-            % curr % old_path);
-          continue;
-        }
-      
-      L(F("analyzing %s %d : '%s' -> '%s'\n")
-        % (path_item_type(old_item) == ptype_directory ? "directory" : "file")
-        % curr % old_path % new_path);
-          
+      get_full_path(pa.first, curr, old_name);
+      get_full_path(pa.second, curr, new_name);
+
       if (null_name(path_item_name(old_item)))
         {
           // an addition (which must be a file, not a directory)
+          compose_path(new_name, new_path);
+          L(F("found addition of file %d : '%s'\n") % curr % new_path);
           I(! null_name(path_item_name(new_item)));
           I(path_item_type(new_item) != ptype_directory);
           pr.added_files.insert(new_path);
-        }
+        }      
+          
       else if (null_name(path_item_name(new_item)))
         {
           // a deletion
+          compose_path(old_name, old_path);
+          L(F("found deletion of %s %d : '%s'\n")
+            % (path_item_type(old_item) == ptype_directory ? "directory" : "file")
+            % curr % old_path);
           I(! null_name(path_item_name(old_item)));
-          switch (path_item_type(new_item))
+          switch (path_item_type(old_item))
             {
             case ptype_directory:
               pr.deleted_dirs.insert(old_path);
@@ -750,7 +737,12 @@ compose_rearrangement(path_analysis const & pa,
         }
       else
         {
+          compose_path(new_name, new_path);
+          compose_path(old_name, old_path);
           // a generic rename
+          L(F("found rename of %s %d : '%s' -> '%s'\n")
+            % (path_item_type(old_item) == ptype_directory ? "directory" : "file")
+            % curr % old_path % new_path);
           switch (path_item_type(new_item))
             {
             case ptype_directory:
@@ -871,6 +863,22 @@ ensure_entry(directory_map & dmap,
              tid_source & ts)
 {
   I(! null_name(entry));
+
+  if (dir_tid != root_tid)
+    {
+      path_state::const_iterator parent = state.find(dir_tid);
+      
+      I( parent != state.end());
+      
+      // if our parent is null, we immediately become null too, and attach to
+      // the root node (where all null entries reside)
+      if (null_name(path_item_name(path_state_item(parent))))
+        {
+          tid new_tid = ts.next();
+          state.insert(std::make_pair(new_tid, path_item(root_tid, entry_ty, null_path)));
+          return new_tid;
+        }  
+    }
 
   boost::shared_ptr<directory_node> node = dnode(dmap, dir_tid);
   directory_node::const_iterator node_entry = node->find(entry);
@@ -1085,6 +1093,75 @@ build_directory_map(path_state const & state,
     }
 }
 
+static void
+set_entries_with_null_parents_to_null(path_state & state)
+{
+  path_state tmp;
+  for (path_state::const_iterator i = state.begin(); i != state.end();
+       ++i)
+    {
+      path_item item = path_state_item(i);
+      if (item.parent != root_tid)
+        {
+          path_state::const_iterator p = state.find(path_item_parent(item));
+          if (null_name(path_state_item(p).name))
+            {
+              item.name = null_path;
+              item.parent = root_tid;
+            }
+        }
+      tmp.insert(std::make_pair(path_state_tid(i), item));
+    }
+  state = tmp;
+}
+
+
+static void
+kill_entries_in_deleted_dirs(path_analysis & pa)
+{
+  path_analysis tmp;
+  for (path_state::const_iterator i = pa.first.begin(); i != pa.first.end();
+       ++i)
+    {
+
+      path_item item = path_state_item(i);
+      path_state::const_iterator j = pa.second.find(path_state_tid(i));
+      I(j != pa.second.end());
+      path_item second_item = path_state_item(j);
+      
+      if (item.parent != root_tid)
+        {         
+          path_state::const_iterator p = pa.second.find(item.parent);
+          I(p != pa.second.end());
+          path_item item_parent_in_second = path_state_item(p);
+
+          if (null_name(item_parent_in_second.name))
+            {
+              // we have just determined that that this entry was in a
+              // directory which was deleted. unfortunately our current
+              // thinking on the matter is that this implies the entry is
+              // dead, whether you tried to move it out of the deleted
+              // directory or not.
+              continue;
+            }
+        }
+
+      // if we made it to here, we want to copy this tid forward
+      tmp.first.insert(*i);
+      tmp.second.insert(*j);
+    }
+  pa = tmp;
+}
+
+
+static void
+normalize_path_analysis(path_analysis & pa)
+{
+  set_entries_with_null_parents_to_null(pa.first);
+  set_entries_with_null_parents_to_null(pa.second);
+  kill_entries_in_deleted_dirs(pa);
+}
+
 
 static void 
 analyze_rearrangement(change_set::path_rearrangement const & pr,
@@ -1093,7 +1170,7 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
 {
   directory_map first_map, second_map;
   state_renumbering renumbering;
-  std::set<tid> damaged_in_first, damaged_in_second;
+  std::set<tid> damaged;
 
   pa.first.clear();
   pa.second.clear();
@@ -1103,7 +1180,7 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
     {
       tid x = ensure_file_in_map(*f, first_map, pa.first, ts);
       pa.second.insert(std::make_pair(x, path_item(root_tid, ptype_file, null_path)));
-      damaged_in_first.insert(x);
+      damaged.insert(x);
     }
 
   for (std::set<file_path>::const_iterator d = pr.deleted_dirs.begin();
@@ -1111,7 +1188,7 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
     {
       tid x = ensure_dir_in_map(*d, first_map, pa.first, ts);
       pa.second.insert(std::make_pair(x, path_item(root_tid, ptype_directory, null_path)));
-      damaged_in_first.insert(x);
+      damaged.insert(x);
     }
 
   for (std::map<file_path,file_path>::const_iterator rf = pr.renamed_files.begin();
@@ -1121,8 +1198,8 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
       tid b = ensure_file_in_map(rf->second, second_map, pa.second, ts);
       I(renumbering.find(a) == renumbering.end());
       renumbering.insert(std::make_pair(b,a));
-      damaged_in_first.insert(a);
-      damaged_in_second.insert(b);
+      damaged.insert(a);
+      damaged.insert(b);
     }
 
   for (std::map<file_path,file_path>::const_iterator rd = pr.renamed_dirs.begin();
@@ -1132,8 +1209,8 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
       tid b = ensure_dir_in_map(rd->second, second_map, pa.second, ts);
       I(renumbering.find(a) == renumbering.end());
       renumbering.insert(std::make_pair(b,a));
-      damaged_in_first.insert(a);
-      damaged_in_second.insert(b);
+      damaged.insert(a);
+      damaged.insert(b);
     }
 
   for (std::set<file_path>::const_iterator a = pr.added_files.begin();
@@ -1141,7 +1218,7 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
     {
       tid x = ensure_file_in_map(*a, second_map, pa.second, ts);
       pa.first.insert(std::make_pair(x, path_item(root_tid, ptype_file, null_path)));
-      damaged_in_second.insert(x);
+      damaged.insert(x);
     }
 
   // we now have two states which probably have a number of entries in
@@ -1193,7 +1270,7 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
       if (pa.first.find(second_tid) != pa.first.end())
         continue;
       get_full_path(pa.second, second_tid, full);
-      if (damaged_in_second.find(second_tid) != damaged_in_second.end())
+      if (damaged.find(second_tid) != damaged.end())
         continue;
       if (null_name(path_item_name(path_state_item(i))))
         continue;
@@ -1204,6 +1281,8 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
   // dump_renumbering("second", renumbering);
   apply_state_renumbering(renumbering, pa.second);
   // dump_analysis("renumbered again", pa);
+
+  normalize_path_analysis(pa);
 
   // that should be the whole deal; if we don't have consensus at this
   // point we have done something wrong.
@@ -1255,11 +1334,11 @@ index_entries(path_state const & state,
       switch (path_item_type(item))
         {
         case ptype_directory:
-          files.insert(std::make_pair(full, path_state_tid(i)));
+          dirs.insert(std::make_pair(full, path_state_tid(i)));
           break;
 
         case ptype_file:
-          dirs.insert(std::make_pair(full, path_state_tid(i)));
+          files.insert(std::make_pair(full, path_state_tid(i)));
           break;
         }
     }  
@@ -1352,6 +1431,8 @@ concatenate_disjoint_analyses(path_analysis const & a,
 
   extend_state(b_tmp.first, concatenated.first);
   extend_state(a_tmp.second, concatenated.second);
+
+  normalize_path_analysis(concatenated);
 
   sanity_check_path_analysis(concatenated);
 }
@@ -1661,6 +1742,18 @@ ensure_no_rename_clobbers(path_analysis const & a,
 
 }
 
+static bool
+exists_and_not_root_and_name_null(tid t, path_state const & state)
+{
+  if (t == root_tid)
+    return false;
+  path_state::const_iterator i = state.find(t);
+  if (i == state.end())
+    return false;
+  path_item item = path_state_item(i);
+  return null_name(item.name);
+}
+
 static void
 project_missing_changes(path_analysis const & a_tmp, 
                         path_analysis const & b_tmp, 
@@ -1684,6 +1777,14 @@ project_missing_changes(path_analysis const & a_tmp,
       path_item a_first_item, a_second_item;
       path_item b_first_item, b_second_item;
       I(find_items(t, a_tmp, a_first_item, a_second_item));
+
+      if (exists_and_not_root_and_name_null(a_first_item.parent, b_tmp.second))
+        {
+          L(F("skipping change on %s (tid %d) beginning in deleted directory\n") 
+            % path_item_name(a_first_item) % t);
+          continue;
+        }
+
       if (find_items(t, b_tmp, b_first_item, b_second_item))
         {
           I(a_first_item == b_first_item);
@@ -1847,6 +1948,9 @@ merge_disjoint_analyses(path_analysis const & a,
   project_missing_changes(a_tmp, b_tmp, b_merged, resolved_conflicts, app);
   project_missing_changes(b_tmp, a_tmp, a_merged, resolved_conflicts, app);
 
+  normalize_path_analysis(b_merged);
+  normalize_path_analysis(a_merged);
+
   {
     // now check: the merge analyses, when concatenated with their
     // predecessors, should lead to the same composite rearrangement
@@ -1861,14 +1965,22 @@ merge_disjoint_analyses(path_analysis const & a,
     rebuild_analysis(a_merged, a_merge_check, ts_tmp);
     rebuild_analysis(b_merged, b_merge_check, ts_tmp);
 
+    std::cerr << "post-merge analyses" << std::endl;
+    dump_analysis("a", a);
+    dump_analysis("b", b);
+    dump_analysis("a_merged", a_merged);
+    dump_analysis("b_merged", b_merged);
+
+    std::cerr << "post-merge analyses as rearrangements" << std::endl;
+    dump_analysis_as_rearrangement("a", a);
+    dump_analysis_as_rearrangement("b", b);
+    dump_analysis_as_rearrangement("a_merged", a_merged);
+    dump_analysis_as_rearrangement("b_merged", b_merged);
+
     concatenate_disjoint_analyses(anc_a_check, a_merge_check, a_check);
     concatenate_disjoint_analyses(anc_b_check, b_merge_check, b_check);
     compose_rearrangement(a_check, a_re);
     compose_rearrangement(b_check, b_re);
-    dump_analysis_as_rearrangement("a", a);
-    dump_analysis_as_rearrangement("b", b);
-    dump_analysis_as_rearrangement("a_merged", a_merged);
-    dump_analysis_as_rearrangement("b", b_merged);
     dump_path_rearrangement("a_re", a_re);  // DEBUG
     dump_path_rearrangement("b_re", b_re);  // DEBUG
     I(a_re == b_re);

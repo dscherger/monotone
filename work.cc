@@ -146,6 +146,9 @@ build_rename(file_path const & src,
 
   bool dir_p = false;
 
+  N(! known_preimage_path(dst, man, pr, dir_p),
+    F("path %s already exists\n") % dst);
+
   if (! known_preimage_path(src, man, pr, dir_p))
     {
       P(F("skipping %s, not currently tracked\n") % src);
@@ -189,8 +192,10 @@ get_options_path(local_path & o_path)
 void 
 read_options_map(data const & dat, options_map & options)
 {
+  std::string options_path = (mkpath(book_keeping_dir) / 
+                              mkpath(options_file_name)).string();
   std::istringstream iss(dat());
-  basic_io::input_source src(iss, "MT/options");
+  basic_io::input_source src(iss, options_path);
   basic_io::tokenizer tok(src);
   basic_io::parser parser(tok);
 
@@ -247,7 +252,7 @@ void
 read_attr_map(data const & dat, attr_map & attr)
 {
   std::istringstream iss(dat());
-  basic_io::input_source src(iss, ".mt-attrs");
+  basic_io::input_source src(iss, attr_file_name);
   basic_io::tokenizer tok(src);
   basic_io::parser parser(tok);
 
