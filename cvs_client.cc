@@ -256,7 +256,7 @@ std::string cvs_client::readline()
     char c=inputbuffer[0];
     inputbuffer=inputbuffer.substr(1);
     if (c=='\n') 
-    {
+    { L(F("readline result '%s'\n") % result);
 //std::cerr << "readline: \"" <<  result << "\"\n";
       return result;
     }
@@ -574,15 +574,15 @@ const cvs_repository::tree_state_t &cvs_repository::now()
               edges.insert(cvs_edge(t));
             }
             // construct manifest
-            // search for a matching revision
-            
-            // prime
-            prime();
+            // search for a matching revision 
+            // - do that later when all files are known ???
           }
           break;
       }
     }
     ticker();
+    // prime
+    prime();
   }
   return (--edges.end())->files; // wrong of course
 }
@@ -601,6 +601,7 @@ void cvs_repository::prime()
     time_t checkin_time=0;
     while (fetch_result(lresult))
     {reswitch:
+      L(F("state %d\n") % int(state));
       switch(state)
       { case st_head:
         { std::string result=combine_result(lresult);
@@ -623,6 +624,7 @@ void cvs_repository::prime()
         }
         case st_tags:
         { std::string result=combine_result(lresult);
+          I(!result.empty());
           if (result[0]!=' ') { state=st_head; goto reswitch; }
           I(result.find_first_not_of(" ")==6);
           std::string::size_type colon=result.find(':');
@@ -652,7 +654,7 @@ void cvs_repository::prime()
           break;
         }
         case st_date_author:
-        { I(lresult.size()==10);
+        { I(lresult.size()==11);
           std::list<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
           std::list<std::pair<std::string,std::string> >::const_iterator i1=i0;
           ++i1;
@@ -751,7 +753,8 @@ int main(int argc,char **argv)
   }
   if (optind+1<=argc) module=argv[optind];
   try
-  { cvs_repository cl(host,repository,user,module);
+  { global_sanity.set_debug();
+    cvs_repository cl(host,repository,user,module);
     if (compress_level) cl.GzipStream(compress_level);
     const cvs_repository::tree_state_t &n=cl.now();
   } catch (std::exception &e)
