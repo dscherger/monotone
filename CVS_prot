@@ -1,3 +1,23 @@
+commands with a capital letter do not give a response
+first command must be Root (only as first command)
+
+Interesting commands:
+ Checkin-time Gzip-stream 
+ list status history annotate 
+
+history -c -l -a -w ?
+
+rlist -e christof/mf
+[-de]
+cvs rls: Listing module: `christof/mf'
+/slantsl.mf/1.1.1.1/Mon Nov 18 14:03:17 1996//
+/steno.mf/1.1.1.1/Mon Nov 18 14:03:17 1996//
+
+rlist -l christof/mf
+cvs rls: Listing module: `christof/mf'
+---- 1996-11-18 14:03:17 +0000 1.1.1.1    slantsl.mf
+---- 1996-11-18 14:03:17 +0000 1.1.1.1    steno.mf
+
 Root /usr/local/cvsroot
 Valid-responses ok error Valid-requests Checked-in New-entry Checksum Copy-file Updated Created Update-existing Merged Patched Rcs-diff Mode Mod-time Removed Remove-entry Set-static-directory Clear-static-directory Set-sticky Clear-sticky Template Clear-template Notified Module-expansion Wrapper-rcsOption M Mbinary E F MT
 valid-requests
@@ -21,3 +41,25 @@ u=rw,g=rw,o=r
 ...
 Questionable F...nst.txt
 update
+
+
+---- how
+
+Root
+...
+rlist -Red
+...
+feststellen, welche Versionen vermutlich importiert sind und welche fehlen
+(nur timestamp)
+
+fehlende revisions/cmanifests mittels
+rlog -d 'Jun 20 09:38:29 1997<Jun 20 09:38:29 2000' christof/localsrc/indent2.c
+aufbauen [cmanifest= (path,version)*]
+
+(log optionen -b? -N -r1.7::)
+
+fehlende manifests inkrementell durch patch request besorgen 
+(evtl. bekannte Version mitnehmen)
+
+Option: letztes erkanntes manifest prüfen
+
