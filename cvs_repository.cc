@@ -168,6 +168,10 @@ rannotate noop version
 
 size_t const cvs_edge::cvs_window;
 
+bool cvs_revision_nr::operator==(const cvs_revision_nr &b) const
+{ return parts==b.parts;
+}
+
 cvs_revision_nr::cvs_revision_nr(const std::string &x)
 { std::string::size_type begin=0;
   do
@@ -198,7 +202,11 @@ std::string cvs_revision_nr::get_string() const
 bool cvs_revision_nr::is_parent_of(const cvs_revision_nr &child) const
 { unsigned cps=child.parts.size();
   unsigned ps=parts.size();
-  if (cps<ps) return false;
+  if (cps<ps) 
+  { if (child==cvs_revision_nr("1.2") && *this==cvs_revision_nr("1.1.1.1"))
+      return true;
+    return false;
+  }
   if (is_branch() || child.is_branch()) return false;
   unsigned diff=0;
   for (;diff<ps;++diff) if (child.parts[diff]!=parts[diff]) break;
