@@ -400,7 +400,7 @@ void cvs_repository::store_delta(app_state &app, const std::string &new_contents
     base64< gzip<delta> > del;
     diff(data(old_contents), data(new_contents), del);
     app.db.put_file_version(from,to,del);
-std::cerr << patch << "----\n" << del << '\n';
+//std::cerr << patch << "----\n" << del << '\n';
 #else
     base64<gzip<delta> > packed;
     pack(delta(patch), packed);
