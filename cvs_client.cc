@@ -203,7 +203,12 @@ std::string cvs_client::readline()
   // read input
   std::string result;
   for (;;)
-  { if (inputbuffer.empty()) underflow();
+  { if (inputbuffer.empty()) 
+    { underflow(); 
+//std::cerr << inputbuffer.size() << " bytes available\n";
+    }
+    else
+//std::cerr << inputbuffer.size() << " bytes still left\n";
     if (inputbuffer.empty()) throw std::runtime_error("no data avail");
     char c=inputbuffer[0];
     inputbuffer=inputbuffer.substr(1);
@@ -227,7 +232,7 @@ void cvs_client::underflow()
   fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)&~O_NONBLOCK);
   bytes_read+=avail_in;
   if (!gzip_level)
-  { inputbuffer+=std::string(buf,buf+bytes_read);
+  { inputbuffer+=std::string(buf,buf+avail_in);
     return;
   }
   decompress.next_in=(Bytef*)buf;
@@ -407,7 +412,7 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 #if 1
 int main()
 { try
-  { cvs_repository cl("localhost","/usr/local/cvsroot","","christof");
+  { cvs_repository cl("localhost","/usr/local/cvsroot","","christof/java");
     const cvs_repository::tree_state_t &n=cl.now();
   } catch (std::exception &e)
   { std::cerr << e.what() << '\n';
