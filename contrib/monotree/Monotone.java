@@ -82,6 +82,13 @@ public class Monotone {
     }
 
     /**
+     * Get the location of this database
+     */
+    File getDatabaseFile() {
+	return database;
+    }
+
+    /**
      * Get the name of the monotone database (without the full path)
      * TODO: Should this strip the .db suffix?
      *

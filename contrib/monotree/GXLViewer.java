@@ -281,6 +281,9 @@ public class GXLViewer {
         button.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent ae) {
 		    JFileChooser fc = new JFileChooser(".");
+		    if(database!=null) {
+			fc.setCurrentDirectory(database.getDatabaseFile());
+		    }
 		    fc.setFileFilter(new MonotoneFileFilter());
 		    int choice = fc.showOpenDialog(panel);
 		    if (choice == JFileChooser.APPROVE_OPTION) {
@@ -527,6 +530,9 @@ public class GXLViewer {
 	}
     }
 
+    /**
+     * Class which encapsulates the behaviour when the user clicks on a node in the graph
+     */
     private class OnClickAction implements EventListener {
 	
 	private void addInfo(JPanel info,GXLNode gxlNode,String infoSet) {
