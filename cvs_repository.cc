@@ -587,7 +587,7 @@ void cvs_repository::prime(app_state &app)
     }
   }
   // fill in file states at given point
-  debug();
+//  debug();
 
   cvs_manifest current_manifest;
   for (std::set<cvs_edge>::iterator e=edges.begin();e!=edges.end();++e)
@@ -700,12 +700,11 @@ void cvs_repository::prime(app_state &app)
     oldmanifestp=&e->files;
   }
   
-  debug();
+//  debug();
 }
 
 void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc)
-{ std::string content;
-  content+=host+":"+root+"/"+module+"\n";
+{ std::string content=host+":"+root+"/"+module+"\n";
   for (cvs_manifest::const_iterator i=e.files.begin(); i!=e.files.end(); ++i)
   { content+=i->second->cvs_version+" "+shorten_path(i->first)+"\n";
   }
@@ -749,23 +748,71 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   repo.GzipStream(3);
   transaction_guard guard(app.db);
 
-  vector< revision<cert> > certs;
-  app.db.get_revision_certs(cvs_cert_name, certs);
-  for (vector<revision<cert> >::const_iterator i=certs.begin(); i!=certs.end(); ++i)
-  { // populate data structure using these certs
-    cert_value name;
-    decode_base64(i->inner().value, name);
-    std::cerr << name().substr(0,70) << '\n';
-//    import_cvs_cert(*i);
-    // name()
+  { std::vector< revision<cert> > certs;
+    app.db.get_revision_certs(cvs_cert_name, certs);
+    repo.process_certs(certs);
   }
   
   // initial checkout
-  if (false && repo.empty()) 
+  if (repo.empty()) 
   { /*const cvs_sync::cvs_repository::tree_state_t &n=*/ repo.now();
   
     repo.prime(app);
   }
+//  else repo.update(app);
   
   guard.commit();      
+}
+
+void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
+{ 
+  std::auto_ptr<ticker> cert_ticker;
+  cert_ticker.reset(new ticker("cvs certs", "C", 10));
+
+  std::string needed_cert=host+":"+root+"/"+module+"\n";
+  for (vector<revision<cert> >::const_iterator i=certs.begin(); i!=certs.end(); ++i)
+  { // populate data structure using these certs
+    cert_value value;
+    decode_base64(i->inner().value, value);
+    if (value().size()>needed_cert.size() 
+      && value().substr(0,needed_cert.size())==needed_cert)
+    { // parse and add the cert
+      ++(*cert_ticker);
+      cvs_edge e;
+      // get author + date 
+      std::vector< revision<cert> > edge_certs;
+      get_revision_certs(i->inner().ident,edge_certs);
+      for (std::vector< revision<cert> >::const_iterator c=edge_certs.begin();
+                c!=edge_certs.end();++c)
+      { if (c->inner().name()==date_cert_name)
+        {
+        }
+        else if (c->inner().name()==author_cert_name)
+        {
+        }
+        else if (c->inner().name()==changelog_cert_name)
+        {
+        }
+        // tag?
+      }
+      
+      std::vector<piece> pieces;
+      index_deltatext(value(),pieces);
+      I(!pieces.empty());
+      for (std::vector<piece>::const_iterator p=pieces.begin()+1;p!=pieces.end();++p)
+      { std::string line=**p;
+        I(!line.empty());
+        I(line[line.size()-1]=='\n');
+        line.erase(line.size()-1,1);
+        std::string::size_type space=line.find(' ');
+        I(space!=std::string::npos);
+        std::string path=module+"/"+line.substr(space+1);
+#if 0
+        files[path].insert( );
+        cvs_file_state s=files[path].?
+        e.files.insert(std::make_pair(path,s));
+#endif        
+      }
+    }
+  }
 }

@@ -125,6 +125,7 @@ public:
   void cert_cvs(const cvs_edge &e, app_state & app, packet_consumer & pc);
   
   bool empty() const { return edges.empty() && files.empty(); }
+  void process_certs(const std::vector< revision<cert> > &certs);
 };
 
 void sync(const std::string &repository, const std::string &module,
