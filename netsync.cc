@@ -2747,26 +2747,43 @@ bool session::process()
     }
 }
 
-// TODO: we should check for errors
+// is this needed for win32?
+//typedef int pid_t;
+
 static pid_t pipe_and_fork(int *fd1,int *fd2)
-{  pid_t result=-1;
-   pipe(fd1);
-   pipe(fd2);
-   if (!(result=fork()))
-   {  // fd1[1] for writing, fd2[0] for reading
-      close(fd1[0]);
-      close(fd2[1]);
-      dup2(fd2[0],0);
-      dup2(fd1[1],1);
-      close(fd1[1]);
-      close(fd2[0]);
-   }
-   else
-   { // fd1[0] for reading, fd2[1] for writing
-     close(fd1[1]);
-     close(fd2[0]);
-   }
-   return result;
+{ pid_t result=-1;
+  fd1[0]=-1; fd1[1]=-1;
+  fd2[0]=-1; fd2[1]=-1;
+#ifndef __WIN32__
+  if (pipe(fd1)) return -1;
+  if (pipe(fd2)) 
+  { close(fd1[0]); close(fd1[1]); return -1; }
+  result=fork();
+  if (result<0)
+  { close(fd1[0]); close(fd1[1]);
+    close(fd2[0]); close(fd2[1]);
+    return -1;
+  }
+  else if (!result)
+  { // fd1[1] for writing, fd2[0] for reading
+    close(fd1[0]);
+    close(fd2[1]);
+    if (dup2(fd2[0],0)!=0 || dup2(fd1[1],1)!=1) 
+    { perror("dup2");
+      exit(-1); // kill the useless child
+    }
+    close(fd1[1]);
+    close(fd2[0]);
+  }
+  else
+  { // fd1[0] for reading, fd2[1] for writing
+    close(fd1[1]);
+    close(fd2[0]);
+  }
+#else
+#  warning yet unimplemented, see CreatePipe and CreateProcess for an example
+#endif  
+  return result;
 }
 
 static std::string::size_type find_wordend(const std::string &address, 
@@ -2823,7 +2840,12 @@ call_server(protocol_role role,
   PipeStream server;
   if (address().substr(0,5)=="file:")
   {  int fd1[2],fd2[2];
-     if (!pipe_and_fork(fd1,fd2))
+     pid_t child=pipe_and_fork(fd1,fd2);
+     if (child<0)
+     {  L(F("pipe/fork failed"));
+        return;
+     }
+     else if (!child)
      {  std::string db_path=address().substr(5);
         const unsigned newsize=64;
         const char *newargv[newsize];
@@ -2854,7 +2876,12 @@ call_server(protocol_role role,
      {  L(F("url %s is not of form ssh:[//]user@host:port/dbpath\n") % address());
         return;
      }
-     if (!pipe_and_fork(fd1,fd2))
+     pid_t child=pipe_and_fork(fd1,fd2);
+     if (child<0)
+     {  L(F("pipe/fork failed"));
+        return;
+     }
+     else if (!child)
      {  const unsigned newsize=64;
         const char *newargv[newsize];
         unsigned newargc=0;
