@@ -862,7 +862,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
   N(cs.rearrangement.deleted_dirs.empty(),
       F("I can't commit directory deletions yet\n"));
   std::vector<commit_arg> commits;
-  
+
   for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
           i!=cs.rearrangement.deleted_files.end(); ++i)
   { commit_arg a;
@@ -921,7 +921,28 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
   std::map<std::string,std::pair<std::string,std::string> > result
     =Commit(e.changelog,e.time,commits);
   if (result.empty()) return edges.end();
-//  e.files ...
+  e.files=parent->files;
+  
+  for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
+          i=result.begin(); i!=result.end(); ++i)
+  { cvs_manifest::iterator manifestiter=e.files.find(i->first);
+    if (i->second.first.empty())
+    { I(manifestiter!=e.files.end());
+      e.files.erase(manifestiter);
+    }
+    else
+    { file_state fs(e.time,i->second.first);
+      fs.log_msg=e.changelog;
+      fs.keyword_substitution=i->second.second;
+      fs.sha1sum=cs.deltas[i->first].second.inner();
+      std::pair<std::set<file_state>::iterator,bool> newelem=
+          files[i->first].known_states.insert(fs);
+      I(!newelem.second);
+      manifestiter->second=newelem.first;
+    }
+  }
+  packet_db_writer dbw(app);
+  cert_cvs(e, dbw);
   edges.insert(e);
   return --(edges.end());
 }

@@ -32,7 +32,7 @@ struct file_state
   unsigned patchsize;
   bool dead;
   std::string md5sum;
-  hexenc<id> sha1sum;
+  hexenc<id> sha1sum; // make this a file_id
   std::string log_msg;
   std::string keyword_substitution;
 
@@ -63,6 +63,7 @@ struct cvs_edge // careful this name is also used in cvs_import
   mutable time_t time2;
   mutable cvs_manifest files; // manifest (or use cvs_manifest)
   mutable hexenc<id> revision; // monotone revision
+      // make this a revision_id
 
   // I do not want this to be 3 hours (how comes?)
   static size_t const cvs_window = 5;

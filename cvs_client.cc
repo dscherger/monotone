@@ -636,7 +636,7 @@ static std::string time_t2rfc822(time_t t)
   struct tm *tm=gmtime(&t);
   I(tm);
   return (F("%02d %s %d %02d:%02d:%02d +0000") 
-    % tm->tm_mday % months[tm->tm_mon] % tm->tm_year+1900
+    % tm->tm_mday % months[tm->tm_mon] % (tm->tm_year+1900)
     % tm->tm_hour % tm->tm_min % tm->tm_sec).str();
 }
 
