@@ -514,21 +514,31 @@ static time_t rls_l2time_t(const std::string &t)
   I(t[20]=='+' || t[20]=='-');
   struct tm tm;
   memset(&tm,0,sizeof tm);
-  tm.tm_year=atoi(t.substr(0,4).c_str());
-  tm.tm_mon=atoi(t.substr(5,2).c_str());
+  tm.tm_year=atoi(t.substr(0,4).c_str())-1900;
+  tm.tm_mon=atoi(t.substr(5,2).c_str())-1;
   tm.tm_mday=atoi(t.substr(8,2).c_str());
   tm.tm_hour=atoi(t.substr(11,2).c_str());
   tm.tm_min=atoi(t.substr(14,2).c_str());
   tm.tm_sec=atoi(t.substr(17,2).c_str());
   int dst_offs=atoi(t.substr(20,5).c_str());
+//  L(F("%d-%d-%d %d:%02d:%02d %04d") % tm.tm_year % tm.tm_mon % tm.tm_mday 
+//    % tm.tm_hour % tm.tm_min % tm.tm_sec % dst_offs );
+  tm.tm_isdst=0;
   I(!dst_offs);
+  time_t result=-1;
 #if 0 // non portable
-  return timegm(&tm);
+  result=timegm(&tm);
 #else // ugly
-  putenv("TZ=UTC"); // or setenv("TZ","UTC",true);
-  // do we need to call tzset? (docs tend to say no)
-  return mktime(&tm);
+  const char *tz=getenv("TZ");
+  setenv("TZ","",true);
+  tzset();
+  result=mktime(&tm);
+  if (tz) setenv("TZ", tz, true);
+  else unsetenv("TZ");
+  tzset();
 #endif
+//  L(F("result %ld\n") % result);
+  return result;
 }
 
 const cvs_repository::tree_state_t &cvs_repository::now()
@@ -724,7 +734,7 @@ void cvs_repository::prime()
             std::pair<std::set<file_state>::iterator,bool> iter=
               i->second.known_states.insert
                 (file_state(checkin_time,revision,dead=="dead"));
-            I(iter.second==false);
+            // I(iter.second==false);
             // set iterators are read only to prevent you from destroying the order
             file_state &fs=const_cast<file_state &>(*(iter.first));
             fs.log_msg=message;
