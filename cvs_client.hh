@@ -69,7 +69,7 @@ class cvs_client
     std::string new_content;
     
     commit_arg() : old_revision("0"), removed() {}
-    commit_arg(const std::string &rev) : old_revision(rev), removed() {}
+//    commit_arg(const std::string &rev) : old_revision(rev), removed() {}
   };
 
 private:
@@ -122,8 +122,8 @@ public:
             const std::string &old_revision, const std::string &new_revision,
             const std::string &keyword_substitution);
   void Update(const std::vector<update_args> &args, const update_callbacks &cb);
-  // returns <filename, new_revision ("" on remove)>
-  std::map<std::string,std::string>
+  // returns <filename, <new_revision,keyword_substitution> ("" on remove)>
+  std::map<std::string,std::pair<std::string,std::string> >
          Commit(const std::string &changelog, time_t when, 
                     const std::vector<commit_arg> &commits);
   

@@ -1153,13 +1153,13 @@ void cvs_client::parse_entry(const std::string &line, std::string &new_revision,
   keyword_substitution=parts[4];
 }
 
-std::map<std::string,std::string>
+std::map<std::string,std::pair<std::string,std::string> >
          cvs_client::Commit(const std::string &changelog, time_t when, 
                     const std::vector<commit_arg> &commits)
 { 
   std::string olddir;
   writestr("Command-prep commit\n");
-  for (std::vector<update_arg>::const_iterator i=commits.begin(); 
+  for (std::vector<commit_arg>::const_iterator i=commits.begin(); 
                         i!=commits.end(); ++i)
   { if (dirname(i->file)!=olddir)
     { olddir=dirname(i->file);
@@ -1181,11 +1181,11 @@ std::map<std::string,std::string>
   SendCommand("Argument -m\n");
   SendArgument(changelog);
   SendCommand("Argument --\n");
-  for (std::map<std::string,update_arg>::const_iterator i=commits.begin(); 
+  for (std::vector<commit_arg>::const_iterator i=commits.begin(); 
                         i!=commits.end(); ++i)
     writestr("Argument "+i->file+"\n");
   writestr("ci");
-  std::map<std::string,std::string> result;
+  std::map<std::string,std::pair<std::string,std::string> > result;
   // process result
   std::vector<std::pair<std::string,std::string> > lresult;
 
@@ -1199,18 +1199,19 @@ std::map<std::string,std::string>
       { I(lresult.size()==4);
         I(lresult[2].first=="rcs");
         I(lresult[3].first=="new entries line");
+        std::pair<std::string,std::string> p;
         std::string file=rcs_file2path(lresult[2].second);
-        std::string keyword_substitution;
-        parse_entry(lresult[3].second,result[file],keyword_substitution);
+        parse_entry(lresult[3].second,p.first,p.second);
+        result[file]=p;
       }
       else if (lresult[0].second=="Remove-entry")
       { I(lresult.size()==3);
         I(lresult[2].first=="rcs");
         std::string file=rcs_file2path(lresult[2].second);
-        result[file].clear();
+        result[file]=std::make_pair(std::string(),std::string());
       }
       else if (lresult[0].second=="error")
-        return std::map<std::string,std::string>();
+        return std::map<std::string,std::pair<std::string,std::string> >();
       else
       { W(F("Commit: unrecognized CMD %s\n") % lresult[0].second);
       }
@@ -1238,9 +1239,9 @@ void cvs_client::SendArgument(const std::string &a)
   std::string::size_type newline=0,start=0;
   std::string::size_type size_of_a=a.size();
   while ((newline=a.find('\n',start))!=std::string::npos)
-  { writestr("Argument"+(start?"x":"")+" "+a.substr(start,newline-start)+"\n");
+  { writestr("Argument"+std::string(start?"x":"")+" "+a.substr(start,newline-start)+"\n");
     start=newline+1;
     if (start==size_of_a) break;
   }
-  writestr("Argument"+(start?"x":"")+" "+a.substr(start)+"\n");
+  writestr("Argument"+std::string(start?"x":"")+" "+a.substr(start)+"\n");
 }

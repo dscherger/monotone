@@ -861,47 +861,67 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       F("I can't commit directory renames yet\n"));
   N(cs.rearrangement.deleted_dirs.empty(),
       F("I can't commit directory deletions yet\n"));
-  std::map<std::string,commit_arg> commits;
-  for (cvs_manifest::const_iterator i=parent->files.begin();
-                        i!=parent->files.end(); ++i)
-    commits[i->first].old_revision=i->second->cvs_version;
+  std::vector<commit_arg> commits;
   
   for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
           i!=cs.rearrangement.deleted_files.end(); ++i)
-    commits[(*i)()].removed=true;
+  { commit_arg a;
+    a.file=(*i)();
+    cvs_manifest::const_iterator old=parent->files.find(a.file);
+    I(old!=parent->files.end());
+    a.removed=true;
+    a.old_revision=old->second->cvs_version;
+    a.keyword_substitution=old->second->keyword_substitution;
+    commits.push_back(a);
+  }
 
   for (std::map<file_path,file_path>::const_iterator i
                           =cs.rearrangement.renamed_files.begin();
           i!=cs.rearrangement.renamed_files.end(); ++i)
-  { commits[i->first()].removed=true;
-    commits[i->second()].added=true;
-    cvs_manifest::const_iterator oldfilep=parent->files.find(i->first());
-    I(oldfilep!=parent->files.end());
-    I(!oldfilep->second->sha1sum().empty());
+  { commit_arg a; // remove
+    a.file=i->first();
+    cvs_manifest::const_iterator old=parent->files.find(a.file);
+    I(old!=parent->files.end());
+    a.removed=true;
+    a.old_revision=old->second->cvs_version;
+    a.keyword_substitution=old->second->keyword_substitution;
+    commits.push_back(a);
+    
+    a=commit_arg(); // add
+    a.file=i->second();
+    I(!old->second->sha1sum().empty());
     file_data dat;
-    app.db.get_file_version(oldfilep->second->sha1sum,dat);
+    app.db.get_file_version(old->second->sha1sum,dat);
     data unpacked;
     unpack(dat.inner(), unpacked);
-    commits[i->second()].new_content=unpacked();
+    a.new_content=unpacked();
+    commits.push_back(a);
   }
-
-  for (std::set<file_path>::const_iterator i
-                          =cs.rearrangement.added_files.begin();
-          i!=cs.rearrangement.added_files.end(); ++i)
-    commits[(*i)()].added=true;
+  
+  // added files also have a delta, so we can ignore this list
 
   for (change_set::delta_map::const_iterator i=cs.deltas.begin();
           i!=cs.deltas.end(); ++i)
-  { commits[i->first()].changed=true;
+  { 
+    commit_arg a;
+    a.file=i->first();
+    cvs_manifest::const_iterator old=parent->files.find(a.file);
+    if (old!=parent->files.end())
+    { a.old_revision=old->second->cvs_version;
+      a.keyword_substitution=old->second->keyword_substitution;
+    }
     file_data dat;
     app.db.get_file_version(i->second.second,dat);
     data unpacked;
     unpack(dat.inner(), unpacked);
-    commits[i->first()].new_content=unpacked();
+    a.new_content=unpacked();
+    commits.push_back(a);
   }
 
-  Commit(e.changelog,e.time,commits);
-  
+  std::map<std::string,std::pair<std::string,std::string> > result
+    =Commit(e.changelog,e.time,commits);
+  if (result.empty()) return edges.end();
+//  e.files ...
   edges.insert(e);
   return --(edges.end());
 }
