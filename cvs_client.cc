@@ -388,7 +388,7 @@ void cvs_client::SendCommand(const char *cmd,...)
 }
 
 static bool begins_with(const std::string &s, const std::string &sub, unsigned &len)
-{ if (s.substr(0,sub.size())==sub) { len=sub.size; return true; }
+{ if (s.substr(0,sub.size())==sub) { len=sub.size(); return true; }
   return false;
 }
 
@@ -503,8 +503,8 @@ bool cvs_client::fetch_result(std::vector<std::pair<std::string,std::string> > &
   std::list<std::string> active_tags;
 loop:
   std::string x=readline();
-  if (x.size()<2) goto error;
   unsigned len=0;
+  if (x.size()<2) goto error;
   if (begins_with(x,"E ",len)) 
   { std::cerr << x.substr(len) << '\n';
     goto loop;
@@ -513,7 +513,7 @@ loop:
   { result.push_back(std::make_pair(std::string(),x.substr(len)));
     return true;
   }
-  if (active_tag.empty() && x=="MT newline") return true;
+  if (active_tags.empty() && x=="MT newline") return true;
   if (begins_with(x,"MT ",len)) 
   { if (x[len]=='+') 
     { active_tags.push_back(x.substr(len+1));
@@ -540,25 +540,25 @@ loop:
   // more complex results
   if (begins_with(x,"Clear-sticky ",len) 
       || begins_with(x,"Set-static-directory ",len))
-  { result.push_back(std::make_pair("CMD",x.substr(0,len-1));
-    result.push_back(std::make_pair("dir",x.substr(len));
-    result.push_back(std::make_pair("rcs",readline());
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("dir",x.substr(len)));
+    result.push_back(std::make_pair("rcs",readline()));
     return true;
   }
   if (begins_with(x,"Mod-time ",len))
-  { result.push_back(std::make_pair("CMD",x.substr(0,len-1));
-    result.push_back(std::make_pair("date",x.substr(len));
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("date",x.substr(len)));
     return true;
   }
   if (begins_with(x,"Created ",len))
-  { result.push_back(std::make_pair("CMD",x.substr(0,len-1));
-    result.push_back(std::make_pair("dir",x.substr(len));
-    result.push_back(std::make_pair("rcs",readline());
-    result.push_back(std::make_pair("new entries line",readline());
-    result.push_back(std::make_pair("mode",readline());
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("dir",x.substr(len)));
+    result.push_back(std::make_pair("rcs",readline()));
+    result.push_back(std::make_pair("new entries line",readline()));
+    result.push_back(std::make_pair("mode",readline()));
     std::string length=readline();
-    result.push_back(std::make_pair("length",length);
-    result.push_back(std::make_pair("data",read_n(length));
+    result.push_back(std::make_pair("length",length));
+    result.push_back(std::make_pair("data",read_n(atol(length.c_str()))));
     return true;
   }
 error:
@@ -827,8 +827,8 @@ void cvs_repository::prime()
   // get the contents
   for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { I(!i->second.known_states.empty());
-    std::string revision first=i->second.known_states.begin()->cvs_version;
-    SendCommand("Directory .",/*"-N","-P",*/"-r",revision.c_str(),"--",i->first,0);
+    std::string revision=i->second.known_states.begin()->cvs_version;
+    SendCommand("Directory .",/*"-N","-P",*/"-r",revision.c_str(),"--",i->first.c_str(),0);
     writestr(root+"\n");
     writestr("co\n");
     enum { st_co
@@ -839,16 +839,16 @@ void cvs_repository::prime()
     { switch(state)
       { case st_co:
         { I(!lresult.empty());
-          if (lresult[0].first=="CMD"))
+          if (lresult[0].first=="CMD")
           { if (lresult[0].second=="Clear-sticky")
             { I(lresult.size()==3);
               I(lresult[1].first=="dir");
-              dir=lresult[1].second();
+              dir=lresult[1].second;
             }
             else if (lresult[0].second=="Set-static-directory")
             { I(lresult.size()==3);
               I(lresult[1].first=="dir");
-              dir2=lresult[1].second();
+              dir2=lresult[1].second;
             }
             else if (lresult[0].second=="Created")
             { std::cerr << combine_result(lresult) << '\n';
