@@ -1178,7 +1178,8 @@ std::map<std::string,std::pair<std::string,std::string> >
 { 
   std::string olddir;
   I(!commits.empty());
-  if (CommandValid("Command-prep")) writestr("Command-prep commit\n");
+// undocumented ...
+//  if (CommandValid("Command-prep")) writestr("Command-prep commit\n");
   for (std::vector<commit_arg>::const_iterator i=commits.begin(); 
                         i!=commits.end(); ++i)
   { if (dirname(i->file)!=olddir)
