@@ -5,8 +5,12 @@
 
 #include <list>
 #include <iostream>
+#include <fstream>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include "sanity.hh"
 #include "cvs_client.hh"
 
@@ -226,43 +230,78 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 }
 
 cvs_client::cvs_client(const std::string &host, const std::string &_root, 
-                    const std::string &user, const std::string &_module)
+                    const std::string &user, const std::string &_module,
+                    bool pserver)
     : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0),
       gzip_level(0), root(_root), module(_module)
 { memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
-  int fd1[2],fd2[2];
-  pid_t child=pipe_and_fork(fd1,fd2);
-  if (child<0) 
-  {  throw std::runtime_error("pipe/fork failed");
-  }
-  else if (!child)
-  { const unsigned newsize=64;
-    const char *newargv[newsize];
-    unsigned newargc=0;
-    if (host.empty())
-    { newargv[newargc++]="cvs";
-      newargv[newargc++]="server";
+  if (pserver)
+  { // it looks like I run into the same problems on Win32 again and again:
+    //  pipes and sockets, so this is not portable except by using the
+    //  Netxx::PipeStream from the ssh branch ... postponed
+    static const int pserver_port=2401;
+    writefd = socket(PF_INET, SOCK_STREAM, 0);
+    I(writefd>=0);
+    struct hostent *ptHost = gethostbyname(host.c_str());
+    if (!ptHost)
+    { L(F("Can't find address for host %s\n") % host);
+      throw std::runtime_error("gethostbyname failed");
     }
-    else
-    { const char *rsh=getenv("CVS_RSH");
-      if (!rsh) rsh="rsh";
-      newargv[newargc++]=rsh;
-      if (!user.empty())
-      { newargv[newargc++]="-l";
-        newargv[newargc++]=user.c_str();
+    struct sockaddr_in tAddr;
+    tAddr.sin_family = AF_INET;
+    tAddr.sin_port = htons(pserver_port);
+    tAddr.sin_addr = *(struct in_addr *)(ptHost->h_addr);
+    if (connect(writefd, (struct sockaddr*)&tAddr, sizeof(tAddr)))
+    { L(F("Can't connect to port %d on %s\n") % pserver_port % host);
+      throw std::runtime_error("connect failed");
+    }
+    readfd=writefd;
+    writestr("BEGIN AUTH REQUEST\n");
+    writestr(root+"\n");
+    writestr(user+"\n");
+    writestr(pserver_password(":pserver:"+user+"@"+host+":"+root)+"\n");
+    writestr("END AUTH REQUEST");
+    std::string answer=readline();
+    if (answer!="I LOVE YOU")
+    { L(F("pserver Authentification failed\n"));
+      throw std::runtime_error("pserver auth failed");
+    }
+  }
+  else // rsh
+  { int fd1[2],fd2[2];
+    pid_t child=pipe_and_fork(fd1,fd2);
+    if (child<0) 
+    {  throw std::runtime_error("pipe/fork failed");
+    }
+    else if (!child)
+    { const unsigned newsize=64;
+      const char *newargv[newsize];
+      unsigned newargc=0;
+      if (host.empty())
+      { newargv[newargc++]="cvs";
+        newargv[newargc++]="server";
       }
-      newargv[newargc++]=host.c_str();
-      newargv[newargc++]="cvs server";
+      else
+      { const char *rsh=getenv("CVS_RSH");
+        if (!rsh) rsh="rsh";
+        newargv[newargc++]=rsh;
+        if (!user.empty())
+        { newargv[newargc++]="-l";
+          newargv[newargc++]=user.c_str();
+        }
+        newargv[newargc++]=host.c_str();
+        newargv[newargc++]="cvs server";
+      }
+      newargv[newargc]=0;
+      
+      execvp(newargv[0],const_cast<char*const*>(newargv));
+      perror(newargv[0]);
+      exit(errno);
     }
-    newargv[newargc]=0;
-    
-    execvp(newargv[0],const_cast<char*const*>(newargv));
-    perror(newargv[0]);
-    exit(errno);
+    readfd=fd1[0];
+    writefd=fd2[1];
   }
-  readfd=fd1[0];
-  writefd=fd2[1];
   
   InitZipStream(0);
   writestr("Root "+root+"\n");
@@ -790,4 +829,21 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
     }
   }
   return result;
+}
+
+std::string cvs_client::pserver_password(const std::string &root)
+{ const char *home=getenv("HOME");
+  if (!home) home="";
+  std::fstream fs((std::string(home)+"/.cvspass").c_str());
+  while (fs.good())
+  { char buf[1024];
+    if (fs.getline(buf,sizeof buf).good())
+    { std::string line=buf;
+      if (line.substr(0,3)=="/1 ") line.erase(0,3);
+      if (line.size()>=root.size()+2 && line.substr(0,root.size())==root
+          && line[root.size()]==' ')
+        return line.substr(root.size()+1);
+    }
+  }
+  return "A"; // empty password
 }

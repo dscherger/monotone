@@ -65,7 +65,7 @@ protected:
 public:  
   cvs_client(const std::string &host, const std::string &_root,
              const std::string &user=std::string(), 
-             const std::string &module=std::string());
+             const std::string &module=std::string(), bool pserver=false);
   ~cvs_client();
              
   void writestr(const std::string &s, bool flush=false);
@@ -95,5 +95,6 @@ public:
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
+  static std::string pserver_password(const std::string &root);
 };
 

@@ -195,8 +195,9 @@ private:
 public:  
   cvs_repository(const std::string &host, const std::string &root,
              const std::string &user=std::string(), 
-             const std::string &module=std::string())
-      : cvs_client(host,root,user,module) {}
+             const std::string &module=std::string(), 
+             bool pserver=false)
+      : cvs_client(host,root,user,module,pserver) {}
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
@@ -392,8 +393,9 @@ test_suite * init_unit_test_suite(int argc, char * argv[])
 int main(int argc,char **argv)
 { std::string repository="/usr/local/cvsroot";
   std::string module="christof/java";
-  std::string host="";
-  std::string user="";
+  std::string host;
+  std::string user;
+  bool pserver=false;
   int compress_level=3;
   int c;
   while ((c=getopt(argc,argv,"z:d:v"))!=-1)
@@ -402,6 +404,11 @@ int main(int argc,char **argv)
         break;
       case 'd': 
         { std::string d_arg=optarg;
+          unsigned len;
+          if (cvs_client::begins_with(d_arg,":pserver:",len))
+          { pserver=true;
+            d_arg.erase(0,len);
+          }
           std::string::size_type at=d_arg.find('@');
           std::string::size_type host_start=at;
           if (at!=std::string::npos) 
@@ -429,7 +436,7 @@ int main(int argc,char **argv)
   }
   if (optind+1<=argc) module=argv[optind];
   try
-  { cvs_repository cl(host,repository,user,module);
+  { cvs_repository cl(host,repository,user,module,pserver);
     if (compress_level) cl.GzipStream(compress_level);
     const cvs_repository::tree_state_t &n=cl.now();
   } catch (std::exception &e)
