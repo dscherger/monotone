@@ -816,7 +816,13 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
           { // std::cerr << combine_result(lresult) << '\n';
             I(lresult.size()==7);
             I(lresult[6].first=="data");
-//            result.mode=?
+            I(lresult[3].first=="new entries line");
+            { std::vector<std::string> parts;
+              stringtok(parts,lresult[3].second,"/");
+              I(parts.size()==5);
+              result.keyword_substitution=parts[4];
+            }
+            result.mode=lresult[4].second;
             result.contents=lresult[6].second;
             L(F("file %s revision %s: %d bytes\n") % file 
                 % revision % lresult[6].second.size());
@@ -1034,7 +1040,7 @@ void cvs_client::Update(const std::vector<std::pair<std::string,std::string> > &
   }
   // @@ perhaps pass -C to work around cvs bug
 // @@ "-r",new_revision.c_str() ... ,bname.c_str()
-  SendCommand("update","-C","-u","--",0);
+  SendCommand("update","-d","-C","-u","--",0);
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile,file;
   enum { st_normal, st_merge } state=st_normal;

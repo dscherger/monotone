@@ -17,6 +17,7 @@ class cvs_client
   { std::string contents;
     std::string checksum;
     std::string patch;
+    std::string keyword_substitution;
     bool removed;
     update() : removed() {}
   };
@@ -41,6 +42,7 @@ class cvs_client
     std::string contents;
     std::string mode;
     bool dead;
+    std::string keyword_substitution;
     
     checkout() : mod_time(-1), dead() {}
   };
