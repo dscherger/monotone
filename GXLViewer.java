@@ -13,6 +13,8 @@ import javax.swing.*;
 import java.util.List;
 import javax.swing.tree.*;
 import javax.swing.event.*;
+import java.awt.SystemColor;
+import javax.swing.border.LineBorder;
 
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.svg.JSVGComponent;
@@ -35,7 +37,7 @@ import org.w3c.dom.svg.SVGDocument;
  */
 public class GXLViewer {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         JFrame f = new JFrame("GXL Viewer");
         GXLViewer app = new GXLViewer(f);
         f.getContentPane().add(app.createComponents());
@@ -47,8 +49,38 @@ public class GXLViewer {
 	    });
         f.setSize(400, 400);
         f.setVisible(true);
+	String defaultDb=findDefaultDB(new File("."));
+	if(defaultDb!=null) { 
+	    System.err.println("Found default database ["+defaultDb+"]");
+	    app.setDatabase(new File(defaultDb));
+	}
+
     }
-    
+
+    private static String findDefaultDB(File candidate) throws IOException {
+	if(!candidate.isDirectory()) throw new IOException("Current candidate "+candidate+" is not a directory.");
+	File mt=new File(candidate,"MT");
+	if(!mt.exists() || !mt.isDirectory()) {
+	    // Recurse up and try the parent directory
+	    if(candidate.getParentFile()==null) return null;
+	    return findDefaultDB(candidate.getParentFile());
+	}
+	File options=new File(mt,"options");
+	FileInputStream rawSource=null;
+	try {
+	    rawSource=new FileInputStream(options);
+	    LineNumberReader source=new LineNumberReader(new InputStreamReader(rawSource));
+	    String line=null;
+	    while((line=source.readLine())!=null) {
+		if(line.startsWith("database")) return line.substring("database".length()+2,line.length()-1);
+	    }
+	    return null;
+	}
+	finally {
+	    if(rawSource!=null) rawSource.close();
+	}
+    }
+
     JFrame frame;
     JButton button = new JButton("Choose Database...");
     JLabel label = new JLabel();
@@ -60,6 +92,8 @@ public class GXLViewer {
     public void finishJob(String message) {
 	label.setText(message);
 	progress.setVisible(false);
+	progress.dispose();
+	progress=null;
     }
 
     public GXLViewer(JFrame f) {
@@ -78,10 +112,22 @@ public class GXLViewer {
 	progress=new JDialog(frame,"Processing...",true);
 	JProgressBar bar=new JProgressBar();
 	bar.setIndeterminate(true);
-	progress.add("Center",bar);
+	JPanel box=new JPanel();
+	progress.add("Center",box);
+	box.setBorder(new LineBorder(SystemColor.windowBorder,3,true));
+	box.add("North",new JLabel("Processing.."));
+	box.add("Center",bar);
+	progress.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        progress.setUndecorated(true);
 	progress.pack();
 	progress.setLocation(frame.getX()+(frame.getWidth()-progress.getWidth())/2,frame.getY()+(frame.getHeight()-progress.getHeight())/2);
 	progress.setVisible(true);
+    }
+
+    public void setDatabase(File file) {
+	database = new Monotone(file);
+	new ReadBranches(GXLViewer.this);
+	setProgressWindow();
     }
 
     public JComponent createComponents() {
@@ -106,9 +152,7 @@ public class GXLViewer {
 		    JFileChooser fc = new JFileChooser(".");
 		    int choice = fc.showOpenDialog(panel);
 		    if (choice == JFileChooser.APPROVE_OPTION) {
-			database = new Monotone(fc.getSelectedFile());
-			new ReadBranches(GXLViewer.this);
-			setProgressWindow();
+			setDatabase(fc.getSelectedFile());
 		    }
 		}
 	    });
@@ -116,6 +160,7 @@ public class GXLViewer {
 
 	tree.addTreeSelectionListener(new TreeSelectionListener() {
 		public void valueChanged(TreeSelectionEvent e) {
+		    if(progress!=null) return; // another job in progress
 		    Object node=e.getPath().getLastPathComponent();
 		    if(!((DefaultMutableTreeNode)node).isLeaf()) return;
 		    final String id=node.toString().substring(0,node.toString().indexOf(' ')-1);
@@ -125,7 +170,7 @@ public class GXLViewer {
 			//			if(e.getPaths().length==1) return; // Root node.
 			// System.err.println("Getting log for "+id);
 			label.setText("Reading log...");
-			final InputStream svgStream=new BufferedInputStream(database.getSVGLog(id));
+			final InputStream svgStream=database.getSVGLog(id);
 			SAXSVGDocumentFactory factory=new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
 			SVGDocument doc=factory.createSVGDocument("http://local",svgStream);
 			svgCanvas.setSVGDocument(doc);

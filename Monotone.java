@@ -92,19 +92,20 @@ public class Monotone {
 	
 	// Start the inferior processes
 	Process monotone=Runtime.getRuntime().exec(getBaseCommand()+command);
-	new ErrorReader(monotone.getErrorStream());
+	new ErrorReader("monotone",monotone.getErrorStream());
 	Process gxl2dot=Runtime.getRuntime().exec("gxl2dot -d");
-	new ErrorReader(gxl2dot.getErrorStream());
+	new ErrorReader("gxl2dot",gxl2dot.getErrorStream());
 	Process dot2svg=Runtime.getRuntime().exec("dot -Tsvg");
-	new ErrorReader(dot2svg.getErrorStream());
+	new ErrorReader("dot2svg",dot2svg.getErrorStream());
 
 	// Chain the log output to the GXL generator and into the dot converter
-	new Log2Gxl().start(new String[] { "--authorfile","authors.map" },monotone.getInputStream(),new BufferedOutputStream(gxl2dot.getOutputStream()));
+	String[] args=new String[] { "--authorfile","authors.map" };
+	if(!(new File("authors.map")).exists()) args=new String[0];
+	new Log2Gxl().start(args,monotone.getInputStream(),new BufferedOutputStream(gxl2dot.getOutputStream()));
 
 	// Chain the dot graph to the svg generator
-	new StreamCopier(new BufferedInputStream(gxl2dot.getInputStream()),new BufferedOutputStream(dot2svg.getOutputStream()));
-	
-        return dot2svg.getInputStream();
+	new StreamCopier("gxl2dot -> dot2svg",new BufferedInputStream(gxl2dot.getInputStream()),new BufferedOutputStream(dot2svg.getOutputStream()),true);
+	return new BufferedInputStream(dot2svg.getInputStream());
       }
 
     /**
@@ -119,7 +120,7 @@ public class Monotone {
 	LineNumberReader source=null;
 	try {
 	    Process monotone=Runtime.getRuntime().exec(getBaseCommand()+command);
-	    new ErrorReader(monotone.getErrorStream());
+	    new ErrorReader("monotone",monotone.getErrorStream());
 	    source=new LineNumberReader(new InputStreamReader(monotone.getInputStream()));
 	    
 	    String line;
@@ -139,7 +140,6 @@ public class Monotone {
 	return Collections.unmodifiableList(results);
     }
 	
-
     /**
      * Thread which reads from a stream and stores the output in a list, one line per entry
      */
@@ -160,7 +160,8 @@ public class Monotone {
 	 *
 	 * @param stream the stream to read from
 	 */
-	public ErrorReader(InputStream stream) {
+	public ErrorReader(String name,InputStream stream) {
+	    super(name);
 	    source=new LineNumberReader(new InputStreamReader(stream));
 	    start();
 	}
@@ -194,6 +195,7 @@ public class Monotone {
      * Thread which copies one stream to another
      */
     private class StreamCopier extends Thread {
+
 	/**
 	 * Source stream
 	 */
@@ -205,11 +207,23 @@ public class Monotone {
 	private OutputStream sink;
 
 	/**
-	 * Start a new thread to copy from the source stream to the sink
+	 * If true, close the sink when the source runs dry
 	 */
-	public StreamCopier(InputStream source,OutputStream sink) {
+	private boolean closeSink;
+
+	/**
+	 * Start a new thread to copy from the source stream to the sink
+	 *
+	 * @param name the name of the thread
+	 * @param source the input source
+	 * @param sink the output destination
+	 * @param closeSink if true, close the sink when the input runs dry
+	 */
+	public StreamCopier(String name,InputStream source,OutputStream sink,boolean closeSink) {
+	    super(name);
 	    this.source=source;
 	    this.sink=sink;
+	    this.closeSink=closeSink;
 	    start();
 	}
 
@@ -220,14 +234,17 @@ public class Monotone {
 	public void run() {
 	    try {
 		int data;
-		while((data=source.read())!=-1) sink.write(data);
+		while((data=source.read())!=-1) {
+		    sink.write(data);
+		}
 	    }
 	    catch(IOException ioe) {
-		// Nothing to be done
+		ioe.printStackTrace();
 	    }
 	    finally {
 		try {
 		    sink.flush();
+		    if(closeSink) sink.close(); 
 		}
 		catch(IOException ioe) {
 		    // Ignore
