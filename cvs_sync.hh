@@ -45,15 +45,18 @@ struct cvs_changeset // == cvs_key ?? rcs_delta+rcs_deltatext
 struct file_state
 { time_t since_when;
   std::string cvs_version;
-  std::string rcs_patch;
-  std::string contents;
-  std::string sha1sum;
+  unsigned size;
+  unsigned patchsize;
+//  std::string rcs_patch;
+//  std::string contents;
   bool dead;
+  std::string md5sum;
+  hexenc<id> sha1sum;
   std::string log_msg;
 
-  file_state() : since_when(), dead() {}  
+  file_state() : since_when(), size(), patchsize(), dead() {}  
   file_state(time_t sw,const std::string &rev,bool d=false) 
-  : since_when(sw), cvs_version(rev), dead(d) {}  
+  : since_when(sw), cvs_version(rev), size(), patchsize(), dead(d) {}  
   bool operator==(const file_state &b) const
   { return since_when==b.since_when; }
   bool operator<(const file_state &b) const
@@ -83,18 +86,7 @@ struct cvs_edge // careful this name is also used in cvs_import
     : changelog(log), changelog_valid(true), author(auth), time(when), time2(when)
   {} 
   
-  inline bool similar_enough(cvs_edge const & other) const
-  {
-    if (changelog != other.changelog)
-      return false;
-    if (author != other.author)
-      return false;
-    if (labs(time - other.time) > cvs_window
-        && labs(time2 - other.time) > cvs_window)
-      return false;
-    return true;
-  }
-
+  bool similar_enough(cvs_edge const & other) const;
   inline bool operator==(cvs_edge const & other) const
   {
     return // branch == other.branch &&
@@ -102,18 +94,7 @@ struct cvs_edge // careful this name is also used in cvs_import
       author == other.author &&
       time == other.time;
   }
-
-  inline bool operator<(cvs_edge const & other) const
-  {
-    return time < other.time ||
-
-      (time == other.time 
-       && author < other.author) ||
-
-      (time == other.time 
-       && author == other.author 
-       && changelog < other.changelog);
-  }
+  bool operator<(cvs_edge const & other) const;
 };
 
 class cvs_repository : public cvs_client
@@ -132,12 +113,13 @@ private:
   std::map<std::string,file> files;
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
+  unsigned files_inserted;
 
 public:  
   void prime(app_state &app);
 public:  
   cvs_repository(const std::string &repository, const std::string &module)
-      : cvs_client(repository,module) {}
+      : cvs_client(repository,module), files_inserted() {}
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
@@ -147,6 +129,7 @@ public:
   const tree_state_t &next(const tree_state_t &m) const;
   
   void debug() const;
+  void store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum);
 };
 
 void sync(const std::string &repository, const std::string &module,

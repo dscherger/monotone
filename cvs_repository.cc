@@ -4,6 +4,8 @@
 // see the file COPYING for details
 
 #include "cvs_sync.hh"
+#include "keys.hh"
+#include "transforms.hh"
 
 using namespace cvs_sync;
 
@@ -78,8 +80,9 @@ bool cvs_revision::is_branch() const
 
 void cvs_repository::ticker() const
 { cvs_client::ticker(false);
-  std::cerr << " [files: " << files.size() 
-          << "] [edges: " << edges.size() 
+  if (files_inserted) std::cerr << "[file ids added: " << files_inserted;
+  else std::cerr << " [files: " << files.size();
+  std::cerr << "] [edges: " << edges.size() 
           << "] [tags: "  << tags.size() 
           << "]\n";
 }
@@ -148,8 +151,8 @@ void cvs_repository::debug() const
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
     { if (j->dead) std::cerr << "dead";
-      else if (!j->contents.empty()) std::cerr << j->contents.size();
-      else if (!j->rcs_patch.empty()) std::cerr << 'p' << j->rcs_patch.size();
+      else if (j->size) std::cerr << j->size;
+      else if (j->patchsize) std::cerr << 'p' << j->patchsize;
       ++j;
       if (j!=i->second.known_states.end()) std::cerr << ',';
     }
@@ -200,6 +203,43 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
   repo.edges.insert(cvs_edge(message,checkin_time,author));
 }
 
+bool cvs_edge::similar_enough(cvs_edge const & other) const
+{
+  if (changelog != other.changelog)
+    return false;
+  if (author != other.author)
+    return false;
+  if (labs(time - other.time) > cvs_window
+      && labs(time2 - other.time) > cvs_window)
+    return false;
+  return true;
+}
+
+bool cvs_edge::operator<(cvs_edge const & other) const
+{
+  return time < other.time ||
+
+    (time == other.time 
+     && author < other.author) ||
+
+    (time == other.time 
+     && author == other.author 
+     && changelog < other.changelog);
+}
+
+void cvs_repository::store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum)
+{
+  data dat(contents);
+  calculate_ident(dat,sha1sum);
+  if (!app.db.file_version_exists(sha1sum))
+  { base64<gzip<data> > packed;
+    pack(dat, packed);
+    file_data fdat=packed;
+    app.db.put_file(sha1sum, fdat);
+    ++files_inserted;
+  }
+}
+
 void cvs_repository::prime(app_state &app)
 { for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
@@ -245,10 +285,9 @@ void cvs_repository::prime(app_state &app)
       std::string revision=s2->cvs_version;
       cvs_client::checkout c=CheckOut(i->first,revision);
 //    I(c.mod_time==?);
-      insert_contents_into_db(app.db,c.contents);
-      const_cast<std::string&>(s2->sha1sum)=?
-      const_cast<std::string &>(s2->contents)=c.contents;
       const_cast<bool&>(s2->dead)=c.dead;
+      if (!c.dead)
+        store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
           s!=i->second.known_states.end();++s)
@@ -261,8 +300,8 @@ void cvs_repository::prime(app_state &app)
       if (s->dead)
       { cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
         I(!c.dead); // dead->dead is no change, so shouldn't get a number
-        // if (c.dead) const_cast<bool&>(s2->dead)=true;
-        const_cast<std::string &>(s2->contents)=c.contents;
+        I(!s2->dead);
+        store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
       }
       else
       { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
@@ -270,11 +309,11 @@ void cvs_repository::prime(app_state &app)
         { const_cast<bool&>(s2->dead)=true;
         }
         else if (!u.checksum.empty())
-        { const_cast<std::string&>(s2->rcs_patch)=u.patch;
-          const_cast<std::string&>(s2->sha1sum)=u.checksum;
+        { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
+          const_cast<std::string&>(s2->md5sum)=u.checksum;
         }
         else
-          const_cast<std::string&>(s2->contents)=u.contents;
+          store_contents(app, u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
       }
     }
     ticker();
@@ -286,6 +325,24 @@ void cvs_repository::prime(app_state &app)
 void cvs_sync::sync(const std::string &repository, const std::string &module,
             const std::string &branch, app_state &app)
 {
+  {
+    // early short-circuit to avoid failure after lots of work
+    rsa_keypair_id key;
+    N(guess_default_key(key,app),
+      F("no unique private key for cert construction"));
+    N(priv_key_exists(app, key),
+      F("no private key '%s' found in database or get_priv_key hook") % key);
+    // Require the password early on, so that we don't do lots of work
+    // and then die.
+    N(app.db.public_key_exists(key),
+      F("no public key '%s' found in database") % key);
+    base64<rsa_pub_key> pub;
+    app.db.get_key(key, pub);
+    base64< arc4<rsa_priv_key> > priv;
+    load_priv_key(app, key, priv);
+    require_password(app.lua, key, pub, priv);
+  }
+  
   cvs_sync::cvs_repository repo(repository,module);
   repo.GzipStream(3);
   transaction_guard guard(app.db);
