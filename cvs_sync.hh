@@ -74,6 +74,9 @@ struct cvs_edge // careful this name is also used in cvs_import
 //  std::string manifest; // monotone manifest
   std::string revision; // monotone revision
 
+  // I do not want this to be 3 hours (how comes?)
+  static size_t const cvs_window = 5;
+
   cvs_edge() : changelog_valid(), time(), time2() {} 
   cvs_edge(time_t when) : changelog_valid(), time(when), time2(when) {} 
   cvs_edge(const std::string &log, time_t when, const std::string &auth) 
@@ -86,8 +89,8 @@ struct cvs_edge // careful this name is also used in cvs_import
       return false;
     if (author != other.author)
       return false;
-    if (labs(time - other.time) > constants::cvs_window
-        && labs(time2 - other.time) > constants::cvs_window)
+    if (labs(time - other.time) > cvs_window
+        && labs(time2 - other.time) > cvs_window)
       return false;
     return true;
   }

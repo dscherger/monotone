@@ -20,6 +20,8 @@ rannotate noop version
 
 //--------------------- implementation -------------------------------
 
+size_t const cvs_edge::cvs_window;
+
 cvs_revision::cvs_revision(const std::string &x)
 { std::string::size_type begin=0;
   do
@@ -216,6 +218,7 @@ void cvs_repository::prime(app_state &app)
     i=j; 
   }
   ticker();
+  
   // join adjacent check ins (same author, same changelog)
   for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();++i)
   { std::set<cvs_edge>::iterator j=i;
@@ -226,6 +229,7 @@ void cvs_repository::prime(app_state &app)
     I(i->time2<=j->time); // should be sorted ...
     if (!i->similar_enough(*j)) 
       continue;
+    I((j->time-i->time2)<=cvs_edge::cvs_window); // just to be sure
     I(i->time2<j->time); // should be non overlapping ...
     const_cast<time_t&>(i->time2)=j->time;
     edges.erase(j);
@@ -278,7 +282,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
             const std::string &branch, app_state &app)
 {
   cvs_sync::cvs_repository repo(repository,module);
-  // repo.GzipStream(3); ?
+  repo.GzipStream(3);
   transaction_guard guard(app.db);
 
   const cvs_sync::cvs_repository::tree_state_t &n=repo.now();

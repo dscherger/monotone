@@ -312,7 +312,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
       unsigned newargc=0;
       if (host.empty())
       { 
-#if 0      
+#if 1
         newargv[newargc++]="cvs";
         newargv[newargc++]="server";
 #else        
