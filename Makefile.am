@@ -117,9 +117,11 @@ WIN32_PLATFORM_SOURCES = \
 bin_PROGRAMS = monotone
 check_PROGRAMS = unit_tests
 noinst_PROGRAMS = txt2c 
+EXTRA_PROGRAMS = cvs_client
 
 monotone_SOURCES = $(MOST_SOURCES) monotone.cc main.cc
 unit_tests_SOURCES = $(MOST_SOURCES) unit_tests.cc
+cvs_client_SOURCES = cvs_client.cc
 
 txt2c_SOURCES = txt2c.cc
 
@@ -129,6 +131,7 @@ lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(CRYPTOPP_SOURCES) \
 			$(IDNA_SOURCES) \
 			$(NETXX_SOURCES)
+cvs_client_LDADD=-lz
 
 # flags
 
