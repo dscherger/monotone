@@ -8,6 +8,7 @@
 #include "transforms.hh"
 #include <vector>
 #include <boost/lexical_cast.hpp>
+#include "cryptopp/md5.h"
 
 using namespace std;
 
@@ -375,8 +376,10 @@ void cvs_repository::store_contents(app_state &app, const std::string &contents,
   }
 }
 
-void cvs_repository::apply_delta(std::string &contents, const std::string &patch)
-{
+static void apply_delta(vector<piece> &contents, const std::string &patch)
+{ vector<piece> after;
+  construct_version(contents,after,patch);
+  std::swap(contents,after);
 }
 
 // a hackish way to reuse code ...
@@ -394,7 +397,8 @@ void cvs_repository::store_delta(app_state &app, const std::string &new_contents
     base64<gzip<delta> > packed;
     pack(delta(patch), packed);
     // app.db.put_delta(from, to, packed, "file_deltas");
-    rcs_put_raw_file_edge(from,to,packed,app.db);
+    // yes, rcs has it the other way round (new and old are switched)
+    rcs_put_raw_file_edge(to,from,packed,app.db);
     ++files_inserted;
   }
 }
@@ -428,7 +432,7 @@ void cvs_repository::prime(app_state &app)
     I(i->time2<=j->time); // should be sorted ...
     if (!i->similar_enough(*j)) 
     { ++i; continue; }
-    I((j->time-i->time2)<=cvs_edge::cvs_window); // just to be sure
+    I((j->time-i->time2)<=time_t(cvs_edge::cvs_window)); // just to be sure
     I(i->author==j->author);
     I(i->changelog==j->changelog);
     I(i->time2<j->time); // should be non overlapping ...
@@ -439,7 +443,7 @@ void cvs_repository::prime(app_state &app)
   
   // get the contents
   for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
-  { std::string file_contents;
+  { vector<piece> file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
       std::string revision=s2->cvs_version;
@@ -449,7 +453,7 @@ void cvs_repository::prime(app_state &app)
       if (!c.dead)
       { store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
-        file_contents=c.contents;
+        index_deltatext(c.contents,file_contents);
       }
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
@@ -466,7 +470,7 @@ void cvs_repository::prime(app_state &app)
         I(!s2->dead);
         store_contents(app, c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
-        file_contents=c.contents;
+        index_deltatext(c.contents,file_contents);
       }
       else
       { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
@@ -478,14 +482,26 @@ void cvs_repository::prime(app_state &app)
           const_cast<std::string&>(s2->md5sum)=u.checksum;
           const_cast<unsigned&>(s2->patchsize)=u.patch.size();
           apply_delta(file_contents, u.patch);
+          std::string contents;
+          build_string(file_contents, contents);
           // check md5
-          store_delta(app, file_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+          CryptoPP::MD5 hash;
+          std::string md5sum=xform<CryptoPP::HexDecoder>(u.checksum);
+          I(md5sum.size()==CryptoPP::MD5::DIGESTSIZE);
+          if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
+              reinterpret_cast<byte const *>(contents.c_str()),
+              contents.size()))
+          { store_delta(app, contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+          }
+          else
+          { throw oops("MD5 sum wrong");
+          }
         }
         else
         {
           store_contents(app, u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=u.contents.size();
-          file_contents=u.contents;
+          index_deltatext(u.contents,file_contents);
         }
       }
     }

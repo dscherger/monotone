@@ -130,7 +130,7 @@ public:
   
   void debug() const;
   void store_contents(app_state &app, const std::string &contents, hexenc<id> &sha1sum);
-  void apply_delta(std::string &contents, const std::string &patch);
+//  void apply_delta(std::string &contents, const std::string &patch);
   void store_delta(app_state &app, const std::string &new_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
 };
 
