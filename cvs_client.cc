@@ -630,6 +630,16 @@ static time_t mod_time2time_t(const std::string &t)
   return timezone2time_t(tm,dst_offs);
 }
 
+static std::string time_t2rfc822(time_t t)
+{ static const char * const months[12] = 
+  {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+  struct tm *tm=gmtime(&t);
+  I(tm);
+  return (F("%02d %s %d %02d:%02d:%02d +0000") 
+    % tm->tm_mday % months[tm->tm_mon] % tm->tm_year+1900
+    % tm->tm_hour % tm->tm_min % tm->tm_sec).str();
+}
+
 void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
 { { va_list ap;
     va_start(ap,dummy);
@@ -1171,7 +1181,8 @@ std::map<std::string,std::pair<std::string,std::string> >
     writestr("Entry /"+bname+"/"+(i->removed?"-":"")
           +i->old_revision+"//"+i->keyword_substitution+"/\n");
     if (!i->removed)
-    { writestr("Modified "+bname+"\n");
+    { writestr("Checkin-time "+time_t2rfc822(when)+"\n");
+      writestr("Modified "+bname+"\n");
       writestr("u=rw,g=r,o=r\n"); // standard mode
       writestr((F("%d\n") % i->new_content.size()).str());
       writestr(i->new_content);
