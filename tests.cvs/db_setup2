@@ -15,17 +15,21 @@ cd test.mt
 
 echo "added by monotone" >dir/E
 ../../monotone add dir/E
-echo "The password is 'x'"
 ../../monotone --key test@localhost --branch test --db ../test.db commit \
-	--message "dir/E added"
+	--message "dir/E added" << EOF
+x
+EOF
 
 echo "changed by monotone" >dir/C
 sleep 2
 ../../monotone --key test@localhost --branch test --db ../test.db commit \
-	--message "dir/C changed"
+	--message "dir/C changed" << EOF
+x
+EOF
 
 ../../monotone drop A
 sleep 2
 ../../monotone --key test@localhost --branch test --db ../test.db commit \
-	--message "A removed"
-
+	--message "A removed" << EOF
+x
+EOF

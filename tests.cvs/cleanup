@@ -1,2 +1,2 @@
 #!/bin/sh
-rm -rf *~ test.cvsroot test.db
+rm -rf *~ test.cvsroot test.db test.mt

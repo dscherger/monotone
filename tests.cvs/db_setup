@@ -21,6 +21,7 @@ DLdihtP1V1VAXvWOxg1H90msWQb2TgaEoPr7+yikyEpGot4duAuqY7qmzpbCpf7Nkvld2nW4
 j0DLQyoefKzMYO5S79Zrgh234nCV1rCVCOj1bLahoiflp1U1vxpmAg4KKFXsmzKZxQIBEQ==
 [end]
 EOF
-echo "The password is 'x'"
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
-	$PWD/test.cvsroot test
+	$PWD/test.cvsroot test << EOF
+x
+EOF

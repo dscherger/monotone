@@ -15,13 +15,19 @@ echo incremental update
 rm -rf  test.cvsroot
 ./cvs_test_setup 
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
-        $PWD/test.cvsroot test
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
 ./cvs_test_setup2
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
-        $PWD/test.cvsroot test
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
 ./cvs_test_setup3
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
-        $PWD/test.cvsroot test
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
 
 echo ---------------------------------
 echo done
