@@ -17,6 +17,7 @@ import java.awt.SystemColor;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileFilter;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.svg.JSVGComponent;
@@ -56,7 +57,7 @@ public class GXLViewer {
 	    });
         f.setSize(400, 400);
         f.setVisible(true);
-	String defaultDb=findDefaultDB(new File("."));
+	String defaultDb=findDefaultDB(new File(".").getAbsoluteFile());
 	if(defaultDb!=null) { 
 	    logger.info("Found default database ["+defaultDb+"]");
 	    app.setDatabase(new File(defaultDb));
@@ -65,6 +66,7 @@ public class GXLViewer {
     }
 
     private static String findDefaultDB(File candidate) throws IOException {
+	logger.finer("Searching for default database in "+candidate); 
 	if(!candidate.isDirectory()) throw new IOException("Current candidate "+candidate+" is not a directory.");
 	File mt=new File(candidate,"MT");
 	if(!mt.exists() || !mt.isDirectory()) {
