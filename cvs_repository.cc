@@ -21,6 +21,68 @@ watch-on watch-off watch-add watch-remove watchers editors annotate
 rannotate noop version
 */
 
+struct cvs_revision
+{ std::vector<int> parts;
+
+  cvs_revision(const std::string &x);
+  void operator++(int);
+  std::string get_string() const;
+  bool is_branch() const;
+  bool is_parent_of(const cvs_revision &child) const;
+};
+
+cvs_revision::cvs_revision(const std::string &x)
+{ std::string::size_type begin=0;
+  do
+  { std::string::size_type end=x.find(".",begin);
+    std::string::size_type len=end-begin;
+    if (end==std::string::npos) len=std::string::npos;
+    parts.push_back(atoi(x.substr(begin,len).c_str()));
+    begin=end;
+    if (begin!=std::string::npos) ++begin;
+  } while(begin!=std::string::npos);
+};
+
+void cvs_revision::operator++(int)
+{ if (parts.empty()) return;
+  parts.back()++;
+}
+
+std::string cvs_revision::get_string() const
+{ std::string result;
+  for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();)
+  { result+= (F("%d") % *i).str();
+    ++i;
+    if (i!=parts.end()) result+",";
+  }
+  return result;
+}
+
+bool cvs_revision::is_parent_of(const cvs_revision &child) const
+{ unsigned cps=child.parts.size();
+  unsigned ps=parts.size();
+  if (cps<ps) return false;
+  if (is_branch() || child.is_branch()) return false;
+  unsigned diff=0;
+  for (;diff<ps;++diff) if (child.parts[diff]!=parts[diff]) break;
+  if (cps==ps)
+  { if (diff+1!=cps) return false;
+    if (parts[diff]+1 != child.parts[diff]) return false;
+  }
+  else // ps < cps
+  { if (diff!=ps) return false;
+    if (ps+2!=cps) return false;
+    if (child.parts[diff]&1 || !child.parts[diff]) return false;
+    if (child.parts[diff+1]!=1) return false;
+  }
+  return true;
+}
+
+// impair number of numbers => branch tag
+bool cvs_revision::is_branch() const 
+{ return parts.size()&1;
+}
+
 struct cvs_file_state
 { std::string revision;
   time_t last_changed;
@@ -295,6 +357,12 @@ void cvs_repository::prime()
     struct checkout c=CheckOut(i->first,revision);
 //    I(c.mod_time==?);
     const_cast<std::string &>(i->second.known_states.begin()->contents)=c.contents;
+    for (std::set<file_state>::iterator s=i->second.known_states.begin();
+          s!=i->second.known_states.end();++s)
+    { std::set<file_state>::iterator s2=s;
+      ++s2;
+      if (s2==i->second.known_states.end()) break;
+    }
   }
 }
 
