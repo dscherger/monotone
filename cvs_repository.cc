@@ -536,7 +536,7 @@ void cvs_repository::prime(app_state &app)
       }
      continue_f: ;
     }
-    e->files=current_manifest;
+    const_cast<cvs_manifest&>(e->files)=current_manifest;
   }
   ticker();
   
