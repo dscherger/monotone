@@ -373,15 +373,28 @@ static void apply_delta(vector<piece> &contents, const std::string &patch)
   std::swap(contents,after);
 }
 
-void cvs_repository::store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to)
-{
+void cvs_repository::store_delta(const std::string &new_contents, 
+          const std::string &old_contents, 
+          // this argument is unused since we can no longer use the rcs patch
+          const std::string &dummy, 
+          const hexenc<id> &from, hexenc<id> &to)
+{ if (old_contents.empty())
+  { store_contents(new_contents, to);
+    return;
+  }
   data dat(new_contents);
   calculate_ident(dat,to);
   if (!app.db.file_version_exists(to))
   { 
     base64< gzip<delta> > del;
     diff(data(old_contents), data(new_contents), del);
-    app.db.put_file_version(from,to,del);
+    base64< gzip<data>> packed;
+    pack(data(new_contents), packed);
+    if (packed().size()<=del().size())
+    // the data is smaller or of equal size to the patch
+      app.db.put_file(to, packed);
+    else 
+      app.db.put_file_version(from,to,del);
     if (file_id_ticker.get()) ++(*file_id_ticker);
   }
 }
@@ -489,7 +502,6 @@ void cvs_repository::prime()
   // get the contents
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { vector<piece> file_contents;
-    std::string keyword_substitution;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
       std::string revision=s2->cvs_version;
@@ -500,7 +512,7 @@ void cvs_repository::prime()
       { store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
         index_deltatext(c.contents,file_contents);
-        keyword_substitution=c.keyword_substitution;
+        const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
       }
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
@@ -518,12 +530,13 @@ void cvs_repository::prime()
         store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
         const_cast<unsigned&>(s2->size)=c.contents.size();
         index_deltatext(c.contents,file_contents);
+        const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
       }
       else if (s2->dead) // short circuit if we already know it's dead
       { L(F("file %s: revision %s already known to be dead\n") % i->first % s2->cvs_version);
       }
       else
-      { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version,keyword_substitution);
+      { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version,s->keyword_substitution);
         if (u.removed)
         { const_cast<bool&>(s2->dead)=true;
         }
@@ -531,6 +544,7 @@ void cvs_repository::prime()
         { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
           const_cast<std::string&>(s2->md5sum)=u.checksum;
           const_cast<unsigned&>(s2->patchsize)=u.patch.size();
+          const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
           std::string old_contents;
           build_string(file_contents, old_contents);
           apply_delta(file_contents, u.patch);
@@ -550,10 +564,17 @@ void cvs_repository::prime()
           }
         }
         else
-        {
-          store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+        { if (!s->sha1sum().empty() && ) 
+          // we default to patch if it's at all possible
+          { std::string old_contents;
+            build_string(file_contents, old_contents);
+            store_delta(u.contents, old_contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+          }
+          else
+            store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=u.contents.size();
           index_deltatext(u.contents,file_contents);
+          const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
         }
       }
     }
@@ -678,13 +699,15 @@ void cvs_repository::prime()
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
 { std::string content=host+":"+root+"/"+module+"\n";
   for (cvs_manifest::const_iterator i=e.files.begin(); i!=e.files.end(); ++i)
-  { content+=i->second->cvs_version+" "+shorten_path(i->first)+"\n";
+  { content+=i->second->cvs_version;
+    if (!i->second->keyword_substitution.empty())
+      content+="/"+i->second->keyword_substitution;
+    content+=" "+shorten_path(i->first)+"\n";
   }
   cert t;
   make_simple_cert(e.revision, cert_name(cvs_cert_name), content, app, t);
   revision<cert> cc(t);
   pc.consume_revision_cert(cc);
-//  put_simple_revision_cert(e.revision, "cvs_revisions", content, app, pc);
 }
 
 cvs_repository::cvs_repository(app_state &_app, const std::string &repository, const std::string &module)
@@ -806,14 +829,22 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         I(!line.empty());
         I(line[line.size()-1]=='\n');
         line.erase(line.size()-1,1);
+        // the format is "<revsion>[/<keyword_substitution>] <path>\n"
+        // e.g. "1.1 .cvsignore",     "1.43/-kb test.png"
         std::string::size_type space=line.find(' ');
         I(space!=std::string::npos);
         std::string monotone_path=line.substr(space+1);
         std::string path=module+"/"+monotone_path;
+        // look for the optional initial slash separating the keyword mode
+        std::string::size_type slash=line.find('/');
+        if (slash==std::string::npos || slash>space)
+          slash=space;
 
         file_state fs;
         fs.since_when=e.time;
-        fs.cvs_version=line.substr(0,space);
+        fs.cvs_version=line.substr(0,slash);
+        if (space!=slash) 
+          fs.keyword_substitution=line.substr(slash+1,space-(slash+1));
         manifest_map::const_iterator iter_file_id=manifest.find(monotone_path);
         I(iter_file_id!=manifest.end());
         fs.sha1sum=iter_file_id->second.inner();
