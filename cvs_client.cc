@@ -17,6 +17,7 @@
 #include <zlib.h>
 #include <fcntl.h>
 #include <cassert>
+#include "sanity.hh"
 //#include <boost/tokenizer.hpp>
 //#include "rcs_file.hh"
 
@@ -364,13 +365,13 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
 
   writestr("valid-requests\n");
   std::string answer=readline();
-  assert(answer.substr(0,15)=="Valid-requests ");
+  I(answer.substr(0,15)=="Valid-requests ");
   // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
   stringtok(push_back2insert(Valid_requests),answer.substr(15));
   answer=readline();
-  assert(answer=="ok");
+  I(answer=="ok");
   
-  assert(Valid_requests.find("UseUnchanged")!=Valid_requests.end());
+  I(Valid_requests.find("UseUnchanged")!=Valid_requests.end());
 
   writestr("UseUnchanged\n"); // ???
   ticker();
@@ -440,6 +441,27 @@ error:
   exit(1);
 }
 
+static time_t rls_l2time_t(const std::string &t)
+{ // 2003-11-26 09:20:57 +0000
+  struct tm tm;
+  memset(&tm,0,sizeof tm);
+  tm.tm_year=atoi(t.substr(0,4).c_str());
+  tm.tm_mon=atoi(t.substr(5,2).c_str());
+  tm.tm_mday=atoi(t.substr(8,2).c_str());
+  tm.tm_hour=atoi(t.substr(11,2).c_str());
+  tm.tm_min=atoi(t.substr(14,2).c_str());
+  tm.tm_sec=atoi(t.substr(17,2).c_str());
+  int dst_offs=atoi(t.substr(20,5).c_str());
+  I(!dst_offs);
+#if 0 // non portable
+  return timegm(&tm);
+#else // ugly
+  putenv("TZ=UTC"); // or setenv("TZ","UTC",true);
+  // do we need to call tzset? (docs tend to say no)
+  return mktime(&tm);
+#endif
+}
+
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (tree_states.empty())
   { SendCommand("rlist","-l","-R","-d","--",module.c_str(),0);
@@ -450,8 +472,8 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     { switch(state)
       { case st_dir:
         { std::string result=combine_result(lresult);
-          assert(result.size()>=2);
-          assert(result[result.size()-1]==':');
+          I(result.size()>=2);
+          I(result[result.size()-1]==':');
           directory=result.substr(0,result.size()-1);
           state=st_file;
           ticker();
@@ -460,28 +482,28 @@ const cvs_repository::tree_state_t &cvs_repository::now()
         case st_file:
           if (lresult.empty() || lresult.begin()->second.empty()) state=st_dir;
           else
-          { assert(lresult.size()==3);
+          { I(lresult.size()==3);
             std::list<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
             std::list<std::pair<std::string,std::string> >::const_iterator i1=i0;
             ++i1;
             std::list<std::pair<std::string,std::string> >::const_iterator i2=i1;
             ++i2;
-            assert(i0->first=="text");
-            assert(i1->first=="date");
-            assert(i2->first=="text");
+            I(i0->first=="text");
+            I(i1->first=="date");
+            I(i2->first=="text");
             std::string keyword=trim(i0->second);
             std::string date=trim(i1->second);
             std::string version=trim(i2->second.substr(1,10));
             std::string dead=trim(i2->second.substr(12,4));
             std::string name=i2->second.substr(17);
             
-            assert(keyword[0]=='-' || keyword[0]=='d');
-            assert(date[4]=='-' && date[7]=='-');
-            assert(date[10]==' ' && date[13]==':');
-            assert(date[16]==':' && date[19]==' ');
-            assert(date[20]=='+' || date[20]=='-');
-            assert(dead.empty() || dead=="dead");
-            assert(!name.empty());
+            I(keyword[0]=='-' || keyword[0]=='d');
+            I(date[4]=='-' && date[7]=='-');
+            I(date[10]==' ' && date[13]==':');
+            I(date[16]==':' && date[19]==' ');
+            I(date[20]=='+' || date[20]=='-');
+            I(dead.empty() || dead=="dead");
+            I(!name.empty());
             
             if (keyword=="----") keyword=std::string();
             if (keyword!="d---")
@@ -499,6 +521,12 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 }
 
 #if 1
+// fake to get it linking
+#include "unit_tests.hh"
+test_suite * init_unit_test_suite(int argc, char * argv[])
+{ return 0;
+}
+
 #include <getopt.h>
 
 int main(int argc,char **argv)
