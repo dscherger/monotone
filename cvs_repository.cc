@@ -297,7 +297,7 @@ void cvs_repository::debug() const
     { if (j->dead) std::cerr << "dead";
       else if (j->size) std::cerr << j->size;
       else if (j->patchsize) std::cerr << 'p' << j->patchsize;
-      else if (!j->sha1sum.empty()) std::cerr << j->sha1sum.substr(0,3);
+      else if (!j->sha1sum().empty()) std::cerr << j->sha1sum().substr(0,3);
       ++j;
       if (j!=i->second.known_states.end()) std::cerr << ',';
     }
