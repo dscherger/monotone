@@ -213,7 +213,7 @@ session :
   app_state & app;
 
   string peer_id;
-  Netxx::socket_type fd;
+  Netxx::socket_type fd,fd_write;
   Netxx::Stream str;  
 
   string inbuf; 
@@ -2717,9 +2717,11 @@ serve_stdio(protocol_role role,
 {
   P(F("beginning service on stdio\n"));
 
+  shared_ptr<session> sess=new session(role, server_voice, collections, 
+                                all_collections, app, "-", 
+                		0, static_cast<long>(timeout_seconds));
+  sess->begin_service();
   // no addr, no server
-  handle_new_connection(0,1, timeout, role, 
-			      collections, all_collections, app);
   bool live_p = true;
   while (live_p)
     {      
