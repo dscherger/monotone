@@ -49,6 +49,7 @@ automate_heads(std::vector<utf8> args,
 {
   if (args.size() != 1)
     throw usage(help_name);
+  app.allow_working_copy();
 
   std::set<revision_id> heads;
   get_branch_heads(idx(args, 0)(), app, heads);
