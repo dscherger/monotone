@@ -388,7 +388,7 @@ void cvs_repository::store_delta(const std::string &new_contents,
   { 
     base64< gzip<delta> > del;
     diff(data(old_contents), data(new_contents), del);
-    base64< gzip<data>> packed;
+    base64< gzip<data> > packed;
     pack(data(new_contents), packed);
     if (packed().size()<=del().size())
     // the data is smaller or of equal size to the patch
@@ -544,7 +544,7 @@ void cvs_repository::prime()
         { // const_cast<std::string&>(s2->rcs_patch)=u.patch;
           const_cast<std::string&>(s2->md5sum)=u.checksum;
           const_cast<unsigned&>(s2->patchsize)=u.patch.size();
-          const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+          const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
           std::string old_contents;
           build_string(file_contents, old_contents);
           apply_delta(file_contents, u.patch);
@@ -564,7 +564,7 @@ void cvs_repository::prime()
           }
         }
         else
-        { if (!s->sha1sum().empty() && ) 
+        { if (!s->sha1sum().empty()) 
           // we default to patch if it's at all possible
           { std::string old_contents;
             build_string(file_contents, old_contents);
@@ -574,7 +574,7 @@ void cvs_repository::prime()
             store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=u.contents.size();
           index_deltatext(u.contents,file_contents);
-          const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+          const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
         }
       }
     }
