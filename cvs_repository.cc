@@ -8,10 +8,21 @@
 #include "transforms.hh"
 #include <vector>
 
+using namespace std;
+
 // since the piece methods in rcs_import depend on rcs_file I cannot reuse them
 namespace cvs_sync
 {
-struct piece;
+struct 
+piece
+{
+  piece(string::size_type p, string::size_type l, unsigned long id) :
+    pos(p), len(l), string_id(id) {}
+  string::size_type pos;
+  string::size_type len;
+  unsigned long string_id;
+  string operator*() const;
+};
 
 struct 
 piece_store
@@ -28,20 +39,10 @@ piece_store
 
 static piece_store global_pieces;
 
-
-struct 
-piece
+string piece::operator*() const
 {
-  piece(string::size_type p, string::size_type l, unsigned long id) :
-    pos(p), len(l), string_id(id) {}
-  string::size_type pos;
-  string::size_type len;
-  unsigned long string_id;
-  string operator*() const
-  {
-    return string(global_pieces.texts.at(string_id)->text.data() + pos, len);
-  }
-};
+//  return string(global_pieces.texts.at(string_id)->text.data() + pos, len);
+}
 
 void 
 process_one_hunk(vector< piece > const & source,
