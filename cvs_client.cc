@@ -32,11 +32,13 @@ rannotate noop version
 
 struct rlog_callbacks
 { // virtual void file(const std::string &file,)=0;
+  virtual void file(const std::string &file,
+        const std::string &head_rev) const=0;
   virtual void tag(const std::string &file,const std::string &tag, 
         const std::string &revision) const=0;
-  virtual void revision(const std::string &file,time_t t,
-        const std::string &rev,const std::string &state,
-        const std::string &log) const=0;
+  virtual void revision(const std::string &file,time_t checkin_date,
+        const std::string &rev,const std::string &author,
+        const std::string &state,const std::string &log) const=0;
 };
 
 class cvs_client
@@ -183,6 +185,8 @@ class cvs_repository : public cvs_client
 { 
 public:
   typedef cvs_changeset::tree_state_t tree_state_t;
+  struct prime_log_cb;
+  struct now_log_cb;
 
 private:
 //  std::list<tree_state_t> tree_states;
@@ -634,6 +638,18 @@ static time_t rls_l2time_t(const std::string &t)
   return result;
 }
 
+struct cvs_repository::now_log_cb : rlog_callbacks
+{ cvs_repository &repo;
+  now_log_cb(cvs_repository &r) : repo(r) {}
+  virtual void file(const std::string &file,const std::string &head_rev) const
+  { repo.files[file]; }
+  virtual void tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const {}
+  virtual void revision(const std::string &file,time_t t,
+        const std::string &rev,const std::string &author,
+        const std::string &state,const std::string &log) const {}
+};
+
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (edges.empty())
   { if (CommandValid("rlist"))
@@ -688,8 +704,9 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     }
     else // less efficient ...
     { I(CommandValid("rlog"));
-      SendCommand("rlog","-N","-h","--",module.c_str(),0);
-      std::vector<std::pair<std::string,std::string> > lresult;
+      RLog(now_log_cb(*this),false,"-N","-h","--",module.c_str(),0);
+//      SendCommand("rlog","-N","-h","--",module.c_str(),0);
+//      std::vector<std::pair<std::string,std::string> > lresult;
     }
     ticker();
     // prime
@@ -746,11 +763,13 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
     SendCommand("rlog",ap);
     va_end(ap);
   }
+  static const char * const fileend="=============================================================================";
+  static const char * const revisionend="----------------------------";
   enum { st_head, st_tags, st_desc, st_rev, st_msg, st_date_author 
        } state=st_head;
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string file;
-  std::string revision;
+  std::string revision,head_rev;
   std::string message;
   std::string author;
   std::string description;
@@ -764,13 +783,19 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
       { std::string result=combine_result(lresult);
         unsigned len;
         if (result.empty()) break; // accept a (first) empty line
-        if (begins_with(result,"RCS file: ",len))
+        if (result==fileend)
+        { cb.file(file,head_rev);
+        }
+        else if (begins_with(result,"RCS file: ",len))
         { I(result.substr(len,root.size())==root);
+          if (result[len+root.size()]=='/') ++len;
           file=result.substr(len+root.size());
           if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
         }
-        else if (begins_with(result,"head: ") ||
-            begins_with(result,"branch:") ||
+        else if (begins_with(result,"head: ",len))
+        { head_rev=result.substr(len);
+        }
+        else if (begins_with(result,"branch:") ||
             begins_with(result,"locks: ") ||
             begins_with(result,"access list:") ||
             begins_with(result,"keyword substitution: ") ||
@@ -798,7 +823,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
       }
       case st_desc:
       { std::string result=combine_result(lresult);
-        if (result=="----------------------------")
+        if (result==revisionend)
         { state=st_rev;
           // cb.file(file,description);
         }
@@ -835,10 +860,13 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
       case st_msg:
       { std::string result=combine_result(lresult);
         // evtl überprüfen, ob das nicht nur ein fake war ...
-        if (result=="----------------------------" ||
-            result=="=============================================================================")
-        { state=st_rev;
-          cb.revision(file,checkin_time,revision,dead,message);
+        if (result==revisionend || result==fileend)
+        { cb.revision(file,checkin_time,revision,author,dead,message);
+          if (result==fileend) 
+          { state=st_head;
+            goto reswitch; // emit file cb
+          }
+          state=st_rev;
         }
         else
         { if (!message.empty()) message+='\n';
@@ -850,113 +878,44 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
   }
 }
 
+struct cvs_repository::prime_log_cb : rlog_callbacks
+{ cvs_repository &repo;
+  std::map<std::string,struct ::file>::iterator i;
+  prime_log_cb(cvs_repository &r,const std::map<std::string,struct ::file>::iterator &_i) 
+      : repo(r), i(_i) {}
+  virtual void tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const;
+  virtual void revision(const std::string &file,time_t t,
+        const std::string &rev,const std::string &author,
+        const std::string &state,const std::string &log) const;
+  virtual void file(const std::string &file,const std::string &head_rev) const
+  { }
+};
+
+void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const
+{ I(i->first==file);
+  std::map<std::string,std::string> &tagslot=repo.tags[tag];
+  tagslot[file]=revision;
+}
+
+void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
+        const std::string &revision,const std::string &author,
+        const std::string &dead,const std::string &message) const
+{ I(i->first==file);
+  std::pair<std::set<file_state>::iterator,bool> iter=
+    i->second.known_states.insert
+      (file_state(checkin_time,revision,dead=="dead"));
+  // I(iter.second==false);
+  // set iterators are read only to prevent you from destroying the order
+  file_state &fs=const_cast<file_state &>(*(iter.first));
+  fs.log_msg=message;
+  repo.edges.insert(cvs_edge(message,checkin_time,author));
+}
+
 void cvs_repository::prime()
 { for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
-  { SendCommand("rlog","-b",i->first.c_str(),0);
-    enum { st_head, st_tags, st_desc, st_rev, st_msg, st_date_author 
-         } state=st_head;
-    std::vector<std::pair<std::string,std::string> > lresult;
-    std::string revision;
-    std::string message;
-    std::string author;
-    std::string description;
-    std::string dead;
-    time_t checkin_time=0;
-    while (fetch_result(lresult))
-    {reswitch:
-      L(F("state %d\n") % int(state));
-      switch(state)
-      { case st_head:
-        { std::string result=combine_result(lresult);
-          if (result.empty()) break; // accept a (first) empty line
-          if (begins_with(result,"RCS file: ") ||
-              begins_with(result,"head: ") ||
-              begins_with(result,"branch:") ||
-              begins_with(result,"locks: ") ||
-              begins_with(result,"access list:") ||
-              begins_with(result,"keyword substitution: ") ||
-              begins_with(result,"total revisions: "))
-            ;
-          else if (result=="description:")
-            state=st_desc;
-          else if (result=="symbolic names:")
-            state=st_tags;
-          else
-          { std::cerr << "unknown rcs head '" << result << "'\n";
-          }
-          break;
-        }
-        case st_tags:
-        { std::string result=combine_result(lresult);
-          I(!result.empty());
-          if (result[0]!='\t') 
-          { L(F("result[0] %d %d\n") % result.size() % int(result[0])); state=st_head; goto reswitch; }
-          I(result.find_first_not_of("\t ")==1);
-          std::string::size_type colon=result.find(':');
-          I(colon!=std::string::npos);
-          std::map<std::string,std::string> &tagslot=tags[result.substr(1,colon-1)];
-          tagslot[i->first]=result.substr(colon+2);
-          break;
-        }
-        case st_desc:
-        { std::string result=combine_result(lresult);
-          if (result=="----------------------------")
-          { state=st_rev;
-            // i->second.= ???
-          }
-          else
-          { if (!description.empty()) description+='\n';
-            description+=result;
-          }
-          break;
-        }
-        case st_rev:
-        { std::string result=combine_result(lresult);
-          I(begins_with(result,"revision "));
-          revision=result.substr(9);
-          state=st_date_author;
-          break;
-        }
-        case st_date_author:
-        { I(lresult.size()==11 || lresult.size()==7);
-          I(lresult[0].first=="text");
-          I(lresult[0].second=="date: ");
-          I(lresult[1].first=="date");
-          checkin_time=rls_l2time_t(lresult[1].second);
-          I(lresult[2].first=="text");
-          I(lresult[2].second==";  author: ");
-          I(lresult[3].first=="text");
-          author=lresult[3].second;
-          I(lresult[4].first=="text");
-          I(lresult[4].second==";  state: ");
-          I(lresult[5].first=="text");
-          dead=lresult[5].second;
-          state=st_msg;
-          break;
-        }
-        case st_msg:
-        { std::string result=combine_result(lresult);
-          // evtl überprüfen, ob das nicht nur ein fake war ...
-          if (result=="----------------------------" ||
-              result=="=============================================================================")
-          { state=st_rev;
-            std::pair<std::set<file_state>::iterator,bool> iter=
-              i->second.known_states.insert
-                (file_state(checkin_time,revision,dead=="dead"));
-            // I(iter.second==false);
-            // set iterators are read only to prevent you from destroying the order
-            file_state &fs=const_cast<file_state &>(*(iter.first));
-            fs.log_msg=message;
-            edges.insert(cvs_edge(message,checkin_time,author));
-          }
-          else
-          { if (!message.empty()) message+='\n';
-            message+=result;
-          }
-          break;
-        }
-      }
-    }
+  { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
   }
   // remove duplicate states
   for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
