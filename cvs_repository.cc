@@ -649,14 +649,14 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     oldmanifestp=&before->files;
   }
   for (; e!=edges.end(); ++e)
-  { change_set cs;
-    build_change_set(*this,*oldmanifestp,e->files,cs);
+  { boost::shared_ptr<change_set> cs(new change_set());
+    build_change_set(*this,*oldmanifestp,e->files,*cs);
     if (*oldmanifestp==e->files) 
     { W(F("null edge (no changed files) @%ld skipped\n") % e->time);
       continue;
     }
     I(!(*oldmanifestp==e->files));
-    apply_change_set(cs, child_map);
+    apply_change_set(*cs, child_map);
     if (child_map.empty()) 
     { W(F("empty edge (no files in manifest) @%ld skipped\n") % e->time);
       // perhaps begin a new tree:
@@ -704,7 +704,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     cert_cvs(*e, dbw);
 
     // now apply same change set to parent_map, making parent_map == child_map
-    apply_change_set(cs, parent_map);
+    apply_change_set(*cs, parent_map);
     parent_mid = child_mid;
     parent_rid = child_rid;
     oldmanifestp=&e->files;
