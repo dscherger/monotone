@@ -834,7 +834,7 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
 std::string cvs_client::pserver_password(const std::string &root)
 { const char *home=getenv("HOME");
   if (!home) home="";
-  std::fstream fs((std::string(home)+"/.cvspass").c_str());
+  std::ifstream fs((std::string(home)+"/.cvspass").c_str());
   while (fs.good())
   { char buf[1024];
     if (fs.getline(buf,sizeof buf).good())
