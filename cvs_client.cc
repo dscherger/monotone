@@ -249,9 +249,26 @@ try_again:
   if (inputbuffer.empty()) goto try_again;
 }
 
+// this mutable/const oddity is to avoid an 
+// "invalid initialization of non-const reference from a temporary" warning
+// when passing this class to stringtok (we cheat by using a const reference)
+template <typename Container>
+ class push_back2insert_cl
+{ mutable Container &c;
+public:
+  push_back2insert_cl(Container &_c) : c(_c) {}
+  template <typename T>
+   void push_back(const T &t) const { c.insert(t); }
+};
+
+// the creator function (so you don't need to specify the type
+template <typename Container>
+ const push_back2insert_cl<Container> push_back2insert(Container &c)
+{ return push_back2insert_cl<Container>(c);
+}
+
 // this was contributed by Marcelo E. Magallon <mmagallo@debian.org>
 // under the GPL to glade-- in July, 2002
-// adapted to work on sets
 
 template <typename Container>
 void
@@ -273,10 +290,10 @@ stringtok (Container &container, std::string const &in,
 
         // push token
         if (j == std::string::npos) {
-            container.insert (in.substr(i));
+            container.push_back (in.substr(i));
             return;
         } else
-            container.insert (in.substr(i, j-i));
+            container.push_back (in.substr(i, j-i));
 
         // set up for next loop
         i = j + 1;
@@ -335,7 +352,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   std::string answer=readline();
   assert(answer.substr(0,15)=="Valid-requests ");
   // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
-  stringtok(Valid_requests,answer.substr(15));
+  stringtok(push_back2insert(Valid_requests),answer.substr(15));
   answer=readline();
   assert(answer=="ok");
   
@@ -386,13 +403,24 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 { if (tree_states.empty())
   { SendCommand("rlist","-e","-R","-d","--",module.c_str(),0);
     std::string result;
-    std::list<std::string> l;
+//    std::list<std::string> l;
+    enum { st_dir, st_file } state=st_dir;
+    std::string directory;
     while (fetch_result(result))
-    { l.push_back(result);
+    { switch(state)
+      { case st_dir:
+          assert(result.size()>=2);
+          assert(result[result.size()-1]==':');
+          directory=result.substr(0,result.size()-1);
+          state=st_file;
+          break;
+        case st_file:
+          break;
+      }
     }
     ticker();
-    for (std::list<std::string>::const_iterator i=l.begin();i!=l.end();++i)
-      std::cerr << *i << ':';
+//    for (std::list<std::string>::const_iterator i=l.begin();i!=l.end();++i)
+//      std::cerr << *i << ':';
   }
   return tree_states.back(); // wrong of course
 }
