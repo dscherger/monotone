@@ -1220,14 +1220,18 @@ std::map<std::string,std::pair<std::string,std::string> >
         I(lresult[2].first=="rcs");
         I(lresult[3].first=="new entries line");
         std::pair<std::string,std::string> p;
-        std::string file=rcs_file2path(lresult[2].second);
+        std::string file=lresult[2].second;
+        I(!file.empty());
+        if (file[0]=='/') file=rcs_file2path(file);
         parse_entry(lresult[3].second,p.first,p.second);
         result[file]=p;
       }
       else if (lresult[0].second=="Remove-entry")
       { I(lresult.size()==3);
         I(lresult[2].first=="rcs");
-        std::string file=rcs_file2path(lresult[2].second);
+        std::string file=lresult[2].second;
+        I(!file.empty());
+        if (file[0]=='/') file=rcs_file2path(file);
         result[file]=std::make_pair(std::string(),std::string());
       }
       else if (lresult[0].second=="error")
