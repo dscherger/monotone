@@ -18,8 +18,6 @@
 	* interner.hh (struct intern): A functor to intern strings in
 	container using STL iterator algorithms.
 
-####### Ancestor
-======= end
 2004-07-31  graydon hoare  <graydon@pobox.com>
 
 	* AUTHORS: Mention Richard Levitte.
