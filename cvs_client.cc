@@ -482,6 +482,13 @@ loop:
     result.push_back(std::make_pair("date",x.substr(len)));
     return true;
   }
+  if (begins_with(x,"Copy-file ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("dir",x.substr(len)));
+    result.push_back(std::make_pair("file",readline()));
+    result.push_back(std::make_pair("new-file",readline()));
+    return true;
+  }
   if (begins_with(x,"Checksum ",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("data",x.substr(len)));
@@ -495,7 +502,7 @@ loop:
     return true;
   }
   if (begins_with(x,"Created ",len) || begins_with(x,"Update-existing ",len)
-      || begins_with(x,"Rcs-diff ",len))
+      || begins_with(x,"Rcs-diff ",len) || begins_with(x,"Merged ",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("dir",x.substr(len)));
     result.push_back(std::make_pair("rcs",readline()));
@@ -508,7 +515,7 @@ loop:
   }
   
 error:
-  std::cerr << "unrecognized result \"" << x << "\"\n";
+  std::cerr << "unrecognized response \"" << x << "\"\n";
   exit(1);
 }
 
@@ -852,8 +859,10 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
   SendCommand("update","-r",new_revision.c_str(),"-u","--",bname.c_str(),0);
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile;
+  enum { st_normal, st_merge } state=st_normal;
   while (fetch_result(lresult))
   { I(!lresult.empty());
+    unsigned len=0;
     if (lresult[0].first=="CMD")
     { if (lresult[0].second=="Update-existing")
       { dir=lresult[1].second;
@@ -876,6 +885,12 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
       { I(lresult.size()==3);
         result.removed=true;
       }
+      else if (lresult[0].second=="Copy-file")
+      { I(state==st_merge);
+      }
+      else if (lresult[0].second=="Merged")
+      { I(state==st_merge);
+      }
       else
       { std::cerr << "unrecognized response " << lresult[0].second << '\n';
       }
@@ -888,9 +903,32 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
       I(lresult[1].first=="fname");
       I(lresult.size()==2);
     }
+    else if (begins_with(lresult[0].second,"RCS file: ",len))
+    { I(state==st_normal);
+      state=st_merge;
+    }
+    else if (begins_with(lresult[0].second,"retrieving revision ",len))
+    { I(state==st_merge);
+    }
+    else if (begins_with(lresult[0].second,"Merging ",len))
+    { I(state==st_merge);
+    }
+    else if (begins_with(lresult[0].second,"C ",len))
+    { I(state==st_merge);
+      I(lresult[1].first=="fname");
+      I(lresult.size()==2);
+    }
     else 
     { std::cerr << "unrecognized response " << lresult[0].second << '\n';
     }
+  }
+  if (state==st_merge)
+  { W(F("Update %s->%s of %s exposed CVS bug\n") % old_revision % new_revision % file);
+    checkout result2=CheckOut(file,new_revision);
+    result.contents=result2.contents;
+    result.patch=std::string();
+    result.checksum=std::string();
+    result.removed=result2.dead;
   }
   return result;
 }
