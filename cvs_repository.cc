@@ -661,9 +661,9 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     oldmanifestp=get_files(before);
   }
   for (; e!=edges.end(); ++e)
-  { change_set cs;
+  { boost::shared_ptr<change_set> cs(new change_set());
     I(!e.delta_base().empty()); // no delta yet
-    if (build_change_set(*this,*oldmanifestp,e->xfiles,cs,remove_state))
+    if (build_change_set(*this,*oldmanifestp,e->xfiles,*cs,remove_state))
       e.delta_base=parent_rid;
     if (cs.empty())
     { W(F("null edge (empty cs) @%ld skipped\n") % e->time);
