@@ -98,7 +98,6 @@ private:
   std::map<std::string,std::map<std::string,std::string> > tags;
   unsigned files_inserted;
   unsigned revisions_created;
-//  std::string monotone_branch; // replace with app.branch_name
 
 public:  
   void prime(app_state &app);

@@ -222,11 +222,13 @@ bool cvs_revision_nr::is_branch() const
 
 void cvs_repository::ticker() const
 { cvs_client::ticker(false);
-  if (files_inserted) std::cerr << "[file ids added: " << files_inserted;
-  else std::cerr << " [files: " << files.size();
-  std::cerr << "] [edges: " << edges.size() 
-          << "] [tags: "  << tags.size() 
-          << "]\n";
+  if (files_inserted) std::cerr << " [file ids added: " << files_inserted;
+  else std::cerr << "] [files: " << files.size();
+  if (revisions_created)
+    std::cerr << "] [revisions created: " << revisions_created;
+  else std::cerr << "] [edges: " << edges.size() 
+          << "] [tags: "  << tags.size();
+  std::cerr << "]\n";
 }
 
 struct cvs_repository::now_log_cb : rlog_callbacks
@@ -674,7 +676,9 @@ void cvs_repository::prime(app_state &app)
     }
     const_cast<hexenc<id>&>(e->revision)=child_rid.inner();
     if (! app.db.revision_exists(child_rid))
-      app.db.put_revision(child_rid, rev);
+    { app.db.put_revision(child_rid, rev);
+      ++revisions_created;
+    }
     cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
     cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
     cert_revision_changelog(child_rid, e->changelog, app, dbw);
@@ -686,6 +690,7 @@ void cvs_repository::prime(app_state &app)
     parent_mid = child_mid;
     parent_rid = child_rid;
     oldmanifestp=&e->files;
+    ticker();
   }
   
   debug();
