@@ -233,7 +233,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &_root,
                     const std::string &user, const std::string &_module,
                     bool pserver)
     : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0),
-      gzip_level(0), root(_root), module(_module)
+      gzip_level(0), root(_root), module(_module), rcs_root(_root)
 { memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
   if (pserver)
@@ -595,9 +595,22 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
         { cb.file(file,head_rev);
         }
         else if (begins_with(result,"RCS file: ",len))
-        { I(result.substr(len,root.size())==root);
-          if (result[len+root.size()]=='/') ++len;
-          file=result.substr(len+root.size());
+        { file=result.substr(len);
+          // try to guess a sane file name (e.g. on cvs.gnome.org)
+          if (file.substr(0,rcs_root.size())!=rcs_root)
+          { std::string::size_type modpos=file.find(module);
+            if (modpos!=std::string::npos) // else ... who knows where to put it
+            { I(modpos>=1);
+              I(file[modpos-1]=='/');
+              std::string oldroot=rcs_root;
+              rcs_root=file.substr(0,modpos-1);
+              W(F("changing rcs root dir from %s to %s\n") % oldroot % rcs_root);
+              file.erase(0,rcs_root.size());
+            }
+          }
+          else file.erase(0,rcs_root.size());
+          I(file[0]=='/');
+          file.erase(0,1);
           if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
           std::string::size_type lastslash=file.rfind('/');
           if (lastslash!=std::string::npos && lastslash>=5
