@@ -757,7 +757,9 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
       if (revision_ticker.get()) ++(*revision_ticker);
     }
     cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
-    cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
+    std::string author=e->author;
+    if (author.find('@')==std::string::npos) author+="@"+host;
+    cert_revision_author(child_rid, author, app, dbw); 
     cert_revision_changelog(child_rid, e->changelog, app, dbw);
     cert_revision_date_time(child_rid, e->time, app, dbw);
     cert_cvs(*e, dbw);
