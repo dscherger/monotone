@@ -50,8 +50,29 @@ echo ---------------------------------
 echo checkin
 echo db_setup2
 ./db_setup2 || exit
+if [ "$stop_at" = "db_setup2" ] ; then exit 0 ; fi
 ../monotone --branch test --key test@localhost --db test.db cvs_push \
 	$PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo ---------------------------------
+echo more complex examples
+echo -- cvs_test_setup4
+./cvs_test_setup4  || exit
+if [ "$stop_at" = "cvs_test_setup4" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_push \
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo -- cvs_test_setup5
+./cvs_test_setup5  || exit
+if [ "$stop_at" = "cvs_test_setup5" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_push \
+        $PWD/test.cvsroot test <<EOF
 x
 EOF
 if [ $? -ne 0 ] ; then exit ; fi

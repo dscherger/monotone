@@ -21,6 +21,7 @@ cd test
 echo "fast A" >A
 echo "fast C" >dir/C
 echo "fast D" >dir/D
+cvs add A
 sleep 2
 cvs ci -m "fast A change" A
 cvs ci -m "fast C change" dir/C
