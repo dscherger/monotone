@@ -102,6 +102,21 @@ for each unique(!) successor commit each changed file (with timestamp)
 ---- thoughts
 changed changelogs/dates will result in ugly fork forests 
 
+we might use update with all files to check which files are dead
+ "Removed name\n"
+
+-----
+rls -lRPd scheint geeigneter zu sein:
+d--- 2005-01-08 23:57:35 +0000                 WWW
+-kb  1998-05-28 08:18:53 +0000 1.1             cpcline-1.0.tgz
+---- 1998-07-17 13:52:32 +0000 1.2        dead glademm-010-011.patch.gz
+---- 1996-11-18 14:27:15 +0000 1.1.1.1         beowulf.asc
+---- 2005-01-09 00:05:39 +0000 1.1.2.1.2+      XX
+dann cvs -d /tmp/y rls -r b3 -edR test
+/XX/1.1.2.1.2.1.2.1/Sun Jan  9 00:05:39 2005//Tb3
+ohne -d
+---- 2005-01-09 00:05:39 +0000 1.1.2.1.2+ XX
+
 ---- class
 class remote_cvs
 {
@@ -117,3 +132,6 @@ public:
   const cvsmanifest &find(const std::string &date,const std::string &changelog);
   const cvsmanifest &next(const cvsmanifest &m) const;
 };
+
+------ Problems:
+what about the time zone offset when communicating with a CVS server

@@ -15,6 +15,7 @@
 #include <stdarg.h>
 #include <zlib.h>
 #include <fcntl.h>
+#include <vector>
 //#include <boost/tokenizer.hpp>
 //#include "rcs_file.hh"
 
@@ -267,9 +268,7 @@ template <typename Container>
 { return push_back2insert_cl<Container>(c);
 }
 
-// this was contributed by Marcelo E. Magallon <mmagallo@debian.org>
-// under the GPL to glade-- in July, 2002
-
+// inspired by code from Marcelo E. Magallon and the libstdc++ doku
 template <typename Container>
 void
 stringtok (Container &container, std::string const &in,
@@ -281,9 +280,9 @@ stringtok (Container &container, std::string const &in,
     while ( i < len )
     {
         // eat leading whitespace
-        i = in.find_first_not_of (delimiters, i);
-        if (i == std::string::npos)
-            return;   // nothing left but white space
+        // i = in.find_first_not_of (delimiters, i);
+        // if (i == std::string::npos)
+        //    return;   // nothing left but white space
 
         // find the end of the token
         std::string::size_type j = in.find_first_of (delimiters, i);
@@ -361,6 +360,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   writestr("UseUnchanged\n"); // ???
   ticker();
 
+//  writestr("Global_option -q\n"); // -Q?
   GzipStream(3);
 }
 
@@ -413,14 +413,33 @@ const cvs_repository::tree_state_t &cvs_repository::now()
           assert(result[result.size()-1]==':');
           directory=result.substr(0,result.size()-1);
           state=st_file;
+          ticker();
           break;
         case st_file:
+          if (result.empty()) state=st_dir;
+          else
+          { std::vector<std::string> fields;
+            stringtok(fields,result,"/");
+            // 0: directory == 'D'
+            // 1: name
+            // 2: revision
+            // 3: date
+            // 4: keyword substitution
+            // 5: tags
+            // if the last one was empty it is not generated
+            if (fields.size()==5) fields.push_back(std::string());
+//std::cerr << fields.size() << '\n';
+            assert(fields.size()==6);
+            if (fields[0].empty()) // not a dir
+            { std::cerr << (directory+"/"+fields[1]) << " V" 
+                << fields[2] << " from " << fields[3] << " " << fields[4]
+                << " " << fields[5] << '\n';
+            }
+          }
           break;
       }
     }
     ticker();
-//    for (std::list<std::string>::const_iterator i=l.begin();i!=l.end();++i)
-//      std::cerr << *i << ':';
   }
   return tree_states.back(); // wrong of course
 }
