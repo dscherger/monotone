@@ -207,15 +207,22 @@ done_marker
 struct PipeStream : Netxx::Stream
 {	int fd_write;
       typedef Netxx::Stream Parent;
+      Netxx::ProbeInfo pi_;
 // override write and other methods ...
   Netxx::signed_size_type write(const void *buffer, Netxx::size_type length);
   Netxx::signed_size_type read (void *buffer, Netxx::size_type length);
+  Netxx::socket_type get_writefd() const { return fd_write; }
+  bool is_pipe() const { return get_writefd()==-1; }
   void close();
   const Netxx::ProbeInfo* get_probe_info() const;
 // ctors
   explicit PipeStream (Netxx::socket_type socketfd, Netxx::socket_type writefd, const Netxx::Timeout &timeout=Netxx::Timeout())
     : Netxx::Stream(socketfd,timeout), fd_write(writefd)
-  {}
+  {  if (!is_pipe())
+     {  pi_.add_socket(get_socketfd());
+        pi_.add_socket(get_writefd());
+     }
+  }
   explicit PipeStream(const char *uri, Netxx::port_type default_port, const Netxx::Timeout &timeout=Netxx::Timeout())
     : Netxx::Stream(uri,default_port,timeout), fd_write(-1)
   {}
@@ -224,19 +231,20 @@ struct PipeStream : Netxx::Stream
 
 // pass them through ... for now
 Netxx::signed_size_type PipeStream::write(const void *buffer, Netxx::size_type length)
-{  if (fd_write==-1) return Parent::write(buffer,length);
+{  if (is_pipe()) return Parent::write(buffer,length);
    else return ::write(fd_write, buffer, length);
 }
 Netxx::signed_size_type PipeStream::read (void *buffer, Netxx::size_type length) 
-{  if (fd_write==-1) return Parent::read(buffer,length);
+{  if (is_pipe()) return Parent::read(buffer,length);
    else return ::read(get_socketfd(), buffer, length);
 }
 void PipeStream::close()
-{  if (fd_write!=-1) ::close(fd_write);
+{  if (!is_pipe()) ::close(fd_write);
    Parent::close();
 }
 const Netxx::ProbeInfo* PipeStream::get_probe_info() const
-{  return Parent::get_probe_info();
+{  if (!is_pipe()) return Parent::get_probe_info();
+   return &pi_;
 }
 
 struct 
@@ -2395,6 +2403,42 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
    return result;
 }
 
+static std::string::size_type find_wordend(const std::string &address, 
+        std::string::size_type begin, std::string::size_type end, 
+        const std::string &breaks)
+{  for (;begin<end;++begin)
+   {  for (std::string::const_iterator i=breaks.begin();i!=breaks.end();++i)
+         if (address[begin]==*i) return begin;
+   }
+   return begin;
+}
+
+static bool parse_ssh_url(const std::string &address,std::string &host,
+                    std::string &user,std::string &port,std::string &dbpath)
+{  std::string::size_type wordbegin=0,end=address.size(),wordend=std::string::npos;
+   if (wordbegin+2<=end && address.substr(wordbegin,2)=="//") wordbegin+=2;
+   wordend=find_wordend(address,wordbegin,end,"@:/");
+   if (wordend==end) return false;
+   if (address[wordend]=='@') 
+   {  user=address.substr(wordbegin,wordend-wordbegin);
+      wordbegin=wordend+1;
+      wordend=find_wordend(address,wordbegin,end,":/");
+      if (wordend==end) return false;
+   }
+   if (address[wordend]==':') 
+   {  host=address.substr(wordbegin,wordend-wordbegin);
+      wordbegin=wordend+1;
+      wordend=find_wordend(address,wordbegin,end,"/");
+      if (wordend==end) return false;
+   }
+   if (address[wordend]!='/') return false;
+   if (wordbegin==wordend) return false; // empty port/host
+   if (host.empty()) host=address.substr(wordbegin,wordend-wordbegin);
+   else port=address.substr(wordbegin,wordend-wordbegin);
+   dbpath=address.substr(wordend); // with leading '/' !
+   return true;
+}
+
 static void 
 call_server(protocol_role role,
 	    vector<utf8> const & collections,
@@ -2430,21 +2474,47 @@ call_server(protocol_role role,
         newargv[newargc]=0;
         
         dup2(open("server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-        execvp("monotone",(char*const*)newargv);
-        perror("monotone");
+        execvp(newargv[0],(char*const*)newargv);
+        perror(newargv[0]);
         exit(errno);
      }
      server=PipeStream(fd1[0],fd2[1],timeout);
   }
-#if 0  
+#if 1
   else if (address().substr(0,4)=="ssh:")
   {  int fd1[2],fd2[2];
+     std::string user,host,port,db_path;
+     if (!parse_ssh_url(address().substr(4),host,user,port,db_path))
+     {  L(F("url %s is not of form ssh:[//]user@host:port/dbpath\n") % address());
+        return;
+     }
      if (!pipe_and_fork(fd1,fd2))
-     {  dup2(open("server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-        execlp("monotone",
-            "monotone","--verbose","--db","/tmp/temp.db",
-            "--","serve","-",collections[0]().c_str(),0);
-        perror("monotone");
+     {  const unsigned newsize=64;
+        const char *newargv[newsize];
+        unsigned newargc=0;
+        newargv[newargc++]="ssh";
+        if (!port.empty()) 
+        {  newargv[newargc++]="-p";
+           newargv[newargc++]=port.c_str();
+        }
+        if (!user.empty()) 
+        {  newargv[newargc++]="-l";
+           newargv[newargc++]=user.c_str();
+        }
+        newargv[newargc++]=host.c_str();
+        newargv[newargc++]="monotone";
+        newargv[newargc++]="--db";
+        newargv[newargc++]=db_path.c_str();
+        newargv[newargc++]="--";
+        newargv[newargc++]="serve";
+        newargv[newargc++]="-";
+        for (unsigned i=0; i<newsize-newargc-2 && i<collections.size(); ++i)
+          newargv[newargc++]=collections[i]().c_str();
+        newargv[newargc]=0;
+        
+//        dup2(open("server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
+        execvp(newargv[0],(char*const*)newargv);
+        perror(newargv[0]);
         exit(errno);
      }
      server=PipeStream(fd1[0],fd2[1],timeout);
@@ -2453,7 +2523,7 @@ call_server(protocol_role role,
   else server=PipeStream(address().c_str(), default_port, timeout); 
   session sess(role, client_voice, collections, all_collections, app, 
 	       address(),
-	       std::make_pair(server.get_socketfd(),server.fd_write), 
+	       std::make_pair(server.get_socketfd(),server.get_writefd()), 
 	       timeout);
 
   ticker input("bytes in"), output("bytes out");
@@ -2825,7 +2895,7 @@ serve_stdio(protocol_role role,
   map<Netxx::socket_type, shared_ptr<session> > sessions;
   
   sessions[sess->str.get_socketfd()]=sess;
-  sessions[sess->str.fd_write]=sess;
+  sessions[sess->str.get_writefd()]=sess;
   
   // no addr, no server
   bool live_p = true;
@@ -2851,11 +2921,11 @@ serve_stdio(protocol_role role,
       FD_ZERO(&rfds);
       if (sess->which_events()&Netxx::Probe::ready_read) FD_SET(sess->str.get_socketfd(), &rfds);
       FD_ZERO(&wfds);
-      if (sess->which_events()&Netxx::Probe::ready_write) FD_SET(sess->str.fd_write, &wfds);
+      if (sess->which_events()&Netxx::Probe::ready_write) FD_SET(sess->str.get_writefd(), &wfds);
       tv.tv_sec = timeout_seconds;
       tv.tv_usec = 0;
       
-      retval = select(sess->str.fd_write+1, &rfds, &wfds, NULL, &tv);
+      retval = select(sess->str.get_writefd()+1, &rfds, &wfds, NULL, &tv);
       
       if (retval == -1)
       {  P(F("select: errno %d\n") % errno);
@@ -2869,8 +2939,8 @@ serve_stdio(protocol_role role,
       {  if (FD_ISSET(sess->str.get_socketfd(), &rfds))
 	    handle_read_available(sess->str.get_socketfd(), sess, sessions, armed_sessions, live_p);
 		
-         if (live_p && FD_ISSET(sess->str.fd_write, &wfds))
-	    handle_write_available(sess->str.fd_write, sess, sessions, live_p);
+         if (live_p && FD_ISSET(sess->str.get_writefd(), &wfds))
+	    handle_write_available(sess->str.get_writefd(), sess, sessions, live_p);
       }
       if (!sess->process())
       {
