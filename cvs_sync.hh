@@ -72,6 +72,7 @@ struct cvs_edge // careful this name is also used in cvs_import
   cvs_edge(const std::string &log, time_t when, const std::string &auth) 
     : changelog(log), changelog_valid(true), author(auth), time(when), time2(when)
   {} 
+  cvs_edge(const revision_id &rid,app_state &app);
   
   bool similar_enough(cvs_edge const & other) const;
   inline bool operator==(cvs_edge const & other) const

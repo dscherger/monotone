@@ -810,9 +810,49 @@ std::set<cvs_edge>::iterator cvs_repository::last_known_revision()
   return now_iter;
 }
 
+cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
+ : changelog_valid(), time(), time2()
+{ revision=hexenc<id>(rid.inner());
+  // get author + date 
+  std::vector< ::revision<cert> > edge_certs;
+  app.db.get_revision_certs(rid,edge_certs);
+  // erase_bogus_certs ?
+  for (std::vector< ::revision<cert> >::const_iterator c=edge_certs.begin();
+            c!=edge_certs.end();++c)
+  { cert_value value;
+    decode_base64(c->inner().value, value);   
+    if (c->inner().name()==date_cert_name)
+    { L(F("date cert %s\n")%value());
+      std::string posix_format=value();
+      std::string::size_type next_illegal=0;
+      while ((next_illegal=posix_format.find_first_of("-:"))!=std::string::npos)
+        posix_format.erase(next_illegal,1);
+      boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(posix_format);
+      boost::posix_time::time_duration dur= tmp
+          -boost::posix_time::ptime(boost::gregorian::date(1970,1,1),
+                          boost::posix_time::time_duration(0,0,0,0));
+      time=time2=dur.total_seconds();
+    }
+    else if (c->inner().name()==author_cert_name)
+    { author=value();
+    }
+    else if (c->inner().name()==changelog_cert_name)
+    { changelog=value();
+      changelog_valid=true;
+    }
+  }
+}
+
 std::set<cvs_edge>::iterator cvs_repository::commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid)
-{
+{ // check that it's the last one
+  { std::set<cvs_edge>::iterator test=parent;
+    ++test;
+    I(test==edges.end());
+  }
+  // a bit like process_certs
+  cvs_edge e(rid,app);
+  
   return edges.end();
 }
 
@@ -927,37 +967,8 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       && cvs_revisions().substr(0,needed_cert.size())==needed_cert)
     { // parse and add the cert
       ++(*cert_ticker);
-      cvs_edge e;
-      e.revision=i->inner().ident;
-      // get author + date 
-      std::vector< revision<cert> > edge_certs;
-      app.db.get_revision_certs(i->inner().ident,edge_certs);
-      // erase_bogus_certs ?
-      for (std::vector< revision<cert> >::const_iterator c=edge_certs.begin();
-                c!=edge_certs.end();++c)
-      { cert_value value;
-        decode_base64(c->inner().value, value);   
-        if (c->inner().name()==date_cert_name)
-        { L(F("date cert %s\n")%value());
-          std::string posix_format=value();
-          std::string::size_type next_illegal=0;
-          while ((next_illegal=posix_format.find_first_of("-:"))!=std::string::npos)
-            posix_format.erase(next_illegal,1);
-          boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(posix_format);
-          boost::posix_time::time_duration dur= tmp
-              -boost::posix_time::ptime(boost::gregorian::date(1970,1,1),
-                              boost::posix_time::time_duration(0,0,0,0));
-          e.time=e.time2=dur.total_seconds();
-        }
-        else if (c->inner().name()==author_cert_name)
-        { e.author=value();
-        }
-        else if (c->inner().name()==changelog_cert_name)
-        { e.changelog=value();
-          e.changelog_valid=true;
-        }
-      }
-      
+      cvs_edge e(i->inner().ident,app);
+
       std::vector<piece> pieces;
       index_deltatext(cvs_revisions(),pieces);
       I(!pieces.empty());
@@ -965,7 +976,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       app.db.get_revision_manifest(i->inner().ident,mid);
       manifest_map manifest;
       app.db.get_manifest(mid,manifest);
-//      manifest;
+      //      manifest;
       for (std::vector<piece>::const_iterator p=pieces.begin()+1;p!=pieces.end();++p)
       { std::string line=**p;
         I(!line.empty());
