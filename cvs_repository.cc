@@ -275,9 +275,9 @@ void cvs_repository::debug() const
     std::cerr << i->changelog.substr(0,nlpos) << "]\n";
   }
 //  std::cerr << '\n';
-  // files map<string,file>
+  // files map<string,file_history>
   std::cerr << "Files :\n";
-  for (std::map<std::string,file>::const_iterator i=files.begin();
+  for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
   { unsigned len=0;
     if (cvs_client::begins_with(i->first,module,len))
@@ -308,8 +308,8 @@ void cvs_repository::debug() const
 
 struct cvs_repository::prime_log_cb : rlog_callbacks
 { cvs_repository &repo;
-  std::map<std::string,struct cvs_sync::file>::iterator i;
-  prime_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file>::iterator &_i) 
+  std::map<std::string,struct cvs_sync::file_history>::iterator i;
+  prime_log_cb(cvs_repository &r,const std::map<std::string,struct cvs_sync::file_history>::iterator &_i) 
       : repo(r), i(_i) {}
   virtual void tag(const std::string &file,const std::string &tag, 
         const std::string &revision) const;
@@ -406,7 +406,7 @@ void cvs_repository::store_delta(app_state &app, const std::string &new_contents
 }
 
 void cvs_repository::prime(app_state &app)
-{ for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
+{ for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
     ticker();
   }
@@ -444,7 +444,7 @@ void cvs_repository::prime(app_state &app)
   }
   
   // get the contents
-  for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
+  for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { vector<piece> file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();

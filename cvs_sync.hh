@@ -23,25 +23,6 @@ struct cvs_revision
   bool is_parent_of(const cvs_revision &child) const;
 };
 
-struct cvs_file_state
-{ std::string revision;
-  time_t last_changed;
-#if 0
-  bool dead;
-  std::string log_message;
-  cvs_file_state() : last_changed(), dead() {}
-  cvs_file_state(const std::string &r, time_t lc, bool d, const std::string &lm) 
-    : revision(r), last_changed(lc), dead(d), log_message(lm) {}
-#endif
-};
-
-struct cvs_changeset // == cvs_key ?? rcs_delta+rcs_deltatext
-{ typedef std::map<std::string,cvs_file_state> tree_state_t;
-
-//  cvs_client::stringset_t tags; ???
-  tree_state_t tree_state; // dead files do not occur here
-};
-
 struct file_state
 { time_t since_when;
   std::string cvs_version;
@@ -63,8 +44,16 @@ struct file_state
   { return since_when<b.since_when; }
 };
 
-struct file
+struct file_history
 { std::set<file_state> known_states;
+};
+
+typedef std::set<file_state>::const_iterator cvs_file_state;
+
+struct cvs_manifest // state of the files at a specific point in history
+{ typedef std::map<std::string,cvs_file_state> tree_state_t;
+
+  tree_state_t tree_state; // dead files do not occur here
 };
 
 struct cvs_edge // careful this name is also used in cvs_import
@@ -73,7 +62,7 @@ struct cvs_edge // careful this name is also used in cvs_import
   bool changelog_valid;
   std::string author;
   time_t time,time2;
-  cvs_changeset::tree_state_t files; // this should be a state change!
+  cvs_manifest::tree_state_t files; // this should be a state change!
 //  std::string manifest; // monotone manifest
   std::string revision; // monotone revision
 
@@ -100,7 +89,7 @@ struct cvs_edge // careful this name is also used in cvs_import
 class cvs_repository : public cvs_client
 { 
 public:
-  typedef cvs_changeset::tree_state_t tree_state_t;
+  typedef cvs_manifest::tree_state_t tree_state_t;
   struct prime_log_cb;
   struct now_log_cb;
   struct now_list_cb;
@@ -110,7 +99,7 @@ private:
   // zusammen mit changelog, date, author(?)
 //  std::map<tree_state_t*,tree_state_t*> successor;
   std::set<cvs_edge> edges;
-  std::map<std::string,file> files;
+  std::map<std::string,file_history> files;
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
   unsigned files_inserted;
