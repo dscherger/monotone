@@ -309,17 +309,20 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     { const unsigned newsize=64;
       const char *newargv[newsize];
       unsigned newargc=0;
+      std::string argbuf;
       if (host.empty())
-      { 
-#if 1
-        newargv[newargc++]="cvs";
-        newargv[newargc++]="server";
-#else // DEBUGGING
-        newargv[newargc++]="sh";
-        newargv[newargc++]="-c";
-        newargv[newargc++]="tee cvs_server.log | cvs server";
-#endif
-
+      { const char *cvs_client_log=getenv("CVS_CLIENT_LOG");
+        if (!cvs_client_log)
+        { newargv[newargc++]="cvs";
+          newargv[newargc++]="server";
+        }
+        else
+        { newargv[newargc++]="sh";
+          newargv[newargc++]="-c";
+          argbuf=std::string("tee \"")+cvs_client_log+".in"+
+              "\" | cvs server | tee \""+cvs_client_log+".out\"";
+          newargv[newargc++]=argbuf.c_str();
+        }
       }
       else
       { const char *rsh=getenv("CVS_RSH");

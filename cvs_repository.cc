@@ -740,8 +740,9 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   }
   
   cvs_sync::cvs_repository repo(app,repository,module);
-// DEBUGGING
-  repo.GzipStream(3);
+// turned off for DEBUGGING
+  if (!getenv("CVS_CLIENT_LOG"))
+    repo.GzipStream(3);
   transaction_guard guard(app.db);
 
   { std::vector< revision<cert> > certs;
