@@ -61,7 +61,9 @@ struct cvs_edge // careful this name is also used in cvs_import
   std::string author;
   time_t time;
   mutable time_t time2;
-  mutable cvs_manifest files; // manifest (or use cvs_manifest)
+  mutable revision_id delta_base;
+  // delta encoded if !delta_base().empty()
+  mutable cvs_manifest xfiles; // manifest (or use cvs_manifest)
   mutable hexenc<id> revision; // monotone revision
       // make this a revision_id
 
@@ -97,6 +99,7 @@ public:
 
 private:
   std::set<cvs_edge> edges;
+  std::map<revision_id,std::set<cvs_edge>::iterator> revision_lookup;
   std::map<std::string,file_history> files;
   // tag,file,rev
   std::map<std::string,std::map<std::string,std::string> > tags;
@@ -105,6 +108,10 @@ private:
   std::auto_ptr<ticker> file_id_ticker;
   std::auto_ptr<ticker> revision_ticker;
   std::auto_ptr<ticker> cvs_edges_ticker;
+
+  // for delta encoding of files
+  std::set<file_state> remove_set; // remove_state lives here
+  cvs_file_state remove_state;
 
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
@@ -130,6 +137,7 @@ private:
   std::set<cvs_edge>::iterator last_known_revision();
   std::set<cvs_edge>::iterator commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid);
+  const cvs_manifest &get_files(const cvs_edge &e);
   
 public: // semi public interface for push/pull
   void prime();
