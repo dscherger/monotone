@@ -108,12 +108,14 @@ public:
   struct update Update(const std::string &file, 
             const std::string &old_revision, const std::string &new_revision,
             const std::string &keyword_substitution);
+  void Update(const std::vector<update_args> &args, const update_callbacks &cb);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
   static std::string pserver_password(const std::string &root);
   
   std::string shorten_path(const std::string &p) const;
-  void Update(const std::vector<update_args> &args, const update_callbacks &cb);
+  static void parse_entry(const std::string &line, std::string &new_revision, 
+                            std::string &keyword_substitution);
 };
 

@@ -468,6 +468,8 @@ loop:
   // more complex results
   if (begins_with(x,"Clear-sticky ",len) 
       || begins_with(x,"Set-static-directory ",len)
+      || begins_with(x,"Clear-static-directory ",len)
+      || begins_with(x,"Clear-template ",len)
       || begins_with(x,"Removed ",len)
       || begins_with(x,"Remove-entry",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
@@ -817,12 +819,8 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
             I(lresult.size()==7);
             I(lresult[6].first=="data");
             I(lresult[3].first=="new entries line");
-            { std::vector<std::string> parts;
-              stringtok(parts,lresult[3].second,"/");
-              I(parts.size()==6);
-//              result.new_revision=parts[2]
-              result.keyword_substitution=parts[4];
-            }
+            std::string new_revision;
+            parse_entry(lresult[3].second,new_revision,result.keyword_substitution);
             result.mode=lresult[4].second;
             result.contents=lresult[6].second;
             L(F("file %s revision %s: %d bytes\n") % file 
@@ -970,11 +968,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         dir=lresult[1].second;
         result.file=lresult[2].second;
         result.contents=lresult[6].second;
-        std::vector<std::string> parts;
-        stringtok(parts,lresult[3].second,"/");
-        I(parts.size()==6);
-        result.new_revision=parts[2];
-        result.keyword_substitution=parts[4];
+        parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         cb(result);
         result=update();
         state=st_normal;
@@ -985,11 +979,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         dir=lresult[1].second;
         result.file=lresult[2].second;
         result.patch=lresult[6].second;
-        std::vector<std::string> parts;
-        stringtok(parts,lresult[3].second,"/");
-        I(parts.size()==6);
-        result.new_revision=parts[2];
-        result.keyword_substitution=parts[4];
+        parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         cb(result);
         result=update();
         state=st_normal;
@@ -1007,6 +997,10 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         result=update();
         state=st_normal;
       }
+      else if (lresult[0].second=="Clear-static-directory"
+          || lresult[0].second=="Clear-template")
+      { 
+      }
       else if (lresult[0].second=="Copy-file")
       { I(state==st_merge);
       }
@@ -1016,16 +1010,10 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         I(lresult[6].first=="data");
         dir=lresult[1].second;
         result.file=lresult[2].second;
-        result.contents=lresult[6].second; // unnecessary ...
-        std::vector<std::string> parts;
-        stringtok(parts,lresult[3].second,"/");
-        I(parts.size()==6);
-        result.new_revision=parts[2];
-        result.keyword_substitution=parts[4];
-//        cb(file,result);
-        // old revision is not needed ...
-        W(F("Update %s->%s of %s exposed CVS bug\n") 
-            % "?" % result.new_revision % result.file);
+        result.contents=lresult[6].second; // strictly this is unnecessary ...
+        parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
+        W(F("Update ->%s of %s exposed CVS bug\n") 
+            % result.new_revision % result.file);
         bugged.push_back(update_args(result.file,std::string(),
                           result.new_revision,result.keyword_substitution));
         result=update();
@@ -1087,4 +1075,16 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     result.file=i->file;
     cb(result);
   }
+}
+
+void cvs_client::parse_entry(const std::string &line, std::string &new_revision, 
+                            std::string &keyword_substitution)
+{
+  std::vector<std::string> parts;
+  stringtok(parts,line,"/");
+  // empty last part will not get created
+  if (parts.size()==5) parts.push_back(std::string());
+  I(parts.size()==6);
+  new_revision=parts[2];
+  keyword_substitution=parts[4];
 }
