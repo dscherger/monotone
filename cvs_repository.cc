@@ -679,6 +679,8 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   manifest_map child_map=parent_map;
   packet_db_writer dbw(app);
   
+  cvs_edges_ticker.reset(0);
+  revision_ticker.reset(new ticker("revisions", "R", 3));
 //  const cvs_manifest *oldmanifestp=&empty;
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
@@ -798,14 +800,11 @@ void cvs_repository::prime()
       update(s,s2,i->first,file_contents);
     }
   }
+  drop_connection();
 
   // fill in file states at given point
   fill_manifests(edges.begin());
   // commit them all
-  
-  cvs_edges_ticker.reset(0);
-  revision_ticker.reset(new ticker("revisions", "R", 3));
-
   commit_revisions(edges.begin());
 }
 
@@ -834,7 +833,6 @@ cvs_repository::cvs_repository(app_state &_app, const std::string &repository,
         revision_ticker(), cvs_edges_ticker(), remove_state()
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
-  revision_ticker.reset(new ticker("revisions", "R", 3));
   remove_state=remove_set.insert(file_state(0,"-",true)).first;
 }
 
@@ -1022,7 +1020,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     packet_db_writer dbw(app);
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
-    debug();
+    if (sanity.debug) debug();
     return --(edges.end());
   }
   W(F("no matching parent found\n"));
@@ -1199,7 +1197,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       revision_lookup[e.revision]=edges.insert(e).first;
     }
   }
-  debug();
+  if (sanity.debug) debug();
 }
 
 struct cvs_repository::update_cb : cvs_client::update_callbacks
@@ -1291,12 +1289,14 @@ void cvs_repository::update()
       }
     }
   }
+  drop_connection();
+  
   std::set<cvs_edge>::iterator dummy_iter=now_iter;
   ++dummy_iter;
   join_edge_parts(dummy_iter);
   
   fill_manifests(dummy_iter);
-  debug();
+  if (sanity.debug) debug();
   commit_revisions(dummy_iter);
 }
 
@@ -1343,10 +1343,11 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
 
 void cvs_sync::admin(const std::string &command, const std::string &arg, 
             app_state &app)
-{ test_key_availability(app);
-
+{ 
+#if 0 // neither used (nor finished) command to migrate pre0.17 certs
   if (command=="compact")
-  { std::string::size_type slash=arg.rfind('/');
+  { test_key_availability(app);
+    std::string::size_type slash=arg.rfind('/');
     I(slash!=std::string::npos);
     cvs_sync::cvs_repository repo(app,arg.substr(0,slash),arg.substr(slash+1),false);
     transaction_guard guard(app.db);
@@ -1359,5 +1360,37 @@ void cvs_sync::admin(const std::string &command, const std::string &arg,
     
     guard.commit();
   }
+#endif
+  // we default to the first repository found (which might not be what you wanted)
+  if (command=="manifest" && arg.size()==constants::idlen)
+  { revision_id rid(arg);
+    // easy but not very efficient way, better would be to retrieve revisions
+    // recursively (perhaps?)
+    std::vector< revision<cert> > certs;
+    app.db.get_revision_certs(rid,cvs_cert_name,certs);
+    N(!certs.empty(),F("revision has no 'cvs-revisions' certificates\n"));
+    
+    cert_value cvs_revisions;
+    decode_base64(certs.front().inner().value, cvs_revisions);
+    std::string::size_type nl=cvs_revisions().find('\n');
+    I(nl!=std::string::npos);
+    std::string line=cvs_revisions().substr(0,nl);
+    std::string::size_type slash=line.rfind('/');
+    I(slash!=std::string::npos);
+    cvs_sync::cvs_repository repo(app,line.substr(0,slash),line.substr(slash+1),false);
+    app.db.get_revision_certs(cvs_cert_name, certs);
+    // erase_bogus_certs ?
+    repo.process_certs(certs);
+    std::cerr << line << '\n';
+    debug_manifest(repo.get_files(rid));
+    return;
+  }
+  
 }
 
+const cvs_manifest &cvs_repository::get_files(const revision_id &rid)
+{ std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
+        cache_item=revision_lookup.find(rid);
+  I(cache_item!=revision_lookup.end());
+  return get_files(*(cache_item->second));
+}

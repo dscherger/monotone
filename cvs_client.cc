@@ -238,8 +238,10 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
       gzip_level(), module(_module)
 { bool pserver=false;
   std::string user;
-  byte_in_ticker.reset(new ticker("bytes in", ">", 256));
-  byte_out_ticker.reset(new ticker("bytes out", "<", 256));
+  if (do_connect)
+  { byte_in_ticker.reset(new ticker("bytes in", ">", 256));
+    byte_out_ticker.reset(new ticker("bytes out", "<", 256));
+  }
   { unsigned len;
     std::string d_arg=repository;
     if (begins_with(d_arg,":pserver:",len))
@@ -392,9 +394,19 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
 //  writestr("Global_option -q\n"); // -Q?
 }
 
-cvs_client::~cvs_client()
-{ deflateEnd(&compress);
+void drop_connection()
+{ byte_in_ticker.reset();
+  byte_out_ticker.reset();
+  deflateEnd(&compress);
   inflateEnd(&decompress);
+  if (readfd!=-1) 
+  { close(readfd); readfd=-1; }
+  if (writefd!=-1) 
+  { close(writefd); writefd=-1; }
+}
+
+cvs_client::~cvs_client()
+{ drop_connection();
 }
 
 void cvs_client::InitZipStream(int level)

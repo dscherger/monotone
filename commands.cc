@@ -3584,7 +3584,7 @@ CMD(cvs_push, "network", "CVS-REPOSITORY CVS-MODULE",
 
 
 CMD(cvs_admin, "network", "COMMAND ARG",
-    "e.g. compact PATH")
+    "e.g. manifest REVISION")
 {
   if (args.size() != 2) throw usage(name);
   cvs_sync::admin(idx(args, 0)(), idx(args, 1)(), app);

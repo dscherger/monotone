@@ -135,5 +135,7 @@ public:
   static void parse_entry(const std::string &line, std::string &new_revision, 
                             std::string &keyword_substitution);
   void Directory(const std::string &path);
+  
+  void drop_connection();
 };
 

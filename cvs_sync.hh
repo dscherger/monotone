@@ -146,6 +146,8 @@ public: // semi public interface for push/pull
   void process_certs(const std::vector< revision<cert> > &certs);
   bool empty() const { return edges.empty() && files.empty(); }
 
+  const cvs_manifest &get_files(const revision_id &e);
+
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module, bool connect=true);
 
