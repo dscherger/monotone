@@ -627,7 +627,9 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
             begins_with(result,"total revisions: "))
           ;
         else if (result=="description:")
-          state=st_desc;
+        { state=st_desc;
+          description=std::string();
+        }
         else if (result=="symbolic names:")
           state=st_tags;
         else
@@ -700,6 +702,7 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
           dead=lresult[5].second;
         }
         state=st_msg;
+        message=std::string();
         break;
       }
       case st_msg:
