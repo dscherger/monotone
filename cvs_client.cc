@@ -30,6 +30,15 @@ watch-on watch-off watch-add watch-remove watchers editors annotate
 rannotate noop version
 */
 
+struct rlog_callbacks
+{ // virtual void file(const std::string &file,)=0;
+  virtual void tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const=0;
+  virtual void revision(const std::string &file,time_t t,
+        const std::string &rev,const std::string &state,
+        const std::string &log) const=0;
+};
+
 class cvs_client
 { int readfd,writefd;
   size_t bytes_read,bytes_written;
@@ -63,6 +72,7 @@ public:
     if (newline) std::cerr << '\n';
   }
   void SendCommand(const char *cmd,...);
+  void SendCommand(const char *cmd, va_list ap);
   // false if none available
   bool fetch_result(std::string &result);
   // semi internal helper to get one result line from a list
@@ -70,6 +80,8 @@ public:
   // MT style
   bool fetch_result(std::vector<std::pair<std::string,std::string> > &result);
   void GzipStream(int level);
+  
+  void RLog(const rlog_callbacks &cb,bool dummy,...);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
@@ -395,7 +407,12 @@ std::string trim(const std::string &s)
 void cvs_client::SendCommand(const char *cmd,...)
 { va_list ap;
   va_start(ap, cmd);
-  const char *arg;
+  SendCommand(cmd,ap);
+  va_end(ap);
+}
+
+void cvs_client::SendCommand(const char *cmd,va_list ap)
+{ const char *arg;
   while ((arg=va_arg(ap,const char *)))
   { writestr("Argument "+std::string(arg)+"\n");
   }
@@ -696,16 +713,141 @@ void cvs_repository::debug() const
   std::cerr << "Files : ";
   for (std::map<std::string,file>::const_iterator i=files.begin();
       i!=files.end();++i)
-  { std::cerr << i->first << " (" << i->second.known_states.size() << " states) ";
+  { unsigned len=0;
+    if (begins_with(i->first,module,len))
+    { if (i->first[len]=='/') ++len;
+      std::cerr << i->first.substr(len);
+    }
+    else std::cerr << i->first;
+    std::cerr << "(";
+    for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
+          j!=i->second.known_states.end();)
+    { if (!j->contents.empty()) std::cerr << j->contents.size();
+      else if (!j->rcs_patch.empty()) std::cerr << 'p' << j->rcs_patch.size();
+      ++j;
+      if (j!=i->second.known_states.end()) std::cerr << ',';
+    }
+    std::cerr << ") ";
   }
   std::cerr << '\n';
   // tags map<string,map<string,string> >
   std::cerr << "Tags : ";
   for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
       i!=tags.end();++i)
-  { std::cerr << i->first << " (" << i->second.size() << " files) ";
+  { std::cerr << i->first << "(" << i->second.size() << " files) ";
   }
   std::cerr << '\n';
+}
+
+// dummy is needed to satisfy va_start (cannot pass objects of non-POD type)
+void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
+{ { va_list ap;
+    va_start(ap,dummy);
+    SendCommand("rlog",ap);
+    va_end(ap);
+  }
+  enum { st_head, st_tags, st_desc, st_rev, st_msg, st_date_author 
+       } state=st_head;
+  std::vector<std::pair<std::string,std::string> > lresult;
+  std::string file;
+  std::string revision;
+  std::string message;
+  std::string author;
+  std::string description;
+  std::string dead;
+  time_t checkin_time=0;
+  while (fetch_result(lresult))
+  {reswitch:
+    L(F("state %d\n") % int(state));
+    switch(state)
+    { case st_head:
+      { std::string result=combine_result(lresult);
+        unsigned len;
+        if (result.empty()) break; // accept a (first) empty line
+        if (begins_with(result,"RCS file: ",len))
+        { I(result.substr(len,root.size())==root);
+          file=result.substr(len+root.size());
+          if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
+        }
+        else if (begins_with(result,"head: ") ||
+            begins_with(result,"branch:") ||
+            begins_with(result,"locks: ") ||
+            begins_with(result,"access list:") ||
+            begins_with(result,"keyword substitution: ") ||
+            begins_with(result,"total revisions: "))
+          ;
+        else if (result=="description:")
+          state=st_desc;
+        else if (result=="symbolic names:")
+          state=st_tags;
+        else
+        { std::cerr << "unknown rcs head '" << result << "'\n";
+        }
+        break;
+      }
+      case st_tags:
+      { std::string result=combine_result(lresult);
+        I(!result.empty());
+        if (result[0]!='\t') 
+        { L(F("result[0] %d %d\n") % result.size() % int(result[0])); state=st_head; goto reswitch; }
+        I(result.find_first_not_of("\t ")==1);
+        std::string::size_type colon=result.find(':');
+        I(colon!=std::string::npos);
+        cb.tag(file,result.substr(1,colon-1),result.substr(colon+2));
+        break;
+      }
+      case st_desc:
+      { std::string result=combine_result(lresult);
+        if (result=="----------------------------")
+        { state=st_rev;
+          // cb.file(file,description);
+        }
+        else
+        { if (!description.empty()) description+='\n';
+          description+=result;
+        }
+        break;
+      }
+      case st_rev:
+      { std::string result=combine_result(lresult);
+        I(begins_with(result,"revision "));
+        revision=result.substr(9);
+        state=st_date_author;
+        break;
+      }
+      case st_date_author:
+      { I(lresult.size()==11 || lresult.size()==7);
+        I(lresult[0].first=="text");
+        I(lresult[0].second=="date: ");
+        I(lresult[1].first=="date");
+        checkin_time=rls_l2time_t(lresult[1].second);
+        I(lresult[2].first=="text");
+        I(lresult[2].second==";  author: ");
+        I(lresult[3].first=="text");
+        author=lresult[3].second;
+        I(lresult[4].first=="text");
+        I(lresult[4].second==";  state: ");
+        I(lresult[5].first=="text");
+        dead=lresult[5].second;
+        state=st_msg;
+        break;
+      }
+      case st_msg:
+      { std::string result=combine_result(lresult);
+        // evtl überprüfen, ob das nicht nur ein fake war ...
+        if (result=="----------------------------" ||
+            result=="=============================================================================")
+        { state=st_rev;
+          cb.revision(file,checkin_time,revision,dead,message);
+        }
+        else
+        { if (!message.empty()) message+='\n';
+          message+=result;
+        }
+        break;
+      }
+    }
+  }
 }
 
 void cvs_repository::prime()
@@ -877,7 +1019,7 @@ void cvs_repository::prime()
             }
           }
           else if (lresult[0].second=="+updated")
-          { std::cerr << combine_result(lresult) << '\n';
+          { // std::cerr << combine_result(lresult) << '\n';
           }
           else 
           { std::cerr << "unrecognized response " << lresult[0].second << '\n';
