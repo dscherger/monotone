@@ -584,46 +584,34 @@ void cvs_repository::prime(app_state &app)
         for (;s!=f->second.known_states.end();)
         { cvs_file_state s2=s;
           ++s2;
-          if (s2==f->second.known_states.end()) // this file remains dead
-            goto continue_f;
-          if (s2->since_when <= e->time2)
-            s=s2;
-          else break;
+          if (s2==f->second.known_states.end() || s2->since_when > e->time2)
+            break;
+          s=s2;
         }
         I(s!=f->second.known_states.end());
-        // a revision was found
-        if (s->since_when <= e->time2)
-        { if (!s->dead) 
-          { current_manifest[f->first]=s;
-            ++s;
-            // check ins must not overlap
-if (s!=f->second.known_states.end() && s->since_when <= e->time2)
-{for (cvs_file_state s2=f->second.known_states.begin();s2!=f->second.known_states.end();++s2)
-  std::cerr << *s2 << ',';
-std::cerr << '\n';
-}
-              I(s==f->second.known_states.end()
-                || s->since_when > e->time2);
-          }
+        // a live revision was found
+        if (s->since_when <= e->time2 && !s->dead)
+        { current_manifest[f->first]=s;
+          I(!s->sha1sum().empty());
+          ++s;
+          // check ins must not overlap (next revision must lie beyond edge)
+          I(s==f->second.known_states.end() || s->since_when > e->time2);
         }
       }
-      else // file was present in last manifest
-      { cvs_file_state st=mi->second;
-        ++st;
-        if (st==f->second.known_states.end()) goto continue_f;
-        if (st->since_when <= e->time2)
-        { if (st->dead) current_manifest.erase(mi);
+      else // file was present in last manifest, check next revision
+      { cvs_file_state s=mi->second;
+        ++s;
+        if (s!=f->second.known_states.end() && s->since_when <= e->time2)
+        { if (s->dead) current_manifest.erase(mi);
           else 
-          { mi->second=st;
-            I(!st->sha1sum().empty());
+          { mi->second=s;
+            I(!s->sha1sum().empty());
           }
-          ++st;
-          // check ins must not overlap
-          I(st==f->second.known_states.end()
-            || st->since_when > e->time2);
+          ++s;
+          // check ins must not overlap (next revision must lie beyond edge)
+          I(s==f->second.known_states.end() || s->since_when > e->time2);
         }
       }
-     continue_f: ;
     }
     const_cast<cvs_manifest&>(e->files)=current_manifest;
   }
@@ -649,6 +637,9 @@ std::cerr << '\n';
     apply_change_set(cs, child_map);
     if (child_map.empty()) 
     { W(F("empty edge (no files in manifest) @%ld skipped\n") % e->time);
+      // perhaps begin a new tree:
+      // parent_rid=revision_id();
+      // parent_mid=manifest_id();
       continue;
     }
     manifest_id child_mid;
@@ -665,7 +656,7 @@ std::cerr << '\n';
     {
         L(F("existing path to %s found, skipping\n") % child_mid);
     }
-    else if (e==edges.begin())
+    else if (parent_mid.inner()().empty())
     {
       manifest_data mdat;
       I(!child_map.empty());
