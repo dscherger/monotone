@@ -61,17 +61,15 @@ class cvs_client
     : file(f), old_revision(o) {}
   };
   struct commit_arg
-  { std::string old_revision;
+  { std::string file;
+    std::string old_revision; // newly_added => "0"
     std::string keyword_substitution;
-//    std::string file; later substitute the map by a vector
-    bool changed; // unneeded
+    // actually these two form a tristate ;-)
     bool removed;
-    bool added;
     std::string new_content;
     
-    commit_arg() : changed(), removed(), added() {}
-    commit_arg(const std::string &rev) 
-    : old_revision(rev), changed(), removed(), added() {}
+    commit_arg() : old_revision("0"), removed() {}
+    commit_arg(const std::string &rev) : old_revision(rev), removed() {}
   };
 
 private:
@@ -124,10 +122,10 @@ public:
             const std::string &old_revision, const std::string &new_revision,
             const std::string &keyword_substitution);
   void Update(const std::vector<update_args> &args, const update_callbacks &cb);
-  // returns <filename, revision>
+  // returns <filename, new_revision ("" on remove)>
   std::map<std::string,std::string>
          Commit(const std::string &changelog, time_t when, 
-                    const std::map<std::string,commit_arg> &commits);
+                    const std::vector<commit_arg> &commits);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
