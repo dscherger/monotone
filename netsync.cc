@@ -2733,8 +2733,8 @@ serve_stdio(protocol_role role,
   P(F("beginning service on stdio\n"));
 
   shared_ptr<session> sess=new session(role, server_voice, collections, 
-                                all_collections, app, "-", 
-                		0, static_cast<long>(timeout_seconds));
+                                all_collections, app, lexical_cast<string>("-"), 
+                		std::make_pair(0,1), static_cast<long>(timeout_seconds));
   sess->begin_service();
   // no addr, no server
   bool live_p = true;
