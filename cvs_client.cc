@@ -1147,3 +1147,9 @@ void cvs_client::parse_entry(const std::string &line, std::string &new_revision,
   new_revision=parts[2];
   keyword_substitution=parts[4];
 }
+
+std::map<std::string,std::string>
+         cvs_client::Commit(const std::string &changelog, time_t when, 
+                    const std::map<std::string,commit_arg> &commits)
+{ return std::map<std::string,std::string>();
+}
