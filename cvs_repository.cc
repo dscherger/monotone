@@ -160,7 +160,7 @@ void cvs_repository::debug() const
   std::cerr << "Tags :\n";
   for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
       i!=tags.end();++i)
-  { std::cerr << i->first << "(" << i->second.size() << " files)";
+  { std::cerr << i->first << "(" << i->second.size() << " files)\n";
   }
 //  std::cerr << '\n';
 }
