@@ -126,3 +126,5 @@ branch update:
 we need to store the branch inside the CVS tag, once non-HEAD revisions occur
 we can use log -r NAME. to get the latest revision info
 we can use log -r NAME to get the radix for the branch
+
+-N -S? 

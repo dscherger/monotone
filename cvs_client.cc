@@ -644,7 +644,7 @@ static time_t mod_time2time_t(const std::string &t)
   return timezone2time_t(tm,dst_offs);
 }
 
-static std::string time_t2rfc822(time_t t)
+std::string cvs_client::time_t2rfc822(time_t t)
 { static const char * const months[12] = 
   {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
   struct tm *tm=gmtime(&t);

@@ -137,5 +137,6 @@ public:
   void Directory(const std::string &path);
   
   void drop_connection();
+  static std::string time_t2rfc822(time_t t);
 };
 

@@ -764,7 +764,12 @@ void cvs_repository::prime()
   revision_ticker.reset(0);
   cvs_edges_ticker.reset(new ticker("edges", "E", 10));
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
-  { RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
+  { // -d D< (sync_since)
+    if (sync_since!=-1) 
+      RLog(prime_log_cb(*this,i),false,
+          "-d",(time_t2rfc822(sync_since)+"<=").c_str(),
+          "-b",i->first.c_str(),0);
+    else RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),0);
   }
   // remove duplicate states (because some edges were added by the 
   // get_all_files method
@@ -830,10 +835,12 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
 cvs_repository::cvs_repository(app_state &_app, const std::string &repository, 
             const std::string &module, bool connect)
       : cvs_client(repository,module,connect), app(_app), file_id_ticker(), 
-        revision_ticker(), cvs_edges_ticker(), remove_state()
+        revision_ticker(), cvs_edges_ticker(), remove_state(), sync_since(-1)
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
   remove_state=remove_set.insert(file_state(0,"-",true)).first;
+  if (!app.sync_since().empty())
+    sync_since=posix2time_t(app.sync_since());
 }
 
 static void test_key_availability(app_state &app)
@@ -862,6 +869,17 @@ std::set<cvs_edge>::iterator cvs_repository::last_known_revision()
   return now_iter;
 }
 
+time_t cvs_repository::posix2time_t(std::string posix_format)
+{ std::string::size_type next_illegal=0;
+  while ((next_illegal=posix_format.find_first_of("-:"))!=std::string::npos)
+        posix_format.erase(next_illegal,1);
+  boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(posix_format);
+  boost::posix_time::time_duration dur= tmp
+          -boost::posix_time::ptime(boost::gregorian::date(1970,1,1),
+                          boost::posix_time::time_duration(0,0,0,0));
+  return dur.total_seconds();
+}
+
 cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
  : changelog_valid(), time(), time2()
 { revision=hexenc<id>(rid.inner());
@@ -875,15 +893,7 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
     decode_base64(c->inner().value, value);   
     if (c->inner().name()==date_cert_name)
     { L(F("date cert %s\n")%value());
-      std::string posix_format=value();
-      std::string::size_type next_illegal=0;
-      while ((next_illegal=posix_format.find_first_of("-:"))!=std::string::npos)
-        posix_format.erase(next_illegal,1);
-      boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(posix_format);
-      boost::posix_time::time_duration dur= tmp
-          -boost::posix_time::ptime(boost::gregorian::date(1970,1,1),
-                          boost::posix_time::time_duration(0,0,0,0));
-      time=time2=dur.total_seconds();
+      time=time2=cvs_repository::posix2time_t(value());
     }
     else if (c->inner().name()==author_cert_name)
     { author=value();

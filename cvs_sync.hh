@@ -112,6 +112,8 @@ private:
   // for delta encoding of files
   std::set<file_state> remove_set; // remove_state lives here
   cvs_file_state remove_state;
+  
+  time_t sync_since;
 
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
@@ -147,6 +149,8 @@ public: // semi public interface for push/pull
   bool empty() const { return edges.empty() && files.empty(); }
 
   const cvs_manifest &get_files(const revision_id &e);
+  
+  static time_t posix2time_t(std::string s);
 
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module, bool connect=true);
