@@ -44,7 +44,7 @@ public:
   
   size_t get_bytes_read() const { return bytes_read; }
   size_t get_bytes_written() const { return bytes_written; }
-  void ticker(bool newline=true)
+  void ticker(bool newline=true) const
   { std::cerr << "[bytes in: " << bytes_read << "] [bytes out: " 
           << bytes_written << "]";
     if (newline) std::cerr << '\n';
@@ -53,7 +53,7 @@ public:
   // false if none available
   bool fetch_result(std::string &result);
   // semi internal helper to get one result line from a list
-  std::string combine_result(const std::list<std::pair<std::string,std::string> > &result);
+  static std::string combine_result(const std::list<std::pair<std::string,std::string> > &result);
   // MT style
   bool fetch_result(std::list<std::pair<std::string,std::string> > &result);
   void GzipStream(int level);
@@ -115,6 +115,8 @@ struct cvs_edge // careful this name is also used in cvs_import
 
   cvs_edge() : changelog_valid(), time() {} 
   cvs_edge(time_t when) : changelog_valid(), time(when) {} 
+  cvs_edge(const std::string &log, time_t when, const std::string &auth) 
+    : changelog(log), changelog_valid(true), author(auth), time(when) {} 
   
   inline bool similar_enough(cvs_edge const & other) const
   {
@@ -161,7 +163,7 @@ private:
   std::set<cvs_edge> edges;
   std::map<std::string,file> files;
   // tag,file,rev
-  std::map<std::string,std::pair<std::string,std::string> > tags;
+  std::map<std::string,std::map<std::string,std::string> > tags;
   
   void prime();
 public:  
@@ -172,15 +174,17 @@ public:
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
-  void ticker();
+  void ticker() const;
   const tree_state_t &now();
   const tree_state_t &find(const std::string &date,const std::string &changelog);
   const tree_state_t &next(const tree_state_t &m) const;
+  
+  void debug() const;
 };
 
 //--------------------- implementation -------------------------------
 
-void cvs_repository::ticker()
+void cvs_repository::ticker() const
 { cvs_client::ticker(false);
   std::cerr << " [files: " << files.size() 
           << "] [edges: " << edges.size() 
@@ -590,6 +594,12 @@ const cvs_repository::tree_state_t &cvs_repository::now()
   return (--edges.end())->files; // wrong of course
 }
 
+void cvs_repository::debug() const
+{ // edges set<cvs_edge>
+  // files map<string,file>
+  // tags map<string,map<string,string> >
+}
+
 void cvs_repository::prime()
 { for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
   { SendCommand("rlog","-b",i->first.c_str(),0);
@@ -634,9 +644,8 @@ void cvs_repository::prime()
           I(result.find_first_not_of("\t ")==1);
           std::string::size_type colon=result.find(':');
           I(colon!=std::string::npos);
-          std::pair<std::string,std::string> &tagslot=tags[result.substr(1,colon-1)];
-          tagslot.first=i->first;
-          tagslot.second=result.substr(colon+2);
+          std::map<std::string,std::string> &tagslot=tags[result.substr(1,colon-1)];
+          tagslot[i->first]=result.substr(colon+2);
           break;
         }
         case st_desc:
@@ -699,6 +708,7 @@ void cvs_repository::prime()
             // set iterators are read only to prevent you from destroying the order
             file_state &fs=const_cast<file_state &>(*(iter.first));
             fs.log_msg=message;
+            edges.insert(cvs_edge(message,checkin_time,author));
           }
           else
           { if (!message.empty()) message+='\n';
