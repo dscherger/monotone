@@ -2707,6 +2707,55 @@ serve_connections(protocol_role role,
     }
 }
 
+static void 
+serve_stdio(protocol_role role,
+		  vector<utf8> const & collections,
+		  set<string> const & all_collections,
+		  app_state & app,
+		  // ?
+		  unsigned long timeout_seconds)
+{
+  P(F("beginning service on stdio\n"));
+
+  // no addr, no server
+  handle_new_connection(0,1, timeout, role, 
+			      collections, all_collections, app);
+  bool live_p = true;
+  while (live_p)
+    {      
+      fd_set rfds,wfds;
+      struct timeval tv;
+      int retval;
+
+      FD_ZERO(&rfds);
+      FD_SET(0, &rfds);
+      FD_ZERO(&wfds);
+      FD_SET(1, &wfds);
+      tv.tv_sec = timeout_seconds;
+      tv.tv_usec = 0;
+      
+      retval = select(2, &rfds, &wfds, NULL, &tv);
+      
+      if (retval == -1)
+      {  P(F("select: errno %d\n") % errno);
+         live_p=false;
+      }
+      else if (retval==0)
+      {  P(F("select: timeout\n"));
+         live_p=false;
+      }
+      else
+      {  if (FD_ISSET(0, &rfds))
+	    handle_read_available(0, live_p);
+		
+         if (live_p && FD_ISSET(1, &wfds))
+	    handle_write_available(1, live_p);
+      }
+		
+    }
+  // cleanup?
+}
+
 
 /////////////////////////////////////////////////
 //
