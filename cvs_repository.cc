@@ -530,6 +530,9 @@ void cvs_repository::prime(app_state &app)
         const_cast<unsigned&>(s2->size)=c.contents.size();
         index_deltatext(c.contents,file_contents);
       }
+      else if (s2->dead) // short circuit if we already know it's dead
+      { L(F("file %s: revision %s already known to be dead\n") % i->first % s2->cvs_version);
+      }
       else
       { cvs_client::update u=Update(i->first,s->cvs_version,s2->cvs_version);
         if (u.removed)
