@@ -34,7 +34,18 @@ struct checkout
 };
 
 class cvs_client
-{ int readfd,writefd;
+{public:
+  struct update
+  { std::string contents;
+    std::string checksum;
+    std::string patch;
+  };
+  typedef struct checkout checkout;
+  typedef struct rlist_callbacks rlist_callbacks;
+  typedef struct rlog_callbacks rlog_callbacks;
+
+private:
+  int readfd,writefd;
   size_t bytes_read,bytes_written;
   typedef std::set<std::string> stringset_t;
   stringset_t Valid_requests;
@@ -77,6 +88,8 @@ public:
   void RLog(const rlog_callbacks &cb,bool dummy,...);
   void RList(const rlist_callbacks &cb,bool dummy,...);
   struct checkout CheckOut(const std::string &file, const std::string &revision);
+  struct update Update(const std::string &file, 
+            const std::string &old_revision, const std::string &new_revision);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }

@@ -380,7 +380,20 @@ loop:
     result.push_back(std::make_pair("date",x.substr(len)));
     return true;
   }
-  if (begins_with(x,"Created ",len))
+  if (begins_with(x,"Checksum ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("data",x.substr(len)));
+    return true;
+  }
+  if (begins_with(x,"Checked-in ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("dir",x.substr(len)));
+    result.push_back(std::make_pair("rcs",readline()));
+    result.push_back(std::make_pair("new entries line",readline()));
+    return true;
+  }
+  if (begins_with(x,"Created ",len) || begins_with(x,"Update-existing ",len)
+      || begins_with(x,"Rcs-diff ",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("dir",x.substr(len)));
     result.push_back(std::make_pair("rcs",readline()));
@@ -391,6 +404,7 @@ loop:
     result.push_back(std::make_pair("data",read_n(atol(length.c_str()))));
     return true;
   }
+  
 error:
   std::cerr << "unrecognized result \"" << x << "\"\n";
   exit(1);
@@ -705,4 +719,65 @@ struct checkout cvs_client::CheckOut(const std::string &file, const std::string 
     }
   }
   return result;
+}
+
+static std::string basename(const std::string &s)
+{ std::string::size_type lastslash=s.rfind("/");
+  if (lastslash==std::string::npos) return s;
+  return s.substr(lastslash+1);
+}
+
+static std::string dirname(const std::string &s)
+{ std::string::size_type lastslash=s.rfind("/");
+  if (lastslash==std::string::npos) return ".";
+  if (!lastslash) return "/";
+  return s.substr(0,lastslash);
+}
+
+struct cvs_client::update cvs_client::Update(const std::string &file, 
+            const std::string &old_revision, const std::string &new_revision)
+{ struct update result;
+  writestr("Directory .\n"+root+"/"+dirname(file)+"\n");
+  std::string bname=basename(file);
+  writestr("Entry /"+bname+"/"+old_revision+"///\n");
+  writestr("Unchanged "+bname+"\n");
+  SendCommand("update","-r",new_revision.c_str(),"-u","--",bname.c_str(),0);
+  std::vector<std::pair<std::string,std::string> > lresult;
+  std::string dir,dir2,rcsfile;
+  while (fetch_result(lresult))
+  { I(!lresult.empty());
+    if (lresult[0].first=="CMD")
+    { if (lresult[0].second=="Update-existing")
+      { dir=lresult[1].second;
+        I(lresult.size()==7);
+        I(lresult[6].first=="data");
+        result.contents=lresult[6].second;
+      }
+      else if (lresult[0].second=="Rcs-diff")
+      { dir=lresult[1].second;
+        I(lresult.size()==7);
+        I(lresult[6].first=="data");
+        result.patch=lresult[6].second;
+      }
+      else if (lresult[0].second=="Checksum")
+      { I(lresult.size()==2);
+        I(lresult[1].first=="data");
+        result.checksum=lresult[1].second;
+      }
+      else
+      { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+      }
+    }
+    else if (lresult[0].second=="+updated")
+    { // std::cerr << combine_result(lresult) << '\n';
+    }
+    else if (lresult[0].second=="P ")
+    { // std::cerr << combine_result(lresult) << '\n';
+      I(lresult[1].first=="fname");
+      I(lresult.size()==2);
+    }
+    else 
+    { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+    }
+  }
 }
