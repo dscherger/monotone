@@ -267,41 +267,51 @@ void cvs_repository::get_all_files()
   }
 }
 
+void debug_manifest(const cvs_manifest &mf)
+{ for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
+  { std::cerr << i->first << ' ' << i->second->cvs_version << ' ' 
+      << (i->second->dead?"dead ":"") << i->second->sha1sum() << '\n';
+  }
+}
+
 void cvs_repository::debug() const
-{ // edges set<cvs_edge>
-  std::cerr << "Edges :\n";
+{ std::ostream &os=std::cerr;
+
+  // edges set<cvs_edge>
+  os << "Edges :\n";
   for (std::set<cvs_edge>::const_iterator i=edges.begin();
       i!=edges.end();++i)
-  { std::cerr << "[" << i->time;
-    if (i->time!=i->time2) std::cerr << '+' << (i->time2-i->time);
+  { os << "[" << i->time;
+    if (i->time!=i->time2) os << '+' << (i->time2-i->time);
+    if (!i->revision().empty()) os << ',' << i->revision();
     if (!i->xfiles.empty()) 
-      std::cerr << ',' << i->xfiles.size() 
+      os << ',' << i->xfiles.size() 
          << (i->delta_base.inner()().empty()?"files":"deltas");
-    std::cerr << ',' << i->author << ',';
+    os << ',' << i->author << ',';
     std::string::size_type nlpos=i->changelog.find_first_of("\n\r");
     if (nlpos>50) nlpos=50;
-    std::cerr << i->changelog.substr(0,nlpos) << "]\n";
+    os << i->changelog.substr(0,nlpos) << "]\n";
   }
-  std::cerr << "Files :\n";
+  os << "Files :\n";
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
-  { std::cerr << shorten_path(i->first);
-    std::cerr << "(";
+  { os << shorten_path(i->first);
+    os << "(";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
-    { if (j->dead) std::cerr << "dead";
-      else if (j->size) std::cerr << j->size;
-      else if (j->patchsize) std::cerr << 'p' << j->patchsize;
-      else if (!j->sha1sum().empty()) std::cerr << j->sha1sum().substr(0,3) << j->keyword_substitution;
+    { if (j->dead) os << "dead";
+      else if (j->size) os << j->size;
+      else if (j->patchsize) os << 'p' << j->patchsize;
+      else if (!j->sha1sum().empty()) os << j->sha1sum().substr(0,3) << j->keyword_substitution;
       ++j;
-      if (j!=i->second.known_states.end()) std::cerr << ',';
+      if (j!=i->second.known_states.end()) os << ',';
     }
-    std::cerr << ")\n";
+    os << ")\n";
   }
-  std::cerr << "Tags :\n";
+  os << "Tags :\n";
   for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
       i!=tags.end();++i)
-  { std::cerr << i->first << "(" << i->second.size() << " files)\n";
+  { os << i->first << "(" << i->second.size() << " files)\n";
   }
 }
 
@@ -1128,9 +1138,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       std::vector<piece>::const_iterator p=pieces.begin()+1;
       if ((**p)[0]=='+') // this is a delta encoded manifest
       { hexenc<id> h=(**p).substr(1,40); // remember to omit the trailing \n
-        id rid;
-        decode_hexenc(h,rid);
-        e.delta_base=revision_id(rid);
+        e.delta_base=revision_id(h);
         ++p;
       }
       for (;p!=pieces.end();++p)
@@ -1272,7 +1280,8 @@ void cvs_repository::update()
 }
 
 static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
-{ for (cvs_manifest::const_iterator i=delta.begin(); i!=delta.end(); ++i)
+{ L(F("apply_manifest_delta: base %d delta %d\n") % base.size() % delta.size());
+  for (cvs_manifest::const_iterator i=delta.begin(); i!=delta.end(); ++i)
   { if (i->second->dead)
     { cvs_manifest::iterator to_remove=base.find(i->first);
       I(to_remove!=base.end());
@@ -1281,24 +1290,30 @@ static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
     else
       base[i->first]=i->second;
   }
+  L(F("apply_manifest_delta: result %d\n") % base.size());
 }
 
 const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
-{ if (!e.delta_base.inner()().empty())
+{ L(F("get_files(%d %s) %s %d\n") % e.time % e.revision % e.delta_base % e.xfiles.size());
+  if (!e.delta_base.inner()().empty())
   { cvs_manifest calculated_manifest;
     // this is non-recursive by reason ...
     const cvs_edge *current=&e;
     std::vector<const cvs_edge *> deltas;
     while (!current->delta_base.inner()().empty())
-    { deltas.push_back(current);
+    { L(F("get_files: looking for base rev %s\n") % current->delta_base);
+      deltas.push_back(current);
       std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
         cache_item=revision_lookup.find(current->delta_base);
       I(cache_item!=revision_lookup.end());
       current=&*(cache_item->second);
     }
-    for (std::vector<const cvs_edge *>::const_iterator i=deltas.begin();
-          i!=deltas.end();++i)
-      apply_manifest_delta(calculated_manifest,e.xfiles);
+    I(current->delta_base.inner()().empty());
+    calculated_manifest=current->xfiles;
+    for (std::vector<const cvs_edge *>::const_reverse_iterator i=deltas.rbegin();
+          i!=static_cast<std::vector<const cvs_edge *>::const_reverse_iterator>(deltas.rend());
+          ++i)
+      apply_manifest_delta(calculated_manifest,(*i)->xfiles);
     e.xfiles=calculated_manifest;
     e.delta_base=revision_id();
   }
