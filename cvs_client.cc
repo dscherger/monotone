@@ -31,16 +31,18 @@ class cvs_client
   void InitZipStream(int level);
   void underflow(); // fetch new characters from stream
 protected:
+  std::string root;
   std::string module;
   
 public:  
-  cvs_client(const std::string &host, const std::string &root,
+  cvs_client(const std::string &host, const std::string &_root,
              const std::string &user=std::string(), 
              const std::string &module=std::string());
   ~cvs_client();
              
   void writestr(const std::string &s, bool flush=false);
   std::string readline();
+  std::string read_n(unsigned size);
   
   size_t get_bytes_read() const { return bytes_read; }
   size_t get_bytes_written() const { return bytes_written; }
@@ -53,9 +55,9 @@ public:
   // false if none available
   bool fetch_result(std::string &result);
   // semi internal helper to get one result line from a list
-  static std::string combine_result(const std::list<std::pair<std::string,std::string> > &result);
+  static std::string combine_result(const std::vector<std::pair<std::string,std::string> > &result);
   // MT style
-  bool fetch_result(std::list<std::pair<std::string,std::string> > &result);
+  bool fetch_result(std::vector<std::pair<std::string,std::string> > &result);
   void GzipStream(int level);
 };
 
@@ -270,6 +272,20 @@ std::string cvs_client::readline()
   }
 }
 
+std::string cvs_client::read_n(unsigned len)
+{ // no flush necessary
+  std::string result;
+  while (len)
+  { if (inputbuffer.empty()) underflow(); 
+    I(!inputbuffer.empty());
+    unsigned avail=inputbuffer.size();
+    if (len<avail) avail=len;
+    result+=inputbuffer.substr(0,avail);
+    len-=avail;
+  }
+  return result;
+}
+
 // are there chars available? get them block if none is available, then
 // get as much as possible
 void cvs_client::underflow()
@@ -371,14 +387,19 @@ void cvs_client::SendCommand(const char *cmd,...)
   writestr(cmd+std::string("\n"));
 }
 
+static bool begins_with(const std::string &s, const std::string &sub, unsigned &len)
+{ if (s.substr(0,sub.size())==sub) { len=sub.size; return true; }
+  return false;
+}
+
 static bool begins_with(const std::string &s, const std::string &sub)
 { return s.substr(0,sub.size())==sub;
 }
 
-cvs_client::cvs_client(const std::string &host, const std::string &root, 
+cvs_client::cvs_client(const std::string &host, const std::string &_root, 
                     const std::string &user, const std::string &_module)
     : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0),
-      gzip_level(0), module(_module)
+      gzip_level(0), root(_root), module(_module)
 { memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
   int fd1[2],fd2[2];
@@ -437,7 +458,6 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   ticker();
 
 //  writestr("Global_option -q\n"); // -Q?
-//  GzipStream(3);
 }
 
 cvs_client::~cvs_client()
@@ -463,44 +483,84 @@ void cvs_client::GzipStream(int level)
 }
 
 bool cvs_client::fetch_result(std::string &result)
-{ std::list<std::pair<std::string,std::string> > res;
+{ std::vector<std::pair<std::string,std::string> > res;
   if (!fetch_result(res) || res.empty()) return false;
   result=combine_result(res);
   return true;
 }
 
-std::string cvs_client::combine_result(const std::list<std::pair<std::string,std::string> > &res)
+std::string cvs_client::combine_result(const std::vector<std::pair<std::string,std::string> > &res)
 { if (res.empty()) return std::string();
   // optimized for the single entry case
-  std::list<std::pair<std::string,std::string> >::const_iterator i=res.begin();
+  std::vector<std::pair<std::string,std::string> >::const_iterator i=res.begin();
   std::string result=i->second;
   for (++i;i!=res.end();++i) result+=i->second;
   return result;
 }
 
-bool cvs_client::fetch_result(std::list<std::pair<std::string,std::string> > &result)
+bool cvs_client::fetch_result(std::vector<std::pair<std::string,std::string> > &result)
 { result.clear();
+  std::list<std::string> active_tags;
 loop:
   std::string x=readline();
   if (x.size()<2) goto error;
-  if (begins_with(x,"E ")) 
-  { std::cerr << x.substr(2) << '\n';
+  unsigned len=0;
+  if (begins_with(x,"E ",len)) 
+  { std::cerr << x.substr(len) << '\n';
     goto loop;
   }
-  if (begins_with(x,"M "))
-  { result.push_back(std::make_pair(std::string(),x.substr(2)));
+  if (begins_with(x,"M ",len))
+  { result.push_back(std::make_pair(std::string(),x.substr(len)));
     return true;
   }
-  if (x=="MT newline") return true;
-  if (begins_with(x,"MT ")) 
-  { std::string::size_type sep=x.find_first_of(" ",3);
+  if (active_tag.empty() && x=="MT newline") return true;
+  if (begins_with(x,"MT ",len)) 
+  { if (x[len]=='+') 
+    { active_tags.push_back(x.substr(len+1));
+      result.push_back(std::make_pair(std::string(),x.substr(len)));
+      goto loop;
+    }
+    if (x[len]=='-') 
+    { I(!active_tags.empty());
+      I(active_tags.back()==x.substr(len+1));
+      active_tags.pop_back();
+      result.push_back(std::make_pair(std::string(),x.substr(len)));
+      if (active_tags.empty()) return true;
+      goto loop;
+    }
+    std::string::size_type sep=x.find_first_of(" ",len);
     if (sep==std::string::npos) 
-      result.push_back(std::make_pair(std::string(),x.substr(3)));
+      result.push_back(std::make_pair(std::string(),x.substr(len)));
     else
-      result.push_back(std::make_pair(x.substr(3,sep-3),x.substr(sep+1)));
+      result.push_back(std::make_pair(x.substr(len,sep-len),x.substr(sep+1)));
     goto loop;
   }
   if (x=="ok") return false;
+  if (!result.empty()) goto error;
+  // more complex results
+  if (begins_with(x,"Clear-sticky ",len) 
+      || begins_with(x,"Set-static-directory ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1));
+    result.push_back(std::make_pair("dir",x.substr(len));
+    result.push_back(std::make_pair("rcs",readline());
+    return true;
+  }
+  if (begins_with(x,"Mod-time ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1));
+    result.push_back(std::make_pair("date",x.substr(len));
+    return true;
+  }
+  if (begins_with(x,"Created ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1));
+    result.push_back(std::make_pair("dir",x.substr(len));
+    result.push_back(std::make_pair("rcs",readline());
+    result.push_back(std::make_pair("new entries line",readline());
+    result.push_back(std::make_pair("mode",readline());
+    std::string length=readline();
+    result.push_back(std::make_pair("length",length);
+    result.push_back(std::make_pair("data",read_n(length));
+    return true;
+  }
 error:
   std::cerr << "unrecognized result \"" << x << "\"\n";
   exit(1);
@@ -544,7 +604,7 @@ static time_t rls_l2time_t(const std::string &t)
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (edges.empty())
   { SendCommand("rlist","-l","-R","-d","--",module.c_str(),0);
-    std::list<std::pair<std::string,std::string> > lresult;
+    std::vector<std::pair<std::string,std::string> > lresult;
     enum { st_dir, st_file } state=st_dir;
     std::string directory;
     while (fetch_result(lresult))
@@ -562,10 +622,10 @@ const cvs_repository::tree_state_t &cvs_repository::now()
           if (lresult.empty() || lresult.begin()->second.empty()) state=st_dir;
           else
           { I(lresult.size()==3);
-            std::list<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
-            std::list<std::pair<std::string,std::string> >::const_iterator i1=i0;
+            std::vector<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
+            std::vector<std::pair<std::string,std::string> >::const_iterator i1=i0;
             ++i1;
-            std::list<std::pair<std::string,std::string> >::const_iterator i2=i1;
+            std::vector<std::pair<std::string,std::string> >::const_iterator i2=i1;
             ++i2;
             I(i0->first=="text");
             I(i1->first=="date");
@@ -635,7 +695,7 @@ void cvs_repository::prime()
   { SendCommand("rlog","-b",i->first.c_str(),0);
     enum { st_head, st_tags, st_desc, st_rev, st_msg, st_date_author 
          } state=st_head;
-    std::list<std::pair<std::string,std::string> > lresult;
+    std::vector<std::pair<std::string,std::string> > lresult;
     std::string revision;
     std::string message;
     std::string author;
@@ -699,16 +759,16 @@ void cvs_repository::prime()
         }
         case st_date_author:
         { I(lresult.size()==11 || lresult.size()==7);
-          std::list<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
-          std::list<std::pair<std::string,std::string> >::const_iterator i1=i0;
+          std::vector<std::pair<std::string,std::string> >::const_iterator i0=lresult.begin();
+          std::vector<std::pair<std::string,std::string> >::const_iterator i1=i0;
           ++i1;
-          std::list<std::pair<std::string,std::string> >::const_iterator i2=i1;
+          std::vector<std::pair<std::string,std::string> >::const_iterator i2=i1;
           ++i2;
-          std::list<std::pair<std::string,std::string> >::const_iterator i3=i2;
+          std::vector<std::pair<std::string,std::string> >::const_iterator i3=i2;
           ++i3;
-          std::list<std::pair<std::string,std::string> >::const_iterator i4=i3;
+          std::vector<std::pair<std::string,std::string> >::const_iterator i4=i3;
           ++i4;
-          std::list<std::pair<std::string,std::string> >::const_iterator i5=i4;
+          std::vector<std::pair<std::string,std::string> >::const_iterator i5=i4;
           ++i5;
           I(i0->first=="text");
           I(i0->second=="date: ");
@@ -766,7 +826,47 @@ void cvs_repository::prime()
   
   // get the contents
   for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)
-  { 
+  { I(!i->second.known_states.empty());
+    std::string revision first=i->second.known_states.begin()->cvs_version;
+    SendCommand("Directory .",/*"-N","-P",*/"-r",revision.c_str(),"--",i->first,0);
+    writestr(root+"\n");
+    writestr("co\n");
+    enum { st_co
+         } state=st_co;
+    std::vector<std::pair<std::string,std::string> > lresult;
+    std::string dir,dir2,dir3,dir4,rcsfile,mode;
+    while (fetch_result(lresult))
+    { switch(state)
+      { case st_co:
+        { I(!lresult.empty());
+          if (lresult[0].first=="CMD"))
+          { if (lresult[0].second=="Clear-sticky")
+            { I(lresult.size()==3);
+              I(lresult[1].first=="dir");
+              dir=lresult[1].second();
+            }
+            else if (lresult[0].second=="Set-static-directory")
+            { I(lresult.size()==3);
+              I(lresult[1].first=="dir");
+              dir2=lresult[1].second();
+            }
+            else if (lresult[0].second=="Created")
+            { std::cerr << combine_result(lresult) << '\n';
+            }
+            else
+            { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+            }
+          }
+          else if (lresult.begin()->first=="+updated")
+          { std::cerr << combine_result(lresult) << '\n';
+          }
+          else 
+          { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+          }
+          break;
+        }
+      }
+    }
   }
 }
 
