@@ -223,12 +223,11 @@ bool cvs_revision_nr::is_branch() const
 void cvs_repository::ticker() const
 { cvs_client::ticker(false);
   if (revisions_created)
-    std::cerr << "] [new revisions: " << revisions_created;
-  else if (files_inserted) std::cerr << " [new file ids: " << files_inserted;
-  else std::cerr << "] [files: " << files.size();
-  std::cerr << "] [edges: " << edges.size() 
-          << "] [tags: "  << tags.size();
-  std::cerr << "]\n";
+    std::cerr << "[new revisions: " << revisions_created << "] ";
+  else if (files_inserted) std::cerr << "[new file ids: " << files_inserted << "] ";
+  else std::cerr << "[files: " << files.size() << "] ";
+  std::cerr << "[edges: " << edges.size() << "] "
+      "[tags: "  << tags.size() << "]\n";
 }
 
 struct cvs_repository::now_log_cb : rlog_callbacks
