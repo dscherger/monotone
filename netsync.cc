@@ -220,7 +220,8 @@ private:
 
 // pass them through ... for now
 Netxx::signed_size_type PipeStream::write(const void *buffer, Netxx::size_type length)
-{  return Parent::write(buffer,length);
+{  if (fd_write==get_socketfd()) return Parent::write(buffer,length);
+   else return ::write(fd_write, buffer, length);
 }
 void PipeStream::close()
 {  Parent::close();
