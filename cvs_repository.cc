@@ -269,9 +269,10 @@ void cvs_repository::debug() const
       i!=edges.end();++i)
   { std::cerr << "[" << i->time;
     if (i->time!=i->time2) std::cerr << '+' << (i->time2-i->time);
+    if (!i->files.empty()) std::cerr << ',' << i->files.size() << "files";
     std::cerr << ',' << i->author << ',';
     std::string::size_type nlpos=i->changelog.find_first_of("\n\r");
-    if (nlpos>60) nlpos=60;
+    if (nlpos>50) nlpos=50;
     std::cerr << i->changelog.substr(0,nlpos) << "]\n";
   }
 //  std::cerr << '\n';
@@ -523,6 +524,10 @@ void cvs_repository::prime(app_state &app)
             s!=f->second.known_states.end();++s)
         { if (s->since_when <= e->time2)
           { if (!s->dead) current_manifest[f->first]=s;
+            ++s;
+            // check ins must not overlap
+            I(s==f->second.known_states.end()
+              || s->since_when > e->time2);
             goto continue_f;
           }
         }
@@ -532,13 +537,20 @@ void cvs_repository::prime(app_state &app)
         ++st;
         if (st==f->second.known_states.end()) goto continue_f;
         if (st->since_when <= e->time2)
-          mi->second=st;
+        { mi->second=st;
+          ++st;
+          // check ins must not overlap
+          I(st==f->second.known_states.end()
+            || st->since_when > e->time2);
+        }
       }
      continue_f: ;
     }
     const_cast<cvs_manifest&>(e->files)=current_manifest;
   }
   ticker();
+  // commit them all
+  //for 
   
   debug();
 }
