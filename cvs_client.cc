@@ -13,6 +13,8 @@
 #include <stdexcept>
 #include <set>
 #include <stdarg.h>
+#include <zlib.h>
+#include <fcntl.h>
 //#include <boost/tokenizer.hpp>
 //#include "rcs_file.hh"
 
@@ -21,6 +23,12 @@ class cvs_client
   size_t bytes_read,bytes_written;
   typedef std::set<std::string> stringset_t;
   stringset_t Valid_requests;
+  int gzip_level;
+  z_stream compress,decompress;
+  std::string inputbuffer;
+
+  void InitZipStream(int level);
+  void underflow(); // fetch new characters from stream
 protected:
   std::string module;
   
@@ -29,7 +37,7 @@ public:
              const std::string &user=std::string(), 
              const std::string &module=std::string());
              
-  void writestr(const std::string &s);
+  void writestr(const std::string &s, bool flush=false);
   std::string readline();
   
   size_t get_bytes_read() const { return bytes_read; }
@@ -42,6 +50,7 @@ public:
   void SendCommand(const char *cmd,...);
   // false if none available
   bool fetch_result(std::string &result);
+  void GzipStream(int level);
 };
 
 void cvs_client::SendCommand(const char *cmd,...)
@@ -165,19 +174,72 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
   return result;
 }
 
-void cvs_client::writestr(const std::string &s)
-{ bytes_written+=write(writefd,s.c_str(),s.size());
+void cvs_client::writestr(const std::string &s, bool flush)
+{ if (!gzip_level)
+  { if (s.size()) bytes_written+=write(writefd,s.c_str(),s.size());
+    return;
+  }
+  char outbuf[1024];
+  compress.next_in=(Bytef*)s.c_str();
+  compress.avail_in=s.size();
+  while (compress.avail_in || flush)
+  // the zlib headers say that avail_out is the only criterion for 
+  // looping, I find testing avail_in more logical
+  { compress.next_out=(Bytef*)outbuf;
+    compress.avail_out=sizeof outbuf;
+    int err=deflate(&compress,flush?Z_SYNC_FLUSH:Z_NO_FLUSH);
+    if (err!=Z_OK) throw std::runtime_error("deflate");
+    unsigned written=sizeof(outbuf)-compress.avail_out;
+    if (written) bytes_written+=write(writefd,outbuf,written);
+    else break;
+  }
 }
 
 // TODO: optimize
 std::string cvs_client::readline()
-{ std::string result;
-  while (true)
-  { char c;
-    if (read(readfd,&c,1)!=1) throw std::runtime_error("read error");
-    ++bytes_read;
-    if (c=='\n') return result;
-    result+=c;
+{ // flush
+  writestr(std::string(),true);
+
+  // read input
+  std::string result;
+  for (;;)
+  { if (inputbuffer.empty()) underflow();
+    if (inputbuffer.empty()) throw std::runtime_error("no data avail");
+    char c=inputbuffer[0];
+    inputbuffer=inputbuffer.substr(1);
+    if (c=='\n') 
+    {
+std::cerr << "readline: \"" <<  result << "\"\n";
+      return result;
+    }
+    else result+=c;
+  }
+}
+
+// are there chars available? get them block if none is available, then
+// get as much as possible
+void cvs_client::underflow()
+{ char buf[1024],buf2[1024];
+  if (read(readfd,buf,1)!=1) throw std::runtime_error("read error");
+  unsigned avail_in=1;
+  fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
+  avail_in+=read(readfd,buf+1,sizeof(buf)-1);
+  fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)&~O_NONBLOCK);
+  bytes_read+=avail_in;
+  if (!gzip_level)
+  { inputbuffer+=std::string(buf,buf+bytes_read);
+    return;
+  }
+  decompress.next_in=(Bytef*)buf;
+  decompress.avail_in=avail_in;
+  for (;;)
+  { decompress.next_out=(Bytef*)buf2;
+    decompress.avail_out=sizeof(buf2);
+    int err=inflate(&decompress,Z_NO_FLUSH);
+    if (err!=Z_OK) throw std::runtime_error("inflate");
+    unsigned bytes_in=sizeof(buf2)-decompress.avail_out;
+    if (bytes_in) inputbuffer+=std::string(buf2,buf2+bytes_in);
+    else break;
   }
 }
 
@@ -217,8 +279,11 @@ stringtok (Container &container, std::string const &in,
 
 cvs_client::cvs_client(const std::string &host, const std::string &root, 
                     const std::string &user, const std::string &_module)
-    : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0), module(_module)
-{ int fd1[2],fd2[2];
+    : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0),
+      gzip_level(0), module(_module)
+{ memset(&compress,0,sizeof compress);
+  memset(&decompress,0,sizeof decompress);
+  int fd1[2],fd2[2];
   pid_t child=pipe_and_fork(fd1,fd2);
   if (child<0) 
   {  throw std::runtime_error("pipe/fork failed");
@@ -250,6 +315,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   readfd=fd1[0];
   writefd=fd2[1];
   
+  InitZipStream(0);
   writestr("Root "+root+"\n");
   writestr("Valid-responses ok error Valid-requests Checked-in "
               "New-entry Checksum Copy-file Updated Created Update-existing "
@@ -268,18 +334,41 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
          i!=Valid_requests.end();++i)
     std::cout << *i << ':';
 #endif
-  assert(readline()=="ok");
+  answer=readline();
+  assert(answer=="ok");
   
   assert(Valid_requests.find("UseUnchanged")!=Valid_requests.end());
 
   writestr("UseUnchanged\n"); // ???
+//  assert(readline()=="ok");
   ticker();
+
+//  GzipStream(3);
 
 //  writestr("Directory .\n");
 //  do
 //  { std::string answer=readline(readfd);
 //    
 //  }
+}
+
+void cvs_client::InitZipStream(int level)
+{ int error=deflateInit(&compress,level);
+  if (error!=Z_OK) throw std::runtime_error("deflateInit");
+  error=inflateInit(&decompress);
+  if (error!=Z_OK) throw std::runtime_error("inflateInit");
+}
+
+void cvs_client::GzipStream(int level)
+{ std::string cmd="Gzip-stream ";
+  cmd+=char('0'+level);
+  cmd+='\n';
+  writestr(cmd);
+  int error=deflateParams(&compress,level,Z_DEFAULT_STRATEGY);
+  if (error!=Z_OK) throw std::runtime_error("deflateParams");
+//  error=inflateInit(&decompress); ??
+//  if (error!=Z_OK) throw std::runtime_error("inflateInit"); ??
+  gzip_level=level;
 }
 
 bool cvs_client::fetch_result(std::string &result)
@@ -317,8 +406,12 @@ const cvs_repository::tree_state_t &cvs_repository::now()
 
 #if 1
 int main()
-{ cvs_repository cl("localhost","/usr/local/cvsroot","","christof");
-  const cvs_repository::tree_state_t &n=cl.now();
+{ try
+  { cvs_repository cl("localhost","/usr/local/cvsroot","","christof");
+    const cvs_repository::tree_state_t &n=cl.now();
+  } catch (std::exception &e)
+  { std::cerr << e.what() << '\n';
+  }
   return 0;
 }
 #endif
