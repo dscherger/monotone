@@ -109,7 +109,7 @@ struct cvs_edge // careful this name is also used in cvs_import
   bool changelog_valid;
   std::string author;
   time_t time; //  std::string time;
-  cvs_changeset::tree_state_t files;
+  cvs_changeset::tree_state_t files; // this should be a state change!
 //  std::string manifest; // monotone manifest
   std::string revision; // monotone revision
 
@@ -590,14 +590,34 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     // prime
     prime();
     ticker();
+    debug();
   }
   return (--edges.end())->files; // wrong of course
 }
 
 void cvs_repository::debug() const
 { // edges set<cvs_edge>
+  std::cerr << "Edges : ";
+  for (std::set<cvs_edge>::const_iterator i=edges.begin();
+      i!=edges.end();++i)
+  { std::cerr << "[" << i->time << ',' << i->author << ',' 
+      << i->changelog.size() << "] ";
+  }
+  std::cerr << '\n';
   // files map<string,file>
+  std::cerr << "Files : ";
+  for (std::map<std::string,file>::const_iterator i=files.begin();
+      i!=files.end();++i)
+  { std::cerr << i->first << " (" << i->second.known_states.size() << " states) ";
+  }
+  std::cerr << '\n';
   // tags map<string,map<string,string> >
+  std::cerr << "Tags : ";
+  for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
+      i!=tags.end();++i)
+  { std::cerr << i->first << " (" << i->second.size() << " files) ";
+  }
+  std::cerr << '\n';
 }
 
 void cvs_repository::prime()
