@@ -23,7 +23,7 @@ echo >>modules test3 test2 '&test1'
 cvs ci -m "module setup"
 cd ..
 
-cvs -d $CVSROOT co test2
+cvs -d $CVSROOT co test3
 cd test2
 
 echo >AA initial AA

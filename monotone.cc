@@ -42,7 +42,7 @@
 #define OPT_MESSAGE 15
 #define OPT_ROOT 16
 #define OPT_DEPTH 17
-#define OPT_SINCE 17
+#define OPT_SINCE 18
 
 // main option processing and exception handling code
 
