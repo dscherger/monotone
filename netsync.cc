@@ -2744,7 +2744,6 @@ serve_stdio(protocol_role role,
 		  vector<utf8> const & collections,
 		  set<string> const & all_collections,
 		  app_state & app,
-		  // ?
 		  unsigned long timeout_seconds)
 {
   P(F("beginning service on stdio\n"));
@@ -2768,9 +2767,9 @@ serve_stdio(protocol_role role,
       int retval;
 
       FD_ZERO(&rfds);
-      FD_SET(0, &rfds);
+      if (sess->which_events()&Netxx::Probe::ready_read) FD_SET(0, &rfds);
       FD_ZERO(&wfds);
-      FD_SET(1, &wfds);
+      if (sess->which_events()&Netxx::Probe::ready_write) FD_SET(1, &wfds);
       tv.tv_sec = timeout_seconds;
       tv.tv_usec = 0;
       
@@ -2794,6 +2793,7 @@ serve_stdio(protocol_role role,
 		
     }
   // cleanup?
+  // sess->queue_bye_cmd();
 }
 
 
