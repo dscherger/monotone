@@ -202,6 +202,12 @@ done_marker
   {}
 };
 
+struct PipeStream : Netxx::Stream
+{	Netxx::socket_type fd_write;
+// override write and other methods ...
+// ctors
+};
+
 struct 
 session :
   public manifest_edge_analyzer
@@ -214,7 +220,7 @@ session :
 
   string peer_id;
   Netxx::socket_type fd,fd_write;
-  Netxx::Stream str;  
+  PipeStream str;  
 
   string inbuf; 
   string outbuf;
