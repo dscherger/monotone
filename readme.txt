@@ -25,6 +25,8 @@ You can set the fill color for authors using a file called authors.map with one 
 jcrisp@s-r-s.co.uk=blue
 njs@pobox.com=green
 
+Tagged nodes show up as rectangles not ellipses
+
 The code is copyright as follows:
 
 /*

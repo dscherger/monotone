@@ -58,9 +58,10 @@ public class Log2Gxl extends Thread {
      *
      * @param argv command line arguments, --authorfile <file> to specify a file mapping authors to colors
      */
-    public static void main(String argv[]) throws IOException,IllegalStateException { 
+    public static void main(String argv[]) throws IOException,IllegalStateException,InterruptedException { 
 	Log2Gxl processor=new Log2Gxl();
 	processor.start(argv);
+	processor.join();
     }
 
     /**
@@ -1172,6 +1173,7 @@ public class Log2Gxl extends Thread {
 		    throw new IOException("Illegal color "+color+" in author color map file");
 		}
 		authorColorMap.put((String)key,color);
+		logger.config(key+"="+color);
 		colorList.remove(color);
 	    }
 	    colors=colorList.toArray(new String[colorList.size()]);
@@ -1200,7 +1202,6 @@ public class Log2Gxl extends Thread {
      * @throws IllegalStateException if the header lines aren't as expected     
      */
     public void start(String argv[],InputStream rawSource,OutputStream sink) throws IOException,IllegalStateException {
-
 	nodes=new HashMap<String,GXLNode>();
 	if(argv.length>0) {
 	    for(int I=0;I<argv.length;I++) {
@@ -1218,15 +1219,21 @@ public class Log2Gxl extends Thread {
 	start();
     }
 
+    /**
+     * Small stub method to wrap the run method and catch generic exceptions
+     */
     public void run() {
 	try {
 	    doRun();
 	}
 	catch(Exception e) {
-	    e.printStackTrace();
+	    logger.throwing(this.getClass().getName(),"run",e);
 	}
     }
 
+    /**
+     * Thread run method which actually does all of the work
+     */
     public void doRun() throws IOException,IllegalStateException {
 	GXLDocument gxlDocument = new GXLDocument();
 	graph = new GXLGraph("Monotone Log");
@@ -1244,7 +1251,7 @@ public class Log2Gxl extends Thread {
 		throw new IOException(source.getLineNumber()+": Input ["+line+"] doesn't look like output of monotone log");
 	    }
 	    parseHeader();
-	    logger.finest(currentNode.getID());
+	    logger.finer(currentNode.getID());
 	    parseFiles();
 	    parseChangeLog();
 	    commitNode();

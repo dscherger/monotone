@@ -134,10 +134,11 @@ public class Monotone {
 		results.add(line);
 	    }
 	    try {
+		// Wait for the monotone process to exit
 		monotone.waitFor();
 	    }
 	    catch(InterruptedException ie) {
-		// No action required
+		logger.throwing(this.getClass().getName(),"run",ie);
 	    }
 	}
 	finally {
@@ -184,14 +185,14 @@ public class Monotone {
 		}
 	    }
 	    catch(IOException ioe) {
-		// No action required
+		    logger.throwing(this.getClass().getName(),"run",ioe);
 	    }
 	    finally {
 		try {
 		    if(source!=null) source.close();
 		}
 		catch(IOException ioe2) {
-		// No action required
+		    logger.throwing(this.getClass().getName(),"run",ioe2);
 		}
 	    }
 	}
@@ -245,7 +246,7 @@ public class Monotone {
 		}
 	    }
 	    catch(IOException ioe) {
-		ioe.printStackTrace();
+		logger.throwing(this.getClass().getName(),"run",ioe);
 	    }
 	    finally {
 		try {
@@ -253,7 +254,7 @@ public class Monotone {
 		    if(closeSink) sink.close(); 
 		}
 		catch(IOException ioe) {
-		    // Ignore
+		    logger.throwing(this.getClass().getName(),"run",ioe);
 		}
 	    }
 	}
