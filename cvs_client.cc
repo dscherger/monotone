@@ -182,8 +182,10 @@ public:
 
 void cvs_repository::ticker()
 { cvs_client::ticker(false);
-  std::cerr << " [files: " << files.size() << "] [edges: " 
-          << edges.size() << "]\n";
+  std::cerr << " [files: " << files.size() 
+          << "] [edges: " << edges.size() 
+          << "] [tags: "  << tags.size() 
+          << "]\n";
 }
 
 // copied from netsync.cc from the ssh branch
@@ -583,6 +585,7 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     ticker();
     // prime
     prime();
+    ticker();
   }
   return (--edges.end())->files; // wrong of course
 }
@@ -605,6 +608,7 @@ void cvs_repository::prime()
       switch(state)
       { case st_head:
         { std::string result=combine_result(lresult);
+          if (result.empty()) break; // accept a (first) empty line
           if (begins_with(result,"RCS file: ") ||
               begins_with(result,"head: ") ||
               begins_with(result,"branch:") ||
@@ -625,11 +629,12 @@ void cvs_repository::prime()
         case st_tags:
         { std::string result=combine_result(lresult);
           I(!result.empty());
-          if (result[0]!=' ') { state=st_head; goto reswitch; }
-          I(result.find_first_not_of(" ")==6);
+          if (result[0]!='\t') 
+          { L(F("result[0] %d %d\n") % result.size() % int(result[0])); state=st_head; goto reswitch; }
+          I(result.find_first_not_of("\t ")==1);
           std::string::size_type colon=result.find(':');
           I(colon!=std::string::npos);
-          std::pair<std::string,std::string> &tagslot=tags[result.substr(6,colon-6)];
+          std::pair<std::string,std::string> &tagslot=tags[result.substr(1,colon-1)];
           tagslot.first=i->first;
           tagslot.second=result.substr(colon+2);
           break;
@@ -722,7 +727,7 @@ int main(int argc,char **argv)
   std::string user="";
   int compress_level=3;
   int c;
-  while ((c=getopt(argc,argv,"z:d:"))!=-1)
+  while ((c=getopt(argc,argv,"z:d:v"))!=-1)
   { switch(c)
     { case 'z': compress_level=atoi(optarg);
         break;
@@ -745,6 +750,8 @@ int main(int argc,char **argv)
           repository=d_arg.substr(repo_start);
         }
         break;
+      case 'v': global_sanity.set_debug();
+        break;
       default: 
         std::cerr << "USAGE: cvs_client [-z level] [-d repo] [module]\n";
         exit(1);
@@ -753,8 +760,7 @@ int main(int argc,char **argv)
   }
   if (optind+1<=argc) module=argv[optind];
   try
-  { global_sanity.set_debug();
-    cvs_repository cl(host,repository,user,module);
+  { cvs_repository cl(host,repository,user,module);
     if (compress_level) cl.GzipStream(compress_level);
     const cvs_repository::tree_state_t &n=cl.now();
   } catch (std::exception &e)
