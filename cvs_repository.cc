@@ -1014,6 +1014,10 @@ void cvs_repository::commit()
       return;
     }
     now_iter=commit(now_iter,*children.begin());
+    
+    P(F("checked %s into cvs repository") % now.revision);
+    // we'd better seperate the commits so that ordering them is possible
+    if (now_iter!=edges.end()) sleep(2);
   }
 }
 
