@@ -49,6 +49,10 @@ construct_version(vector< piece > const & source_lines,
 
 using namespace cvs_sync;
 
+std::ostream &operator<<(std::ostream &o, const file_state &f)
+{ return o << f.since_when << ' ' << f.cvs_version << ' ' << f.dead;
+}
+
 static void cvs_sync::process_one_hunk(vector< piece > const & source,
                  vector< piece > & dest,
                  vector< piece >::const_iterator & i,
@@ -440,6 +444,7 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, const cvs_manife
             {
               L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % c.shorten_path(fn->first) % f->second->sha1sum % fn->second->sha1sum);          
+              I(!fn->second->sha1sum().empty());
               cs.apply_delta(c.shorten_path(fn->first), f->second->sha1sum, fn->second->sha1sum);
             }
         }  
@@ -450,6 +455,7 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, const cvs_manife
       if (fo==oldm.end())
       {  
         L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % c.shorten_path(f->first));
+        I(!f->second->sha1sum().empty());
         cs.add_file(c.shorten_path(f->first), f->second->sha1sum);
       }
     }
@@ -563,6 +569,8 @@ void cvs_repository::prime(app_state &app)
   }
   ticker();
   // fill in file states at given point
+  debug();
+
   cvs_manifest current_manifest;
   for (std::set<cvs_edge>::iterator e=edges.begin();e!=edges.end();++e)
   { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
@@ -571,15 +579,31 @@ void cvs_repository::prime(app_state &app)
         continue; // the file does not exist yet
       cvs_manifest::iterator mi=current_manifest.find(f->first);
       if (mi==current_manifest.end()) // the file is currently dead
-      { for (cvs_file_state s=f->second.known_states.begin();
-            s!=f->second.known_states.end();++s)
-        { if (s->since_when <= e->time2)
-          { if (!s->dead) current_manifest[f->first]=s;
+      { cvs_file_state s=f->second.known_states.begin();
+        // find next revision _within_ edge timespan
+        for (;s!=f->second.known_states.end();)
+        { cvs_file_state s2=s;
+          ++s2;
+          if (s2==f->second.known_states.end()) // this file remains dead
+            goto continue_f;
+          if (s2->since_when <= e->time2)
+            s=s2;
+          else break;
+        }
+        I(s!=f->second.known_states.end());
+        // a revision was found
+        if (s->since_when <= e->time2)
+        { if (!s->dead) 
+          { current_manifest[f->first]=s;
             ++s;
             // check ins must not overlap
-            I(s==f->second.known_states.end()
-              || s->since_when > e->time2);
-            goto continue_f;
+if (s!=f->second.known_states.end() && s->since_when <= e->time2)
+{for (cvs_file_state s2=f->second.known_states.begin();s2!=f->second.known_states.end();++s2)
+  std::cerr << *s2 << ',';
+std::cerr << '\n';
+}
+              I(s==f->second.known_states.end()
+                || s->since_when > e->time2);
           }
         }
       }
@@ -588,7 +612,11 @@ void cvs_repository::prime(app_state &app)
         ++st;
         if (st==f->second.known_states.end()) goto continue_f;
         if (st->since_when <= e->time2)
-        { mi->second=st;
+        { if (st->dead) current_manifest.erase(mi);
+          else 
+          { mi->second=st;
+            I(!st->sha1sum().empty());
+          }
           ++st;
           // check ins must not overlap
           I(st==f->second.known_states.end()
@@ -613,7 +641,12 @@ void cvs_repository::prime(app_state &app)
       oldmanifestp=&e->files,++e)
   { change_set cs;
     build_change_set(*this,*oldmanifestp,e->files,cs);
+    I(!(*oldmanifestp==e->files));
     apply_change_set(cs, child_map);
+    if (child_map.empty()) 
+    { W(F("empty edge (no files in manifest) @%ld skipped\n") % e->time);
+      continue;
+    }
     manifest_id child_mid;
     calculate_ident(child_map, child_mid);
 
@@ -622,6 +655,7 @@ void cvs_repository::prime(app_state &app)
     rev.edges.insert(make_pair(parent_rid, make_pair(parent_mid, cs)));
     revision_id child_rid;
     calculate_ident(rev, child_rid);
+    L(F("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % child_mid);
 
     if (app.db.manifest_version_exists(child_mid))
     {
@@ -630,12 +664,14 @@ void cvs_repository::prime(app_state &app)
     else if (e==edges.begin())
     {
       manifest_data mdat;
+      I(!child_map.empty());
       write_manifest_map(child_map, mdat);
       app.db.put_manifest(child_mid, mdat);
     }
     else
     { 
-      base64< gzip<delta> > del;              
+      base64< gzip<delta> > del;
+      I(!child_map.empty());
       diff(parent_map, child_map, del);
       app.db.put_manifest_version(parent_mid, child_mid, del);
     }
@@ -692,6 +728,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   }
   
   cvs_sync::cvs_repository repo(repository,module,branch);
+// DEBUGGING
   repo.GzipStream(3);
   transaction_guard guard(app.db);
 

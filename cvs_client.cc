@@ -315,7 +315,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
 #if 1
         newargv[newargc++]="cvs";
         newargv[newargc++]="server";
-#else        
+#else // DEBUGGING
         newargv[newargc++]="sh";
         newargv[newargc++]="-c";
         newargv[newargc++]="tee cvs_server.log | cvs server";
@@ -801,7 +801,9 @@ struct checkout cvs_client::CheckOut(const std::string &file, const std::string 
             // this is 18 Nov 1996 14:39:40 -0000 format - strange ...
             // result.mod_time=xyz2time_t(lresult[1].second);
           }
-          else if (lresult[0].second=="Created")
+          else if (lresult[0].second=="Created"
+              || lresult[0].second=="Update-existing")
+          // Update-existing results after crossing a dead state
           { // std::cerr << combine_result(lresult) << '\n';
             I(lresult.size()==7);
             I(lresult[6].first=="data");
