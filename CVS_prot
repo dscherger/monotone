@@ -63,3 +63,30 @@ fehlende manifests inkrementell durch patch request besorgen
 
 Option: letztes erkanntes manifest prüfen
 
+----- Update mit Checksum
+Directory .
+/usr/local/cvsroot/christof/tex/alptraum
+Entry /alptraum.tex/1.1///
+Unchanged alptraum.tex
+update
+
+Clear-static-directory ./
+/usr/local/cvsroot/christof/tex/alptraum/
+Clear-sticky ./
+MT text P 
+MT fname alptraum.tex
+E cvs update: Updating .
+MT text P 
+MT fname alptraum.tex
+MT newline
+Checksum 35a9f38ba4c2f329d8b840adbe41e169
+Rcs-diff ./
+/usr/local/cvsroot/christof/tex/alptraum/alptraum.tex
+/alptraum.tex/1.2///
+u=rw,g=r,o=r
+66
+a0 1
+% $Id: alptraum.tex,v 1.2 1997/03/27 08:52:56 christof Exp $
+Clear-sticky ./
+/usr/local/cvsroot/christof/tex/alptraum/
+ok
