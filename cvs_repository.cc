@@ -3,20 +3,12 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
-//#include <sys/types.h>
-//#include <unistd.h>
 #include <map>
 #include <list>
 #include <iostream>
 #include <stdexcept>
-//#include <vector>
-//#include <set>
-//#include <stdarg.h>
-//#include <zlib.h>
-//#include <cassert>
 #include "sanity.hh"
 #include "cvs_client.hh"
-//#include "rcs_file.hh"
 
 /* supported by the woody version:
 Root Valid-responses valid-requests Repository Directory Max-dotdot
@@ -109,15 +101,14 @@ struct cvs_edge // careful this name is also used in cvs_import
 
   inline bool operator<(cvs_edge const & other) const
   {
-    // nb: this must sort as > to construct the edges in the right direction
-    return time > other.time ||
+    return time < other.time ||
 
       (time == other.time 
-       && author > other.author) ||
+       && author < other.author) ||
 
       (time == other.time 
        && author == other.author 
-       && changelog > other.changelog);
+       && changelog < other.changelog);
   }
 };}
 
@@ -287,14 +278,13 @@ void cvs_repository::prime()
   for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
   { if (i->changelog_valid || i->author.size()) { ++i; continue; }
     std::set<cvs_edge>::iterator j=i;
-    I(j!=edges.begin());
-    --j;
+    j++;
+    I(j!=edges.end());
     I(j->time==i->time);
     I(i->files.empty());
     I(i->revision.empty());
-    j=i; // why does erase not return the next iter :-(
-    ++i;
-    edges.erase(j); 
+    edges.erase(i);
+    i=j; 
   }
   // join adjacent check ins (same author, same changelog)
   
