@@ -41,6 +41,11 @@ struct rlog_callbacks
         const std::string &state,const std::string &log) const=0;
 };
 
+struct rlist_callbacks
+{ virtual void file(const std::string &name, time_t last_change,
+        const std::string &last_rev, bool dead) const=0;
+};
+
 class cvs_client
 { int readfd,writefd;
   size_t bytes_read,bytes_written;
@@ -84,6 +89,7 @@ public:
   void GzipStream(int level);
   
   void RLog(const rlog_callbacks &cb,bool dummy,...);
+  void RList(const rlist_callbacks &cb,bool dummy,...);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
@@ -187,6 +193,7 @@ public:
   typedef cvs_changeset::tree_state_t tree_state_t;
   struct prime_log_cb;
   struct now_log_cb;
+  struct now_list_cb;
 
 private:
 //  std::list<tree_state_t> tree_states;
@@ -650,63 +657,78 @@ struct cvs_repository::now_log_cb : rlog_callbacks
         const std::string &state,const std::string &log) const {}
 };
 
+struct cvs_repository::now_list_cb : rlist_callbacks
+{ cvs_repository &repo;
+  now_list_cb(cvs_repository &r) : repo(r) {}
+  virtual void file(const std::string &name, time_t last_change,
+        const std::string &last_rev, bool dead) const
+  { repo.files[name].known_states.insert(file_state(last_change,last_rev,dead));
+    repo.edges.insert(cvs_edge(last_change));
+  }
+};
+
+void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
+{ { va_list ap;
+    va_start(ap,dummy);
+    SendCommand("rlist",ap);
+    va_end(ap);
+  }
+  std::vector<std::pair<std::string,std::string> > lresult;
+  enum { st_dir, st_file } state=st_dir;
+  std::string directory;
+  while (fetch_result(lresult))
+  { switch(state)
+    { case st_dir:
+      { std::string result=combine_result(lresult);
+        I(result.size()>=2);
+        I(result[result.size()-1]==':');
+        directory=result.substr(0,result.size()-1);
+        state=st_file;
+        ticker();
+        break;
+      }
+      case st_file:
+        if (lresult.empty() || lresult[0].second.empty()) state=st_dir;
+        else
+        { I(lresult.size()==3);
+          I(lresult[0].first=="text");
+          I(lresult[1].first=="date");
+          I(lresult[2].first=="text");
+          std::string keyword=trim(lresult[0].second);
+          std::string date=trim(lresult[1].second);
+          std::string version=trim(lresult[2].second.substr(1,10));
+          std::string dead=trim(lresult[2].second.substr(12,4));
+          std::string name=lresult[2].second.substr(17);
+          
+          I(keyword[0]=='-' || keyword[0]=='d');
+          I(dead.empty() || dead=="dead");
+          I(!name.empty());
+          
+          if (keyword=="----") keyword=std::string();
+          if (keyword!="d---")
+          { //std::cerr << (directory+"/"+name) << " V" 
+            //  << version << " from " << date << " " << dead
+            //  << " " << keyword << '\n';
+            time_t t=rls_l2time_t(date);
+            cb.file(directory+"/"+name,t,version,!dead.empty());
+          }
+          // construct manifest
+          // search for a matching revision 
+          // - do that later when all files are known ???
+        }
+        break;
+    }
+  }
+}
+
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (edges.empty())
   { if (CommandValid("rlist"))
-    { SendCommand("rlist","-l","-R","-d","--",module.c_str(),0);
-      std::vector<std::pair<std::string,std::string> > lresult;
-      enum { st_dir, st_file } state=st_dir;
-      std::string directory;
-      while (fetch_result(lresult))
-      { switch(state)
-        { case st_dir:
-          { std::string result=combine_result(lresult);
-            I(result.size()>=2);
-            I(result[result.size()-1]==':');
-            directory=result.substr(0,result.size()-1);
-            state=st_file;
-            ticker();
-            break;
-          }
-          case st_file:
-            if (lresult.empty() || lresult[0].second.empty()) state=st_dir;
-            else
-            { I(lresult.size()==3);
-              I(lresult[0].first=="text");
-              I(lresult[1].first=="date");
-              I(lresult[2].first=="text");
-              std::string keyword=trim(lresult[0].second);
-              std::string date=trim(lresult[1].second);
-              std::string version=trim(lresult[2].second.substr(1,10));
-              std::string dead=trim(lresult[2].second.substr(12,4));
-              std::string name=lresult[2].second.substr(17);
-              
-              I(keyword[0]=='-' || keyword[0]=='d');
-              I(dead.empty() || dead=="dead");
-              I(!name.empty());
-              
-              if (keyword=="----") keyword=std::string();
-              if (keyword!="d---")
-              { //std::cerr << (directory+"/"+name) << " V" 
-                //  << version << " from " << date << " " << dead
-                //  << " " << keyword << '\n';
-                time_t t=rls_l2time_t(date);
-                files[directory+"/"+name].known_states.insert(file_state(t,version,!dead.empty()));
-                edges.insert(cvs_edge(t));
-              }
-              // construct manifest
-              // search for a matching revision 
-              // - do that later when all files are known ???
-            }
-            break;
-        }
-      }
+    { RList(now_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),0);
     }
-    else // less efficient ...
+    else // less efficient? ...
     { I(CommandValid("rlog"));
       RLog(now_log_cb(*this),false,"-N","-h","--",module.c_str(),0);
-//      SendCommand("rlog","-N","-h","--",module.c_str(),0);
-//      std::vector<std::pair<std::string,std::string> > lresult;
     }
     ticker();
     // prime
