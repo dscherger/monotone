@@ -17,7 +17,6 @@
 #include <fcntl.h>
 #include <cassert>
 #include "sanity.hh"
-//#include <boost/tokenizer.hpp>
 //#include "rcs_file.hh"
 
 class cvs_client
@@ -82,15 +81,43 @@ struct cvs_changeset // == cvs_key ?? rcs_delta+rcs_deltatext
   tree_state_t tree_state; // dead files do not occur here
 };
 
+struct file_state
+{ time_t since_when;
+  std::string cvs_version;
+  std::string rcs_patch;
+  std::string contents;
+  std::string sha1sum;
+  bool dead;
+
+  file_state() : since_when(), dead() {}  
+  file_state(time_t sw,const std::string &rev,bool d=false) 
+  : since_when(sw), cvs_version(rev), dead(d) {}  
+  bool operator==(const file_state &b) const
+  { return since_when==b.since_when; }
+  bool operator<(const file_state &b) const
+  { return since_when<b.since_when; }
+};
+
+struct file
+{ std::set<file_state> known_states;
+};
+
 namespace { // cvs_key?
 namespace constants
 { const static int cvs_window=5; }
-struct cvs_edge // careful!
+struct cvs_edge // careful this name is also used in cvs_import
 { // std::string branch;
   std::string changelog;
+  bool changelog_valid;
   std::string author;
   time_t time; //  std::string time;
- 
+  cvs_changeset::tree_state_t files;
+//  std::string manifest; // monotone manifest
+  std::string revision; // monotone revision
+
+  cvs_edge() : changelog_valid(), time() {} 
+  cvs_edge(time_t when) : changelog_valid(), time(when) {} 
+  
   inline bool similar_enough(cvs_edge const & other) const
   {
     if (changelog != other.changelog)
@@ -130,9 +157,11 @@ public:
   typedef cvs_changeset::tree_state_t tree_state_t;
 
 private:
-  std::list<tree_state_t> tree_states;
+//  std::list<tree_state_t> tree_states;
   // zusammen mit changelog, date, author(?)
-  std::map<tree_state_t*,tree_state_t*> successor;
+//  std::map<tree_state_t*,tree_state_t*> successor;
+  std::set<cvs_edge> edges;
+  std::map<std::string,file> files;
 public:  
   cvs_repository(const std::string &host, const std::string &root,
              const std::string &user=std::string(), 
@@ -141,10 +170,17 @@ public:
 
   std::list<std::string> get_modules();
   void set_branch(const std::string &tag);
+  void ticker();
   const tree_state_t &now();
   const tree_state_t &find(const std::string &date,const std::string &changelog);
   const tree_state_t &next(const tree_state_t &m) const;
 };
+
+void cvs_repository::ticker()
+{ cvs_client::ticker(false);
+  std::cerr << " [files: " << files.size() << "] [edges: " 
+          << edges.size() << "]\n";
+}
 
 // copied from netsync.cc from the ssh branch
 static pid_t pipe_and_fork(int *fd1,int *fd2)
@@ -382,7 +418,7 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
 
 cvs_client::~cvs_client()
 { deflateEnd(&compress);
-  inflateEnd(&uncompress);
+  inflateEnd(&decompress);
 }
 
 void cvs_client::InitZipStream(int level)
@@ -468,7 +504,7 @@ static time_t rls_l2time_t(const std::string &t)
 }
 
 const cvs_repository::tree_state_t &cvs_repository::now()
-{ if (tree_states.empty())
+{ if (edges.empty())
   { SendCommand("rlist","-l","-R","-d","--",module.c_str(),0);
     std::list<std::pair<std::string,std::string> > lresult;
     enum { st_dir, st_file } state=st_dir;
@@ -515,6 +551,9 @@ const cvs_repository::tree_state_t &cvs_repository::now()
             { std::cerr << (directory+"/"+name) << " V" 
                 << version << " from " << date << " " << dead
                 << " " << keyword << '\n';
+              time_t t=rls_l2time_t(date);
+              files[directory+"/"+name].known_states.insert(file_state(t,version,!dead.empty()));
+              edges.insert(cvs_edge(t));
             }
           }
           break;
@@ -522,7 +561,7 @@ const cvs_repository::tree_state_t &cvs_repository::now()
     }
     ticker();
   }
-  return tree_states.back(); // wrong of course
+  return (--edges.end())->files; // wrong of course
 }
 
 #if 1
