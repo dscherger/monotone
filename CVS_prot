@@ -90,3 +90,30 @@ a0 1
 Clear-sticky ./
 /usr/local/cvsroot/christof/tex/alptraum/
 ok
+
+
+----- syntax
+monotone pull [--branch foo] cvs://localhost/usr/local/cvsroot module[:branch]
+
+----- push
+find the last available revision
+for each unique(!) successor commit each changed file (with timestamp)
+
+---- thoughts
+changed changelogs/dates will result in ugly fork forests 
+
+---- class
+class remote_cvs
+{
+public:
+  typedef std::map<std::string,std::string> cvsmanifest; // file,rev
+  // zusammen mit changelog, date, author(?)
+  std::map<cvsmanifest*,cvsmanifest*> successor;
+  remote_cvs(const std::string &host, const std::string &root, const
+		std::string &module="");
+  std::list<std::string> get_modules();
+  void set_branch(const std::string &tag);
+  const cvsmanifest &now();
+  const cvsmanifest &find(const std::string &date,const std::string &changelog);
+  const cvsmanifest &next(const cvsmanifest &m) const;
+};
