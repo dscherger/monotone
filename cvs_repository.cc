@@ -470,10 +470,10 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
           else
             {
               L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % c.shorten_path(fn->first) % f->second->sha1sum % fn->second->sha1sum);          
+                % c.shorten_path(fn->first) % f->second->sha1sum % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
               cs.apply_delta(c.shorten_path(fn->first), f->second->sha1sum, fn->second->sha1sum);
-              cvs_delta[f->first]=f->second;
+              cvs_delta[f->first]=fn->second;
             }
         }  
     }
@@ -628,7 +628,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
     --before;
-    current_manifest=before->xfiles;
+    current_manifest=get_files(*before);
   }
   for (;e!=edges.end();++e)
   { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
