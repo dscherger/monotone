@@ -127,7 +127,9 @@ void cvs_repository::debug() const
   std::cerr << "Edges : ";
   for (std::set<cvs_edge>::const_iterator i=edges.begin();
       i!=edges.end();++i)
-  { std::cerr << "[" << i->time << ',' << i->author << ',' 
+  { std::cerr << "[" << i->time;
+    if (i->time!=i->time2) std::cerr << '+' << (i->time2-i->time);
+    std::cerr << ',' << i->author << ',' 
       << i->changelog.size() << "] ";
   }
   std::cerr << '\n';
@@ -214,7 +216,20 @@ void cvs_repository::prime()
     edges.erase(i);
     i=j; 
   }
+  ticker();
   // join adjacent check ins (same author, same changelog)
+  for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();++i)
+  { std::set<cvs_edge>::iterator j=i;
+    j++; // next one
+    if (j==edges.end()) break;
+    
+    I(j->time2==j->time); // make sure we only do this once
+    I(j->time2<j->time); // should be sorted ...
+    if (!i->similar_enough(*j)) 
+      continue;
+    const_cast<time_t&>(i->time2)=j->time;
+    edges.erase(j);
+  }
   
   // get the contents
   for (std::map<std::string,file>::iterator i=files.begin();i!=files.end();++i)

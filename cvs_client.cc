@@ -126,6 +126,7 @@ try_again:
   unsigned avail_in=1;
   fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
   avail_in+=read(readfd,buf+1,sizeof(buf)-1);
+  I(avail_in!=0); // make sure we did not get -1
   fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)&~O_NONBLOCK);
   bytes_read+=avail_in;
   if (!gzip_level)
