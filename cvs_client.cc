@@ -912,6 +912,11 @@ struct cvs_client::update cvs_client::Update(const std::string &file,
       I(lresult.size()==2);
       I(lresult[1].first=="fname");
     }
+    else if (lresult[0].second=="M ")
+    { I(lresult.size()==2);
+      I(lresult[1].first=="fname");
+      state=st_merge;
+    }
     else if (begins_with(lresult[0].second,"RCS file: ",len))
     { I(state==st_normal);
       state=st_merge;
