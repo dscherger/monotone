@@ -267,7 +267,8 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
 }
 
 void cvs_client::writestr(const std::string &s, bool flush)
-{ if (!gzip_level)
+{ if (s.size()) L(F("writestr(%s") % s); // s mostly contains the \n char
+  if (!gzip_level)
   { if (s.size()) bytes_written+=write(writefd,s.c_str(),s.size());
     return;
   }
@@ -610,8 +611,28 @@ error:
   exit(1);
 }
 
+static time_t cvs111date2time_t(const std::string &t)
+{ // 2000/11/10 14:43:25
+  I(t.size()==19);
+  I(t[4]=='/' && t[7]=='/');
+  I(t[10]==' ' && t[13]==':');
+  I(t[16]==':');
+  struct tm tm;
+  memset(&tm,0,sizeof tm);
+  tm.tm_year=atoi(t.substr(0,4).c_str())-1900;
+  tm.tm_mon=atoi(t.substr(5,2).c_str())-1;
+  tm.tm_mday=atoi(t.substr(8,2).c_str());
+  tm.tm_hour=atoi(t.substr(11,2).c_str());
+  tm.tm_min=atoi(t.substr(14,2).c_str());
+  tm.tm_sec=atoi(t.substr(17,2).c_str());
+  time_t result=-1;
+  result=mktime(&tm); // I _assume_ this is local time :-(
+  return result;
+}
+
 static time_t rls_l2time_t(const std::string &t)
 { // 2003-11-26 09:20:57 +0000
+  I(t.size()==25);
   I(t[4]=='-' && t[7]=='-');
   I(t[10]==' ' && t[13]==':');
   I(t[16]==':' && t[19]==' ');
@@ -863,19 +884,38 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
         break;
       }
       case st_date_author:
-      { I(lresult.size()==11 || lresult.size()==7);
-        I(lresult[0].first=="text");
-        I(lresult[0].second=="date: ");
-        I(lresult[1].first=="date");
-        checkin_time=rls_l2time_t(lresult[1].second);
-        I(lresult[2].first=="text");
-        I(lresult[2].second==";  author: ");
-        I(lresult[3].first=="text");
-        author=lresult[3].second;
-        I(lresult[4].first=="text");
-        I(lresult[4].second==";  state: ");
-        I(lresult[5].first=="text");
-        dead=lresult[5].second;
+      { if (lresult.size()==1) // M ... (cvs 1.11.1p1)
+        { std::string result=combine_result(lresult);
+          unsigned len=0;
+          I(begins_with(result,"date: ",len));
+          std::string::size_type authorpos=result.find(";  author: ",len);
+          I(authorpos!=std::string::npos);
+          std::string::size_type authorbegin=authorpos+11;
+          std::string::size_type statepos=result.find(";  state: ",authorbegin);
+          I(statepos!=std::string::npos);
+          std::string::size_type statebegin=statepos+10;
+          std::string::size_type linespos=result.find(";",statebegin);
+          // ";  lines: "
+          I(linespos!=std::string::npos);
+          checkin_time=cvs111date2time_t(result.substr(len,authorpos-len));
+          author=result.substr(authorbegin,statepos-authorbegin);
+          dead=result.substr(statebegin,linespos-statebegin);
+        }
+        else // cvs 1.12.9
+        { I(lresult.size()==11 || lresult.size()==7);
+          I(lresult[0].first=="text");
+          I(lresult[0].second=="date: ");
+          I(lresult[1].first=="date");
+          checkin_time=rls_l2time_t(lresult[1].second);
+          I(lresult[2].first=="text");
+          I(lresult[2].second==";  author: ");
+          I(lresult[3].first=="text");
+          author=lresult[3].second;
+          I(lresult[4].first=="text");
+          I(lresult[4].second==";  state: ");
+          I(lresult[5].first=="text");
+          dead=lresult[5].second;
+        }
         state=st_msg;
         break;
       }
