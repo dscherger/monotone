@@ -46,6 +46,7 @@ using boost::scoped_ptr;
 
 // cvs history recording stuff
 
+typedef unsigned long cvs_tagname;
 typedef unsigned long cvs_branchname;
 typedef unsigned long cvs_author;
 typedef unsigned long cvs_changelog;
@@ -91,6 +92,7 @@ cvs_key
        && branch > other.branch);
   }
 
+  vector<cvs_tagname> tags;
   cvs_branchname branch;
   cvs_changelog changelog;
   cvs_author author;
@@ -154,6 +156,7 @@ struct
 cvs_history
 {
 
+  interner<unsigned long> tag_interner;
   interner<unsigned long> branch_interner;
   interner<unsigned long> author_interner;
   interner<unsigned long> changelog_interner;
@@ -680,6 +683,53 @@ find_branch_for_version(multimap<string,string> const & symbols,
     }
 }
 
+vector<string> 
+find_tags_for_version(multimap<string,string> const & symbols,
+		      string const & version,
+		      string const & base)
+{
+  typedef multimap<string,string>::const_iterator ity;
+  typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+
+  L(F("looking up tag name for %s\n") % version);
+
+  pair<ity,ity> range = symbols.equal_range(version);
+  vector<string> res;
+  int num_results = 0;
+  string all_res;
+
+  if (range.first != symbols.end())
+    {
+      while (range.first != range.second)
+	{
+	  res.push_back(range.first->second);
+	  if (!all_res.empty()) { all_res += " "; }
+	  all_res += "'";
+	  all_res += range.first->second;
+	  all_res += "'";
+	  range.first++;
+	  num_results++;
+	}
+    }
+
+  switch (num_results)
+    {
+    case 0:
+      W(F("no entries for revision %s found\n")
+	% version);
+      break;
+    case 1:
+      L(F("unique entry for revision %s found: %s\n")
+	% version % all_res);
+      break;
+    default:
+      L(F("multiple entries (%d) for revision %s found, using:\n  %s\n")
+	% num_results % version % all_res);
+      break;
+    }
+  return res;
+}
+
 cvs_key::cvs_key(rcs_file const & r, string const & version,
 		 cvs_history & cvs) 
 {
@@ -709,7 +759,16 @@ cvs_key::cvs_key(rcs_file const & r, string const & version,
   string branch_name = find_branch_for_version(r.admin.symbols, 
 					       version, 
 					       cvs.base_branch);
+  vector<string> tag_names = find_tags_for_version(r.admin.symbols, 
+						   version,
+						   cvs.base_branch);
   branch = cvs.branch_interner.intern(branch_name);
+  if (!tag_names.empty())
+    {
+      transform(tag_names.begin(), tag_names.end(),
+		insert_iterator< vector<cvs_tagname> >(tags, tags.begin()),
+		intern<unsigned long>(cvs.tag_interner));
+    }
   changelog = cvs.changelog_interner.intern(deltatext->second->log);
   author = cvs.author_interner.intern(delta->second->author);
 }
@@ -1055,6 +1114,11 @@ store_auxiliary_certs(cvs_key const & key,
 {
   packet_db_writer dbw(app);
   cert_manifest_in_branch(id, cert_value(cvs.branch_interner.lookup(key.branch)), app, dbw); 
+  for(vector<unsigned long>::const_iterator i = key.tags.begin();
+      i != key.tags.end(); i++)
+    {
+      cert_manifest_tag(id, cvs.tag_interner.lookup((*i)), app, dbw);
+    }
   cert_manifest_author(id, cvs.author_interner.lookup(key.author), app, dbw); 
   cert_manifest_changelog(id, cvs.changelog_interner.lookup(key.changelog), app, dbw);
   cert_manifest_date_time(id, key.time, app, dbw);
