@@ -401,7 +401,7 @@ public class Log2Gxl extends Thread {
 	    }
 	    else {
 		line=source.readLine();
-		// TODO: record changelog 
+		// addToAttributeSet("ChangeLog",line); // gxl2dot chokes on this
 	    }
 	}
     }
@@ -1244,7 +1244,7 @@ public class Log2Gxl extends Thread {
 	    commitNode();
 	}
 
-	System.err.print("Writing SVG graph..");
+	System.err.print("Writing GXL graph..");
 
 	// Write the graph to std out
 	gxlDocument.write(sink);

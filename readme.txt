@@ -1,0 +1,24 @@
+Welcome!
+
+This is a small java GUI to display monotone ancestry graphs.
+It also contains a parser for the monotone log output format which converts the log output to a GXL graph.
+
+Whilst not as complete or functional as monotone-viz, it does run on windows.
+
+In addition to these files you also need:
+
+GXL Java API - http://www.gupro.de/GXL/index.html as: batik/batick-1.5.1/batik.jar
+Batick - SVG library from the Apache project http://xml.apache.org as: gxl/gxl-0.92/gxl.jar
+
+The code is copyright as follows:
+
+/*
+ * Copyright (C) 2005 Joel Crisp <jcrisp@s-r-s.co.uk>
+ * Licensed under the MIT license:
+ *    http://www.opensource.org/licenses/mit-license.html
+ * I.e., do what you like, but keep copyright and there's NO WARRANTY.
+ */
+
+I hope this is useful.
+
+Joel Crisp
