@@ -43,7 +43,8 @@ CRYPTOPP_SOURCES = \
         cryptopp/crc.cpp cryptopp/cryptlib.cpp cryptopp/des.cpp cryptopp/dessp.cpp \
         cryptopp/dll.cpp cryptopp/eprecomp.cpp cryptopp/files.cpp cryptopp/filters.cpp \
         cryptopp/fips140.cpp cryptopp/gzip.cpp cryptopp/hex.cpp cryptopp/hmac.cpp \
-        cryptopp/integer.cpp cryptopp/iterhash.cpp cryptopp/misc.cpp \
+        cryptopp/integer.cpp cryptopp/iterhash.cpp cryptopp/md5.cpp \
+        cryptopp/misc.cpp \
         cryptopp/modes.cpp cryptopp/mqueue.cpp cryptopp/nbtheory.cpp \
         cryptopp/oaep.cpp cryptopp/osrng.cpp cryptopp/pch.cpp cryptopp/pkcspad.cpp \
         cryptopp/pssr.cpp cryptopp/pubkey.cpp cryptopp/queue.cpp \
@@ -56,6 +57,7 @@ CRYPTOPP_SOURCES = \
         cryptopp/crc.h cryptopp/cryptlib.h cryptopp/des.h cryptopp/dll.h cryptopp/eprecomp.h \
         cryptopp/files.h cryptopp/filters.h cryptopp/fips140.h cryptopp/fltrimpl.h \
         cryptopp/gzip.h cryptopp/hex.h cryptopp/integer.h cryptopp/iterhash.h \
+        cryptopp/md5.h \
         cryptopp/mdc.h cryptopp/misc.h cryptopp/modarith.h cryptopp/modes.h \
         cryptopp/mqueue.h cryptopp/nbtheory.h cryptopp/oaep.h cryptopp/oids.h \
         cryptopp/osrng.h cryptopp/pch.h cryptopp/pkcspad.h cryptopp/pssr.h \
@@ -119,7 +121,7 @@ bin_PROGRAMS = monotone
 check_PROGRAMS = unit_tests
 noinst_PROGRAMS = txt2c 
 
-monotone_SOURCES = $(MOST_SOURCES) monotone.cc main.cc
+monotone_SOURCES = $(MOST_SOURCES) cvs_client.cc cvs_repository.cc monotone.cc main.cc 
 unit_tests_SOURCES = $(MOST_SOURCES) unit_tests.cc
 
 txt2c_SOURCES = txt2c.cc
@@ -170,7 +172,7 @@ else
   unit_tests_LDADD = lib3rdparty.a -lboost_unit_test_framework
 endif
 
-monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
+monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
 unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
 
 if WIN32_PLATFORM
