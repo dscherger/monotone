@@ -474,7 +474,7 @@ loop:
       || begins_with(x,"Clear-static-directory ",len)
       || begins_with(x,"Clear-template ",len)
       || begins_with(x,"Removed ",len)
-      || begins_with(x,"Remove-entry",len))
+      || begins_with(x,"Remove-entry ",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("dir",x.substr(len)));
     result.push_back(std::make_pair("rcs",readline()));
@@ -1244,7 +1244,10 @@ std::map<std::string,std::pair<std::string,std::string> >
     { L(F("%s\n") % lresult[0].second);
     }
     else if (begins_with(lresult[0].second,"new revision:",len)
-        || begins_with(lresult[0].second,"initial revision:",len))
+        || begins_with(lresult[0].second,"initial revision:",len)
+        || begins_with(lresult[0].second,"RCS file:",len)
+        || begins_with(lresult[0].second,"done",len)
+        || begins_with(lresult[0].second,"Checking in",len))
     { L(F("%s\n") % lresult[0].second);
     }
     else 

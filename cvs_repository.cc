@@ -844,6 +844,13 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
   }
 }
 
+std::ostream &operator<<(std::ostream &o, const cvs_manifest &mf)
+{ for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
+  { o << i->first << ' ' << i->second->cvs_version << ',';
+  }
+  return o;
+}
+
 std::set<cvs_edge>::iterator cvs_repository::commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid)
 { // check that it's the last one
@@ -876,7 +883,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
             i!=cs.rearrangement.deleted_files.end(); ++i)
     { commit_arg a;
       a.file=module+"/"+(*i)();
-      cvs_manifest::const_iterator old=parent->files.find((*i)());
+      cvs_manifest::const_iterator old=parent->files.find(a.file);
       I(old!=parent->files.end());
       a.removed=true;
       a.old_revision=old->second->cvs_version;
@@ -890,7 +897,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
             i!=cs.rearrangement.renamed_files.end(); ++i)
     { commit_arg a; // remove
       a.file=module+"/"+i->first();
-      cvs_manifest::const_iterator old=parent->files.find(i->first());
+      cvs_manifest::const_iterator old=parent->files.find(a.file);
       I(old!=parent->files.end());
       a.removed=true;
       a.old_revision=old->second->cvs_version;
@@ -917,11 +924,12 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     { 
       commit_arg a;
       a.file=module+"/"+i->first();
-      cvs_manifest::const_iterator old=parent->files.find(i->first());
+      cvs_manifest::const_iterator old=parent->files.find(a.file);
       if (old!=parent->files.end())
       { a.old_revision=old->second->cvs_version;
         a.keyword_substitution=old->second->keyword_substitution;
       }
+// else std::cerr << parent->files << '\n';
       file_data dat;
       app.db.get_file_version(i->second.second,dat);
       data unpacked;
@@ -940,7 +948,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     
     for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
             i=result.begin(); i!=result.end(); ++i)
-    { cvs_manifest::iterator manifestiter=e.files.find(shorten_path(i->first));
+    { cvs_manifest::iterator manifestiter=e.files.find(i->first);
       if (i->second.first.empty())
       { I(manifestiter!=e.files.end());
         e.files.erase(manifestiter);
@@ -955,12 +963,16 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
         std::pair<std::set<file_state>::iterator,bool> newelem=
             files[i->first].known_states.insert(fs);
         I(newelem.second);
-        manifestiter->second=newelem.first;
+        if (manifestiter!=e.files.end())
+          manifestiter->second=newelem.first;
+        else
+          e.files[i->first]=newelem.first;
       }
     }
     packet_db_writer dbw(app);
     cert_cvs(e, dbw);
     edges.insert(e);
+    debug();
     return --(edges.end());
   }
   W(F("no matching parent found\n"));
