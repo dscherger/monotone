@@ -87,6 +87,30 @@
   <xsl:text>" </xsl:text>
   <xsl:text>[</xsl:text>
      <xsl:apply-templates select="@*"/> <!-- Attributes of this node -->
+
+     <!-- Interpret the semantic information in the GXL graph and convert it to visual information in the dot output -->
+     <xsl:text> style="filled"</xsl:text>
+     <xsl:text> label="</xsl:text>
+     <xsl:value-of select="substring(@id,0,8)"/>
+     <xsl:text>\n</xsl:text> <!-- newline -->
+     <xsl:value-of select="attr[@name='Dates']/*"/>
+
+     <xsl:choose>
+       <xsl:when test="count(attr[@name='Tags']/set/string)>0">
+         <xsl:text>\n</xsl:text>
+         <xsl:for-each select="attr[@name='Tags']/set/string">
+           <xsl:text> </xsl:text>
+           <xsl:value-of select="text()"/>
+         </xsl:for-each>
+         <xsl:text>"</xsl:text>
+         <xsl:text> shape="rect" color="red"</xsl:text>       
+       </xsl:when>
+       <xsl:when test="count(attr[@name='Tags']/set/string)=0">
+         <xsl:text>"</xsl:text>
+         <xsl:text> shape="ellipse"</xsl:text>       
+       </xsl:when>
+
+     </xsl:choose>
      <xsl:apply-templates/>             <!-- "attr" nodes -->
   <xsl:text>];&#xA;</xsl:text>
 </xsl:template>
@@ -184,11 +208,16 @@
 
 <xsl:template match="attr"> 
   <xsl:if test="$debug">
-      <xsl:message>New style attribute with content</xsl:message>
+    <xsl:message>New style attribute with content <xsl:value-of select="@name"/> (Ignored)</xsl:message>
   </xsl:if>
-  <xsl:text> </xsl:text>
-  <xsl:value-of select="@name"/>
-  <xsl:text>="</xsl:text>
+</xsl:template>
+
+<xsl:template match="attr[@name='AuthorColor']">
+  <xsl:if test="$debug">
+    <xsl:message>Author color attribute<xsl:value-of select="@name"/></xsl:message>
+  </xsl:if>
+
+  <xsl:text> fillcolor="</xsl:text>
   <xsl:value-of select="*"/>
   <xsl:text>"</xsl:text>
 </xsl:template>

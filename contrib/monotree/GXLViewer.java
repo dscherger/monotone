@@ -30,7 +30,34 @@ import org.apache.batik.swing.svg.GVTTreeBuilderAdapter;
 import org.apache.batik.swing.svg.GVTTreeBuilderEvent;
 import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 import org.apache.batik.util.XMLResourceDescriptor;
+import org.apache.batik.swing.svg.LinkActivationListener;
+import org.apache.batik.swing.svg.SVGUserAgentGUIAdapter;
+import org.apache.batik.swing.svg.LinkActivationEvent;
+import org.apache.batik.util.ParsedURL;
+import org.apache.batik.bridge.UpdateManager;
+import org.apache.batik.bridge.ScriptingEnvironment;
+import org.apache.batik.script.Interpreter;
 import org.w3c.dom.svg.SVGDocument;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+import org.w3c.dom.Node;
+import org.w3c.dom.events.EventTarget;
+import org.w3c.dom.events.EventListener;
+import org.w3c.dom.events.Event;
+import org.w3c.dom.events.MouseEvent;
+
+import net.sourceforge.gxl.GXLDocument;
+import net.sourceforge.gxl.GXLGraph;
+import net.sourceforge.gxl.GXLNode;
+import net.sourceforge.gxl.GXLEdge;
+import net.sourceforge.gxl.GXLString;
+import net.sourceforge.gxl.GXLSet;
+import net.sourceforge.gxl.GXLAttr;
+import net.sourceforge.gxl.GXLInt;
+import net.sourceforge.gxl.GXLTup;
+import net.sourceforge.gxl.GXL;
+import net.sourceforge.gxl.GXLValue;
 
 /**
  * Somewhat misnamed class to provide a simple GUI against a monotone database
@@ -43,7 +70,7 @@ public class GXLViewer {
     /**
      * Log sink
      */
-    private static Logger logger=Logger.getLogger("GXLViewer");
+    private final static Logger logger=Logger.getLogger("GXLViewer");
 
     /**
      * GUI Frame to hold the main window
@@ -64,7 +91,7 @@ public class GXLViewer {
     /**
      * Canvas which displays the actual SVG version of the ancestor tree
      */
-    private JSVGCanvas svgCanvas = new JSVGCanvas();
+    private JSVGCanvas svgCanvas;
 
     /**
      * Tree used to display the branches and heads
@@ -80,7 +107,12 @@ public class GXLViewer {
      * A dialog used to display a progress bar
      */
     private JDialog progress;
-    
+
+    /**
+     * Panel which displays the properties of the currently selected node
+     */
+    private JPanel properties;
+
     public static void main(String[] args) throws IOException {
         JFrame f = new JFrame("GXL Viewer");
         GXLViewer app = new GXLViewer(f);
@@ -164,12 +196,16 @@ public class GXLViewer {
         frame = f;
     }
 
-    public JTree getBranchTree() {
+    private JTree getBranchTree() {
 	return tree;
     }
 
     public Monotone getDatabase() { 
 	return database;
+    }
+
+    public void dumpEvent(Object e) {
+	logger.info(e.getClass().getName()+" "+e);
     }
 
     /**
@@ -205,18 +241,33 @@ public class GXLViewer {
 	setProgressWindow("Reading branches..");
     }
 
+    private class GXLUserAgent extends SVGUserAgentGUIAdapter {
+	public GXLUserAgent(Component parent) {
+	    super(parent);
+	}
+	
+	public void openLink(String uri,boolean newTarget) {
+	    logger.info("Link activated : "+uri);
+	}
+    }	
+
+
     /**
      * Make the GUI
      */
     private JComponent createComponents() {
+	svgCanvas = new JSVGCanvas(new GXLUserAgent(frame),true,true);
         final JPanel panel = new JPanel(new BorderLayout());
 
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
         p.add(button);
         p.add(label);
 
+	properties=new JPanel();
 	tree.setModel(new DefaultTreeModel(new DefaultMutableTreeNode()));
-	JSplitPane splitter=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(tree),new JSVGScrollPane(svgCanvas));
+	JSplitPane splitter=new JSplitPane(JSplitPane.VERTICAL_SPLIT,new JScrollPane(tree),new JScrollPane(properties));
+	splitter.setDividerLocation(200);
+	splitter=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,splitter,new JSVGScrollPane(svgCanvas));
         panel.add("North", p);
         panel.add("Center",splitter); 
 	splitter.setDividerLocation(200);
@@ -247,6 +298,7 @@ public class GXLViewer {
 		 * @param e the tree selection event from the branch tree
 		 */
 		public void valueChanged(TreeSelectionEvent e) {
+		    if(progress!=null) return; // In another job - not safe to continue
 		    Object node=e.getPath().getLastPathComponent();
 		    // Check that our selection is a leaf node (all heads are leaf nodes) and ignore if not
 		    if(!((DefaultMutableTreeNode)node).isLeaf()) return;
@@ -262,6 +314,11 @@ public class GXLViewer {
         svgCanvas.addSVGDocumentLoaderListener(new SVGDocumentLoaderAdapter() {
 		public void documentLoadingStarted(SVGDocumentLoaderEvent e) {
 		    label.setText("Document Loading...");
+	// Setup the interface between the SVG scripting environment and the viewer
+	UpdateManager manager=svgCanvas.getUpdateManager();
+	ScriptingEnvironment scripting=manager.getScriptingEnvironment();
+	Interpreter interpreter=scripting.getInterpreter();
+	interpreter.bindObject("host",this);
 		}
 		public void documentLoadingCompleted(SVGDocumentLoaderEvent e) {
 		    label.setText("Document Loaded.");
@@ -274,6 +331,10 @@ public class GXLViewer {
 		}
 		public void gvtBuildCompleted(GVTTreeBuilderEvent e) {
 		    label.setText("Build Done.");
+		    // Fixup graph to notify onClick events
+		    SVGDocument graph=svgCanvas.getSVGDocument();
+		    EventTarget rootNode=(EventTarget)graph.getDocumentElement();
+		    rootNode.addEventListener("click",new OnClickAction(),false);
 		}
 	    });
 
@@ -286,7 +347,12 @@ public class GXLViewer {
 		}
 	    });
 	
-	svgCanvas.setEnableZoomInteractor(true);
+	//	svgCanvas.setEnableZoomInteractor(true);
+	svgCanvas.addLinkActivationListener(new LinkActivationListener() { 
+		public void linkActivated(LinkActivationEvent e) {
+		    logger.info("Link activated : "+e.getReferencedURI());
+		}});
+	
 	InputMap keys=svgCanvas.getInputMap();
 	keys.put(KeyStroke.getKeyStroke("="),JSVGCanvas.ZOOM_IN_ACTION);
 	keys.put(KeyStroke.getKeyStroke("-"),JSVGCanvas.ZOOM_OUT_ACTION);
@@ -331,7 +397,7 @@ public class GXLViewer {
 		logger.fine("Getting log for "+id);
 		final InputStream svgStream=database.getSVGLog(id);
 		SAXSVGDocumentFactory factory=new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
-		final SVGDocument doc=factory.createSVGDocument("http://local",svgStream);
+		final SVGDocument doc=factory.createSVGDocument("http://internal/graph",svgStream);
 		SwingUtilities.invokeLater(new Runnable() { public void run() {
 		    svgCanvas.setSVGDocument(doc);
 		    svgCanvas.setDocumentState(JSVGComponent.ALWAYS_DYNAMIC);
@@ -458,6 +524,61 @@ public class GXLViewer {
 	 */
 	public String getDescription() {
 	    return "Monotone Database Files";
+	}
+    }
+
+    private class OnClickAction implements EventListener {
+	
+	private void addInfo(JPanel info,GXLNode gxlNode,String infoSet) {
+	    GXLAttr setValue=gxlNode.getAttr(infoSet);
+	    if(setValue==null) return;
+	    GXLSet set=(GXLSet)setValue.getValue();
+	    GridBagConstraints c=new GridBagConstraints();	    
+	    c.anchor=GridBagConstraints.WEST;
+	    JLabel key=new JLabel(infoSet+" ");
+	    info.add(key,c);
+
+	    for(int I=0;I<set.getValueCount();I++) {
+		c=new GridBagConstraints();
+		c.anchor=GridBagConstraints.WEST;
+		c.gridx=1;
+		c.gridwidth=GridBagConstraints.REMAINDER;
+		JLabel value=new JLabel(((GXLString)set.getValueAt(I)).getValue());
+		info.add(value,c);
+	    }
+	}
+
+	public void handleEvent(Event evt) {
+	    // System.err.println(evt);
+	    MouseEvent mouseEvent=(MouseEvent)evt;
+	    EventTarget where=mouseEvent.getTarget();
+	    Element element=(Element)where; // This seems intuitative, but doesn't appear to be documented as legal
+	    while(element.getTagName()!="g") {
+		Node parent=element.getParentNode();
+		if(parent==null) return;
+		if(!(parent instanceof Element)) return;
+		element=(Element)parent;
+	    }
+	    NodeList titles=element.getElementsByTagName("title");
+	    if(titles.getLength()==0) return;
+	    Element title=(Element)titles.item(0);
+	    String id=((Text)title.getFirstChild()).getData(); // Fragile - should check node type
+	    // System.err.println("["+id+"]");
+	    JPanel info=new JPanel();
+	    info.setLayout(new GridBagLayout());
+	    GridBagConstraints c=new GridBagConstraints();
+	    c.gridwidth=GridBagConstraints.REMAINDER;
+	    c.anchor=GridBagConstraints.CENTER;
+	    JLabel property=new JLabel(id);
+	    info.add(property,c);
+	    GXLNode gxlNode=(GXLNode)database.log2gxl.gxlDocument.getElement(id);
+	    addInfo(info,gxlNode,"Authors");
+	    addInfo(info,gxlNode,"Branches");
+	    addInfo(info,gxlNode,"Tags");
+	    addInfo(info,gxlNode,"ChangeLog");
+	    properties.removeAll();
+	    properties.add(BorderLayout.CENTER,info);
+	    properties.revalidate();
 	}
     }
 }

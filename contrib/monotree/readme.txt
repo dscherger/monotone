@@ -9,6 +9,7 @@ In addition to these files and java 1.5 you also need:
 
 GXL Java API - http://www.gupro.de/GXL/index.html as: gxl/gxl-0.92/gxl.jar to monotree.jar
 Batick - SVG library from the Apache project http://xml.apache.org as: batik/batick-1.5.1/batik.jar & batick/batik-1.5.1/lib relative to monotree.jar
+graphviz - Graph layout and SVG generation from ATT http://www.graphviz.org/ with the commands dot and gxl2dot on the path
 
 Run using:
 

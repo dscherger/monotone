@@ -52,9 +52,9 @@ public class Log2Gxl extends Thread {
 
     /**
      * Main method
-     * Invoke via: monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | gxl2dot >log.dot
-     * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | gxl2dot | dot -Tsvg >log.svg
-     * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl --authorfile <file> | gxl2dot | dot -Tsvg >log.svg
+     * Invoke via: monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | xslt gxl2dot.xsl >log.dot
+     * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | xslt gxl2dot.xsl | dot -Tsvg >log.svg
+     * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl --authorfile <file> | xslt gxl2dot.xsl | dot -Tsvg >log.svg
      *
      * @param argv command line arguments, --authorfile <file> to specify a file mapping authors to colors
      */
@@ -84,24 +84,9 @@ public class Log2Gxl extends Thread {
      * This is used to allow incremental construction of attributes during log entry parsing
      */
     private void commitNode() {
-	// DOT specific stuff
-	// These attributes are used by JGraphPad and DOT - node label - id truncated to 8 hex digits
+	// All dot specific stuff has now been moved into the gxl2dot stylesheet
+	// Leave this method in as it may be useful in the future again
 
-	currentNode.setAttr("style",new GXLString("filled"));
-	if(tags.length()>0) { 
-	    currentNode.setAttr("shape",new GXLString("rect"));
-	    currentNode.setAttr("label",new GXLString(currentNode.getID().substring(0,8)+"\\n"+dates+"\\n"+tags));
-	    currentNode.setAttr("color",new GXLString("red"));
-	}
-	else {
-	    currentNode.setAttr("shape",new GXLString("ellipse"));
-	    currentNode.setAttr("label",new GXLString(currentNode.getID().substring(0,8)+"\\n"+dates));
-	}
-
-	// Blank the attributes for the next entry
-	tags="";
-	authors="";
-	dates="";
 	currentNode=null;
     }
 
@@ -174,8 +159,7 @@ public class Log2Gxl extends Thread {
     private void parseDate() throws IOException,IllegalStateException {
 	String line=readLine("Date:");
 	String date=line.substring("Date:".length()+1);
-	if(dates.length()==0) dates=date;
-	else dates=dates+","+date;
+	if(!simpleGXL) addToAttributeSet("Dates",date);
     }
 
     /**
@@ -280,9 +264,6 @@ public class Log2Gxl extends Thread {
         String line=readLine("Author:");
 	String author=line.substring("Author:".length()+1);
 	if(author.length()!=0) {
-	    if(authors.length()==0) authors=author;
-	    else authors=authors+","+author;
-
 	    addToAttributeSet("Authors",author);
 
             if(colorAuthors) {
@@ -291,7 +272,7 @@ public class Log2Gxl extends Thread {
 		    color=colors[authorColorMap.size()];
 		    authorColorMap.put(author,color);
 		}
-		currentNode.setAttr("fillcolor",new GXLString(color));
+		currentNode.setAttr("AuthorColor",new GXLString(color));
 	    }
 	}
     }
@@ -318,8 +299,6 @@ public class Log2Gxl extends Thread {
 	String line=readLine("Tag:");
 	String tag=line.substring("Tag:".length()+1);
 	if(tag.length()!=0) {
-	    if(tags.length()==0) tags=tag;
-	    else tags=tags+","+tag;
 	    addToAttributeSet("Tags",tag);
 	} 
     }
@@ -332,7 +311,7 @@ public class Log2Gxl extends Thread {
      */
     private void parseDeletedFiles() throws IOException,IllegalStateException {
 	String files=readFileBlock("Deleted files:");
-	if(includeFiles) currentNode.setAttr("Deleted files",new GXLString(files));
+	if(!simpleGXL) currentNode.setAttr("Deleted files",new GXLString(files));
     }
 
     /**
@@ -343,7 +322,7 @@ public class Log2Gxl extends Thread {
      */
     private void parseAddedFiles() throws IOException,IllegalStateException {
 	String files=readFileBlock("Added files:");
-	if(includeFiles) currentNode.setAttr("Added files",new GXLString(files));
+	if(!simpleGXL) currentNode.setAttr("Added files",new GXLString(files));
     }
 
     /**
@@ -354,7 +333,7 @@ public class Log2Gxl extends Thread {
      */
     private void parseRenamedFiles() throws IOException,IllegalStateException {
 	String files=readFileBlock("Renamed files:");
-	if(includeFiles) currentNode.setAttr("Renamed files",new GXLString(files));
+	if(!simpleGXL) currentNode.setAttr("Renamed files",new GXLString(files));
     }
 
     /**
@@ -365,7 +344,7 @@ public class Log2Gxl extends Thread {
      */
     private void parseRenamedDirectories() throws IOException,IllegalStateException {
 	String files=readFileBlock("Renamed directories:");
-	if(includeFiles) currentNode.setAttr("Renamed directories",new GXLString(files));
+	if(!simpleGXL) currentNode.setAttr("Renamed directories",new GXLString(files));
     }
 
 
@@ -399,7 +378,7 @@ public class Log2Gxl extends Thread {
      */
     private void parseModifiedFiles() throws IOException,IllegalStateException {
 	String files=readFileBlock("Modified files:");
-	if(includeFiles) currentNode.setAttr("Modified files",new GXLString(files));
+	if(!simpleGXL) currentNode.setAttr("Modified files",new GXLString(files));
     }
 
     /**
@@ -420,7 +399,7 @@ public class Log2Gxl extends Thread {
 	    }
 	    else {
 		line=source.readLine();
-		// addToAttributeSet("ChangeLog",line); // gxl2dot chokes on this
+		if(!simpleGXL) addToAttributeSet("ChangeLog",line); // gxl2dot chokes on this, so comment it out if you want to use gxl2dot
 	    }
 	}
     }
@@ -1157,14 +1136,19 @@ public class Log2Gxl extends Thread {
 
     /**
      * This flag determines if the revision file lists are passed to the GXL node as attributes
-     * Set this to false if using DOT as gxl2dot chokes on it
+     * Set this to false if using gxl2dot as gxl2dot chokes on it
      */
-    private boolean includeFiles=false;
+    private boolean simpleGXL=false;
 
     /**
      * Output stream to dump the GXL graph to
      */
     private OutputStream sink;
+
+    /**
+     * The GXLDocument representing the graph
+     */
+    public GXLDocument gxlDocument;
 
     /**
      * Load a file containing a map of author identifiers to colors
@@ -1230,6 +1214,7 @@ public class Log2Gxl extends Thread {
 	}
         source=new LineNumberReader(new InputStreamReader(rawSource));
 	this.sink=sink;
+	setDaemon(true);
 	start();
     }
 
@@ -1246,11 +1231,12 @@ public class Log2Gxl extends Thread {
     }
 
     /**
-     * Thread run method which actually does all of the work
+     * Create a GXL document by parsing the monotone log output
      */
-    public void doRun() throws IOException,IllegalStateException {
-	GXLDocument gxlDocument = new GXLDocument();
-	graph = new GXLGraph("Monotone Log");
+    private void buildGXLDocument() throws IOException,IllegalStateException {
+	if(gxlDocument!=null) throw new IllegalStateException("Can't invoke buildGXLDocument twice on same instance of Log2Gxl");
+	gxlDocument=new GXLDocument();
+	graph=new GXLGraph("Monotone Log");
 	graph.setAttribute(GXL.EDGEMODE,GXL.DIRECTED);
 	// graph.setAttr("rotate",new GXLString("90")); // Hmm. This rotates the coordinate system, not the graph drawing direction
 	gxlDocument.getDocumentElement().add(graph);
@@ -1270,6 +1256,15 @@ public class Log2Gxl extends Thread {
 	    parseChangeLog();
 	    commitNode();
 	}
+    }
+
+    /**
+     * Thread run method which actually does all of the work
+     */
+    public void doRun() throws IOException,IllegalStateException {
+
+	// Build the graph
+	buildGXLDocument();
 
 	logger.info("Writing GXL graph..");
 

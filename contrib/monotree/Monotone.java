@@ -20,6 +20,10 @@ import java.io.OutputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedInputStream;
 import java.util.logging.Logger;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.transform.stream.StreamResult;
 
 /**
  * Interface class to control an inferior Monotone process and return information from it
@@ -37,7 +41,7 @@ public class Monotone {
      * Pointer to the database file for monotone (the .db file)
      */
     private File database;
-    
+
     /**
      * Create a new interface to a monotone database
      *
@@ -87,6 +91,11 @@ public class Monotone {
 	return database.getName();
     } 
 
+    /**
+     * HACK - remember the last Log2Gxl we ran so GXLViewer can get to it
+     */
+    public Log2Gxl log2gxl;
+
     /** 
      * Run monotone and get an SVG stream from a log 
      *
@@ -99,18 +108,37 @@ public class Monotone {
 	// Start the inferior processes
 	Process monotone=Runtime.getRuntime().exec(getBaseCommand()+command);
 	new ErrorReader("monotone",monotone.getErrorStream());
-	Process gxl2dot=Runtime.getRuntime().exec("gxl2dot -d");
-	new ErrorReader("gxl2dot",gxl2dot.getErrorStream());
 	Process dot2svg=Runtime.getRuntime().exec("dot -Tsvg");
 	new ErrorReader("dot2svg",dot2svg.getErrorStream());
+
+	final PipedOutputStream gxl2dotSourceOutputStream=new PipedOutputStream();
+	final PipedInputStream gxl2dotSourceInputStream=new PipedInputStream(gxl2dotSourceOutputStream);
 
 	// Chain the log output to the GXL generator and into the dot converter
 	String[] args=new String[] { "--authorfile","authors.map" };
 	if(!(new File("authors.map")).exists()) args=new String[0];
-	new Log2Gxl().start(args,monotone.getInputStream(),new BufferedOutputStream(gxl2dot.getOutputStream()));
+	log2gxl=new Log2Gxl();
+	log2gxl.start(args,monotone.getInputStream(),gxl2dotSourceOutputStream);
 
+	final PipedOutputStream gxl2dotSinkOutputStream=new PipedOutputStream();
+	final PipedInputStream gxl2dotSinkInputStream=new PipedInputStream(gxl2dotSinkOutputStream);
+
+	// Create a thread to transform the GXL semantic graph into an DOT visual graph
+	Thread transformerThread=new Thread(new Runnable() { public void run() {
+	    try {
+		TransformerFactory factory=TransformerFactory.newInstance();
+		Transformer transformer=factory.newTransformer(new StreamSource(ClassLoader.getSystemResourceAsStream("gxl2dot.xsl")));
+		transformer.transform(new StreamSource(gxl2dotSourceInputStream),new StreamResult(gxl2dotSinkOutputStream));
+	    }
+	    catch(Exception e) {
+		e.printStackTrace();
+	    }
+	}});
+	transformerThread.setDaemon(true);
+	transformerThread.start();
+    
 	// Chain the dot graph to the svg generator
-	new StreamCopier("gxl2dot -> dot2svg",new BufferedInputStream(gxl2dot.getInputStream()),new BufferedOutputStream(dot2svg.getOutputStream()),true);
+	new StreamCopier("gxl2dot -> dot2svg",gxl2dotSinkInputStream,new BufferedOutputStream(dot2svg.getOutputStream()),true);
 	return new BufferedInputStream(dot2svg.getInputStream());
       }
 
@@ -170,6 +198,7 @@ public class Monotone {
 	public ErrorReader(String name,InputStream stream) {
 	    super(name);
 	    source=new LineNumberReader(new InputStreamReader(stream));
+	    setDaemon(true);
 	    start();
 	}
 	
@@ -231,6 +260,7 @@ public class Monotone {
 	    this.source=source;
 	    this.sink=sink;
 	    this.closeSink=closeSink;
+	    setDaemon(true);
 	    start();
 	}
 
