@@ -204,6 +204,7 @@ done_marker
 
 struct PipeStream : Netxx::Stream
 {	Netxx::socket_type fd_write;
+      typedef Netxx::Stream Parent;
 // override write and other methods ...
   Netxx::signed_size_type write(const void *buffer, Netxx::size_type length);
   void close();
@@ -216,6 +217,17 @@ struct PipeStream : Netxx::Stream
 private:
     struct pimpl; pimpl *pimpl_;
 };
+
+// pass them through ... for now
+Netxx::signed_size_type PipeStream::write(const void *buffer, Netxx::size_type length)
+{  return Parent::write(buffer,length);
+}
+void PipeStream::close()
+{  Parent::close();
+}
+const Netxx::ProbeInfo* PipeStream::get_probe_info() const
+{  return Parent::get_probe_info();
+}
 
 struct 
 session :
@@ -264,7 +276,7 @@ session :
 	  set<string> const & all_collections,
 	  app_state & app,
 	  string const & peer,
-	  Netxx::socket_type sock, 
+	  std::pair<Netxx::socket_type,Netxx::socket_type> sock, 
 	  Netxx::Timeout const & to);
 
   virtual ~session() {}
@@ -387,7 +399,7 @@ session::session(protocol_role role,
 		 set<string> const & all_coll,
 		 app_state & app,
 		 string const & peer,
-		 Netxx::socket_type sock, 
+		 std::pair<Netxx::socket_type,Netxx::socket_type> sock, 
 		 Netxx::Timeout const & to) : 
   role(role),
   voice(voice),
@@ -395,8 +407,8 @@ session::session(protocol_role role,
   all_collections(all_coll),
   app(app),
   peer_id(peer),
-  fd(sock),
-  str(sock, to),
+  fd(sock.first),
+  str(sock.first, sock.second, to),
   inbuf(""),
   outbuf(""),
   armed(false),
@@ -2369,7 +2381,9 @@ call_server(protocol_role role,
   P(F("connecting to %s\n") % address());
   Netxx::Stream server(address().c_str(), default_port, timeout); 
   session sess(role, client_voice, collections, all_collections, app, 
-	       address(), server.get_socketfd(), timeout);
+	       address(), 
+	       std::make_pair(server.get_socketfd(),server.get_socketfd()), 
+	       timeout);
 
   ticker input("bytes in"), output("bytes out");
   sess.in_ticker = &input;
@@ -2521,7 +2535,9 @@ handle_new_connection(Netxx::Address & addr,
       shared_ptr<session> sess(new session(role, server_voice, collections, 
 					   all_collections, app,
 					   lexical_cast<string>(client), 
-					   client.get_socketfd(), timeout));
+					   std::make_pair(client.get_socketfd(),
+					       client.get_socketfd()),
+					   timeout));
       sess->begin_service();
       sessions.insert(make_pair(client.get_socketfd(), sess));
     }
@@ -2732,10 +2748,16 @@ serve_stdio(protocol_role role,
 {
   P(F("beginning service on stdio\n"));
 
-  shared_ptr<session> sess=new session(role, server_voice, collections, 
+  shared_ptr<session> sess(new session(role, server_voice, collections, 
                                 all_collections, app, lexical_cast<string>("-"), 
-                		std::make_pair(0,1), static_cast<long>(timeout_seconds));
+                		std::make_pair(0,1), Netxx::Timeout(timeout_seconds)));
   sess->begin_service();
+  set<Netxx::socket_type> armed_sessions;
+  map<Netxx::socket_type, shared_ptr<session> > sessions;
+  
+  sessions[0]=sess;
+  sessions[1]=sess;
+  
   // no addr, no server
   bool live_p = true;
   while (live_p)
@@ -2763,10 +2785,10 @@ serve_stdio(protocol_role role,
       }
       else
       {  if (FD_ISSET(0, &rfds))
-	    handle_read_available(0, live_p);
+	    handle_read_available(0, sess, sessions, armed_sessions, live_p);
 		
          if (live_p && FD_ISSET(1, &wfds))
-	    handle_write_available(1, live_p);
+	    handle_write_available(1, sess, sessions, live_p);
       }
 		
     }
