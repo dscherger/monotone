@@ -50,11 +50,8 @@ struct file_history
 
 typedef std::set<file_state>::const_iterator cvs_file_state;
 
-struct cvs_manifest // state of the files at a specific point in history
-{ typedef std::map<std::string,cvs_file_state> tree_state_t;
-
-  tree_state_t tree_state; // dead files do not occur here
-};
+// state of the files at a specific point in history, dead files do not occur here
+typedef std::map<std::string,cvs_file_state> cvs_manifest;
 
 struct cvs_edge // careful this name is also used in cvs_import
 {
@@ -62,7 +59,7 @@ struct cvs_edge // careful this name is also used in cvs_import
   bool changelog_valid;
   std::string author;
   time_t time,time2;
-  cvs_manifest::tree_state_t files; // manifest (or use cvs_manifest)
+  cvs_manifest files; // manifest (or use cvs_manifest)
   hexenc<id> revision; // monotone revision
 
   // I do not want this to be 3 hours (how comes?)
@@ -88,7 +85,7 @@ struct cvs_edge // careful this name is also used in cvs_import
 class cvs_repository : public cvs_client
 { 
 public:
-  typedef cvs_manifest::tree_state_t tree_state_t;
+  typedef cvs_manifest tree_state_t;
   struct prime_log_cb;
   struct now_log_cb;
   struct now_list_cb;

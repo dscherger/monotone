@@ -510,6 +510,36 @@ void cvs_repository::prime(app_state &app)
     ticker();
   }
   ticker();
+  // fill in file states at given point
+  cvs_manifest current_manifest;
+  for (std::set<cvs_edge>::iterator e=edges.begin();e!=edges.end();++e)
+  { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
+    { I(!f->second.known_states.empty());
+      if (f->second.known_states.begin()->since_when > e->time2)
+        continue; // the file does not exist yet
+      cvs_manifest::iterator mi=current_manifest.find(f->first);
+      if (mi==current_manifest.end()) // the file is currently dead
+      { for (cvs_file_state s=f->second.known_states.begin();
+            s!=f->second.known_states.end();++s)
+        { if (s->since_when <= e->time2)
+          { if (!s->dead) current_manifest[f->first]=s;
+            goto continue_f;
+          }
+        }
+      }
+      else // file was present in last manifest
+      { cvs_file_state st=mi->second;
+        ++st;
+        if (st==f->second.known_states.end()) goto continue_f;
+        if (st->since_when <= e->time2)
+          mi->second=st;
+      }
+     continue_f: ;
+    }
+    e->files=current_manifest;
+  }
+  ticker();
+  
   debug();
 }
 
@@ -548,68 +578,3 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   guard.commit();      
 //  P(F("[merged] %s\n") % merged);
 }
-
-#if 0
-// fake to get it linking
-#include "unit_tests.hh"
-test_suite * init_unit_test_suite(int argc, char * argv[])
-{ return 0;
-}
-
-#include <getopt.h>
-
-int main(int argc,char **argv)
-{ std::string repository="/usr/local/cvsroot";
-  std::string module="christof/java";
-  std::string host;
-  std::string user;
-  bool pserver=false;
-  int compress_level=3;
-  int c;
-  while ((c=getopt(argc,argv,"z:d:v"))!=-1)
-  { switch(c)
-    { case 'z': compress_level=atoi(optarg);
-        break;
-      case 'd': 
-        { std::string d_arg=optarg;
-          unsigned len;
-          if (cvs_client::begins_with(d_arg,":pserver:",len))
-          { pserver=true;
-            d_arg.erase(0,len);
-          }
-          std::string::size_type at=d_arg.find('@');
-          std::string::size_type host_start=at;
-          if (at!=std::string::npos) 
-          { user=d_arg.substr(0,at); 
-            ++host_start; 
-          }
-          else host_start=0;
-          std::string::size_type colon=d_arg.find(':',host_start);
-          std::string::size_type repo_start=colon;
-          if (colon!=std::string::npos) 
-          { host=d_arg.substr(host_start,colon-host_start); 
-            ++repo_start; 
-          }
-          else repo_start=0;
-          repository=d_arg.substr(repo_start);
-        }
-        break;
-      case 'v': global_sanity.set_debug();
-        break;
-      default: 
-        std::cerr << "USAGE: cvs_client [-z level] [-d repo] [module]\n";
-        exit(1);
-        break;
-    }
-  }
-  if (optind+1<=argc) module=argv[optind];
-  try
-  { cvs_repository cl(host,repository,user,module,pserver);
-    if (compress_level) cl.GzipStream(compress_level);
-    const cvs_repository::tree_state_t &n=cl.now();
-  } catch (std::exception &e)
-  { std::cerr << e.what() << '\n';
-  }
-  return 0;
-}
-#endif
