@@ -205,11 +205,16 @@ done_marker
 struct PipeStream : Netxx::Stream
 {	Netxx::socket_type fd_write;
 // override write and other methods ...
-  Netxx::signed_size_type write (const void *buffer, Netxx::size_type length);
+  Netxx::signed_size_type write(const void *buffer, Netxx::size_type length);
+  void close();
+  const Netxx::ProbeInfo* get_probe_info() const;
 // ctors
   explicit PipeStream (Netxx::socket_type socketfd, Netxx::socket_type writefd, const Netxx::Timeout &timeout=Netxx::Timeout())
     : Netxx::Stream(socketfd,timeout), fd_write(writefd)
   {}
+
+private:
+    struct pimpl; pimpl *pimpl_;
 };
 
 struct 
