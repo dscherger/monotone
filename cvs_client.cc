@@ -851,9 +851,77 @@ static std::string dirname(const std::string &s)
   return s.substr(0,lastslash);
 }
 
+std::string cvs_client::pserver_password(const std::string &root)
+{ const char *home=getenv("HOME");
+  if (!home) home="";
+  std::ifstream fs((std::string(home)+"/.cvspass").c_str());
+  while (fs.good())
+  { char buf[1024];
+    if (fs.getline(buf,sizeof buf).good())
+    { std::string line=buf;
+      if (line.substr(0,3)=="/1 ") line.erase(0,3);
+      if (line.size()>=root.size()+2 && line.substr(0,root.size())==root
+          && line[root.size()]==' ')
+        return line.substr(root.size()+1);
+    }
+  }
+  return "A"; // empty password
+}
+
+std::string cvs_client::shorten_path(const std::string &p) const
+{ unsigned len=0;
+  if (cvs_client::begins_with(p,module,len))
+  { if (p[len]=='/') ++len;
+    return p.substr(len);
+  }
+  return p;
+}
+
+std::string cvs_client::rcs_file2path(std::string file) const
+{ // try to guess a sane file name (e.g. on cvs.gnome.org)
+  if (file.substr(0,rcs_root.size())!=rcs_root)
+  { std::string::size_type modpos=file.find(module);
+    if (modpos!=std::string::npos) // else ... who knows where to put it
+    { I(modpos>=1);
+      I(file[modpos-1]=='/');
+      std::string oldroot=rcs_root;
+      const_cast<std::string&>(rcs_root)=file.substr(0,modpos-1);
+      W(F("changing rcs root dir from %s to %s\n") % oldroot % rcs_root);
+      file.erase(0,rcs_root.size());
+    }
+  }
+  else file.erase(0,rcs_root.size());
+  I(file[0]=='/');
+  file.erase(0,1);
+  if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
+  std::string::size_type lastslash=file.rfind('/');
+  if (lastslash!=std::string::npos && lastslash>=5
+          && file.substr(lastslash-5,6)=="Attic/")
+    file.erase(lastslash-5,6);
+  return file;
+}
+
+namespace {
+struct store_here : cvs_client::update_callbacks
+{ cvs_client::update &store;
+  store_here(cvs_client::update &s) : store(s) {}
+  virtual void operator()(const std::string &f,const cvs_client::update &u) const
+  { const_cast<cvs_client::update&>(store)=u;
+  }
+};
+}
+
 cvs_client::update cvs_client::Update(const std::string &file, 
             const std::string &old_revision, const std::string &new_revision)
-{ struct update result;
+{
+#if 0 // hmmm und wie übergebe ich jetzt die Zielversion?
+  struct update result;
+  std::vector<std::pair<std::string,std::string> > file_revision;
+  file_revision.push_back(std::make_pair(file,old_revision));
+  Update(file_revision,store_here(result));
+  return result;
+#else
+  struct update result;
   writestr("Directory .\n"+root+"/"+dirname(file)+"\n");
   std::string bname=basename(file);
   writestr("Entry /"+bname+"/"+old_revision+"///\n");
@@ -943,56 +1011,7 @@ cvs_client::update cvs_client::Update(const std::string &file,
     result.removed=result2.dead;
   }
   return result;
-}
-
-std::string cvs_client::pserver_password(const std::string &root)
-{ const char *home=getenv("HOME");
-  if (!home) home="";
-  std::ifstream fs((std::string(home)+"/.cvspass").c_str());
-  while (fs.good())
-  { char buf[1024];
-    if (fs.getline(buf,sizeof buf).good())
-    { std::string line=buf;
-      if (line.substr(0,3)=="/1 ") line.erase(0,3);
-      if (line.size()>=root.size()+2 && line.substr(0,root.size())==root
-          && line[root.size()]==' ')
-        return line.substr(root.size()+1);
-    }
-  }
-  return "A"; // empty password
-}
-
-std::string cvs_client::shorten_path(const std::string &p) const
-{ unsigned len=0;
-  if (cvs_client::begins_with(p,module,len))
-  { if (p[len]=='/') ++len;
-    return p.substr(len);
-  }
-  return p;
-}
-
-std::string cvs_client::rcs_file2path(std::string file) const
-{ // try to guess a sane file name (e.g. on cvs.gnome.org)
-  if (file.substr(0,rcs_root.size())!=rcs_root)
-  { std::string::size_type modpos=file.find(module);
-    if (modpos!=std::string::npos) // else ... who knows where to put it
-    { I(modpos>=1);
-      I(file[modpos-1]=='/');
-      std::string oldroot=rcs_root;
-      const_cast<std::string&>(rcs_root)=file.substr(0,modpos-1);
-      W(F("changing rcs root dir from %s to %s\n") % oldroot % rcs_root);
-      file.erase(0,rcs_root.size());
-    }
-  }
-  else file.erase(0,rcs_root.size());
-  I(file[0]=='/');
-  file.erase(0,1);
-  if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
-  std::string::size_type lastslash=file.rfind('/');
-  if (lastslash!=std::string::npos && lastslash>=5
-          && file.substr(lastslash-5,6)=="Attic/")
-    file.erase(lastslash-5,6);
-  return file;
+#endif
 }
 
 // we have to update, status will give us only strange strings (and uses too
@@ -1000,4 +1019,118 @@ std::string cvs_client::rcs_file2path(std::string file) const
 void cvs_client::Update(const std::vector<std::pair<std::string,std::string> > &file_revisions,
     const update_callbacks &cb)
 { 
+  struct update result;
+  I(!file_revisions.empty());
+  std::string olddir;
+  for (std::vector<std::pair<std::string,std::string> >::const_iterator i
+                    =file_revisions.begin(); i!=file_revisions.end(); ++i)
+  { if (dirname(i->first)!=olddir)
+    { olddir=dirname(i->first);
+      writestr("Directory .\n"+root+"/"+olddir+"\n");
+    }
+    std::string bname=basename(i->first);
+    writestr("Entry /"+bname+"/"+i->second+"///\n");
+    writestr("Unchanged "+bname+"\n");
+  }
+  // @@ perhaps pass -C to work around cvs bug
+// @@ "-r",new_revision.c_str() ... ,bname.c_str()
+  SendCommand("update","-C","-u","--",0);
+  std::vector<std::pair<std::string,std::string> > lresult;
+  std::string dir,dir2,rcsfile,file;
+  enum { st_normal, st_merge } state=st_normal;
+// 2do: filename storing
+  while (fetch_result(lresult))
+  { I(!lresult.empty());
+    unsigned len=0;
+    if (lresult[0].first=="CMD")
+    { if (lresult[0].second=="Update-existing")
+      { I(lresult.size()==7);
+        I(lresult[6].first=="data");
+        dir=lresult[1].second;
+        result.contents=lresult[6].second;
+        cb(file,result);
+        result=update();
+        state=st_normal;
+        file.clear();
+      }
+      else if (lresult[0].second=="Rcs-diff")
+      { I(lresult.size()==7);
+        I(lresult[6].first=="data");
+        dir=lresult[1].second;
+        result.patch=lresult[6].second;
+        cb(file,result);
+        result=update();
+        state=st_normal;
+        file.clear();
+      }
+      else if (lresult[0].second=="Checksum")
+      { I(lresult.size()==2);
+        I(lresult[1].first=="data");
+        result.checksum=lresult[1].second;
+      }
+      else if (lresult[0].second=="Removed")
+      { I(lresult.size()==3);
+        result.removed=true;
+        cb(file,result);
+        result=update();
+        state=st_normal;
+        file.clear();
+      }
+      else if (lresult[0].second=="Copy-file")
+      { I(state==st_merge);
+      }
+      else if (lresult[0].second=="Merged")
+      { I(state==st_merge);
+      }
+      else if (lresult[0].second=="error  ")
+      { I(state==st_merge);
+        break;
+      }
+      else
+      { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+      }
+    }
+    else if (lresult[0].second=="+updated")
+    { // std::cerr << combine_result(lresult) << '\n';
+    }
+    else if (lresult[0].second=="P ")
+    { // std::cerr << combine_result(lresult) << '\n';
+      I(lresult.size()==2);
+      I(lresult[1].first=="fname");
+    }
+    else if (lresult[0].second=="M ")
+    { I(lresult.size()==2);
+      I(lresult[1].first=="fname");
+      state=st_merge;
+    }
+    else if (begins_with(lresult[0].second,"RCS file: ",len))
+    { I(state==st_normal);
+      state=st_merge;
+    }
+    else if (begins_with(lresult[0].second,"retrieving revision ",len))
+    { I(state==st_merge);
+    }
+    else if (begins_with(lresult[0].second,"Merging ",len))
+    { I(state==st_merge);
+    }
+    else if (begins_with(lresult[0].second,"C ",len))
+    { state=st_merge;
+      I(lresult.size()==2);
+      I(lresult[1].first=="fname");
+    }
+    else 
+    { std::cerr << "unrecognized response " << lresult[0].second << '\n';
+    }
+  }
+#if 0  
+  if (state==st_merge)
+  { W(F("Update %s->%s of %s exposed CVS bug\n") % old_revision % new_revision % file);
+    checkout result2=CheckOut(file,new_revision);
+    result.contents=result2.contents;
+    result.patch=std::string();
+    result.checksum=std::string();
+    result.removed=result2.dead;
+  }
+#endif  
+//  return result;
 }
