@@ -501,7 +501,10 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     const_cast<std::string&>(s2->md5sum)=u.checksum;
     const_cast<unsigned&>(s2->patchsize)=u.patch.size();
     const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
-    I(s2->since_when==u.mod_time);
+    // I(s2->since_when==u.mod_time);
+    if (u.mod_time!=s2->since_when)
+    { W(F("update time %ld and log time %ld disagree\n") % u.mod_time % s2->since_when);
+    }
     std::string old_contents=contents;
     { std::vector<piece> file_contents;
       index_deltatext(contents,file_contents);
@@ -544,7 +547,10 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   { cvs_client::checkout c=CheckOut(file,s2->cvs_version);
     I(!c.dead); // dead->dead is no change, so shouldn't get a number
     I(!s2->dead);
-    I(s2->since_when==c.mod_time);
+    // I(s2->since_when==c.mod_time);
+    if (c.mod_time!=s2->since_when)
+    { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+    }
     store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     contents=c.contents;
@@ -563,7 +569,10 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
         const cvs_client::checkout &c, std::string &file_contents)
 { const_cast<bool&>(s2->dead)=c.dead;
   if (!c.dead)
-  { I(c.mod_time==s2->since_when);
+  { // I(c.mod_time==s2->since_when);
+    if (c.mod_time!=s2->since_when)
+    { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+    }
     store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;

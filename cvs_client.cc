@@ -526,25 +526,6 @@ error:
   exit(1);
 }
 
-static time_t cvs111date2time_t(const std::string &t)
-{ // 2000/11/10 14:43:25
-  I(t.size()==19);
-  I(t[4]=='/' && t[7]=='/');
-  I(t[10]==' ' && t[13]==':');
-  I(t[16]==':');
-  struct tm tm;
-  memset(&tm,0,sizeof tm);
-  tm.tm_year=atoi(t.substr(0,4).c_str())-1900;
-  tm.tm_mon=atoi(t.substr(5,2).c_str())-1;
-  tm.tm_mday=atoi(t.substr(8,2).c_str());
-  tm.tm_hour=atoi(t.substr(11,2).c_str());
-  tm.tm_min=atoi(t.substr(14,2).c_str());
-  tm.tm_sec=atoi(t.substr(17,2).c_str());
-  time_t result=-1;
-  result=mktime(&tm); // I _assume_ this is local time :-(
-  return result;
-}
-
 static time_t timezone2time_t(const struct tm &tm, int offset_min)
 { I(!offset_min);
   time_t result=-1;
@@ -561,6 +542,24 @@ static time_t timezone2time_t(const struct tm &tm, int offset_min)
 #endif
 //  L(F("result %ld\n") % result);
   return result;
+}
+
+static time_t cvs111date2time_t(const std::string &t)
+{ // 2000/11/10 14:43:25
+  I(t.size()==19);
+  I(t[4]=='/' && t[7]=='/');
+  I(t[10]==' ' && t[13]==':');
+  I(t[16]==':');
+  struct tm tm;
+  memset(&tm,0,sizeof tm);
+  tm.tm_year=atoi(t.substr(0,4).c_str())-1900;
+  tm.tm_mon=atoi(t.substr(5,2).c_str())-1;
+  tm.tm_mday=atoi(t.substr(8,2).c_str());
+  tm.tm_hour=atoi(t.substr(11,2).c_str());
+  tm.tm_min=atoi(t.substr(14,2).c_str());
+  tm.tm_sec=atoi(t.substr(17,2).c_str());
+  // on my debian/woody server (1.11) this is UTC ...
+  return timezone2time_t(tm,0); 
 }
 
 static time_t rls_l2time_t(const std::string &t)

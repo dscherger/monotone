@@ -17,6 +17,7 @@ mkdir test.cvstemp || exit 1
 mkdir test.cvstemp/import || exit 1
 cd $CVSROOT/../test.cvstemp/import
 echo "initial import" >A
+echo "initial "`date` `TZ=UTC date` `date +%s`
 cvs -d $CVSROOT import -m "initial import" test vendor_tag initial_import 
 
 if [ "$1" = "import" ] 
