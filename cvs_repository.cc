@@ -470,12 +470,12 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
   if (s2==end) return;
   I(s->since_when!=s2->since_when);
   // check ins must not overlap (next revision must lie beyond edge)
-  if (s!=end && s->since_when <= e->time2)
-  { W(F("splitting edge %ld-%ld at %ld\n") % e->time % e->time2 % s->since_when);
+  if (s2->since_when <= e->time2)
+  { W(F("splitting edge %ld-%ld at %ld\n") % e->time % e->time2 % s2->since_when);
     cvs_edge new_edge=*e;
-    I(s->since_when-1>=e->time);
-    e->time2=s->since_when-1;
-    new_edge.time=s->since_when;
+    I(s2->since_when-1>=e->time);
+    e->time2=s2->since_when-1;
+    new_edge.time=s2->since_when;
     edges.insert(new_edge);
   }
 }
