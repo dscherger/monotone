@@ -257,9 +257,7 @@ struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 // get all available files and their newest revision
 void cvs_repository::get_all_files()
 { if (edges.empty())
-  { if (
-// @@
-false && CommandValid("rlist"))
+  { if (CommandValid("rlist"))
     { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),0);
     }
     else // less efficient? ...
