@@ -483,6 +483,7 @@ const cvs_repository::tree_state_t &cvs_repository::now()
             assert(dead.empty() || dead=="dead");
             assert(!name.empty());
             
+            if (keyword=="----") keyword=std::string();
             if (keyword!="d---")
             { std::cerr << (directory+"/"+name) << " V" 
                 << version << " from " << date << " " << dead
@@ -507,7 +508,7 @@ int main(int argc,char **argv)
   std::string user="";
   int compress_level=3;
   int c;
-  while ((c=getopt(argc,argv,"zd"))!=-1)
+  while ((c=getopt(argc,argv,"z:d:"))!=-1)
   { switch(c)
     { case 'z': compress_level=atoi(optarg);
         break;
@@ -529,6 +530,7 @@ int main(int argc,char **argv)
           else repo_start=0;
           repository=d_arg.substr(repo_start);
         }
+        break;
       default: 
         std::cerr << "USAGE: cvs_client [-z level] [-d repo] [module]\n";
         exit(1);
@@ -538,7 +540,7 @@ int main(int argc,char **argv)
   if (optind+1<=argc) module=argv[optind];
   try
   { cvs_repository cl(host,repository,user,module);
-    cl.GzipStream(compress_level);
+    if (compress_level) cl.GzipStream(compress_level);
     const cvs_repository::tree_state_t &n=cl.now();
   } catch (std::exception &e)
   { std::cerr << e.what() << '\n';
