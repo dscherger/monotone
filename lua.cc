@@ -579,6 +579,34 @@ lua_hooks::hook_ignore_file(file_path const & p)
   return exec_ok && ignore_it;
 }
 
+bool
+lua_hooks::hook_clobber_existing_file(file_path const & p)
+{
+  bool clobber_it = false;
+  bool exec_ok = Lua(st)
+    .push_str("clobber_existing_file")
+    .get_fn()
+    .push_str(p())
+    .call(1,1)
+    .extract_bool(clobber_it)
+    .ok();
+  return exec_ok && clobber_it;
+}
+
+bool
+lua_hooks::hook_preserve_existing_file(file_path const & p)
+{
+  bool preserve_it = false;
+  bool exec_ok = Lua(st)
+    .push_str("preserve_existing_file")
+    .get_fn()
+    .push_str(p())
+    .call(1,1)
+    .extract_bool(preserve_it)
+    .ok();
+  return exec_ok && preserve_it;
+}
+
 bool 
 lua_hooks::hook_get_nonce(std::string & n)
 {

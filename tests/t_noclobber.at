@@ -1,0 +1,285 @@
+#  -*- Autoconf -*-
+
+# Check that update and checkout do the right thing according to the 
+# clobber_existing_file and preserve_existing_file hooks
+
+# consider splitting this into 3 different tests
+# - t_clobber.at
+# - t_preserve.at
+# - t_fail.at
+
+# for each test we need to test 
+# - update delete 
+#   bogus: delete's don't occur unless file is in current manifest
+#   check is not strictly needed
+# - update move source
+#   bogus: move doesn't occur unless source is in current manifest
+#   check is not strictly needed
+# - update move target
+#   fails in boost
+#   check should be done
+# - update addition
+# - update merge
+#   bogus: merge doesn't occur unless file is in current manifest
+#   check is not strictly needed
+# - checkout
+
+# the problem with 3 tests is that they all need
+# the same database setup!
+
+AT_SETUP([noclobber lua hooks])
+
+MONOTONE_SETUP
+
+# with these hooks monotone should clobber existing files
+
+AT_DATA(clobber.lua, [
+function clobber_existing_file(name)
+   return true;
+end
+
+function preserve_existing_file(name)
+   return false;
+end
+])
+
+# with these hooks monotone should preserve existing files
+
+AT_DATA(preserve.lua, [
+function clobber_existing_file(name)
+   return false;
+end
+
+function preserve_existing_file(name)
+   return true;
+end
+])
+
+# with these hooks monotone should fail if it hits an existing file
+
+AT_DATA(fail.lua, [
+function clobber_existing_file(name)
+   return false;
+end
+
+function preserve_existing_file(name)
+   return false;
+end
+])
+
+AT_DATA(a, [file a
+])
+
+AT_DATA(b, [file b
+])
+
+AT_DATA(c, [file c
+])
+
+AT_DATA(e, [file e
+])
+
+AT_DATA(f, [file f
+])
+
+AT_DATA(x, [existing file
+])
+
+# create files in db
+
+AT_CHECK(MONOTONE add a, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch commit blah-blah, [], [ignore], [ignore])
+A_M_SHA1=`SHA1(MT/manifest)`
+
+AT_CHECK(MONOTONE add b, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch commit blah-blah, [], [ignore], [ignore])
+B_M_SHA1=`SHA1(MT/manifest)`
+
+AT_CHECK(MONOTONE add c, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch commit blah-blah, [], [ignore], [ignore])
+C_M_SHA1=`SHA1(MT/manifest)`
+
+AT_CHECK(mv c d)
+AT_CHECK(MONOTONE rename c d, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch commit blah-blah, [], [ignore], [ignore])
+D_M_SHA1=`SHA1(MT/manifest)`
+
+AT_CHECK(MONOTONE add e, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch commit blah-blah, [], [ignore], [ignore])
+E_M_SHA1=`SHA1(MT/manifest)`
+
+AT_CHECK(MONOTONE add f, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch commit blah-blah, [], [ignore], [ignore])
+F_M_SHA1=`SHA1(MT/manifest)`
+
+AT_CHECK(MONOTONE drop e, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch commit blah-blah, [], [ignore], [ignore])
+E_dropped_M_SHA1=`SHA1(MT/manifest)`
+
+# clobbering checkout
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x a)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=clobber.lua checkout $A_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+AT_CHECK(grep 'no changes' stdout, [], [ignore])
+AT_CHECK(cmp a x, [1], [ignore])
+
+# clobbering update addition
+
+AT_CHECK(cp x b)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=clobber.lua --branch=testbranch update, [], [ignore], [stderr])
+AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+AT_CHECK(grep 'no changes' stdout, [], [ignore])
+AT_CHECK(cmp b x, [1], [ignore])
+
+# clobbering update move source
+# degenerates to clobbering add of source
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x c)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=clobber.lua checkout $B_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(MONOTONE --rcfile=clobber.lua --branch=testbranch update, [], [ignore], [stderr])
+#AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+#AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+#AT_CHECK(grep 'no changes' stdout, [], [ignore])
+#AT_CHECK(cmp b x, [1], [ignore])
+
+# clobbering update move target
+# degenerates to clobbering add of target if current tree doesn't have move source
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x d)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=clobber.lua checkout $B_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(MONOTONE --rcfile=clobber.lua --branch=testbranch update, [], [ignore], [stderr])
+#AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+#AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+#AT_CHECK(grep 'no changes' stdout, [], [ignore])
+#AT_CHECK(cmp b x, [1], [ignore])
+
+# clobbering update move target
+# fails to clobber existing target in boost::filesystem::rename because file exists :(
+
+#AT_CHECK(rm -rf MT a b c d e f)
+#AT_CHECK(cp x d)
+#AT_CHECK(ls -l, [], [ignore])
+
+#AT_CHECK(MONOTONE --rcfile=clobber.lua checkout $C_M_SHA1 ., [], [ignore], [stderr])
+#AT_CHECK(MONOTONE --rcfile=clobber.lua --branch=testbranch update, [], [ignore], [stderr])
+
+#AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+#AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+#AT_CHECK(grep 'no changes' stdout, [], [ignore])
+#AT_CHECK(cmp b x, [1], [ignore])
+
+# clobbering update delete case
+# file not in current manifest is not deleted
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x e)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=clobber.lua checkout $D_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(MONOTONE --rcfile=clobber.lua --branch=testbranch update, [], [ignore], [stderr])
+#AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+AT_CHECK(grep 'no changes' stdout, [], [ignore])
+AT_CHECK(cmp e x, [], [ignore])
+
+# regular delete case
+# should modified files be deleted?
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=clobber.lua checkout $E_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(test -e e, [], [ignore])
+AT_CHECK(MONOTONE --rcfile=clobber.lua --branch=testbranch update, [], [ignore], [stderr])
+AT_CHECK(test -e e, [1], [ignore])
+
+# clobbering update merge case seems nonsensical at the moment
+# and seems to be "handled" as a tree layout conflict
+
+# preserving checkout
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x a)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=preserve.lua checkout $A_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(grep 'preserving' stderr, [], [ignore])
+AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+AT_CHECK(grep 'no changes' stdout, [1], [ignore])
+AT_CHECK(cmp a x, [], [ignore])
+
+# preserving update addition
+
+AT_CHECK(cp x b)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=preserve.lua --branch=testbranch update, [], [ignore], [stderr])
+AT_CHECK(grep 'preserving' stderr, [], [ignore])
+AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+AT_CHECK(grep 'no changes' stdout, [1], [ignore])
+AT_CHECK(cmp b x, [], [ignore])
+
+# preserving update move target
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x d)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=preserve.lua checkout $C_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(MONOTONE --rcfile=preserve.lua --branch=testbranch update, [], [ignore], [stderr])
+#AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+#AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+#AT_CHECK(grep 'no changes' stdout, [], [ignore])
+#AT_CHECK(cmp b x, [1], [ignore])
+
+# failing checkout
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x a)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=fail.lua checkout $A_M_SHA1 ., [1], [ignore], [stderr])
+AT_CHECK(grep 'blocked' stderr, [], [ignore])
+AT_CHECK(cmp a x, [], [ignore])
+
+# failing update addition
+
+AT_CHECK(cp x b)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=fail.lua --branch=testbranch update, [1], [ignore], [stderr])
+AT_CHECK(grep 'blocked' stderr, [], [ignore])
+AT_CHECK(cmp b x, [], [ignore])
+
+# failing update move target
+
+AT_CHECK(rm -rf MT a b c d e f)
+AT_CHECK(cp x d)
+AT_CHECK(ls -l, [], [ignore])
+
+AT_CHECK(MONOTONE --rcfile=fail.lua checkout $C_M_SHA1 ., [], [ignore], [stderr])
+AT_CHECK(MONOTONE --rcfile=fail.lua --branch=testbranch update, [], [ignore], [stderr])
+#AT_CHECK(grep 'clobbering' stderr, [], [ignore])
+#AT_CHECK(MONOTONE status, [], [stdout], [ignore])
+#AT_CHECK(grep 'no changes' stdout, [], [ignore])
+#AT_CHECK(cmp b x, [1], [ignore])
+
+# fail here so we can see all the details while writing the tests...
+
+AT_CHECK(false, [], [ignore])
+
+AT_CLEANUP

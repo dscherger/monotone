@@ -217,6 +217,51 @@ get_work_path(local_path & w_path)
   L(F("work path is %s\n") % w_path);
 }
 
+/*
+ * return true if the existing file checks pass
+ *
+ * called to see if a potentially destructive operation 
+ * on a local file should proceed if the file exists and is not
+ * present in the current manifest
+ *
+ * if the file does not exist return true (proceed)
+ * if the file exists and clobbering is enabled return true (proceed)
+ * if the file exists and preserving is enabled return false (skip file)
+ * otherwise fail with a nasty message
+ */
+
+static bool
+check_existing_file(string op, app_state & app, file_path const & path) 
+{
+  bool existing  = file_exists(path);
+  bool clobbered = existing ? app.lua.hook_clobber_existing_file(path)  : false;
+  bool preserved = existing ? app.lua.hook_preserve_existing_file(path) : false;
+
+  // these logs are just for testing!
+
+  P(F("%s checking existing file %s\n") % op % path);
+
+  if (existing)  P(F("%s checking existing file %s: exists\n")    % op % path);
+  if (clobbered) P(F("%s checking existing file %s: clobbered\n") % op % path);
+  if (preserved) P(F("%s checking existing file %s: preserved\n") % op % path);
+
+  // fail if the file exists and is not to be clobbered or preserved
+
+  N(!existing || clobbered || preserved, 
+    F("%s blocked by existing file %s\n") % op % path);
+
+  if (existing && !clobbered && preserved)
+    W(F("%s preserving existing file %s\n") % op % path);
+
+  if (existing && clobbered) 
+    W(F("%S clobbering existing file %s\n") % op % path);
+
+  // indicate that operation should proceed only if the file does not exist
+  // or if clobbering has been configured
+
+  return !existing || clobbered;
+}
+
 static void 
 get_manifest_map(manifest_map & m)
 {
@@ -1195,61 +1240,76 @@ CMD(update, "working copy", "", "update working copy")
   for (set<file_path>::const_iterator i = ps.f_dels.begin();
        i != ps.f_dels.end(); ++i)
     {
-      L(F("deleting %s\n") % (*i));
-      delete_file(*i);
+      if (m_old.find(*i) != m_old.end() || check_existing_file("delete", app, *i))
+        {
+	  L(F("deleting %s\n") % (*i));
+	  delete_file(*i);
+        }
     }
 
   L(F("applying %d moves to files in tree\n") % ps.f_moves.size());
   for (set<patch_move>::const_iterator i = ps.f_moves.begin();
        i != ps.f_moves.end(); ++i)
     {
-      L(F("moving %s -> %s\n") % i->path_old % i->path_new);
-      make_dir_for(i->path_new);
-      move_file(i->path_old, i->path_new);
+      if ((m_old.find(i->path_old) != m_old.end() || check_existing_file("move source", app, i->path_old)) &&
+	  (m_old.find(i->path_new) != m_old.end() || check_existing_file("move target", app, i->path_new)))
+	{
+	  L(F("moving %s -> %s\n") % i->path_old % i->path_new);
+	  make_dir_for(i->path_new);
+	  move_file(i->path_old, i->path_new);
+	}
     }
-  
+
   L(F("applying %d additions to tree\n") % ps.f_adds.size());
   for (set<patch_addition>::const_iterator i = ps.f_adds.begin();
        i != ps.f_adds.end(); ++i)
     {
-      L(F("adding %s as %s\n") % i->ident % i->path);
-      file_data tmp;
-      if (app.db.file_version_exists(i->ident))
-	app.db.get_file_version(i->ident, tmp);
-      else if (merger.temporary_store.find(i->ident) != merger.temporary_store.end())
-	tmp = merger.temporary_store[i->ident];
-      else
-	I(false); // trip assert. this should be impossible.
-      write_localized_data(i->path, tmp.inner(), app.lua);
+      if (m_old.find(i->path) != m_old.end() || check_existing_file("add", app, i->path))
+	{
+	  L(F("adding %s as %s\n") % i->ident % i->path);
+	  file_data tmp;
+	  if (app.db.file_version_exists(i->ident))
+	    app.db.get_file_version(i->ident, tmp);
+	  else if (merger.temporary_store.find(i->ident) != merger.temporary_store.end())
+	    tmp = merger.temporary_store[i->ident];
+	  else
+	    I(false); // trip assert. this should be impossible.
+
+	  write_localized_data(i->path, tmp.inner(), app.lua);
+	}
     }
 
   L(F("applying %d deltas to tree\n") % ps.f_deltas.size());
   for (set<patch_delta>::const_iterator i = ps.f_deltas.begin();
        i != ps.f_deltas.end(); ++i)
     {
-      P(F("updating file %s: %s -> %s\n") 
-	% i->path % i->id_old % i->id_new);
-      
-      // sanity check
-      {
-	base64< gzip<data> > dtmp;
-	hexenc<id> dtmp_id;
-	read_localized_data(i->path, dtmp, app.lua);
-	calculate_ident(dtmp, dtmp_id);
-	I(dtmp_id == i->id_old.inner());
-      }
-
-      // ok, replace with new version
-      {
-	file_data tmp;
-	if (app.db.file_version_exists(i->id_new))
-	  app.db.get_file_version(i->id_new, tmp);
-	else if (merger.temporary_store.find(i->id_new) != merger.temporary_store.end())
-	  tmp = merger.temporary_store[i->id_new];
-	else
-	  I(false); // trip assert. this should be impossible.
-	write_localized_data(i->path, tmp.inner(), app.lua);
-      }
+      if (m_old.find(i->path) != m_old.end() || check_existing_file("merge", app, i->path))
+	{
+	  P(F("updating file %s: %s -> %s\n") 
+	    % i->path % i->id_old % i->id_new);
+          
+	  // sanity check
+	  {
+	    base64< gzip<data> > dtmp;
+	    hexenc<id> dtmp_id;
+	    read_localized_data(i->path, dtmp, app.lua);
+	    calculate_ident(dtmp, dtmp_id);
+	    I(dtmp_id == i->id_old.inner());
+	  }
+          
+	  // ok, replace with new version
+	  {
+	    file_data tmp;
+	    if (app.db.file_version_exists(i->id_new))
+	      app.db.get_file_version(i->id_new, tmp);
+	    else if (merger.temporary_store.find(i->id_new) != merger.temporary_store.end())
+	      tmp = merger.temporary_store[i->id_new];
+	    else
+	      I(false); // trip assert. this should be impossible.
+            
+	    write_localized_data(i->path, tmp.inner(), app.lua);
+	  }
+	}
     }
   
   L(F("update successful\n"));
@@ -1486,13 +1546,19 @@ CMD(checkout, "tree", "MANIFEST-ID DIRECTORY\nDIRECTORY", "check out tree state 
       N(app.db.file_version_exists(pip.ident()),
 	F("no file version %s found in database for %s")
 	% pip.ident() % pip.path());
-      
-      file_data dat;
-      L(F("writing file %s to %s\n") %
-	pip.ident() % pip.path());
-      app.db.get_file_version(pip.ident(), dat);
-      write_localized_data(pip.path(), dat.inner(), app.lua);
+
+      if (check_existing_file("checkout", app, pip.path())) 
+        {
+	  file_data dat;
+
+	  L(F("writing file %s to %s\n") %
+	    pip.ident() % pip.path());
+	  app.db.get_file_version(pip.ident(), dat);
+	  write_localized_data(pip.path(), dat.inner(), app.lua);
+        }
+
     }
+
   remove_work_set();
   guard.commit();
   update_any_attrs(app);

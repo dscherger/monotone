@@ -53,6 +53,13 @@ function ignore_file(name)
    return false;
 end
 
+function clobber_existing_file(name)
+   return true;
+end
+
+function preserve_existing_file(name)
+   return false;
+end
 
 function edit_comment(basetext)
    local exe = "vi"
