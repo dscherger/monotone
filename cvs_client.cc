@@ -955,7 +955,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   { 
     SendCommand("update","-d","-C","-u",
       "-r",file_revisions.begin()->new_revision.c_str(),
-      "--",file_revisions.begin()->file.c_str(),0);
+      "--",basename(file_revisions.begin()->file).c_str(),0);
   }
   else SendCommand("update","-d","-C","-u","--",0);
   std::vector<std::pair<std::string,std::string> > lresult;
