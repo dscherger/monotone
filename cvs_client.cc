@@ -12,6 +12,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <set>
+#include <stdarg.h>
 //#include <boost/tokenizer.hpp>
 //#include "rcs_file.hh"
 
@@ -20,22 +21,38 @@ class cvs_client
   size_t bytes_read,bytes_written;
   typedef std::set<std::string> stringset_t;
   stringset_t Valid_requests;
+protected:
+  std::string module;
   
 public:  
   cvs_client(const std::string &host, const std::string &root,
              const std::string &user=std::string(), 
              const std::string &module=std::string());
              
-  void writestr(int fd, const std::string &s);
-  std::string readline(int fd);
+  void writestr(const std::string &s);
+  std::string readline();
   
   size_t get_bytes_read() const { return bytes_read; }
   size_t get_bytes_written() const { return bytes_written; }
-  void ticker()
-  { std::cerr << "[bytes sent " << bytes_written << "] [bytes received "
-      << bytes_read << "]\n";
+  void ticker(bool newline=true)
+  { std::cerr << "[bytes in: " << bytes_read << "] [bytes out: " 
+          << bytes_written << "]";
+    if (newline) std::cerr << '\n';
   }
+  void SendCommand(const char *cmd,...);
+  // false if none available
+  bool fetch_result(std::string &result);
 };
+
+void cvs_client::SendCommand(const char *cmd,...)
+{ va_list ap;
+  va_start(ap, cmd);
+  const char *arg;
+  while ((arg=va_arg(ap,const char *)))
+  { writestr("Argument "+std::string(arg)+"\n");
+  }
+  writestr(cmd+std::string("\n"));
+}
 
 struct cvs_file_state
 { std::string revision;
@@ -148,16 +165,16 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
   return result;
 }
 
-void cvs_client::writestr(int fd, const std::string &s)
-{ bytes_written+=write(fd,s.c_str(),s.size());
+void cvs_client::writestr(const std::string &s)
+{ bytes_written+=write(writefd,s.c_str(),s.size());
 }
 
 // TODO: optimize
-std::string cvs_client::readline(int fd)
+std::string cvs_client::readline()
 { std::string result;
   while (true)
   { char c;
-    if (read(fd,&c,1)!=1) throw std::runtime_error("read error");
+    if (read(readfd,&c,1)!=1) throw std::runtime_error("read error");
     ++bytes_read;
     if (c=='\n') return result;
     result+=c;
@@ -199,8 +216,8 @@ stringtok (Container &container, std::string const &in,
 }
 
 cvs_client::cvs_client(const std::string &host, const std::string &root, 
-                    const std::string &user, const std::string &module)
-    : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0)
+                    const std::string &user, const std::string &_module)
+    : readfd(-1), writefd(-1), bytes_read(0), bytes_written(0), module(_module)
 { int fd1[2],fd2[2];
   pid_t child=pipe_and_fork(fd1,fd2);
   if (child<0) 
@@ -233,16 +250,16 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   readfd=fd1[0];
   writefd=fd2[1];
   
-  writestr(writefd,"Root "+root+"\n");
-  writestr(writefd,"Valid-responses ok error Valid-requests Checked-in "
+  writestr("Root "+root+"\n");
+  writestr("Valid-responses ok error Valid-requests Checked-in "
               "New-entry Checksum Copy-file Updated Created Update-existing "
               "Merged Patched Rcs-diff Mode Mod-time Removed Remove-entry "
               "Set-static-directory Clear-static-directory Set-sticky "
               "Clear-sticky Template Clear-template Notified Module-expansion "
               "Wrapper-rcsOption M Mbinary E F MT\n");
 
-  writestr(writefd,"valid-requests\n");
-  std::string answer=readline(readfd);
+  writestr("valid-requests\n");
+  std::string answer=readline();
   assert(answer.substr(0,15)=="Valid-requests ");
   // boost::tokenizer does not provide the needed functionality (preserve -)  
   stringtok(Valid_requests,answer.substr(15));
@@ -250,22 +267,50 @@ cvs_client::cvs_client(const std::string &host, const std::string &root,
   for (stringset_t::const_iterator i=Valid_requests.begin();
          i!=Valid_requests.end();++i)
     std::cout << *i << ':';
-#endif    
+#endif
+  assert(readline()=="ok");
+  
   assert(Valid_requests.find("UseUnchanged")!=Valid_requests.end());
 
-  writestr(writefd,"UseUnchanged\n"); // ???
+  writestr("UseUnchanged\n"); // ???
   ticker();
-  
-//  writestr(writefd,"Directory .\n");
+
+//  writestr("Directory .\n");
 //  do
 //  { std::string answer=readline(readfd);
 //    
 //  }
 }
 
+bool cvs_client::fetch_result(std::string &result)
+{loop:
+  std::string x=readline();
+  if (x.substr(0,2)=="E ") 
+  { std::cerr << x.substr(2) << '\n';
+    goto loop;
+  }
+  if (x.substr(0,2)=="M ") 
+  { result=x.substr(2);
+    return true;
+  }
+  if (x=="ok") return false;
+  std::cerr << "unrecognized result \"" << x << "\"\n";
+  exit(1);
+}
+
+// CVS_RSH=rsh cvs -z0 -d localhost:/usr/local/cvsroot rlist -Red christof
 const cvs_repository::tree_state_t &cvs_repository::now()
 { if (tree_states.empty())
   { // rlist -Red
+    SendCommand("rlist","-e","-R","-d","--",module.c_str(),0);
+    std::string result;
+    std::list<std::string> l;
+    while (fetch_result(result))
+    { l.push_back(result);
+    }
+    ticker();
+    for (std::list<std::string>::const_iterator i=l.begin();i!=l.end();++i)
+      std::cerr << *i << ':';
   }
   return tree_states.back(); // wrong of course
 }
