@@ -672,7 +672,7 @@ void cvs_repository::prime(app_state &app)
     const_cast<hexenc<id>&>(e->revision)=child_rid.inner();
     if (! app.db.revision_exists(child_rid))
       app.db.put_revision(child_rid, rev);
-    cert_revision_in_branch(child_rid, monotone_branch, app, dbw); 
+    cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
     cert_revision_author(child_rid, e->author+"@"+host, app, dbw); 
     cert_revision_changelog(child_rid, e->changelog, app, dbw);
     cert_revision_date_time(child_rid, e->time, app, dbw);
@@ -702,7 +702,7 @@ void cvs_repository::cert_cvs(const cvs_edge &e, app_state & app, packet_consume
 }
 
 void cvs_sync::sync(const std::string &repository, const std::string &module,
-            const std::string &branch, app_state &app)
+            app_state &app)
 {
   {
     // early short-circuit to avoid failure after lots of work
@@ -722,7 +722,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
     require_password(app.lua, key, pub, priv);
   }
   
-  cvs_sync::cvs_repository repo(repository,module,branch);
+  cvs_sync::cvs_repository repo(repository,module);
 // DEBUGGING
   repo.GzipStream(3);
   transaction_guard guard(app.db);
@@ -739,7 +739,7 @@ void cvs_sync::sync(const std::string &repository, const std::string &module,
   
   // initial checkout
   if (repo.empty()) 
-  { const cvs_sync::cvs_repository::tree_state_t &n=repo.now();
+  { /*const cvs_sync::cvs_repository::tree_state_t &n=*/ repo.now();
   
     repo.prime(app);
   }

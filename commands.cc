@@ -3619,19 +3619,19 @@ CMD(setup, "tree", "DIRECTORY", "setup a new working copy directory")
 
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
-CMD(cvs_pull, "network", "CVS-REPOSITORY CVS-MODULE DEST-BRANCH",
+CMD(cvs_pull, "network", "CVS-REPOSITORY CVS-MODULE",
     "import a module from a remote cvs repository")
 {
 
-  if (args.size() != 3) throw usage(name);
+  if (args.size() != 2) throw usage(name);
 
   app.initialize(false);
 
   string repository = idx(args, 0)(),
-      module = idx(args, 1)(),
-      branch = idx(args, 2)();
+      module = idx(args, 1)();
+  N(!app.branch_name().empty(), F("no destination branch specified\n"));
       
-  cvs_sync::sync(repository,module,branch,app);
+  cvs_sync::sync(repository,module,app);
 }
 
 

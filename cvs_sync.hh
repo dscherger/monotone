@@ -98,15 +98,13 @@ private:
   std::map<std::string,std::map<std::string,std::string> > tags;
   unsigned files_inserted;
   unsigned revisions_created;
-  std::string monotone_branch; // replace with app.branch_name
+//  std::string monotone_branch; // replace with app.branch_name
 
 public:  
   void prime(app_state &app);
 public:  
-  cvs_repository(const std::string &repository, const std::string &module,
-        const std::string &mbranch)
-      : cvs_client(repository,module), files_inserted(), revisions_created(),
-        monotone_branch(mbranch)
+  cvs_repository(const std::string &repository, const std::string &module)
+      : cvs_client(repository,module), files_inserted(), revisions_created()
   {}
 
   std::list<std::string> get_modules();
@@ -127,5 +125,5 @@ public:
 };
 
 void sync(const std::string &repository, const std::string &module,
-            const std::string &branch, app_state &app);
+            app_state &app);
 } // end namespace cvs_sync
