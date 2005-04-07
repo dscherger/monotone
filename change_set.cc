@@ -95,7 +95,14 @@ static file_id null_ident;
 //               name -> (ptype, tid),
 //               ...                  ]
 
-typedef smap< path_component, std::pair<ptype,tid> > directory_node;
+// There is a bug in handling directory_nodes; the problem is that it is legal
+// to have multiple files named "", and, worse, to have both a file named ""
+// and a directory named "".  Currently, we make this a map instead of an
+// smap, so whichever ""-named file is added first simply wins, and the rest
+// are ignored.  FIXME: teach the code that uses directory_map's not to expect
+// there to be any entry at all for ""-named files.
+typedef std::map< path_component, std::pair<ptype,tid> > directory_node;
+
 typedef smap<tid, boost::shared_ptr<directory_node> > directory_map;
 
 static path_component

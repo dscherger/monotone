@@ -135,7 +135,11 @@ build_deletions(vector<file_path> const & paths,
       P(F("adding %s to working copy delete set\n") % *i);
 
       if (dir_p) 
-        pr_new.deleted_dirs.insert(*i);
+        {
+          W(F("SORRY -- 'drop somedir' is not going to work.\n"));
+          W(F("Revert and try 'find somedir -type f | xargs monotone drop'\n"));
+          pr_new.deleted_dirs.insert(*i);
+        }
       else 
         pr_new.deleted_files.insert(*i);
   }
@@ -219,6 +223,14 @@ blank_user_log()
   local_path ul_path;
   get_user_log_path(ul_path);
   write_data(ul_path, empty);
+}
+
+bool
+has_contents_user_log()
+{
+  data user_log_message;
+  read_user_log(user_log_message);
+  return user_log_message().length() > 0;
 }
 
 // options map file

@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -5,10 +6,11 @@
 
 #include <config.h>
 
-#include <popt.h>
+#include "popt/popt.h"
 #include <cstdio>
 #include <iterator>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 
 #include <stdlib.h>
@@ -43,6 +45,7 @@
 #define OPT_ROOT 16
 #define OPT_DEPTH 17
 #define OPT_SINCE 18
+#define OPT_ARGFILE 18
 
 // main option processing and exception handling code
 
@@ -70,6 +73,7 @@ struct poptOption options[] =
     {"message", 'm', POPT_ARG_STRING, &argstr, OPT_MESSAGE, "set commit changelog message", NULL},
     {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, "limit search for working copy to specified root", NULL},
     {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, "limit the log output to the given number of entries", NULL},
+    {"xargs", '@', POPT_ARG_STRING, &argstr, OPT_ARGFILE, "insert command line arguments taken from the given file", NULL},
     { NULL, 0, 0, NULL, 0 }
   };
 
@@ -153,6 +157,47 @@ my_poptFreeContext(poptContext con)
   poptFreeContext(con);
 }
 
+// Read arguments from a file.  The special file '-' means stdin.
+// Returned value must be free()'d, after arg parsing has completed.
+static const char **
+my_poptStuffArgFile(poptContext con, utf8 const & filename)
+{
+  utf8 argstr;
+  {
+    data dat;
+    read_data_for_command_line(filename, dat);
+    external ext(dat());
+    system_to_utf8(ext, argstr);
+  }
+  
+  const char **argv = 0;
+  int argc = 0;
+  int rc;
+
+  // Parse the string.  It's OK if there are no arguments.
+  rc = poptParseArgvString(argstr().c_str(), &argc, &argv);
+  N(rc >= 0 || rc == POPT_ERROR_NOARG,
+    F("problem parsing arguments from file %s: %s")
+    % filename % poptStrerror(rc));
+
+  if (rc != POPT_ERROR_NOARG)
+    {
+      // poptStuffArgs does not take an argc argument, but rather requires that
+      // the argv array be null-terminated.
+      I(argv[argc] == NULL);
+      N((rc = poptStuffArgs(con, argv)) >= 0,
+	F("weird error when stuffing arguments read from %s: %s\n")
+	% filename % poptStrerror(rc));
+    }
+  else
+    {
+      free(argv);               // just in case there was something...
+      argv = 0;
+    }
+
+  return argv;
+}
+
 int 
 cpp_main(int argc, char ** argv)
 {
@@ -200,10 +245,14 @@ cpp_main(int argc, char ** argv)
   int opt;
   bool requested_help = false;
 
+  // keep a list of argv vectors created by get_args_from_file, since they
+  // must be individually free()'d, but not until arg parsing is done.
+  std::vector<const char**> sub_argvs;
+
   poptSetOtherOptionHelp(ctx(), "[OPTION...] command [ARGS...]\n");
 
-  try 
-    {      
+  try
+    {
 
       app_state app;
 
@@ -288,6 +337,11 @@ cpp_main(int argc, char ** argv)
               app.set_since(string(argstr));
               break;
 
+            case OPT_ARGFILE:
+              sub_argvs.push_back(my_poptStuffArgFile(ctx(),
+						      utf8(string(argstr))));
+              break;
+
             case OPT_HELP:
             default:
               requested_help = true;
@@ -331,12 +385,18 @@ cpp_main(int argc, char ** argv)
         {
           string cmd(poptGetArg(ctx()));
           vector<utf8> args;
-          while(poptPeekArg(ctx())) 
+          while(poptPeekArg(ctx()))
             {
               args.push_back(utf8(string(poptGetArg(ctx()))));
             }
+          // we've copied everything we want from the command line into our
+          // own data structures, so we can finally delete popt's malloc'ed
+          // argv stuff.
+          for (std::vector<const char**>::const_iterator i = sub_argvs.begin();
+               i != sub_argvs.end(); ++i)
+            free(*i);
           ret = commands::process(app, cmd, args);
-        } 
+        }
     }
   catch (usage & u)
     {
@@ -348,7 +408,7 @@ cpp_main(int argc, char ** argv)
     }
   catch (informative_failure & inf)
     {
-      ui.inform(inf.what + string("\n"));
+      ui.inform(inf.what);
       clean_shutdown = true;
       return 1;
     }

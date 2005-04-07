@@ -1793,10 +1793,11 @@ monotone: branch jp.co.juicebot.jb7
 @end smallexample
 
 Abe neglected to provide a @option{--message} option specifying the
-change log on the command line.  Monotone therefore invokes an external
-``log message editor'' --- typically an editor like @command{vi} ---
-with an explanation of the changes being committed and the opportunity
-to enter a log message.
+change log on the command line and the file @file{MT/log} is empty
+because he did not document his changes there.  Monotone therefore
+invokes an external ``log message editor'' --- typically an editor
+like @command{vi} --- with an explanation of the changes being
+committed and the opportunity to enter a log message.
 
 @smallexample
 @group
@@ -1875,11 +1876,34 @@ $ vi src/banana.c
 @end group
 @end smallexample
 
-She commits her work:
+and logs her changes in @file{MT/log} right away so she does not
+forget what she has done like Abe.
 
 @smallexample
 @group
-$ monotone commit --message='polling implementation of src/banana.c'
+$ vi MT/log
+* src/banana.c: Added polling implementation
+@end group
+@end smallexample
+
+and logs her changes in @file{MT/log} right away so she does not
+forget what she has done:
+
+@smallexample
+@group
+$ vi MT/log
+* src/banana.c: Added polling implementation
+@end group
+@end smallexample
+
+Later, she commits her work.  Monotone again invokes an external editor
+for her to edit her log message, but this time it fills in the messages
+she's written so far, and she simply checks them over one last time
+before finishing her commit:
+
+@smallexample
+@group
+$ monotone commit
 monotone: beginning commit
 monotone: manifest eaebc3c558d9e30db6616ef543595a5a64cc6d5f
 monotone: revision 80ef9c9d251d39074d37e72abf4897e0bbae1cfb
@@ -2073,6 +2097,7 @@ monotone: [source] 8b41b5399a564494993063287a737d26ede3dee4
 monotone: common ancestor 70decb4b31a8227a629c0e364495286c5c75f979 found
 monotone: trying 3-way merge
 monotone: [merged] da499b9d9465a0e003a4c6b2909102ef98bf4e6d
+monotone: your working copies have not been updated
 @end group
 @end smallexample
 
@@ -3676,12 +3701,12 @@ automatically use a certain passphrase for a given key using the
 increases the risk of a key compromise on your local computer. Be
 careful using this hook.
 
-@item monotone delkey @var{keyid}
+@item monotone dropkey @var{keyid}
 
-This command deletes the public and/or private key. If both exist,
-both are deleted, if only one exists, the one that does is deleted.
-This command should be used with caution as changes are irreversible
-without a backup of the key(s) that were removed.
+This command drops the public and/or private key. If both exist, both
+are dropped, if only one exists, it is dropped. This command should
+be used with caution as changes are irreversible without a backup of
+the key(s) that were dropped.
 
 @item monotone chkeypass @var{id}
 
@@ -5628,8 +5653,8 @@ from stdin if no value given on command line.
 Generate an @sc{rsa} key-pair and store it in the database.
 @comment TROFF INPUT: .TP
 
-@item @b{delkey} @i{<keyid>}
-Delete a public and/or private key.
+@item @b{dropkey} @i{<keyid>}
+Drop a public and/or private key.
 @comment TROFF INPUT: .TP
 
 @item @b{chkeypass} @i{<keyid>}

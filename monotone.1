@@ -263,6 +263,15 @@ An alias for \fB--message=\fI<log message>\fP
 Stop the search for a working copy (containing the @file{MT} directory)
 at the specified root directory rather than at the physical root of the
 filesystem.
+.TP
+\fB-xargs=\fI<file>\fP
+Inject the contents of the file in place among the command line
+arguments.  This may be useful in case the command line would
+otherwise become too long for your system.  This option can be used
+more than once if needed.
+.TP
+\fB-@ \fI<file>\fP
+An alias for \fB--xargs=\fI<file>\fP
 
 .SH ENVIRONMENT
 .TP
