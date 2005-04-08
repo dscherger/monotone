@@ -14,21 +14,21 @@ fi
 
 mkdir test.cvstemp
 cd test.cvstemp
-cvs -d $CVSROOT co test
+cvs -Q -d $CVSROOT co test
 cd test
 
 echo "and now change D" >dir/D
 sleep 2
-cvs ci -m "D changed"
+cvs -Q ci -m "D changed"
 
-cvs delete -f B
+cvs -Q delete -f B
 sleep 2
-cvs ci -m "B remove"
+cvs -Q ci -m "B remove"
 
 echo "and now add C" >dir/C
-cvs add dir/C
+cvs -Q add dir/C
 sleep 2
-cvs ci -m "C added"
+cvs -Q ci -m "C added"
 
 cd $CVSROOT/..
 rm -rf test.cvstemp || exit 1

@@ -6,7 +6,7 @@ then
 fi
 mkdir test.cvsroot || exit 1
 CVSROOT=$PWD/test.cvsroot
-cvs -d $CVSROOT init
+cvs -Q -d $CVSROOT init
 
 if [ -e test.cvstemp ]
 then
@@ -18,7 +18,7 @@ mkdir test.cvstemp/import || exit 1
 cd $CVSROOT/../test.cvstemp/import
 echo "initial import" >A
 echo "initial "`date` `TZ=UTC date` `date +%s`
-cvs -d $CVSROOT import -m "initial import" test vendor_tag initial_import 
+cvs -Q -d $CVSROOT import -m "initial import" test vendor_tag initial_import 
 
 if [ "$1" = "import" ] 
 then 
@@ -28,32 +28,32 @@ then
 fi
 
 cd $CVSROOT/../test.cvstemp
-cvs -d $CVSROOT co test
+cvs -Q -d $CVSROOT co test
 cd test
 echo "file added" >B
-cvs add B
+cvs -Q add B
 sleep 2
-cvs ci -m "B added"
+cvs -Q ci -m "B added"
 
-cvs delete -f A
+cvs -Q delete -f A
 sleep 2
-cvs ci -m "A removed"
+cvs -Q ci -m "A removed"
 
 echo "something different" >B
 sleep 2
-cvs ci -m "B changed"
+cvs -Q ci -m "B changed"
 
 mkdir dir
-cvs add dir
+cvs -Q add dir
 echo "some subdir" > dir/D
-cvs add dir/D
+cvs -Q add dir/D
 sleep 2
-cvs ci -m "dir/D added"
+cvs -Q ci -m "dir/D added"
 
 echo "revived" >A
-cvs add A
+cvs -Q add A
 sleep 2
-cvs ci -m "A readded"
+cvs -Q ci -m "A readded"
 
 cd $CVSROOT/..
 rm -rf test.cvstemp || exit 1

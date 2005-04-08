@@ -14,18 +14,18 @@ fi
 
 mkdir test.cvstemp
 cd test.cvstemp
-cvs -d $CVSROOT co test
+cvs -Q -d $CVSROOT co test
 cd test
 
 # rapidly check in with different logs to check the merge algorithm
 echo "fast A" >A
 echo "fast C" >dir/C
 echo "fast D" >dir/D
-cvs add A
+cvs -Q add A
 sleep 2
-cvs ci -m "fast A change" A
-cvs ci -m "fast C change" dir/C
-cvs ci -m "fast D change" dir/D
+cvs -Q ci -m "fast A change" A
+cvs -Q ci -m "fast C change" dir/C
+cvs -Q ci -m "fast D change" dir/D
 
 cd $CVSROOT/..
 rm -rf test.cvstemp || exit 1

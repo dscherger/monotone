@@ -390,7 +390,6 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
   I(CommandValid("UseUnchanged"));
   writestr("UseUnchanged\n");
 
-  primeModules();
 //  writestr("Global_option -q\n"); // -Q?
 }
 
@@ -678,7 +677,8 @@ void cvs_client::Directory(const std::string &path)
 }
 
 void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
-{ { va_list ap;
+{ primeModules();
+  { va_list ap;
     va_start(ap,dummy);
     SendCommand("rlist",ap);
     va_end(ap);
@@ -732,7 +732,8 @@ void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
 
 // dummy is needed to satisfy va_start (cannot pass objects of non-POD type)
 void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
-{ { va_list ap;
+{ primeModules();
+  { va_list ap;
     va_start(ap,dummy);
     SendCommand("rlog",ap);
     va_end(ap);
@@ -873,7 +874,8 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
 }
 
 cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::string &revision)
-{ struct checkout result;
+{ primeModules();
+  struct checkout result;
   Directory("");
   SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",file.c_str(),(void*)0);
   enum { st_co
@@ -1018,7 +1020,7 @@ cvs_client::update cvs_client::Update(const std::string &file,
 // much bandwidth?) [is too verbose]
 void cvs_client::Update(const std::vector<update_args> &file_revisions,
     const update_callbacks &cb)
-{ 
+{ primeModules();
   struct update result;
   I(!file_revisions.empty());
   std::string olddir;
@@ -1142,6 +1144,11 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     { I(lresult.size()==2);
       I(lresult[1].first=="fname");
       state=st_merge;
+    }
+    else if (lresult[0].second=="? ")
+    { I(lresult.size()==2);
+      I(lresult[1].first=="fname");
+      W(F("cvs erraneously reports ? %s\n") % lresult[1].second);
     }
     else if (begins_with(lresult[0].second,"RCS file: ",len))
     { I(state==st_normal);
@@ -1338,7 +1345,7 @@ void cvs_client::SetServerDir(const std::map<std::string,std::string> &m)
 }
 
 void cvs_client::primeModules()
-{ I(server_dir.empty());
+{ if (!server_dir.empty()) return;
   std::vector<std::string> modules=ExpandModules();
   for (std::vector<std::string>::const_iterator i=modules.begin();
           i!=modules.end();++i)
@@ -1347,6 +1354,5 @@ void cvs_client::primeModules()
   server_dir=RequestServerDir();
   for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();
       i!=server_dir.end();++i)
-  { std::cerr << i->first << '\t' << i->second << '\n';
-  }
+    L(F("server dir %s -> %s") % i->first % i->second);
 }

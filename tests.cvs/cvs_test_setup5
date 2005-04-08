@@ -16,28 +16,28 @@ mkdir $CVSROOT/test2
 
 mkdir test.cvstemp
 cd test.cvstemp
-cvs -d $CVSROOT co CVSROOT
+cvs -Q -d $CVSROOT co CVSROOT
 cd CVSROOT
 echo >>modules test1 test
 echo >>modules test3 test2 '&test1'
-cvs ci -m "module setup"
+cvs -Q ci -m "module setup"
 cd ..
 
-cvs -d $CVSROOT co test3
+cvs -Q -d $CVSROOT co test3
 cd test3
 
 echo >AA initial AA
-cvs add AA
-cvs ci -m "AA added"
+cvs -Q add AA
+cvs -Q ci -m "AA added"
 
 mkdir sub2
-cvs add sub2
+cvs -Q add sub2
 echo >sub2/BB initial BB
-cvs add sub2/BB
-cvs ci -m "sub2/BB added"
+cvs -Q add sub2/BB
+cvs -Q ci -m "sub2/BB added"
 
 echo >test1/A cross module change
-cvs ci -m "cross module change of A"
+cvs -Q ci -m "cross module change of A"
 
 cd $CVSROOT/..
 rm -rf test.cvstemp || exit 1
