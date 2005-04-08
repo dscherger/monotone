@@ -264,7 +264,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     else root_start=0;
     root=d_arg.substr(root_start);
   }
-  rcs_root=root;
+//  rcs_root=root;
 
   memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
@@ -388,9 +388,9 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
   I(answer=="ok");
   
   I(CommandValid("UseUnchanged"));
+  writestr("UseUnchanged\n");
 
-  writestr("UseUnchanged\n"); // ???
-
+  primeModules();
 //  writestr("Global_option -q\n"); // -Q?
 }
 
@@ -516,11 +516,23 @@ loop:
     result.push_back(std::make_pair("data",x.substr(len)));
     return true;
   }
+  if (begins_with(x,"Module-expansion ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("dir",x.substr(len)));
+    return true;
+  }
   if (begins_with(x,"Checked-in ",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("dir",x.substr(len)));
     result.push_back(std::make_pair("rcs",readline()));
     result.push_back(std::make_pair("new entries line",readline()));
+    return true;
+  }
+  if (begins_with(x,"Set-sticky ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("dir",x.substr(len)));
+    result.push_back(std::make_pair("rcs",readline()));
+    result.push_back(std::make_pair("tag",readline()));
     return true;
   }
   if (begins_with(x,"Created ",len) || begins_with(x,"Update-existing ",len)
@@ -966,20 +978,13 @@ std::string cvs_client::shorten_path(const std::string &p) const
 
 std::string cvs_client::rcs_file2path(std::string file) const
 { // try to guess a sane file name (e.g. on cvs.gnome.org)
-  if (file.substr(0,rcs_root.size())!=rcs_root)
-  { std::string::size_type modpos=file.find(module);
-    if (modpos!=std::string::npos) // else ... who knows where to put it
-    { I(modpos>=1);
-      I(file[modpos-1]=='/');
-      std::string oldroot=rcs_root;
-      const_cast<std::string&>(rcs_root)=file.substr(0,modpos-1);
-      W(F("changing rcs root dir from %s to %s\n") % oldroot % rcs_root);
-      file.erase(0,rcs_root.size());
+  for (std::map<std::string,std::string>::const_reverse_iterator i=server_dir.rbegin();
+        i!=server_dir.rend();++i)
+  { if (file.substr(0,i->second.size())==i->second)
+    { file.replace(0,i->second.size(),i->first);
+      break;
     }
   }
-  else file.erase(0,rcs_root.size());
-  I(file[0]=='/');
-  file.erase(0,1);
   if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
   std::string::size_type lastslash=file.rfind('/');
   if (lastslash!=std::string::npos && lastslash>=5
@@ -1286,4 +1291,62 @@ void cvs_client::SendArgument(const std::string &a)
     if (start==size_of_a) break;
   }
   writestr("Argument"+std::string(start?"x":"")+" "+a.substr(start)+"\n");
+}
+
+std::vector<std::string> cvs_client::ExpandModules()
+{ SendCommand("expand-modules",module.c_str(),(void*)0);
+  std::vector<std::string> result;
+  std::vector<std::pair<std::string,std::string> > lresult;
+  while (fetch_result(lresult))
+  { I(lresult.size()==2);
+    I(lresult[0].second=="Module-expansion");
+    result.push_back(lresult[1].second);
+  }
+  return result;
+}
+
+// if you know a more efficient way to get this, feel free to replace it
+std::map<std::string,std::string> cvs_client::RequestServerDir()
+{ if (server_dir.size()<=1) 
+    SendCommand("co","-l","-r9999",module.c_str(),(void*)0);
+  else SendCommand("co","-r9999",module.c_str(),(void*)0);
+  std::string last_local,last_rcs;
+  std::map<std::string,std::string> result;
+  std::vector<std::pair<std::string,std::string> > lresult;
+  while (fetch_result(lresult))
+  { I(!lresult.empty());
+    I(lresult[0].first=="CMD");
+    if (lresult[0].second=="Set-sticky"
+        || lresult[0].second=="Clear-template") continue;
+    I(lresult[0].second=="Clear-static-directory");
+    I(lresult.size()==3);
+    if (!last_rcs.empty() && lresult[2].second.substr(0,last_rcs.size())==last_rcs
+          && lresult[1].second.substr(0,last_local.size())==last_local)
+    { I(lresult[2].second.substr(last_rcs.size())
+            ==lresult[1].second.substr(last_local.size()));
+      continue;
+    }
+    result[lresult[1].second]=lresult[2].second;
+    last_local=lresult[1].second;
+    last_rcs=lresult[2].second;
+  }
+  return result;  
+}
+
+void cvs_client::SetServerDir(const std::map<std::string,std::string> &m)
+{ server_dir=m;
+}
+
+void cvs_client::primeModules()
+{ I(server_dir.empty());
+  std::vector<std::string> modules=ExpandModules();
+  for (std::vector<std::string>::const_iterator i=modules.begin();
+          i!=modules.end();++i)
+  { server_dir[*i];
+  }
+  server_dir=RequestServerDir();
+  for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();
+      i!=server_dir.end();++i)
+  { std::cerr << i->first << '\t' << i->second << '\n';
+  }
 }

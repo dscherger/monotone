@@ -82,6 +82,7 @@ private:
   int gzip_level;
   z_stream compress,decompress;
   std::string inputbuffer;
+  std::map<std::string,std::string> server_dir; // local path -> rcs path
 
   void InitZipStream(int level);
   void underflow(); // fetch new characters from stream
@@ -90,7 +91,7 @@ private:
 protected:
   std::string root;
   std::string module;
-  std::string rcs_root; // the real directory of the root (ask cvs.gnome.org)
+//  std::string rcs_root; // the real directory of the root (ask cvs.gnome.org)
   std::string host; // for author certification
   
 public:  
@@ -135,8 +136,13 @@ public:
   static void parse_entry(const std::string &line, std::string &new_revision, 
                             std::string &keyword_substitution);
   void Directory(const std::string &path);
+  std::vector<std::string> ExpandModules();
+  
+  std::map<std::string,std::string> RequestServerDir();
+  void SetServerDir(const std::map<std::string,std::string> &m);
   
   void drop_connection();
   static std::string time_t2rfc822(time_t t);
+  void primeModules();
 };
 
