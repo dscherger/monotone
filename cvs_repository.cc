@@ -257,10 +257,14 @@ struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 // get all available files and their newest revision
 void cvs_repository::get_all_files()
 { if (edges.empty())
-  { if (CommandValid("rlist"))
+  { 
+#if 1 // seems to be more efficient but it's hard to guess the directory the
+    // server talks about
+    if (CommandValid("rlist"))
     { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),(void*)0);
     }
     else // less efficient? ...
+#endif    
     { I(CommandValid("rlog"));
       RLog(get_all_files_log_cb(*this),false,"-N","-h","--",module.c_str(),(void*)0);
     }

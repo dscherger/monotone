@@ -22,7 +22,7 @@ EOF
 if [ $? -ne 0 ] ; then exit ; fi
 
 echo "changed by monotone" >dir/C
-sleep 2
+sleep 1
 ../../monotone --key test@localhost --branch test --db ../test.db commit \
 	--message "dir/C changed" << EOF
 x
@@ -30,7 +30,7 @@ EOF
 if [ $? -ne 0 ] ; then exit ; fi
 
 ../../monotone drop A
-sleep 2
+sleep 1
 ../../monotone --key test@localhost --branch test --db ../test.db commit \
 	--message "A removed" << EOF
 x

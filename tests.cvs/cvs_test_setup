@@ -32,27 +32,27 @@ cvs -Q -d $CVSROOT co test
 cd test
 echo "file added" >B
 cvs -Q add B
-sleep 2
+sleep 1
 cvs -Q ci -m "B added"
 
 cvs -Q delete -f A
-sleep 2
+sleep 1
 cvs -Q ci -m "A removed"
 
 echo "something different" >B
-sleep 2
+sleep 1
 cvs -Q ci -m "B changed"
 
 mkdir dir
 cvs -Q add dir
 echo "some subdir" > dir/D
 cvs -Q add dir/D
-sleep 2
+sleep 1
 cvs -Q ci -m "dir/D added"
 
 echo "revived" >A
 cvs -Q add A
-sleep 2
+sleep 1
 cvs -Q ci -m "A readded"
 
 cd $CVSROOT/..

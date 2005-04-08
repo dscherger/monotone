@@ -19,14 +19,14 @@ cd test
 
 echo "yet another change" >B
 echo "yet another change" >A
-sleep 2
+sleep 1
 cvs -Q ci -m "A+B changed 2"
 
-sleep 2
+sleep 1
 cvs -Q ci -m "B changed 2"
 
 echo "yet another change 2" >B
-sleep 2
+sleep 1
 cvs -Q ci -m "B changed 3"
 
 cd $CVSROOT/..

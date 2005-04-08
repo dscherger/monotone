@@ -22,7 +22,7 @@ echo "fast A" >A
 echo "fast C" >dir/C
 echo "fast D" >dir/D
 cvs -Q add A
-sleep 2
+sleep 1
 cvs -Q ci -m "fast A change" A
 cvs -Q ci -m "fast C change" dir/C
 cvs -Q ci -m "fast D change" dir/D

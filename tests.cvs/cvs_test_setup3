@@ -18,16 +18,16 @@ cvs -Q -d $CVSROOT co test
 cd test
 
 echo "and now change D" >dir/D
-sleep 2
+sleep 1
 cvs -Q ci -m "D changed"
 
 cvs -Q delete -f B
-sleep 2
+sleep 1
 cvs -Q ci -m "B remove"
 
 echo "and now add C" >dir/C
 cvs -Q add dir/C
-sleep 2
+sleep 1
 cvs -Q ci -m "C added"
 
 cd $CVSROOT/..
