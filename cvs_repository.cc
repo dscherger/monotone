@@ -1098,20 +1098,59 @@ void cvs_repository::commit()
   }
 }
 
-void cvs_sync::push(const std::string &repository, const std::string &module,
+// this is somewhat clumsy ... rethink it  
+static void guess_repository(std::string &repository, std::string &module,
+        std::vector< revision<cert> > &certs, app_state &app)
+{ I(!app.branch_name().empty());
+  app.db.get_revision_certs(cvs_cert_name, certs); 
+  // erase_bogus_certs ?
+  std::vector< revision<cert> > branch_certs;
+  base64<cert_value> branch_value;
+  encode_base64(cert_value(app.branch_name()), branch_value);
+  app.db.get_revision_certs(branch_cert_name, branch_value, branch_certs);
+  // use a set to gain speed? scan the smaller vector to gain speed?
+  for (std::vector< revision<cert> >::const_iterator ci=certs.begin();
+        ci!=certs.end();++ci)
+    for (std::vector< revision<cert> >::const_iterator bi=branch_certs.begin();
+          bi!=branch_certs.end();++bi)
+    { // actually this finds an arbitrary element of the set intersection
+      if (ci->inner().ident==bi->inner().ident)
+      { cert_value value;
+        decode_base64(ci->inner().value, value);
+        std::string::size_type nlpos=value().find('\n');
+        I(nlpos!=std::string::npos);
+        std::string repo=value().substr(0,nlpos);
+        std::string::size_type lastslash=repo.rfind('/');
+        I(lastslash!=std::string::npos);
+        // this is naive ... but should work most of the time
+        // we should not separate repo and module by '/'
+        // but I do not know a much better separator
+        repository=repo.substr(0,lastslash);
+        module=repo.substr(lastslash+1);
+        goto break_outer;
+      }
+    }
+  break_outer: ;
+  N(!module.empty(), F("No cvs cert in this branch, please specify repository and module"));
+}
+
+void cvs_sync::push(const std::string &_repository, const std::string &_module,
             app_state &app)
 { test_key_availability(app);
+  // make the variables changeable
+  std::string repository=_repository, module=_module;
+  std::vector< revision<cert> > certs;
+  if (repository.empty() || module.empty())
+    guess_repository(repository, module, certs, app);
   cvs_sync::cvs_repository repo(app,repository,module);
 // turned off for DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo.GzipStream(3);
   transaction_guard guard(app.db);
 
-  { std::vector< revision<cert> > certs;
+  if (certs.empty())
     app.db.get_revision_certs(cvs_cert_name, certs);
-    // erase_bogus_certs ?
-    repo.process_certs(certs);
-  }
+  repo.process_certs(certs);
   
   N(!repo.empty(),
     F("no revision certs for this repository/module\n"));
@@ -1121,21 +1160,24 @@ void cvs_sync::push(const std::string &repository, const std::string &module,
   guard.commit();      
 }
 
-void cvs_sync::pull(const std::string &repository, const std::string &module,
+void cvs_sync::pull(const std::string &_repository, const std::string &_module,
             app_state &app)
 { test_key_availability(app);
+  // make the variables changeable
+  std::string repository=_repository, module=_module;
   
+  std::vector< revision<cert> > certs;
+
+  if (repository.empty() || module.empty())
+    guess_repository(repository, module, certs, app);
   cvs_sync::cvs_repository repo(app,repository,module);
 // turned off for DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo.GzipStream(3);
   transaction_guard guard(app.db);
 
-  { std::vector< revision<cert> > certs;
-    app.db.get_revision_certs(cvs_cert_name, certs);
-    // erase_bogus_certs ?
-    repo.process_certs(certs);
-  }
+  if (certs.empty()) app.db.get_revision_certs(cvs_cert_name, certs); 
+  repo.process_certs(certs);
   
   // initial checkout
   if (repo.empty()) 
