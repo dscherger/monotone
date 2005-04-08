@@ -237,7 +237,24 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     : readfd(-1), writefd(-1), byte_in_ticker(), byte_out_ticker(),
       gzip_level(), module(_module)
 { bool pserver=false;
-  std::string user;
+  std::string user,localhost_name;
+  { // get localhost's name
+    char domainname[1024];
+    *domainname=0;
+    if (gethostname(domainname,sizeof domainname))
+      throw oops("gethostname "+std::string(strerror(errno)));
+    domainname[sizeof(domainname)-1]=0;
+    unsigned len=strlen(domainname);
+    if (len && len<sizeof(domainname)-2)
+    { domainname[len]='.';
+      domainname[++len]=0;
+    }
+    if (getdomainname(domainname+len,sizeof(domainname)-len))
+      throw oops("getdomainname "+std::string(strerror(errno)));
+    domainname[sizeof(domainname)-1]=0;
+    localhost_name=domainname;
+    L(F("localhost's name %s\n") % localhost_name);
+  }
   if (do_connect)
   { byte_in_ticker.reset(new ticker("bytes in", ">", 256));
     byte_out_ticker.reset(new ticker("bytes out", "<", 256));
@@ -304,7 +321,8 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     }
   }
   else // rsh
-  { int fd1[2],fd2[2];
+  { if (host==localhost_name) host="";
+    int fd1[2],fd2[2];
     pid_t child=pipe_and_fork(fd1,fd2);
     if (child<0) 
     {  throw oops("pipe/fork failed "+std::string(strerror(errno)));
@@ -349,25 +367,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     writefd=fd2[1];
     fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
     
-    if (host.empty())
-    {
-      // set host name for author qualification
-      char domainname[1024];
-      *domainname=0;
-      if (gethostname(domainname,sizeof domainname))
-        throw oops("gethostname "+std::string(strerror(errno)));
-      domainname[sizeof(domainname)-1]=0;
-      unsigned len=strlen(domainname);
-      if (len && len<sizeof(domainname)-2)
-      { domainname[len]='.';
-        domainname[++len]=0;
-      }
-      if (getdomainname(domainname+len,sizeof(domainname)-len))
-        throw oops("getdomainname "+std::string(strerror(errno)));
-      domainname[sizeof(domainname)-1]=0;
-      host=domainname;
-      L(F("hostname %s\n") % host);
-    }
+    if (host.empty()) host=localhost_name;
   }
   
   InitZipStream(0);
