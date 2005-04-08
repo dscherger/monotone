@@ -730,6 +730,38 @@ void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
   }
 }
 
+static std::string basename(const std::string &s)
+{ std::string::size_type lastslash=s.rfind("/");
+  if (lastslash==std::string::npos) return s;
+  return s.substr(lastslash+1);
+}
+
+static std::string dirname(const std::string &s)
+{ std::string::size_type lastslash=s.rfind("/");
+  if (lastslash==std::string::npos) return ".";
+  if (!lastslash) return "/";
+  return s.substr(0,lastslash);
+}
+
+void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
+{ primeModules();
+  Directory(dirname(std::string(file)));
+  // Entry /AA/1.1///
+  //  Unchanged AA
+  { va_list ap;
+    va_start(ap,file);
+    const char *arg;
+    while ((arg=va_arg(ap,const char *)))
+    { writestr("Argument "+std::string(arg)+"\n");
+    }
+    va_end(ap);
+  }
+  writestr("Argument --\n"
+        "Argument "+basename(std::string(file))+"\n"
+        "log\n");
+  processLogOutput(cb);
+}
+
 // dummy is needed to satisfy va_start (cannot pass objects of non-POD type)
 void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
 { primeModules();
@@ -738,6 +770,11 @@ void cvs_client::RLog(const rlog_callbacks &cb,bool dummy,...)
     SendCommand("rlog",ap);
     va_end(ap);
   }
+  processLogOutput(cb);
+}
+
+void cvs_client::processLogOutput(const rlog_callbacks &cb)
+{
   static const char * const fileend="=============================================================================";
   static const char * const revisionend="----------------------------";
   enum { st_head, st_tags, st_desc, st_rev, st_msg, st_date_author 
@@ -937,19 +974,6 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
     }
   }
   return result;
-}
-
-static std::string basename(const std::string &s)
-{ std::string::size_type lastslash=s.rfind("/");
-  if (lastslash==std::string::npos) return s;
-  return s.substr(lastslash+1);
-}
-
-static std::string dirname(const std::string &s)
-{ std::string::size_type lastslash=s.rfind("/");
-  if (lastslash==std::string::npos) return ".";
-  if (!lastslash) return "/";
-  return s.substr(0,lastslash);
 }
 
 std::string cvs_client::pserver_password(const std::string &root)
@@ -1333,7 +1357,7 @@ std::map<std::string,std::string> cvs_client::RequestServerDir()
             ==lresult[1].second.substr(last_local.size()));
       continue;
     }
-    result[lresult[1].second]=lresult[2].second;
+    result[shorten_path(lresult[1].second)]=lresult[2].second;
     last_local=lresult[1].second;
     last_rcs=lresult[2].second;
   }
@@ -1349,7 +1373,7 @@ void cvs_client::primeModules()
   std::vector<std::string> modules=ExpandModules();
   for (std::vector<std::string>::const_iterator i=modules.begin();
           i!=modules.end();++i)
-  { server_dir[*i];
+  { server_dir[shorten_path(*i)];
   }
   server_dir=RequestServerDir();
   for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();

@@ -235,7 +235,9 @@ struct cvs_repository::get_all_files_log_cb : rlog_callbacks
 { cvs_repository &repo;
   get_all_files_log_cb(cvs_repository &r) : repo(r) {}
   virtual void file(const std::string &file,const std::string &head_rev) const
-  { repo.files[file]; }
+  { W(F("file %s") % file);
+    repo.files[file]; 
+  }
   virtual void tag(const std::string &file,const std::string &tag, 
         const std::string &revision) const {}
   virtual void revision(const std::string &file,time_t t,
@@ -258,7 +260,7 @@ struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 void cvs_repository::get_all_files()
 { if (edges.empty())
   { 
-#if 1 // seems to be more efficient but it's hard to guess the directory the
+#if 0 // seems to be more efficient but it's hard to guess the directory the
     // server talks about
     if (CommandValid("rlist"))
     { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),(void*)0);
@@ -781,14 +783,14 @@ void cvs_repository::prime()
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { // -d D< (sync_since)
     if (sync_since!=-1) 
-    { RLog(prime_log_cb(*this,i,sync_since),false,
+    { Log(prime_log_cb(*this,i,sync_since),i->first.c_str(),
           "-d",(time_t2rfc822(sync_since)).c_str(),
-          "-b",i->first.c_str(),(void*)0);
-      RLog(prime_log_cb(*this,i),false,
+          "-b",(void*)0);
+      Log(prime_log_cb(*this,i),i->first.c_str(),
           "-d",(time_t2rfc822(sync_since)+"<").c_str(),
-          "-b",i->first.c_str(),(void*)0);
+          "-b",(void*)0);
     }
-    else RLog(prime_log_cb(*this,i),false,"-b",i->first.c_str(),(void*)0);
+    else Log(prime_log_cb(*this,i),i->first.c_str(),"-b",(void*)0);
   }
   // remove duplicate states (because some edges were added by the 
   // get_all_files method
@@ -1325,12 +1327,11 @@ void cvs_repository::update()
     if (last!=f->second.known_states.begin()) --last;
     
     if (last_known_revision.empty())
-      RLog(prime_log_cb(*this,f),false,"-b","-N",
-        "--",i->file.c_str(),(void*)0);
+      Log(prime_log_cb(*this,f),i->file.c_str(),"-b","-N","--",(void*)0);
     else
       // -b causes -r to get ignored on 0.12
-      RLog(prime_log_cb(*this,f),false,/*"-b",*/"-N",
-        ("-r"+last_known_revision+"::").c_str(),"--",i->file.c_str(),(void*)0);
+      Log(prime_log_cb(*this,f),i->file.c_str(),/*"-b",*/"-N",
+        ("-r"+last_known_revision+"::").c_str(),"--",(void*)0);
     
     std::string file_contents,initial_contents;
     if(last==f->second.known_states.end())

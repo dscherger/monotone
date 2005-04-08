@@ -88,6 +88,7 @@ private:
   void underflow(); // fetch new characters from stream
   static bool begins_with(const std::string &s, const std::string &sub);
   std::string rcs_file2path(std::string s) const;
+  void processLogOutput(const rlog_callbacks &cb);
 protected:
   std::string root;
   std::string module;
@@ -117,6 +118,7 @@ public:
   void GzipStream(int level);
   
   void RLog(const rlog_callbacks &cb,bool dummy,...);
+  void Log(const rlog_callbacks &cb,const char *file,...);
   void RList(const rlist_callbacks &cb,bool dummy,...);
   struct checkout CheckOut(const std::string &file, const std::string &revision);
   struct update Update(const std::string &file, 
