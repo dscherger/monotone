@@ -394,7 +394,7 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
   I(CommandValid("UseUnchanged"));
   writestr("UseUnchanged\n");
 
-//  writestr("Global_option -q\n"); // -Q?
+  writestr("Global_option -q\n"); // -Q?
 }
 
 void cvs_client::drop_connection()

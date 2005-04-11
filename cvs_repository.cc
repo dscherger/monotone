@@ -235,7 +235,7 @@ struct cvs_repository::get_all_files_log_cb : rlog_callbacks
 { cvs_repository &repo;
   get_all_files_log_cb(cvs_repository &r) : repo(r) {}
   virtual void file(const std::string &file,const std::string &head_rev) const
-  { W(F("file %s") % file);
+  { L(F("get_all_files_log_cb %s") % file);
     repo.files[file]; 
   }
   virtual void tag(const std::string &file,const std::string &tag, 
@@ -606,7 +606,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     I(!c.dead); // dead->dead is no change, so shouldn't get a number
     I(!s2->dead);
     // I(s2->since_when==c.mod_time);
-    if (c.mod_time!=s2->since_when)
+    if (c.mod_time!=s2->since_when && c.mod_time!=-1)
     { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
     }
     store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
@@ -628,7 +628,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
 { const_cast<bool&>(s2->dead)=c.dead;
   if (!c.dead)
   { // I(c.mod_time==s2->since_when);
-    if (c.mod_time!=s2->since_when)
+    if (c.mod_time!=s2->since_when && c.mod_time!=-1)
     { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
     }
     store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
