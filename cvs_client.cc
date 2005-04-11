@@ -666,7 +666,7 @@ std::string cvs_client::time_t2rfc822(time_t t)
 }
 
 void cvs_client::Directory(const std::string &path)
-{ if (path.empty()) // ???
+{ if (path.empty() || path==".") // ???
   { std::map<std::string,std::string>::const_iterator i=server_dir.find("");
     I(i!=server_dir.end());
     writestr("Directory .\n"+i->second+"\n");
@@ -679,7 +679,9 @@ void cvs_client::Directory(const std::string &path)
     }
     I(i!=server_dir.rend());
     if (path[len]=='/') ++len;
-    writestr("Directory "+path.substr(len)+"\n"+i->second+"/"+path.substr(len)+"\n");
+    I(!i->second.empty());
+    I(i->second[i->second.size()-1]=='/');
+    writestr("Directory "+path.substr(len)+"\n"+i->second+path.substr(len)+"\n");
   }
 }
 
