@@ -1327,11 +1327,11 @@ void cvs_repository::update()
     if (last!=f->second.known_states.begin()) --last;
     
     if (last_known_revision.empty())
-      Log(prime_log_cb(*this,f),i->file.c_str(),"-b","-N","--",(void*)0);
+      Log(prime_log_cb(*this,f),i->file.c_str(),"-b","-N",(void*)0);
     else
       // -b causes -r to get ignored on 0.12
       Log(prime_log_cb(*this,f),i->file.c_str(),/*"-b",*/"-N",
-        ("-r"+last_known_revision+"::").c_str(),"--",(void*)0);
+        ("-r"+last_known_revision+"::").c_str(),(void*)0);
     
     std::string file_contents,initial_contents;
     if(last==f->second.known_states.end())

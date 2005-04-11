@@ -806,6 +806,10 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
   while (fetch_result(lresult))
   {reswitch:
     L(F("state %d\n") % int(state));
+    I(!lresult.empty());
+    if (lresult[0].first=="CMD" && lresult[0].second=="error")
+    { throw oops("log failed");
+    }
     switch(state)
     { case st_head:
       { std::string result=combine_result(lresult);
