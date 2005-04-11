@@ -224,12 +224,12 @@ void cvs_client::SendCommand(const char *cmd,va_list ap)
 }
 
 bool cvs_client::begins_with(const std::string &s, const std::string &sub, unsigned &len)
-{ if (s.substr(0,sub.size())==sub) { len=sub.size(); return true; }
+{ if (!s.compare(0,sub.size(),sub)) { len=sub.size(); return true; }
   return false;
 }
 
 bool cvs_client::begins_with(const std::string &s, const std::string &sub)
-{ return s.substr(0,sub.size())==sub;
+{ return !s.compare(0,sub.size(),sub);
 }
 
 cvs_client::cvs_client(const std::string &repository, const std::string &_module,
@@ -667,12 +667,19 @@ std::string cvs_client::time_t2rfc822(time_t t)
 
 void cvs_client::Directory(const std::string &path)
 { if (path.empty()) // ???
-  { writestr("Directory .\n"+root+"\n");
+  { std::map<std::string,std::string>::const_iterator i=server_dir.find("");
+    I(i!=server_dir.end());
+    writestr("Directory .\n"+i->second+"\n");
   }
   else
-  { std::string shortpath=shorten_path(path);
-    if (shortpath.empty()) shortpath=".";
-    writestr("Directory "+shortpath+"\n"+root+"/"+path+"\n");
+  { std::map<std::string,std::string>::reverse_iterator i;
+    unsigned len=0;
+    for (i=server_dir.rbegin();i!=server_dir.rend();++i)
+    { if (begins_with(path,i->first,len)) break;
+    }
+    I(i!=server_dir.rend());
+    if (path[len]=='/') ++len;
+    writestr("Directory "+path.substr(len)+"\n"+i->second+"/"+path.substr(len)+"\n");
   }
 }
 
@@ -985,7 +992,7 @@ std::string cvs_client::pserver_password(const std::string &root)
     if (fs.getline(buf,sizeof buf).good())
     { std::string line=buf;
       if (line.substr(0,3)=="/1 ") line.erase(0,3);
-      if (line.size()>=root.size()+2 && line.substr(0,root.size())==root
+      if (line.size()>=root.size()+2 && begins_with(line,root)
           && line[root.size()]==' ')
         return line.substr(root.size()+1);
     }
@@ -1006,7 +1013,7 @@ std::string cvs_client::rcs_file2path(std::string file) const
 { // try to guess a sane file name (e.g. on cvs.gnome.org)
   for (std::map<std::string,std::string>::const_reverse_iterator i=server_dir.rbegin();
         i!=server_dir.rend();++i)
-  { if (file.substr(0,i->second.size())==i->second)
+  { if (begins_with(file,i->second))
     { file.replace(0,i->second.size(),i->first);
       break;
     }
@@ -1351,7 +1358,7 @@ std::map<std::string,std::string> cvs_client::RequestServerDir()
         || lresult[0].second=="Clear-template") continue;
     I(lresult[0].second=="Clear-static-directory");
     I(lresult.size()==3);
-    if (!last_rcs.empty() && lresult[2].second.substr(0,last_rcs.size())==last_rcs
+    if (!last_rcs.empty() && begins_with(lresult[2].second,last_rcs)
           && lresult[1].second.substr(0,last_local.size())==last_local)
     { I(lresult[2].second.substr(last_rcs.size())
             ==lresult[1].second.substr(last_local.size()));
