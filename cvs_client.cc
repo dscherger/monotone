@@ -682,6 +682,8 @@ void cvs_client::Directory(const std::string &path)
     for (i=server_dir.rbegin();i!=server_dir.rend();++i)
     { if (begins_with(path_with_slash,i->first,len)) break;
     }
+    I(!server_dir.empty());
+//    if (i==server_dir.rend()) { --i; len=0; } // take the last one
     I(i!=server_dir.rend());
 //    if (path[len]=='/') ++len;
     I(!i->second.empty());
@@ -1266,7 +1268,7 @@ void cvs_client::parse_entry(const std::string &line, std::string &new_revision,
 std::map<std::string,std::pair<std::string,std::string> >
          cvs_client::Commit(const std::string &changelog, time_t when, 
                     const std::vector<commit_arg> &commits)
-{ 
+{ primeModules();
   std::string olddir;
   I(!commits.empty());
 // undocumented ...
