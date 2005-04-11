@@ -824,6 +824,7 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
             begins_with(result,"locks: ") ||
             begins_with(result,"access list:") ||
             begins_with(result,"keyword substitution: ") ||
+            begins_with(result,"Working file: ") ||
             begins_with(result,"total revisions: "))
           ;
         else if (result=="description:")
