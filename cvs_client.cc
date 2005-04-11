@@ -1288,7 +1288,7 @@ std::map<std::string,std::pair<std::string,std::string> >
       writestr(i->new_content);
     }
   }
-  Directory(module);
+  Directory(".");
   writestr("Argument -m\n");
   SendArgument(changelog);
   writestr("Argument --\n");
