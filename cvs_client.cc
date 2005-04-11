@@ -1048,7 +1048,7 @@ std::string cvs_client::rcs_file2path(std::string file) const
       break;
     }
   }
-  if (file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
+  if (file.size()>2 && file.substr(file.size()-2)==",v") file.erase(file.size()-2,2);
   std::string::size_type lastslash=file.rfind('/');
   if (lastslash!=std::string::npos && lastslash>=5
           && file.substr(lastslash-5,6)=="Attic/")
