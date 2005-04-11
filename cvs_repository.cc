@@ -321,7 +321,7 @@ void cvs_repository::debug() const
   os << "Files :\n";
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
-  { os << shorten_path(i->first);
+  { os << i->first;
     os << " (";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
@@ -472,8 +472,8 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
       cvs_manifest::const_iterator fn = newm.find(f->first);
       if (fn==newm.end())
       {  
-        L(F("deleting file '%s'\n") % c.shorten_path(f->first));              
-        cs.delete_file(c.shorten_path(f->first));
+        L(F("deleting file '%s'\n") % f->first);              
+        cs.delete_file(f->first);
         cvs_delta[f->first]=remove_state;
       }
       else 
@@ -485,9 +485,9 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
           else
             {
               L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % c.shorten_path(fn->first) % f->second->sha1sum % fn->second->sha1sum);
+                % fn->first % f->second->sha1sum % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              cs.apply_delta(c.shorten_path(fn->first), f->second->sha1sum, fn->second->sha1sum);
+              cs.apply_delta(fn->first, f->second->sha1sum, fn->second->sha1sum);
               cvs_delta[f->first]=fn->second;
             }
         }  
@@ -497,9 +497,9 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
       cvs_manifest::const_iterator fo = oldm.find(f->first);
       if (fo==oldm.end())
       {  
-        L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % c.shorten_path(f->first));
+        L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum().empty());
-        cs.add_file(c.shorten_path(f->first), f->second->sha1sum);
+        cs.add_file(f->first, f->second->sha1sum);
         cvs_delta[f->first]=f->second;
       }
     }
@@ -854,7 +854,7 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
   { content+=i->second->cvs_version;
     if (!i->second->keyword_substitution.empty())
       content+="/"+i->second->keyword_substitution;
-    content+=" "+shorten_path(i->first)+"\n";
+    content+=" "+i->first+"\n";
   }
   cert t;
   make_simple_cert(e.revision, cert_name(cvs_cert_name), content, app, t);
@@ -969,7 +969,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
             i!=cs.rearrangement.deleted_files.end(); ++i)
     { commit_arg a;
-      a.file=module+"/"+(*i)();
+      a.file=(*i)();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.removed=true;
@@ -983,7 +983,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
                             =cs.rearrangement.renamed_files.begin();
             i!=cs.rearrangement.renamed_files.end(); ++i)
     { commit_arg a; // remove
-      a.file=module+"/"+i->first();
+      a.file=i->first();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.removed=true;
@@ -993,7 +993,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       L(F("rename from %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
       
       a=commit_arg(); // add
-      a.file=module+"/"+i->second();
+      a.file=i->second();
       I(!old->second->sha1sum().empty());
       file_data dat;
       app.db.get_file_version(old->second->sha1sum,dat);
@@ -1010,7 +1010,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
             i!=cs.deltas.end(); ++i)
     { 
       commit_arg a;
-      a.file=module+"/"+i->first();
+      a.file=i->first();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       if (old!=parent_manifest.end())
       { a.old_revision=old->second->cvs_version;
@@ -1043,7 +1043,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       { file_state fs(e.time,i->second.first);
         fs.log_msg=e.changelog;
         fs.keyword_substitution=i->second.second;
-        change_set::delta_map::const_iterator mydelta=cs.deltas.find(shorten_path(i->first));
+        change_set::delta_map::const_iterator mydelta=cs.deltas.find(i->first);
         I(mydelta!=cs.deltas.end());
         fs.sha1sum=mydelta->second.second.inner();
         std::pair<std::set<file_state>::iterator,bool> newelem=
@@ -1247,7 +1247,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         std::string::size_type space=line.find(' ');
         I(space!=std::string::npos);
         std::string monotone_path=line.substr(space+1);
-        std::string path=module+"/"+monotone_path;
+        std::string path=monotone_path;
         // look for the optional initial slash separating the keyword mode
         std::string::size_type slash=line.find('/');
         if (slash==std::string::npos || slash>space)
