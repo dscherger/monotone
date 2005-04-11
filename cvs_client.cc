@@ -224,12 +224,16 @@ void cvs_client::SendCommand(const char *cmd,va_list ap)
 }
 
 bool cvs_client::begins_with(const std::string &s, const std::string &sub, unsigned &len)
-{ if (!s.compare(0,sub.size(),sub)) { len=sub.size(); return true; }
+{ std::string::size_type sublen=sub.size();
+  if (s.size()<sublen) return false;
+  if (!s.compare(0,sublen,sub)) { len=sublen; return true; }
   return false;
 }
 
 bool cvs_client::begins_with(const std::string &s, const std::string &sub)
-{ return !s.compare(0,sub.size(),sub);
+{ std::string::size_type len=sub.size();
+  if (s.size()<len) return false;
+  return !s.compare(0,len,sub);
 }
 
 cvs_client::cvs_client(const std::string &repository, const std::string &_module,
@@ -676,15 +680,15 @@ void cvs_client::Directory(const std::string &path)
     std::string path_with_slash=path+"/";
     unsigned len=0;
     for (i=server_dir.rbegin();i!=server_dir.rend();++i)
-    { L(F("comparing %s %s\n") % path_with_slash % i->first);
-      if (begins_with(path_with_slash,i->first,len)) break;
-      L(F("result %u\n") % len);
+    { if (begins_with(path_with_slash,i->first,len)) break;
     }
     I(i!=server_dir.rend());
-    if (path[len]=='/') ++len;
+//    if (path[len]=='/') ++len;
     I(!i->second.empty());
     I(i->second[i->second.size()-1]=='/');
-    writestr("Directory "+path.substr(len)+"\n"+i->second+path.substr(len)+"\n");
+    std::string rcspath=i->second;
+    if (len<path.size()) rcspath+=path_with_slash.substr(len);
+    writestr("Directory "+path+"\n"+rcspath+"\n");
   }
 }
 
@@ -922,11 +926,28 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
   }
 }
 
-cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::string &revision)
+cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::string &revision)
 { primeModules();
+  std::string file=_file;
   struct checkout result;
-  Directory("");
-  SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",file.c_str(),(void*)0);
+  // Directory("");
+  std::string usemodule=module;
+  { std::map<std::string,std::string>::reverse_iterator i;
+    unsigned len=0;
+    for (i=server_dir.rbegin();i!=server_dir.rend();++i)
+    { if (begins_with(file,i->first,len)) break;
+    }
+    I(i!=server_dir.rend());
+    if (!i->first.empty()) 
+    { usemodule=i->first;
+      if (usemodule[usemodule.size()-1]=='/') 
+        usemodule.erase(usemodule.size()-1,1);
+      usemodule=basename(usemodule);
+      file.erase(0,i->first.size());
+      L(F("usemodule %s @%s %s /%s\n") % _file % i->first % usemodule % file);
+    }
+  }
+  SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",(usemodule+"/"+file).c_str(),(void*)0);
   enum { st_co
        } state=st_co;
   std::vector<std::pair<std::string,std::string> > lresult;
@@ -970,6 +991,9 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &file, const std::st
             result.contents=lresult[6].second;
             L(F("file %s revision %s: %d bytes\n") % file 
                 % revision % lresult[6].second.size());
+          }
+          else if (lresult[0].second=="error")
+          { throw oops("failed to check out "+file);
           }
           else
           { W(F("CheckOut: unrecognized CMD %s\n") % lresult[0].second);
