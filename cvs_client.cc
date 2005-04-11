@@ -673,9 +673,12 @@ void cvs_client::Directory(const std::string &path)
   }
   else
   { std::map<std::string,std::string>::reverse_iterator i;
+    std::string path_with_slash=path+"/";
     unsigned len=0;
     for (i=server_dir.rbegin();i!=server_dir.rend();++i)
-    { if (begins_with(path,i->first,len)) break;
+    { L(F("comparing %s %s\n") % path_with_slash % i->first);
+      if (begins_with(path_with_slash,i->first,len)) break;
+      L(F("result %u\n") % len);
     }
     I(i!=server_dir.rend());
     if (path[len]=='/') ++len;
