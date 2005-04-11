@@ -1103,7 +1103,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   }
   else 
   { // needed for 1.11
-    Directory(module);
+    Directory(".");
     SendCommand("update","-d","-C","-u",(void*)0);
   }
   std::vector<std::pair<std::string,std::string> > lresult;

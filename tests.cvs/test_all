@@ -23,6 +23,7 @@ echo -- db_setup
 rm -rf  test.cvsroot || exit
 echo -- cvs_test_setup
 ./cvs_test_setup || exit 
+if [ "$stop_at" = "cvs_test_setup" ] ; then exit 0 ; fi
 ../monotone --branch test --key test@localhost --db test.db cvs_pull \
         $PWD/test.cvsroot test <<EOF
 x
