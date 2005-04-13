@@ -267,13 +267,16 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
   memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
 
-  if (!do_connect) return;
-  connect();
+  if (do_connect) connect();
 }
 
 void cvs_client::connect()
 { byte_in_ticker.reset(new ticker("bytes in", ">", 256));
   byte_out_ticker.reset(new ticker("bytes out", "<", 256));
+
+  memset(&compress,0,sizeof compress);
+  memset(&decompress,0,sizeof decompress);
+
   if (pserver)
   { // it looks like I run into the same problems on Win32 again and again:
     //  pipes and sockets, so this is not portable except by using the
