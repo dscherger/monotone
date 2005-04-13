@@ -34,6 +34,7 @@ public:
   options_map options;
   utf8 message;
   utf8 search_root;
+  utf8 sync_since;
   std::vector<utf8> revision_selectors;
   std::vector<utf8> extra_rcfiles;
   path_set restrictions;
@@ -63,6 +64,7 @@ public:
   void set_root(utf8 const & root);
   void set_message(utf8 const & message);
   void set_depth(long depth);
+  void set_since(utf8 const & since);
   void add_revision(utf8 const & selector);
 
   void set_stdhooks(bool b);
