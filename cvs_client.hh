@@ -93,6 +93,34 @@ private:
   void processLogOutput(const rlog_callbacks &cb);
   void connect();
   void primeModules();
+  void Log_internal(const rlog_callbacks &cb,const std::string &file,va_list ap);
+  void reconnect();
+
+  void writestr(const std::string &s, bool flush=false);
+  std::string readline();
+  std::string read_n(unsigned size);
+
+//  void ticker(bool newline=true) const;
+  void SendCommand(const char *cmd,...);
+  void SendCommand(const char *cmd, va_list ap);
+  void SendArgument(const std::string &a);
+  // false if none available
+  bool fetch_result(std::string &result);
+  // semi internal helper to get one result line from a list
+  static std::string combine_result(const std::vector<std::pair<std::string,std::string> > &result);
+
+  // MT style
+  bool fetch_result(std::vector<std::pair<std::string,std::string> > &result);
+
+  static std::string pserver_password(const std::string &root);
+  
+  std::string shorten_path(const std::string &p) const;
+  static void parse_entry(const std::string &line, std::string &new_revision, 
+                            std::string &keyword_substitution);
+  void Directory(const std::string &path);
+  std::vector<std::string> ExpandModules();
+  
+  std::map<std::string,std::string> RequestServerDir();
 protected:
   std::string root;
   std::string module;
@@ -103,22 +131,8 @@ public:
   cvs_client(const std::string &repository, const std::string &module, bool connect=true);
   ~cvs_client();
              
-  void writestr(const std::string &s, bool flush=false);
-  std::string readline();
-  std::string read_n(unsigned size);
-  
-//  void ticker(bool newline=true) const;
-  void SendCommand(const char *cmd,...);
-  void SendCommand(const char *cmd, va_list ap);
-  void SendArgument(const std::string &a);
-  // false if none available
-  bool fetch_result(std::string &result);
-  // semi internal helper to get one result line from a list
-  static std::string combine_result(const std::vector<std::pair<std::string,std::string> > &result);
   static bool begins_with(const std::string &s, const std::string &sub, unsigned &len);
   
-  // MT style
-  bool fetch_result(std::vector<std::pair<std::string,std::string> > &result);
   void GzipStream(int level);
   
   void RLog(const rlog_callbacks &cb,bool dummy,...);
@@ -136,19 +150,9 @@ public:
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
-  static std::string pserver_password(const std::string &root);
-  
-  std::string shorten_path(const std::string &p) const;
-  static void parse_entry(const std::string &line, std::string &new_revision, 
-                            std::string &keyword_substitution);
-  void Directory(const std::string &path);
-  std::vector<std::string> ExpandModules();
-  
-  std::map<std::string,std::string> RequestServerDir();
   void SetServerDir(const std::map<std::string,std::string> &m);
   
   void drop_connection();
-  void reconnect();
   static std::string time_t2rfc822(time_t t);
 };
 

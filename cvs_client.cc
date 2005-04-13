@@ -239,7 +239,7 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 cvs_client::cvs_client(const std::string &repository, const std::string &_module,
         bool do_connect)
     : readfd(-1), writefd(-1), byte_in_ticker(), byte_out_ticker(),
-      gzip_level(), module(_module), pserver()
+      gzip_level(), pserver(), module(_module)
 { // parse the arguments
   { unsigned len;
     std::string d_arg=repository;
@@ -290,7 +290,7 @@ void cvs_client::connect()
     tAddr.sin_family = AF_INET;
     tAddr.sin_port = htons(pserver_port);
     tAddr.sin_addr = *(struct in_addr *)(ptHost->h_addr);
-    if (connect(writefd, (struct sockaddr*)&tAddr, sizeof(tAddr)))
+    if (::connect(writefd, (struct sockaddr*)&tAddr, sizeof(tAddr)))
     { L(F("Can't connect to port %d on %s\n") % pserver_port % host);
       throw oops("connect to port "+boost::lexical_cast<std::string>(pserver_port)
               +" on "+host+" failed");
@@ -768,24 +768,34 @@ static std::string dirname(const std::string &s)
   return s.substr(0,lastslash);
 }
 
-void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
-{ primeModules();
-  Directory(dirname(std::string(file)));
+void cvs_client::Log_internal(const rlog_callbacks &cb,const std::string &file,va_list ap)
+{ Directory(dirname(std::string(file)));
   std::string bname=basename(std::string(file));
   writestr("Entry /"+bname+"/1.1.1.1//-kb/\n");
   writestr("Unchanged "+bname+"\n");
-  { va_list ap;
-    va_start(ap,file);
-    const char *arg;
+  { const char *arg;
     while ((arg=va_arg(ap,const char *)))
     { writestr("Argument "+std::string(arg)+"\n");
     }
-    va_end(ap);
   }
   writestr("Argument --\n"
         "Argument "+bname+"\n"
         "log\n");
   processLogOutput(cb);
+}
+
+void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
+{ primeModules();
+  va_list ap,ap2;
+  va_start(ap,file);
+  va_copy(ap2,ap);
+  try {
+  Log_internal(cb,file,ap);
+  } catch (oops &e)
+  { reconnect();
+    Log_internal(cb,file,ap2);
+  }
+  va_end(ap);
 }
 
 // dummy is needed to satisfy va_start (cannot pass objects of non-POD type)
