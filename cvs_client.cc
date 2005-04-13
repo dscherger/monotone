@@ -407,6 +407,7 @@ void cvs_client::drop_connection()
   byte_out_ticker.reset();
   deflateEnd(&compress);
   inflateEnd(&decompress);
+  gzip_level=0;
   if (readfd!=-1) 
   { close(readfd); readfd=-1; }
   if (writefd!=-1) 
