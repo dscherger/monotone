@@ -560,7 +560,7 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     const_cast<unsigned&>(s2->patchsize)=u.patch.size();
     const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
     // I(s2->since_when==u.mod_time);
-    if (u.mod_time!=s2->since_when)
+    if (u.mod_time!=s2->since_when && u.mod_time!=-1)
     { W(F("update time %ld and log time %ld disagree\n") % u.mod_time % s2->since_when);
     }
     std::string old_contents=contents;
