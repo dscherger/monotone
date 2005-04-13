@@ -83,12 +83,16 @@ private:
   z_stream compress,decompress;
   std::string inputbuffer;
   std::map<std::string,std::string> server_dir; // local path -> rcs path
+  std::string user;
+  bool pserver;
 
   void InitZipStream(int level);
   void underflow(); // fetch new characters from stream
   static bool begins_with(const std::string &s, const std::string &sub);
   std::string rcs_file2path(std::string s) const;
   void processLogOutput(const rlog_callbacks &cb);
+  void connect();
+  void primeModules();
 protected:
   std::string root;
   std::string module;
@@ -144,7 +148,7 @@ public:
   void SetServerDir(const std::map<std::string,std::string> &m);
   
   void drop_connection();
+  void reconnect();
   static std::string time_t2rfc822(time_t t);
-  void primeModules();
 };
 

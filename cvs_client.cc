@@ -239,30 +239,8 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 cvs_client::cvs_client(const std::string &repository, const std::string &_module,
         bool do_connect)
     : readfd(-1), writefd(-1), byte_in_ticker(), byte_out_ticker(),
-      gzip_level(), module(_module)
-{ bool pserver=false;
-  std::string user,localhost_name;
-  { // get localhost's name
-    char domainname[1024];
-    *domainname=0;
-    if (gethostname(domainname,sizeof domainname))
-      throw oops("gethostname "+std::string(strerror(errno)));
-    domainname[sizeof(domainname)-1]=0;
-    unsigned len=strlen(domainname);
-    if (len && len<sizeof(domainname)-2)
-    { domainname[len]='.';
-      domainname[++len]=0;
-    }
-    if (getdomainname(domainname+len,sizeof(domainname)-len))
-      throw oops("getdomainname "+std::string(strerror(errno)));
-    domainname[sizeof(domainname)-1]=0;
-    localhost_name=domainname;
-    L(F("localhost's name %s\n") % localhost_name);
-  }
-  if (do_connect)
-  { byte_in_ticker.reset(new ticker("bytes in", ">", 256));
-    byte_out_ticker.reset(new ticker("bytes out", "<", 256));
-  }
+      gzip_level(), module(_module), pserver()
+{ // parse the arguments
   { unsigned len;
     std::string d_arg=repository;
     if (begins_with(d_arg,":pserver:",len))
@@ -285,12 +263,18 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     else root_start=0;
     root=d_arg.substr(root_start);
   }
-//  rcs_root=root;
 
   memset(&compress,0,sizeof compress);
   memset(&decompress,0,sizeof decompress);
+
   if (!do_connect) return;
-  else if (pserver)
+  connect();
+}
+
+void cvs_client::connect()
+{ byte_in_ticker.reset(new ticker("bytes in", ">", 256));
+  byte_out_ticker.reset(new ticker("bytes out", "<", 256));
+  if (pserver)
   { // it looks like I run into the same problems on Win32 again and again:
     //  pipes and sockets, so this is not portable except by using the
     //  Netxx::PipeStream from the ssh branch ... postponed
@@ -325,7 +309,25 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     }
   }
   else // rsh
-  { if (host==localhost_name) host="";
+  { std::string localhost_name;
+    { // get localhost's name
+      char domainname[1024];
+      *domainname=0;
+      if (gethostname(domainname,sizeof domainname))
+        throw oops("gethostname "+std::string(strerror(errno)));
+      domainname[sizeof(domainname)-1]=0;
+      unsigned len=strlen(domainname);
+      if (len && len<sizeof(domainname)-2)
+      { domainname[len]='.';
+        domainname[++len]=0;
+      }
+      if (getdomainname(domainname+len,sizeof(domainname)-len))
+        throw oops("getdomainname "+std::string(strerror(errno)));
+      domainname[sizeof(domainname)-1]=0;
+      localhost_name=domainname;
+      L(F("localhost's name %s\n") % localhost_name);
+    }
+    if (host==localhost_name) host="";
     int fd1[2],fd2[2];
     pid_t child=pipe_and_fork(fd1,fd2);
     if (child<0) 
@@ -410,6 +412,11 @@ void cvs_client::drop_connection()
 
 cvs_client::~cvs_client()
 { drop_connection();
+}
+
+void cvs_client::reconnect()
+{ drop_connection();
+  connect();
 }
 
 void cvs_client::InitZipStream(int level)
