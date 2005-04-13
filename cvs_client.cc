@@ -764,8 +764,9 @@ static std::string dirname(const std::string &s)
 void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
 { primeModules();
   Directory(dirname(std::string(file)));
-  // Entry /AA/1.1///
-  //  Unchanged AA
+  std::string bname=basename(std::string(file));
+  writestr("Entry /"+bname+"/1.1.1.1//-kb/\n");
+  writestr("Unchanged "+bname+"\n");
   { va_list ap;
     va_start(ap,file);
     const char *arg;
@@ -775,7 +776,7 @@ void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
     va_end(ap);
   }
   writestr("Argument --\n"
-        "Argument "+basename(std::string(file))+"\n"
+        "Argument "+bname+"\n"
         "log\n");
   processLogOutput(cb);
 }
