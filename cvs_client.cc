@@ -792,7 +792,8 @@ void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
   try {
   Log_internal(cb,file,ap);
   } catch (oops &e)
-  { reconnect();
+  { W(F("trying to reconnect, perhaps the server is confused\n"));
+    reconnect();
     Log_internal(cb,file,ap2);
   }
   va_end(ap);
