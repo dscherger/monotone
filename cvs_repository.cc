@@ -550,8 +550,8 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
   ++s2;
   if (s2==end) return;
   I(s->since_when!=s2->since_when);
-  // check ins must not overlap (next revision must lie beyond edge)
-  if (s2->since_when <= e->time2)
+  // checkins must not overlap (next revision must lie beyond edge)
+  if ((*s2) <= (*e))
   { W(F("splitting edge %ld-%ld at %ld\n") % e->time % e->time2 % s2->since_when);
     cvs_edge new_edge=*e;
     I(s2->since_when-1>=e->time);
@@ -680,33 +680,41 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
     current_manifest=get_files(*before);
   }
   for (;e!=edges.end();++e)
-  { for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
+  { std::set<cvs_edge>::iterator next_edge=e;
+    ++next_edge;
+    for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
     { I(!f->second.known_states.empty());
-      if (f->second.known_states.begin()->since_when > e->time2)
-        continue; // the file does not exist yet
+      if (!(*(f->second.known_states.begin()) <= (*e)))
+      // the file does not exist yet (first is not below/equal current edge)
+        continue; 
+      if ((*(f->second.known_states.rend()) < (*e)))
+      // the last revision was already processed (it remains this state)
+        continue;
       cvs_manifest::iterator mi=current_manifest.find(f->first);
       if (mi==current_manifest.end()) // the file is currently dead
-      { cvs_file_state s=f->second.known_states.begin();
-        // find next revision _within_ edge timespan
-        for (;s!=f->second.known_states.end();)
-        { cvs_file_state s2=s;
-          ++s2;
-          if (s2==f->second.known_states.end() || s2->since_when > e->time2)
-            break;
+      { cvs_file_state s=f->second.known_states.end();
+        // find last revision that fits but does not yet belong to next edge
+        // use until end, or above range, or belongs to next edge
+        for (cvs_file_state s2=f->second.known_states.begin();
+             s2!=f->second.known_states.end() 
+             && (*s2)<=(*e)
+             && ( next_edge==edges.end() || !((*s2)<(*next_edge)) );
+             ++s2)
           s=s2;
-        }
-        I(s!=f->second.known_states.end());
-        // a live revision was found
-        if (s->since_when <= e->time2 && !s->dead)
+          
+        if (s!=f->second.known_states.end() && !s->dead)
+        // a matching revision was found
         { current_manifest[f->first]=s;
           I(!s->sha1sum().empty());
           check_split(s,f->second.known_states.end(),e);
         }
       }
-      else // file was present in last manifest, check next revision
+      else // file was present in last manifest, check whether next revision already fits
       { cvs_file_state s=mi->second;
         ++s;
-        if (s!=f->second.known_states.end() && s->since_when <= e->time2)
+        if (s!=f->second.known_states.end() 
+            && (*s)<=(*e)
+            && ( next_edge==edges.end() || !((*s)<(*next_edge)) ) )
         { if (s->dead) current_manifest.erase(mi);
           else 
           { mi->second=s;
