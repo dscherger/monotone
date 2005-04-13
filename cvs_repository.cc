@@ -65,14 +65,14 @@ bool file_state::operator<(const file_state &b) const
 }
 
 // whether time is below span or (within span and lesser author,changelog)
-bool operator<(const file_state &s,const cvs_edge &e)
+bool cvs_sync::operator<(const file_state &s,const cvs_edge &e)
 { return s.since_when<e.time ||
     (s.since_when<=e.time2 && (s.author<e.author ||
     (s.author==e.author && s.log_msg<e.changelog)));
 }
 
 // whether time is below span or (within span and lesser/equal author,changelog)
-bool operator<=(const file_state &s,const cvs_edge &e)
+bool cvs_sync::operator<=(const file_state &s,const cvs_edge &e)
 { return s.since_when<e.time ||
     (s.since_when<=e.time2 && (s.author<=e.author ||
     (s.author==e.author && s.log_msg<=e.changelog)));
