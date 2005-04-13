@@ -23,6 +23,7 @@ struct cvs_revision_nr
   bool is_branch() const;
   bool is_parent_of(const cvs_revision_nr &child) const;
   bool operator==(const cvs_revision_nr &b) const;
+  bool operator<(const cvs_revision_nr &b) const;
 };
 
 struct file_state
@@ -34,15 +35,15 @@ struct file_state
   std::string md5sum;
   hexenc<id> sha1sum; // make this a file_id
   std::string log_msg;
+  std::string author;
   std::string keyword_substitution;
 
   file_state() : since_when(), size(), patchsize(), dead() {}  
   file_state(time_t sw,const std::string &rev,bool d=false) 
   : since_when(sw), cvs_version(rev), size(), patchsize(), dead(d) {}  
   bool operator==(const file_state &b) const
-  { return since_when==b.since_when; }
-  bool operator<(const file_state &b) const
-  { return since_when<b.since_when; }
+  { return since_when==b.since_when && cvs_version==cvs_version; }
+  bool operator<(const file_state &b) const;
 };
 
 struct file_history

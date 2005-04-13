@@ -52,8 +52,16 @@ construct_version(vector< piece > const & source_lines,
 
 using namespace cvs_sync;
 
+#if 0
 std::ostream &operator<<(std::ostream &o, const file_state &f)
 { return o << f.since_when << ' ' << f.cvs_version << ' ' << f.dead;
+}
+#endif
+
+bool file_state::operator<(const file_state &b) const
+{ return since_when<b.since_when
+    || (since_when==b.since_when 
+        && cvs_revision_nr(cvs_version)<cvs_revision_nr(b.cvs_version));
 }
 
 static void cvs_sync::process_one_hunk(vector< piece > const & source,
@@ -171,6 +179,11 @@ size_t const cvs_edge::cvs_window;
 
 bool cvs_revision_nr::operator==(const cvs_revision_nr &b) const
 { return parts==b.parts;
+}
+
+// is this strictly correct? feels ok for now (and this is last ressort)
+bool cvs_revision_nr::operator<(const cvs_revision_nr &b) const
+{ return parts<b.parts;
 }
 
 cvs_revision_nr::cvs_revision_nr(const std::string &x)
@@ -390,6 +403,7 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
   // set iterators are read only to prevent you from destroying the order
   file_state &fs=const_cast<file_state &>(*(iter.first));
   fs.log_msg=message;
+  fs.author=author;
   std::pair<std::set<cvs_edge>::iterator,bool> iter2=
     repo.edges.insert(cvs_edge(message,checkin_time,author));
   if (iter2.second && repo.cvs_edges_ticker.get()) ++(*repo.cvs_edges_ticker);
@@ -1049,6 +1063,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       else
       { file_state fs(e.time,i->second.first);
         fs.log_msg=e.changelog;
+        fs.author=e.author;
         fs.keyword_substitution=i->second.second;
         change_set::delta_map::const_iterator mydelta=cs.deltas.find(i->first);
         I(mydelta!=cs.deltas.end());
@@ -1274,6 +1289,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           I(iter_file_id!=manifest.end());
           fs.sha1sum=iter_file_id->second.inner();
           fs.log_msg=e.changelog;
+          fs.author=e.author;
           cvs_file_state cfs=remember(files[path].known_states,fs);
           e.xfiles.insert(std::make_pair(path,cfs));
         }
