@@ -155,7 +155,7 @@ public: // semi public interface for push/pull
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module, bool connect=true);
 
-  void debug() const;
+  std::string debug() const;
   
 #if 0 // yet unimplemented and unneeded ~nice~ API ideas
   std::list<std::string> get_modules();

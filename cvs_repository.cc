@@ -245,6 +245,7 @@ struct cvs_repository::get_all_files_log_cb : rlog_callbacks
         const std::string &state,const std::string &log) const {}
 };
 
+#if 0
 struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 { cvs_repository &repo;
   get_all_files_list_cb(cvs_repository &r) : repo(r) {}
@@ -255,6 +256,7 @@ struct cvs_repository::get_all_files_list_cb : rlist_callbacks
 //    repo.edges.insert(cvs_edge(last_change));
   }
 };
+#endif
 
 // get all available files and their newest revision
 void cvs_repository::get_all_files()
@@ -273,72 +275,76 @@ void cvs_repository::get_all_files()
   }
 }
 
-void debug_manifest(const cvs_manifest &mf)
-{ for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
-  { std::cerr << i->first << ' ' << i->second->cvs_version << ' ' 
-      << (i->second->dead?"dead ":"") << i->second->sha1sum() << '\n';
+std::string debug_manifest(const cvs_manifest &mf)
+{ std::string result;
+  for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
+  { result+= i->first + " " + i->second->cvs_version + " "
+      + (i->second->dead?"dead ":"") + i->second->sha1sum() + "\n";
   }
+  return result;
 }
 
-void debug_files(const std::map<std::string,file_history> &files)
-{ std::ostream &os=std::cerr;
+std::string debug_files(const std::map<std::string,file_history> &files)
+{ std::string result;
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
-  { os << i->first;
-    os << " (";
+  { result += i->first;
+    result += " (";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
-    { os << (j->since_when%1000) << ':' << j->cvs_version << '=';
-      if (j->dead) os << "dead";
-      else if (j->size) os << j->size;
-      else if (j->patchsize) os << 'p' << j->patchsize;
-      else if (!j->sha1sum().empty()) os << j->sha1sum().substr(0,4) << j->keyword_substitution;
+    { result +=  boost::lexical_cast<string>(j->since_when%1000) + ":" + j->cvs_version + "=";
+      if (j->dead) result +=  "dead";
+      else if (j->size) result +=  boost::lexical_cast<string>(j->size);
+      else if (j->patchsize) result +=  'p' + boost::lexical_cast<string>(j->patchsize);
+      else if (!j->sha1sum().empty()) result +=  j->sha1sum().substr(0,4) + j->keyword_substitution;
       ++j;
-      if (j!=i->second.known_states.end()) os << ',';
+      if (j!=i->second.known_states.end()) result += ",";
     }
-    os << ")\n";
+    result += ")\n";
   }
+  return result;
 }
 
-void cvs_repository::debug() const
-{ std::ostream &os=std::cerr;
+std::string cvs_repository::debug() const
+{ std::string result;
 
   // edges set<cvs_edge>
-  os << "Edges :\n";
+  result+= "Edges :\n";
   for (std::set<cvs_edge>::const_iterator i=edges.begin();
       i!=edges.end();++i)
-  { os << "[" << i->time;
-    if (i->time!=i->time2) os << '+' << (i->time2-i->time);
-    if (!i->revision().empty()) os << ',' << i->revision().substr(0,4);
+  { result+= "[" + boost::lexical_cast<string>(i->time);
+    if (i->time!=i->time2) result+= "+" + boost::lexical_cast<string>(i->time2-i->time);
+    if (!i->revision().empty()) result+= "," + i->revision().substr(0,4);
     if (!i->xfiles.empty()) 
-      os << ',' << i->xfiles.size() 
-         << (i->delta_base.inner()().empty()?"files":"deltas");
-    os << ',' << i->author << ',';
+      result+= "," + boost::lexical_cast<string>(i->xfiles.size()) 
+         + (i->delta_base.inner()().empty()?"files":"deltas");
+    result+= "," + i->author + ",";
     std::string::size_type nlpos=i->changelog.find_first_of("\n\r");
     if (nlpos>50) nlpos=50;
-    os << i->changelog.substr(0,nlpos) << "]\n";
+    result+= i->changelog.substr(0,nlpos) + "]\n";
   }
-  os << "Files :\n";
+  result+= "Files :\n";
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
-  { os << i->first;
-    os << " (";
+  { result+= i->first;
+    result+= " (";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
-    { if (j->dead) os << "dead";
-      else if (j->size) os << j->size;
-      else if (j->patchsize) os << 'p' << j->patchsize;
-      else if (!j->sha1sum().empty()) os << j->sha1sum().substr(0,4) << j->keyword_substitution;
+    { if (j->dead) result+= "dead";
+      else if (j->size) result+= boost::lexical_cast<string>(j->size);
+      else if (j->patchsize) result+= "p" + boost::lexical_cast<string>(j->patchsize);
+      else if (!j->sha1sum().empty()) result+= j->sha1sum().substr(0,4) + j->keyword_substitution;
       ++j;
-      if (j!=i->second.known_states.end()) os << ',';
+      if (j!=i->second.known_states.end()) result+= ",";
     }
-    os << ")\n";
+    result+= ")\n";
   }
-  os << "Tags :\n";
+  result+= "Tags :\n";
   for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
       i!=tags.end();++i)
-  { os << i->first << "(" << i->second.size() << " files)\n";
+  { result+= i->first + "(" + boost::lexical_cast<string>(i->second.size()) + " files)\n";
   }
+  return result;
 }
 
 struct cvs_repository::prime_log_cb : rlog_callbacks
@@ -930,12 +936,14 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
   }
 }
 
+#if 0
 std::ostream &operator<<(std::ostream &o, const cvs_manifest &mf)
 { for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
   { o << i->first << ' ' << i->second->cvs_version << ',';
   }
   return o;
 }
+#endif
 
 std::set<cvs_edge>::iterator cvs_repository::commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid)
@@ -1016,7 +1024,6 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       { a.old_revision=old->second->cvs_version;
         a.keyword_substitution=old->second->keyword_substitution;
       }
-// else std::cerr << parent_manifest << '\n';
       file_data dat;
       app.db.get_file_version(i->second.second,dat);
       data unpacked;
@@ -1055,7 +1062,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     packet_db_writer dbw(app);
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
-    if (global_sanity.debug) debug();
+    if (global_sanity.debug) L(F("%s") % debug());
     return --(edges.end());
   }
   W(F("no matching parent found\n"));
@@ -1274,7 +1281,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       revision_lookup[e.revision]=edges.insert(e).first;
     }
   }
-  if (global_sanity.debug) debug();
+  if (global_sanity.debug) L(F("%s") % debug());
 }
 
 struct cvs_repository::update_cb : cvs_client::update_callbacks
@@ -1372,7 +1379,7 @@ void cvs_repository::update()
   join_edge_parts(dummy_iter);
   
   fill_manifests(dummy_iter);
-  if (global_sanity.debug) debug();
+  if (global_sanity.debug) L(F("%s") % debug());
   commit_revisions(dummy_iter);
 }
 
@@ -1457,8 +1464,8 @@ void cvs_sync::admin(const std::string &command, const std::string &arg,
     app.db.get_revision_certs(cvs_cert_name, certs);
     // erase_bogus_certs ?
     repo.process_certs(certs);
-    std::cerr << line << '\n';
-    debug_manifest(repo.get_files(rid));
+    std::cout << line << '\n';
+    std::cout << debug_manifest(repo.get_files(rid));
     return;
   }
   
