@@ -89,6 +89,9 @@ struct cvs_edge // careful this name is also used in cvs_import
   bool operator<(cvs_edge const & other) const;
 };
 
+bool operator<(const file_state &,const cvs_edge &);
+bool operator<=(const file_state &,const cvs_edge &);
+
 class cvs_repository : public cvs_client
 { 
 public:

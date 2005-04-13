@@ -64,6 +64,20 @@ bool file_state::operator<(const file_state &b) const
         && cvs_revision_nr(cvs_version)<cvs_revision_nr(b.cvs_version));
 }
 
+// whether time is below span or (within span and lesser author,changelog)
+bool operator<(const file_state &s,const cvs_edge &e)
+{ return s.since_when<e.time ||
+    (s.since_when<=e.time2 && (s.author<e.author ||
+    (s.author==e.author && s.log_msg<e.changelog)));
+}
+
+// whether time is below span or (within span and lesser/equal author,changelog)
+bool operator<=(const file_state &s,const cvs_edge &e)
+{ return s.since_when<e.time ||
+    (s.since_when<=e.time2 && (s.author<=e.author ||
+    (s.author==e.author && s.log_msg<=e.changelog)));
+}
+
 static void cvs_sync::process_one_hunk(vector< piece > const & source,
                  vector< piece > & dest,
                  vector< piece >::const_iterator & i,
