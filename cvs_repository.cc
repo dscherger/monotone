@@ -686,7 +686,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
     { I(!f->second.known_states.empty());
       if (!(*(f->second.known_states.begin()) <= (*e)))
       // the file does not exist yet (first is not below/equal current edge)
-      { W(F("%s before beginning %d/%d+%d\n") % f->first 
+      { L(F("%s before beginning %d/%d+%d\n") % f->first 
             % f->second.known_states.begin()->since_when
             % e->time % (e->time2-e->time));
         continue; 
@@ -703,14 +703,6 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
       cvs_manifest::iterator mi=current_manifest.find(f->first);
       if (mi==current_manifest.end()) // the file is currently dead
       { cvs_file_state s=f->second.known_states.end();
-for (cvs_file_state s2=f->second.known_states.begin();
-     s2!=f->second.known_states.end();++s2)
-{ W(F("%s match %d/%d+%d %d %d\n") % f->first 
-    % s2->since_when
-    % e->time % (e->time2-e->time)
-    % ((*s2)<=(*e))
-    % ( next_edge==edges.end() || ((*s2)<(*next_edge)) ));
-}
         // find last revision that fits but does not yet belong to next edge
         // use until end, or above range, or belongs to next edge
         for (cvs_file_state s2=f->second.known_states.begin();
@@ -718,7 +710,7 @@ for (cvs_file_state s2=f->second.known_states.begin();
              && (*s2)<=(*e)
              && ( next_edge==edges.end() || ((*s2)<(*next_edge)) );
              ++s2)
-        { W(F("%s matches %d/%d+%d\n") % f->first 
+        { L(F("%s matches %d/%d+%d\n") % f->first 
             % s2->since_when
             % e->time % (e->time2-e->time));
           s=s2;
