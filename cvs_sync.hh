@@ -142,7 +142,7 @@ private:
   void join_edge_parts(std::set<cvs_edge>::iterator i);
   std::set<cvs_edge>::iterator last_known_revision();
   std::set<cvs_edge>::iterator commit(
-      std::set<cvs_edge>::iterator parent, const revision_id &rid);
+      std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail);
   const cvs_manifest &get_files(const cvs_edge &e);
   
 public: // semi public interface for push/pull

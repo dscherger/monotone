@@ -996,7 +996,7 @@ std::ostream &operator<<(std::ostream &o, const cvs_manifest &mf)
 #endif
 
 std::set<cvs_edge>::iterator cvs_repository::commit(
-      std::set<cvs_edge>::iterator parent, const revision_id &rid)
+      std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
 { // check that it's the last one
   L(F("commit %s -> %s\n") % parent->revision % rid);
   { std::set<cvs_edge>::iterator test=parent;
@@ -1087,7 +1087,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     I(!commits.empty());
     std::map<std::string,std::pair<std::string,std::string> > result
       =Commit(e.changelog,e.time,commits);
-    if (result.empty()) return edges.end();
+    if (result.empty()) { fail=true; return edges.end(); }
     
     e.delta_base=parent->revision;
     
@@ -1114,9 +1114,11 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
     if (global_sanity.debug) L(F("%s") % debug());
+    fail=false;
     return --(edges.end());
   }
   W(F("no matching parent found\n"));
+  fail=true;
   return edges.end();
 }
 
@@ -1154,9 +1156,11 @@ void cvs_repository::commit()
       }
       return;
     }
-    now_iter=commit(now_iter,*children.begin());
+    bool fail=bool();
+    now_iter=commit(now_iter,*children.begin(),fail);
     
-    P(F("checked %s into cvs repository") % now.revision);
+    if (!fail)
+      P(F("checked %s into cvs repository") % now.revision);
     // we'd better seperate the commits so that ordering them is possible
     if (now_iter!=edges.end()) sleep(2);
   }
