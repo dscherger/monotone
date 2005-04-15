@@ -185,7 +185,7 @@ else
 endif
 
 monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
-unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
+unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
