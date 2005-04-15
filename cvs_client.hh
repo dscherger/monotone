@@ -46,6 +46,7 @@ class cvs_client
     std::string mode;
     bool dead;
     std::string keyword_substitution;
+    std::string committemplate;
     
     checkout() : mod_time(-1), dead() {}
   };

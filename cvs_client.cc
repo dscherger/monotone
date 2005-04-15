@@ -508,6 +508,15 @@ loop:
     result.push_back(std::make_pair("rcs",readline()));
     return true;
   }
+  if (begins_with(x,"Template ",len))
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    result.push_back(std::make_pair("dir",x.substr(len)));
+    result.push_back(std::make_pair("path",readline()));
+    std::string length=readline();
+    result.push_back(std::make_pair("length",length));
+    result.push_back(std::make_pair("data",read_n(atol(length.c_str()))));
+    return true;
+  }
   if (begins_with(x,"Mod-time ",len))
   { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
     result.push_back(std::make_pair("date",x.substr(len)));
@@ -1022,6 +1031,16 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
             L(F("file %s revision %s: %d bytes\n") % file 
                 % revision % lresult[6].second.size());
           }
+          else if (lresult[0].second=="Template")
+          { I(lresult.size()==5);
+            I(lresult[3].first=="length");
+            long len = atol(lresult[3].second.c_str());
+            I(len >= 0);
+            I(lresult[4].second.size() == (size_t) len);
+            L(F("found commit template %s:\n%s") % lresult[2].second % lresult[4].second);
+            // FIX actually do something with the template?
+            result.committemplate = lresult[4].second;
+          }
           else if (lresult[0].second=="error")
           { throw oops("failed to check out "+file);
           }
@@ -1435,7 +1454,9 @@ std::map<std::string,std::string> cvs_client::RequestServerDir()
   { I(!lresult.empty());
     I(lresult[0].first=="CMD");
     if (lresult[0].second=="Set-sticky"
-        || lresult[0].second=="Clear-template") continue;
+        || lresult[0].second=="Clear-template"
+        || lresult[0].second=="Template") continue;
+    L(F("cvs_client::RequestServerDir lresult[0].second is '%s', not 'Clear-static-directory'") % lresult[0].second);
     I(lresult[0].second=="Clear-static-directory");
     I(lresult.size()==3);
     if (!last_rcs.empty() && begins_with(lresult[2].second,last_rcs)
