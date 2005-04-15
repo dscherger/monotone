@@ -23,7 +23,8 @@ MOST_SOURCES =								\
 	 mkstemp.hh mt_version.hh automate.hh database_check.hh smap.hh	\
 	 gettext.h package_revision.c package_full_revision.c           \
 	 path_component.hh epoch.hh package_full_revision.h             \
-	 package_revision.h inodeprint.hh
+	 package_revision.h inodeprint.hh \
+	 cvs_client.cc cvs_repository.cc 
 
 NETXX_SOURCES =									\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx			\
@@ -131,7 +132,7 @@ bin_PROGRAMS = monotone
 check_PROGRAMS = unit_tests
 noinst_PROGRAMS = txt2c 
 
-monotone_SOURCES = $(MOST_SOURCES) cvs_client.cc cvs_repository.cc monotone.cc main.cc 
+monotone_SOURCES = $(MOST_SOURCES) monotone.cc main.cc 
 unit_tests_SOURCES = $(MOST_SOURCES) unit_tests.cc
 
 txt2c_SOURCES = txt2c.cc
