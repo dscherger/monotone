@@ -413,11 +413,11 @@ public class Log2Gxl extends Thread {
         String line=source.readLine();
 	if(line.length()>0) throw new IOException(source.getLineNumber()+": Unexpected data ["+line+"]");
         line=lookahead();
+        if(line.startsWith("Deleted files:")) parseDeletedFiles();
+        line=lookahead();
         if(line.startsWith("Renamed files:")) parseRenamedFiles();
         line=lookahead();
         if(line.startsWith("Renamed directories:")) parseRenamedDirectories();
-        line=lookahead();
-        if(line.startsWith("Deleted files:")) parseDeletedFiles();
         line=lookahead();
         if(line.startsWith("Added files:")) parseAddedFiles();
         line=lookahead(); 
