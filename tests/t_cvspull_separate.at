@@ -1,6 +1,6 @@
 #  -*- Autoconf -*-
 
-AT_SETUP([pull of CVS module with complex history])
+AT_SETUP([pull of CVS module step by step])
 
 MONOTONE_SETUP
 
@@ -35,6 +35,10 @@ AT_CHECK(mkdir cvstemp)
 AT_CHECK(cp d_import cvstemp/A)
 AT_CHECK([cd cvstemp ; cvs -q -d $CVSROOT import -m 'initial import' test vendor_tag initial_import], [], [ignore], [ignore])
 
+# pull into monotone
+
+AT_CHECK(MONOTONE --branch=testbranch cvs_pull $CVSROOT test, [0], [ignore], [ignore])
+
 # change the repository in various ways
 
 AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
@@ -42,11 +46,18 @@ AT_CHECK(cp d_add test/B)
 AT_CHECK([cd test;cvs -Q add B])
 AT_CHECK([sleep 1;cd test;cvs -Q ci -m 'B added'])
 
+AT_CHECK(MONOTONE --branch=testbranch cvs_pull, [0], [ignore], [ignore])
+
 AT_CHECK([cd test;cvs -Q delete -f A])
 AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A removed'])
 
+AT_CHECK(MONOTONE --branch=testbranch cvs_pull, [0], [ignore], [ignore])
+
 AT_CHECK(cp d_change test/B)
 AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'B changed'])
+
+AT_CHECK(echo MONOTONE --branch=testbranch cvs_pull, [0], [ignore], [ignore])
+exit 1
 
 AT_CHECK(mkdir test/dir)
 AT_CHECK([cd test;cvs -Q add dir])
@@ -54,14 +65,13 @@ AT_CHECK(cp d_subdir test/dir/D)
 AT_CHECK([cd test;cvs -Q add dir/D])
 AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'dir/D added'])
 
+AT_CHECK(MONOTONE --branch=testbranch cvs_pull, [0], [ignore], [ignore])
+
 AT_CHECK(cp d_readd test/A)
 AT_CHECK([cd test;cvs -Q add A])
 AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A readded'])
 
-# pull into monotone
-
-AT_CHECK(MONOTONE --branch=testbranch cvs_pull $CVSROOT test, [], [ignore], [ignore])
-
+AT_CHECK(MONOTONE --branch=testbranch cvs_pull, [0], [ignore], [ignore])
 
 # check presence of files
 
@@ -74,7 +84,7 @@ AT_CHECK(MONOTONE cat file $TSHA4, [], [ignore])
 # also check that history is okay -- has a unique head, and it's the
 # right one.
 
-AT_CHECK(MONOTONE checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+AT_CHECK(MONOTONE checkout --branch=testbranch mtcodir, [0], [ignore], [ignore])
 AT_CHECK(cmp d_readd mtcodir/A)
 AT_CHECK(cmp d_change mtcodir/B)
 AT_CHECK(cmp d_subdir mtcodir/dir/D)
