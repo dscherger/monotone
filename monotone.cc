@@ -44,6 +44,7 @@
 #define OPT_MESSAGE 15
 #define OPT_ROOT 16
 #define OPT_DEPTH 17
+#define OPT_SINCE 9999 // use a custom number ...
 #define OPT_ARGFILE 18
 #define OPT_DATE 19
 #define OPT_AUTHOR 20
@@ -76,6 +77,7 @@ struct poptOption options[] =
     {"author", 0, POPT_ARG_STRING, &argstr, OPT_AUTHOR, "override author for commit", NULL},
     {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, "limit search for working copy to specified root", NULL},
     {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, "limit the log output to the given number of entries", NULL},
+    {"since", 0, POPT_ARG_STRING, &argstr, OPT_SINCE, "set history start for CVS sync", NULL},
     {"xargs", '@', POPT_ARG_STRING, &argstr, OPT_ARGFILE, "insert command line arguments taken from the given file", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
@@ -342,6 +344,10 @@ cpp_main(int argc, char ** argv)
 
             case OPT_DEPTH:
               app.set_depth(arglong);
+              break;
+
+            case OPT_SINCE:
+              app.set_since(string(argstr));
               break;
 
             case OPT_ARGFILE:
