@@ -57,7 +57,6 @@ AT_CHECK(cp d_change test/B)
 AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'B changed'])
 
 AT_CHECK(echo MONOTONE --branch=testbranch cvs_pull, [0], [ignore], [ignore])
-exit 1
 
 AT_CHECK(mkdir test/dir)
 AT_CHECK([cd test;cvs -Q add dir])

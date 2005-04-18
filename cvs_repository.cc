@@ -1322,7 +1322,11 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           fs.keyword_substitution=line.substr(slash+1,space-(slash+1));
         if (fs.cvs_version=="-") // delta encoded: remove
         { I(!e.delta_base.inner()().empty());
-          e.xfiles.insert(std::make_pair(path,remove_state));
+          fs.log_msg=e.changelog;
+          fs.author=e.author;
+          fs.dead=true;
+          cvs_file_state cfs=remember(files[path].known_states,fs);
+          e.xfiles.insert(std::make_pair(path,cfs)); // remove_state));
         }
         else
         { manifest_map::const_iterator iter_file_id=manifest.find(monotone_path);
