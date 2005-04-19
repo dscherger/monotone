@@ -293,6 +293,12 @@ app_state::set_depth(long d)
 }
 
 void
+app_state::set_since(utf8 const & s)
+{
+  sync_since = s;
+}
+
+void
 app_state::add_revision(utf8 const & selector)
 {
   revision_selectors.push_back(selector);
