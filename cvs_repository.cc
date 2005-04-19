@@ -452,10 +452,7 @@ void cvs_repository::store_contents(const std::string &contents, hexenc<id> &sha
   data dat(contents);
   calculate_ident(dat,sha1sum);
   if (!app.db.file_version_exists(sha1sum))
-  { base64<gzip<data> > packed;
-    pack(dat, packed);
-    file_data fdat=packed;
-    app.db.put_file(sha1sum, fdat);
+  { app.db.put_file(sha1sum, dat);
     if (file_id_ticker.get()) ++(*file_id_ticker);
   }
 }
@@ -478,14 +475,11 @@ void cvs_repository::store_delta(const std::string &new_contents,
   data dat(new_contents);
   calculate_ident(dat,to);
   if (!app.db.file_version_exists(to))
-  { 
-    base64< gzip<delta> > del;
+  { delta del;
     diff(data(old_contents), data(new_contents), del);
-    base64< gzip<data> > packed;
-    pack(data(new_contents), packed);
-    if (packed().size()<=del().size())
+    if (dat().size()<=del().size())
     // the data is smaller or of equal size to the patch
-      app.db.put_file(to, packed);
+      app.db.put_file(to, dat);
     else 
       app.db.put_file_version(from,to,del);
     if (file_id_ticker.get()) ++(*file_id_ticker);
@@ -806,7 +800,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     }
     else
     { 
-      base64< gzip<delta> > del;
+      delta del;
       I(!child_map.empty());
       diff(parent_map, child_map, del);
       app.db.put_manifest_version(parent_mid, child_mid, del);
@@ -1055,9 +1049,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       I(!old->second->sha1sum().empty());
       file_data dat;
       app.db.get_file_version(old->second->sha1sum,dat);
-      data unpacked;
-      unpack(dat.inner(), unpacked);
-      a.new_content=unpacked();
+      a.new_content=dat.inner()();
       commits.push_back(a);
       L(F("rename to %s %d\n") % a.file % a.new_content.size());
     }
@@ -1076,9 +1068,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       }
       file_data dat;
       app.db.get_file_version(i->second.second,dat);
-      data unpacked;
-      unpack(dat.inner(), unpacked);
-      a.new_content=unpacked();
+      a.new_content=dat.inner()();
       commits.push_back(a);
       L(F("delta %s %s %s %d\n") % a.file % a.old_revision % a.keyword_substitution
           % a.new_content.size());
@@ -1412,9 +1402,7 @@ void cvs_repository::update()
     { I(!last->sha1sum().empty());
       file_data dat;
       app.db.get_file_version(last->sha1sum,dat);
-      data unpacked;
-      unpack(dat.inner(), unpacked);
-      file_contents=unpacked();
+      file_contents=dat.inner()();
       initial_contents=file_contents;
     }
     for (std::set<file_state>::const_iterator s=last;
