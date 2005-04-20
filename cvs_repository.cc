@@ -1557,7 +1557,7 @@ const cvs_manifest &cvs_repository::get_files(const revision_id &rid)
   return get_files(*(cache_item->second));
 }
 
-struct checkout cvs_repository::CheckOut2(const std::string &file, const std::string &revision)
+struct cvs_client::checkout cvs_repository::CheckOut2(const std::string &file, const std::string &revision)
 { try
   { return CheckOut(file,revision);
   } catch (oops &e)
