@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -319,6 +320,7 @@ void cvs_client::connect()
       if (gethostname(domainname,sizeof domainname))
         throw oops("gethostname "+std::string(strerror(errno)));
       domainname[sizeof(domainname)-1]=0;
+#ifndef __sun
       unsigned len=strlen(domainname);
       if (len && len<sizeof(domainname)-2)
       { domainname[len]='.';
@@ -327,6 +329,7 @@ void cvs_client::connect()
       if (getdomainname(domainname+len,sizeof(domainname)-len))
         throw oops("getdomainname "+std::string(strerror(errno)));
       domainname[sizeof(domainname)-1]=0;
+#endif
       localhost_name=domainname;
       L(F("localhost's name %s\n") % localhost_name);
     }
