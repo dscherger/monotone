@@ -212,17 +212,19 @@ cvs_revision_nr::cvs_revision_nr(const std::string &x)
   } while(begin!=std::string::npos);
 };
 
+// we cannot guess whether the revision following 1.3 is 1.3.2.1 or 1.4 :-(
+// so we can only hope, that this is the expected result
 void cvs_revision_nr::operator++()
 { if (parts.empty()) return;
-  parts.back()++;
+  if (parts.size()==4 && get_string()=="1.1.1.1") *this=cvs_revision_nr("1.2");
+  else parts.back()++;
 }
 
 std::string cvs_revision_nr::get_string() const
 { std::string result;
-  for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();)
-  { result+= (F("%d") % *i).str();
-    ++i;
-    if (i!=parts.end()) result+",";
+  for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();++i)
+  { if (!result.empty()) result+=".";
+    result+=boost::lexical_cast<string>(*i);
   }
   return result;
 }
