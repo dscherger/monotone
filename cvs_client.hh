@@ -95,7 +95,6 @@ private:
   void connect();
   void primeModules();
   void Log_internal(const rlog_callbacks &cb,const std::string &file,va_list ap);
-  void reconnect();
 
   void writestr(const std::string &s, bool flush=false);
   std::string readline();
@@ -128,6 +127,7 @@ protected:
 //  std::string rcs_root; // the real directory of the root (ask cvs.gnome.org)
   std::string host; // for author certification
   
+  void reconnect();
 public:  
   cvs_client(const std::string &repository, const std::string &module, bool connect=true);
   ~cvs_client();

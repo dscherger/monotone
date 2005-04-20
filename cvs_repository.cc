@@ -632,7 +632,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   cvs_revision_nr srev(s->cvs_version);
   I(srev.is_parent_of(s2->cvs_version));
   if (s->dead)
-  { cvs_client::checkout c=CheckOut(file,s2->cvs_version);
+  { cvs_client::checkout c=CheckOut2(file,s2->cvs_version);
     I(!c.dead); // dead->dead is no change, so shouldn't get a number
     I(!s2->dead);
     // I(s2->since_when==c.mod_time);
@@ -867,7 +867,7 @@ void cvs_repository::prime()
   { std::string file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
-      cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
+      cvs_client::checkout c=CheckOut2(i->first,s2->cvs_version);
       store_checkout(s2,c,file_contents);
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
@@ -1422,7 +1422,7 @@ void cvs_repository::update()
     { last=f->second.known_states.begin();
       I(last!=f->second.known_states.end());
       std::set<file_state>::iterator s2=last;
-      cvs_client::checkout c=CheckOut(i->file,s2->cvs_version);
+      cvs_client::checkout c=CheckOut2(i->file,s2->cvs_version);
       store_checkout(s2,c,file_contents);
     }
     else
@@ -1555,4 +1555,14 @@ const cvs_manifest &cvs_repository::get_files(const revision_id &rid)
         cache_item=revision_lookup.find(rid);
   I(cache_item!=revision_lookup.end());
   return get_files(*(cache_item->second));
+}
+
+struct checkout cvs_repository::CheckOut2(const std::string &file, const std::string &revision)
+{ try
+  { return CheckOut(file,revision);
+  } catch (oops &e)
+  { W(F("trying to reconnect, perhaps the server is confused\n"));
+    reconnect();
+    return CheckOut(file,revision);
+  }
 }
