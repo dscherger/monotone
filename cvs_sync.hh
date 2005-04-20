@@ -18,7 +18,7 @@ struct cvs_revision_nr
 { std::vector<int> parts;
 
   cvs_revision_nr(const std::string &x);
-  const cvs_revision_nr &operator++(int);
+  void operator++();
   std::string get_string() const;
   bool is_branch() const;
   bool is_parent_of(const cvs_revision_nr &child) const;

@@ -212,10 +212,9 @@ cvs_revision_nr::cvs_revision_nr(const std::string &x)
   } while(begin!=std::string::npos);
 };
 
-const cvs_revision_nr &cvs_revision_nr::operator++(int)
-{ if (parts.empty()) return *this;
+void cvs_revision_nr::operator++()
+{ if (parts.empty()) return;
   parts.back()++;
-  return *this;
 }
 
 std::string cvs_revision_nr::get_string() const
@@ -1345,7 +1344,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         { file_state fs;
           fs.since_when=i->time;
           cvs_revision_nr rev=j->second->cvs_version;
-          rev++;
+          ++rev;
           fs.cvs_version=rev.get_string();
           fs.log_msg=i->changelog;
           fs.author=i->author;
