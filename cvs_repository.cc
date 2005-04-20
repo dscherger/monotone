@@ -212,9 +212,10 @@ cvs_revision_nr::cvs_revision_nr(const std::string &x)
   } while(begin!=std::string::npos);
 };
 
-void cvs_revision_nr::operator++(int)
-{ if (parts.empty()) return;
+const cvs_revision_nr &cvs_revision_nr::operator++(int)
+{ if (parts.empty()) return *this;
   parts.back()++;
+  return *this;
 }
 
 std::string cvs_revision_nr::get_string() const
@@ -1343,6 +1344,9 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         if (new_iter==new_m.end()) // this file get's removed here
         { file_state fs;
           fs.since_when=i->time;
+          cvs_revision_nr rev=j->second->cvs_version;
+          rev++;
+          fs.cvs_version=rev.get_string();
           fs.log_msg=i->changelog;
           fs.author=i->author;
           fs.dead=true;
@@ -1413,7 +1417,7 @@ void cvs_repository::update()
         ("-r"+last_known_revision+"::").c_str(),(void*)0);
     
     std::string file_contents,initial_contents;
-    if(last==f->second.known_states.end())
+    if(last==f->second.known_states.end() || last->dead)
     { last=f->second.known_states.begin();
       I(last!=f->second.known_states.end());
       std::set<file_state>::iterator s2=last;
