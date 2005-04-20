@@ -1331,6 +1331,28 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       revision_lookup[e.revision]=edges.insert(e).first;
     }
   }
+  // because some manifests might have been absolute (not delta encoded)
+  // we possibly did not notice removes. check for them
+  std::set<cvs_edge>::const_iterator last=edges.end();
+  for (std::set<cvs_edge>::const_iterator i=edges.begin();
+      i!=edges.end();++i)
+  { if (last!=edges.end() && i->delta_base.inner()().empty())
+    { cvs_manifest old=get_files(*last),new_m=get_files(*i);
+      for (cvs_manifest::iterator j=old.begin();j!=old.end();++j)
+      { cvs_manifest::iterator new_iter=new_m.find(j->first);
+        if (new_iter==new_m.end()) // this file get's removed here
+        { file_state fs;
+          fs.since_when=i->time;
+          fs.log_msg=i->changelog;
+          fs.author=i->author;
+          fs.dead=true;
+          L(F("file %s gets removed at %s\n") % j->first % i->revision());
+          remember(files[j->first].known_states,fs);
+        }
+      }
+    }
+    last=i;
+  }
   if (global_sanity.debug) L(F("%s") % debug());
 }
 
@@ -1426,8 +1448,12 @@ void cvs_repository::update()
   ++dummy_iter;
   join_edge_parts(dummy_iter);
   
+//  if (global_sanity.debug) 
+//    std::cerr << debug();
   fill_manifests(dummy_iter);
-  if (global_sanity.debug) L(F("%s") % debug());
+  if (global_sanity.debug) 
+//    std::cerr << debug();
+    L(F("%s") % debug());
   commit_revisions(dummy_iter);
 }
 
