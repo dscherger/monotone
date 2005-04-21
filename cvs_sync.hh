@@ -18,7 +18,7 @@ struct cvs_revision_nr
 { std::vector<int> parts;
 
   cvs_revision_nr(const std::string &x);
-  void operator++(int);
+  void operator++();
   std::string get_string() const;
   bool is_branch() const;
   bool is_parent_of(const cvs_revision_nr &child) const;
@@ -144,6 +144,8 @@ private:
   std::set<cvs_edge>::iterator commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail);
   const cvs_manifest &get_files(const cvs_edge &e);
+  // try harder (reconnect if something goes wrong)
+  struct checkout CheckOut2(const std::string &file, const std::string &revision);
   
 public: // semi public interface for push/pull
   void prime();

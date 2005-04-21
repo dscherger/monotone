@@ -1283,6 +1283,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   }
 
 // cater for encountered bugs ...
+// actually this code should not be necessary with the current options
+// without -C some revisions interacted with each other badly
   for (std::vector<update_args>::const_iterator i=bugged.begin();
                                                   i!=bugged.end();++i)
   { result=update();

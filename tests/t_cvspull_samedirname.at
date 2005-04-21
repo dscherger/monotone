@@ -68,6 +68,7 @@ AT_CHECK(MONOTONE cat file $TSHA3, [], [ignore])
 # right one.
 
 AT_CHECK(MONOTONE checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
-AT_CHECK(cmp importme.3 mtcodir/importme)
+AT_CHECK(cmp importme.2 mtcodir/importme)
+AT_CHECK(cmp importme.3 mtcodir/testdir/importme)
 
 AT_CLEANUP

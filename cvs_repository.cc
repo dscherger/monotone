@@ -212,17 +212,19 @@ cvs_revision_nr::cvs_revision_nr(const std::string &x)
   } while(begin!=std::string::npos);
 };
 
-void cvs_revision_nr::operator++(int)
+// we cannot guess whether the revision following 1.3 is 1.3.2.1 or 1.4 :-(
+// so we can only hope, that this is the expected result
+void cvs_revision_nr::operator++()
 { if (parts.empty()) return;
-  parts.back()++;
+  if (parts.size()==4 && get_string()=="1.1.1.1") *this=cvs_revision_nr("1.2");
+  else parts.back()++;
 }
 
 std::string cvs_revision_nr::get_string() const
 { std::string result;
-  for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();)
-  { result+= (F("%d") % *i).str();
-    ++i;
-    if (i!=parts.end()) result+",";
+  for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();++i)
+  { if (!result.empty()) result+=".";
+    result+=boost::lexical_cast<string>(*i);
   }
   return result;
 }
@@ -630,7 +632,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   cvs_revision_nr srev(s->cvs_version);
   I(srev.is_parent_of(s2->cvs_version));
   if (s->dead)
-  { cvs_client::checkout c=CheckOut(file,s2->cvs_version);
+  { cvs_client::checkout c=CheckOut2(file,s2->cvs_version);
     I(!c.dead); // dead->dead is no change, so shouldn't get a number
     I(!s2->dead);
     // I(s2->since_when==c.mod_time);
@@ -865,7 +867,7 @@ void cvs_repository::prime()
   { std::string file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
-      cvs_client::checkout c=CheckOut(i->first,s2->cvs_version);
+      cvs_client::checkout c=CheckOut2(i->first,s2->cvs_version);
       store_checkout(s2,c,file_contents);
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
@@ -1343,6 +1345,9 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         if (new_iter==new_m.end()) // this file get's removed here
         { file_state fs;
           fs.since_when=i->time;
+          cvs_revision_nr rev=j->second->cvs_version;
+          ++rev;
+          fs.cvs_version=rev.get_string();
           fs.log_msg=i->changelog;
           fs.author=i->author;
           fs.dead=true;
@@ -1413,11 +1418,11 @@ void cvs_repository::update()
         ("-r"+last_known_revision+"::").c_str(),(void*)0);
     
     std::string file_contents,initial_contents;
-    if(last==f->second.known_states.end())
+    if(last==f->second.known_states.end() || last->dead)
     { last=f->second.known_states.begin();
       I(last!=f->second.known_states.end());
       std::set<file_state>::iterator s2=last;
-      cvs_client::checkout c=CheckOut(i->file,s2->cvs_version);
+      cvs_client::checkout c=CheckOut2(i->file,s2->cvs_version);
       store_checkout(s2,c,file_contents);
     }
     else
@@ -1550,4 +1555,14 @@ const cvs_manifest &cvs_repository::get_files(const revision_id &rid)
         cache_item=revision_lookup.find(rid);
   I(cache_item!=revision_lookup.end());
   return get_files(*(cache_item->second));
+}
+
+struct cvs_client::checkout cvs_repository::CheckOut2(const std::string &file, const std::string &revision)
+{ try
+  { return CheckOut(file,revision);
+  } catch (oops &e)
+  { W(F("trying to reconnect, perhaps the server is confused\n"));
+    reconnect();
+    return CheckOut(file,revision);
+  }
 }
