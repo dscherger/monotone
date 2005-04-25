@@ -48,6 +48,7 @@
 #define OPT_ARGFILE 18
 #define OPT_DATE 19
 #define OPT_AUTHOR 20
+#define OPT_ALL_FILES 21
 
 // main option processing and exception handling code
 
@@ -79,6 +80,7 @@ struct poptOption options[] =
     {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, "limit the log output to the given number of entries", NULL},
     {"since", 0, POPT_ARG_STRING, &argstr, OPT_SINCE, "set history start for CVS sync", NULL},
     {"xargs", '@', POPT_ARG_STRING, &argstr, OPT_ARGFILE, "insert command line arguments taken from the given file", NULL},
+    {"all-files", 0, POPT_ARG_NONE, NULL, OPT_ALL_FILES, "inventory all working copy files", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -353,6 +355,10 @@ cpp_main(int argc, char ** argv)
             case OPT_ARGFILE:
               sub_argvs.push_back(my_poptStuffArgFile(ctx(),
                                                       utf8(string(argstr))));
+              break;
+
+            case OPT_ALL_FILES:
+              app.set_all_files(true);
               break;
 
             case OPT_HELP:

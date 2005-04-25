@@ -252,7 +252,7 @@ EXTRA_DIST = $(man1_MANS) \
 	     schema.sql views.sql \
 	     std_hooks.lua test_hooks.lua \
 	     testsuite.at \
-	     $(wildcard tests/t_*.at) \
+	     $(wildcard $(srcdir)/tests/t_*.at) \
 	     testsuite \
              tests/atconfig.in \
              tests/atlocal.in  \
@@ -269,7 +269,7 @@ EXTRA_DIST = $(man1_MANS) \
              contrib/monotone.el \
              contrib/monotone.bash_completion \
              win32/monotone.iss \
-             debian/*
+             $(wildcard $(srcdir)/debian/*)
 
 MAKEINFOFLAGS=-I $(top_builddir)
 
@@ -277,11 +277,14 @@ monotone.pdf: monotone.texi $(PDF_FIGURES)
 
 monotone.dvi: monotone.texi $(EPS_FIGURES)
 
-%.eps: %.epsi
-	mv $< $@
+#%.eps: %.epsi
+#	mv $< $@
+#
+#%.epsi: %.ps
+#	ps2epsi $< $@
 
-%.epsi: %.ps
-	ps2epsi $< $@
+%.eps : %.ps
+	ps2eps $< $@
 
 $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 	mkdir -p $(top_builddir)/figures
