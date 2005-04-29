@@ -45,6 +45,8 @@
 #include "automate.hh"
 #include "inodeprint.hh"
 #include "platform.hh"
+#include "selectors.hh"
+#include "annotate.hh"
 
 //
 // this file defines the task-oriented "top level" commands which can be
@@ -243,93 +245,6 @@ CMD(C, realcommand##_cmd.cmdgroup, realcommand##_cmd.params,  \
   process(app, string(#realcommand), args);                   \
 }
 
-static void 
-get_work_path(local_path & w_path)
-{
-  w_path = (mkpath(book_keeping_dir) / mkpath(work_file_name)).string();
-  L(F("work path is %s\n") % w_path);
-}
-
-static void 
-get_revision_path(local_path & m_path)
-{
-  m_path = (mkpath(book_keeping_dir) / mkpath(revision_file_name)).string();
-  L(F("revision path is %s\n") % m_path);
-}
-
-static void 
-get_revision_id(revision_id & c)
-{
-  c = revision_id();
-  local_path c_path;
-  get_revision_path(c_path);
-
-  N(file_exists(c_path),
-    F("working copy is corrupt: %s does not exist\n") % c_path);
-
-  data c_data;
-  L(F("loading revision id from %s\n") % c_path);
-  read_data(c_path, c_data);
-  c = revision_id(remove_ws(c_data()));
-}
-
-static void 
-put_revision_id(revision_id const & rev)
-{
-  local_path c_path;
-  get_revision_path(c_path);
-  L(F("writing revision id to %s\n") % c_path);
-  data c_data(rev.inner()() + "\n");
-  write_data(c_path, c_data);
-}
-
-static void 
-get_path_rearrangement(change_set::path_rearrangement & w)
-{
-  local_path w_path;
-  get_work_path(w_path);
-  if (file_exists(w_path))
-    {
-      L(F("checking for un-committed work file %s\n") % w_path);
-      data w_data;
-      read_data(w_path, w_data);
-      read_path_rearrangement(w_data, w);
-      L(F("read rearrangement from %s\n") % w_path);
-    }
-  else
-    {
-      L(F("no un-committed work file %s\n") % w_path);
-    }
-}
-
-static void 
-remove_path_rearrangement()
-{
-  local_path w_path;
-  get_work_path(w_path);
-  if (file_exists(w_path))
-    delete_file(w_path);
-}
-
-static void 
-put_path_rearrangement(change_set::path_rearrangement & w)
-{
-  local_path w_path;
-  get_work_path(w_path);
-  
-  if (w.empty())
-    {
-      if (file_exists(w_path))
-        delete_file(w_path);
-    }
-  else
-    {
-      data w_data;
-      write_path_rearrangement(w, w_data);
-      write_data(w_path, w_data);
-    }
-}
-
 static void
 extract_rearranged_paths(change_set::path_rearrangement const & rearrangement, path_set & paths)
 {
@@ -479,59 +394,6 @@ restrict_delta_map(change_set::delta_map const & deltas,
           excluded.insert(*i);
         }
     }
-}
-
-static void 
-update_any_attrs(app_state & app)
-{
-  file_path fp;
-  data attr_data;
-  attr_map attr;
-
-  get_attr_path(fp);
-  if (!file_exists(fp))
-    return;
-
-  read_data(fp, attr_data);
-  read_attr_map(attr_data, attr);
-  apply_attributes(app, attr);
-}
-
-static void
-get_base_revision(app_state & app, 
-                  revision_id & rid,
-                  manifest_id & mid,
-                  manifest_map & man)
-{
-  man.clear();
-
-  get_revision_id(rid);
-
-  if (!null_id(rid))
-    {
-
-      N(app.db.revision_exists(rid),
-        F("base revision %s does not exist in database\n") % rid);
-      
-      app.db.get_revision_manifest(rid, mid);
-      L(F("old manifest is %s\n") % mid);
-      
-      N(app.db.manifest_version_exists(mid),
-        F("base manifest %s does not exist in database\n") % mid);
-      
-      app.db.get_manifest(mid, man);
-    }
-
-  L(F("old manifest has %d entries\n") % man.size());
-}
-
-static void
-get_base_manifest(app_state & app, 
-                  manifest_map & man)
-{
-  revision_id rid;
-  manifest_id mid;
-  get_base_revision(app, rid, mid, man);
 }
 
 static void
@@ -740,76 +602,14 @@ describe_revision(app_state & app, revision_id const & id)
   return description;
 }
 
-static void
-decode_selector(string const & orig_sel,
-                selector_type & type,
-                string & sel,
-                app_state & app)
-{
-  sel = orig_sel;
-
-  L(F("decoding selector '%s'\n") % sel);
-
-  if (sel.size() < 2 || sel[1] != ':')
-    {
-      string tmp;
-      if (!app.lua.hook_expand_selector(sel, tmp))
-        {
-          L(F("expansion of selector '%s' failed\n") % sel);
-        }
-      else
-        {
-          P(F("expanded selector '%s' -> '%s'\n") % sel % tmp);
-          sel = tmp;
-        }
-    }
-  
-  if (sel.size() >= 2 && sel[1] == ':')
-    {
-      switch (sel[0])
-        {
-        case 'a': 
-          type = sel_author;
-          break;
-        case 'b':
-          type = sel_branch;
-          break;
-        case 'd':
-          type = sel_date;
-          break;
-        case 'i':
-          type = sel_ident;
-          break;
-        case 't':
-          type = sel_tag;
-          break;
-        default:          
-          W(F("unknown selector type: %c\n") % sel[0]);
-          break;
-        }
-      sel.erase(0,2);
-    }
-}
-
-static void
-complete_selector(string const & orig_sel,
-                  vector<pair<selector_type, string> > const & limit,             
-                  selector_type & type,
-                  set<string> & completions,
-                  app_state & app)
-{  
-  string sel;
-  decode_selector(orig_sel, type, sel, app);
-  app.db.complete(type, sel, limit, completions);
-}
-
-
 static void 
 complete(app_state & app, 
          string const & str, 
          revision_id & completion)
 {
-
+  // This copies the start of selectors::parse_selector().to avoid
+  // getting a log when there's no expansion happening...:
+  //
   // this rule should always be enabled, even if the user specifies
   // --norc: if you provide a revision id, you get a revision id.
   if (str.find_first_not_of(constants::legal_id_bytes) == string::npos
@@ -818,29 +618,16 @@ complete(app_state & app,
       completion = revision_id(str);
       return;
     }
-  
-  typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-  boost::char_separator<char> slash("/");
-  tokenizer tokens(str, slash);
 
-  vector<string> selector_strings;
-  vector<pair<selector_type, string> > selectors;  
-  copy(tokens.begin(), tokens.end(), back_inserter(selector_strings));
-  for (vector<string>::const_iterator i = selector_strings.begin();
-       i != selector_strings.end(); ++i)
-    {
-      string sel;
-      selector_type type = sel_unknown;
-      decode_selector(*i, type, sel, app);
-      selectors.push_back(make_pair(type, sel));
-    }
+  vector<pair<selectors::selector_type, string> >
+    sels(selectors::parse_selector(str, app));
 
   P(F("expanding selection '%s'\n") % str);
 
   // we jam through an "empty" selection on sel_ident type
   set<string> completions;
-  selector_type ty = sel_ident;
-  complete_selector("", selectors, ty, completions, app);
+  selectors::selector_type ty = selectors::sel_ident;
+  selectors::complete_selector("", sels, ty, completions, app);
 
   N(completions.size() != 0,
     F("no match for selection '%s'") % str);
@@ -2065,15 +1852,10 @@ ls_unknown (app_state & app, bool want_ignored, vector<utf8> const & args)
 
   if (want_ignored)
     for (path_set::const_iterator i = ignored.begin(); i != ignored.end(); ++i)
-      {
-        cout << *i << endl;
-      }
+      cout << *i << endl;
   else 
     for (path_set::const_iterator i = unknown.begin(); i != unknown.end(); ++i)
-      {
-        cout << *i << endl;
-      }
-
+      cout << *i << endl;
 }
 
 static void
@@ -2110,37 +1892,73 @@ ls_missing (app_state & app, vector<utf8> const & args)
     }
 }
 
-static void
-print_inventory(std::string const & status,
-                std::string const & suffix,
-                path_set const & files,
-                path_set const & excluded)
+struct inventory_item
 {
-  for (path_set::const_iterator i = files.begin(); i != files.end(); ++i)
+  enum pstat 
+    { UNCHANGED_PATH, ADDED_PATH, DROPPED_PATH, RENAMED_PATH, UNKNOWN_PATH, IGNORED_PATH } 
+    path_status;
+
+  enum dstat 
+    { UNCHANGED_DATA, PATCHED_DATA, MISSING_DATA } 
+    data_status;
+
+  enum ptype
+    { FILE, DIRECTORY } 
+    path_type;
+
+  file_path old_path;
+
+  inventory_item():
+    path_status(UNCHANGED_PATH), data_status(UNCHANGED_DATA), path_type(FILE), old_path() {}
+};
+
+typedef std::map<file_path, inventory_item> inventory_map;
+
+static void
+inventory_paths(inventory_map & inventory,
+                path_set const & paths,
+                inventory_item::pstat path_status, 
+                inventory_item::ptype path_type = inventory_item::FILE)
+{
+  for (path_set::const_iterator i = paths.begin(); i != paths.end(); i++)
     {
-      if (excluded.find(*i) == excluded.end())
-        cout << status << " " << basic_io::escape((*i)() + suffix) << endl;
+      L(F("%d %d %s\n") % inventory[*i].path_status % path_status % *i);
+      I(inventory[*i].path_status == inventory_item::UNCHANGED_PATH);
+      inventory[*i].path_status = path_status;
+      inventory[*i].path_type = path_type;
     }
 }
 
 static void
-print_inventory(std::string const & status,
-                std::string const & suffix,
-                std::map<file_path, file_path> const & renames,
-                path_set const & excluded)
-                
+inventory_paths(inventory_map & inventory,
+                path_set const & paths,
+                inventory_item::dstat data_status)
 {
-  for (std::map<file_path, file_path>::const_iterator i = renames.begin();
-       i != renames.end(); ++i)
+  for (path_set::const_iterator i = paths.begin(); i != paths.end(); i++)
     {
-      if (excluded.find(i->second) == excluded.end())
-        cout << status 
-             << " " << basic_io::escape(i->first() + suffix) 
-             << " " << basic_io::escape(i->second() + suffix) 
-             << endl;
+      L(F("%d %d %s\n") % inventory[*i].data_status % data_status % *i);
+      I(inventory[*i].data_status == inventory_item::UNCHANGED_DATA);
+      inventory[*i].data_status = data_status;
     }
 }
 
+static void
+inventory_paths(inventory_map & inventory,
+                std::map<file_path,file_path> const & renames,
+                inventory_item::pstat path_status, 
+                inventory_item::ptype path_type = inventory_item::FILE)
+{
+  for (std::map<file_path,file_path>::const_iterator i = renames.begin(); 
+       i != renames.end(); i++)
+    {
+      L(F("%d %d %s %s\n") % inventory[i->second].path_status % path_status % i->first % i->second);
+      I(inventory[i->second].path_status == inventory_item::UNCHANGED_PATH);
+      inventory[i->second].path_status = inventory_item::RENAMED_PATH;
+      inventory[i->second].path_type = path_type;
+      inventory[i->second].old_path = i->first;
+    }
+}
+               
 CMD(inventory, "informative", "[PATH]...", 
     "inventory of every file in working copy with associated status")
 {
@@ -2150,6 +1968,7 @@ CMD(inventory, "informative", "[PATH]...",
   path_set old_paths, new_paths, empty;
   change_set::path_rearrangement included, excluded;
   path_set missing, changed, unchanged, unknown, ignored;
+  inventory_map inventory;
 
   app.require_working_copy();
 
@@ -2161,33 +1980,77 @@ CMD(inventory, "informative", "[PATH]...",
   file_itemizer u(app, new_paths, unknown, ignored);
   walk_tree(u);
 
+  // remove deleted paths from the set of unknown paths
+
+  for (path_set::const_iterator i = included.deleted_files.begin();
+         i != included.deleted_files.end(); ++i)
+    unknown.erase(*i);
+
+  for (path_set::const_iterator i = included.deleted_dirs.begin();
+         i != included.deleted_dirs.end(); ++i)
+    unknown.erase(*i);
+
   classify_paths(app, new_paths, m_old, missing, changed, unchanged);
 
-  print_inventory("!", "", missing, empty);
+  inventory_paths(inventory, missing, inventory_item::MISSING_DATA);
 
-  // a file may be missing and also added or the target of a rename. or it may
-  // be added or the target of a rename and also changed. inventory lists each
-  // file only once with the highest priority status. missing takes precedence
-  // over added or renamed. added or renamed takes precedence over changed.
+  inventory_paths(inventory, included.deleted_files, inventory_item::DROPPED_PATH);
+  inventory_paths(inventory, included.deleted_dirs, inventory_item::DROPPED_PATH, inventory_item::DIRECTORY);
 
-  print_inventory("-", "", included.deleted_files, empty);
-  print_inventory("-", "/", included.deleted_dirs, empty);
+  inventory_paths(inventory, included.renamed_files, inventory_item::RENAMED_PATH);
+  inventory_paths(inventory, included.renamed_dirs, inventory_item::RENAMED_PATH, inventory_item::DIRECTORY);
 
-  // ensure missing has precedence over renamed
-  print_inventory("%", "", included.renamed_files, missing);
-  print_inventory("%", "/", included.renamed_dirs, missing);
+  inventory_paths(inventory, included.added_files, inventory_item::ADDED_PATH);
+  inventory_paths(inventory, changed, inventory_item::PATCHED_DATA);
   
-  // ensure missing has precedence over added
-  print_inventory("+", "", included.added_files, missing);
-  
-  print_inventory("#", "", changed, empty);
-
   if (app.all_files)
     {
-      print_inventory("=", "", unchanged, empty);
-      print_inventory("?", "", unknown, empty);
-      print_inventory("~", "", ignored, empty);
+      inventory_paths(inventory, unchanged, inventory_item::UNCHANGED_DATA);
+      inventory_paths(inventory, unknown, inventory_item::UNKNOWN_PATH);
+      inventory_paths(inventory, ignored, inventory_item::IGNORED_PATH);
     }
+
+  for (inventory_map::const_iterator i = inventory.begin(); i != inventory.end(); ++i)
+    {
+      switch (inventory[i->first].path_status) 
+        {
+        case inventory_item::UNCHANGED_PATH: cout << " "; break;
+        case inventory_item::ADDED_PATH:     cout << "+"; break;
+        case inventory_item::DROPPED_PATH:   cout << "-"; break;
+        case inventory_item::RENAMED_PATH:   cout << "%"; break;
+        case inventory_item::UNKNOWN_PATH:   cout << "?"; break;
+        case inventory_item::IGNORED_PATH:   cout << "~"; break;
+        }
+
+      switch (inventory[i->first].data_status) 
+        {
+        case inventory_item::UNCHANGED_DATA: cout << " "; break;
+        case inventory_item::PATCHED_DATA:   cout << "#"; break;
+        case inventory_item::MISSING_DATA:   cout << "!"; break;
+        }
+
+      cout << " ";
+
+      switch (inventory[i->first].path_type) 
+        {
+        case inventory_item::FILE: 
+          if (inventory[i->first].path_status == inventory_item::RENAMED_PATH)
+            cout << basic_io::escape(inventory[i->first].old_path()) << " "; 
+          
+          cout << basic_io::escape(i->first()); 
+          break;
+
+        case inventory_item::DIRECTORY: 
+          if (inventory[i->first].path_status == inventory_item::RENAMED_PATH)
+            cout << basic_io::escape(inventory[i->first].old_path() + "/") << " "; 
+         
+          cout << basic_io::escape(i->first() + "/"); 
+          break;
+        }
+      
+      cout << endl;
+    }
+ 
 }
 
 CMD(list, "informative", 
@@ -3004,8 +2867,6 @@ void do_diff(const string & name,
   else if (app.revision_selectors.size() == 1)
     app.require_working_copy();
 
-  transaction_guard guard(app.db);
-
   if (app.revision_selectors.size() == 0)
     {
       manifest_map m_old;
@@ -3133,7 +2994,6 @@ void do_diff(const string & name,
   cout << "# " << endl;
 
   dump_diffs(composite.deltas, app, new_is_archived, type);
-
 }
 
 CMD(cdiff, "informative", "[--revision=REVISION [--revision=REVISION]] [PATH]...", 
@@ -3277,7 +3137,7 @@ write_file_targets(change_set const & cs,
       write_localized_data(pth, tmp.inner(), app.lua);
     }
 }
-  
+
 
 // static void dump_change_set(string const & name,
 //                          change_set & cs)
@@ -3287,7 +3147,7 @@ write_file_targets(change_set const & cs,
 //   cout << "change set '" << name << "'\n" << dat << endl;
 // }
 
-CMD(update, "working copy", "\nREVISION", "update working copy to be based off another revision")
+CMD(update, "working copy", "[REVISION]", "update working copy to be based off another revision")
 {
   manifest_map m_old, m_ancestor, m_working, m_chosen;
   manifest_id m_ancestor_id, m_chosen_id;
@@ -3660,7 +3520,15 @@ CMD(propagate, "tree", "SOURCE-BRANCH DEST-BRANCH",
     }
 }
 
-CMD(explicit_merge, "tree", "LEFT-REVISION RIGHT-REVISION DEST-BRANCH\nLEFT-REVISION RIGHT-REVISION COMMON-ANCESTOR DEST-BRANCH",
+CMD(update_inodeprints, "tree", "", "update the inodeprint cache")
+{
+  enable_inodeprints();
+  maybe_update_inodeprints(app);
+}
+
+CMD(explicit_merge, "tree", 
+    "LEFT-REVISION RIGHT-REVISION DEST-BRANCH\n"
+    "LEFT-REVISION RIGHT-REVISION [COMMON-ANCESTOR] DEST-BRANCH",
     "merge two explicitly given revisions, placing result in given branch")
 {
   revision_id left, right, ancestor;
@@ -3860,6 +3728,40 @@ log_certs(app_state & app, revision_id id, cert_name name, string label, bool mu
       else
           cout << tv << endl;
     }     
+}
+
+
+CMD(annotate, "informative", "[--revision=REVISION] PATH", "print annotated copy of the file from REVISION")
+{
+  revision_id rid;
+  file_path file;
+
+  if (app.revision_selectors.size() == 0)
+    app.require_working_copy();
+
+  if ((args.size() != 1) || (app.revision_selectors.size() > 1))
+    throw usage(name);
+
+  file=file_path(idx(args, 0)());
+  if (app.revision_selectors.size() == 0)
+    get_revision_id(rid);
+  else 
+    complete(app, idx(app.revision_selectors, 0)(), rid);
+
+  L(F("annotate file file_path '%s'\n") % file);
+
+  // find the version of the file requested
+  manifest_map mm;
+  revision_set rev;
+  app.db.get_revision(rid, rev);
+  app.db.get_manifest(rev.new_manifest, mm);
+  manifest_map::const_iterator i = mm.find(file);
+  N(i != mm.end(),
+    F("No such file '%s' in revision %s\n") % file % rid);
+  file_id fid = manifest_entry_id(*i);
+  L(F("annotate for file_id %s\n") % manifest_entry_id(*i));
+
+  do_annotate(app, file, fid, rid);
 }
 
 CMD(log, "informative", "[ID] [file]", "print history in reverse order starting from 'ID' (filtering by 'file')")
@@ -4069,7 +3971,10 @@ CMD(automate, "automation",
     "interface_version\n"
     "heads [BRANCH]\n"
     "ancestors REV1 [REV2 [REV3 [...]]]\n"
+    "parents REV\n"
     "descendents REV1 [REV2 [REV3 [...]]]\n"
+    "children REV\n"
+    "graph\n"
     "erase_ancestors [REV1 [REV2 [REV3 [...]]]]\n"
     "toposort [REV1 [REV2 [REV3 [...]]]]\n"
     "ancestry_difference NEW_REV [OLD_REV1 [OLD_REV2 [...]]]\n"

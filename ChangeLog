@@ -1,3 +1,272 @@
+2005-04-29  Nathaniel Smith  <njs@codesourcery.com>
+
+	* change_set.cc (dump_change_set): Don't truncate output.
+	(invert_change_test): New unit test.
+	(invert_change_set): Make it pass.  This fixes (some?)
+	isect.empty() invariant failures.
+	
+	* NEWS: Start updating for 0.19.
+
+	* revision.cc (check_sane_history): Make comment more
+	informative.
+
+2005-04-28  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_netsync_error.at: New test.
+	* testsuite.at: Add it.
+
+2005-04-28  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_rename_attr.at: Fix a bit; also test that rename refuses
+	to move a file to a name that already has attrs.
+	* work.cc (build_rename): Cleanup a bit; refuse to move a file to
+	a name that already has attrs.
+
+	* monotone.texi (Working Copy): Document explicitly that "drop"
+	and "rename" do not modify the filesystem directly, and do affect
+	attributes.
+
+2005-04-28  Derek Scherger  <derek@echologic.com>
+
+	* commands.cc (get_work_path): 
+	(get_revision_path): 
+	(get_revision_id):
+	(put_revision_id):
+	(get_path_rearrangement):
+	(remove_path_rearrangement):
+	(put_path_rearrangement):
+	(update_any_attrs):
+	(get_base_revision):
+	(get_base_manifest): move to work.{cc,hh}
+	(update): indicate optional revision with [ and ]
+	(explicit_merge): indicate optional ancestor with [ and ] 
+
+	* manifest.{cc,hh} (extract_path_set): move here from work.{cc,hh}
+	* revision.{cc,hh} (revision_file_name): move to work.{cc,hh}
+
+	* work.{cc,hh} (extract_path_set): move to manifest.{cc,hh}
+	(get_work_path): 
+	(get_path_rearrangement): 
+	(remove_path_rearrangement): 
+	(put_path_rearrangement): 
+	(get_revision_path): 
+	(get_revision_id): 
+	(put_revision_id): 
+	(get_base_revision): 
+	(get_base_manifest): 
+	(update_any_attrs): move here from commands.cc
+	
+2005-04-28  Derek Scherger  <derek@echologic.com>
+
+	* ChangeLog: 
+	* Makefile.am
+	* tests/t_automate_select.at: merge fixups
+
+2005-04-28  Emile Snyder <emile@alumni.reed.edu>
+
+	* annotate.cc: Fix broken build after propagate from .annotate
+	branch to mainline.  The lcs stuff was changed to use
+	quick_allocator, so our use of it had to change as well.
+	
+2005-04-28  Emile Snyder  <emile@alumni.reed.edu>
+
+	* commands.cc: New command "annotate"
+	* annotate.{cc,hh}: New files implement it.
+	* Makefile.am: Build it.
+	* monotone.texi: Document it.	
+	* tests/t_annotate.at:
+	* tests/t_annotate_add_collision.at:
+	* tests/t_annotate_branch_collision.at: 
+	* testsuite.at: Test it.
+	
+2005-04-29  Grahame Bowland  <grahame@angrygoats.net>
+
+	* netxx/types.h: Add new NetworkException type network 
+	issue not caused by calling program
+	* netsync.cc: Catch Netxx::NetworkException and display 
+	as informative_error.
+	* netxx/address.cxx: NetworkException for unparsable URIs.
+	* netxx/datagram.cxx: NetworkException for connection failure.
+	* netxx/resolve_getaddrinfo.cxx, resolve_gethostbyname.cxx:
+	NetworkException when DNS resolution fails.
+	* netxx/serverbase.cxx: NetworkException if unable to bind 
+	to server port.
+	* netxx/streambase.cxx: NetworkException if unable to 
+	connect.
+
+2005-04-28  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/t_merge_6.at: narrow the testcase down considerably.
+
+2005-04-28  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/t_merge_6.at, testsuite.at: add a new test for the case where
+	duplicate lines appear in a file during a merge. This testcase can
+	be correctly handled by merge(1).
+
+2005-04-28  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/t_i18n_file.at, transforms.cc: OS X expects all paths to be
+	utf-8, don't try to use other encodings in the test.
+
+2005-04-28  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_automate_select.at: silly ignores not needed any more.
+
+2005-04-28  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (complete): Don't talk of there really was no
+	expansion.
+
+2005-04-28  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc, commands.hh: Selector functions and type are moved
+	to...
+	* selectors.cc, selectors.hh: ... these files.
+	* database.cc, database.hh: Adapt to this change.
+	* automate.cc (automate_select): New function, implements
+	'automate select'.
+	(automate_command): Use it.
+	* monotone.texi (Automation): Document it.
+
+	* tests/t_automate_select.at: New test.
+	* testsuite.at: Use it.
+
+	* Makefile.am (MOST_SOURCES): reorganise.  Add selectors.{cc,hh}.
+
+2005-04-27  Derek Scherger  <derek@echologic.com>
+
+	* commands.cc (ls_unknown): remove unneeded braces
+	(struct inventory_item): new struct for tracking inventories
+	(print_inventory): removed old output functions 
+	(inventory_paths): new functions for paths, data and renames
+	(inventory): rework to display two column status codes
+	* monotone.texi (Informative): update for new status codes
+	* tests/t_inventory.at: update for two column status codes
+
+2005-04-27  Richard Levitte  <richard@levitte.org>
+
+	* quick_alloc.hh: Define QA_SUPPORTED when quick allocation is
+	supported.
+	* sanity.hh: Only defined the QA(T) variants of checked_index()
+	when QA_SUPPORTED is defined.
+
+2005-04-27  Joel Reed  <joelwreed@comcast.com>
+
+	* work.cc: on rename move attributes as well.
+	* tests/t_rename_attr.at: No longer a bug.
+
+2005-04-27  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Working Copy, Commands): Document update_inodeprints.
+	* monotone.1: Likewise.
+
+	* tests/t_update_inodeprints.at: New test.
+	* testsuite.at: Add it.
+
+2005-04-27  Richard Levitte  <richard@levitte.org>
+
+	* database.cc (selector_to_certname): Add a case for
+	commands::sel_cert.
+
+2005-04-27  Richard Levitte  <richard@levitte.org>
+
+	* sanity.hh: Add a couple of variants of checked_index() to
+	accomodate for indexes over vector<T, QA(T)>.
+
+	* commands.hh: Add new selector to find arbitrary cert name and
+	value pairs.  The syntax is 'c:{name}={value}'.
+	* commands.cc (decode_selector): Recognise it.
+	* database.cc (complete): Parse it.
+	* std_hooks.lua (expand_selector): Add an expansion for it.
+	* monotone.texi (Selectors): Document it.
+
+	* tests/t_select_cert.at: Add test.
+	* testsuite.at: Use it.
+
+2005-04-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* vocab.cc (verify(file_path)): don't find() twice.
+	* change_set.cc (extend_state): remove commented out line 
+
+2005-04-27  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_cvsimport_manifest_cycle.at: New test.
+	* testsuite.at: Add test.
+	* AUTHORS: Add self.
+
+2005-04-27  Nathaniel Smith  <njs@codesourcery.com>
+
+	* AUTHORS: Add Timothy Brownawell.
+
+2005-04-27  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* ui.{cc,hh}: Delegate tick line blanking to tick_writers.
+
+2005-04-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* work.cc: Don't include boost/regex.hpp.
+
+2005-04-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* manifest.cc, inodeprint.cc: Don't include boost/regex.hpp.
+
+2005-04-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* sqlite/vdbeaux.c (MAX_6BYTE): Apply patch from
+	http://www.sqlite.org/cvstrac/chngview?cn=2445.  It shouldn't
+	affect monotone's usage, but just in case.
+
+2005-04-26  Nathaniel Smith  <njs@codesourcery.com>
+
+	* rcs_import.cc (struct cvs_key, process_branch): Fix
+	indentation.
+	(build_change_set): Handle the case where a file is "added dead".
+
+	* tests/t_cvsimport2.at: Un-XFAIL, improve description.
+
+2005-04-22  Christof Petig <christof@petig-baender.de>
+
+	* sqlite/*: update to sqlite 3.2.1
+
+2005-04-25  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_i18n_file_data.at: New test.
+	* testsuite.at: Add it.
+
+2005-04-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* change_set.cc (extend_state): don't mix find() and insert() on
+	the path_state, to avoid hitting the smap's worst-case.
+
+2005-04-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* change_set.cc (confirm_proper_tree): move things out of the loops
+	for better performance.
+
+2005-04-26  Matt Johnston  <matt@ucc.asn.au>
+
+	* change_set.cc (analyze_rearrangement): get rid of damaged_in_first
+	since it is not used.
+
+2005-04-26  Matt Johnston  <matt@ucc.asn.au>
+
+	* monotone.texi: fix mashed up merge of docs for kill_rev_locally
+	and db check.
+
+2005-04-25  Nathaniel Smith  <njs@codesourcery.com>
+
+	* automate.cc (automate_parents, automate_children) 
+	(automate_graph): New automate commands.
+	(automate_command): Add them.
+	* commands.cc (automate): Synopsisfy them.
+	* monotone.texi (Automation): Document them.
+	* tests/t_automate_graph.at, test/t_parents_children.at: Test
+	them.
+	* testsuite.at: Add the tests.
+
+	* tests/t_automate_ancestors.at: Remove obsolete comment.
+	
 2005-04-24  Derek Scherger  <derek@echologic.com>
 
 	* tests/t_rename_file_to_dir.at:
@@ -3439,7 +3708,7 @@
 	* AUTHORS: Mention Wojciech and Neil.
 	* revision.cc (calculate_ancestors_from_graph): Make non-recursive.
 
-2005-01-17  Wojciech MiÅkowski  <wmilkowski@interia.pl>
+2005-01-17  Wojciech MiÂkowski  <wmilkowski@interia.pl>
 
 	* std_hooks.lua: Teach about meld.
 

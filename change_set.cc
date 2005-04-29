@@ -525,20 +525,26 @@ confirm_proper_tree(path_state const & ps)
   size_t tid_range = max_tid - min_tid + 1;
   
   boost::dynamic_bitset<> confirmed(tid_range);
+  boost::dynamic_bitset<> ancbits(tid_range);
+  std::vector<tid> ancs; // a set is more efficient, at least in normal
+                      // trees where the number of ancestors is
+                      // significantly less than tid_range
+  tid curr;
+  path_item item;
 
   for (path_state::const_iterator i = ps.begin(); i != ps.end(); ++i)
     {
-      tid curr = i->first;
-      path_item item = i->second;
-      std::set<tid> ancs; // a set is more efficient, at least in normal
-                          // trees where the number of ancestors is
-                          // significantly less than tid_range
+      ancs.clear();
+      ancbits.reset();
+      curr = i->first;
+      item = i->second;
 
       while (confirmed.test(curr - min_tid) == false)
         {             
           sanity_check_path_item(item);
-          I(ancs.find(curr) == ancs.end());
-          ancs.insert(curr);
+          I(ancbits.test(curr-min_tid) == false);
+          ancs.push_back(curr);
+          ancbits.set(curr-min_tid);
           if (path_item_parent(item) == root_tid)
             break;
           else
@@ -555,7 +561,7 @@ confirm_proper_tree(path_state const & ps)
               I(path_item_type(item) == ptype_directory);
             }
         }
-      for (std::set<tid>::const_iterator a = ancs.begin(); a != ancs.end(); a++)
+      for (std::vector<tid>::const_iterator a = ancs.begin(); a != ancs.end(); a++)
         {
           confirmed.set(*a - min_tid);
         }
@@ -1102,7 +1108,7 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
 {
   directory_map first_map, second_map;
   state_renumbering renumbering;
-  std::set<tid> damaged_in_first, damaged_in_second;
+  std::set<tid> damaged_in_second;
 
   pa.first.clear();
   pa.second.clear();
@@ -1112,7 +1118,6 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
     {
       tid x = ensure_file_in_map(*f, first_map, pa.first, ts);
       pa.second.insert(std::make_pair(x, path_item(root_tid, ptype_file, make_null_component())));
-      damaged_in_first.insert(x);
     }
 
   for (std::set<file_path>::const_iterator d = pr.deleted_dirs.begin();
@@ -1120,7 +1125,6 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
     {
       tid x = ensure_dir_in_map(*d, first_map, pa.first, ts);
       pa.second.insert(std::make_pair(x, path_item(root_tid, ptype_directory, make_null_component())));
-      damaged_in_first.insert(x);
     }
 
   for (std::map<file_path,file_path>::const_iterator rf = pr.renamed_files.begin();
@@ -1130,7 +1134,6 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
       tid b = ensure_file_in_map(rf->second, second_map, pa.second, ts);
       I(renumbering.find(a) == renumbering.end());
       renumbering.insert(std::make_pair(b,a));
-      damaged_in_first.insert(a);
       damaged_in_second.insert(b);
     }
 
@@ -1141,7 +1144,6 @@ analyze_rearrangement(change_set::path_rearrangement const & pr,
       tid b = ensure_dir_in_map(rd->second, second_map, pa.second, ts);
       I(renumbering.find(a) == renumbering.end());
       renumbering.insert(std::make_pair(b,a));
-      damaged_in_first.insert(a);
       damaged_in_second.insert(b);
     }
 
@@ -1298,12 +1300,17 @@ static void
 extend_state(path_state const & src, 
              path_state & dst)
 {
+  std::vector< std::pair<tid, path_item> > tmp;
   for (path_state::const_iterator i = src.begin();
        i != src.end(); ++i)
     {
       if (dst.find(path_state_tid(i)) == dst.end())
-        dst.insert(*i);
+        tmp.push_back(*i);
     }
+
+  for (std::vector<std::pair<tid, path_item> >::const_iterator i = tmp.begin();
+      i != tmp.end(); i++)
+    dst.insert(*i);
 }
 
 static void
@@ -2266,6 +2273,8 @@ invert_change_set(change_set const & a2b,
 
   b2a.deltas.clear();
 
+  std::set<file_path> moved_deltas;
+
   // existing deltas are in "b space"
   for (path_state::const_iterator b = b2a_analysis.first.begin();
        b != b2a_analysis.first.end(); ++b)
@@ -2303,7 +2312,7 @@ invert_change_set(change_set const & a2b,
               get_full_path(b2a_analysis.first, path_state_tid(b), b_pth);
               get_full_path(b2a_analysis.second, path_state_tid(a), a_pth);
               change_set::delta_map::const_iterator del = a2b.deltas.find(b_pth);
-              if (del == a2b.deltas.end())
+               if (del == a2b.deltas.end())
                 continue;
               file_id src_id(delta_entry_src(del)), dst_id(delta_entry_dst(del));
               L(F("converting delta %s -> %s on %s\n")
@@ -2311,6 +2320,7 @@ invert_change_set(change_set const & a2b,
               L(F("inverse is delta %s -> %s on %s\n")
                 % dst_id % src_id % a_pth);
               b2a.deltas.insert(std::make_pair(a_pth, std::make_pair(dst_id, src_id)));
+              moved_deltas.insert(b_pth);
             }
         }
     }
@@ -2324,8 +2334,11 @@ invert_change_set(change_set const & a2b,
       if (null_id(delta_entry_src(del)))
         continue;
       // check to make sure this isn't one of the already-moved deltas
-      if (b2a.deltas.find(delta_entry_path(del)) != b2a.deltas.end())
+      if (moved_deltas.find(delta_entry_path(del)) != moved_deltas.end())
         continue;
+      // we shouldn't have created a delta earlier, if this file really is
+      // untouched...
+      I(b2a.deltas.find(delta_entry_path(del)) == b2a.deltas.end());
       b2a.deltas.insert(std::make_pair(delta_entry_path(del),
                                        std::make_pair(delta_entry_dst(del),
                                                       delta_entry_src(del))));
@@ -2886,6 +2899,7 @@ write_path_rearrangement(change_set::path_rearrangement const & re,
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 #include "sanity.hh"
+#include "transforms.hh"
 
 static void dump_change_set(std::string const & ctx,
                             change_set const & cs)
@@ -2893,7 +2907,11 @@ static void dump_change_set(std::string const & ctx,
   data tmp;
   write_change_set(cs, tmp);
   L(F("[begin changeset %s]\n") % ctx);
-  L(F("%s") % tmp);
+  std::vector<std::string> lines;
+  split_into_lines(tmp(), lines);
+  for (std::vector<std::string>::const_iterator i = lines.begin();
+       i != lines.end(); ++i)
+    L(F("%s") % *i);
   L(F("[end changeset %s]\n") % ctx);
 }
 
@@ -3022,6 +3040,46 @@ basic_change_set_test()
     {
       L(F("runtime error: %s\n") % exn.what());
     }
+}
+
+static void
+invert_change_test()
+{
+  L(F("STARTING invert_change_test\n"));
+  change_set cs;
+  manifest_map a;
+
+  a.insert(std::make_pair(file_path("usr/lib/zombie"),
+                          file_id(hexenc<id>("92ceb3cd922db36e48d5c30764e0f5488cdfca28"))));
+  cs.delete_file(file_path("usr/lib/zombie"));
+  cs.add_file(file_path("usr/bin/cat"),
+              file_id(hexenc<id>("adc83b19e793491b1c6ea0fd8b46cd9f32e592fc")));
+  cs.add_file(file_path("usr/local/dog"),
+              file_id(hexenc<id>("adc83b19e793491b1c6ea0fd8b46cd9f32e592fc")));
+  a.insert(std::make_pair(file_path("usr/foo"),
+                          file_id(hexenc<id>("9a4d3ae90b0cc26758e17e1f80229a13f57cad6e"))));
+  cs.rename_file(file_path("usr/foo"), file_path("usr/bar"));
+  cs.apply_delta(file_path("usr/bar"),
+                 file_id(hexenc<id>("9a4d3ae90b0cc26758e17e1f80229a13f57cad6e")),
+                 file_id(hexenc<id>("fe18ec0c55cbc72e4e51c58dc13af515a2f3a892")));
+  a.insert(std::make_pair(file_path("usr/quuux"),
+                          file_id(hexenc<id>("fe18ec0c55cbc72e4e51c58dc13af515a2f3a892"))));
+  cs.apply_delta(file_path("usr/quuux"),
+                 file_id(hexenc<id>("fe18ec0c55cbc72e4e51c58dc13af515a2f3a892")),
+                 file_id(hexenc<id>("c6a4a6196bb4a744207e1a6e90273369b8c2e925")));
+
+  manifest_map b;
+  apply_change_set(a, cs, b);
+
+  dump_change_set("invert_change_test, cs", cs);
+  change_set cs2, cs3;
+  invert_change_set(cs, a, cs2);
+  dump_change_set("invert_change_test, cs2", cs2);
+  invert_change_set(cs2, b, cs3);
+  dump_change_set("invert_change_test, cs3", cs3);
+  BOOST_CHECK(cs.rearrangement == cs3.rearrangement);
+  BOOST_CHECK(cs.deltas == cs3.deltas);
+  L(F("ENDING invert_change_test\n"));
 }
 
 static void 
@@ -3520,6 +3578,7 @@ add_change_set_tests(test_suite * suite)
   suite->add(BOOST_TEST_CASE(&non_interfering_change_test));
   suite->add(BOOST_TEST_CASE(&disjoint_merge_tests));
   suite->add(BOOST_TEST_CASE(&bad_concatenate_change_tests));
+  suite->add(BOOST_TEST_CASE(&invert_change_test));
 }
 
 

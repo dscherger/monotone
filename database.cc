@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -2136,27 +2137,28 @@ database::complete(string const & partial,
     completions.insert(file_id(res[i][0]));  
 }
 
-using commands::selector_type;
+using selectors::selector_type;
 
 static void selector_to_certname(selector_type ty,
                                  string & s)
 {
   switch (ty)
     {
-    case commands::sel_author:
+    case selectors::sel_author:
       s = author_cert_name;
       break;
-    case commands::sel_branch:
+    case selectors::sel_branch:
       s = branch_cert_name;
       break;
-    case commands::sel_date:
+    case selectors::sel_date:
       s = date_cert_name;
       break;
-    case commands::sel_tag:
+    case selectors::sel_tag:
       s = tag_cert_name;
       break;
-    case commands::sel_ident:
-    case commands::sel_unknown:
+    case selectors::sel_ident:
+    case selectors::sel_cert:
+    case selectors::sel_unknown:
       I(false); // don't do this.
       break;
     }
@@ -2190,13 +2192,40 @@ void database::complete(selector_type ty,
           else
             lim += " INTERSECT ";
           
-          if (i->first == commands::sel_ident)
+          if (i->first == selectors::sel_ident)
             {
               lim += "SELECT id FROM revision_certs ";
               lim += (F("WHERE id GLOB '%s*'") 
                       % i->second).str();
             }
-          else if (i->first == commands::sel_unknown)
+	  else if (i->first == selectors::sel_cert)
+            {
+              if (i->second.length() > 0)
+                {
+                  size_t spot = i->second.find("=");
+
+                  if (spot != (size_t)-1)
+                    {
+                      string certname;
+                      string certvalue;
+
+                      certname = i->second.substr(0, spot);
+                      spot++;
+                      certvalue = i->second.substr(spot);
+                      lim += "SELECT id FROM revision_certs ";
+                      lim += (F("WHERE name='%s' AND unbase64(value) glob '%s'")
+                              % certname % certvalue).str();
+                    }
+                  else
+                    {
+                      lim += "SELECT id FROM revision_certs ";
+                      lim += (F("WHERE name='%s'")
+                              % i->second).str();
+                    }
+
+                }
+            }
+          else if (i->first == selectors::sel_unknown)
             {
               lim += "SELECT id FROM revision_certs ";
               lim += (F(" WHERE (name='%s' OR name='%s' OR name='%s')")
@@ -2223,14 +2252,14 @@ void database::complete(selector_type ty,
   // which generally means "author, tag or branch"
 
   string query;
-  if (ty == commands::sel_ident)
+  if (ty == selectors::sel_ident)
     {
       query = (F("SELECT id FROM %s") % lim).str();
     }
   else 
     {
       query = "SELECT value FROM revision_certs WHERE";
-      if (ty == commands::sel_unknown)
+      if (ty == selectors::sel_unknown)
         {               
           query += 
             (F(" (name='%s' OR name='%s' OR name='%s')")
@@ -2254,7 +2283,7 @@ void database::complete(selector_type ty,
   fetch(res, one_col, any_rows, query.c_str());
   for (size_t i = 0; i < res.size(); ++i)
     {
-      if (ty == commands::sel_ident)
+      if (ty == selectors::sel_ident)
         completions.insert(res[i][0]);
       else
         {

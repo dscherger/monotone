@@ -90,6 +90,11 @@ revision_set::operator=(revision_set const & other)
 // change sets can be applied to the old manifests to create the new
 // manifest.
 //
+// We also make a special check for merge nodes, where if the previous
+// paragraph wasn't enough to get us back to a common ancestor, we also search
+// all the way up to a common ancestor and make the same check, because that's
+// the invariant that merge is actually required to preserve.
+//
 // NB: While this function has some invariants in it itself, a lot of its
 // purpose is just to exercise all the invariants inside change_set.cc.  So
 // don't remove those invariants.  (As if you needed another reason...)
@@ -1605,8 +1610,6 @@ build_changesets_from_manifest_ancestry(app_state & app)
 
 
 // i/o stuff
-
-std::string revision_file_name("revision");
 
 namespace 
 {
