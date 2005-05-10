@@ -290,6 +290,66 @@ more than once if needed.
 \fB-@ \fI<file>\fP
 An alias for \fB--xargs=\fI<file>\fP
 .TP
+\fB--format \fI<format string>\fP
+Applies the specified format string at automate output.
+The format string is made by a common part, applied to each revision,
+and one or more optional changeset subformats, applied to changeset
+data.
+Special changeset placeholders put in the common expression are
+substituted by the formatted changeset informations.
+The common formatting expression is separated from the changeset ones by apposite markers. 
+ 
+Common formatting specifiers:
+
+%a : value of author certificate
+.br
+%b : value of branch certificate
+.br
+%d : value of date certificate
+.br
+%e : value of comment certificate
+.br
+%i : revision id
+.br
+%l : value of changelog certificate
+.br
+%s : value of testresult certificate
+.br
+%t : value of tag certificate
+.br
+%m : manifest id
+
+Changeset Placeholders:
+
+%P : ancestors (marker @P) 
+.br
+%A : added files (marker @A)
+.br
+%D : deleted files (marker @D)
+.br
+%E : deleted dirs (marker @E)
+.br
+%R : renamed files (marker @R)
+.br
+%C : renamed dirs (marker @C)
+.br
+%M : modified files (marker @M)
+
+The %P,%A,%D,%E,%M changeset placeholders supports the private
+specifier %f, substituted with the file/directory/ancestor name/id
+The %R and %M placeholders supports the specifiers %f, current
+file/directory name and %o, old file/directory name.
+ 
+Plus, all format string support the  \\n, \\r, \\a, \\t, \\b, \\f, \\v
+modifiers with the usual c-like meaning.
+\\\\, \\% and \\@ are used to obtain the \\, % and @ char respectively.
+
+The default format string is '%i\\n'. 
+.TP
+\fB--xml\fP
+Generate an xml document based on automate output and containing full
+revision and changeset data.
+
 
 .SH ENVIRONMENT
 .TP

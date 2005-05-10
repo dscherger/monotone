@@ -48,6 +48,8 @@ struct poptOption coptions[] =
     {"author", 0, POPT_ARG_STRING, &argstr, OPT_AUTHOR, "override author for commit", NULL},
     {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, "limit the log output to the given number of entries", NULL},
     {"pid-file", 0, POPT_ARG_STRING, &argstr, OPT_PIDFILE, "record process id of server", NULL},
+    {"format", 0, POPT_ARG_STRING, &argstr, OPT_FORMAT, "specifies a format string on automate output", NULL},
+    {"xml", 0, POPT_ARG_NONE, NULL, OPT_XML, "automate output will be in XML", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -182,8 +184,8 @@ my_poptStuffArgFile(poptContext con, utf8 const & filename)
       // the argv array be null-terminated.
       I(argv[argc] == NULL);
       N((rc = poptStuffArgs(con, argv)) >= 0,
-        F("weird error when stuffing arguments read from %s: %s\n")
-        % filename % poptStrerror(rc));
+	F("weird error when stuffing arguments read from %s: %s\n")
+	% filename % poptStrerror(rc));
     }
 
   free(argv);
@@ -355,6 +357,14 @@ cpp_main(int argc, char ** argv)
 
             case OPT_ARGFILE:
               my_poptStuffArgFile(ctx(), utf8(string(argstr)));
+              break;
+
+            case OPT_FORMAT:
+              app.set_fmtstring(string(argstr));
+              break;
+
+            case OPT_XML:
+              app.set_xml();
               break;
 
             case OPT_HELP:

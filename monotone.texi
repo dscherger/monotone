@@ -4291,7 +4291,6 @@ command, used for scripting monotone.  All give output on stdout; they
 may also give useful chatter on stderr, including warnings and error
 messages.
 
-
 @ftable @command
 @item monotone automate interface_version
 
@@ -4845,12 +4844,66 @@ message to stderr, and exits with status 1.
 
 @end ftable
 
+Every automation command except @code{interface_version} supports two
+optional formatting specifiers:
+
+@b{ --xml}
+Generate an xml document based on automate output and containing full
+revision and changeset data.
+
+@b{ --format=}@i{<format string>}
+Applies the specified format string at automate output.
+The format string is made by a common part, applied to each revision,
+and one or more optional changeset subformats, applied to changeset
+data.
+Special changeset placeholders put in the common expression are
+substituted by the formatted changeset informations.
+The separate the common formatting expression is separated from  the
+changeset ones by apposite markers. 
+
+Common formatting specifiers:
+@verbatim
+%a : value of author certificate
+%b : value of branch certificate
+%d : value of date certificate
+%e : value of comment certificate
+%i : revision id
+%l : value of changelog certificate
+%s : value of testresult certificate
+%t : value of tag certificate
+%m : manifest id
+@end verbatim
+
+Changeset Placeholders:
+@verbatim
+%P : ancestors (marker @P) 
+%A : added files (marker @A)
+%D : deleted files (marker @D)
+%E : deleted dirs (marker @E)
+%R : renamed files (marker @R)
+%C : renamed dirs (marker @C)
+%M : modified files (marker @M)
+@end verbatim
+
+The %P,%A,%D,%E,%M changeset placeholders supports the private
+specifier %f, substituted with the file/directory/ancestor name/id
+The %R and %M placeholders supports the specifiers %f, current
+file/directory name and %o, old file/directory name.
+ 
+Plus, all format string support the  \\n, \\r, \\a, \\t, \\b, \\f, \\v
+modifiers with the usual c-like meaning.
+\\\\, \\% and \\@ are used to obtain the \\, % and @ char respectively.
+
+The default format string is '%i\\n'. 
+
 @page
 @node    RCS
 @section RCS
 
 @ftable @command
 @item monotone rcs_import @var{filename...}
+
+
 
 This command imports all the file versions in each RCS file listed in
 @var{filename...}.  These files should be raw RCS files, ending in
@@ -6508,6 +6561,56 @@ if needed.
 
 @item @b{-@@} @i{<file>}
 An alias for @b{--xargs=}@i{<file>}.
+
+@item @b{--format=}@i{<format string>}
+Applies the specified format string at automate output.
+The format string is made by a common part, applied to each revision,
+and one or more optional changeset subformats, applied to changeset
+data.
+Special changeset placeholders put in the common expression are
+substituted by the formatted changeset informations.
+The separate the common formatting expression is separated from  the
+changeset ones by apposite markers. 
+
+Common formatting specifiers:
+@verbatim
+%a : value of author certificate
+%b : value of branch certificate
+%d : value of date certificate
+%e : value of comment certificate
+%i : revision id
+%l : value of changelog certificate
+%s : value of testresult certificate
+%t : value of tag certificate
+%m : manifest id
+@end verbatim
+
+Changeset Placeholders:
+@verbatim
+%P : ancestors (marker @P) 
+%A : added files (marker @A)
+%D : deleted files (marker @D)
+%E : deleted dirs (marker @E)
+%R : renamed files (marker @R)
+%C : renamed dirs (marker @C)
+%M : modified files (marker @M)
+@end verbatim
+
+The %P,%A,%D,%E,%M changeset placeholders supports the private
+specifier %f, substituted with the file/directory/ancestor name/id
+The %R and %M placeholders supports the specifiers %f, current
+file/directory name and %o, old file/directory name.
+ 
+Plus, all format string support the  \\n, \\r, \\a, \\t, \\b, \\f, \\v
+modifiers with the usual c-like meaning.
+\\\\, \\% and \\@ are used to obtain the \\, % and @ char respectively.
+
+The default format string is '%i\\n'. 
+
+@item @b{--xml}
+Generate an xml document based on automate output and containing full
+revision and changeset data.
+
 
 @comment TROFF INPUT: .SH ENVIRONMENT
 

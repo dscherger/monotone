@@ -3597,7 +3597,7 @@ CMD(automate, "automation",
     "leaves\n"
     "inventory",
     "automation interface", 
-    OPT_NONE)
+    OPT_FORMAT % OPT_XML)
 {
   if (args.size() == 0)
     throw usage(name);

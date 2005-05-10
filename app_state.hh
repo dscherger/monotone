@@ -43,6 +43,8 @@ public:
   bool found_working_copy;
   long depth;
   fs::path pidfile;
+  utf8 format_string;
+  bool xml_enabled;	
 
   void allow_working_copy();
   void require_working_copy();
@@ -74,6 +76,9 @@ public:
   void set_stdhooks(bool b);
   void set_rcfiles(bool b);
   void add_rcfile(utf8 const & filename);
+
+  void set_fmtstring(utf8 const & fmtstring);
+  void set_xml();
 
   explicit app_state();
   ~app_state();

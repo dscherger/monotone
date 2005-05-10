@@ -31,7 +31,8 @@ static string const key_option("key");
 
 app_state::app_state() 
   : branch_name(""), db(""), stdhooks(true), rcfiles(true),
-    search_root("/"), depth(-1)
+    search_root("/"), depth(-1),
+    format_string("%i\\n"), xml_enabled(false)
 {
   db.set_app(this);
 }
@@ -291,6 +292,18 @@ app_state::set_depth(long d)
   N(d > 0,
     F("negative or zero depth not allowed\n"));
   depth = d;
+}
+
+void
+app_state::set_fmtstring(utf8 const & f)
+{
+  format_string = f;
+}
+
+void
+app_state::set_xml()
+{
+  xml_enabled = true;
 }
 
 void
