@@ -291,7 +291,7 @@ more than once if needed.
 An alias for \fB--xargs=\fI<file>\fP
 .TP
 \fB--format \fI<format string>\fP
-Applies the specified format string at automate output.
+Applies the specified format string at automate or annotate output.
 The format string is made by a common part, applied to each revision,
 and one or more optional changeset subformats, applied to changeset
 data.
@@ -301,23 +301,38 @@ The common formatting expression is separated from the changeset ones by apposit
  
 Common formatting specifiers:
 
-%a : value of author certificate
+%a  : value of author certificate
 .br
-%b : value of branch certificate
+%sa : shortened value of author certificate
 .br
-%d : value of date certificate
+%b  : value of branch certificate
 .br
-%e : value of comment certificate
+%sb : shortened value of branch certificate
 .br
-%i : revision id
+%d  : value of date certificate
 .br
-%l : value of changelog certificate
+%sd : shortened value of date certificate
 .br
-%s : value of testresult certificate
+%e  : value of comment certificate
 .br
-%t : value of tag certificate
+%i  : revision id
 .br
-%m : manifest id
+%si : shortened revision id
+.br
+%l  : value of changelog certificate
+.br
+%s  : value of testresult certificate
+.br
+%t  : value of tag certificate
+.br
+%m  : manifest id
+.br
+%sm : shortened manifest id
+
+The short forms have the following meanings:  For author, everything 
+before the first @ symbol.  For branch, everything after the last '.' 
+character.  For date, everything before the first 'T' character.  
+For ids, the first 8 characters.  
 
 Changeset Placeholders:
 

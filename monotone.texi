@@ -6563,7 +6563,7 @@ if needed.
 An alias for @b{--xargs=}@i{<file>}.
 
 @item @b{--format=}@i{<format string>}
-Applies the specified format string at automate output.
+Applies the specified format string at automate or annotate output.
 The format string is made by a common part, applied to each revision,
 and one or more optional changeset subformats, applied to changeset
 data.
@@ -6574,16 +6574,26 @@ changeset ones by apposite markers.
 
 Common formatting specifiers:
 @verbatim
-%a : value of author certificate
-%b : value of branch certificate
-%d : value of date certificate
-%e : value of comment certificate
-%i : revision id
-%l : value of changelog certificate
-%s : value of testresult certificate
-%t : value of tag certificate
-%m : manifest id
+%a  : value of author certificate
+%sa : shortened value of author certificate
+%b  : value of branch certificate
+%sb : shortened value of branch certificate
+%d  : value of date certificate
+%sd : shortened value of date certificate
+%e  : value of comment certificate
+%i  : revision id
+%si : shortened revision id
+%l  : value of changelog certificate
+%s  : value of testresult certificate
+%t  : value of tag certificate
+%m  : manifest id
+%sm : shortened manifest id
 @end verbatim
+
+The short forms have the following meanings: for ids, the first 8
+characters.  For author, everything before the first @ symbol.  For
+branch, everything after the last '.' character.  For date, everything
+before the first 'T' character.
 
 Changeset Placeholders:
 @verbatim

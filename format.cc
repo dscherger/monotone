@@ -380,48 +380,56 @@ PrintFormatter::apply(const revision_id & rid)
           ++i;
           if (i == e)
             return;
+
+          bool short_form = false;
+          if (*i == 's') {
+            short_form = true;
+            ++i;
+          }
+          if (i == e)
+            return;
+
           switch (*i)
             {
             case 'd':
-              print_cert (certs, date_cert_name);
+              print_cert (certs, date_cert_name, short_form, false, "T");
               break;
-              //case 'D':
-              //print_cert (certs, date_cert_name, true, false, "T");
-              //break;
             case 'a':
-              print_cert (certs, author_cert_name);
+              print_cert (certs, author_cert_name, short_form, false, "@");
               break;
-              //case 'A':
-              //print_cert (certs, author_cert_name, true, false, "@");
-              //break;
             case 't':
+              N(!short_form, F("no short form for tag specifier"));
               print_cert (certs, tag_cert_name);
               break;
             case 'l':
+              N(!short_form, F("no short form for changelog specifier"));
               print_cert (certs, changelog_cert_name);
               break;
             case 'e':
+              N(!short_form, F("no short form for comment specifier"));
               print_cert (certs, comment_cert_name);
               break;
             case 's':
+              N(!short_form, F("no short form for testresult specifier"));
               print_cert (certs, testresult_cert_name);
               break;
             case 'b':
-              print_cert (certs, branch_cert_name);
+              print_cert (certs, branch_cert_name, false, short_form, ".");
               break;
-              //case 'B':
-              //print_cert (certs, branch_cert_name, false, true, ".");
-              //break;
             case 'm':
-              out << rev.new_manifest.inner()();
+              if (short_form)
+                out << rev.new_manifest.inner()().substr(0, 8);
+              else
+                out << rev.new_manifest.inner()();
               break;
             case 'i':
-              out << rid.inner()();
+              if (short_form)
+                out << rid.inner()().substr(0, 8);
+              else
+                out << rid.inner()();
               break;
-              //case 'I':
-              //out << rid.inner()().substr(0, 8);
-              //break;
             default:
+              N(!short_form, F("no short form for changelog specifier"));
               // unrecognized specifier, perhaps is a changeset one ?
               handle_cset(i, rev);
             }
