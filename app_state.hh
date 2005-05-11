@@ -44,6 +44,7 @@ public:
   long depth;
   fs::path pidfile;
   utf8 format_string;
+  bool default_format;
   bool xml_enabled;	
 
   void allow_working_copy();
@@ -77,8 +78,9 @@ public:
   void set_rcfiles(bool b);
   void add_rcfile(utf8 const & filename);
 
-  void set_fmtstring(utf8 const & fmtstring);
-  void set_xml();
+  void set_format_string(utf8 const & fmtstring);
+  void set_default_format(bool val);
+  void set_xml_enabled();
 
   explicit app_state();
   ~app_state();

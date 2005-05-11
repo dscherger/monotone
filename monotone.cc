@@ -262,6 +262,7 @@ cpp_main(int argc, char ** argv)
   try
     {
       app_state app;
+      app.set_default_format(true);
 
       while ((opt = poptGetNextOpt(ctx())) > 0)
         {
@@ -360,11 +361,12 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_FORMAT:
-              app.set_fmtstring(string(argstr));
+              app.set_default_format(false);
+              app.set_format_string(string(argstr));
               break;
 
             case OPT_XML:
-              app.set_xml();
+              app.set_xml_enabled();
               break;
 
             case OPT_HELP:

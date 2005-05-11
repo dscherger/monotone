@@ -32,7 +32,7 @@ static string const key_option("key");
 app_state::app_state() 
   : branch_name(""), db(""), stdhooks(true), rcfiles(true),
     search_root("/"), depth(-1),
-    format_string("%i\\n"), xml_enabled(false)
+    format_string("%i\\n"), default_format(true), xml_enabled(false)
 {
   db.set_app(this);
 }
@@ -295,13 +295,19 @@ app_state::set_depth(long d)
 }
 
 void
-app_state::set_fmtstring(utf8 const & f)
+app_state::set_format_string(utf8 const & f)
 {
   format_string = f;
 }
 
 void
-app_state::set_xml()
+app_state::set_default_format(bool val)
+{
+  default_format = val;
+}
+
+void
+app_state::set_xml_enabled()
 {
   xml_enabled = true;
 }

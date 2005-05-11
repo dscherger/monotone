@@ -213,7 +213,8 @@ annotate_formatter::annotate_formatter(app_state &app,
                                        std::set<revision_id>::const_iterator endrev)
 {
   std::ostringstream res_stream;
-  PrintFormatter pf(res_stream, app, app.format_string);
+  utf8 fs = (app.default_format) ? utf8("%i: ") : app.format_string;
+  PrintFormatter pf(res_stream, app, fs);
 
   size_t max_annotate_len = 0;
   std::set<revision_id>::const_iterator i;
