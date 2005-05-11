@@ -3401,7 +3401,7 @@ log_certs(app_state & app, revision_id id, cert_name name, string label, bool mu
 
 CMD(annotate, "informative", "PATH",
     "print annotated copy of the file from REVISION",
-    OPT_REVISION)
+    OPT_REVISION % OPT_FORMAT)
 {
   revision_id rid;
   file_path file;

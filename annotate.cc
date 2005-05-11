@@ -20,6 +20,7 @@
 #include "transforms.hh"
 #include "lcs.hh"
 #include "annotate.hh"
+#include "format.hh"
 
 
 /* 
@@ -79,6 +80,7 @@
 */   
 
 class annotate_lineage_mapping;
+class annotate_formatter;
 
 class annotate_context {
 public:
@@ -102,7 +104,10 @@ public:
   /// return true if we have no more unassigned lines
   bool is_complete() const;
 
-  void dump() const;
+  std::ostream& write_annotations(boost::shared_ptr<annotate_formatter> frmt, std::ostream &os) const;
+
+  std::set<revision_id>::const_iterator begin_revisions() const { return annotate_revisions.begin(); }
+  std::set<revision_id>::const_iterator end_revisions() const { return annotate_revisions.end(); }
 
 private:
   std::vector<std::string> file_lines;
@@ -119,6 +124,8 @@ private:
   std::set<size_t> touched_lines;
 
   revision_id root_revision;
+
+  std::set<revision_id> annotate_revisions; // set of all revisions that appear in the annotations
 };
 
 
@@ -180,7 +187,47 @@ struct annotate_node_work {
 };
 
 
+class annotate_formatter {
+public:
+  annotate_formatter(app_state &app,
+                     std::set<revision_id>::const_iterator startrev,
+                     std::set<revision_id>::const_iterator endrev,
+                     const std::string &format_string);
 
+  std::string format (const revision_id &rev, const std::string &line) const
+  {
+    std::map<revision_id, std::string>::const_iterator i = desc.find(rev);
+    //I(i != desc.end()); // FIX this is the same bug as the not-all-lines-annotated
+    if (i == desc.end())
+      return "FIXME!!! : " + line;
+
+    return i->second + line;
+  }
+
+protected:
+  std::map<revision_id, std::string> desc;
+};
+
+
+annotate_formatter::annotate_formatter(app_state &app,
+                                       std::set<revision_id>::const_iterator startrev,
+                                       std::set<revision_id>::const_iterator endrev,
+                                       const std::string &format_string)
+{  
+  std::set<revision_id>::const_iterator i;
+  i = startrev;
+  while (i != endrev) {
+    std::ostringstream res_stream;
+
+    {
+      FormatFunc fmt(res_stream, app);
+      fmt(*i);
+    }
+    desc.insert(std::make_pair(*i, res_stream.str()));
+    res_stream.str("");
+    i++;
+  }
+}
 
 
 annotate_context::annotate_context(file_id fid, app_state &app)
@@ -240,6 +287,7 @@ annotate_context::evaluate(revision_id rev)
                       copied_lines.begin(), copied_lines.end(),
                       inserter(credit_lines, credit_lines.begin()));
 
+  size_t old_lines_completed = annotated_lines_completed;
   std::set<size_t>::const_iterator i;
   for (i = credit_lines.begin(); i != credit_lines.end(); i++) {
     I(*i >= 0 && *i < annotations.size());
@@ -252,6 +300,9 @@ annotate_context::evaluate(revision_id rev)
       //L(F("evaluate LEAVING annotations[%d] -> %s\n") % *i % annotations[*i]);
     }
   }
+
+  if (old_lines_completed != annotated_lines_completed)
+      annotate_revisions.insert(rev);
 
   copied_lines.clear();
   touched_lines.clear();
@@ -298,22 +349,14 @@ annotate_context::is_complete() const
 }
 
 
-void
-annotate_context::dump() const
+std::ostream& 
+annotate_context::write_annotations(boost::shared_ptr<annotate_formatter> frmt, std::ostream &os) const
 {
-  revision_id nullid;
-  I(annotations.size() == file_lines.size());
-
-  revision_id lastid = nullid;
   for (size_t i=0; i<file_lines.size(); i++) {
-    //I(! (annotations[i] == nullid) );
-    if (false) //(lastid == annotations[i])
-      std::cout << "                                        : " << file_lines[i] << std::endl;
-    else
-      std::cout << annotations[i] << ": " << file_lines[i] << std::endl;
-
-    lastid = annotations[i];
+    os << frmt->format(annotations[i], file_lines[i]) << std::endl;
   }
+
+  return os;
 }
 
 
@@ -539,16 +582,8 @@ do_annotate (app_state &app, file_path fpath, file_id fid, revision_id rid)
       W(F("annotate was unable to assign blame to some lines.  This is a bug.\n"));
   }
 
-  acp->dump();
-  //boost::shared_ptr<annotation_formatter> frmt(new annotation_text_formatter()); 
-  //write_annotations(acp, frmt); // automatically write to stdout, or make take a stream argument?
+  external fmtstr;
+  utf8_to_system(app.format_string, fmtstr);
+  boost::shared_ptr<annotate_formatter> frmt(new annotate_formatter(app, acp->begin_revisions(), acp->end_revisions(), fmtstr()));
+  acp->write_annotations(frmt, std::cout);
 }
-
-
-/*
-void
-write_annotations (boost::shared_ptr<annotate_context> acp, 
-                   boost::shared_ptr<annotation_formatter> frmt) 
-{
-}
-*/
