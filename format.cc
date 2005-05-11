@@ -147,8 +147,10 @@ PrintFormatter::print_cert (vector < revision < cert > >&certs, const string &na
           std::string::size_type l = std::string::npos;
           if (from_start)
             l = tv().find_first_of(sep);
-          if (from_end) 
+          if (from_end) {
             f = tv().find_last_of(sep);
+            if (f == std::string::npos) f = 0;
+          }
           out << tv().substr(f, l);
           return;
         }

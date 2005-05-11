@@ -191,8 +191,7 @@ class annotate_formatter {
 public:
   annotate_formatter(app_state &app,
                      std::set<revision_id>::const_iterator startrev,
-                     std::set<revision_id>::const_iterator endrev,
-                     const std::string &format_string);
+                     std::set<revision_id>::const_iterator endrev);
 
   std::string format (const revision_id &rev, const std::string &line) const
   {
@@ -211,21 +210,31 @@ protected:
 
 annotate_formatter::annotate_formatter(app_state &app,
                                        std::set<revision_id>::const_iterator startrev,
-                                       std::set<revision_id>::const_iterator endrev,
-                                       const std::string &format_string)
-{  
+                                       std::set<revision_id>::const_iterator endrev)
+{
+  std::ostringstream res_stream;
+  PrintFormatter pf(res_stream, app, app.format_string);
+
+  size_t max_annotate_len = 0;
   std::set<revision_id>::const_iterator i;
   i = startrev;
   while (i != endrev) {
-    std::ostringstream res_stream;
+    pf.apply(*i);
 
-    {
-      FormatFunc fmt(res_stream, app);
-      fmt(*i);
-    }
+    size_t rs = res_stream.str().size();
+    max_annotate_len =  (rs > max_annotate_len) ? rs : max_annotate_len;
+
     desc.insert(std::make_pair(*i, res_stream.str()));
     res_stream.str("");
     i++;
+  }
+
+  // justify the annotate strings
+  std::map<revision_id, std::string>::iterator j = desc.begin();
+  while (j != desc.end()) {
+    size_t extra_spaces = max_annotate_len - j->second.size();
+    j->second = std::string(extra_spaces, ' ') + j->second;
+    j++;
   }
 }
 
@@ -582,8 +591,6 @@ do_annotate (app_state &app, file_path fpath, file_id fid, revision_id rid)
       W(F("annotate was unable to assign blame to some lines.  This is a bug.\n"));
   }
 
-  external fmtstr;
-  utf8_to_system(app.format_string, fmtstr);
-  boost::shared_ptr<annotate_formatter> frmt(new annotate_formatter(app, acp->begin_revisions(), acp->end_revisions(), fmtstr()));
+  boost::shared_ptr<annotate_formatter> frmt(new annotate_formatter(app, acp->begin_revisions(), acp->end_revisions()));
   acp->write_annotations(frmt, std::cout);
 }
