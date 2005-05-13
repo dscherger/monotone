@@ -118,8 +118,8 @@ function get_author(branchname)
 end
 
 function ignore_file(name)
-	if (strfind(name, "test_hooks.lua")) then return true end
-	if (strfind(name, "test.db")) then return true end
+	if (string.find(name, "test_hooks.lua")) then return true end
+	if (string.find(name, "test.db")) then return true end
 	return false
 end
 
@@ -149,6 +149,17 @@ m4_define([CHECK_SAME_STDOUT], [
 AT_CHECK($1, [], [stdout], [ignore])
 AT_CHECK(mv stdout expout)
 AT_CHECK($2, [], [expout], [ignore])
+])
+
+# run as CHECK_SAME_CANONICALISED_STDOUT(command1, command2)
+m4_define([CHECK_SAME_CANONICALISED_STDOUT], [
+AT_CHECK($1, [], [stdout], [ignore])
+AT_CHECK(mv stdout output1)
+AT_CHECK(CANONICALISE(output1))
+AT_CHECK($2, [], [stdout], [ignore])
+AT_CHECK(mv stdout output2)
+AT_CHECK(CANONICALISE(output2))
+AT_CHECK(cmp output1 output2)
 ])
 
 # run as CHECK_DIFFERENT_STDOUT(command1, command2)
@@ -280,9 +291,13 @@ fi
 AT_CHECK(echo $UNGZ_COMMAND, [], [ignore], [ignore])
 ])
 m4_define([UNGZ], [AT_CHECK(
-eval $UNGZ_COMMAND <$1 >$2
 if test "$OSTYPE" == "msys"; then
-  dos2unix -q -o $2
+  if test "$1" != "$2.gz"; then
+    mv $1 $2.gz
+  fi
+  gunzip $2.gz
+else
+  eval $UNGZ_COMMAND <$1 >$2
 fi
 )])
 
@@ -323,32 +338,55 @@ m4_define([MONOTONE2], MONOTONE --db=test2.db)
 m4_define([MONOTONE3], MONOTONE --db=test3.db)
 
 m4_define([NETSYNC_KILL], [
-if test "$OSTYPE" == "msys"; then
-  ps |awk -- '{p=$NF;a=1;if(p=="COMMAND")next;pp=split(p,ps,"/");if(ps[[pp]]=="monotone")system("kill " $a);}'
-  # MinGW has no killall.  The weird a=1 thing is to avoid autotest treating $1 as its own parameter
-else
-  killall monotone 2>/dev/null
+# kill last seen pid if there is no pid file (needed for cases where
+# NETSYNC_KILL{,HARD} is used more than once on a single process.
+if test -e monotone_at.pid; then
+       mt_pid=`cat monotone_at.pid`
 fi
+if test "$OSTYPE" == "msys"; then
+  # we can't use MingW's kill because it can't target Win32 pids.
+  pskill=`which pskill`
+  if test $pskill && test -x $pskill; then
+    $pskill $mt_pid 2>/dev/null
+  else
+    ps | awk -- '{p=$NF;a=1;if(p=="COMMAND")next;pp=split(p,ps,"/");if(ps[[pp]]=="monotone")system("kill " $a);}'
+  fi
+else
+  kill $mt_pid 2>/dev/null
+fi
+rm -f monotone_at.pid 2>/dev/null
 ])
 m4_define([NETSYNC_KILLHARD], [
-if test "$OSTYPE" == "msys"; then
-  ps |awk -- '{p=$NF;a=1;if(p=="COMMAND")next;pp=split(p,ps,"/");if(ps[[pp]]=="monotone")system("kill -KILL " $a);}'
-else
-  killall -KILL monotone 2>/dev/null
+# kill last seen pid if there is no pid file (needed for cases where
+# NETSYNC_KILL{,HARD} is used more than once on a single process.
+if test -e monotone_at.pid; then
+       mt_pid=`cat monotone_at.pid`
 fi
+if test "$OSTYPE" == "msys"; then
+  # we can't use MingW's kill because it can't target Win32 pids.
+  pskill=`which pskill`
+  if test $pskill && test -x $pskill; then
+    $pskill $mt_pid 2>/dev/null
+  else
+    ps | awk -- '{p=$NF;a=1;if(p=="COMMAND")next;pp=split(p,ps,"/");if(ps[[pp]]=="monotone")system("kill -KILL " $a);}'
+  fi
+else
+  kill -KILL $mt_pid 2>/dev/null
+fi
+rm -f monotone_at.pid 2>/dev/null
 ])
 
 # run as NETSYNC_SERVE_N_START(2|3, collection name)
 # note that NETSYNC_SERVE_START is _not_ a special case of this macro.
 m4_define([NETSYNC_SERVE_N_START], [
 NETSYNC_KILLHARD
-MONOTONE --db=test$1.db --rcfile=netsync.lua serve localhost:$_PORT $2 &
+MONOTONE --db=test$1.db --rcfile=netsync.lua --pid-file=monotone_at.pid serve localhost:$_PORT $2 &
 sleep 4
 ])
 # run as NETSYNC_SERVE_START(collection name)
 m4_define([NETSYNC_SERVE_START], [
 NETSYNC_KILLHARD
-MONOTONE --rcfile=netsync.lua serve localhost:$_PORT $1 &
+MONOTONE --rcfile=netsync.lua --pid-file=monotone_at.pid serve localhost:$_PORT $1 &
 sleep 4
 ])
 # run as NETSYNC_SERVE_STOP
@@ -582,7 +620,7 @@ m4_include(tests/t_bad_packets.at)
 m4_include(tests/t_multiple_heads_msg.at)
 m4_include(tests/t_diff_currev.at)
 m4_include(tests/t_normalized_filenames.at)
-m4_include(tests/t_inventory.at)
+m4_include(tests/t_automate_inventory.at)
 m4_include(tests/t_rename_file_to_dir.at)
 m4_include(tests/t_replace_file_with_dir.at)
 m4_include(tests/t_replace_dir_with_file.at)
@@ -592,9 +630,18 @@ m4_include(tests/t_i18n_file_data.at)
 m4_include(tests/t_cvsimport_manifest_cycle.at)
 m4_include(tests/t_select_cert.at)
 m4_include(tests/t_automate_select.at)
-m4_include(tests/t_update_inodeprints.at)
+m4_include(tests/t_refresh_inodeprints.at)
 m4_include(tests/t_merge_6.at)
 m4_include(tests/t_annotate.at)
 m4_include(tests/t_annotate_add_collision.at)
 m4_include(tests/t_annotate_branch_collision.at)
 m4_include(tests/t_netsync_error.at)
+m4_include(tests/t_options.at)
+m4_include(tests/t_annotate_copy_all.at)
+m4_include(tests/t_cvsimport_deleted_invar.at)
+m4_include(tests/t_rcfile_stdin.at)
+m4_include(tests/t_monotone_up.at)
+m4_include(tests/t_drop_vs_patch_rename.at)
+m4_include(tests/t_unreadable_MT.at)
+m4_include(tests/t_cvsimport3.at)
+m4_include(tests/t_commit_message_file.at)

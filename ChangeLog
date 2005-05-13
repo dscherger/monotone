@@ -1,3 +1,494 @@
+2005-05-13  Jon Bright  <jon@siliconcircus.com>
+	* testsuite.at (UNGZ): Change the way the ungzipping works on
+	Win32, in the hope that test 206 will no longer be given invalid
+	files.
+
+2005-05-12  Derek Scherger  <derek@echologic.com>
+
+	* automate.cc: bump version number to 1.0
+	(struct inventory_item): add pre/post states
+	(inventory_paths): remove obsolete function
+	(inventory_pre_state, inventory_post_state, inventory_file_state,
+	inventory_renames): add fancy new functions
+	(automate_inventory): rework for new output format
+	* manifest.{cc,hh} (classify_paths): rename to ...
+	(classify_manifest_paths): ... this and work solely from manifest
+	* monotone.texi: (Automation): update inventory docs
+	* tests/t_automate_inventory.at: update for new format and add
+	some more tests
+	
+2005-05-13  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* HACKING: New file.  First pass at a brief document to help
+	newcomers hack on monotone.
+
+2005-05-12  Riccardo Ghetta <birrachiara@tin.it>
+
+	* options.hh (OPT_MSGFILE): New option.
+	* monotone.cc (message-file): New option.
+	(cpp_main): Handle it.
+	* app_state.{cc,hh} (set_message_file): New function.
+	* commands.cc (commit): Accept and handle new option.
+	* monotone.1, monotone.texi: Document it.
+	* tests/t_commit_message_file.at: New test.
+	* testsuite.at: Add it.
+	
+2005-05-12  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* (20 files): Do not indent with both tabs and spaces in the same file.
+
+2005-05-13  Ulrich Drepper  <drepper@redhat.com>
+
+	* rcs_import.cc (process_one_hunk): Improve handling of corrupt
+	RCS files.
+
+2005-05-13  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at: Fix typo error in Win32 kill logic that was
+	causing the testsuites to hang on Win32 machines that don't have
+	pskill installed.
+
+2005-05-12  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* file_io.cc (write_data_impl): Use portable boost::filesystem
+	calls in place of unlink(2)/remove(2).
+
+2005-05-11  Nathaniel Smith  <njs@codesourcery.com>
+
+	* std_hooks.lua (ignore_file): Organize a bit more, add
+	patterns for autotools cache files, and darcs, codeville, git
+	metadata directories.
+
+2005-05-11  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* revision.cc (expand_dominators): Fix bitmap size-matching.
+		(find_common_ancestor_for_merge): Do not wait for ancestors
+		to be expanded to the beginning of time before expanding
+		dominators. Requires above fix for correct behavior.
+	* ChangeLog: Fix date on previous entry.
+
+2005-05-11  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/monoprof.sh: Add profiling test for "netsync large file".
+		Add options to only run specific profile tests.
+
+2005-05-11  Stanislav Karchebny <stanislav.karchebny@skype.net>
+
+	* contrib/monotone-notify.pl: 'monotone log' takes a revision
+	through the --revision= option.
+
+2005-05-11  Richard Levitte  <richard@levitte.org>
+
+	* contrib/monotone-notify.pl: Change all occurences of $symbol' to
+	${symbol}' to avoid a confusing Perl warning.
+
+2005-05-11  Joel Reed  <joelwreed@comcast.com>
+
+	* contrib/monotone.zsh_completion: add zsh completion contrib.
+
+2005-05-11  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/t_add_intermediate_MT_path.at: remove the drop dir part
+	* tests/t_delete_dir.at: add a note about re-enabling the above test
+	* tests/t_cvsimport3.at: ignore stderr
+
+2005-05-11  Matt Johnston  <matt@ucc.asn.au>
+
+	* rcs_import.cc (find_branchpoint): if a branch is derived from two 
+	differing parent branches, take the one closest to the trunk.
+	* tests/t_cvsimport3.at: add a test for cvs_importing where branches
+	come off a vendor import.
+	* testsuite.at: add it
+
+2005-05-11  Nathaniel Smith  <njs@codesourcery.com>
+
+	* work.cc (build_deletions): Disable delete_dir.
+
+2005-05-11  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* constants.cc (constants::bufsz): Increase buffer size.  Reduces
+	the runtime to tests/t_netsync_largish_file.at by four to seven
+	times on my test machines.
+
+2005-05-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* revision.cc: Make expand_{ancestors,dominators} twice as fast.
+	Loop over revisions in the other direction so that changes at the
+	frontier propogate fully in 1 pass, instead of one level at a time.
+
+2005-05-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* packet.{cc,hh}: Give packet_consumer and children a callback to call
+	after writing out a revision.
+	* netsync.cc: Use this callback to add a "revisions written" ticker,
+	to provide user feedback while sanity checking.
+
+2005-05-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* ui.cc: Make tick_write_count take less horizontal space
+
+2005-05-09  Nathaniel Smith  <njs@codesourcery.com>
+
+	* AUTHORS: Give Riccardo his real name.
+	* ChangeLog: Likewise.
+
+2005-05-09  Riccardo Ghetta <birrachiara@tin.it>
+	
+	* std_hooks.lua: Support kdiff3.
+
+2005-05-09  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* lua.cc (loadstring, run_string): New parameter to identify the
+	source of the Lua string being loaded.
+	(add_{std,test}_hooks, load_rcfile): Pass an identity through.
+
+2005-05-09  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.cc: Absolutify and tilde expand pid file.
+
+2005-05-09  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at: Revert bogus changes committed in revision 9d478.
+
+2005-05-09  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc (pid_file): use fs::path .empty() rather than ==, since
+	boost 1.31 doesn't seem to have the latter.
+
+2005-05-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* lua.cc (report_error, load{file,string}): New member functions.
+	Error handling in call moved into report_error.
+	(call): Call report_error.
+	(run_{file,string}): Call load{file,string} member functions to
+	load Lua code into the VM.  Allows us to report syntax errors when
+	loading rc files.
+	* testsuite.at: test_hooks.lua was calling nonexistent (obsolete)
+	strfind function and failing silently.  The improved error
+	reporting from Lua caught this and cause testsuite failures.
+
+2005-05-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.1: Document --pid-file option.  Also make some minor
+	spelling and punctuation fixes.
+
+2005-05-08  Timothy Brownawell  <tbrownaw@gmail.com>
+	* app_state.cc: {read,write}_options now print a warning instead of
+	failing on unreadable/unwritable MT/options .
+	* tests/t_unreadable_MT.at: add matching test
+	* testsuite.at: add test
+	* tests/README: Mention that new tests must be added to testsuite.at
+	* work.cc: (get_revision_id) Friendlier error message for
+	unreadable MT/revision .
+
+2005-05-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.texi: Right words, wrong order.
+	* testsuite.at: Drop pid mapping trickery, it doesn't work
+	consistently.  We now try and use SysInternal's pskill to kill the
+	process.  If pskill is not available, we fall back to the old
+	'kill all monotone processes' method. These changes affect
+	Win32/MingW only.
+
+2005-05-07  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* commands.cc (pid_file): Remove leftover debugging output.
+	* configure.ac: Correct typos in TYPE_PID_T test.
+	* testsuite.at: Use some trickery on MingW/Cygwin to map the
+	Windows pid to the Cygwin pid.
+	* win32/process.cc (process_wait): Correct return type.
+	(process_spawn): Replace dropped cast on return.
+
+2005-05-07  Matt Johnston <matt@ucc.asn.au>
+
+	* change_set.cc: fix the code which skips deltas on deleted files,
+	  it was looking at the merged filename not the ancestor
+	  filename.
+	* tests/t_drop_vs_patch_rename.at: a test for the above fix
+	* testsuite.at: add it
+
+2005-05-06 Timothy Brownawell <tbrownaw@gmail.com>
+
+	* contrib/monoprof.sh: Add lcad test.
+		Add options to pull/rebuild before profiling.
+
+2005-05-06  Nathaniel Smith  <njs@codesourcery.com>
+
+	* INSTALL: s/g++ 3.2 or 3.3/g++ 3.2 or later/.
+
+2005-05-06  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.1: 
+	* monotone.texi (Commands, Importing from CVS, RCS): Clarify
+	cvs_import documentation on cvsroot vs. module issues.
+
+2005-05-05  Richard Levitte  <richard@levitte.org>
+
+	* AUTHORS: Add rghetta.
+
+2005-05-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.texi: Document --pid-file option for serve command.
+	* app_state.{cc,hh} (set_pidfile, pidfile): New function, new
+	member.
+	* commands.cc (pid_file): New class.
+	(CMD(serve)): Use pid_file.
+	* monotone.cc (coptions, cppmain): Add command-specific option
+	--pid-file.
+	* options.hh (OPT_PIDFILE): New option.
+	* {unix,win32}/process.cc (get_process_id): New function.
+	(process_{spawn,wait,kill}): Use pid_t.
+	* platform.hh (process_{spawn,wait,kill}): Use pid_t.
+	(get_process_id): New function
+	* configure.ac: Test for pid_t.
+	* lua.cc (monotone_{spawn,wait,kill}_for_lua): Use pid_t.
+	* testsuite.at: Update netsync kill functions to use pid file.
+	* tests/t_netsync_sigpipe.at: Update to use pid file.
+	* tests/t_netsync_single.at: Update to use pid file.
+
+2005-05-04  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_monotone_up.at: New test.
+	* testsuite.at: Add it.
+
+2005-05-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* work.cc: Use attr_file_name rather than hardcoded strings.
+
+2005-05-04  Brian Campbell  <ubergeek@dartmouth.edu>
+
+	* contrib/monotone.el (monotone-vc-register): Fix arguments to
+	monotone-cmd-buf, to make work.
+
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* file_io.cc (read_data_for_command_line): Check that file exists,
+	if reading a file.
+
+2005-05-04  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Add TYPE_SOCKLEN_T function from the Autoconf
+	archive.	
+	* cryptopp/cryptlib.h (NameValuePairs): Change GetVoidValue from a
+	pure virtual to an implemented (but never called) member function
+	to work around build problem with GCC 4 on OS X 10.4
+	* netxx/osutil.h: Include config.h, use new HAVE_SOCKLEN_T define
+	to determine socklen_t type.
+
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* lua.cc (load_rcfile): Make a version that takes utf8 strings,
+	and understands -.
+	* app_state.cc (load_rcfiles): Use it.
+	* file_io.{cc,hh} (absolutify_for_command_line): New function.
+	* monotone.cc (cpp_main): Use it.
+	* tests/t_rcfile_stdin.at: New test.
+	* testsuite.at: Include it.
+
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* netsync.cc (load_epoch): Remove unused function.
+
+2005-05-03  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_cvsimport_manifest_cycle.at: Add missing symbols.
+	* tests/t_cvsimport_deleted_invar.at: Add new test.
+	* testsuite.at: New test.
+
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* netsync.cc (run_netsync_protocol): Don't use the word
+	"exception" in error messages.
+
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* UPGRADE: Fix version number.
+
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* debian/compat: New file.
+
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* UPGRADE: Mention upgrading from 0.18.
+	* debian/copyright: Re-sync with AUTHORS.
+	* win32/monotone.iss, monotone.spec, debian/changelog: Bump
+	version numbers to 0.19.
+	* NEWS: Finish updating for 0.19.
+
+2005-05-03  Jon Bright  <jon@siliconcircus.com>
+	* win32/monotone.iss: Bump version to 0.19
+	
+2005-05-03  Jon Bright  <jon@siliconcircus.com>
+	* tests/t_automate_select.at: Use arithmetic comparison for
+	checking output of wc, since wc pads its results with initial
+	spaces on MinGW.
+	
+2005-05-03  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_cvsimport2.at: Pass correct module directory.
+
+2005-05-02  Nathaniel Smith  <njs@codesourcery.com>
+
+	* configure.ac: Bump version to 0.19.
+	* NEWS: Tweaks.
+	* Makefile.am (MOST_SOURCES): Add options.hh.
+	(%.eps): Fix ps2eps calling convention.
+	* po/monotone.pot: Regenerate.
+	* testsuite.at (CHECK_SAME_CANONICALISED_STDOUT): New macro.
+
+2005-05-02  Nathaniel Smith  <njs@codesourcery.com>
+
+	* NEWS: More updates.
+	* rcs_import.cc (store_manifest_edge): Fix some edge cases.
+	* tests/t_cvsimport_manifest_cycle.at: Make work.  Un-XFAIL.
+
+2005-05-01  Matt Johnston  <matt@ucc.asn.au>
+
+	* diff_patch.cc (normalize_extents): broaden the condition when
+	changes can be normalised.
+	* tests/t_merge_6.at: now passes.
+
+2005-05-01  Emile Snyder  <emile@alumni.reed.edu>
+
+	* annotate.cc: Fix bug that njs pointed out when a merge has one
+	side with no changes.  Be smarter about how we get parent
+	file_id's to do file diffs; give another big speedup.
+	* tests/t_annotate_copy_all.at: New test for the bug that is fixed.
+	* testsuite.at: Add the new test.
+
+2005-05-02  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_override_author_date.at: Adapt to the new way to give
+	revision IDs to 'monotone log'.
+
+2005-05-01  Richard Levitte  <richard@levitte.org>
+
+	* monotone.texi: Document the change in 'monotone log'.
+
+2005-05-01  Riccardo Ghetta <birrachiara@tin.it>
+
+	* commands.cc (CMD(log)): Use --revision.
+
+2005-05-02  Matt Johnston  <matt@ucc.asn.au>
+
+	* netsync.cc (process_auth_cmd): make it clearer what the "unknown
+	key hash" refers to.
+
+2005-05-01  Richard Levitte  <richard@levitte.org>
+
+	* commands.hh: Expose complete_commands().
+	* commands.cc (explain_usage, command_options, process): Don't
+	call complete_command().  Except the caller to have done that
+	already.
+	* monotone.cc (cpp_main): Start with completing the command after
+	processing the options.  Use the result everywhere the command is
+	required.  This avoids giving the user duplicate (or in some case,
+	triplicate) messages about command expansion.
+
+2005-04-30  Derek Scherger  <derek@echologic.com>
+
+	* app_state.{cc,hh}: remove --all-files option
+	* automate.cc: move inventory command and associated stuff here from ...
+	* commands.cc: ... here, where it has been removed
+	* monotone.1: relocate inventory command, remove --all-files option
+	* monotone.cc: remove --all-files option
+	* monotone.texi: relocate inventory documentation to automation
+	section, remove --all-files option
+	* tests/t_automate_inventory.at: renamed and updated for move to automate
+	* testsuite.at: adjust for rename
+
+2005-04-30  Derek Scherger  <derek@echologic.com>
+
+	* Makefile.am (MOST_SOURCES): add restrictions.{cc,hh} 
+	* commands.cc (extract_rearranged_paths): 
+	(extract_delta_paths):
+	(extract_changed_paths):
+	(add_intermediate_paths):
+	(restrict_path_set):
+	(restrict_rename_set):
+	(restrict_path_rearrangement):
+	(restrict_delta_map):
+	(calculate_restricted_rearrangement):
+	(calculate_restricted_revision):
+	(calculate_current_revision):
+	(calculate_restricted_change_set): move to restrictions.{cc,hh}
+	(maybe_update_inodeprints):
+	(cat):
+	(dodiff):
+	(update): rename calculate_current_revision to
+	calculate_unrestricted_revision
+	* database_check.hh: update header guard #define
+	* restrictions.{cc,hh}: add new files
+
+2005-04-30  Nathaniel Smith  <njs@codesourcery.com>
+
+	* commands.cc: Add a placeholder OPT_NONE for commands that don't
+	take any command-specific options; use it everywhere.  Now the
+	last argument to CMD never starts with %, and the last argument is
+	always required to be present.
+
+2005-04-30  Richard Levitte  <richard@levitte.org>
+
+	* contrib/monotone-nav.el (mnav-rev-make): Move it so it's defined
+	after the definition of the macro mnav-rev-id.  Otherwise, the
+	byte compiler complains there is no setf method for mnav-rev-id.
+
+2005-04-30  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Database): Minor correction.
+
+2005-04-30  Nathaniel Smith  <njs@codesourcery.com>
+
+	* vocab.cc (trivially_safe_file_path): New function.
+	(verify): Use it.
+	(test_file_path_verification, test_file_path_normalization): Add a
+	few more checks.
+
+	* transforms.{cc,hh} (localized_as_string): New function.
+	* {win32,unix}/inodeprint.cc (inodeprint_file): Use it, to avoid
+	mkpath().
+
+	* commands.cc (add_intermediate_paths): Hand-code intermediate
+	path generator, taking advantage of normalization of file_path's,
+	to avoid mkpath().
+
+2005-04-29  Joel Rosdahl  <joel@rosdahl.net>
+
+	* monotone.texi: Minor corrections.
+
+2005-04-29  Nathaniel Smith  <njs@codesourcery.com>
+
+	* commands.cc (ls_tags): Sort output.
+	* tests/t_tags.at: Test that output is sorted.
+
+2005-04-29  Derek Scherger  <derek@echologic.com>
+
+	* commands.cc (struct file_itemizer): move to ...
+	* work.hh (file_itemizer} ... here
+	* work.cc (file_itemizer::visit_file} ... and here
+
+2005-04-29  Emile Snyder  <emile@alumni.reed.edu>
+
+	* annotate.cc (do_annotate_node): Stop doing expensive
+	calculate_arbitrary_change_set when we already know we have parent
+	and child revisions.  Cuts annotate run time in half.
+	
+2005-04-29  Nathaniel Smith  <njs@codesourcery.com>
+
+	* commands.cc (update_inodeprints): Rename to...
+	(refresh_inodeprints): ...this, so 'monotone up' continues to mean
+	update.
+	
+	* monotone.texi (Inodeprints): Mention refresh_inodeprints in the
+	Inodeprints section.
+	
+	* testsuite.at: 
+	* tests/t_update_inodeprints.at: 
+	* tests/t_refresh_inodeprints.at: 
+	* monotone.texi (Working Copy, Commands): 
+	* monotone.1: Update accordingly.
+
 2005-04-29  Nathaniel Smith  <njs@codesourcery.com>
 
 	* change_set.cc (dump_change_set): Don't truncate output.
@@ -9,6 +500,21 @@
 
 	* revision.cc (check_sane_history): Make comment more
 	informative.
+
+2005-04-29  Grahame Bowland  <grahame@angrygoats.net>
+
+	* netxx/types.h: Add new NetworkException type network 
+	issue not caused by calling program
+	* netsync.cc: Catch Netxx::NetworkException and display 
+	as informative_error.
+	* netxx/address.cxx: NetworkException for unparsable URIs.
+	* netxx/datagram.cxx: NetworkException for connection failure.
+	* netxx/resolve_getaddrinfo.cxx, resolve_gethostbyname.cxx:
+	NetworkException when DNS resolution fails.
+	* netxx/serverbase.cxx: NetworkException if unable to bind 
+	to server port.
+	* netxx/streambase.cxx: NetworkException if unable to 
+	connect.
 
 2005-04-28  Nathaniel Smith  <njs@codesourcery.com>
 
@@ -79,21 +585,6 @@
 	* tests/t_annotate_branch_collision.at: 
 	* testsuite.at: Test it.
 	
-2005-04-29  Grahame Bowland  <grahame@angrygoats.net>
-
-	* netxx/types.h: Add new NetworkException type network 
-	issue not caused by calling program
-	* netsync.cc: Catch Netxx::NetworkException and display 
-	as informative_error.
-	* netxx/address.cxx: NetworkException for unparsable URIs.
-	* netxx/datagram.cxx: NetworkException for connection failure.
-	* netxx/resolve_getaddrinfo.cxx, resolve_gethostbyname.cxx:
-	NetworkException when DNS resolution fails.
-	* netxx/serverbase.cxx: NetworkException if unable to bind 
-	to server port.
-	* netxx/streambase.cxx: NetworkException if unable to 
-	connect.
-
 2005-04-28  Matt Johnston  <matt@ucc.asn.au>
 
 	* tests/t_merge_6.at: narrow the testcase down considerably.
@@ -203,6 +694,16 @@
 
 	* ui.{cc,hh}: Delegate tick line blanking to tick_writers.
 
+2005-04-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* change_set.cc (extend_state): don't mix find() and insert() on
+	the path_state, to avoid hitting the smap's worst-case.
+
+2005-04-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* change_set.cc (confirm_proper_tree): move things out of the loops
+	for better performance.
+
 2005-04-26  Nathaniel Smith  <njs@codesourcery.com>
 
 	* work.cc: Don't include boost/regex.hpp.
@@ -225,24 +726,10 @@
 
 	* tests/t_cvsimport2.at: Un-XFAIL, improve description.
 
-2005-04-22  Christof Petig <christof@petig-baender.de>
+2005-04-26  Richard Levitte  <richard@levitte.org>
 
-	* sqlite/*: update to sqlite 3.2.1
-
-2005-04-25  Nathaniel Smith  <njs@codesourcery.com>
-
-	* tests/t_i18n_file_data.at: New test.
-	* testsuite.at: Add it.
-
-2005-04-27  Matt Johnston  <matt@ucc.asn.au>
-
-	* change_set.cc (extend_state): don't mix find() and insert() on
-	the path_state, to avoid hitting the smap's worst-case.
-
-2005-04-27  Matt Johnston  <matt@ucc.asn.au>
-
-	* change_set.cc (confirm_proper_tree): move things out of the loops
-	for better performance.
+	* monotone.cc (cpp_main): Count the number of command specific
+	options exist.  If there is any, add a title for them.
 
 2005-04-26  Matt Johnston  <matt@ucc.asn.au>
 
@@ -253,6 +740,15 @@
 
 	* monotone.texi: fix mashed up merge of docs for kill_rev_locally
 	and db check.
+
+2005-04-26  Richard Levitte  <richard@levitte.org>
+
+	* monotone.cc, commands.cc: Make some more options global.
+
+2005-04-25  Nathaniel Smith  <njs@codesourcery.com>
+
+	* tests/t_i18n_file_data.at: New test.
+	* testsuite.at: Add it.
 
 2005-04-25  Nathaniel Smith  <njs@codesourcery.com>
 
@@ -391,6 +887,57 @@
 	* transforms.{cc,hh} (localized): ...to here.  Add lots of gunk to
 	avoid calling iconv whenever possible.
 
+2005-04-23  Richard Levitte  <richard@levitte.org>
+
+	* monotone.cc, options.hh: Move the option numbers to options.hh,
+	so they can be easily retrieved by other modules.
+	* monotone.cc: split the options table in global options and
+	command specific options.  The former are always understood, while
+	the latter are only understood by the commands that declare it
+	(see below).
+	(my_poptStuffArgFile): There's no need to keep a copy of the
+	stuffed argv.  This was really never a problem.
+	(coption_string): New function to find the option string from an
+	option number.
+	(cpp_main): Keep track of which command-specific options were
+	given, and check that the given command really uses them.  Make
+	sure that when the help is written, only the appropriate command-
+	specific options are shown.  We do this by hacking the command-
+	specific options table.
+	Throw away sub_argvs, as it's not needed any more (and realy never
+	was).
+
+	* commands.cc: Include options.hh to get the option numbers.
+	(commands_ops): New structure to hold the option
+	numbers used by a command.
+	(commands): Use it.
+	(command_options): Function to get the set of command-specific
+	options for a specific command.
+	(CMD): Changed to take a new parameter describing which command-
+	specific options this command takes.  Note that for commands that
+	do not take command-specific options, this new parameter must
+	still be given, just left empty.
+	Update all commands with this new parameter.
+	* commands.hh: Declare command_options.
+
+	* tests/t_automate_heads.at: 'automate heads' never used the value
+	of --branch.
+	* tests/t_sticky_branch.at: and neither did 'log'...
+	* tests/t_update_missing.at: nor did 'add'...
+
+2005-04-23  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_diff_currev.at: Use CHECK_SAME_STDOUT.
+
+2005-04-23  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_diff_currev.at: New test.
+	* testsuite.at: Add new test.
+
+2005-04-22  Christof Petig <christof@petig-baender.de>
+
+	* sqlite/*: update to sqlite 3.2.1
+
 2005-04-22  Nathaniel Smith  <njs@codesourcery.com>
 
 	* manifest.cc (build_restricted_manifest_map): Fixup after merge
@@ -447,15 +994,6 @@
 	* vocab.cc (test_file_path_verification): MT/path is not a valid
 	file_path either.
 	(test_file_path_normalization): New unit-test.
-
-2005-04-23  Matthew Gregan  <kinetik@orcon.net.nz>
-
-	* tests/t_diff_currev.at: Use CHECK_SAME_STDOUT.
-
-2005-04-23  Matthew Gregan  <kinetik@orcon.net.nz>
-
-	* tests/t_diff_currev.at: New test.
-	* testsuite.at: Add new test.
 
 2005-04-22  Joel Reed  <joelwreed@comcast.net>
 
@@ -793,15 +1331,6 @@
 	branch globs and regexps.
 	(glob_to_regexp_test): A unit test for glob_to_regexp().
 
-2005-04-16  Emile Snyder  <emile@alumni.reed.edu>
-
-	* tests/t_add_stomp_file.at: New test for failing case.  
-        If you have a file foo in your working dir (not monotone 
-        controlled) and someone else adds a file foo and commits, 
-        update should at least warn you before stomping your 
-        non-recoverable foo file.
-	* testsuite.at: Add it.
-	
 2005-04-17  Matt Johnston  <matt@ucc.asn.au>
 
 	* commands.cc: warn that dropkey won't truly erase the privkey
@@ -813,6 +1342,20 @@
 	* database.cc: mention that it could be the filesystem that
 	is full in the SQLITE_FULL error message
 
+2005-04-17  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.cc: Fix warnings: add missing initializers.
+	* netsync.cc: Fix warnings: inline static vs static inline.
+
+2005-04-16  Emile Snyder  <emile@alumni.reed.edu>
+
+	* tests/t_add_stomp_file.at: New test for failing case.  
+        If you have a file foo in your working dir (not monotone 
+        controlled) and someone else adds a file foo and commits, 
+        update should at least warn you before stomping your 
+        non-recoverable foo file.
+	* testsuite.at: Add it.
+	
 2005-04-16  Derek Scherger  <derek@echologic.com>
 
 	* work.cc (known_preimage_path): rename to...
@@ -844,11 +1387,6 @@
 2005-04-16  Nathaniel Smith  <njs@codesourcery.com>
 
 	* ChangeLog: Fixup after merge.
-
-2005-04-17  Matthew Gregan  <kinetik@orcon.net.nz>
-
-	* monotone.cc: Fix warnings: add missing initializers.
-	* netsync.cc: Fix warnings: inline static vs static inline.
 
 2005-04-16  Nathaniel Smith  <njs@codesourcery.com>
 
@@ -935,16 +1473,16 @@
 
 	* AUTHORS: Add Martin Dvorak.
 	
-2005-04-15 Martin Dvorak <jezek2@advel.cz>
-	
-	* tests/t_rename_dir_add_dir_with_old_name.at: New test.
-	* testsuite.at: Add it.
-	
 2005-04-16  Matt Johnston  <matt@ucc.asn.au>
 
 	* change_set.cc (compose_rearrangement): remove logging statements
 	that were using noticable CPU time.
 
+2005-04-15 Martin Dvorak <jezek2@advel.cz>
+	
+	* tests/t_rename_dir_add_dir_with_old_name.at: New test.
+	* testsuite.at: Add it.
+	
 2005-04-15  Olivier Andrieu  <oliv__a@users.sourceforge.net>
 
 	* diff_patch.cc(guess_binary): do not use '\x00' as first
@@ -999,13 +1537,6 @@
 	* monotone.texi (Making Changes): Fixed duplicate paragraph
 	* NEWS: Corrected spelling error in my name.
 
-2005-04-13  Nathaniel Smith  <njs@codesourcery.com>
-
-	* monotone.texi (Informative): 'diff' with two revision arguments
-	can now be filtered by file.
-	
-	* constants.cc (netcmd_payload_limit): Bump to 256 megs.
-
 2005-04-14  Olivier Andrieu  <oliv__a@users.sourceforge.net>
 
 	* Makefile.am: silence cmp
@@ -1013,6 +1544,13 @@
 2005-04-14  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* win32/terminal.cc (have_smart_terminal): Implement for Win32.
+
+2005-04-13  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Informative): 'diff' with two revision arguments
+	can now be filtered by file.
+	
+	* constants.cc (netcmd_payload_limit): Bump to 256 megs.
 
 2005-04-13  Matthew Gregan  <kinetik@orcon.net.nz>
 
@@ -1059,6 +1597,10 @@
 	* tests/t_checkout_id_sets_branch.at: New tests.
 	* testsuite.at: Add them.
 
+2005-04-13  Matthew Gregan  <kinetik@orcon.net.nz>
+	* cryptopp/integer.h: Fix detection of GCC version for SSE2
+	builds.
+
 2005-04-12  Florian Weimer  <fw@deneb.enyo.de>
 
 	* app_state.cc (app_state::allow_working_copy): Only update
@@ -1077,10 +1619,6 @@
 	* monotone.texi (Working Copy): Mention that the "commit" and
 	"update" commands update the stored default branch ("checkout"
 	does, too, but this one should be obvious).
-
-2005-04-13  Matthew Gregan  <kinetik@orcon.net.nz>
-	* cryptopp/integer.h: Fix detection of GCC version for SSE2
-	builds.
 
 2005-04-12  Jon Bright <jon@siliconcircus.com>
 	* rcs_import.cc (find_key_and_state): Fix stupid bug in storing the
@@ -1132,16 +1670,16 @@
 	(PNG_FIGURES): Add, constructing in same way as EPS_FIGURES
 	(monotone.html): Use .perlbak workaround so that this works on Win32
 
+2005-04-11  Matthew Gregan <kinetik@orcon.net.nz>
+
+	* unix/inodeprint.cc, configure.ac: Use nanosecond time resolution for
+	inodeprints on BSDs and other platforms if available.
+
 2005-04-10  Nathaniel Smith  <njs@codesourcery.com>
 
 	* Makefile.am (BUILT_SOURCES_CLEAN): Add package_revision.txt.
 
 	This is the 0.18 release.
-
-2005-04-11  Matthew Gregan <kinetik@orcon.net.nz>
-
-	* unix/inodeprint.cc, configure.ac: Use nanosecond time resolution for
-	inodeprints on BSDs and other platforms if available.
 
 2005-04-10  Derek Scherger  <derek@echologic.com>
 
@@ -1318,6 +1856,11 @@
 
 	* manifest.{hh,cc} (manifest_file_name): Remove unused variable.
 
+2005-04-08  Jeremy Cowgar  <jeremy@cowgar.com>
+
+	* doxygen.cfg: added
+	* Makefile.am: added apidocs target (builds doxygen docs)
+
 2005-04-07  Nathaniel Smith  <njs@codesourcery.com>
 
 	* manifest.{hh,cc}: Remove some commented out unused functions.
@@ -1331,11 +1874,6 @@
 2005-04-07  Nathaniel Smith  <njs@codesourcery.com>
 
 	* manifest.hh, manifest.cc: Remove tabs.
-
-2005-04-08  Jeremy Cowgar  <jeremy@cowgar.com>
-
-	* doxygen.cfg: added
-	* Makefile.am: added apidocs target (builds doxygen docs)
 
 2005-04-07  Nathaniel Smith  <njs@codesourcery.com>
 
@@ -1362,12 +1900,6 @@
 	* change_set.cc (basic_change_set_test): Revert last change; the
 	old version _was_ valid.
 
-2005-04-06  Nathaniel Smith  <njs@codesourcery.com>
-
-	* work.cc (build_deletions): Issue warning when generating
-	delete_dir's; they're totally broken, but I don't want to disable
-	them, because then our tests won't see when they're fixed...
-
 2005-04-07  Nathaniel Smith  <njs@codesourcery.com>
 
 	* smap.hh (insert): Fix stupid bug in assertion condition.
@@ -1393,6 +1925,12 @@
 2005-04-07  Richard Levitte  <richard@levitte.org>
 
 	* cryptopp/config.h: typo...
+
+2005-04-06  Nathaniel Smith  <njs@codesourcery.com>
+
+	* work.cc (build_deletions): Issue warning when generating
+	delete_dir's; they're totally broken, but I don't want to disable
+	them, because then our tests won't see when they're fixed...
 
 2005-04-05  Nathaniel Smith  <njs@codesourcery.com>
 
@@ -3708,7 +4246,7 @@
 	* AUTHORS: Mention Wojciech and Neil.
 	* revision.cc (calculate_ancestors_from_graph): Make non-recursive.
 
-2005-01-17  Wojciech MiÂkowski  <wmilkowski@interia.pl>
+2005-01-17  Wojciech Miłkowski  <wmilkowski@interia.pl>
 
 	* std_hooks.lua: Teach about meld.
 

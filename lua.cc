@@ -8,6 +8,7 @@
 extern "C" {
 #include <lua.h>
 #include <lualib.h>
+#include <lauxlib.h>
 }
 
 #include <errno.h>
@@ -110,7 +111,8 @@ extern "C"
     int n = lua_gettop(L);
     const char *path = lua_tostring(L, -n);
     char **argv = (char**)malloc((n+1)*sizeof(char*));
-    int ret, i;
+    int i;
+    pid_t ret;
     if (argv==NULL)
       return 0;
     argv[0] = (char*)path;
@@ -125,7 +127,7 @@ extern "C"
   static int
   monotone_wait_for_lua(lua_State *L)
   {
-    int pid = (int)lua_tonumber(L, -1);
+    pid_t pid = (pid_t)lua_tonumber(L, -1);
     int res;
     int ret;
     ret = process_wait(pid, &res);
@@ -138,7 +140,7 @@ extern "C"
   monotone_kill_for_lua(lua_State *L)
   {
     int n = lua_gettop(L);
-    int pid = (int)lua_tonumber(L, -2);
+    pid_t pid = (pid_t)lua_tonumber(L, -2);
     int sig;
     if (n>1)
       sig = (int)lua_tonumber(L, -1);
@@ -215,6 +217,15 @@ Lua
   bool ok() 
   { 
     return !failed; 
+  }
+
+  void report_error()
+  {
+    I(lua_isstring(st, -1));
+    string err = string(lua_tostring(st, -1), lua_strlen(st, -1));
+    W(F("%s\n") % err);
+    lua_pop(st, 1);
+    failed = true;
   }
  
   // getters
@@ -446,18 +457,13 @@ Lua
     return *this; 
   }
 
-
   Lua & call(int in, int out) 
   { 
     if (failed) return *this;
     I(lua_checkstack (st, out));
-    if (lua_pcall(st, in, out, 0) != 0) 
+    if (lua_pcall(st, in, out, 0) != 0)
       { 
-        I(lua_isstring (st, -1));
-        string err = string(lua_tostring(st, -1), lua_strlen(st, -1));
-        L(F("lua pcall() failed: %s\n") % err); 
-        lua_pop(st, 1); 
-        failed = true; 
+        report_error();
       } 
     return *this; 
   }
@@ -479,33 +485,54 @@ Lua
   {
     if (!failed) 
       {
-	if (missing_functions.find(fname) != missing_functions.end())
-	  failed = true;
-	else
-	  {
-	    push_str(fname);
-	    get_fn();
-	    if (failed)
-	      missing_functions.insert(fname);
-	  }
+        if (missing_functions.find(fname) != missing_functions.end())
+          failed = true;
+        else
+          {
+            push_str(fname);
+            get_fn();
+            if (failed)
+              missing_functions.insert(fname);
+          }
       }
     return *this;
   }
 
+  Lua & loadstring(string const & str, string const & identity)
+  {
+    if (!failed)
+      {
+        if (luaL_loadbuffer(st, str.c_str(), str.size(), identity.c_str()))
+          {
+            report_error();
+          }
+      }
+    return *this;
+  }
+
+  Lua & loadfile(string const & filename)
+  {
+    if (!failed)
+      {
+        if (luaL_loadfile(st, filename.c_str()))
+          {
+            report_error();
+          }
+      }
+    return *this;
+  }
 };
 
 std::set<string> Lua::missing_functions;
 
 static bool 
-run_string(lua_State * st, string const &str)
+run_string(lua_State * st, string const &str, string const & identity)
 {
   I(st);
   return 
     Lua(st)
-    .func("loadstring")
-    .push_str(str)
-    .call(1,1)
-    .call(0,0)
+    .loadstring(str, identity)
+    .call(0,1)
     .ok();
 }
 
@@ -515,10 +542,8 @@ run_file(lua_State * st, string const &filename)
   I(st);
   return 
     Lua(st)
-    .func("loadfile")
-    .push_str(filename)
-    .call(1,1)
-    .call(0,0)
+    .loadfile(filename)
+    .call(0,1)
     .ok();
 }
 
@@ -527,7 +552,7 @@ run_file(lua_State * st, string const &filename)
 void 
 lua_hooks::add_test_hooks()
 {
-  if (!run_string(st, test_hooks_constant))
+  if (!run_string(st, test_hooks_constant, string("<test hooks>")))
     throw oops("lua error while setting up testing hooks");
 }
 #endif
@@ -535,7 +560,7 @@ lua_hooks::add_test_hooks()
 void 
 lua_hooks::add_std_hooks()
 {
-  if (!run_string(st, std_hooks_constant))
+  if (!run_string(st, std_hooks_constant, string("<std hooks>")))
     throw oops("lua error while setting up standard hooks");
 }
 
@@ -551,6 +576,18 @@ lua_hooks::working_copy_rcfilename(fs::path & file)
   file = mkpath(book_keeping_dir) / mkpath("monotonerc");
 }
 
+
+void
+lua_hooks::load_rcfile(utf8 const & rc)
+{
+  I(st);
+  data dat;
+  L(F("opening rcfile '%s' ...\n") % rc);
+  read_data_for_command_line(rc, dat);
+  N(run_string(st, dat(), rc().c_str()),
+    F("lua error while loading rcfile '%s'") % rc);
+  L(F("'%s' is ok\n") % rc);
+}
 
 void 
 lua_hooks::load_rcfile(fs::path const & rc, bool required)

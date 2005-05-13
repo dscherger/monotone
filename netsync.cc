@@ -12,6 +12,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
 
 #include "app_state.hh"
 #include "cert.hh"
@@ -233,6 +234,7 @@ session
   auto_ptr<ticker> cert_out_ticker;
   auto_ptr<ticker> revision_in_ticker;
   auto_ptr<ticker> revision_out_ticker;
+  auto_ptr<ticker> revision_checked_ticker;
 
   map< std::pair<utf8, netcmd_item_type>, 
        boost::shared_ptr<merkle_table> > merkle_tables;
@@ -260,6 +262,8 @@ session
           Netxx::Timeout const & to);
 
   virtual ~session() {}
+  
+  void rev_written_callback();
 
   id mk_nonce();
   void mark_recent_io();
@@ -376,8 +380,6 @@ session
   void rebuild_merkle_trees(app_state & app,
                             utf8 const & collection);
 
-  void load_epoch(cert_value const & branchname, epoch_id const & epoch);
-  
   bool dispatch_payload(netcmd const & cmd);
   void begin_service();
   bool process();
@@ -435,6 +437,7 @@ session::session(protocol_role role,
   cert_out_ticker(NULL),
   revision_in_ticker(NULL),
   revision_out_ticker(NULL),
+  revision_checked_ticker(NULL),
   analyzed_ancestry(false),
   saved_nonce(""),
   received_goodbye(false),
@@ -449,6 +452,9 @@ session::session(protocol_role role,
       this->collection = idx(collections, 0);
     }
     
+  dbw.set_on_revision_written(boost::bind(&session::rev_written_callback,
+                                          this));
+  
   // we will panic here if the user doesn't like urandom and we can't give
   // them a real entropy-driven random.  
   bool request_blocking_rng = false;
@@ -478,6 +484,11 @@ session::session(protocol_role role,
     {
       rebuild_merkle_trees(app, *i);
     }
+}
+
+void session::rev_written_callback()
+{
+  if(revision_checked_ticker.get()) ++(*revision_checked_ticker);
 }
 
 id 
@@ -1645,7 +1656,7 @@ session::process_auth_cmd(protocol_role role,
 
   if (!app.db.public_key_exists(their_key_hash))
     {
-      W(F("unknown key hash '%s'\n") % their_key_hash);
+      W(F("remote public key hash '%s' is unknown\n") % their_key_hash);
       this->saved_nonce = id("");
       return false;
     }
@@ -2889,6 +2900,7 @@ call_server(protocol_role role,
   sess.byte_out_ticker.reset(new ticker("bytes out", "<", 1024, true));
   if (role == sink_role)
     {
+      sess.revision_checked_ticker.reset(new ticker("revs written", "w", 1));
       sess.cert_in_ticker.reset(new ticker("certs in", "c", 3));
       sess.revision_in_ticker.reset(new ticker("revs in", "r", 1));
     }
@@ -2900,6 +2912,7 @@ call_server(protocol_role role,
   else
     {
       I(role == source_and_sink_role);
+      sess.revision_checked_ticker.reset(new ticker("revs written", "w", 1));
       sess.revision_in_ticker.reset(new ticker("revs in", "r", 1));
       sess.revision_out_ticker.reset(new ticker("revs out", "R", 1));
     }
@@ -3275,24 +3288,6 @@ make_root_node(session & sess,
   return tab;
 }
 
-
-// BROKEN
-void
-session::load_epoch(cert_value const & branchname, epoch_id const & epoch)
-{
-  // hash is of concat(branch name, raw epoch id).  This is unique, because
-  // the latter has a fixed length.
-  std::string tmp(branchname());
-  id raw_epoch;
-  decode_hexenc(epoch.inner(), raw_epoch);
-  tmp += raw_epoch();
-  data tdat(tmp);
-  hexenc<id> out;
-  calculate_ident(tdat, out);
-  id raw_hash;
-  decode_hexenc(out, raw_hash);
-}
-
 void 
 session::rebuild_merkle_trees(app_state & app,
                               utf8 const & collection)
@@ -3456,12 +3451,12 @@ run_netsync_protocol(protocol_voice voice,
   catch (Netxx::NetworkException & e)
     {      
       end_platform_netsync();
-      throw informative_failure((F("network exception: %s") % e.what()).str());
+      throw informative_failure((F("network error: %s") % e.what()).str());
     }
   catch (Netxx::Exception & e)
     {      
       end_platform_netsync();
-      throw oops((F("trapped network exception: %s\n") % e.what()).str());;
+      throw oops((F("network error: %s\n") % e.what()).str());;
     }
   end_platform_netsync();
 }

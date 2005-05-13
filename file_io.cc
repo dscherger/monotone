@@ -3,8 +3,6 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
-#include <stdio.h>             // for rename(2)
-
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -170,10 +168,17 @@ absolutify(string const & path)
   if (! tmp.has_root_path())
     tmp = fs::current_path() / tmp;
   I(tmp.has_root_path());
-#if BOOST_VERSION >= 103100
-      tmp = tmp.normalize();
-#endif
+  tmp = tmp.normalize();
   return tmp.string();
+}
+
+string
+absolutify_for_command_line(string const & path)
+{
+  if (path == "-")
+    return path;
+  else
+    return absolutify(path);
 }
 
 string 
@@ -463,7 +468,10 @@ read_data_for_command_line(utf8 const & path, data & dat)
   if (path() == "-")
     read_data_stdin(dat);
   else
-    read_data_impl(localized(path), dat);
+    {
+      N(fs::exists(localized(path)), F("file '%s' does not exist") % path);
+      read_data_impl(localized(path), dat);
+    }
 }
 
 
@@ -499,12 +507,10 @@ write_data_impl(fs::path const & p,
     // data.tmp closes
   }
 
-  // god forgive my portability sins
   if (fs::exists(p))
-    N(unlink(p.string().c_str()) == 0,
-      F("unlinking %s failed") % p.string());
-  N(rename(tmp.string().c_str(), p.string().c_str()) == 0,
-    F("rename of %s to %s failed") % tmp.string() % p.string());
+    N(fs::remove(p),
+      F("removing %s failed") % p.string());
+  fs::rename(tmp, p);
 }
 
 void 

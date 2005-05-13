@@ -31,9 +31,9 @@ public:
   lua_hooks lua;
   bool stdhooks;
   bool rcfiles;
-  bool all_files;
   options_map options;
   utf8 message;
+  utf8 message_file;
   utf8 date;
   utf8 author;
   utf8 search_root;
@@ -44,6 +44,7 @@ public:
   file_path relative_directory;
   bool found_working_copy;
   long depth;
+  fs::path pidfile;
 
   void allow_working_copy();
   void require_working_copy();
@@ -66,15 +67,16 @@ public:
   void set_signing_key(utf8 const & key);
   void set_root(utf8 const & root);
   void set_message(utf8 const & message);
+  void set_message_file(utf8 const & message_file);
   void set_date(utf8 const & date);
   void set_author(utf8 const & author);
   void set_depth(long depth);
   void set_since(utf8 const & since);
+  void set_pidfile(utf8 const & pidfile);
   void add_revision(utf8 const & selector);
 
   void set_stdhooks(bool b);
   void set_rcfiles(bool b);
-  void set_all_files(bool b);
   void add_rcfile(utf8 const & filename);
 
   explicit app_state();

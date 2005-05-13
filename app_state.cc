@@ -30,7 +30,7 @@ static string const branch_option("branch");
 static string const key_option("key");
 
 app_state::app_state() 
-  : branch_name(""), db(""), stdhooks(true), rcfiles(true), all_files(false),
+  : branch_name(""), db(""), stdhooks(true), rcfiles(true),
     search_root("/"), depth(-1)
 {
   db.set_app(this);
@@ -274,6 +274,12 @@ app_state::set_message(utf8 const & m)
 }
 
 void
+app_state::set_message_file(utf8 const & m)
+{
+  message_file = m;
+}
+
+void
 app_state::set_date(utf8 const & d)
 {
   date = d;
@@ -300,6 +306,12 @@ app_state::set_since(utf8 const & s)
 }
 
 void
+app_state::set_pidfile(utf8 const & p)
+{
+  pidfile = mkpath(p());
+}
+
+void
 app_state::add_revision(utf8 const & selector)
 {
   revision_selectors.push_back(selector);
@@ -315,12 +327,6 @@ void
 app_state::set_rcfiles(bool b)
 {
   rcfiles = b;
-}
-
-void
-app_state::set_all_files(bool b)
-{
-  all_files = b;
 }
 
 void
@@ -359,7 +365,7 @@ app_state::load_rcfiles()
   for (vector<utf8>::const_iterator i = extra_rcfiles.begin();
        i != extra_rcfiles.end(); ++i)
     {
-      lua.load_rcfile(mkpath((*i)()), true);
+      lua.load_rcfile(*i);
     }
 }
 
@@ -368,12 +374,18 @@ app_state::read_options()
 {
   local_path o_path;
   get_options_path(o_path);
-
-  if (file_exists(o_path))
+  try
     {
-      data dat;
-      read_data(o_path, dat);
-      read_options_map(dat, options);
+      if (file_exists(o_path))
+        {
+          data dat;
+          read_data(o_path, dat);
+          read_options_map(dat, options);
+        }
+    }
+  catch(std::exception & e)
+    {
+      W(F("Failed to read options file %s") % o_path);
     }
 }
 
@@ -382,8 +394,14 @@ app_state::write_options()
 {
   local_path o_path;
   get_options_path(o_path);
-
-  data dat;
-  write_options_map(dat, options);
-  write_data(o_path, dat);
+  try
+    {
+      data dat;
+      write_options_map(dat, options);
+      write_data(o_path, dat);
+    }
+  catch(std::exception & e)
+    {
+      W(F("Failed to write options file %s") % o_path);
+    }
 }

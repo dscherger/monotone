@@ -1609,8 +1609,8 @@ communicating with the person they intend to trust, when exchanging
 keys, and not some malicious person pretending to be a team
 member. Key exchange may involve sending keys over an encrypted
 medium, or meeting in person to exchange physical copies, or any
-number of techniques. All that matters, ultimately, is that Jim receive
-both Abe and Beth's key.
+number of techniques. All that matters, ultimately, is that Jim receives
+both Abe's and Beth's key.
 
 So eventually, after key exchange, Jim has the public key files in his
 home directory. He tells monotone to read the associated key packets
@@ -2282,7 +2282,7 @@ types are:
 Uses selector type @code{c}.  The selector string has the syntax
 @var{name} or @var{name}@code{=}@var{value}.  The former syntax will
 select any revision that has a cert with that name, regardless of
-value, the latter will match any revision that has a cert with that
+value; the latter will match any revision that has a cert with that
 name and value.  Values to match for can have wildcards.
 @item Author selection
 Uses selector type @code{a}. For example, @code{a:graydon} matches
@@ -2478,12 +2478,12 @@ inherently somewhat less safe, and, as mentioned above, unnecessary for
 most projects, so it is disabled by default.
 
 If you do determine that it is necessary to use inodeprints with your
-project, it is simple to enable them.  A working copy is in inodeprints
-mode if a file @file{MT/inodeprints} exist.  You can simply create an
-empty file with this name, and the next time you commit or update,
-monotone will automatically populate it with cache information.  You can
-at any point delete this file or truncate it; monotone uses it only as a
-cache and will operate correctly if it is removed.
+project, it is simple to enable them.  Simply run @command{monotone
+refresh_inodeprints}; this will enable inodeprints mode and generate an
+initial cache.  If you ever wish to turn them off again, simply delete
+the file @file{MT/inodeprints}.  You can at any time delete or truncate
+the @file{MT/inodeprints} file; monotone uses it only as a cache and
+will continue to operate correctly.
 
 Normally, instead of enabling this up on a per-working-copy basis, you
 will want to simply define the @code{use_inodeprints} hook to return
@@ -2508,10 +2508,10 @@ each branch is a subgraph of the revision graph, containing only the
 nodes carrying a particular @code{branch} cert.
 
 Many of monotone's operations involve searching the revision graph for
-the ancestors or descendants of a particular revision, or extracting
+the ancestors or descendents of a particular revision, or extracting
 the ``heads'' of a subgraph, which is the subgraph's set of nodes with
-no descendants. For example, when you run the @code{update} command,
-monotone searches the subgraph consisting of descendants of the base
+no descendents. For example, when you run the @code{update} command,
+monotone searches the subgraph consisting of descendents of the base
 revision of the current working copy, trying to locate a unique head to
 update the base revision to.
 
@@ -2536,7 +2536,7 @@ set of lua hooks: @code{get_revision_cert_trust},
 @code{get_manifest_cert_trust} and @code{get_file_cert_trust}. These
 hooks are only called when a cert has at least one good signature from
 a known key, and are passed @emph{all} the keys which have signed the
-cert, as well as the cert's id, name and value. The hook can then
+cert, as well as the cert's ID, name and value. The hook can then
 evaluate the set of signers, as a group, and decide whether to grant
 or deny trust to the assertion made by the cert.
 
@@ -2913,6 +2913,8 @@ Your project name, @code{wobbler} in this example.
 Your database name, @file{test.db} in this example.
 @item
 Your CVS repository path, @file{/usr/local/cvsroot} in this example.
+@item
+The CVS module name for your project, @code{wobbler} in this example.
 @end itemize
 
 Accounting for these differences at your site, the following is an
@@ -2924,7 +2926,7 @@ copy:
 @group
 $ monotone --db=test.db db init
 $ monotone --db=test.db genkey import@@example.net
-$ monotone --db=test.db --branch=net.example.wobbler cvs_import /usr/local/cvsroot
+$ monotone --db=test.db --branch=net.example.wobbler cvs_import /usr/local/cvsroot/wobbler
 $ monotone --db=test.db --branch=net.example.wobbler checkout wobber-checkout
 @end group
 @end smallexample
@@ -3017,7 +3019,7 @@ This command, like other networking commands, involves a separate
 communication step with monotone. The extra command, @command{merge},
 ensures that the branch your are working on has a unique head. You can
 omit the @command{merge} step if you only want @command{update} to
-examine descendants of your base revision, and ignore other heads on
+examine descendents of your base revision, and ignore other heads on
 your branch.
 
 @heading Moving Working Copy to Another Revision
@@ -3292,7 +3294,7 @@ Note that this command only works if @var{id} has exactly one ancestor.
 This command lists the ``heads'' of @var{branchname}. 
 
 The ``heads'' of a branch is the set of revisions which are members of
-the branch, but which have no descendants. These revisions are
+the branch, but which have no descendents. These revisions are
 generally the ``newest'' revisions committed by you or your
 colleagues, at least in terms of ancestry. The heads of a branch may
 not be the newest revisions, in terms of time, but synchronization of
@@ -3406,16 +3408,18 @@ files.
 
 @item monotone commit
 @itemx monotone commit --message=@var{logmsg}
+@itemx monotone commit --message-file=@var{logfile}
 @itemx monotone commit @var{pathname...}
 @itemx monotone commit --message=@var{logmsg} @var{pathname...} 
+@itemx monotone commit --message-file=@var{logfile} @var{pathname...} 
 
 This command looks at your working copy, decides which files have
-changed, and saves the changes to your database. It does this by
-loading the revision named in the @file{MT/revision} file, locating
-the base manifest for your working copy, applying any changes
-described in the @file{MT/work} file, and then comparing the updated
-base manifest to the files it finds in your working copy, to determine
-which files have been edited.
+changed, and saves the changes to your database. It does this by loading
+the revision named in the @file{MT/revision} file, locating the base
+manifest for your working copy, applying any changes described in the
+@file{MT/work} file, and then comparing the updated base manifest to the
+files it finds in your working copy, to determine which files have been
+edited.
 
 For each edited file, a delta is copied into the database. Then the
 newly constructed manifest is recorded (as a delta) and finally the
@@ -3435,6 +3439,11 @@ From within a subdirectory of the working copy the @command{commit}
 command will, by default, include @emph{all changes} in the working
 copy.  Specifying only the pathname "." will restrict @command{commit}
 to files changed within the current subdirectory of the working copy.
+
+The @option{--message} and @option{--message-file} options are mutually
+exclusive.  Both provide a @var{logmsg} describing the commit. 
+@option{--message-file} actually specifies the name of the file containing
+the log message, while @option{--message} provides it directly.
 
 The @file{MT/log} file can be edited by the user during their daily work
 to record the changes made to the working copy. When running the
@@ -3536,7 +3545,7 @@ tries to select the revision to update to from this branch.  The branch
 becomes the new default branch of the working copy (even if you also
 specify an explicit @var{revision} argument).
 
-@item monotone update_inodeprints
+@item monotone refresh_inodeprints
 This command puts the current working copy into @ref{Inodeprints} mode,
 if it was not already, and forces a full inodeprints cache refresh.
 After running this command, you are guaranteed that your working copy is
@@ -3610,6 +3619,11 @@ default-server} or @code{monotone unset database default-collection};
 these will clear your defaults, and cause them to be reset to the next
 person you netsync with.
 
+If a @option{--pid-file} option is specified, the command
+@command{serve} will create the specified file and record the process
+identifier of the server in the file.  This file can then be read to
+identify specific monotone server processes.
+
 @end ftable
 
 
@@ -3628,7 +3642,7 @@ In particular, it prints:
 @item 
 The ``base revision ID'' and ``base manifest ID'', which are
 referenced by the file @file{MT/revision}, and which your working copy
-is an in-progress descendant of.
+is an in-progress descendent of.
 @item
 The ``current manifest ID'', which is the ID of the manifest which
 results from applying @file{MT/work} to the base manifest, and
@@ -3651,69 +3665,12 @@ command will, by default, include @emph{all changes} in the working
 copy.  Specifying only the pathname "." will restrict @command{status}
 to files changed within the current subdirectory of the working copy.
 
-@item monotone inventory
-@itemx monotone inventory @var{pathname...}
-
-This command prints the ``inventory'' of files in a working copy. Each
-file is prefixed by two characters indicating the current status of the
-file's path and associated data or contents.
-
-The first status character may be one of the following:
-@itemize
-@item ' ' the path is unchanged from the current manifest 
-@item '+' the path has been added to the current manifest
-@item '-' the path has been dropped from the current manifest
-@item '%' the path has been renamed in the current manifest, both the old and new name are listed
-@item '?' the path is unknown, it exists in the working copy but not in the current manifest
-@item '~' the path is ignored by the current ignore_file lua hook setting
-@end itemize
-
-The second status character may be one of the following:
-@itemize
-@item ' ' the data is unchanged, its sha1 version matches the version in the base manifest
-@item '#' the data is changed, its sha1 version differs from the version in the base manifest
-@item '!' the data is missing and its sha1 version cannot be computed
-@end itemize
-
-By default the @command{inventory} command lists only ``interesting''
-files, considered to be those with a status of missing, dropped,
-renamed, added or changed. If the @option{--all-files} option is
-specified the @command{inventory} command lists every file in the
-working copy, including those with a status of unchanged, unknown and
-ignored.
-
-Specifying optional @var{pathname...} arguments to the @command{inventory}
-command restricts the set of changes that are visible and results in
-only a partial inventory of the working copy. Changes to files not included
-in the specified set of pathnames will be ignored.
-
-From within a subdirectory of the working copy the @command{inventory}
-command will, by default, include @emph{all changes} in the working
-copy.  Specifying only the pathname "." will restrict @command{inventory}
-to files changed within the current subdirectory of the working copy.
-
-If the @option{--all-files} option is specified the @command{inventory}
-command will list all files in the working copy. However, the changes
-that are will be restricted as described above.
-
-Renamed files have both the old and new name of the file listed on
-the same line in the inventory, in that order.  
-
-Since pathnames may contain spaces, quotes and other ``special''
-characters, the @command{inventory} command lists quoted filenames to
-avoid any ambiguities.
-
-Full support for versioned directories is not yet complete and the
-@command{inventory} command will only list entries for renamed or
-dropped directories. Directory entries are designated by pathnames
-ending with the "/" character.
-
 @item monotone log
 @itemx monotone log --depth=@var{n}
-@itemx monotone log @var{id}
-@itemx monotone log --depth=@var{n} @var{id}
-@itemx monotone log @var{id} @var{file}
-@itemx monotone log --depth=@var{n} @var{id} @var{file}
+@itemx monotone log --revision=@var{id}
+@itemx monotone log --depth=@var{n} --revision=@var{id}
+@itemx monotone log --revision=@var{id} @var{file}
+@itemx monotone log --depth=@var{n} --revision=@var{id} @var{file}
 
 This command prints out a log, in reverse-ancestry order, of small
 history summaries.  Each summary contains author, date, changelog and
@@ -3964,9 +3921,9 @@ This command drops the public and/or private key. If both exist, both
 are dropped, if only one exists, it is dropped. This command should
 be used with caution as changes are irreversible without a backup of
 the key(s) that were dropped. Note also that the private key is not
-guaranteed to actually be erased from your database file - if you are
-going to make the database file public, you should use 'db dump'
-and 'db load' to import into a fresh database.
+guaranteed to actually be erased from your database file --- if you are
+going to make the database file public, you should use @command{db dump}
+and @command{db load} to import into a fresh database.
 
 @item monotone chkeypass @var{id}
 
@@ -3985,8 +3942,8 @@ from @code{stdin}.
 
 This command lets you test your revision trust hook
 @code{get_revision_cert_trust} (see @ref{Hook Reference}).  You pass it
-a revision id, a certificate name, a certificate value, and one or more
-key ids, and it will tell you whether, under your current settings,
+a revision ID, a certificate name, a certificate value, and one or more
+key IDs, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
 
@@ -4295,7 +4252,7 @@ and revision is correct.
 
 This command ``kills'', i.e., deletes, a given revision, as well as any
 certs attached to it.  It has an ugly name because it is a dangerous
-command; it permanently and irrecovably deletes historical information
+command; it permanently and irrevocably deletes historical information
 from your database.  There are a number of caveats:
 @itemize
 @item
@@ -4404,8 +4361,8 @@ Prints the heads of branch @var{branch}.
 
 @item Output format:
 
-Zero or more lines, each giving the id of one head of the given branch.
-Each line consists of a revision id, in hexadecimal, followed by a
+Zero or more lines, each giving the ID of one head of the given branch.
+Each line consists of a revision ID, in hexadecimal, followed by a
 newline.  The lines are printed in alphabetically sorted order.
 
 @item Error conditions:
@@ -4420,7 +4377,7 @@ If the given branch contains no members or does not exist, then no lines are pri
 @table @strong
 @item Arguments:
 
-One or more revision ids, @var{rev1}, @var{rev2}, etc.
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
 
 @item Added in:
 
@@ -4439,8 +4396,8 @@ Prints the ancestors of one or more revisions.
 
 @item Output format:
 
-Zero or more lines, each giving the id of one ancestor of the given
-revisions.  Each line consists of a revision id, in hexadecimal,
+Zero or more lines, each giving the ID of one ancestor of the given
+revisions.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
 
@@ -4461,7 +4418,7 @@ an error message to stderr, and exits with status 1.
 @table @strong
 @item Arguments:
 
-One revision id, @var{rev}.
+One revision ID, @var{rev}.
 
 @item Added in:
 
@@ -4481,8 +4438,8 @@ non-recursive version of @command{automate ancestors}.
 
 @item Output format:
 
-Zero or more lines, each giving the id of one parent of the given
-revision.  Each line consists of a revision id, in hexadecimal,
+Zero or more lines, each giving the ID of one parent of the given
+revision.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
 
@@ -4499,7 +4456,7 @@ stdout, prints an error message to stderr, and exits with status 1.
 @table @strong
 @item Arguments:
 
-One or more revision ids, @var{rev1}, @var{rev2}, etc.
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
 
 @item Added in:
 
@@ -4518,8 +4475,8 @@ Prints the descendents of one or more revisions.
 
 @item Output format:
 
-Zero or more lines, each giving the id of one descendent of the given
-revisions.  Each line consists of a revision id, in hexadecimal,
+Zero or more lines, each giving the ID of one descendent of the given
+revisions.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
 
@@ -4540,7 +4497,7 @@ an error message to stderr, and exits with status 1.
 @table @strong
 @item Arguments:
 
-One revision id, @var{rev}.
+One revision ID, @var{rev}.
 
 @item Added in:
 
@@ -4560,8 +4517,8 @@ non-recursive version of @command{automate descendents}.
 
 @item Output format:
 
-Zero or more lines, each giving the id of one child of the given
-revision.  Each line consists of a revision id, in hexadecimal,
+Zero or more lines, each giving the ID of one child of the given
+revision.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
 
@@ -4599,8 +4556,8 @@ Prints out the complete ancestry graph of this database.
 @item Output format:
 
 Zero or more lines, each giving ancestry information for one revision.
-Each line begins with a revision id.  Following this are zero or more
-space-prefixed revision ids.  Each revision id after the first is a
+Each line begins with a revision ID.  Following this are zero or more
+space-prefixed revision IDs.  Each revision ID after the first is a
 parent (in the sense of @command{automate parents}) of the first.  For
 instance, in the above sample output,
 0c05e8ec9c6af4224672c7cc4c9ef05ae8bdb794 is a root node,
@@ -4623,7 +4580,7 @@ None.
 @table @strong
 @item Arguments:
 
-One or more revision ids, @var{rev1}, @var{rev2}, etc.
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
 
 @item Added in:
 
@@ -4635,7 +4592,7 @@ Prints all arguments, except those that are an ancestor of some other
 argument.  One way to think about this is that it prints the minimal
 elements of the given set, under the ordering imposed by the ``child
 of'' relation.  Another way to think of it is if the arguments formed a
-branch branch, then we would print the heads of that branch.  If there
+branch, then we would print the heads of that branch.  If there
 are no arguments, prints nothing.
 
 @item Sample output:
@@ -4647,8 +4604,8 @@ are no arguments, prints nothing.
 
 @item Output format:
 
-Zero or more lines, each giving the id of one descendent of the given
-revisions.  Each line consists of a revision id, in hexadecimal,
+Zero or more lines, each giving the ID of one descendent of the given
+revisions.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
 
@@ -4665,7 +4622,7 @@ an error message to stderr, and exits with status 1.
 @table @strong
 @item Arguments:
 
-One or more revision ids, @var{rev1}, @var{rev2}, etc.
+One or more revision IDs, @var{rev1}, @var{rev2}, etc.
 
 @item Added in:
 
@@ -4689,7 +4646,7 @@ are no arguments, prints nothing.
 
 @item Output format:
 
-A list of revision ids, in hexadecimal, each followed by a newline.
+A list of revision IDs, in hexadecimal, each followed by a newline.
 Revisions are printed in topologically sorted order.
 
 @item Error conditions:
@@ -4705,8 +4662,8 @@ an error message to stderr, and exits with status 1.
 @table @strong
 @item Arguments:
 
-A ``new'' revision id @var{new}, followed by zero or more ``old''
-revision ids @var{old1}, @var{old2}, etc.
+A ``new'' revision ID @var{new}, followed by zero or more ``old''
+revision IDs @var{old1}, @var{old2}, etc.
 
 @item Added in:
 
@@ -4734,7 +4691,7 @@ new since then.
 
 @item Output format:
 
-A list of revision ids, in hexadecimal, each followed by a newline.
+A list of revision IDs, in hexadecimal, each followed by a newline.
 Revisions are printed in topologically sorted order.
 
 @item Error conditions:
@@ -4775,7 +4732,7 @@ the head of some branch, but not every branch head is a leaf.
 @item Output format:
 
 Zero or more lines, each a leaf of the revision graph.  Each line
-consists of a revision id, in hexadecimal, followed by a newline.  The
+consists of a revision ID, in hexadecimal, followed by a newline.  The
 lines are printed in alphabetically sorted order.
 
 @item Error conditions:
@@ -4809,13 +4766,135 @@ Print all revisions that match the given selector.
 
 @item Output format:
 
-Zero or more lines, each giving the id of one revision that matches the
-given selector.  Each line consists of a revision id, in hexadecimal,
+Zero or more lines, each giving the ID of one revision that matches the
+given selector.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.
 
 @item Error conditions:
 
 None.
+
+@end table
+
+@item monotone automate inventory
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+1.0
+
+@item Purpose:
+
+Prints the inventory of every file found in the working copy or its
+associated base manifest. Each unique path is listed on a line prefixed by
+three status characters and two numeric values used for identifying
+renames. 
+
+@item Sample output:
+
+@verbatim
+  M 0 0 missing
+ AP 0 0 added patched
+D   0 0 dropped
+R   1 0 renamed-from-this
+ R  0 1 renamed-to-this
+  P 0 0 patched
+    0 0 unchanged
+  U 0 0 unknown
+  I 0 0 ignored
+
+# swapped but not moved
+
+RRP 1 2 unchanged
+RRP 2 1 original
+
+# swapped and moved
+
+RR  1 2 unchanged
+RR  2 1 original
+
+# rename foo bar; add foo
+
+RAP 1 0 foo
+ R  0 1 bar
+
+# rotated but not moved dropped -> missing -> original -> dropped
+
+RRP 1 3 dropped
+RRP 2 1 missing
+RRP 3 2 original
+
+# rotated and moved
+
+RR  1 3 dropped
+RR  2 1 missing
+RR  3 2 original
+
+# dropped but not removed and thus unknown
+
+D U 0 0 dropped
+
+# added but removed and thus missing
+
+ AM 0 0 added
+
+# renamed but not moved and thus unknown source and missing target
+
+R U 1 0 original
+ RM 0 1 renamed
+
+# moved but not renamed and thus missing source and unknown target
+
+  M 0 0 original
+  U 0 0 renamed
+
+# renamed and patched
+
+R   1 0 original
+ RP 0 1 renamed
+
+@end verbatim
+
+@item Output format:
+
+Each path is printed on its own line, prefixed by three status
+characters described below. The status is followed by a single space and
+two numbers, each separated by a single space, used for identifying renames.
+The numbers are followed by a single space and then the pathname, which 
+includes the rest of the line. Directory paths are identified as ending with
+the "/" character, file paths do not end in this character.
+
+The three status characters are as follows.
+
+@verbatim
+column 1 pre-state
+      ' ' the path was unchanged in the pre-state
+      'D' the path was deleted from the pre-state
+      'R' the path was renamed from the pre-state name
+column 2 post-state
+      ' ' the path was unchanged in the post-state
+      'R' the path was renamed to the post-state name
+      'A' the path was added to the post-state
+column 3 file-state
+      ' ' the file is known and unchanged from the current manifest version
+      'P' the file is patched to a new version
+      'U' the file is unknown and not included in the current manifest
+      'I' the file is ignored and not included in the current manifest
+      'M' the file is missing but is included in the current manifest
+@end verbatim
+
+Full support for versioned directories is not yet complete and the
+inventory will only list entries for renamed or dropped
+directories. 
+
+@item Error conditions:
+
+When executed from outside of a working copy directory, prints an error
+message to stderr, and exits with status 1.
 
 @end table
 
@@ -4834,16 +4913,21 @@ This command imports all the file versions in each RCS file listed in
 database.  Note that this does not do any revision reconstruction, and
 is only useful for debugging.
 
-@item monotone cvs_import @var{pathname...}
+@item monotone cvs_import @var{pathname}
 
-This command imports all the file versions in each RCS file found in
-the tree of files starting at @var{pathname...}, then reconstructs the
+This command imports all the file versions in each RCS file found in the
+tree of files starting at @var{pathname}, then reconstructs the
 tree-wide history of logical changes by comparing RCS time stamps and
 change log entries. For each logical tree-wide change, monotone
 synthesizes a manifest and revision, and commits them (along with all
-associated file deltas) to your database. It also copies all change
-log entries, author identifiers, and date stamps to manifest
-certificates.
+associated file deltas) to your database. It also copies all change log
+entries, author identifiers, and date stamps to manifest certificates.
+
+In normal use, @var{pathname} will be a CVS module, though it is
+possible to point it at a directory within a module as well.  Whatever
+directory you point it at will become the root of monotone's version of
+the tree.
+
 @end ftable
 
 
@@ -4938,7 +5022,7 @@ change you make. The result is used as the value for a
 changes.
 
 The contents of @file{MT/log} are read and passed as
-@var{user_log_message}. This allows you do document your changes as
+@var{user_log_message}. This allows you to document your changes as
 you proceed instead of waiting until you are ready to commit. Upon
 a successful commit, the contents of @file{MT/log} are erased setting
 the system up for another edit/commit cycle.
@@ -5045,11 +5129,11 @@ manifests, and files associated with the netsync index
 @var{collection}; otherwise @code{false}. This hook has no default
 definition, therefore the default behavior is to deny all reads.
 
-Note that the @var{identity} value is a key id (such as
+Note that the @var{identity} value is a key ID (such as
 ``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
 key fingerprint (hash) in your database. Monotone will not permit two
-keys in your database to have the same id. Make sure you confirm the
-key fingerprints of each key in your database, as key id strings are
+keys in your database to have the same ID. Make sure you confirm the
+key fingerprints of each key in your database, as key ID strings are
 ``convenience names'', not security tokens.
 
 @item get_netsync_anonymous_read_permitted (@var{collection})
@@ -5068,11 +5152,11 @@ manifests, and files associated with the netsync index
 @var{collection}; otherwise @code{false}. This hook has no default
 definition, therefore the default behavior is to deny all writes.
 
-Note that the @var{identity} value is a key id (such as
+Note that the @var{identity} value is a key ID (such as
 ``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
 key fingerprint (hash) in your database. Monotone will not permit two
-keys in your database to have the same id. Make sure you confirm the
-key fingerprints of each key in your database, as key id strings are
+keys in your database to have the same ID. Make sure you confirm the
+key fingerprints of each key in your database, as key ID strings are
 ``convenience names'', not security tokens.
 
 @item ignore_file (@var{filename})
@@ -6145,7 +6229,7 @@ Make a ``branch'' cert approving of a revision's membership in a branch.
 
 @item @b{disapprove} @i{<id>}
 Disapprove of a revision, committing the inverse changes as as a
-descendant of the disapproved revision.
+descendent of the disapproved revision.
 @comment TROFF INPUT: .TP
 
 @item @b{tag} @i{<id> <tagname>}
@@ -6166,10 +6250,6 @@ Show diffs between working copy and database.
 
 @item @b{status} @i{[<pathname>...]}
 Show status of working copy.
-@comment TROFF INPUT: .TP
-
-@item @b{inventory} @i{[<pathname>...]}
-Show inventory of files in working copy.
 @comment TROFF INPUT: .TP
 
 @item @b{log} @i{[id]}
@@ -6274,10 +6354,10 @@ from trusted sources}; all other trust relationships are built out of
 the trust assigned to keys.
 @comment TROFF INPUT: .TP
 
-@item @b{cvs_import} @i{<cvsroot>}
-Import all versions in CVS repository. Reconstructs revisions and
-converts metadata to certificates. A private signing key must already
-exist in the database.
+@item @b{cvs_import} @i{<cvsroot>/<module>}
+Import all versions in a CVS module. Reconstructs revisions and converts
+metadata to certificates. A private signing key must already exist in
+the database.
 @comment TROFF INPUT: .TP
 
 @item @b{rcs_import} @i{<rcsfile> ...}
@@ -6318,18 +6398,24 @@ merely noted as removals in the work list.
 Rename files from @i{<src>} to @i{<dst>} in working copy.
 @comment TROFF INPUT: .TP
 
-@item @b{commit} @i{[--message=log message] [<pathname>...]}
-Commit working copy to database. If a --message @option{option} is
-provided on the command line, it is used; otherwise a log message
-editor will be invoked. If @i{MT/log} exists, it's content will be
-passed to the message editor.
+@item @b{commit} @i{[--message=log message | --message-file=log message file] [<pathname>...]}
+Commit working copy to database.  Each commit has a changelog message
+associated with it.  If @option{--message} is provided on the command
+line, it is used; if @option{--message-file} is provided, the content of
+the named file will be used as a commit message.  If the filename is '-'
+the commit message will be read from standard input.  Otherwise a log
+message editor will be invoked.  If the file @file{MT/log} exists and is
+non-empty, its content is used to prefill the editor.  You cannot
+specify both @option{--message} and @option{--message-file} at the same
+time, and if @file{MT/log} exists and is non-empty, you can cannot
+specify either of them at all.
 @comment TROFF INPUT: .TP
 
 @item @b{update} @i{[revision]}
 Update working copy.
 @comment TROFF INPUT: .SH DESCRIPTION
 
-@item @b{update_inodeprints}
+@item @b{refresh_inodeprints}
 Turn on inodeprints mode, and force a cache refresh.
 
 @item @b{push} @i{<host> <collection>}
@@ -6348,7 +6434,7 @@ Sync contents of @i{<collection>} with database on @i{<host>}
 Serve contents of @i{<collection>} at network address @i{<host>}
 @comment TROFF INPUT: .SH DESCRIPTION
 
-@item @b{automate} @i{(interface_version|heads|descendents|erase_ancestors|toposort|ancestry_difference|leaves)}
+@item @b{automate} @i{(interface_version|heads|descendents|erase_ancestors|toposort|ancestry_difference|leaves|inventory)}
 Scripting interface.
 
 @item @b{db} @i{(init|info|version|dump|load|migrate|execute <sql>)}
@@ -6452,6 +6538,13 @@ used to compare a working copy with a specific revision or to compare
 two specific revisions. It will likely apply to other commands in the
 future.
 
+@item @b{--message-file=}@i{<log message file>}
+Use the content of the given file as the changelog when committing a new
+revision rather than invoking the log message editor.  If the filename
+is '-' the changelog is read from standard input.  Currently this option
+only applies to the commit command, but it may also apply to the comment
+command in the future.
+
 @item @b{--message=}@i{<log message>}
 @itemx @b{-m} @i{<log message>}
 Use the given message as the changelog when committing a new revision
@@ -6460,13 +6553,13 @@ applies to the commit command but it may also apply to the comment
 command in the future.
 
 @item @b{--author=}@i{<author email>}
-Use the given author as the value of the "author" cert when committing
+Use the given author as the value of the @code{author} cert when committing
 a new revision, rather than the default author.  Useful when
 committing a patch on behalf of someone else, or when importing
 history from another version control system.
 
 @item @b{--date=}@i{<date and time>}
-Use the given given date and time as value of the "date" cert when
+Use the given given date and time as value of the @code{date} cert when
 committing a new revision, rather than the current time.  Useful when
 importing history from another version control system.
 
@@ -6483,11 +6576,6 @@ if needed.
 
 @item @b{-@@} @i{<file>}
 An alias for @b{--xargs=}@i{<file>}.
-
-@item @b{--all-files}
-Include every file available in the working copy in the inventory
-list. By default inventory only lists ``interesting'' files. This option
-is specific to the @command{inventory} command.
 
 @comment TROFF INPUT: .SH ENVIRONMENT
 

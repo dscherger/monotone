@@ -55,25 +55,39 @@ attr_functions["execute"] =
 
 
 function ignore_file(name)
+   -- c/c++
    if (string.find(name, "%.a$")) then return true end
    if (string.find(name, "%.so$")) then return true end
    if (string.find(name, "%.o$")) then return true end
    if (string.find(name, "%.la$")) then return true end
    if (string.find(name, "%.lo$")) then return true end
+   if (string.find(name, "^core$")) then return true end
+   if (string.find(name, "/core$")) then return true end
+   -- python
+   if (string.find(name, "%.pyc$")) then return true end
+   if (string.find(name, "%.pyo$")) then return true end
+   -- TeX
    if (string.find(name, "%.aux$")) then return true end
+   -- backup files
    if (string.find(name, "%.bak$")) then return true end
    if (string.find(name, "%.orig$")) then return true end
    if (string.find(name, "%.rej$")) then return true end
    if (string.find(name, "%~$")) then return true end
-   if (string.find(name, "/core$")) then return true end
+   -- autotools detritus:
+   if (string.find(name, "^autom4te.cache/")) then return true end
+   if (string.find(name, "/autom4te.cache/")) then return true end
+   if (string.find(name, "^.deps/")) then return true end
+   if (string.find(name, "/.deps/")) then return true end
+   -- other VCSes:
    if (string.find(name, "^CVS/")) then return true end
    if (string.find(name, "/CVS/")) then return true end
    if (string.find(name, "^%.svn/")) then return true end
    if (string.find(name, "/%.svn/")) then return true end
    if (string.find(name, "^SCCS/")) then return true end
    if (string.find(name, "/SCCS/")) then return true end
-   if (string.find(name, "%.pyc$")) then return true end
-   if (string.find(name, "%.pyo$")) then return true end
+   if (string.find(name, "^_darcs/")) then return true end
+   if (string.find(name, "^.cdv/")) then return true end
+   if (string.find(name, "^.git/")) then return true end
    return false;
 end
 
@@ -232,6 +246,31 @@ function merge3_xxdiff_cmd(left_path, anc_path, right_path, merged_path,
    end
 end
    
+function merge2_kdiff3_cmd(left_path, right_path, merged_path, lfile, rfile, outfile)
+   return 
+   function()
+      return execute("kdiff3", 
+                     "--L1", left_path,
+                     "--L2", right_path,
+                     lfile, rfile, 
+                     "-o", outfile)
+   end
+end
+
+function merge3_kdiff3_cmd(left_path, anc_path, right_path, merged_path, 
+                           lfile, afile, rfile, outfile)
+   return 
+   function()
+      return execute("kdiff3", 
+                     "--L1", anc_path,
+                     "--L2", left_path,
+                     "--L3", right_path,
+                     afile, lfile, rfile, 
+                     "--merge", 
+                     "--o", outfile)
+   end
+end
+
 function write_to_temporary_file(data)
    tmp, filename = temp_file()
    if (tmp == nil) then 
@@ -272,7 +311,10 @@ function merge2(left_path, right_path, merged_path, left, right)
       outfile ~= nil 
    then 
       local cmd = nil
-      if program_exists_in_path("meld") then
+      if program_exists_in_path("kdiff3") then
+         cmd = merge2_kdiff3_cmd(left_path, right_path, merged_path, 
+                                 lfile, rfile, outfile)
+      elseif program_exists_in_path("meld") then
          meld_exists = true
          io.write(string.format("\nWARNING: 'meld' was choosen to perform external 2-way merge.\n" .. 
                                 "You should merge all changes to *LEFT* file due to limitation of program\n" ..
@@ -335,7 +377,10 @@ function merge3(anc_path, left_path, right_path, merged_path, ancestor, left, ri
       outfile ~= nil 
    then 
       local cmd = nil
-      if program_exists_in_path("meld") then
+      if program_exists_in_path("kdiff3") then
+         cmd = merge3_kdiff3_cmd(left_path, anc_path, right_path, merged_path, 
+                                 lfile, afile, rfile, outfile)
+      elseif program_exists_in_path("meld") then
          meld_exists = true
          io.write(string.format("\nWARNING: 'meld' was choosen to perform external 3-way merge.\n" .. 
                                 "You should merge all changes to *CENTER* file due to limitation of program\n" ..

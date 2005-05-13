@@ -234,13 +234,13 @@ Optional argument PATH ."
     (error "Cant find top for %s" path))
   ;; work with full path names
   (setq path (expand-file-name path))
-  (block nil
+  (catch 'found
     (let ((prev-path nil))
       (while (not (equal path prev-path))
         (let ((mt-dir (concat path "MT")))
           ;;(message "Search: %s" mt-dir)
           (when (file-directory-p mt-dir)
-            (return path))
+            (throw 'found path))
           (setq prev-path path
                 path (monotone-file-parent-directory path)))))))
 ;;(monotone-find-MT-top "/disk/amelie1/harley/monotone-dev/contrib/monotone.el")
@@ -708,7 +708,7 @@ the buffer if not global."
   "Register this file with monotone for the next commit."
   (interactive)
   (if buffer-file-name
-    (monotone-cmd-buf 'file "add" (current-buffer))
+    (monotone-cmd-buf 'file '("add") (current-buffer))
     (error "This buffer does not have a file name")))
 
 (defun monotone-vc-status ()

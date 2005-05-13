@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT(monotone, 0.18, monotone-devel@nongnu.org)
+AC_INIT(monotone, 0.19, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE(1.7.1)
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_TESTDIR([tests])
@@ -365,6 +365,38 @@ AC_CHECK_MEMBERS([struct stat.st_ctim.tv_nsec, struct stat.st_mtim.tv_nsec])
 AC_CHECK_MEMBERS([struct stat.st_ctimespec.tv_nsec, struct stat.st_mtimespec.tv_nsec])
 AC_CHECK_MEMBERS([struct stat.st_ctimensec, struct stat.st_mtimensec])
 
+# Check type of socklen_t; int on Cygwin, OS X <= 10.3, Win32.  TYPE_SOCKLEN_T
+# function supplied by <lars@nocrew.org> via http://autoconf-archive.cryp.to/
+AC_DEFUN([TYPE_SOCKLEN_T],
+[AC_CACHE_CHECK([for socklen_t], ac_cv_type_socklen_t,
+[
+  AC_TRY_COMPILE(
+  [#include <sys/types.h>
+   #include <sys/socket.h>],
+  [socklen_t len = 42; return 0;],
+  ac_cv_type_socklen_t=yes,
+  ac_cv_type_socklen_t=no)
+])
+  if test $ac_cv_type_socklen_t = yes; then
+    AC_DEFINE(HAVE_SOCKLEN_T, 1, [Define if platform has socklen_t.])
+  fi
+])
+TYPE_SOCKLEN_T
+
+AC_DEFUN([TYPE_PID_T],
+[AC_CACHE_CHECK([for pid_t], ac_cv_type_pid_t,
+[
+  AC_TRY_COMPILE(
+  [#include <sys/types.h>],
+  [pid_t pid = 42; return 0;],
+  ac_cv_type_pid_t=yes,
+  ac_cv_type_pid_t=no)
+])
+  if test $ac_cv_type_pid_t = no; then
+    AC_DEFINE(pid_t, long, [pid_t substitute.])
+  fi
+])
+TYPE_PID_T
 
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
