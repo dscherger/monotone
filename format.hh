@@ -18,10 +18,10 @@
 class BaseFormatter 
 {
 public:
-   BaseFormatter(app_state &app); 
-   virtual ~BaseFormatter(); 
+  BaseFormatter(app_state &app); 
+  virtual ~BaseFormatter(); 
 
-   virtual void apply(const revision_id &rid) = 0;
+  virtual void apply(const revision_id &rid) = 0;
 
 protected:
   app_state &app;
@@ -33,11 +33,11 @@ protected:
 class FormatFunc : public std::unary_function<revision_id, void>
 {
 public:
-   FormatFunc(std::ostream &out, app_state &app);
-   ~FormatFunc();
-   void operator ()(const revision_id &rid) { fmt->apply(rid); }
+  FormatFunc(std::ostream &out, app_state &app);
+  ~FormatFunc();
+  void operator ()(const revision_id &rid) { fmt->apply(rid); }
 private:
-   std::auto_ptr<BaseFormatter> fmt;   
+  std::auto_ptr<BaseFormatter> fmt;   
 };
 
 
@@ -53,16 +53,16 @@ public:
 private:
   // changeset fmt strs indexing enum
   enum FMTIDX
-  {
-     FMTIDX_REVISION,
-     FMTIDX_ANCESTORS,
-     FMTIDX_DELFILES,
-     FMTIDX_DELDIRS,
-     FMTIDX_RENFILES,
-     FMTIDX_RENDIRS,
-     FMTIDX_ADDFILES,
-     FMTIDX_MODFILES
-  };
+    {
+      FMTIDX_REVISION,
+      FMTIDX_ANCESTORS,
+      FMTIDX_DELFILES,
+      FMTIDX_DELDIRS,
+      FMTIDX_RENFILES,
+      FMTIDX_RENDIRS,
+      FMTIDX_ADDFILES,
+      FMTIDX_MODFILES
+    };
   
   void print_cert (std::vector < revision < cert > >&certs, const std::string &name,
                    bool from_start=false, bool from_end=false, const std::string &sep="");
