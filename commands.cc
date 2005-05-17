@@ -3612,7 +3612,7 @@ CMD(setup, "tree", "DIRECTORY", "setup a new working copy directory",
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(cvs_pull, "network", "[CVS-REPOSITORY CVS-MODULE]",
-    "(re-)import a module from a remote cvs repository")
+    "(re-)import a module from a remote cvs repository", OPT_BRANCH_NAME % OPT_SINCE)
 {
 
   if (args.size() != 2 && args.size() != 0) throw usage(name);
@@ -3629,7 +3629,7 @@ CMD(cvs_pull, "network", "[CVS-REPOSITORY CVS-MODULE]",
 
 
 CMD(cvs_push, "network", "CVS-REPOSITORY CVS-MODULE",
-    "commit changes in local database to a remote cvs repository")
+    "commit changes in local database to a remote cvs repository", OPT_BRANCH_NAME % OPT_SINCE)
 {
 
   if (args.size() != 2 && args.size() != 0) throw usage(name);
@@ -3644,7 +3644,7 @@ CMD(cvs_push, "network", "CVS-REPOSITORY CVS-MODULE",
 
 
 CMD(cvs_admin, "network", "COMMAND ARG",
-    "e.g. manifest REVISION")
+    "e.g. manifest REVISION", OPT_BRANCH_NAME)
 {
   if (args.size() != 2) throw usage(name);
   cvs_sync::admin(idx(args, 0)(), idx(args, 1)(), app);

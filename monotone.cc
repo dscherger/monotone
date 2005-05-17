@@ -27,7 +27,6 @@
 #include "ui.hh"
 #include "mt_version.hh"
 #include "options.hh"
-#define OPT_SINCE 9999 // use a custom number ...
 
 // main option processing and exception handling code
 
