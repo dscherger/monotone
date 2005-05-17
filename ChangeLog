@@ -1,3 +1,82 @@
+2005-05-15  graydon hoare  <graydon@pobox.com>
+
+	* rcs_import.cc (note_state_at_branch_beginning): collect
+	branch beginning states into a single synthetic commit.
+
+2005-05-15  graydon hoare  <graydon@pobox.com>
+
+	* rcs_import.cc: rewrite most of the branch logic to 
+	address issues raised in bugs 13032 and 13063.
+	* tests/t_cvsimport_deleted_invar.at: un-XFAIL.
+
+2005-05-16  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc (commit): change scope of the transaction guard so that
+	the transaction will fail before MT/revision is written (which could
+	leave a non-committed revision/bad working dir).
+
+2005-05-16  Grahame Bowland  <grahame@angrygoats.net>
+
+	* monotone.texi: update "monotone log" documentation
+	* commands.cc: fix "monotone log" when run with no --revision args
+
+2005-05-15  Derek Scherger  <derek@echologic.com>
+
+	* tests/t_update_with_blocked_rename.at: new test
+	* testsuite.at: call it
+
+2005-05-15  Derek Scherger  <derek@echologic.com>
+
+	* netsync.cc (process_anonymous_cmd, process_auth_cmd): log
+	details of permissions allowed/denied
+	* tests/t_netsync_permissions.at: new test
+	* testsuite.at: call it
+
+2005-05-15  Richard Levitte  <richard@levitte.org>
+
+	* contrib/monotone-notify.pl (revision_is_in_branch): Another
+	place where --revision was missing.
+
+2005-05-14  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/monoprof.sh: Clean up variable definitions some.
+		- Add option --datadir, should now be usable without editing
+		variables to match system paths
+		- Add option --setup, generates most of the needed files
+
+2005-05-13  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Add "monotone automate stdio", to let the automation interface
+	take commands on standard input.
+	* automate.cc: (automate_stdio) New function.
+		(automate_command) Add it.
+	* commands.cc: Add to description for "automate".
+	* monotone.texi: Add to documentation.
+
+2005-05-13  Joel Reed  <joelwreed@comcast.com>
+
+	* tests/t_unidiff3.at: opps. forgot to add this file which
+	should have been included as fix for bug 13072.
+
+2005-05-13  Joel Reed  <joelwreed@comcast.com>
+
+	* diff_patch.cc, transforms.cc, testsuite.at: Patch from 
+	drepper@redhat.com, who writes: "The attached patch should fix bug
+	13072.  I have no idea why the code in transform.cc insists on
+	adding an empty line in case the file is empty. Removing the code
+	didn't cause any regressions in the test suite and the
+	diff_patch.cc change corrects the output format.  A new test case
+	is included as well."
+
+2005-05-13  Joel Reed  <joelwreed@comcast.com>
+
+	* automate.cc: add automate attributes command
+	* commands.cc: add attributes subcommand helptext
+	* contrib/monotone.zsh_completion: use automate attributes
+	for completion of monotone attr and cleanup ignore files code
+	* tests/t_automate_attributes.at: add testcase
+	* testsuite.at: include new testcaes
+
 2005-05-13  Jon Bright  <jon@siliconcircus.com>
 	* testsuite.at (UNGZ): Change the way the ungzipping works on
 	Win32, in the hope that test 206 will no longer be given invalid
@@ -52,6 +131,12 @@
 
 	* file_io.cc (write_data_impl): Use portable boost::filesystem
 	calls in place of unlink(2)/remove(2).
+
+2005-05-12  Grahame Bowland  <grahame@angrygoats.net>
+
+	* commands.cc: Modify the "log" command to accept multiple 
+	revisions on command line, and display the log for all 
+	of those revisions.
 
 2005-05-11  Nathaniel Smith  <njs@codesourcery.com>
 
