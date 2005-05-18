@@ -4860,18 +4860,21 @@ Special changeset placeholders put in the common expression are
 substituted by the formatted changeset informations.
 The separate the common formatting expression is separated from  the
 changeset ones by apposite markers. 
+Some formatting specifier have also a short form, obtained prepending
+an 's' to the specifier code. As an example, the short form of the %d
+specifier is %sd.
 
 Common formatting specifiers:
 @verbatim
-%a : value of author certificate
-%b : value of branch certificate
-%d : value of date certificate
+%[s]a : value of author certificate
+%[s]b : value of branch certificate
+%[s]d : value of date certificate
 %e : value of comment certificate
-%i : revision id
+%[s]i : revision id
 %l : value of changelog certificate
-%s : value of testresult certificate
+%r : value of testresult certificate
 %t : value of tag certificate
-%m : manifest id
+%[s]m : manifest id
 @end verbatim
 
 Changeset Placeholders:
@@ -4884,6 +4887,11 @@ Changeset Placeholders:
 %C : renamed dirs (marker @C)
 %M : modified files (marker @M)
 @end verbatim
+
+The short forms have the following meanings: for ids, the first 8
+characters.  For author, everything before the first @ symbol.  For
+branch, everything after the last '.' character.  For date, everything
+before the first 'T' character.
 
 The %P,%A,%D,%E,%M changeset placeholders supports the private
 specifier %f, substituted with the file/directory/ancestor name/id
@@ -6584,7 +6592,7 @@ Common formatting specifiers:
 %i  : revision id
 %si : shortened revision id
 %l  : value of changelog certificate
-%s  : value of testresult certificate
+%r  : value of testresult certificate
 %t  : value of tag certificate
 %m  : manifest id
 %sm : shortened manifest id

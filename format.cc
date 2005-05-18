@@ -363,9 +363,8 @@ PrintFormatter::apply(const revision_id & rid)
           if (*i == 's') {
             short_form = true;
             ++i;
+            N(i != e, F("%%s is not a valid format specifier"));
           }
-          if (i == e)
-            return;
 
           switch (*i)
             {
@@ -387,7 +386,7 @@ PrintFormatter::apply(const revision_id & rid)
               N(!short_form, F("no short form for comment specifier"));
               print_cert (certs, comment_cert_name);
               break;
-            case 's':
+            case 'r':
               N(!short_form, F("no short form for testresult specifier"));
               print_cert (certs, testresult_cert_name);
               break;
