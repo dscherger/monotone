@@ -8,42 +8,15 @@
 #include <transforms.hh>
 #include <format.hh>
 
-using namespace std;
-
-// helper functions to navigate the given revision - shamelessy copied from 'log' command
-void
-walk_edges (const app_state & app, const revision_set & rev,
-	    set < revision_id > &ancestors, vector < change_set > &changes,
-	    set < file_path > &modified_files)
-{
-  for (edge_map::const_iterator e = rev.edges.begin ();
-       e != rev.edges.end (); ++e)
-    {
-      ancestors.insert (edge_old_revision (e));
-
-      change_set const &cs = edge_changes (e);
-      change_set::path_rearrangement const &pr = cs.rearrangement;
-
-      changes.push_back (cs);
-
-      for (change_set::delta_map::const_iterator i = cs.deltas.begin ();
-           i != cs.deltas.end (); i++)
-      {
-        if (pr.added_files.find (i->first ()) == pr.added_files.end ())
-          modified_files.insert (i->first ());
-      }
-    }
-}
-
 // ---------------------- formatting functor ----------------------------
 // IMPORTANT: to complete formatting, it *must* go out of scope (i.e. its destructor
 // called)
 FormatFunc::FormatFunc(std::ostream &out, app_state &app)
 {
   if (app.xml_enabled)
-    fmt = auto_ptr<BaseFormatter>(new XMLFormatter(out, app));
+    fmt = std::auto_ptr<BaseFormatter>(new XMLFormatter(out, app));
   else 
-    fmt = auto_ptr<BaseFormatter>(new PrintFormatter(out, app, app.format_string));
+    fmt = std::auto_ptr<BaseFormatter>(new PrintFormatter(out, app, app.format_string));
 }
 
 FormatFunc::~FormatFunc()
@@ -88,11 +61,11 @@ PrintFormatter::assign_format_strings(const utf8 &fmt)
   fmtstrs[FMTIDX_MODFILES]=utf8("%f\n");
   
   // quick parse of the formatting string
-  string::const_iterator e=fmt().end();
-  string::const_iterator i=fmt().begin();
-  string::const_iterator start_current_fmt=fmt().begin();
+  std::string::const_iterator e=fmt().end();
+  std::string::const_iterator i=fmt().begin();
+  std::string::const_iterator start_current_fmt=fmt().begin();
   FMTIDX current_fmt = FMTIDX_REVISION;
-  string buf;
+  std::string buf;
   while (i != e)
   {
     switch (*i)
@@ -133,10 +106,10 @@ PrintFormatter::assign_format_strings(const utf8 &fmt)
 
 
 void
-PrintFormatter::print_cert (vector < revision < cert > >&certs, const string &name,
-                            bool from_start, bool from_end, const string &sep)
+PrintFormatter::print_cert (std::vector < revision < cert > >&certs, const std::string &name,
+                            bool from_start, bool from_end, const std::string &sep)
 {
-  for (vector < revision < cert > >::const_iterator i = certs.begin ();
+  for (std::vector < revision < cert > >::const_iterator i = certs.begin ();
        i != certs.end (); ++i)
     {
       if (i->inner ().name () == name)
@@ -160,7 +133,7 @@ PrintFormatter::print_cert (vector < revision < cert > >&certs, const string &na
 void
 PrintFormatter::print_cset_ancestor(const utf8 &fmtstring, const revision_id &rid)
 {
-  string::const_iterator i = fmtstring ().begin ();
+  std::string::const_iterator i = fmtstring ().begin ();
   while (i != fmtstring ().end ())
     {
     if ((*i) == '%')
@@ -181,11 +154,11 @@ PrintFormatter::print_cset_ancestor(const utf8 &fmtstring, const revision_id &ri
 }
 
 void
-PrintFormatter::print_cset_single(const utf8 &fmtstring, const set<file_path> &data)
+PrintFormatter::print_cset_single(const utf8 &fmtstring, const std::set<file_path> &data)
 {
-  for (set<file_path>::const_iterator f = data.begin (); f != data.end (); ++f)
+  for (std::set<file_path>::const_iterator f = data.begin (); f != data.end (); ++f)
     {
-    string::const_iterator i = fmtstring ().begin ();
+    std::string::const_iterator i = fmtstring ().begin ();
     while (i != fmtstring ().end ())
       {
       if ((*i) == '%')
@@ -207,11 +180,11 @@ PrintFormatter::print_cset_single(const utf8 &fmtstring, const set<file_path> &d
 }
 
 void
-PrintFormatter::print_cset_pair(const utf8 &fmtstring, const map<file_path, file_path> &data)
+PrintFormatter::print_cset_pair(const utf8 &fmtstring, const std::map<file_path, file_path> &data)
 {
-  for (map<file_path, file_path>::const_iterator f = data.begin (); f != data.end (); ++f)
+  for (std::map<file_path, file_path>::const_iterator f = data.begin (); f != data.end (); ++f)
     {
-    string::const_iterator i = fmtstring ().begin ();
+    std::string::const_iterator i = fmtstring ().begin ();
     while (i != fmtstring ().end ())
       {
       if ((*i) == '%')
@@ -237,7 +210,7 @@ PrintFormatter::print_cset_pair(const utf8 &fmtstring, const map<file_path, file
 }
 
 void
-PrintFormatter::handle_cset(const string::const_iterator &fmt_i, const revision_set & rev)
+PrintFormatter::handle_cset(const std::string::const_iterator &fmt_i, const revision_set & rev)
 {
     FMTIDX curfmt = decode_cset_fmtid(fmt_i);
     N (curfmt != FMTIDX_REVISION, F ("invalid format specifier"));
@@ -289,7 +262,7 @@ PrintFormatter::handle_cset(const string::const_iterator &fmt_i, const revision_
 }
 
 void 
-PrintFormatter::handle_control(string::const_iterator &it, const string::const_iterator &end)
+PrintFormatter::handle_control(std::string::const_iterator &it, const std::string::const_iterator &end)
 {
   ++it;
   if (it == end)
@@ -306,7 +279,7 @@ PrintFormatter::handle_control(string::const_iterator &it, const string::const_i
       out << '@';
       break;
     case 'n':
-      out<< endl;
+      out<< std::endl;
       break;
     case 't':
       out << '\t';
@@ -333,7 +306,7 @@ PrintFormatter::handle_control(string::const_iterator &it, const string::const_i
 }
 
 PrintFormatter::FMTIDX
-PrintFormatter::decode_cset_fmtid(const string::const_iterator &i)
+PrintFormatter::decode_cset_fmtid(const std::string::const_iterator &i)
 {
     switch (*i)
     {
@@ -360,6 +333,9 @@ PrintFormatter::decode_cset_fmtid(const string::const_iterator &i)
 void
 PrintFormatter::apply(const revision_id & rid)
 {
+  if (null_id(rid))
+     return; // not a "real" revision, exiting
+  
   if (!app.db.revision_exists (rid))
     {
       L (F ("revision %s does not exist in db\n") % rid);
@@ -369,12 +345,12 @@ PrintFormatter::apply(const revision_id & rid)
   revision_set rev;
   app.db.get_revision (rid, rev);
 
-  vector < revision < cert > >certs;
+  std::vector < revision < cert > >certs;
   app.db.get_revision_certs (rid, certs);
   erase_bogus_certs (certs, app);
 
-  string::const_iterator i = fmtstrs[FMTIDX_REVISION]().begin ();
-  string::const_iterator e = fmtstrs[FMTIDX_REVISION]().end();
+  std::string::const_iterator i = fmtstrs[FMTIDX_REVISION]().begin ();
+  std::string::const_iterator e = fmtstrs[FMTIDX_REVISION]().end();
   while (i != e)
     {
       if ((*i) == '%')
@@ -448,7 +424,7 @@ PrintFormatter::apply(const revision_id & rid)
 
 // --------------- XML support -----------------
 
-XMLWriter::XMLWriter (ostream & o):
+XMLWriter::XMLWriter (std::ostream & o):
 out (o),
 open_tags(),
 decl_emitted(false),
@@ -464,7 +440,7 @@ XMLWriter::~XMLWriter ()
 void
 XMLWriter::encode(const utf8 & opq)
 {
-  for (string::const_iterator i = opq().begin(); i != opq().end(); ++i)
+  for (std::string::const_iterator i = opq().begin(); i != opq().end(); ++i)
   {
      switch ((*i))
     {
@@ -483,12 +459,12 @@ XMLWriter::tag (const utf8 & tagname)
 {
   if (!decl_emitted)
   {
-     out << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>" << endl;
+     out << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>" << std::endl;
      decl_emitted=true;
   }
 
   if (empty_tag)
-    out << ">" << endl;
+    out << ">" << std::endl;
 
   out << "<" << tagname;
   open_tags.push_back (tagname);
@@ -500,9 +476,9 @@ XMLWriter::end ()
 {
   I (open_tags.size () > 0);
   if (empty_tag)
-    out << "/>" << endl;
+    out << "/>" << std::endl;
   else  
-    out << "</" << open_tags.back () << ">" << endl;
+    out << "</" << open_tags.back () << ">" << std::endl;
   empty_tag=false; // the containing tag is not empty1
   open_tags.pop_back ();
 }
@@ -526,14 +502,14 @@ XMLWriter::cdata (const utf8 & opq)
   if (empty_tag)
   {
      // tag was empty until now, close it
-     out << ">" << endl;
+     out << ">" << std::endl;
      empty_tag=false; 
   }
   encode(opq);
 }
 
 // ---------------- the xml formatter -----------------------
-XMLFormatter::XMLFormatter(ostream &out, app_state &a):
+XMLFormatter::XMLFormatter(std::ostream &out, app_state &a):
 BaseFormatter(a),
 xw(out)
 {
@@ -575,11 +551,11 @@ XMLFormatter::xml_file_id(const file_id & fid)
 void
 XMLFormatter::xml_certs (const revision_id & rid)
 {
-  vector < revision < cert > >certs;
+  std::vector < revision < cert > >certs;
 
   app.db.get_revision_certs (rid, certs);
   erase_bogus_certs (certs, app);
-  for (vector < revision < cert > >::const_iterator i = certs.begin ();
+  for (std::vector < revision < cert > >::const_iterator i = certs.begin ();
        i != certs.end (); ++i)
     {
       xw.tag ("cert");
@@ -656,7 +632,7 @@ XMLFormatter::xml_changeset(const revision_set & rev)
          xml_delta(*f, cs.deltas);
          xw.end();
       }
-      for (m=pr.renamed_dirs.begin(); m != pr.renamed_dirs.end() ; ++f)
+      for (m=pr.renamed_dirs.begin(); m != pr.renamed_dirs.end() ; ++m)
       {
          xw.tag("rename-dir");
          xw.attr("name", m->second());
@@ -679,7 +655,7 @@ XMLFormatter::xml_changeset(const revision_set & rev)
          xml_delta(*f, cs.deltas);
          xw.end();
       }
-      for (m=pr.renamed_files.begin(); m != pr.renamed_files.end() ; ++f)
+      for (m=pr.renamed_files.begin(); m != pr.renamed_files.end() ; ++m)
       {
          xw.tag("rename_file");
          xw.attr("name", m->second());
@@ -689,7 +665,7 @@ XMLFormatter::xml_changeset(const revision_set & rev)
          xw.end();
       }
       
-      set < file_path > modified_files;
+      std::set < file_path > modified_files;
       for (change_set::delta_map::const_iterator i = cs.deltas.begin ();
            i != cs.deltas.end (); i++)
       {
@@ -713,6 +689,9 @@ XMLFormatter::xml_changeset(const revision_set & rev)
 void
 XMLFormatter::apply(const revision_id & rid)
 {
+  if (null_id(rid))
+     return; // not a "real" revision, exiting
+
   if (!app.db.revision_exists (rid))
     {
       L (F ("revision %s does not exist in db\n") % rid);
