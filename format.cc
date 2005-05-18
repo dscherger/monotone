@@ -102,6 +102,9 @@ PrintFormatter::assign_format_strings(const utf8 &fmt)
   // final string  
   buf.assign(start_current_fmt, i);
   fmtstrs[current_fmt] = utf8(buf);
+
+  // assign the starting point for apply()
+  startpoint = fmtstrs[FMTIDX_REVISION]().begin ();
 }
 
 
@@ -349,7 +352,7 @@ PrintFormatter::apply(const revision_id & rid)
   app.db.get_revision_certs (rid, certs);
   erase_bogus_certs (certs, app);
 
-  std::string::const_iterator i = fmtstrs[FMTIDX_REVISION]().begin ();
+  std::string::const_iterator i = startpoint;
   std::string::const_iterator e = fmtstrs[FMTIDX_REVISION]().end();
   while (i != e)
     {
@@ -405,6 +408,11 @@ PrintFormatter::apply(const revision_id & rid)
               else
                 out << rid.inner()();
               break;
+            case '+':
+              N(!short_form, F("no short form for the '%%+' formatting specifier"));
+              startpoint = ++i; // predispone next starting point
+              N(startpoint != e, F("A format string can't terminate with '%%+'"));
+              return; // exit directly from the function, skipping the rest
             default:
               N(!short_form, F("no short form for changelog specifier"));
               // unrecognized specifier, perhaps is a changeset one ?
@@ -418,6 +426,9 @@ PrintFormatter::apply(const revision_id & rid)
       
       ++i;
     }
+
+    // resets fmt str starting point
+    startpoint = fmtstrs[FMTIDX_REVISION]().begin ();
 }
 
 

@@ -328,6 +328,10 @@ Common formatting specifiers:
 %m  : manifest id
 .br
 %sm : shortened manifest id
+.br
+%+  : terminates formatting for the current revision. The next revision
+will be formatted by the specifiers following %+
+
 
 The short forms have the following meanings:  For author, everything 
 before the first @ symbol.  For branch, everything after the last '.' 
@@ -360,6 +364,15 @@ modifiers with the usual c-like meaning.
 \\\\, \\% and \\@ are used to obtain the \\, % and @ char respectively.
 
 The default format string is '%i\\n'. 
+
+The specifier %+ is used to apply alternating format strings to
+different revisions. When found, a %+ specifiers terminates the
+formatting of current revision.
+The next revision to be formatted will 'see' only the format string
+following the %s.
+To have a two column author output you will use a '%a %+ %a\\n' format
+string.
+
 .TP
 \fB--xml\fP
 Generate an xml document based on automate output and containing full

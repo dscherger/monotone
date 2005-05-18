@@ -80,6 +80,7 @@ private:
 private:
   std::ostream & out; 
   utf8 fmtstrs[8];  
+  std::string::const_iterator startpoint;
 };
 
 
