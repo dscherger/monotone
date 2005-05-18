@@ -79,7 +79,20 @@ private:
 
 private:
   std::ostream & out; 
-  utf8 fmtstrs[8];  
+  utf8 fmtstrs[8];
+
+  /// human readable translations of the format region types
+  static std::map<FMTIDX, std::string> format_region_types;
+
+  /// set of allowable \n style codes, ie. 'n' maps to "\n"
+  static std::map<char, std::string> control_character_mapping;
+
+  /// given a FMTIDX, we get a map from valid control "characters" (%sa is multi char though) to 
+  /// a text string describing what get's printed.  trying to ease the way for self-documenting output
+  static std::map<FMTIDX, std::map<std::string, std::string> > format_character_mapping;
+
+  bool valid_format_string;
+  std::string format_string_errors;
 };
 
 
