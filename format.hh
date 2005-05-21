@@ -70,9 +70,9 @@ private:
 
   std::string::const_iterator find_cset_fmt_end(std::string::const_iterator i, 
                                        const std::string::const_iterator &e);
-  void print_cset_ancestor(const std::string::const_iterator &startfmt, 
+  void print_cset_ancestors(const std::string::const_iterator &startfmt, 
                            const std::string::const_iterator & e,
-                           const revision_id &data);
+                           const std::set<revision_id> &data);
   void print_cset_single(const std::string::const_iterator &startfmt, 
                          const std::string::const_iterator & e,
                          const std::set<file_path> &data);
@@ -82,7 +82,7 @@ private:
   FMTIDX decode_cset_fmtid(const std::string::const_iterator &i);
   std::string::const_iterator handle_cset(const std::string::const_iterator &it, 
                                          const std::string::const_iterator & fmt_e,
-                                         const revision_set & rev);
+                                         const changes_summary &csum);
 
   void handle_control(std::string::const_iterator &it, const std::string::const_iterator &end);
 
