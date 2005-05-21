@@ -289,8 +289,14 @@ PrintFormatter::handle_control (std::string::const_iterator & it,
     case '\\':
       out << '\\';
       break;
-    case '@':
-      out << '@';
+    case '%':
+      out << '%';
+      break;
+    case '{':
+      out << '{';
+      break;
+    case '}':
+      out << '}';
       break;
     case 'n':
       out << std::endl;
