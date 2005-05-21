@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 import net.sourceforge.gxl.GXLDocument;
 import net.sourceforge.gxl.GXLGraph;
 import net.sourceforge.gxl.GXLNode;
@@ -54,11 +55,12 @@ public class Log2Gxl extends Thread {
      * Main method
      * Invoke via: monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | xslt gxl2dot.xsl >log.dot
      * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl | xslt gxl2dot.xsl | dot -Tsvg >log.svg
-     * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl --authorfile <file> | xslt gxl2dot.xsl | dot -Tsvg >log.svg
+     * or monotone --db=database.db log id | java -classpath gxl.jar:. uk.co.srs.monotree.Log2Gxl --colorfile <file> | xslt gxl2dot.xsl | dot -Tsvg >log.svg
      *
-     * @param argv command line arguments, --authorfile <file> to specify a file mapping authors to colors
+     * @param argv command line arguments, --colorfile <file> to specify a file mapping authors to colors
      */
     public static void main(String argv[]) throws IOException,IllegalStateException,InterruptedException { 
+	logger.setLevel(Level.FINEST);
 	Log2Gxl processor=new Log2Gxl();
 	processor.start(argv);
 	processor.join();
@@ -267,10 +269,10 @@ public class Log2Gxl extends Thread {
 	    addToAttributeSet("Authors",author);
 
             if(colorAuthors) {
-		String color=authorColorMap.get(author);
+		String color=highlightColorMap.get(author);
 		if(color==null) {
-		    color=colors[authorColorMap.size()];
-		    authorColorMap.put(author,color);
+		    color=colors[highlightColorMap.size()];
+		    highlightColorMap.put(author,color);
 		}
 		currentNode.setAttr("AuthorColor",new GXLString(color));
 	    }
@@ -287,6 +289,15 @@ public class Log2Gxl extends Thread {
 	String branch=line.substring("Branch:".length()+1);
 	if(branch.length()!=0) {
 	    addToAttributeSet("Branches",branch);
+
+            if(colorBranches) {
+		String color=highlightColorMap.get(branch);
+		if(color==null) {
+		    color=colors[highlightColorMap.size()];
+		    highlightColorMap.put(branch,color);
+		}
+		currentNode.setAttr("BranchColor",new GXLString(color));
+	    }
 	} 
     }
 
@@ -413,11 +424,11 @@ public class Log2Gxl extends Thread {
         String line=source.readLine();
 	if(line.length()>0) throw new IOException(source.getLineNumber()+": Unexpected data ["+line+"]");
         line=lookahead();
+        if(line.startsWith("Deleted files:")) parseDeletedFiles();
+        line=lookahead();
         if(line.startsWith("Renamed files:")) parseRenamedFiles();
         line=lookahead();
         if(line.startsWith("Renamed directories:")) parseRenamedDirectories();
-        line=lookahead();
-        if(line.startsWith("Deleted files:")) parseDeletedFiles();
         line=lookahead();
         if(line.startsWith("Added files:")) parseAddedFiles();
         line=lookahead(); 
@@ -425,14 +436,19 @@ public class Log2Gxl extends Thread {
     }
 
     /**
-     * If true, set the background color of the node to indicate the author
+     * If true, output a color of the node to indicate the author of the node
      */
     private boolean colorAuthors=true;
 
     /**
+     * If true, output a color attribute to indicate the branch of the node
+     */
+    private boolean colorBranches=true;
+
+    /**
      * Map of author identifiers to allocated colors
      */
-    private Map<String,String> authorColorMap=new HashMap<String,String>();
+    private Map<String,String> highlightColorMap=new HashMap<String,String>();
     
     /**
      * Array of color names used to allocate colors
@@ -1155,36 +1171,36 @@ public class Log2Gxl extends Thread {
      * This file should consist of lines like
      * jcrisp@s-r-s.co.uk=black
      * 
-     * @param authorFileName the name of the author file (may be qualified)
+     * @param colorfileName the name of the author file (may be qualified)
      * @throws IOException if there is a problem with the author to color mapping file
      */
-    private void loadAuthorFile(String authorFileName) throws IOException {
-	Properties authorMap=new Properties();
-	InputStream authorMapStream=null;
+    private void loadColorfile(String colorfileName) throws IOException {
+	Properties colorMap=new Properties();
+	InputStream colorMapStream=null;
 	try {
-	    authorMapStream=new FileInputStream(authorFileName);
-	    authorMap.load(authorMapStream);
+	    colorMapStream=new FileInputStream(colorfileName);
+	    colorMap.load(colorMapStream);
 	    List<String> colorList=new ArrayList<String>(Arrays.asList(colors));
-	    for(Object key: authorMap.keySet()) {
-		String color=(String)authorMap.get(key);
+	    for(Object key: colorMap.keySet()) {
+		String color=(String)colorMap.get(key);
 		if(!colorList.contains(color)) {
-		    throw new IOException("Illegal color "+color+" in author color map file");
+		    throw new IOException("Illegal color "+color+" in color map file");
 		}
-		authorColorMap.put((String)key,color);
+		highlightColorMap.put((String)key,color);
 		logger.config(key+"="+color);
 		colorList.remove(color);
 	    }
 	    colors=colorList.toArray(new String[colorList.size()]);
 	}
 	finally {
-	    if(authorMapStream!=null) authorMapStream.close();
+	    if(colorMapStream!=null) colorMapStream.close();
 	}
     }
 
     /**
      * Start parsing the output of a monotone log command and output the corresponding GXL graph
      *
-     * @param argv the command line arguments, --authorfile <file> to specify a file mapping authors to colors
+     * @param argv the command line arguments, --colorfile <file> to specify a file mapping authors to colors
      * @throws IOException if there is a read error on the input stream or the input stream runs dry
      * @throws IllegalStateException if the header lines aren't as expected     
      */
@@ -1195,7 +1211,7 @@ public class Log2Gxl extends Thread {
     /**
      * Start parsing the output of a monotone log command and output the corresponding GXL graph
      *
-     * @param argv the command line arguments, --authorfile <file> to specify a file mapping authors to colors
+     * @param argv the command line arguments, --colorfile <file> to specify a file mapping authors to colors
      * @throws IOException if there is a read error on the input stream or the input stream runs dry
      * @throws IllegalStateException if the header lines aren't as expected     
      */
@@ -1203,10 +1219,10 @@ public class Log2Gxl extends Thread {
 	nodes=new HashMap<String,GXLNode>();
 	if(argv.length>0) {
 	    for(int I=0;I<argv.length;I++) {
-		if(argv[I]!=null && argv[I].equals("--authorfile")) {
-		    if(I<argv.length-1) loadAuthorFile(argv[I+1]);
+		if(argv[I]!=null && argv[I].equals("--colorfile")) {
+		    if(I<argv.length-1) loadColorfile(argv[I+1]);
 		    else {
-			System.err.println("Usage: Log2Gxl --authorfile <authorfile>");
+			System.err.println("Usage: Log2Gxl --colorfile <colorfile>");
 			System.exit(-1);
 		    }
 		}
@@ -1226,6 +1242,7 @@ public class Log2Gxl extends Thread {
 	    doRun();
 	}
 	catch(Exception e) {
+	    e.printStackTrace();
 	    logger.throwing(this.getClass().getName(),"run",e);
 	}
     }

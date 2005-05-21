@@ -401,7 +401,7 @@ public class GXLViewer {
 	public void run() {
 	    try {
 		logger.fine("Getting log for "+id);
-		final InputStream svgStream=database.getSVGLog(id);
+		final InputStream svgStream=database.getSVGLog(id,Monotone.HighlightTypes.AUTHORS);
 		SAXSVGDocumentFactory factory=new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
 		final SVGDocument doc=factory.createSVGDocument("http://internal/graph",svgStream);
 		SwingUtilities.invokeLater(new Runnable() { public void run() {
@@ -588,7 +588,8 @@ public class GXLViewer {
 	    JTextField property=new JTextField(id);
 	    property.setEditable(false);
 	    info.add(property,c);
-	    GXLNode gxlNode=(GXLNode)database.log2gxl.gxlDocument.getElement(id);
+	    GXLDocument doc=database.log2gxl.gxlDocument;
+	    GXLNode gxlNode=(GXLNode)doc.getElement(id);
 	    addInfo(info,gxlNode,"Authors");
 	    addInfo(info,gxlNode,"Branches");
 	    addInfo(info,gxlNode,"Tags");

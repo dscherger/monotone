@@ -20,8 +20,11 @@ import java.io.OutputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedInputStream;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.Source;
+import javax.xml.transform.URIResolver;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.transform.stream.StreamResult;
 
@@ -49,6 +52,7 @@ public class Monotone {
      */
     public Monotone(File database) {
 	this.database=database;
+	logger.setLevel(Level.FINEST);
     }
     
     /**
@@ -103,27 +107,36 @@ public class Monotone {
      */
     public Log2Gxl log2gxl;
 
+    public enum HighlightTypes {
+        NONE,
+	AUTHORS,
+	BRANCHES    
+        };
+
     /** 
      * Run monotone and get an SVG stream from a log 
      *
-     * @param id the identifier for which the log should be generated
+     * @param id the identifier (revision or file) for which the log should be generated (not null)
+     * @param highlight an enum specifing the node background highlight type requested
      * @return a stream from which an SVG format graph may be read
      */
-    public InputStream getSVGLog(String id) throws IOException {
-	String command="log "+id;
+    public InputStream getSVGLog(final String id,final HighlightTypes highlight) throws IOException {
+	final String command="log --revision "+id;
 	
 	// Start the inferior processes
-	Process monotone=Runtime.getRuntime().exec(getBaseCommand()+command);
+	final Process monotone=Runtime.getRuntime().exec(getBaseCommand()+command);
 	new ErrorReader("monotone",monotone.getErrorStream());
-	Process dot2svg=Runtime.getRuntime().exec("dot -Tsvg");
+	final Process dot2svg=Runtime.getRuntime().exec("dot -Tsvg");
 	new ErrorReader("dot2svg",dot2svg.getErrorStream());
 
 	final PipedOutputStream gxl2dotSourceOutputStream=new PipedOutputStream();
 	final PipedInputStream gxl2dotSourceInputStream=new PipedInputStream(gxl2dotSourceOutputStream);
 
 	// Chain the log output to the GXL generator and into the dot converter
-	String[] args=new String[] { "--authorfile","authors.map" };
-	if(!(new File("authors.map")).exists()) args=new String[0];
+        final String[] args;
+	if(!(new File("colors.map")).exists()) args=new String[0];
+	else args=new String[] { "--colorfile","colors.map" };
+
 	log2gxl=new Log2Gxl();
 	log2gxl.start(args,monotone.getInputStream(),gxl2dotSourceOutputStream);
 
@@ -131,10 +144,12 @@ public class Monotone {
 	final PipedInputStream gxl2dotSinkInputStream=new PipedInputStream(gxl2dotSinkOutputStream);
 
 	// Create a thread to transform the GXL semantic graph into an DOT visual graph
-	Thread transformerThread=new Thread(new Runnable() { public void run() {
+	final Thread transformerThread=new Thread(new Runnable() { public void run() {
 	    try {
 		TransformerFactory factory=TransformerFactory.newInstance();
+		factory.setURIResolver(new InternalURIResolver());
 		Transformer transformer=factory.newTransformer(new StreamSource(ClassLoader.getSystemResourceAsStream("gxl2dot.xsl")));
+		transformer.setParameter("HIGHLIGHT",highlight.toString());
 		transformer.transform(new StreamSource(gxl2dotSourceInputStream),new StreamResult(gxl2dotSinkOutputStream));
 	    }
 	    catch(Exception e) {
@@ -295,5 +310,21 @@ public class Monotone {
 		}
 	    }
 	}
+    }
+}
+
+class InternalURIResolver implements URIResolver {
+ 
+    /**
+     * Log sink
+     */
+    private static Logger logger=Logger.getLogger("Monotone");
+   
+    public Source resolve(String href,String base) {
+	logger.info("URI is "+href);
+	if(href.equals("http://www.gupro.de/GXL/gxl-1.0.dtd")) {
+	    return new StreamSource(ClassLoader.getSystemResourceAsStream("gxl-1.0.dtd"));
+	}
+	return null;
     }
 }
