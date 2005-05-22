@@ -4859,7 +4859,7 @@ data.
 Changeset subformats are enclosed beetween braces and start with an
 uppercase formatting specifier, e.g. an expression using the 'added
 files' subformat is %A@{...@} .
-Everything \fIinside\fP the braces is repeated for every matching
+Everything inside the braces is repeated for every matching
 changeset item.  For example, %A@{add: %f\n@} prints every added file
 prefixed by 'add: ' and followed by a newline.
 Some formatting specifier have also a short form, obtained prepending
