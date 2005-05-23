@@ -1460,8 +1460,10 @@ std::map<std::string,std::string> cvs_client::RequestServerDir()
     I(lresult[0].first=="CMD");
     if (lresult[0].second=="Set-sticky"
         || lresult[0].second=="Clear-template"
+        || lresult[0].second=="Set-static-directory"
         || lresult[0].second=="Template") continue;
-    L(F("cvs_client::RequestServerDir lresult[0].second is '%s', not 'Clear-static-directory'") % lresult[0].second);
+    if (lresult[0].second!="Clear-static-directory")
+      L(F("cvs_client::RequestServerDir lresult[0].second is '%s', not 'Clear-static-directory'") % lresult[0].second);
     I(lresult[0].second=="Clear-static-directory");
     I(lresult.size()==3);
     if (!last_rcs.empty() && begins_with(lresult[2].second,last_rcs)
