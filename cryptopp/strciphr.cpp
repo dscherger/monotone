@@ -1,6 +1,9 @@
 // strciphr.cpp - written and placed in the public domain by Wei Dai
 
 #include "pch.h"
+
+#ifndef CRYPTOPP_IMPORTS
+
 #include "strciphr.h"
 
 NAMESPACE_BEGIN(CryptoPP)
@@ -8,7 +11,7 @@ NAMESPACE_BEGIN(CryptoPP)
 template <class S>
 byte AdditiveCipherTemplate<S>::GenerateByte()
 {
-	PolicyInterface &policy = AccessPolicy();
+	PolicyInterface &policy = this->AccessPolicy();
 
 	if (m_leftOver == 0)
 	{
@@ -37,7 +40,7 @@ inline void AdditiveCipherTemplate<S>::ProcessData(byte *outString, const byte *
 
 	assert(m_leftOver == 0);
 
-	PolicyInterface &policy = AccessPolicy();
+	PolicyInterface &policy = this->AccessPolicy();
 	unsigned int bytesPerIteration = policy.GetBytesPerIteration();
 	unsigned int alignment = policy.GetAlignment();
 
@@ -81,16 +84,16 @@ inline void AdditiveCipherTemplate<S>::ProcessData(byte *outString, const byte *
 template <class S>
 void AdditiveCipherTemplate<S>::Resynchronize(const byte *iv)
 {
-	PolicyInterface &policy = AccessPolicy();
+	PolicyInterface &policy = this->AccessPolicy();
 	m_leftOver = 0;
 	m_buffer.New(GetBufferByteSize(policy));
 	policy.CipherResynchronize(m_buffer, iv);
 }
 
 template <class BASE>
-void AdditiveCipherTemplate<BASE>::Seek(dword position)
+void AdditiveCipherTemplate<BASE>::Seek(lword position)
 {
-	PolicyInterface &policy = AccessPolicy();
+	PolicyInterface &policy = this->AccessPolicy();
 	unsigned int bytesPerIteration = policy.GetBytesPerIteration();
 
 	policy.SeekToIteration(position / bytesPerIteration);
@@ -108,7 +111,7 @@ void AdditiveCipherTemplate<BASE>::Seek(dword position)
 template <class BASE>
 void CFB_CipherTemplate<BASE>::Resynchronize(const byte *iv)
 {
-	PolicyInterface &policy = AccessPolicy();
+	PolicyInterface &policy = this->AccessPolicy();
 	policy.CipherResynchronize(iv);
 	m_leftOver = policy.GetBytesPerIteration();
 }
@@ -116,7 +119,9 @@ void CFB_CipherTemplate<BASE>::Resynchronize(const byte *iv)
 template <class BASE>
 void CFB_CipherTemplate<BASE>::ProcessData(byte *outString, const byte *inString, unsigned int length)
 {
-	PolicyInterface &policy = AccessPolicy();
+	assert(length % this->MandatoryBlockSize() == 0);
+
+	PolicyInterface &policy = this->AccessPolicy();
 	unsigned int bytesPerIteration = policy.GetBytesPerIteration();
 	unsigned int alignment = policy.GetAlignment();
 	byte *reg = policy.GetRegisterBegin();
@@ -186,3 +191,5 @@ void CFB_DecryptionTemplate<BASE>::CombineMessageAndShiftRegister(byte *output, 
 }
 
 NAMESPACE_END
+
+#endif

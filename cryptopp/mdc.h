@@ -11,6 +11,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! _
 template <class T>
 struct MDC_Info : public FixedBlockSize<T::DIGESTSIZE>, public FixedKeyLength<T::BLOCKSIZE>
 {
@@ -22,7 +23,7 @@ struct MDC_Info : public FixedBlockSize<T::DIGESTSIZE>, public FixedKeyLength<T:
 template <class T>
 class MDC : public MDC_Info<T>
 {
-	class Enc : public BlockCipherBaseTemplate<MDC_Info<T> >
+	class CRYPTOPP_NO_VTABLE Enc : public BlockCipherImpl<MDC_Info<T> >
 	{
 		typedef typename T::HashWordType HashWordType;
 
@@ -30,22 +31,22 @@ class MDC : public MDC_Info<T>
 		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length)
 		{
 			assert(direction == ENCRYPTION);
-			AssertValidKeyLength(length);
-			memcpy(Key(), userKey, KEYLENGTH);
-			T::CorrectEndianess(Key(), Key(), KEYLENGTH);
+			this->AssertValidKeyLength(length);
+			memcpy(Key(), userKey, this->KEYLENGTH);
+			T::CorrectEndianess(Key(), Key(), this->KEYLENGTH);
 		}
 
 		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 		{
-			T::CorrectEndianess(Buffer(), (HashWordType *)inBlock, BLOCKSIZE);
+			T::CorrectEndianess(Buffer(), (HashWordType *)inBlock, this->BLOCKSIZE);
 			T::Transform(Buffer(), Key());
 			if (xorBlock)
 			{
-				T::CorrectEndianess(Buffer(), Buffer(), BLOCKSIZE);
-				xorbuf(outBlock, xorBlock, m_buffer, BLOCKSIZE);
+				T::CorrectEndianess(Buffer(), Buffer(), this->BLOCKSIZE);
+				xorbuf(outBlock, xorBlock, m_buffer, this->BLOCKSIZE);
 			}
 			else
-				T::CorrectEndianess((HashWordType *)outBlock, Buffer(), BLOCKSIZE);
+				T::CorrectEndianess((HashWordType *)outBlock, Buffer(), this->BLOCKSIZE);
 		}
 
 		bool IsPermutation() const {return false;}
@@ -64,7 +65,7 @@ class MDC : public MDC_Info<T>
 
 public:
 	//! use BlockCipher interface
-	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherFinal<ENCRYPTION, Enc> Encryption;
 };
 
 NAMESPACE_END

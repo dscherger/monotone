@@ -16,6 +16,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "constants.hh"
+#include "platform.hh"
 #include "sanity.hh"
 #include "transforms.hh"
 #include "ui.hh"
@@ -28,8 +29,12 @@ using boost::format;
 sanity global_sanity;
 
 sanity::sanity() : 
-  verbose(false), quiet(false), logbuf(0xffff)
-{}
+  debug(false), quiet(false), relaxed(false), logbuf(0xffff)
+{
+  std::string flavour;
+  get_system_flavour(flavour);
+  L(F("started up on %s\n") % flavour);
+}
 
 sanity::~sanity()
 {}
@@ -37,16 +42,28 @@ sanity::~sanity()
 void 
 sanity::dump_buffer()
 {
-  copy(logbuf.begin(), logbuf.end(), ostream_iterator<char>(clog));
+  if (filename != "")
+    {
+      ofstream out(filename.c_str());
+      if (out)
+        {
+          copy(logbuf.begin(), logbuf.end(), ostream_iterator<char>(out));
+          ui.inform(string("wrote debugging log to ") + filename + "\n");
+        }
+      else
+        ui.inform("failed to write debugging log to " + filename + "\n");
+    }
+  else
+    ui.inform(string("discarding debug log (maybe you want --debug or --dump?)\n"));
 }
 
 void 
-sanity::set_verbose()
+sanity::set_debug()
 {
   quiet = false;
-  verbose = true;
+  debug = true;
 
-  // it is possible that some pre-setting-of-verbose data
+  // it is possible that some pre-setting-of-debug data
   // accumulated in the log buffer (during earlier option processing)
   // so we will dump it now  
   ostringstream oss;
@@ -57,16 +74,28 @@ sanity::set_verbose()
     ui.inform((*i) + "\n");
 }
 
+void
+sanity::set_brief()
+{
+  brief = true;
+}
+
 void 
 sanity::set_quiet()
 {
-  verbose = false;
+  debug = false;
   quiet = true;
 }
 
 void 
+sanity::set_relaxed(bool rel)
+{
+  relaxed = rel;
+}
+
+void 
 sanity::log(format const & fmt, 
-	    char const * file, int line)
+            char const * file, int line)
 {
   string str;
   try 
@@ -76,9 +105,9 @@ sanity::log(format const & fmt,
   catch (std::exception & e)
     {
       ui.inform("fatal: formatter failed on " 
-		+ string(file) 
-		+ ":" + boost::lexical_cast<string>(line) 
-		+ ": " + e.what());
+                + string(file) 
+                + ":" + boost::lexical_cast<string>(line) 
+                + ": " + e.what());
       throw e;
     }
   
@@ -86,16 +115,16 @@ sanity::log(format const & fmt,
     {
       str.resize(constants::log_line_sz);
       if (str.at(str.size() - 1) != '\n')
-	str.at(str.size() - 1) = '\n';
+        str.at(str.size() - 1) = '\n';
     }
   copy(str.begin(), str.end(), back_inserter(logbuf));
-  if (verbose)
+  if (debug)
     ui.inform(str);
 }
 
 void 
 sanity::progress(format const & fmt, 
-		 char const * file, int line)
+                 char const * file, int line)
 {
   string str;
   try 
@@ -105,16 +134,16 @@ sanity::progress(format const & fmt,
   catch (std::exception & e)
     {
       ui.inform("fatal: formatter failed on " 
-		+ string(file) 
-		+ ":" + boost::lexical_cast<string>(line) 
-		+ ": " + e.what());
+                + string(file) 
+                + ":" + boost::lexical_cast<string>(line) 
+                + ": " + e.what());
       throw e;
     }
   if (str.size() > constants::log_line_sz)
     {
       str.resize(constants::log_line_sz);
       if (str.at(str.size() - 1) != '\n')
-	str.at(str.size() - 1) = '\n';
+        str.at(str.size() - 1) = '\n';
     }
   copy(str.begin(), str.end(), back_inserter(logbuf));
   if (! quiet)
@@ -123,7 +152,7 @@ sanity::progress(format const & fmt,
 
 void 
 sanity::warning(format const & fmt, 
-		char const * file, int line)
+                char const * file, int line)
 {
   string str;
   try 
@@ -133,16 +162,16 @@ sanity::warning(format const & fmt,
   catch (std::exception & e)
     {
       ui.inform("fatal: formatter failed on " 
-		+ string(file) 
-		+ ":" + boost::lexical_cast<string>(line) 
-		+ ": " + e.what());
+                + string(file) 
+                + ":" + boost::lexical_cast<string>(line) 
+                + ": " + e.what());
       throw e;
     }
   if (str.size() > constants::log_line_sz)
     {
       str.resize(constants::log_line_sz);
       if (str.at(str.size() - 1) != '\n')
-	str.at(str.size() - 1) = '\n';
+        str.at(str.size() - 1) = '\n';
     }
   string str2 = "warning: " + str;
   copy(str2.begin(), str2.end(), back_inserter(logbuf));
@@ -152,16 +181,29 @@ sanity::warning(format const & fmt,
 
 void 
 sanity::naughty_failure(string const & expr, format const & explain, 
-			string const & file, int line)
+                        string const & file, int line)
 {
+  string message;
   log(format("%s:%d: usage constraint '%s' violated\n") % file % line % expr,
       file.c_str(), line);
-  throw informative_failure(string("misuse: ") + explain.str());  
+  prefix_lines_with("misuse: ", explain.str(), message);
+  throw informative_failure(message);
+}
+
+void 
+sanity::error_failure(string const & expr, format const & explain, 
+                        string const & file, int line)
+{
+  string message;
+  log(format("%s:%d: detected error '%s' violated\n") % file % line % expr,
+      file.c_str(), line);
+  prefix_lines_with("error: ", explain.str(), message);
+  throw informative_failure(message);
 }
 
 void 
 sanity::invariant_failure(string const & expr, 
-			  string const & file, int line)
+                          string const & file, int line)
 {
   format fmt = 
     format("%s:%d: invariant '%s' violated\n") 
@@ -172,10 +214,10 @@ sanity::invariant_failure(string const & expr,
 
 void 
 sanity::index_failure(string const & vec_expr, 
-		      string const & idx_expr, 
-		      unsigned long sz,
-		      unsigned long idx,
-		      string const & file, int line)
+                      string const & idx_expr, 
+                      unsigned long sz,
+                      unsigned long idx,
+                      string const & file, int line)
 {
   format fmt = 
     format("%s:%d: index '%s' = %d overflowed vector '%s' with size %d\n")
@@ -183,4 +225,3 @@ sanity::index_failure(string const & vec_expr,
   log(fmt, file.c_str(), line);
   throw logic_error(fmt.str());
 }
-

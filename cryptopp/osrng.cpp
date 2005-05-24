@@ -3,6 +3,9 @@
 // Thanks to Leonard Janke for the suggestion for AutoSeededRandomPool.
 
 #include "pch.h"
+
+#ifndef CRYPTOPP_IMPORTS
+
 #include "osrng.h"
 
 #ifdef OS_RNG_AVAILABLE
@@ -24,6 +27,8 @@
 #endif
 
 NAMESPACE_BEGIN(CryptoPP)
+
+CRYPTOPP_DLL_TEMPLATE_CLASS AutoSeededX917RNG<DES_EDE3>;
 
 #if defined(NONBLOCKING_RNG_AVAILABLE) || defined(BLOCKING_RNG_AVAILABLE)
 OS_RNG_Err::OS_RNG_Err(const std::string &operation)
@@ -177,5 +182,7 @@ void AutoSeededRandomPool::Reseed(bool blocking, unsigned int seedSize)
 }
 
 NAMESPACE_END
+
+#endif
 
 #endif

@@ -32,7 +32,7 @@
 	The "DL_" prefix means an implementation using group operations (in groups where discrete log is hard).
 */
 
-#include "integer.h"
+#include "modarith.h"
 #include "filters.h"
 #include "eprecomp.h"
 #include "fips140.h"
@@ -44,13 +44,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-Integer NR_EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLen);
-Integer DSA_EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLen);
-
-// ********************************************************
-
-//! .
-class TrapdoorFunctionBounds
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE TrapdoorFunctionBounds
 {
 public:
 	virtual ~TrapdoorFunctionBounds() {}
@@ -61,16 +56,16 @@ public:
 	virtual Integer MaxImage() const {return --ImageBound();}
 };
 
-//! .
-class RandomizedTrapdoorFunction : public TrapdoorFunctionBounds
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE RandomizedTrapdoorFunction : public TrapdoorFunctionBounds
 {
 public:
 	virtual Integer ApplyRandomizedFunction(RandomNumberGenerator &rng, const Integer &x) const =0;
 	virtual bool IsRandomized() const {return true;}
 };
 
-//! .
-class TrapdoorFunction : public RandomizedTrapdoorFunction
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE TrapdoorFunction : public RandomizedTrapdoorFunction
 {
 public:
 	Integer ApplyRandomizedFunction(RandomNumberGenerator &rng, const Integer &x) const
@@ -80,8 +75,8 @@ public:
 	virtual Integer ApplyFunction(const Integer &x) const =0;
 };
 
-//! .
-class RandomizedTrapdoorFunctionInverse
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE RandomizedTrapdoorFunctionInverse
 {
 public:
 	virtual ~RandomizedTrapdoorFunctionInverse() {}
@@ -90,8 +85,8 @@ public:
 	virtual bool IsRandomized() const {return true;}
 };
 
-//! .
-class TrapdoorFunctionInverse : public RandomizedTrapdoorFunctionInverse
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE TrapdoorFunctionInverse : public RandomizedTrapdoorFunctionInverse
 {
 public:
 	virtual ~TrapdoorFunctionInverse() {}
@@ -105,25 +100,27 @@ public:
 
 // ********************************************************
 
-//! .
-class PK_EncryptionMessageEncodingMethod
+//! message encoding method for public key encryption
+class CRYPTOPP_NO_VTABLE PK_EncryptionMessageEncodingMethod
 {
 public:
 	virtual ~PK_EncryptionMessageEncodingMethod() {}
 
+	virtual bool ParameterSupported(const char *name) const {return false;}
+
 	//! max size of unpadded message in bytes, given max size of padded message in bits (1 less than size of modulus)
 	virtual unsigned int MaxUnpaddedLength(unsigned int paddedLength) const =0;
 
-	virtual void Pad(RandomNumberGenerator &rng, const byte *raw, unsigned int inputLength, byte *padded, unsigned int paddedBitLength) const =0;
+	virtual void Pad(RandomNumberGenerator &rng, const byte *raw, unsigned int inputLength, byte *padded, unsigned int paddedBitLength, const NameValuePairs &parameters) const =0;
 
-	virtual DecodingResult Unpad(const byte *padded, unsigned int paddedBitLength, byte *raw) const =0;
+	virtual DecodingResult Unpad(const byte *padded, unsigned int paddedBitLength, byte *raw, const NameValuePairs &parameters) const =0;
 };
 
 // ********************************************************
 
-//! .
+//! _
 template <class TFI, class MEI>
-class TF_Base
+class CRYPTOPP_NO_VTABLE TF_Base
 {
 protected:
 	virtual const TrapdoorFunctionBounds & GetTrapdoorFunctionBounds() const =0;
@@ -137,39 +134,54 @@ protected:
 
 // ********************************************************
 
-//! .
-template <class INTERFACE, class BASE>
-class TF_CryptoSystemBase : public INTERFACE, protected BASE
+//! _
+template <class BASE>
+class CRYPTOPP_NO_VTABLE PK_FixedLengthCryptoSystemImpl : public BASE
 {
 public:
-	unsigned int FixedMaxPlaintextLength() const {return GetMessageEncodingInterface().MaxUnpaddedLength(PaddedBlockBitLength());}
-	unsigned int FixedCiphertextLength() const {return GetTrapdoorFunctionBounds().MaxImage().ByteCount();}
+	unsigned int MaxPlaintextLength(unsigned int ciphertextLength) const
+		{return ciphertextLength == FixedCiphertextLength() ? FixedMaxPlaintextLength() : 0;}
+	unsigned int CiphertextLength(unsigned int plaintextLength) const
+		{return plaintextLength <= FixedMaxPlaintextLength() ? FixedCiphertextLength() : 0;}
+
+	virtual unsigned int FixedMaxPlaintextLength() const =0;
+	virtual unsigned int FixedCiphertextLength() const =0;
+};
+
+//! _
+template <class INTERFACE, class BASE>
+class CRYPTOPP_NO_VTABLE TF_CryptoSystemBase : public PK_FixedLengthCryptoSystemImpl<INTERFACE>, protected BASE
+{
+public:
+	bool ParameterSupported(const char *name) const {return this->GetMessageEncodingInterface().ParameterSupported(name);}
+	unsigned int FixedMaxPlaintextLength() const {return this->GetMessageEncodingInterface().MaxUnpaddedLength(PaddedBlockBitLength());}
+	unsigned int FixedCiphertextLength() const {return this->GetTrapdoorFunctionBounds().MaxImage().ByteCount();}
 
 protected:
 	unsigned int PaddedBlockByteLength() const {return BitsToBytes(PaddedBlockBitLength());}
-	unsigned int PaddedBlockBitLength() const {return GetTrapdoorFunctionBounds().PreimageBound().BitCount()-1;}
+	unsigned int PaddedBlockBitLength() const {return this->GetTrapdoorFunctionBounds().PreimageBound().BitCount()-1;}
 };
 
-//! .
-class TF_DecryptorBase : public TF_CryptoSystemBase<PK_FixedLengthDecryptor, TF_Base<TrapdoorFunctionInverse, PK_EncryptionMessageEncodingMethod> >
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE TF_DecryptorBase : public TF_CryptoSystemBase<PK_Decryptor, TF_Base<TrapdoorFunctionInverse, PK_EncryptionMessageEncodingMethod> >
 {
 public:
-	DecodingResult FixedLengthDecrypt(RandomNumberGenerator &rng, const byte *cipherText, byte *plainText) const;
+	DecodingResult Decrypt(RandomNumberGenerator &rng, const byte *ciphertext, unsigned int ciphertextLength, byte *plaintext, const NameValuePairs &parameters = g_nullNameValuePairs) const;
 };
 
-//! .
-class TF_EncryptorBase : public TF_CryptoSystemBase<PK_FixedLengthEncryptor, TF_Base<RandomizedTrapdoorFunction, PK_EncryptionMessageEncodingMethod> >
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE TF_EncryptorBase : public TF_CryptoSystemBase<PK_Encryptor, TF_Base<RandomizedTrapdoorFunction, PK_EncryptionMessageEncodingMethod> >
 {
 public:
-	void Encrypt(RandomNumberGenerator &rng, const byte *plainText, unsigned int plainTextLength, byte *cipherText) const;
+	void Encrypt(RandomNumberGenerator &rng, const byte *plaintext, unsigned int plaintextLength, byte *ciphertext, const NameValuePairs &parameters = g_nullNameValuePairs) const;
 };
 
 // ********************************************************
 
 typedef std::pair<const byte *, unsigned int> HashIdentifier;
 
-//! .
-class PK_SignatureMessageEncodingMethod
+//! interface for message encoding method for public key signature schemes
+class CRYPTOPP_NO_VTABLE PK_SignatureMessageEncodingMethod
 {
 public:
 	virtual ~PK_SignatureMessageEncodingMethod() {}
@@ -232,7 +244,7 @@ public:
 	};
 };
 
-class PK_DeterministicSignatureMessageEncodingMethod : public PK_SignatureMessageEncodingMethod
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE PK_DeterministicSignatureMessageEncodingMethod : public PK_SignatureMessageEncodingMethod
 {
 public:
 	bool VerifyMessageRepresentative(
@@ -240,7 +252,7 @@ public:
 		byte *representative, unsigned int representativeBitLength) const;
 };
 
-class PK_RecoverableSignatureMessageEncodingMethod : public PK_SignatureMessageEncodingMethod
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE PK_RecoverableSignatureMessageEncodingMethod : public PK_SignatureMessageEncodingMethod
 {
 public:
 	bool VerifyMessageRepresentative(
@@ -248,7 +260,7 @@ public:
 		byte *representative, unsigned int representativeBitLength) const;
 };
 
-class DL_SignatureMessageEncodingMethod_DSA : public PK_DeterministicSignatureMessageEncodingMethod
+class CRYPTOPP_DLL DL_SignatureMessageEncodingMethod_DSA : public PK_DeterministicSignatureMessageEncodingMethod
 {
 public:
 	void ComputeMessageRepresentative(RandomNumberGenerator &rng, 
@@ -257,7 +269,7 @@ public:
 		byte *representative, unsigned int representativeBitLength) const;
 };
 
-class DL_SignatureMessageEncodingMethod_NR : public PK_DeterministicSignatureMessageEncodingMethod
+class CRYPTOPP_DLL DL_SignatureMessageEncodingMethod_NR : public PK_DeterministicSignatureMessageEncodingMethod
 {
 public:
 	void ComputeMessageRepresentative(RandomNumberGenerator &rng, 
@@ -266,7 +278,7 @@ public:
 		byte *representative, unsigned int representativeBitLength) const;
 };
 
-class PK_MessageAccumulatorBase : public PK_MessageAccumulator
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE PK_MessageAccumulatorBase : public PK_MessageAccumulator
 {
 public:
 	PK_MessageAccumulatorBase() : m_empty(true) {}
@@ -288,45 +300,45 @@ template <class HASH_ALGORITHM>
 class PK_MessageAccumulatorImpl : public PK_MessageAccumulatorBase, protected ObjectHolder<HASH_ALGORITHM>
 {
 public:
-	HashTransformation & AccessHash() {return m_object;}
+	HashTransformation & AccessHash() {return this->m_object;}
 };
 
-//! .
+//! _
 template <class INTERFACE, class BASE>
-class TF_SignatureSchemeBase : public INTERFACE, protected BASE
+class CRYPTOPP_NO_VTABLE TF_SignatureSchemeBase : public INTERFACE, protected BASE
 {
 public:
 	unsigned int SignatureLength() const 
-		{return GetTrapdoorFunctionBounds().MaxPreimage().ByteCount();}
+		{return this->GetTrapdoorFunctionBounds().MaxPreimage().ByteCount();}
 	unsigned int MaxRecoverableLength() const 
-		{return GetMessageEncodingInterface().MaxRecoverableLength(MessageRepresentativeBitLength(), GetHashIdentifier().second, GetDigestSize());}
+		{return this->GetMessageEncodingInterface().MaxRecoverableLength(MessageRepresentativeBitLength(), GetHashIdentifier().second, GetDigestSize());}
 	unsigned int MaxRecoverableLengthFromSignatureLength(unsigned int signatureLength) const
-		{return MaxRecoverableLength();}
+		{return this->MaxRecoverableLength();}
 
 	bool IsProbabilistic() const 
-		{return GetTrapdoorFunctionInterface().IsRandomized() || GetMessageEncodingInterface().IsProbabilistic();}
+		{return this->GetTrapdoorFunctionInterface().IsRandomized() || this->GetMessageEncodingInterface().IsProbabilistic();}
 	bool AllowNonrecoverablePart() const 
-		{return GetMessageEncodingInterface().AllowNonrecoverablePart();}
+		{return this->GetMessageEncodingInterface().AllowNonrecoverablePart();}
 	bool RecoverablePartFirst() const 
-		{return GetMessageEncodingInterface().RecoverablePartFirst();}
+		{return this->GetMessageEncodingInterface().RecoverablePartFirst();}
 
 protected:
 	unsigned int MessageRepresentativeLength() const {return BitsToBytes(MessageRepresentativeBitLength());}
-	unsigned int MessageRepresentativeBitLength() const {return GetTrapdoorFunctionBounds().ImageBound().BitCount()-1;}
+	unsigned int MessageRepresentativeBitLength() const {return this->GetTrapdoorFunctionBounds().ImageBound().BitCount()-1;}
 	virtual HashIdentifier GetHashIdentifier() const =0;
 	virtual unsigned int GetDigestSize() const =0;
 };
 
-//! .
-class TF_SignerBase : public TF_SignatureSchemeBase<PK_Signer, TF_Base<RandomizedTrapdoorFunctionInverse, PK_SignatureMessageEncodingMethod> >
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE TF_SignerBase : public TF_SignatureSchemeBase<PK_Signer, TF_Base<RandomizedTrapdoorFunctionInverse, PK_SignatureMessageEncodingMethod> >
 {
 public:
 	void InputRecoverableMessage(PK_MessageAccumulator &messageAccumulator, const byte *recoverableMessage, unsigned int recoverableMessageLength) const;
 	unsigned int SignAndRestart(RandomNumberGenerator &rng, PK_MessageAccumulator &messageAccumulator, byte *signature, bool restart=true) const;
 };
 
-//! .
-class TF_VerifierBase : public TF_SignatureSchemeBase<PK_Verifier, TF_Base<TrapdoorFunction, PK_SignatureMessageEncodingMethod> >
+//! _
+class CRYPTOPP_DLL CRYPTOPP_NO_VTABLE TF_VerifierBase : public TF_SignatureSchemeBase<PK_Verifier, TF_Base<TrapdoorFunction, PK_SignatureMessageEncodingMethod> >
 {
 public:
 	void InputSignature(PK_MessageAccumulator &messageAccumulator, const byte *signature, unsigned int signatureLength) const;
@@ -336,7 +348,7 @@ public:
 
 // ********************************************************
 
-//! .
+//! _
 template <class T1, class T2, class T3>
 struct TF_CryptoSchemeOptions
 {
@@ -347,33 +359,35 @@ struct TF_CryptoSchemeOptions
 	typedef T3 MessageEncodingMethod;
 };
 
-//! .
+//! _
 template <class T1, class T2, class T3, class T4>
 struct TF_SignatureSchemeOptions : public TF_CryptoSchemeOptions<T1, T2, T3>
 {
 	typedef T4 HashFunction;
 };
 
-//! .
+//! _
 template <class KEYS>
-class PublicKeyCopier
+class CRYPTOPP_NO_VTABLE PublicKeyCopier
 {
 public:
+	typedef typename KEYS::PublicKey KeyClass;
 	virtual void CopyKeyInto(typename KEYS::PublicKey &key) const =0;
 };
 
-//! .
+//! _
 template <class KEYS>
-class PrivateKeyCopier
+class CRYPTOPP_NO_VTABLE PrivateKeyCopier
 {
 public:
+	typedef typename KEYS::PrivateKey KeyClass;
 	virtual void CopyKeyInto(typename KEYS::PublicKey &key) const =0;
 	virtual void CopyKeyInto(typename KEYS::PrivateKey &key) const =0;
 };
 
-//! .
+//! _
 template <class BASE, class SCHEME_OPTIONS, class KEY>
-class TF_ObjectImplBase : public AlgorithmImpl<BASE, typename SCHEME_OPTIONS::AlgorithmInfo>
+class CRYPTOPP_NO_VTABLE TF_ObjectImplBase : public AlgorithmImpl<BASE, typename SCHEME_OPTIONS::AlgorithmInfo>
 {
 public:
 	typedef SCHEME_OPTIONS SchemeOptions;
@@ -390,9 +404,18 @@ public:
 
 	const KeyClass & GetTrapdoorFunction() const {return GetKey();}
 
+	PK_MessageAccumulator * NewSignatureAccumulator(RandomNumberGenerator &rng) const
+	{
+		return new PK_MessageAccumulatorImpl<CPP_TYPENAME SCHEME_OPTIONS::HashFunction>;
+	}
+	PK_MessageAccumulator * NewVerificationAccumulator() const
+	{
+		return new PK_MessageAccumulatorImpl<CPP_TYPENAME SCHEME_OPTIONS::HashFunction>;
+	}
+
 protected:
 	const typename BASE::MessageEncodingInterface & GetMessageEncodingInterface() const 
-		{static typename SCHEME_OPTIONS::MessageEncodingMethod messageEncodingMethod; return messageEncodingMethod;}
+		{return Singleton<CPP_TYPENAME SCHEME_OPTIONS::MessageEncodingMethod>().Ref();}
 	const TrapdoorFunctionBounds & GetTrapdoorFunctionBounds() const 
 		{return GetKey();}
 	const typename BASE::TrapdoorFunctionInterface & GetTrapdoorFunctionInterface() const 
@@ -401,8 +424,8 @@ protected:
 	// for signature scheme
 	HashIdentifier GetHashIdentifier() const
 	{
-		typedef CPP_TYPENAME SchemeOptions::MessageEncodingMethod::HashIdentifierLookup::HashIdentifierLookup2<CPP_TYPENAME SchemeOptions::HashFunction> L;
-		return L::Lookup();
+        typedef CPP_TYPENAME SchemeOptions::MessageEncodingMethod::HashIdentifierLookup::template HashIdentifierLookup2<CPP_TYPENAME SchemeOptions::HashFunction> L;
+        return L::Lookup();
 	}
 	unsigned int GetDigestSize() const
 	{
@@ -411,7 +434,7 @@ protected:
 	}
 };
 
-//! .
+//! _
 template <class BASE, class SCHEME_OPTIONS, class KEY>
 class TF_ObjectImplExtRef : public TF_ObjectImplBase<BASE, SCHEME_OPTIONS, KEY>
 {
@@ -422,131 +445,100 @@ public:
 	const KEY & GetKey() const {return *m_pKey;}
 	KEY & AccessKey() {throw NotImplemented("TF_ObjectImplExtRef: cannot modify refererenced key");}
 
-	void CopyKeyInto(typename SCHEME_OPTIONS::PrivateKey &key) const {assert(false);}
-	void CopyKeyInto(typename SCHEME_OPTIONS::PublicKey &key) const {assert(false);}
-
 private:
 	const KEY * m_pKey;
 };
 
-//! .
-template <class BASE, class SCHEME_OPTIONS, class KEY>
-class TF_ObjectImpl : public TF_ObjectImplBase<BASE, SCHEME_OPTIONS, KEY>
+//! _
+template <class BASE, class SCHEME_OPTIONS, class KEY_COPIER>
+class CRYPTOPP_NO_VTABLE TF_ObjectImpl : public TF_ObjectImplBase<TwoBases<BASE, KEY_COPIER>, SCHEME_OPTIONS, typename KEY_COPIER::KeyClass>
 {
 public:
-	const KEY & GetKey() const {return m_trapdoorFunction;}
-	KEY & AccessKey() {return m_trapdoorFunction;}
+	typedef typename KEY_COPIER::KeyClass KeyClass;
 
-private:
-	KEY m_trapdoorFunction;
-};
+	const KeyClass & GetKey() const {return m_trapdoorFunction;}
+	KeyClass & AccessKey() {return m_trapdoorFunction;}
 
-//! .
-template <class BASE, class SCHEME_OPTIONS>
-class TF_PublicObjectImpl : public TF_ObjectImpl<BASE, SCHEME_OPTIONS, typename SCHEME_OPTIONS::PublicKey>, public PublicKeyCopier<SCHEME_OPTIONS>
-{
-public:
-	void CopyKeyInto(typename SCHEME_OPTIONS::PublicKey &key) const {key = GetKey();}
-};
-
-//! .
-template <class BASE, class SCHEME_OPTIONS>
-class TF_PrivateObjectImpl : public TF_ObjectImpl<BASE, SCHEME_OPTIONS, typename SCHEME_OPTIONS::PrivateKey>, public PrivateKeyCopier<SCHEME_OPTIONS>
-{
-public:
 	void CopyKeyInto(typename SCHEME_OPTIONS::PrivateKey &key) const {key = GetKey();}
 	void CopyKeyInto(typename SCHEME_OPTIONS::PublicKey &key) const {key = GetKey();}
+
+private:
+	KeyClass m_trapdoorFunction;
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
-class TF_DecryptorImpl : public TF_PrivateObjectImpl<TF_DecryptorBase, SCHEME_OPTIONS>
+class TF_DecryptorImpl : public TF_ObjectImpl<TF_DecryptorBase, SCHEME_OPTIONS, PrivateKeyCopier<typename SCHEME_OPTIONS::Keys> >
 {
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
-class TF_EncryptorImpl : public TF_PublicObjectImpl<TF_EncryptorBase, SCHEME_OPTIONS>
+class TF_EncryptorImpl : public TF_ObjectImpl<TF_EncryptorBase, SCHEME_OPTIONS, PublicKeyCopier<typename SCHEME_OPTIONS::Keys> >
 {
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
-class TF_SignerImpl : public TF_PrivateObjectImpl<TF_SignerBase, SCHEME_OPTIONS>
+class TF_SignerImpl : public TF_ObjectImpl<TF_SignerBase, SCHEME_OPTIONS, PrivateKeyCopier<typename SCHEME_OPTIONS::Keys> >
 {
-	PK_MessageAccumulator * NewSignatureAccumulator(RandomNumberGenerator &rng = NullRNG()) const
-	{
-		return new PK_MessageAccumulatorImpl<CPP_TYPENAME SCHEME_OPTIONS::HashFunction>;
-	}
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
-class TF_VerifierImpl : public TF_PublicObjectImpl<TF_VerifierBase, SCHEME_OPTIONS>
+class TF_VerifierImpl : public TF_ObjectImpl<TF_VerifierBase, SCHEME_OPTIONS, PublicKeyCopier<typename SCHEME_OPTIONS::Keys> >
 {
-	PK_MessageAccumulator * NewVerificationAccumulator() const
-	{
-		return new PK_MessageAccumulatorImpl<CPP_TYPENAME SCHEME_OPTIONS::HashFunction>;
-	}
 };
 
 // ********************************************************
 
-class MaskGeneratingFunction
+//! _
+class CRYPTOPP_NO_VTABLE MaskGeneratingFunction
 {
 public:
 	virtual ~MaskGeneratingFunction() {}
 	virtual void GenerateAndMask(HashTransformation &hash, byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength, bool mask = true) const =0;
 };
 
-void P1363_MGF1KDF2_Common(HashTransformation &hash, byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength, bool mask, unsigned int counterStart);
+CRYPTOPP_DLL void P1363_MGF1KDF2_Common(HashTransformation &hash, byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength, const byte *derivationParams, unsigned int derivationParamsLength, bool mask, unsigned int counterStart);
 
-//! .
+//! _
 class P1363_MGF1 : public MaskGeneratingFunction
 {
 public:
 	static const char * StaticAlgorithmName() {return "MGF1";}
-#if 0
-	// VC60 workaround: this function causes internal compiler error
-	template <class H>
-	static void GenerateAndMaskTemplate(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength, H* dummy=NULL)
-	{
-		H h;
-		P1363_MGF1KDF2_Common(h, output, outputLength, input, inputLength, mask, 0);
-	}
-#endif
 	void GenerateAndMask(HashTransformation &hash, byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength, bool mask = true) const
 	{
-		P1363_MGF1KDF2_Common(hash, output, outputLength, input, inputLength, mask, 0);
+		P1363_MGF1KDF2_Common(hash, output, outputLength, input, inputLength, NULL, 0, mask, 0);
 	}
 };
 
 // ********************************************************
 
-//! .
+//! _
 template <class H>
 class P1363_KDF2
 {
 public:
-	static void DeriveKey(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength)
+	static void DeriveKey(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength, const byte *derivationParams, unsigned int derivationParamsLength)
 	{
 		H h;
-		P1363_MGF1KDF2_Common(h, output, outputLength, input, inputLength, false, 1);
+		P1363_MGF1KDF2_Common(h, output, outputLength, input, inputLength, derivationParams, derivationParamsLength, false, 1);
 	}
 };
 
 // ********************************************************
 
-// to be thrown by DecodeElement and AgreeWithStaticPrivateKey
+//! to be thrown by DecodeElement and AgreeWithStaticPrivateKey
 class DL_BadElement : public InvalidDataFormat
 {
 public:
 	DL_BadElement() : InvalidDataFormat("CryptoPP: invalid group element") {}
 };
 
-//! .
+//! interface for DL group parameters
 template <class T>
-class DL_GroupParameters : public CryptoParameters
+class CRYPTOPP_NO_VTABLE DL_GroupParameters : public CryptoParameters
 {
 	typedef DL_GroupParameters<T> ThisClass;
 	
@@ -636,8 +628,8 @@ private:
 	mutable unsigned int m_validationLevel;
 };
 
-//! .
-template <class GROUP_PRECOMP, class BASE_PRECOMP = DL_FixedBasePrecomputationImpl<typename GROUP_PRECOMP::Element>, class BASE = DL_GroupParameters<typename GROUP_PRECOMP::Element> >
+//! _
+template <class GROUP_PRECOMP, class BASE_PRECOMP = DL_FixedBasePrecomputationImpl<CPP_TYPENAME GROUP_PRECOMP::Element>, class BASE = DL_GroupParameters<CPP_TYPENAME GROUP_PRECOMP::Element> >
 class DL_GroupParametersImpl : public BASE
 {
 public:
@@ -654,18 +646,18 @@ protected:
 	BASE_PRECOMP m_gpc;
 };
 
-//! .
+//! _
 template <class T>
-class DL_Key
+class CRYPTOPP_NO_VTABLE DL_Key
 {
 public:
 	virtual const DL_GroupParameters<T> & GetAbstractGroupParameters() const =0;
 	virtual DL_GroupParameters<T> & AccessAbstractGroupParameters() =0;
 };
 
-//! .
+//! interface for DL public keys
 template <class T>
-class DL_PublicKey : public DL_Key<T>
+class CRYPTOPP_NO_VTABLE DL_PublicKey : public DL_Key<T>
 {
 	typedef DL_PublicKey<T> ThisClass;
 
@@ -674,23 +666,23 @@ public:
 
 	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
 	{
-		return GetValueHelper(this, name, valueType, pValue, &GetAbstractGroupParameters())
+		return GetValueHelper(this, name, valueType, pValue, &this->GetAbstractGroupParameters())
 				CRYPTOPP_GET_FUNCTION_ENTRY(PublicElement);
 	}
 
 	void AssignFrom(const NameValuePairs &source);
 	
 	// non-inherited
-	virtual const Element & GetPublicElement() const {return GetPublicPrecomputation().GetBase(GetAbstractGroupParameters().GetGroupPrecomputation());}
-	virtual void SetPublicElement(const Element &y) {AccessPublicPrecomputation().SetBase(GetAbstractGroupParameters().GetGroupPrecomputation(), y);}
+	virtual const Element & GetPublicElement() const {return GetPublicPrecomputation().GetBase(this->GetAbstractGroupParameters().GetGroupPrecomputation());}
+	virtual void SetPublicElement(const Element &y) {AccessPublicPrecomputation().SetBase(this->GetAbstractGroupParameters().GetGroupPrecomputation(), y);}
 	virtual Element ExponentiatePublicElement(const Integer &exponent) const
 	{
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
 		return GetPublicPrecomputation().Exponentiate(params.GetGroupPrecomputation(), exponent);
 	}
 	virtual Element CascadeExponentiateBaseAndPublicElement(const Integer &baseExp, const Integer &publicExp) const
 	{
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
 		return params.GetBasePrecomputation().CascadeExponentiate(params.GetGroupPrecomputation(), baseExp, GetPublicPrecomputation(), publicExp);
 	}
 
@@ -698,9 +690,9 @@ public:
 	virtual DL_FixedBasePrecomputation<T> & AccessPublicPrecomputation() =0;
 };
 
-//! .
+//! interface for DL private keys
 template <class T>
-class DL_PrivateKey : public DL_Key<T>
+class CRYPTOPP_NO_VTABLE DL_PrivateKey : public DL_Key<T>
 {
 	typedef DL_PrivateKey<T> ThisClass;
 
@@ -709,19 +701,19 @@ public:
 
 	void MakePublicKey(DL_PublicKey<T> &pub) const
 	{
-		pub.AccessAbstractGroupParameters().AssignFrom(GetAbstractGroupParameters());
-		pub.SetPublicElement(GetAbstractGroupParameters().ExponentiateBase(GetPrivateExponent()));
+		pub.AccessAbstractGroupParameters().AssignFrom(this->GetAbstractGroupParameters());
+		pub.SetPublicElement(this->GetAbstractGroupParameters().ExponentiateBase(GetPrivateExponent()));
 	}
 
 	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
 	{
-		return GetValueHelper(this, name, valueType, pValue, &GetAbstractGroupParameters())
+		return GetValueHelper(this, name, valueType, pValue, &this->GetAbstractGroupParameters())
 				CRYPTOPP_GET_FUNCTION_ENTRY(PrivateExponent);
 	}
 
 	void AssignFrom(const NameValuePairs &source)
 	{
-		AccessAbstractGroupParameters().AssignFrom(source);
+		this->AccessAbstractGroupParameters().AssignFrom(source);
 		AssignFromHelper(this, source)
 			CRYPTOPP_SET_FUNCTION_ENTRY(PrivateExponent);
 	}
@@ -738,7 +730,7 @@ void DL_PublicKey<T>::AssignFrom(const NameValuePairs &source)
 		pPrivateKey->MakePublicKey(*this);
 	else
 	{
-		AccessAbstractGroupParameters().AssignFrom(source);
+		this->AccessAbstractGroupParameters().AssignFrom(source);
 		AssignFromHelper(this, source)
 			CRYPTOPP_SET_FUNCTION_ENTRY(PublicElement);
 	}
@@ -746,14 +738,14 @@ void DL_PublicKey<T>::AssignFrom(const NameValuePairs &source)
 
 class OID;
 
-//! .
-template <class PK, class GP>
+//! _
+template <class PK, class GP, class O = OID>
 class DL_KeyImpl : public PK
 {
 public:
 	typedef GP GroupParameters;
 
-	OID GetAlgorithmID() const {return GetGroupParameters().GetAlgorithmID();}
+	O GetAlgorithmID() const {return GetGroupParameters().GetAlgorithmID();}
 //	void BERDecode(BufferedTransformation &bt)
 //		{PK::BERDecode(bt);}
 //	void DEREncode(BufferedTransformation &bt) const
@@ -773,7 +765,7 @@ private:
 class X509PublicKey;
 class PKCS8PrivateKey;
 
-//! .
+//! _
 template <class GP>
 class DL_PrivateKeyImpl : public DL_PrivateKey<CPP_TYPENAME GP::Element>, public DL_KeyImpl<PKCS8PrivateKey, GP>
 {
@@ -806,8 +798,8 @@ public:
 
 	void GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &params)
 	{
-		if (!params.GetThisObject(AccessGroupParameters()))
-			AccessGroupParameters().GenerateRandom(rng, params);
+		if (!params.GetThisObject(this->AccessGroupParameters()))
+			this->AccessGroupParameters().GenerateRandom(rng, params);
 //		std::pair<const byte *, int> seed;
 		Integer x(rng, Integer::One(), GetAbstractGroupParameters().GetMaxExponent());
 //			Integer::ANY, Integer::Zero(), Integer::One(),
@@ -827,8 +819,8 @@ public:
 		{GetAbstractGroupParameters().SavePrecomputation(storedPrecomputation);}
 
 	// DL_Key
-	const DL_GroupParameters<Element> & GetAbstractGroupParameters() const {return GetGroupParameters();}
-	DL_GroupParameters<Element> & AccessAbstractGroupParameters() {return AccessGroupParameters();}
+	const DL_GroupParameters<Element> & GetAbstractGroupParameters() const {return this->GetGroupParameters();}
+	DL_GroupParameters<Element> & AccessAbstractGroupParameters() {return this->AccessGroupParameters();}
 
 	// DL_PrivateKey
 	const Integer & GetPrivateExponent() const {return m_x;}
@@ -844,7 +836,7 @@ private:
 	Integer m_x;
 };
 
-//! .
+//! _
 template <class BASE, class SIGNATURE_SCHEME>
 class DL_PrivateKey_WithSignaturePairwiseConsistencyTest : public BASE
 {
@@ -862,7 +854,7 @@ public:
 	}
 };
 
-//! .
+//! _
 template <class GP>
 class DL_PublicKeyImpl : public DL_PublicKey<typename GP::Element>, public DL_KeyImpl<X509PublicKey, GP>
 {
@@ -873,7 +865,7 @@ public:
 	bool Validate(RandomNumberGenerator &rng, unsigned int level) const
 	{
 		bool pass = GetAbstractGroupParameters().Validate(rng, level);
-		pass = pass && GetAbstractGroupParameters().ValidateElement(level, GetPublicElement(), &GetPublicPrecomputation());
+		pass = pass && GetAbstractGroupParameters().ValidateElement(level, this->GetPublicElement(), &GetPublicPrecomputation());
 		return pass;
 	}
 
@@ -908,8 +900,8 @@ public:
 	}
 
 	// DL_Key
-	const DL_GroupParameters<Element> & GetAbstractGroupParameters() const {return GetGroupParameters();}
-	DL_GroupParameters<Element> & AccessAbstractGroupParameters() {return AccessGroupParameters();}
+	const DL_GroupParameters<Element> & GetAbstractGroupParameters() const {return this->GetGroupParameters();}
+	DL_GroupParameters<Element> & AccessAbstractGroupParameters() {return this->AccessGroupParameters();}
 
 	// DL_PublicKey
 	const DL_FixedBasePrecomputation<Element> & GetPublicPrecomputation() const {return m_ypc;}
@@ -917,18 +909,17 @@ public:
 
 	// non-inherited
 	bool operator==(const DL_PublicKeyImpl<GP> &rhs) const
-		{return GetGroupParameters() == rhs.GetGroupParameters() && GetPublicElement() == rhs.GetPublicElement();}
+		{return this->GetGroupParameters() == rhs.GetGroupParameters() && this->GetPublicElement() == rhs.GetPublicElement();}
 
 private:
 	typename GP::BasePrecomputation m_ypc;
 };
 
-//! .
+//! interface for Elgamal-like signature algorithms
 template <class T>
-class DL_ElgamalLikeSignatureAlgorithm
+class CRYPTOPP_NO_VTABLE DL_ElgamalLikeSignatureAlgorithm
 {
 public:
-//	virtual Integer EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLength) const =0;
 	virtual void Sign(const DL_GroupParameters<T> &params, const Integer &privateKey, const Integer &k, const Integer &e, Integer &r, Integer &s) const =0;
 	virtual bool Verify(const DL_GroupParameters<T> &params, const DL_PublicKey<T> &publicKey, const Integer &e, const Integer &r, const Integer &s) const =0;
 	virtual Integer RecoverPresignature(const DL_GroupParameters<T> &params, const DL_PublicKey<T> &publicKey, const Integer &r, const Integer &s) const
@@ -939,9 +930,9 @@ public:
 		{return params.GetSubgroupOrder().ByteCount();}
 };
 
-//! .
+//! interface for DL key agreement algorithms
 template <class T>
-class DL_KeyAgreementAlgorithm
+class CRYPTOPP_NO_VTABLE DL_KeyAgreementAlgorithm
 {
 public:
 	typedef T Element;
@@ -950,28 +941,30 @@ public:
 	virtual Element AgreeWithStaticPrivateKey(const DL_GroupParameters<Element> &params, const Element &publicElement, bool validateOtherPublicKey, const Integer &privateExponent) const =0;
 };
 
-//! .
+//! interface for key derivation algorithms used in DL cryptosystems
 template <class T>
-class DL_KeyDerivationAlgorithm
+class CRYPTOPP_NO_VTABLE DL_KeyDerivationAlgorithm
 {
 public:
-	virtual void Derive(const DL_GroupParameters<T> &params, byte *derivedKey, unsigned int derivedLength, const T &agreedElement, const T &ephemeralPublicKey) const =0;
+	virtual bool ParameterSupported(const char *name) const {return false;}
+	virtual void Derive(const DL_GroupParameters<T> &groupParams, byte *derivedKey, unsigned int derivedLength, const T &agreedElement, const T &ephemeralPublicKey, const NameValuePairs &derivationParams) const =0;
 };
 
-//! .
-class DL_SymmetricEncryptionAlgorithm
+//! interface for symmetric encryption algorithms used in DL cryptosystems
+class CRYPTOPP_NO_VTABLE DL_SymmetricEncryptionAlgorithm
 {
 public:
-	virtual unsigned int GetSymmetricKeyLength(unsigned int plainTextLength) const =0;
-	virtual unsigned int GetSymmetricCiphertextLength(unsigned int plainTextLength) const =0;
-	virtual unsigned int GetMaxSymmetricPlaintextLength(unsigned int cipherTextLength) const =0;
-	virtual void SymmetricEncrypt(RandomNumberGenerator &rng, const byte *key, const byte *plainText, unsigned int plainTextLength, byte *cipherText) const =0;
-	virtual DecodingResult SymmetricDecrypt(const byte *key, const byte *cipherText, unsigned int cipherTextLength, byte *plainText) const =0;
+	virtual bool ParameterSupported(const char *name) const {return false;}
+	virtual unsigned int GetSymmetricKeyLength(unsigned int plaintextLength) const =0;
+	virtual unsigned int GetSymmetricCiphertextLength(unsigned int plaintextLength) const =0;
+	virtual unsigned int GetMaxSymmetricPlaintextLength(unsigned int ciphertextLength) const =0;
+	virtual void SymmetricEncrypt(RandomNumberGenerator &rng, const byte *key, const byte *plaintext, unsigned int plaintextLength, byte *ciphertext, const NameValuePairs &parameters) const =0;
+	virtual DecodingResult SymmetricDecrypt(const byte *key, const byte *ciphertext, unsigned int ciphertextLength, byte *plaintext, const NameValuePairs &parameters) const =0;
 };
 
-//! .
+//! _
 template <class KI>
-class DL_Base
+class CRYPTOPP_NO_VTABLE DL_Base
 {
 protected:
 	typedef KI KeyInterface;
@@ -984,15 +977,15 @@ protected:
 	virtual const KeyInterface & GetKeyInterface() const =0;
 };
 
-//! .
+//! _
 template <class INTERFACE, class KEY_INTERFACE>
-class DL_SignatureSchemeBase : public INTERFACE, public DL_Base<KEY_INTERFACE>
+class CRYPTOPP_NO_VTABLE DL_SignatureSchemeBase : public INTERFACE, public DL_Base<KEY_INTERFACE>
 {
 public:
 	unsigned int SignatureLength() const
 	{
-		return GetSignatureAlgorithm().RLen(GetAbstractGroupParameters())
-			+ GetSignatureAlgorithm().SLen(GetAbstractGroupParameters());
+		return GetSignatureAlgorithm().RLen(this->GetAbstractGroupParameters())
+			+ GetSignatureAlgorithm().SLen(this->GetAbstractGroupParameters());
 	}
 	unsigned int MaxRecoverableLength() const 
 		{return GetMessageEncodingInterface().MaxRecoverableLength(0, GetHashIdentifier().second, GetDigestSize());}
@@ -1008,7 +1001,7 @@ public:
 
 protected:
 	unsigned int MessageRepresentativeLength() const {return BitsToBytes(MessageRepresentativeBitLength());}
-	unsigned int MessageRepresentativeBitLength() const {return GetAbstractGroupParameters().GetSubgroupOrder().BitCount();}
+	unsigned int MessageRepresentativeBitLength() const {return this->GetAbstractGroupParameters().GetSubgroupOrder().BitCount();}
 
 	virtual const DL_ElgamalLikeSignatureAlgorithm<CPP_TYPENAME KEY_INTERFACE::Element> & GetSignatureAlgorithm() const =0;
 	virtual const PK_SignatureMessageEncodingMethod & GetMessageEncodingInterface() const =0;
@@ -1016,17 +1009,17 @@ protected:
 	virtual unsigned int GetDigestSize() const =0;
 };
 
-//! .
+//! _
 template <class T>
-class DL_SignerBase : public DL_SignatureSchemeBase<PK_Signer, DL_PrivateKey<T> >
+class CRYPTOPP_NO_VTABLE DL_SignerBase : public DL_SignatureSchemeBase<PK_Signer, DL_PrivateKey<T> >
 {
 public:
 	// for validation testing
 	void RawSign(const Integer &k, const Integer &e, Integer &r, Integer &s) const
 	{
-		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = GetSignatureAlgorithm();
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
-		const DL_PrivateKey<T> &key = GetKeyInterface();
+		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = this->GetSignatureAlgorithm();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
+		const DL_PrivateKey<T> &key = this->GetKeyInterface();
 
 		r = params.ConvertElementToInteger(params.ExponentiateBase(k));
 		alg.Sign(params, key.GetPrivateExponent(), k, e, r, s);
@@ -1036,7 +1029,7 @@ public:
 	{
 		PK_MessageAccumulatorBase &ma = static_cast<PK_MessageAccumulatorBase &>(messageAccumulator);
 		ma.m_recoverableMessage.Assign(recoverableMessage, recoverableMessageLength);
-		GetMessageEncodingInterface().ProcessRecoverableMessage(ma.AccessHash(), 
+		this->GetMessageEncodingInterface().ProcessRecoverableMessage(ma.AccessHash(), 
 			recoverableMessage, recoverableMessageLength, 
 			ma.m_presignature, ma.m_presignature.size(),
 			ma.m_semisignature);
@@ -1044,24 +1037,24 @@ public:
 
 	unsigned int SignAndRestart(RandomNumberGenerator &rng, PK_MessageAccumulator &messageAccumulator, byte *signature, bool restart) const
 	{
-		GetMaterial().DoQuickSanityCheck();
+		this->GetMaterial().DoQuickSanityCheck();
 
 		PK_MessageAccumulatorBase &ma = static_cast<PK_MessageAccumulatorBase &>(messageAccumulator);
-		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = GetSignatureAlgorithm();
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
-		const DL_PrivateKey<T> &key = GetKeyInterface();
+		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = this->GetSignatureAlgorithm();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
+		const DL_PrivateKey<T> &key = this->GetKeyInterface();
 
-		SecByteBlock representative(MessageRepresentativeLength());
-		GetMessageEncodingInterface().ComputeMessageRepresentative(
+		SecByteBlock representative(this->MessageRepresentativeLength());
+		this->GetMessageEncodingInterface().ComputeMessageRepresentative(
 			rng, 
 			ma.m_recoverableMessage, ma.m_recoverableMessage.size(), 
-			ma.AccessHash(), GetHashIdentifier(), ma.m_empty, 
-			representative, MessageRepresentativeBitLength());
+			ma.AccessHash(), this->GetHashIdentifier(), ma.m_empty, 
+			representative, this->MessageRepresentativeBitLength());
 		ma.m_empty = true;
 		Integer e(representative, representative.size());
 
 		Integer r;
-		if (MaxRecoverableLength() > 0)
+		if (this->MaxRecoverableLength() > 0)
 			r.Decode(ma.m_semisignature, ma.m_semisignature.size());
 		else
 			r.Decode(ma.m_presignature, ma.m_presignature.size());
@@ -1075,51 +1068,51 @@ public:
 		if (restart)
 			RestartMessageAccumulator(rng, ma);
 
-		return SignatureLength();
+		return this->SignatureLength();
 	}
 
 protected:
 	void RestartMessageAccumulator(RandomNumberGenerator &rng, PK_MessageAccumulatorBase &ma) const
 	{
-		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = GetSignatureAlgorithm();
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
+		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = this->GetSignatureAlgorithm();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
 		ma.m_k.Randomize(rng, 1, params.GetSubgroupOrder()-1);
 		ma.m_presignature.New(params.GetEncodedElementSize(false));
 		params.ConvertElementToInteger(params.ExponentiateBase(ma.m_k)).Encode(ma.m_presignature, ma.m_presignature.size());
 	}
 };
 
-//! .
+//! _
 template <class T>
-class DL_VerifierBase : public DL_SignatureSchemeBase<PK_Verifier, DL_PublicKey<T> >
+class CRYPTOPP_NO_VTABLE DL_VerifierBase : public DL_SignatureSchemeBase<PK_Verifier, DL_PublicKey<T> >
 {
 public:
 	void InputSignature(PK_MessageAccumulator &messageAccumulator, const byte *signature, unsigned int signatureLength) const
 	{
 		PK_MessageAccumulatorBase &ma = static_cast<PK_MessageAccumulatorBase &>(messageAccumulator);
-		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = GetSignatureAlgorithm();
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
+		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = this->GetSignatureAlgorithm();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
 
 		unsigned int rLen = alg.RLen(params);
 		ma.m_semisignature.Assign(signature, rLen);
 		ma.m_s.Decode(signature+rLen, alg.SLen(params));
 
-		GetMessageEncodingInterface().ProcessSemisignature(ma.AccessHash(), ma.m_semisignature, ma.m_semisignature.size());
+		this->GetMessageEncodingInterface().ProcessSemisignature(ma.AccessHash(), ma.m_semisignature, ma.m_semisignature.size());
 	}
 	
 	bool VerifyAndRestart(PK_MessageAccumulator &messageAccumulator) const
 	{
-		GetMaterial().DoQuickSanityCheck();
+		this->GetMaterial().DoQuickSanityCheck();
 
 		PK_MessageAccumulatorBase &ma = static_cast<PK_MessageAccumulatorBase &>(messageAccumulator);
-		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = GetSignatureAlgorithm();
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
-		const DL_PublicKey<T> &key = GetKeyInterface();
+		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = this->GetSignatureAlgorithm();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
+		const DL_PublicKey<T> &key = this->GetKeyInterface();
 
-		SecByteBlock representative(MessageRepresentativeLength());
-		GetMessageEncodingInterface().ComputeMessageRepresentative(NullRNG(), ma.m_recoverableMessage, ma.m_recoverableMessage.size(), 
-			ma.AccessHash(), GetHashIdentifier(), ma.m_empty,
-			representative, MessageRepresentativeBitLength());
+		SecByteBlock representative(this->MessageRepresentativeLength());
+		this->GetMessageEncodingInterface().ComputeMessageRepresentative(NullRNG(), ma.m_recoverableMessage, ma.m_recoverableMessage.size(), 
+			ma.AccessHash(), this->GetHashIdentifier(), ma.m_empty,
+			representative, this->MessageRepresentativeBitLength());
 		ma.m_empty = true;
 		Integer e(representative, representative.size());
 
@@ -1129,19 +1122,19 @@ public:
 
 	DecodingResult RecoverAndRestart(byte *recoveredMessage, PK_MessageAccumulator &messageAccumulator) const
 	{
-		GetMaterial().DoQuickSanityCheck();
+		this->GetMaterial().DoQuickSanityCheck();
 
 		PK_MessageAccumulatorBase &ma = static_cast<PK_MessageAccumulatorBase &>(messageAccumulator);
-		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = GetSignatureAlgorithm();
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
-		const DL_PublicKey<T> &key = GetKeyInterface();
+		const DL_ElgamalLikeSignatureAlgorithm<T> &alg = this->GetSignatureAlgorithm();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
+		const DL_PublicKey<T> &key = this->GetKeyInterface();
 
-		SecByteBlock representative(MessageRepresentativeLength());
-		GetMessageEncodingInterface().ComputeMessageRepresentative(
+		SecByteBlock representative(this->MessageRepresentativeLength());
+		this->GetMessageEncodingInterface().ComputeMessageRepresentative(
 			NullRNG(), 
 			ma.m_recoverableMessage, ma.m_recoverableMessage.size(), 
-			ma.AccessHash(), GetHashIdentifier(), ma.m_empty,
-			representative, MessageRepresentativeBitLength());
+			ma.AccessHash(), this->GetHashIdentifier(), ma.m_empty,
+			representative, this->MessageRepresentativeBitLength());
 		ma.m_empty = true;
 		Integer e(representative, representative.size());
 
@@ -1149,32 +1142,35 @@ public:
 		Integer r(ma.m_semisignature, ma.m_semisignature.size());
 		alg.RecoverPresignature(params, key, r, ma.m_s).Encode(ma.m_presignature, ma.m_presignature.size());
 
-		return GetMessageEncodingInterface().RecoverMessageFromSemisignature(
-			ma.AccessHash(), GetHashIdentifier(),
+		return this->GetMessageEncodingInterface().RecoverMessageFromSemisignature(
+			ma.AccessHash(), this->GetHashIdentifier(),
 			ma.m_presignature, ma.m_presignature.size(),
 			ma.m_semisignature, ma.m_semisignature.size(),
 			recoveredMessage);
 	}
 };
 
-//! .
+//! _
 template <class PK, class KI>
-class DL_CryptoSystemBase : public PK, public DL_Base<KI>
+class CRYPTOPP_NO_VTABLE DL_CryptoSystemBase : public PK, public DL_Base<KI>
 {
 public:
 	typedef typename DL_Base<KI>::Element Element;
 
-	unsigned int MaxPlaintextLength(unsigned int cipherTextLength) const
+	unsigned int MaxPlaintextLength(unsigned int ciphertextLength) const
 	{
-		unsigned int minLen = GetAbstractGroupParameters().GetEncodedElementSize(true);
-		return cipherTextLength < minLen ? 0 : GetSymmetricEncryptionAlgorithm().GetMaxSymmetricPlaintextLength(cipherTextLength - minLen);
+		unsigned int minLen = this->GetAbstractGroupParameters().GetEncodedElementSize(true);
+		return ciphertextLength < minLen ? 0 : GetSymmetricEncryptionAlgorithm().GetMaxSymmetricPlaintextLength(ciphertextLength - minLen);
 	}
 
-	unsigned int CiphertextLength(unsigned int plainTextLength) const
+	unsigned int CiphertextLength(unsigned int plaintextLength) const
 	{
-		unsigned int len = GetSymmetricEncryptionAlgorithm().GetSymmetricCiphertextLength(plainTextLength);
-		return len == 0 ? 0 : GetAbstractGroupParameters().GetEncodedElementSize(true) + len;
+		unsigned int len = GetSymmetricEncryptionAlgorithm().GetSymmetricCiphertextLength(plaintextLength);
+		return len == 0 ? 0 : this->GetAbstractGroupParameters().GetEncodedElementSize(true) + len;
 	}
+
+	bool ParameterSupported(const char *name) const
+		{return GetKeyDerivationAlgorithm().ParameterSupported(name) || GetSymmetricEncryptionAlgorithm().ParameterSupported(name);}
 
 protected:
 	virtual const DL_KeyAgreementAlgorithm<Element> & GetKeyAgreementAlgorithm() const =0;
@@ -1182,34 +1178,34 @@ protected:
 	virtual const DL_SymmetricEncryptionAlgorithm & GetSymmetricEncryptionAlgorithm() const =0;
 };
 
-//! .
-template <class T, class PK = PK_Decryptor>
-class DL_DecryptorBase : public DL_CryptoSystemBase<PK, DL_PrivateKey<T> >
+//! _
+template <class T>
+class CRYPTOPP_NO_VTABLE DL_DecryptorBase : public DL_CryptoSystemBase<PK_Decryptor, DL_PrivateKey<T> >
 {
 public:
 	typedef T Element;
 
-	DecodingResult Decrypt(RandomNumberGenerator &rng, const byte *cipherText, unsigned int cipherTextLength, byte *plainText) const
+	DecodingResult Decrypt(RandomNumberGenerator &rng, const byte *ciphertext, unsigned int ciphertextLength, byte *plaintext, const NameValuePairs &parameters = g_nullNameValuePairs) const
 	{
 		try
 		{
-			const DL_KeyAgreementAlgorithm<T> &agreeAlg = GetKeyAgreementAlgorithm();
-			const DL_KeyDerivationAlgorithm<T> &derivAlg = GetKeyDerivationAlgorithm();
-			const DL_SymmetricEncryptionAlgorithm &encAlg = GetSymmetricEncryptionAlgorithm();
-			const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
-			const DL_PrivateKey<T> &key = GetKeyInterface();
+			const DL_KeyAgreementAlgorithm<T> &agreeAlg = this->GetKeyAgreementAlgorithm();
+			const DL_KeyDerivationAlgorithm<T> &derivAlg = this->GetKeyDerivationAlgorithm();
+			const DL_SymmetricEncryptionAlgorithm &encAlg = this->GetSymmetricEncryptionAlgorithm();
+			const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
+			const DL_PrivateKey<T> &key = this->GetKeyInterface();
 
-			Element q = params.DecodeElement(cipherText, true);
+			Element q = params.DecodeElement(ciphertext, true);
 			unsigned int elementSize = params.GetEncodedElementSize(true);
-			cipherText += elementSize;
-			cipherTextLength -= elementSize;
+			ciphertext += elementSize;
+			ciphertextLength -= elementSize;
 
 			Element z = agreeAlg.AgreeWithStaticPrivateKey(params, q, true, key.GetPrivateExponent());
 
-			SecByteBlock derivedKey(encAlg.GetSymmetricKeyLength(encAlg.GetMaxSymmetricPlaintextLength(cipherTextLength)));
-			derivAlg.Derive(params, derivedKey, derivedKey.size(), z, q);
+			SecByteBlock derivedKey(encAlg.GetSymmetricKeyLength(encAlg.GetMaxSymmetricPlaintextLength(ciphertextLength)));
+			derivAlg.Derive(params, derivedKey, derivedKey.size(), z, q, parameters);
 
-			return encAlg.SymmetricDecrypt(derivedKey, cipherText, cipherTextLength, plainText);
+			return encAlg.SymmetricDecrypt(derivedKey, ciphertext, ciphertextLength, plaintext, parameters);
 		}
 		catch (DL_BadElement &)
 		{
@@ -1218,37 +1214,37 @@ public:
 	}
 };
 
-//! .
-template <class T, class PK = PK_Encryptor>
-class DL_EncryptorBase : public DL_CryptoSystemBase<PK, DL_PublicKey<T> >
+//! _
+template <class T>
+class CRYPTOPP_NO_VTABLE DL_EncryptorBase : public DL_CryptoSystemBase<PK_Encryptor, DL_PublicKey<T> >
 {
 public:
 	typedef T Element;
 
-	void Encrypt(RandomNumberGenerator &rng, const byte *plainText, unsigned int plainTextLength, byte *cipherText) const
+	void Encrypt(RandomNumberGenerator &rng, const byte *plaintext, unsigned int plaintextLength, byte *ciphertext, const NameValuePairs &parameters = g_nullNameValuePairs) const
 	{
-		const DL_KeyAgreementAlgorithm<T> &agreeAlg = GetKeyAgreementAlgorithm();
-		const DL_KeyDerivationAlgorithm<T> &derivAlg = GetKeyDerivationAlgorithm();
-		const DL_SymmetricEncryptionAlgorithm &encAlg = GetSymmetricEncryptionAlgorithm();
-		const DL_GroupParameters<T> &params = GetAbstractGroupParameters();
-		const DL_PublicKey<T> &key = GetKeyInterface();
+		const DL_KeyAgreementAlgorithm<T> &agreeAlg = this->GetKeyAgreementAlgorithm();
+		const DL_KeyDerivationAlgorithm<T> &derivAlg = this->GetKeyDerivationAlgorithm();
+		const DL_SymmetricEncryptionAlgorithm &encAlg = this->GetSymmetricEncryptionAlgorithm();
+		const DL_GroupParameters<T> &params = this->GetAbstractGroupParameters();
+		const DL_PublicKey<T> &key = this->GetKeyInterface();
 
 		Integer x(rng, Integer::One(), params.GetMaxExponent());
 		Element q = params.ExponentiateBase(x);
-		params.EncodeElement(true, q, cipherText);
+		params.EncodeElement(true, q, ciphertext);
 		unsigned int elementSize = params.GetEncodedElementSize(true);
-		cipherText += elementSize;
+		ciphertext += elementSize;
 
 		Element z = agreeAlg.AgreeWithEphemeralPrivateKey(params, key.GetPublicPrecomputation(), x);
 
-		SecByteBlock derivedKey(encAlg.GetSymmetricKeyLength(plainTextLength));
-		derivAlg.Derive(params, derivedKey, derivedKey.size(), z, q);
+		SecByteBlock derivedKey(encAlg.GetSymmetricKeyLength(plaintextLength));
+		derivAlg.Derive(params, derivedKey, derivedKey.size(), z, q, parameters);
 
-		encAlg.SymmetricEncrypt(rng, derivedKey, plainText, plainTextLength, cipherText);
+		encAlg.SymmetricEncrypt(rng, derivedKey, plaintext, plaintextLength, ciphertext, parameters);
 	}
 };
 
-//! .
+//! _
 template <class T1, class T2>
 struct DL_SchemeOptionsBase
 {
@@ -1257,7 +1253,7 @@ struct DL_SchemeOptionsBase
 	typedef typename GroupParameters::Element Element;
 };
 
-//! .
+//! _
 template <class T1, class T2>
 struct DL_KeyedSchemeOptions : public DL_SchemeOptionsBase<T1, typename T2::PublicKey::GroupParameters>
 {
@@ -1266,7 +1262,7 @@ struct DL_KeyedSchemeOptions : public DL_SchemeOptionsBase<T1, typename T2::Publ
 	typedef typename Keys::PublicKey PublicKey;
 };
 
-//! .
+//! _
 template <class T1, class T2, class T3, class T4, class T5>
 struct DL_SignatureSchemeOptions : public DL_KeyedSchemeOptions<T1, T2>
 {
@@ -1275,7 +1271,7 @@ struct DL_SignatureSchemeOptions : public DL_KeyedSchemeOptions<T1, T2>
 	typedef T5 HashFunction;
 };
 
-//! .
+//! _
 template <class T1, class T2, class T3, class T4, class T5>
 struct DL_CryptoSchemeOptions : public DL_KeyedSchemeOptions<T1, T2>
 {
@@ -1284,21 +1280,20 @@ struct DL_CryptoSchemeOptions : public DL_KeyedSchemeOptions<T1, T2>
 	typedef T5 SymmetricEncryptionAlgorithm;
 };
 
-//! .
+//! _
 template <class BASE, class SCHEME_OPTIONS, class KEY>
-class DL_ObjectImplBase : public AlgorithmImpl<BASE, typename SCHEME_OPTIONS::AlgorithmInfo>
+class CRYPTOPP_NO_VTABLE DL_ObjectImplBase : public AlgorithmImpl<BASE, typename SCHEME_OPTIONS::AlgorithmInfo>
 {
 public:
 	typedef SCHEME_OPTIONS SchemeOptions;
-	typedef KEY KeyClass;
-	typedef typename KeyClass::Element Element;
+	typedef typename KEY::Element Element;
 
 	PrivateKey & AccessPrivateKey() {return m_key;}
 	PublicKey & AccessPublicKey() {return m_key;}
 
 	// KeyAccessor
-	const KeyClass & GetKey() const {return m_key;}
-	KeyClass & AccessKey() {return m_key;}
+	const KEY & GetKey() const {return m_key;}
+	KEY & AccessKey() {return m_key;}
 
 protected:
 	typename BASE::KeyInterface & AccessKeyInterface() {return m_key;}
@@ -1307,8 +1302,8 @@ protected:
 	// for signature scheme
 	HashIdentifier GetHashIdentifier() const
 	{
-		typedef CPP_TYPENAME SchemeOptions::MessageEncodingMethod::HashIdentifierLookup::HashIdentifierLookup2<CPP_TYPENAME SchemeOptions::HashFunction> L;
-		return L::Lookup();
+		typedef typename SchemeOptions::MessageEncodingMethod::HashIdentifierLookup HashLookup;
+		return HashLookup::template HashIdentifierLookup2<CPP_TYPENAME SchemeOptions::HashFunction>::Lookup();
 	}
 	unsigned int GetDigestSize() const
 	{
@@ -1317,80 +1312,82 @@ protected:
 	}
 
 private:
-	KeyClass m_key;
+	KEY m_key;
 };
 
-//! .
+//! _
 template <class BASE, class SCHEME_OPTIONS, class KEY>
-class DL_ObjectImpl : public DL_ObjectImplBase<BASE, SCHEME_OPTIONS, KEY>
+class CRYPTOPP_NO_VTABLE DL_ObjectImpl : public DL_ObjectImplBase<BASE, SCHEME_OPTIONS, KEY>
 {
 public:
 	typedef typename KEY::Element Element;
 
 protected:
 	const DL_ElgamalLikeSignatureAlgorithm<Element> & GetSignatureAlgorithm() const
-		{static typename SCHEME_OPTIONS::SignatureAlgorithm a; return a;}
+		{return Singleton<CPP_TYPENAME SCHEME_OPTIONS::SignatureAlgorithm>().Ref();}
 	const DL_KeyAgreementAlgorithm<Element> & GetKeyAgreementAlgorithm() const
-		{static typename SCHEME_OPTIONS::KeyAgreementAlgorithm a; return a;}
+		{return Singleton<CPP_TYPENAME SCHEME_OPTIONS::KeyAgreementAlgorithm>().Ref();}
 	const DL_KeyDerivationAlgorithm<Element> & GetKeyDerivationAlgorithm() const
-		{static typename SCHEME_OPTIONS::KeyDerivationAlgorithm a; return a;}
+		{return Singleton<CPP_TYPENAME SCHEME_OPTIONS::KeyDerivationAlgorithm>().Ref();}
 	const DL_SymmetricEncryptionAlgorithm & GetSymmetricEncryptionAlgorithm() const
-		{static typename SCHEME_OPTIONS::SymmetricEncryptionAlgorithm a; return a;}
+		{return Singleton<CPP_TYPENAME SCHEME_OPTIONS::SymmetricEncryptionAlgorithm>().Ref();}
 	HashIdentifier GetHashIdentifier() const
 		{return HashIdentifier();}
 	const PK_SignatureMessageEncodingMethod & GetMessageEncodingInterface() const 
-		{static typename SCHEME_OPTIONS::MessageEncodingMethod a; return a;}
+		{return Singleton<CPP_TYPENAME SCHEME_OPTIONS::MessageEncodingMethod>().Ref();}
 };
 
-//! .
+//! _
 template <class BASE, class SCHEME_OPTIONS>
-class DL_PublicObjectImpl : public DL_ObjectImpl<BASE, SCHEME_OPTIONS, typename SCHEME_OPTIONS::PublicKey>, public PublicKeyCopier<SCHEME_OPTIONS>
+class CRYPTOPP_NO_VTABLE DL_PublicObjectImpl : public DL_ObjectImpl<BASE, SCHEME_OPTIONS, typename SCHEME_OPTIONS::PublicKey>, public PublicKeyCopier<SCHEME_OPTIONS>
 {
 public:
 	void CopyKeyInto(typename SCHEME_OPTIONS::PublicKey &key) const
-		{key = GetKey();}
+		{key = this->GetKey();}
 };
 
-//! .
+//! _
 template <class BASE, class SCHEME_OPTIONS>
-class DL_PrivateObjectImpl : public DL_ObjectImpl<BASE, SCHEME_OPTIONS, typename SCHEME_OPTIONS::PrivateKey>, public PrivateKeyCopier<SCHEME_OPTIONS>
+class CRYPTOPP_NO_VTABLE DL_PrivateObjectImpl : public DL_ObjectImpl<BASE, SCHEME_OPTIONS, typename SCHEME_OPTIONS::PrivateKey>, public PrivateKeyCopier<SCHEME_OPTIONS>
 {
 public:
 	void CopyKeyInto(typename SCHEME_OPTIONS::PublicKey &key) const
-		{GetKey().MakePublicKey(key);}
+		{this->GetKey().MakePublicKey(key);}
 	void CopyKeyInto(typename SCHEME_OPTIONS::PrivateKey &key) const
-		{key = GetKey();}
+		{key = this->GetKey();}
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
 class DL_SignerImpl : public DL_PrivateObjectImpl<DL_SignerBase<typename SCHEME_OPTIONS::Element>, SCHEME_OPTIONS>
 {
-	PK_MessageAccumulator * NewSignatureAccumulator(RandomNumberGenerator &rng = NullRNG()) const
+public:
+	PK_MessageAccumulator * NewSignatureAccumulator(RandomNumberGenerator &rng) const
 	{
 		std::auto_ptr<PK_MessageAccumulatorBase> p(new PK_MessageAccumulatorImpl<CPP_TYPENAME SCHEME_OPTIONS::HashFunction>);
-		RestartMessageAccumulator(rng, *p);
+		this->RestartMessageAccumulator(rng, *p);
 		return p.release();
 	}
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
 class DL_VerifierImpl : public DL_PublicObjectImpl<DL_VerifierBase<typename SCHEME_OPTIONS::Element>, SCHEME_OPTIONS>
 {
+public:
 	PK_MessageAccumulator * NewVerificationAccumulator() const
 	{
 		return new PK_MessageAccumulatorImpl<CPP_TYPENAME SCHEME_OPTIONS::HashFunction>;
 	}
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
 class DL_EncryptorImpl : public DL_PublicObjectImpl<DL_EncryptorBase<typename SCHEME_OPTIONS::Element>, SCHEME_OPTIONS>
 {
 };
 
-//! .
+//! _
 template <class SCHEME_OPTIONS>
 class DL_DecryptorImpl : public DL_PrivateObjectImpl<DL_DecryptorBase<typename SCHEME_OPTIONS::Element>, SCHEME_OPTIONS>
 {
@@ -1398,9 +1395,9 @@ class DL_DecryptorImpl : public DL_PrivateObjectImpl<DL_DecryptorBase<typename S
 
 // ********************************************************
 
-//! .
+//! _
 template <class T>
-class DL_SimpleKeyAgreementDomainBase : public SimpleKeyAgreementDomain
+class CRYPTOPP_NO_VTABLE DL_SimpleKeyAgreementDomainBase : public SimpleKeyAgreementDomain
 {
 public:
 	typedef T Element;
@@ -1464,7 +1461,7 @@ public:
 	typedef ELEMENT Element;
 
 	static const char *StaticAlgorithmName()
-		{return COFACTOR_OPTION::ToEnum() == NO_COFACTOR_MULTIPLICTION ? "DH" : "DHC";}
+		{return COFACTOR_OPTION::ToEnum() == INCOMPATIBLE_COFACTOR_MULTIPLICTION ? "DHC" : "DH";}
 
 	Element AgreeWithEphemeralPrivateKey(const DL_GroupParameters<Element> &params, const DL_FixedBasePrecomputation<Element> &publicPrecomputation, const Integer &privateExponent) const
 	{
@@ -1512,113 +1509,113 @@ public:
 
 //! A template implementing constructors for public key algorithm classes
 template <class BASE>
-class PK_FinalTemplate : public BASE
+class CRYPTOPP_NO_VTABLE PK_FinalTemplate : public BASE
 {
 public:
 	PK_FinalTemplate() {}
 
 	PK_FinalTemplate(const Integer &v1)
-		{AccessKey().Initialize(v1);}
+		{this->AccessKey().Initialize(v1);}
 
-	PK_FinalTemplate(const typename BASE::KeyClass &key)  {AccessKey().operator=(key);}
+	PK_FinalTemplate(const typename BASE::KeyClass &key)  {this->AccessKey().operator=(key);}
 
 	template <class T>
 	PK_FinalTemplate(const PublicKeyCopier<T> &key)
-		{key.CopyKeyInto(AccessKey());}
+		{key.CopyKeyInto(this->AccessKey());}
 
 	template <class T>
 	PK_FinalTemplate(const PrivateKeyCopier<T> &key)
-		{key.CopyKeyInto(AccessKey());}
+		{key.CopyKeyInto(this->AccessKey());}
 
-	PK_FinalTemplate(BufferedTransformation &bt) {AccessKey().BERDecode(bt);}
+	PK_FinalTemplate(BufferedTransformation &bt) {this->AccessKey().BERDecode(bt);}
 
 #if (defined(_MSC_VER) && _MSC_VER < 1300)
 
 	template <class T1, class T2>
 	PK_FinalTemplate(T1 &v1, T2 &v2)
-		{AccessKey().Initialize(v1, v2);}
+		{this->AccessKey().Initialize(v1, v2);}
 
 	template <class T1, class T2, class T3>
 	PK_FinalTemplate(T1 &v1, T2 &v2, T3 &v3)
-		{AccessKey().Initialize(v1, v2, v3);}
+		{this->AccessKey().Initialize(v1, v2, v3);}
 	
 	template <class T1, class T2, class T3, class T4>
 	PK_FinalTemplate(T1 &v1, T2 &v2, T3 &v3, T4 &v4)
-		{AccessKey().Initialize(v1, v2, v3, v4);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4);}
 
 	template <class T1, class T2, class T3, class T4, class T5>
 	PK_FinalTemplate(T1 &v1, T2 &v2, T3 &v3, T4 &v4, T5 &v5)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6>
 	PK_FinalTemplate(T1 &v1, T2 &v2, T3 &v3, T4 &v4, T5 &v5, T6 &v6)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6, class T7>
 	PK_FinalTemplate(T1 &v1, T2 &v2, T3 &v3, T4 &v4, T5 &v5, T6 &v6, T7 &v7)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
 	PK_FinalTemplate(T1 &v1, T2 &v2, T3 &v3, T4 &v4, T5 &v5, T6 &v6, T7 &v7, T8 &v8)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7, v8);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7, v8);}
 
 #else
 
 	template <class T1, class T2>
 	PK_FinalTemplate(const T1 &v1, const T2 &v2)
-		{AccessKey().Initialize(v1, v2);}
+		{this->AccessKey().Initialize(v1, v2);}
 
 	template <class T1, class T2, class T3>
 	PK_FinalTemplate(const T1 &v1, const T2 &v2, const T3 &v3)
-		{AccessKey().Initialize(v1, v2, v3);}
+		{this->AccessKey().Initialize(v1, v2, v3);}
 	
 	template <class T1, class T2, class T3, class T4>
 	PK_FinalTemplate(const T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4)
-		{AccessKey().Initialize(v1, v2, v3, v4);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4);}
 
 	template <class T1, class T2, class T3, class T4, class T5>
 	PK_FinalTemplate(const T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6>
 	PK_FinalTemplate(const T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5, const T6 &v6)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6, class T7>
 	PK_FinalTemplate(const T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5, const T6 &v6, const T7 &v7)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
 	PK_FinalTemplate(const T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5, const T6 &v6, const T7 &v7, const T8 &v8)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7, v8);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7, v8);}
 
 	template <class T1, class T2>
 	PK_FinalTemplate(T1 &v1, const T2 &v2)
-		{AccessKey().Initialize(v1, v2);}
+		{this->AccessKey().Initialize(v1, v2);}
 
 	template <class T1, class T2, class T3>
 	PK_FinalTemplate(T1 &v1, const T2 &v2, const T3 &v3)
-		{AccessKey().Initialize(v1, v2, v3);}
+		{this->AccessKey().Initialize(v1, v2, v3);}
 	
 	template <class T1, class T2, class T3, class T4>
 	PK_FinalTemplate(T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4)
-		{AccessKey().Initialize(v1, v2, v3, v4);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4);}
 
 	template <class T1, class T2, class T3, class T4, class T5>
 	PK_FinalTemplate(T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6>
 	PK_FinalTemplate(T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5, const T6 &v6)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6, class T7>
 	PK_FinalTemplate(T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5, const T6 &v6, const T7 &v7)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7);}
 
 	template <class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
 	PK_FinalTemplate(T1 &v1, const T2 &v2, const T3 &v3, const T4 &v4, const T5 &v5, const T6 &v6, const T7 &v7, const T8 &v8)
-		{AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7, v8);}
+		{this->AccessKey().Initialize(v1, v2, v3, v4, v5, v6, v7, v8);}
 
 #endif
 };

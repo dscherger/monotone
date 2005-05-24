@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <iostream>
+#include <ui.hh>
 
 // Microsoft + other compatible compilers such as Intel
 #if defined(_MSC_VER) || (defined(__MWERKS__) && __MWERKS__ >= 0x3000)
@@ -42,7 +43,7 @@
 #define MS_STRUCTURED_EXCEPTION_HANDLING
 #include <windows.h> 
 
-#elif defined(__unix)
+#elif defined(__unix) || defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #define UNIX_STYLE_SIGNAL_HANDLING
 #include <unistd.h>
 #include <csignal>
@@ -284,25 +285,25 @@ main_with_signal_handlers(int argc, char **argv)
     
     else 
       {
-	trapped_signal = true;
+        trapped_signal = true;
         switch(sigtype) 
-	  {
-	  case SIGTRAP:
+          {
+          case SIGTRAP:
             em = "signal: SIGTRAP (perhaps integer divide by zero)";
             break;
-	  case SIGFPE:
+          case SIGFPE:
             em = "signal: SIGFPE (arithmetic exception)";
             break;
-	  case SIGABRT:
+          case SIGABRT:
             em = "signal: SIGABRT (application abort requested)";
             break;
-	  case SIGSEGV:
-	  case SIGBUS:
+          case SIGSEGV:
+          case SIGBUS:
             em = "signal: memory access violation";
             break;
-	  default:
+          default:
             em = "signal: unrecognized signal";
-	  }
+          }
       }
     
     sigaction(SIGFPE , &old_SIGFPE_action , sigaction_ptr());
@@ -320,7 +321,7 @@ main_with_signal_handlers(int argc, char **argv)
 
 
 static int 
-main_with_many_flavours_of_exception(char argc, char **argv)
+main_with_many_flavours_of_exception(int argc, char **argv)
 {
   
 #if defined(MS_STRUCTURED_EXCEPTION_HANDLING) && !defined(__BORLANDC__) && !defined(__MINGW32__)
@@ -338,112 +339,112 @@ main_with_many_flavours_of_exception(char argc, char **argv)
 
     catch (char const * ex)
       { 
-	report_error("C string: ", ex); 
+        report_error("C string: ", ex); 
       }
 
     catch (std::string const & ex)
       { 
-	report_error("std::string: ", ex.c_str()); 
+        report_error("std::string: ", ex.c_str()); 
       }
     
     catch( std::bad_alloc const & ex )
       { 
-	report_error("std::bad_alloc: ", ex.what()); 
+        report_error("std::bad_alloc: ", ex.what()); 
       }
     
 #if !defined(__BORLANDC__) || __BORLANDC__ > 0x0551
     catch (std::bad_cast const & ex)
       { 
-	report_error("std::bad_cast: ", ex.what()); 
+        report_error("std::bad_cast: ", ex.what()); 
       }
 
     catch (std::bad_typeid const & ex)
       { 
-	report_error("std::bad_typeid: ", ex.what()); 
+        report_error("std::bad_typeid: ", ex.what()); 
       }
 #else
     catch(std::bad_cast const & ex)
       { 
-	report_error("std::bad_cast"); 
+        report_error("std::bad_cast"); 
       }
 
     catch( std::bad_typeid const & ex)
       { 
-	report_error("std::bad_typeid"); 
+        report_error("std::bad_typeid"); 
       }
 #endif
     
     catch(std::bad_exception const & ex)
       { 
-	report_error("std::bad_exception: ", ex.what()); 
+        report_error("std::bad_exception: ", ex.what()); 
       }
 
     catch( std::domain_error const& ex )
       { 
-	report_error("std::domain_error: ", ex.what()); 
+        report_error("std::domain_error: ", ex.what()); 
       }
 
     catch( std::invalid_argument const& ex )
       { 
-	report_error("std::invalid_argument: ", ex.what()); 
+        report_error("std::invalid_argument: ", ex.what()); 
       }
 
     catch( std::length_error const& ex )
       { 
-	report_error("std::length_error: ", ex.what()); 
+        report_error("std::length_error: ", ex.what()); 
       }
 
     catch( std::out_of_range const& ex )
       { 
-	report_error("std::out_of_range: ", ex.what()); 
+        report_error("std::out_of_range: ", ex.what()); 
       }
 
     catch( std::range_error const& ex )
       { 
-	report_error("std::range_error: ", ex.what()); 
+        report_error("std::range_error: ", ex.what()); 
       }
 
     catch( std::overflow_error const& ex )
       { 
-	report_error("std::overflow_error: ", ex.what()); 
+        report_error("std::overflow_error: ", ex.what()); 
       }
 
     catch( std::underflow_error const& ex )
       { 
-	report_error("std::underflow_error: ", ex.what()); 
+        report_error("std::underflow_error: ", ex.what()); 
       }
 
     catch( std::logic_error const& ex )
       { 
-	report_error("std::logic_error: ", ex.what()); 
+        report_error("std::logic_error: ", ex.what()); 
       }
 
     catch( std::runtime_error const& ex )
       { 
-	report_error("std::runtime_error: ", ex.what()); 
+        report_error("std::runtime_error: ", ex.what()); 
       }
 
     catch( std::exception const& ex )
       { 
-	report_error("std::exception: ", ex.what()); 
+        report_error("std::exception: ", ex.what()); 
       }
 
 #if defined(MS_STRUCTURED_EXCEPTION_HANDLING)
     catch(ms_se_exception const & ex)
       { 
-	report_ms_se_error(ex.exception_id); 
+        report_ms_se_error(ex.exception_id); 
       }
 
 #elif defined(UNIX_STYLE_SIGNAL_HANDLING)
     catch(unix_signal_exception const & ex)
       { 
-	report_error(ex.error_message); 
+        report_error(ex.error_message); 
       }
 #endif
 
     catch( ... )
       { 
-	report_error("unknown type" ); 
+        report_error("unknown type" ); 
       }
     return 0;
 }
@@ -457,7 +458,11 @@ main(int argc, char **argv)
     }
   catch (the_one_true_exception const & e)
     {
-      std::cerr << "monotone: fatal: " << e.buf << std::endl;
-      return 1;
+      ui.fatal(std::string(e.buf) + "\n");
+      // If we got here, it's because something went _really_ wrong, like an
+      // invariant failure or a segfault.  So use a distinctive error code, in
+      // particular so the testsuite can tell whether we detected an error
+      // properly or waited until an invariant caught it...
+      return 3;
     }
 }
