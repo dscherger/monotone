@@ -42,6 +42,7 @@
 #include "netxx/timeout.h"
 
 #include <fcntl.h>
+#include <errno.h>
 
 //
 // this is the "new" network synchronization (netsync) system in

@@ -1,212 +1,236 @@
-building and installation process for monotone
-==============================================
+Installation Instructions
+*************************
 
-1. prerequisites: 
+Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005 Free
+Software Foundation, Inc.
 
-  * hardware prerequisites:
+This file is free documentation; the Free Software Foundation gives
+unlimited permission to copy, distribute and modify it.
 
-    - g++ consumes a lot of memory building monotone, due to
-      monotone's liberal use of C++ features. it may be possible to
-      build on a system with 128mb of memory, but not pleasant. we are
-      working on making this situation better.
+Basic Installation
+==================
 
-  * software prerequisites:
+These are generic installation instructions.
 
-    - a supported C++ compiler: g++ 3.2 or later.
-    - an installed copy of boost 1.31.0 or later.
+   The `configure' shell script attempts to guess correct values for
+various system-dependent variables used during compilation.  It uses
+those values to create a `Makefile' in each directory of the package.
+It may also create one or more `.h' files containing system-dependent
+definitions.  Finally, it creates a shell script `config.status' that
+you can run in the future to recreate the current configuration, and a
+file `config.log' containing compiler output (useful mainly for
+debugging `configure').
 
-        on debian: 
+   It can also use an optional file (typically called `config.cache'
+and enabled with `--cache-file=config.cache' or simply `-C') that saves
+the results of its tests to speed up reconfiguring.  (Caching is
+disabled by default to prevent problems with accidental use of stale
+cache files.)
 
-           apt-get install libboost-date-time-dev
-           apt-get install libboost-filesystem-dev
-           apt-get install libboost-regex-dev
-           apt-get install libboost-test-dev
-           apt-get install libboost-dev
-           apt-get install g++
+   If you need to do unusual things to compile the package, please try
+to figure out how `configure' could check whether to do them, and mail
+diffs or instructions to the address given in the `README' so they can
+be considered for the next release.  If you are using the cache, and at
+some point `config.cache' contains results you don't want to keep, you
+may remove or edit it.
 
-        on fedora: 
+   The file `configure.ac' (or `configure.in') is used to create
+`configure' by a program called `autoconf'.  You only need
+`configure.ac' if you want to change it or regenerate `configure' using
+a newer version of `autoconf'.
 
-           apt-get install boost-devel 
-           apt-get install g++
+The simplest way to compile this package is:
 
-        on other systems:
+  1. `cd' to the directory containing the package's source code and type
+     `./configure' to configure the package for your system.  If you're
+     using `csh' on an old version of System V, you might need to type
+     `sh ./configure' instead to prevent `csh' from trying to execute
+     `configure' itself.
 
-           check your system package repository, you may need to 
-           build some of these from source. if your package repository
-           does not contain the libraries, see:
+     Running `configure' takes awhile.  While running, it prints some
+     messages telling which features it is checking for.
 
-                http://gcc.gnu.org      for g++
-                http://www.boost.org    for boost
+  2. Type `make' to compile the package.
 
-1.1 building boost:
+  3. Optionally, type `make check' to run any self-tests that come with
+     the package.
 
-  many people have reported difficulty building boost. the main
-  problem is that boost builds with an unorthodox build tool called
-  "bjam" which must, itself, be built or installed before boost can be
-  built. the bjam sources are contained within the boost distribution,
-  but somewhat hidden. there are instructions on
-  http://www.boost.org/more/getting_started.html, but we have
-  assembled this abbreviated bourne shell sequence for advanced users
-  who do not need all the preamble:
+  4. Type `make install' to install the programs and any data files and
+     documentation.
 
-    wget http://aleron.dl.sourceforge.net/sourceforge/boost/boost_1_31_0.tar.gz
-    tar -xzf boost_1_31_0.tar.gz
-    cd boost_1_31_0
-    (cd tools/build/jam_src && ./build.sh)
-    BJAM=`find tools/build/jam_src/ -name bjam -a -type f`
-    $BJAM "-sBUILD=release <threading>single <optimization>speed <runtime-link>static"
-    for i in `find bin -type d -a -name \*.a`; 
-      do for j in `find $i -type f -a -name \*.a`; 
-        do mv $j libs/`basename $i`; 
-      done; 
-    done
-    ranlib libs/*.a
+  5. You can remove the program binaries and object files from the
+     source code directory by typing `make clean'.  To also remove the
+     files that `configure' created (so you can compile the package for
+     a different kind of computer), type `make distclean'.  There is
+     also a `make maintainer-clean' target, but that is intended mainly
+     for the package's developers.  If you use it, you may have to get
+     all sorts of other programs in order to regenerate files that came
+     with the distribution.
 
-  if this completes successfully, you will have a selection of boost
-  libraries in boost_1_31_0/libs and boost headers in
-  boost_1_31_0/boost. you can then either copy the .a files to your
-  standard library path and the directory "boost_1_31_0/boost" to your
-  standard include path, or you can pass additional configuration
-  options to your monotone configure build, such as:
+Compilers and Options
+=====================
 
-    ./configure CPPFLAGS="-Iboost_1_31_2" LDFLAGS="-Lboost_1_31_0/libs"
+Some systems require unusual options for compilation or linking that the
+`configure' script does not know about.  Run `./configure --help' for
+details on some of the pertinent environment variables.
 
-  monotone does not use all of boost -- for instance, people often
-  have trouble building boost.python, which we do not use.  you don't
-  need to build any libraries that we don't use!
+   You can give `configure' initial values for configuration parameters
+by setting variables in the command line or in the environment.  Here
+is an example:
 
-2. configuring monotone:
+     ./configure CC=c89 CFLAGS=-O2 LIBS=-lposix
 
-  * if there is no ./configure script in your source tree you'll need
-    to create one before proceeding to the next step. one of the 
-    following auto* commands should work:
+   *Note Defining Variables::, for more details.
 
-        $ aclocal-1.7 && autoreconf --install
-        $ AUTOMAKE=automake-1.7 ACLOCAL=aclocal-1.7 autoreconf --install
+Compiling For Multiple Architectures
+====================================
 
-  * type "./configure" for a basic configuration of monotone.  several
-    configuration options are available; type "configure --help" for a
-    list of all of them. some special options are shown here:
+You can compile the package for more than one kind of computer at the
+same time, by placing the object files for each architecture in their
+own directory.  To do this, you must use a version of `make' that
+supports the `VPATH' variable, such as GNU `make'.  `cd' to the
+directory where you want the object files and executables to go and run
+the `configure' script.  `configure' automatically checks for the
+source code in the directory that `configure' is in and in `..'.
 
-     --enable-ipv6[=auto|no|yes]
+   If you have to use a `make' that does not support the `VPATH'
+variable, you have to compile the package for one architecture at a
+time in the source code directory.  After you have installed the
+package for one architecture, use `make distclean' before reconfiguring
+for another architecture.
 
-       specify whether IPv6 support has to be enabled or disabled.  the
-       default is to try automatic detection (auto) and use the guessed
-       results.  however, you can force IPv6 detection by saying 'yes'
-       or completely disable it using 'no'.
+Installation Names
+==================
 
-     --enable-static-boost[=prefix]
+By default, `make install' will install the package's files in
+`/usr/local/bin', `/usr/local/man', etc.  You can specify an
+installation prefix other than `/usr/local' by giving `configure' the
+option `--prefix=PREFIX'.
 
-       this will attempt to link a "mostly static" version of monotone
-       using the .a files supplied with your installation of
-       boost. the resulting binary will be larger but more portable
-       than a normal (dynamic) link.
+   You can specify separate installation prefixes for
+architecture-specific files and architecture-independent files.  If you
+give `configure' the option `--exec-prefix=PREFIX', the package will
+use PREFIX as the prefix for installing programs and libraries.
+Documentation and other data files will still use the regular prefix.
 
-       you can optionally pass a prefix to the option, which will be
-       used to look for the static libraries; otherwise a list of
-       predefined directories will be used.  for example:
+   In addition, if you use an unusual directory layout you can give
+options like `--bindir=DIR' to specify different values for particular
+kinds of files.  Run `configure --help' for a list of the directories
+you can set and what kinds of files go in them.
 
-         ./configure --enable-static-boost=/usr/local/boost
+   If the package supports it, you can cause programs to be installed
+with an extra prefix or suffix on their names by giving `configure' the
+option `--program-prefix=PREFIX' or `--program-suffix=SUFFIX'.
 
-     --disable-nls
+Optional Features
+=================
 
-       build a version of monotone without support for local message
-       catalogs. you might like to do this if you do not have a
-       working installation of GNU gettext.
+Some packages pay attention to `--enable-FEATURE' options to
+`configure', where FEATURE indicates an optional part of the package.
+They may also pay attention to `--with-PACKAGE' options, where PACKAGE
+is something like `gnu-as' or `x' (for the X Window System).  The
+`README' should mention any `--enable-' and `--with-' options that the
+package recognizes.
 
-     --with-bundled-lua=no
-     --with-bundled-sqlite=no
+   For packages that use the X Window System, `configure' can usually
+find the X include and library files automatically, but if it doesn't,
+you can use the `configure' options `--x-includes=DIR' and
+`--x-libraries=DIR' to specify their locations.
 
-       build a version of monotone without the internal "bundled"
-       copies of lua and sqlite libraries. normally monotone will use
-       copies of these libraries it was bundled with. If you set these
-       flags to "no", it will try to use libraries it finds on your
-       system, and use the bundled versions only if you do not have
-       your own copies.
+Specifying the System Type
+==========================
 
-       this is usually untested and not guaranteed to work.  if you
-       have strange problems, then try using the bundled lua and
-       sqlite.
+There may be some features `configure' cannot figure out automatically,
+but needs to determine by the type of machine the package will run on.
+Usually, assuming the package is built to be run on the _same_
+architectures, `configure' can figure that out, but if it prints a
+message saying it cannot guess the machine type, give it the
+`--build=TYPE' option.  TYPE can either be a short name for the system
+type, such as `sun4', or a canonical name which has the form:
 
-     --disable-large-file
+     CPU-COMPANY-SYSTEM
 
-       this will disable large file support from the builtin sqlite, to
-       achieve maximum binary compatibility with old systems.  this option
-       has no effect when --with-bundled-sqlite=no is also given.
+where SYSTEM can have one of these forms:
 
-     BOOST_SUFFIX=string
+     OS KERNEL-OS
 
-       this variable, to be set on configure's command line, can be used
-       to specify a special string suffix to be appended to boost library
-       names.  many Linux distributions provide symlinks to hide this
-       suffix, but others do not.  therefore, you need to pass it to the
-       configure script through this variable for correct detection of
-       boost.  for example:
+   See the file `config.sub' for the possible values of each field.  If
+`config.sub' isn't included in this package, then this package doesn't
+need to know the machine type.
 
-         ./configure BOOST_SUFFIX=-gcc
+   If you are _building_ compiler tools for cross-compiling, you should
+use the `--target=TYPE' option to select the type of system they will
+produce code for.
 
-       note that, sometimes, the configure script will be able to guess
-       the correct suffix by itself.
+   If you want to _use_ a cross compiler, that generates code for a
+platform different from the build platform, you should specify the
+"host" platform (i.e., that on which the generated programs will
+eventually be run) with `--host=TYPE'.
 
-3. building monotone
+Sharing Defaults
+================
 
-  * type "make". this should produce a monotone binary in your current
-    directory. if not, please send a build log to 
-    monotone-devel@nongnu.org with a description of the failure.
+If you want to set default values for `configure' scripts to share, you
+can create a site shell script called `config.site' that gives default
+values for variables like `CC', `cache_file', and `prefix'.
+`configure' looks for `PREFIX/share/config.site' if it exists, then
+`PREFIX/etc/config.site' if it exists.  Or, you can set the
+`CONFIG_SITE' environment variable to the location of the site script.
+A warning: not all `configure' scripts look for a site script.
 
-  * if you are on solaris/x86, read appendix A of this document.
+Defining Variables
+==================
 
-4. testing monotone
+Variables not defined in a site shell script can be set in the
+environment passed to `configure'.  However, some packages may run
+configure again during the build, and the customized values of these
+variables may be lost.  In order to avoid this problem, you should set
+them in the `configure' command line, using `VAR=value'.  For example:
 
-  * there is a "make check" target which you can try, if you'd like to
-    confirm monotone's functionality on your system. you might also
-    like to try fetching monotone's sources from our monotone
-    server. this process will transfer the complete development
-    history (about 40 megabytes) to your database, and you will then
-    be free to share it with others or make changes and submit them to
-    us:
+     ./configure CC=/usr/local2/bin/gcc
 
-        monotone --db=mt.db db init
+causes the specified `gcc' to be used as the C compiler (unless it is
+overridden in the site shell script).  Here is a another example:
 
-        monotone --db=mt.db read  <<EOF
-         [pubkey monotone@off.net]
-         MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQCkVU7BYI5bRRJmkJc8gomO9WdTTGG10Lmh
-         PdAEqD6sSdsMkTC9okfsQQ8obE+GODrFa70fX5PJNevNoE+Ryxzu+xtJjmuR2tYTeRNwNa0F
-         dIo/QLteQ4Vwh5162It1kPhLKb1Ki62ZG8aw6ATS4GQVJPci2g1lpn1RG0Z+fFdFJQIBEQ==
-         [end]
-        EOF
+     /bin/bash ./configure CONFIG_SHELL=/bin/bash
 
-        monotone --db=mt.db --key="" pull off.net net.venge.monotone
+Here the `CONFIG_SHELL=/bin/bash' operand causes subsequent
+configuration-related scripts to be executed by `/bin/bash'.
 
-        monotone --db=mt.db --branch=net.venge.monotone checkout monotone-sources
+`configure' Invocation
+======================
 
-5. upgrading
+`configure' recognizes the following options to control how it operates.
 
-  * if you have an existing monotone installation, you may need to
-    perform some additional steps to migrate your data to the newest
-    version; see the file UPGRADE for details.
+`--help'
+`-h'
+     Print a summary of the options to `configure', and exit.
 
-A. build notes for solaris/x86
+`--version'
+`-V'
+     Print the version of Autoconf used to generate the `configure'
+     script, and exit.
 
-  * on solaris/x86 the build might fail in cryptopp/integer.cpp if your gcc
-    is configured to use the sunos as. a temporary fix is to use gnu as to
-    to compile that file (remember to replace $BOOST_PREFIX with the path
-    to boost's headers):
+`--cache-file=FILE'
+     Enable the cache: use and save the results of the tests in FILE,
+     traditionally `config.cache'.  FILE defaults to `/dev/null' to
+     disable caching.
 
+`--config-cache'
+`-C'
+     Alias for `--cache-file=config.cache'.
 
-    if g++ -DLOCALEDIR=\"/usr/local/share/locale\" -DHAVE_CONFIG_H -I. -I. \
-       -I$BOOST_PREFIX -I./lua -I./sqlite -DNDEBUG -DBOOST_DISABLE_THREADS \ 
-       -Wall  -O2 -fno-strict-aliasing -MT cryptopp/lib3rdparty_a-integer.o \
-       -MD -MP -MF "cryptopp/.deps/lib3rdparty_a-integer.Tpo" -S -o \
-       cryptopp/lib3rdparty_a-integer.S \
-       `test -f 'cryptopp/integer.cpp' || echo './'`cryptopp/integer.cpp;
-    then
-       mv -f "cryptopp/.deps/lib3rdparty_a-integer.Tpo" \
-         "cryptopp/.deps/lib3rdparty_a-integer.Po";
-    else
-       rm -f "cryptopp/.deps/lib3rdparty_a-integer.Tpo"; exit 1;
-    fi
-    gas cryptopp/lib3rdparty_a-integer.S -o cryptopp/lib3rdparty_a-integer.o
+`--quiet'
+`--silent'
+`-q'
+     Do not print messages saying which checks are being made.  To
+     suppress all normal output, redirect it to `/dev/null' (any error
+     messages will still be shown).
 
+`--srcdir=DIR'
+     Look for the package's source code in directory DIR.  Usually
+     `configure' can determine that directory automatically.
 
-    after that, just do "make" again, it should finish the build now.
+`configure' also accepts some other, not widely useful, options.  Run
+`configure --help' for more details.
+
