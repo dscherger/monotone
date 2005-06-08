@@ -1506,23 +1506,6 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
 void cvs_sync::admin(const std::string &command, const std::string &arg, 
             app_state &app)
 { 
-#if 0 // neither used (nor finished) command to migrate pre0.17 certs
-  if (command=="compact")
-  { test_key_availability(app);
-    std::string::size_type slash=arg.rfind('/');
-    I(slash!=std::string::npos);
-    cvs_sync::cvs_repository repo(app,arg.substr(0,slash),arg.substr(slash+1),false);
-    transaction_guard guard(app.db);
-
-    { std::vector< revision<cert> > certs;
-      app.db.get_revision_certs(cvs_cert_name, certs);
-      // erase_bogus_certs ?
-      repo.process_certs(certs);
-    }
-    
-    guard.commit();
-  }
-#endif
   // we default to the first repository found (which might not be what you wanted)
   if (command=="manifest" && arg.size()==constants::idlen)
   { revision_id rid(arg);
@@ -1565,4 +1548,96 @@ struct cvs_client::checkout cvs_repository::CheckOut2(const std::string &file, c
     reconnect();
     return CheckOut(file,revision);
   }
+}
+
+// inspired by code from Marcelo E. Magallon and the libstdc++ doku
+template <typename Container>
+void
+stringtok (Container &container, std::string const &in,
+           const char * const delimiters = " \t\n")
+{
+    const std::string::size_type len = in.length();
+          std::string::size_type i = 0;
+
+    while ( i < len )
+    {
+        // eat leading whitespace
+        // i = in.find_first_not_of (delimiters, i);
+        // if (i == std::string::npos)
+        //    return;   // nothing left but white space
+
+        // find the end of the token
+        std::string::size_type j = in.find_first_of (delimiters, i);
+
+        // push token
+        if (j == std::string::npos) {
+            container.push_back (in.substr(i));
+            return;
+        } else
+            container.push_back (in.substr(i, j-i));
+
+        // set up for next loop
+        i = j + 1;
+    }
+}
+
+void cvs_repository::validate_path(const std::string &local, const std::string &server)
+{ for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();
+      i!=server_dir.end();++i)
+  { if (local.substr(0,i->first.size())==i->first 
+        && server.substr(0,i->second.size())==i->second
+        && local.substr(i->first.size())==server.substr(i->second.size()))
+      return;
+  }
+  server_dir[local]=server;
+}
+
+void cvs_repository::takeover_dir(const std::string &path)
+{ fstream cvs_Entries(path+"CVS/Entries");
+  N(cvs_Entries.good(),
+      F("can't open %s\n") % (path+"CVS/Entries"));
+  while ()
+  { std::string line;
+    getline(cvs_Entries,line);
+    if (!cvs_Entries.good() || line.empty())
+    { std::vector<std::string> parts;
+      stringtok(parts,line,"/");
+      // empty last part will not get created
+      if (parts.size()==5) parts.push_back(std::string());
+      if (parts[0]=="D")
+      { std::string dirname=parts[1];
+        // append dirname
+        std::string subpath=path+dirname+"/";
+        std::string repository;
+        { fstream cvs_repository(subpath+"CVS/Repository");
+          N(cvs_repository.good(),
+            F("can't open %sCVS/Repository\n") % subpath);
+          std::getline(cvs_repository,repository);
+        }
+        validate_path(subpath,repository);
+        takeover_dir(subpath);
+      }  
+    }
+  }
+}
+
+// read in directory put into db
+void cvs_sync::takeover(app_state &app)
+{ std::string root,repository;
+
+  { fstream cvs_root("CVS/Root");
+    N(cvs_root.good(),
+      F("can't open ./CVS/Root, please change into the working directory\n"));
+    std::getline(cvs_root,root);
+  }
+  { fstream cvs_repository("CVS/Repository");
+    N(cvs_repository.good(),
+      F("can't open ./CVS/Repository\n"));
+    std::getline(cvs_repository,repository);
+  }
+  test_key_availability(app);
+  cvs_sync::cvs_repository repo(app,root,repository,false);
+  // 2DO: validate directory to match the structure
+  repo.validate_path("",repository);
+  repo.takeover_dir("");
 }

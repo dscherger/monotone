@@ -176,4 +176,5 @@ void pull(const std::string &repository, const std::string &module,
 void push(const std::string &repository, const std::string &module,
             app_state &app);
 void admin(const std::string &command, const std::string &arg, app_state &app);
+void takeover(app_state &app);
 } // end namespace cvs_sync
