@@ -155,5 +155,7 @@ public:
   
   void drop_connection();
   static std::string time_t2rfc822(time_t t);
+
+  void validate_path(const std::string &local, const std::string &server);
 };
 

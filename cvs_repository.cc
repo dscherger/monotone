@@ -11,6 +11,7 @@
 #include "cryptopp/md5.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/greg_date.hpp>
+#include <fstream>
 
 using namespace std;
 
@@ -1581,7 +1582,7 @@ stringtok (Container &container, std::string const &in,
     }
 }
 
-void cvs_repository::validate_path(const std::string &local, const std::string &server)
+void cvs_client::validate_path(const std::string &local, const std::string &server)
 { for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();
       i!=server_dir.end();++i)
   { if (local.substr(0,i->first.size())==i->first 
@@ -1593,29 +1594,38 @@ void cvs_repository::validate_path(const std::string &local, const std::string &
 }
 
 void cvs_repository::takeover_dir(const std::string &path)
-{ fstream cvs_Entries(path+"CVS/Entries");
+{ std::ifstream cvs_Entries((path+"CVS/Entries").c_str());
   N(cvs_Entries.good(),
       F("can't open %s\n") % (path+"CVS/Entries"));
-  while ()
+  L(F("takeover_dir %s\n") % path);
+  while (true)
   { std::string line;
-    getline(cvs_Entries,line);
-    if (!cvs_Entries.good() || line.empty())
+    std::getline(cvs_Entries,line);
+    if (!cvs_Entries.good()) break;
+    if (!line.empty())
     { std::vector<std::string> parts;
       stringtok(parts,line,"/");
       // empty last part will not get created
       if (parts.size()==5) parts.push_back(std::string());
+      if (parts.size()!=6) 
+      { W(F("entry line with %d components '%s'\n") % parts.size() %line);
+        continue;
+      }
       if (parts[0]=="D")
       { std::string dirname=parts[1];
         // append dirname
         std::string subpath=path+dirname+"/";
         std::string repository;
-        { fstream cvs_repository(subpath+"CVS/Repository");
+        { ifstream cvs_repository((subpath+"CVS/Repository").c_str());
           N(cvs_repository.good(),
             F("can't open %sCVS/Repository\n") % subpath);
           std::getline(cvs_repository,repository);
         }
         validate_path(subpath,repository);
         takeover_dir(subpath);
+      }
+      else // file
+      {  // remember permissions, store file contents
       }  
     }
   }

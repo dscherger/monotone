@@ -158,6 +158,8 @@ public: // semi public interface for push/pull
   
   static time_t posix2time_t(std::string s);
 
+  void takeover_dir(const std::string &path);
+  
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module, bool connect=true);
 
