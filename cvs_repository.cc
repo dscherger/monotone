@@ -1643,7 +1643,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         fs.keyword_substitution=parts[4];
         // @@ import the file and check whether it is (un-)changed
 //        fs.sha1sum=@@
-        f.known_states.insert(fs);
+        f->second.known_states.insert(fs);
       }
     }
   }

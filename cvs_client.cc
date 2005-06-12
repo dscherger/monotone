@@ -684,8 +684,8 @@ static time_t mod_time2time_t(const std::string &t)
 
 time_t cvs_client::Entries2time_t(const std::string &t)
 { I(t.size()==24);
-  I(t[3]=' ');
-  I(t[7]=' ');
+  I(t[3]==' ');
+  I(t[7]==' ');
   std::vector<std::string> parts;
   stringtok(parts,t);
   I(parts.size()==5);
@@ -699,7 +699,7 @@ time_t cvs_client::Entries2time_t(const std::string &t)
   tm.tm_min=atoi(parts[3].substr(3,2).c_str());
   tm.tm_sec=atoi(parts[3].substr(6,2).c_str());
   tm.tm_isdst=-1;
-  return mktime(tm);
+  return mktime(&tm);
 }
 
 std::string cvs_client::time_t2rfc822(time_t t)
