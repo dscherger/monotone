@@ -682,6 +682,26 @@ static time_t mod_time2time_t(const std::string &t)
   return timezone2time_t(tm,dst_offs);
 }
 
+time_t cvs_client::Entries2time_t(const std::string &t)
+{ I(t.size()==24);
+  I(t[3]=' ');
+  I(t[7]=' ');
+  std::vector<std::string> parts;
+  stringtok(parts,t);
+  I(parts.size()==5);
+  struct tm tm;
+  memset(&tm,0,sizeof tm);
+  I(parts[3][2]==':' && parts[3][5]==':');
+  tm.tm_year=atoi(parts[4].c_str())-1900;
+  tm.tm_mon=monname2month(parts[1])-1;
+  tm.tm_mday=atoi(parts[2].c_str());
+  tm.tm_hour=atoi(parts[3].substr(0,2).c_str());
+  tm.tm_min=atoi(parts[3].substr(3,2).c_str());
+  tm.tm_sec=atoi(parts[3].substr(6,2).c_str());
+  tm.tm_isdst=-1;
+  return mktime(tm);
+}
+
 std::string cvs_client::time_t2rfc822(time_t t)
 { static const char * const months[12] = 
   {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};

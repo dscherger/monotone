@@ -1626,7 +1626,25 @@ void cvs_repository::takeover_dir(const std::string &path)
       }
       else // file
       {  // remember permissions, store file contents
-      }  
+        I(parts[0].empty());
+        std::string filename=path+parts[1];
+        I(!access(filename.c_str(),R_OK));
+        // parts[2]=version
+        // parts[3]=date
+        // parts[4]=keyword subst
+        // parts[5]='T'tag
+        time_t modtime=cvs_client::Entries2time_t(parts[3]);
+        I(files.find(filename)==files.end());
+        std::map<std::string,file_history>::iterator f
+            =files.insert(std::make_pair(filename,file_history())).first;
+        file_state fs(modtime,parts[2]);
+        fs.log_msg="initial cvs content";
+        fs.author="@@";
+        fs.keyword_substitution=parts[4];
+        // @@ import the file and check whether it is (un-)changed
+//        fs.sha1sum=@@
+        f.known_states.insert(fs);
+      }
     }
   }
 }
