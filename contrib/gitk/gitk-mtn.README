@@ -1,0 +1,20 @@
+
+BEWARE! gitk-mtn (unlike gitk) is just pre-pre-alpha. Not everything works.
+DON'T SELECT ANYTHING IN THE FILE PANE.	YOU HAVE BEEN WARNED.
+
+gitk-mtn-1.0 is a slightly hacked version of gitk-1.0, the git commit viewer by
+Paul Mackerras (paulus@samba.org).
+
+It needs a recent monotone (0.20 at least) with the log command using --last 
+instead of --depth.  If your monotone log command still uses --depth, change
+line 86 accordingly.
+
+It also uses "automate graph", which dumps the entire db, making the resulting
+gitk output almost unreadable.
+To have a saner display (just the current branch), apply the graphbranch.patch
+to your monotone sources and rebuild. Use the resulting monotone with gitk-mtn.
+
+Usage:
+ invoke gitk-mtn-1.0 in a monotone working dir.  monotone executable should be
+in your path.
+

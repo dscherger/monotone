@@ -1,0 +1,61 @@
+# 
+# patch "automate.cc"
+#  from [646411d161574bb13a8cb76ff8f8abd28de310ba]
+#    to [2112d41f871e2426218ac91262c57de80c5d4ba8]
+# 
+# patch "database.cc"
+#  from [181e7b79e4435b2ffa1561ce8b9162a41563ed72]
+#    to [e4096c5d61872fefdd663d619705b5c986bf995d]
+# 
+# patch "database.hh"
+#  from [402c6310d759c4934fc19ba823f2536ca3251d46]
+#    to [dd7b020f6deb593492f2c9cb8f07f1d44ca93a5e]
+# 
+--- automate.cc
++++ automate.cc
+@@ -451,7 +451,8 @@
+   std::multimap<revision_id, revision_id> edges_mmap;
+   std::map<revision_id, std::set<revision_id> > child_to_parents;
+ 
+-  app.db.get_revision_ancestry(edges_mmap);
++//  app.db.get_revision_ancestry(edges_mmap);
++  app.db.get_branch_ancestry(edges_mmap, app.branch_name);
+ 
+   for (std::multimap<revision_id, revision_id>::const_iterator i = edges_mmap.begin();
+        i != edges_mmap.end(); ++i)
+--- database.cc
++++ database.cc
+@@ -1355,6 +1355,21 @@
+ }
+ 
+ void 
++database::get_branch_ancestry(std::multimap<revision_id, revision_id> & graph, const utf8 &branch)
++{
++  results res;
++  graph.clear();
++  fetch(res, 2, any_rows, 
++        (F("SELECT parent,child FROM revision_ancestry,revision_certs where "
++        "id=child and name='%s' and unbase64(value) glob '%s' ") 
++        % branch_cert_name
++        % branch).str().c_str()  );
++  for (size_t i = 0; i < res.size(); ++i)
++    graph.insert(std::make_pair(revision_id(res[i][0]),
++                                revision_id(res[i][1])));
++}
++
++void 
+ database::get_revision_parents(revision_id const & id,
+                               set<revision_id> & parents)
+ {
+--- database.hh
++++ database.hh
+@@ -265,6 +265,9 @@
+ 
+   void get_revision_ancestry(std::multimap<revision_id, revision_id> & graph);
+ 
++  void get_branch_ancestry(std::multimap<revision_id, revision_id> & graph, 
++                           const utf8 &branch);
++
+   void get_revision_parents(revision_id const & id,
+                            std::set<revision_id> & parents);
+ 
