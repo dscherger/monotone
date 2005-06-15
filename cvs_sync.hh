@@ -65,16 +65,19 @@ struct cvs_edge // careful this name is also used in cvs_import
   mutable revision_id delta_base;
   // delta encoded if !delta_base().empty()
   mutable cvs_manifest xfiles; // manifest (or use cvs_manifest)
+  mutable unsigned cm_delta_depth; // we store a full manifest every N revisions
+  static const unsigned cm_max_delta_depth=50;
   mutable hexenc<id> revision; // monotone revision
       // make this a revision_id
 
   // I do not want this to be 3 hours (how comes?)
   static size_t const cvs_window = 5;
 
-  cvs_edge() : changelog_valid(), time(), time2() {} 
-  cvs_edge(time_t when) : changelog_valid(), time(when), time2(when) {} 
+  cvs_edge() : changelog_valid(), time(), time2(), cm_delta_depth() {} 
+  cvs_edge(time_t when) : changelog_valid(), time(when), time2(when), cm_delta_depth() {} 
   cvs_edge(const std::string &log, time_t when, const std::string &auth) 
-    : changelog(log), changelog_valid(true), author(auth), time(when), time2(when)
+    : changelog(log), changelog_valid(true), author(auth), time(when), time2(when),
+      cm_delta_depth()
   {} 
   cvs_edge(const revision_id &rid,app_state &app);
   

@@ -493,7 +493,7 @@ void cvs_repository::store_delta(const std::string &new_contents,
 
 static bool 
 build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &newm,
-                 change_set & cs, cvs_file_state remove_state)
+                 change_set & cs, cvs_file_state remove_state, unsigned cm_delta_depth)
 {
   cs = change_set();
   cvs_manifest cvs_delta;
@@ -536,7 +536,8 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
         cvs_delta[f->first]=f->second;
       }
     }
-  if (!oldm.empty() && cvs_delta.size()<newm.size())
+  if (!oldm.empty() && cvs_delta.size()<newm.size() 
+      && cm_delta_depth+1<cvs_edge::cm_max_delta_depth)
   { newm=cvs_delta;
     return true;
   }
@@ -748,6 +749,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   manifest_map parent_map;
   manifest_map child_map=parent_map;
   packet_db_writer dbw(app);
+  unsigned cm_delta_depth=0;
   
   cvs_edges_ticker.reset(0);
   revision_ticker.reset(new ticker("revisions", "R", 3));
@@ -761,13 +763,16 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     app.db.get_manifest(parent_mid,parent_map);
     child_map=parent_map;
     parent_manifest=get_files(*before);
+    cm_delta_depth=before->cm_delta_depth;
   }
   for (; e!=edges.end(); ++e)
   { boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
-    if (build_change_set(*this,parent_manifest,e->xfiles,*cs,remove_state))
-      e->delta_base=parent_rid;
+    if (build_change_set(*this,parent_manifest,e->xfiles,*cs,remove_state,cm_delta_depth))
+    { e->delta_base=parent_rid;
+      e->cm_delta_depth=cm_delta_depth+1;
+    }
     if (cs->empty())
     { W(F("null edge (empty cs) @%ld skipped\n") % e->time);
       continue;
@@ -828,6 +833,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     parent_mid = child_mid;
     parent_rid = child_rid;
     parent_manifest=child_manifest;
+    cm_delta_depth=e->cm_delta_depth;
   }
 }
 
@@ -963,7 +969,7 @@ time_t cvs_repository::posix2time_t(std::string posix_format)
 }
 
 cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
- : changelog_valid(), time(), time2()
+ : changelog_valid(), time(), time2(), cm_delta_depth()
 { revision=hexenc<id>(rid.inner());
   // get author + date 
   std::vector< ::revision<cert> > edge_certs;
@@ -1010,6 +1016,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
   revision_set rs;
   app.db.get_revision(rid, rs);
   std::vector<commit_arg> commits;
+  unsigned cm_delta_depth=parent->cm_delta_depth;
   
   for (edge_map::const_iterator j = rs.edges.begin(); 
        j != rs.edges.end();
@@ -1108,6 +1115,12 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       }
     }
     packet_db_writer dbw(app);
+    if (cm_delta_depth+1>=cvs_edge::cm_max_delta_depth) 
+    { get_files(e);
+      cm_delta_depth=0;
+    }
+    else
+      e.cm_delta_depth=++cm_delta_depth;
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
     if (global_sanity.debug) L(F("%s") % debug());
@@ -1505,6 +1518,7 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
     std::vector<const cvs_edge *> deltas;
     while (!current->delta_base.inner()().empty())
     { L(F("get_files: looking for base rev %s\n") % current->delta_base);
+      ++e.cm_delta_depth;
       deltas.push_back(current);
       std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
         cache_item=revision_lookup.find(current->delta_base);
