@@ -12,6 +12,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/greg_date.hpp>
 #include <fstream>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -450,9 +451,8 @@ bool cvs_edge::operator<(cvs_edge const & other) const
      && changelog < other.changelog);
 }
 
-void cvs_repository::store_contents(const std::string &contents, hexenc<id> &sha1sum)
+void cvs_repository::store_contents(const data &dat, hexenc<id> &sha1sum)
 {
-  data dat(contents);
   calculate_ident(dat,sha1sum);
   if (!app.db.file_version_exists(sha1sum))
   { app.db.put_file(sha1sum, dat);
@@ -1598,6 +1598,7 @@ void cvs_repository::takeover_dir(const std::string &path)
   N(cvs_Entries.good(),
       F("can't open %s\n") % (path+"CVS/Entries"));
   L(F("takeover_dir %s\n") % path);
+  static hexenc<id> empty_file;
   while (true)
   { std::string line;
     std::getline(cvs_Entries,line);
@@ -1638,14 +1639,63 @@ void cvs_repository::takeover_dir(const std::string &path)
         std::map<std::string,file_history>::iterator f
             =files.insert(std::make_pair(filename,file_history())).first;
         file_state fs(modtime,parts[2]);
-        fs.log_msg="initial cvs content";
-        fs.author="@@";
+        fs.author="?";
         fs.keyword_substitution=parts[4];
+        { struct stat sbuf;
+          I(!stat(filename.c_str(), &sbuf));
+          if (sbuf.st_mtime!=modtime)
+          { L(F("modified %s %u %u\n") % filename % modtime % sbuf.st_mtime);
+            fs.log_msg="partially overwritten content from last update";
+            store_contents(std::string(), fs.sha1sum);
+            f->second.known_states.insert(fs);
+            
+            fs.since_when=time(NULL);
+            fs.cvs_version=std::string();
+          }
+        }
         // @@ import the file and check whether it is (un-)changed
-//        fs.sha1sum=@@
+        fs.log_msg="initial cvs content";
+        data new_data;
+        read_localized_data(filename, new_data, app.lua);
+        store_contents(new_data, fs.sha1sum);
         f->second.known_states.insert(fs);
       }
     }
+  }
+}
+
+void cvs_repository::takeover()
+{ 
+  validate_path("",module);
+  takeover_dir("");
+  
+  bool need_second=false;
+  cvs_edge e1,e2;
+  e1.time=0;
+  e1.changelog="last cvs update (modified)";
+  e1.changelog_valid=true;
+  e2.time=time(NULL);
+  e2.changelog="cvs takeover";
+  e2.changelog_valid=true;
+  for (std::map<std::string,file_history>::const_iterator i=files.begin();
+      i!=files.end();++i)
+  { cvs_file_state first,second;
+    first=i->second.known_states.begin();
+    I(first!=i->second.known_states.end());
+    second=first;
+    ++second;
+    if (second==i->second.known_states.end()) second=first;
+    else if (!need_second) need_second=true;
+    if (e1.time<first->since_when) e1.time=first->since_when;
+    e1.xfiles[i->first]=first;
+    e2.xfiles[i->first]=second;
+    // at most two states known !
+    I((++second)==i->second.known_states.end());
+  }
+  if (!need_second) e1.changelog=e2.changelog;
+  edges.insert(e1);
+  if (need_second)
+  { edges.insert(e2);
   }
 }
 
@@ -1666,6 +1716,7 @@ void cvs_sync::takeover(app_state &app)
   test_key_availability(app);
   cvs_sync::cvs_repository repo(app,root,repository,false);
   // 2DO: validate directory to match the structure
-  repo.validate_path("",repository);
-  repo.takeover_dir("");
+  repo.takeover();
+  
+  std::cerr << repo.debug() << '\n';
 }

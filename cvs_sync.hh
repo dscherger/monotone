@@ -133,7 +133,8 @@ private:
   void fill_manifests(std::set<cvs_edge>::iterator e);
   void commit_revisions(std::set<cvs_edge>::iterator e);
 
-  void store_contents(const std::string &contents, hexenc<id> &sha1sum);
+// std::string is equivalent to data
+  void store_contents(const data &contents, hexenc<id> &sha1sum);
 //  void apply_delta(std::string &contents, const std::string &patch);
   void store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
@@ -146,6 +147,7 @@ private:
   const cvs_manifest &get_files(const cvs_edge &e);
   // try harder (reconnect if something goes wrong)
   struct checkout CheckOut2(const std::string &file, const std::string &revision);
+  void takeover_dir(const std::string &path);
   
 public: // semi public interface for push/pull
   void prime();
@@ -158,7 +160,7 @@ public: // semi public interface for push/pull
   
   static time_t posix2time_t(std::string s);
 
-  void takeover_dir(const std::string &path);
+  void takeover();
   
 public:  
   cvs_repository(app_state &app, const std::string &repository, const std::string &module, bool connect=true);

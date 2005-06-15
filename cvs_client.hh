@@ -33,11 +33,15 @@ class cvs_client
     virtual void revision(const std::string &file,time_t checkin_date,
           const std::string &rev,const std::string &author,
           const std::string &state,const std::string &log) const=0;
+    // to silence gcc
+    virtual ~rlog_callbacks() {}
   };
 
   struct rlist_callbacks
   { virtual void file(const std::string &name, time_t last_change,
           const std::string &last_rev, bool dead) const=0;
+    // to silence gcc
+    virtual ~rlist_callbacks() {}
   };
 
   struct checkout
@@ -52,6 +56,8 @@ class cvs_client
   };
   struct update_callbacks
   { virtual void operator()(const update &) const=0;
+    // to silence gcc
+    virtual ~update_callbacks() {}
   };
   struct update_args
   { std::string file, old_revision, new_revision, keyword_substitution;
