@@ -158,6 +158,8 @@ public:
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }
   void SetServerDir(const std::map<std::string,std::string> &m);
+  const std::map<std::string,std::string> &GetServerDir() const
+  { return server_dir; }
   
   void drop_connection();
   static std::string time_t2rfc822(time_t t);

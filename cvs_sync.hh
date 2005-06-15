@@ -149,6 +149,9 @@ private:
   struct checkout CheckOut2(const std::string &file, const std::string &revision);
   void takeover_dir(const std::string &path);
   
+  void store_modules();
+  void retrieve_modules();
+  
 public: // semi public interface for push/pull
   void prime();
   void update();

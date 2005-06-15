@@ -832,7 +832,8 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
 }
 
 void cvs_repository::prime()
-{ get_all_files();
+{ retrieve_modules();
+  get_all_files();
   revision_ticker.reset(0);
   cvs_edges_ticker.reset(new ticker("edges", "E", 10));
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
@@ -896,6 +897,8 @@ void cvs_repository::prime()
   
   // commit them all
   commit_revisions(edges.begin());
+  
+  store_modules();
 }
 
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
@@ -1117,7 +1120,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
 }
 
 void cvs_repository::commit()
-{
+{ retrieve_modules();
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
   while (now_iter!=edges.end())
   { const cvs_edge &now=*now_iter;
@@ -1158,6 +1161,7 @@ void cvs_repository::commit()
     // we'd better seperate the commits so that ordering them is possible
     if (now_iter!=edges.end()) sleep(2);
   }
+  store_modules();
 }
 
 // this is somewhat clumsy ... rethink it  
@@ -1183,7 +1187,7 @@ static void guess_repository(std::string &repository, std::string &module,
         I(nlpos!=std::string::npos);
         std::string repo=value().substr(0,nlpos);
         std::string::size_type lastslash=repo.find('\t'); 
-#ifdef BACKWARD:COMPATIBLE        
+#ifdef BACKWARD_COMPATIBLE
         if (lastslash==std::string::npos) lastslash=repo.rfind('/');
 #endif
         I(lastslash!=std::string::npos);
@@ -1387,7 +1391,8 @@ struct cvs_repository::update_cb : cvs_client::update_callbacks
 };
 
 void cvs_repository::update()
-{ std::set<cvs_edge>::iterator now_iter=last_known_revision();
+{ retrieve_modules();
+  std::set<cvs_edge>::iterator now_iter=last_known_revision();
   const cvs_edge &now=*now_iter;
   I(!now.revision().empty());
   std::vector<update_args> file_revisions;
@@ -1473,6 +1478,8 @@ void cvs_repository::update()
 //    std::cerr << debug();
     L(F("%s") % debug());
   commit_revisions(dummy_iter);
+  
+  store_modules();
 }
 
 static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
@@ -1738,6 +1745,8 @@ void cvs_repository::takeover()
 //  update_any_attrs(app);
   put_revision_id((--edges.end())->revision);
 //  maybe_update_inodeprints(app);
+
+  store_modules();
 }
 
 // read in directory put into db
@@ -1761,4 +1770,39 @@ void cvs_sync::takeover(app_state &app, const std::string &_module)
   cvs_sync::cvs_repository repo(app,root,module,false);
   // 2DO: validate directory to match the structure
   repo.takeover();
+}
+
+void cvs_repository::store_modules()
+{ const std::map<std::string,std::string> &sd=GetServerDir();
+  std::string value;
+  std::string name=host+":"+root+"\t"+module+"\n";
+  for (std::map<std::string,std::string>::const_iterator i=sd.begin();
+        i!=sd.end();++i)
+  { value+=i->first+"\t"+i->second+"\n";
+  }
+  std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
+  var_value oldval;
+  app.db.get_var(key,oldval);
+  if (oldval()!=value) app.db.set_var(key, value);
+}
+
+void cvs_repository::retrieve_modules()
+{ if (!GetServerDir().empty()) return;
+  std::string name=host+":"+root+"\t"+module+"\n";
+  std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
+  var_value value;
+  app.db.get_var(key,value);
+  if (value().empty()) return;
+  std::map<std::string,std::string> sd;
+  std::vector<piece> pieces;
+  std::string value_s=value();
+  index_deltatext(value_s,pieces);
+  for (std::vector<piece>::const_iterator p=pieces.begin();p!=pieces.end();++p)
+  { std::string line=**p;
+    I(!line.empty());
+    std::string::size_type tab=line.find('\t');
+    I(tab!=std::string::npos);
+    sd[line.substr(0,tab)]=line.substr(tab+1);
+  }
+  SetServerDir(sd);
 }
