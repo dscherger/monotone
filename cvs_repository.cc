@@ -14,6 +14,8 @@
 #include <fstream>
 #include <sys/stat.h>
 
+#define BACKWARD_COMPATIBLE
+
 using namespace std;
 
 // since the piece methods in rcs_import depend on rcs_file I cannot reuse them
@@ -897,11 +899,10 @@ void cvs_repository::prime()
 }
 
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
-{ std::string content=host+":"+root+"/"+module+"\n";
+{ // I assume that at least TAB is uncommon in path names - even on Windows
+  std::string content=host+":"+root+"\t"+module+"\n";
   if (!e.delta_base.inner()().empty()) 
-  { //hexenc<id> h;
-//    encode_hexenc(e.delta_base.inner(),h);
-    content+="+"+e.delta_base.inner()()+"\n";
+  { content+="+"+e.delta_base.inner()()+"\n";
   }
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
   { content+=i->second->cvs_version;
@@ -1181,7 +1182,10 @@ static void guess_repository(std::string &repository, std::string &module,
         std::string::size_type nlpos=value().find('\n');
         I(nlpos!=std::string::npos);
         std::string repo=value().substr(0,nlpos);
-        std::string::size_type lastslash=repo.rfind('/');
+        std::string::size_type lastslash=repo.find('\t'); 
+#ifdef BACKWARD:COMPATIBLE        
+        if (lastslash==std::string::npos) lastslash=repo.rfind('/');
+#endif
         I(lastslash!=std::string::npos);
         // this is naive ... but should work most of the time
         // we should not separate repo and module by '/'
@@ -1266,13 +1270,20 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
   std::auto_ptr<ticker> cert_ticker;
   cert_ticker.reset(new ticker("cvs certs", "C", 10));
 
-  std::string needed_cert=host+":"+root+"/"+module+"\n";
+  std::string needed_cert=host+":"+root+"\t"+module+"\n";
+#ifdef BACKWARD_COMPATIBLE
+  std::string needed_cert_old=host+":"+root+"/"+module+"\n";
+#endif  
   for (vector<revision<cert> >::const_iterator i=certs.begin(); i!=certs.end(); ++i)
   { // populate data structure using these certs
     cert_value cvs_revisions;
     decode_base64(i->inner().value, cvs_revisions);
     if (cvs_revisions().size()>needed_cert.size() 
-      && cvs_revisions().substr(0,needed_cert.size())==needed_cert)
+      && (cvs_revisions().substr(0,needed_cert.size())==needed_cert
+#ifdef BACKWARD_COMPATIBLE
+         || cvs_revisions().substr(0,needed_cert_old.size())==needed_cert_old
+#endif
+      ))
     { // parse and add the cert
       ++(*cert_ticker);
       cvs_edge e(i->inner().ident,app);
