@@ -688,7 +688,11 @@ time_t cvs_client::Entries2time_t(const std::string &t)
   I(t[7]==' ');
   std::vector<std::string> parts;
   stringtok(parts,t);
-  I(parts.size()==5 || parts.size()==6);
+  // stringtok is not overly well suited for this task, every single whitespace
+  // separates parts
+  if (parts.size()==6 && t[8]==' ' && parts[2].empty())
+    parts.erase(parts.begin()+2);
+  I(parts.size()==5); //  || parts.size()==6);
   struct tm tm;
   memset(&tm,0,sizeof tm);
   I(parts[3][2]==':' && parts[3][5]==':');
