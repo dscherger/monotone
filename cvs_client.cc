@@ -702,8 +702,9 @@ time_t cvs_client::Entries2time_t(const std::string &t)
   tm.tm_hour=atoi(parts[3].substr(0,2).c_str());
   tm.tm_min=atoi(parts[3].substr(3,2).c_str());
   tm.tm_sec=atoi(parts[3].substr(6,2).c_str());
-  tm.tm_isdst=-1;
-  return mktime(&tm);
+  tm.tm_isdst=0;
+  // at least for me it was UTC ...
+  return timezone2time_t(tm,0);
 }
 
 std::string cvs_client::time_t2rfc822(time_t t)
