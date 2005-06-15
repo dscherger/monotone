@@ -1594,7 +1594,13 @@ void cvs_client::validate_path(const std::string &local, const std::string &serv
 }
 
 void cvs_repository::takeover_dir(const std::string &path)
-{ std::ifstream cvs_Entries((path+"CVS/Entries").c_str());
+{ { std::string repository;
+    std::ifstream cvs_repository((path+"CVS/Repository").c_str());
+    N(cvs_repository.good(), F("can't open %sCVS/Repository\n") % path);
+    std::getline(cvs_repository,repository);
+    validate_path(path,repository);
+  }
+  std::ifstream cvs_Entries((path+"CVS/Entries").c_str());
   N(cvs_Entries.good(),
       F("can't open %s\n") % (path+"CVS/Entries"));
   L(F("takeover_dir %s\n") % path);
@@ -1613,17 +1619,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         continue;
       }
       if (parts[0]=="D")
-      { std::string dirname=parts[1];
-        // append dirname
-        std::string subpath=path+dirname+"/";
-        std::string repository;
-        { ifstream cvs_repository((subpath+"CVS/Repository").c_str());
-          N(cvs_repository.good(),
-            F("can't open %sCVS/Repository\n") % subpath);
-          std::getline(cvs_repository,repository);
-        }
-        validate_path(subpath,repository);
-        takeover_dir(subpath);
+      { takeover_dir(path+parts[1]+"/");
       }
       else // file
       {  // remember permissions, store file contents
@@ -1665,9 +1661,7 @@ void cvs_repository::takeover_dir(const std::string &path)
 }
 
 void cvs_repository::takeover()
-{ 
-  validate_path("",module);
-  takeover_dir("");
+{ takeover_dir("");
   
   bool need_second=false;
   cvs_edge e1,e2;
@@ -1697,26 +1691,29 @@ void cvs_repository::takeover()
   if (need_second)
   { edges.insert(e2);
   }
+  // commit them all
+  commit_revisions(edges.begin());
 }
 
 // read in directory put into db
-void cvs_sync::takeover(app_state &app)
-{ std::string root,repository;
+void cvs_sync::takeover(app_state &app, const std::string &_module)
+{ std::string root,module=_module;
 
   { fstream cvs_root("CVS/Root");
     N(cvs_root.good(),
       F("can't open ./CVS/Root, please change into the working directory\n"));
     std::getline(cvs_root,root);
   }
+  if (module.empty())
   { fstream cvs_repository("CVS/Repository");
     N(cvs_repository.good(),
       F("can't open ./CVS/Repository\n"));
-    std::getline(cvs_repository,repository);
+    std::getline(cvs_repository,module);
+    W(F("Guessing '%s' as the module name\n") % module);
   }
   test_key_availability(app);
-  cvs_sync::cvs_repository repo(app,root,repository,false);
+  cvs_sync::cvs_repository repo(app,root,module,false);
   // 2DO: validate directory to match the structure
   repo.takeover();
-  
-  std::cerr << repo.debug() << '\n';
+//  std::cerr << repo.debug() << '\n';
 }

@@ -3693,12 +3693,13 @@ CMD(cvs_push, "network", "CVS-REPOSITORY CVS-MODULE",
 }
 
 
-CMD(cvs_takeover, "working copy", "",
+CMD(cvs_takeover, "working copy", "[CVS-MODULE]",
     "put a CVS working directory under monotone's control", OPT_BRANCH_NAME)
 {
-  if (args.size() != 0) throw usage(name);
-
-  cvs_sync::takeover(app);
+  if (args.size() > 1) throw usage(name);
+  string module;
+  if (args.size() == 1) module = idx(args, 0)();
+  cvs_sync::takeover(app, module);
 }
 
 
