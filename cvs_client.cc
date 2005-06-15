@@ -244,7 +244,8 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
 { // parse the arguments
   { unsigned len;
     std::string d_arg=repository;
-    if (begins_with(d_arg,":pserver:",len))
+    if (begins_with(d_arg,":ext:",len)) d_arg.erase(0,len);
+    else if (begins_with(d_arg,":pserver:",len))
     { pserver=true;
       d_arg.erase(0,len);
     }
