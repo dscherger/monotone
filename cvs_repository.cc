@@ -1635,7 +1635,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         std::map<std::string,file_history>::iterator f
             =files.insert(std::make_pair(filename,file_history())).first;
         file_state fs(modtime,parts[2]);
-        fs.author="?";
+        fs.author="unknown";
         fs.keyword_substitution=parts[4];
         { struct stat sbuf;
           I(!stat(filename.c_str(), &sbuf));
@@ -1668,9 +1668,11 @@ void cvs_repository::takeover()
   e1.time=0;
   e1.changelog="last cvs update (modified)";
   e1.changelog_valid=true;
+  e1.author="unknown";
   e2.time=time(NULL);
   e2.changelog="cvs takeover";
   e2.changelog_valid=true;
+  e2.author="unknown";
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
       i!=files.end();++i)
   { cvs_file_state first,second;
