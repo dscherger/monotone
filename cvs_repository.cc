@@ -1192,6 +1192,7 @@ static void guess_repository(std::string &repository, std::string &module,
         // but I do not know a much better separator
         repository=repo.substr(0,lastslash);
         module=repo.substr(lastslash+1);
+        L(F("using module '%s' in repository '%s'\n") % module % repository);
         goto break_outer;
       }
     }
@@ -1706,12 +1707,44 @@ void cvs_repository::takeover()
   }
   // commit them all
   commit_revisions(edges.begin());
+  // create a MT directory 
+//  std::cerr << repo.debug() << '\n';
+//  I(!mkdir("MT",0777));
+//  app.create_working_copy(".");
+//  app.write_options();
+  app.create_working_copy(".");
+#if 0  
+  local_path mt(app.book_keeping_dir);
+
+  N(!directory_exists(mt),
+    F("monotone book-keeping directory '%s' already exists in '%s'\n") 
+    % app.book_keeping_dir % ".");
+
+  L(F("creating book-keeping directory '%s' for working copy in '%s'\n")
+    % app.book_keeping_dir % ".");
+
+  mkdir_p(mt);
+
+//  make_branch_sticky();
+
+  app.write_options();
+
+  app.blank_user_log();
+
+  if (app.lua.hook_use_inodeprints())
+    app.enable_inodeprints();
+#endif    
+  // like in commit
+//  update_any_attrs(app);
+  put_revision_id((--edges.end())->revision);
+//  maybe_update_inodeprints(app);
 }
 
 // read in directory put into db
 void cvs_sync::takeover(app_state &app, const std::string &_module)
 { std::string root,module=_module;
 
+  N(access("MT",F_OK),F("Found a MT file or directory, already under monotone's control?"));
   { fstream cvs_root("CVS/Root");
     N(cvs_root.good(),
       F("can't open ./CVS/Root, please change into the working directory\n"));
@@ -1728,5 +1761,4 @@ void cvs_sync::takeover(app_state &app, const std::string &_module)
   cvs_sync::cvs_repository repo(app,root,module,false);
   // 2DO: validate directory to match the structure
   repo.takeover();
-//  std::cerr << repo.debug() << '\n';
 }
