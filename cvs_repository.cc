@@ -1631,7 +1631,9 @@ void cvs_repository::takeover_dir(const std::string &path)
     std::ifstream cvs_repository((path+"CVS/Repository").c_str());
     N(cvs_repository.good(), F("can't open %sCVS/Repository\n") % path);
     std::getline(cvs_repository,repository);
-    validate_path(path,repository);
+    I(!repository.empty());
+    if (repository[0]!='/') repository=root+"/"+repository;
+    validate_path(path,repository+"/");
   }
   std::ifstream cvs_Entries((path+"CVS/Entries").c_str());
   N(cvs_Entries.good(),
