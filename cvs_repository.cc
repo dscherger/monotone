@@ -1819,6 +1819,8 @@ void cvs_repository::retrieve_modules()
     I(!line.empty());
     std::string::size_type tab=line.find('\t');
     I(tab!=std::string::npos);
+    I(line[line.size()-1]=='\n');
+    line.erase(line.size()-1,1);
     sd[line.substr(0,tab)]=line.substr(tab+1);
   }
   SetServerDir(sd);
