@@ -1796,7 +1796,9 @@ void cvs_repository::store_modules()
   }
   std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
   var_value oldval;
-  app.db.get_var(key,oldval);
+  try 
+  { app.db.get_var(key,oldval);
+  } catch (logic_error &e) {}
   if (oldval()!=value) app.db.set_var(key, value);
 }
 
@@ -1805,8 +1807,9 @@ void cvs_repository::retrieve_modules()
   std::string name=host+":"+root+"\t"+module+"\n";
   std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
   var_value value;
-  app.db.get_var(key,value);
-  if (value().empty()) return;
+  try {
+    app.db.get_var(key,value);
+  } catch (logic_error &e) { return; }
   std::map<std::string,std::string> sd;
   std::vector<piece> pieces;
   std::string value_s=value();
