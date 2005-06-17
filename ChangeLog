@@ -1,3 +1,10 @@
+2005-06-xx  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc: Beginnings of precise-cdv merge, as "pcdv" command.
+	(Translation of Python reference implementation posted to Revctrl.)
+	Will be moved to a more appropriate home once it works (currenty
+	has insane memory usage).
+
 2005-06-05  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* netsync.cc, netcmd.cc: Style cleanups (mostly whitespace).
