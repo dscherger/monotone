@@ -1,4 +1,4 @@
-2005-06-xx  Timothy Brownawell  <tbrownaw@gmail.com>
+2005-06-16  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* commands.cc: Beginnings of precise-cdv merge, as "pcdv" command.
 	(Translation of Python reference implementation posted to Revctrl.)
