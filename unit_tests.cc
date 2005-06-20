@@ -57,6 +57,9 @@ test_suite * init_unit_test_suite(int argc, char * argv[])
   if (t.empty() || t.find("change_set") != t.end())
     add_change_set_tests(suite);  
 
+  if (t.empty() || t.find("cset") != t.end())
+    add_cset_tests(suite);  
+
   if (t.empty() || t.find("diff_patch") != t.end())
     add_diff_patch_tests(suite);
 
@@ -69,7 +72,7 @@ test_suite * init_unit_test_suite(int argc, char * argv[])
   if (t.empty() || t.find("netcmd") != t.end())
     add_netcmd_tests(suite);  
 
-  if (t.empty() || t.find("netcmd") != t.end())
+  if (t.empty() || t.find("path_component") != t.end())
     add_path_component_tests(suite);  
 
   

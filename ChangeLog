@@ -1,3 +1,7 @@
+2005-06-19  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Rewrite-in-progress on change_set.cc.
+
 2005-06-14  Richard Levitte  <richard@levitte.org>
 
 	* std_hooks.lua (get_preferred_merge2_command,
