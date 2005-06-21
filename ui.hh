@@ -28,6 +28,7 @@ struct ticker
       bool kilocount=false);
   void operator++();
   void operator+=(size_t t);
+  void operator--();
   ~ticker();
 };
 
