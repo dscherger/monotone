@@ -1369,7 +1369,7 @@ std::map<std::string,std::pair<std::string,std::string> >
   writestr("Argument --\n");
   for (std::vector<commit_arg>::const_iterator i=commits.begin(); 
                         i!=commits.end(); ++i)
-    writestr("Argument "+shorten_path(i->file)+"\n");
+    writestr("Argument "+i->file+"\n");
   writestr("ci\n");
   std::map<std::string,std::pair<std::string,std::string> > result;
   // process result

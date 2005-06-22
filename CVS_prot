@@ -130,8 +130,6 @@ we can use log -r NAME to get the radix for the branch
 -N -S? 
 
 -------------------- TODO ------------------------------
-push/pull o.Argumente
-modules: fetch expand-modules, figure out server dirs, save and removen prefix
 correct < when calculating manifests
 push: changelog on merge
 faster initial db-access (multimap? without timestamp access?)
