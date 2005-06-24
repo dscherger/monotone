@@ -931,7 +931,8 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
       case st_rev:
       { std::string result=combine_result(lresult);
         unsigned len=0;
-        if (!begins_with(result,"revision",len))
+        if (!begins_with(result,"revision ",len)) // do not delete the space here
+                    // it restricts accepted lines further
         // accept ---------------------------- lines in changelogs
         { description+=std::string(revisionend)+"\n"; 
           state=st_desc;
