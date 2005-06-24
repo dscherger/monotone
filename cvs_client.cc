@@ -931,7 +931,12 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
       case st_rev:
       { std::string result=combine_result(lresult);
         unsigned len=0;
-        I(begins_with(result,"revision ",len));
+        if (!begins_with(result,"revision",len))
+        // accept ---------------------------- lines in changelogs
+        { description+=std::string(revisionend)+"\n"; 
+          state=st_desc;
+          goto reswitch;
+        }
         revision=result.substr(len);
         state=st_date_author;
         break;
