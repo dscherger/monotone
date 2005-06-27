@@ -3982,6 +3982,7 @@ struct living_status
     for (map<string, vector<string> >::const_iterator i
          = other.overrides.begin(); i != other.overrides.end(); ++i)
       {
+        newdict.insert(*i);
         map<string, vector<string> >::const_iterator j
             = overrides.find(i->first);
         I(j == overrides.end() || j->second == i->second);
@@ -4381,14 +4382,14 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
               cout<<"<<<<<<<<<<"<<'\n';
               for (vector<string>::iterator j = i->left.begin();
                    j != i->left.end(); ++j)
-                cout<<*j;
+                cout<<" "<<*j;
             }
           if (i->right.size())
             {
               cout<<">>>>>>>>>"<<'\n';
               for (vector<string>::iterator j = i->right.begin();
                    j != i->right.end(); ++j)
-                cout<<*j;
+                cout<<" "<<*j;
             }
           lastok = false;
         }
@@ -4400,7 +4401,7 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
                 cout<<"=========="<<'\n';
               for (vector<string>::iterator j = i->left.begin();
                    j != i->left.end(); ++j)
-                cout<<*j;
+                cout<<" "<<*j;
             }
           lastok = true;
         }

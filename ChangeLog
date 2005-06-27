@@ -1,3 +1,8 @@
+2005-06-27  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc: living_status::merge was missing a line.
+	* contrib/monoprof.sh: add profile test for pcdv
+
 2005-06-16  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* commands.cc: Beginnings of precise-cdv merge, as "pcdv" command.
