@@ -374,7 +374,7 @@ test_bigfile()
 }
 
 TESTS="${TESTS} pcdv"
-test_name()
+pcdv()
 {
 	local TESTNAME="pcdv"
 	local SHORTNAME="pcdv"
