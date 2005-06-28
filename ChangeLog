@@ -1,5 +1,12 @@
 2005-06-27  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* new files: pcdv.{cc,hh}
+	* commands.cc: move precise-cdv to it's own file, even though
+	memory usage is not yet fixed.
+	* Makefile.am: add pcdv.{cc,hh} to sources list
+
+2005-06-27  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	* commands.cc: living_status::merge was missing a line.
 	* contrib/monoprof.sh: add profile test for pcdv
 
