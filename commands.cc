@@ -3822,6 +3822,9 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
     "precise-cdv merge FILENAME in the two given revisions",
     OPT_NONE)
 {
+  if (!pcdv_test())
+    return;
+
   if (args.size() != 3)
     throw usage(name);
 
@@ -3849,9 +3852,9 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   map<revision_id, file_state> files;
   file_state empty = file_state(vector<string>(), string());
   std::set<revision_id> heads;
+  file_state p(empty);
   while (!roots.empty())
     {
-      file_state p(empty);
       vector<revision_id> const & ps(parents[roots.front()].second);
       if (ps.size() == 0)
         p = empty;
@@ -3923,8 +3926,8 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
               for (vector<string>::iterator j = i->left.begin();
                    j != i->left.end(); ++j)
                 cout<<" "<<*j;
+              lastok = true;
             }
-          lastok = true;
         }
     }
 }

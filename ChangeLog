@@ -1,3 +1,10 @@
+2005-06-29  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: many changes, including adding test code.
+	Does not work properly on test code.
+	* commands.cc: pcdv runs new test code first
+	* contrib/monoprof.sh: pcdv test uses different file now
+
 2005-06-27  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* new files: pcdv.{cc,hh}

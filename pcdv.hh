@@ -4,6 +4,7 @@
 #include <set>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 using std::vector;
 using std::string;
@@ -11,6 +12,9 @@ using std::map;
 using std::pair;
 using std::make_pair;
 using std::set;
+
+bool
+pcdv_test();
 
 struct merge_section
 {
@@ -31,18 +35,44 @@ struct merge_section
   split(true), left(l), right(r) {}
 };
 
+// This is a const object type; there are no modifiers.
 struct living_status
 {
-  map<string, vector<string> > overrides;
+  boost::shared_ptr<map<string, vector<string> > > overrides;
+  boost::scoped_ptr<pair<bool, bool> > precomp;
 
-  living_status()
+  living_status():
+   overrides(new map<string, vector<string> >()),
+   precomp(new pair<bool, bool>(false, false))
   {
-    overrides.insert(make_pair("root", vector<string>()));
+    overrides->insert(make_pair("root", vector<string>()));
   }
 
-  living_status(map<string, vector<string> > const & _overrides):
-    overrides(_overrides)
+  living_status(boost::shared_ptr<map<string, vector<string> > > _overrides):
+    overrides(_overrides),
+    precomp(new pair<bool, bool>(false, false))
   {}
+
+  living_status(boost::shared_ptr<map<string, vector<string> > > _overrides,
+                bool living_hint):
+    overrides(_overrides),
+    precomp(new pair<bool, bool>(true, living_hint))
+  {}
+
+  living_status(living_status const & x):
+   overrides(x.overrides),
+   precomp(new pair<bool, bool>(*x.precomp))
+  {}
+
+  living_status const &
+  operator=(living_status const & x)
+  {
+    overrides = x.overrides;
+    precomp.reset(new pair<bool, bool>(*x.precomp));
+    return *this;
+  }
+
+  ~living_status();
 
   living_status
   merge(living_status const & other) const;
@@ -60,16 +90,20 @@ struct living_status
 //a.mash(b).resolve(c) -> "a and b were merged, with result c"
 //a.mash(b).conflict() -> "merge a and b"
 //a.resolve(b) -> "b is a child of a"
+
+// This is a const object type; there are no modifiers.
 struct file_state
 {
   boost::shared_ptr<vector<pair<string, pair<string, int> > > > weave;
-  map<pair<string, int>, living_status> states;
+  boost::shared_ptr<map<pair<string, int>, living_status> > states;
 
   file_state(boost::shared_ptr<vector<pair<string, pair<string, int> > > > _weave):
-    weave(_weave)
+    weave(_weave), states(new map<pair<string, int>, living_status>())
   {}
 
   file_state(vector<string> const & initial, string const & rev);
+
+  ~file_state();
 
   // combine line states between two versions of a file
   file_state
