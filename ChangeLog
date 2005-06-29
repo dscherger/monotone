@@ -1,5 +1,10 @@
 2005-06-29  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* pcdv.cc: more stuff in test code (same as tests in reference impl)
+	bugfix unique_lcs, living_status, file_state
+
+2005-06-29  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	* pcdv.{cc,hh}: many changes, including adding test code.
 	Does not work properly on test code.
 	* commands.cc: pcdv runs new test code first

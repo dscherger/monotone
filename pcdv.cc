@@ -23,7 +23,7 @@ living_status::~living_status()
 
 file_state::~file_state()
 {
-  if (weave.unique())
+  if (false && weave.unique())
     {
       states.reset();
       std::cout<<"Destroyed file_state of "<<weave->size()
@@ -56,7 +56,7 @@ unique_lcs(vector<string> const & a,
   // btoa[i] = a.find(b[i]), if b[i] is unique in both
   // otherwise, btoa[i] = -1
   map<string, int> index2;
-  vector<int> btoa(b.size());
+  vector<int> btoa(b.size(), -1);
   for (int i = 0; (unsigned int)(i) < b.size(); ++i)
     {
       map<string, int>::iterator j = index.find(idx(b,i));
@@ -155,6 +155,7 @@ recurse_matches(vector<string> const & a,
     a2.push_back(idx(a, i));
   for(int i = blo; i < bhi; ++i)
     b2.push_back(idx(b, i));
+
   unique_lcs(a2, b2, linematches);
   for (vector<pair<int, int> >::iterator i = linematches.begin();
        i != linematches.end(); ++i)
@@ -298,7 +299,8 @@ living_status::set_living(string rev, bool new_status) const
             j != i->second.end(); ++j)
         alive.erase(*j);
     }
-  boost::shared_ptr<map<string, vector<string> > > newdict(overrides);
+  boost::shared_ptr<map<string, vector<string> > > newdict;
+  newdict.reset(new map<string, vector<string> >(*overrides));
   map<string, vector<string> >::iterator res =
       newdict->insert(make_pair(rev, vector<string>())).first;
   for (set<string>::iterator i = alive.begin();
@@ -336,6 +338,16 @@ file_state::mash(file_state const & other) const
       map<pair<string, int>, living_status>::const_iterator j
           = other.states->find(i->first);
       if (j != other.states->end())
+        (*newstate.states)[i->first] = i->second.merge(j->second);
+      else
+        (*newstate.states)[i->first] = i->second.merge(living_status());
+    }
+  for (map<pair<string, int>, living_status>::const_iterator i
+        = other.states->begin(); i != other.states->end(); ++i)
+    {
+      map<pair<string, int>, living_status>::const_iterator j
+          = states->find(i->first);
+      if (j != states->end())
         (*newstate.states)[i->first] = i->second.merge(j->second);
       else
         (*newstate.states)[i->first] = i->second.merge(living_status());
@@ -502,23 +514,12 @@ file_state::resolve(vector<string> const & result, string revision) const
   return out;
 }
 
-bool
-pcdv_test()
+
+
+void
+show_conflict(vector<merge_section> const & result)
 {
-  vector<string> file;
-  file_state root(file, "v0");
-  file.push_back("line1\n");
-  file.push_back("line2\n");
-  file.push_back("line3\n");
-  file_state file1(root.resolve(file, "v1"));
-  file[1]="line2 a\n";
-  file_state file2a(file1.resolve(file, "v2a"));
-  file[1]="line2 b\n";
-  file_state file2b(file1.resolve(file, "v2b"));
-  
-  vector<merge_section> result=file2a.conflict(file2b);
-  bool lastok=false;
-  for (vector<merge_section>::iterator i = result.begin();
+  for (vector<merge_section>::const_iterator i = result.begin();
        i != result.end(); ++i)
     {
       if (i->split)
@@ -526,31 +527,210 @@ pcdv_test()
           if (i->left.size())
             {
               std::cout<<"<<<<<<<<<<"<<'\n';
-              for (vector<string>::iterator j = i->left.begin();
+              for (vector<string>::const_iterator j = i->left.begin();
                    j != i->left.end(); ++j)
                 std::cout<<" "<<*j;
             }
           if (i->right.size())
             {
-              std::cout<<">>>>>>>>>"<<'\n';
-              for (vector<string>::iterator j = i->right.begin();
+              std::cout<<">>>>>>>>>>"<<'\n';
+              for (vector<string>::const_iterator j = i->right.begin();
                    j != i->right.end(); ++j)
                 std::cout<<" "<<*j;
             }
-          lastok = false;
         }
       else
         {
           if (i->left.size())
             {
-              if (!lastok)
-                std::cout<<"=========="<<'\n';
-              for (vector<string>::iterator j = i->left.begin();
+              std::cout<<"=========="<<'\n';
+              for (vector<string>::const_iterator j = i->left.begin();
                    j != i->left.end(); ++j)
                 std::cout<<" "<<*j;
-              lastok = true;
             }
         }
     }
-  return false;
+}
+
+vector<merge_section>
+consolidate(vector<merge_section> const & in)
+{
+  vector<merge_section> out;
+  if (!in.size())
+    return out;
+  vector<merge_section>::const_iterator i = in.begin();
+  out.push_back(*i);
+  ++i;
+  while (i != in.end())
+    {
+      if (!out.back().split && !i->split)
+        out.back().left.insert(out.back().left.end(),
+                               i->left.begin(),
+                               i->left.end());
+      else
+        out.push_back(*i);
+      ++i;
+    }
+  return out;
+}
+
+
+
+
+
+vector<string>
+vectorize(string x)
+{
+  vector<string> out;
+  for (string::iterator i = x.begin(); i != x.end(); ++i)
+    out.push_back(string()+(*i)+"\n");
+  return out;
+}
+
+struct vp: public vector<pair<int, int> >
+{
+  vp pb(int l, int r)
+  {
+    push_back(pair<int, int>(l, r));
+    return *this;
+  }
+};
+
+void
+test_unique_lcs()
+{
+  // unique_lcs
+  vector<string> l, r;
+  vector<pair<int, int> > res;
+  unique_lcs(l,r, res);
+  I(res == vp());
+
+  l = vectorize("a");
+  r = vectorize("a");
+  unique_lcs(l,r, res);
+  I(res == vp().pb(0, 0));
+
+  l = vectorize("a");
+  r = vectorize("b");
+  unique_lcs(l,r, res);
+  I(res == vp());
+
+  l = vectorize("ab");
+  r = vectorize("ab");
+  unique_lcs(l,r, res);
+  I(res == vp().pb(0, 0).pb(1, 1));
+
+  l = vectorize("abcde");
+  r = vectorize("cdeab");
+  unique_lcs(l,r, res);
+  I(res == vp().pb(2, 0).pb(3, 1).pb(4, 2));
+
+  l = vectorize("cdeab");
+  r = vectorize("abcde");
+  unique_lcs(l,r, res);
+  I(res == vp().pb(0, 2).pb(1, 3).pb(2, 4));
+
+  l = vectorize("abXde");
+  r = vectorize("abYde");
+  unique_lcs(l,r, res);
+  I(res == vp().pb(0, 0).pb(1, 1).pb(3, 3).pb(4, 4));
+
+  l = vectorize("acbac");
+  r = vectorize("abc");
+  unique_lcs(l,r, res);
+  I(res == vp().pb(2, 1));
+}
+
+void
+test_recurse_matches()
+{
+  vector<pair<int, int> > res;
+  vector<string> l, r;
+
+  l.push_back("a\n");
+  l.push_back("");
+  l.push_back("b\n");
+  l.push_back("");
+  l.push_back("c\n");
+
+  r = vectorize("aabcc");
+  recurse_matches(l, r, 5, 5, res, 10);
+  I(res == vp().pb(0, 1).pb(2, 2).pb(4, 3));
+
+  res.clear();
+  l = vectorize("acbac");
+  r = vectorize("abc");
+  recurse_matches(l, r, 5, 3, res, 10);
+  I(res == vp().pb(0, 0).pb(2, 1).pb(4, 2));
+}
+
+void
+test_living_status()
+{
+  living_status ds;
+  I(!ds.is_living());
+  living_status ta(ds.set_living("a", true));
+  I(ta.is_living());
+  living_status tb(ds.set_living("b", true));
+  living_status tc(ta.set_living("c", false));
+  I(!tc.is_living());
+  living_status td(ta.set_living("d", false));
+  living_status te(tb.merge(tc));
+  I(te.is_living());
+  living_status tf(te.merge(td));
+  I(tf.is_living());
+  living_status tg(tb.set_living("g", false));
+  living_status th(te.merge(tg));
+  I(!th.is_living());
+}
+
+void
+test_file_state()
+{
+  {
+    file_state ta(vectorize("abc"), "x");
+    I(ta.resolve(vectorize("bcd"), "y").current() == vectorize("bcd"));
+  }
+
+  {
+    file_state ta(vectorize("abc"), "x");
+    file_state tb(ta.resolve(vectorize("dabc"), "y"));
+    file_state tc(ta.resolve(vectorize("abce"), "z"));
+    file_state td(tb.mash(tc));
+    I(td.current() == vectorize("dabce"));
+  }
+
+  {
+    file_state ta(vectorize("abc"), "x");
+    file_state tb(ta.resolve(vectorize("adc"), "y"));
+    file_state tc(tb.resolve(vectorize("abc"), "z"));
+    file_state td(ta.resolve(vectorize("aec"), "w"));
+
+    vector<merge_section> res(consolidate(tc.conflict(td)));
+    vector<merge_section> real;
+    real.push_back(vectorize("aec"));
+    I(res == real);
+  }
+
+  {
+    file_state ta(vectorize("abc"), "x");
+    file_state tb(ta.resolve(vectorize("adc"), "y"));
+    file_state tc(ta.resolve(vectorize("aec"), "z"));
+
+    vector<merge_section> res(consolidate(tb.conflict(tc)));
+    vector<merge_section> real;
+    real.push_back(vectorize("a"));
+    real.push_back(merge_section(vectorize("d"), vectorize("e")));
+    real.push_back(vectorize("c"));
+    I(res == real);
+  }
+}
+
+void
+pcdv_test()
+{
+  test_unique_lcs();
+  test_recurse_matches();
+  test_living_status();
+  test_file_state();
 }

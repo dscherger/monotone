@@ -1,3 +1,6 @@
+#ifndef __PCDV_HH__
+#define __PCDV_HH__
+
 #include <vector>
 #include <string>
 #include <map>
@@ -13,8 +16,6 @@ using std::pair;
 using std::make_pair;
 using std::set;
 
-bool
-pcdv_test();
 
 struct merge_section
 {
@@ -33,7 +34,19 @@ struct merge_section
 
   merge_section(vector<string> const & l, vector<string> const & r):
   split(true), left(l), right(r) {}
+
+  bool
+  operator==(merge_section const & other) const
+  {
+    return split == other.split && left == other.left && right == other.right;
+  }
 };
+
+vector<merge_section>
+consolidate(vector<merge_section> const & in);
+
+void
+show_conflict(vector<merge_section> const & result);
 
 // This is a const object type; there are no modifiers.
 struct living_status
@@ -121,3 +134,8 @@ struct file_state
   file_state
   resolve(vector<string> const & result, string revision) const;
 };
+
+void
+pcdv_test();
+
+#endif

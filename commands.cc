@@ -3822,8 +3822,7 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
     "precise-cdv merge FILENAME in the two given revisions",
     OPT_NONE)
 {
-  if (!pcdv_test())
-    return;
+  pcdv_test();
 
   if (args.size() != 3)
     throw usage(name);
@@ -3895,41 +3894,7 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   map<revision_id, file_state>::iterator r = files.find(right);
   N(r != files.end(), F("Not found."));
   vector<merge_section> result(l->second.conflict(r->second));
-  bool lastok=false;
-  for (vector<merge_section>::iterator i = result.begin();
-       i != result.end(); ++i)
-    {
-      if (i->split)
-        {
-          if (i->left.size())
-            {
-              cout<<"<<<<<<<<<<"<<'\n';
-              for (vector<string>::iterator j = i->left.begin();
-                   j != i->left.end(); ++j)
-                cout<<" "<<*j;
-            }
-          if (i->right.size())
-            {
-              cout<<">>>>>>>>>"<<'\n';
-              for (vector<string>::iterator j = i->right.begin();
-                   j != i->right.end(); ++j)
-                cout<<" "<<*j;
-            }
-          lastok = false;
-        }
-      else
-        {
-          if (i->left.size())
-            {
-              if (!lastok)
-                cout<<"=========="<<'\n';
-              for (vector<string>::iterator j = i->left.begin();
-                   j != i->left.end(); ++j)
-                cout<<" "<<*j;
-              lastok = true;
-            }
-        }
-    }
+  show_conflict(consolidate(result));
 }
 
 
