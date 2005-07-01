@@ -1,3 +1,7 @@
+2005-07-01  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.cc: Various speedups.
+
 2005-06-29  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* pcdv.cc: more stuff in test code (same as tests in reference impl)

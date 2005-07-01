@@ -23,7 +23,7 @@ living_status::~living_status()
 
 file_state::~file_state()
 {
-  if (false && weave.unique())
+  if (weave.unique())
     {
       states.reset();
       std::cout<<"Destroyed file_state of "<<weave->size()
@@ -40,29 +40,36 @@ file_state::~file_state()
 void
 unique_lcs(vector<string> const & a,
            vector<string> const & b,
+           int alo,
+           int blo,
+           int ahi,
+           int bhi,
            vector<pair<int, int> > & res)
 {
+  res.clear();
+  if (alo == ahi || blo == bhi)
+    return;
   // index[line in a] = position of line
   // if line is a duplicate, index[line] = -1
   map<string, int> index;
-  for (int i = 0; (unsigned int)(i) < a.size(); ++i)
+  for (int i = 0; i < ahi - alo; ++i)
     {
-      map<string, int>::iterator j = index.find(idx(a,i));
+      map<string, int>::iterator j = index.find(idx(a,i + alo));
       if (j != index.end())
         j->second=-1;
       else
-        index.insert(make_pair(idx(a,i), i));
+        index.insert(make_pair(idx(a,i + alo), i));
     }
   // btoa[i] = a.find(b[i]), if b[i] is unique in both
   // otherwise, btoa[i] = -1
   map<string, int> index2;
-  vector<int> btoa(b.size(), -1);
-  for (int i = 0; (unsigned int)(i) < b.size(); ++i)
+  vector<int> btoa(bhi - blo, -1);
+  for (int i = 0; i < bhi - blo; ++i)
     {
-      map<string, int>::iterator j = index.find(idx(b,i));
+      map<string, int>::iterator j = index.find(idx(b,i + blo));
       if (j != index.end())
         {
-          map<string, int>::iterator k = index2.find(idx(b,i));
+          map<string, int>::iterator k = index2.find(idx(b,i + blo));
           if (k != index2.end())
             {
               btoa[k->second] = -1;
@@ -70,14 +77,14 @@ unique_lcs(vector<string> const & a,
             }
           else
             {
-              index2.insert(make_pair(idx(b,i), i));
+              index2.insert(make_pair(idx(b,i + blo), i));
               btoa[i] = j->second;
             }
         }
     }
   // Patience sorting
   // http://en.wikipedia.org/wiki/Patience_sorting
-  vector<int> backpointers(b.size(), -1);
+  vector<int> backpointers(bhi - blo, -1);
   vector<int> stacks;
   vector<int> lasts;
   int k = 0;
@@ -118,13 +125,12 @@ unique_lcs(vector<string> const & a,
           lasts.push_back(bpos);
         }
     }
-  res.clear();
   if (lasts.empty())
     return;
   k = lasts.back();
   while (k != -1)
     {
-      res.push_back(make_pair(idx(btoa, k), k));
+      res.push_back(make_pair(idx(btoa, k) + alo, k + blo));
       k = idx(backpointers, k);
     }
   reverse(res.begin(), res.end());
@@ -134,6 +140,8 @@ unique_lcs(vector<string> const & a,
 void
 recurse_matches(vector<string> const & a,
                 vector<string> const & b,
+                int alo,
+                int blo,
                 int ahi,
                 int bhi,
                 vector<pair<int, int> > & answer,
@@ -142,26 +150,14 @@ recurse_matches(vector<string> const & a,
   if (maxrecursion < 0)
     return;
   unsigned int oldlength = answer.size();
-  int alo = 0, blo = 0;
-  if (oldlength != 0)
-    {
-      alo = answer.back().first + 1;
-      blo = answer.back().second + 1;
-    }
   // extend line matches into section matches
   vector<pair<int, int> > linematches;
-  vector<string> a2, b2;
-  for(int i = alo; i < ahi; ++i)
-    a2.push_back(idx(a, i));
-  for(int i = blo; i < bhi; ++i)
-    b2.push_back(idx(b, i));
-
-  unique_lcs(a2, b2, linematches);
+  unique_lcs(a, b, alo, blo, ahi, bhi, linematches);
   for (vector<pair<int, int> >::iterator i = linematches.begin();
        i != linematches.end(); ++i)
     {
-      int apos = i->first + alo;
-      int bpos = i->second + blo;
+      int apos = i->first;
+      int bpos = i->second;
       int lasta = -1, lastb = -1;
       if (answer.size())
         {
@@ -182,7 +178,8 @@ recurse_matches(vector<string> const & a,
           apos = newapos;
           --bpos;
         }
-      recurse_matches(a, b, apos, bpos, answer, maxrecursion-1);
+      recurse_matches(a, b, ((lasta==-1)?0:lasta), ((lastb==-1)?0:lastb),
+                      apos, bpos, answer, maxrecursion-1);
       answer.push_back(make_pair(apos, bpos));
       // extend as far forward as possible
       while (apos < ahi - 1 && bpos < bhi - 1)
@@ -198,8 +195,9 @@ recurse_matches(vector<string> const & a,
         }
     }
   if (answer.size() > oldlength)
-    // find matches between the laswt match and the end
-    recurse_matches(a, b, ahi, bhi, answer, maxrecursion - 1);
+    // find matches between the last match and the end
+    recurse_matches(a, b, answer.back().first, answer.back().second,
+                    ahi, bhi, answer, maxrecursion - 1);
 }
 
 
@@ -332,25 +330,25 @@ file_state::mash(file_state const & other) const
 {
   I(weave == other.weave);
   file_state newstate(weave);
-  for (map<pair<string, int>, living_status>::const_iterator i
-        = states->begin(); i != states->end(); ++i)
+  map<pair<string, int>, living_status>::const_iterator l, r;
+  l = states->begin();
+  r = other.states->begin();
+  while (l != states->end() || r != other.states->end())
     {
-      map<pair<string, int>, living_status>::const_iterator j
-          = other.states->find(i->first);
-      if (j != other.states->end())
-        (*newstate.states)[i->first] = i->second.merge(j->second);
+      if (l == states->end())
+        newstate.states->insert(*(r++));
+      else if (r == other.states->end())
+        newstate.states->insert(*(l++));
+      else if (std::less<pair<string, int> >()(l->first, r->first))
+        newstate.states->insert(*(r++));
+      else if (std::less<pair<string, int> >()(r->first, l->first))
+        newstate.states->insert(*(l++));
       else
-        (*newstate.states)[i->first] = i->second.merge(living_status());
-    }
-  for (map<pair<string, int>, living_status>::const_iterator i
-        = other.states->begin(); i != other.states->end(); ++i)
-    {
-      map<pair<string, int>, living_status>::const_iterator j
-          = states->find(i->first);
-      if (j != states->end())
-        (*newstate.states)[i->first] = i->second.merge(j->second);
-      else
-        (*newstate.states)[i->first] = i->second.merge(living_status());
+        {
+          newstate.states->insert(make_pair(l->first,
+                                            l->second.merge(r->second)));
+          ++l, ++r;
+        }
     }
   return newstate;
 }
@@ -454,7 +452,7 @@ file_state::resolve(vector<string> const & result, string revision) const
         lines.push_back(string());
     }
   vector<pair<int, int> > matches;
-  recurse_matches(lines, result,
+  recurse_matches(lines, result, 0, 0,
                   lines.size(), result.size(),
                   matches, 10);
   lines.clear();
@@ -466,7 +464,14 @@ file_state::resolve(vector<string> const & result, string revision) const
   for (vector<pair<int, int> >::iterator i = matches.begin();
         i != matches.end(); ++i)
     {
-      recurse_matches(lines, result, i->first, i->second, matches2, 10);
+      int alo=0, blo=0;
+      if (matches2.size())
+        {
+          alo = matches2.back().first;
+          blo = matches2.back().second;
+        }
+      recurse_matches(lines, result, alo, blo,
+                      i->first, i->second, matches2, 10);
       if ((unsigned int)(i->first) != lines.size())
         matches2.push_back(make_pair(i->first, i->second));
     }
@@ -495,21 +500,38 @@ file_state::resolve(vector<string> const & result, string revision) const
       lastb = i->second;
     }
   reverse(toinsert.begin(), toinsert.end());
-  for (vector<pair<int, pair<string, pair<string, int> > > >::iterator i
-        = toinsert.begin(); i != toinsert.end(); ++i)
-    weave->insert(weave->begin() + i->first, i->second);
+  // toinsert is now in last-first order
+
+//  for (vector<pair<int, pair<string, pair<string, int> > > >::iterator i
+//        = toinsert.begin(); i != toinsert.end(); ++i)
+//    weave->insert(weave->begin() + i->first, i->second);
+  if (toinsert.size())
+    {
+      weave->insert(weave->begin()+toinsert.front().first, toinsert.size(),
+                    make_pair(string(), make_pair(string(), 0)));
+      int tpos = 0;
+      int wfrom = toinsert.front().first - 1;
+      int wpos = wfrom + toinsert.size();
+      while ((unsigned int)(tpos) < toinsert.size())
+        {
+          if (idx(toinsert, tpos).first == wfrom+1)
+            idx(*weave, wpos--) = idx(toinsert, tpos++).second;
+          else
+            idx(*weave, wpos--) = idx(*weave, wfrom--);
+        }
+    }
+
   file_state out(weave);
   for (vector<pair<string, pair<string, int> > >::iterator i
         = weave->begin(); i != weave->end(); ++i)
     {
+      bool live = living.find(i->second) != living.end();
+      living_status orig;
       map<pair<string, int>, living_status>::const_iterator j
         = states->find(i->second);
       if (j != states->end())
-        (*out.states)[i->second] = j->second.set_living(revision,
-                                      living.find(i->second) != living.end());
-      else
-        (*out.states)[i->second] = living_status().set_living(revision,
-                                      living.find(i->second) != living.end());
+        orig = j->second;
+      out.states->insert(make_pair(i->second, orig.set_living(revision, live)));
     }
   return out;
 }
@@ -602,42 +624,42 @@ test_unique_lcs()
   // unique_lcs
   vector<string> l, r;
   vector<pair<int, int> > res;
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 0, 0, res);
   I(res == vp());
 
   l = vectorize("a");
   r = vectorize("a");
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 1, 1, res);
   I(res == vp().pb(0, 0));
 
   l = vectorize("a");
   r = vectorize("b");
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 1, 1, res);
   I(res == vp());
 
   l = vectorize("ab");
   r = vectorize("ab");
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 2, 2, res);
   I(res == vp().pb(0, 0).pb(1, 1));
 
   l = vectorize("abcde");
   r = vectorize("cdeab");
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 5, 5, res);
   I(res == vp().pb(2, 0).pb(3, 1).pb(4, 2));
 
   l = vectorize("cdeab");
   r = vectorize("abcde");
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 5, 5, res);
   I(res == vp().pb(0, 2).pb(1, 3).pb(2, 4));
 
   l = vectorize("abXde");
   r = vectorize("abYde");
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 5, 5, res);
   I(res == vp().pb(0, 0).pb(1, 1).pb(3, 3).pb(4, 4));
 
   l = vectorize("acbac");
   r = vectorize("abc");
-  unique_lcs(l,r, res);
+  unique_lcs(l, r, 0, 0, 5, 3, res);
   I(res == vp().pb(2, 1));
 }
 
@@ -654,13 +676,13 @@ test_recurse_matches()
   l.push_back("c\n");
 
   r = vectorize("aabcc");
-  recurse_matches(l, r, 5, 5, res, 10);
+  recurse_matches(l, r, 0, 0, 5, 5, res, 10);
   I(res == vp().pb(0, 1).pb(2, 2).pb(4, 3));
 
   res.clear();
   l = vectorize("acbac");
   r = vectorize("abc");
-  recurse_matches(l, r, 5, 3, res, 10);
+  recurse_matches(l, r, 0, 0, 5, 3, res, 10);
   I(res == vp().pb(0, 0).pb(2, 1).pb(4, 2));
 }
 

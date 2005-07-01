@@ -49,6 +49,8 @@ void
 show_conflict(vector<merge_section> const & result);
 
 // This is a const object type; there are no modifiers.
+// There are likely to be many, many copies of each object. Since objects
+// don't change, share internal data between copies.
 struct living_status
 {
   boost::shared_ptr<map<string, vector<string> > > overrides;
