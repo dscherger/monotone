@@ -1,0 +1,86 @@
+Serving a monotone database with remote control
+===============================================
+
+The monotone server is really working fine.  As long as you're
+satisfied with doing all the administration on the server, all you
+need to do is to hack your lua file, load a key a little now and then
+and restart the server process when needed (i.e. any time you make a
+change).
+
+Thing is, you might want to have things like that happen a little more
+dynamically, and with the possibility to control it remotely.
+
+Additionally, it's nice to have modern notification working.
+
+
+How to do this
+==============
+
+To start with, we need a couple of special branches that are meant to
+be used as a configuration channel:
+
+  {domain}:.etc
+  {domain}:.keys
+
+Scripts are distributed in another branch:
+
+  {domain}:.bin
+
+To set up the server, you need to do following in the directory where
+this README resides:
+
+  ./server-setup.sh
+
+That script will ask for a directory to have the repository structure
+in, a user to run the monotone process under, the key identity you
+want to use for the server process, and a password to protect it
+with.  Note that this script must be run as root.
+
+You will end up with the following directory and file structure:
+
+  /your/repository/dir/
+   |
+   +-- {domain}
+   |    |
+   |    +-- version.dat		# A single line containing the tag for
+   |    |			# the structure version of the
+   |    |			# software in the '.bin' branch this
+   |    |			# structure is built for.
+   |    |
+   |    +-- etc/
+   |    |    |
+   |    |    +-- MT/		# monotone admin directory for branch
+   |    |    |			# '{domain}:.etc'.
+   |    |    +-- readers.acl	# Lines are '{branch} SPC {key-id}'.
+   |    |    +-- writers.acl	# Lines are '{branch} SPC {key-id}'.
+   |    |    +-- anonymous.acl	# Lines are '{branch}'.
+   |    |    +-- branch-addr.dat# For notifier: line are
+   |    |			# '{branch} diff:{address} nodiff:{address}'.
+   |    |
+   |    +-- keys/		# All keys.
+   |         |
+   |         +-- MT/		# monotone admin directory for branch
+   |         |			# '{domain}:.keys'.
+   |         +-- public/	# One file per key.  File is named
+   |         |			# after fingerprint.
+   |         +-- private/	# One file per key.  File is named
+   |				# after fingerprint.
+   |
+   +-- bin/			# All scripts used by this system.
+   |    |
+   |    +-- MT/			# monotone admin directory for branch '.bin'.
+   |    +-- received-proc.sh	# Notofication script and
+   |    |			# infrastructure updater.
+   |    +-- update-struct.sh	# Script to update the configuration structure.
+   |    +-- server.lua		# Server hooks.
+   |    +-- debian-start.sh	# A start script for Debian
+   |    +-- debian-restart.sh	# A restart script for Debian
+   |    +-- debian-stop.sh	# A stop script for Debian
+   |
+   +-- server.db		# The main database
+   |
+   +-- var/
+        |
+        +-- run/		# Files for the running process.
+        +-- log/		# Log files.
+        +-- tmp/		# Temporary storage.
