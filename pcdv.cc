@@ -1,17 +1,20 @@
 #include <set>
 #include <map>
+#include <deque>
 
 #include "sanity.hh"
 #include "pcdv.hh"
 
 #include <iostream>
 
+// This stuff is to provide data for size optimization.
 unsigned int biggest_living_status=0;
 unsigned int sum_living_status=0;
 unsigned int num_living_status=0;
 
 living_status::~living_status()
 {
+/*
   if (overrides.unique())
     {
       ++num_living_status;
@@ -19,27 +22,32 @@ living_status::~living_status()
       if (overrides->size() > biggest_living_status)
         biggest_living_status = overrides->size();
     }
+*/
 }
 
 file_state::~file_state()
 {
+/*
   if (weave.unique())
     {
-      states.reset();
       std::cout<<"Destroyed file_state of "<<weave->size()
                <<" lines."<<std::endl;
+      weave.reset();
+      states.reset();
       std::cout<<"Average living_status size: "
                <<float(sum_living_status)/float(num_living_status)<<std::endl;
       std::cout<<"Max living_status size: "<<biggest_living_status<<std::endl;
       std::cout<<"Destroyed "<<num_living_status
                <<" living_status so far."<<std::endl;
     }
+*/
 }
+// end optimization data generation code
 
 // find lines that occur exactly once in each of a and b
 void
-unique_lcs(vector<string> const & a,
-           vector<string> const & b,
+unique_lcs(vector<line_contents> const & a,
+           vector<line_contents> const & b,
            int alo,
            int blo,
            int ahi,
@@ -51,10 +59,10 @@ unique_lcs(vector<string> const & a,
     return;
   // index[line in a] = position of line
   // if line is a duplicate, index[line] = -1
-  map<string, int> index;
+  map<line_contents, int> index;
   for (int i = 0; i < ahi - alo; ++i)
     {
-      map<string, int>::iterator j = index.find(idx(a,i + alo));
+      map<line_contents, int>::iterator j = index.find(idx(a,i + alo));
       if (j != index.end())
         j->second=-1;
       else
@@ -62,14 +70,14 @@ unique_lcs(vector<string> const & a,
     }
   // btoa[i] = a.find(b[i]), if b[i] is unique in both
   // otherwise, btoa[i] = -1
-  map<string, int> index2;
+  map<line_contents, int> index2;
   vector<int> btoa(bhi - blo, -1);
   for (int i = 0; i < bhi - blo; ++i)
     {
-      map<string, int>::iterator j = index.find(idx(b,i + blo));
+      map<line_contents, int>::iterator j = index.find(idx(b,i + blo));
       if (j != index.end())
         {
-          map<string, int>::iterator k = index2.find(idx(b,i + blo));
+          map<line_contents, int>::iterator k = index2.find(idx(b,i + blo));
           if (k != index2.end())
             {
               btoa[k->second] = -1;
@@ -138,8 +146,8 @@ unique_lcs(vector<string> const & a,
 }
 
 void
-recurse_matches(vector<string> const & a,
-                vector<string> const & b,
+recurse_matches(vector<line_contents> const & a,
+                vector<line_contents> const & b,
                 int alo,
                 int blo,
                 int ahi,
@@ -171,7 +179,7 @@ recurse_matches(vector<string> const & a,
       while (apos > lasta + 1 && bpos > lastb + 1)
         {
           int newapos = apos - 1;
-          while (newapos > lasta && idx(a, newapos).empty())
+          while (newapos > lasta && idx(a, newapos) == -1)
             --newapos;
           if (newapos == lasta || idx(a, newapos) != idx(b, bpos-1))
             break;
@@ -185,7 +193,7 @@ recurse_matches(vector<string> const & a,
       while (apos < ahi - 1 && bpos < bhi - 1)
         {
           int newapos = apos + 1;
-          while (newapos < ahi - 1 && idx(a, newapos).empty())
+          while (newapos < ahi - 1 && idx(a, newapos) == -1)
             ++newapos;
           if (newapos == ahi || idx(a, newapos) != idx(b, bpos + 1))
             break;
@@ -200,41 +208,107 @@ recurse_matches(vector<string> const & a,
                     ahi, bhi, answer, maxrecursion - 1);
 }
 
+////////////////////////////////////////////
+/////////////// living_status //////////////
+////////////////////////////////////////////
+
+living_status::living_status():
+               overrides(new map<revid, vector<revid> >()),
+               leaves(new vector<revid>()),
+               precomp(new pair<bool, bool>(false, false))
+{
+  overrides->insert(make_pair(revid(-1), vector<revid>()));
+  leaves->push_back(revid(-1));
+}
+
+living_status::living_status(boost::shared_ptr<line_data> ovr):
+               overrides(ovr),
+               leaves(new vector<revid>()),
+               precomp(new pair<bool, bool>(false, false))
+{
+  leaves->push_back(revid(-1));
+}
+
+living_status::living_status(living_status const & x):
+               overrides(x.overrides),
+               leaves(x.leaves),
+               precomp(x.precomp)
+{}
+
+living_status const &
+living_status::operator=(living_status const & x)
+{
+  overrides = x.overrides;
+  leaves = x.leaves;
+  precomp = x.precomp;
+  return *this;
+}
+
+living_status const
+living_status::new_version(vector<revid> const & _leaves) const
+{
+  living_status out(*this);
+  out.leaves.reset(new vector<revid>(_leaves));
+  out.precomp.reset(new pair<bool, bool>(false, false));
+  return out;
+}
+
+living_status const
+living_status::new_version(vector<revid> const & _leaves,
+                           bool living_hint) const
+{
+  living_status out(new_version(_leaves));
+  out.precomp->first = true;
+  out.precomp->second = living_hint;
+  return out;
+}
 
 living_status
 living_status::merge(living_status const & other) const
 {
-  boost::shared_ptr<map<string, vector<string> > > newdict;
-  newdict.reset(new map<string, vector<string> >());
-  bool notleft=false, notright=false;
-  for (map<string, vector<string> >::const_iterator i = overrides->begin();
-        i != overrides->end(); ++i)
+  I(overrides == other.overrides);
+  set<revid> leafset, done;
+  std::deque<revid> todo;
+  for (vector<revid>::const_iterator i = leaves->begin();
+       i != leaves->end(); ++i)
+    leafset.insert(*i);
+  for (vector<revid>::const_iterator i = other.leaves->begin();
+       i != other.leaves->end(); ++i)
+    leafset.insert(*i);
+  for (set<revid>::const_iterator i = leafset.begin();
+       i != leafset.end(); ++i)
+    todo.push_back(*i);
+  while (todo.size())
     {
-      newdict->insert(*i);
-      map<string, vector<string> >::const_iterator j =
-          other.overrides->find(i->first);
-      if (j == other.overrides->end())
-        notright = true;
-      else
-        I(j->second == i->second);
+      line_data::const_iterator i = overrides->find(todo.front());
+      I(i != overrides->end());
+      for (vector<revid>::const_iterator j = i->second.begin();
+           j != i->second.end(); ++j)
+        {
+          if (done.find(*j) != done.end())
+            continue;
+          set<revid>::iterator l = leafset.find(*j);
+          if (l != leafset.end())
+            {
+              leafset.erase(l);
+              continue;
+            }
+          done.insert(*j);
+          todo.push_back(*j);
+        }
+      todo.pop_front();
     }
-  for (map<string, vector<string> >::const_iterator i
-        = other.overrides->begin(); i != other.overrides->end(); ++i)
-    {
-      newdict->insert(*i);
-      map<string, vector<string> >::const_iterator j
-          = overrides->find(i->first);
-      if (j == overrides->end())
-        notleft = true;
-      else
-        I(j->second == i->second);
-    }
-  if (!notleft)
+
+  vector<revid> newleaves;
+  newleaves.reserve(leafset.size());
+  for (set<revid>::const_iterator i = leafset.begin();
+       i != leafset.end(); ++i)
+    newleaves.push_back(*i);
+  if (newleaves == *leaves)
     return *this;
-  else if (!notright)
+  if (newleaves == *other.leaves)
     return other;
-  else
-    return living_status(newdict);
+  return new_version(newleaves);
 }
 
 bool
@@ -242,37 +316,47 @@ living_status::is_living() const
 {
   if (precomp->first)
     return precomp->second;
-  set<string> oldworking, newworking, ref;
-  for (map<string, vector<string> >::const_iterator i = overrides->begin();
-        i != overrides->end(); ++i)
-    ref.insert(i->first);
+  set<revid> oldworking, newworking, ref;
+  std::deque<revid> todo;
+  for (vector<revid>::const_iterator i = leaves->begin();
+       i != leaves->end(); ++i)
+    todo.push_back(*i);
+  while (todo.size())
+    {
+      ref.insert(todo.front());
+      line_data::const_iterator i = overrides->find(todo.front());
+      I(i != overrides->end());
+      for (vector<revid>::const_iterator j = i->second.begin();
+           j != i->second.end(); ++j)
+        todo.push_back(*j);
+      todo.pop_front();
+    }
   newworking = ref;
   while (oldworking != newworking)
     {
       oldworking = newworking;
       newworking = ref;
-      for (set<string>::const_iterator k = oldworking.begin();
+      for (set<revid>::const_iterator k = oldworking.begin();
             k != oldworking.end(); ++k)
         {
-          map<string, vector<string> >::const_iterator x
-              = overrides->find(*k);
-          for (vector<string>::const_iterator j = x->second.begin();
+          line_data::const_iterator x = overrides->find(*k);
+          for (vector<revid>::const_iterator j = x->second.begin();
                 j != x->second.end(); ++j)
             newworking.erase(*j);
         }
     }
   precomp->first = true;
-  return precomp->second = (newworking.find("root") == newworking.end());
+  return precomp->second = (newworking.find(revid(-1)) == newworking.end());
 }
 
 bool
-living_status::_makes_living(string key) const
+living_status::_makes_living(revid key) const
 {
   bool result = false;
-  while (key != "root")
+  line_data::const_iterator i;
+  while (key != revid(-1))
     {
       result = !result;
-      map<string, vector<string> >::const_iterator i;
       i = overrides->find(key);
       if (i == overrides->end() || i->second.empty())
         break;
@@ -282,45 +366,98 @@ living_status::_makes_living(string key) const
 }
 
 living_status
-living_status::set_living(string rev, bool new_status) const
+living_status::set_living(revid rev, bool new_status) const
 {
   if (new_status == is_living())
     return *this;
-  set<string> alive;
-  for (map<string, vector<string> >::const_iterator i = overrides->begin();
-        i != overrides->end(); ++i)
-    alive.insert(i->first);
-  for (map<string, vector<string> >::const_iterator i = overrides->begin();
-        i != overrides->end(); ++i)
+  vector<revid> newleaves;
+  line_data::iterator res =
+      overrides->insert(make_pair(rev, vector<revid>())).first;
+  bool in = false;
+  for (vector<revid>::iterator i = leaves->begin();
+        i != leaves->end(); ++i)
     {
-      for (vector<string>::const_iterator j = i->second.begin();
-            j != i->second.end(); ++j)
-        alive.erase(*j);
-    }
-  boost::shared_ptr<map<string, vector<string> > > newdict;
-  newdict.reset(new map<string, vector<string> >(*overrides));
-  map<string, vector<string> >::iterator res =
-      newdict->insert(make_pair(rev, vector<string>())).first;
-  for (set<string>::iterator i = alive.begin();
-        i != alive.end(); ++i)
-    {
+      if (!in && *i > rev)
+        {
+          in = true;
+          newleaves.push_back(rev);
+        }
       if (_makes_living(*i) != new_status)
         res->second.push_back(*i);
+      else
+        newleaves.push_back(*i);
     }
-  return living_status(newdict, new_status);
+  if (!in)
+    newleaves.push_back(rev);
+  return new_version(newleaves, new_status);
 }
 
+/////////// line_id, weave_line /////////////////////
 
+line_id::line_id(revid const & r, int p):
+ rev(r), pos(p)
+{}
 
-file_state::file_state(vector<string> const & initial, string const & rev):
- states(new map<pair<string, int>, living_status>())
+bool operator<(line_id const l, line_id const r)
 {
-  weave.reset(new vector<pair<string, pair<string, int> > >);
-  for (int i = 0; (unsigned int)(i) < initial.size(); ++i)
-    weave->push_back(make_pair(idx(initial, i), make_pair(rev, i)));
+  return l.rev < r.rev || (l.rev == r.rev && l.pos < r.pos);
+}
+
+bool operator>(line_id const l, line_id const r)
+{
+  return l.rev > r.rev || (l.rev == r.rev && l.pos > r.pos);
+}
+
+bool operator!=(line_id const l, line_id const r)
+{
+  return l.rev != r.rev && l.pos != r.pos;
+}
+
+bool operator==(line_id const l, line_id const r)
+{
+  return l.rev == r.rev && l.pos == r.pos;
+}
+
+weave_line::weave_line(line_contents const & l, revid const & v, int n):
+            line(l),
+            id(line_id(v,n)),
+            versions(new living_status::line_data())
+{
+  versions->insert(make_pair(revid(-1), vector<revid>()));
+}
+
+////////////////////////////////////////////////////
+//////////////////// file_state ////////////////////
+////////////////////////////////////////////////////
+
+file_state::file_state(boost::shared_ptr<vector<weave_line> > _weave,
+                       boost::shared_ptr<std::pair<interner<line_contents>,
+                                                   interner<revid> > > _itx):
+            weave(_weave),
+            itx(_itx),
+            states(new map<line_id, living_status>())
+{}
+
+file_state::file_state():
+            weave(new vector<weave_line>()),
+            itx(new std::pair<interner<line_contents>,
+                              interner<revid> >()),
+            states(new map<line_id, living_status>())
+{}
+
+file_state::file_state(vector<string> const & initial, string rev):
+            weave(new vector<weave_line>()),
+            itx(new std::pair<interner<line_contents>,
+                              interner<revid> >()),
+            states(new map<line_id, living_status>())
+{
+  revid r(itx->second.intern(rev));
   for (int i = 0; (unsigned int)(i) < initial.size(); ++i)
     {
-      (*states)[make_pair(rev, i)] = living_status().set_living(rev, true);
+      line_contents l(itx->first.intern(idx(initial, i)));
+      weave->push_back(weave_line(l, r, i));
+      living_status ls(living_status(weave->back().versions));
+      states->insert(make_pair(weave->back().id, ls.set_living(r, true)));
     }
 }
 
@@ -329,8 +466,8 @@ file_state
 file_state::mash(file_state const & other) const
 {
   I(weave == other.weave);
-  file_state newstate(weave);
-  map<pair<string, int>, living_status>::const_iterator l, r;
+  file_state newstate(weave, itx);
+  map<line_id, living_status>::const_iterator l, r;
   l = states->begin();
   r = other.states->begin();
   while (l != states->end() || r != other.states->end())
@@ -339,9 +476,9 @@ file_state::mash(file_state const & other) const
         newstate.states->insert(*(r++));
       else if (r == other.states->end())
         newstate.states->insert(*(l++));
-      else if (std::less<pair<string, int> >()(l->first, r->first))
+      else if (l->first < r->first)
         newstate.states->insert(*(r++));
-      else if (std::less<pair<string, int> >()(r->first, l->first))
+      else if (r->first < l->first)
         newstate.states->insert(*(l++));
       else
         {
@@ -358,13 +495,13 @@ vector<string>
 file_state::current() const
 {
   vector<string> res;
-  for (vector<pair<string, pair<string, int> > >::iterator i
+  for (vector<weave_line>::iterator i
         = weave->begin(); i != weave->end(); ++i)
     {
-      map<pair<string, int>, living_status>::const_iterator j
-        = states->find(i->second);
+      map<line_id, living_status>::const_iterator j
+        = states->find(i->id);
       if (j != states->end() && j->second.is_living())
-        res.push_back(i->first);
+        res.push_back(itx->first.lookup(i->line));
     }
   return res;
 }
@@ -377,27 +514,28 @@ file_state::conflict(file_state const & other) const
   vector<merge_section> result;
   vector<string> left, right, clean;
   bool mustleft = false, mustright = false;
-  for (vector<pair<string, pair<string, int> > >::const_iterator i
+  for (vector<weave_line>::const_iterator i
         = weave->begin(); i != weave->end(); ++i)
     {
-      map<pair<string, int>, living_status>::const_iterator m
-          = states->find(i->second);
-      map<pair<string, int>, living_status>::const_iterator o
-          = other.states->find(i->second);
+      map<line_id, living_status>::const_iterator m = states->find(i->id);
+      map<line_id, living_status>::const_iterator o = other.states->find(i->id);
       bool mm(m != states->end());
       bool oo(o != other.states->end());
-      living_status const & meline(mm?m->second:living_status());
-      living_status const & otherline(oo?o->second:living_status());
-      bool mehave = meline.is_living();
-      bool otherhave = otherline.is_living();
-      bool mergehave = meline.merge(otherline).is_living();
+      bool mehave=false, otherhave=false, mergehave=false;
+      if (mm)
+        mergehave = mehave = m->second.is_living();
+      if (oo)
+        mergehave = otherhave = o->second.is_living();
+      if (mm && oo)
+        mergehave = m->second.merge(o->second).is_living();
+
       if (mehave && otherhave && mergehave)
         {
           if (mustright && mustleft)
             result.push_back(merge_section(left, right));
           else
             result.push_back(merge_section(clean));
-          result.push_back(merge_section(i->first));
+          result.push_back(merge_section(itx->first.lookup(i->line)));
           left.clear();
           right.clear();
           clean.clear();
@@ -414,11 +552,11 @@ file_state::conflict(file_state const & other) const
                 mustright = true;
             }
           if (mehave)
-            left.push_back(i->first);
+            left.push_back(itx->first.lookup(i->line));
           if (otherhave)
-            right.push_back(i->first);
+            right.push_back(itx->first.lookup(i->line));
           if (mergehave)
-            clean.push_back(i->first);
+            clean.push_back(itx->first.lookup(i->line));
         }
     }
   if (mustright && mustleft)
@@ -430,35 +568,41 @@ file_state::conflict(file_state const & other) const
 
 // add a descendent of this version to the weave, and return it
 file_state
-file_state::resolve(vector<string> const & result, string revision) const
+file_state::resolve(vector<string> const & result_, string revision) const
 {
   if (weave->empty())
     {
-      file_state x(result, revision);
+      file_state x(result_, revision);
       *weave = *x.weave;
       x.weave = weave;
       return x;
     }
-  vector<string> lines;
+  revid rev(itx->second.intern(revision));
+  vector<line_contents> result;
+  result.reserve(result_.size());
+  for (vector<string>::const_iterator i = result_.begin();
+       i != result_.end(); ++i)
+    result.push_back(itx->first.intern(*i));
+  vector<line_contents> lines;
   lines.reserve(weave->size());
-  for (vector<pair<string, pair<string, int> > >::iterator i
-        = weave->begin(); i != weave->end(); ++i)
+  for (vector<weave_line>::iterator i = weave->begin();
+       i != weave->end(); ++i)
     {
-      map<pair<string, int>, living_status>::const_iterator j
-        = states->find(i->second);
+      map<line_id, living_status>::const_iterator j
+        = states->find(i->id);
       if (j != states->end() && j->second.is_living())
-        lines.push_back(i->first);
+        lines.push_back(i->line);
       else
-        lines.push_back(string());
+        lines.push_back(-1);
     }
   vector<pair<int, int> > matches;
   recurse_matches(lines, result, 0, 0,
                   lines.size(), result.size(),
                   matches, 10);
   lines.clear();
-  for (vector<pair<string, pair<string, int> > >::iterator i
-        = weave->begin(); i != weave->end(); ++i)
-    lines.push_back(i->first);
+  for (vector<weave_line>::iterator i = weave->begin();
+       i != weave->end(); ++i)
+    lines.push_back(i->line);
   vector<pair<int, int> > matches2;
   matches.push_back(make_pair(lines.size(), result.size()));
   for (vector<pair<int, int> >::iterator i = matches.begin();
@@ -476,13 +620,13 @@ file_state::resolve(vector<string> const & result, string revision) const
         matches2.push_back(make_pair(i->first, i->second));
     }
   matches.pop_back();
-  set<pair<string, int> > living;
+  set<line_id> living;
   for (vector<pair<int, int> >::iterator i = matches2.begin();
         i != matches2.end(); ++i)
     {
-      living.insert(idx(*weave, i->first).second);
+      living.insert(idx(*weave, i->first).id);
     }
-  vector<pair<int, pair<string, pair<string, int> > > > toinsert;
+  vector<pair<int, weave_line> > toinsert;
   int lasta = -1, lastb = -1;
   matches2.push_back(make_pair(weave->size(), result.size()));
   for (vector<pair<int, int> >::iterator i = matches2.begin();
@@ -490,11 +634,11 @@ file_state::resolve(vector<string> const & result, string revision) const
     {
       for (int x = lastb + 1; x < i->second; ++x)
         {
-          pair<string, int> newline(revision, x);
-          living.insert(newline);
+          living.insert(line_id(rev, x));
           toinsert.push_back(make_pair(lasta + 1,
-                                        make_pair(idx(result,x),
-                                                  newline)));
+                                       weave_line(idx(result,x),
+                                                  rev,
+                                                  x)));
         }
       lasta = i->first;
       lastb = i->second;
@@ -502,13 +646,11 @@ file_state::resolve(vector<string> const & result, string revision) const
   reverse(toinsert.begin(), toinsert.end());
   // toinsert is now in last-first order
 
-//  for (vector<pair<int, pair<string, pair<string, int> > > >::iterator i
-//        = toinsert.begin(); i != toinsert.end(); ++i)
-//    weave->insert(weave->begin() + i->first, i->second);
   if (toinsert.size())
     {
-      weave->insert(weave->begin()+toinsert.front().first, toinsert.size(),
-                    make_pair(string(), make_pair(string(), 0)));
+      weave->insert(weave->begin()+toinsert.front().first,
+                    toinsert.size(),
+                    weave_line());
       int tpos = 0;
       int wfrom = toinsert.front().first - 1;
       int wpos = wfrom + toinsert.size();
@@ -521,22 +663,26 @@ file_state::resolve(vector<string> const & result, string revision) const
         }
     }
 
-  file_state out(weave);
-  for (vector<pair<string, pair<string, int> > >::iterator i
-        = weave->begin(); i != weave->end(); ++i)
+  file_state out(weave, itx);
+  for (vector<weave_line>::iterator i = weave->begin();
+       i != weave->end(); ++i)
     {
-      bool live = living.find(i->second) != living.end();
-      living_status orig;
-      map<pair<string, int>, living_status>::const_iterator j
-        = states->find(i->second);
+      bool live = living.find(i->id) != living.end();
+      living_status orig(i->versions);
+      map<line_id, living_status>::const_iterator j = states->find(i->id);
       if (j != states->end())
         orig = j->second;
-      out.states->insert(make_pair(i->second, orig.set_living(revision, live)));
+      else if (!live)
+        continue;
+      living_status x(orig.set_living(rev, live));
+      out.states->insert(make_pair(i->id, x));
     }
   return out;
 }
 
-
+//////////////////////////////////////////////
+//////////////// misc ////////////////////////
+//////////////////////////////////////////////
 
 void
 show_conflict(vector<merge_section> const & result)
@@ -597,7 +743,9 @@ consolidate(vector<merge_section> const & in)
 }
 
 
-
+/////////////////////////////////////////////////////////////////
+///////////////////////// Tests /////////////////////////////////
+/////////////////////////////////////////////////////////////////
 
 
 vector<string>
@@ -622,43 +770,75 @@ void
 test_unique_lcs()
 {
   // unique_lcs
-  vector<string> l, r;
+  vector<line_contents> l, r;
   vector<pair<int, int> > res;
   unique_lcs(l, r, 0, 0, 0, 0, res);
   I(res == vp());
 
-  l = vectorize("a");
-  r = vectorize("a");
+  l.push_back(0);
+  r.push_back(0);
   unique_lcs(l, r, 0, 0, 1, 1, res);
   I(res == vp().pb(0, 0));
 
-  l = vectorize("a");
-  r = vectorize("b");
+  l.clear();
+  r.clear();
+  l.push_back(0);
+  r.push_back(1);
   unique_lcs(l, r, 0, 0, 1, 1, res);
   I(res == vp());
 
-  l = vectorize("ab");
-  r = vectorize("ab");
+  l.clear();
+  r.clear();
+  l.push_back(0);
+  l.push_back(1);
+  r.push_back(0);
+  r.push_back(1);
   unique_lcs(l, r, 0, 0, 2, 2, res);
   I(res == vp().pb(0, 0).pb(1, 1));
 
-  l = vectorize("abcde");
-  r = vectorize("cdeab");
+  l.clear();
+  r.clear();
+  l.push_back(0);
+  l.push_back(1);
+  l.push_back(2);
+  l.push_back(3);
+  l.push_back(4);
+  r.push_back(2);
+  r.push_back(3);
+  r.push_back(4);
+  r.push_back(0);
+  r.push_back(1);
   unique_lcs(l, r, 0, 0, 5, 5, res);
   I(res == vp().pb(2, 0).pb(3, 1).pb(4, 2));
 
-  l = vectorize("cdeab");
-  r = vectorize("abcde");
-  unique_lcs(l, r, 0, 0, 5, 5, res);
+  unique_lcs(r, l, 0, 0, 5, 5, res);
   I(res == vp().pb(0, 2).pb(1, 3).pb(2, 4));
 
-  l = vectorize("abXde");
-  r = vectorize("abYde");
+  l.clear();
+  r.clear();
+  l.push_back(0);
+  l.push_back(1);
+  l.push_back(10);
+  l.push_back(3);
+  l.push_back(4);
+  r.push_back(0);
+  r.push_back(1);
+  r.push_back(11);
+  r.push_back(3);
+  r.push_back(4);
   unique_lcs(l, r, 0, 0, 5, 5, res);
   I(res == vp().pb(0, 0).pb(1, 1).pb(3, 3).pb(4, 4));
 
-  l = vectorize("acbac");
-  r = vectorize("abc");
+  l.clear();
+  r.clear();
+  l.push_back(0);
+  l.push_back(2);
+  l.push_back(1);
+  l.push_back(0);
+  l.push_back(2);
+  r.push_back(0);
+  r.push_back(1);
+  r.push_back(2);
   unique_lcs(l, r, 0, 0, 5, 3, res);
   I(res == vp().pb(2, 1));
 }
@@ -667,21 +847,32 @@ void
 test_recurse_matches()
 {
   vector<pair<int, int> > res;
-  vector<string> l, r;
+  vector<line_contents> l, r;
 
-  l.push_back("a\n");
-  l.push_back("");
-  l.push_back("b\n");
-  l.push_back("");
-  l.push_back("c\n");
-
-  r = vectorize("aabcc");
+  l.push_back(0);
+  l.push_back(-1);
+  l.push_back(1);
+  l.push_back(-1);
+  l.push_back(2);
+  r.push_back(0);
+  r.push_back(0);
+  r.push_back(1);
+  r.push_back(2);
+  r.push_back(2);
   recurse_matches(l, r, 0, 0, 5, 5, res, 10);
   I(res == vp().pb(0, 1).pb(2, 2).pb(4, 3));
 
   res.clear();
-  l = vectorize("acbac");
-  r = vectorize("abc");
+  l.clear();
+  r.clear();
+  l.push_back(0);
+  l.push_back(2);
+  l.push_back(1);
+  l.push_back(0);
+  l.push_back(2);
+  r.push_back(0);
+  r.push_back(1);
+  r.push_back(2);
   recurse_matches(l, r, 0, 0, 5, 3, res, 10);
   I(res == vp().pb(0, 0).pb(2, 1).pb(4, 2));
 }
@@ -691,17 +882,22 @@ test_living_status()
 {
   living_status ds;
   I(!ds.is_living());
-  living_status ta(ds.set_living("a", true));
+
+  living_status ta(ds.set_living(1, true));
   I(ta.is_living());
-  living_status tb(ds.set_living("b", true));
-  living_status tc(ta.set_living("c", false));
+
+  living_status tb(ds.set_living(2, true));
+  living_status tc(ta.set_living(3, false));
   I(!tc.is_living());
-  living_status td(ta.set_living("d", false));
+
+  living_status td(ta.set_living(4, false));
   living_status te(tb.merge(tc));
   I(te.is_living());
+
   living_status tf(te.merge(td));
   I(tf.is_living());
-  living_status tg(tb.set_living("g", false));
+
+  living_status tg(tb.set_living(7, false));
   living_status th(te.merge(tg));
   I(!th.is_living());
 }
@@ -710,23 +906,25 @@ void
 test_file_state()
 {
   {
-    file_state ta(vectorize("abc"), "x");
-    I(ta.resolve(vectorize("bcd"), "y").current() == vectorize("bcd"));
+    file_state ta(vectorize("abc"), "a");
+    file_state tb(ta.resolve(vectorize("bcd"), "b"));
+    vector<string> res(tb.current());
+    I(res == vectorize("bcd"));
   }
 
   {
-    file_state ta(vectorize("abc"), "x");
-    file_state tb(ta.resolve(vectorize("dabc"), "y"));
-    file_state tc(ta.resolve(vectorize("abce"), "z"));
+    file_state ta(vectorize("abc"), "a");
+    file_state tb(ta.resolve(vectorize("dabc"), "b"));
+    file_state tc(ta.resolve(vectorize("abce"), "c"));
     file_state td(tb.mash(tc));
     I(td.current() == vectorize("dabce"));
   }
 
   {
-    file_state ta(vectorize("abc"), "x");
-    file_state tb(ta.resolve(vectorize("adc"), "y"));
-    file_state tc(tb.resolve(vectorize("abc"), "z"));
-    file_state td(ta.resolve(vectorize("aec"), "w"));
+    file_state ta(vectorize("abc"), "a");
+    file_state tb(ta.resolve(vectorize("adc"), "b"));
+    file_state tc(tb.resolve(vectorize("abc"), "c"));
+    file_state td(ta.resolve(vectorize("aec"), "d"));
 
     vector<merge_section> res(consolidate(tc.conflict(td)));
     vector<merge_section> real;
@@ -735,9 +933,9 @@ test_file_state()
   }
 
   {
-    file_state ta(vectorize("abc"), "x");
-    file_state tb(ta.resolve(vectorize("adc"), "y"));
-    file_state tc(ta.resolve(vectorize("aec"), "z"));
+    file_state ta(vectorize("abc"), "a");
+    file_state tb(ta.resolve(vectorize("adc"), "b"));
+    file_state tc(ta.resolve(vectorize("aec"), "c"));
 
     vector<merge_section> res(consolidate(tb.conflict(tc)));
     vector<merge_section> real;

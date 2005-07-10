@@ -9,6 +9,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include "interner.hh"
+
 using std::vector;
 using std::string;
 using std::map;
@@ -48,46 +50,35 @@ consolidate(vector<merge_section> const & in);
 void
 show_conflict(vector<merge_section> const & result);
 
+typedef int revid;
+typedef int line_contents;
+
 // This is a const object type; there are no modifiers.
 // There are likely to be many, many copies of each object. Since objects
 // don't change, share internal data between copies.
 struct living_status
 {
-  boost::shared_ptr<map<string, vector<string> > > overrides;
-  boost::scoped_ptr<pair<bool, bool> > precomp;
+  typedef map<revid, vector<revid> > line_data;
+  // Shared for all versions of a given line
+  boost::shared_ptr<line_data> overrides;
+  // Shared for all copies of this version of this line
+  boost::shared_ptr<vector<revid> > leaves;
+  boost::shared_ptr<pair<bool, bool> > precomp;
 
-  living_status():
-   overrides(new map<string, vector<string> >()),
-   precomp(new pair<bool, bool>(false, false))
-  {
-    overrides->insert(make_pair("root", vector<string>()));
-  }
-
-  living_status(boost::shared_ptr<map<string, vector<string> > > _overrides):
-    overrides(_overrides),
-    precomp(new pair<bool, bool>(false, false))
-  {}
-
-  living_status(boost::shared_ptr<map<string, vector<string> > > _overrides,
-                bool living_hint):
-    overrides(_overrides),
-    precomp(new pair<bool, bool>(true, living_hint))
-  {}
-
-  living_status(living_status const & x):
-   overrides(x.overrides),
-   precomp(new pair<bool, bool>(*x.precomp))
-  {}
+  living_status();
+  living_status(boost::shared_ptr<line_data> ovr);
+  living_status(living_status const & x);
 
   living_status const &
-  operator=(living_status const & x)
-  {
-    overrides = x.overrides;
-    precomp.reset(new pair<bool, bool>(*x.precomp));
-    return *this;
-  }
+  operator=(living_status const & x);
 
   ~living_status();
+
+  living_status const
+  new_version(vector<revid> const & _leaves) const;
+
+  living_status const
+  new_version(vector<revid> const & _leaves, bool living_hint) const;
 
   living_status
   merge(living_status const & other) const;
@@ -96,10 +87,33 @@ struct living_status
   is_living() const;
 
   bool
-  _makes_living(string key) const;
+  _makes_living(revid key) const;
 
   living_status
-  set_living(string rev, bool new_status) const;
+  set_living(revid rev, bool new_status) const;
+};
+
+struct line_id
+{
+  revid rev;
+  int pos;
+
+  line_id(){}
+  line_id(revid const & r, int p);
+};
+
+// keep this small, we have a vector of them that gets things inserted
+// in the middle fairly often. make that need as little copying as possible.
+struct weave_line
+{
+  line_contents line;
+  line_id id;
+  boost::shared_ptr<living_status::line_data> versions;
+
+  weave_line()
+  {}
+  
+  weave_line(line_contents const & l, revid const & v, int n);
 };
 
 //a.mash(b).resolve(c) -> "a and b were merged, with result c"
@@ -109,14 +123,16 @@ struct living_status
 // This is a const object type; there are no modifiers.
 struct file_state
 {
-  boost::shared_ptr<vector<pair<string, pair<string, int> > > > weave;
-  boost::shared_ptr<map<pair<string, int>, living_status> > states;
+  boost::shared_ptr<vector<weave_line> > weave;
+  boost::shared_ptr<std::pair<interner<line_contents>,
+                              interner<revid> > > itx;
+  boost::shared_ptr<map<line_id, living_status> > states;
 
-  file_state(boost::shared_ptr<vector<pair<string, pair<string, int> > > > _weave):
-    weave(_weave), states(new map<pair<string, int>, living_status>())
-  {}
-
-  file_state(vector<string> const & initial, string const & rev);
+  file_state(boost::shared_ptr<vector<weave_line> > _weave,
+             boost::shared_ptr<std::pair<interner<line_contents>,
+                                         interner<revid> > > _itx);
+  file_state();
+  file_state(vector<string> const & initial, string rev);
 
   ~file_state();
 

@@ -1,3 +1,11 @@
+2005-07-09  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: More speedups; use interners to work with ints instead
+	of strings. Data structure changes.
+	* commands.cc (CMD(pcdv)): Don't keep file_state for unneded revisions.
+	Gets rid of memory usage problems.
+	* interner.hh (interner::intern): Make slightly faster.
+
 2005-07-01  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* pcdv.cc: Various speedups.

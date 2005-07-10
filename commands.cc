@@ -3827,6 +3827,10 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   if (args.size() != 3)
     throw usage(name);
 
+  revision_id left, right;
+  complete(app, idx(args, 0)(), left);
+  complete(app, idx(args, 1)(), right);
+
   typedef std::multimap<revision_id, revision_id>::iterator gi;
   typedef std::map<revision_id, std::pair<int, vector<revision_id> > >::iterator pi;
   std::multimap<revision_id, revision_id> graph;
@@ -3834,6 +3838,7 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   std::set<revision_id> leaves;
   app.db.get_revision_ids(leaves);
   std::map<revision_id, std::pair<int, vector<revision_id> > > parents;
+  std::map<revision_id, int> child_count;
   for (gi i = graph.begin(); i != graph.end(); ++i)
     parents.insert(std::make_pair(i->first,
                                   std::make_pair(0, vector<revision_id>())));
@@ -3848,8 +3853,12 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   for (pi i = parents.begin(); i != parents.end(); ++i)
     if(i->second.first == 0)
       roots.push_back(i->first);
+
+  ticker count("Revs in weave", "R", 1);
+  ticker lines("Lines in weave", "L", 1);
+
   map<revision_id, file_state> files;
-  file_state empty = file_state(vector<string>(), string());
+  file_state empty;
   std::set<revision_id> heads;
   file_state p(empty);
   while (!roots.empty())
@@ -3873,27 +3882,42 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
           p = i->second.mash(j->second);
         }
       vector<string> contents(get_file(roots.front(), idx(args, 2)(), app));
-      files.insert(std::make_pair(roots.front(),p.resolve(contents, roots.front().inner()())));
+      string r(roots.front().inner()());
+      files.insert(std::make_pair(roots.front(),p.resolve(contents, r)));
+
+      ++count;
+      lines += (empty.weave->size() - lines.ticks);
+
       heads.insert(roots.front());
       for (vector<revision_id>::const_iterator i = ps.begin();
            i != ps.end(); ++i)
-        heads.erase(*i);
-      for(gi i = graph.lower_bound(roots.front());
-          i != graph.upper_bound(roots.front()); i++)
-        if(--(parents[i->second].first) == 0)
-          roots.push_back(i->second);
+        {
+          heads.erase(*i);
+          if (--child_count[*i] == 0
+              && left.inner()() != i->inner()()
+              && right.inner()() != i->inner()())
+            files.erase(*i);
+        }
+      int children = 0;
+      for (gi i = graph.lower_bound(roots.front());
+           i != graph.upper_bound(roots.front()); i++)
+        {
+          if (--(parents[i->second].first) == 0)
+            roots.push_back(i->second);
+          ++children;
+        }
+      child_count.insert(make_pair(roots.front(), children));
       graph.erase(roots.front());
       leaves.erase(roots.front());
       roots.pop_front();
     }
-  revision_id left, right;
-  complete(app, idx(args, 0)(), left);
-  complete(app, idx(args, 1)(), right);
+
   map<revision_id, file_state>::iterator l = files.find(left);
-  N(l != files.end(), F("Not found."));
+  N(l != files.end(), F("Not found: %s.") % left);
   map<revision_id, file_state>::iterator r = files.find(right);
-  N(r != files.end(), F("Not found."));
+  N(r != files.end(), F("Not found: %s.") % right);
   vector<merge_section> result(l->second.conflict(r->second));
+  P(F(""));
   show_conflict(consolidate(result));
 }
 
