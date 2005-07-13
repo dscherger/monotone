@@ -47,7 +47,8 @@ MOST_SOURCES =								\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
          package_revision.c package_revision.h				\
-         package_full_revision.c package_full_revision.h options.hh
+         package_full_revision.c package_full_revision.h options.hh	\
+         netxx_pipe.cc
 
 NETXX_SOURCES =									\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx			\
@@ -62,7 +63,7 @@ NETXX_SOURCES =									\
 	netxx/address.h netxx/datagram.h netxx/datagramserver.h			\
 	netxx/netbuf.h netxx/netxx.h netxx/peer.h netxx/probe.h			\
 	netxx/probeinfo.h netxx/sockopt.h netxx/stream.h netxx/streambase.h	\
-	netxx/streamserver.h netxx/timeout.h netxx/types.h netxx_pipe.cc
+	netxx/streamserver.h netxx/timeout.h netxx/types.h
 
 
 CRYPTOPP_SOURCES = \
