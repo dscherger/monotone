@@ -69,7 +69,7 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
       unsigned newargc=0;
       newargv[newargc++]=cmd.c_str();
       for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
-        newargv[newargc++]=cmd.c_str();
+        newargv[newargc++]=i->c_str();
       newargv[newargc]=0;
       execvp(newargv[0],const_cast<char*const*>(newargv));
       perror(newargv[0]);
