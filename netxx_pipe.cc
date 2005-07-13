@@ -4,7 +4,7 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
-#include <netxx_pipe.h>
+#include <netxx_pipe.hh>
 
 Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
   : readfd(_readfd), writefd(_writefd)
@@ -12,11 +12,11 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
   pi_.add_socket(writefd);
 }
 
-Netxx::PipeStream::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
+Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
 { return ::read(readfd,buffer,length);
 }
 
-Netxx::PipeStream::signed_size_type Netxx::PipeStream::write(const void *buffer, size_type length)
+Netxx::signed_size_type Netxx::PipeStream::write(const void *buffer, size_type length)
 { return ::write(writefd,buffer,length);
 }
 
@@ -29,6 +29,7 @@ Netxx::socket_type Netxx::PipeStream::get_socketfd (void) const
 { return Netxx::socket_type(-1);
 }
 
+#if 0
 namespace {
 class PipeProbe : public Netxx::ProbeInfo
 {public:
@@ -36,6 +37,7 @@ class PipeProbe : public Netxx::ProbeInfo
   virtual pending_type check_pending (socket_type, pending_type) const;
 };
 }
+#endif
 
 const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 { return &pi_;

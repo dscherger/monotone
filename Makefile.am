@@ -62,7 +62,7 @@ NETXX_SOURCES =									\
 	netxx/address.h netxx/datagram.h netxx/datagramserver.h			\
 	netxx/netbuf.h netxx/netxx.h netxx/peer.h netxx/probe.h			\
 	netxx/probeinfo.h netxx/sockopt.h netxx/stream.h netxx/streambase.h	\
-	netxx/streamserver.h netxx/timeout.h netxx/types.h
+	netxx/streamserver.h netxx/timeout.h netxx/types.h netxx_pipe.cc
 
 
 CRYPTOPP_SOURCES = \
