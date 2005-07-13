@@ -10,6 +10,7 @@ namespace Netxx {
 
 class PipeStream : public StreamBase {
     int readfd, writefd;
+    ProbeInfo pi_;
 public:
     explicit PipeStream (int readfd, int writefd);
 //    explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);
