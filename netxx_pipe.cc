@@ -125,13 +125,19 @@ const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 static void
 simple_pipe_test()
 { std::vector<std::string> args;
+  std::string cmd;
 #ifdef WIN32
   args.push_back("\\");
-  Netxx::PipeStream pipe("dir",args);
+  cmd="dir";
 #else
+  args.push_back("-l");
   args.push_back("/");
-  Netxx::PipeStream pipe("ls",args);
+  cmd="ls";
 #endif  
+  Netxx::PipeStream pipe(cmd,args);
+#ifndef WIN32
+  fcntl(pipe.get_readfd(),F_SETFL,fcntl(pipe.get_readfd(),F_GETFL)&~O_NONBLOCK);
+#endif
   std::string result;
   char buf[1024];
   Netxx::signed_size_type bytes;
@@ -142,7 +148,7 @@ simple_pipe_test()
   } while (true);
   pipe.close();
   BOOST_CHECK(!result.empty());
-  L(F("command output is: %s\n") % result);
+  L(F("command output (%d bytes) is: %s\n") % result.size() % result);
 }
 
 void
