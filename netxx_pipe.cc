@@ -51,12 +51,44 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
   }
   return result;
 }
-#endif  
+#endif
+
+#ifdef WIN32
+#include <windows.h>
+#include <io.h>
+#endif
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
   : readfd(), writefd(), child()
 { 
 #ifdef WIN32
+    int fd1[2],fd2[2];
+    fd1[0]=-1; fd1[1]=-1;
+    fd2[0]=-1; fd2[1]=-1;
+    if (_pipe(fd1,0,false)) throw oops("pipe failed");
+    if (_pipe(fd2,0,false))
+    { ::close(fd1[0]); ::close(fd1[1]); throw oops("pipe failed"); }
+    PROCESS_INFORMATION piProcInfo;
+    STARTUPINFO siStartInfo;
+    memset(&piProcInfo,0,sizeof piProcInfo);
+    memset(&siStartInfo,0,sizeof siStartInfo);
+    siStartInfo.cb = sizeof siStartInfo;
+    siStartInfo.hStdError = (HANDLE)_get_osfhandle(2);
+    siStartInfo.hStdOutput = (HANDLE)_get_osfhandle(fd1[1]);
+    siStartInfo.hStdInput = (HANDLE)_get_osfhandle(fd2[0]);
+    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+    // we do not quote correctly (blanks are much more common on Win32 than quotes)
+    std::string cmdline="\""+cmd+"\" ";
+    for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
+        cmdline+="\""+*i+"\" ";
+    bool result= CreateProcess(0,const_cast<CHAR*>(cmdline.c_str()),
+                        0,0,false,0,0,0,&siStartInfo,&piProcInfo);
+    if (!result) throw oops("CreateProcess failed");
+    ::close(fd1[1]);
+    ::close(fd2[0]);
+    child=long(piProcInfo.hProcess);
+    readfd=fd1[0];
+    writefd=fd2[1];
 #else
     int fd1[2],fd2[2];
     child=pipe_and_fork(fd1,fd2);
@@ -96,6 +128,7 @@ void Netxx::PipeStream::close (void)
   ::close(writefd);
 // wait for Process to end (before???)
 #ifdef WIN32
+  WaitForSingleObject((HANDLE)child, INFINITE);
 #else
   if (child) waitpid(child,0,0);
 #endif
