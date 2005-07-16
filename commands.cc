@@ -10,6 +10,7 @@
 #include <cstring>
 #include <set>
 #include <vector>
+#include <deque>
 #include <algorithm>
 #include <iterator>
 #include <boost/lexical_cast.hpp>
@@ -3838,5 +3839,136 @@ CMD(unset, "vars", "DOMAIN NAME",
   N(app.db.var_exists(k), F("no var with name %s in domain %s") % n % d);
   app.db.clear_var(k);
 }
+
+
+
+vector<string>
+get_file(revision_id const & rev, string const & filename, app_state & app)
+{
+  if (null_id(rev))
+    return vector<string>();
+  manifest_id mid;
+  app.db.get_revision_manifest(rev, mid);
+  file_path fp(filename);
+  manifest_map m;
+  app.db.get_manifest(mid, m);
+  manifest_map::const_iterator i = m.find(fp);
+  if(i == m.end())
+    return vector<string>();
+  file_id ident = manifest_entry_id(i);
+  file_data dat;
+  L(F("dumping file %s\n") % ident);
+  app.db.get_file_version(ident, dat);
+  vector<string> lines;
+  split_into_lines(dat.inner()(), "utf8", lines);
+  for (vector<string>::iterator i = lines.begin();
+       i != lines.end(); ++i)
+    (*i)+='\n';
+  return lines;
+}
+
+CMD(pcdv, "debug", "REVISION REVISION FILENAME",
+    "precise-cdv merge FILENAME in the two given revisions",
+    OPT_NONE)
+{
+  pcdv_test();
+
+  if (args.size() != 3)
+    throw usage(name);
+
+  revision_id left, right;
+  complete(app, idx(args, 0)(), left);
+  complete(app, idx(args, 1)(), right);
+
+  typedef std::multimap<revision_id, revision_id>::iterator gi;
+  typedef std::map<revision_id, std::pair<int, vector<revision_id> > >::iterator pi;
+  std::multimap<revision_id, revision_id> graph;
+  app.db.get_revision_ancestry(graph);
+  std::set<revision_id> leaves;
+  app.db.get_revision_ids(leaves);
+  std::map<revision_id, std::pair<int, vector<revision_id> > > parents;
+  std::map<revision_id, int> child_count;
+  for (gi i = graph.begin(); i != graph.end(); ++i)
+    parents.insert(std::make_pair(i->first,
+                                  std::make_pair(0, vector<revision_id>())));
+  for (gi i = graph.begin(); i != graph.end(); ++i)
+    {
+      std::pair<int, vector<revision_id> > & p(parents[i->second]);
+      ++p.first;
+      p.second.push_back(i->first);
+    }
+  // first find the set of graph roots
+  std::list<revision_id> roots;
+  for (pi i = parents.begin(); i != parents.end(); ++i)
+    if(i->second.first == 0)
+      roots.push_back(i->first);
+
+  ticker count("Revs in weave", "R", 1);
+  ticker lines("Lines in weave", "L", 1);
+
+  map<revision_id, file_state> files;
+  file_state empty;
+  std::set<revision_id> heads;
+  file_state p(empty);
+  while (!roots.empty())
+    {
+      vector<revision_id> const & ps(parents[roots.front()].second);
+      if (ps.size() == 0)
+        p = empty;
+      else if (ps.size() == 1)
+        {
+          map<revision_id, file_state>::iterator i = files.find(ps.front());
+          I(i != files.end());
+          p = i->second;
+        }
+      else
+        {
+          I(ps.size() == 2);
+          map<revision_id, file_state>::iterator i = files.find(ps.front());
+          I(i != files.end());
+          map<revision_id, file_state>::iterator j = files.find(ps.back());
+          I(j != files.end());
+          p = i->second.mash(j->second);
+        }
+      vector<string> contents(get_file(roots.front(), idx(args, 2)(), app));
+      string r(roots.front().inner()());
+      files.insert(std::make_pair(roots.front(),p.resolve(contents, r)));
+
+      ++count;
+      lines += (empty.weave->size() - lines.ticks);
+
+      heads.insert(roots.front());
+      for (vector<revision_id>::const_iterator i = ps.begin();
+           i != ps.end(); ++i)
+        {
+          heads.erase(*i);
+          if (--child_count[*i] == 0
+              && left.inner()() != i->inner()()
+              && right.inner()() != i->inner()())
+            files.erase(*i);
+        }
+      int children = 0;
+      for (gi i = graph.lower_bound(roots.front());
+           i != graph.upper_bound(roots.front()); i++)
+        {
+          if (--(parents[i->second].first) == 0)
+            roots.push_back(i->second);
+          ++children;
+        }
+      child_count.insert(make_pair(roots.front(), children));
+      graph.erase(roots.front());
+      leaves.erase(roots.front());
+      roots.pop_front();
+    }
+
+  map<revision_id, file_state>::iterator l = files.find(left);
+  N(l != files.end(), F("Not found: %s.") % left);
+  map<revision_id, file_state>::iterator r = files.find(right);
+  N(r != files.end(), F("Not found: %s.") % right);
+  vector<merge_section> result(l->second.conflict(r->second));
+  P(F(""));
+  show_conflict(consolidate(result));
+}
+
 
 }; // namespace commands
