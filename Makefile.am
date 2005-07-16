@@ -181,7 +181,7 @@ monotone_LDFLAGS =
 monotone_CPPFLAGS =
 
 unit_tests_LDFLAGS = 
-unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS
+unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I.
 
 # conditionals from configury
 

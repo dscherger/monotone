@@ -56,6 +56,7 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
 #ifdef WIN32
 #include <windows.h>
 #include <io.h>
+#include <fcntl.h>
 #endif
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
@@ -65,9 +66,10 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
     int fd1[2],fd2[2];
     fd1[0]=-1; fd1[1]=-1;
     fd2[0]=-1; fd2[1]=-1;
-    if (_pipe(fd1,0,false)) throw oops("pipe failed");
-    if (_pipe(fd2,0,false))
+    if (_pipe(fd1,0,_O_BINARY)) throw oops("pipe failed");
+    if (_pipe(fd2,0,_O_BINARY)) // | O_NOINHERIT
     { ::close(fd1[0]); ::close(fd1[1]); throw oops("pipe failed"); }
+    // abuse dup, use spawnvp?
     PROCESS_INFORMATION piProcInfo;
     STARTUPINFO siStartInfo;
     memset(&piProcInfo,0,sizeof piProcInfo);
@@ -81,9 +83,11 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
     std::string cmdline="\""+cmd+"\" ";
     for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
         cmdline+="\""+*i+"\" ";
+    L(F("cmdline '%s'\n") % cmdline);
     bool result= CreateProcess(0,const_cast<CHAR*>(cmdline.c_str()),
-                        0,0,false,0,0,0,&siStartInfo,&piProcInfo);
-    if (!result) throw oops("CreateProcess failed");
+                        0,0,TRUE,0,0,0,&siStartInfo,&piProcInfo);
+    if (!result) 
+    { L(F("err %d\n") % GetLastError()); throw oops("CreateProcess failed"); }
     ::close(fd1[1]);
     ::close(fd2[0]);
     child=long(piProcInfo.hProcess);
@@ -160,8 +164,8 @@ simple_pipe_test()
 { std::vector<std::string> args;
   std::string cmd;
 #ifdef WIN32
-  args.push_back("\\");
-  cmd="dir";
+  args.push_back("--version");
+  cmd="monotone";
 #else
   args.push_back("-l");
   args.push_back("/");
