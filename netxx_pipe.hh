@@ -26,4 +26,12 @@ public:
     int get_readfd(void) const { return readfd; }
     int get_writefd(void) const { return writefd; }
 };
+
+#ifdef WIN32
+  class PipeCompatibleProbe : public Probe
+  {
+  }
+#else
+  typedef Probe PipeCompatibleProbe; 
+#endif
 }
