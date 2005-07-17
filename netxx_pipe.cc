@@ -91,6 +91,14 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
     ::close(fd1[1]);
     ::close(fd2[0]);
     child=long(piProcInfo.hProcess);
+    // setvbuf?
+    // COMMTIMEOUTS cto;
+    // memset(&cto,0,sizeof cto);
+    // cto.ReadIntervalTimeout=MAXDWORD;
+    // cto.ReadTotalTimeoutMultiplier=MAXDWORD;
+    // cto.ReadTotalTimeoutConstant=milliseconds;
+    // SetCommTimeouts(handle,&cto);
+    // non-blocking: RIT=MAXDWORD RTTM=0 RTTC=0
     readfd=fd1[0];
     writefd=fd2[1];
 #else
