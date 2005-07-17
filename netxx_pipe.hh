@@ -29,8 +29,23 @@ public:
 
 #ifdef WIN32
   class PipeCompatibleProbe : public Probe
-  {
-  }
+  { // We need to make sure that only pipes are connected, if Streams are
+    // connected the old Probe functions still apply
+    // use WriteFileEx/ReadFileEx with Overlap?
+      bool is_pipe;
+      PipeStream *pipe;
+    public:
+      PipeCompatibleProbe() : is_pipe(), pipe() {}
+      void clear()
+      { if (is_pipe) { pipe=0; is_pipe=false; } else Probe::clear(); }
+      result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
+      void add(const PipeStream &ps, ready_type rt=ready_none);
+      void remove(const PipeStream &ps);
+      template <typename T> void add (const T &t, ready_type rt=ready_none)
+      { if (is_pipe) throw std::runtime_error("stream added to a pipe probe");
+        Probe::add(t,rt);
+      }
+  };
 #else
   typedef Probe PipeCompatibleProbe; 
 #endif
