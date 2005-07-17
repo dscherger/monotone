@@ -1,3 +1,7 @@
+2005-07-16  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Bugfixing, copy-on-write, attribute support.
+
 2005-06-19  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc: Rewrite-in-progress on change_set.cc.
