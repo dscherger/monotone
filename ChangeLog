@@ -1,3 +1,17 @@
+2005-07-18  Richard Levitte  <richard@levitte.org>
+
+	* selectors.cc (decode_selectors): If we're at the beginning of
+	the composite selector string, parse h: if it's there.  Takes a
+	couple of new arguments, to return a flag saying only the heads
+	of the selection should be used, and an input flag saying if the
+	current selector is the first or not.
+	(complete_selectors, parse_selector): Adjust.
+	* commands.cc (complete): Use the new "heads only" selector.
+	* automate.cc (automate_select): Dito.
+
+	* tests/t_heads_of_certs.at: New test.
+	* testsuite.at: Use it.
+
 2005-07-17  Nathaniel Smith  <njs@pobox.com>
 
 	* configure.ac, win32/monotone.iss, monotone.spec:

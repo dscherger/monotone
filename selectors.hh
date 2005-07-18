@@ -35,10 +35,13 @@ namespace selectors
   complete_selector(std::string const & orig_sel,
                     std::vector<std::pair<selector_type, std::string> > const & limit,
                     selector_type & type,
+                    bool & get_heads,
                     std::set<std::string> & completions,
-                    app_state & app);
+                    app_state & app,
+                    bool first_selector);
   std::vector<std::pair<selector_type, std::string> >
   parse_selector(std::string const & str,
+                 bool & get_heads,
                  app_state & app);
 
 }; // namespace selectors
