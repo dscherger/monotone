@@ -1,3 +1,23 @@
+2005-07-18  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_heads_of_certs.at: A better title (differing from the
+	title in t_select_cert.at), and explain the presence of the last
+	check.
+
+2005-07-18  Richard Levitte  <richard@levitte.org>
+
+	* selectors.cc (decode_selectors): If we're at the beginning of
+	the composite selector string, parse h: if it's there.  Takes a
+	couple of new arguments, to return a flag saying only the heads
+	of the selection should be used, and an input flag saying if the
+	current selector is the first or not.
+	(complete_selectors, parse_selector): Adjust.
+	* commands.cc (complete): Use the new "heads only" selector.
+	* automate.cc (automate_select): Dito.
+
+	* tests/t_heads_of_certs.at: New test.
+	* testsuite.at: Use it.
+
 2005-07-18  Matt Johnston  <matt@ucc.asn.au>
 
 	* keys.cc (get_passphrase): don't bomb out if they type an empty passphrase.
