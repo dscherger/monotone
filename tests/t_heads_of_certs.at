@@ -1,4 +1,4 @@
-AT_SETUP([selecting arbitrary certs])
+AT_SETUP([selecting headmost arbitrary certs])
 MONOTONE_SETUP
 
 ADD_FILE(testfile, [this is just a file
@@ -26,6 +26,7 @@ AT_CHECK(grep 'has multiple ambiguous expansions' stderr, [0], [ignore])
 # Check that a log with h: succeeds...
 AT_CHECK(MONOTONE log --revision='h:c:testcert', [], [stdout], [ignore])
 # Note that if the third revision is in the log, something else is wrong...
+# There is really no case for this last test, just paranoia.
 AT_CHECK(grep $THIRD stdout, [1], [ignore], [ignore])
 
 AT_CLEANUP
