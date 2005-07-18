@@ -1,3 +1,7 @@
+2005-07-18  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: More bugfixing, passes first unit test.
+
 2005-07-16  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc: Bugfixing, copy-on-write, attribute support.

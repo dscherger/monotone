@@ -168,6 +168,7 @@ attach and detach lists:
 
 #include <algorithm>
 #include <deque>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stack>
@@ -188,6 +189,7 @@ attach and detach lists:
 
 using std::deque;
 using std::map;
+using std::ostream;
 using std::pair;
 using std::set;
 using std::stack;
@@ -287,6 +289,11 @@ operator<(dirent_t const & a,
   return *a < *b;
 }
 
+ostream &
+operator<<(ostream & o, dirent_t const & d)
+{
+  return o << d->val;
+}
 
 struct 
 dirent_hash
@@ -508,10 +515,13 @@ file_node::shallow_copy() const
   f->ident = ident;
   f->parent = parent;
   f->name = name;
+
   if (fancy)
     f->fancy.reset(new fancy_part(*fancy));
 
   f->content = content;
+
+  // L(F("shallow-copied file node %d='%s'\n") % ident % name);
 
   return f;
 }
@@ -539,7 +549,7 @@ void
 dir_node::add_child(dirent_t name, node_t n)
 {
   I(!contains_entry(name));
-  L(F("parent %d adding child %d = '%s'\n") % ident % n->ident % name->val);
+  // L(F("parent %d adding child %d = '%s'\n") % ident % n->ident % name->val);
   n->name = name;
   n->parent = ident;
   entries.insert(make_pair(name,n));
@@ -589,7 +599,8 @@ dfs_iter
 
   dfs_iter(dir_t root)
   {
-    stk.push(make_pair(root, root->entries.begin()));
+    if (!root->entries.empty())
+      stk.push(make_pair(root, root->entries.begin()));
   }
 
   bool finished()
@@ -599,11 +610,15 @@ dfs_iter
 
   dir_t cwd()
   {
+    I(!stk.empty());
     return stk.top().first;
   }
 
   node_t operator*()
   {
+    I(!stk.empty());
+    //     L(F("dfs_iter dereferencing node in '%s'\n") 
+    //       % stk.top().first->name);
     return stk.top().second->second;
   }
 
@@ -611,7 +626,6 @@ dfs_iter
   {
     if (stk.empty())
       return;
-
 
     node_t ntmp = stk.top().second->second;
     if (is_dir_t(ntmp))
@@ -639,12 +653,12 @@ bfs_iter
   deque<node_t> q;
   bfs_iter(node_t root)
   {
-    if (is_dir_t(root))
-      L(F("bfs_iter starting with node %d (%d children)\n") 
-	% root->ident % downcast_to_dir_t(root)->entries.size());
-    else
-      L(F("bfs_iter starting with node %d\n") 
-	% root->ident);
+    //     if (is_dir_t(root))
+    //       L(F("bfs_iter starting with node %d (%d children)\n") 
+    // 	% root->ident % downcast_to_dir_t(root)->entries.size());
+    //     else
+    //       L(F("bfs_iter starting with node %d\n") 
+    // 	% root->ident);
     q.push_back(root);
   }
 
@@ -670,8 +684,8 @@ bfs_iter
 	for (dirmap_t::const_iterator i = tmp->entries.begin();
 	     i != tmp->entries.end(); ++i)
 	  {
-	    L(F("bfs_iter adding node %d, child fo %d\n") 
-	      % i->second->ident % tmp->ident);
+            // 	    L(F("bfs_iter adding node %d, child of %d\n") 
+            // 	      % i->second->ident % tmp->ident);
 	    q.push_back(i->second);
 	  }
       }
@@ -684,6 +698,11 @@ static bool
 shallow_equal(node_t const & a,
 	      node_t const & b)
 {
+  //   L(F("shallow equal: idents (%d,%d), parents (%d,%d), names (%s,%s)\n")
+  //     % a->ident % b->ident
+  //     % a->parent % b->parent
+  //     % a->name % b->name);
+
   if ((a->ident != b->ident)
       || (a->parent != b->parent)
       || (a->name != b->name))      
@@ -703,6 +722,7 @@ shallow_equal(node_t const & a,
     {
       file_t fa = downcast_to_file_t(a);
       file_t fb = downcast_to_file_t(b);
+      //       L(F("files: content %s vs %s\n") % fa->content % fb->content);
       if (! (fa->content == fb->content))
 	return false;
       return true;
@@ -712,8 +732,20 @@ shallow_equal(node_t const & a,
     {
       dir_t da = downcast_to_dir_t(a);
       dir_t db = downcast_to_dir_t(b);
-      if (da->entries != db->entries)
-	return false;
+      dirmap_t::const_iterator di = da->entries.begin();
+      dirmap_t::const_iterator dj = db->entries.begin();
+      while (di != da->entries.end() && dj != db->entries.end())
+        {
+          if (di->first != dj->first)
+            return false;
+          if (di->second->ident != dj->second->ident)
+            return false;
+          ++di;
+          ++dj;
+        }
+      if (di != da->entries.end() ||
+          dj != db->entries.end())
+        return false;
       return true;
     }
   else
@@ -751,7 +783,7 @@ dir_node::contains_entry(dirent_t p) const
 node_t 
 dir_node::get_entry(dirent_t p) const
 {
-  L(F("dir_node::get_entry(\"%s\")\n") % p->val);
+  // L(F("dir_node::get_entry(\"%s\")\n") % p->val);
   dirmap_t::const_iterator i = entries.find(p);
   I(i != entries.end());
   return i->second;
@@ -764,10 +796,14 @@ dir_node::shallow_copy() const
   d->generation = 0;
   d->ident = ident;
   d->parent = parent;
+  d->name = name;
+
   if (fancy)
     d->fancy.reset(new fancy_part(*fancy));
 
   d->entries = entries;
+
+  // L(F("shallow-copied directory node %d='%s'\n") % ident % name);
 
   return d;
 }
@@ -892,6 +928,7 @@ mfest::make_dir()
   dir_t n(new dir_node());
   n->ident = ++max_ident;
   n->parent = nursery_ident;
+  //   L(F("produced new dir %d\n") % n->ident);
   nodes.insert(make_pair(n->ident, n));
   return n;
 }
@@ -902,6 +939,7 @@ mfest::make_file()
   file_t n(new file_node());
   n->ident = ++max_ident;
   n->parent = nursery_ident;
+  //   L(F("produced new file %d\n") % n->ident);
   nodes.insert(make_pair(n->ident, n));
   return n;
 }
@@ -916,12 +954,23 @@ mfest::check_sane() const
   // directory for absence of cycle-forming edges and agreement
   // between names.
 
-  L(F("mfest sanity check beginning...\n"));
+  //   L(F("mfest sanity check beginning...\n"));
   for(bfs_iter i(root); !i.finished(); ++i)
     {
-      path_vec_t v;
-      get_path(*i, v);
-      L(F("tree iter visiting %s\n") % v.to_file_path());
+      //       if ((*i)->live())
+      //         {
+      //           path_vec_t v;
+      //           get_path(*i, v);
+      //           L(F("tree iter visiting live node %d = '%s'\n") 
+      //             % (*i)->ident
+      //             % v.to_file_path());
+      //         }
+      //       else
+      //         {
+      //           L(F("tree iter visiting %s node %d\n") 
+      //             % ((*i)->unborn() ? "unborn" : "killed")
+      //             % (*i)->ident);
+      //         }
       I(seen.find((*i)->ident) == seen.end());
       seen.insert((*i)->ident);
     }
@@ -933,16 +982,27 @@ mfest::check_sane() const
   for (node_map_t::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
-      path_vec_t v;
-      get_path(i->second, v);
-      L(F("set iter visiting %s\n") % v.to_file_path());
+      //       if (i->second->live())
+      //         {
+      //           path_vec_t v;
+      //           get_path(i->second, v);
+      //           L(F("set iter visiting live node %d = '%s'\n") 
+      //             % i->first
+      //             % v.to_file_path());
+      //         }
+      //       else
+      //         {
+      //           L(F("set iter visiting %s node %d\n") 
+      //             % (i->second->unborn() ? "unborn" : "killed")
+      //             % i->first);
+      //         }
+      I(i->first == i->second->ident);
       if (i->second->live())
 	{
 	  I(seen.find(i->first) != seen.end());
 	}
-      I(i->first == i->second->ident);
     }    
-  L(F("mfest sanity check done"));
+  //   L(F("mfest sanity check done"));
 }
 
 bool 
@@ -992,7 +1052,7 @@ mfest::dir_exists(file_path dp) const
 node_t 
 mfest::get_node(ident_t i) const
 {
-  L(F("mfest::get_node(%s)\n") % i);
+  // L(F("mfest::get_node(%s)\n") % i);
   node_map_t::const_iterator j = nodes.find(i);
   I(j != nodes.end());
   return j->second;
@@ -1045,6 +1105,7 @@ void
 mfest::get_path(node_t const & n, 
 		path_vec_t & path) const
 {
+  I(n->live());
   path.dir.clear();
   path.leaf = n->name;
   ident_t i = n->parent;
@@ -1086,7 +1147,7 @@ mfest::get_containing_dir_node(path_vec_t const & v,
 {  
   if (root->generation < write_generation)
     {
-      L(F("upgrading root to write generation %d\n") % write_generation);
+      // L(F("upgrading root to write generation %d\n") % write_generation);
       root = downcast_to_dir_t(root->shallow_copy());
       root->generation = write_generation;
       nodes.erase(root->ident);
@@ -1152,15 +1213,19 @@ mfest::get_file_node(ident_t i, gen_t write_generation)
 bool 
 mfest::operator==(mfest const & other) const
 {
+  // L(F("comparing manifests: max ident %d vs. %d\n") 
+  //   % max_ident % other.max_ident);
   if (max_ident != other.max_ident)
     return false;
 
+  //   L(F("comparing manifests: deep_equal\n"));
   if (!deep_equal(root, other.root))
     return false;
 
   for (node_map_t::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
+      //       L(F("comparing manifests: node %d\n") % i->first);
       node_map_t::const_iterator j = other.nodes.find(i->first);
 
       if (j == other.nodes.end())
@@ -1483,9 +1548,13 @@ check_mfests_agree(mfest const & a,
 void 
 cset::check_sane() const
 {
+  //   L(F("cset::check_sane checking prestate manifest sanity...\n"));
   old_mfest.check_sane();
+  //   L(F("cset::check_sane checking poststate manifest sanity...\n"));
   new_mfest.check_sane();
+  //   L(F("cset::check_sane checking pre/post agreement...\n"));
   check_mfests_agree(old_mfest, new_mfest);
+  //   L(F("cset::check_sane OK\n"));
 }
 
 
