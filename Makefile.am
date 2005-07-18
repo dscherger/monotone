@@ -47,7 +47,8 @@ MOST_SOURCES =								\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
          package_revision.c package_revision.h				\
-         package_full_revision.c package_full_revision.h options.hh
+         package_full_revision.c package_full_revision.h options.hh	\
+         netxx_pipe.cc
 
 NETXX_SOURCES =									\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx			\
@@ -180,7 +181,7 @@ monotone_LDFLAGS =
 monotone_CPPFLAGS =
 
 unit_tests_LDFLAGS = 
-unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS
+unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I.
 
 # conditionals from configury
 

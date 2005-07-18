@@ -1,0 +1,6 @@
+Netxx::Socket's read and write methods are not virtual
+Netxx::Socket calls WSASetup on Windows unconditionally. This is not needed
+for pipes. So a Pipe is not a Socket ...
+
+Trying to derive from StreamBase ...
+... should be possible if we modify the Probe(Info) code
