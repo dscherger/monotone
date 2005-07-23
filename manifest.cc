@@ -27,7 +27,6 @@
 // and i/o functions on them. a manifest specifies exactly which versions
 // of each file reside at which path location in a given tree.
 
-using namespace boost;
 using namespace std;
 
 // building manifest_maps
@@ -119,19 +118,19 @@ classify_manifest_paths(app_state & app,
             }
 
           // ...ah, well, no good fingerprint, just check directly.
-          if (file_exists(i->first))
+          file_id ident;
+          if (ident_existing_file(i->first, ident, app.lua))
             {
-              hexenc<id> ident;
-              calculate_ident(i->first, ident, app.lua);
-
-              if (ident == i->second.inner())
+              if (ident == i->second)
                 unchanged.insert(i->first);
               else
                 changed.insert(i->first);
-
             }
           else
-            missing.insert(i->first);
+            {
+              missing.insert(i->first);
+            }
+
         }
       else
         {
@@ -179,11 +178,10 @@ build_restricted_manifest_map(path_set const & paths,
             }
 
           // ...ah, well, no good fingerprint, just check directly.
-          if (file_exists(*i))
+          file_id ident;
+          if (ident_existing_file(*i, ident, app.lua))
             {
-              hexenc<id> ident;
-              calculate_ident(*i, ident, app.lua);
-              m_new.insert(manifest_entry(*i, file_id(ident)));
+              m_new.insert(manifest_entry(*i, ident));
             }
           else
             {

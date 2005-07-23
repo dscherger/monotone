@@ -3,6 +3,8 @@
 #include <vector>
 #ifdef WIN32
 #include <io.h> /* for chdir() */
+#else
+#include <unistd.h> /* for chdir() on POSIX */
 #endif
 #include <cstdlib>              // for strtoul()
 
@@ -31,7 +33,8 @@ static string const key_option("key");
 
 app_state::app_state() 
   : branch_name(""), db(""), stdhooks(true), rcfiles(true), diffs(false),
-    search_root("/"), depth(-1), last(-1), verbose(false)
+    no_merges(false), set_default(false), verbose(false), search_root("/"),
+    depth(-1), last(-1), diff_format(unified_diff), diff_args_provided(false)
 {
   db.set_app(this);
 }
@@ -83,9 +86,11 @@ app_state::allow_working_copy()
 }
 
 void 
-app_state::require_working_copy()
+app_state::require_working_copy(std::string const & explanation)
 {
-  N(found_working_copy, F("working copy directory required but not found"));
+  N(found_working_copy,
+    F("working copy directory required but not found%s%s")
+    % (explanation.empty() ? "" : "\n") % explanation);
   write_options();
 }
 
@@ -338,6 +343,25 @@ void
 app_state::add_revision(utf8 const & selector)
 {
   revision_selectors.push_back(selector);
+}
+
+void
+app_state::add_exclude(utf8 const & exclude_pattern)
+{
+  exclude_patterns.insert(exclude_pattern);
+}
+
+void
+app_state::set_diff_format(diff_type dtype)
+{
+  diff_format = dtype;
+}
+
+void
+app_state::set_diff_args(utf8 const & args)
+{
+  diff_args_provided = true;
+  diff_args = args;
 }
 
 void

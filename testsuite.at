@@ -327,7 +327,7 @@ function get_netsync_read_permitted(pattern, identity)
 	return true
 end
 
-function get_netsync_write_permitted(pattern, identity)
+function get_netsync_write_permitted(identity)
 	return true
 end
 ])
@@ -380,13 +380,13 @@ rm -f monotone_at.pid 2>/dev/null
 # note that NETSYNC_SERVE_START is _not_ a special case of this macro.
 m4_define([NETSYNC_SERVE_N_START], [
 NETSYNC_KILLHARD
-MONOTONE --db=test$1.db --rcfile=netsync.lua --pid-file=monotone_at.pid serve localhost:$_PORT $2 &
+MONOTONE --db=test$1.db --rcfile=netsync.lua --pid-file=monotone_at.pid serve localhost:$_PORT m4_if($2, [], "*", $2) &
 sleep 4
 ])
 # run as NETSYNC_SERVE_START(pattern)
 m4_define([NETSYNC_SERVE_START], [
 NETSYNC_KILLHARD
-MONOTONE --rcfile=netsync.lua --pid-file=monotone_at.pid serve localhost:$_PORT $1 &
+MONOTONE --rcfile=netsync.lua --pid-file=monotone_at.pid serve localhost:$_PORT m4_if($1, [], "*", $1) &
 sleep 4
 ])
 # run as NETSYNC_SERVE_STOP
@@ -659,4 +659,21 @@ m4_include(tests/t_restricted_commit_with_inodeprints.at)
 m4_include(tests/t_merge_manual.at)
 m4_include(tests/t_revert_restrict.at)
 m4_include(tests/t_status.at)
-
+m4_include(tests/t_cvsimport_drepper2.at)
+m4_include(tests/t_rcfile_dir.at)
+m4_include(tests/t_lua_includedir.at)
+m4_include(tests/t_existsonpath.at)
+m4_include(tests/t_db_kill_branch_certs_locally.at)
+m4_include(tests/t_netsync_globs.at)
+m4_include(tests/t_set_default.at)
+m4_include(tests/t_netsync_read_permissions.at)
+m4_include(tests/t_netsync_exclude.at)
+m4_include(tests/t_netsync_exclude_default.at)
+m4_include(tests/t_ambiguous_tags.at)
+m4_include(tests/t_kill_tag_locally.at)
+m4_include(tests/t_restricted_diff_unchanged.at)
+m4_include(tests/t_selector_globbing.at)
+m4_include(tests/t_diff_external.at)
+m4_include(tests/t_migrate_broken_schema.at)
+m4_include(tests/t_ls_branches.at)
+m4_include(tests/t_database_check_normalized.at)

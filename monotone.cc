@@ -8,6 +8,7 @@
 
 #include "popt/popt.h"
 #include <cstdio>
+#include <strings.h>
 #include <iterator>
 #include <iostream>
 #include <fstream>
@@ -56,6 +57,12 @@ struct poptOption coptions[] =
     {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, "print a brief version of the normal output", NULL},
     {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, "print diffs along with logs", NULL},
     {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, "skip merges when printing logs", NULL},
+    {"set-default", 0, POPT_ARG_NONE, NULL, OPT_SET_DEFAULT, "use the current arguments as the future default", NULL},
+    {"exclude", 0, POPT_ARG_STRING, &argstr, OPT_EXCLUDE, "leave out branches matching a pattern", NULL},
+    {"unified", 0, POPT_ARG_NONE, NULL, OPT_UNIFIED_DIFF, "Use unified diff format", NULL},
+    {"context", 0, POPT_ARG_NONE, NULL, OPT_CONTEXT_DIFF, "Use context diff format", NULL},
+    {"external", 0, POPT_ARG_NONE, NULL, OPT_EXTERNAL_DIFF, "Use external diff hook for generating diffs", NULL},
+    {"diff-args", 0, POPT_ARG_STRING, &argstr, OPT_EXTERNAL_DIFF_ARGS, "Argument to pass external diff hook", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -247,7 +254,7 @@ cpp_main(int argc, char ** argv)
 
   L(F("set locale: LC_CTYPE=%s, LC_MESSAGES=%s\n")
     % (setlocale(LC_CTYPE, NULL) == NULL ? "n/a" : setlocale(LC_CTYPE, NULL))
-    % (setlocale(LC_MESSAGES, NULL) == NULL ? "n/a" : setlocale(LC_CTYPE, NULL)));
+    % (setlocale(LC_MESSAGES, NULL) == NULL ? "n/a" : setlocale(LC_MESSAGES, NULL)));
 
   // decode all argv values into a UTF-8 array
 
@@ -388,12 +395,36 @@ cpp_main(int argc, char ** argv)
               app.no_merges = true;
               break;
 
+            case OPT_SET_DEFAULT:
+              app.set_default = true;
+              break;
+
+            case OPT_EXCLUDE:
+              app.add_exclude(utf8(string(argstr)));
+              break;
+
             case OPT_PIDFILE:
               app.set_pidfile(absolutify(tilde_expand(string(argstr))));
               break;
 
             case OPT_ARGFILE:
               my_poptStuffArgFile(ctx(), utf8(string(argstr)));
+              break;
+
+            case OPT_UNIFIED_DIFF:
+              app.set_diff_format(unified_diff);
+              break;
+
+            case OPT_CONTEXT_DIFF:
+              app.set_diff_format(context_diff);
+              break;
+
+            case OPT_EXTERNAL_DIFF:
+              app.set_diff_format(external_diff);
+              break;
+              
+            case OPT_EXTERNAL_DIFF_ARGS:
+              app.set_diff_args(utf8(string(argstr)));
               break;
 
             case OPT_HELP:

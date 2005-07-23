@@ -33,6 +33,7 @@ public:
   bool rcfiles;
   bool diffs;
   bool no_merges;
+  bool set_default;
   bool verbose;
   options_map options;
   utf8 message;
@@ -41,6 +42,7 @@ public:
   utf8 author;
   utf8 search_root;
   std::vector<utf8> revision_selectors;
+  std::set<utf8> exclude_patterns;
   std::vector<utf8> extra_rcfiles;
   path_set restrictions;
   file_path relative_directory;
@@ -48,9 +50,12 @@ public:
   long depth;
   long last;
   fs::path pidfile;
+  diff_type diff_format;
+  bool diff_args_provided;
+  utf8 diff_args;
 
   void allow_working_copy();
-  void require_working_copy();
+  void require_working_copy(std::string const & explanation = "");
   void create_working_copy(std::string const & dir);
 
   file_path prefix(utf8 const & path);
@@ -79,6 +84,9 @@ public:
   void set_last(long last);
   void set_pidfile(utf8 const & pidfile);
   void add_revision(utf8 const & selector);
+  void add_exclude(utf8 const & exclude_pattern);
+  void set_diff_format(diff_type dtype);
+  void set_diff_args(utf8 const & args);
 
   void set_stdhooks(bool b);
   void set_rcfiles(bool b);
