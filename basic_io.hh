@@ -151,6 +151,7 @@ namespace basic_io
     std::vector<std::pair<std::string, std::string> > entries;
     void push_hex_pair(std::string const & k, std::string const & v);
     void push_str_pair(std::string const & k, std::string const & v);
+    void push_str_triple(std::string const & k, std::string const & n, std::string const & v);
   };
 
   struct 

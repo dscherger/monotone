@@ -2199,6 +2199,12 @@ namespace
 {
   namespace syms
   {
+    // mfest symbols
+    std::string const dir("dir");
+    std::string const file("file");
+    std::string const content("content");
+
+    // cset symbols
     std::string const set_heir("set_heir");
     std::string const delete_node("delete");
     std::string const rename_node("rename");
@@ -2442,6 +2448,91 @@ write_cset(cset const & cs,
   dat = data(oss.str());  
 }
 
+void
+parse_mfest(basic_io::parser & p, 
+	    mfest & m)
+{
+  cset c;
+  std::string pth, n, v;
+  while (p.symp())
+    {
+      if (p.symp(syms::dir))
+	{
+	  p.sym();
+	  p.str(pth);
+	  c.add_dir(file_path(pth));
+	}
+      else if (p.symp(syms::file))
+	{
+	  p.sym();
+	  p.str(pth);
+	  c.add_file(file_path(pth));
+	}
+      else break;
+
+      // if we got here, we read either a dir or file
+      while (p.symp(syms::attr))
+	{
+	  p.sym();
+	  p.str(n);
+	  p.str(v);
+	  c.set_attr(file_path(pth), n, v);
+	}
+    }
+
+  // now store the results into the provided mfest
+  m.reset(c.new_mfest);
+}
+
+void
+print_mfest(basic_io::printer & p,
+	    mfest const & m)
+{
+  for (dfs_iter i(m.root); !i.finished(); ++i)
+    {
+      node_t curr = *i;
+      basic_io::stanza st;
+      if (is_dir_t(curr))
+	st.push_str_pair(syms::dir, curr->name->val);
+      else
+	{
+	  file_t ftmp = downcast_to_file_t(curr);
+	  st.push_str_pair(syms::file, curr->name->val);
+	  st.push_hex_pair(syms::content, ftmp->content.inner()());
+	}
+      if (curr->has_attrs())
+	{
+	  for (map<attr_name, attr_val>::const_iterator j = curr->fancy->attrs.begin();
+	       j != curr->fancy->attrs.end(); ++j)
+	    st.push_str_triple(syms::attr, j->first, j->second);
+	}
+    }
+  
+}
+
+void
+read_mfest(data const & dat,
+	   mfest & mf)
+{
+  std::istringstream iss(dat());
+  basic_io::input_source src(iss, "mfest");
+  basic_io::tokenizer tok(src);
+  basic_io::parser pars(tok);
+  parse_mfest(pars, mf);
+  I(src.lookahead == EOF);
+  mf.check_sane();
+}
+
+void
+write_mfest(mfest const & mf,
+	    data & dat)
+{
+  mf.check_sane();
+  std::ostringstream oss;
+  basic_io::printer pr(oss);
+  print_mfest(pr, mf);
+  dat = data(oss.str());  
+}
 
 
 
@@ -2456,10 +2547,27 @@ write_cset(cset const & cs,
 file_id null_file_id;
 
 static void
+spin_mfest(mfest const & m)
+{
+  data tmp;
+  mfest m1, m2;
+  m1.reset(m);
+  for (unsigned i = 0; i < 5; ++i)
+    {
+      write_mfest(m1, tmp);
+      read_mfest(tmp, m2);
+      I(m1 == m2);
+      m1.reset(m2);
+    }
+}
+
+static void
 spin_cset(cset const & cs)
 {
   data tmp1;
   cset cs1;
+  spin_mfest(cs.old_mfest);
+  spin_mfest(cs.new_mfest);
   write_cset(cs, tmp1);
   read_cset(tmp1, cs1);
   for (int i = 0; i < 5; ++i)
@@ -2470,8 +2578,10 @@ spin_cset(cset const & cs)
       BOOST_CHECK(tmp1 == tmp2);
       read_cset(tmp2, cs2);
       BOOST_CHECK(cs1 == cs2);
-      cs1 = cs2;
-    }
+      cs1 = cs2;      
+      spin_mfest(cs2.old_mfest);
+      spin_mfest(cs2.new_mfest);
+    }  
 }
 
 static void 
