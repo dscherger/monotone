@@ -1,3 +1,31 @@
+2005-07-22  Matt Johnston  <matt@ucc.asn.au>
+
+	* database_check.cc: check that revisions and manifests
+	are normalised to the same for that they would be written as.
+	* tests/t_database_check_normalized.at: a test for it.
+	* testsuite.at: add it.
+
+2005-07-21  Richard Levitte  <richard@levitte.org>
+
+	* contrib/monotone-import.pl: Now uses the given tag.
+
+2005-07-20  Marcel van der Boom  <marcel@hsdev.com>
+
+	* database.{cc,hh} (get_branches): New method.
+	* commands.cc (ls_branches): Use it.
+	* netsync.cc (get_branches): Likewise.
+	* tests/t_ls_branches.at: New test.
+	* testsuite.at: Add it.
+	
+2005-07-20  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (db): Rename kill_branch_locally to
+	kill_branch_certs_locally.
+	* tests/t_db_kill_branch_locally.at: Rename to...
+	* tests/t_db_kill_branch_certs_locally.at: ...this.  Update.
+	* testsuite.at: Update.
+	* monotone.texi (Database): Update.
+
 2005-07-19  Nathaniel Smith  <njs@pobox.com>
 
 	* schema_migration.cc (migrator::migrate): Add a check for schemas
