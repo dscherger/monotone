@@ -3,19 +3,18 @@
 nodes:
 ~~~~~~
 
- a node is either a file or a directory. nodes have attributes, an
- ident, a parent-ident, and a set of heirs and sires. directory nodes
- have a map of children and a map of clobbered-children. file nodes
- have a content hash. see below for the definitions of these members.
+ a node is either a file or a directory. nodes have attributes, an ident, a
+ parent-ident, possibly an heir, and a set of sires. directory nodes have a
+ map of children and a map of clobbered-children. file nodes have a content
+ hash. see below for the definitions of these members.
 
 
 mfests:
 ~~~~~~~
 
- an mfest is an index-set of nodes X and a tree T of nodes starting
- from a root. the index X maps ident numbers to shared pointers into
- T. there may be entries in X which are not in T. T must always be a
- well-formed tree.
+ an mfest is an index-set of nodes X and a tree T of nodes starting from a
+ root. the index X maps ident numbers to shared pointers into T. there may
+ be entries in X which are not in T. T must always be a well-formed tree.
 
  an mfest has a normal form, in which:
  
@@ -31,10 +30,10 @@ csets:
 ~~~~~~
 
  a cset is a pair of mfests A, B. the mfests in a cset are *not*
- normalized. it is an invariant that idents(A.X) = idents(B.X), but it
- is only sometimes true that idents(A.T) = idents(B.T); some nodes
- might be present in one mfest's tree but absent from the other's (if
- they were added or deleted).
+ normalized. it is an invariant that idents(A.X) = idents(B.X), but it is
+ only sometimes true that idents(A.T) = idents(B.T); some nodes might be
+ present in one mfest's tree but absent from the other's (if they were
+ added or deleted).
 
 
 change_consumers:
@@ -69,22 +68,24 @@ change_consumers:
 heirs and sires:
 ~~~~~~~~~~~~~~~~
 
- nodes may have heirs or sires. only nodes being deleted in a cset may
- have an heir; only nodes being added in a cset may have a sire. the
- heir of a node is a target to send future content deltas and
- attributes to; it is a "forwarding address" used in cases where 
- two files with separate histories are considered identical in a merge
- and "sutured": one node is deleted, and it marks the other node as an
+ nodes may have heirs or sires. only nodes being deleted in a cset may have
+ an heir; only nodes being added in a cset may have a sire. a node may have
+ at most one heir. the heir of a node is a target to send future content
+ deltas and attributes to; it is a "forwarding address" used in cases where
+ two files with separate histories are considered identical in a merge and
+ "sutured": one node is deleted, and it marks the other node as an
  heir. the name of the heir is looked up in the new manifest.
 
  only attribute and content-merging passes care about heirs and sires.
  they do not affect lifecycle decisions during merging.
 
- an added node A has a node S as sire in cset C iff there is a cset C'
- in which A was being deleted with heir S, and C' = inverse(C). in
- other words, sires exist *only* to preserve information about heirs
- during cset inversion. there are no user-accessible primitives for
- creating sire relationships.
+ an added node A has a node S as sire in cset C iff there is a cset C' in
+ which A was being deleted with heir S, and C' = inverse(C). in other
+ words, sires exist *only* to preserve information about heirs during cset
+ inversion. there are no user-accessible primitives for creating sire
+ relationships. a node S may be the sire of many other nodes N1,...,Nk, if
+ multiple Nk consider S their heir. the sire relationship is therefore a
+ set.
 
 
 generation numbers:
@@ -166,6 +167,7 @@ attach and detach lists:
 #define __STDC_CONSTANT_MACROS
 #define __STDC_LIMIT_MACROS
 
+
 #include <algorithm>
 #include <deque>
 #include <iostream>
@@ -175,17 +177,23 @@ attach and detach lists:
 #include <string>
 #include <vector>
 
+
 #include <ext/hash_map>
 #include <ext/hash_set>
 
+
+#include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem/path.hpp>
 
+
 #include "basic_io.hh"
+#include "constants.hh"
 #include "numeric_vocab.hh"
 #include "sanity.hh"
 #include "vocab.hh"
+
 
 using std::deque;
 using std::map;
@@ -198,11 +206,13 @@ using std::vector;
 using std::inserter;
 using std::copy;
 using std::make_pair;
+using boost::lexical_cast;
 using boost::scoped_ptr;
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
 using __gnu_cxx::hash_map;
 using __gnu_cxx::hash_set;
+
 
 struct node;
 struct dir_node;
@@ -211,6 +221,7 @@ struct dir_entry;
 struct dirent_t_cmp;
 struct dirent_hash;
 struct dirent_eq;
+
 
 namespace __gnu_cxx
 {
@@ -222,6 +233,7 @@ namespace __gnu_cxx
     { return static_cast<size_t>(__x); }
   };
 }
+
 
 typedef uint64_t ident_t;
 typedef uint64_t gen_t;
@@ -235,14 +247,18 @@ typedef hash_set<dirent_t, dirent_hash, dirent_eq> dirset_t;
 typedef string attr_name;
 typedef string attr_val;
 
+
 static ident_t
 null_ident = 0;
   
+
 static ident_t 
 nursery_ident = 1;
 
+
 static ident_t 
 graveyard_ident = 2;
+
 
 struct
 ident_source
@@ -251,6 +267,7 @@ ident_source
   ident_source() : ctr(graveyard_ident + 1) {}
   ident_t next() { I(ctr != UINT64_MAX); return ctr++; }
 };
+
 
 //==================================================================
 // dirents and paths
@@ -279,8 +296,10 @@ dir_entry
   }
 };
 
+
 dirent_t
 null_dirent(new dir_entry(""));
+
 
 bool
 operator<(dirent_t const & a,
@@ -289,11 +308,13 @@ operator<(dirent_t const & a,
   return *a < *b;
 }
 
+
 ostream &
 operator<<(ostream & o, dirent_t const & d)
 {
   return o << d->val;
 }
+
 
 struct 
 dirent_hash
@@ -304,6 +325,7 @@ dirent_hash
   }
 };
 
+
 struct 
 dirent_eq
 {
@@ -313,6 +335,7 @@ dirent_eq
     return *a == *b;
   }
 };
+
 
 // this helper class represents an "unpacked" view of the path
 // through a tree of directory nodes to some specific leaf (either
@@ -329,27 +352,41 @@ path_vec_t
   {
   }
 
-  path_vec_t(file_path const & f)
+  static dirent_t intern_component(string const & s)
+  {
+    dirent_t tmp(new dir_entry(s));
+    dirset_t::const_iterator i = dset.find(tmp);
+    if (i == dset.end())
+      {
+        dset.insert(tmp);
+      }
+    else
+      {
+        tmp = *i;
+      }
+    return tmp;
+  }
+
+  static path_vec_t from_file_path(file_path const & f)
   {
     fs::path fp(f());
+    path_vec_t pv;
     for (fs::path::iterator i = fp.begin(); 
 	 i != fp.end(); ++i)
       {
-	dirent_t tmp(new dir_entry(*i));
-	dirset_t::const_iterator j = dset.find(tmp);
-	if (j == dset.end())
-	  {
-	    dset.insert(tmp);
-	  }
-	else
-	  {
-	    tmp = *j;
-	  }
-	dir.push_back(tmp);
+	dirent_t tmp = intern_component(*i);
+	pv.dir.push_back(tmp);
       }
-    I(!dir.empty());
-    leaf = dir.back();
-    dir.pop_back();
+    I(!pv.dir.empty());
+    pv.leaf = pv.dir.back();
+    pv.dir.pop_back();
+    return pv;
+  }
+
+  void operator/=(dirent_t d)
+  {
+    dir.push_back(leaf);
+    leaf = d;
   }
 
   file_path to_file_path() const
@@ -366,6 +403,7 @@ path_vec_t
 
 };
 
+
 //==================================================================
 // nodes
 //==================================================================
@@ -373,6 +411,7 @@ path_vec_t
 // static bucket of shared pointers
 dirset_t
 path_vec_t::dset;
+
 
 struct 
 node
@@ -497,6 +536,7 @@ node
   virtual ~node() {}  
 };
 
+
 struct 
 file_node 
   : public node
@@ -506,6 +546,7 @@ file_node
   virtual node_t shallow_copy() const;
   virtual ~file_node() {}
 };
+
 
 node_t 
 file_node::shallow_copy() const
@@ -545,6 +586,7 @@ dir_node
   virtual ~dir_node() {}
 };
 
+
 void 
 dir_node::add_child(dirent_t name, node_t n)
 {
@@ -555,12 +597,14 @@ dir_node::add_child(dirent_t name, node_t n)
   entries.insert(make_pair(name,n));
 }
 
+
 void 
 dir_node::drop_child(dirent_t c)
 {
   I(contains_entry(c));
   entries.erase(c);
 }
+
 
 static inline bool 
 is_dir_t(node_t n)
@@ -569,12 +613,14 @@ is_dir_t(node_t n)
   return static_cast<bool>(d);
 }
 
+
 static inline bool 
 is_file_t(node_t n)
 {
   file_t f = dynamic_pointer_cast<file_node, node>(n);
   return static_cast<bool>(f);
 }
+
 
 static inline dir_t 
 downcast_to_dir_t(node_t const n)
@@ -584,6 +630,7 @@ downcast_to_dir_t(node_t const n)
   return d;
 }
 
+
 static inline file_t 
 downcast_to_file_t(node_t const n)
 {
@@ -592,9 +639,13 @@ downcast_to_file_t(node_t const n)
   return f;
 }
 
+
 struct 
 dfs_iter
 {
+  // NB: the dfs_iter struct *does not return* the node it's
+  // constructed on, as part of its iteration 
+
   stack< pair<dir_t, dirmap_t::const_iterator> > stk;
 
   dfs_iter(dir_t root)
@@ -694,83 +745,6 @@ bfs_iter
 };
 
 
-static bool 
-shallow_equal(node_t const & a,
-	      node_t const & b)
-{
-  //   L(F("shallow equal: idents (%d,%d), parents (%d,%d), names (%s,%s)\n")
-  //     % a->ident % b->ident
-  //     % a->parent % b->parent
-  //     % a->name % b->name);
-
-  if ((a->ident != b->ident)
-      || (a->parent != b->parent)
-      || (a->name != b->name))      
-	return false;
-
-  if (a->fancy || b->fancy)
-    {
-      if (!(b->fancy && b->fancy))
-	return false;
-      if ((a->fancy->sire != b->fancy->sire)
-	  || (a->fancy->heir != b->fancy->heir)
-	  || (a->fancy->attrs != b->fancy->attrs))
-	return false;
-    }
-
-  if (is_file_t(a) && is_file_t(b))
-    {
-      file_t fa = downcast_to_file_t(a);
-      file_t fb = downcast_to_file_t(b);
-      //       L(F("files: content %s vs %s\n") % fa->content % fb->content);
-      if (! (fa->content == fb->content))
-	return false;
-      return true;
-    }
-
-  else if (is_dir_t(a) && is_dir_t(b))
-    {
-      dir_t da = downcast_to_dir_t(a);
-      dir_t db = downcast_to_dir_t(b);
-      dirmap_t::const_iterator di = da->entries.begin();
-      dirmap_t::const_iterator dj = db->entries.begin();
-      while (di != da->entries.end() && dj != db->entries.end())
-        {
-          if (di->first != dj->first)
-            return false;
-          if (di->second->ident != dj->second->ident)
-            return false;
-          ++di;
-          ++dj;
-        }
-      if (di != da->entries.end() ||
-          dj != db->entries.end())
-        return false;
-      return true;
-    }
-  else
-    return false;
-}
-
-static bool 
-deep_equal(node_t const & a,
-	   node_t const & b)
-{
-  bfs_iter pa(a), pb(b);
-  while (!(pa.finished() || pb.finished()))
-    {
-      if (!shallow_equal(*pa, *pb))
-	return false;
-      ++pa;
-      ++pb;
-    }
-
-  if (! (pa.finished() && pb.finished()))
-    return false;
-
-  return true;
-}
-
 bool 
 dir_node::contains_entry(dirent_t p) const
 {
@@ -780,6 +754,7 @@ dir_node::contains_entry(dirent_t p) const
   return true;
 }
 
+
 node_t 
 dir_node::get_entry(dirent_t p) const
 {
@@ -788,6 +763,7 @@ dir_node::get_entry(dirent_t p) const
   I(i != entries.end());
   return i->second;
 }
+
 
 node_t 
 dir_node::shallow_copy() const
@@ -842,12 +818,12 @@ deep_copy(node_t n)
 }
 
 
-
 //==================================================================
 // mfests
 //==================================================================
 
 typedef hash_map<ident_t, node_t> node_map_t;
+
 
 static void
 index_nodes(dir_t d, node_map_t & nodes)
@@ -855,6 +831,7 @@ index_nodes(dir_t d, node_map_t & nodes)
   for (bfs_iter i(d); !i.finished(); ++i)
     nodes.insert(make_pair((*i)->ident, *i));
 }
+
 
 struct 
 mfest
@@ -907,11 +884,11 @@ mfest
 };
 
 
-
 mfest::mfest(mfest const & other)
 {
   this->reset(other);
 }
+
 
 void
 mfest::reset(mfest const & other)
@@ -921,6 +898,7 @@ mfest::reset(mfest const & other)
   max_ident = other.max_ident;
   index_nodes(root, nodes);
 }
+
 
 dir_t 
 mfest::make_dir()
@@ -933,6 +911,7 @@ mfest::make_dir()
   return n;
 }
 
+
 file_t 
 mfest::make_file()
 {
@@ -944,6 +923,7 @@ mfest::make_file()
   return n;
 }
 
+
 void
 mfest::check_sane() const
 {
@@ -954,23 +934,23 @@ mfest::check_sane() const
   // directory for absence of cycle-forming edges and agreement
   // between names.
 
-  //   L(F("mfest sanity check beginning...\n"));
+  L(F("mfest sanity check beginning...\n"));
   for(bfs_iter i(root); !i.finished(); ++i)
     {
-      //       if ((*i)->live())
-      //         {
-      //           path_vec_t v;
-      //           get_path(*i, v);
-      //           L(F("tree iter visiting live node %d = '%s'\n") 
-      //             % (*i)->ident
-      //             % v.to_file_path());
-      //         }
-      //       else
-      //         {
-      //           L(F("tree iter visiting %s node %d\n") 
-      //             % ((*i)->unborn() ? "unborn" : "killed")
-      //             % (*i)->ident);
-      //         }
+             if ((*i)->live())
+               {
+                 path_vec_t v;
+                 get_path(*i, v);
+                 L(F("tree iter visiting live node %d = '%s'\n") 
+                   % (*i)->ident
+                   % v.to_file_path());
+               }
+             else
+               {
+                 L(F("tree iter visiting %s node %d\n") 
+                   % ((*i)->unborn() ? "unborn" : "killed")
+                   % (*i)->ident);
+               }
       I(seen.find((*i)->ident) == seen.end());
       seen.insert((*i)->ident);
     }
@@ -1002,13 +982,14 @@ mfest::check_sane() const
 	  I(seen.find(i->first) != seen.end());
 	}
     }    
-  //   L(F("mfest sanity check done"));
+  L(F("mfest sanity check done"));
 }
+
 
 bool 
 mfest::file_exists(file_path fp) const
 {
-  path_vec_t v(fp);
+  path_vec_t v = path_vec_t::from_file_path(fp);
   dir_t d = root;
   vector<dirent_t>::const_iterator i = v.dir.begin(), j = v.dir.end();
   while(i != j)
@@ -1027,10 +1008,11 @@ mfest::file_exists(file_path fp) const
     && is_file_t(d->get_entry(v.leaf));
 }
 
+
 bool 
 mfest::dir_exists(file_path dp) const
 {
-  path_vec_t v(dp);
+  path_vec_t v = path_vec_t::from_file_path(dp);
   dir_t d = root;
   vector<dirent_t>::const_iterator i = v.dir.begin(), j = v.dir.end();
   while(i != j)
@@ -1049,6 +1031,7 @@ mfest::dir_exists(file_path dp) const
     && is_dir_t(d->get_entry(v.leaf));
 }
 
+
 node_t 
 mfest::get_node(ident_t i) const
 {
@@ -1058,11 +1041,13 @@ mfest::get_node(ident_t i) const
   return j->second;
 }
 
+
 dir_t 
 mfest::get_dir_node(ident_t i) const
 {
   return downcast_to_dir_t(get_node(i));
 }
+
 
 file_t 
 mfest::get_file_node(ident_t i) const
@@ -1070,17 +1055,20 @@ mfest::get_file_node(ident_t i) const
   return downcast_to_file_t(get_node(i));
 }
 
+
 dir_t 
 mfest::get_dir_node(path_vec_t const & d) const
 {
   return downcast_to_dir_t(get_node(d));
 }
 
+
 file_t 
 mfest::get_file_node(path_vec_t const & f) const
 {
   return downcast_to_file_t(get_node(f));
 }
+
 
 dir_t 
 mfest::get_containing_dir_node(path_vec_t const & v) const
@@ -1095,11 +1083,13 @@ mfest::get_containing_dir_node(path_vec_t const & v) const
   return d;
 }
 
+
 node_t 
 mfest::get_node(path_vec_t const & n) const
 {
   return get_containing_dir_node(n)->get_entry(n.leaf);
 }
+
 
 void
 mfest::get_path(node_t const & n, 
@@ -1141,13 +1131,14 @@ ensure_node_meets_generation(mfest & m,
     }
 }
 
+
 dir_t 
 mfest::get_containing_dir_node(path_vec_t const & v,
 			       gen_t write_generation)
 {  
   if (root->generation < write_generation)
     {
-      // L(F("upgrading root to write generation %d\n") % write_generation);
+      L(F("upgrading root to write generation %d\n") % write_generation);
       root = downcast_to_dir_t(root->shallow_copy());
       root->generation = write_generation;
       nodes.erase(root->ident);
@@ -1165,6 +1156,7 @@ mfest::get_containing_dir_node(path_vec_t const & v,
   return d;
 }
 
+
 node_t 
 mfest::get_node(path_vec_t const & pth,
 		gen_t write_generation)
@@ -1175,12 +1167,14 @@ mfest::get_node(path_vec_t const & pth,
   return n;
 }
 
+
 dir_t 
 mfest::get_dir_node(path_vec_t const & pth,
 		    gen_t write_generation)
 {
   return downcast_to_dir_t(get_node(pth, write_generation));
 }
+
 
 file_t 
 mfest::get_file_node(path_vec_t const & pth,
@@ -1189,14 +1183,18 @@ mfest::get_file_node(path_vec_t const & pth,
   return downcast_to_file_t(get_node(pth, write_generation));
 }
 
+
 node_t 
 mfest::get_node(ident_t i, gen_t write_generation)
 {
   path_vec_t pth;
+  if (i == root->ident)
+    return root;
   node_t n = get_node(i);
   get_path(n, pth);
   return get_node(pth, write_generation);
 }
+
 
 dir_t 
 mfest::get_dir_node(ident_t i, gen_t write_generation)
@@ -1204,36 +1202,67 @@ mfest::get_dir_node(ident_t i, gen_t write_generation)
   return downcast_to_dir_t(get_node(i, write_generation));
 }
 
+
 file_t 
 mfest::get_file_node(ident_t i, gen_t write_generation)
 {
   return downcast_to_file_t(get_node(i, write_generation));
 }
 
+
 bool 
-mfest::operator==(mfest const & other) const
+equal_up_to_renumbering(mfest const & ma,
+                        mfest const & mb)
 {
-  // L(F("comparing manifests: max ident %d vs. %d\n") 
-  //   % max_ident % other.max_ident);
-  if (max_ident != other.max_ident)
-    return false;
+  // NB: this function compares mfests for structural equality over the
+  // abstract filesystem; it ignores differences which may exist between
+  // the mfests' node sets, ident numbers, and any sire/heir relationships
+  // (which are only relevant in the context of csets)
 
-  //   L(F("comparing manifests: deep_equal\n"));
-  if (!deep_equal(root, other.root))
-    return false;
+  bfs_iter pa(ma.root), pb(mb.root);
 
-  for (node_map_t::const_iterator i = nodes.begin();
-       i != nodes.end(); ++i)
+  while (!(pa.finished() || pb.finished()))
     {
-      //       L(F("comparing manifests: node %d\n") % i->first);
-      node_map_t::const_iterator j = other.nodes.find(i->first);
 
-      if (j == other.nodes.end())
-	return false;
+      node_t a = *pa;
+      node_t b = *pb;
+      
+      if ((a->name != b->name))
+        return false;
+      
+      if (a->fancy || b->fancy)
+        {
+          if (!(a->fancy && b->fancy))
+            return false;
+          if (a->fancy->attrs != b->fancy->attrs)
+            return false;
+        }
 
-      if (!shallow_equal(i->second, j->second))
-	return false;
+      if (is_file_t(a) && is_file_t(b))
+        {
+          file_t fa = downcast_to_file_t(a);
+          file_t fb = downcast_to_file_t(b);
+          if (! (fa->content == fb->content))
+            return false;
+        }
+
+      else if (is_dir_t(a) && is_dir_t(b))
+        {
+          dir_t da = downcast_to_dir_t(a);
+          dir_t db = downcast_to_dir_t(b);
+          if (da->entries.size() != da->entries.size())
+            return false;
+        }
+      else
+        return false;
+
+      ++pa;
+      ++pb;
     }
+
+  if (! (pa.finished() && pb.finished()))
+    return false;
+
   return true;
 }
 
@@ -1303,53 +1332,60 @@ change_consumer
 			  attr_name const & name) = 0;
 };
 
+
 void 
 change_consumer::set_heir(file_path const & dying,
 			  file_path const & heir)
 {
   L(F("set_heir('%s', '%s')\n") % dying % heir);
-  this->set_heir(path_vec_t(dying), 
-		 path_vec_t(heir));
+  this->set_heir(path_vec_t::from_file_path(dying), 
+		 path_vec_t::from_file_path(heir));
 }
+
 
 void 
 change_consumer::delete_node(file_path const & dp)
 {
   L(F("delete_node('%s')\n") % dp);
-  this->delete_node(path_vec_t(dp));
+  this->delete_node(path_vec_t::from_file_path(dp));
 }
+
 
 void 
 change_consumer::rename_node(file_path const & a,
 			     file_path const & b)
 {
   L(F("rename_node('%s', '%s')\n") % a % b);
-  this->rename_node(path_vec_t(a),
-		    path_vec_t(b));
+  this->rename_node(path_vec_t::from_file_path(a),
+		    path_vec_t::from_file_path(b));
 }
+
 
 void 
 change_consumer::add_dir(file_path const & dp)
 {
   L(F("add_dir('%s')\n") % dp);
-  this->add_dir(path_vec_t(dp));
+  this->add_dir(path_vec_t::from_file_path(dp));
 }
+
 
 void 
 change_consumer::add_file(file_path const & fp)
 {
   L(F("add_file('%s')\n") % fp);
-  this->add_file(path_vec_t(fp));
+  this->add_file(path_vec_t::from_file_path(fp));
 }
+
 
 void 
 change_consumer::set_sire(file_path const & newborn,
 			  file_path const & sire)
 {
   L(F("set_sire('%s', '%s')\n") % newborn % sire);
-  this->set_sire(path_vec_t(newborn), 
-		 path_vec_t(sire));
+  this->set_sire(path_vec_t::from_file_path(newborn), 
+		 path_vec_t::from_file_path(sire));
 }
+
 
 void 
 change_consumer::apply_delta(file_path const & path, 
@@ -1357,8 +1393,9 @@ change_consumer::apply_delta(file_path const & path,
 			     file_id const & dst)
 {
   L(F("apply_delta('%s', [%s], [%s])\n") % path % src % dst);
-  this->apply_delta(path_vec_t(path), src, dst);
+  this->apply_delta(path_vec_t::from_file_path(path), src, dst);
 }
+
 
 void 
 change_consumer::set_attr(file_path const & path, 
@@ -1366,15 +1403,16 @@ change_consumer::set_attr(file_path const & path,
 			  attr_val const & val)
 {
   L(F("set_attr('%s', '%s', '%s')\n") % path % name % val);
-  this->set_attr(path_vec_t(path), name, val);
+  this->set_attr(path_vec_t::from_file_path(path), name, val);
 }
+
 
 void 
 change_consumer::clear_attr(file_path const & path, 
 			    attr_name const & name)
 {
   L(F("clear_attr('%s', '%s')\n") % path % name);
-  this->clear_attr(path_vec_t(path), name);
+  this->clear_attr(path_vec_t::from_file_path(path), name);
 }
 
 
@@ -1404,11 +1442,13 @@ attach_detach_change_consumer
 
 };
 
+
 void 
 attach_detach_change_consumer::delete_node(path_vec_t const & path)
 {
   this->detach(path);
 }
+
 
 void 
 attach_detach_change_consumer::rename_node(path_vec_t const & src, 
@@ -1416,6 +1456,7 @@ attach_detach_change_consumer::rename_node(path_vec_t const & src,
 {
   pending_renames.push_back(make_pair(src, dst));
 }
+
 
 void 
 attach_detach_change_consumer::finalize_renames()
@@ -1491,27 +1532,19 @@ cset
 
   virtual void clear_attr(path_vec_t const & path, 
 			  attr_name const & name);
-
-  bool operator==(cset const & other) const
-  {
-    if (! (old_mfest == other.old_mfest))
-      return false;
-    if (! (new_mfest == other.new_mfest))
-      return false;
-    return true;
-  }
-
 };
+
 
 static gen_t 
 find_max_write_generation(dir_t d)
 {
-  gen_t m = 0;
+  gen_t m = d->generation;
   for (dfs_iter i(d); !i.finished(); ++i)
     if ((*i)->generation > m)
-      m = (*i)->generation;
+      m = (*i)->generation;  
   return m;
 }
+
 
 void 
 cset::reset(mfest const & m)
@@ -1521,6 +1554,7 @@ cset::reset(mfest const & m)
   write_generation = find_max_write_generation(m.root);
   I(write_generation != UINT64_MAX);
   ++write_generation;
+  L(F("cset write generation is %d\n") % write_generation);
 }
 
 
@@ -1536,9 +1570,10 @@ check_hash_inclusion(mfest const & a,
     }  
 }
 
+
 static void
 check_mfests_agree(mfest const & a,
-		      mfest const & b)
+                   mfest const & b)
 {
   check_hash_inclusion(a,b);
   check_hash_inclusion(b,a);
@@ -1573,6 +1608,7 @@ cset::set_heir(path_vec_t const & dying,
     }
 }
 
+
 void 
 cset::set_sire(path_vec_t const & newborn,
 	       path_vec_t const & sire)
@@ -1587,6 +1623,7 @@ cset::set_sire(path_vec_t const & newborn,
       check_sane();
     }
 }
+
 
 ident_t 
 cset::detach(path_vec_t const & path)
@@ -1606,6 +1643,7 @@ cset::detach(path_vec_t const & path)
   return dst->ident;
 }
 
+
 void 
 cset::attach(path_vec_t const & path, ident_t id)
 {
@@ -1619,11 +1657,14 @@ cset::attach(path_vec_t const & path, ident_t id)
     }
 }
 
+
 void 
 cset::add_dir(path_vec_t const & dp)
 {
   dir_t new_dst_parent = new_mfest.get_containing_dir_node(dp, write_generation);
   dir_t new_dir = old_mfest.make_dir();
+  if (new_dir->ident > new_mfest.max_ident)
+    new_mfest.max_ident = new_dir->ident;
   node_t new_dir_in_new_mfest = new_dir->shallow_copy();
 
   new_dst_parent->add_child(dp.leaf, new_dir_in_new_mfest);
@@ -1635,11 +1676,14 @@ cset::add_dir(path_vec_t const & dp)
     }
 }
 
+
 void 
 cset::add_file(path_vec_t const & fp)
 {
   dir_t new_dst_parent = new_mfest.get_containing_dir_node(fp, write_generation);
   file_t new_file = old_mfest.make_file();
+  if (new_file->ident > new_mfest.max_ident)
+    new_mfest.max_ident = new_file->ident;
   node_t new_file_in_new_mfest = new_file->shallow_copy();
 
   new_dst_parent->add_child(fp.leaf, new_file_in_new_mfest);
@@ -1650,6 +1694,7 @@ cset::add_file(path_vec_t const & fp)
       check_sane();
     }
 }
+
 
 void 
 cset::apply_delta(path_vec_t const & path, 
@@ -1668,6 +1713,7 @@ cset::apply_delta(path_vec_t const & path,
     }
 }
 
+
 void 
 cset::set_attr(path_vec_t const & path, 
 	       attr_name const & name, 
@@ -1676,6 +1722,7 @@ cset::set_attr(path_vec_t const & path,
   node_t n = new_mfest.get_node(path, write_generation);
   n->set_attr(name, val);
 }
+
 
 void 
 cset::clear_attr(path_vec_t const & path, 
@@ -1692,6 +1739,7 @@ typedef vector<pair<pair<node_t, node_t>,
 		    shared_ptr<set<attr_name> > > > 
 node_attr_name_vec;
 
+
 struct replay_record
 {
   node_pair_vec heirs_set;
@@ -1704,6 +1752,7 @@ struct replay_record
   file_pair_vec deltas_applied;
   node_attr_name_vec attrs_changed;
 };
+
 
 static void
 play_back_replay_record(replay_record const & rr,
@@ -1994,6 +2043,7 @@ play_back_replay_record_inverse(replay_record const & rr,
     }
 }
 
+
 static void
 build_replay_record(mfest const & src,
 		    mfest const & dst,
@@ -2115,6 +2165,7 @@ build_replay_record(mfest const & src,
     }
 }
 
+
 void 
 cset::replay_changes(change_consumer & cc) const
 {
@@ -2123,6 +2174,7 @@ cset::replay_changes(change_consumer & cc) const
   build_replay_record(old_mfest, new_mfest, rr);
   play_back_replay_record(rr, old_mfest, new_mfest, cc);
 }
+
 
 void 
 cset::replay_inverse_changes(change_consumer & cc) const
@@ -2191,8 +2243,6 @@ concatenate_changesets(cset const & a,
 //
 
 // TODO: implement this algorithm!
-
-
 
 
 namespace
@@ -2309,6 +2359,7 @@ parse_cset(basic_io::parser & parser,
     }
 }
 
+
 struct 
 cset_printer 
   : public change_consumer
@@ -2334,6 +2385,7 @@ cset_printer
 			attr_val const & val);
 };
 
+
 void 
 cset_printer::set_heir(path_vec_t const & dying, 
 		       path_vec_t const & heir)
@@ -2344,6 +2396,7 @@ cset_printer::set_heir(path_vec_t const & dying,
       printer.print_stanza(st);
 }
 
+
 void 
 cset_printer::delete_node(path_vec_t const & dp)
 {
@@ -2351,6 +2404,7 @@ cset_printer::delete_node(path_vec_t const & dp)
       st.push_str_pair(syms::delete_node, dp.to_file_path()());
       printer.print_stanza(st);
 }
+
 
 void 
 cset_printer::rename_node(path_vec_t const & src, 
@@ -2362,6 +2416,7 @@ cset_printer::rename_node(path_vec_t const & src,
       printer.print_stanza(st);
 }
 
+
 void 
 cset_printer::add_dir(path_vec_t const & dp)
 {
@@ -2370,6 +2425,7 @@ cset_printer::add_dir(path_vec_t const & dp)
       printer.print_stanza(st);
 }
 
+
 void 
 cset_printer::add_file(path_vec_t const & fp)
 {
@@ -2377,6 +2433,7 @@ cset_printer::add_file(path_vec_t const & fp)
       st.push_str_pair(syms::add_file, fp.to_file_path()());
       printer.print_stanza(st);
 }
+
 
 void 
 cset_printer::set_sire(path_vec_t const & newborn, 
@@ -2387,6 +2444,7 @@ cset_printer::set_sire(path_vec_t const & newborn,
       st.push_str_pair(syms::from, sire.to_file_path()());
       printer.print_stanza(st);
 }
+
 
 void 
 cset_printer::apply_delta(path_vec_t const & path, 
@@ -2400,6 +2458,7 @@ cset_printer::apply_delta(path_vec_t const & path,
       printer.print_stanza(st);
 }
 
+
 void 
 cset_printer::clear_attr(path_vec_t const & path, 
 			 attr_name const & attr)
@@ -2409,6 +2468,7 @@ cset_printer::clear_attr(path_vec_t const & path,
       st.push_str_pair(syms::attr, attr);
       printer.print_stanza(st);
 }
+
 
 void 
 cset_printer::set_attr(path_vec_t const & path, 
@@ -2436,6 +2496,7 @@ read_cset(data const & dat,
   cs.check_sane();
 }
 
+
 void
 write_cset(cset const & cs,
 	   data & dat)
@@ -2453,20 +2514,26 @@ parse_mfest(basic_io::parser & p,
 	    mfest & m)
 {
   cset c;
-  std::string pth, n, v;
+  change_consumer & cs = c;
+  std::string pth, ident, n, v;
   while (p.symp())
     {
       if (p.symp(syms::dir))
 	{
 	  p.sym();
 	  p.str(pth);
-	  c.add_dir(file_path(pth));
+          // L(F("read dir %s\n") % pth);
+	  cs.add_dir(file_path(pth));
 	}
       else if (p.symp(syms::file))
 	{
 	  p.sym();
 	  p.str(pth);
-	  c.add_file(file_path(pth));
+	  p.esym(syms::content);
+          p.hex(ident);
+          // L(F("read file %s\n") % pth);
+	  cs.add_file(file_path(pth));
+          cs.apply_delta(file_path(pth), file_id(), file_id(ident));
 	}
       else break;
 
@@ -2476,13 +2543,15 @@ parse_mfest(basic_io::parser & p,
 	  p.sym();
 	  p.str(n);
 	  p.str(v);
-	  c.set_attr(file_path(pth), n, v);
+          // L(F("read attr %s : %s = %s\n") % pth % n % v);
+	  cs.set_attr(file_path(pth), n, v);
 	}
     }
 
   // now store the results into the provided mfest
   m.reset(c.new_mfest);
 }
+
 
 void
 print_mfest(basic_io::printer & p,
@@ -2491,24 +2560,37 @@ print_mfest(basic_io::printer & p,
   for (dfs_iter i(m.root); !i.finished(); ++i)
     {
       node_t curr = *i;
+      path_vec_t pv;
+      m.get_path(curr, pv);
+
+      file_path fp = pv.to_file_path();
+
       basic_io::stanza st;
       if (is_dir_t(curr))
-	st.push_str_pair(syms::dir, curr->name->val);
+        {
+          // L(F("printing dir %s\n") % fp);
+          st.push_str_pair(syms::dir, fp());
+        }
       else
 	{
 	  file_t ftmp = downcast_to_file_t(curr);
-	  st.push_str_pair(syms::file, curr->name->val);
+	  st.push_str_pair(syms::file, fp());
 	  st.push_hex_pair(syms::content, ftmp->content.inner()());
+          // L(F("printing file %s\n") % fp);
 	}
       if (curr->has_attrs())
 	{
 	  for (map<attr_name, attr_val>::const_iterator j = curr->fancy->attrs.begin();
 	       j != curr->fancy->attrs.end(); ++j)
-	    st.push_str_triple(syms::attr, j->first, j->second);
+            {
+              // L(F("printing attr %s : %s = %s\n") % fp % j->first % j->second);
+              st.push_str_triple(syms::attr, j->first, j->second);
+            }
 	}
-    }
-  
+      p.print_stanza(st);
+    }  
 }
+
 
 void
 read_mfest(data const & dat,
@@ -2522,6 +2604,7 @@ read_mfest(data const & dat,
   I(src.lookahead == EOF);
   mf.check_sane();
 }
+
 
 void
 write_mfest(mfest const & mf,
@@ -2546,6 +2629,288 @@ write_mfest(mfest const & mf,
 
 file_id null_file_id;
 
+
+struct
+change_automaton
+{
+
+  change_automaton()
+  {
+    srand(0x12345678);
+  }
+
+  string new_word()
+  {
+    static string wordchars = "abcdefghijlkmnopqrstuvwxyz_-ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static unsigned tick = 0;
+    string tmp;
+    do 
+      {
+        tmp += wordchars[rand() % wordchars.size()];
+      }
+    while (tmp.size() < 10 && !flip(10));
+    return tmp + lexical_cast<string>(tick++);
+  }
+
+  file_id new_ident()
+  {
+    static string tab = "0123456789abcdef";
+    string tmp;
+    tmp.reserve(constants::idlen);
+    for (unsigned i = 0; i < constants::idlen; ++i)
+      tmp += tab[rand() % tab.size()];
+    return file_id(tmp);
+  }
+
+  dirent_t new_entry()
+  {
+    return path_vec_t::intern_component(new_word());
+  }
+
+  bool flip(unsigned n = 2)
+  {
+    return (rand() % n) == 0;
+  }
+
+  attr_name pick_attr(node_t n)
+  {
+    I(n->has_attrs());
+    vector<attr_name> tmp;
+    for (map<attr_name, attr_val>::const_iterator i = n->fancy->attrs.begin();
+         i != n->fancy->attrs.end(); ++i)
+      {
+        tmp.push_back(i->first);
+      }
+    return tmp[rand() % tmp.size()];
+  }
+
+  enum action
+    {
+      add_a_node = 0,
+      delete_a_node = 1,
+      rename_a_node = 2,
+      apply_a_delta = 3,
+      set_an_attribute = 4,
+      clear_an_attribute = 5,
+      
+      number_of_actions = 6
+    };
+  
+  void inspect(mfest const & m,
+               bool & has_nonroot_nodes,
+               bool & has_attrs)
+  {
+
+    has_nonroot_nodes = false;
+    has_attrs = false;
+
+    for (bfs_iter i(m.root); !i.finished(); ++i)
+      {
+        if ((*i)->ident != m.root->ident)
+          has_nonroot_nodes = true;
+
+        if ((*i)->has_attrs())
+          has_attrs = true;
+        
+        if (has_nonroot_nodes 
+            && has_attrs)
+          return;
+      }
+  }
+  
+  void perform_random_action(cset & c)
+  {
+    set<ident_t> parents;
+    path_vec_t pv_a, pv_b;
+    file_path fp_a, fp_b;
+
+    bool has_nonroot_nodes;
+    bool has_attrs;
+
+    change_consumer & cs = c;
+
+    inspect(c.new_mfest, 
+            has_nonroot_nodes, 
+            has_attrs);
+
+    vector<node_t> nodes;
+    get_nodes(c.new_mfest, nodes);
+
+    bool did_something = false;
+    while (! did_something)
+      {    
+        switch (static_cast<enum action>(rand() % static_cast<unsigned>(number_of_actions)))
+          {
+
+          case add_a_node:
+            {
+              node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
+              if (is_dir_t(n) && flip())
+                {
+                  // add a child of an existing entry
+                  pv_a /= new_entry();
+                }
+              else
+                {
+                  // add a sibling of an existing entry
+                  pv_a.leaf = new_entry();
+                }
+          
+              fp_a = pv_a.to_file_path();
+
+              if (flip())
+                cs.add_dir(fp_a);
+              else
+                {
+                  cs.add_file(fp_a);
+                  cs.apply_delta(fp_a, null_file_id, new_ident());            
+                }
+              did_something = true;
+            }
+            break;
+        
+          case delete_a_node:
+            {
+              if (has_nonroot_nodes)
+                {
+                  node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
+                  
+                  if (n->live() 
+                      && (n->ident != c.new_mfest.root->ident)
+                      && (is_file_t(n) || (is_dir_t(n) 
+                                           && downcast_to_dir_t(n)->entries.empty())))
+                    {
+                      fp_a = pv_a.to_file_path();
+                      cs.delete_node(fp_a);
+                      did_something = true;
+                    }
+                }
+              break;
+          
+            }
+
+          case rename_a_node:
+            {              
+              // FIXME :  cc.finalize_renames();
+
+              if (false && has_nonroot_nodes)
+                {
+                  node_t src = random_node(c.old_mfest, nodes, pv_a, parents);
+                  node_t dst = random_node(c.new_mfest, nodes, pv_b, parents);
+                  
+                  // we want to be sure we're not moving src into one of 
+                  // its own children; this is the same as saying that
+                  // src isn't in dst's parents
+                  
+                  if (src->live() 
+                      && dst->live()
+                      && (parents.find(src->ident) == parents.end()))
+                    {
+                      if (is_dir_t(dst))
+                        {
+                          
+                          pv_b /= new_entry();
+                        }
+                      else
+                        {
+                          pv_b.leaf = new_entry();
+                        }
+                      fp_a = pv_a.to_file_path();
+                      fp_b = pv_b.to_file_path();
+                      cs.rename_node(fp_a, fp_b);
+                      did_something = true;
+                    }
+                }
+            }
+            break;
+
+          case apply_a_delta:
+            {
+              if (has_nonroot_nodes)
+                {
+                  node_t f = random_node(c.new_mfest, nodes, pv_a, parents);              
+                  if (f->live() && is_file_t(f))
+                    {
+                      cs.apply_delta(pv_a.to_file_path(),
+                                     downcast_to_file_t(f)->content, 
+                                     new_ident());
+                      did_something = true;
+                    }
+                }
+            }
+            break;
+
+          case set_an_attribute:
+            {
+              if (has_nonroot_nodes)
+                {
+                  node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
+                  if (n->ident != c.new_mfest.root->ident)
+                    {
+                      fp_a = pv_a.to_file_path();
+                      cs.set_attr(fp_a, new_word(), new_word());
+                      did_something = true;
+                    }
+                }
+            }
+            break;
+        
+          case clear_an_attribute:
+            {
+              if (has_nonroot_nodes && has_attrs)
+                {
+                  node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
+                  if (n->ident != c.new_mfest.root->ident)
+                    {
+                      fp_a = pv_a.to_file_path();
+                      if (n->has_attrs())
+                        {
+                          cs.clear_attr(fp_a, pick_attr(n));
+                          did_something = true;
+                        }
+                    }
+                }
+            }
+            break;
+
+          case number_of_actions:
+            break;
+                
+          }
+      }
+  }
+    
+  void get_nodes(mfest const & m, vector<node_t> & nodes)
+  {
+    nodes.clear();
+    for (bfs_iter i(m.root); !i.finished(); ++i)
+      nodes.push_back(*i);
+  }
+
+  node_t random_node(mfest const & m, 
+                     vector<node_t> & nodes,
+                     path_vec_t & pv,
+                     set<ident_t> & parents)
+  {
+    parents.clear();
+
+    node_t result = nodes[rand() % nodes.size()];
+
+    for (node_t tmp = result; tmp->ident != m.root->ident; tmp = m.get_node(tmp->parent))
+      {
+        parents.insert(result->parent);        
+      }
+
+    m.get_path(result, pv);
+
+    return result;
+  }
+
+                   
+};
+
+
+
 static void
 spin_mfest(mfest const & m)
 {
@@ -2554,12 +2919,15 @@ spin_mfest(mfest const & m)
   m1.reset(m);
   for (unsigned i = 0; i < 5; ++i)
     {
+      L(F("spinning %d-entry mfest (pass %d)\n") % m1.nodes.size() % i);
       write_mfest(m1, tmp);
+      L(F("wrote mfest: [[%s]]\n") % tmp);
       read_mfest(tmp, m2);
-      I(m1 == m2);
+      BOOST_CHECK(equal_up_to_renumbering(m1, m2));
       m1.reset(m2);
     }
 }
+
 
 static void
 spin_cset(cset const & cs)
@@ -2574,15 +2942,16 @@ spin_cset(cset const & cs)
     {
       data tmp2;
       cset cs2;
+      L(F("spinning cset (pass %d)\n") % i);
       write_cset(cs1, tmp2);
       BOOST_CHECK(tmp1 == tmp2);
       read_cset(tmp2, cs2);
-      BOOST_CHECK(cs1 == cs2);
-      cs1 = cs2;      
       spin_mfest(cs2.old_mfest);
       spin_mfest(cs2.new_mfest);
+      cs1 = cs2;
     }  
 }
+
 
 static void 
 basic_cset_test()
@@ -2590,7 +2959,8 @@ basic_cset_test()
   try
     {
 
-      cset cs;
+      cset c;
+      change_consumer & cs = c; 
       cs.add_dir(file_path("usr"));
       cs.add_dir(file_path("usr/bin"));
       cs.add_file(file_path("usr/bin/cat"));
@@ -2605,7 +2975,7 @@ basic_cset_test()
 		     null_file_id, 
 		     file_id(hexenc<id>("adc83b19e793491b1c6ea0fd8b46cd9f32e592fc")));
 
-      spin_cset(cs);
+      spin_cset(c);
     }
   catch (informative_failure & exn)
     {
@@ -2617,11 +2987,27 @@ basic_cset_test()
     }
 }
 
+static void
+automaton_cset_test()
+{
+  mfest m1;
+
+  change_automaton aut;
+  for (int i = 0; i < 1000; ++i)
+    {
+      cset cs(m1);
+      aut.perform_random_action(cs);
+      m1.reset(cs.new_mfest);
+    }
+}
+
+
 void 
 add_cset_tests(test_suite * suite)
 {
   I(suite);
   suite->add(BOOST_TEST_CASE(&basic_cset_test));
+  suite->add(BOOST_TEST_CASE(&automaton_cset_test));
 }
 
 
