@@ -8,13 +8,26 @@
 #include <vector>
 #include <netxx/socket.h>
 #include <netxx/streambase.h>
+#ifdef WIN32
+#  include <windows.h>
+#endif
 
 namespace Netxx {
+#ifdef WIN32
+class PipeCompatibleProbe;
+#endif
 
 class PipeStream : public StreamBase 
 {   int readfd, writefd;
     ProbeInfo pi_;
     int child;
+#ifdef WIN32
+    char readbuf[1024];
+    unsigned bytes_available;
+    OVERLAPPED overlap;
+    
+    friend class PipeCompatibleProbe;
+#endif
 public:
     explicit PipeStream (int readfd, int writefd);
     explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);

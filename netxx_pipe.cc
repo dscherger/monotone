@@ -101,6 +101,11 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
     // non-blocking: RIT=MAXDWORD RTTM=0 RTTC=0
     readfd=fd1[0];
     writefd=fd2[1];
+    
+    memset(&overlap,0,sizeof overlap);
+    overlap.hEvent=CreateEvent(0,FALSE,FALSE,0); // TRUE,TRUE,0); ??
+    bytes_available=0;
+    I(overlap.hEvent!=0);
 #else
     int fd1[2],fd2[2];
     child=pipe_and_fork(fd1,fd2);
@@ -163,6 +168,39 @@ class PipeProbe : public Netxx::ProbeInfo
 const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 { return &pi_;
 }
+
+#ifdef WIN32
+Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
+{ if (!is_pipe) return Probe::ready(timeout,rt);
+  if (rt&ready_write) return ready_write;
+  if (rt&ready_read)
+  { if (pipe->bytes_available) return ready_read;
+    // ResetEvent(pipe->overlap.hEvent);
+    DWORD bytes_read=0;
+    if (!ReadFileEx((HANDLE)_get_osfhandle(readfd),pipe->readbuf,sizeof pipe->readbuf,&bytes_read,&pipe->overlap,NULL))
+    { L(F("ReadFileEx failed %d\n") % GetLastError());
+      throw oops("ReadFileEx failed ");
+    }
+    if (bytes_read)
+    { pipe->bytes_available=bytes_read;
+      return ready_read;
+    }
+    if (WaitForSingleObject(pipe->hEvent,timeout->seconds))
+    { L(F("WaitForSingleObject failed %d\n") % GetLastError());
+      throw oops("WaitForSingleObject failed ");
+    }
+    if (GetOverlappedResult((HANDLE)_get_osfhandle(readfd),&pipe->overlap,&bytes_read,FALSE))
+    { L(F("GetOverlappedResult failed %d\n") % GetLastError());
+      throw oops("GetOverlappedResult failed ");
+    }
+    if (bytes_read)
+    { pipe->bytes_available=bytes_read;
+      return ready_read;
+    }
+  }
+  return ready_none;
+}
+#endif
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
