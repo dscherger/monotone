@@ -177,8 +177,8 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
   { if (pipe->bytes_available) return ready_read;
     // ResetEvent(pipe->overlap.hEvent);
     DWORD bytes_read=0;
-    if (!ReadFileEx((HANDLE)_get_osfhandle(readfd),pipe->readbuf,sizeof pipe->readbuf,&bytes_read,&pipe->overlap,NULL))
-    { L(F("ReadFileEx failed %d\n") % GetLastError());
+    if (!ReadFile((HANDLE)_get_osfhandle(readfd),pipe->readbuf,sizeof pipe->readbuf,&bytes_read,&pipe->overlap))
+    { L(F("ReadFile failed %d\n") % GetLastError());
       throw oops("ReadFileEx failed ");
     }
     if (bytes_read)
