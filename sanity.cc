@@ -277,17 +277,22 @@ sanity::gasp()
       ui.inform("contents of work set:");
       ui.inform(gasp_dump);
     }
+  already_dumping = false;
 }
 
 MusingI::MusingI()
 {
-  global_sanity.musings.push_back(this);
+  if (!global_sanity.already_dumping)
+    global_sanity.musings.push_back(this);
 }
 
 MusingI::~MusingI()
 {
-  I(global_sanity.musings.back() == this);
-  global_sanity.musings.pop_back();
+  if (!global_sanity.already_dumping)
+    {
+      I(global_sanity.musings.back() == this);
+      global_sanity.musings.pop_back();
+    }
 }
 
 void
