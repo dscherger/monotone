@@ -934,23 +934,23 @@ mfest::check_sane() const
   // directory for absence of cycle-forming edges and agreement
   // between names.
 
-  L(F("mfest sanity check beginning...\n"));
+  //   L(F("mfest sanity check beginning...\n"));
   for(bfs_iter i(root); !i.finished(); ++i)
     {
-             if ((*i)->live())
-               {
-                 path_vec_t v;
-                 get_path(*i, v);
-                 L(F("tree iter visiting live node %d = '%s'\n") 
-                   % (*i)->ident
-                   % v.to_file_path());
-               }
-             else
-               {
-                 L(F("tree iter visiting %s node %d\n") 
-                   % ((*i)->unborn() ? "unborn" : "killed")
-                   % (*i)->ident);
-               }
+      //       if ((*i)->live())
+      // 	{
+      // 	  path_vec_t v;
+      // 	  get_path(*i, v);
+      // 	  L(F("tree iter visiting live node %d = '%s'\n") 
+      // 	    % (*i)->ident
+      // 	    % v.to_file_path());
+      // 	}
+      //       else
+      // 	{
+      // 	  L(F("tree iter visiting %s node %d\n") 
+      // 	    % ((*i)->unborn() ? "unborn" : "killed")
+      // 	    % (*i)->ident);
+      // 	}
       I(seen.find((*i)->ident) == seen.end());
       seen.insert((*i)->ident);
     }
@@ -982,7 +982,7 @@ mfest::check_sane() const
 	  I(seen.find(i->first) != seen.end());
 	}
     }    
-  L(F("mfest sanity check done"));
+  // L(F("mfest sanity check done"));
 }
 
 
@@ -1138,7 +1138,7 @@ mfest::get_containing_dir_node(path_vec_t const & v,
 {  
   if (root->generation < write_generation)
     {
-      L(F("upgrading root to write generation %d\n") % write_generation);
+      // L(F("upgrading root to write generation %d\n") % write_generation);
       root = downcast_to_dir_t(root->shallow_copy());
       root->generation = write_generation;
       nodes.erase(root->ident);
@@ -1435,20 +1435,11 @@ attach_detach_change_consumer
 
   vector< pair<path_vec_t, path_vec_t> > pending_renames;
 
-  virtual void delete_node(path_vec_t const & src);
   virtual void rename_node(path_vec_t const & src, 
 			   path_vec_t const & dst);
   virtual void finalize_renames();
 
 };
-
-
-void 
-attach_detach_change_consumer::delete_node(path_vec_t const & path)
-{
-  this->detach(path);
-}
-
 
 void 
 attach_detach_change_consumer::rename_node(path_vec_t const & src, 
@@ -1510,9 +1501,13 @@ cset
   void replay_changes(change_consumer & cc) const;
   void replay_inverse_changes(change_consumer & cc) const;
 
+  virtual void finalize_renames();
+
   virtual void set_heir(path_vec_t const & dying,
 			path_vec_t const & heir);
   
+  virtual void delete_node(path_vec_t const & dp);
+
   virtual ident_t detach(path_vec_t const & path);
   virtual void attach(path_vec_t const & path, ident_t id);
 
@@ -1554,7 +1549,7 @@ cset::reset(mfest const & m)
   write_generation = find_max_write_generation(m.root);
   I(write_generation != UINT64_MAX);
   ++write_generation;
-  L(F("cset write generation is %d\n") % write_generation);
+  // L(F("cset write generation is %d\n") % write_generation);
 }
 
 
@@ -1590,6 +1585,28 @@ cset::check_sane() const
   //   L(F("cset::check_sane checking pre/post agreement...\n"));
   check_mfests_agree(old_mfest, new_mfest);
   //   L(F("cset::check_sane OK\n"));
+}
+
+void 
+cset::finalize_renames()
+{
+  attach_detach_change_consumer::finalize_renames();
+
+  if (global_sanity.debug)
+    {
+      check_sane();
+    }
+}
+
+void 
+cset::delete_node(path_vec_t const & dp)
+{
+  this->detach(dp);
+
+  if (global_sanity.debug)
+    {
+      check_sane();
+    }  
 }
 
 
@@ -1635,10 +1652,10 @@ cset::detach(path_vec_t const & path)
   parent_of_dst->drop_child(dst->name);
   dst->parent = graveyard_ident; 
 
-  if (global_sanity.debug)
-    {
-      check_sane();
-    }
+  // NB: it is important *not* to check sanity here, as we might have
+  // entered a transient state where detached grandchildren are 
+  // not pointing to the graveyard because they're about to be
+  // re-attached.
 
   return dst->ident;
 }
@@ -1651,10 +1668,10 @@ cset::attach(path_vec_t const & path, ident_t id)
   dir_t d = new_mfest.get_containing_dir_node(path, write_generation);
   d->add_child(path.leaf, n);
 
-  if (global_sanity.debug)
-    {
-      check_sane();
-    }
+  // NB: it is important *not* to check sanity here, as we might still
+  // be in a transient state where detached grandchildren are not
+  // pointing to the graveyard because they're about to be
+  // re-attached.
 }
 
 
@@ -2641,7 +2658,7 @@ change_automaton
 
   string new_word()
   {
-    static string wordchars = "abcdefghijlkmnopqrstuvwxyz_-ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static string wordchars = "abcdefghijlkmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     static unsigned tick = 0;
     string tmp;
     do 
@@ -2791,9 +2808,7 @@ change_automaton
 
           case rename_a_node:
             {              
-              // FIXME :  cc.finalize_renames();
-
-              if (false && has_nonroot_nodes)
+              if (has_nonroot_nodes)
                 {
                   node_t src = random_node(c.old_mfest, nodes, pv_a, parents);
                   node_t dst = random_node(c.new_mfest, nodes, pv_b, parents);
@@ -2807,8 +2822,7 @@ change_automaton
                       && (parents.find(src->ident) == parents.end()))
                     {
                       if (is_dir_t(dst))
-                        {
-                          
+                        {                          
                           pv_b /= new_entry();
                         }
                       else
@@ -2818,6 +2832,7 @@ change_automaton
                       fp_a = pv_a.to_file_path();
                       fp_b = pv_b.to_file_path();
                       cs.rename_node(fp_a, fp_b);
+		      cs.finalize_renames();
                       did_something = true;
                     }
                 }
@@ -2895,11 +2910,13 @@ change_automaton
     parents.clear();
 
     node_t result = nodes[rand() % nodes.size()];
-
+    
     for (node_t tmp = result; tmp->ident != m.root->ident; tmp = m.get_node(tmp->parent))
       {
-        parents.insert(result->parent);        
+        parents.insert(tmp->ident);
       }
+
+    parents.insert(m.root->ident);
 
     m.get_path(result, pv);
 
@@ -2995,9 +3012,21 @@ automaton_cset_test()
   change_automaton aut;
   for (int i = 0; i < 1000; ++i)
     {
-      cset cs(m1);
-      aut.perform_random_action(cs);
-      m1.reset(cs.new_mfest);
+      cset cs1(m1);
+      aut.perform_random_action(cs1);
+
+      cset cs2(cs1.new_mfest);
+      aut.perform_random_action(cs2);
+
+      cset cs3(cs2.new_mfest);
+      aut.perform_random_action(cs3);
+
+      cset csA, csB;
+
+      concatenate_changesets(cs1, cs2, csA);
+      concatenate_changesets(csA, cs3, csB);
+
+      m1.reset(csB.new_mfest);
     }
 }
 
@@ -3006,8 +3035,8 @@ void
 add_cset_tests(test_suite * suite)
 {
   I(suite);
-  suite->add(BOOST_TEST_CASE(&basic_cset_test));
   suite->add(BOOST_TEST_CASE(&automaton_cset_test));
+  suite->add(BOOST_TEST_CASE(&basic_cset_test));
 }
 
 

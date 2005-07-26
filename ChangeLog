@@ -1,3 +1,7 @@
+2005-07-25  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Random tester seems to be able to run forever now.
+
 2005-07-24  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc (change_automaton): New random-testing struct.
