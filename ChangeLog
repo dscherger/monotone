@@ -1,3 +1,38 @@
+2005-07-26  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.cc (dump): Add state_renumbering dumper.
+	(merge_disjoint_analyses): Add MM().
+
+2005-07-26  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.cc (dump): Add path_analysis dumper.
+	(merge_change_sets): Add more MM()s.
+
+2005-07-26  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.cc (dump): Add path_state dumper.
+	(sanity_check_path_state): Add MM().
+
+2005-07-26  Richard Levitte  <richard@levitte.org>
+
+	* revision.cc (check_sane_history): Convert tabs to the
+	appropriate amount of spaces.
+
+2005-07-26  Richard Levitte  <richard@levitte.org>
+
+	* sanity.hh, revision.cc (check_sane_history),
+	change_set.cc (concatenate_change_sets, merge_change_sets,
+	invert_change_set): Because boost currently uses the symbol M, we
+	have a clash.  Therefore, let's rename M to MM, for now.
+
+2005-07-26  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (CMD(privkey)): Change so both the public and
+	private key are printed.
+
+	* tests/t_dropkey_2.at, tests/t_lua_privkey.at: Adapt to the new
+	private key format.
+
 2005-07-24  Nathaniel Smith  <njs@pobox.com>
 
 	* sanity.cc (MusingI, ~MusingI): No-op when already in the middle
