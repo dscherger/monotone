@@ -8,6 +8,7 @@
 
 #include "popt/popt.h"
 #include <cstdio>
+#include <strings.h>
 #include <iterator>
 #include <iostream>
 #include <fstream>
@@ -35,9 +36,12 @@ using namespace std;
 char * argstr = NULL;
 long arglong = 0;
 
-// Options are divide into two tables.  The first one is command-specific
+// Options are split between two tables.  The first one is command-specific
 // options (hence the `c' in `coptions').  The second is the global one
 // with options that aren't tied to specific commands.
+//
+// the intent is to ensure that any command specific options mean the same
+// thing to all commands that use them
 
 struct poptOption coptions[] =
   {
@@ -53,6 +57,8 @@ struct poptOption coptions[] =
     {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, "print a brief version of the normal output", NULL},
     {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, "print diffs along with logs", NULL},
     {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, "skip merges when printing logs", NULL},
+    {"set-default", 0, POPT_ARG_NONE, NULL, OPT_SET_DEFAULT, "use the current arguments as the future default", NULL},
+    {"exclude", 0, POPT_ARG_STRING, &argstr, OPT_EXCLUDE, "leave out branches matching a pattern", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -75,6 +81,7 @@ struct poptOption options[] =
     {"key", 'k', POPT_ARG_STRING, &argstr, OPT_KEY_NAME, "set key for signatures", NULL},
     {"db", 'd', POPT_ARG_STRING, &argstr, OPT_DB_NAME, "set name of database", NULL},
     {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, "limit search for working copy to specified root", NULL},
+    {"verbose", 0, POPT_ARG_NONE, NULL, OPT_VERBOSE, "verbose completion output", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -243,7 +250,7 @@ cpp_main(int argc, char ** argv)
 
   L(F("set locale: LC_CTYPE=%s, LC_MESSAGES=%s\n")
     % (setlocale(LC_CTYPE, NULL) == NULL ? "n/a" : setlocale(LC_CTYPE, NULL))
-    % (setlocale(LC_MESSAGES, NULL) == NULL ? "n/a" : setlocale(LC_CTYPE, NULL)));
+    % (setlocale(LC_MESSAGES, NULL) == NULL ? "n/a" : setlocale(LC_MESSAGES, NULL)));
 
   // decode all argv values into a UTF-8 array
 
@@ -293,6 +300,10 @@ cpp_main(int argc, char ** argv)
 
             case OPT_NORC:
               app.set_rcfiles(false);
+              break;
+
+            case OPT_VERBOSE:
+              app.set_verbose(true);
               break;
 
             case OPT_RCFILE:
@@ -378,6 +389,14 @@ cpp_main(int argc, char ** argv)
 
             case OPT_NO_MERGES:
               app.no_merges = true;
+              break;
+
+            case OPT_SET_DEFAULT:
+              app.set_default = true;
+              break;
+
+            case OPT_EXCLUDE:
+              app.add_exclude(utf8(string(argstr)));
               break;
 
             case OPT_PIDFILE:

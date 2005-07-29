@@ -7,6 +7,7 @@
 // see the file COPYING for details
 
 #include <unistd.h>
+#include <string>
 #include "numeric_vocab.hh"
 
 namespace constants
@@ -32,7 +33,7 @@ namespace constants
 
   // number of seconds in window, in which to consider CVS commits equivalent
   // if they have otherwise compatible contents (author, changelog)
-  extern size_t const cvs_window; 
+  extern time_t const cvs_window; 
 
   // number of bytes in a password buffer. further bytes will be dropped.
   extern size_t const maxpasswd;
@@ -119,6 +120,15 @@ namespace constants
 
   // number of seconds a connection can be idle before it's dropped
   extern size_t const netsync_timeout_seconds;
+
+  // netsync HMAC key length
+  extern size_t const netsync_session_key_length_in_bytes;
+
+  // netsync HMAC value length
+  extern size_t const netsync_hmac_value_length_in_bytes;
+
+  // netsync session key default initializer
+  extern std::string const & netsync_key_initializer;
 
 }
 

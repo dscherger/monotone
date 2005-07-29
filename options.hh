@@ -34,3 +34,6 @@
 #define OPT_DIFFS 25
 #define OPT_NO_MERGES 26
 #define OPT_LAST 27
+#define OPT_VERBOSE 28
+#define OPT_SET_DEFAULT 29
+#define OPT_EXCLUDE 30
