@@ -1,3 +1,8 @@
+2005-07-29  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc (pcdv): Try to make pcdv driver more efficient.
+	* pcdv.{cc,hh}: Handle the interners better.
+
 2005-07-09  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* pcdv.{cc,hh}: More speedups; use interners to work with ints instead

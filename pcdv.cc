@@ -445,10 +445,12 @@ file_state::file_state():
             states(new map<line_id, living_status>())
 {}
 
-file_state::file_state(vector<string> const & initial, string rev):
-            weave(new vector<weave_line>()),
-            itx(new std::pair<interner<line_contents>,
-                              interner<revid> >()),
+file_state::file_state(vector<string> const & initial, string rev,
+                       boost::shared_ptr<vector<weave_line> > _weave,
+                       boost::shared_ptr<std::pair<interner<line_contents>,
+                                                   interner<revid> > > _itx):
+            weave(_weave),
+            itx(_itx),
             states(new map<line_id, living_status>())
 {
   revid r(itx->second.intern(rev));
@@ -517,6 +519,7 @@ file_state::conflict(file_state const & other) const
   for (vector<weave_line>::const_iterator i
         = weave->begin(); i != weave->end(); ++i)
     {
+      std::string line(itx->first.lookup(i->line));
       map<line_id, living_status>::const_iterator m = states->find(i->id);
       map<line_id, living_status>::const_iterator o = other.states->find(i->id);
       bool mm(m != states->end());
@@ -535,7 +538,7 @@ file_state::conflict(file_state const & other) const
             result.push_back(merge_section(left, right));
           else
             result.push_back(merge_section(clean));
-          result.push_back(merge_section(itx->first.lookup(i->line)));
+          result.push_back(merge_section(line));
           left.clear();
           right.clear();
           clean.clear();
@@ -552,11 +555,11 @@ file_state::conflict(file_state const & other) const
                 mustright = true;
             }
           if (mehave)
-            left.push_back(itx->first.lookup(i->line));
+            left.push_back(line);
           if (otherhave)
-            right.push_back(itx->first.lookup(i->line));
+            right.push_back(line);
           if (mergehave)
-            clean.push_back(itx->first.lookup(i->line));
+            clean.push_back(line);
         }
     }
   if (mustright && mustleft)
@@ -572,9 +575,7 @@ file_state::resolve(vector<string> const & result_, string revision) const
 {
   if (weave->empty())
     {
-      file_state x(result_, revision);
-      *weave = *x.weave;
-      x.weave = weave;
+      file_state x(result_, revision, weave, itx);
       return x;
     }
   revid rev(itx->second.intern(revision));
@@ -906,14 +907,16 @@ void
 test_file_state()
 {
   {
-    file_state ta(vectorize("abc"), "a");
+    file_state orig;
+    file_state ta(orig.resolve(vectorize("abc"), "a"));
     file_state tb(ta.resolve(vectorize("bcd"), "b"));
     vector<string> res(tb.current());
     I(res == vectorize("bcd"));
   }
 
   {
-    file_state ta(vectorize("abc"), "a");
+    file_state orig;
+    file_state ta(orig.resolve(vectorize("abc"), "a"));
     file_state tb(ta.resolve(vectorize("dabc"), "b"));
     file_state tc(ta.resolve(vectorize("abce"), "c"));
     file_state td(tb.mash(tc));
@@ -921,7 +924,8 @@ test_file_state()
   }
 
   {
-    file_state ta(vectorize("abc"), "a");
+    file_state orig;
+    file_state ta(orig.resolve(vectorize("abc"), "a"));
     file_state tb(ta.resolve(vectorize("adc"), "b"));
     file_state tc(tb.resolve(vectorize("abc"), "c"));
     file_state td(ta.resolve(vectorize("aec"), "d"));
@@ -933,7 +937,8 @@ test_file_state()
   }
 
   {
-    file_state ta(vectorize("abc"), "a");
+    file_state orig;
+    file_state ta(orig.resolve(vectorize("abc"), "a"));
     file_state tb(ta.resolve(vectorize("adc"), "b"));
     file_state tc(ta.resolve(vectorize("aec"), "c"));
 

@@ -132,7 +132,10 @@ struct file_state
              boost::shared_ptr<std::pair<interner<line_contents>,
                                          interner<revid> > > _itx);
   file_state();
-  file_state(vector<string> const & initial, string rev);
+  file_state(vector<string> const & initial, string rev,
+             boost::shared_ptr<vector<weave_line> > _weave,
+             boost::shared_ptr<std::pair<interner<line_contents>,
+                                         interner<revid> > > _itx);
 
   ~file_state();
 

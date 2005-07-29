@@ -3794,28 +3794,119 @@ CMD(unset, "vars", "DOMAIN NAME",
 
 
 vector<string>
-get_file(revision_id const & rev, string const & filename, app_state & app)
+get_file(file_id const & ident, app_state & app)
 {
-  if (null_id(rev))
-    return vector<string>();
+  file_data dat;
+  app.db.get_file_version(ident, dat);
+  std::string const & in(dat.inner()());
+  vector<string> out;
+
+  // like split_into_lines, but keep the line-end characters
+  // line-end is "\r", "\n", "\r\n", or "\n\r"
+  std::string::size_type begin = 0;
+  std::string::size_type end = in.find_first_of("\r\n", begin);
+  while (end != std::string::npos && end >= begin)
+    {
+      if (in.size() > end+1
+          && (in.at(end+1) == '\n'
+              || in.at(end+1) == '\r'))
+        end += 2;
+      else
+        end += 1;
+      out.push_back(in.substr(begin, end-begin));
+      begin = end;
+      if (begin >= in.size())
+        break;
+      end = in.find_first_of("\r\n", begin);
+    }
+  if (begin < in.size())
+    out.push_back(in.substr(begin, in.size() - begin));
+
+  return out;
+}
+
+typedef std::map<revision_id, std::pair<int, vector<revision_id> > > pmap;
+typedef std::map<revision_id, std::pair<int, vector<revision_id> > > cmap;
+
+void
+get_fileids(revision_id const & start,
+            file_path const & fp,
+            std::map<revision_id, std::pair<file_id, file_path> > & fileids,
+            pmap & parents,
+            cmap & children,
+            vector<revision_id> & roots,
+            app_state & app)
+{
   manifest_id mid;
-  app.db.get_revision_manifest(rev, mid);
-  file_path fp(filename);
+  app.db.get_revision_manifest(start, mid);
   manifest_map m;
   app.db.get_manifest(mid, m);
   manifest_map::const_iterator i = m.find(fp);
-  if(i == m.end())
-    return vector<string>();
+  I(i != m.end());
   file_id ident = manifest_entry_id(i);
-  file_data dat;
-  L(F("dumping file %s\n") % ident);
-  app.db.get_file_version(ident, dat);
-  vector<string> lines;
-  split_into_lines(dat.inner()(), "utf8", lines);
-  for (vector<string>::iterator i = lines.begin();
-       i != lines.end(); ++i)
-    (*i)+='\n';
-  return lines;
+  fileids.insert(make_pair(start, make_pair(ident, fp)));
+  std::deque<std::pair<revision_id, file_path> > todo;
+  todo.push_back(make_pair(start, fp));
+  ticker num("file_id count", "F", 1);
+  while (!todo.empty())
+    {
+      file_path const & p(todo.front().second);
+      revision_set rs;
+      app.db.get_revision(todo.front().first, rs);
+      int child_count = 0;
+      for (edge_map::const_iterator i = rs.edges.begin();
+           i != rs.edges.end(); ++i)
+        {
+          revision_id oldrev(edge_old_revision(i));
+          {
+            std::pair<int, vector<revision_id> > p(1, vector<revision_id>());
+            p.second.push_back(oldrev);
+            std::pair<pmap::iterator, bool>
+                pr(parents.insert(make_pair(todo.front().first, p)));
+            if (!pr.second)
+              {
+                I(++pr.first->second.first <= 2);
+                pr.first->second.second.push_back(oldrev);
+              }
+
+            std::pair<int, vector<revision_id> > c(1, vector<revision_id>());
+            c.second.push_back(todo.front().first);
+            std::pair<pmap::iterator, bool>
+                cr(children.insert(make_pair(oldrev, c)));
+            if (!cr.second)
+              {
+                ++cr.first->second.first;
+                cr.first->second.second.push_back(todo.front().first);
+              }
+          }
+
+          // already processed it
+          if (fileids.find(oldrev) != fileids.end())
+            continue;
+          // this is the beginning of time
+          if (edge_changes(i).rearrangement.has_added_file(p))
+            continue;
+          std::map<file_path, file_path> const &
+              renames(edge_changes(i).rearrangement.renamed_files);
+          std::map<file_path, file_path>::const_iterator j = renames.begin();
+          while (j != renames.end() && !(j->second == p))
+            ++j;
+          file_path const & mfp((j == renames.end())?fp:j->first);
+          
+          manifest_map m;
+          app.db.get_manifest(edge_old_manifest(i), m);
+          manifest_map::const_iterator mi = m.find(mfp);
+          I(mi != m.end());
+          file_id ident = manifest_entry_id(mi);
+          fileids.insert(make_pair(oldrev, make_pair(ident, mfp)));
+          todo.push_back(make_pair(oldrev, mfp));
+          ++child_count;
+        }
+      if (!child_count)
+        roots.push_back(todo.front().first);
+      ++num;
+      todo.pop_front();
+    }
 }
 
 CMD(pcdv, "debug", "REVISION REVISION FILENAME",
@@ -3823,6 +3914,8 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
     OPT_NONE)
 {
   pcdv_test();
+  if (args.size() == 0)
+    return;
 
   if (args.size() != 3)
     throw usage(name);
@@ -3830,85 +3923,91 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   revision_id left, right;
   complete(app, idx(args, 0)(), left);
   complete(app, idx(args, 1)(), right);
+  file_path fp(idx(args, 2)());
 
-  typedef std::multimap<revision_id, revision_id>::iterator gi;
-  typedef std::map<revision_id, std::pair<int, vector<revision_id> > >::iterator pi;
-  std::multimap<revision_id, revision_id> graph;
-  app.db.get_revision_ancestry(graph);
-  std::set<revision_id> leaves;
-  app.db.get_revision_ids(leaves);
-  std::map<revision_id, std::pair<int, vector<revision_id> > > parents;
-  std::map<revision_id, int> child_count;
-  for (gi i = graph.begin(); i != graph.end(); ++i)
-    parents.insert(std::make_pair(i->first,
-                                  std::make_pair(0, vector<revision_id>())));
-  for (gi i = graph.begin(); i != graph.end(); ++i)
-    {
-      std::pair<int, vector<revision_id> > & p(parents[i->second]);
-      ++p.first;
-      p.second.push_back(i->first);
-    }
-  // first find the set of graph roots
-  std::list<revision_id> roots;
-  for (pi i = parents.begin(); i != parents.end(); ++i)
-    if(i->second.first == 0)
-      roots.push_back(i->first);
+  std::map<revision_id, std::pair<file_id, file_path> > fileids;
+  pmap parents;
+  cmap children;
+  std::vector<revision_id> rootvect;
+  get_fileids(left, fp, fileids, parents, children, rootvect, app);
+  get_fileids(right, fp, fileids, parents, children, rootvect, app);
+
+  // now compute the merge history
+  std::deque<revision_id> roots;
+  for (vector<revision_id>::const_iterator i = rootvect.begin();
+       i != rootvect.end(); ++i)
+    roots.push_back(*i);
 
   ticker count("Revs in weave", "R", 1);
   ticker lines("Lines in weave", "L", 1);
+  ticker unique("Unique lines", "U", 1);
 
   map<revision_id, file_state> files;
   file_state empty;
-  std::set<revision_id> heads;
   file_state p(empty);
-  while (!roots.empty())
+  bool found_right = false;
+  bool found_left = false;
+  while (!roots.empty() && !(found_right && found_left))
     {
-      vector<revision_id> const & ps(parents[roots.front()].second);
-      if (ps.size() == 0)
-        p = empty;
-      else if (ps.size() == 1)
+      std::map<revision_id, std::pair<file_id, file_path> >::const_iterator
+          i(fileids.find(roots.front()));
+      if (i != fileids.end())
         {
-          map<revision_id, file_state>::iterator i = files.find(ps.front());
-          I(i != files.end());
-          p = i->second;
-        }
-      else
-        {
-          I(ps.size() == 2);
-          map<revision_id, file_state>::iterator i = files.find(ps.front());
-          I(i != files.end());
-          map<revision_id, file_state>::iterator j = files.find(ps.back());
-          I(j != files.end());
-          p = i->second.mash(j->second);
-        }
-      vector<string> contents(get_file(roots.front(), idx(args, 2)(), app));
-      string r(roots.front().inner()());
-      files.insert(std::make_pair(roots.front(),p.resolve(contents, r)));
+          vector<revision_id> const & ps(parents[roots.front()].second);
+          if (ps.size() == 0)
+            p = empty;
+          else if (ps.size() == 1)
+            {
+              map<revision_id, file_state>::const_iterator
+                  i = files.find(ps.front());
+              if (i != files.end())
+                p = i->second;
+            }
+          else
+            {
+              I(ps.size() == 2);
+              map<revision_id, file_state>::const_iterator
+                  i = files.find(ps.front());
+              bool l(i != files.end());
+              map<revision_id, file_state>::const_iterator
+                  j = files.find(ps.back());
+              bool r(j != files.end());
+              if (l && r)
+                p = i->second.mash(j->second);
+              else if (l)
+                p = i->second;
+              else if (r)
+                p = j->second;
+            }
+          vector<string> contents(get_file(i->second.first, app));
+          string r(roots.front().inner()());
+          files.insert(std::make_pair(roots.front(),p.resolve(contents, r)));
 
-      ++count;
-      lines += (empty.weave->size() - lines.ticks);
+          ++count;
+          lines += (empty.weave->size() - lines.ticks);
+          unique += (empty.itx->first.rev.size() - unique.ticks);
 
-      heads.insert(roots.front());
-      for (vector<revision_id>::const_iterator i = ps.begin();
-           i != ps.end(); ++i)
-        {
-          heads.erase(*i);
-          if (--child_count[*i] == 0
-              && left.inner()() != i->inner()()
-              && right.inner()() != i->inner()())
-            files.erase(*i);
+          found_left = found_left
+                       || (left.inner()() == roots.front().inner()());
+          found_right = found_right
+                        || (right.inner()() == roots.front().inner()());
+          for (vector<revision_id>::const_iterator i = ps.begin();
+               i != ps.end(); ++i)
+            {
+              if (--children[*i].first == 0
+                  && left.inner()() != i->inner()()
+                  && right.inner()() != i->inner()())
+                files.erase(*i);
+            }
         }
-      int children = 0;
-      for (gi i = graph.lower_bound(roots.front());
-           i != graph.upper_bound(roots.front()); i++)
+
+      vector<revision_id> const & cs(children[roots.front()].second);
+      for (vector<revision_id>::const_iterator i = cs.begin();
+           i != cs.end(); i++)
         {
-          if (--(parents[i->second].first) == 0)
-            roots.push_back(i->second);
-          ++children;
+          if (--(parents[*i].first) == 0)
+            roots.push_back(*i);
         }
-      child_count.insert(make_pair(roots.front(), children));
-      graph.erase(roots.front());
-      leaves.erase(roots.front());
       roots.pop_front();
     }
 
@@ -3916,6 +4015,9 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   N(l != files.end(), F("Not found: %s.") % left);
   map<revision_id, file_state>::iterator r = files.find(right);
   N(r != files.end(), F("Not found: %s.") % right);
+
+  P(F("Done building history."));
+
   vector<merge_section> result(l->second.conflict(r->second));
   P(F(""));
   show_conflict(consolidate(result));
