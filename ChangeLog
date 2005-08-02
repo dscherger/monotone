@@ -1,3 +1,8 @@
+2005-08-01  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Steps towards integrating feedback from njs: much
+	smaller and tighter than before, minimal state in nodes.
+
 2005-07-25  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc: Random tester seems to be able to run forever now.
