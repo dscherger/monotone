@@ -10,6 +10,8 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "interner.hh"
+#include "change_set.hh"
+#include "path_component.hh"
 
 using std::vector;
 using std::string;
@@ -18,6 +20,7 @@ using std::pair;
 using std::make_pair;
 using std::set;
 
+// pcdv (history-aware merge) for files (line state is {alive, dead} binary)
 
 struct merge_section
 {
@@ -74,6 +77,9 @@ struct living_status
 
   ~living_status();
 
+  living_status
+  copy() const;
+
   living_status const
   new_version(vector<revid> const & _leaves) const;
 
@@ -116,6 +122,8 @@ struct weave_line
   weave_line(line_contents const & l, revid const & v, int n);
 };
 
+void test_file_state();//for friend decl.
+
 //a.mash(b).resolve(c) -> "a and b were merged, with result c"
 //a.mash(b).conflict() -> "merge a and b"
 //a.resolve(b) -> "b is a child of a"
@@ -128,16 +136,21 @@ struct file_state
                               interner<revid> > > itx;
   boost::shared_ptr<map<line_id, living_status> > states;
 
+private:
+  file_state();
   file_state(boost::shared_ptr<vector<weave_line> > _weave,
              boost::shared_ptr<std::pair<interner<line_contents>,
                                          interner<revid> > > _itx);
-  file_state();
   file_state(vector<string> const & initial, string rev,
              boost::shared_ptr<vector<weave_line> > _weave,
              boost::shared_ptr<std::pair<interner<line_contents>,
                                          interner<revid> > > _itx);
+public:
 
   ~file_state();
+
+  static file_state
+  new_file() {return file_state();}
 
   // combine line states between two versions of a file
   file_state
@@ -154,9 +167,130 @@ struct file_state
   // add a descendent of this version to the weave, and return it
   file_state
   resolve(vector<string> const & result, string revision) const;
+
+  friend void test_file_state();
 };
 
 void
 pcdv_test();
+
+
+// history-aware directory merge (line state is a (parent+string))
+// multiple lines (files/directories) cannot have the same state (filename)
+
+typedef int item_id;
+
+struct path_conflict
+{
+  enum what {split, collision};
+  what type;
+  std::vector<item_id> items;
+  std::vector<file_path> lnames;
+  std::vector<file_path> rnames;
+  std::string name;
+  struct resolution
+  {
+    std::vector<std::pair<item_id, std::string> > res;
+  };
+};
+
+struct item_status
+{
+  typedef std::pair<item_id, path_component> item_state;
+  typedef std::map<revid, std::pair<item_state, vector<revid> > > item_data;
+  // shared for all versions of this item
+  boost::shared_ptr<item_data> versions;
+  // shared between all copies of this version of this item
+  boost::shared_ptr<std::vector<revid> > leaves;
+
+  item_status();
+  item_status(boost::shared_ptr<item_data> ver);
+  item_status(item_status const & x);
+
+  ~item_status();
+
+  item_status const
+  new_version(vector<revid> const & _leaves) const;
+
+  item_status
+  merge(item_status const & other) const;
+
+  std::set<item_state>
+  current_names() const;
+
+  item_status
+  rename(revid rev, item_id new_parent, path_component new_name) const;
+
+  item_status
+  copy() const;
+};
+
+// This is a const object type; there are no modifiers.
+// Usage:
+//   for a->b
+//     a.rearrange(<changes>, 'b')
+//   for (a, b)->c (merge in history)
+//     x = a.rearrange(<changes>, 'c')
+//     y = b.rearrange(<changes>, 'c')
+//     x.mash(y)
+//   for merge(a, b)
+//     x = a.mash(b)
+//     <conflict> = x.get_conflicts()
+//     x.resolve(<conflict_resolution>)
+//     x.get_changes_from(a)
+//     x.get_changes_from(b)
+class tree_state
+{
+  boost::shared_ptr<vector<boost::shared_ptr<item_status::item_data> > > items;
+  boost::shared_ptr<std::map<item_id, item_status> > states;
+  boost::shared_ptr<interner<revid> > itx;
+
+  tree_state(boost::shared_ptr<vector<boost::shared_ptr<
+                                        item_status::item_data> > > _items,
+             boost::shared_ptr<interner<revid> > _itx);
+  tree_state();
+public:
+
+  ~tree_state();
+
+  static tree_state
+  new_tree() {return tree_state();}
+
+  static tree_state
+  merge(std::vector<tree_state> const & trees,
+        std::vector<change_set::path_rearrangement> const & changes,
+        std::string revision);
+
+  std::vector<path_conflict>
+  conflict(tree_state const & other) const;
+  
+  bool
+  is_clean()
+  {return conflict(*this).empty();}
+
+  std::vector<std::pair<item_id, file_path> >
+  current() const;
+
+  // get the changes along edge this->merged for merged=merge(this, other)
+  void
+  get_changes_for_merge(tree_state const & other,
+                        std::set<path_conflict::resolution> const & res,
+                        change_set::path_rearrangement & changes);
+private:
+  file_path
+  get_full_name(item_status::item_state x) const;
+
+  std::string
+  get_ambiguous_full_name(item_status::item_state x) const;
+
+  tree_state
+  mash(tree_state const & other) const;
+
+  static tree_state
+  mash(std::vector<tree_state> const & trees);
+};
+
+void
+dirmerge_test();
 
 #endif

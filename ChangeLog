@@ -1,3 +1,9 @@
+2005-08-02  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: Add history-aware filetree merge.
+		TODO: write get_changes_for_merge, add tests.
+	* commands.cc: Call it from the pcdv driver.
+
 2005-07-29  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* commands.cc (pcdv): Try to make pcdv driver more efficient.

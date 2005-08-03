@@ -52,6 +52,8 @@
 #include "options.hh"
 #include "globish.hh"
 
+#include "pcdv.hh"
+
 //
 // this file defines the task-oriented "top level" commands which can be
 // issued as part of a monotone command line. the command line can only
@@ -3907,6 +3909,9 @@ get_fileids(revision_id const & start,
            i != rs.edges.end(); ++i)
         {
           revision_id oldrev(edge_old_revision(i));
+          if (!(oldrev == revision_id()))
+            ++child_count;
+
           {
             std::pair<int, vector<revision_id> > p(1, vector<revision_id>());
             p.second.push_back(oldrev);
@@ -3933,23 +3938,27 @@ get_fileids(revision_id const & start,
           if (fileids.find(oldrev) != fileids.end())
             continue;
           // this is the beginning of time
-          if (edge_changes(i).rearrangement.has_added_file(p))
-            continue;
+//          if (edge_changes(i).rearrangement.has_added_file(p))
+//            continue;
           std::map<file_path, file_path> const &
               renames(edge_changes(i).rearrangement.renamed_files);
           std::map<file_path, file_path>::const_iterator j = renames.begin();
           while (j != renames.end() && !(j->second == p))
             ++j;
           file_path const & mfp((j == renames.end())?fp:j->first);
-          
-          manifest_map m;
-          app.db.get_manifest(edge_old_manifest(i), m);
-          manifest_map::const_iterator mi = m.find(mfp);
-          I(mi != m.end());
-          file_id ident = manifest_entry_id(mi);
-          fileids.insert(make_pair(oldrev, make_pair(ident, mfp)));
-          todo.push_back(make_pair(oldrev, mfp));
-          ++child_count;
+          if (!(mfp == file_path()
+              || edge_changes(i).rearrangement.has_added_file(p)))
+          {
+            manifest_map m;
+            app.db.get_manifest(edge_old_manifest(i), m);
+            manifest_map::const_iterator mi = m.find(mfp);
+            I(mi != m.end());
+            file_id ident = manifest_entry_id(mi);
+            fileids.insert(make_pair(oldrev, make_pair(ident, mfp)));
+            todo.push_back(make_pair(oldrev, mfp));
+          }
+          else if (!(oldrev == revision_id()))
+            todo.push_back(make_pair(oldrev, file_path()));
         }
       if (!child_count)
         roots.push_back(todo.front().first);
@@ -3985,19 +3994,48 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   std::deque<revision_id> roots;
   for (vector<revision_id>::const_iterator i = rootvect.begin();
        i != rootvect.end(); ++i)
-    roots.push_back(*i);
+    {
+      roots.push_back(*i);
+      P(F("Roots: %1%") % *i);
+    }
 
   ticker count("Revs in weave", "R", 1);
   ticker lines("Lines in weave", "L", 1);
   ticker unique("Unique lines", "U", 1);
 
   map<revision_id, file_state> files;
-  file_state empty;
+  file_state empty(file_state::new_file());
   file_state p(empty);
+  std::map<revision_id, tree_state> trees;
+  tree_state emptytree(tree_state::new_tree());
   bool found_right = false;
   bool found_left = false;
   while (!roots.empty() && !(found_right && found_left))
     {
+      revision_set rs;
+      app.db.get_revision(roots.front(), rs);
+      std::vector<tree_state> treevec;
+      std::vector<change_set::path_rearrangement> revec;
+      for (edge_map::const_iterator i = rs.edges.begin();
+           i != rs.edges.end(); ++i)
+        {
+          tree_state from(emptytree);
+          if (edge_old_revision(i) == revision_id())
+            from = emptytree;
+          else
+            {
+              std::map<revision_id, tree_state>::iterator
+                j = trees.find(edge_old_revision(i));
+              I(j != trees.end());
+              from = j->second;
+            }
+          treevec.push_back(from);
+          revec.push_back(edge_changes(i).rearrangement);
+        }
+      tree_state newtree(tree_state::merge(treevec, revec,
+                                           roots.front().inner()()));
+      trees.insert(make_pair(roots.front(), newtree));
+
       std::map<revision_id, std::pair<file_id, file_path> >::const_iterator
           i(fileids.find(roots.front()));
       if (i != fileids.end())
@@ -4046,7 +4084,10 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
               if (--children[*i].first == 0
                   && left.inner()() != i->inner()()
                   && right.inner()() != i->inner()())
-                files.erase(*i);
+                {
+                  files.erase(*i);
+                  trees.erase(*i);
+                }
             }
         }
 
@@ -4070,6 +4111,14 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   vector<merge_section> result(l->second.conflict(r->second));
   P(F(""));
   show_conflict(consolidate(result));
+  std::map<revision_id, tree_state>::const_iterator lt(trees.find(left));
+  std::map<revision_id, tree_state>::const_iterator rt(trees.find(right));
+  std::vector<std::pair<item_id, file_path> > t(lt->second.current());
+  for (std::vector<std::pair<item_id, file_path> >::const_iterator
+         i = t.begin(); i != t.end(); ++i)
+    {
+      P(F("%1%: %2%") % i->first % i->second);
+    }
 }
 
 
