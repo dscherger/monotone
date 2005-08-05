@@ -1,3 +1,7 @@
+2005-08-04  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Further hacking, nothing exciting.
+
 2005-08-01  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc: Steps towards integrating feedback from njs: much

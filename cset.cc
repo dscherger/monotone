@@ -687,13 +687,13 @@ mfest
   bool dir_exists(file_path dp) const;
 
   // Imperative parts (fault on lookup failures).
-  void path_to_node(path_vec_t const & pth, dir_t & parent, node_t & leaf);
-  void node_to_path(node_t const & n, path_vec_t & pth);
+  void lookup(path_vec_t const & pth, 
+	      dir_t & parent, node_t & leaf);
 };
 
 
 void 
-mfest::path_to_node(path_vec_t const & pth, dir_t & parent, node_t & leaf)
+mfest::lookup(path_vec_t const & pth, dir_t & parent, node_t & leaf)
 {
   parent = root;
   for (vector<dirent_t>::const_iterator i = pth.dir.begin(); 
@@ -702,24 +702,6 @@ mfest::path_to_node(path_vec_t const & pth, dir_t & parent, node_t & leaf)
       parent = downcast_to_dir_t(parent->get_entry(*i));
     }
   leaf = parent->get_entry(pth.leaf);
-}
-
-
-void 
-mfest::node_to_path(node_t const & n, path_vec_t & path)
-{
-  for (dfs_iter i(root); !i.finished(); ++i)
-    {
-      node_t nn = *i;
-      if (nn.get() == n.get())
-        {
-          i.path(path);
-          return;
-        }        
-    }
-
-  // Don't request a node which doesn't exist.
-  I(false); 
 }
 
 
@@ -1055,10 +1037,33 @@ cset
   mfest new_mfest;
   hash_set<node_t> graveyard;
 
+  // Fields and accessors related to the "inverse"
+  // child->{parent,name} maps.
+
+  hash_map<weak_node_t, pair<weak_node_t, dirent_t> > old_parents;
+  hash_map<weak_node_t, pair<weak_node_t, dirent_t> > new_parents;
+
+  void get_old_path(node_t const & leaf, path_vec_t & pth) const;
+  void get_new_path(node_t const & leaf, path_vec_t & pth) const;
+
+  void set_old_parent(node_t const & child, 
+		      dir_t const & parent, 
+		      dirent_t name_in_parent);
+  void set_new_parent(node_t const & child, 
+		      dir_t const & parent, 
+		      dirent_t name_in_parent);
+  void get_old_parent(node_t const & child, 
+		      dir_t & parent, 
+		      dirent_t & name_in_parent) const;
+  void get_new_parent(node_t const & child, 
+		      dir_t & parent, 
+		      dirent_t & name_in_parent) const;
+
+  // Fields and accessors related to the new <-> old bijection.
+
   hash_map<weak_node_t, weak_node_t> old_to_new;
   hash_map<weak_node_t, weak_node_t> new_to_old;
 
-  // Accessors related the new <-> old bijection.
   void update_old_new_mapping(weak_node_t old, 
                               weak_node_t modified_new);
   void get_corresponding_new_weak_node(weak_node_t old_or_unborn, 
@@ -1133,6 +1138,18 @@ cset::reset(mfest const & m)
 
   old_mfest.reset(m);
   new_mfest.reset(m);
+
+  old_parents.clear();
+  new_parents.clear();
+
+  for (dfs_iter i(old_mfest.root); !i.finished(); ++i)
+    {
+      dir_t parent;
+      dirent_t entry;
+      i.cwd(parent);
+      i.leaf(entry);
+      set_old_parent(*i, parent, entry);
+    }
 }
 
 bool 
@@ -1181,11 +1198,32 @@ cset::check_sane() const
   confirm_weak_maps_agree(new_to_old, old_to_new);
   confirm_weak_maps_agree(old_to_new, new_to_old);
 
-  for (bfs_iter i(old_mfest.root); !i.finished(); ++i)
-    I(is_live(*i));
+  I(is_live(old_mfest.root));
+  I(is_live(new_mfest.root));
 
-  for (bfs_iter i(new_mfest.root); !i.finished(); ++i)
-    I(is_live(*i));
+  for (dfs_iter i(old_mfest.root); !i.finished(); ++i)
+    {
+      I(is_live(*i));
+      dir_t parent, indexed_parent;
+      dirent_t entry, indexed_entry;
+      i.cwd(parent);
+      i.leaf(entry);
+      get_old_parent(*i, indexed_parent, indexed_entry);
+      I(entry == indexed_entry);
+      I(parent.get() == indexed_parent.get());
+    }
+
+  for (dfs_iter i(new_mfest.root); !i.finished(); ++i)
+    {
+      I(is_live(*i));
+      dir_t parent, indexed_parent;
+      dirent_t entry, indexed_entry;
+      i.cwd(parent);
+      i.leaf(entry);
+      get_new_parent(*i, indexed_parent, indexed_entry);
+      I(entry == indexed_entry);
+      I(parent.get() == indexed_parent.get());
+    }
 
   for (hash_set<node_t>::const_iterator i = graveyard.begin(); 
        i != graveyard.end(); ++i)
@@ -1200,6 +1238,92 @@ cset::check_sane() const
       I(!is_killed(*i));
       I(new_to_old.find(weak_node_t(*i)) != new_to_old.end());
     }  
+}
+
+void 
+cset::get_old_path(node_t const & leaf, path_vec_t & pth) const
+{
+  pth.dir.clear();
+  dir_t parent;  
+  get_old_parent(leaf, parent, pth.leaf);
+
+  for (node_t child = parent; 
+       child.get() != old_mfest.root.get();
+       child = parent)
+    {
+      dirent_t child_entry;
+      get_old_parent(child, parent, child_entry);
+      pth.dir.push_back(child_entry);
+    }
+
+  reverse(pth.dir.begin(), pth.dir.end());  
+}
+
+void 
+cset::get_new_path(node_t const & leaf, path_vec_t & pth) const
+{
+  pth.dir.clear();
+  dir_t parent;  
+  get_new_parent(leaf, parent, pth.leaf);
+
+  for (node_t child = parent; 
+       child.get() != new_mfest.root.get();
+       child = parent)
+    {
+      dirent_t child_entry;
+      get_new_parent(child, parent, child_entry);
+      pth.dir.push_back(child_entry);
+    }
+
+  reverse(pth.dir.begin(), pth.dir.end());  
+}
+
+void 
+cset::set_old_parent(node_t const & child, 
+		     dir_t const & parent, 
+		     dirent_t name_in_parent)
+{
+  old_parents[weak_node_t(child)] = make_pair(weak_node_t(parent),
+					      name_in_parent);
+}
+
+void 
+cset::set_new_parent(node_t const & child, 
+		     dir_t const & parent, 
+		     dirent_t name_in_parent)
+{
+  new_parents[weak_node_t(child)] = make_pair(weak_node_t(parent),
+					      name_in_parent);
+}
+
+void 
+cset::get_old_parent(node_t const & child, 
+		     dir_t & parent, 
+		     dirent_t & name_in_parent) const
+{
+  hash_map<weak_node_t, pair<weak_node_t, dirent_t> >::const_iterator i = 
+    old_parents.find(weak_node_t(child));
+  I(i != old_parents.end());
+  I(!i->second.first.expired());
+  parent = downcast_to_dir_t(i->second.first.lock());
+  name_in_parent = i->second.second;
+}
+
+void 
+cset::get_new_parent(node_t const & child, 
+		     dir_t & parent, 
+		     dirent_t & name_in_parent) const
+{
+  hash_map<weak_node_t, pair<weak_node_t, dirent_t> >::const_iterator i = 
+    new_parents.find(weak_node_t(child));
+  if (i != new_parents.end())
+    {
+      I(!i->second.first.expired());
+      parent = downcast_to_dir_t(i->second.first.lock());
+      name_in_parent = i->second.second;
+    }
+  else
+    get_old_parent(child, parent, name_in_parent);
 }
 
 
@@ -1238,6 +1362,7 @@ cset::unique_entry_in_new_dir(dir_t new_dir, dirent_t entry)
       I(result.unique());
       update_old_new_mapping(old_weak_node, weak_node_t(result));
       new_dir->entries[entry] = result;
+      set_new_parent(result, new_dir, entry);
     }
 
   // The node should now have exactly 2 references: 
@@ -1385,13 +1510,14 @@ cset::detach(path_vec_t const & path)
   node_t old_node, new_node;
   path_vec_t new_path;
 
-  old_mfest.path_to_node(path, old_parent, old_node);
+  old_mfest.lookup(path, old_parent, old_node);
   get_corresponding_new_node(old_node, new_node);
-  new_mfest.node_to_path(new_node, new_path);
+  get_new_path(new_node, new_path);
 
   dir_t new_parent = get_writable_dir_containing(new_path);
   new_node = unique_entry_in_new_dir(new_parent, new_path.leaf);
   new_parent->drop_child(new_path.leaf);
+  new_parents.erase(new_node);
   return new_node;
 
   // NB: it is important *not* to check sanity here, as we might have
@@ -1406,6 +1532,7 @@ cset::attach(path_vec_t const & path, node_t n)
 {
   dir_t new_dir = get_writable_dir_containing(path);
   new_dir->add_child(path.leaf, n);
+  set_new_parent(n, new_dir, path.leaf);
 
   // NB: it is important *not* to check sanity here, as we might still
   // be in a transient state where detached grandchildren are not
@@ -1423,6 +1550,7 @@ cset::add_dir(path_vec_t const & dp)
   dir_t new_dir(downcast_to_dir_t(old_dir->shallow_copy()));
   dir_t new_parent = get_writable_dir_containing(dp);
   new_parent->add_child(dp.leaf, new_dir);
+  set_new_parent(new_dir, new_parent, dp.leaf);
 
   old_to_new[weak_node_t(old_dir)] = weak_node_t(new_dir);
   new_to_old[weak_node_t(new_dir)] = weak_node_t(old_dir);
@@ -1443,6 +1571,7 @@ cset::add_file(path_vec_t const & fp)
   file_t new_file(downcast_to_file_t(old_file->shallow_copy()));
   dir_t new_parent = get_writable_dir_containing(fp);
   new_parent->add_child(fp.leaf, new_file);
+  set_new_parent(new_file, new_parent, fp.leaf);
 
   old_to_new[weak_node_t(old_file)] = weak_node_t(new_file);
   new_to_old[weak_node_t(new_file)] = weak_node_t(old_file);
@@ -1502,124 +1631,89 @@ cset::clear_attr(path_vec_t const & path,
     }
 }
 
-typedef vector<pair<path_vec_t, path_vec_t> > path_vec_pair;
-typedef vector<pair<path_vec_pair, 
-		    shared_ptr<set<attr_name> > > > 
-path_pair_attr_name_vec;
-
 
 struct replay_record
 {
-  path_vec_pair dirs_deleted;
-  path_vec_pair files_deleted;
-  path_vec_pair nodes_renamed;
-  path_vec_pair dirs_added;
-  path_vec_pair files_added;
-  path_vec_pair deltas_applied;
-  path_pair_attr_name_vec attrs_changed;
-};
 
-/*
+  struct live_paths
+  {
+    path_vec_t src;
+    path_vec_t dst;
+  }
+
+  struct changed_attr
+  {
+    live_paths paths;
+    attr_name name;
+    attr_val src_val;
+    attr_val dst_val;
+  }
+
+  struct applied_delta
+  {
+    live_paths paths;
+    file_id src_id;
+    file_id dst_id;
+  }
+
+  vector<path_vec_t> files_deleted;
+  vector<path_vec_t> dirs_deleted;
+  vector<live_paths> nodes_renamed;
+  vector<path_vec_t> dirs_added;
+  vector<path_vec_t> files_added;
+  vector<applied_delta> deltas_applied;
+  vector<changed_attr> attrs_changed;
+};
 
 
 static void
 play_back_replay_record(replay_record const & rr,
-			mfest const & src,
-			mfest const & dst,
 			change_consumer & cc)
 {
-  path_vec_t v1, v2;
-
-  for (node_pair_vec::const_iterator i = rr.files_deleted.begin();
+  for (vector<path_vec_t>::const_iterator i = rr.files_deleted.begin();
        i != rr.files_deleted.end(); ++i)
-    {
-      src.get_path(i->first, v1);
-      cc.delete_node(v1);
-    }
-
-  for (node_pair_vec::const_iterator i = rr.dirs_deleted.begin();
+    cc.delete_node(*i);
+  
+  for (vector<path_vec_t>::const_iterator i = rr.dirs_deleted.begin();
        i != rr.dirs_deleted.end(); ++i)
-    {
-      src.get_path(i->first, v1);
-      cc.delete_node(v1);
-    }
+    cc.delete_node(*i);
 
-  for (node_pair_vec::const_iterator i = rr.nodes_renamed.begin();
-       i != rr.nodes_renamed.end(); ++i)
-    {
-      src.get_path(i->first, v1);
-      dst.get_path(i->second, v2);
-      cc.rename_node(v1, v2);
-    }
+  for (vector<replay_record::live_paths>::const_iterator i 
+	 = rr.nodes_renamed.begin(); i != rr.nodes_renamed.end(); ++i)
+    cc.rename_node(i->src, i->dst);
 
   cc.finalize_renames();
 
-  for (node_pair_vec::const_iterator i = rr.dirs_added.begin();
+  for (vector<path_vec_t>::const_iterator i = rr.dirs_added.begin();
        i != rr.dirs_added.end(); ++i)
-    {
-      dst.get_path(i->second, v2);
-      cc.add_dir(v2);
-    }
+    cc.add_dir(*i);
 
-  for (node_pair_vec::const_iterator i = rr.files_added.begin();
+  for (vector<path_vec_t>::const_iterator i = rr.files_added.begin();
        i != rr.files_added.end(); ++i)
-    {
-      dst.get_path(i->second, v2);
-      cc.add_file(v2);
-    }
+    cc.add_file(*i);
 
-  for (file_pair_vec::const_iterator i = rr.deltas_applied.begin();
-       i != rr.deltas_applied.end(); ++i)
-    {
-      dst.get_path(i->second, v2);
-      cc.apply_delta(v2, 
-		     i->first->content, 
-		     i->second->content);
-    }
+  for (vector<replay_record::applied_delta>::const_iterator i 
+	 = rr.deltas_applied.begin(); i != rr.deltas_applied.end(); ++i)
+    cc.apply_delta(i->paths.dst, i->src_id, i->dst_id);
 
   // attr pass #1: emit all the cleared attrs
-  for (node_attr_name_vec::const_iterator i = rr.attrs_changed.begin();
+  for (vector<replay_record::changed_attr>::const_iterator i = rr.attrs_changed.begin();
        i != rr.attrs_changed.end(); ++i)
     {
-      node_t a = i->first.first;
-      node_t b = i->first.second;
-      shared_ptr< set<attr_name> > attr_names = i->second;
-      for (set<attr_name>::const_iterator j = attr_names->begin();
-	   j != attr_names->end(); ++j)
-	{
-	  if (a->has_attr(*j) && !b->has_attr(*j))
-	    {
-	      dst.get_path(b, v2);
-	      cc.clear_attr(v2, *j);
-	    }
-	}
+      if (i->dst_val.empty())
+	cc.clear_attr(i->paths.dst, i->name);
     }
 
   // attr pass #2: emit all the set attrs
-  for (node_attr_name_vec::const_iterator i = rr.attrs_changed.begin();
+  for (vector<replay_record::changed_attr>::const_iterator i = rr.attrs_changed.begin();
        i != rr.attrs_changed.end(); ++i)
     {
-      node_t a = i->first.first;
-      node_t b = i->first.second;
-      shared_ptr< set<attr_name> > attr_names = i->second;
-      for (set<attr_name>::const_iterator j = attr_names->begin();
-	   j != attr_names->end(); ++j)
-	{
-	  if (b->has_attr(*j))
-	    {
-	      if ((!a->has_attr(*j))
-		  || (a->has_attr(*j) &&
-		      a->get_attr(*j) != b->get_attr(*j)))
-		{
-		  dst.get_path(b, v2);
-		  cc.set_attr(v2, *j, b->get_attr(*j));
-		}
-	    }
-	}
+      if (!i->dst_val.empty())
+	cc.set_attr(i->paths.dst, i->name, i->dst_val);
     }
 }
 
-
+/*
 static void
 play_back_replay_record_inverse(replay_record const & rr,
 				mfest const & src,
@@ -1764,11 +1858,11 @@ play_back_replay_record_inverse(replay_record const & rr,
 	}
     }
 }
+*/
 
 
 static void
-build_replay_record(mfest const & src,
-		    mfest const & dst,
+build_replay_record(cset const & cs,
 		    replay_record & rr)
 {
   // we do two passes accumulating nodes: the first pass accumulates
@@ -1777,47 +1871,53 @@ build_replay_record(mfest const & src,
   // the dst map. in both cases we append any interesting nodes to
   // vectors which we then replay as blocks of related changes.
   
-  for (dfs_iter i(src.root); !i.finished(); ++i)
+  for (dfs_iter i(cs.old_mfest.root); !i.finished(); ++i)
     {
       // in this pass we accumulate nodes_deleted. the "self" node is a
       // member of the "src" directory tree.
-      node_t self = *i;
-      node_t other = dst.get_node(self->ident);
-
+      node_t self = *i, other;
       I(self->live());
+
+      cs.get_corresponding_new_node(self, other);
       
       if (other->killed())
 	{
+	  path_vec_t pth;
+	  cs.get_old_path(self, pth);
+
 	  if (is_dir_t(self))
-	    rr.dirs_deleted.push_back(make_pair(self, other));
+	    rr.dirs_deleted.push_back(pth);
 	  else
-	    rr.files_deleted.push_back(make_pair(self, other));	    
+	    rr.files_deleted.push_back(pth);
 	}
     }
 
-  for (dfs_iter i(dst.root); !i.finished(); ++i)
+  for (dfs_iter i(cs.new_mfest.root); !i.finished(); ++i)
     {
       // in this pass we accumulate nodes_renamed, files_added, dirs_added,
       // deltas_applied, attrs_cleared, and attrs_set.
       //
       // the "self" node is a member of the "dst" directory tree.
-      node_t self = *i;
+      node_t self = *i, other;
 
       I(self->live());
 
-      node_t other = src.get_node(self->ident);
+      get_corresponding_old_node(self, other);
+
       if (other->unborn())
 	{
+	  path_vec_t pth;
+	  cs.get_new_path(self, pth);
 	  if (is_dir_t(self))
 	    {
 	      I(is_dir_t(other));
-	      rr.dirs_added.push_back(make_pair(other, self));
+	      rr.dirs_added.push_back(pth);
 	    }
 	  else
 	    {
 	      I(is_file_t(self));
 	      I(is_file_t(other));
-	      rr.files_added.push_back(make_pair(other, self));
+	      rr.files_added.push_back(pth);
 	    }
 	} 
       else if (other->live())
@@ -1825,7 +1925,10 @@ build_replay_record(mfest const & src,
 	  if ((other->name->val != self->name->val)
 	      || (other->parent != self->parent))
 	    {
-	      rr.nodes_renamed.push_back(make_pair(other, self));
+	      replay_record::live_paths paths;
+	      cs.get_old_path(other, paths.src);
+	      cs.get_new_path(self, paths.dst);
+	      rr.nodes_renamed.push_back(paths);
 	    }
 	}
 
@@ -1837,40 +1940,61 @@ build_replay_record(mfest const & src,
 	  file_t f_self = downcast_to_file_t(self);
 	  if (!(f_other->content == f_self->content))
 	    {
-	      rr.deltas_applied.push_back(make_pair(f_other, f_self));
+	      replay_record::applied_delta del;
+	      cs.get_old_path(other, del.paths.src);
+	      cs.get_new_path(self, del.paths.dst);
+	      del.src_id = f_other->content;
+	      del.dst_id = f_self->content;
+	      rr.deltas_applied.push_back(del);
 	    }
 	}
       
       // attrs which were changed
-      if (other->has_attrs() || self->has_attrs())
+      if (self->attrs != other->attrs)
 	{
-	  map<attr_name, attr_val> self_attrs;
-	  map<attr_name, attr_val> other_attrs;
+	  life_paths pths;
+	  cs.get_old_path(other, pths.src);
+	  cs.get_new_path(self, pths.dst);
 
-	  if (self->has_attrs())
-	    self_attrs = self->fancy->attrs;
-
-	  if (other->has_attrs())
-	    other_attrs = other->fancy->attrs;
-
-	  shared_ptr< set<attr_name> > attr_set = shared_ptr< set<attr_name> >(new set<attr_name>);
-
-	  for (map<attr_name, attr_val>::const_iterator a = self_attrs.begin();
-	       a != self_attrs.end(); ++a)
+	  for (map<attr_name, attr_val>::const_iterator a = self->attrs.begin();
+	       a != self->attrs.end(); ++a)
 	    {
-	      if (other_attrs[a->first] != a->second)
-		attr_set->insert(a->first);
+	      attr_val oldval;
+
+	      map<attr_name, attr_val>::const_iterator b = other->attrs.find(a->first);
+	      if (b != other->attrs.end())
+		oldval = b->second;
+
+	      if (oldval != a->second)
+		{
+		  replay_record::changed_attr ab;
+		  ab.paths = pths;
+		  ab.name = a->first;
+		  ab.src_val = oldval;
+		  ab.dst_val = a->second;
+		  rr.attrs_changed.push_back(ab);
+		}
 	    }
 
-	  for (map<attr_name, attr_val>::const_iterator b = other_attrs.begin();
-	       b != other_attrs.end(); ++b)
+	  for (map<attr_name, attr_val>::const_iterator b = other->attrs.begin();
+	       b != other->attrs.end(); ++b)
 	    {
-	      if (self_attrs[b->first] != b->second)
-		attr_set->insert(b->first);
-	    }
+	      attr_val newval;
 
-	  if (!attr_set->empty())
-	    rr.attrs_changed.push_back(make_pair(make_pair(self, other), attr_set));
+	      map<attr_name, attr_val>::const_iterator a = self->attrs.find(b->first);
+	      if (a != other->attrs.end())
+		newval = a->second;
+
+	      if (newval != b->second)
+		{
+		  replay_record::changed_attr ab;
+		  ab.paths = pths;
+		  ab.name = b->first;
+		  ab.src_val = b->second;
+		  ab.dst_val = newval;
+		  rr.attrs_changed.push_back(ab);
+		}
+	    }
 	}
     }
 }
@@ -1881,20 +2005,21 @@ cset::replay_changes(change_consumer & cc) const
 {
   replay_record rr;
   check_sane();
-  build_replay_record(old_mfest, new_mfest, rr);
+  build_replay_record(*this, rr);
   play_back_replay_record(rr, old_mfest, new_mfest, cc);
 }
 
 
+/*
 void 
 cset::replay_inverse_changes(change_consumer & cc) const
 {
   replay_record rr;
   check_sane();
-  build_replay_record(old_mfest, new_mfest, rr);
+  build_replay_record(*this, rr);
   play_back_replay_record_inverse(rr, old_mfest, new_mfest, cc);
 }
-
+*/
 
 void
 concatenate_changesets(cset const & a,
@@ -1953,6 +2078,8 @@ concatenate_changesets(cset const & a,
 //
 
 // TODO: implement this algorithm!
+
+/*
 
 
 namespace
