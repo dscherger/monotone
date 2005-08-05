@@ -43,16 +43,16 @@ Change_consumers:
  add is looked up in the post-state.
 
  When playing back a change_set, there is a canonical order in which
- entries are emitted: delete, rename, add, apply_delta, clear_attr,
- set_attr.
+ entries are emitted: deleted files, deleted dirs, renamed nodes,
+ added dirs, added files, applied deltas, attrs cleared, attrs set.
 
  Furthermore within each type of entry, the order in which the entries
- are emitted is specified: all entries are emitted in lexicographic
- order, which happens to induce topological order as well (A is always
- emitted before A/B).
+ are emitted is specified: deletes are emitted in reverse-lexicographic
+ order (B, A/B, A) and all other entries are emitted in lexicographic
+ order (A, A/B, B).
 
  Crucially, delete is ordered by *source space*; rename, add, apply_delta,
- clear_attr, and set_attr are ordered by *destination space*. wW replay
+ clear_attr, and set_attr are ordered by *destination space*. We replay
  these by walking the tree rooted in each mfest.
 
 
@@ -350,6 +350,19 @@ path_vec_t
 
 };
 
+bool
+operator<(path_vec_t const & pva,
+	  path_vec_t const & pvb)
+{
+  vector<dirent_t> a(pva.dir);
+  vector<dirent_t> b(pvb.dir);
+  a.push_back(pva.leaf);
+  b.push_back(pvb.leaf);
+  return lexicographical_compare(a.begin(), a.end(),
+				 b.begin(), b.end());
+  
+}
+
 
 //==================================================================
 // nodes
@@ -546,9 +559,9 @@ dfs_iter
     while (!stk.empty() 
 	   && stk.top().second == stk.top().first->entries.end())
       {
-        I(!prefix.empty());
 	stk.pop();
-        prefix.pop_back();
+	if (!prefix.empty())
+	  prefix.pop_back();
 	if (!stk.empty())
 	  ++stk.top().second;
       }
@@ -1494,7 +1507,17 @@ cset::finalize_renames()
 void 
 cset::delete_node(path_vec_t const & dp)
 {
-  graveyard.insert(this->detach(dp));
+  node_t n = this->detach(dp);
+  if (is_dir_t(n))
+    {
+      // NB: we do not permit deleting a non-empty directory; the
+      // semantics are too complex when coupled with renames (which
+      // might escape the deleted dir). If you are a client and you
+      // want to delete a dir, you have to delete everything inside
+      // the dir first.
+      I(downcast_to_dir_t(n)->entries.empty());
+    }
+  graveyard.insert(n);
 
   if (global_sanity.debug)
     {
@@ -1639,7 +1662,7 @@ struct replay_record
   {
     path_vec_t src;
     path_vec_t dst;
-  }
+  };
 
   struct changed_attr
   {
@@ -1647,22 +1670,65 @@ struct replay_record
     attr_name name;
     attr_val src_val;
     attr_val dst_val;
-  }
+  };
 
   struct applied_delta
   {
     live_paths paths;
     file_id src_id;
     file_id dst_id;
-  }
+  };
 
-  vector<path_vec_t> files_deleted;
-  vector<path_vec_t> dirs_deleted;
+  set<path_vec_t> files_deleted;
+  set<path_vec_t> dirs_deleted;
   vector<live_paths> nodes_renamed;
-  vector<path_vec_t> dirs_added;
-  vector<path_vec_t> files_added;
+  set<path_vec_t> dirs_added;
+  set<path_vec_t> files_added;
   vector<applied_delta> deltas_applied;
   vector<changed_attr> attrs_changed;
+
+  // In the forward direction, renames are sorted by destination
+  // space; so in the inverse record, renames should be sorted by
+  // source space.
+  struct rename_inverse_sorter
+  {
+    bool operator()(live_paths const & a,
+		    live_paths const & b)
+    {
+      return a.src < b.src;
+    }
+  };
+
+  // The same is true of deltas.
+  struct delta_inverse_sorter
+  {
+    bool operator()(applied_delta const & a,
+		    applied_delta const & b)
+    {
+      return a.paths.src < b.paths.src;
+    }
+  };
+
+  // The same is true of attributes.
+  struct attr_inverse_sorter
+  {
+    bool operator()(changed_attr const & a,
+		    changed_attr const & b)
+    {
+      return a.paths.src < b.paths.src;
+    }
+  };
+
+  void sort_for_inverse_direction()
+  {
+    sort(nodes_renamed.begin(), nodes_renamed.end(), 
+	 rename_inverse_sorter());
+    sort(deltas_applied.begin(), deltas_applied.end(),
+	 delta_inverse_sorter());
+    sort(attrs_changed.begin(), attrs_changed.end(),
+	 attr_inverse_sorter());
+  }
+  
 };
 
 
@@ -1670,13 +1736,14 @@ static void
 play_back_replay_record(replay_record const & rr,
 			change_consumer & cc)
 {
-  for (vector<path_vec_t>::const_iterator i = rr.files_deleted.begin();
-       i != rr.files_deleted.end(); ++i)
+  for (set<path_vec_t>::reverse_iterator i = rr.files_deleted.rbegin();
+       i != rr.files_deleted.rend(); ++i)
     cc.delete_node(*i);
   
-  for (vector<path_vec_t>::const_iterator i = rr.dirs_deleted.begin();
-       i != rr.dirs_deleted.end(); ++i)
+  for (set<path_vec_t>::reverse_iterator i = rr.dirs_deleted.rbegin();
+       i != rr.dirs_deleted.rend(); ++i)
     cc.delete_node(*i);
+
 
   for (vector<replay_record::live_paths>::const_iterator i 
 	 = rr.nodes_renamed.begin(); i != rr.nodes_renamed.end(); ++i)
@@ -1684,11 +1751,12 @@ play_back_replay_record(replay_record const & rr,
 
   cc.finalize_renames();
 
-  for (vector<path_vec_t>::const_iterator i = rr.dirs_added.begin();
+
+  for (set<path_vec_t>::const_iterator i = rr.dirs_added.begin();
        i != rr.dirs_added.end(); ++i)
     cc.add_dir(*i);
 
-  for (vector<path_vec_t>::const_iterator i = rr.files_added.begin();
+  for (set<path_vec_t>::const_iterator i = rr.files_added.begin();
        i != rr.files_added.end(); ++i)
     cc.add_file(*i);
 
@@ -1713,152 +1781,57 @@ play_back_replay_record(replay_record const & rr,
     }
 }
 
-/*
+
 static void
 play_back_replay_record_inverse(replay_record const & rr,
-				mfest const & src,
-				mfest const & dst,
 				change_consumer & cc)
 {
-  path_vec_t v1, v2;
 
-  for (node_pair_vec::const_iterator i = rr.files_added.begin();
-       i != rr.files_added.end(); ++i)
-    {
-      // the forward cset goes from src->dst, and had 
-      // add_file(newborn) with newborn in dst
-      //
-      // the inverse cset goes from src<-dst, and has
-      // delete_node(dying) with dying in dst
+  for (set<path_vec_t>::reverse_iterator i = rr.files_added.rbegin();
+       i != rr.files_added.rend(); ++i)
+    cc.delete_node(*i);
 
-      dst.get_path(i->second, v2);
-      cc.delete_node(v2);
-    }
+  for (set<path_vec_t>::reverse_iterator i = rr.dirs_added.rbegin();
+       i != rr.dirs_added.rend(); ++i)
+    cc.delete_node(*i);
 
-  for (node_pair_vec::const_iterator i = rr.dirs_added.begin();
-       i != rr.dirs_added.end(); ++i)
-    {
-      // the forward cset goes from src->dst, and had 
-      // add_dir(newborn) with newborn in dst
-      //
-      // the inverse cset goes from src<-dst, and has
-      // delete_node(dying) with dying in dst
 
-      dst.get_path(i->second, v2);
-      cc.delete_node(v2);
-    }
-
-  for (node_pair_vec::const_iterator i = rr.nodes_renamed.begin();
-       i != rr.nodes_renamed.end(); ++i)
-    {
-      // the forward cset goes from src->dst, and had 
-      // rename_node(a, b) with a in src in b in dst
-      //
-      // the inverse cset goes from src<-dst, and has
-      // rename_node(b, a) with a in src in b in dst
-
-      src.get_path(i->first, v1);
-      dst.get_path(i->second, v2);
-      cc.rename_node(v2, v1);
-    }
+  for (vector<replay_record::live_paths>::const_iterator i 
+	 = rr.nodes_renamed.begin(); i != rr.nodes_renamed.end(); ++i)
+    cc.rename_node(i->dst, i->src);
 
   cc.finalize_renames();
 
-  for (node_pair_vec::const_iterator i = rr.dirs_deleted.begin();
+
+  for (set<path_vec_t>::const_iterator i = rr.dirs_deleted.begin();
        i != rr.dirs_deleted.end(); ++i)
-    {
-      // the forward cset goes from src->dst, and had 
-      // delete_node(dying) with dying in src
-      //
-      // the inverse cset goes from src<-dst, and has
-      // add_dir(newborn) with newborn in src
+    cc.add_dir(*i);
 
-      dst.get_path(i->first, v1);
-      cc.add_dir(v1);
-    }
-
-  for (node_pair_vec::const_iterator i = rr.files_deleted.begin();
+  for (set<path_vec_t>::const_iterator i = rr.files_deleted.begin();
        i != rr.files_deleted.end(); ++i)
-    {
-      // the forward cset goes from src->dst, and had 
-      // delete_node(dying) with dying in src
-      //
-      // the inverse cset goes from src<-dst, and has
-      // add_file(newborn) with newborn in src
+    cc.add_file(*i);
+  
 
-      dst.get_path(i->first, v1);
-      cc.add_file(v1);
-    }
-
-  for (file_pair_vec::const_iterator i = rr.deltas_applied.begin();
-       i != rr.deltas_applied.end(); ++i)
-    {
-      // the forward cset goes from src->dst, and had 
-      // apply_delta(pth, a, b) with a in src, and pth and b in dst
-      //
-      // the inverse cset goes from src<-dst, and has
-      // apply_delta(pth, a, b) with a in dst, and pth and b in src
-
-      src.get_path(i->first, v1);
-      cc.apply_delta(v1, 
-		     i->second->content,
-		     i->first->content);
-    }
+  for (vector<replay_record::applied_delta>::const_iterator i 
+	 = rr.deltas_applied.begin(); i != rr.deltas_applied.end(); ++i)
+    cc.apply_delta(i->paths.src, i->dst_id, i->src_id);
 
   // attr pass #1: emit all the cleared attrs
-  for (node_attr_name_vec::const_iterator i = rr.attrs_changed.begin();
+  for (vector<replay_record::changed_attr>::const_iterator i = rr.attrs_changed.begin();
        i != rr.attrs_changed.end(); ++i)
     {
-      // the forward cset goes from src->dst, nodes a->b, and had 
-      // clear_attr(b, attr) with b in dst
-      //
-      // the inverse cset goes from src<-dst, nodes a<-b, and has
-      // clear_attr(a, attr) with a in src
-
-      node_t a = i->first.first;
-      node_t b = i->first.second;
-      shared_ptr< set<attr_name> > attr_names = i->second;
-      for (set<attr_name>::const_iterator j = attr_names->begin();
-	   j != attr_names->end(); ++j)
-	{
-	  if (b->has_attr(*j) && !a->has_attr(*j))
-	    {
-	      dst.get_path(a, v1);
-	      cc.clear_attr(v1, *j);
-	    }
-	}
+      if (i->src_val.empty())
+	cc.clear_attr(i->paths.src, i->name);
     }
 
   // attr pass #2: emit all the set attrs
-  for (node_attr_name_vec::const_iterator i = rr.attrs_changed.begin();
+  for (vector<replay_record::changed_attr>::const_iterator i = rr.attrs_changed.begin();
        i != rr.attrs_changed.end(); ++i)
     {
-      // the forward cset goes from src->dst, nodes a->b, and had 
-      // set_attr(b, attr, val) with b in dst
-      //
-      // the inverse cset goes from src<-dst, nodes a<-b, and has
-      // set_attr(a, attr, val) with a in src
-
-      node_t a = i->first.first;
-      node_t b = i->first.second;
-      shared_ptr< set<attr_name> > attr_names = i->second;
-      for (set<attr_name>::const_iterator j = attr_names->begin();
-	   j != attr_names->end(); ++j)
-	{
-	  if (a->has_attr(*j))
-	    {
-	      if ((!b->has_attr(*j))
-		  || (b->has_attr(*j) &&
-		      b->get_attr(*j) != a->get_attr(*j)))
-		{
-		  dst.get_path(a, v1);
-		  cc.set_attr(v1, *j, a->get_attr(*j));
-		}
-	    }
-	}
+      if (!i->src_val.empty())
+	cc.set_attr(i->paths.src, i->name, i->src_val);
     }
 }
-*/
 
 
 static void
@@ -1876,21 +1849,22 @@ build_replay_record(cset const & cs,
       // in this pass we accumulate nodes_deleted. the "self" node is a
       // member of the "src" directory tree.
       node_t self = *i, other;
-      I(self->live());
+      cs.is_live(self);
 
       cs.get_corresponding_new_node(self, other);
       
-      if (other->killed())
+      if (cs.is_killed(other))
 	{
 	  path_vec_t pth;
 	  cs.get_old_path(self, pth);
 
 	  if (is_dir_t(self))
-	    rr.dirs_deleted.push_back(pth);
+	    rr.dirs_deleted.insert(pth);
 	  else
-	    rr.files_deleted.push_back(pth);
+	    rr.files_deleted.insert(pth);
 	}
     }
+
 
   for (dfs_iter i(cs.new_mfest.root); !i.finished(); ++i)
     {
@@ -1900,30 +1874,35 @@ build_replay_record(cset const & cs,
       // the "self" node is a member of the "dst" directory tree.
       node_t self = *i, other;
 
-      I(self->live());
+      I(cs.is_live(self));
 
-      get_corresponding_old_node(self, other);
+      cs.get_corresponding_old_node(self, other);
 
-      if (other->unborn())
+      if (cs.is_unborn(other))
 	{
 	  path_vec_t pth;
 	  cs.get_new_path(self, pth);
 	  if (is_dir_t(self))
 	    {
 	      I(is_dir_t(other));
-	      rr.dirs_added.push_back(pth);
+	      rr.dirs_added.insert(pth);
 	    }
 	  else
 	    {
 	      I(is_file_t(self));
 	      I(is_file_t(other));
-	      rr.files_added.push_back(pth);
+	      rr.files_added.insert(pth);
 	    }
 	} 
-      else if (other->live())
+      else if (cs.is_live(other))
 	{
-	  if ((other->name->val != self->name->val)
-	      || (other->parent != self->parent))
+	  dirent_t self_entry, other_entry;
+	  dir_t self_parent, other_parent;
+	  cs.get_old_parent(other, other_parent, other_entry);
+	  cs.get_new_parent(self, self_parent, self_entry);
+
+	  if ((other_entry != self_entry)
+	      || (other_parent.get() != self_parent.get()))
 	    {
 	      replay_record::live_paths paths;
 	      cs.get_old_path(other, paths.src);
@@ -1952,7 +1931,7 @@ build_replay_record(cset const & cs,
       // attrs which were changed
       if (self->attrs != other->attrs)
 	{
-	  life_paths pths;
+	  replay_record::live_paths pths;
 	  cs.get_old_path(other, pths.src);
 	  cs.get_new_path(self, pths.dst);
 
@@ -2004,22 +1983,20 @@ void
 cset::replay_changes(change_consumer & cc) const
 {
   replay_record rr;
-  check_sane();
   build_replay_record(*this, rr);
-  play_back_replay_record(rr, old_mfest, new_mfest, cc);
+  play_back_replay_record(rr, cc);
 }
 
 
-/*
 void 
 cset::replay_inverse_changes(change_consumer & cc) const
 {
   replay_record rr;
-  check_sane();
   build_replay_record(*this, rr);
-  play_back_replay_record_inverse(rr, old_mfest, new_mfest, cc);
+  rr.sort_for_inverse_direction();
+  play_back_replay_record_inverse(rr, cc);
 }
-*/
+
 
 void
 concatenate_changesets(cset const & a,
@@ -2078,8 +2055,6 @@ concatenate_changesets(cset const & a,
 //
 
 // TODO: implement this algorithm!
-
-/*
 
 
 namespace
@@ -2352,7 +2327,7 @@ print_mfest(basic_io::printer & p,
     {
       node_t curr = *i;
       path_vec_t pv;
-      m.get_path(curr, pv);
+      i.path(pv);
 
       file_path fp = pv.to_file_path();
 
@@ -2369,14 +2344,12 @@ print_mfest(basic_io::printer & p,
 	  st.push_hex_pair(syms::content, ftmp->content.inner()());
           // L(F("printing file %s\n") % fp);
 	}
-      if (curr->has_attrs())
+      for (map<attr_name, attr_val>::const_iterator j = curr->attrs.begin();
+	   j != curr->attrs.end(); ++j)
 	{
-	  for (map<attr_name, attr_val>::const_iterator j = curr->fancy->attrs.begin();
-	       j != curr->fancy->attrs.end(); ++j)
-            {
-              // L(F("printing attr %s : %s = %s\n") % fp % j->first % j->second);
-              st.push_str_triple(syms::attr, j->first, j->second);
-            }
+	  I(!j->second.empty());
+	  // L(F("printing attr %s : %s = %s\n") % fp % j->first % j->second);
+	  st.push_str_triple(syms::attr, j->first, j->second);
 	}
       p.print_stanza(st);
     }  
@@ -2408,8 +2381,6 @@ write_mfest(mfest const & mf,
   dat = data(oss.str());  
 }
 
-*/
-
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
@@ -2419,8 +2390,7 @@ write_mfest(mfest const & mf,
 // TODO: copy more tests from change_set.cc into here, adapt to the
 // new circumstances
 
-file_id null_file_id;
-
+/* 
 
 struct
 change_automaton
@@ -2701,6 +2671,33 @@ change_automaton
                    
 };
 
+static void
+automaton_cset_test()
+{
+  mfest m1;
+
+  change_automaton aut;
+  for (int i = 0; i < 1000; ++i)
+    {
+      cset cs1(m1);
+      aut.perform_random_action(cs1);
+
+      cset cs2(cs1.new_mfest);
+      aut.perform_random_action(cs2);
+
+      cset cs3(cs2.new_mfest);
+      aut.perform_random_action(cs3);
+
+      cset csA, csB;
+
+      concatenate_changesets(cs1, cs2, csA);
+      concatenate_changesets(csA, cs3, csB);
+
+      m1.reset(csB.new_mfest);
+    }
+}
+
+*/
 
 
 static void
@@ -2711,11 +2708,11 @@ spin_mfest(mfest const & m)
   m1.reset(m);
   for (unsigned i = 0; i < 5; ++i)
     {
-      L(F("spinning %d-entry mfest (pass %d)\n") % m1.nodes.size() % i);
+      L(F("spinning mfest (pass %d)\n") % i);
       write_mfest(m1, tmp);
       L(F("wrote mfest: [[%s]]\n") % tmp);
       read_mfest(tmp, m2);
-      BOOST_CHECK(structurally_equal(m1, m2));
+      BOOST_CHECK(m1 == m2);
       m1.reset(m2);
     }
 }
@@ -2744,6 +2741,7 @@ spin_cset(cset const & cs)
     }  
 }
 
+file_id null_file_id;
 
 static void 
 basic_cset_test()
@@ -2779,38 +2777,13 @@ basic_cset_test()
     }
 }
 
-static void
-automaton_cset_test()
-{
-  mfest m1;
-
-  change_automaton aut;
-  for (int i = 0; i < 1000; ++i)
-    {
-      cset cs1(m1);
-      aut.perform_random_action(cs1);
-
-      cset cs2(cs1.new_mfest);
-      aut.perform_random_action(cs2);
-
-      cset cs3(cs2.new_mfest);
-      aut.perform_random_action(cs3);
-
-      cset csA, csB;
-
-      concatenate_changesets(cs1, cs2, csA);
-      concatenate_changesets(csA, cs3, csB);
-
-      m1.reset(csB.new_mfest);
-    }
-}
 
 
 void 
 add_cset_tests(test_suite * suite)
 {
   I(suite);
-  suite->add(BOOST_TEST_CASE(&automaton_cset_test));
+  //suite->add(BOOST_TEST_CASE(&automaton_cset_test));
   suite->add(BOOST_TEST_CASE(&basic_cset_test));
 }
 
