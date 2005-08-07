@@ -21,12 +21,27 @@ Mfests:
 Csets:
 ~~~~~~
 
- A cset is a pair of mfests OLD, NEW, an "incubator" set of unborn nodes, a
- "graveyard" set of killed nodes, and a pair of maps relating copied nodes
- in mfest B to nodes in A. We should have that:
+ A cset is a change_consumer (see below) and also an object which
+ can be analyzed to *feed* a change_consumer. Structurally, it is:
 
-    {OLD union incubator} == {NEW union graveyard}.
+    - a pair of mfests "old" and "new" 
+    - an "incubator" set of unborn nodes
+    - a "graveyard" set of killed nodes
+    - a pair of maps relating copied nodes in "new" to 
+      their corresponding pre-copy node in "old"
+    - a pair of maps connecting nodes to their parents
+      in "old" and "new" (these cannot be stored in the
+      nodes themselves because much of the graph may be
+      shared)
 
+ We should have that:
+
+    {OLD union incubator} == {NEW union graveyard}
+
+ As well, the parents in each map should always match up with the child
+ relationships stored in the nodes, and the new->old and old->new maps
+ should agree.
+ 
 
 Change_consumers:
 ~~~~~~~~~~~~~~~~~
@@ -874,12 +889,15 @@ change_consumer
 
   virtual ~change_consumer() {}
 
-  void delete_node(file_path const & pth);
+  void delete_dir(file_path const & pth);
+  void delete_file(file_path const & pth,
+                   file_id const & ident);
   void rename_node(file_path const & src, 
 		   file_path const & dst);
 
   void add_dir(file_path const & dp);
-  void add_file(file_path const & fp);
+  void add_file(file_path const & fp,
+                file_id const & ident);
 
   void apply_delta(file_path const & path, 
 		   file_id const & src, 
@@ -897,13 +915,16 @@ change_consumer
   // This part is just a lower-level form of the API above, to avoid
   // composing or parsing file_paths in their string-y form.
 
-  virtual void delete_node(path_vec_t const & path) = 0;
+  virtual void delete_file(path_vec_t const & path,
+                           file_id const & ident) = 0;
+  virtual void delete_dir(path_vec_t const & path) = 0;
 
   virtual void rename_node(path_vec_t const & src, 
 			   path_vec_t const & dst) = 0;
   
   virtual void add_dir(path_vec_t const & dp) = 0;
-  virtual void add_file(path_vec_t const & fp) = 0;
+  virtual void add_file(path_vec_t const & fp,
+                        file_id const & ident) = 0;
 
   virtual void apply_delta(path_vec_t const & path, 
 			   file_id const & src, 
@@ -918,12 +939,20 @@ change_consumer
 };
 
 
+void 
+change_consumer::delete_dir(file_path const & dp)
+{
+  L(F("delete_dir('%s')\n") % dp);
+  this->delete_dir(path_vec_t::from_file_path(dp));
+}
 
 void 
-change_consumer::delete_node(file_path const & dp)
+change_consumer::delete_file(file_path const & fp,
+                             file_id const & ident)
 {
-  L(F("delete_node('%s')\n") % dp);
-  this->delete_node(path_vec_t::from_file_path(dp));
+  I(!ident.inner()().empty());
+  L(F("delete_file('%s', '%s')\n") % fp % ident);
+  this->delete_file(path_vec_t::from_file_path(fp), ident);
 }
 
 
@@ -946,10 +975,12 @@ change_consumer::add_dir(file_path const & dp)
 
 
 void 
-change_consumer::add_file(file_path const & fp)
+change_consumer::add_file(file_path const & fp,
+                          file_id const & ident)
 {
-  L(F("add_file('%s')\n") % fp);
-  this->add_file(path_vec_t::from_file_path(fp));
+  L(F("add_file('%s', '%s')\n") % fp % ident);
+  I(!ident.inner()().empty());
+  this->add_file(path_vec_t::from_file_path(fp), ident);
 }
 
 
@@ -959,6 +990,8 @@ change_consumer::apply_delta(file_path const & path,
 			     file_id const & dst)
 {
   L(F("apply_delta('%s', [%s], [%s])\n") % path % src % dst);
+  I(!src.inner()().empty());
+  I(!dst.inner()().empty());
   this->apply_delta(path_vec_t::from_file_path(path), src, dst);
 }
 
@@ -1118,13 +1151,16 @@ cset
 
   virtual void finalize_renames();
 
-  virtual void delete_node(path_vec_t const & dp);
+  virtual void delete_dir(path_vec_t const & dp);
+  virtual void delete_file(path_vec_t const & dp,
+                           file_id const & ident);
 
   virtual node_t detach(path_vec_t const & path);
   virtual void attach(path_vec_t const & path, node_t id);
 
   virtual void add_dir(path_vec_t const & dp);
-  virtual void add_file(path_vec_t const & fp);
+  virtual void add_file(path_vec_t const & fp,
+                        file_id const & ident);
 
   virtual void apply_delta(path_vec_t const & path, 
 			   file_id const & src, 
@@ -1242,14 +1278,14 @@ cset::check_sane() const
        i != graveyard.end(); ++i)
     {
       I(!is_unborn(*i));
-      I(old_to_new.find(weak_node_t(*i)) != old_to_new.end());
+      I(new_to_old.find(weak_node_t(*i)) != new_to_old.end());
     }
 
   for (hash_set<node_t>::const_iterator i = incubator.begin(); 
        i != incubator.end(); ++i)
     {
       I(!is_killed(*i));
-      I(new_to_old.find(weak_node_t(*i)) != new_to_old.end());
+      I(old_to_new.find(weak_node_t(*i)) != old_to_new.end());
     }  
 }
 
@@ -1296,6 +1332,11 @@ cset::set_old_parent(node_t const & child,
 		     dir_t const & parent, 
 		     dirent_t name_in_parent)
 {
+  // L(F("set_old_parent(child=0x%x, parent=0x%x, name='%s')\n")
+  //     % child.get()
+  //     % parent.get()
+  //     % name_in_parent);
+
   old_parents[weak_node_t(child)] = make_pair(weak_node_t(parent),
 					      name_in_parent);
 }
@@ -1305,6 +1346,11 @@ cset::set_new_parent(node_t const & child,
 		     dir_t const & parent, 
 		     dirent_t name_in_parent)
 {
+  // L(F("set_new_parent(child=0x%x, parent=0x%x, name='%s')\n")
+  //     % child.get()
+  //     % parent.get()
+  //     % name_in_parent);
+
   new_parents[weak_node_t(child)] = make_pair(weak_node_t(parent),
 					      name_in_parent);
 }
@@ -1314,12 +1360,20 @@ cset::get_old_parent(node_t const & child,
 		     dir_t & parent, 
 		     dirent_t & name_in_parent) const
 {
-  hash_map<weak_node_t, pair<weak_node_t, dirent_t> >::const_iterator i = 
+  // L(F("get_old_parent(0x%x)\n") % child.get());
+ 
+ hash_map<weak_node_t, pair<weak_node_t, dirent_t> >::const_iterator i = 
     old_parents.find(weak_node_t(child));
+
   I(i != old_parents.end());
   I(!i->second.first.expired());
   parent = downcast_to_dir_t(i->second.first.lock());
   name_in_parent = i->second.second;
+
+  // L(F("get_old_parent(0x%x) -> parent=0x%x name='%s' \n") 
+  //     % child.get()
+  //     % parent.get()
+  //     % name_in_parent);
 }
 
 void 
@@ -1327,8 +1381,12 @@ cset::get_new_parent(node_t const & child,
 		     dir_t & parent, 
 		     dirent_t & name_in_parent) const
 {
+  // L(F("get_new_parent(0x%x)\n") % child.get());
+
   hash_map<weak_node_t, pair<weak_node_t, dirent_t> >::const_iterator i = 
     new_parents.find(weak_node_t(child));
+
+
   if (i != new_parents.end())
     {
       I(!i->second.first.expired());
@@ -1337,6 +1395,11 @@ cset::get_new_parent(node_t const & child,
     }
   else
     get_old_parent(child, parent, name_in_parent);
+
+  // L(F("get_new_parent(0x%x) -> parent=0x%x name='%s' \n") 
+  //     % child.get()
+  //     % parent.get()
+  //     % name_in_parent);
 }
 
 
@@ -1346,6 +1409,10 @@ cset::update_old_new_mapping(weak_node_t old, weak_node_t modified_new)
   // We must call this when we might have changed the "new" node associated
   // with an "old" (or unborn) node; namely when we've done a
   // copy-for-write.
+
+  // L(F("re-associating old 0x%x -> new 0x%x\n") 
+  //     % old.lock().get() 
+  //     % modified_new.lock().get());
 
   weak_node_t existing_new;
   get_corresponding_new_weak_node(old, existing_new);
@@ -1444,6 +1511,10 @@ void
 cset::get_corresponding_new_weak_node(weak_node_t old_or_unborn, 
                                       weak_node_t & n) const
 {
+
+  // L(F("get_corresponding_new_weak_node(0x%x)\n")
+  //     % old_or_unborn.lock().get());
+
   hash_map<weak_node_t, weak_node_t>::const_iterator i 
     = old_to_new.find(old_or_unborn);
 
@@ -1452,23 +1523,34 @@ cset::get_corresponding_new_weak_node(weak_node_t old_or_unborn,
   else
     n = i->second;
 
+  // L(F("get_corresponding_new_weak_node(0x%x) -> 0x%x\n")
+  //     % old_or_unborn.lock().get()
+  //     % n.lock().get());
+
   I(!n.expired());
 }
 
 
 void
 cset::get_corresponding_old_weak_node(weak_node_t new_or_killed, 
-                                      weak_node_t & n) const
+                                      weak_node_t & o) const
 {
+  // L(F("get_corresponding_old_weak_node(0x%x)\n")
+  //     % new_or_killed.lock().get());
+
   hash_map<weak_node_t, weak_node_t>::const_iterator i 
     = new_to_old.find(new_or_killed);
 
   if (i == old_to_new.end())
-    n = new_or_killed;
+    o = new_or_killed;
   else
-    n = i->second;
+    o = i->second;
 
-  I(!n.expired());
+  // L(F("get_corresponding_old_weak_node(0x%x) -> 0x%x\n")
+  //     % new_or_killed.lock().get()
+  //     % o.lock().get());
+
+  I(!o.expired());
 }
 
 
@@ -1505,18 +1587,34 @@ cset::finalize_renames()
 
 
 void 
-cset::delete_node(path_vec_t const & dp)
+cset::delete_dir(path_vec_t const & dp)
 {
   node_t n = this->detach(dp);
-  if (is_dir_t(n))
+  I(is_dir_t(n));
+
+  // NB: we do not permit deleting a non-empty directory; the
+  // semantics are too complex when coupled with renames (which
+  // might escape the deleted dir). If you are a client and you
+  // want to delete a dir, you have to delete everything inside
+  // the dir first.
+  I(downcast_to_dir_t(n)->entries.empty());
+
+  graveyard.insert(n);
+
+  if (global_sanity.debug)
     {
-      // NB: we do not permit deleting a non-empty directory; the
-      // semantics are too complex when coupled with renames (which
-      // might escape the deleted dir). If you are a client and you
-      // want to delete a dir, you have to delete everything inside
-      // the dir first.
-      I(downcast_to_dir_t(n)->entries.empty());
-    }
+      check_sane();
+    }  
+}
+
+void 
+cset::delete_file(path_vec_t const & dp,
+                  file_id const & ident)
+{
+  I(!ident.inner()().empty());
+  node_t n = this->detach(dp);
+  I(is_file_t(n));
+  I(downcast_to_file_t(n)->content == ident);
   graveyard.insert(n);
 
   if (global_sanity.debug)
@@ -1578,6 +1676,10 @@ cset::add_dir(path_vec_t const & dp)
   old_to_new[weak_node_t(old_dir)] = weak_node_t(new_dir);
   new_to_old[weak_node_t(new_dir)] = weak_node_t(old_dir);
 
+  // L(F("added dir mapping old 0x%x -> new 0x%x\n") 
+  //     % old_dir.get() 
+  //     % new_dir.get());
+
   if (global_sanity.debug)
     {
       check_sane();
@@ -1586,18 +1688,25 @@ cset::add_dir(path_vec_t const & dp)
 
 
 void 
-cset::add_file(path_vec_t const & fp)
+cset::add_file(path_vec_t const & fp,
+               file_id const & ident)
 {
+  I(!ident.inner()().empty());
   file_t old_file(new file_node());
   incubator.insert(old_file);
 
   file_t new_file(downcast_to_file_t(old_file->shallow_copy()));
+  new_file->content = ident;
   dir_t new_parent = get_writable_dir_containing(fp);
   new_parent->add_child(fp.leaf, new_file);
   set_new_parent(new_file, new_parent, fp.leaf);
 
   old_to_new[weak_node_t(old_file)] = weak_node_t(new_file);
   new_to_old[weak_node_t(new_file)] = weak_node_t(old_file);
+
+  //   L(F("added file mapping old 0x%x -> new 0x%x\n") 
+  //     % old_file.get() 
+  //     % new_file.get());
 
   if (global_sanity.debug)
     {
@@ -1613,6 +1722,9 @@ cset::apply_delta(path_vec_t const & path,
 {
   node_t old_node;
   file_t old_file, new_file;
+  
+  I(!s.inner()().empty());
+  I(!d.inner()().empty());
 
   new_file = get_writable_file(path);
   get_corresponding_old_node(weak_node_t(new_file), old_node);
@@ -1679,11 +1791,21 @@ struct replay_record
     file_id dst_id;
   };
 
-  set<path_vec_t> files_deleted;
+  struct path_with_content
+  {
+    path_vec_t path;
+    file_id content;
+    bool operator<(path_with_content const & other) const
+    {
+      return path < other.path;
+    }
+  };
+
+  set<path_with_content> files_deleted;
   set<path_vec_t> dirs_deleted;
   vector<live_paths> nodes_renamed;
   set<path_vec_t> dirs_added;
-  set<path_vec_t> files_added;
+  set<path_with_content> files_added;
   vector<applied_delta> deltas_applied;
   vector<changed_attr> attrs_changed;
 
@@ -1736,13 +1858,13 @@ static void
 play_back_replay_record(replay_record const & rr,
 			change_consumer & cc)
 {
-  for (set<path_vec_t>::reverse_iterator i = rr.files_deleted.rbegin();
-       i != rr.files_deleted.rend(); ++i)
-    cc.delete_node(*i);
+  for (set<replay_record::path_with_content>::reverse_iterator i 
+         = rr.files_deleted.rbegin(); i != rr.files_deleted.rend(); ++i)
+    cc.delete_file(i->path, i->content);
   
   for (set<path_vec_t>::reverse_iterator i = rr.dirs_deleted.rbegin();
        i != rr.dirs_deleted.rend(); ++i)
-    cc.delete_node(*i);
+    cc.delete_dir(*i);
 
 
   for (vector<replay_record::live_paths>::const_iterator i 
@@ -1756,9 +1878,9 @@ play_back_replay_record(replay_record const & rr,
        i != rr.dirs_added.end(); ++i)
     cc.add_dir(*i);
 
-  for (set<path_vec_t>::const_iterator i = rr.files_added.begin();
-       i != rr.files_added.end(); ++i)
-    cc.add_file(*i);
+  for (set<replay_record::path_with_content>::const_iterator i 
+         = rr.files_added.begin(); i != rr.files_added.end(); ++i)
+    cc.add_file(i->path, i->content);
 
   for (vector<replay_record::applied_delta>::const_iterator i 
 	 = rr.deltas_applied.begin(); i != rr.deltas_applied.end(); ++i)
@@ -1787,13 +1909,13 @@ play_back_replay_record_inverse(replay_record const & rr,
 				change_consumer & cc)
 {
 
-  for (set<path_vec_t>::reverse_iterator i = rr.files_added.rbegin();
-       i != rr.files_added.rend(); ++i)
-    cc.delete_node(*i);
+  for (set<replay_record::path_with_content>::reverse_iterator i 
+         = rr.files_added.rbegin(); i != rr.files_added.rend(); ++i)
+    cc.delete_file(i->path, i->content);
 
   for (set<path_vec_t>::reverse_iterator i = rr.dirs_added.rbegin();
        i != rr.dirs_added.rend(); ++i)
-    cc.delete_node(*i);
+    cc.delete_dir(*i);
 
 
   for (vector<replay_record::live_paths>::const_iterator i 
@@ -1807,9 +1929,9 @@ play_back_replay_record_inverse(replay_record const & rr,
        i != rr.dirs_deleted.end(); ++i)
     cc.add_dir(*i);
 
-  for (set<path_vec_t>::const_iterator i = rr.files_deleted.begin();
-       i != rr.files_deleted.end(); ++i)
-    cc.add_file(*i);
+  for (set<replay_record::path_with_content>::const_iterator i 
+         = rr.files_deleted.begin(); i != rr.files_deleted.end(); ++i)
+    cc.add_file(i->path, i->content);
   
 
   for (vector<replay_record::applied_delta>::const_iterator i 
@@ -1861,7 +1983,12 @@ build_replay_record(cset const & cs,
 	  if (is_dir_t(self))
 	    rr.dirs_deleted.insert(pth);
 	  else
-	    rr.files_deleted.insert(pth);
+            {
+              replay_record::path_with_content pc;
+              pc.path = pth;
+              pc.content = downcast_to_file_t(self)->content;
+              rr.files_deleted.insert(pc);
+            }
 	}
     }
 
@@ -1891,7 +2018,10 @@ build_replay_record(cset const & cs,
 	    {
 	      I(is_file_t(self));
 	      I(is_file_t(other));
-	      rr.files_added.insert(pth);
+              replay_record::path_with_content pc;
+              pc.path = pth;
+              pc.content = downcast_to_file_t(self)->content;
+	      rr.files_added.insert(pc);
 	    }
 	} 
       else if (cs.is_live(other))
@@ -1912,7 +2042,9 @@ build_replay_record(cset const & cs,
 	}
 
       // content deltas
-      if (is_file_t(self))
+      if (is_file_t(self)
+          && cs.is_live(self)
+          && cs.is_live(other))
 	{
 	  I(is_file_t(other));
 	  file_t f_other = downcast_to_file_t(other);
@@ -1924,6 +2056,8 @@ build_replay_record(cset const & cs,
 	      cs.get_new_path(self, del.paths.dst);
 	      del.src_id = f_other->content;
 	      del.dst_id = f_self->content;
+              I(!del.src_id.inner()().empty());
+              I(!del.dst_id.inner()().empty());
 	      rr.deltas_applied.push_back(del);
 	    }
 	}
@@ -2067,7 +2201,8 @@ namespace
     std::string const content("content");
 
     // cset symbols
-    std::string const delete_node("delete");
+    std::string const delete_file("delete_file");
+    std::string const delete_dir("delete_dir");
     std::string const rename_node("rename");
     std::string const add_file("add_file");
     std::string const add_dir("add_dir");
@@ -2089,11 +2224,20 @@ parse_cset(basic_io::parser & parser,
   while (parser.symp())
     {
       std::string t1, t2, t3;
-      if (parser.symp(syms::delete_node)) 
+      if (parser.symp(syms::delete_file)) 
         { 
           parser.sym();
           parser.str(t1);
-          cc.delete_node(file_path(t1));
+	  parser.esym(syms::content);
+	  parser.hex(t2);
+          cc.delete_file(file_path(t1),
+                         file_id(t2));
+        }
+      else if (parser.symp(syms::delete_dir)) 
+        { 
+          parser.sym();
+          parser.str(t1);
+          cc.delete_dir(file_path(t1));
         }
       else if (parser.symp(syms::rename_node)) 
         { 
@@ -2108,7 +2252,10 @@ parse_cset(basic_io::parser & parser,
         { 
           parser.sym();
           parser.str(t1);
-          cc.add_file(file_path(t1));
+	  parser.esym(syms::content);
+	  parser.hex(t2);
+          cc.add_file(file_path(t1),
+                      file_id(t2));
         }
       else if (parser.symp(syms::add_dir)) 
         { 
@@ -2158,11 +2305,14 @@ cset_printer
 {
   basic_io::printer & printer;
   cset_printer(basic_io::printer & p) : printer(p) {}
-  virtual void delete_node(path_vec_t const & fp);
+  virtual void delete_file(path_vec_t const & fp,
+                           file_id const & content);
+  virtual void delete_dir(path_vec_t const & fp);
   virtual void rename_node(path_vec_t const & src, 
 			   path_vec_t const & dst);
   virtual void add_dir(path_vec_t const & dp);
-  virtual void add_file(path_vec_t const & fp);
+  virtual void add_file(path_vec_t const & fp,
+                        file_id const & ident);
   virtual void apply_delta(path_vec_t const & path,
 			   file_id const & src,
 			   file_id const & dst);
@@ -2175,11 +2325,23 @@ cset_printer
 
 
 void 
-cset_printer::delete_node(path_vec_t const & dp)
+cset_printer::delete_file(path_vec_t const & fp,
+                          file_id const & ident)
 {
-      basic_io::stanza st;
-      st.push_str_pair(syms::delete_node, dp.to_file_path()());
-      printer.print_stanza(st);
+  basic_io::stanza st;
+  I(!ident.inner()().empty());
+  st.push_str_pair(syms::delete_file, fp.to_file_path()());
+  st.push_hex_pair(syms::content, ident.inner()());
+  printer.print_stanza(st);
+}
+
+
+void 
+cset_printer::delete_dir(path_vec_t const & dp)
+{
+  basic_io::stanza st;
+  st.push_str_pair(syms::delete_dir, dp.to_file_path()());
+  printer.print_stanza(st);
 }
 
 
@@ -2187,41 +2349,46 @@ void
 cset_printer::rename_node(path_vec_t const & src, 
 			  path_vec_t const & dst)
 {
-      basic_io::stanza st;
-      st.push_str_pair(syms::rename_node, src.to_file_path()());
-      st.push_str_pair(syms::to, dst.to_file_path()());
-      printer.print_stanza(st);
+  basic_io::stanza st;
+  st.push_str_pair(syms::rename_node, src.to_file_path()());
+  st.push_str_pair(syms::to, dst.to_file_path()());
+  printer.print_stanza(st);
 }
 
 
 void 
 cset_printer::add_dir(path_vec_t const & dp)
 {
-      basic_io::stanza st;
-      st.push_str_pair(syms::add_dir, dp.to_file_path()());
-      printer.print_stanza(st);
+  basic_io::stanza st;
+  st.push_str_pair(syms::add_dir, dp.to_file_path()());
+  printer.print_stanza(st);
 }
 
 
 void 
-cset_printer::add_file(path_vec_t const & fp)
+cset_printer::add_file(path_vec_t const & fp,
+                       file_id const & ident)
 {
-      basic_io::stanza st;
-      st.push_str_pair(syms::add_file, fp.to_file_path()());
-      printer.print_stanza(st);
+  basic_io::stanza st;
+  I(!ident.inner()().empty());
+  st.push_str_pair(syms::add_file, fp.to_file_path()());
+  st.push_hex_pair(syms::content, ident.inner()());
+  printer.print_stanza(st);
 }
 
 
 void 
 cset_printer::apply_delta(path_vec_t const & path, 
-			   file_id const & src, 
-			   file_id const & dst)
+                          file_id const & src, 
+                          file_id const & dst)
 {
-      basic_io::stanza st;
-      st.push_str_pair(syms::patch, path.to_file_path()());
-      st.push_hex_pair(syms::from, src.inner()());
-      st.push_hex_pair(syms::to, dst.inner()());
-      printer.print_stanza(st);
+  basic_io::stanza st;
+  I(!src.inner()().empty());
+  I(!dst.inner()().empty());
+  st.push_str_pair(syms::patch, path.to_file_path()());
+  st.push_hex_pair(syms::from, src.inner()());
+  st.push_hex_pair(syms::to, dst.inner()());
+  printer.print_stanza(st);
 }
 
 
@@ -2229,10 +2396,10 @@ void
 cset_printer::clear_attr(path_vec_t const & path, 
 			 attr_name const & attr)
 {
-      basic_io::stanza st;
-      st.push_str_pair(syms::set, path.to_file_path()());
-      st.push_str_pair(syms::attr, attr);
-      printer.print_stanza(st);
+  basic_io::stanza st;
+  st.push_str_pair(syms::set, path.to_file_path()());
+  st.push_str_pair(syms::attr, attr);
+  printer.print_stanza(st);
 }
 
 
@@ -2241,11 +2408,11 @@ cset_printer::set_attr(path_vec_t const & path,
 		       attr_name const & attr,
 		       attr_val const & val)
 {
-      basic_io::stanza st;
-      st.push_str_pair(syms::set, path.to_file_path()());
-      st.push_str_pair(syms::attr, attr);
-      st.push_str_pair(syms::value, val);
-      printer.print_stanza(st);
+  basic_io::stanza st;
+  st.push_str_pair(syms::set, path.to_file_path()());
+  st.push_str_pair(syms::attr, attr);
+  st.push_str_pair(syms::value, val);
+  printer.print_stanza(st);
 }
 
 
@@ -2298,8 +2465,7 @@ parse_mfest(basic_io::parser & p,
 	  p.esym(syms::content);
           p.hex(ident);
           // L(F("read file %s\n") % pth);
-	  cs.add_file(file_path(pth));
-          cs.apply_delta(file_path(pth), file_id(), file_id(ident));
+	  cs.add_file(file_path(pth), file_id(ident));
 	}
       else break;
 
@@ -2753,17 +2919,13 @@ basic_cset_test()
       change_consumer & cs = c; 
       cs.add_dir(file_path("usr"));
       cs.add_dir(file_path("usr/bin"));
-      cs.add_file(file_path("usr/bin/cat"));
-      cs.apply_delta(file_path("usr/bin/cat"),
-		     null_file_id, 
-		     file_id(hexenc<id>("adc83b19e793491b1c6ea0fd8b46cd9f32e592fc")));
+      cs.add_file(file_path("usr/bin/cat"),
+                  file_id(hexenc<id>("adc83b19e793491b1c6ea0fd8b46cd9f32e592fc")));
 
       cs.add_dir(file_path("usr/local"));
       cs.add_dir(file_path("usr/local/bin"));
-      cs.add_file(file_path("usr/local/bin/dog"));
-      cs.apply_delta(file_path("usr/local/bin/dog"),
-		     null_file_id, 
-		     file_id(hexenc<id>("adc83b19e793491b1c6ea0fd8b46cd9f32e592fc")));
+      cs.add_file(file_path("usr/local/bin/dog"),
+                  file_id(hexenc<id>("adc83b19e793491b1c6ea0fd8b46cd9f32e592fc")));
 
       spin_cset(c);
     }

@@ -1,3 +1,11 @@
+2005-08-07  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Split delete_node into delete_{dir,file}.
+	Made {delete,add}_file take a content ID parameter.
+	Removed "empty" delta notion for adds. Got first 
+	unit test working again under revised njs-suggested
+	design (weak pointer maps, no parent links).
+
 2005-08-04  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc: Main body of code compiles again.
