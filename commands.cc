@@ -2087,7 +2087,7 @@ CMD(pull, "network", "[ADDRESS[:PORTNUMBER] [PATTERN]]",
   process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, app);
 
   if (app.signing_key() == "")
-    W(F("doing anonymous pull\n"));
+    P(F("doing anonymous pull; use -kKEYNAME if you need authentication\n"));
   
   run_netsync_protocol(client_voice, sink_role, addr,
                        include_pattern, exclude_pattern, app);  
@@ -2388,12 +2388,12 @@ CMD(commit, "working copy", "[PATH]...",
   else
     get_log_message(rs, app, log_message);
 
+  N(log_message.find_first_not_of(" \r\t\n") != string::npos,
+    F("empty log message"));
+
   // we write it out so that if the commit fails, the log
   // message will be preserved for a retry
   write_user_log(data(log_message));
-
-  N(log_message.find_first_not_of(" \r\t\n") != string::npos,
-    F("empty log message"));
 
   {
     transaction_guard guard(app.db);

@@ -1,3 +1,45 @@
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (BOTAN_SOURCES): Add botan headers.
+	* po/monotone.pot: Regenerate.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees, insert_with_parents): Make a
+	ticker for added revisions, since traversing the tree to pull in
+	ancestors causes a noticeable pause before the cert/key tickers
+	start up.
+	(insert_with_parents): Also simplify logic.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (pull): Clarify what the "doing anonymous pull"
+	message means and what you might do about it.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Network Service, Hooks): Document
+	get_netsync_read_permitted as getting a nil value on anonymous
+	connects.
+	* lua.{cc.hh} (hook_get_netsync_anonymous_read_permitted):
+	Remove. Replace with 1-argument version of
+	hook_get_netsync_write_permitted.
+	* netsync.cc (process_anonymous_cmd): Update.
+	* tests/t_netsync_permissions.at: Likewise.
+
+2005-08-07  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* botan/{data_snk,es_file}.cpp: Open fstreams in binary mode.
+	These changes, plus the same change for data_src.cpp and
+	es_ftw.cpp, have been sent upstream.
+
+2005-08-05  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (commit): Write out the log message to MT/log
+	_after_ making sure it's non-empty.
+	* tests/t_commit_cancelled.at: New test.
+	* testsuite.at: Add it.
+	
 2005-08-04  Nathaniel Smith  <njs@pobox.com>
 
 	* netsync.cc (rebuild_merkle_trees): Typo.
