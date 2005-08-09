@@ -1,3 +1,24 @@
+Mon Aug  8 23:23:53 PDT 2005
+
+        0.22 release.  new crypto library, bug fixes, ui improvements
+
+        - switch from crypto++ to botan as underlying crypto library.
+          this should not cause any user-visible changes; let us know
+          if it does.  special thanks to Matt Johnston
+          <matt@ucc.asn.au>, Kaushik Veeraraghavan
+          <kaushikv@gmail.com>, Matthew Gregan
+          <kinetik@orcon.net.nz>.
+        - incompatible change to netsync permission hooks: the
+          get_netsync_anonymous_read_permitted hook has been removed;
+          instead, get_netsync_read_permitted will be called with a
+          key name of nil.  server administrators should update/review
+          their configuration
+        - new option for merge and propagate: --lca.  Until we get a
+          long-term solution to the various 3-way merge problems, this
+          should be more convenient than using explicit_merge.
+        - many small improvements to error messages, fixes of minor
+          annoyances, netsync tickers more accurate, etc.
+
 Sun Jul 17 16:48:26 PDT 2005
 
         0.21 release.  bug fixes, performance improvements, and ui

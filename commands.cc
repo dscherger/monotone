@@ -2978,7 +2978,7 @@ CMD(update, "working copy", "",
           for (set<revision_id>::const_iterator i = candidates.begin();
                i != candidates.end(); ++i)
             P(F("  %s\n") % describe_revision(app, *i));
-          P(F("choose one with 'monotone update <id>'\n"));
+          P(F("choose one with 'monotone update -r<id>'\n"));
           N(false, F("multiple candidates remain after selection"));
         }
       r_chosen_id = *(candidates.begin());
@@ -3213,7 +3213,7 @@ try_one_merge(revision_id const & left_id,
 
 
 CMD(merge, "tree", "", "merge unmerged heads of branch",
-    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR)
+    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR % OPT_LCA)
 {
   set<revision_id> heads;
 
@@ -3263,7 +3263,7 @@ CMD(merge, "tree", "", "merge unmerged heads of branch",
 
 CMD(propagate, "tree", "SOURCE-BRANCH DEST-BRANCH", 
     "merge from one branch to another asymmetrically",
-    OPT_DATE % OPT_AUTHOR)
+    OPT_DATE % OPT_AUTHOR % OPT_LCA)
 {
   //   this is a special merge operator, but very useful for people maintaining
   //   "slightly disparate but related" trees. it does a one-way merge; less
