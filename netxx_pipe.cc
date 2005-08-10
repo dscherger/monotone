@@ -185,7 +185,7 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
     { pipe->bytes_available=bytes_read;
       return std::make_pair(pipe->get_readfd(),ready_read);
     }
-    if (WaitForSingleObject(pipe->overlap.hEvent,timeout.seconds))
+    if (WaitForSingleObject(pipe->overlap.hEvent,timeout.get_sec()))
     { L(F("WaitForSingleObject failed %d\n") % GetLastError());
       throw oops("WaitForSingleObject failed ");
     }
