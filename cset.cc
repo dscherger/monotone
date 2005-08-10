@@ -345,6 +345,16 @@ path_vec_t
     return pv;
   }
 
+  bool operator==(path_vec_t const & other) const
+  {
+    return dir == other.dir && leaf == other.leaf;
+  }
+
+  bool operator!=(path_vec_t const & other) const
+  {
+    return ! (*this == other);
+  }
+
   void operator/=(dirent_t d)
   {
     dir.push_back(leaf);
@@ -1271,7 +1281,13 @@ cset::check_sane() const
       i.leaf(entry);
       get_new_parent(*i, indexed_parent, indexed_entry);
       I(entry == indexed_entry);
-      I(parent.get() == indexed_parent.get());
+
+      // NB: in the *new* set, it is *not* an invariant
+      // that the parent is the same as the indexed parent;
+      // the indexed parent may be the old one if there was
+      // no copy made.
+      //
+      // I(parent.get() == indexed_parent.get());
     }
 
   for (hash_set<node_t>::const_iterator i = graveyard.begin(); 
@@ -1479,8 +1495,15 @@ cset::get_writable_dir_containing(path_vec_t const & pth)
   // to replace any existing slot S with a clone because D is itself
   // unique; nobody else is going to see us damaging it.
 
+  // L(F("get_writable_dir_containing(%s)\n") % pth.to_file_path());
+
   if (!new_mfest.root.unique())
-    new_mfest.root = downcast_to_dir_t(new_mfest.root->shallow_copy());
+    {
+      new_mfest.root = downcast_to_dir_t(new_mfest.root->shallow_copy());
+      for (dirmap_t::const_iterator i = new_mfest.root->entries.begin(); 
+           i != new_mfest.root->entries.end(); ++i)
+        set_new_parent(i->second, new_mfest.root, i->first);
+    }
 
   I(new_mfest.root.unique());
   
@@ -1974,6 +1997,10 @@ build_replay_record(cset const & cs,
       cs.is_live(self);
 
       cs.get_corresponding_new_node(self, other);
+
+      // Cheap short circuit
+      if (self.get() == other.get())
+        continue;
       
       if (cs.is_killed(other))
 	{
@@ -2005,10 +2032,14 @@ build_replay_record(cset const & cs,
 
       cs.get_corresponding_old_node(self, other);
 
+      // Cheap short circuit
+      if (self.get() == other.get())
+        continue;
+
       if (cs.is_unborn(other))
 	{
 	  path_vec_t pth;
-	  cs.get_new_path(self, pth);
+          i.path(pth);
 	  if (is_dir_t(self))
 	    {
 	      I(is_dir_t(other));
@@ -2028,17 +2059,13 @@ build_replay_record(cset const & cs,
 	{
 	  dirent_t self_entry, other_entry;
 	  dir_t self_parent, other_parent;
-	  cs.get_old_parent(other, other_parent, other_entry);
-	  cs.get_new_parent(self, self_parent, self_entry);
 
-	  if ((other_entry != self_entry)
-	      || (other_parent.get() != self_parent.get()))
-	    {
-	      replay_record::live_paths paths;
-	      cs.get_old_path(other, paths.src);
-	      cs.get_new_path(self, paths.dst);
-	      rr.nodes_renamed.push_back(paths);
-	    }
+          replay_record::live_paths paths;
+          cs.get_old_path(other, paths.src);
+          i.path(paths.dst);
+
+	  if (paths.src != paths.dst)
+            rr.nodes_renamed.push_back(paths);
 	}
 
       // content deltas
@@ -2053,7 +2080,7 @@ build_replay_record(cset const & cs,
 	    {
 	      replay_record::applied_delta del;
 	      cs.get_old_path(other, del.paths.src);
-	      cs.get_new_path(self, del.paths.dst);
+              i.path(del.paths.dst);
 	      del.src_id = f_other->content;
 	      del.dst_id = f_self->content;
               I(!del.src_id.inner()().empty());
@@ -2067,7 +2094,7 @@ build_replay_record(cset const & cs,
 	{
 	  replay_record::live_paths pths;
 	  cs.get_old_path(other, pths.src);
-	  cs.get_new_path(self, pths.dst);
+          i.path(pths.dst);
 
 	  for (map<attr_name, attr_val>::const_iterator a = self->attrs.begin();
 	       a != self->attrs.end(); ++a)
@@ -2095,7 +2122,7 @@ build_replay_record(cset const & cs,
 	      attr_val newval;
 
 	      map<attr_name, attr_val>::const_iterator a = self->attrs.find(b->first);
-	      if (a != other->attrs.end())
+	      if (a != self->attrs.end())
 		newval = a->second;
 
 	      if (newval != b->second)
@@ -2556,8 +2583,6 @@ write_mfest(mfest const & mf,
 // TODO: copy more tests from change_set.cc into here, adapt to the
 // new circumstances
 
-/* 
-
 struct
 change_automaton
 {
@@ -2592,7 +2617,7 @@ change_automaton
 
   dirent_t new_entry()
   {
-    return path_vec_t::intern_component(new_word());
+    return dirent_t(new_word());
   }
 
   bool flip(unsigned n = 2)
@@ -2604,8 +2629,8 @@ change_automaton
   {
     I(n->has_attrs());
     vector<attr_name> tmp;
-    for (map<attr_name, attr_val>::const_iterator i = n->fancy->attrs.begin();
-         i != n->fancy->attrs.end(); ++i)
+    for (map<attr_name, attr_val>::const_iterator i = n->attrs.begin();
+         i != n->attrs.end(); ++i)
       {
         tmp.push_back(i->first);
       }
@@ -2634,7 +2659,7 @@ change_automaton
 
     for (bfs_iter i(m.root); !i.finished(); ++i)
       {
-        if ((*i)->has_parent())
+        if ((*i).get() != m.root.get())
           has_nonroot_nodes = true;
         
         if ((*i)->has_attrs())
@@ -2648,7 +2673,7 @@ change_automaton
   
   void perform_random_action(cset & c)
   {
-    hash_set<node_t, cset::hash> parents;
+    hash_set<node *> parents;
     path_vec_t pv_a, pv_b;
     file_path fp_a, fp_b;
 
@@ -2672,7 +2697,7 @@ change_automaton
 
           case add_a_node:
             {
-              node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
+              node_t n = random_node(c, false, nodes, pv_a, parents);
               if (is_dir_t(n) && flip())
                 {
                   // add a child of an existing entry
@@ -2690,8 +2715,7 @@ change_automaton
                 cs.add_dir(fp_a);
               else
                 {
-                  cs.add_file(fp_a);
-                  cs.apply_delta(fp_a, null_file_id, new_ident());            
+                  cs.add_file(fp_a, new_ident());
                 }
               did_something = true;
             }
@@ -2701,15 +2725,18 @@ change_automaton
             {
               if (has_nonroot_nodes)
                 {
-                  node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
+                  node_t n = random_node(c, false, nodes, pv_a, parents);
                   
-                  if (n->live() 
-                      && (n->ident != c.new_mfest.root->ident)
+                  if (c.is_live(n)
+                      && (n.get() != c.new_mfest.root.get())
                       && (is_file_t(n) || (is_dir_t(n) 
                                            && downcast_to_dir_t(n)->entries.empty())))
                     {
                       fp_a = pv_a.to_file_path();
-                      cs.delete_node(fp_a);
+                      if (is_dir_t(n))
+                        cs.delete_dir(fp_a);
+                      else
+                        cs.delete_file(fp_a, downcast_to_file_t(n)->content);
                       did_something = true;
                     }
                 }
@@ -2721,16 +2748,16 @@ change_automaton
             {              
               if (has_nonroot_nodes)
                 {
-                  node_t src = random_node(c.old_mfest, nodes, pv_a, parents);
-                  node_t dst = random_node(c.new_mfest, nodes, pv_b, parents);
+                  node_t src = random_node(c, true, nodes, pv_a, parents);
+                  node_t dst = random_node(c, false, nodes, pv_b, parents);
                   
                   // we want to be sure we're not moving src into one of 
                   // its own children; this is the same as saying that
                   // src isn't in dst's parents
                   
-                  if (src->live() 
-                      && dst->live()
-                      && (parents.find(src->ident) == parents.end()))
+                  if (c.is_live(src)
+                      && c.is_live(dst)
+                      && (parents.find(src.get()) == parents.end()))
                     {
                       if (is_dir_t(dst))
                         {                          
@@ -2754,8 +2781,8 @@ change_automaton
             {
               if (has_nonroot_nodes)
                 {
-                  node_t f = random_node(c.new_mfest, nodes, pv_a, parents);              
-                  if (f->live() && is_file_t(f))
+                  node_t f = random_node(c, false, nodes, pv_a, parents);              
+                  if (c.is_live(f) && is_file_t(f))
                     {
                       cs.apply_delta(pv_a.to_file_path(),
                                      downcast_to_file_t(f)->content, 
@@ -2770,8 +2797,8 @@ change_automaton
             {
               if (has_nonroot_nodes)
                 {
-                  node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
-                  if (n->ident != c.new_mfest.root->ident)
+                  node_t n = random_node(c, false, nodes, pv_a, parents);
+                  if (n.get() != c.new_mfest.root.get())
                     {
                       fp_a = pv_a.to_file_path();
                       cs.set_attr(fp_a, new_word(), new_word());
@@ -2785,8 +2812,8 @@ change_automaton
             {
               if (has_nonroot_nodes && has_attrs)
                 {
-                  node_t n = random_node(c.new_mfest, nodes, pv_a, parents);
-                  if (n->ident != c.new_mfest.root->ident)
+                  node_t n = random_node(c, false, nodes, pv_a, parents);
+                  if (n.get() != c.new_mfest.root.get())
                     {
                       fp_a = pv_a.to_file_path();
                       if (n->has_attrs())
@@ -2813,23 +2840,37 @@ change_automaton
       nodes.push_back(*i);
   }
 
-  node_t random_node(mfest const & m, 
+  node_t random_node(cset const & c, 
+                     bool old,
                      vector<node_t> & nodes,
                      path_vec_t & pv,
-                     set<ident_t> & parents)
+                     hash_set<node *> & parents)
   {
     parents.clear();
 
     node_t result = nodes[rand() % nodes.size()];
     
-    for (node_t tmp = result; tmp->ident != m.root->ident; tmp = m.get_node(tmp->parent))
+    node *r = (old ? c.old_mfest.root.get() : c.new_mfest.root.get());
+    parents.insert(r);
+
+    node_t tmp = result;
+    while (tmp.get() != r)
       {
-        parents.insert(tmp->ident);
+        parents.insert(tmp.get());
+        dir_t parent;
+        dirent_t entry;
+        if (old)
+          c.get_old_parent(tmp, parent, entry);
+        else
+          c.get_new_parent(tmp, parent, entry);
+        tmp = parent;
       }
 
-    parents.insert(m.root->ident);
-
-    m.get_path(result, pv);
+    if (result.get() != r)
+      if (old)
+        c.get_old_path(result, pv);
+      else
+        c.get_new_path(result, pv);
 
     return result;
   }
@@ -2845,25 +2886,29 @@ automaton_cset_test()
   change_automaton aut;
   for (int i = 0; i < 1000; ++i)
     {
+      //L(F("automaton cycle %d, changeset 1\n") % i);
       cset cs1(m1);
       aut.perform_random_action(cs1);
 
+      //L(F("automaton cycle %d, changeset 2\n") % i);
       cset cs2(cs1.new_mfest);
       aut.perform_random_action(cs2);
 
+      //L(F("automaton cycle %d, changeset 3\n") % i);
       cset cs3(cs2.new_mfest);
       aut.perform_random_action(cs3);
 
       cset csA, csB;
 
+      //L(F("automaton cycle %d, concatenation: 1+2\n") % i);
       concatenate_changesets(cs1, cs2, csA);
+
+      //L(F("automaton cycle %d, concatenation: (1+2)+3\n") % i);
       concatenate_changesets(csA, cs3, csB);
 
       m1.reset(csB.new_mfest);
     }
 }
-
-*/
 
 
 static void
@@ -2945,7 +2990,7 @@ void
 add_cset_tests(test_suite * suite)
 {
   I(suite);
-  //suite->add(BOOST_TEST_CASE(&automaton_cset_test));
+  suite->add(BOOST_TEST_CASE(&automaton_cset_test));
   suite->add(BOOST_TEST_CASE(&basic_cset_test));
 }
 

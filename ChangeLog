@@ -1,3 +1,7 @@
+2005-08-10  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Automaton test gets a few hundred edits in.
+
 2005-08-07  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc: Split delete_node into delete_{dir,file}.
