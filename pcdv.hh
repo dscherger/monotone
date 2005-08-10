@@ -188,10 +188,7 @@ struct path_conflict
   std::vector<file_path> lnames;
   std::vector<file_path> rnames;
   std::string name;
-  struct resolution
-  {
-    std::vector<std::pair<item_id, std::string> > res;
-  };
+  typedef std::pair<item_id, std::string> resolution;
 };
 
 struct item_status
@@ -201,7 +198,8 @@ struct item_status
   // shared for all versions of this item
   boost::shared_ptr<item_data> versions;
   // shared between all copies of this version of this item
-  boost::shared_ptr<std::vector<revid> > leaves;
+  boost::shared_ptr<std::vector<revid> const > leaves;
+  bool is_dir;
 
   item_status();
   item_status(boost::shared_ptr<item_data> ver);
@@ -225,6 +223,7 @@ struct item_status
   copy() const;
 };
 
+
 // This is a const object type; there are no modifiers.
 // Usage:
 //   for a->b
@@ -241,6 +240,7 @@ struct item_status
 //     x.get_changes_from(b)
 class tree_state
 {
+  typedef int fpid;
   boost::shared_ptr<vector<boost::shared_ptr<item_status::item_data> > > items;
   boost::shared_ptr<std::map<item_id, item_status> > states;
   boost::shared_ptr<interner<revid> > itx;
@@ -257,7 +257,7 @@ public:
   new_tree() {return tree_state();}
 
   static tree_state
-  merge(std::vector<tree_state> const & trees,
+  merge_with_rearrangement(std::vector<tree_state> const & trees,
         std::vector<change_set::path_rearrangement> const & changes,
         std::string revision);
 
@@ -271,14 +271,25 @@ public:
   std::vector<std::pair<item_id, file_path> >
   current() const;
 
-  // get the changes along edge this->merged for merged=merge(this, other)
+  // get the changes along edge this->merged for merged=merge(revs)
+  // note that revs should include *this
   void
-  get_changes_for_merge(tree_state const & other,
+  get_changes_for_merge(tree_state const & merged,
+                        change_set::path_rearrangement & changes) const;
+
+  static tree_state
+  merge_with_resolution(std::vector<tree_state> const & revs,
                         std::set<path_conflict::resolution> const & res,
-                        change_set::path_rearrangement & changes);
+                        std::string const & revision);
 private:
   file_path
   get_full_name(item_status::item_state x) const;
+
+  file_path
+  get_full_name(item_status x) const;
+
+  file_path
+  try_get_full_name(item_status::item_state x, int & d) const;
 
   std::string
   get_ambiguous_full_name(item_status::item_state x) const;
@@ -288,6 +299,12 @@ private:
 
   static tree_state
   mash(std::vector<tree_state> const & trees);
+
+  void
+  ensure_dir_exists(std::vector<path_component> const & parts,
+                    std::map<fpid, item_id> & outmap,
+                    interner<fpid> & cit,
+                    std::string const & revision);
 };
 
 void

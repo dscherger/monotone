@@ -1,3 +1,8 @@
+2005-08-03  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: Work on merge functions for trees.
+	* commands.cc: Misc. changes to pcdv driver
+
 2005-08-02  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* pcdv.{cc,hh}: Add history-aware filetree merge.

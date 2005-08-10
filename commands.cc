@@ -3888,14 +3888,18 @@ get_fileids(revision_id const & start,
             vector<revision_id> & roots,
             app_state & app)
 {
-  manifest_id mid;
-  app.db.get_revision_manifest(start, mid);
-  manifest_map m;
-  app.db.get_manifest(mid, m);
-  manifest_map::const_iterator i = m.find(fp);
-  I(i != m.end());
-  file_id ident = manifest_entry_id(i);
-  fileids.insert(make_pair(start, make_pair(ident, fp)));
+  if (!(fp == file_path()))
+    {
+      manifest_id mid;
+      app.db.get_revision_manifest(start, mid);
+      manifest_map m;
+      app.db.get_manifest(mid, m);
+      manifest_map::const_iterator i = m.find(fp);
+      I(i != m.end());
+      file_id ident = manifest_entry_id(i);
+      fileids.insert(make_pair(start, make_pair(ident, fp)));
+    }
+
   std::deque<std::pair<revision_id, file_path> > todo;
   todo.push_back(make_pair(start, fp));
   ticker num("file_id count", "F", 1);
@@ -3967,6 +3971,162 @@ get_fileids(revision_id const & start,
     }
 }
 
+void
+prdiff(change_set::path_rearrangement const & a,
+       change_set::path_rearrangement const & b)
+{
+  std::set<file_path>::const_iterator sa, sb;
+  std::map<file_path, file_path>::const_iterator ma, mb;
+
+  sa = a.deleted_files.begin();
+  sb = b.deleted_files.begin();
+  while (sa != a.deleted_files.end() || sb != b.deleted_files.end())
+    {
+      if (sa == a.deleted_files.end())
+        {
+          P(F("> delete_file %1%") % *sb);
+          ++sb;
+        }
+      else if (sb == b.deleted_files.end())
+        {
+          P(F("< delete_file %1%") % *sa);
+          ++sa;
+        }
+      else if (*sa < *sb)
+        {
+          P(F("< delete_file %1%") % *sa);
+         ++sa;
+        }
+      else if (*sb < *sa)
+        {
+          P(F("> delete_file %1%") % *sb);
+          ++sb;
+        }
+      else
+        ++sa, ++sb;
+    }
+
+  sa = a.deleted_dirs.begin();
+  sb = b.deleted_dirs.begin();
+  while (sa != a.deleted_dirs.end() || sb != b.deleted_dirs.end())
+    {
+      if (sa == a.deleted_dirs.end())
+        {
+          P(F("> delete_dir %1%") % *sb);
+          ++sb;
+        }
+      else if (sb == b.deleted_dirs.end())
+        {
+          P(F("< delete_dir %1%") % *sa);
+          ++sa;
+        }
+      else if (*sa < *sb)
+        {
+          P(F("< delete_dir %1%") % *sa);
+         ++sa;
+        }
+      else if (*sb < *sa)
+        {
+          P(F("> delete_dir %1%") % *sb);
+          ++sb;
+        }
+      else
+        ++sa, ++sb;
+    }
+
+  sa = a.added_files.begin();
+  sb = b.added_files.begin();
+  while (sa != a.added_files.end() || sb != b.added_files.end())
+    {
+      if (sa == a.added_files.end())
+        {
+          P(F("> add_file %1%") % *sb);
+          ++sb;
+        }
+      else if (sb == b.added_files.end())
+        {
+          P(F("< add_file %1%") % *sa);
+          ++sa;
+        }
+      else if (*sa < *sb)
+        {
+          P(F("< add_file %1%") % *sa);
+         ++sa;
+        }
+      else if (*sb < *sa)
+        {
+          P(F("> add_file %1%") % *sb);
+          ++sb;
+        }
+      else
+        ++sa, ++sb;
+    }
+
+  ma = a.renamed_files.begin();
+  mb = b.renamed_files.begin();
+  while (ma != a.renamed_files.end() || mb != b.renamed_files.end())
+    {
+      if (ma == a.renamed_files.end())
+        {
+          P(F("> rename_file %1%") % mb->first);
+          P(F(">          to %1%") % mb->second);
+          ++mb;
+        }
+      else if (mb == b.renamed_files.end())
+        {
+          P(F("< rename_file %1%") % ma->first);
+          P(F(">          to %1%") % ma->second);
+          ++ma;
+        }
+      else if (*ma < *mb)
+        {
+          P(F("< rename_file %1%") % ma->first);
+          P(F(">          to %1%") % ma->second);
+         ++ma;
+        }
+      else if (*mb < *ma)
+        {
+          P(F("> rename_file %1%") % mb->first);
+          P(F(">          to %1%") % mb->second);
+          ++mb;
+        }
+      else
+        ++ma, ++mb;
+    }
+
+  ma = a.renamed_dirs.begin();
+  mb = b.renamed_dirs.begin();
+  while (ma != a.renamed_dirs.end() || mb != b.renamed_dirs.end())
+    {
+      if (ma == a.renamed_dirs.end())
+        {
+          P(F("> rename_dir %1%") % mb->first);
+          P(F(">         to %1%") % mb->second);
+          ++mb;
+        }
+      else if (mb == b.renamed_dirs.end())
+        {
+          P(F("< rename_dir %1%") % ma->first);
+          P(F(">         to %1%") % ma->second);
+          ++ma;
+        }
+      else if (*ma < *mb)
+        {
+          P(F("< rename_dir %1%") % ma->first);
+          P(F(">         to %1%") % ma->second);
+         ++ma;
+        }
+      else if (*mb < *ma)
+        {
+          P(F("> rename_dir %1%") % mb->first);
+          P(F(">         to %1%") % mb->second);
+          ++mb;
+        }
+      else
+        ++ma, ++mb;
+    }
+}
+
 CMD(pcdv, "debug", "REVISION REVISION FILENAME",
     "precise-cdv merge FILENAME in the two given revisions",
     OPT_NONE)
@@ -4032,8 +4192,22 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
           treevec.push_back(from);
           revec.push_back(edge_changes(i).rearrangement);
         }
-      tree_state newtree(tree_state::merge(treevec, revec,
+      tree_state newtree(tree_state::merge_with_rearrangement(treevec, revec,
                                            roots.front().inner()()));
+      if (rs.edges.size() > 1)
+        for (unsigned int i = 0; i != rs.edges.size(); ++i)
+          {
+            std::set<path_conflict::resolution> res;
+            change_set::path_rearrangement changes;
+            idx(treevec, i).get_changes_for_merge(newtree, changes);
+            if (!(idx(revec, i) == changes))
+              {
+//                P(F("From parent #%1% to %2%") % i % roots.front());
+//                P(F("Real vs. calc"));
+//                prdiff(idx(revec, i), changes);
+//                I(false);
+              }
+          }
       trees.insert(make_pair(roots.front(), newtree));
 
       std::map<revision_id, std::pair<file_id, file_path> >::const_iterator
@@ -4101,6 +4275,52 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
       roots.pop_front();
     }
 
+  std::map<revision_id, tree_state>::const_iterator lt(trees.find(left));
+  std::map<revision_id, tree_state>::const_iterator rt(trees.find(right));
+  I(lt != trees.end());
+  I(rt != trees.end());
+  std::vector<path_conflict> conf(lt->second.conflict(rt->second));
+/*
+  std::vector<std::pair<item_id, file_path> > t(lt->second.current());
+  for (std::vector<std::pair<item_id, file_path> >::const_iterator
+         i = t.begin(); i != t.end(); ++i)
+    {
+      P(F("%1%: %2%") % i->first % i->second);
+    }
+*/
+  P(F("There are %1% conflicts:") % conf.size());
+  for (std::vector<path_conflict>::const_iterator i = conf.begin();
+       i != conf.end(); ++i)
+    {
+      P(F("Type: %1%") % ((i->type == path_conflict::collision)
+                          ?"Collision":"Split"));
+      for (unsigned int j = 0; j < i->items.size(); ++j)
+        {
+          P(F("Item %1%:") % idx(i->items, j));
+          P(F("Lname: %1%") % idx(i->lnames, j));
+          P(F("Rname: %1%") % idx(i->rnames, j));
+        }
+      P(F("Name: %1%") % i->name);
+    }
+  if (conf.empty())
+    {
+      std::set<path_conflict::resolution> res;
+      std::vector<tree_state> parents;
+      parents.push_back(lt->second);
+      parents.push_back(rt->second);
+      change_set::path_rearrangement changes;
+      data dat;
+      tree_state mt(tree_state::merge_with_resolution(parents, res, "xxx"));
+      lt->second.get_changes_for_merge(mt, changes);
+//      P(F("Left changes:"));
+//      write_path_rearrangement(changes, dat);
+//      P(F("%1%") % dat);
+      rt->second.get_changes_for_merge(mt, changes);
+//      P(F("Right changes:"));
+//      write_path_rearrangement(changes, dat);
+//      P(F("%1%") % dat);
+    }
+
   map<revision_id, file_state>::iterator l = files.find(left);
   N(l != files.end(), F("Not found: %s.") % left);
   map<revision_id, file_state>::iterator r = files.find(right);
@@ -4109,16 +4329,7 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   P(F("Done building history."));
 
   vector<merge_section> result(l->second.conflict(r->second));
-  P(F(""));
   show_conflict(consolidate(result));
-  std::map<revision_id, tree_state>::const_iterator lt(trees.find(left));
-  std::map<revision_id, tree_state>::const_iterator rt(trees.find(right));
-  std::vector<std::pair<item_id, file_path> > t(lt->second.current());
-  for (std::vector<std::pair<item_id, file_path> >::const_iterator
-         i = t.begin(); i != t.end(); ++i)
-    {
-      P(F("%1%: %2%") % i->first % i->second);
-    }
 }
 
 

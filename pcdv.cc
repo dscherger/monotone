@@ -1,6 +1,7 @@
 #include <set>
 #include <map>
 #include <deque>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include "sanity.hh"
 #include "pcdv.hh"
@@ -497,9 +498,9 @@ file_state::mash(file_state const & other) const
         newstate.states->insert(make_pair(r->first,r->second.copy())), ++r;
       else if (r == other.states->end())
         newstate.states->insert(make_pair(l->first,l->second.copy())), ++l;
-      else if (l->first < r->first)
+      else if (l->first > r->first)
         newstate.states->insert(make_pair(r->first,r->second.copy())), ++r;
-      else if (r->first < l->first)
+      else if (r->first > l->first)
         newstate.states->insert(make_pair(l->first,l->second.copy())), ++l;
       else
         {
@@ -770,20 +771,26 @@ consolidate(vector<merge_section> const & in)
 
 item_status::item_status():
              versions(new item_data()),
-             leaves(new vector<revid>())
+             leaves(),
+             is_dir(false)
 {
   versions->insert(make_pair(revid(-1),
                              make_pair(make_pair(item_id(-1),
                                                  make_null_component()),
                                        vector<revid>())));
-  leaves->push_back(revid(-1));
+  std::vector<revid> * l = new std::vector<revid>();
+  l->push_back(revid(-1));
+  leaves.reset(l);
 }
 
 item_status::item_status(boost::shared_ptr<item_data> ver):
              versions(ver),
-             leaves(new vector<revid>())
+             leaves(),
+             is_dir(false)
 {
-  leaves->push_back(revid(-1));
+  std::vector<revid> * l = new std::vector<revid>();
+  l->push_back(revid(-1));
+  leaves.reset(l);
   versions->insert(make_pair(revid(-1),
                              make_pair(make_pair(item_id(-1),
                                                  make_null_component()),
@@ -792,7 +799,8 @@ item_status::item_status(boost::shared_ptr<item_data> ver):
 
 item_status::item_status(item_status const & x):
                versions(x.versions),
-               leaves(x.leaves)
+               leaves(x.leaves),
+               is_dir(x.is_dir)
 {}
 
 item_status::~item_status()
@@ -819,6 +827,7 @@ item_status
 item_status::merge(item_status const & other) const
 {
   I(versions == other.versions);
+  I(is_dir == other.is_dir);
   set<revid> leafset, done;
   std::deque<revid> todo;
   for (vector<revid>::const_iterator i = leaves->begin();
@@ -876,6 +885,12 @@ item_status::current_names() const
       I(j != versions->end());
       out.insert(j->second.first);
     }
+  if (out.size() > 1
+      && out.find(make_pair(-1, make_null_component())) != out.end())
+    {
+      out.clear();
+      out.insert(make_pair(-1, make_null_component()));
+    }
   return out;
 }
 
@@ -883,23 +898,44 @@ item_status
 item_status::rename(revid rev, item_id new_parent, path_component new_name) const
 {
   item_state newstate(make_pair(new_parent, new_name));
+//  {
+    item_data::iterator i = versions->find(rev);
+    if (i != versions->end())
+      {
+//        I(i->second.first == newstate);
+// An error, but it's triggered by errors already in the monotone db.
+// These are of the form cs_left = {}, cs_right = {drop, add}
+// So, warn instead of failing.
+        if (i->second.first == newstate)
+          return *this;
+        W(F("Renaming a file to multiple names within one revision."));
+      }
+//  }
   vector<revid> newleaves, badleaves;
-  for (vector<revid>::iterator i = leaves->begin();
+  newleaves.push_back(rev);
+  for (vector<revid>::const_iterator i = leaves->begin();
         i != leaves->end(); ++i)
     {
       item_data::const_iterator j = versions->find(*i);
       I(j != versions->end());
       if (j->second.first == newstate)
         newleaves.push_back(*i);
-      else
+      else if (*i != rev)
         badleaves.push_back(*i);
     }
-  if (badleaves.empty())
-    return *this;
-
-  newleaves.push_back(rev);
+  if (i != versions->end())
+    versions->erase(i);
   versions->insert(make_pair(rev, make_pair(newstate, badleaves)));
-  return new_version(newleaves);
+  if (badleaves.empty())
+    {
+      std::set<item_state> c = current_names();
+      I(c.size() == 1);
+      I(*c.begin() == newstate);
+      return *this;
+    }
+
+  item_status out(new_version(newleaves));
+  return out;
 }
 
 
@@ -927,8 +963,8 @@ const int renamed_dir(3);
 const int renamed_file(4);
 const int added_dir(5); // not used
 const int added_file(6);
-typedef std::multimap<std::pair<int, std::pair<int, int> >,
-                      std::pair<file_path, file_path> > orderer;
+typedef std::multimap<boost::tuple<int, int, int>,
+                    boost::tuple<file_path, file_path, bool> > orderer;
 
 void
 process_rearrangement(change_set::path_rearrangement const & changes,
@@ -939,18 +975,18 @@ process_rearrangement(change_set::path_rearrangement const & changes,
     {
       std::vector<path_component> splitted;
       split_path(*i, splitted);
-      todo.insert(make_pair(make_pair(splitted.size(),
-                                      make_pair(deleted_dir, num)),
-                            make_pair(*i, file_path())));
+      todo.insert(make_pair(boost::make_tuple(splitted.size(),
+                                              deleted_dir, num),
+                            boost::make_tuple(*i, file_path(), true)));
     }
   for (std::set<file_path>::const_iterator i = changes.deleted_files.begin();
        i != changes.deleted_files.end(); ++i)
     {
       std::vector<path_component> splitted;
       split_path(*i, splitted);
-      todo.insert(make_pair(make_pair(splitted.size(),
-                                      make_pair(deleted_file, num)),
-                            make_pair(*i, file_path())));
+      todo.insert(make_pair(boost::make_tuple(splitted.size(),
+                                              deleted_file, num),
+                            boost::make_tuple(*i, file_path(), false)));
     }
   for (std::map<file_path, file_path>::const_iterator
          i = changes.renamed_dirs.begin();
@@ -958,9 +994,9 @@ process_rearrangement(change_set::path_rearrangement const & changes,
     {
       std::vector<path_component> splitted;
       split_path(i->second, splitted);
-      todo.insert(make_pair(make_pair(splitted.size(),
-                                      make_pair(renamed_dir, num)),
-                            make_pair(i->first, i->second)));
+      todo.insert(make_pair(boost::make_tuple(splitted.size(),
+                                              renamed_dir, num),
+                            boost::make_tuple(i->first, i->second, true)));
     }
   for (std::map<file_path, file_path>::const_iterator
          i = changes.renamed_files.begin();
@@ -968,24 +1004,69 @@ process_rearrangement(change_set::path_rearrangement const & changes,
     {
       std::vector<path_component> splitted;
       split_path(i->second, splitted);
-      todo.insert(make_pair(make_pair(splitted.size(),
-                                      make_pair(renamed_file, num)),
-                            make_pair(i->first, i->second)));
+      todo.insert(make_pair(boost::make_tuple(splitted.size(),
+                                              renamed_file, num),
+                            boost::make_tuple(i->first, i->second, false)));
     }
   for (std::set<file_path>::const_iterator i = changes.added_files.begin();
        i != changes.added_files.end(); ++i)
     {
       std::vector<path_component> splitted;
       split_path(*i, splitted);
-      todo.insert(make_pair(make_pair(splitted.size(),
-                                      make_pair(added_file, num)),
-                            make_pair(file_path(), *i)));
+      todo.insert(make_pair(boost::make_tuple(splitted.size(),
+                                              added_file, num),
+                            boost::make_tuple(file_path(), *i, false)));
     }
 
 }
 
+
+void
+tree_state::ensure_dir_exists(std::vector<path_component> const & parts,
+                             std::map<fpid, item_id> & outmap,
+                             interner<fpid> & cit,
+                             std::string const & revision)
+{
+  // parent directory implied, did not previously exist
+  std::vector<path_component> p(parts);
+  bool newfile;
+  file_path pdir;
+  fpid pd;
+  do
+    {
+      p.pop_back();
+      if (p.size())
+        compose_path(p, pdir);
+      else
+        pdir = file_path();
+      pd = cit.intern(pdir(), newfile);
+    }
+  while (newfile);
+  // found a parent that already exists
+  std::map<fpid, item_id>::const_iterator k = outmap.find(pd);
+  I(k != outmap.end());
+  item_id pi(k->second);
+  while (p.size() != parts.size())
+    {
+      p.push_back(idx(parts, p.size()));
+      compose_path(p, pdir);
+      boost::shared_ptr<item_status::item_data> ver;
+      ver.reset(new item_status::item_data());
+      items->push_back(ver);
+      revid r(itx->intern(revision));
+      item_status newitem(item_status(ver).rename(r, pi, p.back()));
+      newitem.is_dir = true;
+      states->insert(make_pair(items->size()-1,
+                               newitem));
+      pi = items->size() - 1;
+      pd = cit.intern(pdir());
+      outmap.insert(make_pair(pd, pi));
+    }
+}
+
+
 tree_state
-tree_state::merge(std::vector<tree_state> const & trees,
+tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
                   std::vector<change_set::path_rearrangement> const & changes,
                   std::string revision)
 {
@@ -993,7 +1074,6 @@ tree_state::merge(std::vector<tree_state> const & trees,
   // deleted dirs, deleted files, renamed dirs, renamed files, added files
   // sort key is (depth, class, rev#)
   orderer todo;
-  typedef int fpid;
   std::map<fpid, item_id> outmap;// for tree poststate
   std::vector<std::map<fpid, item_id> > premaps;//for tree prestates
   std::vector<std::map<fpid, item_id> > postmaps;//for rearrangement poststates
@@ -1017,13 +1097,11 @@ tree_state::merge(std::vector<tree_state> const & trees,
     for (i = trees.begin(), x = changes.begin();
          i != trees.end() && x != changes.end(); ++i, ++x)
       {
-//      P(F("Next parent:"));
         premaps.push_back(std::map<fpid, item_id>());
         std::vector<std::pair<item_id, file_path> > curr = i->current();
         for (std::vector<std::pair<item_id, file_path> >::const_iterator
                j = curr.begin(); j != curr.end(); ++j)
           {
-//          P(F("%1%: %2%") % j->first % j->second);
             fpid myid = cit.intern(j->second());
             premaps.back().insert(make_pair(myid, j->first));
 
@@ -1044,13 +1122,16 @@ tree_state::merge(std::vector<tree_state> const & trees,
 
   for (orderer::const_iterator i = todo.begin(); i != todo.end(); ++i)
     {
-      file_path const & from(i->second.first);
-      file_path const & to(i->second.second);
-      int type(i->first.second.first);
-      int which(i->first.second.second);
-      item_status current_item;
+      file_path const & from(i->second.get<0>());
+      file_path const & to(i->second.get<1>());
+      bool is_dir(i->second.get<2>());
+      int type(i->first.get<1>());
+      int which(i->first.get<2>());
       item_id current_id;
       std::map<item_id, item_status>::iterator j = out.states->end();
+      bool addednew = false;
+
+      // find where it comes from...
       if (type == added_file || type == added_dir)
         {
           std::map<fpid, item_id>::const_iterator
@@ -1065,6 +1146,8 @@ tree_state::merge(std::vector<tree_state> const & trees,
               p = out.states->insert(make_pair(current_id, item_status(ver)));
               I(p.second);
               j = p.first;
+              addednew = true;
+//              P(F("New item: %1%") % current_id);
             }
           else
             {
@@ -1084,14 +1167,29 @@ tree_state::merge(std::vector<tree_state> const & trees,
           j = out.states->find(current_id);
         }
       I(j != out.states->end());
-      current_item = j->second;
+      item_status & current_item(j->second);
+//      P(F("%1% (%2%) from %3% to %4%, by %5% (type %6%) in %7%") % current_id
+//        % out.get_full_name(j->second) % from % to % which % type % revision);
+
+      // ...find where it goes...
       if (type == deleted_file || type == deleted_dir)
         {
-          j->second = item_status(current_item.rename(out.itx->intern(revision),
-                                                      item_id(-1),
-                                                      make_null_component()));
+          current_item = current_item.rename(out.itx->intern(revision),
+                                             item_id(-1),
+                                             make_null_component());
           continue;
         }
+      {
+        int d = -1;
+        std::set<item_status::item_state> s = current_item.current_names();
+        file_path orig;
+        if (s.size() == 1)
+          orig = out.try_get_full_name(*s.begin(), d);
+        if (!(addednew
+              || !(orig == file_path() && d != -1)
+              || to == file_path()))
+          W(F("undeleting %1%") % to);
+      }
       outmap.insert(make_pair(cit.intern(to()), current_id));
 
       file_path pdir;
@@ -1102,56 +1200,18 @@ tree_state::merge(std::vector<tree_state> const & trees,
         compose_path(parts, pdir);
       bool newfile;
       fpid pd = cit.intern(pdir(), newfile);
-
-      // make sure we know where to put it
       if (newfile)
-        {
-          // parent directory implied, did not previously exist
-          std::vector<path_component> p(parts);
-          do
-            {
-              p.pop_back();
-              if (p.size())
-                compose_path(p, pdir);
-              else
-                pdir = file_path();
-              pd = cit.intern(pdir(), newfile);
-            }
-          while (newfile);
-          // found a parent that already exists
-          std::map<fpid, item_id>::const_iterator k = outmap.find(pd);
-          I(k != outmap.end());
-          item_id pi(k->second);
-          while (p.size() != parts.size())
-            {
-              p.push_back(idx(parts, p.size()));
-              compose_path(p, pdir);
-              boost::shared_ptr<item_status::item_data> ver;
-              ver.reset(new item_status::item_data());
-              out.items->push_back(ver);
-              revid r(out.itx->intern(revision));
-              out.states->insert(make_pair(out.items->size()-1,
-                                 item_status(ver).rename(r,
-                                                         pi, p.back())));
-              pi = out.items->size() - 1;
-              pd = cit.intern(pdir());
-              outmap.insert(make_pair(pd, pi));
-            }
-        }
-      file_path recon;
-      split_path(pdir, parts);
-      parts.push_back(new_name);
-      compose_path(parts, recon);
-      I(recon == to);
+        out.ensure_dir_exists(parts, outmap, cit, revision);
 
       std::map<fpid, item_id>::const_iterator k = outmap.find(pd);
       I(k != outmap.end());
-      j->second = item_status(current_item.rename(out.itx->intern(revision),
-                                                  k->second,
-                                                  new_name));
-      std::set<item_status::item_state> n(j->second.current_names());
-      I(n.size() == 1);
-      recon = out.get_full_name(*n.begin());
+
+      // ...and get it moved in.
+      current_item = current_item.rename(out.itx->intern(revision),
+                                         k->second,
+                                         new_name);
+      current_item.is_dir = is_dir;
+      file_path recon = out.get_full_name(current_item);
       I(recon == to);
     }
   return out;
@@ -1185,9 +1245,9 @@ tree_state::mash(tree_state const & other) const
         newstate.states->insert(make_pair(r->first,r->second.copy())), ++r;
       else if (r == other.states->end())
         newstate.states->insert(make_pair(l->first,l->second.copy())), ++l;
-      else if (l->first < r->first)
+      else if (l->first > r->first)
         newstate.states->insert(make_pair(r->first,r->second.copy())), ++r;
-      else if (r->first < l->first)
+      else if (r->first > l->first)
         newstate.states->insert(make_pair(l->first,l->second.copy())), ++l;
       else
         {
@@ -1234,6 +1294,8 @@ tree_state::conflict(tree_state const & other) const
       for (std::set<item_status::item_state>::const_iterator
              j = s.begin(); j != s.end(); ++j)
         {
+          if (*j == make_pair(item_id(-1), make_null_component()))
+            continue;
           std::map<item_status::item_state, std::set<item_id> >::iterator
             k = m.find(*j);
           if (k == m.end())
@@ -1263,15 +1325,23 @@ tree_state::conflict(tree_state const & other) const
           std::map<item_id, item_status>::const_iterator
             l(states->find(*j)),
             r(other.states->find(*j));
-          I(l != states->end());
-          I(r != other.states->end());
-          std::set<item_status::item_state>
-            left(l->second.current_names()),
-            right(r->second.current_names());
-          I(left.size() == 1);
-          I(right.size() == 1);
-          c.lnames.push_back(get_full_name(*left.begin()));
-          c.rnames.push_back(other.get_full_name(*right.begin()));
+          std::set<item_status::item_state> left, right;
+          if (l != states->end())
+            {
+              left = l->second.current_names();
+              I(left.size() == 1);
+              c.lnames.push_back(get_full_name(*left.begin()));
+            }
+          else
+            c.lnames.push_back(file_path());
+          if (r != other.states->end())
+            {
+              right = r->second.current_names();
+              I(right.size() == 1);
+              c.rnames.push_back(other.get_full_name(*right.begin()));
+            }
+          else
+            c.rnames.push_back(file_path());
         }
       out.push_back(c);
     }
@@ -1293,18 +1363,204 @@ tree_state::current() const
 }
 
 void
-tree_state::get_changes_for_merge(tree_state const & other,
-                               std::set<path_conflict::resolution> const & res,
+tree_state::get_changes_for_merge(tree_state const & merged,
                                   change_set::path_rearrangement & changes)
+                                  const
 {
+  changes.deleted_dirs.clear();
+  changes.deleted_files.clear();
+  changes.renamed_dirs.clear();
+  changes.renamed_files.clear();
+  //
+  changes.added_files.clear();
+
+  map<item_id, item_status>::const_iterator l, r;
+  l = states->begin();
+  r = merged.states->begin();
+  while (l != states->end() || r != merged.states->end())
+    {
+      file_path from, to;
+      bool from_is_dir(false), to_is_dir(false);
+
+      if (l == states->end())
+        {
+          to = merged.get_full_name(r->second);
+          to_is_dir = r->second.is_dir;
+          ++r;
+        }
+      else if (r == merged.states->end())
+        {
+          from = get_full_name(l->second);
+          from_is_dir = l->second.is_dir;
+          ++l;
+        }
+      else if (l->first > r->first)
+        {
+          to = merged.get_full_name(r->second);
+          to_is_dir = r->second.is_dir;
+          ++r;
+        }
+      else if (r->first > l->first)
+        {
+          from = get_full_name(l->second);
+          from_is_dir = l->second.is_dir;
+          ++l;
+        }
+      else
+        {
+          from = get_full_name(l->second);
+          from_is_dir = l->second.is_dir;
+          to = merged.get_full_name(r->second);
+          to_is_dir = r->second.is_dir;
+          ++l, ++r;
+        }
+
+      if (to == from)
+        continue;
+      else if (to == file_path())
+        {
+          if (from_is_dir)
+            changes.deleted_dirs.insert(from);
+          else
+            changes.deleted_files.insert(from);
+        }
+      else if (from == file_path())
+        {
+          if (to_is_dir)
+            ;
+          else
+            changes.added_files.insert(to);
+        }
+      else
+        {
+          if (from_is_dir)
+            changes.renamed_dirs.insert(make_pair(from, to));
+          else
+            changes.renamed_files.insert(make_pair(from, to));
+        }
+    }
+}
+
+tree_state
+tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
+                               std::set<path_conflict::resolution> const & res,
+                                  std::string const & revision)
+{
+  tree_state merged(mash(revs));
+
+  std::set<item_id> resolved;
+  typedef std::vector<path_component> splitpath;
+
+  // we need the names of close-to-root items
+  // before we can resolve their children
+  std::multimap<int, std::pair<item_id, splitpath > > sorted;
+  for (std::set<path_conflict::resolution>::const_iterator i = res.begin();
+       i != res.end(); ++i)
+    {
+      file_path fp(i->second);
+      splitpath sp;
+      split_path(fp, sp);
+      sorted.insert(make_pair(sp.size(), make_pair(i->first, sp)));
+    }
+  typedef int fpid;
+  interner<fpid> cit;
+  map<fpid, item_id> names;
+  int lastlevel = 0;
+  for (std::multimap<int, std::pair<item_id, splitpath > >::const_iterator
+         i = sorted.begin(); i != sorted.end(); ++i)
+    {
+      if (i->first > lastlevel)
+        {
+          // names should contain everything closer to root
+          // than the level we're at now
+          for (std::map<item_id, item_status>::const_iterator
+                 j = merged.states->begin(); j != merged.states->end(); ++j)
+            {
+              if (resolved.find(j->first) == resolved.end())
+                {
+                  std::set<item_status::item_state>
+                    x(j->second.current_names());
+                  if (x.size() != 1)
+                    continue;// not resolved, so not closer
+                  int d;
+                  file_path fp(merged.try_get_full_name(*x.begin(), d));
+                  if (d >= lastlevel || d == -1)
+                    continue;// not reached, or not resolved
+                  resolved.insert(j->first);
+                  fpid f(cit.intern(fp()));
+                  names.insert(make_pair(f, j->first));
+                }
+            }
+          ++lastlevel;
+        }
+      item_id const & id(i->second.first);
+      splitpath sp(i->second.second);
+      unsigned int s = resolved.size();
+      resolved.insert(id);
+      std::map<item_id, item_status>::const_iterator
+        j = merged.states->find(id);
+      I(j != merged.states->end());
+      item_status it = j->second;
+      if (s == resolved.size())
+        {
+          // already resolved this item, this resolution had better match
+          std::set<item_status::item_state> names = it.current_names();
+          I(names.size() == 1);
+          file_path prev = merged.get_full_name(*names.begin());
+          file_path to;
+          compose_path(sp, to);
+          I(to == prev);
+        }
+       else
+        {
+          file_path fp;
+          compose_path(sp, fp);
+          path_component name(sp.back());
+          sp.pop_back();
+          file_path pdir;
+          if (sp.size())
+            compose_path(sp, pdir);
+          bool newfile;
+          fpid pd = cit.intern(pdir(), newfile);
+          if (newfile)
+            merged.ensure_dir_exists(sp, names, cit, revision);
+          std::map<fpid, item_id>::const_iterator k = names.find(pd);
+          I(k != names.end());
+
+          std::map<item_id, item_status>::iterator
+            j = merged.states->find(k->second);
+          I(j != merged.states->end());
+          j->second = item_status(j->second.rename(merged.itx->intern(revision),
+                                                   k->second, name));
+          cit.intern(fp());
+        }
+    }
+  return merged;
+}
+
+file_path
+tree_state::get_full_name(item_status x) const
+{
+  std::set<item_status::item_state> y;
+  y = x.current_names();
+  I(y.size() == 1);
+  return get_full_name(*y.begin());
 }
 
 file_path
 tree_state::get_full_name(item_status::item_state x) const
 {
-// fails if the item has multiple names (only call this on clean trees)
+  int d;
+  file_path out(try_get_full_name(x, d));
+  I(d != -1);
+  return out;
+}
+
+file_path
+tree_state::try_get_full_name(item_status::item_state x, int & d) const
+{
+  d = 0;
   std::vector<path_component> names;
-  file_path out;
   names.push_back(x.second);
   while (x.first != -1)
     {
@@ -1312,11 +1568,16 @@ tree_state::get_full_name(item_status::item_state x) const
         i = states->find(x.first);
       I(i != states->end());
       std::set<item_status::item_state> y = i->second.current_names();
-      I(y.size() == 1);
+      if (y.size() != 1)
+        {
+          d = -1;
+          return file_path();
+        }
       x = *y.begin();
       names.push_back(x.second);
     }
   reverse(names.begin(), names.end());
+  file_path out;
   compose_path(names, out);
   return out;
 }
@@ -1329,11 +1590,12 @@ tree_state::get_ambiguous_full_name(item_status::item_state x) const
   file_path fp;
   std::string out;
   names.push_back(x.second);
-  do
+  while (x.first != -1)
     {
       std::map<item_id, item_status>::const_iterator
         i = states->find(x.first);
-      I(i != states->end());
+      if (i != states->end());
+      else E(false, F("Missing: %1%") % x.first);
       std::set<item_status::item_state> y = i->second.current_names();
       if (y.size() != 1)
         {
@@ -1343,7 +1605,6 @@ tree_state::get_ambiguous_full_name(item_status::item_state x) const
       x = *y.begin();
       names.push_back(x.second);
     }
-  while (x.first != -1);
   reverse(names.begin(), names.end());
   compose_path(names, fp);
   out += fp();
