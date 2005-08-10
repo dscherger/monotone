@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT(monotone, 0.20, monotone-devel@nongnu.org)
+AC_INIT(monotone, 0.22, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE(1.7.1)
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_TESTDIR([tests])
@@ -284,51 +284,7 @@ AH_TEMPLATE([USE_DLOPEN], [For LUA: use dlopen for loadlib])
 AC_SEARCH_LIBS([inet_aton], [resolv])
 AC_SEARCH_LIBS([accept], [socket])
 AC_SEARCH_LIBS([inet_ntoa], [nsl])
-
-
-##########
-# Checks for external lua library, revert to bundled version if not found or
-# user gives --with-bundled-lua.
-AC_ARG_WITH([bundled-lua],
-   AS_HELP_STRING(
-      [--with-bundled-lua],
-      [Force use of bundled version of lua (default=yes)]
-   ), [bundled_lua="$withval"], [bundled_lua=yes]
-)
-
-if test "x$bundled_lua" = "xno" ; then
-   bundled_lua=yes
-   AC_CHECK_HEADERS([lua.h lualib.h],
-      AC_CHECK_LIB([lua], [lua_open],
-         AC_CHECK_LIB([lualib], [luaopen_base],
-            [LIBS="$LIBS -llua -llualib" ; bundled_lua=no], , [-llua]
-         )
-      )
-   )
-fi
-
-AM_CONDITIONAL(BUNDLED_LUA, test "x$bundled_lua" != "xno")
-
-##########
-# Checks for external sqlite library, revert to bundled version if not found or
-# user gives --with-bundled-sqlite.
-AC_ARG_WITH([bundled-sqlite],
-   AS_HELP_STRING(
-      [--with-bundled-sqlite],
-      [Force use of bundled version of sqlite (default=yes)]
-   ), [bundled_sqlite="$withval"], [bundled_sqlite=yes]
-)
-
-if test "x$bundled_sqlite" = "xno" ; then
-   bundled_sqlite=yes
-   AC_CHECK_HEADER([sqlite3.h],
-      AC_CHECK_LIB([sqlite3], [sqlite3_open],
-         [LIBS="$LIBS -lsqlite3" ; bundled_sqlite=no]
-      )
-   )
-fi
-
-AM_CONDITIONAL(BUNDLED_SQLITE, test "x$bundled_sqlite" != "xno")
+AC_CHECK_LIB([z], [deflate], , AC_MSG_FAILURE([zlib is required]))
 
 # Now let the user specify whether he wants large file support or not in
 # sqlite.
@@ -349,9 +305,8 @@ fi
 AC_SUBST(SQLITE_CPPFLAGS)
 
 ##########
-# Checks for bundled popt.  We use it unconditionally, because the external
-# one has serious bugs that we can't live with.  Maybe some time in the
-# future...
+# We use our bundled popt unconditionally, because the external one has
+# serious bugs that we can't live with.  Maybe some time in the future...
 # The following was simply taken from the configure.in that comes with popt.
 #AC_LANG_PUSH(C)
 AC_CHECK_HEADERS([alloca.h float.h libintl.h mcheck.h])

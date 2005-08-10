@@ -44,6 +44,8 @@ namespace constants
   // truncated.
   size_t const db_log_line_sz = 70;
 
+  size_t const default_terminal_width = 72;
+
   // size in bytes of the database xdelta version reconstruction cache.
   // the value of 7 MB was determined as the optimal point after timing
   // various values with a pull of the monotone repository - it could
@@ -101,6 +103,9 @@ namespace constants
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   "0123456789"   
   "-"
+  // other non-shell, non-selector metacharacters allowed in (unquoted) local
+  // parts by RFC2821/RFC2822.  The full list is !#$%&'*+-/=?^_`|{}~.
+  "+_."
   // label and component separators
   ".@"
   ;
@@ -165,6 +170,8 @@ namespace constants
   size_t const netsync_timeout_seconds = 21600; // 6 hours
   size_t const netsync_session_key_length_in_bytes = 20;     // 160 bits
   size_t const netsync_hmac_value_length_in_bytes = 20;      // 160 bits
+
+  size_t const sha1_digest_length = 20; // 160 bits
 
   std::string const & netsync_key_initializer = std::string(netsync_session_key_length_in_bytes, 0);
 

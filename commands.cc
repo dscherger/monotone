@@ -1111,6 +1111,7 @@ CMD(drop, "working copy", "PATH...", "drop files from working copy", OPT_NONE)
   update_any_attrs(app);
 }
 
+ALIAS(rm, drop);
 
 CMD(rename, "working copy", "SRC DST", "rename entries in the working copy",
     OPT_NONE)
@@ -1133,6 +1134,7 @@ CMD(rename, "working copy", "SRC DST", "rename entries in the working copy",
   update_any_attrs(app);
 }
 
+ALIAS(mv, rename)
 
 // fload and fmerge are simple commands for debugging the line
 // merger. fcommit is a helper for making single-file commits to monotone
@@ -1576,22 +1578,13 @@ CMD(heads, "tree", "", "show unmerged head revisions of branch",
 static void 
 ls_branches(string name, app_state & app, vector<utf8> const & args)
 {
-  vector< revision<cert> > certs;
-  app.db.get_revision_certs(branch_cert_name, certs);
-
   vector<string> names;
-  for (size_t i = 0; i < certs.size(); ++i)
-    {
-      cert_value name;
-      decode_base64(idx(certs, i).inner().value, name);
-      if (!app.lua.hook_ignore_branch(name()))
-        names.push_back(name());
-    }
+  app.db.get_branches(names);
 
   sort(names.begin(), names.end());
-  names.erase(std::unique(names.begin(), names.end()), names.end());
   for (size_t i = 0; i < names.size(); ++i)
-    cout << idx(names, i) << endl;
+    if (!app.lua.hook_ignore_branch(idx(names, i)))
+      cout << idx(names, i) << endl;
 }
 
 static void 
@@ -1945,13 +1938,16 @@ CMD(privkey, "packet i/o", "ID", "write private key packet to stdout",
     throw usage(name);
 
   rsa_keypair_id ident(idx(args, 0)());
-  N(app.db.private_key_exists(ident),
-    F("private key '%s' does not exist in database") % idx(args, 0)());
+  N(app.db.private_key_exists(ident) && app.db.private_key_exists(ident),
+    F("public and private key '%s' do not exist in database") % idx(args, 0)());
 
   packet_writer pw(cout);
-  base64< arc4<rsa_priv_key> > key;
-  app.db.get_key(ident, key);
-  pw.consume_private_key(ident, key);
+  base64< arc4<rsa_priv_key> > privkey;
+  base64< rsa_pub_key > pubkey;
+  app.db.get_key(ident, privkey);
+  app.db.get_key(ident, pubkey);
+  pw.consume_public_key(ident, pubkey);
+  pw.consume_private_key(ident, privkey);
 }
 
 
@@ -2080,7 +2076,7 @@ CMD(pull, "network", "[ADDRESS[:PORTNUMBER] [PATTERN]]",
   process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, app);
 
   if (app.signing_key() == "")
-    W(F("doing anonymous pull\n"));
+    P(F("doing anonymous pull; use -kKEYNAME if you need authentication\n"));
   
   run_netsync_protocol(client_voice, sink_role, addr,
                        include_pattern, exclude_pattern, app);  
@@ -2134,7 +2130,7 @@ CMD(db, "database",
     "migrate\n"
     "execute\n"
     "kill_rev_locally ID\n"
-    "kill_branch_locally BRANCH\n"
+    "kill_branch_certs_locally BRANCH\n"
     "kill_tag_locally TAG\n"
     "check\n"
     "changesetify\n"
@@ -2174,7 +2170,7 @@ CMD(db, "database",
         kill_rev_locally(app,idx(args, 1)());
       else if (idx(args, 0)() == "clear_epoch")
         app.db.clear_epoch(cert_value(idx(args, 1)()));
-      else if (idx(args, 0)() == "kill_branch_locally")
+      else if (idx(args, 0)() == "kill_branch_certs_locally")
         app.db.delete_branch_named(cert_value(idx(args, 1)()));
       else if (idx(args, 0)() == "kill_tag_locally")
         app.db.delete_tag_named(cert_value(idx(args, 1)()));
@@ -2381,12 +2377,12 @@ CMD(commit, "working copy", "[PATH]...",
   else
     get_log_message(rs, app, log_message);
 
+  N(log_message.find_first_not_of(" \r\t\n") != string::npos,
+    F("empty log message"));
+
   // we write it out so that if the commit fails, the log
   // message will be preserved for a retry
   write_user_log(data(log_message));
-
-  N(log_message.find_first_not_of(" \r\t\n") != string::npos,
-    F("empty log message"));
 
   {
     transaction_guard guard(app.db);
@@ -2530,6 +2526,51 @@ CMD(commit, "working copy", "[PATH]...",
 
 ALIAS(ci, commit);
 
+static void
+do_external_diff(change_set::delta_map const & deltas,
+                 app_state & app,
+                 bool new_is_archived)
+{
+  for (change_set::delta_map::const_iterator i = deltas.begin();
+       i != deltas.end(); ++i)
+    {
+      data data_old;
+      data data_new;
+
+      if (!null_id(delta_entry_src(i)))
+        {
+          file_data f_old;
+          app.db.get_file_version(delta_entry_src(i), f_old);
+          data_old = f_old.inner();
+        }
+
+      if (new_is_archived)
+        {
+          file_data f_new;
+          app.db.get_file_version(delta_entry_dst(i), f_new);
+          data_new = f_new.inner();
+        }
+      else
+        {
+          read_localized_data(delta_entry_path(i),
+                              data_new, app.lua);
+        }
+
+      bool is_binary = false;
+      if (guess_binary(data_old()) ||
+          guess_binary(data_new()))
+        is_binary = true;
+
+      app.lua.hook_external_diff(delta_entry_path(i),
+                                 data_old,
+                                 data_new,
+                                 is_binary,
+                                 app.diff_args_provided,
+                                 app.diff_args(),
+                                 delta_entry_src(i).inner()(),
+                                 delta_entry_dst(i).inner()());
+    }
+}
 
 static void 
 dump_diffs(change_set::delta_map const & deltas,
@@ -2537,10 +2578,11 @@ dump_diffs(change_set::delta_map const & deltas,
            bool new_is_archived,
            diff_type type)
 {
-  
+  std::string patch_sep = std::string(guess_terminal_width(), '=');
   for (change_set::delta_map::const_iterator i = deltas.begin();
        i != deltas.end(); ++i)
     {
+      cout << patch_sep << "\n";
       if (null_id(delta_entry_src(i)))
         {
           data unpacked;
@@ -2565,8 +2607,8 @@ dump_diffs(change_set::delta_map const & deltas,
               split_into_lines(unpacked(), lines);
               if (! lines.empty())
                 {
-                  cout << (F("--- %s\n") % delta_entry_path(i))
-                       << (F("+++ %s\n") % delta_entry_path(i))
+                  cout << (F("--- %s\t%s\n") % delta_entry_path(i) % delta_entry_src(i))
+                       << (F("+++ %s\t%s\n") % delta_entry_path(i) % delta_entry_dst(i))
                        << (F("@@ -0,0 +1,%d @@\n") % lines.size());
                   for (vector<string>::const_iterator j = lines.begin();
                        j != lines.end(); ++j)
@@ -2606,6 +2648,8 @@ dump_diffs(change_set::delta_map const & deltas,
               split_into_lines(data_new(), new_lines);
               make_diff(delta_entry_path(i)(), 
                         delta_entry_path(i)(), 
+                        delta_entry_src(i),
+                        delta_entry_dst(i),
                         old_lines, new_lines,
                         cout, type);
             }
@@ -2613,14 +2657,19 @@ dump_diffs(change_set::delta_map const & deltas,
     }
 }
 
-void do_diff(const string & name, 
-             app_state & app, 
-             vector<utf8> const & args, 
-             diff_type type)
+CMD(diff, "informative", "[PATH]...", 
+    "show current diffs on stdout.\n"
+    "If one revision is given, the diff between the working directory and\n"
+    "that revision is shown.  If two revisions are given, the diff between\n"
+    "them is given.  If no format is specified, unified is used by default.",
+    OPT_BRANCH_NAME % OPT_REVISION % OPT_DEPTH %
+    OPT_UNIFIED_DIFF % OPT_CONTEXT_DIFF % OPT_EXTERNAL_DIFF %
+    OPT_EXTERNAL_DIFF_ARGS)
 {
   revision_set r_old, r_new;
   manifest_map m_new;
   bool new_is_archived;
+  diff_type type = app.diff_format;
 
   change_set composite;
 
@@ -2729,27 +2778,10 @@ void do_diff(const string & name,
     }
   cout << "# " << endl;
 
-  dump_diffs(composite.deltas, app, new_is_archived, type);
-}
-
-CMD(cdiff, "informative", "[PATH]...", 
-    "show current context diffs on stdout.\n"
-    "If one revision is given, the diff between the working directory and\n"
-    "that revision is shown.  If two revisions are given, the diff between\n"
-    "them is given.",
-    OPT_BRANCH_NAME % OPT_REVISION % OPT_DEPTH)
-{
-  do_diff(name, app, args, context_diff);
-}
-
-CMD(diff, "informative", "[PATH]...", 
-    "show current unified diffs on stdout.\n"
-    "If one revision is given, the diff between the working directory and\n"
-    "that revision is shown.  If two revisions are given, the diff between\n"
-    "them is given.",
-    OPT_BRANCH_NAME % OPT_REVISION % OPT_DEPTH)
-{
-  do_diff(name, app, args, unified_diff);
+  if (type == external_diff) {
+    do_external_diff(composite.deltas, app, new_is_archived);
+  } else
+    dump_diffs(composite.deltas, app, new_is_archived, type);
 }
 
 CMD(lca, "debug", "LEFT RIGHT", "print least common ancestor", OPT_NONE)
@@ -2911,8 +2943,6 @@ CMD(update, "working copy", "",
   if (app.revision_selectors.size() > 1)
     throw usage(name);
 
-  if (!app.branch_name().empty())
-    app.make_branch_sticky();
   app.require_working_copy();
 
   calculate_unrestricted_revision(app, r_working, m_old, m_working);
@@ -2927,15 +2957,17 @@ CMD(update, "working copy", "",
     {
       set<revision_id> candidates;
       pick_update_candidates(r_old_id, app, candidates);
-      N(candidates.size() != 0,
-        F("no candidates remain after selection"));
+      N(!candidates.empty(),
+        F("your request matches no descendents of the current revision\n"
+          "in fact, it doesn't even match the current revision\n"
+          "maybe you want --revision=<rev on other branch>"));
       if (candidates.size() != 1)
         {
           P(F("multiple update candidates:\n"));
           for (set<revision_id>::const_iterator i = candidates.begin();
                i != candidates.end(); ++i)
             P(F("  %s\n") % describe_revision(app, *i));
-          P(F("choose one with 'monotone update <id>'\n"));
+          P(F("choose one with 'monotone update -r<id>'\n"));
           N(false, F("multiple candidates remain after selection"));
         }
       r_chosen_id = *(candidates.begin());
@@ -3038,6 +3070,10 @@ CMD(update, "working copy", "",
   // nb: we write out r_chosen, not r_new, because the revision-on-disk
   // is the basis of the working copy, not the working copy itself.
   put_revision_id(r_chosen_id);
+  if (!app.branch_name().empty())
+    {
+      app.make_branch_sticky();
+    }
   P(F("updated to base revision %s\n") % r_chosen_id);
 
   put_path_rearrangement(remaining.rearrangement);
@@ -3166,7 +3202,7 @@ try_one_merge(revision_id const & left_id,
 
 
 CMD(merge, "tree", "", "merge unmerged heads of branch",
-    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR)
+    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR % OPT_LCA)
 {
   set<revision_id> heads;
 
@@ -3216,7 +3252,7 @@ CMD(merge, "tree", "", "merge unmerged heads of branch",
 
 CMD(propagate, "tree", "SOURCE-BRANCH DEST-BRANCH", 
     "merge from one branch to another asymmetrically",
-    OPT_DATE % OPT_AUTHOR)
+    OPT_DATE % OPT_AUTHOR % OPT_LCA)
 {
   //   this is a special merge operator, but very useful for people maintaining
   //   "slightly disparate but related" trees. it does a one-way merge; less
@@ -3580,6 +3616,9 @@ CMD(annotate, "informative", "PATH",
   else 
     complete(app, idx(app.revision_selectors, 0)(), rid);
 
+  N(!null_id(rid), F("no revision for file '%s' in database") % file);
+  N(app.db.revision_exists(rid), F("no such revision '%s'") % rid);
+
   L(F("annotate file file_path '%s'\n") % file);
 
   // find the version of the file requested
@@ -3604,7 +3643,7 @@ CMD(log, "informative", "[FILE]",
   file_path file;
 
   if (app.revision_selectors.size() == 0)
-    app.require_working_copy();
+    app.require_working_copy("try passing a --revision to start at");
 
   if (args.size() > 1)
     throw usage(name);

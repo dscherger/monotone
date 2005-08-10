@@ -11,7 +11,6 @@
 #include <sstream>
 #include <vector>
 
-#include <stdarg.h>
 #include <string.h>
 
 #include <boost/shared_ptr.hpp>
@@ -543,151 +542,6 @@ database::~database()
       sqlite3_close(__sql);
       __sql = 0;
     }
-}
-
-static void 
-assert_sqlite3_ok(int res, char const * errmsg, string const & ctx = "")
-{
-  if (res == SQLITE_OK && !errmsg)
-    {
-      // the only point of return
-      return;
-    }
-
-  bool internal_error = false;
-  string err_desc;
-
-  // first we handle "external" errors
-  switch (res)
-    {
-    case SQLITE_PERM:
-      err_desc = "Access permission denied";
-      break;
-
-    case SQLITE_READONLY:
-      err_desc = "Attempt to write a readonly database";
-      break;
-
-    case SQLITE_IOERR:
-      err_desc = "Some kind of disk I/O error occurred";
-      break;
-
-    case SQLITE_CORRUPT:
-      err_desc = "The database disk image is malformed";
-      break;
-
-    case SQLITE_FULL:
-      err_desc = "Insertion failed because database (or filesystem) is full";
-      break;
-
-    case SQLITE_CANTOPEN:
-      err_desc = "Unable to open the database file";
-      break;
-
-    // fallthrough for internal errors
-    default:
-      internal_error = true;
-    }
-
-  if (!internal_error)
-   {
-     if (errmsg)
-       err_desc = errmsg;
-
-     // ctx is ignored, since the error is most likely unrelated to the
-     // query
-     E(false, F("sqlite error: %s") % err_desc);
-   }
-
-  // ... and now we handle the internal errors
-  switch (res)
-   {
-
-    case SQLITE_OK:
-      I(errmsg);
-      err_desc = errmsg;
-      break;
-
-    case SQLITE_ERROR:
-      err_desc = "SQL error or missing database";
-      break;
-
-    case SQLITE_INTERNAL:
-      err_desc = "An internal logic error in SQLite";
-      break;
-
-    case SQLITE_ABORT:
-      err_desc = "Callback routine requested an abort";
-      break;
-
-    case SQLITE_BUSY:
-      // TODO: handle this more gracefully in calling functions,
-      // then perhaps it should be an external error?
-      err_desc = "The database file is locked";
-      break;
-
-    case SQLITE_LOCKED:
-      // TODO: see SQLITE_BUSY comment
-      err_desc = "A table in the database is locked";
-      break;
-
-    case SQLITE_NOMEM:
-      err_desc = "A malloc() failed";
-      break;
-
-    case SQLITE_INTERRUPT:
-      err_desc = "Operation terminated by sqlite3_interrupt()";
-      break;
-
-    case SQLITE_NOTFOUND:
-      err_desc = "(Internal Only) Table or record not found";
-      break;
-
-    case SQLITE_PROTOCOL:
-      err_desc = "database lock protocol error";
-      break;
-
-    case SQLITE_EMPTY:
-      err_desc = "(Internal Only) database table is empty";
-      break;
-
-    case SQLITE_SCHEMA:
-      err_desc = "The database schema changed";
-      break;
-
-    case SQLITE_TOOBIG:
-      err_desc = "Too much data for one row of a table";
-      break;
-
-    case SQLITE_CONSTRAINT:
-      err_desc = "Abort due to contraint violation";
-      break;
-
-    case SQLITE_MISMATCH:
-      err_desc = "Data type mismatch";
-      break;
-
-    case SQLITE_MISUSE:
-      err_desc = "Library used incorrectly";
-      break;
-
-    case SQLITE_NOLFS:
-      err_desc = "Uses OS features not supported on host";
-      break;
-
-    case SQLITE_AUTH:
-      err_desc = "Authorization denied";
-      break;
-
-    default:
-      err_desc = string("Unknown DB result code: ") + lexical_cast<string>(res);
-      break;
-    }
-
-   if (errmsg)
-      err_desc = errmsg;
-
-   throw oops(ctx + "sqlite error: " + err_desc);
 }
 
 void 
@@ -1827,7 +1681,6 @@ database::install_functions(app_state * app)
                            SQLITE_UTF8, NULL,
                            &sqlite3_unbase64_fn, 
                            NULL, NULL) == 0);
-
   I(sqlite3_create_function(sql(), "unpack", -1, 
                            SQLITE_UTF8, NULL,
                            &sqlite3_unpack_fn, 
@@ -2248,14 +2101,18 @@ database::complete(string const & partial,
 using selectors::selector_type;
 
 static void selector_to_certname(selector_type ty,
-                                 string & s)
+                                 string & s,
+                                 string & prefix,
+                                 string & suffix)
 {
+  prefix = suffix = "*";
   switch (ty)
     {
     case selectors::sel_author:
       s = author_cert_name;
       break;
     case selectors::sel_branch:
+      prefix = suffix = "";
       s = branch_cert_name;
       break;
     case selectors::sel_date:
@@ -2264,6 +2121,7 @@ static void selector_to_certname(selector_type ty,
       s = date_cert_name;
       break;
     case selectors::sel_tag:
+      prefix = suffix = "";
       s = tag_cert_name;
       break;
     case selectors::sel_ident:
@@ -2348,7 +2206,9 @@ void database::complete(selector_type ty,
           else
             {
               string certname;
-              selector_to_certname(i->first, certname);
+              string prefix;
+              string suffix;
+              selector_to_certname(i->first, certname, prefix, suffix);
               lim += (F("SELECT id FROM revision_certs WHERE name='%s' AND ") % certname).str();
               switch (i->first)
                 {
@@ -2359,7 +2219,8 @@ void database::complete(selector_type ty,
                   lim += (F("unbase64(value) > X'%s'") % encode_hexenc(i->second)).str();
                   break;
                 default:
-                  lim += (F("unbase64(value) glob '*%s*'") % i->second).str();
+                  lim += (F("unbase64(value) glob '%s%s%s'")
+                          % prefix % i->second % suffix).str();
                   break;
                 }
             }
@@ -2378,6 +2239,8 @@ void database::complete(selector_type ty,
     }
   else 
     {
+      string prefix = "*";
+      string suffix = "*";
       query = "SELECT value FROM revision_certs WHERE";
       if (ty == selectors::sel_unknown)
         {               
@@ -2390,12 +2253,13 @@ void database::complete(selector_type ty,
       else
         {
           string certname;
-          selector_to_certname(ty, certname);
+          selector_to_certname(ty, certname, prefix, suffix);
           query += 
             (F(" (name='%s')") % certname).str();
         }
         
-      query += (F(" AND (unbase64(value) GLOB '*%s*')") % partial).str();
+      query += (F(" AND (unbase64(value) GLOB '%s%s%s')")
+                % prefix % partial % suffix).str();
       query += (F(" AND (id IN %s)") % lim).str();
     }
 
@@ -2545,6 +2409,24 @@ database::clear_var(var_key const & key)
   encode_base64(key.second, name_encoded);
   execute("DELETE FROM db_vars WHERE domain = ? AND name = ?",
           key.first().c_str(), name_encoded().c_str());
+}
+
+// branches
+
+void
+database::get_branches(vector<string> & names)
+{
+    results res;
+    string query="SELECT DISTINCT value FROM revision_certs WHERE name= ?";
+    string cert_name="branch";
+    fetch(res,one_col,any_rows,query.c_str(),cert_name.c_str());
+    for (size_t i = 0; i < res.size(); ++i)
+      {
+        base64<data> row_encoded(res[i][0]);
+        data name;
+        decode_base64(row_encoded, name);
+        names.push_back(name());
+      }
 }
 
 // transaction guards

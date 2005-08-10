@@ -57,10 +57,566 @@
 	Will be moved to a more appropriate home once it works (currenty
 	has insane memory usage).
 
+2005-08-09  Richard Li  <richardl@redhat.com>
+
+	* std_hooks.lua (merge2, merge3): explain a little better why
+	monotone can't find a merge command.
+
+2005-08-09  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (update): Fix helpful error message to suggest
+	_current_ commandline syntax.
+
+2005-08-09  Olivier Andrieu  <oliv__a@users.sourceforge.net>
+
+	* contrib/monotone.el: a couple of fixes spotted by the compiler
+	* Changelog, contrib/colorize: utf8ize
+
+2005-08-09  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Put a time in.
+	* po/monotone.pot: Regenerate.
+	
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* configure.ac, monotone.spec, debian/changelog:
+	* win32/monotone.iss: Bump version number.
+
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* UPGRADE: Fix title.
+	* NEWS: Add --lca.
+
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (merge, propagate): Take --lca.
+	* options.hh: Add OPT_LCA.
+	* monotone.cc (coptions, cpp_main): Support it it.
+	* app_state.{hh,cc} (app_state::usa_lca): New variable.
+	* revision.cc (find_common_ancestor_for_merge): Use LCA if user
+	passed --lca.
+	* tests/t_merge_lca.at: New test.
+	* testsuite.at: Add it.
+	* monotone.texi (Tree): Document --lca.
+	
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: First-pass for 0.22 release.
+	* UPGRADE: Likewise.
+
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (BOTAN_SOURCES): Add botan headers.
+	* po/monotone.pot: Regenerate.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees, insert_with_parents): Make a
+	ticker for added revisions, since traversing the tree to pull in
+	ancestors causes a noticeable pause before the cert/key tickers
+	start up.
+	(insert_with_parents): Also simplify logic.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (pull): Clarify what the "doing anonymous pull"
+	message means and what you might do about it.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Network Service, Hooks): Document
+	get_netsync_read_permitted as getting a nil value on anonymous
+	connects.
+	* lua.{cc.hh} (hook_get_netsync_anonymous_read_permitted):
+	Remove. Replace with 1-argument version of
+	hook_get_netsync_write_permitted.
+	* netsync.cc (process_anonymous_cmd): Update.
+	* tests/t_netsync_permissions.at: Likewise.
+
+2005-08-07  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* botan/{data_snk,es_file}.cpp: Open fstreams in binary mode.
+	These changes, plus the same change for data_src.cpp and
+	es_ftw.cpp, have been sent upstream.
+
+2005-08-05  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (commit): Write out the log message to MT/log
+	_after_ making sure it's non-empty.
+	* tests/t_commit_cancelled.at: New test.
+	* testsuite.at: Add it.
+	
+2005-08-04  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees): Typo.
+
+2005-08-04  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees): Tweak message ("rebuilding
+	merkle trees" does not mean anything to J. Random User...)
+
+2005-08-04  Nathaniel Smith  <njs@pobox.com>
+
+	* manifest.cc (build_restricted_manifest_map): In 'missing files'
+	error message, explain how to recover.
+
+2005-08-03  Nathaniel Smith  <njs@pobox.com>
+
+	* testsuite.at (NETSYNC_ADDRESS): New macro.
+	(NETSYNC_SERVE_N_START, NETSYNC_SERVE_START)
+	(NETSYNC_CLIENT_N_RUN): Use it.
+	
+	* tests/t_netsync_checks_server_key.at: Make sure can unset the
+	known-servers entry.
+
+2005-08-03  Matthew A. Nicholson  <matt@matt-land.com>
+
+	* std_hooks.lua (get_preferred_merge2_command)
+	(get_preferred_merge3_command): Provide more information on how to
+	use vim as merge tool.
+
+2005-08-03  graydon hoare  <graydon@pobox.com>
+
+	* unix/process.cc (make_executable): Fix race, set user/group/other.
+
+2005-08-03  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* botan/data_src.cpp (DataSource_Stream::DataSourceStream): Open
+	fstream as binary file.
+
+2005-08-03  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* win32/inodeprint.cc: Botan changes.  Also, hash individual
+	FileTime structure members rather than the entire structure.
+	* keys.cc: Add explicit 'using' for Botan::byte.
+	* botan/es_win32.{cpp,h}: Add missing files.
+	* Makefile.am: Enable entropy collection via CryptoAPI and Win32
+	API.
+
+2005-08-02  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/gzip.cpp: forgot to commit some semicolons
+
+2005-08-02  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/gzip.{cpp,h}: rearranged the code to be clearer.
+
+2005-08-01  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (get_branches): Remove warning when there are no
+	branches.
+
+2005-07-29  Nathaniel Smith  <njs@pobox.com>
+
+	* globish.cc (matcher::operator()): Log what's happening.
+	(checked_globish_to_regex_test): Fix previously added test.
+
+2005-07-29  Nathaniel Smith  <njs@pobox.com>
+
+	* globish.cc (checked_globish_to_regex_test): Add another test for
+	quoted characters.
+
+2005-07-28  Nathaniel Smith  <njs@pobox.com>
+
+	* update.cc (calculate_update_set): Only include current rev in
+	update set if it is an acceptable candidate.
+	* commands.cc (update): Clarify error message in this case.
+	* tests/t_update_branch.at: Update accordingly.
+
+2005-07-28  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.spec: Require boost >= 1.32.
+
+2005-07-27  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_merge_add_del.at: 'drop' does not take a branch (test
+	now fails in expected place).
+	* tests/t_merge_add_rename_add.at: New test.
+	* testsuite.at: Add it.
+
+2005-07-27  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_update_branch.at: New test.
+	* testsuite.at: Add it.
+	(REVERT_TO): Do not preserve MT/options file (can setup invalid
+	branch).
+	* app_state.cc (make_branch_sticky): Call write_options when
+	already have a working copy.
+	* commands.cc (update): Call make_branch_sticky at appropriate
+	time.
+
+2005-07-27  Nathaniel Smith  <njs@pobox.com>
+	
+	* commands.cc: ALIAS(mv, rename).  ALIAS(rm, drop).
+
+2005-07-26  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.cc (dump): Add state_renumbering dumper.
+	(merge_disjoint_analyses): Add MM().
+
+2005-07-26  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.cc (dump): Add path_analysis dumper.
+	(merge_change_sets): Add more MM()s.
+
+2005-07-26  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.cc (dump): Add path_state dumper.
+	(sanity_check_path_state): Add MM().
+
+2005-07-26  Richard Levitte  <richard@levitte.org>
+
+	* revision.cc (check_sane_history): Convert tabs to the
+	appropriate amount of spaces.
+
+2005-07-26  Richard Levitte  <richard@levitte.org>
+
+	* sanity.hh, revision.cc (check_sane_history),
+	change_set.cc (concatenate_change_sets, merge_change_sets,
+	invert_change_set): Because boost currently uses the symbol M, we
+	have a clash.  Therefore, let's rename M to MM, for now.
+
+2005-07-26  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (CMD(privkey)): Change so both the public and
+	private key are printed.
+
+	* tests/t_dropkey_2.at, tests/t_lua_privkey.at: Adapt to the new
+	private key format.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.cc (MusingI, ~MusingI): No-op when already in the middle
+	of dumping.
+
+2005-07-25  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* Makefile.am, configure.ac: Remove BUNDLED_{LUA,SQLITE} tests and
+	clarify the comment for popt.  Using external versions of these
+	tools didn't work anyway, so there's no point giving the
+	impression that it might.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.cc (gasp): Handle the possibility of multiple valid calls
+	to gasp(), 'db check' can trigger multiple invariants without
+	dying.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.{hh,cc} (sanity::already_dumping, gasp): Don't let gasp
+	be called recursively, in case a dump triggers an invariant.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.cc (gasp): Make more robust against new errors triggered
+	during error unwind.  (write_change_set in particular likes to
+	blow up when handling in invalid change_set.)
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.cc (merge_change_sets, check_sane)
+	(concatenate_change_sets, invert_change_set): Add M()s.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.{hh,cc} (dump): Remove templated version, add std::string
+	version.
+	* vocab.{hh,cc} (dump): Add ATOMIC/DECORATE/ENCODING dumpers.
+	* change_set.{hh,cc} (dump): Add change_set dumper.
+	* manifest.{hh,cc} (dump): Add manifest_map dumper.
+	* revision.cc (check_sane_history): Add some M()s.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.hh (class Musing, gasp, dump): Actually, take a
+	std::string instead of a std::ostream; fits our idioms better.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.cc (log, progress, warning): Append '\n' to strings when
+	necessary.
+	(gasp): Save string properly.
+	(M): Apply black magic.  Now works correctly.
+	(dump): Write newline.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.hh (dump): Add a default 'dump' implementation for all
+	<<able objects.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* constants.{cc,hh} (default_terminal_width): New constant.
+	* ui.cc (guess_terminal_width): Use it.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* diff_patch.cc (unidiff_append_test): Fix typo.
+
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_annotate_no_rev.at: New test.
+	* testsuite.at: Add it.
+	
+2005-07-24  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.{hh,cc} (sanity, dump_buffer, invariant_failure)
+	(index_failure,	MusingI, Musing, M): Implement macro M(), for
+	'musing', which marks data that monotone was musing over when an
+	invariant tripped.
+	* Makefile.am (MOST_SOURCES): Fix spacing.
+
+2005-07-23  Nathaniel Smith  <njs@pobox.com>
+
+	* ui.{hh,cc} (guess_terminal_width): New function.
+	(tick_write_dot::chars_on_line): Make unsigned to quiet gcc warning.
+	(tick_write_dot::write_ticks): Use guess_terminal_width.
+	* commands.cc (dump_diffs): Take full responsibility for printing
+	=== lines, and use guess_terminal_width.
+	* diff_patch.cc (make_diff): Don't print === lines.
+	(unidiff_append_test): Adjust accordingly.
+
+2005-07-23  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* commands.cc (CMD(annotate)): Check for a valid revision before
+	trying to fetch it from the database.
+	* lua/lundump.[ch], lua/ldump.c: Rename VERSION and VERSION0 to
+	LUA_DUMP_VERSION and LUA_DUMP_VERSION0 to avoid clashes with
+	VERSION from config.h.
+
+2005-07-22  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Committing Work): Remove discussion of manifests.
+
+2005-07-20  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees): Make 'including branch'
+	message L() instead of P(); it's nice information, but too much to
+	be useful with large databases.
+
+2005-07-22  Matt Johnston  <matt@ucc.asn.au>
+
+	* database_check.cc: check that revisions and manifests
+	are normalised to the same for that they would be written as.
+	* tests/t_database_check_normalized.at: a test for it.
+	* testsuite.at: add it.
+
+2005-07-21  Richard Levitte  <richard@levitte.org>
+
+	* contrib/monotone-import.pl: Now uses the given tag.
+
+2005-07-20  Marcel van der Boom  <marcel@hsdev.com>
+
+	* database.{cc,hh} (get_branches): New method.
+	* commands.cc (ls_branches): Use it.
+	* netsync.cc (get_branches): Likewise.
+	* tests/t_ls_branches.at: New test.
+	* testsuite.at: Add it.
+	
+2005-07-20  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (db): Rename kill_branch_locally to
+	kill_branch_certs_locally.
+	* tests/t_db_kill_branch_locally.at: Rename to...
+	* tests/t_db_kill_branch_certs_locally.at: ...this.  Update.
+	* testsuite.at: Update.
+	* monotone.texi (Database): Update.
+
+2005-07-19  Nathaniel Smith  <njs@pobox.com>
+
+	* schema_migration.cc (migrator::migrate): Add a check for schemas
+	that are just... wrong.
+	* tests/t_migrate_broken_schema.at: New test.
+
+2005-07-19  Nathaniel Smith  <njs@pobox.com>
+
+	* netcmd.cc (read): Make the bad HMAC error message clearer.
+
+2005-07-19  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_diff_external.at: Canonicalise output for Win32.
+
+2005-07-18  Nathaniel Smith  <njs@pobox.com>
+
+	* keys.cc (get_passphrase): Do still error out if they keep typing
+	empty passphrases.
+
+2005-07-18  Richard Levitte  <richard@levitte.org>
+
+	* database.cc: Move the inclusion of stdarg.h...
+	* database.hh: ... here.
+
+2005-07-18  Matt Johnston  <matt@ucc.asn.au>
+
+	* keys.cc (get_passphrase): don't bomb out if they type an empty passphrase.
+
+2005-07-18  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* work.cc, manifest.cc: Remove 'using namespace boost'.
+
+2005-07-18  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (received_items): New instance variable.
+	(session::session): Initialize it.
+	(note_item_arrived): Maintain it.
+	(item_request_outstanding): Rename it to...
+	(item_already_received): ...this, and have it check both
+	outstanding and fulfilled requests.
+	(queue_send_data_cmd, queue_send_delta_cmd): Call it via new
+	name.
+	
+	Hopefully this will eliminate cases where "revs in" is larger than
+	"revs written".
+	
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* constants.cc (legal_key_name_bytes): Allow + and _ to appear in
+	key names.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* ui.{cc,hh} (tick_write_dot::write_ticks): Start a new line when
+	too many dots have been written.
+	* netsync.cc (process_refine_cmd): Add comment noting a possible
+	optimization regarding subtree refinement.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* configure.ac, win32/monotone.iss, monotone.spec:
+	* debian/changelog: Bump version numbers to 0.21.
+	* NEWS: Commit to a timestamp.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Add diff changes, more tweaking.
+	* UPGRADE: Update for 0.21.
+	* AUTHORS: Add Vladimir Vukicevic.
+
+2005-07-18  Matt Johnston  <matt@ucc.asn.au>
+
+	* netsync.cc: merge fixup
+	* botan/pipe_rw.cpp (read_all_as_string): make it smarter and faster
+
+2005-07-18  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/sha160.{cpp,h}: new faster sha160 implementation from Jack Lloyd
+	and Kaushik Veeraraghavan.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_diff_external.at: New test.
+	* testsuite.at: Add it.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Restrictions): diff -r -r does accept
+	restrictions now.
+	(CVS Phrasebook): Clarify diff section.
+	(Informative): Document diff [--unified|--context|--external],
+	--diff-args.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* app_state.{cc,hh}: Record whether --diff-args was passed, not
+	just a string value.
+	* lua.{cc,hh} (hook_external_diff): Take a diff_args_provided
+	variable.
+	* commands.cc (do_external_diff): Pass it.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* std_hooks.lua (external_diff_default_args): New variable.
+	(external_diff): Use it as a default, and use user-provided
+	diff_args otherwise.
+	* monotone.texi (Hooks): Document this.
+
+2005-07-16  Vladimir Vukicevic  <vladimirv@gmail.com>
+
+	* lua.{cc,hh} (hook_external_diff): New hook.
+	* std_hooks.lua (external_diff): Add default definition.
+	* monotone.texi (Hooks): Document external_diff hook.
+	* app_state.{cc,hh}, options.hh, monotone.cc: Add --context,
+	--external, --unified, --diff-args options.
+	* commands.cc (do_external_diff): New function.
+	(dump_diffs): Put a == line between each file's diffs.
+	Pass file_ids of pre- and post-states to make_diff.
+	(diff): Take new options.
+	(cdiff): Remove.
+	* diff_patch.{cc,hh} (make_diff): Print file ids in diff file
+	headers.
+	(unidiff_append_test): Update.
+	(enum diff_type): Move to...
+	* vocab.hh: ...here.
+	* tests/t_restrictions.at, tests/t_crlf.at: Update.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* manifest.cc (build_restricted_manifest_map): Remove doubled
+	comment.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Mention need for 'db migrate'.
+
+2005-07-17  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* lua/*: Import Lua 5.0.2 from upstream.
+	* lua/*: Fix up CVS $Id$ tags, which appear to have been trashed
+	since monotone existed in CVS.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Update for 0.21.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (assert_sqlite3_ok): Remove dead function.
+	
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* app_state.cc (require_working_copy): Oops, make it compile.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* app_state.{cc,hh} (require_working_copy): Take an optional
+	argument to give more details about why a working copy was
+	required.
+	* commands.cc (log): Give said details.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (CVS Phrasebook): Include 'log'.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Selectors): Document use of globs.
+	* tests/t_selector_globbing.at: New test.
+	* testsuite.at: Add it.
+	
+2005-07-16  Jordan Breeding  <jordan.breeding@mac.com>
+
+	* database.cc (selector_to_certname): Make 't:' selector match
+	exactly by default as well.
+
+2005-06-25  Brian Downing <bdowning@lavos.net>
+
+	* database.cc (selector_to_certname, complete): Makes 'b:'
+	selector be interpreted as a glob instead of as a partial string
+	match.
+	
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc: Revert accidentally committed changes.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* ChangeLog: Fix formatting.
+
 2005-07-15  Matt Johnston  <matt@ucc.asn.au>
 
-  * netsync.cc (rebuild_merkle_trees): bad_branch_certs is a set of cert
-  hashes, not of revision idents.
+	* netsync.cc (rebuild_merkle_trees): bad_branch_certs is a set of cert
+	hashes, not of revision idents.
 
 2005-07-14  Nathaniel Smith  <njs@pobox.com>
 
@@ -216,6 +772,16 @@
 
 	* interner.hh: make slightly faster
 
+2005-07-11  Matt Johnston  <matt@ucc.asn.au>
+
+	* hmac.cc: <string> not <string.h>
+
+2005-07-11  Matt Johnston  <matt@ucc.asn.au>
+
+	* keys.cc (encrypt_rsa): fix typo
+	* hmac.{cc,hh}: store key as SymmetricKey, pass correctly to
+	MAC_Filter
+
 2005-07-10  Nathaniel Smith  <njs@pobox.com>
 
 	* ChangeLog, configure.ac: Re-remove mysteriously revived
@@ -276,6 +842,16 @@
 	* monotone.texi (Generating Keys): Make it a little clearer that
 	we aren't necessarily recommending people store their passphrase
 	in plaintext.
+
+2005-07-08  Matt Johnston  <matt@ucc.asn.au>
+
+	* propagate mainline to botan branch
+
+	* constants.{cc,hh}: add sha1_digest_length as botan
+	doesn't provide a convenient definition.
+	* hmac.{cc,hh}: convert to use botan
+	* keys.cc (encrypt_rsa, decrypt_rsa): use botan
+	* transforms.{cc,hh}: use botan
 
 2005-07-08  Matt Johnston  <matt@ucc.asn.au>
 
@@ -3470,6 +4046,11 @@
 	* tests/t_sql_unpack.at: New test.
 	* testsuite.at: Add it.
 
+2005-04-04  Matt Johnston  <matt@ucc.asn.au>
+
+	* file_io.cc (read_data_stdin): make it use botan
+	* mkstemp.cc: merge cleanup (missed something up the manual merge)
+
 2005-04-04  Nathaniel Smith  <njs@codesourcery.com>
 
 	* contrib/ciabot_monotone.py (config): Genericize again, so lazy
@@ -3797,6 +4378,19 @@
         such as 'log'.
         * tests/t_netsync_sigpipe.at: test it.
         * testsuite.at: add it.
+
+2005-03-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/t_database_check.at: re-encode the manifestX
+	data so that it doesn't use any fancy gzip features like
+	filenames (so that the botan parse can handle it).
+	( if it should be able to handle it, an additional test
+	can be added testing it explicitly).
+
+2005-03-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/base64.h: Change default break value so that
+	output is split into 72 col lines.
 
 2005-03-25  Matt Johnston  <matt@ucc.asn.au>
 
@@ -5288,6 +5882,13 @@
 	(import_states_by_branch): Add 'revisions' argument.
 	(import_cvs_repo): Add a stage 3 that writes out the revisions
 	accumulated in the 'revisions' vector.
+	
+2005-01-27  Matt Johnston  <matt@ucc.asn.au>
+
+	(compile fixes for Linux/gcc 3.3.4)
+	* botan/{util.cpp,primes.cpp}: give large constants ULL
+	suffixes
+	* botan/{gzip.cpp}: fix type for std::max() comparison
 
 2005-01-27  graydon hoare  <graydon@pobox.com>
 
@@ -5708,6 +6309,11 @@
 	informative.
 	(rcs_import): Also add more details to help text.
 
+2005-01-17  Matt Johnston  <matt@ucc.asn.au>
+
+	* file_io.cc: re-add accidentally removed #include
+	* botan/gzip.cc: improved comments, removed unused code
+
 2005-01-17  Nathaniel Smith  <njs@codesourcery.com>
 
 	* diff_patch.cc (normalize_extents): Add missing ')'.
@@ -5758,7 +6364,7 @@
 	* AUTHORS: Mention Wojciech and Neil.
 	* revision.cc (calculate_ancestors_from_graph): Make non-recursive.
 
-2005-01-17  Wojciech MiÃkowski  <wmilkowski@interia.pl>
+2005-01-17  Wojciech Miłkowski  <wmilkowski@interia.pl>
 
 	* std_hooks.lua: Teach about meld.
 
@@ -5951,6 +6557,18 @@
 	(log) add Ancestor: and Branch: entries to output; use above new
 	function
 	* tests/t_cross.at: update to work with changesets
+
+2005-1-1  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/base64.cpp: Include a terminating newline in all cases for
+	compatibility with cryptopp
+
+2005-1-1  Matt Johnston  <matt@ucc.asn.au>
+
+	* keys.cc: fix merge issues propagating 0.16 to net.venge.monotone.botan
+	* botan/config.h: add it
+	* botan/{aes,des,dh,dsa,elgamal,lion,lubyrack,nr,rw,openpgp}*: removed
+	unused files.
 
 2004-12-30  graydon hoare  <graydon@pobox.com>
 
@@ -6829,6 +7447,10 @@
 	* change_set.cc (merge_disjoint_analyses): Prevent duplicated
 	tids being used.
 	(merge_disjoint_analyses): Fix typo (s/a_tmp/b_tmp/)
+
+2004-11-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* Replaced cryptopp with botan
 
 2004-11-24  Nathaniel Smith  <njs@codesourcery.com>
 

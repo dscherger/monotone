@@ -9,6 +9,10 @@
 class app_state;
 class lua_hooks;
 
+#include <boost/shared_ptr.hpp>
+#include <botan/pubkey.h>
+#include <botan/rsa.h>
+
 #include <vector>
 
 #include "database.hh"
@@ -50,9 +54,25 @@ public:
   long depth;
   long last;
   fs::path pidfile;
+  diff_type diff_format;
+  bool diff_args_provided;
+  utf8 diff_args;
+  bool use_lca;
+
+
+
+  // These are used to cache signers/verifiers (if the hook allows).
+  // They can't be function-static variables in key.cc, since they must be
+  // destroyed before the Botan deinitialize() function is called. */
+  std::map<rsa_keypair_id,
+    std::pair<boost::shared_ptr<Botan::PK_Signer>, 
+        boost::shared_ptr<Botan::RSA_PrivateKey> > > signers;
+  std::map<rsa_keypair_id,
+    std::pair<boost::shared_ptr<Botan::PK_Verifier>,
+        boost::shared_ptr<Botan::RSA_PublicKey> > > verifiers;
 
   void allow_working_copy();
-  void require_working_copy();
+  void require_working_copy(std::string const & explanation = "");
   void create_working_copy(std::string const & dir);
 
   file_path prefix(utf8 const & path);
@@ -82,6 +102,8 @@ public:
   void set_pidfile(utf8 const & pidfile);
   void add_revision(utf8 const & selector);
   void add_exclude(utf8 const & exclude_pattern);
+  void set_diff_format(diff_type dtype);
+  void set_diff_args(utf8 const & args);
 
   void set_stdhooks(bool b);
   void set_rcfiles(bool b);

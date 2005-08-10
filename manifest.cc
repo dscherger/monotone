@@ -27,7 +27,6 @@
 // and i/o functions on them. a manifest specifies exactly which versions
 // of each file reside at which path location in a given tree.
 
-using namespace boost;
 using namespace std;
 
 // building manifest_maps
@@ -179,7 +178,6 @@ build_restricted_manifest_map(path_set const & paths,
             }
 
           // ...ah, well, no good fingerprint, just check directly.
-          // ...ah, well, no good fingerprint, just check directly.
           file_id ident;
           if (ident_existing_file(*i, ident, app.lua))
             {
@@ -200,7 +198,11 @@ build_restricted_manifest_map(path_set const & paths,
     }
 
   N(missing_files == 0, 
-    F("%d missing files\n") % missing_files);
+    F("%d missing files\n"
+      "to restore consistency, on each missing file run either\n"
+      "'monotone drop FILE' to remove it permanently, or\n"
+      "'monotone revert FILE' to restore it\n")
+    % missing_files);
 
 }
 
@@ -273,4 +275,10 @@ write_manifest_map(manifest_map const & man,
   dat = sstr.str();
 }
 
-
+void
+dump(manifest_map const & man, std::string & out)
+{
+  data dat;
+  write_manifest_map(man, dat);
+  out = dat();
+}

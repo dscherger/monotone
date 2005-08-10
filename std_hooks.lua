@@ -363,6 +363,9 @@ function get_preferred_merge2_command (tbl)
          cmd = merge2_emacs_cmd ("emacs", lfile, rfile, outfile) 
       end
    elseif string.find(editor, "vim") ~= nil then
+      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 2-way merge.\n"..
+          "You should merge all changes to *LEFT* file due to limitation of program\n"..
+          "arguments.\n\n")) 
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
          cmd = merge2_vim_cmd ("gvim", lfile, rfile, outfile) 
       elseif program_exists_in_path ("vim") then 
@@ -414,7 +417,10 @@ function merge2 (left_path, right_path, merged_path, left, right)
             ret = nil 
          end
       else
-         io.write ("no external 2-way merge command found\n")
+         io.write (string.format("No external 2-way merge command found.\n"..
+            "You may want to check that $EDITOR is set to an editor that supports 2-way merge,\n"..
+            "set this explicitly in your get_preferred_merge2_command hook,\n"..
+            "or add a 2-way merge program to your path.\n\n"))
       end
    end
 
@@ -450,10 +456,13 @@ function get_preferred_merge3_command (tbl)
          cmd = merge3_emacs_cmd ("emacs", lfile, afile, rfile, outfile) 
       end
    elseif string.find(editor, "vim") ~= nil then
+      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 2-way merge.\n"..
+          "You should merge all changes to *LEFT* file due to limitation of program\n"..
+          "arguments.  The order of the files is ancestor, left, right.\n\n")) 
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then 
-         cmd = merge3_vim_cmd ("gvim", lfile, afile, rfile, outfile) 
+         cmd = merge3_vim_cmd ("gvim", afile, lfile, rfile, outfile) 
       elseif program_exists_in_path ("vim") then 
-         cmd = merge3_vim_cmd ("vim", lfile, afile, rfile, outfile) 
+         cmd = merge3_vim_cmd ("vim", afile, lfile, rfile, outfile) 
       end
    elseif program_exists_in_path ("meld") then 
       tbl.meld_exists = true 
@@ -503,7 +512,10 @@ function merge3 (anc_path, left_path, right_path, merged_path, ancestor, left, r
             ret = nil 
          end
       else
-         io.write ("no external 3-way merge command found\n")
+         io.write (string.format("No external 3-way merge command found.\n"..
+            "You may want to check that $EDITOR is set to an editor that supports 3-way merge,\n"..
+            "set this explicitly in your get_preferred_merge3_command hook,\n"..
+            "or add a 3-way merge program to your path.\n\n"))
       end
    end
    
@@ -609,4 +621,18 @@ end
 
 function use_inodeprints()
    return false
+end
+
+external_diff_default_args = "-u"
+
+-- default external diff, works for gnu diff
+function external_diff(file_path, data_old, data_new, is_binary, diff_args, rev_old, rev_new)
+   local old_file = write_to_temporary_file(data_old);
+   local new_file = write_to_temporary_file(data_new);
+
+   if diff_args == nil then diff_args = external_diff_default_args end
+   execute("diff", diff_args, "--label", file_path .. "\told", old_file, "--label", file_path .. "\tnew", new_file);
+
+   os.remove (old_file);
+   os.remove (new_file);
 end

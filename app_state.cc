@@ -34,7 +34,8 @@ static string const key_option("key");
 app_state::app_state() 
   : branch_name(""), db(""), stdhooks(true), rcfiles(true), diffs(false),
     no_merges(false), set_default(false), verbose(false), search_root("/"),
-    depth(-1), last(-1)
+    depth(-1), last(-1), diff_format(unified_diff), diff_args_provided(false),
+    use_lca(false)
 {
   db.set_app(this);
 }
@@ -86,9 +87,11 @@ app_state::allow_working_copy()
 }
 
 void 
-app_state::require_working_copy()
+app_state::require_working_copy(std::string const & explanation)
 {
-  N(found_working_copy, F("working copy directory required but not found"));
+  N(found_working_copy,
+    F("working copy directory required but not found%s%s")
+    % (explanation.empty() ? "" : "\n") % explanation);
   write_options();
 }
 
@@ -269,6 +272,13 @@ void
 app_state::make_branch_sticky()
 {
   options[branch_option] = branch_name();
+  if (found_working_copy)
+    {
+      // already have a working copy, can (must) write options directly
+      // if we don't have a working copy yet, then require_working_copy (for
+      // instance) will call write_options when it finds one.
+      write_options();
+    }
 }
 
 void 
@@ -347,6 +357,19 @@ void
 app_state::add_exclude(utf8 const & exclude_pattern)
 {
   exclude_patterns.insert(exclude_pattern);
+}
+
+void
+app_state::set_diff_format(diff_type dtype)
+{
+  diff_format = dtype;
+}
+
+void
+app_state::set_diff_args(utf8 const & args)
+{
+  diff_args_provided = true;
+  diff_args = args;
 }
 
 void

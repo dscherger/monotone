@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2004 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -20,7 +21,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "cryptopp/osrng.h"
+#include "botan/botan.h"
 
 #include "basic_io.hh"
 #include "change_set.hh"
@@ -176,12 +177,14 @@ check_sane_history(revision_id const & child_id,
                                           *current_to_child_changes_p,
                                           *old_to_child_changes_p);
                 }
+              MM(*old_to_child_changes_p);
 
               // we have the change_set; now, is it one we've seen before?
               if (changesets.find(old_id) != changesets.end())
                 {
                   // If it is, then make sure the paths agree on the
                   // changeset.
+                  MM(*changesets.find(old_id)->second);
                   I(*changesets.find(old_id)->second == *old_to_child_changes_p);
                 }
               else
@@ -197,6 +200,8 @@ check_sane_history(revision_id const & child_id,
                   if (!null_id(old_id))
                     app.db.get_manifest(m_old_id, purported_m_child);
                   apply_change_set(*old_to_child_changes_p, purported_m_child);
+                  MM(purported_m_child);
+                  MM(m_child);
                   I(purported_m_child == m_child);
                 }
             }
@@ -497,6 +502,11 @@ find_common_ancestor_for_merge(revision_id const & left,
                                revision_id & anc,
                                app_state & app)
 {
+  // Temporary workaround until we figure out how to clean up the whole
+  // ancestor selection mess:
+  if (app.use_lca)
+    return find_least_common_ancestor(left, right, anc, app);
+
   interner<ctx> intern;
   std::map< ctx, shared_bitmap > 
     parents, ancestors, dominators;
@@ -1170,12 +1180,11 @@ void anc_graph::write_certs()
 
   {
     // regenerate epochs on all branches to random states
-    CryptoPP::AutoSeededRandomPool prng;
     
     for (std::set<std::string>::const_iterator i = branches.begin(); i != branches.end(); ++i)
       {
         char buf[constants::epochlen_bytes];
-        prng.GenerateBlock(reinterpret_cast<byte *>(buf), constants::epochlen_bytes);
+        Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
         hexenc<data> hexdata;
         encode_hexenc(data(std::string(buf, buf + constants::epochlen_bytes)), hexdata);
         epoch_data new_epoch(hexdata);

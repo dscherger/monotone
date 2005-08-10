@@ -1467,33 +1467,11 @@ monotone: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
 @end group
 @end smallexample
 
-Monotone did a number of things when committing the new
-revision. First, we can see from the output that monotone generated a
-manifest of the tree Jim committed. The manifest is stored inside the
-database, but Jim can print it out if he wants to see the exact state
-of all the files referenced by the revision he committed:
-
-@smallexample
-@group
-$ monotone cat manifest
-3b12b2d0b31439bd50976633db1895cff8b19da0  include/jb.h
-2650ffc660dd00a08b659b883b65a060cac7e560  src/apple.c
-e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f  src/banana.c
-@end group
-@end smallexample
-
-The column on the left contains cryptographic hashes of the files
-listed in the column on the right. Such a hash is also called the
-``file ID'' of the file. The file ID identifies the state of each file
-stored in Jim's tree. The manifest is just a plain text file,
-identical to the output from the popular @command{sha1sum} unix
-command.
-
-When monotone committed Jim's revision, it also erased the
-@file{MT/work} file, and wrote a new file called @file{MT/revision},
-which contains the working copy's new base revision ID. Jim can use
-this revision ID in the future, as an argument to the
-@command{checkout} command, if he wishes to return to this revision:
+When monotone committed Jim's revision, erased the @file{MT/work} file,
+and wrote a new file called @file{MT/revision}, which contains the
+working copy's new base revision ID. Jim can use this revision ID in the
+future, as an argument to the @command{checkout} command, if he wishes
+to return to this revision:
 
 @smallexample
 @group
@@ -1502,7 +1480,7 @@ $ cat MT/revision
 @end group
 @end smallexample
 
-Finally, monotone also generated a number of certificates, attached to
+Monotone also generated a number of certificates, attached to
 the new revision. These certs store metadata about the commit. Jim can
 ask monotone for a list of certs on this revision.
 
@@ -1645,10 +1623,6 @@ end
 function get_netsync_write_permitted (identity)
   if (identity == "abe@@juicebot.co.jp") then return true end
   if (identity == "beth@@juicebot.co.jp") then return true end
-  return false
-end
-
-function get_netsync_anonymous_read_permitted (branch)
   return false
 end
 ^D
@@ -2277,7 +2251,7 @@ of selectors follows.
 @heading Selectors in detail
 
 A selector is a combination of a selector type, which is a single
-ASCII character, followed by a @code{:} character and a selector
+xoASCII character, followed by a @code{:} character and a selector
 string. All selectors strings except for selector type @code{c}
 are just values. The value is matched against identifiers or certs,
 depending on its type, in an attempt to match a single revision.
@@ -2290,13 +2264,14 @@ Uses selector type @code{c}.  The selector string has the syntax
 @var{name} or @var{name}@code{=}@var{value}.  The former syntax will
 select any revision that has a cert with that name, regardless of
 value; the latter will match any revision that has a cert with that
-name and value.  Values to match for can have wildcards.
+name and value.  Values to match for can have shell wildcards.
 @item Author selection
 Uses selector type @code{a}. For example, @code{a:graydon} matches
-@code{author} certs where the cert value begins with @code{graydon}.
+@code{author} certs where the cert value contains @code{graydon}.
 @item Branch selection
-Uses selector type @code{b}. For example, @code{b:net.venge} matches
-@code{branch} certs where the cert value begins with @code{net.venge}.
+Uses selector type @code{b}. For example, @code{b:net.venge.monotone} matches
+@code{branch} certs where the cert value is @code{net.venge.monotone}.
+Values to match for can have shell wildcards.
 @item Date selection
 Uses selector type @code{d}. For example, @code{d:2004-04} matches
 @code{date} certs where the cert value begins with
@@ -2317,9 +2292,9 @@ syntax (see below)
 Uses selector type @code{i}. For example, @code{i:0f3a} matches
 revision IDs which begin with @code{0f3a}.
 @item Tag selection
-Uses selector type @code{t}. For example, @code{t:monotone-0.11}
-matches @code{tag} certs where the cert value begins with
-@code{monotone-0.11}.
+Uses selector type @code{t}. For example, @code{t:monotone-0.11} matches
+@code{tag} certs where the cert value begins with @code{monotone-0.11}.
+Values to match for can have shell wildcards.
 @end table
 
 Further selector types may be added in the future. 
@@ -2423,12 +2398,6 @@ Commands which support restrictions also support the
 @option{--depth=@var{n} } option, where @var{n} specifies the maximum
 number of directories to descend. For example, @var{n}=0 disables
 recursion, @var{n}=1 means descend at most one directory, and so on.
-
-One variant of the @command{diff} command takes two @option{--revision}
-options and does not operate on a working copy, but instead compares two
-arbitrary database revisions. In this form the @command{diff} command
-does not currently support a restriction or optional @var{pathname...}
-arguments. This may be changed in the future.
 
 The @command{update} command does not allow for updates to a
 restricted set of files, which may be slightly different than other
@@ -3165,13 +3134,13 @@ $ monotone diff
 @item
 @smallexample
 @group
-$ cvs diff -r 1.2 -r 1.4
+$ cvs diff -r 1.2 -r 1.4 myfile
 @end group
 @end smallexample
 @tab
 @smallexample
 @group
-$ monotone diff -r 3e7db -r 278df
+$ monotone diff -r 3e7db -r 278df myfile
 @end group
 @end smallexample
 @end multitable
@@ -3182,8 +3151,8 @@ differences between your working copy and its base revision, whereas
 @command{diff} accompanied by two revision numbers prints the
 difference between those two revisions. The major difference between
 CVS and monotone here is that monotone's revision numbers are
-@emph{revision IDs}, so the @command{diff} command prints the
-difference between the two entire trees.
+@emph{revision IDs}, rather than file IDs.  If one leaves off the file
+argument, then diff can print the difference between two entire trees.
 
 @heading Showing Working Copy Status
 
@@ -3252,6 +3221,27 @@ Monotone does not require that you erase a file from the working copy
 before you drop it. Dropping a file merely removes its entry in the
 manifest of the current revision.
 
+
+@heading Viewing History
+
+@multitable @columnfractions .4 .4
+@item
+@smallexample
+@group
+$ cvs log [file]
+@end group
+@end smallexample
+@tab
+@smallexample
+@group
+$ monotone log [file]
+@end group
+@end smallexample
+@end multitable
+
+Unlike CVS log, monotone log can also be used without a working
+directory; but in this case you must pass a @option{--revision} argument
+to tell monotone where to start displaying the log from.
 
 @heading Importing a New Project
 
@@ -3398,7 +3388,8 @@ not be the newest revisions, in terms of time, but synchronization of
 computer clocks is not reliable, so monotone usually ignores time.
 
 
-@item monotone merge --branch=@var{branchname}
+@item monotone merge [--branch=@var{branchname}]
+@item monotone merge --lca [--branch=@var{branchname}]
 This command merges the ``heads'' of @var{branchname}, if there are
 multiple heads, and commits the results to the database, marking the
 resulting merged revision as a member of @var{branchname}. The merged
@@ -3410,8 +3401,17 @@ graph and these 3 revisions are provided to the built-in 3-way merge
 algorithm. The process then repeats for each additional head, using
 the result of each previous merge as an input to the next.
 
+The @option{--lca} option is provided as a temporary workaround for some
+inherent problems with 3-way merging; if you encounter a huge number of
+spurious conflicts, or get an invariant failure, then you may wish to
+try using @option{--lca}.  Using it @emph{can}, in certain
+circumstances, cause some edits that should be conflicts to merge
+cleanly instead, which is why it is not the default; but these cases are
+rare, and until we can find something better than 3-way merging to use,
+you may find this option more convenient than @command{explicit_merge}
 
 @item monotone propagate @var{sourcebranch} @var{destbranch}
+@item monotone propagate --lca @var{sourcebranch} @var{destbranch}
 This command takes a unique head from @var{sourcebranch} and merges it
 with a unique head of @var{destbranch}, using the least common
 ancestor of the two heads for a 3-way merge. The resulting revision is
@@ -3427,6 +3427,14 @@ maintenance branches for stable software releases, trivial bug fix
 branches, public contribution branches, or branches devoted to the
 development of a single module within a larger project.
 
+The @option{--lca} option is provided as a temporary workaround for some
+inherent problems with 3-way merging; if you encounter a huge number of
+spurious conflicts, or get an invariant failure, then you may wish to
+try using @option{--lca}.  Using it @emph{can}, in certain
+circumstances, cause some edits that should be conflicts to merge
+cleanly instead, which is why it is not the default; but these cases are
+rare, and until we can find something better than 3-way merging to use,
+you may find this option more convenient than @command{explicit_merge}
 
 @item monotone explicit_merge @var{id} @var{id} @var{destbranch}
 @itemx monotone explicit_merge @var{id} @var{id} @var{ancestor} @var{destbranch}
@@ -3718,9 +3726,8 @@ option when connecting to the server and branch pattern that you want to
 make the new default.
 
 In the server, different permissions can be applied to each branch; see
-the hooks @code{get_netsync_read_permitted},
-@code{get_netsync_write_permitted}, and
-@code{get_netsync_anonymous_read_permitted} (see @ref{Hook Reference}).
+the hooks @code{get_netsync_read_permitted} and
+@code{get_netsync_write_permitted} (see @ref{Hook Reference}).
 
 If a @option{--pid-file} option is specified, the command
 @command{serve} will create the specified file and record the process
@@ -3840,7 +3847,9 @@ $ mt complete revision 01f
 @end group
 @end smallexample
 
-@item monotone diff 
+@item monotone diff
+@item monotone diff --context
+@item monotone diff --external [--diff-args=@var{argstring}]
 @itemx monotone diff @var{pathname...}
 @itemx monotone diff --revision=@var{id}
 @itemx monotone diff --revision=@var{id} @var{pathname...}
@@ -3873,6 +3882,23 @@ From within a subdirectory of the working copy the @command{diff}
 command will, by default, include @emph{all changes} in the working
 copy.  Specifying only the pathname "." will restrict @command{diff}
 to files changed within the current subdirectory of the working copy.
+
+The output format of @command{diff} is controlled by the options
+@option{--unified}, @option{--context}, and @option{--external}.
+@option{--unified} requests the ``unified diff'' format, the default
+(analogous to running the program @code{diff -u}).  @option{--context}
+request the ``context diff'' format (analogous to running the program
+@code{diff -c}).  Both of these formats are generated directly by
+monotone, using its built-in diff algorithm.
+
+Sometimes, you may want more flexibility in output formats; for these
+cases, you can use @option{--external}, which causes monotone to invoke
+an external program to generate the actual output.  By default, the
+external program is @code{diff}, and you can use the option
+@option{--diff-args} to pass additional arguments controlling
+formatting.  The actual invocation of @code{diff}, default arguments
+passed to it, and so on, are controlled by the hook
+@code{external_diff}; see @ref{Hooks} for more details.
 
 @item monotone list certs @var{id}
 
@@ -4410,7 +4436,7 @@ you do, after all, need to retrieve the data in @var{id}, then
 work you can extract @var{id}'s data.
 @end itemize
 
-@item monotone db kill_branch_locally @var{branch}
+@item monotone db kill_branch_certs_locally @var{branch}
 
 This command ``kills'' a branch by deleting all branch certs with that
 branch name. You should consider carefully whether you want to use it,
@@ -5501,6 +5527,9 @@ manifests, and files associated with @var{branch}; otherwise @code{false}.
 This hook has no default definition, therefore the default behavior is
 to deny all reads.
 
+If a client connects anonymously, this hook will be called with a
+@var{identity} of @code{nil}.
+
 Note that the @var{identity} value is a key ID (such as
 ``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
 key fingerprint (hash) in your database. Monotone will not permit two
@@ -5508,20 +5537,16 @@ keys in your database to have the same ID. Make sure you confirm the
 key fingerprints of each key in your database, as key ID strings are
 ``convenience names'', not security tokens.
 
-@item get_netsync_anonymous_read_permitted (@var{branch})
-
-This hook has identical semantics to @code{get_netsync_read_permitted}
-except that it is called when a connecting client requests anonymous
-read access. There is no corresponding anonymous write
-access hook. This hook has no default definition, therefore the
-default behavior is to deny all anonymous reads.
-
 @item get_netsync_write_permitted (@var{identity})
 
 Returns @code{true} if a peer authenticated as key @var{identity} should
 be allowed to write into your database certs, revisions, manifests, and
 files; otherwise @code{false}.  This hook has no default definition,
 therefore the default behavior is to deny all writes.
+
+If a client connects anonymously, it will be unconditionally denied
+write access; this hook will @emph{not} be called with a @var{identity}
+of @code{nil}.
 
 Note that the @var{identity} value is a key ID (such as
 ``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
@@ -5812,6 +5837,26 @@ attr_init_functions["manual_merge"] =
 
 The @code{binary_file} function is also defined as a lua hook. See
 @ref{Default hooks}. 
+
+@item external_diff (@var{file_path}, @var{old_data}, @var{new_data}, @var{is_binary},
+                     @var{diff_args}, @var{old_rev}, @var{new_rev})
+
+Called for each file when @command{diff} is given the
+@option{--external} command.  @var{file_path} is the pathname of the
+file that is being diffed.  @var{old_data} and @var{new_data} are the
+data contents of the old and the new file.  If the data is binary,
+@var{is_binary} will be true, otherwise false.  @var{old_rev} and
+@var{new_rev} are the revision IDs of the old and new data.
+
+If an extra arguments are given via @option{--diff-args}, the string
+will be passed in as @var{diff_args}.  Otherwise @var{diff_args} will
+be nil.
+
+The default implementation of this hook calls the program @code{diff},
+and if @option{--diff-args} were not passed, takes default arguments
+from the lua variable @code{external_diff_default_args}.  You can
+override this variable in your configuration file, without overriding
+the whole hook.
 
 @end ftable
 

@@ -36,7 +36,7 @@
 #include "hmac.hh"
 #include "globish.hh"
 
-#include "cryptopp/osrng.h"
+#include "botan/botan.h"
 
 #include "netxx/address.h"
 #include "netxx/peer.h"
@@ -123,7 +123,6 @@
 // HMAC calculated over the payload.  The key for the SHA-1 HMAC is 20
 // bytes of 0 during authentication, and a 20-byte random key chosen
 // by the client after authentication (discussed below).
-//
 // decoding involves simply buffering until a sufficient number of bytes are
 // received, then advancing the buffer pointer. any time an integrity check
 // (the HMAC) fails, the protocol is assumed to have lost synchronization, and
@@ -273,6 +272,7 @@ session
 
   map<netcmd_item_type, done_marker> done_refinements;
   map<netcmd_item_type, boost::shared_ptr< set<id> > > requested_items;
+  map<netcmd_item_type, boost::shared_ptr< set<id> > > received_items;
   map<revision_id, boost::shared_ptr< pair<revision_data, revision_set> > > ancestry;
   map<revision_id, map<cert_name, vector<cert> > > received_certs;
   set< pair<id, id> > reverse_delta_requests;
@@ -281,7 +281,6 @@ session
   id saved_nonce;
   bool received_goodbye;
   bool sent_goodbye;
-  boost::scoped_ptr<CryptoPP::AutoSeededRandomPool> prng;
 
   packet_db_valve dbw;
 
@@ -313,7 +312,7 @@ session
   bool all_requested_revisions_received();
 
   void note_item_requested(netcmd_item_type ty, id const & i);
-  bool item_request_outstanding(netcmd_item_type ty, id const & i);
+  bool item_already_requested(netcmd_item_type ty, id const & i);
   void note_item_arrived(netcmd_item_type ty, id const & i);
 
   void maybe_note_epochs_finished();
@@ -498,19 +497,6 @@ session::session(protocol_role role,
                                           this, _1));
   dbw.set_on_pubkey_written(boost::bind(&session::key_written_callback,
                                           this, _1));
-  
-  // we will panic here if the user doesn't like urandom and we can't give
-  // them a real entropy-driven random.  
-  bool request_blocking_rng = false;
-  if (!app.lua.hook_non_blocking_rng_ok())
-    {
-#ifndef BLOCKING_RNG_AVAILABLE 
-      throw oops("no blocking RNG available and non-blocking RNG rejected");
-#else
-      request_blocking_rng = true;
-#endif
-    }  
-  prng.reset(new CryptoPP::AutoSeededRandomPool(request_blocking_rng));
 
   done_refinements.insert(make_pair(cert_item, done_marker()));
   done_refinements.insert(make_pair(key_item, done_marker()));
@@ -522,6 +508,13 @@ session::session(protocol_role role,
   requested_items.insert(make_pair(manifest_item, boost::shared_ptr< set<id> >(new set<id>())));
   requested_items.insert(make_pair(file_item, boost::shared_ptr< set<id> >(new set<id>())));
   requested_items.insert(make_pair(epoch_item, boost::shared_ptr< set<id> >(new set<id>())));
+
+  received_items.insert(make_pair(cert_item, boost::shared_ptr< set<id> >(new set<id>())));
+  received_items.insert(make_pair(key_item, boost::shared_ptr< set<id> >(new set<id>())));
+  received_items.insert(make_pair(revision_item, boost::shared_ptr< set<id> >(new set<id>())));
+  received_items.insert(make_pair(manifest_item, boost::shared_ptr< set<id> >(new set<id>())));
+  received_items.insert(make_pair(file_item, boost::shared_ptr< set<id> >(new set<id>())));
+  received_items.insert(make_pair(epoch_item, boost::shared_ptr< set<id> >(new set<id>())));
 }
 
 session::~session()
@@ -597,7 +590,8 @@ session::mk_nonce()
 {
   I(this->saved_nonce().size() == 0);
   char buf[constants::merkle_hash_length_in_bytes];
-  prng->GenerateBlock(reinterpret_cast<byte *>(buf), constants::merkle_hash_length_in_bytes);
+  Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
+          constants::merkle_hash_length_in_bytes);
   this->saved_nonce = string(buf, buf + constants::merkle_hash_length_in_bytes);
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
   return this->saved_nonce;
@@ -726,6 +720,11 @@ session::note_item_arrived(netcmd_item_type ty, id const & ident)
     i = requested_items.find(ty);
   I(i != requested_items.end());
   i->second->erase(ident);
+  map<netcmd_item_type, boost::shared_ptr< set<id> > >::const_iterator 
+    j = received_items.find(ty);
+  I(j != received_items.end());
+  j->second->insert(ident);
+  
 
   switch (ty)
     {
@@ -744,12 +743,18 @@ session::note_item_arrived(netcmd_item_type ty, id const & ident)
 }
 
 bool 
-session::item_request_outstanding(netcmd_item_type ty, id const & ident)
+session::item_already_requested(netcmd_item_type ty, id const & ident)
 {
-  map<netcmd_item_type, boost::shared_ptr< set<id> > >::const_iterator 
-    i = requested_items.find(ty);
+  map<netcmd_item_type, boost::shared_ptr< set<id> > >::const_iterator i;
+  i = requested_items.find(ty);
   I(i != requested_items.end());
-  return i->second->find(ident) != i->second->end();
+  if (i->second->find(ident) != i->second->end())
+    return true;
+  i = received_items.find(ty);
+  I(i != received_items.end());
+  if (i->second->find(ident) != i->second->end())
+    return true;
+  return false;
 }
 
 
@@ -1490,7 +1495,7 @@ session::queue_send_data_cmd(netcmd_item_type type,
       return;
     }
 
-  if (item_request_outstanding(type, item))
+  if (item_already_requested(type, item))
     {
       L(F("not queueing request for %s '%s' as we already requested it\n") 
         % typestr % hid);
@@ -1526,7 +1531,7 @@ session::queue_send_delta_cmd(netcmd_item_type type,
       return;
     }
 
-  if (item_request_outstanding(type, ident))
+  if (item_already_requested(type, ident))
     {
       L(F("not queueing request for %s delta '%s' -> '%s' as we already requested the target\n") 
         % typestr % base_hid % ident_hid);
@@ -1685,18 +1690,8 @@ session::process_done_cmd(size_t level, netcmd_item_type type)
 void
 get_branches(app_state & app, vector<string> & names)
 {
-  vector< revision<cert> > certs;
-  app.db.get_revision_certs(branch_cert_name, certs);
-  for (size_t i = 0; i < certs.size(); ++i)
-    {
-      cert_value name;
-      decode_base64(idx(certs, i).inner().value, name);
-      names.push_back(name());
-    }
+  app.db.get_branches(names);
   sort(names.begin(), names.end());
-  names.erase(std::unique(names.begin(), names.end()), names.end());
-  if (!names.size())
-    W(F("No branches found."));
 }
 
 static const var_domain known_servers_domain = var_domain("known-servers");
@@ -1792,7 +1787,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       rsa_sha1_signature sig_raw;
       base64< arc4<rsa_priv_key> > our_priv;
       load_priv_key(app, app.signing_key, our_priv);
-      make_signature(app.lua, app.signing_key, our_priv, nonce(), sig);
+      make_signature(app, app.signing_key, our_priv, nonce(), sig);
       decode_base64(sig, sig_raw);
       
       // make a new nonce of our own and send off the 'auth'
@@ -1850,7 +1845,7 @@ session::process_anonymous_cmd(protocol_role role,
       i != branchnames.end(); i++)
     {
       if (their_matcher(*i))
-        if (our_matcher(*i) && app.lua.hook_get_netsync_anonymous_read_permitted(*i))
+        if (our_matcher(*i) && app.lua.hook_get_netsync_read_permitted(*i))
           ok_branches.insert(utf8(*i));
         else
           {
@@ -1989,7 +1984,7 @@ session::process_auth_cmd(protocol_role their_role,
   // check the signature
   base64<rsa_sha1_signature> sig;
   encode_base64(rsa_sha1_signature(signature), sig);
-  if (check_signature(app.lua, their_id, their_key, nonce1(), sig))
+  if (check_signature(app, their_id, their_key, nonce1(), sig))
     {
       // get our private key and sign back
       L(F("client signature OK, accepting authentication\n"));
@@ -2043,7 +2038,7 @@ session::process_confirm_cmd(string const & signature)
       app.db.get_pubkey(their_key_hash, their_id, their_key);
       base64<rsa_sha1_signature> sig;
       encode_base64(rsa_sha1_signature(signature), sig);
-      if (check_signature(app.lua, their_id, their_key, this->saved_nonce(), sig))
+      if (check_signature(app, their_id, their_key, this->saved_nonce(), sig))
         {
           L(F("server signature OK, accepting authentication\n"));
           return true;
@@ -2326,6 +2321,9 @@ session::process_refine_cmd(merkle_node const & their_node)
                     load_merkle_node(their_node.type, our_node->level + 1,
                                      subprefix, our_subtree);
                     I(our_node->type == our_subtree->type);
+                    // FIXME: it would be more efficient here, to instead of
+                    // sending our subtree, just send the data for everything
+                    // in the subtree.
                     queue_refine_cmd(*our_subtree);
                   }
                   break;
@@ -2425,6 +2423,10 @@ session::process_refine_cmd(merkle_node const & their_node)
                     merkle_ptr our_subtree;
                     load_merkle_node(our_node->type, our_node->level + 1,
                                      subprefix, our_subtree);
+                    // FIXME: it would be more efficient here, to instead of
+                    // sending our subtree, just send the data for everything
+                    // in the subtree (except, possibly, the item they already
+                    // have).
                     queue_refine_cmd(*our_subtree);
                   }
                   break;
@@ -2485,6 +2487,9 @@ session::process_refine_cmd(merkle_node const & their_node)
                     merkle_ptr our_subtree;
                     load_merkle_node(our_node->type, our_node->level + 1,
                                      subprefix, our_subtree);
+                    // FIXME: it would be more efficient here, to instead of
+                    // sending our subtree, just send the data for everything
+                    // in the subtree (except, possibly, the dead thing).
                     queue_refine_cmd(*our_subtree);
                   }
                   break;
@@ -3586,29 +3591,24 @@ make_root_node(session & sess,
 }
 
 void
-insert_with_parents(revision_id rev, set<revision_id> & col, app_state & app)
+insert_with_parents(revision_id rev, set<revision_id> & col, app_state & app, ticker & revisions_ticker)
 {
-  if (col.find(rev) != col.end())
-    return;
-  col.insert(rev);
   vector<revision_id> frontier;
   frontier.push_back(rev);
   while (!frontier.empty())
     {
       revision_id rid = frontier.back();
       frontier.pop_back();
-      if (!null_id(rid))
+      if (!null_id(rid) && col.find(rid) == col.end())
         {
+          ++revisions_ticker;
           col.insert(rid);
           std::set<revision_id> parents;
           app.db.get_revision_parents(rid, parents);
           for (std::set<revision_id>::const_iterator i = parents.begin();
                i != parents.end(); ++i)
             {
-              if (col.find(*i) == col.end())
-                {
-                  frontier.push_back(*i);
-                }
+              frontier.push_back(*i);
             }
         }
     }
@@ -3618,15 +3618,16 @@ void
 session::rebuild_merkle_trees(app_state & app,
                               set<utf8> const & branchnames)
 {
-  P(F("rebuilding merkle trees ...\n"));
+  P(F("finding items to synchronize:\n"));
   for (set<utf8>::const_iterator i = branchnames.begin();
       i != branchnames.end(); ++i)
-    P(F("including branch %s") % *i);
+    L(F("including branch %s") % *i);
 
   boost::shared_ptr<merkle_table> ctab = make_root_node(*this, cert_item);
   boost::shared_ptr<merkle_table> ktab = make_root_node(*this, key_item);
   boost::shared_ptr<merkle_table> etab = make_root_node(*this, epoch_item);
 
+  ticker revisions_ticker("revisions", "r", 64);
   ticker certs_ticker("certs", "c", 256);
   ticker keys_ticker("keys", "k", 1);
 
@@ -3646,7 +3647,7 @@ session::rebuild_merkle_trees(app_state & app,
         if (branchnames.find(name()) != branchnames.end())
           {
             insert_with_parents(revision_id(idx(certs, i).inner().ident),
-                                revision_ids, app);
+                                revision_ids, app, revisions_ticker);
           }
         else
           {

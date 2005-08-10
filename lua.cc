@@ -1023,6 +1023,41 @@ lua_hooks::hook_resolve_dir_conflict(file_path const & anc,
   return ok;  
 }
 
+bool
+lua_hooks::hook_external_diff(file_path const & path,
+                              data const & data_old,
+                              data const & data_new,
+                              bool is_binary,
+                              bool diff_args_provided,
+                              std::string const & diff_args,
+                              std::string const & oldrev,
+                              std::string const & newrev)
+{
+  Lua ll(st);
+
+  ll
+    .func("external_diff")
+    .push_str(path());
+
+  if (oldrev.length() != 0)
+    ll.push_str(data_old());
+  else
+    ll.push_nil();
+
+  ll.push_str(data_new());
+
+  ll.push_bool(is_binary);
+
+  if (diff_args_provided)
+    ll.push_str(diff_args);
+  else
+    ll.push_nil();
+
+  ll.push_str(oldrev);
+  ll.push_str(newrev);
+
+  return ll.call(7,0).ok();
+}
 
 bool
 lua_hooks::hook_use_inodeprints()
@@ -1054,15 +1089,17 @@ lua_hooks::hook_get_netsync_read_permitted(std::string const & branch,
   return exec_ok && permitted;
 }
 
+// Anonymous no-key version
 bool 
-lua_hooks::hook_get_netsync_anonymous_read_permitted(std::string const & branch)
+lua_hooks::hook_get_netsync_read_permitted(std::string const & branch)
 {
   bool permitted = false, exec_ok = false;
 
   exec_ok = Lua(st)
-    .func("get_netsync_anonymous_read_permitted")
+    .func("get_netsync_read_permitted")
     .push_str(branch)
-    .call(1,1)
+    .push_nil()
+    .call(2,1)
     .extract_bool(permitted)
     .ok();
 
