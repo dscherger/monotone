@@ -6,3 +6,7 @@ README
 README.changesets
 UPGRADE
 monotone.html
+figures
+contrib
+debian/README.Debian
+debian/TODO.Debian

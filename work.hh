@@ -104,6 +104,8 @@ void get_user_log_path(local_path & ul_path);
 
 void read_user_log(data & dat);
 
+void write_user_log(data const & dat);
+
 void blank_user_log();
 
 bool has_contents_user_log();
@@ -163,6 +165,7 @@ void write_attr_map(data & dat,
                     attr_map const & options);
 
 extern std::string const encoding_attribute;
+extern std::string const manual_merge_attribute;
 
 bool get_attribute_from_db(file_path const & file,
                            std::string const & attr_key,

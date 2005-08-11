@@ -27,8 +27,10 @@
 
 class config:
     def project_for_branch(self, branchname):
-        # Customize this if you are watching multiple different projects.
-        # Return None if changes to the given branch are uninteresting.
+        # Customize this to return your project name(s).  If changes to the
+        # given branch are uninteresting -- i.e., changes to them should be
+        # ignored entirely -- then return the python constant None (which is
+        # distinct from the string "None", a valid but poor project name!).
         #if branchname.startswith("net.venge.monotone-viz"):
         #    return "monotone-viz"
         #elif branchname.startswith("net.venge.monotone.contrib.monotree"):
@@ -37,12 +39,12 @@ class config:
         #    return "monotone"
         return "FIXME"
 
-    # Add entries of the form "server address": "collection name" to get
+    # Add entries of the form ("server address", "pattern") to get
     # this script to watch the given collections at the given monotone
     # servers.
-    watch_list = {
-        #"venge.net": "net.venge.monotone"
-        }
+    watch_list = [
+        #("venge.net", "net.venge.monotone"),
+        ]
 
     # If this is non-None, then the web interface will make any file 'foo' a
     # link to 'repository_uri/foo'.
@@ -97,6 +99,9 @@ class Monotone:
     def db_init(self):
         self._run_monotone(["db", "init"])
 
+    def db_migrate(self):
+        self._run_monotone(["db", "migrate"])
+
     def ensure_db_exists(self):
         if not os.path.exists(self.db):
             self.db_init()
@@ -111,12 +116,12 @@ class Monotone:
         args = ["automate", "ancestry_difference", new_rev] + old_revs
         return self._split_revs(self._run_monotone(args))
 
-    def log(self, rev, depth=None):
-        if depth is not None:
-            depth_arg = ["--depth=%i" % (depth,)]
+    def log(self, rev, xlast=None):
+        if xlast is not None:
+            last_arg = ["--last=%i" % (xlast,)]
         else:
-            depth_arg = []
-        return self._run_monotone(["log", rev] + depth_arg)
+            last_arg = []
+        return self._run_monotone(["log", "-r", rev] + last_arg)
 
     def toposort(self, revs):
         args = ["automate", "toposort"] + revs
@@ -261,7 +266,8 @@ def main(progname, args):
         c = config()
         m = Monotone(c.monotone_exec, os.path.join(state_dir, "database.db"))
         m.ensure_db_exists()
-        for server, collection in c.watch_list.items():
+        m.db_migrate()
+        for server, collection in c.watch_list:
             m.pull(server, collection)
         lf = LeafFile(os.path.join(state_dir, "leaves"))
         new_leaves = m.leaves()

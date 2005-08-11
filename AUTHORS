@@ -46,7 +46,7 @@ contributing authors, including:
   Christian Kollee <stuka@pestilenz.org>
   Faheem Mitha <faheem@email.unc.edu>
   Neil Conway <neilc@samurai.com>
-  Wojciech Miłkowski <wmilkowski@interia.pl>
+  Wojciech MiÅkowski <wmilkowski@interia.pl>
   Georg-W. Koltermann <Georg.Koltermann@mscsoftware.com>
   Daniel Berlin <dberlin@dberlin.org>
   Jon Bright <jon@siliconcircus.org>
@@ -58,7 +58,13 @@ contributing authors, including:
   Joel Reed <joelwreed@comcast.net>
   Timothy Brownawell <tbrownaw@gmail.com>
   Matthew Gregan <kinetik@orcon.net.nz>
-  rghetta <birrachiara@tin.it>
+  Riccardo Ghetta <birrachiara@tin.it>
+  Brian Campbell <brian.p.campbell@dartmouth.edu>
+  Ethan Blanton <elb@elitists.net>
+  Eric Anderson <anderse-monotone@cello.hpl.hp.com>
+  Kaushik Veeraraghavan <kaushikv@gmail.com>
+  Jordan Breeding <jordan.breeding@mac.com>
+  Vladimir Vukicevic <vladimirv@gmail.com>
 
 supporting files:
 -----------------
@@ -67,15 +73,6 @@ D. Richard Hipp <drh@hwaci.com> wrote the files in sqlite/*, but is in
 no way affiliated with this project. I simply copied his code, which
 is assigned to the public domain. You can find the original code at
 http://www.sqlite.org.
-
-
-Wei Dai <weidai@eskimo.com> wrote many of the files in cryptopp/*,
-though possibly not all of them; the files themselves were assigned to
-the public domain, and Wei Dai retains copyright only over the
-collective work of the crypto++ library from whence they were
-copied. I make no claim to be representing the crypto++ collective
-work here; I am merely using several public domain files from it. You
-can find the original code at http://www.cryptopp.com.
 
 
 The files in idna/* are copies of the core portion of the "GNU libidn"
@@ -202,12 +199,48 @@ files in boost/ related to circular buffers:
 
 ---
 
+Jack Lloyd <lloyd@randombit.net> wrote the majority of the Botan
+library, with contributions as noted in botan/thanks.txt
+The library is distributed under a BSD-like license:
+
+---
+
+Copyright (C) 1999-2004 The Botan Project. All rights reserved.
+
+Redistribution and use in source and binary forms, for any use, with or without
+modification, is permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+list of conditions, and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions, and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) "AS IS" AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE DISCLAIMED.
+
+IN NO EVENT SHALL THE AUTHOR(S) OR CONTRIBUTOR(S) BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---
+
 The files in popt/* are copies of the original popt 1.7 as provided by
 Debian (their own version number is 1.7-5).  According to the README
 (reproduced as popt/README), it was written by a (former?) RedHat
 employee using the address ewt@redhat.com.  popt is licensed with the
 X Consortium public license, nowadays called the "X.Net, Inc. License".
 It's reproduced in popt/COPYING.
+
+
+The file contrib/colorize is a copy of a perl script written by CÃ©dric
+Bouvier, which is released under the GNU GPL.
 
 
 copyright status:

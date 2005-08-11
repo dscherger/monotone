@@ -223,6 +223,11 @@ void
 parse_path_rearrangement(basic_io::parser & pa,
                          change_set::path_rearrangement & pr);
 
+// debugging
+
+void dump(change_set const & cs, std::string & out);
+
+
 // The changes_summary structure holds a list all of files and directories
 // affected in a revision, and is useful in the 'log' command to print this
 // information easily.  It has to be constructed from all change_set objects

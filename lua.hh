@@ -39,6 +39,7 @@ public:
 
   // cert hooks
   bool hook_expand_selector(std::string const & sel, std::string & exp);
+  bool hook_expand_date(std::string const & sel, std::string & exp);
   bool hook_get_branch_key(cert_value const & branchname, rsa_keypair_id & k);
   bool lua_hooks::hook_get_priv_key(rsa_keypair_id const & k,
                                    base64< arc4<rsa_priv_key> > & priv_key );
@@ -61,11 +62,11 @@ public:
                                      std::map<rsa_keypair_id, bool> const & new_results);
 
   // network hooks
-  bool hook_get_netsync_read_permitted(std::string const & collection, 
+  bool hook_get_netsync_read_permitted(std::string const & branch, 
                                        rsa_keypair_id const & identity);
-  bool hook_get_netsync_anonymous_read_permitted(std::string const & collection);
-  bool hook_get_netsync_write_permitted(std::string const & collection, 
-                                        rsa_keypair_id const & identity);
+  // anonymous no-key version
+  bool hook_get_netsync_read_permitted(std::string const & branch);
+  bool hook_get_netsync_write_permitted(rsa_keypair_id const & identity);
 
   // local repo hooks
   bool hook_ignore_file(file_path const & p);
@@ -95,6 +96,15 @@ public:
                                  file_path const & b,
                                  file_path & res);
 
+  bool hook_external_diff(file_path const & path,
+                          data const & data_old,
+                          data const & data_new,
+                          bool is_binary,
+                          bool diff_args_provided,
+                          std::string const & diff_args,
+                          std::string const & oldrev,
+                          std::string const & newrev);
+
   // working copy hooks
   bool hook_use_inodeprints();
 
@@ -115,6 +125,16 @@ public:
   // notification hooks
   bool hook_note_commit(revision_id const & new_id,
                         std::map<cert_name, cert_value> const & certs);
+
+  bool hook_note_netsync_revision_received(revision_id const & new_id,
+                        std::set<std::pair<rsa_keypair_id,
+                                         std::pair<cert_name,
+                                                cert_value> > > const & certs);
+  bool hook_note_netsync_pubkey_received(rsa_keypair_id const & kid);
+  bool hook_note_netsync_cert_received(revision_id const & rid,
+                                       rsa_keypair_id const & kid,
+                                       cert_name const & name,
+                                       cert_value const & value);
 };
 
 #endif // __LUA_HH__

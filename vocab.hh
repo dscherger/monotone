@@ -24,6 +24,9 @@ template <typename INNER>                              \
 std::ostream & operator<<(std::ostream &,              \
                           enc<INNER> const &);         \
                                                        \
+template <typename INNER>                              \
+void dump(enc<INNER> const &, std::string &);          \
+                                                       \
 template<typename INNER>                               \
 class enc {                                            \
   INNER i;                                             \
@@ -54,6 +57,9 @@ class dec;                                             \
 template <typename INNER>                              \
 std::ostream & operator<<(std::ostream &,              \
                           dec<INNER> const &);         \
+                                                       \
+template <typename INNER>                              \
+void dump(dec<INNER> const &, std::string &);          \
                                                        \
 template<typename INNER>                               \
 class dec {                                            \
@@ -95,7 +101,8 @@ public:                                                \
   friend std::ostream & operator<<(std::ostream &,     \
                                    ty const &);        \
 };                                                     \
-std::ostream & operator<<(std::ostream &, ty const &);
+std::ostream & operator<<(std::ostream &, ty const &); \
+void dump(ty const &, std::string &);
 
 #define ATOMIC_NOVERIFY(ty)                            \
 ATOMIC(ty)                                             \
@@ -117,6 +124,7 @@ inline void verify(ty &) {}
 typedef revision< hexenc<id> >  revision_id;
 typedef manifest< hexenc<id> >  manifest_id;
 typedef     file< hexenc<id> >      file_id;
+typedef      key< hexenc<id> >       key_id;
 typedef    epoch< hexenc<id> >     epoch_id;
 typedef    epoch< hexenc<data> > epoch_data;
 
@@ -142,5 +150,14 @@ namespace fs = boost::filesystem;
 extern template class revision<cert>;
 extern template class manifest<cert>;
 #endif
+
+// diff type
+enum diff_type
+{
+  unified_diff,
+  context_diff,
+  external_diff
+};
+
 
 #endif // __VOCAB_HH__

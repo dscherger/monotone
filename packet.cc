@@ -18,8 +18,12 @@
 #include "sanity.hh"
 #include "transforms.hh"
 
-using namespace boost;
 using namespace std;
+using boost::shared_ptr;
+using boost::lexical_cast;
+using boost::match_default;
+using boost::match_results;
+using boost::regex;
 
 // --- packet db writer --
 //
@@ -116,6 +120,9 @@ public:
     return type < other.type ||
       (type == other.type && ident < other.ident);
   }  
+  // we need to be able to avoid circular dependencies between prerequisite and
+  // delayed_packet shared_ptrs.
+  void cleanup() { delayed.clear(); }
 };
 
 class 
@@ -321,7 +328,7 @@ delayed_revision_data_packet::apply_delayed_packet(packet_db_writer & pw)
 delayed_revision_data_packet::~delayed_revision_data_packet()
 {
   if (!all_prerequisites_satisfied())
-    W(F("discarding revision data packet with unmet dependencies\n"));
+    W(F("discarding revision data packet %s with unmet dependencies\n") % ident);
 }
 
 void 
@@ -334,7 +341,7 @@ delayed_manifest_data_packet::apply_delayed_packet(packet_db_writer & pw)
 delayed_manifest_data_packet::~delayed_manifest_data_packet()
 {
   if (!all_prerequisites_satisfied())
-    W(F("discarding manifest data packet with unmet dependencies\n"));
+    W(F("discarding manifest data packet %s with unmet dependencies\n") % ident);
 }
 
 void 
@@ -366,7 +373,8 @@ delayed_manifest_delta_packet::apply_delayed_packet(packet_db_writer & pw)
 delayed_manifest_delta_packet::~delayed_manifest_delta_packet()
 {
   if (!all_prerequisites_satisfied())
-    W(F("discarding manifest delta packet with unmet dependencies\n"));
+    W(F("discarding manifest delta packet %s -> %s with unmet dependencies\n")
+        % old_id % new_id);
 }
 
 void 
@@ -385,7 +393,8 @@ delayed_file_delta_packet::apply_delayed_packet(packet_db_writer & pw)
 delayed_file_delta_packet::~delayed_file_delta_packet()
 {
   if (!all_prerequisites_satisfied())
-    W(F("discarding file delta packet with unmet dependencies\n"));
+    W(F("discarding file delta packet %s -> %s with unmet dependencies\n")
+        % old_id % new_id);
 }
 
 void 
@@ -428,6 +437,36 @@ delayed_private_key_packet::~delayed_private_key_packet()
   I(all_prerequisites_satisfied());
 }
 
+
+void
+packet_consumer::set_on_revision_written(boost::function1<void,
+                                                        revision_id> const & x)
+{
+  on_revision_written=x;
+}
+
+void
+packet_consumer::set_on_cert_written(boost::function1<void,
+                                                      cert const &> const & x)
+{
+  on_cert_written=x;
+}
+
+void
+packet_consumer::set_on_pubkey_written(boost::function1<void, rsa_keypair_id>
+                                                  const & x)
+{
+  on_pubkey_written=x;
+}
+
+void
+packet_consumer::set_on_privkey_written(boost::function1<void, rsa_keypair_id>
+                                                  const & x)
+{
+  on_privkey_written=x;
+}
+
+
 struct packet_db_writer::impl
 {
   app_state & app;
@@ -459,6 +498,8 @@ struct packet_db_writer::impl
     : app(app), take_keys(take_keys), count(0)
     // cert("cert", 1), manc("manc", 1), manw("manw", 1), filec("filec", 1)
   {}
+
+  ~impl();
 };
 
 packet_db_writer::packet_db_writer(app_state & app, bool take_keys) 
@@ -468,6 +509,26 @@ packet_db_writer::packet_db_writer(app_state & app, bool take_keys)
 packet_db_writer::~packet_db_writer() 
 {}
 
+packet_db_writer::impl::~impl()
+{
+
+  // break any circular dependencies for unsatisfied prerequisites
+  for (map<revision_id, shared_ptr<prerequisite> >::const_iterator i =
+      revision_prereqs.begin(); i != revision_prereqs.end(); i++)
+    {
+      i->second->cleanup();
+    }
+  for (map<manifest_id, shared_ptr<prerequisite> >::const_iterator i =
+      manifest_prereqs.begin(); i != manifest_prereqs.end(); i++)
+    {
+      i->second->cleanup();
+    }
+  for (map<file_id, shared_ptr<prerequisite> >::const_iterator i =
+      file_prereqs.begin(); i != file_prereqs.end(); i++)
+    {
+      i->second->cleanup();
+    }
+}
 
 bool 
 packet_db_writer::impl::revision_exists_in_db(revision_id const & r)
@@ -635,7 +696,7 @@ packet_db_writer::consume_file_delta(file_id const & old_id,
 
 void 
 packet_db_writer::consume_file_reverse_delta(file_id const & new_id,
-                                             file_id const & old_id,                                         
+                                             file_id const & old_id,
                                              file_delta const & del)
 {
   transaction_guard guard(pimpl->app.db);
@@ -859,6 +920,7 @@ packet_db_writer::consume_revision_data(revision_id const & ident,
       if (dp->all_prerequisites_satisfied())
         {
           pimpl->app.db.put_revision(ident, dat);
+          if(on_revision_written) on_revision_written(ident);
           pimpl->accepted_revision(ident, *this);
         }
     }
@@ -877,6 +939,7 @@ packet_db_writer::consume_revision_cert(revision<cert> const & t)
       if (pimpl->revision_exists_in_db(revision_id(t.inner().ident)))
         {
           pimpl->app.db.put_revision_cert(t);
+          if(on_cert_written) on_cert_written(t.inner());
         }
       else
         {
@@ -911,7 +974,10 @@ packet_db_writer::consume_public_key(rsa_keypair_id const & ident,
       return;
     }
   if (! pimpl->app.db.public_key_exists(ident))
-    pimpl->app.db.put_key(ident, k);
+    {
+      pimpl->app.db.put_key(ident, k);
+      if(on_pubkey_written) on_pubkey_written(ident);
+    }
   else
     {
       base64<rsa_pub_key> tmp;
@@ -935,7 +1001,10 @@ packet_db_writer::consume_private_key(rsa_keypair_id const & ident,
       return;
     }
   if (! pimpl->app.db.private_key_exists(ident))
-    pimpl->app.db.put_key(ident, k);
+    {
+      pimpl->app.db.put_key(ident, k);
+      if(on_privkey_written) on_privkey_written(ident);
+    }
   else
     L(F("skipping existing private key %s\n") % ident);
   ++(pimpl->count);
@@ -989,6 +1058,38 @@ packet_db_valve::open_valve()
 }
 
 #define DOIT(x) pimpl->do_packet(boost::shared_ptr<delayed_packet>(new x));
+
+void
+packet_db_valve::set_on_revision_written(boost::function1<void,
+                                                        revision_id> const & x)
+{
+  on_revision_written=x;
+  pimpl->writer.set_on_revision_written(x);
+}
+
+void
+packet_db_valve::set_on_cert_written(boost::function1<void,
+                                                      cert const &> const & x)
+{
+  on_cert_written=x;
+  pimpl->writer.set_on_cert_written(x);
+}
+
+void
+packet_db_valve::set_on_pubkey_written(boost::function1<void, rsa_keypair_id>
+                                                  const & x)
+{
+  on_pubkey_written=x;
+  pimpl->writer.set_on_pubkey_written(x);
+}
+
+void
+packet_db_valve::set_on_privkey_written(boost::function1<void, rsa_keypair_id>
+                                                  const & x)
+{
+  on_privkey_written=x;
+  pimpl->writer.set_on_privkey_written(x);
+}
 
 void
 packet_db_valve::consume_file_data(file_id const & ident, 

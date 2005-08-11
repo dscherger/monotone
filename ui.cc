@@ -1,13 +1,4 @@
-#include "config.h"
-#include "platform.hh"
-#include "sanity.hh"
-#include "ui.hh"
-#include "transforms.hh"
-
-#include <iostream>
-#include <iomanip>
-#include <boost/lexical_cast.hpp>
-
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -16,6 +7,17 @@
 // this file contains a couple utilities to deal with the user
 // interface. the global user_interface object 'ui' owns clog, so no
 // writing to it directly!
+
+#include "config.h"
+#include "platform.hh"
+#include "sanity.hh"
+#include "ui.hh"
+#include "transforms.hh"
+#include "constants.hh"
+
+#include <iostream>
+#include <iomanip>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using boost::lexical_cast;
@@ -80,15 +82,36 @@ tick_write_count::~tick_write_count()
 
 void tick_write_count::write_ticks()
 {
-  string tickline = "\rmonotone:";
+  string tickline1, tickline2;
+  bool first_tick = true;
+
+  tickline1 = "monotone: ";
+  tickline2 = "\rmonotone:";
+  
+  unsigned int width;
+  unsigned int minwidth = 7;
   for (map<string,ticker *>::const_iterator i = ui.tickers.begin();
        i != ui.tickers.end(); ++i)
     {
-      string suffix;
-      ostringstream disptick;
+      width = 1 + i->second->name.size();
+      if (!first_tick)
+        {
+          tickline1 += " | ";
+          tickline2 += " |";
+        }
+      first_tick = false;
+      if(i->second->name.size() < minwidth)
+        {
+          tickline1.append(minwidth - i->second->name.size(),' ');
+          width += minwidth - i->second->name.size();
+        }
+      tickline1 += i->second->name;
+      
+      string count;
       if (i->second->kilocount && i->second->ticks >= 10000)
         { // automatic unit conversion is enabled
           float div;
+          string suffix;
           if (i->second->ticks >= 1048576) {
           // ticks >=1MB, use Mb
             div = 1048576;
@@ -98,34 +121,53 @@ void tick_write_count::write_ticks()
             div = 1024;
             suffix = "k";
           }
-          disptick << std::fixed << std::setprecision(1) <<
-              (i->second->ticks / div);
-        } else {
-          // no automatic unit conversion.
-          disptick << i->second->ticks;
+          // we reset the mod to the divider, to avoid spurious screen updates
+          i->second->mod = static_cast<int>(div / 10.0);
+          count = (F("%.1f%s") % (i->second->ticks / div) % suffix).str();
         }
-      tickline +=
-        string(" [")
-        + i->first + ": " + disptick.str()
-        + suffix
-        + "]";
+      else
+        {
+          count = (F("%d") % i->second->ticks).str();
+        }
+        
+      if(count.size() < width)
+        {
+          tickline2.append(width-count.size(),' ');
+        }
+      else if(count.size() > width)
+        {
+          count = count.substr(count.size() - width);
+        }
+      tickline2 += count;
     }
-  tickline += ui.tick_trailer;
 
-  size_t curr_sz = tickline.size();
+  if (ui.tick_trailer.size() > 0)
+    {
+      tickline2 += " ";
+      tickline2 += ui.tick_trailer;
+    }
+  
+  size_t curr_sz = tickline2.size();
   if (curr_sz < last_tick_len)
-    tickline += string(last_tick_len - curr_sz, ' ');
+    tickline2.append(last_tick_len - curr_sz, ' ');
   last_tick_len = curr_sz;
 
   unsigned int tw = terminal_width();
-  if (tw && tickline.size() > tw)
+  if(!ui.last_write_was_a_tick)
     {
-      // first character in tickline is "\r", which does not take up any
-      // width, so we add 1 to compensate.
-      tickline.resize(tw + 1);
+      if (tw && tickline1.size() > tw)
+        {
+          tickline1.resize(tw);
+        }
+      clog << tickline1 << "\n";
     }
-
-  clog << tickline;
+  if (tw && tickline2.size() > tw)
+    {
+      // first character in tickline2 is "\r", which does not take up any
+      // width, so we add 1 to compensate.
+      tickline2.resize(tw + 1);
+    }
+  clog << tickline2;
   clog.flush();
 }
 
@@ -145,6 +187,7 @@ tick_write_dot::~tick_write_dot()
 
 void tick_write_dot::write_ticks()
 {
+  static const string tickline_prefix = "monotone: ";
   string tickline1, tickline2;
   bool first_tick = true;
 
@@ -156,7 +199,8 @@ void tick_write_dot::write_ticks()
   else
     {
       tickline1 = "monotone: ticks: ";
-      tickline2 = "\nmonotone: ";
+      tickline2 = "\n" + tickline_prefix;
+      chars_on_line = tickline_prefix.size();
     }
 
   for (map<string,ticker *>::const_iterator i = ui.tickers.begin();
@@ -179,6 +223,12 @@ void tick_write_dot::write_ticks()
           || ((i->second->ticks / i->second->mod)
               > (old->second / i->second->mod)))
         {
+          chars_on_line += i->second->shortname.size();
+          if (chars_on_line > guess_terminal_width())
+            {
+              chars_on_line = tickline_prefix.size() + i->second->shortname.size();
+              tickline2 += "\n" + tickline_prefix;
+            }
           tickline2 += i->second->shortname;
 
           if (old == last_ticks.end())
@@ -307,3 +357,13 @@ user_interface::inform(string const & line)
   clog << sanitize(prefixedLine) << endl;
   clog.flush();
 }
+
+unsigned int
+guess_terminal_width()
+{
+  unsigned int w = terminal_width();
+  if (!w)
+    w = constants::default_terminal_width;
+  return w;
+}
+

@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2002, 2003, 2004 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -6,6 +7,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator>
+#include <list>
 #include <map>
 #include <set>
 #include <sstream>
@@ -51,142 +53,94 @@ typedef unsigned long cvs_author;
 typedef unsigned long cvs_changelog;
 typedef unsigned long cvs_version;
 typedef unsigned long cvs_path;
+typedef unsigned long cvs_tag;
 
 struct cvs_history;
 
-struct 
-cvs_key
+struct
+cvs_commit
 {
-  cvs_key() {}
-  cvs_key(rcs_file const & r, 
-          string const & version, 
-          cvs_history & cvs);
+  cvs_commit(rcs_file const & r, 
+             string const & rcs_version,
+             file_id const & ident,
+             cvs_history & cvs);
 
-  inline bool similar_enough(cvs_key const & other) const
-  {
-    L(F("Checking similarity of %d and %d\n") % id % other.id);
-    if (changelog != other.changelog)
-      return false;
-    if (author != other.author)
-      return false;
-    if (labs(time - other.time) > constants::cvs_window)
-      return false;
-    for (map<file_path,string>::const_iterator it = files.begin(); it!=files.end(); it++)
-      {
-        map<file_path,string>::const_iterator otherit;
-        
-        L(F("checking %s %s\n") % it->first % it->second);
-        otherit = other.files.find(it->first);
-        if (otherit != other.files.end() && it->second!=otherit->second)
-          {
-            L(F("!similar_enough: %d/%d\n") % id % other.id);
-            return false;
-          }
-        else if (otherit != other.files.end())
-          {
-            L(F("Same file, different version: %s and %s\n") % it->second % otherit->second);
-          }
-      }
-    L(F("similar_enough: %d/%d\n") % id % other.id);
-    return true;
-  }
-
-  inline bool operator==(cvs_key const & other) const
-  {
-    L(F("Checking equality of %d and %d\n") % id % other.id);
-    return branch == other.branch &&
-      changelog == other.changelog &&
-      author == other.author &&
-      time == other.time;
-  }
-
-  inline bool operator<(cvs_key const & other) const
-  {
-    // nb: this must sort as > to construct the edges in the right direction
-    return time > other.time ||
-
-      (time == other.time 
-       && author > other.author) ||
-
-      (time == other.time 
-       && author == other.author 
-       && changelog > other.changelog) ||
-
-      (time == other.time 
-       && author == other.author 
-       && changelog == other.changelog
-       && branch > other.branch);
-  }
-
-  inline void add_file(file_path const &file, string const &version)
-  {
-    L(F("Adding file %s version %s to %d\n") % file % version % id);
-    files.insert( make_pair(file, version) );
-  }
-
-  cvs_branchname branch;
-  cvs_changelog changelog;
-  cvs_author author;
+  bool is_synthetic_branch_root;
   time_t time;
-  map<file_path, string> files; // Maps file to version
-  int id; // Only used for debug output
-
-  static int nextid; // Used to initialise id
-};
-
-int cvs_key::nextid = 0;
-
-struct 
-cvs_file_edge
-{
-  cvs_file_edge (file_id const & pv, 
-                 file_path const & pp,
-                 bool pl,
-                 file_id const & cv, 
-                 file_path const & cp,
-                 bool cl,
-                 cvs_history & cvs);
-  cvs_version parent_version;
-  cvs_path parent_path;
-  bool parent_live_p;
-  cvs_version child_version;
-  cvs_path child_path;
-  bool child_live_p;
-  inline bool operator<(cvs_file_edge const & other) const
+  bool alive;
+  cvs_author author;
+  cvs_changelog changelog;
+  cvs_version version;
+  cvs_path path;
+  vector<cvs_tag> tags;
+  
+  bool operator<(cvs_commit const & other) const 
   {
-#if 0
-    return (parent_path < other.parent_path) 
-                       || ((parent_path == other.parent_path) 
-       && ((parent_version < other.parent_version) 
-                       || ((parent_version == other.parent_version) 
-       && ((parent_live_p < other.parent_live_p) 
-                       || ((parent_live_p == other.parent_live_p) 
-       && ((child_path < other.child_path) 
-                       || ((child_path == other.child_path) 
-       && ((child_version < other.child_version) 
-                       || ((child_version == other.child_version) 
-       && (child_live_p < other.child_live_p) )))))))));
-#else
-    return (parent_path < other.parent_path) 
-                        || ((parent_path == other.parent_path) 
-        && ((parent_version < other.parent_version) 
-                        || ((parent_version == other.parent_version) 
-        && ((parent_live_p < other.parent_live_p) 
-                        || ((parent_live_p == other.parent_live_p) 
-        && ((child_path < other.child_path) 
-                        || ((child_path == other.child_path) 
-        && ((child_version < other.child_version) 
-                        || ((child_version == other.child_version) 
-        && (child_live_p < other.child_live_p) )))))))));
-#endif
+    return time < other.time;
   }
 };
 
-struct 
-cvs_state
+struct
+cvs_branch
 {
-  set<cvs_file_edge> in_edges;
-  map< cvs_key, shared_ptr<cvs_state> > substates;
+  bool has_a_branchpoint;
+  bool has_a_commit;
+  time_t last_branchpoint;
+  time_t first_commit;
+
+  map<cvs_path, cvs_version> live_at_beginning;
+  vector<cvs_commit> lineage;  
+
+  cvs_branch()
+    : has_a_branchpoint(false),
+      has_a_commit(false),
+      last_branchpoint(0),
+      first_commit(0)
+  {
+  }      
+
+  void note_commit(time_t now)
+  {
+    if (!has_a_commit)
+      {
+        first_commit = now;
+      }
+    else
+      {
+        if (now < first_commit)
+          first_commit = now;
+      }
+    has_a_commit = true;
+  }
+
+  void note_branchpoint(time_t now)
+  {
+    has_a_branchpoint = true;
+    if (now > last_branchpoint)
+      last_branchpoint = now;
+  }
+
+  time_t beginning() const
+  {
+    I(has_a_branchpoint || has_a_commit);    
+    if (has_a_commit)
+      {
+        I(first_commit != 0);
+        return first_commit;
+      }
+    else
+      {
+        I(last_branchpoint != 0);
+        return last_branchpoint;
+      }
+  }
+  
+  void append_commit(cvs_commit const & c) 
+  {
+    I(c.time != 0);
+    note_commit(c.time);
+    lineage.push_back(c);
+  }
 };
 
 struct 
@@ -198,46 +152,140 @@ cvs_history
   interner<unsigned long> changelog_interner;
   interner<unsigned long> file_version_interner;
   interner<unsigned long> path_interner;
+  interner<unsigned long> tag_interner;
   interner<unsigned long> manifest_version_interner;
 
   cycle_detector<unsigned long> manifest_cycle_detector;
 
-  bool find_key_and_state(rcs_file const & r, 
-                          string const & version,
-                          cvs_key & key,
-                          shared_ptr<cvs_state> & state);
+  // assume admin has foo:X.Y.0.N in it, then 
+  // this multimap contains entries of the form
+  // X.Y   -> foo
+  multimap<string, string> branchpoints;
+  
+  // and this map contains entries of the form
+  // X.Y.N.1 -> foo
+  map<string, string> branch_first_entries;
 
-  typedef stack< shared_ptr<cvs_state> > state_stack;
+  // branch name -> branch
+  map<string, shared_ptr<cvs_branch> > branches;
+  shared_ptr<cvs_branch> trunk;
 
-  map<unsigned long, 
-      pair<cvs_key, 
-           shared_ptr<cvs_state> > > branchpoints;
+  // stack of branches we're injecting states into
+  stack< shared_ptr<cvs_branch> > stk;
+  stack< cvs_branchname > bstk;
 
-  state_stack stk;
+  // tag -> time, revision
+  //
+  // used to resolve the *last* revision which has a given tag
+  // applied; this is the revision which wins the tag.
+  map<unsigned long, pair<time_t, revision_id> > resolved_tags;
+
   file_path curr_file;
+  cvs_path curr_file_interned;
   
   string base_branch;
 
   ticker n_versions;
-  ticker n_tree_branches;
+  ticker n_tree_branches;  
 
   cvs_history();
   void set_filename(string const & file,
                     file_id const & ident);
-  void push_branch(rcs_file const & r, 
-                   string const & branchpoint_version,
-                   string const & first_branch_version);
-  void note_file_edge(rcs_file const & r, 
-                      string const & prev_rcs_version_num,
-                      string const & next_rcs_version_num,
-                      file_id const & prev_version,
-                      file_id const & next_version);
-  void find_branchpoint(rcs_file const & r,
-                        string const & branchpoint_version,
-                        string const & first_branch_version,
-                        shared_ptr<cvs_state> & branchpoint);
+
+  void index_branchpoint_symbols(rcs_file const & r);
+
+  void push_branch(string const & branch_name, bool private_branch);
   void pop_branch();
 };
+
+
+static bool
+is_sbr(shared_ptr<rcs_delta> dl,
+       shared_ptr<rcs_deltatext> dt)
+{
+
+  // CVS abuses the RCS format a bit (ha!) when storing a file which
+  // was only added on a branch: on the root of the branch there'll be
+  // a commit with dead state, empty text, and a log message
+  // containing the string "file foo was initially added on branch
+  // bar". We recognize and ignore these cases, as they do not
+  // "really" represent commits to be clustered together.
+
+  if (dl->state != "dead")
+    return false;
+
+  if (!dt->text.empty())
+    return false;
+
+  string log_bit = "was initially added on branch";
+  string::const_iterator i = search(dt->log.begin(),
+                                    dt->log.end(),
+                                    log_bit.begin(),
+                                    log_bit.end());
+
+  return i != dt->log.end();
+}
+
+
+cvs_commit::cvs_commit(rcs_file const & r, 
+                       string const & rcs_version,
+                       file_id const & ident,
+                       cvs_history & cvs)
+{
+  map<string, shared_ptr<rcs_delta> >::const_iterator delta = 
+    r.deltas.find(rcs_version);
+  I(delta != r.deltas.end());
+    
+  map<string, shared_ptr<rcs_deltatext> >::const_iterator deltatext = 
+    r.deltatexts.find(rcs_version);
+  I(deltatext != r.deltatexts.end());
+    
+  struct tm t;
+  // We need to initialize t to all zeros, because strptime has a habit of
+  // leaving bits of the data structure alone, letting garbage sneak into
+  // our output.
+  memset(&t, 0, sizeof(t));
+  char const * dp = delta->second->date.c_str();
+  L(F("Calculating time of %s\n") % dp);
+#ifdef WIN32
+  I(sscanf(dp, "%d.%d.%d.%d.%d.%d", &(t.tm_year), &(t.tm_mon), 
+           &(t.tm_mday), &(t.tm_hour), &(t.tm_min), &(t.tm_sec))==6);
+  t.tm_mon--;
+  // Apparently some RCS files have 2 digit years, others four; tm always
+  // wants a 2 (or 3) digit year (years since 1900).
+  if (t.tm_year > 1900)
+    t.tm_year-=1900;
+#else
+  if (strptime(dp, "%y.%m.%d.%H.%M.%S", &t) == NULL)
+    I(strptime(dp, "%Y.%m.%d.%H.%M.%S", &t) != NULL);
+#endif
+  time = mktime(&t);
+  L(F("= %i\n") % time);
+
+  is_synthetic_branch_root = is_sbr(delta->second, 
+                                    deltatext->second);
+
+  alive = delta->second->state != "dead";
+  if (is_synthetic_branch_root)
+    changelog = cvs.changelog_interner.intern("synthetic branch root changelog");
+  else
+    changelog = cvs.changelog_interner.intern(deltatext->second->log);
+  author = cvs.author_interner.intern(delta->second->author);
+  path = cvs.curr_file_interned;
+  version = cvs.file_version_interner.intern(ident.inner()());
+
+  typedef multimap<string,string>::const_iterator ity;
+  pair<ity,ity> range = r.admin.symbols.equal_range(rcs_version);  
+  for (ity i = range.first; i != range.second; ++i)
+    {
+      if (i->first == rcs_version)
+        {
+          L(F("version %s -> tag %s\n") % rcs_version % i->second);
+          tags.push_back(cvs.tag_interner.intern(i->second));
+        }
+    }
+
+}
 
 
 // piece table stuff
@@ -323,12 +371,13 @@ process_one_hunk(vector< piece > const & source,
   assert(directive.size() > 1);
   ++i;
 
-  char code;
-  int pos, len;
-  sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len);
-
   try 
     {
+      char code;
+      int pos, len;
+      if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
+	      throw oops("illformed directive '" + directive + "'");
+
       if (code == 'a')
         {
           // 'ax y' means "copy from source to dest until cursor == x, then
@@ -465,6 +514,64 @@ insert_into_db(data const & curr_data,
 }
 
 
+
+/*
+       
+please read this exhaustingly long comment and understand it
+before mucking with the branch inference logic.
+
+we are processing a file version. a branch might begin here. if
+the current version is X.Y, then there is a branch B starting
+here iff there is a symbol in the admin section called X.Y.0.Z,
+where Z is the branch number (or if there is a private branch 
+called X.Y.Z, which is either an import branch or some private
+RCS cruft).
+
+the version X.Y is then considered the branchpoint of B in the
+current file. this does *not* mean that the CVS key -- an
+abstraction representing whole-tree operations -- of X.Y is the
+branchpoint across the CVS archive we're processing.
+
+in fact, CVS does not record the occurrence of a branching
+action (tag -b). we have no idea who executed that command and
+when. what we know instead is the commit X.Y immediately
+preceeding the branch -- CVS consideres this the branchpoint --
+in this file's reduced view of history. we also know the first
+commit X.Y.Z.1 inside the branch (which might not exist).
+
+our old strategy was to consider all branches nested in a
+hierarchy, which was a super-tree of all the branch trees in all
+the CVS files in a repository. this involved considering X.Y as
+the parent version of branch X.Y.Z, an selecting "the"
+branchpoint connecting the two as the least CVS key X.Y.Z.1
+committed inside the branch B.
+
+this was a mistake, for two significant reasons.
+
+first, some files do not *have* any commit inside the branch B,
+only a branchpoint X.Y.0.Z. this branchpoint is actually the
+last commit *before* the user branched, and could be a very old
+commit, long before the branch was formed, so it is useless in
+determining the branch structure.
+
+second, some files do not have a branch B, or worse, have
+branched into B from an "ancestor" branch A, where a different
+file branches into B from a different ancestor branch C. in
+other words, while there *is* a tree structure within the X.Y.Z
+branches of each file, there is *no* shared tree structure
+between the branch names across a repository. in one file A can
+be an ancestor of B, in another file B can be an ancestor of A.
+
+thus, we give up on establishing a hierarchy between branches
+altogether. all branches exist in a flat namespace, and all are
+direct descendents of the empty revision at the root of
+history. each branchpoint symbol mentioned in the
+administrative section of a file is considered the root of a new
+lineage.
+      
+*/
+
+
 static void 
 process_branch(string const & begin_version, 
                vector< piece > const & begin_lines,
@@ -485,10 +592,18 @@ process_branch(string const & begin_version,
   while(! (r.deltas.find(curr_version) == r.deltas.end()))
     {
       L(F("version %s has %d lines\n") % curr_version % curr_lines->size());
+
+      cvs_commit curr_commit(r, curr_version, curr_id, cvs);
+      if (!curr_commit.is_synthetic_branch_root)
+        {
+          cvs.stk.top()->append_commit(curr_commit);
+          ++cvs.n_versions;
+        }
       
       string next_version = r.deltas.find(curr_version)->second->next;
-      if (!next_version.empty())
-      {  // construct this edge on our own branch
+
+      if (! next_version.empty())
+      {  
          L(F("following RCS edge %s -> %s\n") % curr_version % next_version);
 
          construct_version(*curr_lines, next_version, *next_lines, r);
@@ -497,63 +612,68 @@ process_branch(string const & begin_version,
 
          insert_into_db(curr_data, curr_id, 
                      *next_lines, next_data, next_id, db);
-
-         cvs.note_file_edge (r, curr_version, next_version, 
-                          file_id(curr_id), file_id(next_id));
-      }
-      else
-      {  L(F("revision %s has no successor\n") % curr_version);
-         if (curr_version=="1.1")
-         {  // mark this file as newly present since this commit
-            // (and as not present before)
-            
-            // perhaps this should get a member function of cvs_history ?
-            L(F("marking %s as not present in older manifests\n") % curr_version);
-            cvs_key k;
-            shared_ptr<cvs_state> s;
-            cvs.find_key_and_state(r, curr_version, k, s);
-            I(r.deltas.find(curr_version) != r.deltas.end());
-            bool live_p = r.deltas.find(curr_version)->second->state != "dead";
-            s->in_edges.insert(cvs_file_edge(curr_id, cvs.curr_file, false,
-                                             curr_id, cvs.curr_file, live_p,
-                                             cvs));
-            ++cvs.n_versions;
-         }
       }
 
-      // recursively follow any branches rooted here
+      // mark the beginning-of-branch time and state of this file if
+      // we're at a branchpoint
+      typedef multimap<string,string>::const_iterator ity;
+      pair<ity,ity> range = cvs.branchpoints.equal_range(curr_version);
+      if (range.first != cvs.branchpoints.end() 
+          && range.first->first == curr_version)
+        {
+          for (ity i = range.first; i != range.second; ++i)
+            {
+              cvs.push_branch(i->second, false);   
+              shared_ptr<cvs_branch> b = cvs.stk.top();
+              if (curr_commit.alive)
+                b->live_at_beginning[cvs.curr_file_interned] = curr_commit.version;
+              b->note_branchpoint(curr_commit.time);
+              cvs.pop_branch();
+            }
+        }
+                
+
+      // recursively follow any branch commits coming from the branchpoint
       boost::shared_ptr<rcs_delta> curr_delta = r.deltas.find(curr_version)->second;
       for(vector<string>::const_iterator i = curr_delta->branches.begin();
-          i != curr_delta->branches.end(); ++i)
-        {
-          L(F("following RCS branch %s\n") % (*i));
-          vector< piece > branch_lines;
-          construct_version(*curr_lines, *i, branch_lines, r);
+	  i != curr_delta->branches.end(); ++i)
+	{
+	  string branch;
+	  data branch_data;
+	  hexenc<id> branch_id;
+	  vector< piece > branch_lines;
+	  bool priv = false;
+	  map<string, string>::const_iterator be = cvs.branch_first_entries.find(*i);
           
-          data branch_data;
-          hexenc<id> branch_id;
-          insert_into_db(curr_data, curr_id, 
+	  if (be != cvs.branch_first_entries.end())
+	    branch = be->second;
+	  else
+	    priv = true;
+	  
+	  L(F("following RCS branch %s = '%s'\n") % (*i) % branch);
+          
+	  construct_version(*curr_lines, *i, branch_lines, r);          	  
+	  insert_into_db(curr_data, curr_id, 
                          branch_lines, branch_data, branch_id, db);
-          cvs.push_branch (r, curr_version, *i);
-
-          cvs.note_file_edge (r, curr_version, *i,
-                              file_id(curr_id), file_id(branch_id));
-
-          process_branch(*i, branch_lines, branch_data, branch_id, r, db, cvs);
-          cvs.pop_branch();
-          L(F("finished RCS branch %s\n") % (*i));
-        }
-
+          
+          cvs.push_branch(branch, priv);
+	  process_branch(*i, branch_lines, branch_data, branch_id, r, db, cvs);
+	  cvs.pop_branch();
+	  
+	  L(F("finished RCS branch %s = '%s'\n") % (*i) % branch);
+	}
+      
       if (!r.deltas.find(curr_version)->second->next.empty())
-      {  // advance
-         curr_data = next_data;
-         curr_id = next_id;
-         curr_version = next_version;
-         swap(next_lines, curr_lines);
-         next_lines->clear();
-      }
+        {  
+          // advance
+          curr_data = next_data;
+          curr_id = next_id;
+          curr_version = next_version;
+          swap(next_lines, curr_lines);
+          next_lines->clear();
+        }
       else break;
-    }
+    }  
 } 
 
 
@@ -576,6 +696,7 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
     file_id fid = id;
 
     cvs.set_filename (filename, fid);
+    cvs.index_branchpoint_symbols (r);
 
     if (! db.file_version_exists (fid))
       {
@@ -584,10 +705,10 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
         
     {
       // create the head state in case it is a loner
-      cvs_key k;
-      shared_ptr<cvs_state> s;
-      L(F("noting head version %s : %s\n") % cvs.curr_file % r.admin.head);
-      cvs.find_key_and_state (r, r.admin.head, k, s);
+      //       cvs_key k;
+      //       shared_ptr<cvs_state> s;
+      //       L(F("noting head version %s : %s\n") % cvs.curr_file % r.admin.head);
+      //       cvs.find_key_and_state (r, r.admin.head, k, s);
     }
     
     global_pieces.reset();
@@ -601,176 +722,51 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
 
 
 void 
-import_rcs_file(fs::path const & filename, database & db)
+test_parse_rcs_file(fs::path const & filename, database & db)
 {
   cvs_history cvs;
 
-  I(! fs::is_directory(filename));
   I(! filename.empty());
+  I(fs::exists(filename));
+  I(! fs::is_directory(filename));
 
-  fs::path leaf = mkpath(filename.leaf());
-  fs::path branch = mkpath(filename.branch_path().string());
-
-  I(! branch.empty());
-  I(! leaf.empty());
-  I( fs::is_directory(branch));
-  I( fs::exists(branch));
-
-  I(chdir(filename.branch_path().native_directory_string().c_str()) == 0); 
-
-  I(fs::exists(leaf));
-
-  import_rcs_file_with_cvs(leaf.native_file_string(), db, cvs);
+  P(F("parsing RCS file %s\n") % filename.string());
+  rcs_file r;
+  parse_rcs_file(filename.string(), r);
+  P(F("parsed RCS file %s OK\n") % filename.string());
 }
 
 
 // CVS importing stuff follows
 
-/*
 
-  we define a "cvs key" as a triple of author, commit time and
-  changelog. the equality of keys is a bit blurry due to a window of time
-  in which "the same" commit may begin and end. the window is evaluated
-  during the multimap walk though; for insertion in the multimap a true >
-  is used. a key identifies a particular commit.
-
-  we reconstruct the history of a CVS archive by accumulating file edges
-  into archive nodes. each node is called a "cvs_state", but it is really a
-  collection of file *edges* leading into that archive state. we accumulate
-  file edges by walking up the trunk and down the branches of each RCS file.
-
-  once we've got all the edges accumulated into archive nodes, we walk the
-  tree of cvs_states, up through the trunk and down through the branches,
-  carrying a manifest_map with us during the walk. for each edge, we
-  construct either the parent or child state of the edge (depending on
-  which way we're walking) and then calculate and write out a manifest
-  delta for the difference between the previous and current manifest map. we
-  also write out manifest certs, though the direction of ancestry changes
-  depending on whether we're going up the trunk or down the branches.
-
- */
-
-cvs_file_edge::cvs_file_edge (file_id const & pv, file_path const & pp, bool pl,
-                              file_id const & cv, file_path const & cp, bool cl,
-                              cvs_history & cvs) :
-  parent_version(cvs.file_version_interner.intern(pv.inner()())), 
-  parent_path(cvs.path_interner.intern(pp())),
-  parent_live_p(pl),
-  child_version(cvs.file_version_interner.intern(cv.inner()())), 
-  child_path(cvs.path_interner.intern(cp())),
-  child_live_p(cl)
+static void
+split_version(string const & v, vector<string> & vs)
 {
-}
-
-
-static string 
-find_branch_for_version(multimap<string,string> const & symbols,
-                        string const & version,
-                        string const & base)
-{
-  typedef multimap<string,string>::const_iterator ity;
-  typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-
-  L(F("looking up branch name for %s\n") % version);
-
+  vs.clear();
   boost::char_separator<char> sep(".");
-  tokenizer tokens(version, sep);
-  vector<string> components;
-  copy(tokens.begin(), tokens.end(), back_inserter(components));
-
-  if (components.size() < 4)
-    {
-      L(F("version %s has too few components, using branch %s\n")
-        % version % base);
-      return base;
-    }
-  
-  string branch_version;
-  components[components.size() - 1] = components[components.size() - 2];
-  components[components.size() - 2] = "0";
-  for (size_t i = 0; i < components.size(); ++i)
-    {
-      if (i != 0)
-        branch_version += ".";
-      branch_version += components[i];
-    }
-
-  pair<ity,ity> range = symbols.equal_range(branch_version);
-  if (range.first == symbols.end())
-    {
-      L(F("no branch %s found, using base '%s'\n") 
-        % branch_version % base);
-      return base;
-    }
-  else
-    {
-      string res = base;
-      res += ".";
-      res += range.first->second;
-      int num_results = 0;
-      while (range.first != range.second)
-        { range.first++; num_results++; }
-
-      if (num_results > 1)
-        W(F("multiple entries (%d) for branch %s found, using: '%s'\n")
-          % num_results % branch_version % res);
-      else
-        L(F("unique entry for branch %s found: '%s'\n") 
-          % branch_version % res);
-      return res;
-    }
+  typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+  tokenizer tokens(v, sep);
+  copy(tokens.begin(), tokens.end(), back_inserter(vs));
 }
 
-cvs_key::cvs_key(rcs_file const & r, string const & version,
-                 cvs_history & cvs) 
+static void
+join_version(vector<string> const & vs, string & v)
 {
-  map<string, shared_ptr<rcs_delta> >::const_iterator delta = 
-    r.deltas.find(version);
-  I(delta != r.deltas.end());
-
-  map<string, shared_ptr<rcs_deltatext> >::const_iterator deltatext = 
-    r.deltatexts.find(version);
-  I(deltatext != r.deltatexts.end());
-
-  {    
-    struct tm t;
-    // We need to initialize t to all zeros, because strptime has a habit of
-    // leaving bits of the data structure alone, letting garbage sneak into
-    // our output.
-    memset(&t, 0, sizeof(t));
-    char const * dp = delta->second->date.c_str();
-    L(F("Calculating time of %s\n") % dp);
-#ifdef WIN32
-    I(sscanf(dp, "%d.%d.%d.%d.%d.%d", &(t.tm_year), &(t.tm_mon), 
-             &(t.tm_mday), &(t.tm_hour), &(t.tm_min), &(t.tm_sec))==6);
-    t.tm_mon--;
-    // Apparently some RCS files have 2 digit years, others four; tm always
-    // wants a 2 (or 3) digit year (years since 1900).
-    if (t.tm_year > 1900)
-        t.tm_year-=1900;
-#else
-    if (strptime(dp, "%y.%m.%d.%H.%M.%S", &t) == NULL)
-      I(strptime(dp, "%Y.%m.%d.%H.%M.%S", &t) != NULL);
-#endif
-    time=mktime(&t);
-    L(F("= %i\n") % time);
-    id = nextid++;
-  }
-
-  string branch_name = find_branch_for_version(r.admin.symbols, 
-                                               version, 
-                                               cvs.base_branch);
-  branch = cvs.branch_interner.intern(branch_name);
-  changelog = cvs.changelog_interner.intern(deltatext->second->log);
-  author = cvs.author_interner.intern(delta->second->author);
+  v.clear();
+  for (vector<string>::const_iterator i = vs.begin();
+       i != vs.end(); ++i)
+    {
+      if (i != vs.begin())
+	v += ".";
+      v += *i;
+    }
 }
-
 
 cvs_history::cvs_history() :
   n_versions("versions", "v", 1),
   n_tree_branches("branches", "b", 1)
 {
-  stk.push(shared_ptr<cvs_state>(new cvs_state()));  
 }
 
 void 
@@ -789,192 +785,118 @@ cvs_history::set_filename(string const & file,
         && ss.substr(last_slash-5,6)=="Attic/")
      ss.erase(last_slash-5,6);
   curr_file = file_path(ss);
+  curr_file_interned = path_interner.intern(ss);
 }
 
-bool 
-cvs_history::find_key_and_state(rcs_file const & r, 
-                                string const & version,
-                                cvs_key & key,
-                                shared_ptr<cvs_state> & state)
+void cvs_history::index_branchpoint_symbols(rcs_file const & r)
 {
-  I(stk.size() > 0);
-  map< cvs_key, shared_ptr<cvs_state> > & substates = stk.top()->substates;
-  cvs_key nk(r, version, *this);
+  branchpoints.clear();
+  branch_first_entries.clear();
 
-  nk.add_file(curr_file, version);
-  // key+(window/2) is in the future, key-(window/2) is in the past. the
-  // past is considered "greater than" the future in this map, so we take:
-  // 
-  //  - new, the lower bound of key+(window/2) in the map
-  //  - old, the upper bound of key-(window/2) in the map
-  //
-  // and search all the nodes inside this section, from new to old bound.
-
-  map< cvs_key, shared_ptr<cvs_state> >::const_iterator i_new, i_old, i;
-  cvs_key k_new(nk), k_old(nk);
-
-  if (static_cast<time_t>(k_new.time + constants::cvs_window / 2) > k_new.time)
-    k_new.time += constants::cvs_window / 2;
-
-  if (static_cast<time_t>(k_old.time - constants::cvs_window / 2) < k_old.time)
-    k_old.time -= constants::cvs_window / 2;
-  
-  i_new = substates.lower_bound(k_new);
-  i_old = substates.upper_bound(k_old);
-
-  for (i = i_new; i != i_old; ++i)
+  for (std::multimap<std::string, std::string>::const_iterator i = 
+	 r.admin.symbols.begin(); i != r.admin.symbols.end(); ++i)
     {
-      if (i->first.similar_enough(nk))
+      std::string const & num = i->first;
+      std::string const & sym = i->second;
+
+      vector<string> components;
+      split_version(num, components);
+
+      vector<string> first_entry_components;
+      vector<string> branchpoint_components;
+
+      if (components.size() > 2 && 
+          (components.size() % 2 == 1))
         {
-          key = i->first;
-          state = i->second;
-          key.add_file(curr_file, version);
-          substates.erase(i->first);
-          substates.insert(make_pair(key, state));
-          return true;
+          // this is a "vendor" branch
+          // 
+          // such as "1.1.1", where "1.1" is the branchpoint and
+          // "1.1.1.1" will be the first commit on it.
+          
+          first_entry_components = components;
+          first_entry_components.push_back("1");
+
+          branchpoint_components = components;
+          branchpoint_components.erase(branchpoint_components.end() - 1, 
+                                       branchpoint_components.end());
+
+        }      
+
+      else if (components.size() > 2 && 
+               (components.size() % 2 == 0) &&
+               components[components.size() - 2] == string("0"))
+	{
+          // this is a "normal" branch
+          //
+          // such as "1.3.0.2", where "1.3" is the branchpoint and
+          // "1.3.2.1"
+
+          first_entry_components = components;
+	  first_entry_components[first_entry_components.size() - 2] 
+            = first_entry_components[first_entry_components.size() - 1];          
+	  first_entry_components[first_entry_components.size() - 1] 
+            = string("1");
+          
+          branchpoint_components = components;
+          branchpoint_components.erase(branchpoint_components.end() - 2,
+                                       branchpoint_components.end());
         }
+
+      string first_entry_version;
+      join_version(first_entry_components, first_entry_version);
+      
+      L(F("first version in branch %s would be %s\n") 
+        % sym % first_entry_version);
+      branch_first_entries.insert(make_pair(first_entry_version, sym));
+
+      string branchpoint_version;
+      join_version(branchpoint_components, branchpoint_version);
+      
+      L(F("file branchpoint for %s at %s\n") % sym % branchpoint_version);
+      branchpoints.insert(make_pair(branchpoint_version, sym));
     }
-  key = nk;
-  state = shared_ptr<cvs_state>(new cvs_state());
-  substates.insert(make_pair(key, state));
-  return false;
 }
 
-void
-cvs_history::find_branchpoint(rcs_file const & r,
-                              string const & branchpoint_version,
-                              string const & first_branch_version,
-                              shared_ptr<cvs_state> & branchpoint)
+
+
+void 
+cvs_history::push_branch(string const & branch_name, bool private_branch)
 {
-  cvs_key k; 
-  I(find_key_and_state(r, branchpoint_version, k, branchpoint));
+  shared_ptr<cvs_branch> branch;
+  
+  string bname = base_branch + "." + branch_name;
+  I(stk.size() > 0);
 
-  string branch_name = find_branch_for_version(r.admin.symbols, 
-                                               first_branch_version, 
-                                               base_branch);
-
-  unsigned long branch = branch_interner.intern(branch_name);
-    
-  map<unsigned long, 
-    pair<cvs_key, shared_ptr<cvs_state> > >::const_iterator i 
-    = branchpoints.find(branch);
-
-  if (i == branchpoints.end())
+  if (private_branch)
     {
-      ++n_tree_branches;
-      L(F("beginning branch %s at %s : %s\n")
-        % branch_name % curr_file % branchpoint_version);
-      branchpoints.insert(make_pair(branch, 
-                                    make_pair(k, branchpoint)));
+      branch = shared_ptr<cvs_branch>(new cvs_branch());
+      stk.push(branch);
+      bstk.push(branch_interner.intern(""));
+      return;
     }
   else
-    {
-      // take the earlier of the new key and the existing branchpoint
-      if (k.time < i->second.first.time)
+    {  
+      map<string, shared_ptr<cvs_branch> >::const_iterator b = branches.find(bname);
+      if (b == branches.end())
         {
-          L(F("moving branch %s back to %s : %s\n")
-            % branch_name % curr_file % branchpoint_version);
-          shared_ptr<cvs_state> old = i->second.second;
-          set<cvs_key> moved;
-          for (map< cvs_key, shared_ptr<cvs_state> >::const_iterator j = 
-                 old->substates.begin(); j != old->substates.end(); ++j)
-            {
-              if (j->first.branch == branch)
-                {
-                  branchpoint->substates.insert(*j);
-                  moved.insert(j->first);
-                }
-            }
-          for (set<cvs_key>::const_iterator j = moved.begin(); j != moved.end();
-               ++j)
-            {
-              old->substates.erase(*j);
-            }
-          branchpoints[branch] = make_pair(k, branchpoint);
+          branch = shared_ptr<cvs_branch>(new cvs_branch());
+          branches.insert(make_pair(bname, branch));
+          ++n_tree_branches;
         }
       else
-        {
-          L(F("using existing branchpoint for %s at %s : %s\n")
-            % branch_name % curr_file % branchpoint_version);
-          branchpoint = i->second.second;
-        }
+        branch = b->second;
+      
+      stk.push(branch);
+      bstk.push(branch_interner.intern(bname));
     }
-}
-
-void 
-cvs_history::push_branch(rcs_file const & r, 
-                         string const & branchpoint_version,
-                         string const & first_branch_version) 
-{      
-  shared_ptr<cvs_state> branchpoint;
-  I(stk.size() > 0);
-  find_branchpoint(r, branchpoint_version, 
-                   first_branch_version, branchpoint);
-  stk.push(branchpoint);
-}
-
-void 
-cvs_history::note_file_edge(rcs_file const & r, 
-                            string const & prev_rcs_version_num,
-                            string const & next_rcs_version_num,
-                            file_id const & prev_version,
-                            file_id const & next_version) 
-{
-
-  cvs_key k;
-  shared_ptr<cvs_state> s;
-
-  I(stk.size() > 0);
-  I(! curr_file().empty());
-  
-  // we can't use operator[] since it is non-const
-  std::map<std::string, boost::shared_ptr<rcs_delta> >::const_iterator
-        prev_delta = r.deltas.find(prev_rcs_version_num),
-        next_delta = r.deltas.find(next_rcs_version_num);
-  I(prev_delta!=r.deltas.end());
-  I(next_delta!=r.deltas.end());
-  bool prev_alive = prev_delta->second->state!="dead";
-  bool next_alive = next_delta->second->state!="dead";
-  
-  L(F("note_file_edge %s %d -> %s %d\n") % prev_rcs_version_num % prev_alive
-                % next_rcs_version_num % next_alive);
-
-  // we always aggregate in-edges in children, but we will also create
-  // parents as we encounter them.
-  if (stk.size() == 1)
-    {
-      // we are on the trunk, prev is child, next is parent.
-      L(F("noting trunk edge %s : %s -> %s\n") % curr_file
-        % next_rcs_version_num
-        % prev_rcs_version_num);
-      find_key_and_state (r, next_rcs_version_num, k, s); // just to create it if necessary      
-      find_key_and_state (r, prev_rcs_version_num, k, s);
-
-      s->in_edges.insert(cvs_file_edge(next_version, curr_file, next_alive,
-                                       prev_version, curr_file, prev_alive,
-                                       *this));
-    }
-  else
-    {
-      // we are on a branch, prev is parent, next is child.
-      L(F("noting branch edge %s : %s -> %s\n") % curr_file
-        % prev_rcs_version_num
-        % next_rcs_version_num);
-      find_key_and_state (r, next_rcs_version_num, k, s);
-      s->in_edges.insert(cvs_file_edge(prev_version, curr_file, prev_alive,
-                                       next_version, curr_file, next_alive,
-                                       *this));
-    }
-    
-  ++n_versions;
 }
 
 void 
 cvs_history::pop_branch() 
 {
   I(stk.size() > 1);
-  I(stk.top()->substates.size() > 0);
   stk.pop();
+  bstk.pop();
 }
 
 
@@ -994,7 +916,14 @@ public:
     string file = path();
     if (file.substr(file.size() - 2) == string(",v"))      
       {
-        import_rcs_file_with_cvs(file, db, cvs);
+        try
+          {
+            import_rcs_file_with_cvs(file, db, cvs);
+          }
+        catch (oops const & o)
+          {
+            W(F("error reading RCS file %s: %s\n") % file % o.what());
+          }
       }
     else
       L(F("skipping non-RCS file %s\n") % file);
@@ -1003,301 +932,291 @@ public:
 };
 
 
-static void 
-store_manifest_edge(manifest_map const & parent,
-                    manifest_map const & child,
-                    manifest_id const & parent_mid,
-                    manifest_id const & child_mid,
-                    app_state & app,
-                    cvs_history & cvs,
-                    unsigned long depth,
-                    bool head_manifest_p)
+
+
+//
+// our task here is to produce a sequence of revision descriptions
+// from the per-file commit records we have. we do this by rolling
+// forwards through the temporally sorted file-commit list
+// accumulating file-commits into revisions and flushing the
+// revisions when we feel they are "complete".
+//
+// revisions have to have a time associated with them. this time
+// will be the first time of any commit associated with the
+// revision. they have an author and a changelog, which is shared
+// by all the file-commits in the revision.
+//
+// there might be multiple revisions overlapping in time. this is
+// legal wrt. CVS. we keep a set, and search all members of the set
+// for the best match.
+//
+// consider this situation of overlapping revisions:
+//
+//    +---------------+   +---------------+   +---------------+
+//    | rev #1 @ 0011 |   | rev #2 @ 0012 |   | rev #3 @ 0013 |
+//    |~~~~~~~~~~~~~~~|   |~~~~~~~~~~~~~~~|   |~~~~~~~~~~~~~~~|
+//    | patch foo.txt |   | patch bar.txt |   | patch baz.txt |
+//    +---------------+   +---------------+   +---------------+
+//
+// suppose you have this situation and you run across a "patch
+// bar.txt" commit at timestamp 0014. what do you do?
+//
+// - you know that rev #2 cannot accept this commit, simply because
+//   two commits on the same file makes *two* revisions, not one.
+//
+// - perhaps rev #3 could accept it; after all, it could be that the
+//   commit associated with rev #2 released its commit lock, and the
+//   commit associated with rev #3 quickly updated and committed at
+//   0013, finishing off at 0014.
+//
+// - can rev #1 accept it? no. because CVS calcualted the version it 
+//   expected to see in bar.txt before calling up the server, when
+//   committing rev #1. the version it expected to see was the version
+//   in bar.txt *before* time 0012; that is, before rev #2 had any affect
+//   on bar.txt. when it contacted the server, the commit associated 
+//   with rev #1 would have aborted if it had seen any other number. 
+//   so rev #1 could not start before an edit to bar.txt and then
+//   include its own edit to bar.txt.
+//
+// so we have only one case where bar.txt can be accepted. if the
+// commit is not accepted into a legal rev (outside the window,
+// wrong changelog/author) it starts a new revision.
+//
+// as we scan forwards, if we hit timestamps which lie beyond rev #n's
+// window, we flush rev #n. 
+//
+// if there are multiple coincident and legal revs to direct a
+// commit to (all with the same author/changelog), we direct the
+// commit to the rev with the closest initial timestamp. that is,
+// the *latest* beginning time.
+
+struct
+cvs_cluster
 {
+  time_t first_time;
+  cvs_author author;
+  cvs_changelog changelog;
+  set<cvs_tag> tags;
 
-  if (depth == 0)
-    L(F("storing trunk manifest %s (base %s)\n") % parent_mid % child_mid);
-  else
-    L(F("storing branch manifest %s (base %s)\n") % child_mid % parent_mid);
+  cvs_cluster(time_t t, 
+              cvs_author a,
+              cvs_changelog c) 
+    : first_time(t),
+      author(a),
+      changelog(c)
+  {}
 
-  if (depth == 0 && head_manifest_p)
-    {
-      L(F("storing trunk head %s\n") % child_mid);
-      // the trunk branch has one very important manifest: the head.
-      // this is the "newest" of all manifests within the import, and
-      // we store it in its entirety.
-      if (! app.db.manifest_version_exists(child_mid))
-        {
-          manifest_data mdat;
-          write_manifest_map(child, mdat);
-          app.db.put_manifest(child_mid, mdat);
-        }
-    }
+  struct entry
+  {
+    bool live;
+    cvs_version version;
+    time_t time;
+    entry(bool l, cvs_version v, time_t t)
+      : live(l),
+        version(v),
+        time(t)
+    {}
+  };
 
-  if (null_id(parent_mid))
-    {
-      L(F("skipping null manifest\n"));
-      return;
-    }
-
-  unsigned long p, c, older, newer;
-  p = cvs.manifest_version_interner.intern(parent_mid.inner()());
-  c = cvs.manifest_version_interner.intern(child_mid.inner()());
-  older = (depth == 0) ? p : c;
-  newer = (depth == 0) ? c : p;
-  if (cvs.manifest_cycle_detector.edge_makes_cycle(older,newer))        
-    {
-      if (depth == 0)
-        {
-          L(F("skipping cyclical trunk manifest delta %s -> %s\n") 
-            % parent_mid % child_mid);
-          // if this is on the trunk, we are potentially breaking the chain
-          // one would use to get to p. we need to make sure p exists.
-          if (!app.db.manifest_version_exists(parent_mid))
-            {
-              L(F("writing full manifest %s\n") % parent_mid);
-              manifest_data mdat;
-              write_manifest_map(parent, mdat);
-              app.db.put_manifest(parent_mid, mdat);
-            }
-        }
-      else
-        {
-          L(F("skipping cyclical branch manifest delta %s -> %s\n") 
-            % child_mid % parent_mid);
-          // if this is on a branch, we are potentially breaking the chain one
-          // would use to get to c. we need to make sure c exists.
-          if (!app.db.manifest_version_exists(child_mid))
-            {
-              L(F("writing full manifest %s\n") % child_mid);
-              manifest_data mdat;
-              write_manifest_map(child, mdat);
-              app.db.put_manifest(child_mid, mdat);
-            }
-        }       
-      return;
-    }
-  
-  cvs.manifest_cycle_detector.put_edge(older,newer);        
-  if (depth == 0)
-    {
-      L(F("storing trunk manifest delta %s -> %s\n") 
-        % child_mid % parent_mid);
-      
-      // in this case, the ancestry-based 'child' is on a trunk, so it is
-      // a 'new' version as far as the storage system is concerned; that
-      // is to say that the ancestry-based 'parent' is a temporally older
-      // tree version, which can be constructed from the 'newer' child. so
-      // the delta should run from child (new) -> parent (old).
-      
-      delta del;
-      diff(child, parent, del);
-      rcs_put_raw_manifest_edge(parent_mid.inner(),
-                                child_mid.inner(),
-                                del, app.db);
-    }
-  else
-    {
-      L(F("storing branch manifest delta %s -> %s\n") 
-        % parent_mid % child_mid);
-      
-      // in this case, the ancestry-based 'child' is on a branch, so it is
-      // an 'old' version as far as the storage system is concerned; that
-      // is to say it is constructed by first building a 'new' version (the
-      // ancestry-based 'parent') and then following a delta to the
-      // child. remember that the storage system assumes that all deltas go
-      // from temporally new -> temporally old. so the delta should go from
-      // parent (new) -> child (old)
-      
-      delta del;
-      diff(parent, child, del);
-      rcs_put_raw_manifest_edge(child_mid.inner(),
-                                parent_mid.inner(),                             
-                                del, app.db);
-    }
-}
+  typedef map<cvs_path, entry> entry_map;
+  entry_map entries;
+};
 
 
-static void 
-store_auxiliary_certs(cvs_key const & key, 
-                      revision_id const & id, 
-                      app_state & app, 
-                      cvs_history const & cvs)
+struct
+cluster_consumer
 {
-  packet_db_writer dbw(app);
-  cert_revision_in_branch(id, cert_value(cvs.branch_interner.lookup(key.branch)), app, dbw); 
-  cert_revision_author(id, cvs.author_interner.lookup(key.author), app, dbw); 
-  cert_revision_changelog(id, cvs.changelog_interner.lookup(key.changelog), app, dbw);
-  cert_revision_date_time(id, key.time, app, dbw);
-}
+  cvs_history & cvs;
+  app_state & app;
+  string const & branchname;
+  cvs_branch const & branch;
+  map<cvs_path, cvs_version> live_files;
+  ticker & n_manifests;
+  ticker & n_revisions;
 
-static void 
-build_change_set(shared_ptr<cvs_state> state,
-                 manifest_map const & state_map,
-                 cvs_history & cvs,
-                 change_set & cs)
+  struct prepared_revision
+  {
+    prepared_revision(revision_id i, 
+                      shared_ptr<revision_set> r,
+                      cvs_cluster const & c);
+    revision_id rid;
+    shared_ptr<revision_set> rev;
+    time_t time;
+    cvs_author author;
+    cvs_changelog changelog;
+    vector<cvs_tag> tags;
+  };
+
+  vector<prepared_revision> preps;
+
+  manifest_map parent_map, child_map;
+  manifest_id parent_mid, child_mid;
+  revision_id parent_rid, child_rid;
+
+  cluster_consumer(cvs_history & cvs,
+                   app_state & app,
+                   string const & branchname,
+                   cvs_branch const & branch,
+                   ticker & n_manifests,
+                   ticker & n_revs);
+
+  void consume_cluster(cvs_cluster const & c, 
+                       bool head_p);
+  void build_change_set(cvs_cluster const & c,
+                        change_set & cs);
+  void store_manifest_edge(bool head_p);
+  void store_auxiliary_certs(prepared_revision const & p);
+  void store_revisions();
+};
+
+typedef shared_ptr<cvs_cluster> 
+cluster_ptr;
+
+struct
+cluster_ptr_lt
 {
-  change_set empty;
-  cs = empty;
+  bool operator()(cluster_ptr const & a,
+                  cluster_ptr const & b) const
+  {
+    return a->first_time < b->first_time;
+  }
+};
 
-  for (set<cvs_file_edge>::const_iterator f = state->in_edges.begin();
-       f != state->in_edges.end(); ++f)
-    {
-      file_id fid(cvs.file_version_interner.lookup(f->child_version));
-      file_path pth(cvs.path_interner.lookup(f->child_path));
-      if (!f->child_live_p)
-        {  
-          if (f->parent_live_p)
+typedef set<cluster_ptr, cluster_ptr_lt>
+cluster_set;
+
+void 
+import_branch(cvs_history & cvs, 
+              app_state & app,
+              string const & branchname,
+              shared_ptr<cvs_branch> const & branch,
+              ticker & n_manifests,
+              ticker & n_revs)
+{
+  cluster_set clusters;
+  cluster_consumer cons(cvs, app, branchname, *branch, n_manifests, n_revs);
+  unsigned long commits_remaining = branch->lineage.size();
+
+  // step 1: sort the lineage
+  stable_sort(branch->lineage.begin(), branch->lineage.end());
+
+  for (vector<cvs_commit>::const_iterator i = branch->lineage.begin();
+       i != branch->lineage.end(); ++i)
+    {      
+      commits_remaining--;
+
+      L(F("examining next commit [t:%d] [p:%s] [a:%s] [c:%s]\n")
+        % i->time 
+        % cvs.path_interner.lookup(i->path)
+        % cvs.author_interner.lookup(i->author)
+        % cvs.changelog_interner.lookup(i->changelog));
+      
+      // step 2: expire all clusters from the beginning of the set which
+      // have passed the window size
+      while (!clusters.empty())
+        {
+          cluster_set::const_iterator j = clusters.begin();
+          if ((*j)->first_time + constants::cvs_window < i->time)
             {
-              L(F("deleting entry state '%s' on '%s'\n") % fid % pth);              
-              cs.delete_file(pth);
+              L(F("expiring cluster\n"));
+              cons.consume_cluster(**j, false);
+              clusters.erase(j);
             }
           else
+            break;
+        }
+      
+      // step 3: find the last still-live cluster to have touched this
+      // file
+      time_t time_of_last_cluster_touching_this_file = 0;
+
+      unsigned clu = 0;
+      for (cluster_set::const_iterator j = clusters.begin();
+           j != clusters.end(); ++j)
+        {          
+          L(F("examining cluster %d to see if it touched %d\n")
+            % clu++
+            % i->path);
+            
+          cvs_cluster::entry_map::const_iterator k = (*j)->entries.find(i->path);
+          if ((k != (*j)->entries.end())
+              && (k->second.time > time_of_last_cluster_touching_this_file))
             {
-              // it can actually happen that we have a file that went from
-              // dead to dead.  when a file is created on a branch, cvs first
-              // _commits a deleted file_ on mainline, and then branches from
-              // it and resurrects it.  In such cases, we should just ignore
-              // the file, it doesn't actually exist.  So, in this block, we
-              // do nothing.
+              L(F("found cluster touching %d: [t:%d] [a:%d] [c:%d]\n")
+                % i->path
+                % (*j)->first_time 
+                % (*j)->author
+                % (*j)->changelog);
+              time_of_last_cluster_touching_this_file = (*j)->first_time;
             }
         }
-      else 
+      L(F("last modification time is %d\n") 
+        % time_of_last_cluster_touching_this_file);
+      
+      // step 4: find a cluster which starts on or after the
+      // last_modify_time, which doesn't modify the file in question,
+      // and which contains the same author and changelog as our
+      // commit
+      cluster_ptr target;
+      for (cluster_set::const_iterator j = clusters.begin();
+           j != clusters.end(); ++j)
         {
-          manifest_map::const_iterator i = state_map.find(pth);
-          if (i == state_map.end())
-            {
-              L(F("adding entry state '%s' on '%s'\n") % fid % pth);          
-              cs.add_file(pth, fid);          
+          if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
+              && ((*j)->author == i->author)
+              && ((*j)->changelog == i->changelog)
+              && ((*j)->entries.find(i->path) == (*j)->entries.end()))
+            {              
+              L(F("picked existing cluster [t:%d] [a:%d] [c:%d]\n")
+                % (*j)->first_time 
+                % (*j)->author
+                % (*j)->changelog);
+
+              target = (*j);
             }
-          else if (manifest_entry_id(i) == fid)
-            {
-              L(F("skipping preserved entry state '%s' on '%s'\n")
-                % fid % pth);         
-            }
-          else
-            {
-              L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % pth % manifest_entry_id(i) % fid);          
-              cs.apply_delta(pth, manifest_entry_id(i), fid);
-            }
-        }  
+        }
+      
+      // if we're still not finding an active cluster,
+      // this is probably the first commit in it. make 
+      // a new one.
+      if (!target)
+        {
+          L(F("building new cluster [t:%d] [a:%d] [c:%d]\n")
+            % i->time 
+            % i->author
+            % i->changelog);
+
+          target = cluster_ptr(new cvs_cluster(i->time, 
+                                               i->author, 
+                                               i->changelog));
+          clusters.insert(target);
+        }
+      
+      I(target);
+      target->entries.insert(make_pair(i->path, 
+                                       cvs_cluster::entry(i->alive, 
+                                                          i->version,
+                                                          i->time)));
+      for (vector<cvs_tag>::const_iterator j = i->tags.begin();
+           j != i->tags.end(); ++j)
+        {
+          target->tags.insert(*j);          
+        }
     }
-  L(F("logical changeset from parent -> child has %d file state changes\n") 
-    % state->in_edges.size());
+
+
+  // now we are done this lineage; flush all remaining clusters
+  L(F("finished branch commits, writing all pending clusters\n"));
+  while (!clusters.empty())
+    {
+      cons.consume_cluster(**clusters.begin(), clusters.size() == 1);
+      clusters.erase(clusters.begin());
+    }
+  L(F("finished writing pending clusters\n"));
+
+  cons.store_revisions();
+
 }
 
-
-static void 
-import_states_recursive(ticker & n_edges, 
-                        ticker & n_branches,
-                        shared_ptr<cvs_state> state,
-                        cvs_branchname branch_filter,
-                        revision_id parent_rid,
-                        manifest_id parent_mid,
-                        manifest_map parent_map,
-                        cvs_history & cvs,
-                        app_state & app,
-                        vector< pair<cvs_key, revision_set> > & revisions,
-                        unsigned long depth);
-
-static void 
-import_states_by_branch(ticker & n_edges, 
-                        ticker & n_branches,
-                        shared_ptr<cvs_state> state,
-                        revision_id const & parent_rid,
-                        manifest_id const & parent_mid,
-                        manifest_map const & parent_map,
-                        cvs_history & cvs,
-                        app_state & app,
-                        vector< pair<cvs_key, revision_set> > & revisions,
-                        unsigned long depth)
-{
-  set<cvs_branchname> branches;
-
-  // collect all the branches
-  for (map< cvs_key, shared_ptr<cvs_state> >::reverse_iterator i = state->substates.rbegin();
-       i != state->substates.rend(); ++i)
-    branches.insert(i->first.branch);
-
-  // walk each sub-branch in order
-  for (set<cvs_branchname>::const_iterator branch = branches.begin();
-       branch != branches.end(); ++branch)
-    {
-      import_states_recursive(n_edges, n_branches, state, *branch, 
-                              parent_rid, parent_mid, parent_map, 
-                              cvs, app, revisions, depth);
-    }
-}
-
-static void 
-import_states_recursive(ticker & n_edges, 
-                        ticker & n_branches,
-                        shared_ptr<cvs_state> state,
-                        cvs_branchname branch_filter,
-                        revision_id parent_rid,
-                        manifest_id parent_mid,
-                        manifest_map parent_map,
-                        cvs_history & cvs,
-                        app_state & app,
-                        vector< pair<cvs_key, revision_set> > & revisions,
-                        unsigned long depth)
-{
-  if (state->substates.size() > 0)
-    ++n_branches;
-
-  manifest_id child_mid;
-  revision_id child_rid;
-  manifest_map child_map = parent_map;
-  
-  string branchname = cvs.branch_interner.lookup(branch_filter);
-  ui.set_tick_trailer("building branch " + branchname);
-
-  // these are all sub-branches, so we look through them temporally
-  // *backwards* from oldest to newest
-  map< cvs_key, shared_ptr<cvs_state> >::reverse_iterator newest_branch_state;
-  for (map< cvs_key, shared_ptr<cvs_state> >::reverse_iterator i = state->substates.rbegin();
-       i != state->substates.rend(); ++i)
-    {
-      if (i->first.branch != branch_filter)
-        continue;
-      newest_branch_state = i;
-    }
-
-  for (map< cvs_key, shared_ptr<cvs_state> >::reverse_iterator i = state->substates.rbegin();
-       i != state->substates.rend(); ++i)
-    {
-      if (i->first.branch != branch_filter)
-        continue;
-
-      revision_set rev;
-      boost::shared_ptr<change_set> cs(new change_set());
-      build_change_set(i->second, parent_map, cvs, *cs);
-
-      apply_change_set(*cs, child_map);
-      calculate_ident(child_map, child_mid);
-
-      rev.new_manifest = child_mid;
-      rev.edges.insert(make_pair(parent_rid, make_pair(parent_mid, cs)));
-      calculate_ident(rev, child_rid);
-
-      revisions.push_back(make_pair(i->first, rev));
-
-      store_manifest_edge(parent_map, child_map, 
-                          parent_mid, child_mid, 
-                          app, cvs, depth, i == newest_branch_state);
-
-      if (i->second->substates.size() > 0)
-        import_states_by_branch(n_edges, n_branches, i->second, 
-                                child_rid, child_mid, child_map, 
-                                cvs, app, revisions, depth+1);
-
-      // now apply same change set to parent_map, making parent_map == child_map
-      apply_change_set(*cs, parent_map);
-      parent_mid = child_mid;
-      parent_rid = child_rid;
-      ++n_edges;
-    }
-}
 
 void 
 import_cvs_repo(fs::path const & cvsroot, 
@@ -1320,6 +1239,11 @@ import_cvs_repo(fs::path const & cvsroot,
   N(app.branch_name() != "", F("need base --branch argument for importing"));
   cvs.base_branch = app.branch_name();
 
+  // push the trunk
+  cvs.trunk = shared_ptr<cvs_branch>(new cvs_branch());
+  cvs.stk.push(cvs.trunk);
+  cvs.bstk.push(cvs.branch_interner.intern(cvs.base_branch));
+
   {
     transaction_guard guard(app.db);
     cvs_tree_walker walker(cvs, app.db);
@@ -1334,43 +1258,299 @@ import_cvs_repo(fs::path const & cvsroot,
     guard.commit();
   }
 
-  P(F("phase 1 (version import) complete\n"));
-
   I(cvs.stk.size() == 1);
-  shared_ptr<cvs_state> state = cvs.stk.top();
 
-  vector< pair<cvs_key, revision_set> > revisions;
+  ticker n_revs("revisions", "r", 1);
+  ticker n_manifests("manifests", "m", 1);
+
+  while (cvs.branches.size() > 0)
+    {
+      transaction_guard guard(app.db);
+      map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
+      string branchname = i->first;
+      shared_ptr<cvs_branch> branch = i->second;
+      L(F("branch %s has %d entries\n") % branchname % branch->lineage.size());
+      import_branch(cvs, app, branchname, branch, n_manifests, n_revs);
+
+      // free up some memory
+      cvs.branches.erase(branchname); 
+      guard.commit();
+    }
+
   {
-    ticker n_branches("finished branches", "b", 1);
-    ticker n_edges("finished edges", "e", 1);
     transaction_guard guard(app.db);
-    manifest_map root_manifest;
-    manifest_id root_mid;
-    revision_id root_rid; 
-
-    import_states_by_branch(n_edges, n_branches, state, 
-                            root_rid, root_mid,
-                            root_manifest, cvs, app, revisions, 0);
-    P(F("phase 2 (ancestry reconstruction) complete\n"));
+    L(F("trunk has %d entries\n") % cvs.trunk->lineage.size());
+    import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_manifests, n_revs);
     guard.commit();
   }
-  
+
+  // now we have a "last" rev for each tag
   {
-    ticker n_revisions("written revisions", "r", 1);
-    ui.set_tick_trailer("");
+    ticker n_tags("tags", "t", 1);
+    packet_db_writer dbw(app);
     transaction_guard guard(app.db);
-    for (vector< pair<cvs_key, revision_set> >::const_iterator
-           i = revisions.begin(); i != revisions.end(); ++i)
+    for (map<unsigned long, pair<time_t, revision_id> >::const_iterator i = cvs.resolved_tags.begin();
+         i != cvs.resolved_tags.end(); ++i)
       {
-        revision_id rid;
-        calculate_ident(i->second, rid);
-        if (! app.db.revision_exists(rid))
-          app.db.put_revision(rid, i->second);
-        store_auxiliary_certs(i->first, rid, app, cvs);
-        ++n_revisions;
+        string tag = cvs.tag_interner.lookup(i->first);
+        ui.set_tick_trailer("marking tag " + tag);
+        cert_revision_tag(i->second.second, tag, app, dbw);
+        ++n_tags;
       }
-    P(F("phase 3 (writing revisions) complete\n"));
     guard.commit();
   }
+
+
+  return;
+
 }
 
+cluster_consumer::cluster_consumer(cvs_history & cvs,
+                                   app_state & app,
+                                   string const & branchname,
+                                   cvs_branch const & branch,
+                                   ticker & n_mans,
+                                   ticker & n_revs)
+  : cvs(cvs), 
+    app(app), 
+    branchname(branchname),
+    branch(branch),
+    n_manifests(n_mans),
+    n_revisions(n_revs)
+{
+  if (!branch.live_at_beginning.empty())
+    {
+      cvs_author synthetic_author = 
+        cvs.author_interner.intern("cvs_import");
+      
+      cvs_changelog synthetic_cl = 
+        cvs.changelog_interner.intern("beginning of branch " 
+                                      + branchname);
+      
+      time_t synthetic_time = branch.beginning();
+      cvs_cluster initial_cluster(synthetic_time, 
+                                  synthetic_author, 
+                                  synthetic_cl);
+      
+      L(F("initial cluster on branch %s has %d live entries\n") % 
+        branchname % branch.live_at_beginning.size());
+
+      for (map<cvs_path, cvs_version>::const_iterator i = branch.live_at_beginning.begin();
+           i != branch.live_at_beginning.end(); ++i)
+        {
+          cvs_cluster::entry e(true, i->second, synthetic_time);
+          L(F("initial cluster contains %s at %s\n") % 
+            cvs.path_interner.lookup(i->first) %
+            cvs.file_version_interner.lookup(i->second));
+          initial_cluster.entries.insert(make_pair(i->first, e));
+        }
+      consume_cluster(initial_cluster, branch.lineage.empty());
+    }
+}
+  
+cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
+                                                       shared_ptr<revision_set> r,
+                                                       cvs_cluster const & c)
+  : rid(i), 
+    rev(r), 
+    time(c.first_time), 
+    author(c.author), 
+    changelog(c.changelog)
+{
+  for (set<cvs_tag>::const_iterator i = c.tags.begin();
+       i != c.tags.end(); ++i)
+    {
+      tags.push_back(*i);
+    }
+}
+
+
+void 
+cluster_consumer::store_revisions()
+{
+  for (vector<prepared_revision>::const_iterator i = preps.begin();
+       i != preps.end(); ++i)
+    {
+      if (! app.db.revision_exists(i->rid))
+        {
+          data tmp;
+          write_revision_set(*(i->rev), tmp);
+          app.db.put_revision(i->rid, *(i->rev));
+          store_auxiliary_certs(*i);
+          ++n_revisions;
+        }
+    }
+}
+
+void
+cluster_consumer::store_manifest_edge(bool head_p)
+{
+  L(F("storing manifest '%s' (base %s)\n") % parent_mid % child_mid);
+  ++n_manifests;
+
+  if (head_p)
+    {
+      L(F("storing head %s\n") % child_mid);
+      // a branch has one very important manifest: the head.  this is
+      // the "newest" of all manifests within the branch (including
+      // the trunk), and we store it in its entirety, before the
+      // cluster consumer is destroyed.
+      if (! app.db.manifest_version_exists(child_mid))
+        {
+          manifest_data mdat;
+          write_manifest_map(child_map, mdat);
+          app.db.put_manifest(child_mid, mdat);
+        }
+    }
+
+  if (null_id(parent_mid))
+    {
+      L(F("skipping delta to null manifest\n"));
+      return;
+    }
+
+  unsigned long older, newer;
+
+  older = cvs.manifest_version_interner.intern(parent_mid.inner()());
+  newer = cvs.manifest_version_interner.intern(child_mid.inner()());
+
+  if (cvs.manifest_cycle_detector.edge_makes_cycle(older,newer))        
+    {
+
+      L(F("skipping cyclical manifest delta %s -> %s\n") 
+	% parent_mid % child_mid);
+      // we are potentially breaking the chain one would use to get to
+      // p. we need to make sure p exists.
+      if (!app.db.manifest_version_exists(parent_mid))
+	{
+	  L(F("writing full manifest %s\n") % parent_mid);
+	  manifest_data mdat;
+	  write_manifest_map(parent_map, mdat);
+	  app.db.put_manifest(parent_mid, mdat);
+	}
+      return;
+    }
+  
+  cvs.manifest_cycle_detector.put_edge(older,newer);        
+
+  L(F("storing manifest delta %s -> %s\n") 
+    % child_mid % parent_mid);
+  
+  // the ancestry-based 'child' is a 'new' version as far as the
+  // storage system is concerned; that is to say that the
+  // ancestry-based 'parent' is a temporally older tree version, which
+  // can be constructed from the 'newer' child. so the delta should
+  // run from child (new) -> parent (old).
+      
+  delta del;
+  diff(child_map, parent_map, del);
+  rcs_put_raw_manifest_edge(parent_mid.inner(),
+			    child_mid.inner(),
+			    del, app.db);
+}
+
+void 
+cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
+{
+  packet_db_writer dbw(app);
+
+  for (vector<cvs_tag>::const_iterator i = p.tags.begin();
+       i != p.tags.end(); ++i)
+    {
+      map<unsigned long, pair<time_t, revision_id> >::const_iterator j 
+        = cvs.resolved_tags.find(*i);
+
+      if (j != cvs.resolved_tags.end())
+        {
+          if (j->second.first < p.time)
+            {
+              // move the tag forwards
+              cvs.resolved_tags.erase(*i);
+              cvs.resolved_tags.insert(make_pair(*i, make_pair(p.time, p.rid)));
+            }
+        }
+      else
+        {
+          cvs.resolved_tags.insert(make_pair(*i, make_pair(p.time, p.rid)));
+        }
+    }
+
+  cert_revision_in_branch(p.rid, cert_value(branchname), app, dbw); 
+  cert_revision_author(p.rid, cvs.author_interner.lookup(p.author), app, dbw); 
+  cert_revision_changelog(p.rid, cvs.changelog_interner.lookup(p.changelog), app, dbw);
+  cert_revision_date_time(p.rid, p.time, app, dbw);
+}
+
+void
+cluster_consumer::build_change_set(cvs_cluster const & c,
+                                   change_set & cs)
+{
+  for (cvs_cluster::entry_map::const_iterator i = c.entries.begin();
+       i != c.entries.end(); ++i)
+    {
+      file_path pth(cvs.path_interner.lookup(i->first));
+      file_id fid(cvs.file_version_interner.lookup(i->second.version));
+      if (i->second.live)
+        {
+          map<cvs_path, cvs_version>::const_iterator e = live_files.find(i->first);
+          if (e == live_files.end())
+            {
+              L(F("adding entry state '%s' on '%s'\n") % fid % pth);          
+              cs.add_file(pth, fid);
+              live_files[i->first] = i->second.version;
+            }
+          else if (e->second != i->second.version)
+            {
+              file_id old_fid(cvs.file_version_interner.lookup(e->second));
+              L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
+                % pth % old_fid % fid);
+              cs.apply_delta(pth, old_fid, fid);
+              live_files[i->first] = i->second.version;
+            }
+        }
+      else
+        {
+          map<cvs_path, cvs_version>::const_iterator e = live_files.find(i->first);
+          if (e != live_files.end())
+            {
+              L(F("deleting entry state '%s' on '%s'\n") % fid % pth);              
+              cs.delete_file(pth);
+              live_files.erase(i->first);
+            }
+        }
+    }
+}
+
+void
+cluster_consumer::consume_cluster(cvs_cluster const & c,
+                                  bool head_p)
+{
+  // we should never have an empty cluster; it's *possible* to have
+  // an empty changeset (say on a vendor import) but every cluster
+  // should have been created by at least one file commit, even
+  // if the commit made no changes. it's a logical inconsistency if
+  // you have an empty cluster.
+  I(!c.entries.empty());
+
+  L(F("BEGIN consume_cluster()\n"));
+  shared_ptr<revision_set> rev(new revision_set());
+  boost::shared_ptr<change_set> cs(new change_set());
+  build_change_set(c, *cs);
+
+  apply_change_set(*cs, child_map);
+  calculate_ident(child_map, child_mid);
+
+  rev->new_manifest = child_mid;
+  rev->edges.insert(make_pair(parent_rid, make_pair(parent_mid, cs)));
+  calculate_ident(*rev, child_rid);
+
+  store_manifest_edge(head_p);
+
+  preps.push_back(prepared_revision(child_rid, rev, c));
+
+  // now apply same change set to parent_map, making parent_map == child_map
+  apply_change_set(*cs, parent_map);
+  parent_mid = child_mid;
+  parent_rid = child_rid;
+  L(F("END consume_cluster('%s') (parent '%s')\n") % child_rid % rev->edges.begin()->first);  
+}

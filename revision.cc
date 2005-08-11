@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2004 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -14,12 +15,13 @@
 #include <string>
 #include <iterator>
 #include <functional>
+#include <list>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "cryptopp/osrng.h"
+#include "botan/botan.h"
 
 #include "basic_io.hh"
 #include "change_set.hh"
@@ -61,6 +63,12 @@ void revision_set::check_sane() const
             }
         }
     }
+}
+
+bool 
+revision_set::is_merge_node() const
+{ 
+  return edges.size() > 1; 
 }
 
 revision_set::revision_set(revision_set const & other)
@@ -130,8 +138,6 @@ check_sane_history(revision_id const & child_id,
   std::set<revision_id> frontier;
   frontier.insert(child_id);
     
-  // FIXME: if we don't check the LCA already, check it.
-
   while (depth-- > 0)
     {
       std::set<revision_id> next_frontier;
@@ -171,12 +177,14 @@ check_sane_history(revision_id const & child_id,
                                           *current_to_child_changes_p,
                                           *old_to_child_changes_p);
                 }
+              MM(*old_to_child_changes_p);
 
               // we have the change_set; now, is it one we've seen before?
               if (changesets.find(old_id) != changesets.end())
                 {
                   // If it is, then make sure the paths agree on the
                   // changeset.
+                  MM(*changesets.find(old_id)->second);
                   I(*changesets.find(old_id)->second == *old_to_child_changes_p);
                 }
               else
@@ -192,6 +200,8 @@ check_sane_history(revision_id const & child_id,
                   if (!null_id(old_id))
                     app.db.get_manifest(m_old_id, purported_m_child);
                   apply_change_set(*old_to_child_changes_p, purported_m_child);
+                  MM(purported_m_child);
+                  MM(m_child);
                   I(purported_m_child == m_child);
                 }
             }
@@ -332,8 +342,8 @@ expand_dominators(std::map<ctx, shared_bitmap> & parents,
   nodes.reserve(dominators.size());
 
   // pass 1, pull out all the node numbers we're going to scan this time around
-  for (std::map<ctx, shared_bitmap>::const_iterator e = dominators.begin(); 
-       e != dominators.end(); ++e)
+  for (std::map<ctx, shared_bitmap>::reverse_iterator e = dominators.rbegin(); 
+       e != dominators.rend(); ++e)
     nodes.push_back(e->first);
   
   // pass 2, update any of the dominator entries we can
@@ -363,11 +373,11 @@ expand_dominators(std::map<ctx, shared_bitmap> & parents,
                                              shared_bitmap(new bitmap())));
           shared_bitmap pbits = dominators[parent];
 
-          if (bits->size() > pbits->size())
-            pbits->resize(bits->size());
+          if (intersection.size() > pbits->size())
+            pbits->resize(intersection.size());
 
-          if (pbits->size() > bits->size())
-            bits->resize(pbits->size());
+          if (pbits->size() > intersection.size())
+            intersection.resize(pbits->size());
 
           if (first)
             {
@@ -378,6 +388,11 @@ expand_dominators(std::map<ctx, shared_bitmap> & parents,
             intersection &= (*pbits);
         }
 
+      if (intersection.size() > bits->size())
+        bits->resize(intersection.size());
+
+      if (bits->size() > intersection.size())
+        intersection.resize(bits->size());
       (*bits) |= intersection;
       if (*bits != saved)
         something_changed = true;
@@ -398,8 +413,8 @@ expand_ancestors(std::map<ctx, shared_bitmap> & parents,
   nodes.reserve(ancestors.size());
 
   // pass 1, pull out all the node numbers we're going to scan this time around
-  for (std::map<ctx, shared_bitmap>::const_iterator e = ancestors.begin(); 
-       e != ancestors.end(); ++e)
+  for (std::map<ctx, shared_bitmap>::reverse_iterator e = ancestors.rbegin(); 
+       e != ancestors.rend(); ++e)
     nodes.push_back(e->first);
   
   // pass 2, update any of the ancestor entries we can
@@ -487,6 +502,11 @@ find_common_ancestor_for_merge(revision_id const & left,
                                revision_id & anc,
                                app_state & app)
 {
+  // Temporary workaround until we figure out how to clean up the whole
+  // ancestor selection mess:
+  if (app.use_lca)
+    return find_least_common_ancestor(left, right, anc, app);
+
   interner<ctx> intern;
   std::map< ctx, shared_bitmap > 
     parents, ancestors, dominators;
@@ -506,7 +526,7 @@ find_common_ancestor_for_merge(revision_id const & left,
   
   L(F("searching for common ancestor, left=%s right=%s\n") % left % right);
   
-  while (expand_ancestors(parents, ancestors, intern, app) ||
+  while (expand_ancestors(parents, ancestors, intern, app) |
          expand_dominators(parents, dominators, intern, app))
     {
       L(F("common ancestor scan [par=%d,anc=%d,dom=%d]\n") % 
@@ -542,6 +562,12 @@ find_least_common_ancestor(revision_id const & left,
   interner<ctx> intern;
   std::map< ctx, shared_bitmap >
     parents, ancestors;
+
+  if (left == right)
+    {
+      anc = left;
+      return true;
+    }
 
   ctx ln = intern.intern(left.inner()());
   ctx rn = intern.intern(right.inner()());
@@ -708,30 +734,37 @@ toposort(std::set<revision_id> const & revisions,
 {
   sorted.clear();
   typedef std::multimap<revision_id, revision_id>::iterator gi;
+  typedef std::map<revision_id, int>::iterator pi;
   std::multimap<revision_id, revision_id> graph;
   app.db.get_revision_ancestry(graph);
   std::set<revision_id> leaves;
   app.db.get_revision_ids(leaves);
-  while (!graph.empty())
+  std::map<revision_id, int> pcount;
+  for (gi i = graph.begin(); i != graph.end(); ++i)
+    pcount.insert(std::make_pair(i->first, 0));
+  for (gi i = graph.begin(); i != graph.end(); ++i)
+    ++(pcount[i->second]);
+  // first find the set of graph roots
+  std::list<revision_id> roots;
+  for (pi i = pcount.begin(); i != pcount.end(); ++i)
+    if(i->second==0)
+      roots.push_back(i->first);
+  while (!roots.empty())
     {
-      // first find the set of current graph roots
-      std::set<revision_id> roots;
-      for (gi i = graph.begin(); i != graph.end(); ++i)
-        roots.insert(i->first);
-      for (gi i = graph.begin(); i != graph.end(); ++i)
-        roots.erase(i->second);
-      // now stick them in our ordering (if wanted), and remove them from the
-      // graph
-      for (std::set<revision_id>::const_iterator i = roots.begin();
-           i != roots.end(); ++i)
-        {
-          L(F("new root: %s\n") % (*i));
-          if (revisions.find(*i) != revisions.end())
-            sorted.push_back(*i);
-          graph.erase(*i);
-          leaves.erase(*i);
-        }
+      // now stick them in our ordering (if wanted) and remove them from the
+      // graph, calculating the new roots as we go
+      L(F("new root: %s\n") % (roots.front()));
+      if (revisions.find(roots.front()) != revisions.end())
+        sorted.push_back(roots.front());
+      for(gi i = graph.lower_bound(roots.front());
+          i != graph.upper_bound(roots.front()); i++)
+        if(--(pcount[i->second]) == 0)
+          roots.push_back(i->second);
+      graph.erase(roots.front());
+      leaves.erase(roots.front());
+      roots.pop_front();
     }
+  I(graph.empty());
   for (std::set<revision_id>::const_iterator i = leaves.begin();
        i != leaves.end(); ++i)
     {
@@ -1147,12 +1180,11 @@ void anc_graph::write_certs()
 
   {
     // regenerate epochs on all branches to random states
-    CryptoPP::AutoSeededRandomPool prng;
     
     for (std::set<std::string>::const_iterator i = branches.begin(); i != branches.end(); ++i)
       {
         char buf[constants::epochlen_bytes];
-        prng.GenerateBlock(reinterpret_cast<byte *>(buf), constants::epochlen_bytes);
+        Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
         hexenc<data> hexdata;
         encode_hexenc(data(std::string(buf, buf + constants::epochlen_bytes)), hexdata);
         epoch_data new_epoch(hexdata);

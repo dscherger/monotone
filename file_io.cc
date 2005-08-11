@@ -3,14 +3,13 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
-#include <stdio.h>             // for rename(2)
-
+#include <iostream>
+#include <fstream>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
 
-#include "cryptopp/filters.h"
-#include "cryptopp/files.h"
+#include "botan/botan.h"
 
 #include "file_io.hh"
 #include "lua.hh"
@@ -256,6 +255,39 @@ file_exists(local_path const & p)
   return fs::exists(localized(p)); 
 }
 
+bool
+ident_existing_file(file_path const & p, file_id & ident, lua_hooks & lua)
+{
+  fs::path local_p(localized(p));
+
+  if (!fs::exists(local_p))
+    return false;
+
+  if (fs::is_directory(local_p))
+    {
+      W(F("expected file '%s', but it is a directory.") % p());
+      return false;
+    }
+
+  hexenc<id> id;
+  calculate_ident(p, id, lua);
+  ident = file_id(id);
+
+  return true;
+}
+
+bool guess_binary(string const & s)
+{
+  // these do not occur in ASCII text files
+  // FIXME: this heuristic is (a) crap and (b) hardcoded. fix both these.
+  if (s.find_first_of('\x00') != string::npos ||
+      s.find_first_of("\x01\x02\x03\x04\x05\x06\x0e\x0f"
+                      "\x10\x11\x12\x13\x14\x15\x16\x17\x18"
+                      "\x19\x1a\x1c\x1d\x1e\x1f") != string::npos)
+    return true;
+  return false;
+}
+
 void 
 delete_file(local_path const & p) 
 { 
@@ -370,11 +402,13 @@ read_data_impl(fs::path const & p,
   
   ifstream file(p.string().c_str(),
                 ios_base::in | ios_base::binary);
-  string in;
   if (!file)
     throw oops(string("cannot open file ") + p.string() + " for reading");
-  CryptoPP::FileSource f(file, true, new CryptoPP::StringSink(in));
-  dat = in;
+  Botan::Pipe pipe;
+  pipe.start_msg();
+  file >> pipe;
+  pipe.end_msg();
+  dat = pipe.read_all_as_string();
 }
 
 // This function can only be called once per run.
@@ -384,9 +418,11 @@ read_data_stdin(data & dat)
   static bool have_consumed_stdin = false;
   N(!have_consumed_stdin, F("Cannot read standard input multiple times"));
   have_consumed_stdin = true;
-  string in;
-  CryptoPP::FileSource f(cin, true, new CryptoPP::StringSink(in));
-  dat = in;
+  Botan::Pipe pipe;
+  pipe.start_msg();
+  cin >> pipe;
+  pipe.end_msg();
+  dat = pipe.read_all_as_string();
 }
 
 void 
@@ -505,16 +541,15 @@ write_data_impl(fs::path const & p,
                   ios_base::out | ios_base::trunc | ios_base::binary);
     if (!file)
       throw oops(string("cannot open file ") + tmp.string() + " for writing");    
-    CryptoPP::StringSource s(dat(), true, new CryptoPP::FileSink(file));
+    Botan::Pipe pipe(new Botan::DataSink_Stream(file));
+    pipe.process_msg(dat());
     // data.tmp closes
   }
 
-  // god forgive my portability sins
   if (fs::exists(p))
-    N(unlink(p.string().c_str()) == 0,
-      F("unlinking %s failed") % p.string());
-  N(rename(tmp.string().c_str(), p.string().c_str()) == 0,
-    F("rename of %s to %s failed") % tmp.string() % p.string());
+    N(fs::remove(p),
+      F("removing %s failed") % p.string());
+  fs::rename(tmp, p);
 }
 
 void 

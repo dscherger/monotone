@@ -7,6 +7,7 @@
 // see the file COPYING for details
 
 #include <unistd.h>
+#include <string>
 #include "numeric_vocab.hh"
 
 namespace constants
@@ -14,6 +15,9 @@ namespace constants
 
   // this file contains magic constants which you could, in theory, tweak.
   // probably best not to tweak them though.
+
+  // block size in bytes for "automate stdio" output
+  extern size_t const automate_stdio_size;
 
   // number of bits in an RSA key we use
   extern size_t const keylen; 
@@ -29,7 +33,7 @@ namespace constants
 
   // number of seconds in window, in which to consider CVS commits equivalent
   // if they have otherwise compatible contents (author, changelog)
-  extern size_t const cvs_window; 
+  extern time_t const cvs_window; 
 
   // number of bytes in a password buffer. further bytes will be dropped.
   extern size_t const maxpasswd;
@@ -47,6 +51,9 @@ namespace constants
   // size of a line of text in the log buffer, beyond which log lines will be
   // truncated.
   extern size_t const log_line_sz;
+
+  // assumed width of the terminal, when we can't query for it directly
+  extern size_t const default_terminal_width;
 
   // all the ASCII characters (bytes) which are legal in a packet
   extern char const * const legal_packet_bytes;
@@ -116,6 +123,18 @@ namespace constants
 
   // number of seconds a connection can be idle before it's dropped
   extern size_t const netsync_timeout_seconds;
+
+  // netsync HMAC key length
+  extern size_t const netsync_session_key_length_in_bytes;
+
+  // netsync HMAC value length
+  extern size_t const netsync_hmac_value_length_in_bytes;
+
+  // how long a sha1 digest should be
+  extern size_t const sha1_digest_length;
+
+  // netsync session key default initializer
+  extern std::string const & netsync_key_initializer;
 
 }
 

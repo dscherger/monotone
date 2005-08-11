@@ -16,12 +16,9 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/tokenizer.hpp>
 
-#include "cryptopp/filters.h"
-#include "cryptopp/files.h"
-#include "cryptopp/sha.h"
-#include "cryptopp/hex.h"
-#include "cryptopp/base64.h"
-#include "cryptopp/gzip.h"
+#include "botan/botan.h"
+#include "botan/gzip.h"
+#include "botan/sha160.h"
 
 #include "idna/idna.h"
 #include "idna/stringprep.h"
@@ -67,20 +64,19 @@ using namespace std;
 template<typename XFM> string xform(string const & in)
 {
   string out;
-  out.reserve(in.size() * 2);
-  CryptoPP::StringSource 
-    str(in, true, 
-        new XFM(new CryptoPP::StringSink(out)));
+  Botan::Pipe pipe(new XFM());
+  pipe.process_msg(in);
+  out = pipe.read_all_as_string();
   return out;
 }
 
 // specialize it
-template string xform<CryptoPP::Base64Encoder>(string const &);
-template string xform<CryptoPP::Base64Decoder>(string const &);
-template string xform<CryptoPP::HexEncoder>(string const &);
-template string xform<CryptoPP::HexDecoder>(string const &);
-template string xform<CryptoPP::Gzip>(string const &);
-template string xform<CryptoPP::Gunzip>(string const &);
+template string xform<Botan::Base64_Encoder>(string const &);
+template string xform<Botan::Base64_Decoder>(string const &);
+template string xform<Botan::Hex_Encoder>(string const &);
+template string xform<Botan::Hex_Decoder>(string const &);
+template string xform<Botan::Gzip_Compression>(string const &);
+template string xform<Botan::Gzip_Decompression>(string const &);
 
 // for use in hexenc encoding
 
@@ -157,9 +153,38 @@ uppercase(string const & in)
   return n;
 }
 
+template <typename T>
+void pack(T const & in, base64< gzip<T> > & out)
+{
+  string tmp;
+  tmp.reserve(in().size()); // FIXME: do some benchmarking and make this a constant::
+
+  Botan::Pipe pipe(new Botan::Gzip_Compression(), new Botan::Base64_Encoder);
+  pipe.process_msg(in());
+  tmp = pipe.read_all_as_string();
+  out = tmp;
+}
+
+template <typename T>
+void unpack(base64< gzip<T> > const & in, T & out)
+{
+  string tmp;
+  tmp.reserve(in().size()); // FIXME: do some benchmarking and make this a constant::
+
+  Botan::Pipe pipe(new Botan::Base64_Decoder(), new Botan::Gzip_Decompression());
+  pipe.process_msg(in());
+  tmp = pipe.read_all_as_string();
+
+  out = tmp;
+}
+
+// specialise them
+template void pack<data>(data const &, base64< gzip<data> > &);
+template void pack<delta>(delta const &, base64< gzip<delta> > &);
+template void unpack<data>(base64< gzip<data> > const &, data &);
+template void unpack<delta>(base64< gzip<delta> > const &, delta &);
 
 // diffing and patching
-
 
 void 
 diff(data const & olddata,
@@ -197,13 +222,10 @@ void
 calculate_ident(data const & dat,
                 hexenc<id> & ident)
 {
-  CryptoPP::SHA hash;
-  hash.Update(reinterpret_cast<byte const *>(dat().c_str()), 
-              static_cast<unsigned int>(dat().size()));
-  char digest[CryptoPP::SHA::DIGESTSIZE];
-  hash.Final(reinterpret_cast<byte *>(digest));
-  string out(digest, CryptoPP::SHA::DIGESTSIZE);
-  id ident_decoded(out);
+  Botan::Pipe p(new Botan::Hash_Filter("SHA-1"));
+  p.process_msg(dat());
+
+  id ident_decoded(p.read_all_as_string());
   encode_hexenc(ident_decoded, ident);  
 }
 
@@ -231,7 +253,6 @@ void
 calculate_ident(manifest_map const & m,
                 manifest_id & ident)
 {
-  CryptoPP::SHA hash;
   size_t sz = 0;
   static size_t bufsz = 0;
   static char *buf = NULL;
@@ -265,13 +286,10 @@ calculate_ident(manifest_map const & m,
       *c++ = '\n'; 
     }
   
-  hash.Update(reinterpret_cast<byte const *>(buf), 
-              static_cast<unsigned int>(sz));
+  Botan::Pipe p(new Botan::Hash_Filter("SHA-1"));
+  p.process_msg(reinterpret_cast<Botan::byte const*>(buf), sz);
 
-  char digest[CryptoPP::SHA::DIGESTSIZE];
-  hash.Final(reinterpret_cast<byte *>(digest));
-  string out(digest, CryptoPP::SHA::DIGESTSIZE);
-  id ident_decoded(out);
+  id ident_decoded(p.read_all_as_string());
   hexenc<id> raw_ident;
   encode_hexenc(ident_decoded, raw_ident);  
   ident = manifest_id(raw_ident);    
@@ -331,17 +349,13 @@ calculate_ident(file_path const & file,
       // no conversions necessary, use streaming form
       // still have to localize the filename
       fs::path localized_file = localized(file);
-      // crypto++'s FileSource will simply treat directories as empty files,
-      // so we'd better check ourselves.
+      // Best to be safe and check it isn't a dir.
       I(fs::exists(localized_file) && !fs::is_directory(localized_file));
-      CryptoPP::SHA hash;
-      unsigned int const sz = 2 * CryptoPP::SHA::DIGESTSIZE;
-      char buffer[sz];
-      CryptoPP::FileSource f(localized_file.native_file_string().c_str(),
-                             true, new CryptoPP::HashFilter
-                             (hash, new CryptoPP::HexEncoder
-                              (new CryptoPP::ArraySink(reinterpret_cast<byte *>(buffer), sz))));
-      ident = lowercase(string(buffer, sz));
+      Botan::Pipe p(new Botan::Hash_Filter("SHA-1"), new Botan::Hex_Encoder());
+      Botan::DataSource_Stream infile(localized_file.native_file_string());
+      p.process_msg(infile);
+
+      ident = lowercase(p.read_all_as_string());
     }
 }
 
@@ -395,8 +409,6 @@ void split_into_lines(std::string const & in,
     {
       out.push_back(in);
     }
-  if (out.size() == 0)
-    out.push_back("");
 }
 
 
@@ -482,8 +494,8 @@ trim_ws(string const & s)
 string 
 canonical_base64(string const & s)
 {
-  return xform<CryptoPP::Base64Encoder>
-    (xform<CryptoPP::Base64Decoder>(s));
+  return xform<Botan::Base64_Encoder>
+    (xform<Botan::Base64_Decoder>(s));
 }
 
 
@@ -839,140 +851,6 @@ line_end_convert(string const & linesep, string const & src, string & dst)
     dst += linesep_str;
 }
 
-// glob_to_regexp converts a sh file glob to a regexp.  The regexp should
-// be usable by the Boost regexp library.
-//
-// Pattern tranformation:
-//
-// - Any character except those described below are copied as they are.
-// - The backslash (\) escapes the following character.  The escaping
-//   backslash is copied to the regexp along with the following character.
-// - * is transformed to .* in the regexp.
-// - ? is transformed to . in the regexp.
-// - { is transformed to ( in the regexp, unless within [ and ].
-// - } is transformed to ) in the regexp, unless within [ and ].
-// - , is transformed to | in the regexp, if within { and } and not
-//    within [ and ].
-// - ^ is escaped unless it comes directly after an unescaped [.
-// - ! is transformed to ^ in the regexp if it comes directly after an
-//   unescaped [.
-// - ] directly following an unescaped [ is escaped.
-string glob_to_regexp(const string & glob)
-{
-  int in_braces = 0;            // counter for levels if {}
-  bool in_brackets = false;     // flags if we're inside a [], which
-                                // has higher precedence than {}.
-                                // Also, [ is accepted inside [] unescaped.
-  bool this_was_opening_bracket = false;
-  string tmp;
-
-  tmp.reserve(glob.size() * 2);
-
-#ifdef BUILD_UNIT_TESTS
-  cerr << "DEBUG[glob_to_regexp]: input = \"" << glob << "\"" << endl;
-#endif
-
-  for (string::const_iterator i = glob.begin(); i != glob.end(); ++i)
-    {
-      char c = *i;
-      bool last_was_opening_bracket = this_was_opening_bracket;
-      this_was_opening_bracket = false;
-
-      // Special case ^ and ! at the beginning of a [] expression.
-      if (in_brackets && last_was_opening_bracket
-          && (c == '!' || c == '^'))
-        {
-          tmp += '^';
-          if (++i == glob.end())
-            break;
-          c = *i;
-        }
-
-      if (c == '\\')
-        {
-          tmp += c;
-          if (++i == glob.end())
-            break;
-          tmp += *i;
-        }
-      else if (in_brackets)
-        {
-          switch(c)
-            {
-            case ']':
-              if (!last_was_opening_bracket)
-                {
-                  in_brackets = false;
-                  tmp += c;
-                  break;
-                }
-              // Trickling through to the standard character conversion,
-              // because ] as the first character of a set is regarded as
-              // a normal character.
-            default:
-              if (!(isalnum(c) || c == '_'))
-                {
-                  tmp += '\\';
-                }
-              tmp += c;
-              break;
-            }
-        }
-      else
-        {
-          switch(c)
-            {
-            case '*':
-              tmp += ".*";
-              break;
-            case '?':
-              tmp += '.';
-              break;
-            case '{':
-              in_braces++;
-              tmp += '(';
-              break;
-            case '}':
-              N(in_braces != 0,
-                F("trying to end a brace expression in a glob when none is started"));
-              tmp += ')';
-              in_braces--;
-              break;
-            case '[':
-              in_brackets = true;
-              this_was_opening_bracket = true;
-              tmp += c;
-              break;
-            case ',':
-              if (in_braces > 0)
-                {
-                  tmp += '|';
-                  break;
-                }
-              // Trickling through to default: here, since a comma outside of
-              // brace notation is just a normal character.
-            default:
-              if (!(isalnum(c) || c == '_'))
-                {
-                  tmp += '\\';
-                }
-              tmp += c;
-              break;
-            }
-        }
-    }
-
-  N(!in_brackets,
-    F("run-away bracket expression in glob"));
-  N(in_braces == 0,
-    F("run-away brace expression in glob"));
-
-#ifdef BUILD_UNIT_TESTS
-  cerr << "DEBUG[glob_to_regexp]: output = \"" << tmp << "\"" << endl;
-#endif
-
-  return tmp;
-}
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
@@ -1252,15 +1130,6 @@ static void encode_test()
   check_idna_encoding();
 }
 
-static void glob_to_regexp_test()
-{
-  BOOST_CHECK(glob_to_regexp("abc,v") == "abc\\,v");
-  BOOST_CHECK(glob_to_regexp("foo[12m,]") == "foo[12m\\,]");
-  // A full fledged, use all damn features test...
-  BOOST_CHECK(glob_to_regexp("foo.{bar*,cookie?{haha,hehe[^\\123!,]}}[!]a^b]")
-              == "foo\\.(bar.*|cookie.(haha|hehe[^\\123\\!\\,]))[^\\]a\\^b]");
-}
-
 void 
 add_transform_tests(test_suite * suite)
 {
@@ -1272,7 +1141,6 @@ add_transform_tests(test_suite * suite)
   suite->add(BOOST_TEST_CASE(&join_lines_test));
   suite->add(BOOST_TEST_CASE(&strip_ws_test));
   suite->add(BOOST_TEST_CASE(&encode_test));
-  suite->add(BOOST_TEST_CASE(&glob_to_regexp_test));
 }
 
 #endif // BUILD_UNIT_TESTS

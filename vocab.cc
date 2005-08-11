@@ -102,6 +102,42 @@ verify(rsa_keypair_id & val)
   val.ok = true;
 }
 
+inline void
+verify(netsync_session_key & val)
+{
+  if (val.ok)
+    return;
+
+  if (val().size() == 0)
+    {
+      val.s.append(constants::netsync_session_key_length_in_bytes, 0);
+      return;
+    }
+
+  N(val().size() == constants::netsync_session_key_length_in_bytes,
+    F("Invalid key length of %d bytes") % val().length());
+
+  val.ok = true;
+}
+
+inline void
+verify(netsync_hmac_value & val)
+{
+  if (val.ok)
+    return;
+
+  if (val().size() == 0)
+    {
+      val.s.append(constants::netsync_hmac_value_length_in_bytes, 0);
+      return;
+    }
+
+  N(val().size() == constants::netsync_hmac_value_length_in_bytes,
+    F("Invalid hmac length of %d bytes") % val().length());
+
+  val.ok = true;
+}
+
 
 inline void 
 verify(local_path & val)
@@ -233,7 +269,10 @@ ty const & ty::operator=(ty const & other)   \
                                              \
 ostream & operator<<(ostream & o,            \
                      ty const & a)           \
-{ return (o << a.s); }
+{ return (o << a.s); }                       \
+                                             \
+void dump(ty const & obj, std::string & out) \
+{ out = obj(); }
 
 #define ATOMIC_NOVERIFY(ty) ATOMIC(ty)
 
@@ -262,7 +301,11 @@ enc<INNER>::operator=(enc<INNER> const & other)          \
                                                          \
 template <typename INNER>                                \
 ostream & operator<<(ostream & o, enc<INNER> const & e)  \
-{ return (o << e.i); }
+{ return (o << e.i); }                                   \
+                                                         \
+template <typename INNER>                                \
+void dump(enc<INNER> const & obj, std::string & out)     \
+{ out = obj(); }
 
 
 #define DECORATE(dec)                                    \
@@ -284,8 +327,11 @@ dec<INNER>::operator=(dec<INNER> const & other)          \
                                                          \
 template <typename INNER>                                \
 ostream & operator<<(ostream & o, dec<INNER> const & d)  \
-{ return (o << d.i); }
-
+{ return (o << d.i); }                                   \
+                                                         \
+template <typename INNER>                                \
+void dump(dec<INNER> const & obj, std::string & out)     \
+{ dump(obj.inner(), out); }
 
 #define EXTERN 
 

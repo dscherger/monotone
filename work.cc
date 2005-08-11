@@ -16,7 +16,6 @@
 
 // working copy / book-keeping file code
 
-using namespace boost;
 using namespace std;
 
 // attribute map file
@@ -214,8 +213,8 @@ build_deletions(vector<file_path> const & paths,
 
       if (dir_p) 
         {
-          W(F("SORRY -- 'drop somedir' is not going to work.\n"));
-          W(F("Revert and try 'find somedir -type f | xargs monotone drop'\n"));
+          E(false, F("sorry -- 'drop <directory>' is currently broken.\n"
+                     "try 'find %s -type f | monotone drop -@-'\n") % (*i));
           pr_new.deleted_dirs.insert(*i);
         }
       else 
@@ -464,6 +463,15 @@ read_user_log(data & dat)
 }
 
 void
+write_user_log(data const & dat)
+{
+  local_path ul_path;
+  get_user_log_path(ul_path);
+
+  write_data(ul_path, dat);
+}
+
+void
 blank_user_log()
 {
   data empty;
@@ -664,6 +672,8 @@ apply_attributes(app_state & app, attr_map const & attr)
 string const encoding_attribute("encoding");
 string const binary_encoding("binary");
 string const default_encoding("default");
+
+string const manual_merge_attribute("manual_merge");
 
 static bool find_in_attr_map(attr_map const & attr,
                              file_path const & file,

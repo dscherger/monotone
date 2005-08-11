@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT(monotone, 0.19, monotone-devel@nongnu.org)
+AC_INIT(monotone, 0.22, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE(1.7.1)
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_TESTDIR([tests])
@@ -78,6 +78,40 @@ AC_CHECK_FUNC([pthread_mutex_lock], [],
 # This is technically incorrect if Boost is for some reason compiled
 # without threads on a system that does provide threads; we'll end up
 # compiling monotone with thread support for no reason.
+
+AC_DEFUN([BOOST_VERSION_CHECK],
+[AC_CACHE_CHECK([boost version 1.32 or newer], ac_cv_version_boost,
+[
+  AC_TRY_RUN(
+  [#include <boost/version.hpp>
+  int main() { return (BOOST_VERSION < 103200); }],
+  ac_cv_version_boost=yes,
+  ac_cv_version_boost=no)
+])
+  if test $ac_cv_version_boost = no; then
+	AC_MSG_ERROR([boost 1.32 or newer required])
+  fi
+])
+BOOST_VERSION_CHECK
+
+# Boost 1.32.0 has some g++ 4.0 incompatibilities.  Fortunately, it's
+# only in deprecated code that we don't use, and that is removed in
+# Boost CVS (and therefore presumably in 1.33).  So use a super-ugly
+# hack to get around it.
+AC_DEFUN([BOOST_FIX_VERSION],
+[AC_CACHE_CHECK([if boost requires extra flags to compile], ac_fix_boost,
+[
+  AC_TRY_RUN(
+  [#include <boost/version.hpp>
+  int main() { return (BOOST_VERSION != 103200); }],
+  ac_fix_boost=yes,
+  ac_fix_boost=no)
+])
+  if test $ac_fix_boost = yes; then
+    CXXFLAGS="$CXXFLAGS -DBOOST_REGEX_V4_CHAR_REGEX_TRAITS_HPP -DBOOST_REGEX_COMPILE_HPP"
+  fi
+])
+BOOST_FIX_VERSION
 
 # Boost libraries have a string suffix that identifies the compiler
 # they were built with, among other details.  For example, it can be
@@ -250,51 +284,7 @@ AH_TEMPLATE([USE_DLOPEN], [For LUA: use dlopen for loadlib])
 AC_SEARCH_LIBS([inet_aton], [resolv])
 AC_SEARCH_LIBS([accept], [socket])
 AC_SEARCH_LIBS([inet_ntoa], [nsl])
-
-
-##########
-# Checks for external lua library, revert to bundled version if not found or
-# user gives --with-bundled-lua.
-AC_ARG_WITH([bundled-lua],
-   AS_HELP_STRING(
-      [--with-bundled-lua],
-      [Force use of bundled version of lua (default=yes)]
-   ), [bundled_lua="$withval"], [bundled_lua=yes]
-)
-
-if test "x$bundled_lua" = "xno" ; then
-   bundled_lua=yes
-   AC_CHECK_HEADERS([lua.h lualib.h],
-      AC_CHECK_LIB([lua], [lua_open],
-         AC_CHECK_LIB([lualib], [luaopen_base],
-            [LIBS="$LIBS -llua -llualib" ; bundled_lua=no], , [-llua]
-         )
-      )
-   )
-fi
-
-AM_CONDITIONAL(BUNDLED_LUA, test "x$bundled_lua" != "xno")
-
-##########
-# Checks for external sqlite library, revert to bundled version if not found or
-# user gives --with-bundled-sqlite.
-AC_ARG_WITH([bundled-sqlite],
-   AS_HELP_STRING(
-      [--with-bundled-sqlite],
-      [Force use of bundled version of sqlite (default=yes)]
-   ), [bundled_sqlite="$withval"], [bundled_sqlite=yes]
-)
-
-if test "x$bundled_sqlite" = "xno" ; then
-   bundled_sqlite=yes
-   AC_CHECK_HEADER([sqlite3.h],
-      AC_CHECK_LIB([sqlite3], [sqlite3_open],
-         [LIBS="$LIBS -lsqlite3" ; bundled_sqlite=no]
-      )
-   )
-fi
-
-AM_CONDITIONAL(BUNDLED_SQLITE, test "x$bundled_sqlite" != "xno")
+AC_CHECK_LIB([z], [deflate], , AC_MSG_FAILURE([zlib is required]))
 
 # Now let the user specify whether he wants large file support or not in
 # sqlite.
@@ -315,9 +305,8 @@ fi
 AC_SUBST(SQLITE_CPPFLAGS)
 
 ##########
-# Checks for bundled popt.  We use it unconditionally, because the external
-# one has serious bugs that we can't live with.  Maybe some time in the
-# future...
+# We use our bundled popt unconditionally, because the external one has
+# serious bugs that we can't live with.  Maybe some time in the future...
 # The following was simply taken from the configure.in that comes with popt.
 #AC_LANG_PUSH(C)
 AC_CHECK_HEADERS([alloca.h float.h libintl.h mcheck.h])

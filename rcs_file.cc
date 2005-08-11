@@ -43,16 +43,16 @@ file_handle
     {
       struct stat st;
       if (stat(fn.c_str(), &st) == -1)
-	throw oops("stat of " + filename + " failed");
+        throw oops("stat of " + filename + " failed");
       length = st.st_size;
       fd = open(filename.c_str(), O_RDONLY);
       if (fd == -1)
-	throw oops("open of " + filename + " failed");
+        throw oops("open of " + filename + " failed");
     }
   ~file_handle() 
     {
       if (close(fd) == -1)
-	throw oops("close of " + filename + " failed");
+        throw oops("close of " + filename + " failed");
     }
 };
 struct file_source
@@ -81,8 +81,8 @@ struct file_source
     return good();
   }
   file_source(std::string const & fn, 
-	      int f, 
-	      off_t len) : 
+              int f, 
+              off_t len) : 
     filename(fn),
     fd(f),
     length(len),
@@ -113,20 +113,20 @@ file_handle
     {
       struct stat st;
       if (stat(fn.c_str(), &st) == -1)
-	throw oops("stat of " + filename + " failed");
+        throw oops("stat of " + filename + " failed");
       length = st.st_size;
       fd = CreateFile(fn.c_str(),
-		      GENERIC_READ, 
-		      FILE_SHARE_READ,
-		      NULL,
-		      OPEN_EXISTING, 0, NULL);
+                      GENERIC_READ, 
+                      FILE_SHARE_READ,
+                      NULL,
+                      OPEN_EXISTING, 0, NULL);
       if (fd == NULL)
-	throw oops("open of " + filename + " failed");
+        throw oops("open of " + filename + " failed");
     }
   ~file_handle() 
     {
       if (CloseHandle(fd)==0)
-	throw oops("close of " + filename + " failed");
+        throw oops("close of " + filename + " failed");
     }
 };
 
@@ -157,8 +157,8 @@ file_source
     return good();
   }
   file_source(std::string const & fn,
-	      HANDLE f,
-	      off_t len) :
+              HANDLE f,
+              off_t len) :
     filename(fn),
     fd(f),
     length(len),
@@ -196,9 +196,23 @@ typedef enum
   } 
 token_type;
 
+static inline void
+adv(char i, size_t & line, size_t & col)
+{
+  if (i == '\n')
+    {
+      col = 0;
+      ++line;
+    }
+  else
+    ++col;
+}
+
 static token_type 
 get_token(file_source & ist,
-	  std::string & str)
+          std::string & str,
+	  size_t & line, 
+	  size_t & col)
 {
   bool saw_idchar = false;
   int i = ist.peek();
@@ -209,9 +223,10 @@ get_token(file_source & ist,
   while (true)
     {
       if (i == EOF)
-	return TOK_NONE;
+        return TOK_NONE;
+      adv(i, line, col);
       if (!isspace(i))
-	break;
+        break;
       ist.get(c);
       i = ist.peek();
     }
@@ -220,43 +235,50 @@ get_token(file_source & ist,
     {
     case ';':
       ist.get(c); 
+      ++col;
       return TOK_SEMI; 
       break;
       
     case ':':
       ist.get(c);
+      ++col;
       return TOK_COLON;
       break;
 
     case '@':
       ist.get(c);
+      ++col;
       while (ist.get(c))
-	{
-	  if (c == '@')
+        {
+          if (c == '@')
+            {
+              if (ist.peek() == '@')
+                { ist.get(c); str += c; ++col; }
+              else
+                break;
+            }
+          else
 	    {
-	      if (ist.peek() == '@')
-		{ ist.get(c); str += c; }
-	      else
-		break;
+	      adv(i, line, col);
+	      str += c;
 	    }
-	  else
-	    str += c;
-	}
+        }
       return TOK_STRING;
       break;
 
     default:
       while (ist.good() 
-	     && i != ';' 
-	     && i != ':' 
-	     && !isspace(i))
-	{
-	  ist.get(c);
-	  if (! isdigit(c) && c != '.')
-	    saw_idchar = true;
-	  str += c;
-	  i = ist.peek();
-	}
+             && i != ';' 
+             && i != ':' 
+             && !isspace(i))
+        {
+          ist.get(c);
+	  ++col;
+          if (! isdigit(c) && c != '.')
+            saw_idchar = true;
+          str += c;
+          i = ist.peek();
+        }
       break;
     }
   
@@ -275,9 +297,11 @@ struct parser
   std::string token;
   token_type ttype;
 
+  size_t line, col;
+
   parser(file_source & s,
-	 rcs_file & r) 
-    : ist(s), r(r)
+         rcs_file & r) 
+    : ist(s), r(r), line(1), col(1)
   {}
   
   std::string tt2str(token_type tt)
@@ -285,24 +309,24 @@ struct parser
     switch (tt)
       {
       case TOK_STRING:
-	return "TOK_STRING";
+        return "TOK_STRING";
       case TOK_SYMBOL:
-	return "TOK_SYMBOL";
+        return "TOK_SYMBOL";
       case TOK_NUM:
-	return "TOK_NUM";
+        return "TOK_NUM";
       case TOK_SEMI:
-	return "TOK_SEMI";
+        return "TOK_SEMI";
       case TOK_COLON:
-	return "TOK_COLON";
+        return "TOK_COLON";
       case TOK_NONE:
-	return "TOK_NONE";
+        return "TOK_NONE";
       }
     return "TOK_UNKNOWN";
   }
 
   void advance()
   {
-    ttype = get_token(ist, token);
+    ttype = get_token(ist, token, line, col);
     // std::cerr << tt2str(ttype) << ": " << token << std::endl;
   }
 
@@ -316,12 +340,8 @@ struct parser
   void eat(token_type want)
   {
     if (ttype != want)
-      throw oops("parse failure: expecting " 
-			       + tt2str(want) 
-			       + " got "
-			       + tt2str(ttype)
-			       + " with value: "
-			       + token);
+      throw oops((F("parse failure %d:%d: expecting %s, got %s with value '%s'\n")
+		  % line % col % tt2str(want) % tt2str(ttype) % token).str());
     advance();
   }
 
@@ -339,24 +359,23 @@ struct parser
   { 
     std::string tmp;
     if (!symp(expected))
-      throw oops(std::string("parse failure: ")
-			       + "expecting word '" 
-			       + expected 
-			       + "'");
+      throw oops((F("parse failure %d:%d: expecting word '%s'\n")
+		  % line % col % expected).str());
     advance();
   }
 
   bool wordp()
   {
     return (ttype == TOK_STRING
-	    || ttype == TOK_SYMBOL
-	    || ttype == TOK_NUM
-	    || ttype == TOK_COLON);
+            || ttype == TOK_SYMBOL
+            || ttype == TOK_NUM
+            || ttype == TOK_COLON);
   }
   void word()
   { 
     if (!wordp())
-      throw oops("expecting word");
+      throw oops((F("parse failure %d:%d: expecting word\n")
+		  % line % col).str());
     advance();
   }
 
@@ -364,9 +383,9 @@ struct parser
   {
     while(symp() && !symp(terminator))
       {
-	sym();
-	while (wordp()) word();
-	semi();
+        sym();
+        while (wordp()) word();
+        semi();
       }
   }
 
@@ -376,11 +395,24 @@ struct parser
     if (symp("branch")) { sym(r.admin.branch); if (nump()) num(); semi(); }
     expect("access"); while(symp()) { sym(); } semi();
     expect("symbols"); 
-    while(symp()) 
+
+    // "man rcsfile" lies: there are real files in the wild which use
+    // num tokens as the key value in a symbols entry. for example
+    // "3.1:1.1.0.2" is a real sym:num specification, despite "3.1"
+    // being a num itself, not a sym.
+
+    while(symp() || nump()) 
       { 
-	std::string stmp, ntmp;
-	sym(stmp); colon(); num(ntmp); 
-	r.admin.symbols.insert(make_pair(ntmp, stmp));
+        std::string stmp, ntmp;
+	if (symp())
+	  {
+	    sym(stmp); colon(); num(ntmp); 
+	  }
+	else
+	  {
+	    num(stmp); colon(); num(ntmp); 
+	  }
+        r.admin.symbols.insert(make_pair(ntmp, stmp));
       } 
     semi();
     expect("locks"); while(symp()) { sym(); colon(); num(); } semi();
@@ -394,22 +426,22 @@ struct parser
   {    
     while (nump())
       {
-	rcs_delta d;
-	num(d.num);
-	expect("date"); num(d.date); semi();
-	expect("author"); sym(d.author); semi();
-	expect("state"); if (symp()) sym(d.state); semi();
-	expect("branches"); 
-	while(nump()) 
-	  { 
-	    std::string tmp; 
-	    num(tmp); 
-	    d.branches.push_back(tmp); 
-	  }
-	semi();
-	expect("next"); if (nump()) num(d.next); semi();
-	parse_newphrases("desc");
-	r.push_delta(d);
+        rcs_delta d;
+        num(d.num);
+        expect("date"); num(d.date); semi();
+        expect("author"); sym(d.author); semi();
+        expect("state"); if (symp()) sym(d.state); semi();
+        expect("branches"); 
+        while(nump()) 
+          { 
+            std::string tmp; 
+            num(tmp); 
+            d.branches.push_back(tmp); 
+          }
+        semi();
+        expect("next"); if (nump()) num(d.next); semi();
+        parse_newphrases("desc");
+        r.push_delta(d);
       }
   }
 
@@ -422,12 +454,12 @@ struct parser
   {
     while(nump())
       {
-	rcs_deltatext d;
-	num(d.num);
-	expect("log"); str(d.log); 
-	parse_newphrases("text");
-	expect("text"); str(d.text);
-	r.push_deltatext(d);
+        rcs_deltatext d;
+        num(d.num);
+        expect("log"); str(d.log); 
+        parse_newphrases("text");
+        expect("text"); str(d.text);
+        r.push_deltatext(d);
       }
   }
 

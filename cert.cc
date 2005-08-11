@@ -27,7 +27,10 @@
 #include <vector>
 
 using namespace std;
-using namespace boost;
+using boost::shared_ptr;
+using boost::get;
+using boost::tuple;
+using boost::lexical_cast;
 
 // FIXME: the bogus-cert family of functions is ridiculous
 // and needs to be replaced, or at least factored.
@@ -86,7 +89,7 @@ erase_bogus_certs(vector< manifest<cert> > & certs,
   vector< manifest<cert> > tmp_certs;
 
   // sorry, this is a crazy data structure
-  typedef tuple< hexenc<id>, cert_name, base64<cert_value> > trust_key;
+  typedef boost::tuple< hexenc<id>, cert_name, base64<cert_value> > trust_key;
   typedef map< trust_key, pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
   trust_map trust;
 
@@ -391,7 +394,7 @@ calculate_cert(app_state & app, cert & t)
 
   load_priv_key(app, t.key, priv);
 
-  make_signature(app.lua, t.key, priv, signed_text, t.sig);
+  make_signature(app, t.key, priv, signed_text, t.sig);
 }
 
 cert_status 
@@ -419,7 +422,7 @@ check_cert(app_state & app, cert const & t)
 
   string signed_text;
   cert_signable_text(t, signed_text);
-  if (check_signature(app.lua, t.key, pub, signed_text, t.sig))
+  if (check_signature(app, t.key, pub, signed_text, t.sig))
     return cert_ok;
   else
     return cert_bad;

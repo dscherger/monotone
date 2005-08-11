@@ -27,7 +27,6 @@
 // and i/o functions on them. a manifest specifies exactly which versions
 // of each file reside at which path location in a given tree.
 
-using namespace boost;
 using namespace std;
 
 // building manifest_maps
@@ -84,12 +83,11 @@ inodeprint_unchanged(inodeprint_map const & ipm, file_path const & path)
 }
 
 void 
-classify_paths(app_state & app,
-               path_set const & paths,
-               manifest_map const & m_old, 
-               path_set & missing,
-               path_set & changed,
-               path_set & unchanged)
+classify_manifest_paths(app_state & app,
+                        manifest_map const & man, 
+                        path_set & missing,
+                        path_set & changed,
+                        path_set & unchanged)
 {
   inodeprint_map ipm;
 
@@ -103,48 +101,41 @@ classify_paths(app_state & app,
   // this code is speed critical, hence the use of inode fingerprints so be
   // careful when making changes in here and preferably do some timing tests
 
-  for (path_set::const_iterator i = paths.begin(); i != paths.end(); ++i)
+  for (manifest_map::const_iterator i = man.begin(); i != man.end(); ++i)
     {
-      if (app.restriction_includes(*i))
+      if (app.restriction_includes(i->first))
         {
           // compute the current sha1 id for included files
           // we might be able to avoid it, if we have an inode fingerprint...
-          if (inodeprint_unchanged(ipm, *i))
+          if (inodeprint_unchanged(ipm, i->first))
             {
               // the inode fingerprint hasn't changed, so we assume the file
               // hasn't either.
-              manifest_map::const_iterator k = m_old.find(*i);
-              I(k != m_old.end());
-              unchanged.insert(*i);
+              manifest_map::const_iterator k = man.find(i->first);
+              I(k != man.end());
+              unchanged.insert(i->first);
               continue;
             }
 
           // ...ah, well, no good fingerprint, just check directly.
-          if (file_exists(*i))
+          file_id ident;
+          if (ident_existing_file(i->first, ident, app.lua))
             {
-              hexenc<id> ident;
-              calculate_ident(*i, ident, app.lua);
-              manifest_map::const_iterator k = m_old.find(*i); 
-
-              if (k != m_old.end())
-                {
-                  if (ident == k->second.inner())
-                    unchanged.insert(*i);
-                  else
-                    changed.insert(*i);
-                }
-
-              // if the path was not found in the old manifest it must have
-              // been added or renamed ad it's ignored here
-                
+              if (ident == i->second)
+                unchanged.insert(i->first);
+              else
+                changed.insert(i->first);
             }
           else
-            missing.insert(*i);
+            {
+              missing.insert(i->first);
+            }
+
         }
       else
         {
           // changes to excluded files are ignored
-          unchanged.insert(*i);
+          unchanged.insert(i->first);
         }
     }
 }
@@ -187,11 +178,10 @@ build_restricted_manifest_map(path_set const & paths,
             }
 
           // ...ah, well, no good fingerprint, just check directly.
-          if (file_exists(*i))
+          file_id ident;
+          if (ident_existing_file(*i, ident, app.lua))
             {
-              hexenc<id> ident;
-              calculate_ident(*i, ident, app.lua);
-              m_new.insert(manifest_entry(*i, file_id(ident)));
+              m_new.insert(manifest_entry(*i, ident));
             }
           else
             {
@@ -208,7 +198,11 @@ build_restricted_manifest_map(path_set const & paths,
     }
 
   N(missing_files == 0, 
-    F("%d missing files\n") % missing_files);
+    F("%d missing files\n"
+      "to restore consistency, on each missing file run either\n"
+      "'monotone drop FILE' to remove it permanently, or\n"
+      "'monotone revert FILE' to restore it\n")
+    % missing_files);
 
 }
 
@@ -281,4 +275,10 @@ write_manifest_map(manifest_map const & man,
   dat = sstr.str();
 }
 
-
+void
+dump(manifest_map const & man, std::string & out)
+{
+  data dat;
+  write_manifest_map(man, dat);
+  out = dat();
+}

@@ -25,19 +25,21 @@ namespace selectors
       sel_tag,
       sel_ident,
       sel_cert,
+      sel_earlier,
+      sel_later,
       sel_unknown
     }
   selector_type;
 
   void
   complete_selector(std::string const & orig_sel,
-		    std::vector<std::pair<selector_type, std::string> > const & limit,
-		    selector_type & type,
-		    std::set<std::string> & completions,
-		    app_state & app);
+                    std::vector<std::pair<selector_type, std::string> > const & limit,
+                    selector_type & type,
+                    std::set<std::string> & completions,
+                    app_state & app);
   std::vector<std::pair<selector_type, std::string> >
   parse_selector(std::string const & str,
-		 app_state & app);
+                 app_state & app);
 
 }; // namespace selectors
 

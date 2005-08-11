@@ -15,6 +15,9 @@
 namespace constants
 {
 
+  // block size in bytes for "automate stdio" output
+  size_t const automate_stdio_size = 1024;
+
   // number of bits in an RSA key we use
   size_t const keylen = 1024; 
 
@@ -29,20 +32,25 @@ namespace constants
 
   // number of seconds in window, in which to consider CVS commits equivalent
   // if they have otherwise compatible contents (author, changelog)
-  size_t const cvs_window = 3600 * 3; 
+  time_t const cvs_window = 60 * 5; 
 
   // number of bytes in a password buffer. further bytes will be dropped.
   size_t const maxpasswd = 0xfff;
 
   // number of bytes to use in buffers, for buffered i/o operations
-  size_t const bufsz = 0xfff;
+  size_t const bufsz = 0x3ffff;
 
   // size of a line of database traffic logging, beyond which lines will be
   // truncated.
   size_t const db_log_line_sz = 70;
 
-  // size in bytes of the database xdelta version reconstruction cache
-  size_t const db_version_cache_sz = 1 << 20;
+  size_t const default_terminal_width = 72;
+
+  // size in bytes of the database xdelta version reconstruction cache.
+  // the value of 7 MB was determined as the optimal point after timing
+  // various values with a pull of the monotone repository - it could
+  // be tweaked further.
+  size_t const db_version_cache_sz = 7 * (1 << 20);
 
   // size of a line of text in the log buffer, beyond which log lines will be
   // truncated.
@@ -95,6 +103,9 @@ namespace constants
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   "0123456789"   
   "-"
+  // other non-shell, non-selector metacharacters allowed in (unquoted) local
+  // parts by RFC2821/RFC2822.  The full list is !#$%&'*+-/=?^_`|{}~.
+  "+_."
   // label and component separators
   ".@"
   ;
@@ -142,7 +153,7 @@ namespace constants
   BOOST_STATIC_ASSERT(merkle_bitmap_length_in_bits > 0);
   BOOST_STATIC_ASSERT((merkle_bitmap_length_in_bits % 8) == 0);
 
-  u8 const netcmd_current_protocol_version = 4;
+  u8 const netcmd_current_protocol_version = 5;
   size_t const netcmd_minsz = (1     // version
                                + 1   // cmd code
                                + 1   // smallest uleb possible
@@ -157,5 +168,11 @@ namespace constants
   size_t const netsync_default_port = 5253;
   size_t const netsync_connection_limit = 1024; 
   size_t const netsync_timeout_seconds = 21600; // 6 hours
+  size_t const netsync_session_key_length_in_bytes = 20;     // 160 bits
+  size_t const netsync_hmac_value_length_in_bytes = 20;      // 160 bits
+
+  size_t const sha1_digest_length = 20; // 160 bits
+
+  std::string const & netsync_key_initializer = std::string(netsync_session_key_length_in_bytes, 0);
 
 }
