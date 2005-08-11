@@ -1,3 +1,8 @@
+2005-08-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh} (tree merger): Teach it about file suturing.
+		(Needed for tracking the monotone db.)
+
 2005-08-03  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* pcdv.{cc,hh}: Work on merge functions for trees.

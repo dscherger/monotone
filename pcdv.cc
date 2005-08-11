@@ -873,6 +873,41 @@ item_status::merge(item_status const & other) const
   return new_version(newleaves);
 }
 
+item_status
+item_status::suture(item_status const & other) const
+{
+  I(versions != other.versions);
+  I(is_dir == other.is_dir);
+  for (item_data::iterator o = other.versions->begin();
+       o != other.versions->end(); ++o)
+    {
+      item_data::iterator m = versions->find(o->first);
+      if (m == versions->end())
+        versions->insert(*o);
+      else
+        {
+          I(m->second.first == o->second.first);
+          std::set<revid> s;
+          std::vector<revid> const & ov(o->second.second);
+          std::vector<revid> & mv(m->second.second);
+          for (std::vector<revid>::const_iterator j = mv.begin();
+               j != mv.end(); ++j)
+            s.insert(*j);
+          for (std::vector<revid>::const_iterator j = ov.begin();
+               j != ov.end(); ++j)
+            {
+              unsigned int p = s.size();
+              s.insert(*j);
+              if (p != s.size())
+                mv.push_back(*j);
+            }
+        }
+    }
+  item_status myother(other);
+  myother.versions = versions;
+  return merge(myother);
+}
+
 std::set<item_status::item_state>
 item_status::current_names() const
 {
@@ -1115,7 +1150,21 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
             bool mvfile = (x->renamed_files.find(j->second)
                            != x->renamed_files.end());
             if (!deldir && !delfile && !mvdir && !mvfile)
-              outmap.insert(make_pair(myid, j->first));
+              {
+                std::pair<std::map<fpid, item_id>::iterator, bool> r;
+                r = outmap.insert(make_pair(myid, j->first));
+                if (r.first->second != j->first)
+                  {
+                    W(F("Colliding over %1%") % j->second());
+                    std::map<item_id, item_status>::iterator a, b;
+                    a = out.states->find(r.first->second);
+                    b = out.states->find(j->first);
+                    I(a != out.states->end());
+                    I(b != out.states->end());
+                    a->second = a->second.suture(b->second);
+                    out.states->erase(b);
+                  }
+              }
           }
       }
   }
@@ -1190,7 +1239,6 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
               || to == file_path()))
           W(F("undeleting %1%") % to);
       }
-      outmap.insert(make_pair(cit.intern(to()), current_id));
 
       file_path pdir;
       std::vector<path_component> parts;
@@ -1213,6 +1261,19 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       current_item.is_dir = is_dir;
       file_path recon = out.get_full_name(current_item);
       I(recon == to);
+      std::pair<std::map<fpid, item_id>::iterator, bool> r;
+      r = outmap.insert(make_pair(cit.intern(to()), current_id));
+      if (r.first->second != current_id)
+        {
+          W(F("Colliding over %1%") % to);
+          std::map<item_id, item_status>::iterator a, b;
+          a = out.states->find(r.first->second);
+          b = out.states->find(j->first);
+          I(a != out.states->end());
+          I(b != out.states->end());
+          a->second = a->second.suture(b->second);
+          out.states->erase(b);
+        }
     }
   return out;
 }
@@ -1357,7 +1418,9 @@ tree_state::current() const
     {
       std::set<item_status::item_state> s = i->second.current_names();
       I(s.size() == 1);
-      out.push_back(make_pair(i->first, get_full_name(*s.begin())));
+      file_path fp = get_full_name(*s.begin());
+      if (!(fp == file_path()))
+      out.push_back(make_pair(i->first, fp));
     }
   return out;
 }

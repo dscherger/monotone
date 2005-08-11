@@ -213,6 +213,9 @@ struct item_status
   item_status
   merge(item_status const & other) const;
 
+  item_status
+  suture(item_status const & other) const;
+
   std::set<item_state>
   current_names() const;
 
