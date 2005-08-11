@@ -200,6 +200,13 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
   }
   return std::make_pair(socket_type(-1),ready_none);
 }
+
+void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
+{ assert(!is_pipe);
+  assert(!pipe);
+  is_pipe=true;
+  pipe=&ps;
+}
 #endif
 
 #ifdef BUILD_UNIT_TESTS
