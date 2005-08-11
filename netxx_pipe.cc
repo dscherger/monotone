@@ -133,7 +133,19 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
 }
 
 Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
-{ return ::read(readfd,buffer,length);
+{
+#ifdef WIN32
+  if (length>bytes_available) length=bytes_available;
+  if (length)
+  { memcpy(buffer,readbuf,length);
+    if (length<bytes_available) 
+      memmove(readbuf,readbuf+length,bytes_available-length);
+    bytes_available-=length;
+  }
+  return length;
+#else
+  return ::read(readfd,buffer,length);
+#endif
 }
 
 Netxx::signed_size_type Netxx::PipeStream::write(const void *buffer, size_type length)
@@ -235,7 +247,7 @@ simple_pipe_test()
   Netxx::Timeout timeout(2L), instant(0,1);
   probe.clear();
   probe.add(pipe, Netxx::Probe::ready_read | Netxx::Probe::ready_oobd);
-  Netxx::Probe::result_type res = probe.ready(timeout);
+  Netxx::Probe::result_type res = probe.ready(timeout,Netxx::Probe::ready_read);
   L(F("probe %d/%d\n") % res.first % res.second);
   do
   { bytes=pipe.read(buf,sizeof buf);
