@@ -45,7 +45,7 @@
 #include "netxx/stream.h"
 #include "netxx/streamserver.h"
 #include "netxx/timeout.h"
-#include "netxx_pipe.h"
+#include "netxx_pipe.hh"
 
 //
 // this is the "new" network synchronization (netsync) system in
@@ -3266,79 +3266,53 @@ call_server(protocol_role role,
   P(F("connecting to %s\n") % address());
   shared_ptr<Netxx::StreamBase> server;
   if (address().substr(0,5)=="file:")
-  {  int fd1[2],fd2[2];
-     pid_t child=pipe_and_fork(fd1,fd2);
-     if (child<0)
-     {  L(F("pipe/fork failed"));
-        return;
+  {  std::vector<std::string> args;
+     std::string db_path=address().substr(5);
+     if (global_sanity.debug) args.push_back("--debug");
+     args.push_back("--db");
+     args.push_back(db_path);
+     if (exclude_pattern().size())
+     { args.push_back("--exclude");
+       args.push_back(exclude_pattern());
      }
-     else if (!child)
-     {  std::string db_path=address().substr(5);
-        const unsigned newsize=64;
-        const char *newargv[newsize];
-        unsigned newargc=0;
-        newargv[newargc++]="monotone";
-        if (global_sanity.debug) newargv[newargc++]="--debug";
-        newargv[newargc++]="--db";
-        newargv[newargc++]=db_path.c_str();
-        newargv[newargc++]="--";
-        newargv[newargc++]="serve";
-        newargv[newargc++]="-";
-        for (unsigned i=0; i<newsize-newargc-2 && i<collections.size(); ++i)
-          newargv[newargc++]=collections[i]().c_str();
-        newargv[newargc]=0;
-        
-        if (global_sanity.debug) 
-           dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-        execvp(newargv[0],(char*const*)newargv);
-        perror(newargv[0]);
-        exit(errno);
-     }
-     server=new Netxx::PipeStream(fd1[0],fd2[1],timeout);
+     args.push_back("--");
+     args.push_back("serve");
+     args.push_back("-");
+     args.push_back(include_pattern());
+//        if (global_sanity.debug) 
+//           dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
+     server=new Netxx::PipeStream("monotone",args);
   }
   else if (address().substr(0,4)=="ssh:")
-  {  int fd1[2],fd2[2];
+  {  std::vector<std::string> args;
      std::string user,host,port,db_path;
      if (!parse_ssh_url(address().substr(4),host,user,port,db_path))
      {  L(F("url %s is not of form ssh:[//]user@host:port/dbpath\n") % address());
         return;
      }
-     pid_t child=pipe_and_fork(fd1,fd2);
-     if (child<0)
-     {  L(F("pipe/fork failed"));
-        return;
+     if (!port.empty()) 
+     {  args.push_back("-p");
+        args.push_back(port);
      }
-     else if (!child)
-     {  const unsigned newsize=64;
-        const char *newargv[newsize];
-        unsigned newargc=0;
-        newargv[newargc++]="ssh";
-        if (!port.empty()) 
-        {  newargv[newargc++]="-p";
-           newargv[newargc++]=port.c_str();
-        }
-        if (!user.empty()) 
-        {  newargv[newargc++]="-l";
-           newargv[newargc++]=user.c_str();
-        }
-        newargv[newargc++]=host.c_str();
-        newargv[newargc++]="monotone";
-        newargv[newargc++]="--db";
-        newargv[newargc++]=db_path.c_str();
-        newargv[newargc++]="--";
-        newargv[newargc++]="serve";
-        newargv[newargc++]="-";
-        for (unsigned i=0; i<newsize-newargc-2 && i<collections.size(); ++i)
-          newargv[newargc++]=collections[i]().c_str();
-        newargv[newargc]=0;
-        
-        if (global_sanity.debug) 
-           dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-        execvp(newargv[0],(char*const*)newargv);
-        perror(newargv[0]);
-        exit(errno);
+     if (!user.empty()) 
+     {  args.push_back("-l");
+        args.push_back(user);
      }
-     server=new PipeStream(fd1[0],fd2[1],timeout);
+     args.push_back(host);
+     args.push_back("monotone");
+     args.push_back("--db");
+     args.push_back(db_path.c_str();
+     if (exclude_pattern().size())
+     { args.push_back("--exclude");
+       args.push_back(exclude_pattern());
+     }
+     args.push_back("--");
+     args.push_back("serve");
+     args.push_back("-");
+     args.push_back(include_pattern());
+//     if (global_sanity.debug) 
+//        dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
+     server=new PipeStream("ssh",args);
   }
   else server=new Netxx::Stream(address().c_str(), default_port, timeout); 
 //  Netxx::Stream server(address().c_str(), default_port, timeout);
