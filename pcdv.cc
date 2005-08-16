@@ -974,23 +974,57 @@ item_status::rename(revid rev, item_id new_parent, path_component new_name) cons
 }
 
 
-
-tree_state::tree_state(boost::shared_ptr<vector<boost::shared_ptr<
-                                            item_status::item_data> > > _items,
-                       boost::shared_ptr<interner<revid> > _itx):
-            items(_items),
-            states(new std::map<item_id, item_status>()),
-            itx(_itx)
-{}
-
 tree_state::tree_state():
             items(new vector<boost::shared_ptr<item_status::item_data> >()),
             states(new std::map<item_id, item_status>()),
-            itx(new interner<revid>())
+            itx(new interner<revid>()),
+            sutures(new std::map<item_id, item_id>())
 {}
+
+tree_state
+tree_state::new_skel() const
+{
+  tree_state out;
+  out.items = items;
+  out.itx = itx;
+  out.sutures = sutures;
+  return out;
+}
 
 tree_state::~tree_state()
 {}
+
+void
+tree_state::add_suture(item_id l, item_id r)
+{
+  std::map<item_id, item_id>::const_iterator i = sutures->find(r);
+  if (i != sutures->end())
+    add_suture(l, i->second);
+}
+
+void
+tree_state::apply_sutures()
+{
+  for (std::map<item_id, item_id>::const_iterator i = sutures->begin();
+       i != sutures->end(); ++i)
+    {
+      std::map<item_id, item_status>::iterator j = states->find(i->first);
+      std::map<item_id, item_status>::iterator k = states->find(i->second);
+      if (j != states->end())
+        {
+          if (k == states->end())
+            {
+              states->insert(make_pair(i->second, j->second));
+              states->erase(j);
+            }
+          else
+            {
+              k->second = k->second.suture(j->second);
+              states->erase(j);
+            }
+        }
+    }
+}
 
 const int deleted_dir(1);
 const int deleted_file(2);
@@ -1156,13 +1190,7 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
                 if (r.first->second != j->first)
                   {
                     W(F("Colliding over %1%") % j->second());
-                    std::map<item_id, item_status>::iterator a, b;
-                    a = out.states->find(r.first->second);
-                    b = out.states->find(j->first);
-                    I(a != out.states->end());
-                    I(b != out.states->end());
-                    a->second = a->second.suture(b->second);
-                    out.states->erase(b);
+                    out.add_suture(r.first->second, j->first);
                   }
               }
           }
@@ -1266,15 +1294,10 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       if (r.first->second != current_id)
         {
           W(F("Colliding over %1%") % to);
-          std::map<item_id, item_status>::iterator a, b;
-          a = out.states->find(r.first->second);
-          b = out.states->find(j->first);
-          I(a != out.states->end());
-          I(b != out.states->end());
-          a->second = a->second.suture(b->second);
-          out.states->erase(b);
+          out.add_suture(r.first->second, j->first);
         }
     }
+  out.apply_sutures();
   return out;
 }
 
@@ -1296,7 +1319,7 @@ tree_state
 tree_state::mash(tree_state const & other) const
 {
   I(items == other.items);
-  tree_state newstate(items, itx);
+  tree_state newstate = new_skel();
   map<item_id, item_status>::const_iterator l, r;
   l = states->begin();
   r = other.states->begin();
@@ -1324,6 +1347,7 @@ std::vector<path_conflict>
 tree_state::conflict(tree_state const & other) const
 {
   tree_state merged(mash(other));
+  merged.apply_sutures();
   std::vector<path_conflict> out;
   std::map<item_status::item_state, std::set<item_id> > m;
 
@@ -1510,6 +1534,7 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
                                   std::string const & revision)
 {
   tree_state merged(mash(revs));
+  merged.apply_sutures();
 
   std::set<item_id> resolved;
   typedef std::vector<path_component> splitpath;

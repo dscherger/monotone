@@ -3043,11 +3043,11 @@ CMD(update, "working copy", "",
       // we apply the working to merged changeset to the working copy
       // and keep the rearrangement from chosen to merged changeset in MT/work
 
-      merge_change_sets(old_to_chosen, 
-                        old_to_working,
-                        chosen_to_merged, 
-                        working_to_merged,
-                        merger, app);
+      merge_revisions(r_old_id, r_chosen_id, r_old_id, 
+                      old_to_working,
+                      chosen_to_merged,
+                      working_to_merged,
+                      merger, app);
       // dump_change_set("chosen to merged", chosen_to_merged);
       // dump_change_set("working to merged", working_to_merged);
 
@@ -3151,16 +3151,16 @@ try_one_merge(revision_id const & left_id,
     }
   else
     {
-      P(F("no common ancestor found, synthesizing edges\n")); 
+      P(F("no common ancestor found, synthesizing edges\n"));
       build_pure_addition_change_set(left_man, *anc_to_left);
       build_pure_addition_change_set(right_man, *anc_to_right);
     }
   
   merge_provider merger(app, anc_man, left_man, right_man);
   
-  merge_change_sets(*anc_to_left, *anc_to_right, 
-                    *left_to_merged, *right_to_merged,
-                    merger, app);
+  merge_revisions(anc_id, left_id, right_id, change_set(),
+                  *left_to_merged, *right_to_merged,
+                  merger, app);
   
   {
     // we have to record *some* route to this manifest. we pick the

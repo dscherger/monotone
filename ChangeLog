@@ -1,3 +1,12 @@
+2005-08-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* change_set.{cc,hh}: Replace tree merger with the one in pcdv.{cc,hh}.
+		DOES NOT pass ./testsuite (13 failures, 1 unexpected pass)
+		REMOVE disjoint_merge_test() (no longer applicable in
+		this form, and the same functionality is checked in tests/ .)
+	* commands.cc: New merger takes different arguments; update calls.
+	* pcdv.{cc,hh}: Handle sutures better.
+
 2005-08-10  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* pcdv.{cc,hh} (tree merger): Teach it about file suturing.

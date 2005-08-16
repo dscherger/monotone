@@ -138,6 +138,7 @@ concatenate_change_sets(change_set const & a,
 
 struct merge_provider;
 
+/*
 void
 merge_change_sets(change_set const & a,
                   change_set const & b,
@@ -145,6 +146,16 @@ merge_change_sets(change_set const & a,
                   change_set & b_merged,
                   merge_provider & merger,
                   app_state & app);
+*/
+void
+merge_revisions(revision_id const & anc,
+                revision_id const & a,
+                revision_id const & b,
+                change_set const & b_extra_changes,
+                change_set & a_merged,
+                change_set & b_merged,
+                merge_provider & merger,
+                app_state & app);
 
 // value-oriented access to printers and parsers
 

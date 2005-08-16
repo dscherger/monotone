@@ -227,7 +227,7 @@ struct item_status
 };
 
 
-// This is a const object type; there are no modifiers.
+// This is a const object type; there are no modifiers. ??
 // Usage:
 //   for a->b
 //     a.rearrange(<changes>, 'b')
@@ -247,11 +247,14 @@ class tree_state
   boost::shared_ptr<vector<boost::shared_ptr<item_status::item_data> > > items;
   boost::shared_ptr<std::map<item_id, item_status> > states;
   boost::shared_ptr<interner<revid> > itx;
+  boost::shared_ptr<std::map<item_id, item_id> > sutures;
 
-  tree_state(boost::shared_ptr<vector<boost::shared_ptr<
-                                        item_status::item_data> > > _items,
-             boost::shared_ptr<interner<revid> > _itx);
   tree_state();
+
+  tree_state new_skel() const;
+
+  void add_suture(item_id l, item_id r);
+  void apply_sutures();
 public:
 
   ~tree_state();
