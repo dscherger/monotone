@@ -3220,7 +3220,7 @@ static std::string::size_type find_wordend(const std::string &address,
    {  for (std::string::const_iterator i=breaks.begin();i!=breaks.end();++i)
          if (address[begin]==*i) return begin;
    }
-   return begin;2
+   return begin;
 }
 
 static bool parse_ssh_url(const std::string &address,std::string &host,
@@ -3258,7 +3258,7 @@ call_server(protocol_role role,
             Netxx::port_type default_port,
             unsigned long timeout_seconds)
 {
-  Netxx::Probe probe;
+  Netxx::PipeCompatibleProbe probe;
   Netxx::Timeout timeout(static_cast<long>(timeout_seconds)), instant(0,1);
 
   // FIXME: split into labels and convert to ace here.
@@ -3281,7 +3281,7 @@ call_server(protocol_role role,
      args.push_back(include_pattern());
 //        if (global_sanity.debug) 
 //           dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-     server=new Netxx::PipeStream("monotone",args);
+     server=shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream("monotone",args));
   }
   else if (address().substr(0,4)=="ssh:")
   {  std::vector<std::string> args;
@@ -3301,7 +3301,7 @@ call_server(protocol_role role,
      args.push_back(host);
      args.push_back("monotone");
      args.push_back("--db");
-     args.push_back(db_path.c_str();
+     args.push_back(db_path);
      if (exclude_pattern().size())
      { args.push_back("--exclude");
        args.push_back(exclude_pattern());
@@ -3312,10 +3312,9 @@ call_server(protocol_role role,
      args.push_back(include_pattern());
 //     if (global_sanity.debug) 
 //        dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-     server=new PipeStream("ssh",args);
+     server=shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream("ssh",args));
   }
-  else server=new Netxx::Stream(address().c_str(), default_port, timeout); 
-//  Netxx::Stream server(address().c_str(), default_port, timeout);
+  else server=shared_ptr<Netxx::StreamBase>(new Netxx::Stream(address().c_str(), default_port, timeout)); 
   session sess(role, client_voice, include_pattern, exclude_pattern,
                app, address(), server);
   
@@ -3334,7 +3333,9 @@ call_server(protocol_role role,
         }
 
       probe.clear();
-      probe.add(sess.str, sess.which_events());
+      Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess.str);
+      if (!pipe) probe.add(*(sess.str), sess.which_events());
+      else probe.add(*pipe, sess.which_events());
       Netxx::Probe::result_type res = probe.ready(armed ? instant : timeout);
       Netxx::Probe::ready_type event = res.second;
       Netxx::socket_type fd = res.first;
@@ -3425,7 +3426,7 @@ arm_sessions_and_calculate_probe(Netxx::Probe & probe,
               L(F("fd %d is armed\n") % i->first);
               armed_sessions.insert(i->first);
             }
-          probe.add(i->second->str, i->second->which_events());
+          probe.add(*i->second->str, i->second->which_events());
         }
       catch (bad_decode & bd)
         {
@@ -3688,9 +3689,13 @@ serve_single_connection(//protocol_role role,
   map<Netxx::socket_type, shared_ptr<session> > sessions;
   set<Netxx::socket_type> armed_sessions;
   
-  sessions[sess->str.get_socketfd()]=sess;
-  PipeStream *pipe=dynamic_cast<PipeStream*>(&*sess->str);
-  if (pipe) sessions[pipe->get_writefd()]=sess;
+  if (sess->str->get_socketfd()!=-1) 
+    sessions[sess->str->get_socketfd()]=sess;
+  Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess->str);
+  if (pipe) 
+  { sessions[pipe->get_writefd()]=sess;
+    sessions[pipe->get_readfd()]=sess;
+  }
   
   // no addr, no server
   
@@ -3703,8 +3708,8 @@ serve_single_connection(//protocol_role role,
       arm_sessions_and_calculate_probe(probe, sessions, armed_sessions);
 
       L(F("i/o probe with %d armed\n") % armed_sessions.size());      
-      Netxx::Probe::result_type res = probe.ready(/*sessions.empty() ? forever */
-                                           : (armed_sessions.empty() ? timeout 
+      Netxx::Probe::result_type res = probe.ready(/*sessions.empty() ? forever 
+                                           : */ (armed_sessions.empty() ? timeout 
                                               : instant));
       Netxx::Probe::ready_type event = res.second;
       Netxx::socket_type fd = res.first;
@@ -3712,8 +3717,8 @@ serve_single_connection(//protocol_role role,
       if (fd == -1)
         {
           if (armed_sessions.empty()) 
-            L(F("timed out waiting for I/O (listening on %s : %d)\n") 
-              % addr.get_name() % addr.get_port());
+            L(F("timed out waiting for I/O (listening on %s)\n") 
+              % sess->peer_id);
         }
       
       // an existing session woke up
@@ -3931,11 +3936,11 @@ run_netsync_protocol(protocol_voice voice,
       if (voice == server_voice)
         {
           if (addr==utf8("-"))
-          { shared_ptr<Netxx::PipeStream> str(new PipeStream(0,1));
+          { shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
             shared_ptr<session> sess(new session(role, server_voice, 
                                                  include_pattern, exclude_pattern,
                                                  app, "stdio", str));
-            serve_single_connection(sess,constants::netsync_timeout_seconds)
+            serve_single_connection(sess,constants::netsync_timeout_seconds);
           }
           else
             serve_connections(role, include_pattern, exclude_pattern, app,
