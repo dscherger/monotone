@@ -2054,6 +2054,31 @@ struct itempaths
   {}
 };
 
+void dump(itempaths const & obj, std::string & out)
+{
+  std::string o;
+  dump(obj.anc, o);
+  out = "Ancestor: " + o;
+  dump(obj.left, o);
+  out += "\nLeft: " + o;
+  dump(obj.right, o);
+  out += "\nRight: " + o;
+  dump(obj.merged, o);
+  out += "\nMerged: " + o;
+}
+
+void dump(std::vector<itempaths> const & obj, std::string & out)
+{
+  out.clear();
+  std::string o;
+  for (std::vector<itempaths>::const_iterator i = obj.begin();
+       i != obj.end(); ++i)
+    {
+      dump(*i, o);
+      out += o + "\n";
+    }
+}
+
 static void
 merge_deltas(itempaths const & paths, 
              std::map<file_path, file_id> & merge_finalists,
@@ -2122,7 +2147,10 @@ project_missing_deltas(change_set const & a,
       // and we have a delta applied to a file in a2. we want to
       // figure out what to call this delta's path in b2.
 
-      itempaths const & paths = pathsmap[delta_entry_path(i)];
+      std::map<file_path, itempaths>::const_iterator
+        x = pathsmap.find(delta_entry_path(i));
+      I(x != pathsmap.end());
+      itempaths const & paths = x->second;
 
       // now check to see if there was a delta on the b.second name in b
       change_set::delta_map::const_iterator j = b.deltas.find(paths.right);
@@ -2140,7 +2168,8 @@ project_missing_deltas(change_set const & a,
           // if no deltas in b, copy ours over using the merged name
           L(F("merge is copying delta '%s' : '%s' -> '%s'\n") 
             % paths.merged % delta_entry_src(i) % delta_entry_dst(i));
-          I(b.deltas.find(paths.merged) == b.deltas.end());
+          I(b.deltas.find(paths.merged) == b.deltas.end()
+            || a.rearrangement.has_deleted_file(paths.merged));
           b_merged.apply_delta(paths.merged,
                                delta_entry_src(i),
                                delta_entry_dst(i));
@@ -2251,6 +2280,8 @@ process_filetree_history(revision_id const & anc,
 {
   typedef std::multimap<revision_id, revision_id>::iterator gi;
   typedef std::map<revision_id, std::pair<int, std::set<revision_id> > >::iterator ai;
+
+  // process history
   std::multimap<revision_id, revision_id> graph, rgraph;
   app.db.get_revision_ancestry(graph);
   for (gi i = graph.begin(); i != graph.end(); ++i)
@@ -2334,6 +2365,7 @@ process_filetree_history(revision_id const & anc,
       roots.pop_front();
     }
 
+  // find the interesting revisions
   std::map<revision_id, tree_state>::const_iterator
     i = trees.find(anc),
     j = trees.find(left),
@@ -2348,14 +2380,25 @@ process_filetree_history(revision_id const & anc,
   std::vector<change_set::path_rearrangement> rr;
   rr.push_back(right_extra_changes);
   tree_state r = tree_state::merge_with_rearrangement(rp, rr, "xyzzy");
+
+  // do the merge
   std::vector<path_conflict> conf(l.conflict(r));
   std::set<path_conflict::resolution> res;
-  E(conf.size() == 0, F("Cannot handle merge conflicts over filenames yet."));
+  for (std::vector<path_conflict>::const_iterator i = conf.begin();
+       i != conf.end(); ++i)
+    {
+      E(i->type != path_conflict::split,
+        F("Cannot handle filename conflicts yet."));
+      if (i->type == path_conflict::collision)
+        W(F("Filename collision, suturing..."));
+    }
   std::vector<tree_state> rl;
   rl.push_back(l);
   rl.push_back(r);
   tree_state m = tree_state::merge_with_resolution(rl, res, "abccb");
+  I(m.conflict(m).empty());
 
+  // calculate outputs
   std::map<item_id, itempaths> ip;
   std::vector<std::pair<item_id, file_path> > ps;
   ps = a.current();
@@ -2410,12 +2453,10 @@ merge_revisions(revision_id const & anc,
                 merge_provider & merger,
                 app_state & app)
 {
-  MM(a_merged);
-  MM(b_merged);
-
   L(F("merging revisions\n"));
 
   std::vector<itempaths> paths;
+  MM(paths);
 
   std::map<file_path, file_id> merge_finalists;
 
@@ -2471,12 +2512,11 @@ merge_revisions(revision_id const & anc,
     }
   concatenate_change_sets(anc_b, b_extra_changes, anc_bwithchanges);
 
+  MM(b_merged);
   project_missing_deltas(anc_a, anc_bwithchanges,
                          paths,
                          b_merged,
                          merger, merge_finalists);
-
-  b_merged.check_sane();
 
   for (std::vector<itempaths>::iterator i = paths.begin();
        i != paths.end(); ++i)
@@ -2486,12 +2526,15 @@ merge_revisions(revision_id const & anc,
       (*i).right = t;
     }
 
+  MM(a_merged);
   project_missing_deltas(anc_bwithchanges, anc_a,
                          paths,
                          a_merged,
                          merger, merge_finalists);
 
+  L(F("Checking merge..."));
   a_merged.check_sane();
+  b_merged.check_sane();
 
   {
     // confirmation step
@@ -3024,11 +3067,10 @@ parse_path_rearrangement(basic_io::parser & parser,
 
 
 void 
-print_path_rearrangement(basic_io::printer & printer,
-                         change_set::path_rearrangement const & pr)
+print_insane_path_rearrangement(basic_io::printer & printer,
+                                change_set::path_rearrangement const & pr)
 {
 
-  pr.check_sane();
   for (std::set<file_path>::const_iterator i = pr.deleted_files.begin();
        i != pr.deleted_files.end(); ++i)
     {
@@ -3073,6 +3115,14 @@ print_path_rearrangement(basic_io::printer & printer,
 }
 
 void 
+print_path_rearrangement(basic_io::printer & printer,
+                         change_set::path_rearrangement const & pr)
+{
+  pr.check_sane();
+  print_insane_path_rearrangement(printer, pr);
+}
+
+void 
 parse_change_set(basic_io::parser & parser,
                  change_set & cs)
 {
@@ -3097,11 +3147,10 @@ parse_change_set(basic_io::parser & parser,
 }
 
 void 
-print_change_set(basic_io::printer & printer,
-                 change_set const & cs)
+print_insane_change_set(basic_io::printer & printer,
+                        change_set const & cs)
 {
-  cs.check_sane();
-  print_path_rearrangement(printer, cs.rearrangement);
+  print_insane_path_rearrangement(printer, cs.rearrangement);
   
   for (change_set::delta_map::const_iterator i = cs.deltas.begin();
        i != cs.deltas.end(); ++i)
@@ -3112,6 +3161,14 @@ print_change_set(basic_io::printer & printer,
       st.push_hex_pair(syms::to, i->second.second.inner()());
       printer.print_stanza(st);
     }
+}
+
+void 
+print_change_set(basic_io::printer & printer,
+                 change_set const & cs)
+{
+  cs.check_sane();
+  print_insane_change_set(printer, cs);
 }
 
 void
@@ -3143,14 +3200,21 @@ read_change_set(data const & dat,
 }
 
 void
+write_insane_change_set(change_set const & cs,
+                        data & dat)
+{
+  std::ostringstream oss;
+  basic_io::printer pr(oss);
+  print_insane_change_set(pr, cs);
+  dat = data(oss.str());  
+}
+
+void
 write_change_set(change_set const & cs,
                  data & dat)
 {
   cs.check_sane();
-  std::ostringstream oss;
-  basic_io::printer pr(oss);
-  print_change_set(pr, cs);
-  dat = data(oss.str());  
+  write_insane_change_set(cs, dat);
 }
 
 void
@@ -3168,7 +3232,8 @@ void
 dump(change_set const & cs, std::string & out)
 {
   data tmp;
-  write_change_set(cs, tmp);
+  write_insane_change_set(cs, tmp);
+//  write_change_set(cs, tmp);
   out = tmp();
 }
 

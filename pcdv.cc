@@ -997,13 +997,22 @@ tree_state::~tree_state()
 void
 tree_state::add_suture(item_id l, item_id r)
 {
+  I(l != r);
+  if (l < r)
+    {
+      item_id t = r;
+      r = l;
+      l = t;
+    }
   std::map<item_id, item_id>::const_iterator i = sutures->find(r);
   if (i != sutures->end())
     add_suture(l, i->second);
+  else
+    sutures->insert(make_pair(l, r));
 }
 
 void
-tree_state::apply_sutures()
+tree_state::apply_sutures() const
 {
   for (std::map<item_id, item_id>::const_iterator i = sutures->begin();
        i != sutures->end(); ++i)
@@ -1014,7 +1023,8 @@ tree_state::apply_sutures()
         {
           if (k == states->end())
             {
-              states->insert(make_pair(i->second, j->second));
+              item_status x(idx(*items, i->second));
+              states->insert(make_pair(i->second, x.suture(j->second)));
               states->erase(j);
             }
           else
@@ -1167,7 +1177,8 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
          i != trees.end() && x != changes.end(); ++i, ++x)
       {
         premaps.push_back(std::map<fpid, item_id>());
-        std::vector<std::pair<item_id, file_path> > curr = i->current();
+        std::vector<std::pair<item_id, file_path> >
+          curr = i->current_with_dirs();
         for (std::vector<std::pair<item_id, file_path> >::const_iterator
                j = curr.begin(); j != curr.end(); ++j)
           {
@@ -1312,6 +1323,7 @@ tree_state::mash(std::vector<tree_state> const & trees)
   if (trees.size() == 1)
     out.states.reset(new map<item_id, item_status>(*out.states));
   I(out.states != idx(trees, 0).states);
+  out.apply_sutures();
   return out;
 }
 
@@ -1346,8 +1358,8 @@ tree_state::mash(tree_state const & other) const
 std::vector<path_conflict>
 tree_state::conflict(tree_state const & other) const
 {
+  apply_sutures();
   tree_state merged(mash(other));
-  merged.apply_sutures();
   std::vector<path_conflict> out;
   std::map<item_status::item_state, std::set<item_id> > m;
 
@@ -1374,6 +1386,13 @@ tree_state::conflict(tree_state const & other) const
           I(right.size() == 1);
           c.lnames.push_back(get_full_name(*left.begin()));
           c.rnames.push_back(other.get_full_name(*right.begin()));
+          P(F("split: '%1%' vs '%2%' ('%3%' vs '%4%' (dirs are %5% vs %6%))")
+            % get_full_name(*left.begin())
+            % other.get_full_name(*right.begin())
+            % merged.get_full_name(*left.begin())
+            % merged.get_full_name(*right.begin())
+            % left.begin()->first
+            % right.begin()->first);
           out.push_back(c);
         }
       for (std::set<item_status::item_state>::const_iterator
@@ -1436,6 +1455,26 @@ tree_state::conflict(tree_state const & other) const
 std::vector<std::pair<item_id, file_path> >
 tree_state::current() const
 {
+  apply_sutures();
+  std::vector<std::pair<item_id, file_path> > out;
+  for (std::map<item_id, item_status>::const_iterator i = states->begin();
+       i != states->end(); ++i)
+    {
+      if (i->second.is_dir)
+        continue;
+      std::set<item_status::item_state> s = i->second.current_names();
+      I(s.size() == 1);
+      file_path fp = get_full_name(*s.begin());
+      if (!(fp == file_path()))
+      out.push_back(make_pair(i->first, fp));
+    }
+  return out;
+}
+
+std::vector<std::pair<item_id, file_path> >
+tree_state::current_with_dirs() const
+{
+  apply_sutures();
   std::vector<std::pair<item_id, file_path> > out;
   for (std::map<item_id, item_status>::const_iterator i = states->begin();
        i != states->end(); ++i)
@@ -1454,6 +1493,8 @@ tree_state::get_changes_for_merge(tree_state const & merged,
                                   change_set::path_rearrangement & changes)
                                   const
 {
+  this->apply_sutures();
+  merged.apply_sutures();
   changes.deleted_dirs.clear();
   changes.deleted_files.clear();
   changes.renamed_dirs.clear();
@@ -1464,48 +1505,76 @@ tree_state::get_changes_for_merge(tree_state const & merged,
   map<item_id, item_status>::const_iterator l, r;
   l = states->begin();
   r = merged.states->begin();
+  item_status::item_state empty(-1, make_null_component());
   while (l != states->end() || r != merged.states->end())
     {
       file_path from, to;
+      std::set<item_status::item_state> pres, posts;
+      item_status::item_state pre(empty), post(empty);
       bool from_is_dir(false), to_is_dir(false);
 
       if (l == states->end())
         {
-          to = merged.get_full_name(r->second);
+          posts = r->second.current_names();
+          I(posts.size() == 1);
+          post = *posts.begin();
+          if (post != empty)
+            to = merged.get_full_name(post);
           to_is_dir = r->second.is_dir;
           ++r;
         }
       else if (r == merged.states->end())
         {
-          from = get_full_name(l->second);
+          pres = l->second.current_names();
+          I(pres.size() == 1);
+          pre = *pres.begin();
+          if (pre != empty)
+            from = get_full_name(pre);
           from_is_dir = l->second.is_dir;
           ++l;
         }
       else if (l->first > r->first)
         {
-          to = merged.get_full_name(r->second);
+          posts = r->second.current_names();
+          I(posts.size() == 1);
+          post = *posts.begin();
+          if (post != empty)
+            to = merged.get_full_name(post);
           to_is_dir = r->second.is_dir;
           ++r;
         }
       else if (r->first > l->first)
         {
-          from = get_full_name(l->second);
+          pres = l->second.current_names();
+          I(pres.size() == 1);
+          pre = *pres.begin();
+          if (pre != empty)
+            from = get_full_name(pre);
           from_is_dir = l->second.is_dir;
           ++l;
         }
       else
         {
-          from = get_full_name(l->second);
+          posts = r->second.current_names();
+          I(posts.size() == 1);
+          post = *posts.begin();
+          if (post != empty)
+            to = merged.get_full_name(post);
+          pres = l->second.current_names();
+          I(pres.size() == 1);
+          pre = *pres.begin();
+          if (pre != empty)
+            from = get_full_name(pre);
           from_is_dir = l->second.is_dir;
-          to = merged.get_full_name(r->second);
           to_is_dir = r->second.is_dir;
           ++l, ++r;
         }
 
-      if (to == from)
+      if (pre == post)
         continue;
       else if (to == file_path())
         {
+          I(!(from == file_path()));
           if (from_is_dir)
             changes.deleted_dirs.insert(from);
           else
@@ -1513,6 +1582,7 @@ tree_state::get_changes_for_merge(tree_state const & merged,
         }
       else if (from == file_path())
         {
+          I(!(to == file_path()));
           if (to_is_dir)
             ;
           else
@@ -1520,6 +1590,7 @@ tree_state::get_changes_for_merge(tree_state const & merged,
         }
       else
         {
+          I(!(from == file_path()));
           if (from_is_dir)
             changes.renamed_dirs.insert(make_pair(from, to));
           else
@@ -1552,7 +1623,8 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
     }
   typedef int fpid;
   interner<fpid> cit;
-  map<fpid, item_id> names;
+  std::map<fpid, item_id> names;
+  typedef std::pair<std::map<fpid, item_id>::iterator, bool> nir;
   int lastlevel = 0;
   for (std::multimap<int, std::pair<item_id, splitpath > >::const_iterator
          i = sorted.begin(); i != sorted.end(); ++i)
@@ -1576,7 +1648,12 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
                     continue;// not reached, or not resolved
                   resolved.insert(j->first);
                   fpid f(cit.intern(fp()));
-                  names.insert(make_pair(f, j->first));
+                  nir r = names.insert(make_pair(f, j->first));
+                  if (r.first->second != j->first)
+                    {
+                      W(F("Suturing files %1%") % fp);
+                      merged.add_suture(r.first->second, j->first);
+                    }
                 }
             }
           ++lastlevel;
@@ -1620,9 +1697,34 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
           I(j != merged.states->end());
           j->second = item_status(j->second.rename(merged.itx->intern(revision),
                                                    k->second, name));
-          cit.intern(fp());
+          fpid f(cit.intern(fp()));
+          nir r = names.insert(make_pair(f, j->first));
+          if (r.first->second != j->first)
+            {
+              W(F("Suturing files %1%") % fp);
+              merged.add_suture(r.first->second, j->first);
+            }
         }
     }
+  // nearly a c&p from if (i->first > lastlevel)
+  for (std::map<item_id, item_status>::const_iterator
+         j = merged.states->begin(); j != merged.states->end(); ++j)
+    {
+      if (resolved.find(j->first) == resolved.end())
+        {
+          file_path fp(merged.get_full_name(j->second));
+          resolved.insert(j->first);
+          fpid f(cit.intern(fp()));
+          nir r = names.insert(make_pair(f, j->first));
+          if (r.first->second != j->first)
+            {
+              W(F("Suturing items %1% and %2% over %3%")
+                % r.first->second % j->first % fp);
+              merged.add_suture(r.first->second, j->first);
+            }
+        }
+    }
+  merged.apply_sutures();
   return merged;
 }
 

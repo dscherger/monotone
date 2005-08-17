@@ -254,7 +254,7 @@ class tree_state
   tree_state new_skel() const;
 
   void add_suture(item_id l, item_id r);
-  void apply_sutures();
+  void apply_sutures() const;
 public:
 
   ~tree_state();
@@ -276,6 +276,8 @@ public:
 
   std::vector<std::pair<item_id, file_path> >
   current() const;
+  std::vector<std::pair<item_id, file_path> >
+  current_with_dirs() const;
 
   // get the changes along edge this->merged for merged=merge(revs)
   // note that revs should include *this
