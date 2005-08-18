@@ -1710,6 +1710,8 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
                   file_path fp(merged.try_get_full_name(*x.begin(), d));
                   if (d >= lastlevel || d == -1)
                     continue;// not reached, or not resolved
+                  if (fp == file_path())
+                    continue;
                   resolved.insert(j->first);
                   fpid f(cit.intern(fp()));
                   nir r = names.insert(make_pair(f, j->first));
@@ -1761,6 +1763,8 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
           I(j != merged.states->end());
           j->second = item_status(j->second.rename(merged.itx->intern(revision),
                                                    k->second, name));
+          if (fp == file_path())
+            continue;
           fpid f(cit.intern(fp()));
           nir r = names.insert(make_pair(f, j->first));
           if (r.first->second != j->first)
@@ -1778,12 +1782,13 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
         {
           file_path fp(merged.get_full_name(j->second));
           resolved.insert(j->first);
+          if (fp == file_path())
+            continue;
           fpid f(cit.intern(fp()));
           nir r = names.insert(make_pair(f, j->first));
           if (r.first->second != j->first)
             {
-              W(F("Suturing items %1% and %2% over %3%")
-                % r.first->second % j->first % fp);
+              W(F("Suturing files %1%") % fp);
               merged.add_suture(r.first->second, j->first);
             }
         }

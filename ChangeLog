@@ -1,5 +1,10 @@
 2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* pcdv.cc (tree_state::merge_with_resolution): bugfix, multiple
+	items sharing the empty name is not a suture
+
+2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	PASS 'make check'
 	* pcdv.{cc,hh}: Bugfix tree_state::merge_with_rearrangement .
 	Improve suture-handling code.
