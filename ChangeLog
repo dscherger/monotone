@@ -1,4 +1,13 @@
 
+2005-08-18  Petr Baudis  <pasky@suse.cz>
+	* Makefile.am, git.hh, git.cc: Initial support for importing from
+	GIT repositories to Monotone. This is pretty basic yet, full of
+	TODOs, can't do tags nor incremental imports, does not record
+	executability of files, and does not attach git certs to the
+	imported commits. But it more-or-less successfully imports history
+	of the GIT project itself, although it takes its time.
+	* commands.cc: git_import command.
+
 2005-08-17  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* sanity.cc (gasp()): When catching an error from dumping a MM'd
