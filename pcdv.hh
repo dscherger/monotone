@@ -255,6 +255,7 @@ class tree_state
 
   void add_suture(item_id l, item_id r);
   void apply_sutures() const;
+  item_id getid(item_id from) const;
 public:
 
   ~tree_state();

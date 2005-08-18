@@ -1,3 +1,11 @@
+2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	PASS 'make check'
+	* pcdv.{cc,hh}: Bugfix tree_state::merge_with_rearrangement .
+	Improve suture-handling code.
+	* pcdv.cc, change_set.cc: Clean up "printf debugging".
+	* change_set.cc: remove commented-out remains of old tree merger
+
 2005-08-17  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	Improve testsuite compliance: 1 failure remaining.
