@@ -39,12 +39,45 @@ extern "C" {
 using namespace std;
 using boost::lexical_cast;
 
-/*
 static int panic_thrower(lua_State * st)
 {
   throw oops("lua panic");
 }
-*/
+
+// adapted from "programming in lua", section 24.2.3
+// http://www.lua.org/pil/24.2.3.html
+// output is from bottom (least accessible) to top (most accessible, where
+// push and pop happen).
+static std::string
+dump_stack(lua_State * st)
+{
+  std::string out;
+  int i;
+  int top = lua_gettop(st);
+  for (i = 1; i <= top; i++) {  /* repeat for each level */
+    int t = lua_type(st, i);
+    switch (t) {
+    case LUA_TSTRING:  /* strings */
+      out += (F("`%s'") % std::string(lua_tostring(st, i), lua_strlen(st, i))).str();
+      break;
+      
+    case LUA_TBOOLEAN:  /* booleans */
+      out += (lua_toboolean(st, i) ? "true" : "false");
+      break;
+      
+    case LUA_TNUMBER:  /* numbers */
+      out += (F("%g") % lua_tonumber(st, i)).str();
+      break;
+      
+    default:  /* other values */
+      out += (F("%s") % lua_typename(st, t)).str();
+      break;
+      
+    }
+    out += "  ";  /* put a separator */
+  }
+  return out;
+}
 
 // This Lua object represents a single imperative transaction with the lua
 // interpreter. if it fails at any point, all further commands in the
@@ -67,6 +100,12 @@ Lua
     lua_settop(st, 0);
   }
 
+  void fail(std::string const & reason)
+  {
+    L(F("lua failure: %s; stack = %s\n") % reason % dump_stack(st));
+    failed = true;
+  }
+
   bool ok() 
   { 
     L(F("Lua::ok(): failed = %i") % failed);
@@ -78,6 +117,7 @@ Lua
     I(lua_isstring(st, -1));
     string err = string(lua_tostring(st, -1), lua_strlen(st, -1));
     W(F("%s\n") % err);
+    L(F("lua stack: %s") % dump_stack(st));
     lua_pop(st, 1);
     failed = true;
   }
@@ -89,14 +129,12 @@ Lua
     if (failed) return *this;
     if (!lua_istable (st, idx)) 
       { 
-        L(F("lua istable() failed\n")); 
-        failed = true; 
+        fail("istable() in get");
         return *this; 
       }
     if (lua_gettop (st) < 1) 
       { 
-        L(F("lua stack top > 0 failed\n")); 
-        failed = true; 
+        fail("stack top > 0 in get");
         return *this; 
       }
     lua_gettable(st, idx); 
@@ -108,10 +146,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isfunction (st, -1)) 
-      { 
-        L(F("lua isfunction() failed in get_fn\n")); 
-        failed = true; 
-      }
+      fail("isfunction() in get_fn");
     return *this; 
   }
 
@@ -120,10 +155,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_istable (st, -1)) 
-      { 
-        L(F("lua istable() failed in get_tab\n")); 
-        failed = true; 
-      }
+      fail("istable() in get_tab");
     return *this; 
   }
 
@@ -132,10 +164,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isstring (st, -1)) 
-      { 
-        L(F("lua isstring() failed in get_str\n")); 
-        failed = true; 
-      }
+      fail("isstring() in get_str");
     return *this; 
   }
 
@@ -144,10 +173,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isnumber (st, -1)) 
-      { 
-        L(F("lua isnumber() failed in get_num\n")); 
-        failed = true; 
-      }
+      fail("isnumber() in get_num");
     return *this; 
   }
 
@@ -156,10 +182,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isboolean (st, -1)) 
-      { 
-        L(F("lua isboolean() failed in get_bool\n")); 
-        failed = true; 
-      }
+      fail("isboolean() in get_bool");
     return *this; 
   }
 
@@ -170,8 +193,7 @@ Lua
     if (failed) return *this;
     if (!lua_isstring (st, -1)) 
       { 
-        L(F("lua isstring() failed in extract_str\n")); 
-        failed = true; 
+        fail("isstring() in extract_str");
         return *this;
       }
     str = string(lua_tostring(st, -1), lua_strlen(st, -1));
@@ -184,8 +206,7 @@ Lua
     if (failed) return *this;
     if (!lua_isnumber (st, -1)) 
       { 
-        L(F("lua isnumber() failed in extract_int\n")); 
-        failed = true; 
+        fail("isnumber() in extract_int");
         return *this;
       }
     i = static_cast<int>(lua_tonumber(st, -1));
@@ -198,8 +219,7 @@ Lua
     if (failed) return *this;
     if (!lua_isnumber (st, -1)) 
       { 
-        L(F("lua isnumber() failed in extract_double\n")); 
-        failed = true; 
+        fail("isnumber() in extract_double");
         return *this;
       }
     i = lua_tonumber(st, -1);
@@ -213,8 +233,7 @@ Lua
     if (failed) return *this;
     if (!lua_isboolean (st, -1)) 
       { 
-        L(F("lua isboolean() failed in extract_bool\n")); 
-        failed = true; 
+        fail("isboolean() in extract_bool");
         return *this;
       }
     i = (lua_toboolean(st, -1) == 1);
@@ -230,8 +249,7 @@ Lua
     if (failed) return *this;
     if (!lua_istable(st, -1)) 
       { 
-        L(F("lua istable() failed in begin\n")); 
-        failed = true; 
+        fail("istable() in begin");
         return *this;
       }
     I(lua_checkstack (st, 1));
@@ -244,8 +262,7 @@ Lua
     if (failed) return false;
     if (!lua_istable(st, -2)) 
       { 
-        L(F("lua istable() failed in next\n")); 
-        failed = true; 
+        fail("istable() in next");
         return false;
       }
     I(lua_checkstack (st, 1));
@@ -331,8 +348,7 @@ Lua
     if (failed) return *this;
     if (lua_gettop (st) < count) 
       { 
-        L(F("lua stack top >= count failed\n")); 
-        failed = true; 
+        fail("stack top is not >= count in pop");
         return *this; 
       }
     lua_pop(st, count); 
@@ -565,8 +581,7 @@ lua_hooks::lua_hooks()
   st = lua_open ();  
   I(st);
 
-  // no atpanic support in 4.x
-  // lua_atpanic (st, &panic_thrower);
+  lua_atpanic (st, &panic_thrower);
 
   luaopen_base(st);
   luaopen_io(st);
