@@ -335,6 +335,19 @@ full_change_set(manifest_map const & m_old,
     }
 }
 
+static void
+parse_person_line(string &line, git_person &person, time_t &time)
+{
+  int emailstart = line.find('<');
+  int emailend = line.find('>', emailstart);
+  int timeend = line.find(' ', emailend + 2);
+  person.name = line.substr(0, emailstart - 1);
+  person.email = line.substr(emailstart + 1, emailend - emailstart - 1);
+  time = atol(line.substr(emailend + 2, timeend - emailend - 2).c_str());
+  L(F("Person name: '%s', email: '%s', time: '%d'")
+    % person.name % person.email % time);
+}
+
 static revision_id
 import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 {
@@ -348,8 +361,8 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   manifest_map manifest;
   // XXX: it might be user policy decision whether to take author or committer
   // as monotone author; the time should be always commit time, though
-  //git_person author();
-  //time_t author_time = 0;
+  git_person author;
+  time_t author_time = 0;
   git_person committer;
   time_t commit_time = 0;
   string logmsg;
@@ -415,14 +428,11 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 	}
       else if (keyword == "committer")
 	{
-	  int emailstart = param.find('<');
-	  int emailend = param.find('>', emailstart);
-	  int timeend = param.find(' ', emailend + 2);
-	  committer.name = param.substr(0, emailstart - 2);
-	  committer.email = param.substr(emailstart + 1, emailend - emailstart - 1);
-	  commit_time = atol(param.substr(emailend + 2, timeend - emailend - 2).c_str());
-	  L(F("Committer name: '%s', email: '%s', time: '%d'")
-	    % committer.name % committer.email % commit_time);
+	  parse_person_line(param, committer, commit_time);
+	}
+      else if (keyword == "author")
+	{
+	  parse_person_line(param, author, author_time);
 	}
     }
 
@@ -442,6 +452,15 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   cert_revision_author(rid, committer.name, app, dbw);
   cert_revision_changelog(rid, logmsg, app, dbw);
   cert_revision_date_time(rid, commit_time, app, dbw);
+
+  static string const gitcommit_id_cert_name = "gitcommit-id";
+  static string const gitcommit_author_cert_name = "gitcommit-author";
+  put_simple_revision_cert(rid, gitcommit_id_cert_name,
+                           gitrid(), app, dbw);
+  string authorcert = author.name + " <" + author.email + "> "
+                    + boost::lexical_cast<string>(author_time);
+  put_simple_revision_cert(rid, gitcommit_author_cert_name,
+                           authorcert, app, dbw);
 
   return rid;
 }

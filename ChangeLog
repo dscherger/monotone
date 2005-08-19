@@ -1,4 +1,12 @@
 
+2005-08-20  Petr Baudis  <pasky@suse.cz>
+	* cert.hh, cert.cc: Publish put_simple_revision_cert() - that
+	hints that it is ok to do custom certificates and lets us easily
+	do so from the GIT importer.
+	* git.cc: Associate a gitcommit cert containing commit and author
+	information with each imported commit. This will be especially
+	important for incremental imports.
+
 2005-08-18  Petr Baudis  <pasky@suse.cz>
 	* Makefile.am, git.hh, git.cc: Initial support for importing from
 	GIT repositories to Monotone. This is pretty basic yet, full of
