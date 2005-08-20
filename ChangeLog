@@ -1,3 +1,10 @@
+2005-08-19  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* change_set.cc: Add (and use) dump() for vector<path_rearrangement>
+	* pcdv.cc: Clean up P() / L() usage.
+	* pcdv.cc (item_status::suture): Downgrade invariant (should
+	have been error) to warning; was triggered by monotone db.
+
 2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* pcdv.cc (tree_state::merge_with_resolution): bugfix, multiple

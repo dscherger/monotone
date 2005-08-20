@@ -887,7 +887,11 @@ item_status::suture(item_status const & other) const
         versions->insert(*o);
       else
         {
-          I(m->second.first == o->second.first);
+          if (!(m->second.first == o->second.first))
+            {
+              W(F("Sutured items previously had different names in the same revision."));
+              L(F("This was in revision #%1%") % o->first);
+            }
           std::set<revid> s;
           std::vector<revid> const & ov(o->second.second);
           std::vector<revid> & mv(m->second.second);
@@ -998,6 +1002,8 @@ tree_state::~tree_state()
 void
 tree_state::add_suture(item_id l, item_id r)
 {
+  I(l != -1);
+  I(r != -1);
   I(l != r);
   if (l < r)
     {
@@ -1009,7 +1015,10 @@ tree_state::add_suture(item_id l, item_id r)
   if (i != sutures->end())
     add_suture(l, i->second);
   else
-    sutures->insert(make_pair(l, r));
+    {
+      L(F("Suturing item %1% to item %2%") % l % r);
+      sutures->insert(make_pair(l, r));
+    }
 }
 
 void
@@ -1044,6 +1053,9 @@ tree_state::getid(item_id from) const
   item_id out = from;
   while (i != sutures->end())
     {
+      std::map<item_id, item_status>::iterator j = states->find(i->first);
+      if (j != states->end())
+        return i->first;
       out = i->second;
       i = sutures->find(out);
     }
@@ -1164,6 +1176,8 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
                   std::vector<change_set::path_rearrangement> const & changes,
                   std::string revision)
 {
+  tree_state out(mash(trees));
+  L(F("Now processing %1% (#%2%)") % revision % out.itx->intern(revision));
   // shortest first, then in order of:
   // deleted dirs, deleted files, renamed dirs, renamed files, added files
   // sort key is (depth, class, rev#)
@@ -1184,7 +1198,6 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       }
   }
   interner<fpid> cit;
-  tree_state out(mash(trees));
   fpid rootid = cit.intern(file_path()());
   outmap.insert(make_pair(rootid, -1));
   done.insert(-1);
@@ -1239,8 +1252,9 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
           for (std::set<unch>::iterator i = unchanged.begin();
                i != unchanged.end(); ++i)
             {
-              item_id myid = out.getid(i->get<1>());
-              item_id pid = out.getid(i->get<2>());
+              tree_state const & t(*i->get<0>());
+              item_id myid = t.getid(i->get<1>());
+              item_id pid = t.getid(i->get<2>());
               // process this item if its parent has been processed
               if (done.find(pid) == done.end())
                 continue;
@@ -1248,17 +1262,23 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
               if (done.find(myid) != done.end())
                 continue;
               std::map<item_id, item_status>::const_iterator
-                j = out.states->find(myid);
-              I(j != out.states->end());
-              file_path fp = out.get_full_name(j->second);
+                j = t.states->find(myid);
+              I(j != t.states->end());
+              file_path fp = t.get_full_name(j->second);
+              I(!(fp == file_path()));
               done.insert(myid);
               std::pair<std::map<fpid, item_id>::iterator, bool> r;
               r = outmap.insert(make_pair(cit.intern(fp()), myid));
               if (r.first->second != myid)
                 {
-                  W(F("Colliding over %1%") % fp);
+                  L(F("Items %1% and %2% Colliding over %3% in revision %4%")
+                    % myid
+                    % r.first->second
+                    % fp
+                    % revision);
                   out.add_suture(r.first->second, myid);
                 }
+              done.insert(t.getid(myid));
             }
           lastlevel = level;
         }
@@ -1282,7 +1302,7 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
               I(p.second);
               j = p.first;
               addednew = true;
-              L(F("New item: %1%") % to);
+              L(F("New item: %1% (%2%)") % to % current_id);
             }
           else
             {
@@ -1313,6 +1333,7 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
           done.insert(current_id);
           continue;
         }
+      I(!(to == file_path()));
       {
         int d = -1;
         std::set<item_status::item_state> s = current_item.current_names();
@@ -1340,6 +1361,15 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       I(k != outmap.end());
 
       // ...and get it moved in.
+      if (type != added_file && type != added_dir)
+        {
+          std::map<item_id, item_status>::const_iterator
+            i = idx(trees,which).states->find(current_id);
+          if (i != idx(trees,which).states->end())
+            L(F("File %1% being renamed to %2%. (%3%)")
+              % idx(trees,which).get_full_name(i->second)
+              % to % current_id);
+        }
       current_item = current_item.rename(out.itx->intern(revision),
                                          k->second,
                                          new_name);
@@ -1351,15 +1381,20 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       r = outmap.insert(make_pair(cit.intern(to()), current_id));
       if (r.first->second != current_id)
         {
-          W(F("Colliding over %1%") % to);
+          L(F("Items %1% and %2% Colliding over %3% in revision %4%")
+            % current_id
+            % r.first->second
+            % to
+            % revision);
           out.add_suture(r.first->second, current_id);
         }
     }
   for (std::set<unch>::iterator i = unchanged.begin();
        i != unchanged.end(); ++i)
     {
-      item_id myid = out.getid(i->get<1>());
-      item_id pid = out.getid(i->get<2>());
+      tree_state const & t(*i->get<0>());
+      item_id myid = t.getid(i->get<1>());
+      item_id pid = t.getid(i->get<2>());
       // process this item if its parent has been processed
       if (done.find(pid) == done.end())
         continue;
@@ -1367,17 +1402,22 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       if (done.find(myid) != done.end())
         continue;
       std::map<item_id, item_status>::const_iterator
-        j = out.states->find(myid);
-      I(j != out.states->end());
-      file_path fp = out.get_full_name(j->second);
-      done.insert(myid);
+        j = t.states->find(myid);
+      I(j != t.states->end());
+      file_path fp = t.get_full_name(j->second);
+      I(!(fp == file_path()));
       std::pair<std::map<fpid, item_id>::iterator, bool> r;
       r = outmap.insert(make_pair(cit.intern(fp()), myid));
       if (r.first->second != myid)
         {
-          W(F("Colliding over %1%") % fp);
+          L(F("Items %1% and %2% Colliding over %3% in revision %4%")
+            % myid
+            % r.first->second
+            % fp
+            % revision);
           out.add_suture(r.first->second, myid);
         }
+      done.insert(t.getid(myid));
     }
   out.apply_sutures();
   return out;

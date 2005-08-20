@@ -1939,6 +1939,7 @@ process_filetree_history(revision_id const & anc,
       app.db.get_revision(roots.front(), rs);
       std::vector<tree_state> treevec;
       std::vector<change_set::path_rearrangement> revec;
+      MM(revec);
       for (edge_map::const_iterator i = rs.edges.begin();
            i != rs.edges.end(); ++i)
         {
@@ -2827,14 +2828,21 @@ write_change_set(change_set const & cs,
 }
 
 void
+write_insane_path_rearrangement(change_set::path_rearrangement const & re,
+                                data & dat)
+{
+  std::ostringstream oss;
+  basic_io::printer pr(oss);
+  print_insane_path_rearrangement(pr, re);
+  dat = data(oss.str());  
+}
+
+void
 write_path_rearrangement(change_set::path_rearrangement const & re,
                          data & dat)
 {
   re.check_sane();
-  std::ostringstream oss;
-  basic_io::printer pr(oss);
-  print_path_rearrangement(pr, re);
-  dat = data(oss.str());  
+  write_insane_path_rearrangement(re, dat); 
 }
 
 void
@@ -2842,8 +2850,29 @@ dump(change_set const & cs, std::string & out)
 {
   data tmp;
   write_insane_change_set(cs, tmp);
-//  write_change_set(cs, tmp);
   out = tmp();
+}
+
+void
+dump(change_set::path_rearrangement const & pr, std::string & out)
+{
+  data tmp;
+  write_insane_path_rearrangement(pr, tmp);
+  out = tmp();
+}
+
+void
+dump(std::vector<change_set::path_rearrangement> const & obj,
+     std::string & out)
+{
+  out.clear();
+  std::string tmp;
+  for (std::vector<change_set::path_rearrangement>::const_iterator
+         i = obj.begin(); i != obj.end(); ++i)
+    {
+      dump(*i, tmp);
+      out += tmp + "\n\n";
+    }
 }
 
 #ifdef BUILD_UNIT_TESTS
