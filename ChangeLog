@@ -1,3 +1,111 @@
+2005-08-19  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* change_set.cc: Add (and use) dump() for vector<path_rearrangement>
+	* pcdv.cc: Clean up P() / L() usage.
+	* pcdv.cc (item_status::suture): Downgrade invariant (should
+	have been error) to warning; was triggered by monotone db.
+
+2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.cc (tree_state::merge_with_resolution): bugfix, multiple
+	items sharing the empty name is not a suture
+
+2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	PASS 'make check'
+	* pcdv.{cc,hh}: Bugfix tree_state::merge_with_rearrangement .
+	Improve suture-handling code.
+	* pcdv.cc, change_set.cc: Clean up "printf debugging".
+	* change_set.cc: remove commented-out remains of old tree merger
+
+2005-08-17  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Improve testsuite compliance: 1 failure remaining.
+	* tests/t_merge_add_del.at: Remove XFAIL
+	* pcdv.{cc,hh}, change_set.cc: (Ick! Ick! Ick!) allow tree
+	merger to generate sutures. Bugfix suture handling code.
+	Bugfix tree_state::get_changes_for_merge .
+	* sanity.cc (gasp()): When catching an error from dumping a MM'd
+	variable, do not discard output generated prior to the error. This
+	way, at least the header line (function name, file, line no.) is
+	printed.
+	* change_set.cc: write_insane_change_set: new function to write a
+	change set without sanity checking it, now used by dump().
+	* tests/t_rename_added_in_rename.at: Make comment match the code.
+
+2005-08-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* change_set.{cc,hh}: Replace tree merger with the one in pcdv.{cc,hh}.
+		DOES NOT pass ./testsuite (13 failures, 1 unexpected pass)
+		REMOVE disjoint_merge_test() (no longer applicable in
+		this form, and the same functionality is checked in tests/ .)
+	* commands.cc: New merger takes different arguments; update calls.
+	* pcdv.{cc,hh}: Handle sutures better.
+
+2005-08-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh} (tree merger): Teach it about file suturing.
+		(Needed for tracking the monotone db.)
+
+2005-08-03  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: Work on merge functions for trees.
+	* commands.cc: Misc. changes to pcdv driver
+
+2005-08-02  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: Add history-aware filetree merge.
+		TODO: write get_changes_for_merge, add tests.
+	* commands.cc: Call it from the pcdv driver.
+
+2005-07-29  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc (pcdv): Try to make pcdv driver more efficient.
+	* pcdv.{cc,hh}: Handle the interners better.
+
+2005-07-09  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: More speedups; use interners to work with ints instead
+	of strings. Data structure changes.
+	* commands.cc (CMD(pcdv)): Don't keep file_state for unneded revisions.
+	Gets rid of memory usage problems.
+	* interner.hh (interner::intern): Make slightly faster.
+
+2005-07-01  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.cc: Various speedups.
+
+2005-06-29  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.cc: more stuff in test code (same as tests in reference impl)
+	bugfix unique_lcs, living_status, file_state
+
+2005-06-29  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* pcdv.{cc,hh}: many changes, including adding test code.
+	Does not work properly on test code.
+	* commands.cc: pcdv runs new test code first
+	* contrib/monoprof.sh: pcdv test uses different file now
+
+2005-06-27  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* new files: pcdv.{cc,hh}
+	* commands.cc: move precise-cdv to it's own file, even though
+	memory usage is not yet fixed.
+	* Makefile.am: add pcdv.{cc,hh} to sources list
+
+2005-06-27  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc: living_status::merge was missing a line.
+	* contrib/monoprof.sh: add profile test for pcdv
+
+2005-06-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc: Beginnings of precise-cdv merge, as "pcdv" command.
+	(Translation of Python reference implementation posted to Revctrl.)
+	Will be moved to a more appropriate home once it works (currenty
+	has insane memory usage).
+
 2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* std_hooks.lua: accept_testresult_change now only cares about
