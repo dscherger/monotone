@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <queue>
 
 #ifndef WIN32
 
@@ -102,7 +103,7 @@ git_db
   // DAG of the revision ancestry in topological order
   // (top of the stack are the earliest revisions)
   // The @revision can be even head name.
-  stack<git_object_id> load_revs(const string revision);
+  stack<git_object_id> load_revs(const string revision, const set<git_object_id> &exclude);
 
   git_db(const fs::path &path_) : path(path_) { }
 };
@@ -186,9 +187,15 @@ git_db::get_object(const string type, const git_object_id objid, data &dat)
 
 
 stack<git_object_id>
-git_db::load_revs(const string revision)
+git_db::load_revs(const string revision, const set<git_object_id> &exclude)
 {
-  filebuf &fb = capture_cmd_output(F("git-rev-list --topo-order %s") % revision);
+  string excludestr;
+  for (set<git_object_id>::const_iterator i = exclude.begin();
+       i != exclude.end(); ++i)
+    excludestr += " ^" + (*i)();
+
+  filebuf &fb = capture_cmd_output(F("git-rev-list --topo-order %s %s")
+                                   % revision % excludestr);
   istream stream(&fb);
 
   stack<git_object_id> st;
@@ -295,6 +302,127 @@ import_git_tree(git_history &git, app_state &app, git_object_id gittid,
   git.manifestmap[gittid()] = mid;
   ++git.n_objs;
   return mid;
+}
+
+
+static string const gitcommit_id_cert_name = "gitcommit-id";
+static string const gitcommit_author_cert_name = "gitcommit-author";
+
+// TODO: Make git_heads_on_branch() and historical_gitrev_to_monorev() share
+// code.
+
+// Get the list of GIT heads in the database.
+// Under some circumstances, it might insert some redundant items into the set
+// (which doesn't matter for our current usage).
+static void
+git_heads_on_branch(git_history &git, app_state &app, set<git_object_id> &git_heads)
+{
+  queue<revision_id> frontier;
+  set<revision_id> seen;
+
+  // Take only heads in our branch - even if the commits are already in the db,
+  // we want to import them again, just to add our branch membership to them.
+  // (TODO)
+  set<revision_id> heads;
+  get_branch_heads(git.base_branch, app, heads);
+  for (set<revision_id>::const_iterator i = heads.begin();
+       i != heads.end(); ++i)
+    frontier.push(*i);
+
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.front(); frontier.pop();
+
+      if (seen.find(rid) != seen.end())
+	continue;
+      seen.insert(rid);
+
+      revision_set rev;
+      app.db.get_revision(rid, rev);
+
+      vector<revision<cert> > certs;
+      app.db.get_revision_certs(rid, gitcommit_id_cert_name, certs);
+      I(certs.size() < 2);
+      if (certs.size() > 0)
+        {
+	  // This is a GIT commit, then.
+	  cert_value cv;
+	  decode_base64(certs[0].inner().value, cv);
+	  git_object_id gitrid = cv();
+
+	  git.commitmap[gitrid()] = make_pair(rid, rev.new_manifest);
+
+	  git_heads.insert(gitrid);
+	  continue; // stop traversing in this direction
+	}
+
+      for (edge_map::const_iterator e = rev.edges.begin();
+	   e != rev.edges.end(); ++e)
+	{
+	  frontier.push(edge_old_revision(e));
+	}
+    }
+}
+
+// Look up given GIT commit id in present monotone history;
+// this is used for incremental merging. Being smart, it also
+// populates the commitmap with GIT commits it finds along the way.
+static void
+historical_gitrev_to_monorev(git_history &git, app_state &app,
+                             git_object_id gitrid, revision_id &found_rid)
+{
+  queue<revision_id> frontier;
+  set<revision_id> seen;
+
+  // All the ancestry should be at least already in our branch, so there is
+  // no need to work over the whole database.
+  set<revision_id> heads;
+  get_branch_heads(git.base_branch, app, heads);
+  for (set<revision_id>::const_iterator i = heads.begin();
+       i != heads.end(); ++i)
+    frontier.push(*i);
+
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.front(); frontier.pop();
+
+      if (seen.find(rid) != seen.end())
+	continue;
+      seen.insert(rid);
+
+      revision_set rev;
+      app.db.get_revision(rid, rev);
+
+      vector<revision<cert> > certs;
+      app.db.get_revision_certs(rid, gitcommit_id_cert_name, certs);
+      I(certs.size() < 2);
+      if (certs.size() > 0)
+        {
+	  // This is a GIT commit, then.
+	  cert_value cv;
+	  decode_base64(certs[0].inner().value, cv);
+	  git_object_id gitoid = cv();
+
+	  git.commitmap[gitoid()] = make_pair(rid, rev.new_manifest);
+
+	  if (gitoid == gitrid)
+	    {
+	      found_rid = rid;
+	      return;
+	    }
+	}
+
+      for (edge_map::const_iterator e = rev.edges.begin();
+	   e != rev.edges.end(); ++e)
+	{
+	  frontier.push(edge_old_revision(e));
+	}
+    }
+
+  throw oops("Wicked revision tree - incremental import wanted to\n"
+             "import a GIT commit whose parent is not in the Monotone\n"
+	     "database yet. This means a hole must have popped up\n"
+	     "in the Monotone revision history.");
 }
 
 // extract_path_set() is silly and wipes its playground first
@@ -410,10 +538,24 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 	  if (rev.edges.size() >= 2)
 	    continue;
 
-	  // given the topo order, we ought to have the parent hashed
-	  // TODO: except for incremental pulls
-	  revision_id parent_rev = git.commitmap[param].first;
-	  manifest_id parent_mid = git.commitmap[param].second;
+	  revision_id parent_rev;
+	  manifest_id parent_mid;
+
+	  // given the topo order, we ought to have the parent hashed - except
+	  // for incremental pulls
+	  map<git_object_id, pair<revision_id, manifest_id>
+	      >::const_iterator i = git.commitmap.find(param);
+	  if (i != git.commitmap.end())
+	    {
+	      parent_rev = i->second.first;
+	      parent_mid = i->second.second;
+	    }
+	  else
+	    {
+	      historical_gitrev_to_monorev(git, app, param, parent_rev);
+	      app.db.get_revision_manifest(parent_rev, parent_mid);
+	    }
+
 	  manifest_map parent_man;
 	  L(F("parent revision '%s'") % parent_rev.inner());
 	  L(F("parent manifest '%s', loading...") % parent_mid.inner());
@@ -453,8 +595,6 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   cert_revision_changelog(rid, logmsg, app, dbw);
   cert_revision_date_time(rid, commit_time, app, dbw);
 
-  static string const gitcommit_id_cert_name = "gitcommit-id";
-  static string const gitcommit_author_cert_name = "gitcommit-author";
   put_simple_revision_cert(rid, gitcommit_id_cert_name,
                            gitrid(), app, dbw);
   string authorcert = author.name + " <" + author.email + "> "
@@ -491,17 +631,18 @@ import_git_repo(fs::path const & gitrepo,
   setenv("GIT_DIR", gitrepo.native_directory_string().c_str(), 1);
 
   N(app.branch_name() != "", F("need base --branch argument for importing"));
-  set<revision_id> heads;
-  get_branch_heads(app.branch_name(), app, heads);
-  N(heads.size() == 0, F("importing works only to an empty branch for now"));
 
   git_history git(gitrepo);
   git.base_branch = app.branch_name();
 
   {
     transaction_guard guard(app.db);
-    stack<git_object_id> revs = git.db.load_revs("master");
     app.db.ensure_open();
+
+    set<git_object_id> revs_exclude;
+    git_heads_on_branch(git, app, revs_exclude);
+    stack<git_object_id> revs = git.db.load_revs("master", revs_exclude);
+
     while (!revs.empty())
       {
 	ui.set_tick_trailer(revs.top()());

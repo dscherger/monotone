@@ -1,5 +1,10 @@
 
 2005-08-20  Petr Baudis  <pasky@suse.cz>
+	* git.cc: Support for incremental imports - when you pull new
+	stuff to your GIT repository, you can then re-run git_import
+	and it will import the new stuff to a Monotone branch.
+
+2005-08-20  Petr Baudis  <pasky@suse.cz>
 	* cert.hh, cert.cc: Publish put_simple_revision_cert() - that
 	hints that it is ok to do custom certificates and lets us easily
 	do so from the GIT importer.
