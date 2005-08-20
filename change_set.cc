@@ -1654,6 +1654,8 @@ struct itempaths
   file_path left;
   file_path right;
   file_path merged;
+  bool clean;
+  file_id hash;
 
   itempaths(file_path const & a, file_path const & l,
             file_path const & r, file_path const & m):
@@ -1993,6 +1995,7 @@ process_filetree_history(revision_id const & anc,
 
   // do the merge
   std::vector<path_conflict> conf(l.conflict(r));
+  MM(conf);
   std::set<path_conflict::resolution> res;
   for (std::vector<path_conflict>::const_iterator i = conf.begin();
        i != conf.end(); ++i)

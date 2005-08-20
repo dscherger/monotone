@@ -193,12 +193,16 @@ struct path_conflict
 
 struct item_status
 {
-  typedef std::pair<item_id, path_component> item_state;
-  typedef std::map<revid, std::pair<item_state, vector<revid> > > item_data;
+  typedef unsigned int scalar;
+  typedef std::pair<item_id, path_component> path_state;
+  typedef std::map<revid, std::pair<path_state, vector<revid> > > path_data;
+  typedef std::map<revid, std::pair<scalar, std::vector<revid> > > scalar_data;
+  typedef std::pair<path_data, scalar_data> item_data;
   // shared for all versions of this item
   boost::shared_ptr<item_data> versions;
   // shared between all copies of this version of this item
-  boost::shared_ptr<std::vector<revid> const > leaves;
+  boost::shared_ptr<std::pair<std::vector<revid>,
+                              std::vector<revid> > const> leaves;
   bool is_dir;
 
   item_status();
@@ -208,7 +212,8 @@ struct item_status
   ~item_status();
 
   item_status const
-  new_version(vector<revid> const & _leaves) const;
+  new_version(std::pair<std::vector<revid>,
+                        std::vector<revid> > const & _leaves) const;
 
   item_status
   merge(item_status const & other) const;
@@ -216,11 +221,17 @@ struct item_status
   item_status
   suture(item_status const & other) const;
 
-  std::set<item_state>
+  std::set<path_state>
   current_names() const;
+
+  std::set<scalar>
+  current_scalars() const;
 
   item_status
   rename(revid rev, item_id new_parent, path_component new_name) const;
+
+  item_status
+  set_scalar(revid rev, scalar ns) const;
 
   item_status
   copy() const;
@@ -268,8 +279,15 @@ public:
         std::vector<change_set::path_rearrangement> const & changes,
         std::string revision);
 
+  tree_state
+  set_scalars(std::string revision,
+              std::map<file_path, item_status::scalar> const & m) const;
+
   std::vector<path_conflict>
   conflict(tree_state const & other) const;
+
+  std::map<item_id, std::set<item_status::scalar> >
+  current_scalars() const;
   
   bool
   is_clean()
@@ -292,16 +310,16 @@ public:
                         std::string const & revision);
 private:
   file_path
-  get_full_name(item_status::item_state x) const;
+  get_full_name(item_status::path_state x) const;
 
   file_path
   get_full_name(item_status x) const;
 
   file_path
-  try_get_full_name(item_status::item_state x, int & d) const;
+  try_get_full_name(item_status::path_state x, int & d) const;
 
   std::string
-  get_ambiguous_full_name(item_status::item_state x) const;
+  get_ambiguous_full_name(item_status::path_state x) const;
 
   tree_state
   mash(tree_state const & other) const;
@@ -315,6 +333,12 @@ private:
                     interner<fpid> & cit,
                     std::string const & revision);
 };
+
+void
+dump(path_conflict const & obj, std::string & out);
+
+void
+dump(std::vector<path_conflict> const & obj, std::string & out);
 
 void
 dirmerge_test();
