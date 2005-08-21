@@ -1,5 +1,12 @@
 2005-08-21  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* change_set.{cc,hh}: New function, transplant_change_set . Used
+	for update.
+	* change_set.cc: use versioned scalars for tracking file hashes.
+	Clean up project_missing_deltas.
+
+2005-08-21  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	Fix bad merge (user error).
 
 2005-08-20  Timothy Brownawell  <tbrownaw@gmail.com>

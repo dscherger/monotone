@@ -2897,11 +2897,11 @@ CMD(update, "working copy", "",
       // we apply the working to merged changeset to the working copy
       // and keep the rearrangement from chosen to merged changeset in MT/work
 
-      merge_revisions(r_old_id, r_chosen_id, r_old_id, 
-                      old_to_working,
-                      chosen_to_merged,
-                      working_to_merged,
-                      merger, app);
+      transplant_change_set(r_old_id, r_chosen_id,
+                            old_to_working,
+                            chosen_to_merged,
+                            working_to_merged,
+                            merger, app);
       // dump_change_set("chosen to merged", chosen_to_merged);
       // dump_change_set("working to merged", working_to_merged);
 
@@ -3012,7 +3012,7 @@ try_one_merge(revision_id const & left_id,
   
   merge_provider merger(app, anc_man, left_man, right_man);
   
-  merge_revisions(anc_id, left_id, right_id, change_set(),
+  merge_revisions(anc_id, left_id, right_id,
                   *left_to_merged, *right_to_merged,
                   merger, app);
   
