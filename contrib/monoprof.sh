@@ -373,6 +373,22 @@ test_bigfile()
 	popd
 }
 
+TESTS="${TESTS} pcdv"
+pcdv()
+{
+	local TESTNAME="pcdv"
+	local SHORTNAME="pcdv"
+#setup:
+	pushd ${BUILDDIR}
+	profstart
+#run:	
+	mtn pcdv f02571e9d874b48e01921f106107f87257607f0a \
+		6edbbc3496b85a5032fbe0e82347d819a6167206 commands.cc
+	profend
+#cleanup:
+	popd
+}
+
 #TESTS="${TESTS} test_name"
 #test_name()
 #{

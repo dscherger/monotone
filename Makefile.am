@@ -40,6 +40,7 @@ MOST_SOURCES =								\
          selectors.cc selectors.hh					\
          annotate.cc annotate.hh					\
          restrictions.cc restrictions.hh				\
+         pcdv.cc pcdv.hh						\
          hmac.cc hmac.hh                                                \
          globish.cc globish.hh                                          \
          string_queue.cc string_queue.hh                                          \

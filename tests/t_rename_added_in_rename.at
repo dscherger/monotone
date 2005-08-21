@@ -14,7 +14,7 @@ MONOTONE_SETUP
 #     |        \   |
 #     |         merge 1
 #     |             |
-#     RENAME_FILE_R |       - rename_file foo/a bar/a
+#     RENAME_FILE_R |       - rename_file foo/a foo/b
 #               \   |
 #                \  |
 #                 TEST_R
