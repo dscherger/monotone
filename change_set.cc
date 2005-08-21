@@ -1892,6 +1892,8 @@ process_filetree_history(revision_id const & anc,
   typedef std::multimap<revision_id, revision_id>::iterator gi;
   typedef std::map<revision_id, std::pair<int, std::set<revision_id> > >::iterator ai;
 
+  interner<item_status::scalar> itx;
+
   // process history
   std::multimap<revision_id, revision_id> graph, rgraph;
   app.db.get_revision_ancestry(graph);
@@ -1942,6 +1944,7 @@ process_filetree_history(revision_id const & anc,
       std::vector<tree_state> treevec;
       std::vector<change_set::path_rearrangement> revec;
       MM(revec);
+      std::map<file_path, item_status::scalar> sc;
       for (edge_map::const_iterator i = rs.edges.begin();
            i != rs.edges.end(); ++i)
         {
@@ -1957,11 +1960,19 @@ process_filetree_history(revision_id const & anc,
             }
           treevec.push_back(from);
           revec.push_back(edge_changes(i).rearrangement);
+          for (change_set::delta_map::const_iterator
+                 j = edge_changes(i).deltas.begin();
+               j != edge_changes(i).deltas.end(); ++j)
+            {
+              sc.insert(make_pair(delta_entry_path(j),
+                                  itx.intern(delta_entry_dst(j).inner()())));
+            }
         }
-      tree_state newtree(tree_state::merge_with_rearrangement(treevec, revec,
-                                           roots.front().inner()()));
+      tree_state newtree1(tree_state::merge_with_rearrangement(treevec, revec,
+                                            roots.front().inner()()));
+      tree_state newtree2(newtree1.set_scalars(roots.front().inner()(), sc));
 
-      trees.insert(make_pair(roots.front(), newtree));
+      trees.insert(make_pair(roots.front(), newtree2));
 
       ai i = about.find(roots.front());
       I(i != about.end());
@@ -2046,6 +2057,22 @@ process_filetree_history(revision_id const & anc,
       r = ip.insert(std::make_pair(i->first, itempaths()));
       r.first->second.merged = (*i).second;
     }
+
+  std::map<item_id, std::set<item_status::scalar> > sm = m.current_scalars();
+  for (std::map<item_id, std::set<item_status::scalar> >::const_iterator
+         i = sm.begin(); i != sm.end(); ++i)
+    {
+      std::pair<std::map<item_id, itempaths>::iterator, bool> r;
+      r = ip.insert(std::make_pair(i->first, itempaths()));
+      if ((*i).second.size() == 1)
+        {
+          r.first->second.clean = true;
+          r.first->second.hash = file_id(itx.lookup(*(*i).second.begin()));
+        }
+      else
+        r.first->second.clean = false;
+    }
+
   paths.clear();
   paths.reserve(ip.size());
   for (std::map<item_id, itempaths>::const_iterator i = ip.begin();

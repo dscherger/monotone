@@ -2017,7 +2017,11 @@ tree_state::current_scalars() const
   std::map<item_id, std::set<item_status::scalar> > out;
   for (std::map<item_id, item_status>::const_iterator i = states->begin();
        i != states->end(); ++i)
-    out.insert(make_pair(i->first, i->second.current_scalars()));
+    {
+      std::set<item_status::scalar> s = i->second.current_scalars();
+      if (!(s.size() == 1 && *s.begin() == item_status::scalar(-1)))
+        out.insert(make_pair(i->first, s));
+    }
   return out;
 }
 

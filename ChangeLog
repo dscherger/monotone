@@ -1,5 +1,10 @@
 2005-08-20  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* change_set.cc: use versioned scalars to track file edits
+	* pcdv.cc (tree_state::current_scalars): bugfix
+
+2005-08-20  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	* pcdv.{cc,hh} (tree merger): each file now gets a versioned scalar
 
 2005-08-19  Timothy Brownawell  <tbrownaw@gmail.com>
