@@ -1017,6 +1017,7 @@ change_value(std::map<revid, std::pair<T, std::vector<revid> > > & ver,
 //  }
   std::vector<revid> newleaves, badleaves;
   newleaves.push_back(rev);
+  bool changed = false;
   for (vector<revid>::const_iterator i = leaves.begin();
         i != leaves.end(); ++i)
     {
@@ -1024,14 +1025,19 @@ change_value(std::map<revid, std::pair<T, std::vector<revid> > > & ver,
       I(j != ver.end());
       if (j->second.first == val)
         newleaves.push_back(*i);
-      else if (*i != rev)
-        badleaves.push_back(*i);
+      else
+        {
+          changed = true;
+          if (*i != rev)
+            badleaves.push_back(*i);
+        }
     }
   if (i != ver.end())
     ver.erase(i);
   ver.insert(make_pair(rev, make_pair(val, badleaves)));
-  if (badleaves.empty())
+  if (!changed)
     newleaves.erase(newleaves.begin());
+  I(!newleaves.empty());
   return newleaves;
 }
 

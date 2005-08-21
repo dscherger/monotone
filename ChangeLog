@@ -1,5 +1,9 @@
 2005-08-20  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* pcdv.cc (change_value): Bugfix.
+
+2005-08-20  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	* change_set.cc: use versioned scalars to track file edits
 	* pcdv.cc (tree_state::current_scalars): bugfix
 
