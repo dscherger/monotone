@@ -46,6 +46,39 @@
 #include "netxx/streamserver.h"
 #include "netxx/timeout.h"
 
+// TODO: things to do that will break protocol compatibility
+//   -- need some way to upgrade anonymous to keyed pull, without user having
+//      to explicitly specify which they want
+//      just having a way to respond "access denied, try again" might work
+//      but perhaps better to have the anonymous command include a note "I
+//      _could_ use key <...> if you prefer", and if that would lead to more
+//      access, could reply "I do prefer".  (Does this lead to too much
+//      information exposure?  Allows anonymous people to probe what branches
+//      a key has access to.)
+//   -- "warning" packet type?
+//   -- Richard Levitte wants, when you (e.g.) request '*' but don't access to
+//      all of it, you just get the parts you have access to (maybe with
+//      warnings about skipped branches).  to do this right, should have a way
+//      for the server to send back to the client "right, you're not getting
+//      the following branches: ...", so the client will not include them in
+//      its merkle trie.
+//   -- add some sort of vhost field to the client's first packet, saying who
+//      they expect to talk to
+//   -- connection teardown is flawed:
+//      -- simple bug: often connections "fail" even though they succeeded.
+//         should figure out why.  (Possibly one side doesn't wait for their
+//         goodbye packet to drain before closing the socket?)
+//      -- subtle misdesign: "goodbye" packets indicate completion of data
+//         transfer.  they do not indicate that data has been written to
+//         disk.  there should be some way to indicate that data has been
+//         successfully written to disk.  See message (and thread)
+//         <E0420553-34F3-45E8-9DA4-D8A5CB9B0600@hsdev.com> on
+//         monotone-devel.
+//   -- apparently we have a IANA approved port: 4691.  I guess we should
+//      switch to using that.
+//      (It's registered under the name "netsync".  "monotone" would probably
+//      be better, but I don't know how possible it is to change this...)
+
 //
 // this is the "new" network synchronization (netsync) system in
 // monotone. it is based on synchronizing a pair of merkle trees over an
@@ -236,7 +269,7 @@ session
   Netxx::socket_type fd;
   Netxx::Stream str;  
 
-  string inbuf; 
+  string_queue inbuf; 
   // deque of pair<string data, size_t cur_pos>
   deque< pair<string,size_t> > outbuf; 
   // the total data stored in outbuf - this is
@@ -467,7 +500,7 @@ session::session(protocol_role role,
   peer_id(peer),
   fd(sock),
   str(sock, to),
-  inbuf(""),
+  inbuf(),
   outbuf_size(0),
   armed(false),
   remote_peer_key_hash(""),
@@ -1322,7 +1355,7 @@ session::read_some()
           L(F("in error unwind mode, so throwing them into the bit bucket\n"));
           return true;
         }
-      inbuf.append(string(tmp, tmp + count));
+      inbuf.append(tmp,count);
       mark_recent_io();
       if (byte_in_ticker.get() != NULL)
         (*byte_in_ticker) += count;
@@ -1565,7 +1598,16 @@ session::queue_data_cmd(netcmd_item_type type,
 
   L(F("queueing %d bytes of data for %s item '%s'\n")
     % dat.size() % typestr % hid);
+
   netcmd cmd;
+  // TODO: This pair of functions will make two copies of a large
+  // file, the first in cmd.write_data_cmd, and the second in
+  // write_netcmd_and_try_flush when the data is copied from the
+  // cmd.payload variable to the string buffer for output.  This 
+  // double copy should be collapsed out, it may be better to use
+  // a string_queue for output as well as input, as that will reduce
+  // the amount of mallocs that happen when the string queue is large
+  // enough to just store the data.
   cmd.write_data_cmd(type, item, dat);
   write_netcmd_and_try_flush(cmd);
   note_item_sent(type, item);

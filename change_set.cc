@@ -2945,6 +2945,77 @@ spin_change_set(change_set const & cs)
     }
 }
 
+static void
+disjoint_merge_test(std::string const & ab_str,
+                    std::string const & ac_str)
+{
+  change_set ab, ac, bm, cm;
+
+  app_state app;
+
+  L(F("beginning disjoint_merge_test\n"));
+
+  read_change_set(data(ab_str), ab);
+  read_change_set(data(ac_str), ac);
+
+  manifest_map dummy;
+
+  merge_provider merger(app, dummy, dummy, dummy);
+  merge_change_sets(ab, ac, bm, cm, merger, app);
+
+  dump_change_set("ab", ab);
+  dump_change_set("ac", ac);
+  dump_change_set("bm", bm);
+  dump_change_set("cm", cm);
+
+  BOOST_CHECK(bm.rearrangement == ac.rearrangement);
+  BOOST_CHECK(cm.rearrangement == ab.rearrangement);
+
+  L(F("finished disjoint_merge_test\n"));
+}
+
+static void
+disjoint_merge_tests()
+{
+  disjoint_merge_test
+    ("rename_file \"foo\"\n"
+     "         to \"bar\"\n",
+
+     "rename_file \"apple\"\n"
+     "         to \"orange\"\n");
+
+  disjoint_merge_test
+    ("rename_file \"foo/a.txt\"\n"
+     "         to \"bar/b.txt\"\n",
+
+     "rename_file \"bar/c.txt\"\n"
+     "         to \"baz/d.txt\"\n");
+
+  disjoint_merge_test
+    ("patch \"foo/file.txt\"\n"
+     " from [c6a4a6196bb4a744207e1a6e90273369b8c2e925]\n"
+     "   to [fe18ec0c55cbc72e4e51c58dc13af515a2f3a892]\n",
+
+     "rename_file \"foo/file.txt\"\n"
+     "         to \"foo/apple.txt\"\n");
+
+  disjoint_merge_test
+    (
+     "rename_file \"apple.txt\"\n"
+     "         to \"pear.txt\"\n"
+     "\n"
+     "patch \"foo.txt\"\n"
+     " from [c6a4a6196bb4a744207e1a6e90273369b8c2e925]\n"
+     "   to [fe18ec0c55cbc72e4e51c58dc13af515a2f3a892]\n",
+     
+     "rename_file \"foo.txt\"\n"
+     "         to \"bar.txt\"\n"
+     "\n"
+     "patch \"apple.txt\"\n"
+     " from [fe18ec0c55cbc72e4e51c58dc13af515a2f3a892]\n"
+     "   to [435e816c30263c9184f94e7c4d5aec78ea7c028a]\n");  
+}
+
 static void 
 basic_change_set_test()
 {
