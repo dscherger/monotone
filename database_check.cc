@@ -337,7 +337,7 @@ check_certs(app_state & app,
         {
           std::string signed_text;
           cert_signable_text(i->inner(), signed_text);
-          checked.good_sig = check_signature(app.lua, i->inner().key, 
+          checked.good_sig = check_signature(app, i->inner().key, 
                                              checked_keys[i->inner().key].pub_encoded, 
                                              signed_text, i->inner().sig);
         }
@@ -505,9 +505,11 @@ report_revisions(std::map<revision_id, checked_revision> const & checked_revisio
       if (!revision.history_error.empty())
         {
           bad_history++;
+          std::string tmp = revision.history_error;
+          if (tmp[tmp.length() - 1] == '\n')
+            tmp.erase(tmp.length() - 1);
           P(F("revision %s has bad history (%s)\n")
-            % i->first
-            % revision.history_error); 
+            % i->first % tmp);
         }
 
       if (!revision.normalized)

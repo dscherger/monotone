@@ -5,24 +5,26 @@
 
 #include <sys/stat.h>
 
-#include "cryptopp/sha.h"
+#include "botan/botan.h"
+#include "botan/sha160.h"
 
 #include "platform.hh"
 #include "transforms.hh"
 #include "file_io.hh"
+#include "constants.hh"
 
 namespace
 {
   template <typename T> void
-  add_hash(CryptoPP::SHA & hash, T obj)
+  add_hash(Botan::SHA_160 & hash, T obj)
   {
       // FIXME: this is not endian safe, which will cause problems
       // if the inodeprint listing is shared between machines of
       // different types (over NFS etc).
       size_t size = sizeof(obj);
-      hash.Update(reinterpret_cast<byte const *>(&size),
+      hash.update(reinterpret_cast<Botan::byte const *>(&size),
                   sizeof(size));
-      hash.Update(reinterpret_cast<byte const *>(&obj),
+      hash.update(reinterpret_cast<Botan::byte const *>(&obj),
                   sizeof(obj));
   }
 };
@@ -33,7 +35,7 @@ bool inodeprint_file(file_path const & file, hexenc<inodeprint> & ip)
   if (stat(localized_as_string(file).c_str(), &st) < 0)
     return false;
 
-  CryptoPP::SHA hash;
+  Botan::SHA_160 hash;
 
   add_hash(hash, st.st_ctime);
 
@@ -67,9 +69,9 @@ bool inodeprint_file(file_path const & file, hexenc<inodeprint> & ip)
   add_hash(hash, st.st_gid);
   add_hash(hash, st.st_size);
 
-  char digest[CryptoPP::SHA::DIGESTSIZE];
-  hash.Final(reinterpret_cast<byte *>(digest));
-  std::string out(digest, CryptoPP::SHA::DIGESTSIZE);
+  char digest[constants::sha1_digest_length];
+  hash.final(reinterpret_cast<Botan::byte *>(digest));
+  std::string out(digest, constants::sha1_digest_length);
   inodeprint ip_raw(out);
   encode_hexenc(ip_raw, ip);
   return true;

@@ -6,6 +6,8 @@
 
 #include <stdlib.h>
 
+#include "botan/botan.h"
+
 #include "unit_tests.hh"
 #include "sanity.hh"
 
@@ -17,6 +19,7 @@ void dumper()
 {
   if (!clean_shutdown)
         global_sanity.dump_buffer();    
+        Botan::Init::deinitialize();
 }
 
 void clean_shutdown_dummy_test()
@@ -26,6 +29,8 @@ void clean_shutdown_dummy_test()
 
 test_suite * init_unit_test_suite(int argc, char * argv[])
 {
+  Botan::Init::initialize();
+
   clean_shutdown = false;
   atexit(&dumper);
   global_sanity.set_debug();
@@ -80,6 +85,8 @@ test_suite * init_unit_test_suite(int argc, char * argv[])
   
   if (t.empty() || t.find("pipe") != t.end())
     add_pipe_tests(suite);  
+  if (t.empty() || t.find("string_queue") != t.end())
+    add_string_queue_tests(suite);  
   
   // all done, add our clean-shutdown-indicator
   suite->add(BOOST_TEST_CASE(&clean_shutdown_dummy_test));

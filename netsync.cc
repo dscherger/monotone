@@ -36,7 +36,7 @@
 #include "hmac.hh"
 #include "globish.hh"
 
-#include "cryptopp/osrng.h"
+#include "botan/botan.h"
 
 #include "netxx/address.h"
 #include "netxx/peer.h"
@@ -45,6 +45,39 @@
 #include "netxx/stream.h"
 #include "netxx/streamserver.h"
 #include "netxx/timeout.h"
+
+// TODO: things to do that will break protocol compatibility
+//   -- need some way to upgrade anonymous to keyed pull, without user having
+//      to explicitly specify which they want
+//      just having a way to respond "access denied, try again" might work
+//      but perhaps better to have the anonymous command include a note "I
+//      _could_ use key <...> if you prefer", and if that would lead to more
+//      access, could reply "I do prefer".  (Does this lead to too much
+//      information exposure?  Allows anonymous people to probe what branches
+//      a key has access to.)
+//   -- "warning" packet type?
+//   -- Richard Levitte wants, when you (e.g.) request '*' but don't access to
+//      all of it, you just get the parts you have access to (maybe with
+//      warnings about skipped branches).  to do this right, should have a way
+//      for the server to send back to the client "right, you're not getting
+//      the following branches: ...", so the client will not include them in
+//      its merkle trie.
+//   -- add some sort of vhost field to the client's first packet, saying who
+//      they expect to talk to
+//   -- connection teardown is flawed:
+//      -- simple bug: often connections "fail" even though they succeeded.
+//         should figure out why.  (Possibly one side doesn't wait for their
+//         goodbye packet to drain before closing the socket?)
+//      -- subtle misdesign: "goodbye" packets indicate completion of data
+//         transfer.  they do not indicate that data has been written to
+//         disk.  there should be some way to indicate that data has been
+//         successfully written to disk.  See message (and thread)
+//         <E0420553-34F3-45E8-9DA4-D8A5CB9B0600@hsdev.com> on
+//         monotone-devel.
+//   -- apparently we have a IANA approved port: 4691.  I guess we should
+//      switch to using that.
+//      (It's registered under the name "netsync".  "monotone" would probably
+//      be better, but I don't know how possible it is to change this...)
 
 //
 // this is the "new" network synchronization (netsync) system in
@@ -123,7 +156,6 @@
 // HMAC calculated over the payload.  The key for the SHA-1 HMAC is 20
 // bytes of 0 during authentication, and a 20-byte random key chosen
 // by the client after authentication (discussed below).
-//
 // decoding involves simply buffering until a sufficient number of bytes are
 // received, then advancing the buffer pointer. any time an integrity check
 // (the HMAC) fails, the protocol is assumed to have lost synchronization, and
@@ -237,7 +269,7 @@ session
   Netxx::socket_type fd;
   Netxx::Stream str;  
 
-  string inbuf; 
+  string_queue inbuf; 
   // deque of pair<string data, size_t cur_pos>
   deque< pair<string,size_t> > outbuf; 
   // the total data stored in outbuf - this is
@@ -282,7 +314,6 @@ session
   id saved_nonce;
   bool received_goodbye;
   bool sent_goodbye;
-  boost::scoped_ptr<CryptoPP::AutoSeededRandomPool> prng;
 
   packet_db_valve dbw;
 
@@ -469,7 +500,7 @@ session::session(protocol_role role,
   peer_id(peer),
   fd(sock),
   str(sock, to),
-  inbuf(""),
+  inbuf(),
   outbuf_size(0),
   armed(false),
   remote_peer_key_hash(""),
@@ -499,19 +530,6 @@ session::session(protocol_role role,
                                           this, _1));
   dbw.set_on_pubkey_written(boost::bind(&session::key_written_callback,
                                           this, _1));
-  
-  // we will panic here if the user doesn't like urandom and we can't give
-  // them a real entropy-driven random.  
-  bool request_blocking_rng = false;
-  if (!app.lua.hook_non_blocking_rng_ok())
-    {
-#ifndef BLOCKING_RNG_AVAILABLE 
-      throw oops("no blocking RNG available and non-blocking RNG rejected");
-#else
-      request_blocking_rng = true;
-#endif
-    }  
-  prng.reset(new CryptoPP::AutoSeededRandomPool(request_blocking_rng));
 
   done_refinements.insert(make_pair(cert_item, done_marker()));
   done_refinements.insert(make_pair(key_item, done_marker()));
@@ -605,7 +623,8 @@ session::mk_nonce()
 {
   I(this->saved_nonce().size() == 0);
   char buf[constants::merkle_hash_length_in_bytes];
-  prng->GenerateBlock(reinterpret_cast<byte *>(buf), constants::merkle_hash_length_in_bytes);
+  Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
+          constants::merkle_hash_length_in_bytes);
   this->saved_nonce = string(buf, buf + constants::merkle_hash_length_in_bytes);
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
   return this->saved_nonce;
@@ -1336,7 +1355,7 @@ session::read_some()
           L(F("in error unwind mode, so throwing them into the bit bucket\n"));
           return true;
         }
-      inbuf.append(string(tmp, tmp + count));
+      inbuf.append(tmp,count);
       mark_recent_io();
       if (byte_in_ticker.get() != NULL)
         (*byte_in_ticker) += count;
@@ -1579,7 +1598,16 @@ session::queue_data_cmd(netcmd_item_type type,
 
   L(F("queueing %d bytes of data for %s item '%s'\n")
     % dat.size() % typestr % hid);
+
   netcmd cmd;
+  // TODO: This pair of functions will make two copies of a large
+  // file, the first in cmd.write_data_cmd, and the second in
+  // write_netcmd_and_try_flush when the data is copied from the
+  // cmd.payload variable to the string buffer for output.  This 
+  // double copy should be collapsed out, it may be better to use
+  // a string_queue for output as well as input, as that will reduce
+  // the amount of mallocs that happen when the string queue is large
+  // enough to just store the data.
   cmd.write_data_cmd(type, item, dat);
   write_netcmd_and_try_flush(cmd);
   note_item_sent(type, item);
@@ -1650,7 +1678,7 @@ session::process_bye_cmd()
 bool 
 session::process_error_cmd(string const & errmsg) 
 {
-  throw bad_decode(F("received network error: %s\n") % errmsg);
+  throw bad_decode(F("received network error: %s") % errmsg);
 }
 
 bool 
@@ -1706,8 +1734,6 @@ get_branches(app_state & app, vector<string> & names)
 {
   app.db.get_branches(names);
   sort(names.begin(), names.end());
-  if (!names.size())
-    W(F("No branches found."));
 }
 
 static const var_domain known_servers_domain = var_domain("known-servers");
@@ -1803,7 +1829,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       rsa_sha1_signature sig_raw;
       base64< arc4<rsa_priv_key> > our_priv;
       load_priv_key(app, app.signing_key, our_priv);
-      make_signature(app.lua, app.signing_key, our_priv, nonce(), sig);
+      make_signature(app, app.signing_key, our_priv, nonce(), sig);
       decode_base64(sig, sig_raw);
       
       // make a new nonce of our own and send off the 'auth'
@@ -1861,7 +1887,7 @@ session::process_anonymous_cmd(protocol_role role,
       i != branchnames.end(); i++)
     {
       if (their_matcher(*i))
-        if (our_matcher(*i) && app.lua.hook_get_netsync_anonymous_read_permitted(*i))
+        if (our_matcher(*i) && app.lua.hook_get_netsync_read_permitted(*i))
           ok_branches.insert(utf8(*i));
         else
           {
@@ -2000,7 +2026,7 @@ session::process_auth_cmd(protocol_role their_role,
   // check the signature
   base64<rsa_sha1_signature> sig;
   encode_base64(rsa_sha1_signature(signature), sig);
-  if (check_signature(app.lua, their_id, their_key, nonce1(), sig))
+  if (check_signature(app, their_id, their_key, nonce1(), sig))
     {
       // get our private key and sign back
       L(F("client signature OK, accepting authentication\n"));
@@ -2054,7 +2080,7 @@ session::process_confirm_cmd(string const & signature)
       app.db.get_pubkey(their_key_hash, their_id, their_key);
       base64<rsa_sha1_signature> sig;
       encode_base64(rsa_sha1_signature(signature), sig);
-      if (check_signature(app.lua, their_id, their_key, this->saved_nonce(), sig))
+      if (check_signature(app, their_id, their_key, this->saved_nonce(), sig))
         {
           L(F("server signature OK, accepting authentication\n"));
           return true;
@@ -3607,29 +3633,24 @@ make_root_node(session & sess,
 }
 
 void
-insert_with_parents(revision_id rev, set<revision_id> & col, app_state & app)
+insert_with_parents(revision_id rev, set<revision_id> & col, app_state & app, ticker & revisions_ticker)
 {
-  if (col.find(rev) != col.end())
-    return;
-  col.insert(rev);
   vector<revision_id> frontier;
   frontier.push_back(rev);
   while (!frontier.empty())
     {
       revision_id rid = frontier.back();
       frontier.pop_back();
-      if (!null_id(rid))
+      if (!null_id(rid) && col.find(rid) == col.end())
         {
+          ++revisions_ticker;
           col.insert(rid);
           std::set<revision_id> parents;
           app.db.get_revision_parents(rid, parents);
           for (std::set<revision_id>::const_iterator i = parents.begin();
                i != parents.end(); ++i)
             {
-              if (col.find(*i) == col.end())
-                {
-                  frontier.push_back(*i);
-                }
+              frontier.push_back(*i);
             }
         }
     }
@@ -3639,7 +3660,7 @@ void
 session::rebuild_merkle_trees(app_state & app,
                               set<utf8> const & branchnames)
 {
-  P(F("rebuilding merkle trees ...\n"));
+  P(F("finding items to synchronize:\n"));
   for (set<utf8>::const_iterator i = branchnames.begin();
       i != branchnames.end(); ++i)
     L(F("including branch %s") % *i);
@@ -3648,6 +3669,7 @@ session::rebuild_merkle_trees(app_state & app,
   boost::shared_ptr<merkle_table> ktab = make_root_node(*this, key_item);
   boost::shared_ptr<merkle_table> etab = make_root_node(*this, epoch_item);
 
+  ticker revisions_ticker("revisions", "r", 64);
   ticker certs_ticker("certs", "c", 256);
   ticker keys_ticker("keys", "k", 1);
 
@@ -3667,7 +3689,7 @@ session::rebuild_merkle_trees(app_state & app,
         if (branchnames.find(name()) != branchnames.end())
           {
             insert_with_parents(revision_id(idx(certs, i).inner().ident),
-                                revision_ids, app);
+                                revision_ids, app, revisions_ticker);
           }
         else
           {
@@ -3788,7 +3810,7 @@ run_netsync_protocol(protocol_voice voice,
   catch (Netxx::Exception & e)
     {      
       end_platform_netsync();
-      throw oops((F("network error: %s\n") % e.what()).str());;
+      throw oops((F("network error: %s") % e.what()).str());;
     }
   end_platform_netsync();
 }

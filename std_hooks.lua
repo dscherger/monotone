@@ -106,6 +106,7 @@ function ignore_file(name)
    if (string.find(name, "^_darcs/")) then return true end
    if (string.find(name, "^.cdv/")) then return true end
    if (string.find(name, "^.git/")) then return true end
+   if (string.find(name, "%.scc$")) then return true end
    return false;
 end
 
@@ -203,9 +204,19 @@ function get_file_cert_trust(signers, id, name, val)
 end
 
 function accept_testresult_change(old_results, new_results)
-   for test,res in pairs(old_results)
+   local reqfile = io.open("MT/wanted-testresults", "r")
+   if (reqfile == nil) then return true end
+   local line = reqfile:read()
+   local required = {}
+   while (line ~= nil)
    do
-      if res == true and new_results[test] ~= true
+      required[line] = true
+      line = reqfile:read()
+   end
+   io.close(reqfile)
+   for test, res in pairs(required)
+   do
+      if old_results[test] == true and new_results[test] ~= true
       then
          return false
       end
@@ -229,6 +240,26 @@ function merge3_meld_cmd(lfile, afile, rfile)
    end
 end
 
+function merge2_tortoise_cmd(lfile, rfile, outfile)
+   return
+   function()
+      return execute("tortoisemerge",
+                     string.format("/theirs:%s", lfile),
+                     string.format("/mine:%s", rfile),
+                     string.format("/merged:%s", outfile))
+   end
+end
+
+function merge3_tortoise_cmd(lfile, afile, rfile, outfile)
+   return
+   function()
+      return execute("tortoisemerge",
+                     string.format("/base:%s", afile),
+                     string.format("/theirs:%s", lfile),
+                     string.format("/mine:%s", rfile),
+                     string.format("/merged:%s", outfile))
+   end
+end
 
 function merge2_vim_cmd(vim, lfile, rfile, outfile)
    return
@@ -356,6 +387,8 @@ function get_preferred_merge2_command (tbl)
       cmd =   merge2_kdiff3_cmd (left_path, right_path, merged_path, lfile, rfile, outfile) 
    elseif program_exists_in_path ("xxdiff") then 
       cmd = merge2_xxdiff_cmd (left_path, right_path, merged_path, lfile, rfile, outfile) 
+   elseif program_exists_in_path ("TortoiseMerge") then
+      cmd = merge2_tortoise_cmd(lfile, rfile, outfile)
    elseif string.find(editor, "emacs") ~= nil or string.find(editor, "gnu") ~= nil then 
       if string.find(editor, "xemacs") and program_exists_in_path("xemacs") then
          cmd = merge2_emacs_cmd ("xemacs", lfile, rfile, outfile) 
@@ -363,6 +396,9 @@ function get_preferred_merge2_command (tbl)
          cmd = merge2_emacs_cmd ("emacs", lfile, rfile, outfile) 
       end
    elseif string.find(editor, "vim") ~= nil then
+      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 2-way merge.\n"..
+          "You should merge all changes to *LEFT* file due to limitation of program\n"..
+          "arguments.\n\n")) 
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
          cmd = merge2_vim_cmd ("gvim", lfile, rfile, outfile) 
       elseif program_exists_in_path ("vim") then 
@@ -414,7 +450,10 @@ function merge2 (left_path, right_path, merged_path, left, right)
             ret = nil 
          end
       else
-         io.write ("no external 2-way merge command found\n")
+         io.write (string.format("No external 2-way merge command found.\n"..
+            "You may want to check that $EDITOR is set to an editor that supports 2-way merge,\n"..
+            "set this explicitly in your get_preferred_merge2_command hook,\n"..
+            "or add a 2-way merge program to your path.\n\n"))
       end
    end
 
@@ -443,6 +482,8 @@ function get_preferred_merge3_command (tbl)
       cmd = merge3_kdiff3_cmd (left_path, anc_path, right_path, merged_path, lfile, afile, rfile, outfile) 
    elseif program_exists_in_path ("xxdiff") then 
       cmd = merge3_xxdiff_cmd (left_path, anc_path, right_path, merged_path, lfile, afile, rfile, outfile) 
+   elseif program_exists_in_path ("TortoiseMerge") then
+      cmd = merge3_tortoise_cmd(lfile, afile, rfile, outfile)
    elseif string.find(editor, "emacs") ~= nil or string.find(editor, "gnu") ~= nil then 
       if string.find(editor, "xemacs") and program_exists_in_path ("xemacs") then 
          cmd = merge3_emacs_cmd ("xemacs", lfile, afile, rfile, outfile) 
@@ -450,10 +491,13 @@ function get_preferred_merge3_command (tbl)
          cmd = merge3_emacs_cmd ("emacs", lfile, afile, rfile, outfile) 
       end
    elseif string.find(editor, "vim") ~= nil then
+      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 2-way merge.\n"..
+          "You should merge all changes to *LEFT* file due to limitation of program\n"..
+          "arguments.  The order of the files is ancestor, left, right.\n\n")) 
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then 
-         cmd = merge3_vim_cmd ("gvim", lfile, afile, rfile, outfile) 
+         cmd = merge3_vim_cmd ("gvim", afile, lfile, rfile, outfile) 
       elseif program_exists_in_path ("vim") then 
-         cmd = merge3_vim_cmd ("vim", lfile, afile, rfile, outfile) 
+         cmd = merge3_vim_cmd ("vim", afile, lfile, rfile, outfile) 
       end
    elseif program_exists_in_path ("meld") then 
       tbl.meld_exists = true 
@@ -503,7 +547,10 @@ function merge3 (anc_path, left_path, right_path, merged_path, ancestor, left, r
             ret = nil 
          end
       else
-         io.write ("no external 3-way merge command found\n")
+         io.write (string.format("No external 3-way merge command found.\n"..
+            "You may want to check that $EDITOR is set to an editor that supports 3-way merge,\n"..
+            "set this explicitly in your get_preferred_merge3_command hook,\n"..
+            "or add a 3-way merge program to your path.\n\n"))
       end
    end
    

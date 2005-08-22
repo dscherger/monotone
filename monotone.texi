@@ -1250,7 +1250,7 @@ Jim creates his working copy:
 
 @smallexample
 @group
-/home/jim$ monotone setup juice
+/home/jim$ monotone --db=jim.db setup juice
 /home/jim$ cd juice
 /home/jim/juice$
 @end group
@@ -1321,7 +1321,7 @@ recursively scans the directory and adds all its files.
 
 @smallexample
 @group
-$ monotone --db=~/jim.db add include/jb.h src
+$ monotone add include/jb.h src
 monotone: adding include/jb.h to working copy add set
 monotone: adding src/apple.c to working copy add set
 monotone: adding src/banana.c to working copy add set
@@ -1348,7 +1348,7 @@ he has forgotten what he was doing. He asks monotone:
 
 @smallexample
 @group
-$ monotone --db=jim.db status
+$ monotone status
 
 new_manifest [2098eddbe833046174de28172a813150a6cbda7b]
 
@@ -1389,7 +1389,7 @@ he runs a command which prints out the status @emph{and} a GNU
 
 @smallexample
 @group
-$ monotone --db=jim.db diff
+$ monotone diff
 # 
 # add_file "include/jb.h"
 # 
@@ -1457,11 +1457,13 @@ chooses @code{jp.co.juicebot.jb7} as a branch name. (See @ref{Naming
 Conventions} for more information about appropriate branch names.) He
 then commits his working copy, which causes monotone to process the
 @file{MT/work} file and record the file contents, manifest, and revision
-into the database.
+into the database.  Since he didn't give a branch when he ran
+@command{setup}, he has to do so now; monotone will remember the branch
+and re-use it for future commits automatically.
 
 @smallexample
 @group
-$ monotone --db=jim.db --branch=jp.co.juicebot.jb7 commit --message="initial checkin of project"
+$ monotone --branch=jp.co.juicebot.jb7 commit --message="initial checkin of project"
 monotone: beginning commit on branch 'jp.co.juicebot.jb7'
 monotone: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
 @end group
@@ -1623,10 +1625,6 @@ end
 function get_netsync_write_permitted (identity)
   if (identity == "abe@@juicebot.co.jp") then return true end
   if (identity == "beth@@juicebot.co.jp") then return true end
-  return false
-end
-
-function get_netsync_anonymous_read_permitted (branch)
   return false
 end
 ^D
@@ -3392,7 +3390,8 @@ not be the newest revisions, in terms of time, but synchronization of
 computer clocks is not reliable, so monotone usually ignores time.
 
 
-@item monotone merge --branch=@var{branchname}
+@item monotone merge [--branch=@var{branchname}]
+@item monotone merge --lca [--branch=@var{branchname}]
 This command merges the ``heads'' of @var{branchname}, if there are
 multiple heads, and commits the results to the database, marking the
 resulting merged revision as a member of @var{branchname}. The merged
@@ -3404,8 +3403,17 @@ graph and these 3 revisions are provided to the built-in 3-way merge
 algorithm. The process then repeats for each additional head, using
 the result of each previous merge as an input to the next.
 
+The @option{--lca} option is provided as a temporary workaround for some
+inherent problems with 3-way merging; if you encounter a huge number of
+spurious conflicts, or get an invariant failure, then you may wish to
+try using @option{--lca}.  Using it @emph{can}, in certain
+circumstances, cause some edits that should be conflicts to merge
+cleanly instead, which is why it is not the default; but these cases are
+rare, and until we can find something better than 3-way merging to use,
+you may find this option more convenient than @command{explicit_merge}
 
 @item monotone propagate @var{sourcebranch} @var{destbranch}
+@item monotone propagate --lca @var{sourcebranch} @var{destbranch}
 This command takes a unique head from @var{sourcebranch} and merges it
 with a unique head of @var{destbranch}, using the least common
 ancestor of the two heads for a 3-way merge. The resulting revision is
@@ -3421,6 +3429,14 @@ maintenance branches for stable software releases, trivial bug fix
 branches, public contribution branches, or branches devoted to the
 development of a single module within a larger project.
 
+The @option{--lca} option is provided as a temporary workaround for some
+inherent problems with 3-way merging; if you encounter a huge number of
+spurious conflicts, or get an invariant failure, then you may wish to
+try using @option{--lca}.  Using it @emph{can}, in certain
+circumstances, cause some edits that should be conflicts to merge
+cleanly instead, which is why it is not the default; but these cases are
+rare, and until we can find something better than 3-way merging to use,
+you may find this option more convenient than @command{explicit_merge}
 
 @item monotone explicit_merge @var{id} @var{id} @var{destbranch}
 @itemx monotone explicit_merge @var{id} @var{id} @var{ancestor} @var{destbranch}
@@ -3712,9 +3728,8 @@ option when connecting to the server and branch pattern that you want to
 make the new default.
 
 In the server, different permissions can be applied to each branch; see
-the hooks @code{get_netsync_read_permitted},
-@code{get_netsync_write_permitted}, and
-@code{get_netsync_anonymous_read_permitted} (see @ref{Hook Reference}).
+the hooks @code{get_netsync_read_permitted} and
+@code{get_netsync_write_permitted} (see @ref{Hook Reference}).
 
 If a @option{--pid-file} option is specified, the command
 @command{serve} will create the specified file and record the process
@@ -5514,6 +5529,9 @@ manifests, and files associated with @var{branch}; otherwise @code{false}.
 This hook has no default definition, therefore the default behavior is
 to deny all reads.
 
+If a client connects anonymously, this hook will be called with a
+@var{identity} of @code{nil}.
+
 Note that the @var{identity} value is a key ID (such as
 ``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
 key fingerprint (hash) in your database. Monotone will not permit two
@@ -5521,20 +5539,16 @@ keys in your database to have the same ID. Make sure you confirm the
 key fingerprints of each key in your database, as key ID strings are
 ``convenience names'', not security tokens.
 
-@item get_netsync_anonymous_read_permitted (@var{branch})
-
-This hook has identical semantics to @code{get_netsync_read_permitted}
-except that it is called when a connecting client requests anonymous
-read access. There is no corresponding anonymous write
-access hook. This hook has no default definition, therefore the
-default behavior is to deny all anonymous reads.
-
 @item get_netsync_write_permitted (@var{identity})
 
 Returns @code{true} if a peer authenticated as key @var{identity} should
 be allowed to write into your database certs, revisions, manifests, and
 files; otherwise @code{false}.  This hook has no default definition,
 therefore the default behavior is to deny all writes.
+
+If a client connects anonymously, it will be unconditionally denied
+write access; this hook will @emph{not} be called with a @var{identity}
+of @code{nil}.
 
 Note that the @var{identity} value is a key ID (such as
 ``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
@@ -6617,10 +6631,6 @@ Put a symbolic tag cert on a revision.
 
 @item @b{testresult} @i{<id> (0|1|true|false|yes|no|pass|fail)}
 Indicate a passing or failing test result on a revision.
-@comment TROFF INPUT: .TP
-
-@item @b{agraph}
-Dump revision graph to stdout in VCG format.
 @comment TROFF INPUT: .TP
 
 @item @b{diff} @i{[--revision=<id1> [--revision=<id2>] ] [<pathname>...]}

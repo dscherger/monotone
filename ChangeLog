@@ -1,3 +1,572 @@
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* mt_version.cc (print_full_version): Typo.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* mt_version.cc: Include sanity.hh.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (process_error_cmd, run_netsync_protocol): Remove
+	some newlines to avoid translation noise.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* po/LINGUAS, po/ja.po: Remove ja translation again, it seems to
+	be corrupt.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (update): Don't use F() to indent things.
+	
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (dump_diffs): Don't use F() to create diff headers.
+	(commands::process): Put '' in the log message to make Benoît
+	Dejean happy ;-).
+	
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* po/LINGUAS, po/ja.po: Add Japanese translation by Satoru SATOH.
+	
+2005-08-20  Benoît Dejean  <benoit@placenet.org>
+
+	* po/monotone.pot: Remove from version control.
+	* po/POTFILES.skip: New file.
+	* po/fr.po: French translation (initial version).
+	* po/LINGUAS: Add fr.
+	
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (read): Use FP (thanks to Benoît Dejean for
+	catch).
+	* mt_version.cc (print_version, print_full_version): Mark more
+	strings for i18n (also thanks to Benoît Dejean).
+	
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (commands): Revert previous changes, xgettext is
+	buggy.
+	Mark every CMD() string argument with _().
+	* i18n.h, Makefile.am: New file.
+	* sanity.hh: Include it.
+	* po/Makevars (XGETTEXT_OPTIONS): Learn about _() and N_() as
+	markers.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (commands): Oops, can't call gettext on a
+	std::string...
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.cc (coptions, options): Use gettext_noop to mark usage
+	strings for i18n.
+	* commands.cc (commands): gettextify command descriptions
+	* po/Makevars (XGETTEXT_OPTIONS): Include the 2nd, 3rd, and 4th
+	arguments to CMD macro as translatedable strings.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc: Replace a bunch of F()'s by boost::format's,
+	because F is only for strings displayed to user.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* po/Makevars (XGETTEXT_OPTIONS): Extract FP'ed strings.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.hh (FP): New macro.  Usage:
+	FP("frobbed %i bar", "frobbed %s bars", num_bars) % num_bars
+
+2005-08-20  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* revision.hh: Delete doubled line of text in comment.
+
+2005-08-20  Benoît Dejean  <benoit@placenet.org>
+
+	* monotone.cc (cpp_main): setlocale(LC_ALL).
+	* commands.cc (dropkey): Unify warning into a single string.
+
+2005-08-20  Nathaniel Smith  <njs@codesourcery.com>
+
+	* contrib/monoprof.sh (test_commit): Kernel tarball unpacks to
+	linux-$KVER/, not $KVER/.
+
+2005-08-19  Nathaniel Smith  <njs@codesourcery.com>
+
+	* contrib/monoprof.sh (SETUP): Put netsync hooks in the default
+	hook file.
+
+2005-08-19  Nathaniel Smith  <njs@codesourcery.com>
+
+	* contrib/monoprof.sh: Give a sensible error message if $DATADIR
+	doesn't exist.
+
+2005-08-20  Matt Johnston  <matt@ucc.asn.au>
+
+	* database.cc (put_revision): uncomment check_sane_history call
+	(was accidentally committed commented out)
+
+2005-08-19  Nathaniel Smith  <njs@codesourcery.com>
+
+	* monotone.texi (Tutorial): Tweak wording, use --db at more
+	appropriate places.
+
+2005-08-19  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_crlf.at: Adjust expected line count to accomodate diff
+	output change.
+	* commands.cc (CMD(diff)): Include base revision ID in diff output
+	header when diffing against working copy.  Useful to identify what
+	revision a patch was created against.
+	* std_hooks.lua (ignore_file): Ignore Visual SourceSafe junk.
+
+2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* std_hooks.lua: accept_testresult_change now only cares about
+	testresults listed in MT/wanted-testresults
+
+2005-08-18  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* INSTALL: Remove outdated references to configure options and
+	Solaris build workarounds.
+	* configure.ac: Lower gettext requirement from 0.12.1 to 0.11.5.
+
+2005-08-17  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* sanity.cc (gasp()): When catching an error from dumping a MM'd
+	variable, do not discard output generated prior to the error. This
+	way, at least the header line (function name, file, line no.) is
+	printed.
+	* change_set.cc: write_insane_change_set: new function to write a
+	change set without sanity checking it, now used by dump().
+
+2005-08-17  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* unix/process.cc: missing include
+	* m4/fexceptions.m4, configure.ac, Makefile.am: remove hardcoded
+	-fexceptions in CFLAGS and add it only if compiler doesn't freak
+	out.
+
+2005-08-17  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (build_additions): Tweak wording.
+
+2005-08-17  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc: Add IANA port assignment to the todo list.
+
+2005-08-17  Nathaniel Smith  <njs@pobox.com>
+
+	* unix/process.cc (make_executable): Open the fd read-only, avoids
+	problems with read-only files, and a writeable fd doesn't seem to
+	be necessary to change permission bits.
+
+2005-08-17  Nathaniel Smith  <njs@pobox.com>
+
+	* unix/process.cc (is_executable, make_executable): When reporting
+	an error in a syscall, include the actual error message.
+
+2005-08-17  Nathaniel Smith  <njs@pobox.com>
+
+	* lua.cc (dump_stack): New function.
+	(Lua::fail): New method; use above.
+	(get, get_fn, get_tab, get_str, get_num, get_bool, extract_str)
+	(extract_int, extract_double, extract_bool, begin, next, pop): Use
+	it, to give better logging.
+	
+2005-08-17  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (lib3rdparty_a_CFLAGS): Build 3rd party C code with
+	-fexceptions.
+
+2005-08-17  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* win32/process.cc: Slightly smarter argv->cmdline munging.
+	* std_hooks.lua: Merge hooks for TortoiseMerge (part of
+	TortoiseSVN).
+
+2005-08-17  Nathaniel Smith  <njs@pobox.com>
+
+	* lua.cc (lua_hooks): Re-enable panic thrower, we no longer
+	support Lua 4.
+
+2005-08-16  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc: Add more netsync todos.
+
+2005-08-15  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_explicit_merge_with_anc.at: New test.
+	* testsuite.at: Add it.
+
+2005-08-15  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_log_brief.at: New test.
+	* testsuite.at: Add it.
+
+2005-08-15  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (fcommit): Remove.  This command has never been
+	documented, tested, or maintained; it also doesn't avoid the use
+	of temporary files (which was supposed to be its purpose).  Has it
+	ever actually been used...?
+	
+2005-08-15  Nathaniel Smith  <njs@pobox.com>
+
+	* lua.cc (hook_init_attributes): Do more logging; use begin()
+	instead of starting iteration by hand.
+
+2005-08-15  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* testsuite.at, tests/*.at: make testsuite less demanding:
+	- QGREP() and QEGREP() provide a portable [e]grep -q
+	- export FOO=bar -> FOO=bar; export FOO
+	- tail -n $x -> TAIL($x) with appropriate macro
+
+2005-08-15  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* m4/typeof.m4: new test, looks if compiler knows the typeof()
+	extension
+	* configure.ac: use it
+	* sanity.hh: use the test, and boost's abstraction over
+	__PRETTY_FUNCTION__ and similar pseudo-macros
+
+2005-08-15  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* configure.ac (BOOST_FIX_VERSION): only apply that fix on gcc.
+
+2005-08-14  Nathaniel Smith  <njs@pobox.com>
+
+	* configure.ac (BOOST_VERSION_CHECK, BOOST_FIX_VERSION): Fix for
+	cross-compilation.  (Thanks to John Bowler <jbowler@acm.org>.)
+
+2005-08-14  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at: Don't use agraph.
+	* Makefile.am: Minor cleanups.
+
+2005-08-13  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* botan/gzip.cpp, botan/mutex.cpp: c functions via c* headers need
+	std:: prefix
+
+2005-08-13  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* schema_migration.cc (lowercase): it's only used for processing sha1
+	values whos size we know: make array size constant
+	* transforms.cc (encode_hexenc, decode_hexenc): they have to work with
+	all kinds of string sizes, so at least make them nicer by using
+	boost::scoped_array
+
+2005-08-13  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* revision.cc: make copy constructor of revision_set behave like
+	normal constructor in case it's copying a freshly created object
+
+2005-08-13  Nathaniel Smith  <njs@pobox.com>
+
+	* testsuite.at: Use SEGV to kill netsync servers, in hopes it will
+	give better coverage information.
+
+2005-08-13  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* configure.ac: Remove an obsolete check to see if SQLite was
+	bundled or not, because the bundled version has been used
+	exclusively for quite some time.
+
+2005-08-13  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* database_check.cc: Remove trailing newline from error messages
+	when embedding them inside other strings, so that the trailing
+	closing parenthesis is printed correctly.
+
+2005-08-13  Julio M. Merino Vidal  <jmmv@menta.net>
+
+	* configure.ac: Add '-mt' as another possible suffix to detect the
+	Boost libraries.  It's very common when these libraries are built
+	with the "native naming layout".
+
+2005-08-13  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.1, monotone.texi: Don't mention agraph.
+	* tests/t_netsync_repeated.at: Don't use agraph.
+	* tests/t_netsync_unrelated.at: Likewise.
+
+2005-08-13  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (agraph): Remove.
+
+2005-08-13  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_commit_log_writeback.at: New test.
+	* testsuite.at: Add it.
+
+2005-08-12  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (commit): When user uses --message or
+	--message-file, don't require non-empty logs, and don't write out
+	message to MT/log.  (This makes re-running a 'commit -m foo'
+	command line until it works possible; otherwise the second try
+	will get a 'MT/log non-empty and -m supplied' error.)
+
+2005-08-11  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc: Add a list of ideas for improvement that will break
+	network compatibility and thus perhaps should go together.
+
+2005-08-11  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_commit_message_file.at: Un-double file contents.
+
+2005-08-11  Nathaniel Smith  <njs@pobox.com>
+
+	* lua.cc (ok, extract_str, extract_int, extract_double)
+	(extract_bool): Add more logging.
+
+2005-08-11  Patrick Mauritz <oxygene@studentenbude.ath.cx>
+
+	* INSTALL: remove section about crypto++ on solaris
+	* config.rpath, mkinstalldirs, po/Makefile.in.in,
+	  various files in m4, ABOUT-NLS:
+	  remove as they're autogenerated
+	* hash_map.hh, m4/gnucxxhashmap.m4, m4/stlporthashmap.m4:
+	  new files, abstraction over hash_map differences in STL impls.
+	* m4/externtemplate.m4: new file, check if compiler is happy
+	  with "extern template"
+	* configure.ac: hook up the new autoconf tests
+	* Makefile.am: remove -Wall
+	* botan/gzip.cpp, botan/mutex.cpp: add includes
+	* constants.*: move values to .hh if used for array sizes
+	* interner.hh, xdelta.cc: use hash_map.hh
+	* merkle_tree.cc, unix/inodeprint.cc: make array size truly
+	  constant 
+	* sanity.hh: work-around for missing typeof() and
+	  __PRETTY_FUNCTIONS on non-gcc compilers
+	* schema_migration.cc, transforms.cc: moved dynamically
+	  initialized array to heap
+	* transforms.hh, vocab.hh: use externtemplate autoconf test
+
+2005-08-10  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.spec: include zlib-devel and texinfo as build
+	requirements, zlib as a runtime requirement.
+
+2005-08-09  Eric Anderson  <anderse-monotone@cello.hpl.hp.com>
+ 
+	* Changes to significantly improve network pull performance
+	* string_queue.hh: created to store pending data and allow for
+	efficient removal from the front.  The string queue automatically
+	reduces its buffer size if it is very empty.  	
+	* hmac.{cc,hh}: Add in a version of chained_hmac::process that can
+	operate on a string_queue for use during read.
+	* netcmd.{cc,hh}: update netcmd::read to use a string_queue rather
+	than a string, update all the regression tests also.  This required
+	the somewhat ugly creation of a read_string function because the
+	netcmd read and write functions are no longer using the same type.
+	* netio.hh: introduce functions for operating on a string_queue. They
+	are identical to the equivalent string functions except for the type
+	of the argument.
+	* netsync.cc: Use a string_queue rather than a string for storing the 
+	input and output buffers.
+
+	* string_queue.cc: unit tests (Matt Johnston)
+
+2005-08-09  Richard Li  <richardl@redhat.com>
+
+	* std_hooks.lua (merge2, merge3): explain a little better why
+	monotone can't find a merge command.
+
+2005-08-09  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (update): Fix helpful error message to suggest
+	_current_ commandline syntax.
+
+2005-08-09  Olivier Andrieu  <oliv__a@users.sourceforge.net>
+
+	* contrib/monotone.el: a couple of fixes spotted by the compiler
+	* Changelog, contrib/colorize: utf8ize
+
+2005-08-09  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Put a time in.
+	* po/monotone.pot: Regenerate.
+	
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* configure.ac, monotone.spec, debian/changelog:
+	* win32/monotone.iss: Bump version number.
+
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* UPGRADE: Fix title.
+	* NEWS: Add --lca.
+
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (merge, propagate): Take --lca.
+	* options.hh: Add OPT_LCA.
+	* monotone.cc (coptions, cpp_main): Support it it.
+	* app_state.{hh,cc} (app_state::usa_lca): New variable.
+	* revision.cc (find_common_ancestor_for_merge): Use LCA if user
+	passed --lca.
+	* tests/t_merge_lca.at: New test.
+	* testsuite.at: Add it.
+	* monotone.texi (Tree): Document --lca.
+	
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: First-pass for 0.22 release.
+	* UPGRADE: Likewise.
+
+2005-08-08  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (BOTAN_SOURCES): Add botan headers.
+	* po/monotone.pot: Regenerate.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees, insert_with_parents): Make a
+	ticker for added revisions, since traversing the tree to pull in
+	ancestors causes a noticeable pause before the cert/key tickers
+	start up.
+	(insert_with_parents): Also simplify logic.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (pull): Clarify what the "doing anonymous pull"
+	message means and what you might do about it.
+
+2005-08-07  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Network Service, Hooks): Document
+	get_netsync_read_permitted as getting a nil value on anonymous
+	connects.
+	* lua.{cc.hh} (hook_get_netsync_anonymous_read_permitted):
+	Remove. Replace with 1-argument version of
+	hook_get_netsync_write_permitted.
+	* netsync.cc (process_anonymous_cmd): Update.
+	* tests/t_netsync_permissions.at: Likewise.
+
+2005-08-07  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* botan/{data_snk,es_file}.cpp: Open fstreams in binary mode.
+	These changes, plus the same change for data_src.cpp and
+	es_ftw.cpp, have been sent upstream.
+
+2005-08-05  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (commit): Write out the log message to MT/log
+	_after_ making sure it's non-empty.
+	* tests/t_commit_cancelled.at: New test.
+	* testsuite.at: Add it.
+	
+2005-08-04  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees): Typo.
+
+2005-08-04  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (rebuild_merkle_trees): Tweak message ("rebuilding
+	merkle trees" does not mean anything to J. Random User...)
+
+2005-08-04  Nathaniel Smith  <njs@pobox.com>
+
+	* manifest.cc (build_restricted_manifest_map): In 'missing files'
+	error message, explain how to recover.
+
+2005-08-03  Nathaniel Smith  <njs@pobox.com>
+
+	* testsuite.at (NETSYNC_ADDRESS): New macro.
+	(NETSYNC_SERVE_N_START, NETSYNC_SERVE_START)
+	(NETSYNC_CLIENT_N_RUN): Use it.
+	
+	* tests/t_netsync_checks_server_key.at: Make sure can unset the
+	known-servers entry.
+
+2005-08-03  Matthew A. Nicholson  <matt@matt-land.com>
+
+	* std_hooks.lua (get_preferred_merge2_command)
+	(get_preferred_merge3_command): Provide more information on how to
+	use vim as merge tool.
+
+2005-08-03  graydon hoare  <graydon@pobox.com>
+
+	* unix/process.cc (make_executable): Fix race, set user/group/other.
+
+2005-08-03  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* botan/data_src.cpp (DataSource_Stream::DataSourceStream): Open
+	fstream as binary file.
+
+2005-08-03  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* win32/inodeprint.cc: Botan changes.  Also, hash individual
+	FileTime structure members rather than the entire structure.
+	* keys.cc: Add explicit 'using' for Botan::byte.
+	* botan/es_win32.{cpp,h}: Add missing files.
+	* Makefile.am: Enable entropy collection via CryptoAPI and Win32
+	API.
+
+2005-08-02  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/gzip.cpp: forgot to commit some semicolons
+
+2005-08-02  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/gzip.{cpp,h}: rearranged the code to be clearer.
+
+2005-08-01  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (get_branches): Remove warning when there are no
+	branches.
+
+2005-07-29  Nathaniel Smith  <njs@pobox.com>
+
+	* globish.cc (matcher::operator()): Log what's happening.
+	(checked_globish_to_regex_test): Fix previously added test.
+
+2005-07-29  Nathaniel Smith  <njs@pobox.com>
+
+	* globish.cc (checked_globish_to_regex_test): Add another test for
+	quoted characters.
+
+2005-07-28  Nathaniel Smith  <njs@pobox.com>
+
+	* update.cc (calculate_update_set): Only include current rev in
+	update set if it is an acceptable candidate.
+	* commands.cc (update): Clarify error message in this case.
+	* tests/t_update_branch.at: Update accordingly.
+
+2005-07-28  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.spec: Require boost >= 1.32.
+
+2005-07-27  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_merge_add_del.at: 'drop' does not take a branch (test
+	now fails in expected place).
+	* tests/t_merge_add_rename_add.at: New test.
+	* testsuite.at: Add it.
+
+2005-07-27  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_update_branch.at: New test.
+	* testsuite.at: Add it.
+	(REVERT_TO): Do not preserve MT/options file (can setup invalid
+	branch).
+	* app_state.cc (make_branch_sticky): Call write_options when
+	already have a working copy.
+	* commands.cc (update): Call make_branch_sticky at appropriate
+	time.
+
+2005-07-27  Nathaniel Smith  <njs@pobox.com>
+	
+	* commands.cc: ALIAS(mv, rename).  ALIAS(rm, drop).
+
 2005-07-26  Nathaniel Smith  <njs@pobox.com>
 
 	* change_set.cc (dump): Add state_renumbering dumper.
@@ -241,6 +810,16 @@
 	* NEWS: Add diff changes, more tweaking.
 	* UPGRADE: Update for 0.21.
 	* AUTHORS: Add Vladimir Vukicevic.
+
+2005-07-18  Matt Johnston  <matt@ucc.asn.au>
+
+	* netsync.cc: merge fixup
+	* botan/pipe_rw.cpp (read_all_as_string): make it smarter and faster
+
+2005-07-18  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/sha160.{cpp,h}: new faster sha160 implementation from Jack Lloyd
+	and Kaushik Veeraraghavan.
 
 2005-07-17  Nathaniel Smith  <njs@pobox.com>
 
@@ -511,6 +1090,16 @@
 
 	* interner.hh: make slightly faster
 
+2005-07-11  Matt Johnston  <matt@ucc.asn.au>
+
+	* hmac.cc: <string> not <string.h>
+
+2005-07-11  Matt Johnston  <matt@ucc.asn.au>
+
+	* keys.cc (encrypt_rsa): fix typo
+	* hmac.{cc,hh}: store key as SymmetricKey, pass correctly to
+	MAC_Filter
+
 2005-07-10  Nathaniel Smith  <njs@pobox.com>
 
 	* ChangeLog, configure.ac: Re-remove mysteriously revived
@@ -571,6 +1160,16 @@
 	* monotone.texi (Generating Keys): Make it a little clearer that
 	we aren't necessarily recommending people store their passphrase
 	in plaintext.
+
+2005-07-08  Matt Johnston  <matt@ucc.asn.au>
+
+	* propagate mainline to botan branch
+
+	* constants.{cc,hh}: add sha1_digest_length as botan
+	doesn't provide a convenient definition.
+	* hmac.{cc,hh}: convert to use botan
+	* keys.cc (encrypt_rsa, decrypt_rsa): use botan
+	* transforms.{cc,hh}: use botan
 
 2005-07-08  Matt Johnston  <matt@ucc.asn.au>
 
@@ -3765,6 +4364,11 @@
 	* tests/t_sql_unpack.at: New test.
 	* testsuite.at: Add it.
 
+2005-04-04  Matt Johnston  <matt@ucc.asn.au>
+
+	* file_io.cc (read_data_stdin): make it use botan
+	* mkstemp.cc: merge cleanup (missed something up the manual merge)
+
 2005-04-04  Nathaniel Smith  <njs@codesourcery.com>
 
 	* contrib/ciabot_monotone.py (config): Genericize again, so lazy
@@ -4092,6 +4696,19 @@
         such as 'log'.
         * tests/t_netsync_sigpipe.at: test it.
         * testsuite.at: add it.
+
+2005-03-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/t_database_check.at: re-encode the manifestX
+	data so that it doesn't use any fancy gzip features like
+	filenames (so that the botan parse can handle it).
+	( if it should be able to handle it, an additional test
+	can be added testing it explicitly).
+
+2005-03-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/base64.h: Change default break value so that
+	output is split into 72 col lines.
 
 2005-03-25  Matt Johnston  <matt@ucc.asn.au>
 
@@ -5583,6 +6200,13 @@
 	(import_states_by_branch): Add 'revisions' argument.
 	(import_cvs_repo): Add a stage 3 that writes out the revisions
 	accumulated in the 'revisions' vector.
+	
+2005-01-27  Matt Johnston  <matt@ucc.asn.au>
+
+	(compile fixes for Linux/gcc 3.3.4)
+	* botan/{util.cpp,primes.cpp}: give large constants ULL
+	suffixes
+	* botan/{gzip.cpp}: fix type for std::max() comparison
 
 2005-01-27  graydon hoare  <graydon@pobox.com>
 
@@ -6003,6 +6627,11 @@
 	informative.
 	(rcs_import): Also add more details to help text.
 
+2005-01-17  Matt Johnston  <matt@ucc.asn.au>
+
+	* file_io.cc: re-add accidentally removed #include
+	* botan/gzip.cc: improved comments, removed unused code
+
 2005-01-17  Nathaniel Smith  <njs@codesourcery.com>
 
 	* diff_patch.cc (normalize_extents): Add missing ')'.
@@ -6053,7 +6682,7 @@
 	* AUTHORS: Mention Wojciech and Neil.
 	* revision.cc (calculate_ancestors_from_graph): Make non-recursive.
 
-2005-01-17  Wojciech MiÃkowski  <wmilkowski@interia.pl>
+2005-01-17  Wojciech Miłkowski  <wmilkowski@interia.pl>
 
 	* std_hooks.lua: Teach about meld.
 
@@ -6246,6 +6875,18 @@
 	(log) add Ancestor: and Branch: entries to output; use above new
 	function
 	* tests/t_cross.at: update to work with changesets
+
+2005-1-1  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/base64.cpp: Include a terminating newline in all cases for
+	compatibility with cryptopp
+
+2005-1-1  Matt Johnston  <matt@ucc.asn.au>
+
+	* keys.cc: fix merge issues propagating 0.16 to net.venge.monotone.botan
+	* botan/config.h: add it
+	* botan/{aes,des,dh,dsa,elgamal,lion,lubyrack,nr,rw,openpgp}*: removed
+	unused files.
 
 2004-12-30  graydon hoare  <graydon@pobox.com>
 
@@ -7124,6 +7765,10 @@
 	* change_set.cc (merge_disjoint_analyses): Prevent duplicated
 	tids being used.
 	(merge_disjoint_analyses): Fix typo (s/a_tmp/b_tmp/)
+
+2004-11-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* Replaced cryptopp with botan
 
 2004-11-24  Nathaniel Smith  <njs@codesourcery.com>
 

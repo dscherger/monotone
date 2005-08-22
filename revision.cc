@@ -21,7 +21,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "cryptopp/osrng.h"
+#include "botan/botan.h"
 
 #include "basic_io.hh"
 #include "change_set.hh"
@@ -73,6 +73,8 @@ revision_set::is_merge_node() const
 
 revision_set::revision_set(revision_set const & other)
 {
+  /* behave like normal constructor if other is empty */
+  if (null_id(other.new_manifest) && other.edges.empty()) return;
   other.check_sane();
   new_manifest = other.new_manifest;
   edges = other.edges;
@@ -502,6 +504,11 @@ find_common_ancestor_for_merge(revision_id const & left,
                                revision_id & anc,
                                app_state & app)
 {
+  // Temporary workaround until we figure out how to clean up the whole
+  // ancestor selection mess:
+  if (app.use_lca)
+    return find_least_common_ancestor(left, right, anc, app);
+
   interner<ctx> intern;
   std::map< ctx, shared_bitmap > 
     parents, ancestors, dominators;
@@ -1175,12 +1182,11 @@ void anc_graph::write_certs()
 
   {
     // regenerate epochs on all branches to random states
-    CryptoPP::AutoSeededRandomPool prng;
     
     for (std::set<std::string>::const_iterator i = branches.begin(); i != branches.end(); ++i)
       {
         char buf[constants::epochlen_bytes];
-        prng.GenerateBlock(reinterpret_cast<byte *>(buf), constants::epochlen_bytes);
+        Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
         hexenc<data> hexdata;
         encode_hexenc(data(std::string(buf, buf + constants::epochlen_bytes)), hexdata);
         epoch_data new_epoch(hexdata);

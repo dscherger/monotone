@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT(monotone, 0.21, monotone-devel@nongnu.org)
+AC_INIT(monotone, 0.22, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE(1.7.1)
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_TESTDIR([tests])
@@ -25,16 +25,26 @@ test "z$CFLAGS" = "z" && CFLAGS="-O2 -fno-strict-aliasing"
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_RANLIB
+AC_CC_FEXCEPTIONS
 AC_LANG(C++)
+
+AC_PROG_CXX_WARNINGS
+AC_CXX_TYPEOF
+
+AC_CXX_GNUCXX_HASHMAP
+AC_CXX_STLPORT_HASHMAP
 
 # check to see how to make objects in subdirs
 AM_PROG_CC_C_O
+
+# check for language features
+AC_CXX_EXTERN_TEMPLATE
 
 # intl / gettext
 # the AM_GNU_GETTEXT macro test won't compile with g++
 AC_LANG_PUSH(C)
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION(0.12.1)
+AM_GNU_GETTEXT_VERSION(0.11.5)
 AM_ICONV
 AC_LANG_POP()
 
@@ -82,9 +92,14 @@ AC_CHECK_FUNC([pthread_mutex_lock], [],
 AC_DEFUN([BOOST_VERSION_CHECK],
 [AC_CACHE_CHECK([boost version 1.32 or newer], ac_cv_version_boost,
 [
-  AC_TRY_RUN(
+  AC_COMPILE_IFELSE(
   [#include <boost/version.hpp>
-  int main() { return (BOOST_VERSION < 103200); }],
+  #if BOOST_VERSION >= 103200
+  int main() { return 0; }
+  #else
+  #error boost version is too old
+  #endif
+  ],
   ac_cv_version_boost=yes,
   ac_cv_version_boost=no)
 ])
@@ -101,9 +116,14 @@ BOOST_VERSION_CHECK
 AC_DEFUN([BOOST_FIX_VERSION],
 [AC_CACHE_CHECK([if boost requires extra flags to compile], ac_fix_boost,
 [
-  AC_TRY_RUN(
+  AC_COMPILE_IFELSE(
   [#include <boost/version.hpp>
-  int main() { return (BOOST_VERSION != 103200); }],
+  #if (BOOST_VERSION == 103200) && defined(__GNUC__)
+  int main() { return 0; }
+  #else
+  #error boost version is not 1.32.0
+  #endif
+  ],
   ac_fix_boost=yes,
   ac_fix_boost=no)
 ])
@@ -128,7 +148,7 @@ AC_SUBST(BOOST_SUFFIX)
 # Now check for Boost libraries proper.
 
 found=no
-suffixes=${BOOST_SUFFIX:-"none -gcc -mipspro -sunpro"}
+suffixes=${BOOST_SUFFIX:-"none -gcc -mipspro -mt -sunpro"}
 for BOOST_SUFFIX in ${suffixes}
 do
     test "x${BOOST_SUFFIX}" = "xnone" && BOOST_SUFFIX=
@@ -284,6 +304,7 @@ AH_TEMPLATE([USE_DLOPEN], [For LUA: use dlopen for loadlib])
 AC_SEARCH_LIBS([inet_aton], [resolv])
 AC_SEARCH_LIBS([accept], [socket])
 AC_SEARCH_LIBS([inet_ntoa], [nsl])
+AC_CHECK_LIB([z], [deflate], , AC_MSG_FAILURE([zlib is required]))
 
 # Now let the user specify whether he wants large file support or not in
 # sqlite.
@@ -295,11 +316,7 @@ AC_ARG_ENABLE([large-file],
 )
 
 if test "x$enable_large_file" = "xno"; then
-   if test "x$bundled_sqlite" = "xno"; then
-      AC_MSG_WARN(--disable-large-file has no effect when using the bundled sqlite)
-   else
-      SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DSQLITE_DISABLE_LFS"
-   fi
+   SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DSQLITE_DISABLE_LFS"
 fi
 AC_SUBST(SQLITE_CPPFLAGS)
 
