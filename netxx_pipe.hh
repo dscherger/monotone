@@ -29,7 +29,7 @@ class PipeStream : public StreamBase
     friend class PipeCompatibleProbe;
 #endif
 public:
-    explicit PipeStream (int readfd, int writefd);
+    explicit PipeStream (int readfd, int writefd); // Timeout?
     explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);
     virtual signed_size_type read (void *buffer, size_type length);
     virtual signed_size_type write (const void *buffer, size_type length);
