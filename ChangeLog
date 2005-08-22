@@ -1,5 +1,9 @@
 2005-08-22  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* commands.cc: remove tree merger from the pcdv test driver
+
+2005-08-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	* change_set.cc (process_filetree_history): Only go back to the lcad.
 	Prehistory isn't needed for merging, and slows things down a lot.
 
