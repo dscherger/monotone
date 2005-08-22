@@ -837,9 +837,9 @@ CMD(dropkey, "key and cert", "KEYID", "drop a public and private key", OPT_NONE)
   if (app.db.private_key_exists(ident))
     {
       P(F("dropping private key '%s' from database\n\n") % ident);
-      W(F("the private key data may not have been erased from the"));
-      W(F("database. it is recommended that you use 'db dump' and"));
-      W(F("'db load' to be sure."));
+      W(F("the private key data may not have been erased from the\n"
+          "database. it is recommended that you use 'db dump' and\n"
+          "'db load' to be sure."));
       app.db.delete_private_key(ident);
       key_deleted = true;
     }
@@ -2586,6 +2586,7 @@ CMD(diff, "informative", "[PATH]...",
   manifest_map m_new;
   bool new_is_archived;
   diff_type type = app.diff_format;
+  ostringstream header;
 
   change_set composite;
 
@@ -2604,6 +2605,9 @@ CMD(diff, "informative", "[PATH]...",
       if (r_new.edges.size() == 1)
         composite = edge_changes(r_new.edges.begin());
       new_is_archived = false;
+      revision_id old_rid;
+      get_revision_id(old_rid);
+      header << "# old_revision [" << old_rid << "]" << endl;
     }
   else if (app.revision_selectors.size() == 1)
     {
@@ -2617,26 +2621,22 @@ CMD(diff, "informative", "[PATH]...",
       I(r_new.edges.size() == 1 || r_new.edges.size() == 0);
       N(r_new.edges.size() == 1, F("current revision has no ancestor"));
       new_is_archived = false;
+      header << "# old_revision [" << r_old_id << "]" << endl;
     }
   else if (app.revision_selectors.size() == 2)
     {
       revision_id r_old_id, r_new_id;
       manifest_id m_new_id;
-
       complete(app, idx(app.revision_selectors, 0)(), r_old_id);
       complete(app, idx(app.revision_selectors, 1)(), r_new_id);
-
       N(app.db.revision_exists(r_old_id),
         F("revision %s does not exist") % r_old_id);
       app.db.get_revision(r_old_id, r_old);
-
       N(app.db.revision_exists(r_new_id),
         F("revision %s does not exist") % r_new_id);
       app.db.get_revision(r_new_id, r_new);
-
       app.db.get_revision_manifest(r_new_id, m_new_id);
       app.db.get_manifest(m_new_id, m_new);
-
       new_is_archived = true;
     }
   else
@@ -2685,6 +2685,7 @@ CMD(diff, "informative", "[PATH]...",
   cout << "# " << endl;
   if (summary().size() > 0) 
     {
+      cout << header.str() << "# " << endl;
       for (vector<string>::iterator i = lines.begin(); i != lines.end(); ++i)
         cout << "# " << *i << endl;
     }
