@@ -338,7 +338,20 @@ void
 dump(path_conflict const & obj, std::string & out);
 
 void
+read_path_resolution(data const & in, path_conflict::resolution & obj);
+
+void
+read_path_resolutions(data const & in,
+                      std::set<path_conflict::resolution> & obj);
+
+void
 dump(std::vector<path_conflict> const & obj, std::string & out);
+
+void
+dump(std::set<path_conflict::resolution> const & obj, std::string & out);
+
+void
+write_path_conflicts(std::vector<path_conflict> const & pc, data & dat);
 
 void
 dirmerge_test();

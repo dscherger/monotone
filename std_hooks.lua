@@ -671,3 +671,34 @@ function external_diff(file_path, data_old, data_new, is_binary, diff_args, rev_
    os.remove (old_file);
    os.remove (new_file);
 end
+
+
+function resolve_path_conflicts(conflicts)
+   local exe = "vi"
+   local visual = os.getenv("VISUAL")
+   if (visual ~= nil) then exe = visual end
+   local editor = os.getenv("EDITOR")
+   if (editor ~= nil) then exe = editor end
+
+   local tmp, tname = temp_file()
+   if (tmp == nil) then return nil end
+   tmp:write(conflicts)
+   io.close(tmp)
+
+   if (execute(exe, tname) ~= 0) then
+      os.remove(tname)
+      return nil
+   end
+
+   tmp = io.open(tname, "r")
+   if (tmp == nil) then os.remove(tname); return nil end
+   local res = ""
+   local line = tmp:read()
+   while(line ~= nil) do 
+      res = res .. line .. "\n"
+      line = tmp:read()
+   end
+   io.close(tmp)
+   os.remove(tname)
+   return res
+end

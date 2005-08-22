@@ -1336,3 +1336,18 @@ lua_hooks::hook_note_netsync_cert_received(revision_id const & rid,
   ll.call(4, 0);
   return ll.ok();
 }
+
+bool 
+lua_hooks::hook_resolve_path_conflicts(data const & orig, 
+                                       data & result)
+{
+  string res;
+  bool ok = Lua(st)
+    .func("resolve_path_conflicts")
+    .push_str(orig())
+    .call(1,1)
+    .extract_str(res)
+    .ok();
+  result = res;
+  return ok;
+}

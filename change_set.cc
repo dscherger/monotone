@@ -1904,11 +1904,19 @@ merge_trees(std::vector<tree_state> const & treevec,
 }
 
 tree_state
-merge_trees(tree_state l, tree_state r)
+merge_trees(tree_state l, tree_state r, app_state & app)
 {
   std::vector<path_conflict> conf(l.conflict(r));
   MM(conf);
   std::set<path_conflict::resolution> res;
+  if (!conf.empty())
+    {
+      data c, r;
+      write_path_conflicts(conf, c);
+      app.lua.hook_resolve_path_conflicts(c, r);
+      read_path_resolutions(r, res);
+    }
+/*
   for (std::vector<path_conflict>::const_iterator i = conf.begin();
        i != conf.end(); ++i)
     {
@@ -1917,6 +1925,7 @@ merge_trees(tree_state l, tree_state r)
       if (i->type == path_conflict::collision)
         W(F("Filename collision, suturing..."));
     }
+*/
   std::vector<tree_state> lr;
   lr.push_back(l);
   lr.push_back(r);
@@ -2075,7 +2084,7 @@ process_filetree_history(revision_id const & anc,
   tree_state r = k->second;
 
   // do the merge
-  tree_state m = merge_trees(l, r);
+  tree_state m = merge_trees(l, r, app);
 
   // calculate outputs
   calculate_itempaths(a, l, r, m, paths, itx);
@@ -2238,7 +2247,7 @@ transplant_change_set(revision_id const & from,
   tree_state changes = merge_trees(treevec, chvec, itx, "changes");
 
   // merge
-  tree_state result = merge_trees(left, changes);
+  tree_state result = merge_trees(left, changes, app);
 
   // calculate outputs
   std::vector<itempaths> paths;

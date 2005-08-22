@@ -135,6 +135,9 @@ public:
                                        rsa_keypair_id const & kid,
                                        cert_name const & name,
                                        cert_value const & value);
+
+  bool hook_resolve_path_conflicts(data const & orig, 
+                                   data & result);
 };
 
 #endif // __LUA_HH__

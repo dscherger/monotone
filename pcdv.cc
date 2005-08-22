@@ -2,6 +2,7 @@
 #include <map>
 #include <deque>
 #include <boost/tuple/tuple_comparison.hpp>
+#include <boost/regex.hpp>
 
 #include "sanity.hh"
 #include "pcdv.hh"
@@ -1562,6 +1563,7 @@ tree_state::conflict(tree_state const & other) const
   apply_sutures();
   tree_state merged(mash(other));
   std::vector<path_conflict> out;
+  MM(out);
   std::map<item_status::path_state, std::set<item_id> > m;
 
   // splits, merge(mv a b, mv a c)
@@ -1583,10 +1585,21 @@ tree_state::conflict(tree_state const & other) const
           std::set<item_status::path_state>
             left(j->second.current_names()),
             right(k->second.current_names());
-          I(left.size() == 1);
-          I(right.size() == 1);
-          c.lnames.push_back(get_full_name(*left.begin()));
-          c.rnames.push_back(other.get_full_name(*right.begin()));
+          I((left.size() == 1 && right.size() == 1) || left == right);
+          if (left.size() == 1)
+            {
+              c.lnames.push_back(get_full_name(*left.begin()));
+              c.rnames.push_back(other.get_full_name(*right.begin()));
+            }
+          else
+            {
+              E(left.size() == 2, F("Item has too many names."));
+              std::set<item_status::path_state>::const_iterator
+                k = left.begin();
+              c.lnames.push_back(get_full_name(*k));
+              ++k;
+              c.rnames.push_back(get_full_name(*k));
+            }
           out.push_back(c);
         }
       for (std::set<item_status::path_state>::const_iterator
@@ -1794,6 +1807,7 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
                                std::set<path_conflict::resolution> const & res,
                                   std::string const & revision)
 {
+  MM(res);
   tree_state merged(mash(revs));
   merged.apply_sutures();
 
@@ -1807,6 +1821,7 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
        i != res.end(); ++i)
     {
       file_path fp(i->second);
+      P(F("Item %1% resolved to '%2%'") % i->first % i->second);
       splitpath sp;
       split_path(fp, sp);
       sorted.insert(make_pair(sp.size(), make_pair(i->first, sp)));
@@ -1814,6 +1829,8 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
   typedef int fpid;
   interner<fpid> cit;
   std::map<fpid, item_id> names;
+  fpid rootid = cit.intern(file_path()());
+  names.insert(make_pair(rootid, -1));
   typedef std::pair<std::map<fpid, item_id>::iterator, bool> nir;
   int lastlevel = 0;
   for (std::multimap<int, std::pair<item_id, splitpath > >::const_iterator
@@ -1854,7 +1871,7 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
       splitpath sp(i->second.second);
       unsigned int s = resolved.size();
       resolved.insert(id);
-      std::map<item_id, item_status>::const_iterator
+      std::map<item_id, item_status>::iterator
         j = merged.states->find(id);
       I(j != merged.states->end());
       item_status it = j->second;
@@ -1884,9 +1901,6 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
           std::map<fpid, item_id>::const_iterator k = names.find(pd);
           I(k != names.end());
 
-          std::map<item_id, item_status>::iterator
-            j = merged.states->find(k->second);
-          I(j != merged.states->end());
           j->second = item_status(j->second.rename(merged.itx->intern(revision),
                                                    k->second, name));
           if (fp == file_path())
@@ -1906,8 +1920,15 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
     {
       if (resolved.find(j->first) == resolved.end())
         {
-          file_path fp(merged.get_full_name(j->second));
           resolved.insert(j->first);
+          std::set<item_status::path_state>
+            x(j->second.current_names());
+          if (x.size() != 1)
+            continue;// not resolved, so ignore
+          int d;
+          file_path fp(merged.try_get_full_name(*x.begin(), d));
+          if (d == -1)
+            continue;// not resolved, so ignore
           if (fp == file_path())
             continue;
           fpid f(cit.intern(fp()));
@@ -2038,16 +2059,60 @@ tree_state::current_scalars() const
 void
 dump(path_conflict const & obj, std::string & out)
 {
-  out = "##########";
+  out = "##########\n";
   out+=(F("#Type: %1%\n")
         % ((obj.type == path_conflict::collision)?"Collision":"Split")).str();
   for (unsigned int j = 0; j < obj.items.size(); ++j)
     {
-      out+=(F("Item %1%:\n") % idx(obj.items, j)).str();
-      out+=(F("#\tLname: %1%\n") % idx(obj.lnames, j)).str();
-      out+=(F("#\tRname: %1%\n") % idx(obj.rnames, j)).str();
+      out+=(F("Item %1%: ''\n") % idx(obj.items, j)).str();
+      out+=(F("#\tLname: '%1%'\n") % idx(obj.lnames, j)).str();
+      out+=(F("#\tRname: '%1%'\n") % idx(obj.rnames, j)).str();
     }
-  out+=(F("#Name: %1%\n") % obj.name).str();
+  out+=(F("#Name: '%1%'\n") % obj.name).str();
+}
+
+void
+dump(std::set<path_conflict::resolution> const & obj, std::string & out)
+{
+  out.clear();
+  for (std::set<path_conflict::resolution>::const_iterator i = obj.begin();
+       i != obj.end(); ++i)
+    out += (F("Item %1%: '%2%'\n") % i->first % i->second).str();
+}
+
+void
+read_path_resolution(data const & in, path_conflict::resolution & obj)
+{
+  boost::regex pat("Item ([[:digit:]]+)\\: '(.*)'");
+  boost::smatch m;
+  N(boost::regex_match(in(), m, pat), F("Malformed resolution."));
+  I(m.size() == 3);// 2 parentheses + the expr itself
+  std::string idstr(m[1].first, m[1].second);
+  MM(idstr);
+  obj.first = boost::lexical_cast<item_id>(idstr);
+  obj.second = std::string(m[2].first, m[2].second);
+}
+
+void
+split_into_lines(std::string const & in,
+                 std::vector<std::string> & out);
+
+void
+read_path_resolutions(data const & in,
+                      std::set<path_conflict::resolution> & obj)
+{
+  std::vector<std::string> lines;
+  split_into_lines(in(), lines);
+  for (std::vector<std::string>::const_iterator i = lines.begin();
+       i != lines.end(); ++i)
+    {
+      if (i->size() && (*i)[0] != '#')
+        {
+          path_conflict::resolution r;
+          read_path_resolution(data(*i), r);
+          obj.insert(r);
+        }
+    }
 }
 
 void
@@ -2061,6 +2126,14 @@ dump(std::vector<path_conflict> const & obj, std::string & out)
       dump(*i, tmp);
       out += tmp;
     }
+}
+
+void
+write_path_conflicts(std::vector<path_conflict> const & pc, data & dat)
+{
+  std::string s;
+  dump(pc, s);
+  dat = data(s);
 }
 
 
