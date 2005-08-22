@@ -1940,13 +1940,38 @@ process_filetree_history(revision_id const & anc,
   interner<item_status::scalar> itx;
 
   // process history
+
   std::multimap<revision_id, revision_id> graph, rgraph;
   app.db.get_revision_ancestry(graph);
-  for (gi i = graph.begin(); i != graph.end(); ++i)
-    rgraph.insert(std::make_pair(i->second, i->first));
+  std::deque<revision_id> todo, roots;
+//  for (gi i = graph.begin(); i != graph.end(); ++i)
+//    rgraph.insert(std::make_pair(i->second, i->first));
+  // only process as far back as the lcad. This saves time, and older history
+  // has no effect on the merge.
+  revision_id lcad;
+  find_common_ancestor_for_merge(left, right, lcad, app);
+  todo.push_back(lcad);
+  std::set<revision_id> done;
+  while(todo.size())
+    {
+      revision_id c(todo.back());
+      todo.pop_back();
+      unsigned int s = done.size();
+      done.insert(c);
+      if (s == done.size())
+        continue;
+      gi pb = graph.lower_bound(c);
+      gi pe = graph.upper_bound(c);
+      for (gi i = pb; i != pe; ++i)
+        {
+          todo.push_back(i->second);
+          rgraph.insert(std::make_pair(i->second, i->first));
+        }
+    }
+
+
   // rev -> {# of parents remaining, children}
   std::map<revision_id, std::pair<int, std::set<revision_id> > > about;
-  std::deque<revision_id> todo, roots;
   todo.push_back(left);
   todo.push_back(right);
   todo.push_back(anc);
@@ -1999,11 +2024,25 @@ process_filetree_history(revision_id const & anc,
             {
               std::map<revision_id, tree_state>::iterator
                 j = trees.find(edge_old_revision(i));
-              I(j != trees.end());
+              // if it doesn't exist, then it's from a rev that's being ignored
+              // due to old age.
+              if (j == trees.end())
+                continue;
               from = j->second;
             }
           treevec.push_back(from);
           chvec.push_back(edge_changes(i));
+        }
+      if (treevec.empty())
+        {
+          // this can happen since we ignore prehistoric ancestors.
+          // but we still need a change_set
+          manifest_map man;
+          app.db.get_manifest(rs.new_manifest, man);
+          change_set cs;
+          build_pure_addition_change_set(man, cs);
+          treevec.push_back(emptytree);
+          chvec.push_back(cs);
         }
       trees.insert(make_pair(roots.front(),
                              merge_trees(treevec, chvec, itx,
