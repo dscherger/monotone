@@ -92,8 +92,8 @@ Attach and detach lists:
  Csets contain an implicit order to their operations: a block of delete
  actions, then renames, adds, deltas, and finally attribute
  changes. Moreover as we've seen above, within each block there is a
- topological order: renames landing on A/B happen before renames landing on
- A/B/C, for example.
+ topological order: renames coming from A/B happen before renames coming
+ from A/B/C, for example.
 
  There is still, however, an ordering hazard when you apply renames
  "in-place", either to an mfest or a filesystem: it's possible that a
@@ -131,14 +131,15 @@ Attach and detach lists:
  So what we do instead is execute the first "half" of the renames in a
  preliminary pass, then the second "half" of them in a second pass. The
  change_consumer interface has a special "finalize_renames()" method which
- triggers the second half; it is called after the last rename is
- processed. Here's how we *actually* process the renames:
+ runs these halves; it is called after the last rename is processed. Here's
+ how we *actually* process the renames:
 
-  - buffer all the renames into a vector of src/dst pairs, in order.
+  - buffer all the renames into a vector of src/dst pairs, in order (by src).
   - when the user calls finalize_renames():
     - build a temporary vector of nodes with the same length as the buffer
     - walk the vector from end to beginning, detaching each node from
       the NEW tree and saving it in the temporary vector ("bottom-up")
+    - sort the temporary vector of detached nodes by dst space.
     - walk the vector from beginning to end, attaching each node to
       the NEW tree ("top-down")
 
@@ -1127,6 +1128,17 @@ attach_detach_change_consumer::rename_node(path_vec_t const & src,
   pending_renames.push_back(make_pair(src, dst));
 }
 
+struct 
+finalize_sorter
+{
+  bool
+  operator()(pair<path_vec_t, node_t> const & a,
+             pair<path_vec_t, node_t> const & b) const
+  {
+    return a.first < b.first;
+  }
+};
+
 
 void
 attach_detach_change_consumer::finalize_renames()
@@ -1138,6 +1150,8 @@ attach_detach_change_consumer::finalize_renames()
     {
       tmp.push_back(make_pair(i->second, detach(i->first)));
     }
+
+  sort(tmp.begin(), tmp.end(), finalize_sorter());
 
   for (vector< pair<path_vec_t, node_t> >::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
@@ -1782,6 +1796,7 @@ cset::detach(path_vec_t const & path)
   node_t old_node, new_node;
   path_vec_t new_path;
 
+  // L(F("detach: removing child at path '%s'") % path.to_file_path());
   old_mfest.lookup(path, old_parent, old_node);
   get_corresponding_new_node(old_node, new_node);
   get_new_path(new_node, new_path);
@@ -1980,15 +1995,15 @@ struct replay_record
   vector<applied_delta> deltas_applied;
   vector<changed_attr> attrs_changed;
 
-  // In the forward direction, renames are sorted by destination
+  // In the forward direction, renames are sorted by source
   // space; so in the inverse record, renames should be sorted by
-  // source space.
+  // destination space.
   struct rename_inverse_sorter
   {
     bool operator()(live_paths const & a,
 		    live_paths const & b)
     {
-      return a.src < b.src;
+      return a.dst < b.dst;
     }
   };
 
@@ -2139,8 +2154,8 @@ build_replay_record(cset const & cs,
 
   for (dfs_iter i(cs.old_mfest.root); !i.finished(); ++i)
     {
-      // in this pass we accumulate nodes_deleted. the "self" node is a
-      // member of the "src" directory tree.
+      // in this pass we accumulate nodes_deleted and nodes_renamed. the
+      // "self" node is a member of the "src" directory tree.
       node_t self = *i, other;
       cs.is_live(self);
 
@@ -2152,31 +2167,38 @@ build_replay_record(cset const & cs,
 
       if (cs.is_killed(other))
 	{
-	  path_vec_t pth;
-	  cs.get_old_path(self, pth);
-
 	  if (is_dir_t(self))
             {
               replay_record::path_with_attrs pa;
-              pa.path = pth;
+              cs.get_old_path(self, pa.path);
               pa.attrs = self->attrs;
               rr.dirs_deleted.insert(pa);
             }
 	  else
             {
               replay_record::path_with_attrs_and_content pc;
-              pc.path = pth;
+              cs.get_old_path(self, pc.path);
               pc.content = downcast_to_file_t(self)->content;
               pc.attrs = self->attrs;
               rr.files_deleted.insert(pc);
             }
 	}
+      else if (cs.is_live(other))
+	{
+          replay_record::live_paths paths;
+          i.path(paths.src);
+          cs.get_new_path(other, paths.dst);
+
+	  if (paths.src != paths.dst)
+            rr.nodes_renamed.push_back(paths);
+	}
+
     }
 
 
   for (dfs_iter i(cs.new_mfest.root); !i.finished(); ++i)
     {
-      // in this pass we accumulate nodes_renamed, files_added, dirs_added,
+      // in this pass we accumulate files_added, dirs_added,
       // deltas_applied, attrs_cleared, and attrs_set.
       //
       // the "self" node is a member of the "dst" directory tree.
@@ -2213,19 +2235,7 @@ build_replay_record(cset const & cs,
 	      rr.files_added.insert(pc);
 	    }
 	}
-      else if (cs.is_live(other))
-	{
-	  dirent_t self_entry, other_entry;
-	  dir_t self_parent, other_parent;
-
-          replay_record::live_paths paths;
-          cs.get_old_path(other, paths.src);
-          i.path(paths.dst);
-
-	  if (paths.src != paths.dst)
-            rr.nodes_renamed.push_back(paths);
-	}
-
+      
       // content deltas
       if (is_file_t(self)
           && cs.is_live(self)
@@ -3064,8 +3074,8 @@ automaton_cset_test()
       aut.perform_random_action(cs1);
       aut.perform_random_action(cs1);
 
-      write_mfest(cs1.new_mfest, tmp);
-      std::cerr << "1 [[[" << tmp << "]]]" << std::endl;
+//       write_mfest(cs1.new_mfest, tmp);
+//       std::cerr << "1 [[[" << tmp << "]]]" << std::endl;
 
       //L(F("automaton cycle %d, changeset 2\n") % i);
       cset cs2(cs1.new_mfest);
@@ -3073,8 +3083,8 @@ automaton_cset_test()
       aut.perform_random_action(cs2);
       aut.perform_random_action(cs2);
 
-      write_mfest(cs2.new_mfest, tmp);
-      std::cerr << "2 [[[" << tmp << "]]]" << std::endl;
+//       write_mfest(cs2.new_mfest, tmp);
+//       std::cerr << "2 [[[" << tmp << "]]]" << std::endl;
 
       //L(F("automaton cycle %d, changeset 3\n") % i);
       cset cs3(cs2.new_mfest);
@@ -3082,22 +3092,30 @@ automaton_cset_test()
       aut.perform_random_action(cs3);
       aut.perform_random_action(cs3);
 
-      write_mfest(cs3.new_mfest, tmp);
-      std::cerr << "3 [[[" << tmp << "]]]" << std::endl;
+//       write_mfest(cs3.new_mfest, tmp);
+//       std::cerr << "3 [[[" << tmp << "]]]" << std::endl;
 
       cset csA, csB;
 
       //L(F("automaton cycle %d, concatenation: 1+2\n") % i);
+//       write_cset (cs1, tmp);
+//       std::cerr << "cs1: [[[" << tmp << "]]]" << std::endl;
+//       write_cset (cs2, tmp);
+//       std::cerr << "cs2: [[[" << tmp << "]]]" << std::endl;
       concatenate_changesets(cs1, cs2, csA);
 
-      write_mfest(csA.new_mfest, tmp);
-      std::cerr << "4 [[[" << tmp << "]]]" << std::endl;
+//       write_mfest(csA.new_mfest, tmp);
+//       std::cerr << "4 [[[" << tmp << "]]]" << std::endl;
 
       //L(F("automaton cycle %d, concatenation: (1+2)+3\n") % i);
+//       write_cset (csA, tmp);
+//       std::cerr << "csA: [[[" << tmp << "]]]" << std::endl;
+//       write_cset (cs3, tmp);
+//       std::cerr << "cs3: [[[" << tmp << "]]]" << std::endl;
       concatenate_changesets(csA, cs3, csB);
 
-      write_mfest(csB.new_mfest, tmp);
-      std::cerr << "5 [[[" << tmp << "]]]" << std::endl;
+//       write_mfest(csB.new_mfest, tmp);
+//       std::cerr << "5 [[[" << tmp << "]]]" << std::endl;
 
       m1.reset(csB.new_mfest);
     }

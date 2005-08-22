@@ -1,3 +1,7 @@
+2005-08-22  graydon hoare  <graydon@pobox.com>
+
+	* cset.cc: Automaton test runs forever.
+
 2005-08-18  graydon hoare  <graydon@pobox.com>
 
 	* cset.cc: Rewrite automaton, some more (slow) progress.
