@@ -237,5 +237,6 @@ parse_path_rearrangement(basic_io::parser & pa,
 // debugging
 
 void dump(change_set const & cs, std::string & out);
+void dump(change_set::path_rearrangement const & pr, std::string & out);
 
 #endif // __CHANGE_SET_HH__

@@ -1,3 +1,12 @@
+2005-08-24  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_merge_add_rename_add.at: remove XFAIL
+	The result of this merge (<mv a b>, <add b>) are now defined: call
+	the resolve_path_conflicts hook with a "collision" type conflict.
+	Not resolving the conflict (in this case) leads to a warning,
+	followed by a crash. The warning should be an error, but is triggered
+	by the monotone db.
+
 2005-08-22  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* tree merger: Allow tree conflicts to be resolved by the user.

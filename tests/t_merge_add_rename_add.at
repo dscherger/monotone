@@ -2,8 +2,6 @@
 
 AT_SETUP([merging <add a, rename a b> with <add b>])
 
-# This test is a bug report.
-AT_XFAIL_IF(true)
 
 MONOTONE_SETUP
 
@@ -14,12 +12,23 @@ MONOTONE_SETUP
 #              D
 #
 # A is the common ancestor, containing 'add foo'.  B contains 'rename foo
-# bar'.  C contains 'add bar'.  D is the final state after a merge--we
-# currently don't have a definition for what this final state is.
+# bar'.  C contains 'add bar'.
+# Merging B and C gives a tree conflict. If this isn't resolved, it leads
+# to a suture. But since both files being sutured exist in C, the suture will
+# trigger an I .
+# Expect the merge to fail, but check that the tree resolution hook is told
+# about the conflict.
 
 AT_DATA(foo, [extra blah blah foo
 ])
 AT_DATA(bar, [extra blah blah bar
+])
+AT_DATA(dumpconf.lua, [function resolve_path_conflicts(conflicts)
+local x = io.open("conf", "w")
+x:write(conflicts)
+io.close(x)
+return nil
+end
 ])
 
 # produce state A
@@ -40,9 +49,10 @@ AT_CHECK(MONOTONE --branch=branch.main commit --message 'state C - add bar', [],
 C_REVISION_SHA=`BASE_REVISION`
 
 # merge heads to make D
-AT_CHECK(MONOTONE --branch=branch.main merge, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=branch.main --rcfile=dumpconf.lua merge, [3], [ignore], [stderr])
 
-# XXX: once the final state has a real definition inside monotone, we need
-# to add checks here to ensure that state has been reached.
+AT_CHECK(grep "This may cause crashes." stderr, [], [ignore], [ignore])
+
+AT_CHECK(grep "Type: Collision" conf, [], [ignore], [ignore])
 
 AT_CLEANUP

@@ -1789,6 +1789,7 @@ calculate_itempaths(tree_state const & a,
                     std::vector<itempaths> & paths,
                     interner<item_status::scalar> & itx)
 {
+  MM(paths);
   std::map<item_id, itempaths> ip;
   std::vector<std::pair<item_id, file_path> > ps;
   std::map<item_id, std::set<item_status::scalar> > sm;
@@ -1909,6 +1910,7 @@ merge_trees(tree_state l, tree_state r, app_state & app)
   std::vector<path_conflict> conf(l.conflict(r));
   MM(conf);
   std::set<path_conflict::resolution> res;
+  MM(res);
   if (!conf.empty())
     {
       data c, r;

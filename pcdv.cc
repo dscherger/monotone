@@ -926,6 +926,7 @@ suture_maps(std::map<revid, std::pair<T, std::vector<revid> > > & v1,
           if (!(m->second.first == o->second.first))
             {
               W(F("Sutured items previously had different values in the same revision."));
+              W(F("This may cause crashes."));
               L(F("This was in revision #%1%") % o->first);
             }
           std::set<revid> s;
@@ -955,7 +956,14 @@ item_status::suture(item_status const & other) const
   suture_maps(versions->second, other.versions->second);
   item_status myother(other);
   myother.versions = versions;
-  return merge(myother);
+  item_status out = merge(myother);
+  if (out.current_names().size() > 1)
+    {
+      W(F("Sutured items previously had different values in the same revision."));
+      W(F("This may cause crashes."));
+      L(F("This was in revision #%1%") % *leaves->first.begin());
+    }
+  return out;
 }
 
 template<typename T>
@@ -1659,43 +1667,12 @@ tree_state::conflict(tree_state const & other) const
   return out;
 }
 
-std::vector<std::pair<item_id, file_path> >
-tree_state::current() const
-{
-  apply_sutures();
-  std::vector<std::pair<item_id, file_path> > out;
-  for (std::map<item_id, item_status>::const_iterator i = states->begin();
-       i != states->end(); ++i)
-    {
-      if (i->second.is_dir)
-        continue;
-      file_path fp = get_full_name(i->second);
-      if (!(fp == file_path()))
-      out.push_back(make_pair(i->first, fp));
-    }
-  return out;
-}
-
-std::vector<std::pair<item_id, file_path> >
-tree_state::current_with_dirs() const
-{
-  apply_sutures();
-  std::vector<std::pair<item_id, file_path> > out;
-  for (std::map<item_id, item_status>::const_iterator i = states->begin();
-       i != states->end(); ++i)
-    {
-      file_path fp = get_full_name(i->second);
-      if (!(fp == file_path()))
-      out.push_back(make_pair(i->first, fp));
-    }
-  return out;
-}
-
 void
 tree_state::get_changes_for_merge(tree_state const & merged,
                                   change_set::path_rearrangement & changes)
                                   const
 {
+  MM(changes);
   this->apply_sutures();
   merged.apply_sutures();
   changes.deleted_dirs.clear();
@@ -1944,6 +1921,38 @@ tree_state::merge_with_resolution(std::vector<tree_state> const & revs,
   return merged;
 }
 
+std::vector<std::pair<item_id, file_path> >
+tree_state::current() const
+{
+  apply_sutures();
+  std::vector<std::pair<item_id, file_path> > out;
+  for (std::map<item_id, item_status>::const_iterator i = states->begin();
+       i != states->end(); ++i)
+    {
+      if (i->second.is_dir)
+        continue;
+      file_path fp = get_full_name(i->second);
+      if (!(fp == file_path()))
+      out.push_back(make_pair(i->first, fp));
+    }
+  return out;
+}
+
+std::vector<std::pair<item_id, file_path> >
+tree_state::current_with_dirs() const
+{
+  apply_sutures();
+  std::vector<std::pair<item_id, file_path> > out;
+  for (std::map<item_id, item_status>::const_iterator i = states->begin();
+       i != states->end(); ++i)
+    {
+      file_path fp = get_full_name(i->second);
+      if (!(fp == file_path()))
+      out.push_back(make_pair(i->first, fp));
+    }
+  return out;
+}
+
 file_path
 tree_state::get_full_name(item_status x) const
 {
@@ -1980,6 +1989,11 @@ tree_state::try_get_full_name(item_status::path_state x, int & d) const
           return file_path();
         }
       x = *y.begin();
+      if (null_name(x.second))
+        {// a parent dir was deleted
+          d = 0;
+          return file_path();
+        }
       names.push_back(x.second);
     }
   reverse(names.begin(), names.end());
@@ -2008,6 +2022,8 @@ tree_state::get_ambiguous_full_name(item_status::path_state x) const
           break;
         }
       x = *y.begin();
+      if (null_name(x.second))
+        return std::string();
       names.push_back(x.second);
     }
   reverse(names.begin(), names.end());
