@@ -1,5 +1,11 @@
 2005-08-24  Timothy Brownawell  <tbrownaw@gmail.com>
 
+	* tests/t_add_vs_commit.at: Fix BASE_REVISION usage for the working
+	dir of interest not being '.' .
+	remove XFAIL
+
+2005-08-24  Timothy Brownawell  <tbrownaw@gmail.com>
+
 	* tests/t_merge_add_rename_add.at: remove XFAIL
 	The result of this merge (<mv a b>, <add b>) are now defined: call
 	the resolve_path_conflicts hook with a "collision" type conflict.
