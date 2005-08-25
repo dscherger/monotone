@@ -8,7 +8,7 @@
 #include "transforms.hh"
 #include <vector>
 #include <boost/lexical_cast.hpp>
-#include "cryptopp/md5.h"
+#include "botan/md5.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/greg_date.hpp>
 #include <fstream>
@@ -604,16 +604,19 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
       build_string(file_contents, contents);
     }
     // check md5
-    CryptoPP::MD5 hash;
-    std::string md5sum=xform<CryptoPP::HexDecoder>(u.checksum);
-    I(md5sum.size()==CryptoPP::MD5::DIGESTSIZE);
-    if (hash.VerifyDigest(reinterpret_cast<byte const *>(md5sum.c_str()),
-        reinterpret_cast<byte const *>(contents.c_str()),
-        contents.size()))
+    Botan::MD5 hash;
+    std::string md5sum=xform<Botan::Hex_Decoder>(u.checksum);
+    I(md5sum.size()==hash.OUTPUT_LENGTH);
+    Botan::SecureVector<Botan::byte> hashval=hash.process(contents);
+    I(hashval.size()==hash.OUTPUT_LENGTH);
+    unsigned hashidx=hash.OUTPUT_LENGTH;
+    for (;hashidx && hashval[hashidx-1]==md5sum[hashidx-1];--hashidx) ;
+    if (!hashidx)
     { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
     }
     else
-    { throw oops("MD5 sum wrong");
+    { L(F("MD5 sum %s<>%s") % u.checksum % xform<Botan::Hex_Encoder>(std::string(hashval.begin(),hashval.end())));
+      throw oops("MD5 sum wrong");
     }
   }
   else
