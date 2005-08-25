@@ -599,19 +599,6 @@ utf8_to_ace(utf8 const & utf, ace & a)
   free(out);
 }
 
-external
-outprep(std::string const & msg)
-{
-  external localized_msg;
-  utf8_to_system(utf8(msg), localized_msg);
-  return localized_msg;
-}
-external
-outprep(boost::format const & format)
-{
-  return outprep(format.str());
-}
-
 // hack: this is an unexposed function in libidna
 extern "C" long g_utf8_strlen(const char * p, size_t max);
 
