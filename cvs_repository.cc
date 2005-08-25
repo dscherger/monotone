@@ -610,12 +610,13 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     Botan::SecureVector<Botan::byte> hashval=hash.process(contents);
     I(hashval.size()==hash.OUTPUT_LENGTH);
     unsigned hashidx=hash.OUTPUT_LENGTH;
-    for (;hashidx && hashval[hashidx-1]==md5sum[hashidx-1];--hashidx) ;
+    for (;hashidx && hashval[hashidx-1]==Botan::byte(md5sum[hashidx-1]);--hashidx) ;
     if (!hashidx)
     { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
     }
     else
-    { L(F("MD5 sum %s<>%s") % u.checksum % xform<Botan::Hex_Encoder>(std::string(hashval.begin(),hashval.end())));
+    { L(F("MD5 sum %s<>%s") % u.checksum 
+          % xform<Botan::Hex_Encoder>(std::string(hashval.begin(),hashval.end())));
       throw oops("MD5 sum wrong");
     }
   }
