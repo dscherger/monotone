@@ -324,6 +324,12 @@ app_state::set_depth(long d)
 }
 
 void
+app_state::set_since(utf8 const & s)
+{
+  sync_since = s;
+}
+
+void
 app_state::set_last(long l)
 {
   N(l > 0,
