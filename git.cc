@@ -116,7 +116,6 @@ git_history
 
   map<git_object_id, pair<revision_id, manifest_id> > commitmap;
   map<git_object_id, file_id> filemap;
-  map<git_object_id, manifest_id> manifestmap;
 
   ticker n_revs;
   ticker n_objs;
@@ -243,18 +242,11 @@ import_git_blob(git_history &git, app_state &app, git_object_id gitbid)
   return fid;
 }
 
-static manifest_id
+static void
 import_git_tree(git_history &git, app_state &app, git_object_id gittid,
-                manifest_map &manifest, string prefix)
+                manifest_map &manifest, string prefix, attr_map &attrs)
 {
   L(F("Importing tree '%s'") % gittid());
-  map<git_object_id, manifest_id>::const_iterator i = git.manifestmap.find(gittid);
-  if (i != git.manifestmap.end())
-    {
-      L(F("  -> map hit '%s'") % i->second);
-      app.db.get_manifest(i->second, manifest);
-      return i->second;
-    }
 
   data dat;
   git.db.get_object("tree", gittid, dat);
@@ -277,31 +269,25 @@ import_git_tree(git_history &git, app_state &app, git_object_id gittid,
       L(F("   [%s]") % gitoid());
       pos += 20;
 
+      string fullname(prefix + name);
+
       if (mode & 040000) // directory
-	import_git_tree(git, app, gitoid, manifest, prefix + name + "/");
+	import_git_tree(git, app, gitoid, manifest, fullname + '/', attrs);
       else
         {
-	  // FIXME: Executability
+	  if (mode & 0100) // executable
+	    {
+	      L(F("marking '%s' as executable") % fullname);
+	      attrs[fullname]["execute"] = "true";
+	    }
 
 	  file_id fid = import_git_blob(git, app, gitoid);
 	  L(F("entry monoid [%s]") % fid.inner());
-	  manifest.insert(manifest_entry(file_path(prefix + name), fid));
+	  manifest.insert(manifest_entry(file_path(fullname), fid));
 	}
     }
 
-  manifest_id mid;
-  calculate_ident(manifest, mid);
-
-  if (! app.db.manifest_version_exists(mid))
-    {
-      manifest_data manidata;
-      write_manifest_map(manifest, manidata);
-      // TODO: put_manifest_with_delta()
-      app.db.put_manifest(mid, manidata);
-    }
-  git.manifestmap[gittid()] = mid;
   ++git.n_objs;
-  return mid;
 }
 
 
@@ -526,7 +512,33 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
       L(F("HDR: '%s' => '%s'") % keyword % param);
       if (keyword == "tree")
 	{
-	  rev.new_manifest = import_git_tree(git, app, param, manifest, "");
+	  attr_map attrs;
+	  import_git_tree(git, app, param, manifest, "", attrs);
+
+	  // Write the attribute map
+	  {
+	    data attr_data;
+	    write_attr_map(attr_data, attrs);
+
+	    file_id fid;
+	    calculate_ident(attr_data, fid);
+	    if (! app.db.file_version_exists(fid))
+	      app.db.put_file(fid, attr_data);
+
+	    file_path attr_path;
+	    get_attr_path(attr_path);
+	    manifest.insert(manifest_entry(attr_path, fid));
+	  }
+
+	  calculate_ident(manifest, rev.new_manifest);
+	  if (! app.db.manifest_version_exists(rev.new_manifest))
+	    {
+	      manifest_data manidata;
+	      write_manifest_map(manifest, manidata);
+	      // TODO: put_manifest_with_delta()
+	      app.db.put_manifest(rev.new_manifest, manidata);
+	    }
+
 	  L(F("[%s] Manifest ID: '%s'") % gitrid() % rev.new_manifest.inner());
 	}
       else if (keyword == "parent")
