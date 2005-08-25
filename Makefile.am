@@ -50,7 +50,7 @@ MOST_SOURCES =								\
          package_revision.c package_revision.h options.hh \
          cvs_client.cc cvs_repository.cc \
          package_full_revision.c package_full_revision.h options.hh     \
-         i18n.h
+         i18n.h netxx_pipe.cc
 
 NETXX_SOURCES =									\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx			\
@@ -239,7 +239,7 @@ monotone_LDFLAGS =
 monotone_CPPFLAGS = -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite
 
 unit_tests_LDFLAGS = 
-unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite
+unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite -I.
 
 # conditionals from configury
 
