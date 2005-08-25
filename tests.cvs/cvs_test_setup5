@@ -1,0 +1,43 @@
+#!/bin/sh
+if [ ! -e test.cvsroot ]
+then
+  echo "Test CVS root Directory not already there."
+  exit 1
+fi
+CVSROOT=$PWD/test.cvsroot
+
+if [ -e test.cvstemp ]
+then
+  echo "Test CVS working Directory already there."
+  exit 1
+fi
+
+mkdir $CVSROOT/test2
+
+mkdir test.cvstemp
+cd test.cvstemp
+cvs -Q -d $CVSROOT co CVSROOT
+cd CVSROOT
+echo >>modules test1 test
+echo >>modules test3 test2 '&test1'
+cvs -Q ci -m "module setup"
+cd ..
+
+cvs -Q -d $CVSROOT co test3
+cd test3
+
+echo >AA initial AA
+cvs -Q add AA
+cvs -Q ci -m "AA added"
+
+mkdir sub2
+cvs -Q add sub2
+echo >sub2/BB initial BB
+cvs -Q add sub2/BB
+cvs -Q ci -m "sub2/BB added"
+
+echo >test1/A cross module change
+cvs -Q ci -m "cross module change of A"
+
+cd $CVSROOT/..
+rm -rf test.cvstemp || exit 1
