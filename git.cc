@@ -96,7 +96,7 @@ git_db
 {
   const fs::path path;
 
-  filebuf &get_object(const string type, const git_object_id objid);
+  void get_object(const string type, const git_object_id objid, filebuf &fb);
   void get_object(const string type, const git_object_id objid, data &dat);
 
   // DAG of the revision ancestry in topological order
@@ -130,8 +130,8 @@ git_history
 // This should change to libgit calls in the future
 
 
-static filebuf &
-capture_cmd_output(boost::format const & fmt)
+static void
+capture_cmd_output(boost::format const & fmt, filebuf &fb)
 {
   string str;
   try
@@ -155,25 +155,23 @@ capture_cmd_output(boost::format const & fmt)
   L(F("Capturing cmd output: %s") % cmdline);
   N(system(cmdline.c_str()),
     F("git command %s failed") % str);
-  filebuf &fb = *new filebuf;
   fb.open(tmpfile.c_str(), ios::in);
   close(fd);
   fs::remove(tmpfile);
-  return fb;
 }
 
 
-filebuf &
-git_db::get_object(const string type, const git_object_id objid)
+void
+git_db::get_object(const string type, const git_object_id objid, filebuf &fb)
 {
-  filebuf &fb = capture_cmd_output(F("git-cat-file %s %s") % type % objid());
-  return fb;
+  capture_cmd_output(F("git-cat-file %s %s") % type % objid(), fb);
 }
 
 void
 git_db::get_object(const string type, const git_object_id objid, data &dat)
 {
-  filebuf &fb = get_object(type, objid);
+  filebuf fb;
+  get_object(type, objid, fb);
   istream stream(&fb);
 
   Botan::Pipe pipe;
@@ -181,7 +179,6 @@ git_db::get_object(const string type, const git_object_id objid, data &dat)
   stream >> pipe;
   pipe.end_msg();
   dat = pipe.read_all_as_string();
-  delete &fb;
 }
 
 
@@ -193,8 +190,9 @@ git_db::load_revs(const string revision, const set<git_object_id> &exclude)
        i != exclude.end(); ++i)
     excludestr += " \"^" + (*i)() + "\"";
 
-  filebuf &fb = capture_cmd_output(F("git-rev-list --topo-order %s %s")
-                                   % revision % excludestr);
+  filebuf fb;
+  capture_cmd_output(F("git-rev-list --topo-order %s %s")
+                     % revision % excludestr, fb);
   istream stream(&fb);
 
   stack<git_object_id> st;
@@ -208,7 +206,6 @@ git_db::load_revs(const string revision, const set<git_object_id> &exclude)
       st.push(git_object_id(string(revbuf)));
     }
   L(F("Loaded all revisions"));
-  delete &fb;
   return st;
 }
 
@@ -466,7 +463,8 @@ static revision_id
 import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 {
   L(F("Importing commit '%s'") % gitrid());
-  filebuf &fb = git.db.get_object("commit", gitrid);
+  filebuf fb;
+  git.db.get_object("commit", gitrid, fb);
   istream stream(&fb);
 
   bool header = true;
@@ -592,8 +590,6 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 	  parse_person_line(param, author, author_time);
 	}
     }
-
-  delete &fb;
 
   revision_id rid;
   calculate_ident(rev, rid);
