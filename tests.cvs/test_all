@@ -1,0 +1,82 @@
+#!/bin/sh
+stop_at=$1
+./cleanup || exit
+if [ -z "$stop_at" ]
+then
+  echo ----------------------------------
+  echo -- full checkin
+  ./cvs_test_setup || exit
+  ./cvs_test_setup2 || exit
+  ./cvs_test_setup3 || exit
+  echo -- db_setup
+  ./db_setup || exit
+fi
+
+echo ----------------------------------
+echo -- incremental update
+./cleanup || exit
+echo -- cvs_test_setup import
+./cvs_test_setup import || exit
+echo -- db_setup
+./db_setup || exit
+
+rm -rf  test.cvsroot || exit
+echo -- cvs_test_setup
+./cvs_test_setup || exit 
+if [ "$stop_at" = "cvs_test_setup" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_pull \
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+echo -- cvs_test_setup2
+./cvs_test_setup2  || exit
+if [ "$stop_at" = "cvs_test_setup2" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_pull \
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo -- cvs_test_setup3
+./cvs_test_setup3  || exit
+if [ "$stop_at" = "cvs_test_setup3" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_pull \
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo ---------------------------------
+echo checkin
+echo db_setup2
+./db_setup2 || exit
+if [ "$stop_at" = "db_setup2" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_push \
+	$PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo ---------------------------------
+echo more complex examples
+echo -- cvs_test_setup4
+./cvs_test_setup4  || exit
+if [ "$stop_at" = "cvs_test_setup4" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_push \
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo -- cvs_test_setup5
+./cvs_test_setup5  || exit
+if [ "$stop_at" = "cvs_test_setup5" ] ; then exit 0 ; fi
+../monotone --branch test --key test@localhost --db test.db cvs_push \
+        $PWD/test.cvsroot test <<EOF
+x
+EOF
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo ---------------------------------
+echo done

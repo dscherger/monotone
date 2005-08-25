@@ -54,6 +54,7 @@ struct poptOption coptions[] =
     {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, "limit the number of levels of directories to descend", NULL},
     {"last", 0, POPT_ARG_LONG, &arglong, OPT_LAST, "limit the log output to the given number of entries", NULL},
     {"pid-file", 0, POPT_ARG_STRING, &argstr, OPT_PIDFILE, "record process id of server", NULL},
+    {"since", 0, POPT_ARG_STRING, &argstr, OPT_SINCE, "set history start for CVS sync", NULL},
     {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, "print a brief version of the normal output", NULL},
     {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, "print diffs along with logs", NULL},
     {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, "skip merges when printing logs", NULL},
@@ -217,6 +218,7 @@ coption_string(int o)
 int 
 cpp_main(int argc, char ** argv)
 {
+
   clean_shutdown = false;
   int ret = 0;
 
@@ -375,6 +377,10 @@ cpp_main(int argc, char ** argv)
 
             case OPT_DEPTH:
               app.set_depth(arglong);
+              break;
+
+            case OPT_SINCE:
+              app.set_since(string(argstr));
               break;
 
             case OPT_BRIEF:

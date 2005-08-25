@@ -46,8 +46,9 @@ MOST_SOURCES =								\
 	 cleanup.hh unit_tests.hh interner.hh				\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
-         package_revision.c package_revision.h				\
-         package_full_revision.c package_full_revision.h options.hh
+         package_revision.c package_revision.h options.hh \
+         package_full_revision.c package_full_revision.h options.hh \
+         cvs_client.cc cvs_repository.cc
 
 NETXX_SOURCES =									\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx			\
@@ -71,7 +72,8 @@ CRYPTOPP_SOURCES = \
         cryptopp/crc.cpp cryptopp/cryptlib.cpp cryptopp/des.cpp cryptopp/dessp.cpp \
         cryptopp/dll.cpp cryptopp/eprecomp.cpp cryptopp/files.cpp cryptopp/filters.cpp \
         cryptopp/fips140.cpp cryptopp/gzip.cpp cryptopp/hex.cpp cryptopp/hmac.cpp \
-        cryptopp/integer.cpp cryptopp/iterhash.cpp cryptopp/misc.cpp \
+        cryptopp/integer.cpp cryptopp/iterhash.cpp cryptopp/md5.cpp \
+        cryptopp/misc.cpp \
         cryptopp/modes.cpp cryptopp/mqueue.cpp cryptopp/nbtheory.cpp \
         cryptopp/oaep.cpp cryptopp/osrng.cpp cryptopp/pch.cpp cryptopp/pkcspad.cpp \
         cryptopp/pssr.cpp cryptopp/pubkey.cpp cryptopp/queue.cpp \
@@ -84,6 +86,7 @@ CRYPTOPP_SOURCES = \
         cryptopp/crc.h cryptopp/cryptlib.h cryptopp/des.h cryptopp/dll.h cryptopp/eprecomp.h \
         cryptopp/files.h cryptopp/filters.h cryptopp/fips140.h cryptopp/fltrimpl.h \
         cryptopp/gzip.h cryptopp/hex.h cryptopp/integer.h cryptopp/iterhash.h \
+        cryptopp/md5.h \
         cryptopp/mdc.h cryptopp/misc.h cryptopp/modarith.h cryptopp/modes.h \
         cryptopp/mqueue.h cryptopp/nbtheory.h cryptopp/oaep.h cryptopp/oids.h \
         cryptopp/osrng.h cryptopp/pch.h cryptopp/pkcspad.h cryptopp/pssr.h \
@@ -206,8 +209,8 @@ else
   unit_tests_LDADD = lib3rdparty.a -lboost_unit_test_framework$(BOOST_SUFFIX)
 endif
 
-monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
-unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
+monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
+unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
