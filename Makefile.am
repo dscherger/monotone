@@ -47,7 +47,8 @@ MOST_SOURCES =								\
 	 cleanup.hh unit_tests.hh interner.hh				\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
-         package_revision.c package_revision.h				\
+         package_revision.c package_revision.h options.hh \
+         cvs_client.cc cvs_repository.cc \
          package_full_revision.c package_full_revision.h options.hh     \
          i18n.h
 
@@ -254,8 +255,8 @@ else
   unit_tests_LDADD = lib3rdparty.a -lboost_unit_test_framework$(BOOST_SUFFIX)
 endif
 
-monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
-unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
+monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
+unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
