@@ -9,7 +9,6 @@
 // Sponsored by Google's Summer of Code and SuSE
 
 // TODO:
-// * Incremental import
 // * Export, incremental export
 // * Non-master head
 // * Do not use external commands, but libgit directly (?)
@@ -351,7 +350,7 @@ git_heads_on_branch(git_history &git, app_state &app, set<git_object_id> &git_he
 }
 
 // Look up given GIT commit id in present monotone history;
-// this is used for incremental merging. Being smart, it also
+// this is used for incremental import. Being smart, it also
 // populates the commitmap with GIT commits it finds along the way.
 static void
 historical_gitrev_to_monorev(git_history &git, app_state &app,
@@ -557,7 +556,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 	  manifest_id parent_mid;
 
 	  // given the topo order, we ought to have the parent hashed - except
-	  // for incremental pulls
+	  // for incremental imports
 	  map<git_object_id, pair<revision_id, manifest_id>
 	      >::const_iterator i = git.commitmap.find(param);
 	  if (i != git.commitmap.end())
