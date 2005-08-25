@@ -167,6 +167,10 @@ void write_attr_map(data & dat,
 extern std::string const encoding_attribute;
 extern std::string const manual_merge_attribute;
 
+void read_attr_map_from_db(manifest_map const & man,
+		           attr_map & attr,
+                           app_state & app);
+
 bool get_attribute_from_db(file_path const & file,
                            std::string const & attr_key,
                            manifest_map const & man,
