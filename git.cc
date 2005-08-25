@@ -140,7 +140,7 @@ capture_cmd_output(boost::format const & fmt)
     }
   catch (std::exception & e)
     {
-      ui.inform(string("fatal: capture_cmd_output() formatter failed:") + e.what());
+      P(F("capture_cmd_output() formatter failed: %s") % e.what());
       throw e;
     }
 
@@ -152,8 +152,8 @@ capture_cmd_output(boost::format const & fmt)
   int fd = monotone_mkstemp(tmpfile);
 
   L(F("Capturing cmd output: %s") % ("(" + str + ") >" + tmpfile));
-  if (system(string("(" + str + ") >" + tmpfile).c_str()))
-    throw oops("git command " + str + " failed");
+  N(system(string("(" + str + ") >" + tmpfile).c_str()),
+    F("git command %s failed") % str);
   filebuf &fb = *new filebuf;
   fb.open(tmpfile.c_str(), ios::in);
   close(fd);
@@ -404,10 +404,10 @@ historical_gitrev_to_monorev(git_history &git, app_state &app,
 	}
     }
 
-  throw oops("Wicked revision tree - incremental import wanted to\n"
-             "import a GIT commit whose parent is not in the Monotone\n"
-	     "database yet. This means a hole must have popped up\n"
-	     "in the Monotone revision history.");
+  N(false,
+    F("Wicked revision tree - incremental import wanted to import a GIT commit\n"
+      "whose parent is not in the Monotone database yet. This means a hole must\n"
+      "have popped up in the Monotone revision history."));
 }
 
 // extract_path_set() is silly and wipes its playground first
@@ -679,7 +679,7 @@ void
 import_git_repo(fs::path const & gitrepo,
                 app_state & app)
 {
-  throw oops("git import not supported on win32");
+  E("git import not supported on win32");
 }
 
 #endif
