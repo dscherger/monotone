@@ -1,3 +1,209 @@
+2005-08-24  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (assert_sqlite3_ok): Remove accidentally-left-in
+	format string argument.
+
+2005-08-24  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (check_sane_history): Add MM's for calculated
+	changesets.
+
+2005-08-24  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (assert_sqlite3_ok): Don't print the raw sqlite
+	error code.  Do add some auxiliary information when sqlite errors
+	are confusing.
+
+2005-08-24  Nathaniel Smith  <njs@pobox.com>
+
+	* Back out most changes since
+	b580c6ac5bf8eea1f442b8bddc60283b047ade1e.  Handling charsets
+	properly by working in utf8 and then converting sucks.  Problems
+	include
+	  - gettext hates you (wants to return stuff in local charset)
+	  - strerror hates you (same reason, but you can't turn it off)
+	  - can't report charset conversion errors
+	We thus return to our "sorta-correct, by accident" status quo.
+	Only change left in is signedness fix in
+	5548868ab56d939c1fd8713aa2ac8caacd1184a1.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* ui.cc (sanitize): Fix signedness bug in comparison.
+	* unix/unix.{cc,hh}: New files.
+	* Makefile.am (UNIX_PLATFORM_SOURCES): Add them.
+	* unix/process.cc (is_executable, make_executable): Use new
+	function last_error.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* transforms.{cc,hh} (system_charset): Expose.
+	* monotone.cc (cpp_main): Use it to fiddle with gettext's charset
+	conversion and make --help output actually correct.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* transforms.cc (outprep): Don't sanitize all output; removes too
+	many valid characters (\r, \t, etc.).
+	* ui.cc: Call outprep on ticker output.
+	(inform): Do still sanitize ui.inform() output.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* transforms.cc (outprep): New function.
+	* ui.cc (inform): Use it.
+	* monotone.cc (cpp_main): Use it.
+	Everything that writes user-intended output directly (i.e., via
+	cout) must call outprep() on that data before printing it.
+	
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.cc (cpp_main): Trick popt into converting its generated
+	help messages into the current locale's charset.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* ui.cc (inform, sanitize): Convert all output from utf8 to
+	current locale's charset.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.cc (cpp_main): Use bind_textdomain_codeset to request
+	that all gettext'ed strings be returned in UTF-8.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* idna/nfkc.c (g_utf8_strlen): Expose.
+	* transforms.{cc,hh} (length): New function.
+	* ui.cc (write_ticks): Use length() instead of .size() to
+	calculate string widths; should support multibyte characters
+	better.  (Still some problems relating to truncating strings to
+	avoid overflow -- calculate truncation by length, but perform
+	truncation by bytes...)
+
+2005-08-24  Benoît Dejean  <benoit@placenet.org>
+
+	* po/fr.po: Updated French translation.
+
+2005-08-24  Benoît Dejean  <benoit@placenet.org>
+
+	* monotone.cc:
+	* commands.cc: Two more i18n strings.
+
+2005-08-23  Benoît Dejean  <benoit@placenet.org>
+
+	* lua.cc: boost::format vs. F.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* AUTHORS: Add Benoît Dejean <benoit@placenet.org>.  Create new
+	section for translators.  Add Benoît there too.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc: N_("") -> "".
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc: Make all CMD() calls use N_() instead of _().
+	(commands): Insert _() everywhere usage strings are used.  This is
+	icky.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* keys.cc (get_passphrase): Put back trailing ": " removed in
+	recent i18n changes.
+
+2005-08-23  Benoît Dejean  <benoit@placenet.org>
+
+	* change_set.cc (dump_change_set): boost::format instead of F.
+	* commands.cc (get_log_message, notify_if_multiple_heads,
+	complete, CMD(attr)): Marked some strings for i18n. Replaced a
+	multiline string by prefix_lines_with(). Merged strings.
+	* diff_patch.cc (merge_provider::try_to_merge_files): Merged
+	strings.
+	* i18n.h: N_() stands for gettext_noop(), not plural.
+	* keys.cc (get_passphrase): Fixed string surgery.
+	* netsync.cc: i18nized tickers' labels. Added xgettext comment
+	as tickers do not play well with multibytes characters (like é).
+	(session::analyze_attachment): Fixed string surgery.
+	(session::process_hello_cmd): Merged many strings.
+	(session::process_data_cmd): Removed some leading/trailing
+	whitespaces.
+	* sanity.cc: Marked error prefixes for i18n.
+	* ui.cc (tick_write_count::write_ticks): Reworked and fixed
+	surgery. Merged some strings.
+
+2005-08-23  Benoît Dejean  <benoit@placenet.org>
+
+	* commands.cc (CMD*): _("") -> "" as _("") returns the PO
+	header.
+
+2005-08-23  Benoît Dejean  <benoit@placenet.org>
+
+	* transforms.cc (check_idna_encoding): No i18n for unittests.
+
+2005-08-23  Benoît Dejean  <benoit@placenet.org>
+
+	* change_set.cc (dump_change_set): boost::format instead of F.
+	* commands.cc (get_log_message, notify_if_multiple_heads,
+	complete, CMD(attr)): Marked some strings for i18n. Replaced a
+	multiline string by prefix_lines_with(). Merged strings.
+	* diff_patch.cc (merge_provider::try_to_merge_files): Merged
+	strings.
+	* i18n.h: N_() stands for gettext_noop(), not plural.
+	* keys.cc (get_passphrase): Fixed string surgery.
+	* netsync.cc: i18nized tickers' labels. Added xgettext comment
+	as tickers do not play well with multibytes characters (like é).
+	(session::analyze_attachment): Fixed string surgery.
+	(session::process_hello_cmd): Merged many strings.
+	(session::process_data_cmd): Removed some leading/trailing
+	whitespaces.
+	* sanity.cc: Marked error prefixes for i18n.
+	* ui.cc (tick_write_count::write_ticks): Reworked and fixed
+	surgery. Merged some strings.
+
+2005-08-23  Benoît Dejean  <benoit@placenet.org>
+
+	* netcmd.cc (test_netcmd_functions): Don't translate unittest
+	strings.
+	* rcs_import.cc (cvs_commit::cvs_commit):
+	* database.cc (version_cache::put):
+	* lua.cc (dump_stack): boost::format vs. F for strings that are
+	not messages.
+
+2005-08-23  Benoît Dejean  <benoit@placenet.org>
+
+	* xdelta.cc: Don't translate unittest strings.
+
+2005-08-23  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.texi: Bring 'update' syntax up to date.
+
+2005-08-23  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_diff_external.at: --diff-args without --external is an
+	error.
+	* commands.cc (diff): Likewise.
+
+2005-08-22  Nathaniel Smith  <njs@pobox.com>
+
+	* contrib/ciabot_monotone.py (send_change_for): Handle author
+	names with spaces in.
+
+2005-08-22  Matt Johnston  <matt@ucc.asn.au>
+
+	* HACKING: change the vim modeline to something that seems to work
+	better.
+
+2005-08-23  Olivier Andrieu  <oliv__a@users.sourceforge.net>
+
+	* contrib/monotone.el: When running monotone commands, re-use
+	*monotone* buffers. Make the "status" command use the prefix
+	argument. Make the "tree"-restricted commands work in dired
+	buffers. Add the "--no-merges" option in the log command. Various
+	other innocuous changes.
+
 2005-08-22  Nathaniel Smith  <njs@pobox.com>
 
 	* mt_version.cc (print_full_version): Typo.
@@ -80,6 +286,17 @@
 
 	* sanity.hh (FP): New macro.  Usage:
 	FP("frobbed %i bar", "frobbed %s bars", num_bars) % num_bars
+
+2005-08-22  Richard Levitte  <richard@levitte.org>
+
+	* contrib/monotone-import.pl: When temporarly touching files that
+	have disappeared since last import, don't forget to create
+	intermediary directories as well (and to remove them later on).
+	Make sure all file arguments are quoted.  Finally, pick up the
+	newly created revision by reading MT/revision instead of relying
+	on backquotes working.
+	Notofication and initial correction submitted by
+	BigFish <bigfische@gmail.com>.
 
 2005-08-20  Matthew Gregan  <kinetik@orcon.net.nz>
 
