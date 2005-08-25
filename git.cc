@@ -481,6 +481,9 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   time_t commit_time = 0;
   string logmsg;
 
+  // Read until eof - we have to peek() first since eof is set only after
+  // a read _after_ the end of the file, so we would get one superfluous
+  // iteration introducing trailing empty line (from failed getline()).
   while (!(stream.peek(), stream.eof()))
     {
       // XXX: Allow arbitrarily long lines
