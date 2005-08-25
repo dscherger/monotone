@@ -151,8 +151,9 @@ capture_cmd_output(boost::format const & fmt)
   tmpfile += "/mtoutput.XXXXXX";
   int fd = monotone_mkstemp(tmpfile);
 
-  L(F("Capturing cmd output: %s") % ("(" + str + ") >" + tmpfile));
-  N(system(string("(" + str + ") >" + tmpfile).c_str()),
+  string cmdline("(" + str + ") >" + tmpfile);
+  L(F("Capturing cmd output: %s") % cmdline);
+  N(system(cmdline.c_str()),
     F("git command %s failed") % str);
   filebuf &fb = *new filebuf;
   fb.open(tmpfile.c_str(), ios::in);
