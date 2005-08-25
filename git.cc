@@ -35,6 +35,7 @@
 #include <unistd.h>
 
 #include <stdio.h>
+#include <string.h> // strdup(), woo-hoo!
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -627,7 +628,7 @@ import_git_repo(fs::path const & gitrepo,
     F("path %s does not exist") % gitrepo.string());
   N(fs::is_directory(gitrepo),
     F("path %s is not a directory") % gitrepo.string());
-  putenv((char*)(string("GIT_DIR=")+gitrepo.native_directory_string()).c_str());
+  putenv((char*)strdup((string("GIT_DIR=")+gitrepo.native_directory_string()).c_str()));
 
   N(app.branch_name() != "", F("need base --branch argument for importing"));
 
