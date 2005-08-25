@@ -1,3 +1,89 @@
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* configure.ac, win32/monotone.iss, monotone.spec:
+	* debian/changelog: Bump version numbers to 0.21.
+	* NEWS: Commit to a timestamp.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Add diff changes, more tweaking.
+	* UPGRADE: Update for 0.21.
+	* AUTHORS: Add Vladimir Vukicevic.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_diff_external.at: New test.
+	* testsuite.at: Add it.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Restrictions): diff -r -r does accept
+	restrictions now.
+	(CVS Phrasebook): Clarify diff section.
+	(Informative): Document diff [--unified|--context|--external],
+	--diff-args.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* app_state.{cc,hh}: Record whether --diff-args was passed, not
+	just a string value.
+	* lua.{cc,hh} (hook_external_diff): Take a diff_args_provided
+	variable.
+	* commands.cc (do_external_diff): Pass it.
+
+2005-07-17  Nathaniel Smith  <njs@pobox.com>
+
+	* std_hooks.lua (external_diff_default_args): New variable.
+	(external_diff): Use it as a default, and use user-provided
+	diff_args otherwise.
+	* monotone.texi (Hooks): Document this.
+
+2005-07-16  Vladimir Vukicevic  <vladimirv@gmail.com>
+
+	* lua.{cc,hh} (hook_external_diff): New hook.
+	* std_hooks.lua (external_diff): Add default definition.
+	* monotone.texi (Hooks): Document external_diff hook.
+	* app_state.{cc,hh}, options.hh, monotone.cc: Add --context,
+	--external, --unified, --diff-args options.
+	* commands.cc (do_external_diff): New function.
+	(dump_diffs): Put a == line between each file's diffs.
+	Pass file_ids of pre- and post-states to make_diff.
+	(diff): Take new options.
+	(cdiff): Remove.
+	* diff_patch.{cc,hh} (make_diff): Print file ids in diff file
+	headers.
+	(unidiff_append_test): Update.
+	(enum diff_type): Move to...
+	* vocab.hh: ...here.
+	* tests/t_restrictions.at, tests/t_crlf.at: Update.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* manifest.cc (build_restricted_manifest_map): Remove doubled
+	comment.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Mention need for 'db migrate'.
+
+2005-07-17  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* lua/*: Import Lua 5.0.2 from upstream.
+	* lua/*: Fix up CVS $Id$ tags, which appear to have been trashed
+	since monotone existed in CVS.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Update for 0.21.
+
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (assert_sqlite3_ok): Remove dead function.
+	
+2005-07-16  Nathaniel Smith  <njs@pobox.com>
+
+	* app_state.cc (require_working_copy): Oops, make it compile.
+
 2005-07-16  Nathaniel Smith  <njs@pobox.com>
 
 	* app_state.{cc,hh} (require_working_copy): Take an optional
