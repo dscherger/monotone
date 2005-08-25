@@ -153,7 +153,7 @@ capture_cmd_output(boost::format const & fmt, filebuf &fb)
 
   string cmdline("(" + str + ") >" + tmpfile);
   L(F("Capturing cmd output: %s") % cmdline);
-  N(system(cmdline.c_str()),
+  N(system(cmdline.c_str()) == 0,
     F("git command %s failed") % str);
   fb.open(tmpfile.c_str(), ios::in);
   close(fd);
