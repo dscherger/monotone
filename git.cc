@@ -98,6 +98,7 @@ git_db
 
   void get_object(const string type, const git_object_id objid, filebuf &fb);
   void get_object(const string type, const git_object_id objid, data &dat);
+  string get_object_type(const git_object_id objid);
 
   // DAG of the revision ancestry in topological order
   // (top of the stack are the earliest revisions)
@@ -179,6 +180,18 @@ git_db::get_object(const string type, const git_object_id objid, data &dat)
   stream >> pipe;
   pipe.end_msg();
   dat = pipe.read_all_as_string();
+}
+
+string
+git_db::get_object_type(const git_object_id objid)
+{
+  filebuf fb;
+  capture_cmd_output(F("git-cat-file -t %s") % objid(), fb);
+  istream stream(&fb);
+
+  string type;
+  stream >> type;
+  return type;
 }
 
 
@@ -617,6 +630,116 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 }
 
 
+static void
+import_git_tag(git_history &git, app_state &app, git_object_id gittid,
+               git_object_id &targetobj)
+{
+  L(F("Importing tag '%s'") % gittid());
+  data dat;
+  git.db.get_object("tag", gittid, dat);
+  string str(dat());
+
+  // The tag object header always starts with an "object" line which is the
+  // only thing interesting for us.
+
+  str.erase(0, str.find(' ') + 1);
+  str.erase(str.find('\n'));
+  I(str.length() == 40);
+  targetobj = str;
+}
+
+static bool
+resolve_git_tag(git_history &git, app_state &app, string &name,
+                git_object_id &gitoid, revision_id &rev)
+{
+  // The cheapest first:
+  map<git_object_id, pair<revision_id, manifest_id> >::const_iterator i = git.commitmap.find(gitoid());
+  if (i != git.commitmap.end())
+    {
+      L(F("commitmap hit '%s'") % i->second.first.inner());
+      rev = i->second.first;
+      return true;
+    }
+
+  // Here, we could check the other maps and throw an error, but since tags
+  // of other objects than tags are extremely rare, it's really not worth it.
+
+  // To avoid potentially scanning all the history, check if it's a tag object
+  // (very common), or indeed a "strange" one:
+  string type = git.db.get_object_type(gitoid);
+
+  if (type == "tag")
+    {
+      git_object_id obj;
+      import_git_tag(git, app, gitoid, obj);
+      return resolve_git_tag(git, app, name, obj, rev);
+    }
+  else if (type == "commit")
+    {
+      historical_gitrev_to_monorev(git, app, gitoid, rev);
+      return true;
+    }
+  else
+    {
+      ui.warn(F("Warning: GIT tag '%s' (%s) does not tag a revision but a %s. Skipping...")
+	      % name % gitoid() % type);
+      return false;
+    }
+}
+
+static void
+import_unresolved_git_tag(git_history &git, app_state &app, string name, git_object_id gitoid)
+{
+  L(F("Importing tag '%s' -> '%s'") % name % gitoid());
+
+  // Does the tag already exist?
+  // FIXME: Just look it up in the db.
+  vector< revision<cert> > certs;
+  app.db.get_revision_certs(tag_cert_name, certs);
+  for (vector< revision<cert> >::const_iterator i = certs.begin();
+      i != certs.end(); ++i)
+    {
+      cert_value cname;
+      cert c = i->inner();
+      decode_base64(c.value, cname);
+      if (cname == name)
+	{
+	  L(F("tag already exists"));
+	  return;
+	}
+    }
+
+  revision_id rev;
+  if (!resolve_git_tag(git, app, name, gitoid, rev))
+    return;
+
+  L(F("Writing tag '%s' -> '%s'") % name % rev.inner());
+  packet_db_writer dbw(app);
+  cert_revision_tag(rev.inner(), name, app, dbw);
+}
+
+class
+tags_tree_walker
+  : public tree_walker
+{
+  git_history & git;
+  app_state & app;
+public:
+  tags_tree_walker(git_history & g, app_state & a)
+    : git(g), app(a)
+  {
+  }
+  virtual void visit_file(file_path const & path)
+  {
+    data refdata;
+    L(F("Processing tag file '%s'") % path());
+    read_data(file_path(git.db.path.string() + "/refs/tags/" + path()), refdata);
+    import_unresolved_git_tag(git, app, path(), refdata().substr(0, 40));
+  }
+  virtual ~tags_tree_walker() {}
+};
+
+
 git_history::git_history(const fs::path &path)
   : db(path), n_revs("revisions", "r", 1), n_objs("objects", "o", 10)
 {
@@ -664,7 +787,19 @@ import_git_repo(fs::path const & gitrepo,
     guard.commit();
   }
 
-  // TODO: tags
+  fs::path tags_tree = gitrepo / "refs/tags";
+  if (fs::exists(tags_tree))
+    {
+      N(fs::is_directory(tags_tree),
+	F("path %s is not a directory") % tags_tree.string());
+
+      transaction_guard guard(app.db);
+      app.db.ensure_open();
+
+      tags_tree_walker walker(git, app);
+      walk_tree_absolute(tags_tree, walker);
+      guard.commit();
+    }
 
   return;
 }
