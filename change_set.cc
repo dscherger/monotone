@@ -551,60 +551,60 @@ sanity_check_path_item(path_item const & pi)
 {
 }
 
+// recursive helper for confirm_proper_tree.
+// traverse up the tree from p, return true if the root tid is hit
+// in finite (ttl) time.
+static bool check_depth(path_state const & ps, path_item const & p,
+                        size_t ttl,
+                        boost::dynamic_bitset<> & checked, tid min_tid)
+{
+  if (ttl == 0)
+      return false;
+
+  if (path_item_parent(p) == root_tid)
+      return true;
+
+  // can only use the checked cache if the name isn't null.
+  // null names' parents need to be checked further on.
+  if (!null_name(path_item_name(p)) 
+      && checked[path_item_parent(p) - min_tid])
+      return true;
+
+  path_state::const_iterator par = ps.find(path_item_parent(p));
+  I(par != ps.end());
+  I(path_item_type(path_state_item(par)) == ptype_directory);
+
+  // if we're null, our parent must also be null
+  if (null_name(path_item_name(p)))
+      I(null_name(path_item_name(path_state_item(par))));
+
+  // recurse
+  bool ret = check_depth(ps, path_state_item(par), ttl - 1, checked, min_tid);
+  checked[path_item_parent(p) - min_tid] = ret;
+  return ret;
+}
+
+// Check that there are no loops in the path_state.
+// This can be done by recursing up the tree, and ensuring that the root
+// tid is hit in finite steps.
 static void
 confirm_proper_tree(path_state const & ps)
 {
   if (ps.empty())
-    return;
+      return;
 
   I(ps.find(root_tid) == ps.end()); // Note that this find() also ensures
-                                    // sortedness of ps.
-
-  tid min_tid = ps.begin()->first;
+                                    // sortedness of ps...
+  tid min_tid = ps.begin()->first;  // ... which matters here
   tid max_tid = ps.rbegin()->first;
   size_t tid_range = max_tid - min_tid + 1;
-  
-  boost::dynamic_bitset<> confirmed(tid_range);
-  boost::dynamic_bitset<> ancbits(tid_range);
-  std::vector<tid> ancs; // a set is more efficient, at least in normal
-                      // trees where the number of ancestors is
-                      // significantly less than tid_range
-  tid curr;
-  path_item item;
+  boost::dynamic_bitset<> checked(tid_range);
 
-  for (path_state::const_iterator i = ps.begin(); i != ps.end(); ++i)
+  for (path_state::const_iterator p = ps.begin(); p != ps.end(); p++)
     {
-      ancs.clear();
-      ancbits.reset();
-      curr = i->first;
-      item = i->second;
-
-      while (confirmed.test(curr - min_tid) == false)
-        {             
-          sanity_check_path_item(item);
-          I(ancbits.test(curr-min_tid) == false);
-          ancs.push_back(curr);
-          ancbits.set(curr-min_tid);
-          if (path_item_parent(item) == root_tid)
-            break;
-          else
-            {
-              curr = path_item_parent(item);
-              path_state::const_iterator j = ps.find(curr);
-              I(j != ps.end());
-
-              // if we're null, our parent must also be null
-              if (null_name(item.name))
-                I(null_name(path_state_item(j).name));
-
-              item = path_state_item(j);
-              I(path_item_type(item) == ptype_directory);
-            }
-        }
-      for (std::vector<tid>::const_iterator a = ancs.begin(); a != ancs.end(); a++)
-        {
-          confirmed.set(*a - min_tid);
-        }
+      // the path to the top must be finite, otherwise there are loops.
+      I(check_depth(ps, path_state_item(p), 
+                    constants::max_path_depth, checked, min_tid) == true);
     }
 }
 
@@ -3002,13 +3002,13 @@ static void dump_change_set(std::string const & ctx,
 {
   data tmp;
   write_change_set(cs, tmp);
-  L(F("[begin changeset %s]\n") % ctx);
+  L(boost::format("[begin changeset %s]\n") % ctx);
   std::vector<std::string> lines;
   split_into_lines(tmp(), lines);
   for (std::vector<std::string>::const_iterator i = lines.begin();
        i != lines.end(); ++i)
     L(boost::format("%s") % *i);
-  L(F("[end changeset %s]\n") % ctx);
+  L(boost::format("[end changeset %s]\n") % ctx);
 }
 
 static void
@@ -3040,7 +3040,7 @@ disjoint_merge_test(std::string const & ab_str,
 
   app_state app;
 
-  L(F("beginning disjoint_merge_test\n"));
+  L(boost::format("beginning disjoint_merge_test\n"));
 
   read_change_set(data(ab_str), ab);
   read_change_set(data(ac_str), ac);
@@ -3058,7 +3058,7 @@ disjoint_merge_test(std::string const & ab_str,
   BOOST_CHECK(bm.rearrangement == ac.rearrangement);
   BOOST_CHECK(cm.rearrangement == ab.rearrangement);
 
-  L(F("finished disjoint_merge_test\n"));
+  L(boost::format("finished disjoint_merge_test\n"));
 }
 
 static void
@@ -3130,18 +3130,18 @@ basic_change_set_test()
     }
   catch (informative_failure & exn)
     {
-      L(F("informative failure: %s\n") % exn.what);
+      L(boost::format("informative failure: %s\n") % exn.what);
     }
   catch (std::runtime_error & exn)
     {
-      L(F("runtime error: %s\n") % exn.what());
+      L(boost::format("runtime error: %s\n") % exn.what());
     }
 }
 
 static void
 invert_change_test()
 {
-  L(F("STARTING invert_change_test\n"));
+  L(boost::format("STARTING invert_change_test\n"));
   change_set cs;
   manifest_map a;
 
@@ -3175,7 +3175,7 @@ invert_change_test()
   dump_change_set("invert_change_test, cs3", cs3);
   BOOST_CHECK(cs.rearrangement == cs3.rearrangement);
   BOOST_CHECK(cs.deltas == cs3.deltas);
-  L(F("ENDING invert_change_test\n"));
+  L(boost::format("ENDING invert_change_test\n"));
 }
 
 static void 
@@ -3215,11 +3215,11 @@ neutralize_change_test()
     }
   catch (informative_failure & exn)
     {
-      L(F("informative failure: %s\n") % exn.what);
+      L(boost::format("informative failure: %s\n") % exn.what);
     }
   catch (std::runtime_error & exn)
     {
-      L(F("runtime error: %s\n") % exn.what());
+      L(boost::format("runtime error: %s\n") % exn.what());
     }
 }
 
@@ -3260,11 +3260,11 @@ non_interfering_change_test()
     }
   catch (informative_failure & exn)
     {
-      L(F("informative failure: %s\n") % exn.what);
+      L(boost::format("informative failure: %s\n") % exn.what);
     }
   catch (std::runtime_error & exn)
     {
-      L(F("runtime error: %s\n") % exn.what());
+      L(boost::format("runtime error: %s\n") % exn.what());
     }
 }
 
@@ -3284,14 +3284,14 @@ struct bad_concatenate_change_test
   std::string ident;
   bad_concatenate_change_test(char const *file, int line) : 
     do_combine(false),
-    ident((F("%s:%d") % file % line).str())
+    ident((boost::format("%s:%d") % file % line).str())
   {    
-    L(F("BEGINNING concatenation test %s\n") % ident);
+    L(boost::format("BEGINNING concatenation test %s\n") % ident);
   }
 
   ~bad_concatenate_change_test()
   {
-    L(F("FINISHING concatenation test %s\n") % ident);
+    L(boost::format("FINISHING concatenation test %s\n") % ident);
   }
 
   change_set & getit(which_t which)
@@ -3346,7 +3346,7 @@ struct bad_concatenate_change_test
   }
   void run()
   {
-    L(F("RUNNING bad_concatenate_change_test %s\n") % ident);
+    L(boost::format("RUNNING bad_concatenate_change_test %s\n") % ident);
     try
       {
         dump_change_set("a", a);
@@ -3354,28 +3354,28 @@ struct bad_concatenate_change_test
       }
     catch (std::logic_error e)
       {
-        L(F("skipping change_set printing, one or both are not sane\n"));
+        L(boost::format("skipping change_set printing, one or both are not sane\n"));
       }
     BOOST_CHECK_THROW(concatenate_change_sets(a, b, concat),
                       std::logic_error);
     try { dump_change_set("concat", concat); }
-    catch (std::logic_error e) { L(F("concat change_set is insane\n")); }
+    catch (std::logic_error e) { L(boost::format("concat change_set is insane\n")); }
     if (do_combine)
       {
-        L(F("Checking combined change set\n"));
+        L(boost::format("Checking combined change set\n"));
         change_set empty_cs, combined_concat;
         BOOST_CHECK_THROW(concatenate_change_sets(combined,
                                                   empty_cs,
                                                   combined_concat),
                           std::logic_error);
         try { dump_change_set("combined_concat", combined_concat); }
-        catch (std::logic_error e) { L(F("combined_concat is insane\n")); }
+        catch (std::logic_error e) { L(boost::format("combined_concat is insane\n")); }
       }
   }
   void run_both()
   {
     run();
-    L(F("RUNNING bad_concatenate_change_test %s again backwards\n") % ident);
+    L(boost::format("RUNNING bad_concatenate_change_test %s again backwards\n") % ident);
     BOOST_CHECK_THROW(concatenate_change_sets(a, b, concat),
                       std::logic_error);
   }

@@ -1,3 +1,43 @@
+2005-08-26  Richard Levitte  <richard@levitte.org>
+
+	* database.cc (version): Revert the change done earlier, as it
+	aborted if the schema isn't the current one, rendering this method
+	useless.
+
+2005-08-26  Matt Johnston  <matt@ucc.asn.au>
+
+	* change_set.cc (check_depth, confirm_proper_tree): 
+	more efficient algorithm to check for no loops
+	* constants.hh: new constant max_path_depth to limit
+	recursion in check_depth.
+
+2005-08-26  Benoît Dejean  <benoit@placenet.org>
+
+	* po/fr.po: Updated French translation.
+
+2005-08-26  Richard Levitte  <richard@levitte.org>
+
+	* options.hh, monotone.cc: Add the '--execute' command-specific
+	option.
+	* monotone.cc (cpp_main): ... and process it.
+	* app_state.hh (class app_state): Add the 'execute' boolean.
+	* app_state.cc (app_state): Initialise it.
+	* commands.cc (CMD(drop)): Add '--execute' capability.
+	* commands.cc (CMD(rename)): Add '--execute' capability.  Pass
+	'app' to build_rename.
+	* work.hh, work.cc (build_deletions, build_rename): Do the actual
+	work.  This required the addition of an app_state parameter to
+	build_rename.
+
+	* tests/t_drop_execute.at, tests/t_rename_execute.at: New tests.
+	* testsuite.at: Add them.
+
+2005-08-26  Benoît Dejean  <benoit@placenet.org>
+
+	* mt_version.cc (print_full_version): Merged strings.
+	* change_set.cc: No i18n for unittests. Wow, this saves
+	21 strings (total 781).
+
 2005-08-25  Benoît Dejean  <benoit@placenet.org>
 
 	* commands.cc (safe_gettext): New function.
