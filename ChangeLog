@@ -1,3 +1,9 @@
+2005-08-26  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* change_set.cc, pcdv.cc, restrictions.cc: Try to make directory
+	deletion work. (Unsuccesful, but left in because it doesn't seem to
+	break anything.)
+
 2005-08-24  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* tests/t_add_vs_commit.at: Fix BASE_REVISION usage for the working

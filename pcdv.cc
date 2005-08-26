@@ -1362,8 +1362,9 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
               std::set<item_status::path_state> s = j->second.current_names();
               I(s.size() == 1);
               file_path fp = out.get_full_name(*s.begin());
-              I(!(fp == file_path()));
               done.insert(myid);
+              if (fp == file_path())
+                continue;// parent dir was deleted
               std::pair<std::map<fpid, item_id>::iterator, bool> r;
               r = outmap.insert(make_pair(cit.intern(fp()), myid));
               if (r.first->second != myid)
@@ -1424,6 +1425,7 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       // ...find where it goes...
       if (type == deleted_file || type == deleted_dir)
         {
+          L(F("File %1% being deleted (%2%)") % from % current_id);
           current_item = current_item.rename(out.itx->intern(revision),
                                              item_id(-1),
                                              make_null_component());
@@ -1504,7 +1506,8 @@ tree_state::merge_with_rearrangement(std::vector<tree_state> const & trees,
       std::set<item_status::path_state> s = j->second.current_names();
       I(s.size() == 1);
       file_path fp = out.get_full_name(*s.begin());
-      I(!(fp == file_path()));
+      if (fp == file_path())
+        continue;// parent dir was deleted
       std::pair<std::map<fpid, item_id>::iterator, bool> r;
       r = outmap.insert(make_pair(cit.intern(fp()), myid));
       if (r.first->second != myid)
@@ -1750,7 +1753,7 @@ tree_state::get_changes_for_merge(tree_state const & merged,
           ++l, ++r;
         }
 
-      if (pre == post)
+      if (pre == post || (from == file_path() && to == file_path()))
         continue;
       else if (to == file_path())
         {

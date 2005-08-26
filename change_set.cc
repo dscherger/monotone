@@ -211,6 +211,15 @@ change_set::path_rearrangement::has_added_file(file_path const & file) const
 bool
 change_set::path_rearrangement::has_deleted_file(file_path const & file) const
 {
+  std::vector<path_component> spl;
+  split_path(file, spl);
+  for (spl.pop_back(); !spl.empty(); spl.pop_back())
+    {
+      file_path recon;
+      compose_path(spl, recon);
+      if (deleted_dirs.find(recon) != deleted_dirs.end())
+        return true;
+    }
   return deleted_files.find(file) != deleted_files.end();
 }
 
@@ -808,10 +817,41 @@ compose_rearrangement(path_analysis const & pa,
           compose_path(old_name, old_path);
         }
 
-      if (!null_name(path_item_name(new_item)))      
+      bool del_parent = false;
+      {
+        bool last = false;// we don't want to count the last item
+        get_full_path(pa.second, curr, new_name);
+        for (std::vector<path_component>::const_iterator
+               i = new_name.begin(); i != new_name.end(); ++i)
+          {
+            del_parent = del_parent || last;
+            last = null_name(*i);
+          }
+      }
+      if (!null_name(path_item_name(new_item)))
+/*        {
+          std::vector<path_component> pdir_new_name;
+          tid p = path_item_parent(old_item);
+          get_full_path(pa.second, p, pdir_new_name);
+          for (std::vector<path_component>::const_iterator
+                 i = pdir_new_name.begin(); i != pdir_new_name.end(); ++i)
+            {
+              if (null_name(*i))
+                del_parent = true;
+            }
+        }
+      else*/  
         {
+          bool last = false;// we don't want to count the last item
           get_full_path(pa.second, curr, new_name);
-          compose_path(new_name, new_path);
+          for (std::vector<path_component>::const_iterator
+                 i = new_name.begin(); i != new_name.end(); ++i)
+            {
+              del_parent = del_parent || last;
+              last = null_name(*i);
+            }
+          if (!del_parent)
+            compose_path(new_name, new_path);
         }
 
       if (old_path == new_path)
@@ -823,12 +863,17 @@ compose_rearrangement(path_analysis const & pa,
           */
           continue;
         }
+      if (del_parent)
+        {
+          L(F("skipping '%1%' with deleted parent") % old_path);
+          continue;
+        }
       
-      /*
+//      /*
       L(F("analyzing %s %d : '%s' -> '%s'\n")
         % (path_item_type(old_item) == ptype_directory ? "directory" : "file")
         % curr % old_path % new_path);
-      */
+//      */
       
       if (null_name(path_item_name(old_item)))
         {
@@ -1395,6 +1440,8 @@ extract_killed(path_analysis const & a,
       // a path P = DIR/LEAF is "killed" by a path_analysis iff the
       // directory node named DIR in the post-state contains LEAF in the
       // pre-state, and does not contain LEAF in the post-state
+      //
+      //FIXME: what if the node DIR no longer exists?
 
       boost::shared_ptr<directory_node> first_node = i->second;
       boost::shared_ptr<directory_node> second_node = j->second;
@@ -1411,6 +1458,15 @@ extract_killed(path_analysis const & a,
               file_path killed_path;
               get_full_path(a.second, dir_tid, killed_name);
               killed_name.push_back(first_name);
+              bool del_parent = false;
+              for (std::vector<path_component>::const_iterator
+                     i = killed_name.begin(); i != killed_name.end(); ++i)
+                {
+                  if (null_name(*i))
+                    del_parent = true;
+                }
+              if (del_parent)
+                break;
               compose_path(killed_name, killed_path);
               killed.insert(killed_path);
             }
@@ -1622,7 +1678,9 @@ concatenate_change_sets(change_set const & a,
           if (!b.rearrangement.has_deleted_file(del_pth)
               || b.rearrangement.has_added_file(del_pth)
               || b.rearrangement.has_renamed_file_dst(del_pth))
-            concatenated.deltas.insert(*del);
+            {
+              concatenated.deltas.insert(*del);
+            }
         }
     }
   
@@ -1833,6 +1891,8 @@ calculate_itempaths(tree_state const & a,
     {
       std::pair<std::map<item_id, itempaths>::iterator, bool> r;
       r = ip.insert(std::make_pair(i->first, itempaths()));
+      if (r.first->second.anc == file_path())
+        continue;
       I((*i).second.size() == 1);
       r.first->second.ahash = file_id(itx.lookup(*(*i).second.begin()));
     }
@@ -1843,6 +1903,8 @@ calculate_itempaths(tree_state const & a,
     {
       std::pair<std::map<item_id, itempaths>::iterator, bool> r;
       r = ip.insert(std::make_pair(i->first, itempaths()));
+      if (r.first->second.left == file_path())
+        continue;
       I((*i).second.size() == 1);
       r.first->second.lhash = file_id(itx.lookup(*(*i).second.begin()));
     }
@@ -1853,6 +1915,8 @@ calculate_itempaths(tree_state const & a,
     {
       std::pair<std::map<item_id, itempaths>::iterator, bool> r;
       r = ip.insert(std::make_pair(i->first, itempaths()));
+      if (r.first->second.right == file_path())
+        continue;
       I((*i).second.size() == 1);
       r.first->second.rhash = file_id(itx.lookup(*(*i).second.begin()));
     }
@@ -1863,6 +1927,8 @@ calculate_itempaths(tree_state const & a,
     {
       std::pair<std::map<item_id, itempaths>::iterator, bool> r;
       r = ip.insert(std::make_pair(i->first, itempaths()));
+      if (r.first->second.merged == file_path())
+        continue;
       if ((*i).second.size() == 1)
         {
           r.first->second.clean = true;
@@ -2604,11 +2670,21 @@ apply_path_rearrangement_fastpath(change_set::path_rearrangement const & pr,
     }
 }
 
+void dump(path_set const & obj, std::string & out)
+{
+  out.clear();
+  for (path_set::const_iterator i = obj.begin(); i != obj.end(); ++i)
+    out += (*i)() + "\n";
+}
+
 static inline void
 apply_path_rearrangement_slowpath(path_set const & old_ps,
                                   change_set::path_rearrangement const & pr,
                                   path_set & new_ps)
 {
+  MM(pr);
+  MM(old_ps);
+  MM(new_ps);
   pr.check_sane();
   change_set::path_rearrangement a, b;
   a.added_files = old_ps;

@@ -194,6 +194,9 @@ calculate_restricted_rearrangement(app_state & app,
   apply_path_rearrangement(old_paths, included, new_paths);
 }
 
+
+void dump(path_set const & obj, std::string & out);
+
 void
 calculate_restricted_revision(app_state & app, 
                               std::vector<utf8> const & args,
@@ -215,7 +218,11 @@ calculate_restricted_revision(app_state & app,
                                      old_manifest_id, old_revision_id,
                                      m_old, old_paths, new_paths, 
                                      cs->rearrangement, excluded);
-
+  MM(old_paths);
+  MM(new_paths);
+  MM(*cs);
+  MM(m_old);
+  MM(m_new);
   build_restricted_manifest_map(new_paths, m_old, m_new, app);
   complete_change_set(m_old, m_new, *cs);
 
