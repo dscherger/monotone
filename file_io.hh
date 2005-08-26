@@ -123,6 +123,11 @@ void walk_tree(file_path const & path,
                tree_walker & walker,
                bool require_existing_path = true);
 
+// from anywhere, with native path
+void
+walk_tree_absolute(fs::path const & path,
+		   tree_walker & walker);
+
 
 
 #endif // __FILE_IO_H__

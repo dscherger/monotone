@@ -31,6 +31,7 @@
 #include "database_check.hh"
 #include "diff_patch.hh"
 #include "file_io.hh"
+#include "git.hh"
 #include "keys.hh"
 #include "manifest.hh"
 #include "netsync.hh"
@@ -3431,6 +3432,15 @@ CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS reposit
     throw usage(name);
 
   import_cvs_repo(mkpath(idx(args, 0)()), app);
+}
+
+CMD(git_import, "git", "GITREPO", "import given head from GIT repository",
+    OPT_BRANCH_NAME)
+{
+  if (args.size() != 1)
+    throw usage(name);
+
+  import_git_repo(mkpath(idx(args, 0)()), app);
 }
 
 static void

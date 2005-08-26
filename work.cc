@@ -692,28 +692,35 @@ static bool find_in_attr_map(attr_map const & attr,
   return true;
 }
 
+void 
+read_attr_map_from_db(manifest_map const & man,
+		      attr_map & attr,
+                      app_state & app)
+{
+  file_path fp;
+  get_attr_path(fp);
+  manifest_map::const_iterator i = man.find(fp);
+  if (i == man.end())
+    return;
+
+  file_id fid = manifest_entry_id(i);
+  if (!app.db.file_version_exists(fid))
+    return;
+
+  file_data attr_data;
+  app.db.get_file_version(fid, attr_data);
+
+  read_attr_map(data(attr_data.inner()()), attr);
+}
+
 bool get_attribute_from_db(file_path const & file,
                            std::string const & attr_key,
                            manifest_map const & man,
                            std::string & attr_val,
                            app_state & app)
 {
-  file_path fp;
-  get_attr_path(fp);
-  manifest_map::const_iterator i = man.find(fp);
-  if (i == man.end())
-    return false;
-
-  file_id fid = manifest_entry_id(i);
-  if (!app.db.file_version_exists(fid))
-    return false;
-
-  file_data attr_data;
-  app.db.get_file_version(fid, attr_data);
-
   attr_map attr;
-  read_attr_map(data(attr_data.inner()()), attr);
-
+  read_attr_map_from_db(man, attr, app);
   return find_in_attr_map(attr, file, attr_key, attr_val);
 }
 

@@ -706,6 +706,20 @@ walk_tree(tree_walker & walker)
   walk_tree_recursive(fs::current_path(), fs::path(), walker);
 }
 
+// from anywhere, with native path
+void
+walk_tree_absolute(fs::path const & path,
+		   tree_walker & walker)
+{
+  if (! fs::is_directory(path))
+    walker.visit_file(file_path(path.string()));
+  else
+    {
+      // we likely do not want the localization here
+      walk_tree_recursive(path, "", walker);
+    }
+}
+
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
