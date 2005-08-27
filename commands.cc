@@ -3774,29 +3774,65 @@ typedef std::map<revision_id, std::pair<int, vector<revision_id> > > pmap;
 typedef std::map<revision_id, std::pair<int, vector<revision_id> > > cmap;
 
 void
-get_fileids(revision_id const & start,
-            file_path const & fp,
+get_fileids(revision_id const & left,
+            revision_id const & right,
+            file_path const & lfp,
+            file_path const & rfp,
             std::map<revision_id, std::pair<file_id, file_path> > & fileids,
             pmap & parents,
             cmap & children,
             vector<revision_id> & roots,
             app_state & app)
 {
-  if (!(fp == file_path()))
-    {
-      manifest_id mid;
-      app.db.get_revision_manifest(start, mid);
-      manifest_map m;
-      app.db.get_manifest(mid, m);
-      manifest_map::const_iterator i = m.find(fp);
-      I(i != m.end());
-      file_id ident = manifest_entry_id(i);
-      fileids.insert(make_pair(start, make_pair(ident, fp)));
-    }
+  std::set<revision_id> allowed_revs;
+  revision_id lcad;
+  {
+    find_common_ancestor_for_merge(left, right, lcad, app);
+    std::deque<revision_id> todo;
+    typedef std::multimap<revision_id, revision_id>::iterator gi;
+    std::multimap<revision_id, revision_id> graph;
+    app.db.get_revision_ancestry(graph);
+    todo.push_back(lcad);
+    while(todo.size())
+      {
+        revision_id c(todo.back());
+        todo.pop_back();
+        unsigned int s = allowed_revs.size();
+        allowed_revs.insert(c);
+        if (s == allowed_revs.size())
+          continue;
+        gi pb = graph.lower_bound(c);
+        gi pe = graph.upper_bound(c);
+        for (gi i = pb; i != pe; ++i)
+          todo.push_back(i->second);
+      }
+  }
 
   std::deque<std::pair<revision_id, file_path> > todo;
-  todo.push_back(make_pair(start, fp));
-  ticker num("file_id count", "F", 1);
+
+  {// left
+    manifest_id mid;
+    app.db.get_revision_manifest(left, mid);
+    manifest_map m;
+    app.db.get_manifest(mid, m);
+    manifest_map::const_iterator i = m.find(lfp);
+    I(i != m.end());
+    file_id ident = manifest_entry_id(i);
+    fileids.insert(make_pair(left, make_pair(ident, lfp)));
+    todo.push_back(make_pair(left, lfp));
+  }
+  {// right
+    manifest_id mid;
+    app.db.get_revision_manifest(right, mid);
+    manifest_map m;
+    app.db.get_manifest(mid, m);
+    manifest_map::const_iterator i = m.find(rfp);
+    I(i != m.end());
+    file_id ident = manifest_entry_id(i);
+    fileids.insert(make_pair(right, make_pair(ident, rfp)));
+    todo.push_back(make_pair(right, rfp));
+  }
+
   while (!todo.empty())
     {
       file_path const & p(todo.front().second);
@@ -3807,60 +3843,59 @@ get_fileids(revision_id const & start,
            i != rs.edges.end(); ++i)
         {
           revision_id oldrev(edge_old_revision(i));
-          if (!(oldrev == revision_id()))
-            ++child_count;
+          // revisions not descended from the lcad do not exist.
+          if (allowed_revs.find(oldrev) == allowed_revs.end())
+            oldrev = revision_id();
 
-          {
-            std::pair<int, vector<revision_id> > p(1, vector<revision_id>());
-            p.second.push_back(oldrev);
-            std::pair<pmap::iterator, bool>
-                pr(parents.insert(make_pair(todo.front().first, p)));
-            if (!pr.second)
-              {
-                I(++pr.first->second.first <= 2);
-                pr.first->second.second.push_back(oldrev);
-              }
-
-            std::pair<int, vector<revision_id> > c(1, vector<revision_id>());
-            c.second.push_back(todo.front().first);
-            std::pair<pmap::iterator, bool>
-                cr(children.insert(make_pair(oldrev, c)));
-            if (!cr.second)
-              {
-                ++cr.first->second.first;
-                cr.first->second.second.push_back(todo.front().first);
-              }
-          }
-
-          // already processed it
-          if (fileids.find(oldrev) != fileids.end())
-            continue;
-          // this is the beginning of time
-//          if (edge_changes(i).rearrangement.has_added_file(p))
-//            continue;
           std::map<file_path, file_path> const &
               renames(edge_changes(i).rearrangement.renamed_files);
           std::map<file_path, file_path>::const_iterator j = renames.begin();
           while (j != renames.end() && !(j->second == p))
             ++j;
-          file_path const & mfp((j == renames.end())?fp:j->first);
-          if (!(mfp == file_path()
-              || edge_changes(i).rearrangement.has_added_file(p)))
-          {
-            manifest_map m;
-            app.db.get_manifest(edge_old_manifest(i), m);
-            manifest_map::const_iterator mi = m.find(mfp);
-            I(mi != m.end());
-            file_id ident = manifest_entry_id(mi);
-            fileids.insert(make_pair(oldrev, make_pair(ident, mfp)));
-            todo.push_back(make_pair(oldrev, mfp));
-          }
-          else if (!(oldrev == revision_id()))
-            todo.push_back(make_pair(oldrev, file_path()));
+          file_path const & mfp((j == renames.end())?p:j->first);
+          bool parent_has_file =
+                             !(mfp == file_path())
+                          && !edge_changes(i).rearrangement.has_added_file(p)
+                          && !(oldrev == revision_id());
+
+          if (!parent_has_file)
+            continue;
+          std::pair<int, vector<revision_id> > p(1, vector<revision_id>());
+          p.second.push_back(oldrev);
+          std::pair<pmap::iterator, bool>
+              pr(parents.insert(make_pair(todo.front().first, p)));
+          if (!pr.second)
+            {
+              I(++pr.first->second.first <= 2);
+              pr.first->second.second.push_back(oldrev);
+            }
+
+          std::pair<int, vector<revision_id> > c(1, vector<revision_id>());
+          c.second.push_back(todo.front().first);
+          std::pair<pmap::iterator, bool>
+              cr(children.insert(make_pair(oldrev, c)));
+          if (!cr.second)
+            {
+              ++cr.first->second.first;
+              cr.first->second.second.push_back(todo.front().first);
+            }
+
+          ++child_count;
+
+          // already processed it
+          if (fileids.find(oldrev) != fileids.end())
+            continue;
+
+          manifest_map m;
+          app.db.get_manifest(edge_old_manifest(i), m);
+          manifest_map::const_iterator mi = m.find(mfp);
+          I(mi != m.end());
+          file_id ident = manifest_entry_id(mi);
+          fileids.insert(make_pair(oldrev, make_pair(ident, mfp)));
+          todo.push_back(make_pair(oldrev, mfp));
         }
       if (!child_count)
         roots.push_back(todo.front().first);
-      ++num;
       todo.pop_front();
     }
 }
@@ -3885,21 +3920,15 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
   pmap parents;
   cmap children;
   std::vector<revision_id> rootvect;
-  get_fileids(left, fp, fileids, parents, children, rootvect, app);
-  get_fileids(right, fp, fileids, parents, children, rootvect, app);
+  get_fileids(left, right, fp, fp, fileids, parents, children, rootvect, app);
+  P(F("Done locating ancestors."));
+  P(F("found %1% roots in %2% revisions") % rootvect.size() % fileids.size());
 
   // now compute the merge history
   std::deque<revision_id> roots;
   for (vector<revision_id>::const_iterator i = rootvect.begin();
        i != rootvect.end(); ++i)
-    {
-      roots.push_back(*i);
-      P(F("Roots: %1%") % *i);
-    }
-
-  ticker count("Revs in weave", "R", 1);
-  ticker lines("Lines in weave", "L", 1);
-  ticker unique("Unique lines", "U", 1);
+    roots.push_back(*i);
 
   map<revision_id, file_state> files;
   file_state empty(file_state::new_file());
@@ -3941,10 +3970,6 @@ CMD(pcdv, "debug", "REVISION REVISION FILENAME",
           vector<string> contents(get_file(i->second.first, app));
           string r(roots.front().inner()());
           files.insert(std::make_pair(roots.front(),p.resolve(contents, r)));
-
-          ++count;
-          lines += (empty.weave->size() - lines.ticks);
-          unique += (empty.itx->first.rev.size() - unique.ticks);
 
           found_left = found_left
                        || (left.inner()() == roots.front().inner()());

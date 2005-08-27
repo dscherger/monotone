@@ -1,3 +1,9 @@
+2005-08-27  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc: have the pcdv test driver limit to descendents of
+	the lcad. Processing time ranges from a few seconds to 4 minutes,
+	depending on lcad distance and file size.
+
 2005-08-26  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* change_set.cc, pcdv.cc, restrictions.cc: Try to make directory
