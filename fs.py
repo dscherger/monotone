@@ -49,6 +49,9 @@ class WriteableFS (ReadableFS):
     def rmdir(self, filename):
         raise NotImplementedError
 
+    def truncate(self, filename, length):
+        raise NotImplementedError
+
 class LocalReadableFS(ReadableFS):
     def __init__(self, dir):
         self.dir = dir
@@ -103,3 +106,6 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
 
     def rmdir(self, filename):
         os.rmdir(self._fname(filename))
+
+    def truncate(self, filename, length):
+        open(self._fname(filename), "ab").truncate(length)

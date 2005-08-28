@@ -58,6 +58,10 @@ from cStringIO import StringIO
 # similar).  which means that it would be better to not have to regenerate all
 # hash files from scratch.  various options... move them out of the way, don't
 # delete them until everything is committed, perhaps.
+#
+# hmm... even if we don't have truncate, we should be able to restore original
+# hash files, at which point, we have random junk in DATA and INDEX but it
+# doesn't matter too much... INDEX will become corrupted, of course.
 
 # How a pull works:
 #   -- pull VERSION, see if it matches ours.  (note down what it says for
