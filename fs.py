@@ -1,9 +1,9 @@
-# interface to remote (dumb) servers
+# interface to FS-like things
 
 import os
 import os.path
 
-class ReadableServer:
+class ReadableFS:
     # All operators are blocking
 
     # returns an object that supports read(), close() with standard file
@@ -26,7 +26,7 @@ class ReadableServer:
         raise NotImplementedError
 
 
-class WriteableServer (ReadableServer):
+class WriteableFS (ReadableFS):
     # returns an object that supports write(), flush(), close() with standard
     # file object semantics
     def open_append(self, filename):
@@ -40,8 +40,15 @@ class WriteableServer (ReadableServer):
     def delete(self, filename):
         raise NotImplementedError
 
+    # returns true if mkdir succeeded, false if failed
+    # used for locking
+    def mkdir(self, filename):
+        raise NotImplementedError
 
-class LocalServer (WriteableServer:
+    def rmdir(self, filename):
+        raise NotImplementedError
+
+class LocalFS (WriteableFS:
     def __init__(self, dir):
         self.dir = dir
 
@@ -81,3 +88,13 @@ class LocalServer (WriteableServer:
 
     def delete(self, filename):
         os.unlink(self._fname(filename))
+
+    def mkdir(self, filename):
+        try:
+            os.mkdir(self._fname(filename))
+        except IOError:
+            return 0
+        return 1
+
+    def rmdir(self, filename):
+        os.rmdir(self._fname(filename))
