@@ -42,9 +42,22 @@ from cStringIO import StringIO
 #     some are unused?)
 #   finally, there's a file VERSION, which contains the sha1 of the string
 #   "<hash1>\0<hash2>\0...<hashn>\0", plus a newline.
-#   finally2, there's a file called DATA_LENGTH, which contains the size of
-#     the file DATA in bytes.  (this is used to synthesize offsets into it for
-#     remotely appended data.)
+#   finally2, there's a file called LENGTH, which contains the size of
+#     the file DATA in bytes, and then the size of the file INDEX in bytes.
+
+# sometimes there is a file _rollback, which is a copy of LENGTH made before
+# starting a transaction.  the way this works is that if a transaction gets
+# uncleanly aborted (which we try to make sure doesn't happen, because it is
+# icky), then we use this file to do rollback.  rollback can only be done
+# locally -- the way it works is that we truncate DATA and INDEX to the
+# lengths given in _rollback, replace LENGTH by _rollback, and regenerate all
+# hashes from scratch.
+# actually, SFTP supports truncate (paramiko doesn't expose it, but all you
+# have to do is create a SFTPAttributes object, set its size field, and send a
+# setstat request on it -- see implementation of paramiko's chmod, for
+# similar).  which means that it would be better to not have to regenerate all
+# hash files from scratch.  various options... move them out of the way, don't
+# delete them until everything is committed, perhaps.
 
 # How a pull works:
 #   -- pull VERSION, see if it matches ours.  (note down what it says for

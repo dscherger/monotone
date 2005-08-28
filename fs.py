@@ -13,6 +13,7 @@ class ReadableFS:
 
     # takes an iterable of filenames
     # returns a map {filename -> contents of file}
+    # if some file does not exist, will have a None for contents
     def fetch(self, filenames):
         raise NotImplementedError
 
@@ -33,8 +34,8 @@ class WriteableFS (ReadableFS):
         raise NotImplementedError
 
     # files is a map {filename -> contents of file}
-    # this operation must be atomic
-    def replace(self, files):
+    # this operation must be atomic and clobbering
+    def put(self, files):
         raise NotImplementedError
 
     def delete(self, filename):
@@ -48,7 +49,7 @@ class WriteableFS (ReadableFS):
     def rmdir(self, filename):
         raise NotImplementedError
 
-class LocalFS (WriteableFS:
+class LocalReadableFS(ReadableFS):
     def __init__(self, dir):
         self.dir = dir
 
@@ -61,9 +62,12 @@ class LocalFS (WriteableFS:
     def fetch(self, filenames):
         files = {}
         for fn in filenames:
-            f = open(self._fname(fn), "rb")
-            files[fn] = f.read()
-            f.close()
+            try:
+                f = open(self._fname(fn), "rb")
+                files[fn] = f.read()
+                f.close()
+            except IOError:
+                files[fn] = None
         return files
 
     def fetch_bytes(self, filename, bytes):
@@ -75,10 +79,11 @@ class LocalFS (WriteableFS:
     def exists(self, filename):
         return os.path.exists(self._fname(filename))
 
+class LocalWriteableFs(LocalReadableFS, WriteableFS):
     def open_append(self, filename):
         return open(self._fname(filename), "ab")
 
-    def replace(self, filenames):
+    def put(self, filenames):
         for fn, data in filenames.iteritems():
             tmpname = self._fname("__tmp")
             tmph = open(tmpname, "wb")
