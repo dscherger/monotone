@@ -11,7 +11,8 @@ class MerkleDir:
     data_file = "DATA"
     index_file = "INDEX"
     data_length_file = "DATA_LENGTH"
-    lock_file = "__lock"
+    lock_file = "_lock"
+    lock_info_file = "_lock_info"
     hashes_prefix = "HASHES_"
 
     def __init__(self, directory):

@@ -101,29 +101,12 @@ from cStringIO import StringIO
 #       it and see what happens)
 #     "delete file"
 
-# locking:
-#   writers:
-#   -- if the lockfile exists, abort
-#   -- append a unique nonce to the lockfile
-#   -- fetch the lockfile; if our nonce is at the beginning proceed
-#      otherwise, abort
-#   (with ftp, can use APPE command: ftp.storebinary("APPE <name>", fileobj))
-#   (with sftp, can open in mode "a")
-#   -- when done, delete lockfile
+# also write a file called _lock_info or something containing info on who
+# created the lock, to ease in cleaning things up.
 #
-#   readers:
-#   -- fetches VERSION, then root hashfile, then child hashes, then data
-#   -- data is not referenced until fully written, so that's okay
-#   -- as long as hash files are updated atomically (!), they will always
-#      contain a list of things that really exist and may be wanted; and the
-#      root file will always contain a list of things that may be interesting
-#      (even if yet more interesting things are being written at the same
-#      time)
-#   so the worst thing that can happen is that we get some stuff without its
-#   prerequisites, which will be fixed at next pull anyway.
-#   should probably check the push version before and after the pull anyway,
-#   so we can tell the user when they raced and there's more stuff to get...?
-#   or even just start the pull over...?
+# there is no atomic replace in sftp (probably not ftp either).  can write,
+# delete, rename, to minimize window.  but clients should be prepared to retry
+# if a file fetch fails.
 
 # TODO:
 #   -- cat revision and packet commands -> automate?
