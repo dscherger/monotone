@@ -67,32 +67,29 @@ private:
   void print_cert (std::vector < revision < cert > >&certs, const std::string &name,
                    bool from_start=false, bool from_end=false, const std::string &sep="");
   void print_changeset(const revision_set & rev);
-  void assign_format_strings(const utf8 &fmt); 
 
-  void print_cset_ancestor(const utf8 &fmtstring, const revision_id &data);
-  void print_cset_single(const utf8 &fmtstring, const std::set<file_path> &data);
-  void print_cset_pair(const utf8 &fmtstring, const std::map<file_path, file_path> &data);
+  std::string::const_iterator find_cset_fmt_end(std::string::const_iterator i, 
+                                       const std::string::const_iterator &e);
+  void print_cset_ancestors(const std::string::const_iterator &startfmt, 
+                           const std::string::const_iterator & e,
+                           const std::set<revision_id> &data);
+  void print_cset_single(const std::string::const_iterator &startfmt, 
+                         const std::string::const_iterator & e,
+                         const std::set<file_path> &data);
+  void print_cset_pair(const std::string::const_iterator &startfmt, 
+                       const std::string::const_iterator & e,
+                       const std::map<file_path, file_path> &data);
   FMTIDX decode_cset_fmtid(const std::string::const_iterator &i);
-  void handle_cset(const std::string::const_iterator &it, const revision_set & rev);
+  std::string::const_iterator handle_cset(const std::string::const_iterator &it, 
+                                         const std::string::const_iterator & fmt_e,
+                                         const changes_summary &csum);
 
   void handle_control(std::string::const_iterator &it, const std::string::const_iterator &end);
 
 private:
   std::ostream & out; 
-  utf8 fmtstrs[8];
-
-  /// human readable translations of the format region types
-  static std::map<FMTIDX, std::string> format_region_types;
-
-  /// set of allowable \n style codes, ie. 'n' maps to "\n"
-  static std::map<char, std::string> control_character_mapping;
-
-  /// given a FMTIDX, we get a map from valid control "characters" (%sa is multi char though) to 
-  /// a text string describing what get's printed.  trying to ease the way for self-documenting output
-  static std::map<FMTIDX, std::map<std::string, std::string> > format_character_mapping;
-
-  bool valid_format_string;
-  std::string format_string_errors;
+  utf8 fmtstr;  
+  std::string::const_iterator startpoint;
 };
 
 

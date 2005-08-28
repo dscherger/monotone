@@ -114,10 +114,9 @@ automate_ancestors(std::vector<utf8> args,
           }
       }
     }
-  for (std::set<revision_id>::const_iterator i = ancestors.begin();
-       i != ancestors.end(); ++i)
-    if (!null_id(*i))
-      output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(ancestors.begin(), ancestors.end(), fmt);
 }
 
 
@@ -334,10 +333,9 @@ automate_parents(std::vector<utf8> args,
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   std::set<revision_id> parents;
   app.db.get_revision_parents(rid, parents);
-  for (std::set<revision_id>::const_iterator i = parents.begin();
-       i != parents.end(); ++i)
-      if (!null_id(*i))
-          output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(parents.begin(), parents.end(), fmt);
 }
 
 // Name: children
@@ -362,10 +360,9 @@ automate_children(std::vector<utf8> args,
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   std::set<revision_id> children;
   app.db.get_revision_children(rid, children);
-  for (std::set<revision_id>::const_iterator i = children.begin();
-       i != children.end(); ++i)
-      if (!null_id(*i))
-          output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(children.begin(), children.end(), fmt);
 }
 
 // Name: graph
@@ -451,9 +448,13 @@ automate_select(std::vector<utf8> args,
   selectors::selector_type ty = selectors::sel_ident;
   selectors::complete_selector("", sels, ty, completions, app);
 
+  std::vector<revision_id> revs;
   for (std::set<std::string>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
-    output << *i << std::endl;
+      revs.push_back(revision_id(*i));
+
+  FormatFunc fmt(output, app);
+  for_each(revs.begin(), revs.end(), fmt);
 }
 
 struct inventory_item

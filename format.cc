@@ -8,243 +8,53 @@
 #include <transforms.hh>
 #include <format.hh>
 
-using namespace std;
-
-// helper functions to navigate the given revision - shamelessy copied from 'log' command
-void
-walk_edges (const app_state & app, const revision_set & rev,
-	    set < revision_id > &ancestors, vector < change_set > &changes,
-	    set < file_path > &modified_files)
-{
-  for (edge_map::const_iterator e = rev.edges.begin ();
-       e != rev.edges.end (); ++e)
-    {
-      ancestors.insert (edge_old_revision (e));
-
-      change_set const &cs = edge_changes (e);
-      change_set::path_rearrangement const &pr = cs.rearrangement;
-
-      changes.push_back (cs);
-
-      for (change_set::delta_map::const_iterator i = cs.deltas.begin ();
-           i != cs.deltas.end (); i++)
-        {
-          if (pr.added_files.find (i->first ()) == pr.added_files.end ())
-            modified_files.insert (i->first ());
-        }
-    }
-}
-
 // ---------------------- formatting functor ----------------------------
-// IMPORTANT: to complete formatting, it *must* go out of scope (i.e. its destructor
-// called)
-FormatFunc::FormatFunc(std::ostream &out, app_state &app)
+// IMPORTANT: to complete (XML) formatting, it *must* go out of scope (i.e. its 
+// destructor called)
+FormatFunc::FormatFunc (std::ostream & out, app_state & app)
 {
   if (app.xml_enabled)
-    fmt = auto_ptr<BaseFormatter>(new XMLFormatter(out, app));
-  else 
-    fmt = auto_ptr<BaseFormatter>(new PrintFormatter(out, app, app.format_string));
+    fmt = std::auto_ptr < BaseFormatter > (new XMLFormatter (out, app));
+  else
+    fmt =
+      std::auto_ptr < BaseFormatter >
+      (new PrintFormatter (out, app, app.format_string));
 }
 
-FormatFunc::~FormatFunc()
+FormatFunc::~FormatFunc ()
 {
 }
-   
+
 // ---------------------- base formatter ----------------------------
-BaseFormatter::BaseFormatter(app_state &a):
-  app(a)
+BaseFormatter::BaseFormatter (app_state & a):
+app (a)
 {
 }
 
-BaseFormatter::~BaseFormatter()
+BaseFormatter::~BaseFormatter ()
 {
 }
-
-std::map<PrintFormatter::FMTIDX, std::string> PrintFormatter::format_region_types;
-std::map<char, std::string> PrintFormatter::control_character_mapping;
-std::map<PrintFormatter::FMTIDX, std::map<std::string, std::string> > PrintFormatter::format_character_mapping;
 
 // ---------------------- format string support ----------------------------
-PrintFormatter::PrintFormatter(std::ostream & o, app_state &a, const utf8 &fmt):
-  BaseFormatter(a),
-  out(o),
-  valid_format_string(true)
-{
-  format_region_types[FMTIDX_REVISION] = "revision";
-  format_region_types[FMTIDX_ANCESTORS] = "ancestors";
-  format_region_types[FMTIDX_DELFILES] = "deleted files";
-  format_region_types[FMTIDX_DELDIRS] = "deleted directories";
-  format_region_types[FMTIDX_RENFILES] = "renamed files";
-  format_region_types[FMTIDX_RENDIRS] = "renamed directories";
-  format_region_types[FMTIDX_ADDFILES] = "added files";
-  format_region_types[FMTIDX_MODFILES] = "modified files";
-
-  control_character_mapping['\\'] = "\\";
-  control_character_mapping['@'] = "@";
-  control_character_mapping['n'] = "\n";
-  control_character_mapping['t'] = "\t";
-  control_character_mapping['a'] = "\a";
-  control_character_mapping['b'] = "\b";
-  control_character_mapping['f'] = "\f";
-  control_character_mapping['r'] = "\r";
-  control_character_mapping['v'] = "\v";
-
-  format_character_mapping[FMTIDX_REVISION]["i"] = "Revision id.";
-  format_character_mapping[FMTIDX_REVISION]["si"] = "Short form of revision id (first 8 characters).";
-  format_character_mapping[FMTIDX_REVISION]["a"] = "Author cert value.";
-  format_character_mapping[FMTIDX_REVISION]["sa"] = "Short form of author cert (everything before '@' in foo@bar.com).";
-  format_character_mapping[FMTIDX_REVISION]["d"] = "Date cert.";
-  format_character_mapping[FMTIDX_REVISION]["sd"] = "Short form of date cert (everything before 'T' in 2005-05-15T12:12:32).";
-  format_character_mapping[FMTIDX_REVISION]["t"] = "Tag cert.";
-  format_character_mapping[FMTIDX_REVISION]["l"] = "Changelog cert.";
-  format_character_mapping[FMTIDX_REVISION]["e"] = "Comment cert.";
-  format_character_mapping[FMTIDX_REVISION]["r"] = "Testresult cert.";
-  format_character_mapping[FMTIDX_REVISION]["b"] = "Branch cert.";
-  format_character_mapping[FMTIDX_REVISION]["sb"] = "Short form of branch cert (everything after final '.' in org.foo.project.branch).";
-  format_character_mapping[FMTIDX_REVISION]["m"] = "Manifest id.";
-  format_character_mapping[FMTIDX_REVISION]["sm"] = "Short form of manifest id (first 8 characters).";
-
-  format_character_mapping[FMTIDX_REVISION]["P"] = "Placeholder for 'ancestors' subformat string.";
-  format_character_mapping[FMTIDX_REVISION]["D"] = "Placeholder for 'deleted files' subformat string.";
-  format_character_mapping[FMTIDX_REVISION]["R"] = "Placeholder for 'renmed files' subformat string.";
-  format_character_mapping[FMTIDX_REVISION]["A"] = "Placeholder for 'added files' subformat string.";
-  format_character_mapping[FMTIDX_REVISION]["M"] = "Placeholder for 'modified files' subformat string.";
-  format_character_mapping[FMTIDX_REVISION]["E"] = "Placeholder for 'deleted directories' subformat string.";
-  format_character_mapping[FMTIDX_REVISION]["E"] = "Placeholder for 'renamed directories' subformat string.";
-
-  format_character_mapping[FMTIDX_ANCESTORS]["f"] = "File name.";
-  format_character_mapping[FMTIDX_DELFILES]["f"] = "File name.";
-  format_character_mapping[FMTIDX_DELDIRS]["f"] = "File name.";
-
-  format_character_mapping[FMTIDX_RENFILES]["f"] = "File name after rename.";
-  format_character_mapping[FMTIDX_RENFILES]["o"] = "File name before rename.";
-
-  format_character_mapping[FMTIDX_RENDIRS]["f"] = "Directory name after rename.";
-  format_character_mapping[FMTIDX_RENDIRS]["o"] = "Directory name before rename.";
-
-  format_character_mapping[FMTIDX_ADDFILES]["f"] = "File name.";
-  format_character_mapping[FMTIDX_MODFILES]["f"] = "File name.";
-  
-  assign_format_strings(fmt);
-
-  N(valid_format_string == true,
-    F("Format string error(s):%s") % format_string_errors);
-}
-
-PrintFormatter::~PrintFormatter()
+PrintFormatter::PrintFormatter (std::ostream & o, app_state & a,
+                                const utf8 & fmt):
+BaseFormatter (a),
+out (o),
+fmtstr (fmt),
+startpoint (fmtstr ().begin ())
 {
 }
 
-// splits the given format string into the revision fmt string and 
-// one or more optional changeset fmt strings1
-void
-PrintFormatter::assign_format_strings(const utf8 &fmt)
+PrintFormatter::~PrintFormatter ()
 {
-  // establishing defaults
-  fmtstrs[FMTIDX_REVISION]=utf8("");
-  fmtstrs[FMTIDX_ANCESTORS]=utf8("%f\n");
-  fmtstrs[FMTIDX_DELFILES]=utf8("%f\n");
-  fmtstrs[FMTIDX_DELDIRS]=utf8("%f\n");
-  fmtstrs[FMTIDX_RENFILES]=utf8("%o -> %f\n");
-  fmtstrs[FMTIDX_RENDIRS]=utf8("%o -> %f\n");
-  fmtstrs[FMTIDX_ADDFILES]=utf8("%f\n");
-  fmtstrs[FMTIDX_MODFILES]=utf8("%f\n");
-  
-  // quick parse of the formatting string
-  string::const_iterator e=fmt().end();
-  string::const_iterator i=fmt().begin();
-  string::const_iterator start_current_fmt=fmt().begin();
-  FMTIDX current_fmt = FMTIDX_REVISION;
-  string buf;
-  while (i != e)
-    {
-      switch (*i)
-        {
-        case '@':
-          {
-            // seems a start of a changeset format
-            // stores the current fmt string (trying to work around ATOMIC limits)
-            buf.assign(start_current_fmt, i);
-            fmtstrs[current_fmt] = utf8(buf);
-          
-            ++i;
-            if (i==e) {
-              valid_format_string = false;
-              format_string_errors += std::string("  Format string may not end with '@'.");
-              continue;
-            }
-
-            // prepare for new fmt string
-            current_fmt = decode_cset_fmtid(i);
-            if (current_fmt == FMTIDX_REVISION) {
-              valid_format_string = false;
-              format_string_errors += (F("  Invalid changeset specifier '@%c'.") % *i).str();
-              break;
-            }
-
-            start_current_fmt=i;
-            ++start_current_fmt;
-          }
-          break;
-       
-        case '\\': 
-          // control character
-          {
-            char orig = *i;
-            ++i;
-            if (i == e) {
-              valid_format_string = false;
-              format_string_errors += "  Format string may not end with a bare '\\'.";
-              break;
-            }
-
-            if (control_character_mapping.find(*i) == control_character_mapping.end()) {
-              valid_format_string = false;
-              format_string_errors += (F("  Invalid control character '%c%c'.") % orig % *i).str();
-            }
-          }
-          break;
-        case '%':
-          // fmt specifier
-          {
-            ++i;
-            if (i == e) {
-              valid_format_string = false;
-              format_string_errors += "  Format string may not end with '%'.";
-              break;
-            }
-            if (*i == '%') break; // escaped % via %%
-
-            std::string target; target = *i;
-            if (*i == 's') {
-              ++i;
-              if (i != e) { std::string t; t = *i; target += t; }
-            }
-            std::map<std::string, std::string>::const_iterator fi;
-            fi = format_character_mapping[current_fmt].find(target);
-            if (fi == format_character_mapping[current_fmt].end()) {
-              valid_format_string = false;
-              format_string_errors += (F("  Invalid format specifier '%%%s' for a %s region.") % target % format_region_types[current_fmt]).str();
-              break;
-            }
-          }
-          break;
-        }
-      if (i != e)  
-        ++i;
-    }
-
-  // final string  
-  buf.assign(start_current_fmt, i);
-  fmtstrs[current_fmt] = utf8(buf);
 }
-
 
 void
-PrintFormatter::print_cert (vector < revision < cert > >&certs, const string &name,
-                            bool from_start, bool from_end, const string &sep)
+PrintFormatter::print_cert (std::vector < revision < cert > >&certs,
+                            const std::string & name, bool from_start,
+                            bool from_end, const std::string & sep)
 {
-  for (vector < revision < cert > >::const_iterator i = certs.begin ();
+  for (std::vector < revision < cert > >::const_iterator i = certs.begin ();
        i != certs.end (); ++i)
     {
       if (i->inner ().name () == name)
@@ -254,188 +64,298 @@ PrintFormatter::print_cert (vector < revision < cert > >&certs, const string &na
           std::string::size_type f = 0;
           std::string::size_type l = std::string::npos;
           if (from_start)
-            l = tv().find_first_of(sep);
-          if (from_end) {
-            f = tv().find_last_of(sep);
-            if (f == std::string::npos) f = 0;
-          }
-          out << tv().substr(f, l);
+            l = tv ().find_first_of (sep);
+          if (from_end)
+            {
+              f = tv ().find_last_of (sep);
+              if (f == std::string::npos)
+                f = 0;
+            }
+          out << tv ().substr (f, l);
           return;
         }
     }
 }
 
 void
-PrintFormatter::print_cset_ancestor(const utf8 &fmtstring, const revision_id &rid)
+PrintFormatter::print_cset_ancestors(const std::string::
+                                     const_iterator & startfmt,
+                                     const std::string::const_iterator & e,
+                                     const std::set<revision_id> &data)
 {
-  string::const_iterator i = fmtstring ().begin ();
-  while (i != fmtstring ().end ())
+  for (std::set<revision_id>::const_iterator f = data.begin ();
+       f != data.end (); ++f)
     {
-      if ((*i) == '%')
-        {
-          ++i;
-          if (i == fmtstring ().end ())
-            break;
-          I (*i == 'f'); //, F ("invalid ancestor format string\n"));
-          out << rid.inner ()();
-        }
-      else if ( (*i) == '\\')
-        handle_control(i, fmtstring ().end ());
-      else
-        out << (*i);
-    
-      ++i;
-    }
-}
-
-void
-PrintFormatter::print_cset_single(const utf8 &fmtstring, const set<file_path> &data)
-{
-  for (set<file_path>::const_iterator f = data.begin (); f != data.end (); ++f)
-    {
-      string::const_iterator i = fmtstring ().begin ();
-      while (i != fmtstring ().end ())
+      std::string::const_iterator i (startfmt);
+      while (i != e)
         {
           if ((*i) == '%')
             {
               ++i;
-              if (i == fmtstring ().end ())
+              if (i == e)
                 break;
-              I (*i == 'f'); //, F ("invalid file format string\n"));
-              out << (*f)();
+              switch (*i)
+                {
+                case 'f':
+                  out << f->inner ()();
+                  break;
+                case '%':
+                  out << '%';
+                  break;
+                default:
+                  N (false,
+                     F ("invalid ancestor format specifier '%%%c'\n") % *i);
+                }
             }
-          else if ( (*i) == '\\')
-            handle_control(i, fmtstring ().end ());
+          else if ((*i) == '\\')
+            handle_control (i, e);
           else
             out << (*i);
-      
+    
           ++i;
         }
-    }        
+    }
 }
 
 void
-PrintFormatter::print_cset_pair(const utf8 &fmtstring, const map<file_path, file_path> &data)
+PrintFormatter::print_cset_single (const std::string::
+                                   const_iterator & startfmt,
+                                   const std::string::const_iterator & e,
+                                   const std::set < file_path > &data)
 {
-  for (map<file_path, file_path>::const_iterator f = data.begin (); f != data.end (); ++f)
+  for (std::set < file_path >::const_iterator f = data.begin ();
+       f != data.end (); ++f)
     {
-      string::const_iterator i = fmtstring ().begin ();
-      while (i != fmtstring ().end ())
+      std::string::const_iterator i (startfmt);
+      while (i != e)
         {
           if ((*i) == '%')
             {
               ++i;
-              if (i == fmtstring ().end ())
+              if (i == e)
                 break;
-              I (*i == 'o' || *i == 'f'); //, F ("invalid rename format string\n"));
-              if (*i == 'o')
-                out << f->first();
-              else
-                out << f->second();
+              switch (*i)
+                {
+                case 'f':
+                  out << (*f) ();
+                  break;
+                case '%':
+                  out << '%';
+                  break;
+                default:
+                  N (false,
+                     F ("invalid file format specifier '%%%c'\n") % *i);
+                }
             }
-          else if ( (*i) == '\\')
-            handle_control(i, fmtstring ().end ());
+          else if ((*i) == '\\')
+            handle_control (i, e);
           else
             out << (*i);
-      
+
           ++i;
         }
-            
-    }        
+    }
 }
 
 void
-PrintFormatter::handle_cset(const string::const_iterator &fmt_i, const revision_set & rev)
+PrintFormatter::print_cset_pair (const std::string::const_iterator & startfmt,
+                                 const std::string::const_iterator & e,
+                                 const std::map < file_path,
+                                 file_path > &data)
 {
-  FMTIDX curfmt = decode_cset_fmtid(fmt_i);
-  I (curfmt != FMTIDX_REVISION); //, F ("invalid format specifier"));
-
-  for (edge_map::const_iterator e = rev.edges.begin ();
-       e != rev.edges.end (); ++e)
+  for (std::map < file_path, file_path >::const_iterator f = data.begin ();
+       f != data.end (); ++f)
     {
-      change_set const &cs = edge_changes (e);
-      change_set::path_rearrangement const &pr = cs.rearrangement;
-
-      switch (curfmt)
+      std::string::const_iterator i (startfmt);
+      while (i != e)
         {
-        case FMTIDX_ANCESTORS:
-          print_cset_ancestor(fmtstrs[curfmt], edge_old_revision (e));
-          break;
-        case FMTIDX_DELFILES:
-          print_cset_single(fmtstrs[curfmt], pr.deleted_files);
-          break;
-        case FMTIDX_DELDIRS:
-          print_cset_single(fmtstrs[curfmt], pr.deleted_dirs);
-          break;
-        case FMTIDX_ADDFILES:
-          print_cset_single(fmtstrs[curfmt], pr.added_files);
-          break;
-        case FMTIDX_MODFILES:
-          {
-            std::set<file_path> modified_files;
-            for (change_set::delta_map::const_iterator i = cs.deltas.begin ();
-                 i != cs.deltas.end (); i++)
-              {
-                if (pr.added_files.find (i->first ()) == pr.added_files.end ())
-                  modified_files.insert (i->first ());
-              }
-            print_cset_single(fmtstrs[curfmt], modified_files);
-          }
-          break;
-        case FMTIDX_RENFILES:
-          print_cset_pair(fmtstrs[curfmt], pr.renamed_files);
-          break;
-        case FMTIDX_RENDIRS:
-          print_cset_pair(fmtstrs[curfmt], pr.renamed_dirs);
-          break;
-        
-        default:
-          break;
+          if ((*i) == '%')
+            {
+              ++i;
+              if (i == e)
+                break;
+              switch (*i)
+                {
+                case 'o':
+                  out << f->first ();
+                  break;
+                case 'f':
+                  out << f->second ();
+                  break;
+                case '%':
+                  out << '%';
+                  break;
+                default:
+                  N (false,
+                     F ("invalid rename format specifier '%%%c'\n") % *i);
+                }
+            }
+          else if ((*i) == '\\')
+            handle_control (i, e);
+          else
+            out << (*i);
+          ++i;
         }
     }
-    
 }
 
-void 
-PrintFormatter::handle_control(string::const_iterator &it, const string::const_iterator &end)
+std::string::const_iterator
+  PrintFormatter::find_cset_fmt_end (std::string::const_iterator i,
+                                     const std::string::const_iterator & e)
+{
+  int level = 1;                // we are already inside a parens
+  while (i != e && level > 0)
+    {
+      switch (*i)
+        {
+        case '\\':
+        case '%':
+          // just skip the next char
+          ++i;
+          break;
+        case '{':
+          // another parenthesis, inner level ...
+          ++level;
+          break;
+        case '}':
+          // closing of a level
+          --level;
+          break;
+        }
+      if (i != e && level)
+        ++i;                    // next char
+    }
+  N (i != e
+     && *i == '}', F ("invalid changeset format expression. Missing '}'"));
+  return i;
+}
+
+std::string::const_iterator
+PrintFormatter::handle_cset (const std::string::const_iterator & startfmt,
+                               const std::string::const_iterator & endfmt,
+                               const changes_summary &csum)
+{
+  std::string::const_iterator fmt_i (startfmt);
+
+  FMTIDX curfmt = decode_cset_fmtid (fmt_i);
+  N (curfmt != FMTIDX_REVISION,
+     F ("invalid changeset format specifier %%%c") % *fmt_i);
+  N (++fmt_i != endfmt && *fmt_i == '{',
+     F ("missing '{' following changeset format specifier"));
+  N (++fmt_i != endfmt, F ("a format string could not end with '{'"));
+
+  std::string::const_iterator fmt_e (find_cset_fmt_end (fmt_i, endfmt));
+
+  switch (curfmt)
+    {
+    case FMTIDX_ANCESTORS:
+      print_cset_ancestors(fmt_i, fmt_e, csum.ancestors);
+      break;
+    case FMTIDX_DELFILES:
+      print_cset_single (fmt_i, fmt_e, csum.deleted_files);
+      break;
+    case FMTIDX_DELDIRS:
+      print_cset_single (fmt_i, fmt_e, csum.deleted_dirs);
+      break;
+    case FMTIDX_ADDFILES:
+      print_cset_single (fmt_i, fmt_e, csum.added_files);
+      break;
+    case FMTIDX_MODFILES:
+      print_cset_single (fmt_i, fmt_e, csum.modified_files);
+      break;
+    case FMTIDX_RENFILES:
+      print_cset_pair (fmt_i, fmt_e, csum.renamed_files);
+      break;
+    case FMTIDX_RENDIRS:
+      print_cset_pair (fmt_i, fmt_e, csum.renamed_dirs);
+      break;
+    default:
+      break;
+    }
+
+    // go to end position
+  return fmt_e;
+}
+
+void
+PrintFormatter::handle_control (std::string::const_iterator & it,
+                                const std::string::const_iterator & end)
 {
   ++it;
   if (it == end)
     return;
-
-  std::map<char, std::string>::const_iterator cc = control_character_mapping.find(*it);
-  I(cc != control_character_mapping.end());
-  out << cc->second;
+  switch (*it)
+    {
+    case '\\':
+      out << '\\';
+      break;
+    case '%':
+      out << '%';
+      break;
+    case '{':
+      out << '{';
+      break;
+    case '}':
+      out << '}';
+      break;
+    case 'n':
+      out << std::endl;
+      break;
+    case 't':
+      out << '\t';
+      break;
+    case 'a':
+      out << '\a';
+      break;
+    case 'b':
+      out << '\b';
+      break;
+    case 'f':
+      out << '\f';
+      break;
+    case 'r':
+      out << '\r';
+      break;
+    case 'v':
+      out << '\v';
+      break;
+    default:
+      N (false, F ("\ninvalid control char %c\n") % (*it));
+      return;
+    }
 }
 
 PrintFormatter::FMTIDX
-PrintFormatter::decode_cset_fmtid(const string::const_iterator &i)
+  PrintFormatter::decode_cset_fmtid (const std::string::const_iterator & i)
 {
   switch (*i)
     {
-    case 'P': // ancestors
+    case 'P':                  // ancestors
       return FMTIDX_ANCESTORS;
-    case 'D': // deleted files
+    case 'D':                  // deleted files
       return FMTIDX_DELFILES;
-    case 'R': // renamed files
+    case 'R':                  // renamed files
       return FMTIDX_RENFILES;
-    case 'A': // added files
+    case 'A':                  // added files
       return FMTIDX_ADDFILES;
-    case 'M': // modified files
+    case 'M':                  // modified files
       return FMTIDX_MODFILES;
-    case 'E': // deleted dirs
+    case 'E':                  // deleted dirs
       return FMTIDX_DELDIRS;
-    case 'C': // renamed dirs
+    case 'C':                  // renamed dirs
       return FMTIDX_RENDIRS;
     }
-    
+
   // everything else is handled as revision fmt
-  return FMTIDX_REVISION; 
+  return FMTIDX_REVISION;
 }
 
 void
-PrintFormatter::apply(const revision_id & rid)
+PrintFormatter::apply (const revision_id & rid)
 {
+  if (null_id (rid))
+    return;                     // not a "real" revision, exiting
+
   if (!app.db.revision_exists (rid))
     {
       L (F ("revision %s does not exist in db\n") % rid);
@@ -445,12 +365,20 @@ PrintFormatter::apply(const revision_id & rid)
   revision_set rev;
   app.db.get_revision (rid, rev);
 
-  vector < revision < cert > >certs;
+  std::vector < revision < cert > >certs;
   app.db.get_revision_certs (rid, certs);
   erase_bogus_certs (certs, app);
 
-  string::const_iterator i = fmtstrs[FMTIDX_REVISION]().begin ();
-  string::const_iterator e = fmtstrs[FMTIDX_REVISION]().end();
+  // prepare the changeset summary
+  changes_summary csum;
+  for (edge_map::const_iterator e = rev.edges.begin (); e != rev.edges.end (); ++e)
+    {
+      csum.ancestors.insert(edge_old_revision(e));
+      csum.add_change_set(edge_changes(e));
+    }
+  
+  std::string::const_iterator i = startpoint;
+  std::string::const_iterator e = fmtstr ().end ();
   while (i != e)
     {
       if ((*i) == '%')
@@ -459,22 +387,20 @@ PrintFormatter::apply(const revision_id & rid)
           if (i == e)
             return;
 
-          if (*i == '%') {
-            out << "%";
-            ++i;
-            continue;
-          }
-
           bool short_form = false;
-          if (*i == 's') {
-            short_form = true;
-            ++i;
-          }
-          if (i == e)
-            return;
+          if (*i == 's')
+            {
+              short_form = true;
+              ++i;
+              N (i != e, F ("%%s is not a valid format specifier"));
+            }
 
           switch (*i)
             {
+            case '%':
+              N (!short_form, F ("no short form for '%%%%'"));
+              out << '%';
+              break;
             case 'd':
               print_cert (certs, date_cert_name, short_form, false, "T");
               break;
@@ -482,19 +408,19 @@ PrintFormatter::apply(const revision_id & rid)
               print_cert (certs, author_cert_name, short_form, false, "@");
               break;
             case 't':
-              I (!short_form);
+              N (!short_form, F ("no short form for tag specifier"));
               print_cert (certs, tag_cert_name);
               break;
             case 'l':
-              I (!short_form);
+              N (!short_form, F ("no short form for changelog specifier"));
               print_cert (certs, changelog_cert_name);
               break;
             case 'e':
-              I (!short_form);
+              N (!short_form, F ("no short form for comment specifier"));
               print_cert (certs, comment_cert_name);
               break;
             case 'r':
-              I (!short_form);
+              N (!short_form, F ("no short form for testresult specifier"));
               print_cert (certs, testresult_cert_name);
               break;
             case 'b':
@@ -502,63 +428,84 @@ PrintFormatter::apply(const revision_id & rid)
               break;
             case 'm':
               if (short_form)
-                out << rev.new_manifest.inner()().substr(0, 8);
+                out << rev.new_manifest.inner ()().substr (0, 8);
               else
-                out << rev.new_manifest.inner()();
+                out << rev.new_manifest.inner ()();
               break;
             case 'i':
               if (short_form)
-                out << rid.inner()().substr(0, 8);
+                out << rid.inner ()().substr (0, 8);
               else
-                out << rid.inner()();
+                out << rid.inner ()();
               break;
+            case '+':
+              N (!short_form,
+                 F ("no short form for the '%%+' formatting specifier"));
+              startpoint = ++i; // predispone next starting point
+              N (startpoint != e,
+                 F ("A format string can't terminate with '%%+'"));
+              return;           // exit directly from the function, skipping the rest
             default:
-              I (!short_form);
+              N (!short_form, F ("no short form for changelog specifier"));
               // unrecognized specifier, perhaps is a changeset one ?
-              out << "\n####### default for " << *i << " #####\n";
-              handle_cset(i, rev);
+              i = handle_cset (i, e, csum);
+              break;
             }
         }
-      else if ( (*i) == '\\')
-        handle_control(i, e);
+      else if ((*i) == '\\')
+        handle_control (i, e);
       else
         out << (*i);
-      
+
+      I (i != e);               // just to make sure
       ++i;
     }
+
+  // resets fmt str starting point
+  startpoint = fmtstr ().begin ();
 }
 
 
 // --------------- XML support -----------------
 
-XMLWriter::XMLWriter (ostream & o):
-  out (o),
-  open_tags(),
-  decl_emitted(false),
-  empty_tag(false)
+XMLWriter::XMLWriter (std::ostream & o):
+out (o), open_tags (), decl_emitted (false), empty_tag (false)
 {
 }
 
 XMLWriter::~XMLWriter ()
 {
-  I (open_tags.size () == 0);	// forgot to closing some tags ?
+  I (open_tags.size () == 0);   // forgot to closing some tags ?
 }
 
 void
-XMLWriter::encode(const utf8 & opq)
+XMLWriter::encode (const utf8 & opq)
 {
-  for (string::const_iterator i = opq().begin(); i != opq().end(); ++i)
+  for (std::string::const_iterator i = opq ().begin (); i != opq ().end ();
+       ++i)
     {
       switch ((*i))
         {
-        case '<': out << "&lt;"; break;
-        case '>': out << "&gt;"; break;
-        case '&': out << "&amp;"; break;
-        case '"': out << "&quot;"; break;
-        case '\'': out << "&apos;"; break;
-        default: out << *i; break;
+        case '<':
+          out << "&lt;";
+          break;
+        case '>':
+          out << "&gt;";
+          break;
+        case '&':
+          out << "&amp;";
+          break;
+        case '"':
+          out << "&quot;";
+          break;
+        case '\'':
+          out << "&apos;";
+          break;
+        default:
+          out << *i;
+          break;
         }
-    }     
+    }
 }
 
 void
@@ -566,16 +513,17 @@ XMLWriter::tag (const utf8 & tagname)
 {
   if (!decl_emitted)
     {
-      out << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>" << endl;
-      decl_emitted=true;
+      out << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>"
+        << std::endl;
+      decl_emitted = true;
     }
 
   if (empty_tag)
-    out << ">" << endl;
+    out << ">" << std::endl;
 
   out << "<" << tagname;
   open_tags.push_back (tagname);
-  empty_tag = true; // right now, the tag is empty
+  empty_tag = true;             // right now, the tag is empty
 }
 
 void
@@ -583,21 +531,21 @@ XMLWriter::end ()
 {
   I (open_tags.size () > 0);
   if (empty_tag)
-    out << "/>" << endl;
-  else  
-    out << "</" << open_tags.back () << ">" << endl;
-  empty_tag=false; // the containing tag is not empty1
+    out << "/>" << std::endl;
+  else
+    out << "</" << open_tags.back () << ">" << std::endl;
+  empty_tag = false;            // the containing tag is not empty1
   open_tags.pop_back ();
 }
 
 void
-XMLWriter::attr(const utf8 & attrname, const utf8 &value)
+XMLWriter::attr (const utf8 & attrname, const utf8 & value)
 {
   I (open_tags.size () > 0);
   I (empty_tag);
-  
+
   out << " " << attrname << "=\"";
-  encode(value);
+  encode (value);
   out << "\"";
 }
 
@@ -605,51 +553,50 @@ void
 XMLWriter::cdata (const utf8 & opq)
 {
   I (open_tags.size () > 0);
-  
+
   if (empty_tag)
     {
       // tag was empty until now, close it
-      out << ">" << endl;
-      empty_tag=false; 
+      out << ">" << std::endl;
+      empty_tag = false;
     }
-  encode(opq);
+  encode (opq);
 }
 
 // ---------------- the xml formatter -----------------------
-XMLFormatter::XMLFormatter(ostream &out, app_state &a):
-  BaseFormatter(a),
-  xw(out)
+XMLFormatter::XMLFormatter (std::ostream & out, app_state & a):
+BaseFormatter (a), xw (out)
 {
-  xw.tag("monotone"); // docroot
+  xw.tag ("monotone");          // docroot
 }
 
-XMLFormatter::~XMLFormatter()
+XMLFormatter::~XMLFormatter ()
 {
-  xw.end();
-}
-
-void
-XMLFormatter::xml_revision_id(const revision_id & rid)
-{
-  xw.tag("id");
-  xw.cdata (rid.inner ()());	
-  xw.end();
+  xw.end ();
 }
 
 void
-XMLFormatter::xml_manifest(const manifest_id & mid)
+XMLFormatter::xml_revision_id (const revision_id & rid)
 {
-  xw.tag("manifest");
-  xw.cdata (mid.inner ()());	
-  xw.end();
+  xw.tag ("id");
+  xw.cdata (rid.inner ()());
+  xw.end ();
 }
 
 void
-XMLFormatter::xml_file_id(const file_id & fid)
+XMLFormatter::xml_manifest (const manifest_id & mid)
 {
-  xw.tag("file-id");
-  xw.cdata (fid.inner ()());	
-  xw.end();
+  xw.tag ("manifest");
+  xw.cdata (mid.inner ()());
+  xw.end ();
+}
+
+void
+XMLFormatter::xml_file_id (const file_id & fid)
+{
+  xw.tag ("file-id");
+  xw.cdata (fid.inner ()());
+  xw.end ();
 }
 
 // dumps all *valid* certs associated to a revision
@@ -658,15 +605,15 @@ XMLFormatter::xml_file_id(const file_id & fid)
 void
 XMLFormatter::xml_certs (const revision_id & rid)
 {
-  vector < revision < cert > >certs;
+  std::vector < revision < cert > >certs;
 
   app.db.get_revision_certs (rid, certs);
   erase_bogus_certs (certs, app);
-  for (vector < revision < cert > >::const_iterator i = certs.begin ();
+  for (std::vector < revision < cert > >::const_iterator i = certs.begin ();
        i != certs.end (); ++i)
     {
       xw.tag ("cert");
-      xw.attr("name", i->inner ().name ());
+      xw.attr ("name", i->inner ().name ());
 
       xw.tag ("value");
       cert_value tv;
@@ -679,7 +626,7 @@ XMLFormatter::xml_certs (const revision_id & rid)
       xw.end ();
 
       xw.tag ("signature");
-      xw.cdata (i->inner ().sig ());	// only makes sense if encoded
+      xw.cdata (i->inner ().sig ());    // only makes sense if encoded
       xw.end ();
 
       xw.end ();
@@ -688,41 +635,42 @@ XMLFormatter::xml_certs (const revision_id & rid)
 }
 
 void
-XMLFormatter::xml_ancestors(const revision_set & rev)
+XMLFormatter::xml_ancestors (const revision_set & rev)
 {
   for (edge_map::const_iterator e = rev.edges.begin ();
        e != rev.edges.end (); ++e)
     {
-      const revision_id &rid = edge_old_revision (e);
-      xw.tag("ancestor");
-      xml_revision_id(rid);
-      xw.end();
+      const revision_id & rid = edge_old_revision (e);
+      xw.tag ("ancestor");
+      xml_revision_id (rid);
+      xw.end ();
     }
 }
 
 void
-XMLFormatter::xml_delta(const file_path& f, const change_set::delta_map &dm)
+XMLFormatter::xml_delta (const file_path & f,
+                         const change_set::delta_map & dm)
 {
-  change_set::delta_map::const_iterator i = dm.find(f);
-  if (i != dm.end())
+  change_set::delta_map::const_iterator i = dm.find (f);
+  if (i != dm.end ())
     {
-      xw.tag("delta");
-      xw.tag("old");
-      xml_file_id( i->second.first);
-      xw.end();
-      xw.tag("new");
-      xml_file_id( i->second.second);
-      xw.end();
-      xw.end();
+      xw.tag ("delta");
+      xw.tag ("old");
+      xml_file_id (i->second.first);
+      xw.end ();
+      xw.tag ("new");
+      xml_file_id (i->second.second);
+      xw.end ();
+      xw.end ();
     }
 }
 
 void
-XMLFormatter::xml_changeset(const revision_set & rev)
+XMLFormatter::xml_changeset (const revision_set & rev)
 {
-  xml_ancestors(rev);
+  xml_ancestors (rev);
 
-  xw.tag("changeset");
+  xw.tag ("changeset");
 
   for (edge_map::const_iterator e = rev.edges.begin ();
        e != rev.edges.end (); ++e)
@@ -730,72 +678,75 @@ XMLFormatter::xml_changeset(const revision_set & rev)
       change_set const &cs = edge_changes (e);
       change_set::path_rearrangement const &pr = cs.rearrangement;
 
-      std::set<file_path>::const_iterator f;
-      std::map<file_path, file_path>::const_iterator m;
-      for (f=pr.deleted_dirs.begin(); f != pr.deleted_dirs.end() ; ++f)
+      std::set < file_path >::const_iterator f;
+      std::map < file_path, file_path >::const_iterator m;
+      for (f = pr.deleted_dirs.begin (); f != pr.deleted_dirs.end (); ++f)
         {
-          xw.tag("delete-dir");
-          xw.attr("name", (*f)());
-          xml_delta(*f, cs.deltas);
-          xw.end();
+          xw.tag ("delete-dir");
+          xw.attr ("name", (*f) ());
+          xml_delta (*f, cs.deltas);
+          xw.end ();
         }
-      for (m=pr.renamed_dirs.begin(); m != pr.renamed_dirs.end() ; ++f)
+      for (m = pr.renamed_dirs.begin (); m != pr.renamed_dirs.end (); ++m)
         {
-          xw.tag("rename-dir");
-          xw.attr("name", m->second());
-          xw.attr("old-name", m->first());
-          xml_delta(m->second, cs.deltas);
-          xml_delta(m->first, cs.deltas);
-          xw.end();
+          xw.tag ("rename-dir");
+          xw.attr ("name", m->second ());
+          xw.attr ("old-name", m->first ());
+          xml_delta (m->second, cs.deltas);
+          xml_delta (m->first, cs.deltas);
+          xw.end ();
         }
-      for (f=pr.added_files.begin(); f != pr.added_files.end() ; ++f)
+      for (f = pr.added_files.begin (); f != pr.added_files.end (); ++f)
         {
-          xw.tag("add-file");
-          xw.attr("name", (*f)());
-          xml_delta(*f, cs.deltas);
-          xw.end();
+          xw.tag ("add-file");
+          xw.attr ("name", (*f) ());
+          xml_delta (*f, cs.deltas);
+          xw.end ();
         }
-      for (f=pr.deleted_files.begin(); f != pr.deleted_files.end() ; ++f)
+      for (f = pr.deleted_files.begin (); f != pr.deleted_files.end (); ++f)
         {
-          xw.tag("delete_file");
-          xw.attr("name", (*f)());
-          xml_delta(*f, cs.deltas);
-          xw.end();
+          xw.tag ("delete_file");
+          xw.attr ("name", (*f) ());
+          xml_delta (*f, cs.deltas);
+          xw.end ();
         }
-      for (m=pr.renamed_files.begin(); m != pr.renamed_files.end() ; ++f)
+      for (m = pr.renamed_files.begin (); m != pr.renamed_files.end (); ++m)
         {
-          xw.tag("rename_file");
-          xw.attr("name", m->second());
-          xw.attr("old-name", m->first());
-          xml_delta(m->second, cs.deltas);
-          xml_delta(m->first, cs.deltas);
-          xw.end();
+          xw.tag ("rename_file");
+          xw.attr ("name", m->second ());
+          xw.attr ("old-name", m->first ());
+          xml_delta (m->second, cs.deltas);
+          xml_delta (m->first, cs.deltas);
+          xw.end ();
         }
-      
-      set < file_path > modified_files;
+
+      std::set < file_path > modified_files;
       for (change_set::delta_map::const_iterator i = cs.deltas.begin ();
            i != cs.deltas.end (); i++)
         {
           if (pr.added_files.find (i->first ()) == pr.added_files.end ())
             modified_files.insert (i->first ());
         }
-      for (f=modified_files.begin(); f != modified_files.end() ; ++f)
+      for (f = modified_files.begin (); f != modified_files.end (); ++f)
         {
-          xw.tag("change-file");
-          xw.attr("name", (*f)());
-          xml_delta(*f, cs.deltas);
-          xw.end();
+          xw.tag ("change-file");
+          xw.attr ("name", (*f) ());
+          xml_delta (*f, cs.deltas);
+          xw.end ();
         }
-      
+
     }
 
-  xw.end();
+  xw.end ();
 }
 
 // dumps recursively a revision
 void
-XMLFormatter::apply(const revision_id & rid)
+XMLFormatter::apply (const revision_id & rid)
 {
+  if (null_id (rid))
+    return;                     // not a "real" revision, exiting
+
   if (!app.db.revision_exists (rid))
     {
       L (F ("revision %s does not exist in db\n") % rid);
@@ -806,10 +757,10 @@ XMLFormatter::apply(const revision_id & rid)
   app.db.get_revision (rid, rev);
 
   xw.tag ("revision");
-  xml_revision_id(rid);
-  xml_manifest(rev.new_manifest);
+  xml_revision_id (rid);
+  xml_manifest (rev.new_manifest);
   xml_certs (rid);
-  xml_changeset(rev);
-   
+  xml_changeset (rev);
+
   xw.end ();
 }
