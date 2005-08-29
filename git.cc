@@ -302,7 +302,7 @@ import_git_tree(git_history &git, app_state &app, git_object_id gittid,
 
 
 static string const gitcommit_id_cert_name = "gitcommit-id";
-static string const gitcommit_author_cert_name = "gitcommit-author";
+static string const gitcommit_committer_cert_name = "gitcommit-committer";
 
 // TODO: Make git_heads_on_branch() and historical_gitrev_to_monorev() share
 // code.
@@ -484,8 +484,8 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   revision_set rev;
 
   manifest_map manifest;
-  // XXX: it might be user policy decision whether to take author or committer
-  // as monotone author; the time should be always commit time, though
+  // XXX: it might be user policy decision whether to take author
+  // or committer as monotone author
   git_person author;
   time_t author_time = 0;
   git_person committer;
@@ -615,16 +615,16 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 
   packet_db_writer dbw(app);
   cert_revision_in_branch(rid, cert_value(git.base_branch), app, dbw);
-  cert_revision_author(rid, committer.name, app, dbw);
+  cert_revision_author(rid, author.name, app, dbw);
   cert_revision_changelog(rid, logmsg, app, dbw);
   cert_revision_date_time(rid, commit_time, app, dbw);
 
   put_simple_revision_cert(rid, gitcommit_id_cert_name,
                            gitrid(), app, dbw);
-  string authorcert = author.name + " <" + author.email + "> "
-                    + boost::lexical_cast<string>(author_time);
-  put_simple_revision_cert(rid, gitcommit_author_cert_name,
-                           authorcert, app, dbw);
+  string ctercert = committer.name + " <" + committer.email + "> "
+                    + boost::lexical_cast<string>(commit_time);
+  put_simple_revision_cert(rid, gitcommit_committer_cert_name,
+                           ctercert, app, dbw);
 
   return rid;
 }
