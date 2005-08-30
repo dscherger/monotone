@@ -731,9 +731,14 @@ public:
   }
   virtual void visit_file(file_path const & path)
   {
-    data refdata;
     L(F("Processing tag file '%s'") % path());
-    read_data(file_path(git.db.path.string() + "/refs/tags/" + path()), refdata);
+
+    data refdata;
+    fs::path abspath = git.db.path;
+    abspath /= "refs/tags";
+    abspath /= path();
+    read_data(abspath, refdata);
+
     import_unresolved_git_tag(git, app, path(), refdata().substr(0, 40));
   }
   virtual ~tags_tree_walker() {}

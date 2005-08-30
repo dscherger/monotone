@@ -390,9 +390,8 @@ make_dir_for(file_path const & p)
     }
 }
 
-static void 
-read_data_impl(fs::path const & p,
-               data & dat)
+void 
+read_data(fs::path const & p, data & dat)
 {
   if (!fs::exists(p))
     throw oops("file '" + p.string() + "' does not exist");
@@ -428,13 +427,13 @@ read_data_stdin(data & dat)
 void 
 read_data(local_path const & path, data & dat)
 { 
-  read_data_impl(localized(path), dat); 
+  read_data(localized(path), dat); 
 }
 
 void 
 read_data(file_path const & path, data & dat)
 { 
-  read_data_impl(localized(path), dat); 
+  read_data(localized(path), dat); 
 }
 
 void 
@@ -442,7 +441,7 @@ read_data(local_path const & path,
           base64< gzip<data> > & dat)
 {
   data data_plain;
-  read_data_impl(localized(path), data_plain);
+  read_data(localized(path), data_plain);
   gzip<data> data_compressed;
   base64< gzip<data> > data_encoded;  
   encode_gzip(data_plain, data_compressed);
@@ -508,7 +507,7 @@ read_data_for_command_line(utf8 const & path, data & dat)
   else
     {
       N(fs::exists(localized(path)), F("file '%s' does not exist") % path);
-      read_data_impl(localized(path), dat);
+      read_data(localized(path), dat);
     }
 }
 

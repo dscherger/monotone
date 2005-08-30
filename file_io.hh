@@ -83,6 +83,7 @@ void move_dir(file_path const & old_path,
 void move_dir(local_path const & old_path,
               local_path const & new_path);
 
+void read_data(fs::path const & path, data & data);
 void read_data(local_path const & path, data & data);
 void read_data(local_path const & path, base64< gzip<data> > & data);
 void read_data(file_path const & path, data & data);
