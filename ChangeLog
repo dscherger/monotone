@@ -1,5 +1,9 @@
 2005-08-30  Nathaniel Smith  <njs@pobox.com>
 
+	* file_io.cc (walk_tree_absolute): Implement.
+
+2005-08-30  Nathaniel Smith  <njs@pobox.com>
+
 	* commands.cc (cvs_import, git_import): Fixup after merge.
 	* git.hh (import_git_repo): Port to paths.cc.
 	* git.cc: Port to paths.cc generally.

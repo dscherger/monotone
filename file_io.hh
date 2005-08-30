@@ -105,7 +105,8 @@ public:
 
 void
 walk_tree_absolute(system_path const & path,
-                   absolute_tree_walker & walker);
+                   absolute_tree_walker & walker,
+                   bool require_existing_path = true);
 
 
 
