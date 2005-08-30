@@ -11,8 +11,6 @@
 // TODO:
 // * Export, incremental export
 // * Non-master head
-// * Do not use external commands, but libgit directly (?)
-// * Remote repositories
 
 #include <algorithm>
 #include <iostream>
