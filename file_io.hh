@@ -101,7 +101,7 @@ class absolute_tree_walker
 public:
   virtual void visit_file(system_path const & path) = 0;
   virtual ~absolute_tree_walker();
-}
+};
 
 void
 walk_tree_absolute(system_path const & path,
