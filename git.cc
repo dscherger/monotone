@@ -283,15 +283,17 @@ import_git_tree(git_history &git, app_state &app, git_object_id gittid,
         import_git_tree(git, app, gitoid, manifest, fullname + '/', attrs);
       else
         {
+	  file_path fpath = file_path_internal(fullname);
+
           if (mode & 0100) // executable
             {
               L(F("marking '%s' as executable") % fullname);
-              attrs[fullname]["execute"] = "true";
+              attrs[fpath]["execute"] = "true";
             }
 
           file_id fid = import_git_blob(git, app, gitoid);
           L(F("entry monoid [%s]") % fid.inner());
-          manifest.insert(manifest_entry(file_path(fullname), fid));
+          manifest.insert(manifest_entry(fpath, fid));
         }
     }
 
@@ -733,8 +735,19 @@ public:
 
     data refdata;
     read_data(path, refdata);
-    // FIXME: Incorrect - there can be tags like "net/v1.0" and such.
-    std::string tagname = fs::path(path.as_external(), fs::native).leaf();
+
+    // We can't just .leaf() - there can be tags like "net/v1.0" and such.
+    // XXX: My head hurts from all those temporary variables.
+    system_path sptagsdir = git.db.path / "refs/tags";
+    fs::path tagsdir(sptagsdir.as_external(), fs::native);
+    fs::path tagpath(path.as_external(), fs::native);
+    std::string strtagpath = tagpath.string(), strtagsdir = tagsdir.string();
+
+    N(strtagpath.substr(0, strtagsdir.length()) == strtagsdir,
+      F("tags directory name screwed up - %s does not being with %s")
+      % strtagpath % strtagsdir);
+    std::string tagname(strtagpath.substr(strtagsdir.length() + 1)); // + '/'
+
     import_unresolved_git_tag(git, app, tagname, refdata().substr(0, 40));
   }
   virtual ~tags_tree_walker() {}
@@ -759,16 +772,12 @@ import_git_repo(system_path const & gitrepo,
     require_password(key, app);
   }
 
-  N(fs::exists(gitrepo),
-    F("path %s does not exist") % gitrepo.string());
-  N(fs::is_directory(gitrepo),
-    F("path %s is not a directory") % gitrepo.string());
   require_path_is_directory(gitrepo,
                             F("repo %s does not exist") % gitrepo,
                             F("repo %s is not a directory") % gitrepo);
-  
+
   {
-    char * env_entry = stdrup((string("GIT_DIR=") + gitrepo.as_external()).c_str());
+    char * env_entry = strdup((string("GIT_DIR=") + gitrepo.as_external()).c_str());
     putenv(env_entry);
   }
 
