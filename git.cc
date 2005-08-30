@@ -94,7 +94,7 @@ git_person
 struct
 git_db
 {
-  const fs::path path;
+  const system_path path;
 
   void get_object(const string type, const git_object_id objid, filebuf &fb);
   void get_object(const string type, const git_object_id objid, data &dat);
@@ -105,7 +105,7 @@ git_db
   // The @revision can be even head name.
   stack<git_object_id> load_revs(const string revision, const set<git_object_id> &exclude);
 
-  git_db(const fs::path &path_) : path(path_) { }
+  git_db(const system_path &path_) : path(path_) { }
 };
 
 
@@ -122,7 +122,7 @@ git_history
 
   string base_branch;
 
-  git_history(const fs::path &path);
+  git_history(const system_path & path);
 };
 
 
@@ -158,7 +158,7 @@ capture_cmd_output(boost::format const & fmt, filebuf &fb)
     F("git command %s failed") % str);
   fb.open(tmpfile.c_str(), ios::in);
   close(fd);
-  fs::remove(tmpfile);
+  delete_file(system_path(tmpfile));
 }
 
 
@@ -214,7 +214,7 @@ git_db::load_revs(const string revision, const set<git_object_id> &exclude)
       char revbuf[41];
       stream.getline(revbuf, 41);
       if (strlen(revbuf) < 40)
-	continue;
+        continue;
       L(F("noted revision %s") % revbuf);
       st.push(git_object_id(string(revbuf)));
     }
@@ -282,19 +282,19 @@ import_git_tree(git_history &git, app_state &app, git_object_id gittid,
       string fullname(prefix + name);
 
       if (mode & 040000) // directory
-	import_git_tree(git, app, gitoid, manifest, fullname + '/', attrs);
+        import_git_tree(git, app, gitoid, manifest, fullname + '/', attrs);
       else
         {
-	  if (mode & 0100) // executable
-	    {
-	      L(F("marking '%s' as executable") % fullname);
-	      attrs[fullname]["execute"] = "true";
-	    }
+          if (mode & 0100) // executable
+            {
+              L(F("marking '%s' as executable") % fullname);
+              attrs[fullname]["execute"] = "true";
+            }
 
-	  file_id fid = import_git_blob(git, app, gitoid);
-	  L(F("entry monoid [%s]") % fid.inner());
-	  manifest.insert(manifest_entry(file_path(fullname), fid));
-	}
+          file_id fid = import_git_blob(git, app, gitoid);
+          L(F("entry monoid [%s]") % fid.inner());
+          manifest.insert(manifest_entry(file_path(fullname), fid));
+        }
     }
 
   ++git.n_objs;
@@ -330,7 +330,7 @@ git_heads_on_branch(git_history &git, app_state &app, set<git_object_id> &git_he
       revision_id rid = frontier.front(); frontier.pop();
 
       if (seen.find(rid) != seen.end())
-	continue;
+        continue;
       seen.insert(rid);
 
       revision_set rev;
@@ -341,22 +341,22 @@ git_heads_on_branch(git_history &git, app_state &app, set<git_object_id> &git_he
       I(certs.size() < 2);
       if (certs.size() > 0)
         {
-	  // This is a GIT commit, then.
-	  cert_value cv;
-	  decode_base64(certs[0].inner().value, cv);
-	  git_object_id gitrid = cv();
+          // This is a GIT commit, then.
+          cert_value cv;
+          decode_base64(certs[0].inner().value, cv);
+          git_object_id gitrid = cv();
 
-	  git.commitmap[gitrid()] = make_pair(rid, rev.new_manifest);
+          git.commitmap[gitrid()] = make_pair(rid, rev.new_manifest);
 
-	  git_heads.insert(gitrid);
-	  continue; // stop traversing in this direction
-	}
+          git_heads.insert(gitrid);
+          continue; // stop traversing in this direction
+        }
 
       for (edge_map::const_iterator e = rev.edges.begin();
-	   e != rev.edges.end(); ++e)
-	{
-	  frontier.push(edge_old_revision(e));
-	}
+           e != rev.edges.end(); ++e)
+        {
+          frontier.push(edge_old_revision(e));
+        }
     }
 }
 
@@ -383,7 +383,7 @@ historical_gitrev_to_monorev(git_history &git, app_state &app,
       revision_id rid = frontier.front(); frontier.pop();
 
       if (seen.find(rid) != seen.end())
-	continue;
+        continue;
       seen.insert(rid);
 
       revision_set rev;
@@ -394,25 +394,25 @@ historical_gitrev_to_monorev(git_history &git, app_state &app,
       I(certs.size() < 2);
       if (certs.size() > 0)
         {
-	  // This is a GIT commit, then.
-	  cert_value cv;
-	  decode_base64(certs[0].inner().value, cv);
-	  git_object_id gitoid = cv();
+          // This is a GIT commit, then.
+          cert_value cv;
+          decode_base64(certs[0].inner().value, cv);
+          git_object_id gitoid = cv();
 
-	  git.commitmap[gitoid()] = make_pair(rid, rev.new_manifest);
+          git.commitmap[gitoid()] = make_pair(rid, rev.new_manifest);
 
-	  if (gitoid == gitrid)
-	    {
-	      found_rid = rid;
-	      return;
-	    }
-	}
+          if (gitoid == gitrid)
+            {
+              found_rid = rid;
+              return;
+            }
+        }
 
       for (edge_map::const_iterator e = rev.edges.begin();
-	   e != rev.edges.end(); ++e)
-	{
-	  frontier.push(edge_old_revision(e));
-	}
+           e != rev.edges.end(); ++e)
+        {
+          frontier.push(edge_old_revision(e));
+        }
     }
 
   N(false,
@@ -450,9 +450,9 @@ full_change_set(manifest_map const & m_old,
       manifest_map::const_iterator j = m_old.find(*i);
       manifest_map::const_iterator k = m_new.find(*i);
       if (j == m_old.end())
-	cs.add_file(*i, manifest_entry_id(k));
+        cs.add_file(*i, manifest_entry_id(k));
       else if (k == m_new.end())
-	cs.delete_file(*i);
+        cs.delete_file(*i);
       else if (!(manifest_entry_id(j) == manifest_entry_id(k)))
         cs.deltas.insert(std::make_pair(*i, std::make_pair(manifest_entry_id(j),
                                                            manifest_entry_id(k))));
@@ -504,16 +504,16 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 
       if (header && line.size() == 0)
         {
-	  header = false;
-	  continue;
+          header = false;
+          continue;
         }
 
       if (!header)
         {
-	  L(F("LOG: %s") % line);
-	  logmsg += line + '\n';
-	  continue;
-	}
+          L(F("LOG: %s") % line);
+          logmsg += line + '\n';
+          continue;
+        }
 
       // HEADER
       // The order is always: tree, parent, author, committer
@@ -525,83 +525,83 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 
       L(F("HDR: '%s' => '%s'") % keyword % param);
       if (keyword == "tree")
-	{
-	  attr_map attrs;
-	  import_git_tree(git, app, param, manifest, "", attrs);
+        {
+          attr_map attrs;
+          import_git_tree(git, app, param, manifest, "", attrs);
 
-	  // Write the attribute map
-	  {
-	    data attr_data;
-	    write_attr_map(attr_data, attrs);
+          // Write the attribute map
+          {
+            data attr_data;
+            write_attr_map(attr_data, attrs);
 
-	    file_id fid;
-	    calculate_ident(attr_data, fid);
-	    if (! app.db.file_version_exists(fid))
-	      app.db.put_file(fid, attr_data);
+            file_id fid;
+            calculate_ident(attr_data, fid);
+            if (! app.db.file_version_exists(fid))
+              app.db.put_file(fid, attr_data);
 
-	    file_path attr_path;
-	    get_attr_path(attr_path);
-	    manifest.insert(manifest_entry(attr_path, fid));
-	  }
+            file_path attr_path;
+            get_attr_path(attr_path);
+            manifest.insert(manifest_entry(attr_path, fid));
+          }
 
-	  calculate_ident(manifest, rev.new_manifest);
-	  if (! app.db.manifest_version_exists(rev.new_manifest))
-	    {
-	      manifest_data manidata;
-	      write_manifest_map(manifest, manidata);
-	      // TODO: put_manifest_with_delta()
-	      app.db.put_manifest(rev.new_manifest, manidata);
-	    }
+          calculate_ident(manifest, rev.new_manifest);
+          if (! app.db.manifest_version_exists(rev.new_manifest))
+            {
+              manifest_data manidata;
+              write_manifest_map(manifest, manidata);
+              // TODO: put_manifest_with_delta()
+              app.db.put_manifest(rev.new_manifest, manidata);
+            }
 
-	  L(F("[%s] Manifest ID: '%s'") % gitrid() % rev.new_manifest.inner());
-	}
+          L(F("[%s] Manifest ID: '%s'") % gitrid() % rev.new_manifest.inner());
+        }
       else if (keyword == "parent")
-	{
-	  // FIXME: So far, in all the known GIT histories there was only a
-	  // single "octopus" (>2 parents) merge. So this should be fixed
-	  // to something a bit more history-friendly but it's not worth
-	  // making a huge fuzz about it.
-	  if (rev.edges.size() >= 2)
-	    continue;
+        {
+          // FIXME: So far, in all the known GIT histories there was only a
+          // single "octopus" (>2 parents) merge. So this should be fixed
+          // to something a bit more history-friendly but it's not worth
+          // making a huge fuzz about it.
+          if (rev.edges.size() >= 2)
+            continue;
 
-	  revision_id parent_rev;
-	  manifest_id parent_mid;
+          revision_id parent_rev;
+          manifest_id parent_mid;
 
-	  // given the topo order, we ought to have the parent hashed - except
-	  // for incremental imports
-	  map<git_object_id, pair<revision_id, manifest_id>
-	      >::const_iterator i = git.commitmap.find(param);
-	  if (i != git.commitmap.end())
-	    {
-	      parent_rev = i->second.first;
-	      parent_mid = i->second.second;
-	    }
-	  else
-	    {
-	      historical_gitrev_to_monorev(git, app, param, parent_rev);
-	      app.db.get_revision_manifest(parent_rev, parent_mid);
-	    }
+          // given the topo order, we ought to have the parent hashed - except
+          // for incremental imports
+          map<git_object_id, pair<revision_id, manifest_id>
+              >::const_iterator i = git.commitmap.find(param);
+          if (i != git.commitmap.end())
+            {
+              parent_rev = i->second.first;
+              parent_mid = i->second.second;
+            }
+          else
+            {
+              historical_gitrev_to_monorev(git, app, param, parent_rev);
+              app.db.get_revision_manifest(parent_rev, parent_mid);
+            }
 
-	  manifest_map parent_man;
-	  L(F("parent revision '%s'") % parent_rev.inner());
-	  L(F("parent manifest '%s', loading...") % parent_mid.inner());
-	  app.db.get_manifest(parent_mid, parent_man);
+          manifest_map parent_man;
+          L(F("parent revision '%s'") % parent_rev.inner());
+          L(F("parent manifest '%s', loading...") % parent_mid.inner());
+          app.db.get_manifest(parent_mid, parent_man);
 
-	  boost::shared_ptr<change_set> changes(new change_set());
+          boost::shared_ptr<change_set> changes(new change_set());
 
-	  // complete_change_set(parent_man, manifest, *changes);
-	  full_change_set(parent_man, manifest, *changes);
+          // complete_change_set(parent_man, manifest, *changes);
+          full_change_set(parent_man, manifest, *changes);
 
-	  rev.edges.insert(make_pair(parent_rev, make_pair(parent_mid, changes)));
-	}
+          rev.edges.insert(make_pair(parent_rev, make_pair(parent_mid, changes)));
+        }
       else if (keyword == "committer")
-	{
-	  parse_person_line(param, committer, commit_time);
-	}
+        {
+          parse_person_line(param, committer, commit_time);
+        }
       else if (keyword == "author")
-	{
-	  parse_person_line(param, author, author_time);
-	}
+        {
+          parse_person_line(param, author, author_time);
+        }
     }
 
   revision_id rid;
@@ -682,7 +682,7 @@ resolve_git_tag(git_history &git, app_state &app, string &name,
   else
     {
       ui.warn(F("Warning: GIT tag '%s' (%s) does not tag a revision but a %s. Skipping...")
-	      % name % gitoid() % type);
+              % name % gitoid() % type);
       return false;
     }
 }
@@ -703,10 +703,10 @@ import_unresolved_git_tag(git_history &git, app_state &app, string name, git_obj
       cert c = i->inner();
       decode_base64(c.value, cname);
       if (cname == name)
-	{
-	  L(F("tag already exists"));
-	  return;
-	}
+        {
+          L(F("tag already exists"));
+          return;
+        }
     }
 
   revision_id rev;
@@ -720,7 +720,7 @@ import_unresolved_git_tag(git_history &git, app_state &app, string name, git_obj
 
 class
 tags_tree_walker
-  : public tree_walker
+  : public absolute_tree_walker
 {
   git_history & git;
   app_state & app;
@@ -729,25 +729,26 @@ public:
     : git(g), app(a)
   {
   }
-  virtual void visit_file(file_path const & path)
+  virtual void visit_file(system_path const & path)
   {
     data refdata;
-    L(F("Processing tag file '%s'") % path());
-    read_data(file_path(git.db.path.string() + "/refs/tags/" + path()), refdata);
-    import_unresolved_git_tag(git, app, path(), refdata().substr(0, 40));
+    L(F("Processing tag file '%s'") % path);
+    read_data(path, refdata);
+    std::string tagname = fs::path(path.as_external(), fs::native).leaf();
+    import_unresolved_git_tag(git, app, tagname, refdata().substr(0, 40));
   }
   virtual ~tags_tree_walker() {}
 };
 
 
-git_history::git_history(const fs::path &path)
+git_history::git_history(system_path const & path)
   : db(path), n_revs("revisions", "r", 1), n_objs("objects", "o", 10)
 {
 }
 
 
 void
-import_git_repo(fs::path const & gitrepo,
+import_git_repo(system_path const & gitrepo,
                 app_state & app)
 {
   {
@@ -762,7 +763,14 @@ import_git_repo(fs::path const & gitrepo,
     F("path %s does not exist") % gitrepo.string());
   N(fs::is_directory(gitrepo),
     F("path %s is not a directory") % gitrepo.string());
-  putenv((char*)strdup((string("GIT_DIR=")+gitrepo.native_directory_string()).c_str()));
+  require_path_is_directory(gitrepo,
+                            F("repo %s does not exist") % gitrepo,
+                            F("repo %s is not a directory") % gitrepo);
+  
+  {
+    char * env_entry = stdrup((string("GIT_DIR=") + gitrepo.as_external()).c_str());
+    putenv(env_entry);
+  }
 
   N(app.branch_name() != "", F("need base --branch argument for importing"));
 
@@ -779,19 +787,19 @@ import_git_repo(fs::path const & gitrepo,
 
     while (!revs.empty())
       {
-	ui.set_tick_trailer(revs.top()());
-	import_git_commit(git, app, revs.top());
-	revs.pop();
+        ui.set_tick_trailer(revs.top()());
+        import_git_commit(git, app, revs.top());
+        revs.pop();
       }
     ui.set_tick_trailer("");
     guard.commit();
   }
 
-  fs::path tags_tree = gitrepo / "refs/tags";
-  if (fs::exists(tags_tree))
+  system_path tags_tree = gitrepo / "refs/tags";
+  if (path_exists(tags_tree))
     {
-      N(fs::is_directory(tags_tree),
-	F("path %s is not a directory") % tags_tree.string());
+      N(directory_exists(tags_tree),
+        F("path %s is not a directory") % tags_tree);
 
       transaction_guard guard(app.db);
       app.db.ensure_open();
@@ -808,7 +816,7 @@ import_git_repo(fs::path const & gitrepo,
 #else // WIN32
 
 void
-import_git_repo(fs::path const & gitrepo,
+import_git_repo(system_path const & gitrepo,
                 app_state & app)
 {
   E("git import not supported on win32");

@@ -9,6 +9,6 @@
 #include "vocab.hh"
 #include "database.hh"
 
-void import_git_repo(fs::path const & gitrepo, app_state & app);
+void import_git_repo(system_path const & gitrepo, app_state & app);
 
 #endif // __GIT_IMPORT_HH__
