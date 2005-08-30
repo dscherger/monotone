@@ -640,8 +640,16 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   cvs_revision_nr srev(s->cvs_version);
   I(srev.is_parent_of(s2->cvs_version));
   if (s->dead)
-  { cvs_client::checkout c=CheckOut2(file,s2->cvs_version);
+  { 
+#if 0  
+    cvs_client::checkout c=CheckOut2(file,s2->cvs_version);
     I(!c.dead); // dead->dead is no change, so shouldn't get a number
+#else
+    // this might fail (?) because we issued an Entry somewhere above
+    // but ... we can specify the correct directory!
+    cvs_client::update c=Update(file,s2->cvs_version);
+    I(!c.removed);
+#endif    
     I(!s2->dead);
     // I(s2->since_when==c.mod_time);
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
@@ -665,6 +673,21 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
         const cvs_client::checkout &c, std::string &file_contents)
 { const_cast<bool&>(s2->dead)=c.dead;
   if (!c.dead)
+  { // I(c.mod_time==s2->since_when);
+    if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
+    { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+    }
+    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    const_cast<unsigned&>(s2->size)=c.contents.size();
+    file_contents=c.contents;
+    const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+  }
+}
+
+void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
+        const cvs_client::update &c, std::string &file_contents)
+{ const_cast<bool&>(s2->dead)=c.removed;
+  if (!c.removed)
   { // I(c.mod_time==s2->since_when);
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
@@ -881,8 +904,13 @@ void cvs_repository::prime()
   { std::string file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
+#if 0    
       cvs_client::checkout c=CheckOut2(i->first,s2->cvs_version);
       store_checkout(s2,c,file_contents);
+#else
+      cvs_client::update c=Update(i->first,s2->cvs_version);
+      store_checkout(s2,c,file_contents);
+#endif      
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
           s!=i->second.known_states.end();++s)
@@ -1457,8 +1485,13 @@ void cvs_repository::update()
     { last=f->second.known_states.begin();
       I(last!=f->second.known_states.end());
       std::set<file_state>::iterator s2=last;
+#if 0      
       cvs_client::checkout c=CheckOut2(i->file,s2->cvs_version);
       store_checkout(s2,c,file_contents);
+#else
+      cvs_client::update c=Update(i->file,s2->cvs_version);
+      store_checkout(s2,c,file_contents);
+#endif
     }
     else
     { I(!last->sha1sum().empty());

@@ -1160,6 +1160,15 @@ cvs_client::update cvs_client::Update(const std::string &file,
   return result;
 }
 
+cvs_client::update cvs_client::Update(const std::string &file, const std::string &new_revision)
+{
+  struct update result;
+  std::vector<update_args> file_revision;
+  file_revision.push_back(update_args(file,"",new_revision,""));
+  Update(file_revision,store_here(result));
+  return result;
+}
+
 // we have to update, status will give us only strange strings (and uses too
 // much bandwidth?) [is too verbose]
 void cvs_client::Update(const std::vector<update_args> &file_revisions,
@@ -1174,15 +1183,22 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     { olddir=dirname(i->file);
       Directory(olddir);
     }
-    std::string bname=basename(i->file);
-    writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
-    writestr("Unchanged "+bname+"\n");
+    if (!i->old_revision.empty())
+    { std::string bname=basename(i->file);
+      writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
+      writestr("Unchanged "+bname+"\n");
+    }
+    else I(file_revisions.size()==1); // this is only designed to work this way
   }
   if (file_revisions.size()==1 && !file_revisions.begin()->new_revision.empty())
-  { 
-    SendCommand("update","-d","-C","-u",
-      "-r",file_revisions.begin()->new_revision.c_str(),
-      "--",basename(file_revisions.begin()->file).c_str(),(void*)0);
+  { if (file_revisions.begin()->old_revision.empty())
+      SendCommand("update","-d","-C","-A",
+        "-r",file_revisions.begin()->new_revision.c_str(),
+        "--",basename(file_revisions.begin()->file).c_str(),(void*)0);
+    else
+      SendCommand("update","-d","-C","-u",
+        "-r",file_revisions.begin()->new_revision.c_str(),
+        "--",basename(file_revisions.begin()->file).c_str(),(void*)0);
   }
   else 
   { // needed for 1.11

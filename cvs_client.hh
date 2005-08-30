@@ -149,6 +149,8 @@ public:
   struct update Update(const std::string &file, 
             const std::string &old_revision, const std::string &new_revision,
             const std::string &keyword_substitution);
+  // update can also check out files
+  struct update Update(const std::string &file, const std::string &new_revision);
   void Update(const std::vector<update_args> &args, const update_callbacks &cb);
   // returns <filename, <new_revision,keyword_substitution> ("" on remove)>
   std::map<std::string,std::pair<std::string,std::string> >

@@ -130,6 +130,8 @@ private:
               std::string &contents);
   void store_checkout(std::set<file_state>::iterator s2,
         const cvs_client::checkout &file, std::string &file_contents);
+  void store_checkout(std::set<file_state>::iterator s2,
+        const cvs_client::update &file, std::string &file_contents);
   void store_update(std::set<file_state>::const_iterator s,
         std::set<file_state>::iterator s2,const cvs_client::update &u,
         std::string &file_contents);
