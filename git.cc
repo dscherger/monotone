@@ -731,9 +731,11 @@ public:
   }
   virtual void visit_file(system_path const & path)
   {
-    data refdata;
     L(F("Processing tag file '%s'") % path);
+
+    data refdata;
     read_data(path, refdata);
+    // FIXME: Incorrect - there can be tags like "net/v1.0" and such.
     std::string tagname = fs::path(path.as_external(), fs::native).leaf();
     import_unresolved_git_tag(git, app, tagname, refdata().substr(0, 40));
   }
