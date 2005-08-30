@@ -118,7 +118,7 @@ git_history
   ticker n_revs;
   ticker n_objs;
 
-  string base_branch;
+  string branch;
 
   git_history(const system_path & path);
 };
@@ -320,7 +320,7 @@ git_heads_on_branch(git_history &git, app_state &app, set<git_object_id> &git_he
   // we want to import them again, just to add our branch membership to them.
   // (TODO)
   set<revision_id> heads;
-  get_branch_heads(git.base_branch, app, heads);
+  get_branch_heads(git.branch, app, heads);
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
     frontier.push(*i);
@@ -373,7 +373,7 @@ historical_gitrev_to_monorev(git_history &git, app_state &app,
   // All the ancestry should be at least already in our branch, so there is
   // no need to work over the whole database.
   set<revision_id> heads;
-  get_branch_heads(git.base_branch, app, heads);
+  get_branch_heads(git.branch, app, heads);
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
     frontier.push(*i);
@@ -614,7 +614,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   ++git.n_objs;
 
   packet_db_writer dbw(app);
-  cert_revision_in_branch(rid, cert_value(git.base_branch), app, dbw);
+  cert_revision_in_branch(rid, cert_value(git.branch), app, dbw);
   cert_revision_author(rid, author.name, app, dbw);
   cert_revision_changelog(rid, logmsg, app, dbw);
   cert_revision_date_time(rid, commit_time, app, dbw);
@@ -628,6 +628,55 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 
   return rid;
 }
+
+class
+heads_tree_walker
+  : public absolute_tree_walker
+{
+  git_history & git;
+  app_state & app;
+public:
+  heads_tree_walker(git_history & g, app_state & a)
+    : git(g), app(a)
+  {
+  }
+  virtual void visit_file(system_path const & path)
+  {
+    L(F("Processing head file '%s'") % path);
+
+    data refdata;
+    read_data(path, refdata);
+
+    // We can't just .leaf() - there can be heads like "net/ipv4" and such.
+    // XXX: My head hurts from all those temporary variables.
+    system_path spheadsdir = git.db.path / "refs/heads";
+    fs::path headsdir(spheadsdir.as_external(), fs::native);
+    fs::path headpath(path.as_external(), fs::native);
+    std::string strheadpath = headpath.string(), strheadsdir = headsdir.string();
+
+    N(strheadpath.substr(0, strheadsdir.length()) == strheadsdir,
+      F("heads directory name screwed up - %s does not being with %s")
+      % strheadpath % strheadsdir);
+    std::string headname(strheadpath.substr(strheadsdir.length() + 1)); // + '/'
+
+    git.branch = app.branch_name();
+    if (headname != "master")
+      git.branch += "." + headname;
+
+    set<git_object_id> revs_exclude;
+    git_heads_on_branch(git, app, revs_exclude);
+    stack<git_object_id> revs = git.db.load_revs(headname, revs_exclude);
+
+    while (!revs.empty())
+      {
+        ui.set_tick_trailer(revs.top()());
+        import_git_commit(git, app, revs.top());
+        revs.pop();
+      }
+    ui.set_tick_trailer("");
+  }
+  virtual ~heads_tree_walker() {}
+};
 
 
 static void
@@ -784,23 +833,17 @@ import_git_repo(system_path const & gitrepo,
   N(app.branch_name() != "", F("need base --branch argument for importing"));
 
   git_history git(gitrepo);
-  git.base_branch = app.branch_name();
 
   {
+    system_path heads_tree = gitrepo / "refs/heads";
+    N(directory_exists(heads_tree),
+      F("path %s is not a directory") % heads_tree);
+
     transaction_guard guard(app.db);
     app.db.ensure_open();
 
-    set<git_object_id> revs_exclude;
-    git_heads_on_branch(git, app, revs_exclude);
-    stack<git_object_id> revs = git.db.load_revs("master", revs_exclude);
-
-    while (!revs.empty())
-      {
-        ui.set_tick_trailer(revs.top()());
-        import_git_commit(git, app, revs.top());
-        revs.pop();
-      }
-    ui.set_tick_trailer("");
+    heads_tree_walker walker(git, app);
+    walk_tree_absolute(heads_tree, walker);
     guard.commit();
   }
 
