@@ -10,7 +10,6 @@
 
 // TODO:
 // * Export, incremental export
-// * Non-master head
 
 #include <algorithm>
 #include <iostream>
