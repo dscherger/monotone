@@ -448,13 +448,24 @@ full_change_set(manifest_map const & m_old,
     {
       manifest_map::const_iterator j = m_old.find(*i);
       manifest_map::const_iterator k = m_new.find(*i);
+      L(F("full_change_set: looking up '%s' - hits old %d and new %d")
+	% *i % (j != m_old.end()) % (k != m_new.end()));
       if (j == m_old.end())
-        cs.add_file(*i, manifest_entry_id(k));
+	{
+	  L(F("full_change_set: adding %s") % manifest_entry_id(k));
+	  cs.add_file(*i, manifest_entry_id(k));
+	}
       else if (k == m_new.end())
-        cs.delete_file(*i);
+	{
+	  L(F("full_change_set: deleting %s") % manifest_entry_id(j));
+	  cs.delete_file(*i);
+	}
       else if (!(manifest_entry_id(j) == manifest_entry_id(k)))
-        cs.deltas.insert(std::make_pair(*i, std::make_pair(manifest_entry_id(j),
-                                                           manifest_entry_id(k))));
+	{
+	  L(F("full_change_set: delta %s -> %s") % manifest_entry_id(j) % manifest_entry_id(k));
+	  cs.deltas.insert(std::make_pair(*i, std::make_pair(manifest_entry_id(j),
+							     manifest_entry_id(k))));
+	}
     }
 }
 
@@ -584,6 +595,12 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 
           // complete_change_set(parent_man, manifest, *changes);
           full_change_set(parent_man, manifest, *changes);
+
+	  {
+	    data cset;
+	    write_change_set(*changes, cset);
+	    L(F("Changeset:\n%s") % cset());
+	  }
 
           edges.insert(make_pair(parent_rev, make_pair(parent_mid, changes)));
         }
