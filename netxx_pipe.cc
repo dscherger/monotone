@@ -182,6 +182,18 @@ const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 }
 
 #ifdef WIN32
+
+#define FAIL_IF(FUN,ARGS,CHECK) \
+  do \
+  if (FUN ARGS CHECK) \
+  { W(F(##FUN " failed %d\n") % GetLastError()); \
+    throw oops(##FUN " failed"); \
+  } \
+  while (0)
+
+// to emulate the semantics of the select call we wait up to timeout for the
+// first byte and ask for more bytes with no timeout
+//   perhaps there is a more efficient/less complicated way (tell me if you know)
 Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
 { if (!is_pipe) return Probe::ready(timeout,rt);
   if (rt&ready_write) return std::make_pair(pipe->get_writefd(),ready_write);
@@ -190,27 +202,27 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
     
     HANDLE h_read=(HANDLE)_get_osfhandle(pipe->get_readfd());
     DWORD bytes_read=0;
-    if (!ReadFile(h_read,pipe->readbuf,sizeof pipe->readbuf,&bytes_read,&pipe->overlap))
-    { L(F("ReadFile failed %d\n") % GetLastError());
-      throw oops("ReadFile failed ");
+    FAIL_IF( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0);
+    if (!bytes_read)
+    { FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,timeout.get_sec()),!=0);
+      FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),!=0);
+      if (!bytes_read)
+      { FAIL_IF( CancelIO,(h_read),!=0);
+        std::make_pair(socket_type(-1),ready_none);
+      }
     }
-    if (bytes_read)
-    { pipe->bytes_available=bytes_read;
-      return std::make_pair(pipe->get_readfd(),ready_read);
+    I(bytes_read==1);
+    pipe->bytes_available=bytes_read;
+    FAIL_IF( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0);
+    FAIL_IF( CancelIO,(h_read),!=0);
+    if (!bytes_read)
+    { FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),!=0);
+      I(!bytes_read);
     }
-    if (WaitForSingleObject(pipe->overlap.hEvent,timeout.get_sec()))
-    { L(F("WaitForSingleObject failed %d\n") % GetLastError());
-      throw oops("WaitForSingleObject failed ");
+    else
+    { pipe->bytes_available+=bytes_read;
     }
-  // CancelIO(h_read);
-    if (GetOverlappedResult(h_read,&pipe->overlap,&bytes_read,FALSE))
-    { L(F("GetOverlappedResult failed %d\n") % GetLastError());
-      throw oops("GetOverlappedResult failed ");
-    }
-    if (bytes_read)
-    { pipe->bytes_available=bytes_read;
-      return std::make_pair(pipe->get_readfd(),ready_read);
-    }
+    return std::make_pair(pipe->get_readfd(),ready_read);
   }
   return std::make_pair(socket_type(-1),ready_none);
 }
