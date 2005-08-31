@@ -482,6 +482,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 
   bool header = true;
   revision_set rev;
+  edge_map edges;
 
   manifest_map manifest;
   // XXX: it might be user policy decision whether to take author
@@ -557,13 +558,6 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
         }
       else if (keyword == "parent")
         {
-          // FIXME: So far, in all the known GIT histories there was only a
-          // single "octopus" (>2 parents) merge. So this should be fixed
-          // to something a bit more history-friendly but it's not worth
-          // making a huge fuzz about it.
-          if (rev.edges.size() >= 2)
-            continue;
-
           revision_id parent_rev;
           manifest_id parent_mid;
 
@@ -592,7 +586,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
           // complete_change_set(parent_man, manifest, *changes);
           full_change_set(parent_man, manifest, *changes);
 
-          rev.edges.insert(make_pair(parent_rev, make_pair(parent_mid, changes)));
+          edges.insert(make_pair(parent_rev, make_pair(parent_mid, changes)));
         }
       else if (keyword == "committer")
         {
@@ -604,27 +598,68 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
         }
     }
 
+  // Connect with the ancestry:
+
+  edge_map::const_iterator e = edges.begin();
+  // In the normal case, edges will have only single member.
+  if (e != edges.end()) // Root commit has no parents!
+    rev.edges.insert(*(e++));
+
+  // For regular merges, it will have two members.
+  if (e != edges.end())
+    rev.edges.insert(*(e++));
+
   revision_id rid;
-  calculate_ident(rev, rid);
-  L(F("[%s] Monotone commit ID: '%s'") % gitrid() % rid.inner());
-  if (! app.db.revision_exists(rid))
-    app.db.put_revision(rid, rev);
-  git.commitmap[gitrid()] = make_pair(rid, rev.new_manifest);
-  ++git.n_revs;
-  ++git.n_objs;
+  bool put_commit = true;
+  // But for octopus merges, it will have even more. That's why are
+  // we doing all this funny iteration stuff.
+  bool octopus = false;
 
-  packet_db_writer dbw(app);
-  cert_revision_in_branch(rid, cert_value(git.branch), app, dbw);
-  cert_revision_author(rid, author.name, app, dbw);
-  cert_revision_changelog(rid, logmsg, app, dbw);
-  cert_revision_date_time(rid, commit_time, app, dbw);
+  while (put_commit)
+    {
+      calculate_ident(rev, rid);
+      L(F("[%s] Monotone commit ID: '%s'") % gitrid() % rid.inner());
+      if (! app.db.revision_exists(rid))
+	app.db.put_revision(rid, rev);
+      git.commitmap[gitrid()] = make_pair(rid, rev.new_manifest);
+      ++git.n_revs;
+      ++git.n_objs;
 
-  put_simple_revision_cert(rid, gitcommit_id_cert_name,
-                           gitrid(), app, dbw);
-  string ctercert = committer.name + " <" + committer.email + "> "
-                    + boost::lexical_cast<string>(commit_time);
-  put_simple_revision_cert(rid, gitcommit_committer_cert_name,
-                           ctercert, app, dbw);
+      packet_db_writer dbw(app);
+      cert_revision_in_branch(rid, cert_value(git.branch), app, dbw);
+      cert_revision_author(rid, author.name, app, dbw);
+      cert_revision_date_time(rid, commit_time, app, dbw);
+      if (octopus)
+	cert_revision_changelog(rid,
+				"Dummy commit representing GIT octopus merge.\n(See the previous commit.)",
+				app, dbw);
+      else
+	cert_revision_changelog(rid, logmsg, app, dbw);
+
+      put_simple_revision_cert(rid, gitcommit_id_cert_name,
+			       gitrid(), app, dbw);
+      string ctercert = committer.name + " <" + committer.email + "> "
+			+ boost::lexical_cast<string>(commit_time);
+      put_simple_revision_cert(rid, gitcommit_committer_cert_name,
+			       ctercert, app, dbw);
+
+      put_commit = false;
+      if (e != edges.end())
+        {
+	  L(F("OCTOPUS MERGE"));
+	  // Octopus merge - keep going.
+	  put_commit = true;
+	  octopus = true;
+
+	  rev.edges.clear();
+	  rev.edges.insert(*(e++));
+	  // The current commit. Manifest stays the same so we needn't
+	  // bother with changeset.
+          rev.edges.insert(make_pair(rid, make_pair(rev.new_manifest,
+                                                boost::shared_ptr<change_set>(new change_set())
+						)));
+	}
+    }
 
   return rid;
 }
@@ -655,7 +690,7 @@ public:
     std::string strheadpath = headpath.string(), strheadsdir = headsdir.string();
 
     N(strheadpath.substr(0, strheadsdir.length()) == strheadsdir,
-      F("heads directory name screwed up - %s does not being with %s")
+      F("heads directory name screwed up - %s does not begin with %s")
       % strheadpath % strheadsdir);
     std::string headname(strheadpath.substr(strheadsdir.length() + 1)); // + '/'
 
