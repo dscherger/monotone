@@ -187,11 +187,12 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
   if (rt&ready_write) return std::make_pair(pipe->get_writefd(),ready_write);
   if (rt&ready_read)
   { if (pipe->bytes_available) return std::make_pair(pipe->get_readfd(),ready_read);
-    // ResetEvent(pipe->overlap.hEvent);
+    
+    HANDLE h_read=(HANDLE)_get_osfhandle(pipe->get_readfd());
     DWORD bytes_read=0;
-    if (!ReadFile((HANDLE)_get_osfhandle(pipe->get_readfd()),pipe->readbuf,sizeof pipe->readbuf,&bytes_read,&pipe->overlap))
+    if (!ReadFile(h_read,pipe->readbuf,sizeof pipe->readbuf,&bytes_read,&pipe->overlap))
     { L(F("ReadFile failed %d\n") % GetLastError());
-      throw oops("ReadFileEx failed ");
+      throw oops("ReadFile failed ");
     }
     if (bytes_read)
     { pipe->bytes_available=bytes_read;
@@ -201,7 +202,8 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
     { L(F("WaitForSingleObject failed %d\n") % GetLastError());
       throw oops("WaitForSingleObject failed ");
     }
-    if (GetOverlappedResult((HANDLE)_get_osfhandle(pipe->get_readfd()),&pipe->overlap,&bytes_read,FALSE))
+  // CancelIO(h_read);
+    if (GetOverlappedResult(h_read,&pipe->overlap,&bytes_read,FALSE))
     { L(F("GetOverlappedResult failed %d\n") % GetLastError());
       throw oops("GetOverlappedResult failed ");
     }
