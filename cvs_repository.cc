@@ -665,7 +665,21 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   }
   else
   { cvs_client::update u=Update(file,s->cvs_version,s2->cvs_version,s->keyword_substitution);
-    store_update(s,s2,u,contents);
+    try 
+    { store_update(s,s2,u,contents);
+    } catch (std::exception &e)
+    { W(F("Update: patching failed with %s\n") % e.what());
+      cvs_client::update c=Update(file,s2->cvs_version);
+      if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
+      { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+      }
+      const_cast<std::string&>(s2->md5sum)="";
+      const_cast<unsigned&>(s2->patchsize)=0;
+      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      const_cast<unsigned&>(s2->size)=c.contents.size();
+      contents=c.contents;
+      const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+    }
   }
 }
 
