@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // vim:sw=2:
-// Copyright (C) 2005  Petr Baudis <pasky@ucw.cz>
+// Copyright (C) 2005  Petr Baudis <pasky@suse.cz>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
