@@ -32,6 +32,25 @@
 	of the GIT project itself, although it takes its time.
 	* commands.cc: git_import command.
 
+2005-08-31  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* paths.cc (test_bookkeeping_path, test_system_path): Second
+	attempt at compile fixes; this time the unit tests actually pass
+	too.
+
+2005-08-30  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* paths.cc (test_bookkeeping_path, test_system_path): Shift object
+	instantiation around a little to work around what seems to be a
+	bug in the gcc 3.3 parser.
+	* win32/inodeprint.cc (inodeprint_file): Update to use new path
+	handling code.
+	* win32/fs.cc (tilde_expand): Compile fix.
+
+2005-08-30  Petr Baudis  <pasky@suse.cz>
+
+	* std_hooks.lua: Simple support for merging using merge(1) and vim.
+
 2005-08-30  Benoît Dejean  <benoit@placenet.org>
 
 	* po/fr.po: Updated French translation.
