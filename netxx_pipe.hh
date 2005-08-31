@@ -12,6 +12,27 @@
 #  include <windows.h>
 #endif
 
+/* What is this all for?
+
+If you want to transparently handle a pipe and a socket on unix and windows
+you have to abstract some difficulties:
+
+ - sockets have a single filedescriptor for reading and writing
+   pipes usually come in pairs (one for reading and one for writing)
+   
+ - process creation is different on unix and windows
+ 
+ => so Netxx::PipeStream is a Netxx::StreamBase which abstracts two pipes to
+   and from an external command
+   
+ - windows can select on a socket but not on a pipe
+ 
+ => so Netxx::PipeCompatibleProbe is a Netxx::Probe like class which
+   _can_ handle pipes on windows (emulating select is difficult at best!)
+   (on unix Probe and PipeCompatibleProbe are identical)
+   
+*/
+
 namespace Netxx {
 #ifdef WIN32
 class PipeCompatibleProbe;
