@@ -299,8 +299,10 @@ export_git_tree(git_history &git, app_state &app, manifest_id mid)
   manifest_map manifest;
   app.db.get_manifest(mid, manifest);
 
-  set<shared_ptr<git_tree_entry> > tree;
+  attr_map attrs;
+  read_attr_map_from_db(manifest, attrs, app);
 
+  set<shared_ptr<git_tree_entry> > tree;
   for (manifest_map::const_iterator i = manifest.begin();
        i != manifest.end(); ++i)
     {
@@ -308,6 +310,11 @@ export_git_tree(git_history &git, app_state &app, manifest_id mid)
       shared_ptr<git_tree_entry> entry(new git_tree_entry);
       entry->blob_id = export_git_blob(git, app, manifest_entry_id(*i));
       entry->path = manifest_entry_path(*i);
+
+      string attrval;
+      if (find_in_attr_map(attrs, entry->path, "execute", attrval))
+	entry->execute = (attrval == "true");
+
       tree.insert(entry);
     }
 
