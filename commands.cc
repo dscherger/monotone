@@ -3459,23 +3459,28 @@ CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS reposit
   import_cvs_repo(system_path(idx(args, 0)), app);
 }
 
-CMD(git_import, "git", "GITREPO", "import given head from GIT repository",
+CMD(git, N_("interface with the GIT version control system"),
+    N_("import GITREPO\n"
+       "export GITREPO"),
+    N_("import/export from/to a GIT repository; can handle incremental\n"
+       "importing/exporting and exporting back to a repository you\n"
+       "previously imported from"),
     OPT_BRANCH_NAME)
 {
-  if (args.size() != 1)
+  if (args.size() != 2)
     throw usage(name);
 
-  import_git_repo(system_path(idx(args, 0)), app);
-}
-
-CMD(git_export, "git", "GITREPO", "export from Monotone to given GIT repository",
-    OPT_BRANCH_NAME)
-{
-  if (args.size() != 1)
+  vector<utf8>::const_iterator i = args.begin();
+  ++i;
+  vector<utf8> removed (i, args.end());
+  if (idx(args, 0)() == "import")
+    import_git_repo(system_path(idx(removed, 0)), app);
+  else if (idx(args, 0)() == "export")
+    export_git_repo(system_path(idx(removed, 0)), app);
+  else
     throw usage(name);
-
-  export_git_repo(system_path(idx(args, 0)), app);
 }
+
 
 static void
 log_certs(app_state & app, revision_id id, cert_name name,
