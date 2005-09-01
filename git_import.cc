@@ -47,7 +47,7 @@
 #include "constants.hh"
 #include "database.hh"
 #include "file_io.hh"
-#include "git.hh"
+#include "git_import.hh"
 #include "keys.hh"
 #include "manifest.hh"
 #include "mkstemp.hh"

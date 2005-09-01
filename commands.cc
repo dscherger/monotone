@@ -28,7 +28,7 @@
 #include "database_check.hh"
 #include "diff_patch.hh"
 #include "file_io.hh"
-#include "git.hh"
+#include "git_import.hh"
 #include "git_export.hh"
 #include "keys.hh"
 #include "manifest.hh"

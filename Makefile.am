@@ -29,7 +29,7 @@ MOST_SOURCES =								\
          mkstemp.cc mkstemp.hh						\
          lcs.cc lcs.hh							\
          rcs_import.cc rcs_import.hh					\
-         git.cc git.hh							\
+         git_import.cc git_import.hh					\
          git_export.cc git_export.hh					\
          revision.cc revision.hh					\
 	 change_set.cc change_set.hh					\
