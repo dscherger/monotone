@@ -468,7 +468,7 @@ historical_monorev_to_gitrev(git_history &git, app_state &app,
 }
 
 static bool
-export_git_revision(git_history &git, app_state &app, revision_id rid, git_object_id gitcid)
+export_git_revision(git_history &git, app_state &app, revision_id rid, git_object_id &gitcid)
 {
   L(F("Exporting commit '%s'") % rid.inner());
 
@@ -523,6 +523,10 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
 
   gitcid = git.staging.commit_save(gittid, parents, author, committer, data(logmsg));
   git.commitmap.insert(make_pair(rid, gitcid));
+
+  packet_db_writer dbw(app);
+  put_simple_revision_cert(rid, gitcommit_id_cert_name, gitcid(), app, dbw);
+
   return true;
 }
 
