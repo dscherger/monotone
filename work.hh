@@ -184,6 +184,11 @@ bool get_attribute_from_working_copy(file_path const & file,
                                      std::string const & attr_key,
                                      std::string & attr_val); 
 
+bool find_in_attr_map(attr_map const & attr,
+                      file_path const & file,
+                      std::string const & attr_key,
+                      std::string & attr_val);
+
 void update_any_attrs(app_state & app);
 
 extern std::string const binary_encoding;

@@ -681,10 +681,10 @@ string const default_encoding("default");
 
 string const manual_merge_attribute("manual_merge");
 
-static bool find_in_attr_map(attr_map const & attr,
-                             file_path const & file,
-                             std::string const & attr_key,
-                             std::string & attr_val)
+bool find_in_attr_map(attr_map const & attr,
+                      file_path const & file,
+                      std::string const & attr_key,
+                      std::string & attr_val)
 {
   attr_map::const_iterator f = attr.find(file);
   if (f == attr.end())
