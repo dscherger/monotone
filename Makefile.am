@@ -47,8 +47,8 @@ MOST_SOURCES =								\
 	 cleanup.hh unit_tests.hh interner.hh				\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
-         package_revision.c package_revision.h options.hh \
-         cvs_client.cc cvs_repository.cc \
+         package_revision.c package_revision.h				\
+         cvs_client.cc cvs_repository.cc				\
          package_full_revision.c package_full_revision.h options.hh     \
          i18n.h netxx_pipe.cc
 
@@ -94,8 +94,8 @@ BOTAN_SOURCES =                                                                 
         botan/gzip.cpp botan/hash_id.cpp botan/hex.cpp botan/hmac.cpp	\
         botan/if_algo.cpp botan/inifile.cpp botan/init.cpp		\
         botan/kdf.cpp botan/keypair.cpp botan/look_pk.cpp		\
-        botan/lookup.cpp botan/make_prm.cpp botan/md5.cpp		\
-        botan/mdx_hash.cpp						\
+        botan/lookup.cpp botan/make_prm.cpp botan/mdx_hash.cpp		\
+        botan/md5.cpp							\
         botan/mem_pool.cpp botan/mgf1.cpp botan/mlock.cpp		\
         botan/mod_exp.cpp botan/mode_pad.cpp botan/modebase.cpp		\
         botan/mp_comba.cpp botan/mp_core.cpp botan/mp_fkmul.cpp		\
@@ -256,8 +256,8 @@ else
   unit_tests_LDADD = lib3rdparty.a -lboost_unit_test_framework$(BOOST_SUFFIX)
 endif
 
-monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
-unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL) -lz
+monotone_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
+unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)

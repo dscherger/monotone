@@ -9,7 +9,8 @@
 #include <stdarg.h>
 #include <zlib.h>
 #include "ui.hh"
-
+#include "netxx_pipe.hh"
+#include <boost/shared_ptr.hpp>
 
 class cvs_client
 {public:
@@ -80,8 +81,8 @@ class cvs_client
   };
 
 private:
-  int readfd,writefd;
-//  size_t bytes_read,bytes_written;
+  boost::shared_ptr<Netxx::StreamBase> stream;
+//  int readfd,writefd;
   std::auto_ptr<ticker> byte_in_ticker;
   std::auto_ptr<ticker> byte_out_ticker;
   typedef std::set<std::string> stringset_t;

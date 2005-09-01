@@ -119,12 +119,20 @@ std::string cvs_client::read_n(unsigned len)
 void cvs_client::underflow()
 { char buf[1024],buf2[1024];
 try_again:
+  Netxx::PipeCompatibleProbe probe;
+  Netxx::Timeout timeout(30L); // 30 seconds
+      Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess.str);
+      if (!pipe) probe.add(*(sess.str), sess.which_events());
+      else probe.add(*pipe, sess.which_events());  
+  Netxx::Probe::result_type res = probe.ready(timeout);
+#if 0
   fd_set rfds;
   
   FD_ZERO(&rfds);
   FD_SET(readfd, &rfds);
   if (select(readfd+1, &rfds, 0, 0, 0)!=1)
     throw oops("select error "+std::string(strerror(errno)));
+#endif    
   ssize_t avail_in=read(readfd,buf,sizeof buf);
   if (avail_in<1) 
     throw oops("read error "+std::string(strerror(errno)));
