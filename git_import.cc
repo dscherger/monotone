@@ -47,6 +47,7 @@
 #include "constants.hh"
 #include "database.hh"
 #include "file_io.hh"
+#include "git.hh"
 #include "git_import.hh"
 #include "keys.hh"
 #include "manifest.hh"
@@ -78,15 +79,7 @@ using boost::scoped_ptr;
  * the hash, but it wouldn't be as easy to code, so it's a TODO.
  */
 
-typedef hexenc<id> git_object_id;
-
 struct git_history;
-
-struct
-git_person
-{
-  string name, email;
-};
 
 struct
 git_db
@@ -125,44 +118,11 @@ git_history
 
 
 /*** The raw GIT interface */
-// This should change to libgit calls in the future
-
-
-static void
-capture_cmd_output(boost::format const & fmt, filebuf &fb)
-{
-  string str;
-  try
-    {
-      str = fmt.str();
-    }
-  catch (std::exception & e)
-    {
-      P(F("capture_cmd_output() formatter failed: %s") % e.what());
-      throw e;
-    }
-
-  char *tmpdir = getenv("TMPDIR");
-  if (!tmpdir)
-    tmpdir = "/tmp";
-  string tmpfile(tmpdir);
-  tmpfile += "/mtoutput.XXXXXX";
-  int fd = monotone_mkstemp(tmpfile);
-
-  string cmdline("(" + str + ") >" + tmpfile);
-  L(F("Capturing cmd output: %s") % cmdline);
-  N(system(cmdline.c_str()) == 0,
-    F("git command %s failed") % str);
-  fb.open(tmpfile.c_str(), ios::in);
-  close(fd);
-  delete_file(system_path(tmpfile));
-}
-
 
 void
 git_db::get_object(const string type, const git_object_id objid, filebuf &fb)
 {
-  capture_cmd_output(F("git-cat-file %s %s") % type % objid(), fb);
+  capture_git_cmd_output(F("git-cat-file %s %s") % type % objid(), fb);
 }
 
 void
@@ -183,7 +143,7 @@ string
 git_db::get_object_type(const git_object_id objid)
 {
   filebuf fb;
-  capture_cmd_output(F("git-cat-file -t %s") % objid(), fb);
+  capture_git_cmd_output(F("git-cat-file -t %s") % objid(), fb);
   istream stream(&fb);
 
   string type;
@@ -201,7 +161,7 @@ git_db::load_revs(const string revision, const set<git_object_id> &exclude)
     excludestr += " \"^" + (*i)() + "\"";
 
   filebuf fb;
-  capture_cmd_output(F("git-rev-list --topo-order %s %s")
+  capture_git_cmd_output(F("git-rev-list --topo-order %s %s")
                      % revision % excludestr, fb);
   istream stream(&fb);
 
@@ -299,9 +259,6 @@ import_git_tree(git_history &git, app_state &app, git_object_id gittid,
   ++git.n_objs;
 }
 
-
-static string const gitcommit_id_cert_name = "gitcommit-id";
-static string const gitcommit_committer_cert_name = "gitcommit-committer";
 
 // TODO: Make git_heads_on_branch() and historical_gitrev_to_monorev() share
 // code.

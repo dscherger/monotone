@@ -48,6 +48,7 @@
 #include "constants.hh"
 #include "database.hh"
 #include "file_io.hh"
+#include "git.hh"
 #include "git_export.hh"
 #include "keys.hh"
 #include "manifest.hh"
@@ -60,14 +61,6 @@
 using namespace std;
 using boost::shared_ptr;
 using boost::scoped_ptr;
-
-typedef hexenc<id> git_object_id;
-
-struct
-git_person
-{
-  string name, email;
-};
 
 struct
 git_tree_entry
@@ -121,108 +114,14 @@ git_history
 };
 
 
-
-static string const gitcommit_id_cert_name = "gitcommit-id";
-static string const gitcommit_committer_cert_name = "gitcommit-committer";
-
 /*** The raw GIT interface */
-
-static void
-set_git_env(string const & name, string const & value)
-{
-  char *env_entry = strdup((name + "=" + value).c_str());
-  putenv(env_entry);
-}
-
-static void
-stream_grabline(istream &stream, string &line)
-{
-  // You can't hate C++ as much as I do.
-  char linebuf[256];
-  stream.getline(linebuf, 256);
-  line = linebuf;
-}
-
-
-static int
-git_tmpfile(string &tmpfile)
-{
-  char *tmpdir = getenv("TMPDIR");
-  if (!tmpdir)
-    tmpdir = "/tmp";
-
-  tmpfile = string(tmpdir);
-  tmpfile += "/mtgit.XXXXXX";
-  return monotone_mkstemp(tmpfile);
-}
-
-static void
-capture_cmd_output(boost::format const & fmt, filebuf &fb)
-{
-  string str;
-  try
-    {
-      str = fmt.str();
-    }
-  catch (std::exception & e)
-    {
-      P(F("capture_cmd_output() formatter failed: %s") % e.what());
-      throw e;
-    }
-
-  string tmpfile;
-  int fd = git_tmpfile(tmpfile);
-  string cmdline("(" + str + ") >" + tmpfile);
-  L(F("Capturing cmd output: %s") % cmdline);
-  N(system(cmdline.c_str()) == 0,
-    F("git command %s failed") % str);
-  fb.open(tmpfile.c_str(), ios::in);
-  close(fd);
-  delete_file(system_path(tmpfile));
-}
-
-static void
-capture_cmd_io(boost::format const & fmt, data const &input, filebuf &fbout)
-{
-  string str;
-  try
-    {
-      str = fmt.str();
-    }
-  catch (std::exception & e)
-    {
-      P(F("capture_cmd_io() formatter failed: %s") % e.what());
-      throw e;
-    }
-
-  string intmpfile;
-  {
-    int fd = git_tmpfile(intmpfile);
-    filebuf fb;
-    fb.open(intmpfile.c_str(), ios::out);
-    close(fd);
-    ostream stream(&fb);
-    stream << input();
-  }
-
-  string outtmpfile;
-  int fd = git_tmpfile(outtmpfile);
-  string cmdline("(" + str + ") <" + intmpfile + " >" + outtmpfile);
-  L(F("Feeding cmd input: %s") % cmdline);
-  N(system(cmdline.c_str()) == 0,
-    F("git command %s failed") % str);
-  fbout.open(outtmpfile.c_str(), ios::in);
-  close(fd);
-  delete_file(system_path(outtmpfile));
-  delete_file(system_path(intmpfile));
-}
 
 // XXX: Code duplication with git_db::load_revs().
 static void
 get_gitrev_ancestry(git_object_id revision, set<git_object_id> &ancestry)
 {
   filebuf fb;
-  capture_cmd_output(F("git-rev-list %s") % revision(), fb);
+  capture_git_cmd_output(F("git-rev-list %s") % revision(), fb);
   istream stream(&fb);
 
   stack<git_object_id> st;
@@ -287,7 +186,7 @@ git_staging::blob_save(data const &blob)
   N(system(cmdline.c_str()) == 0, F("Adding '%s' failed") % blobpath);
 
   filebuf fb;
-  capture_cmd_output(F("cd '%s' && git-ls-files --stage") % strpath, fb);
+  capture_git_cmd_output(F("cd '%s' && git-ls-files --stage") % strpath, fb);
   istream stream(&fb);
   string line;
   stream_grabline(stream, line);
@@ -321,7 +220,7 @@ git_staging::tree_save(set<shared_ptr<git_tree_entry> > const &entries)
   N(system(cmdline.c_str()) == 0, F("Writing tree index failed"));
 
   filebuf fb;
-  capture_cmd_output(F("git-write-tree"), fb);
+  capture_git_cmd_output(F("git-write-tree"), fb);
   istream stream(&fb);
   string line;
   stream_grabline(stream, line);
@@ -358,7 +257,7 @@ git_staging::commit_save(git_object_id const &tree,
       cmdline += "-p " + (*i)() + " ";
     }
   filebuf fb;
-  capture_cmd_io(F("%s") % cmdline, mylogmsg, fb);
+  capture_git_cmd_io(F("%s") % cmdline, mylogmsg, fb);
   istream stream(&fb);
   string line;
   stream_grabline(stream, line);
