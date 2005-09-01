@@ -139,10 +139,13 @@ is_ancestor(revision_id const & ancestor,
             revision_id const & descendent,
             app_state & app);
 
+enum { topo_all, topo_include, topo_exclude } toposort_filter;
+
 void
 toposort(std::set<revision_id> const & revisions,
          std::vector<revision_id> & sorted,
-         app_state & app);
+         app_state & app,
+	 toposort_filter filter = topo_include);
 
 void
 erase_ancestors(std::set<revision_id> & revisions, app_state & app);

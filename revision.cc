@@ -732,15 +732,23 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
     }
 }
 
+static bool
+topofilter(list<revision_id> const &revs, revision_id const &rev,
+           toposort_filter filter)
+{
+  if (filter == topo_any)
+    return true;
+  bool in_revs = (revs.find(rev) != revs.end());
+  return (filter == topo_include) ? in_revs : !in_revs;
+}
+
 // this function actually toposorts the whole graph, and then filters by the
-// passed in set.  if anyone ever needs to toposort the whole graph, then,
-// this function would be a good thing to generalize...
-//
-// if @revisions is empty, no filtering is performed
+// passed in set (unless filter is set to topo_all).
 void
 toposort(std::set<revision_id> const & revisions,
          std::vector<revision_id> & sorted,
-         app_state & app)
+         app_state & app,
+	 toposort_filter filter)
 {
   sorted.clear();
   typedef std::multimap<revision_id, revision_id>::iterator gi;
@@ -764,7 +772,7 @@ toposort(std::set<revision_id> const & revisions,
       // now stick them in our ordering (if wanted) and remove them from the
       // graph, calculating the new roots as we go
       L(F("new root: %s\n") % (roots.front()));
-      if (revisions.empty() || revisions.find(roots.front()) != revisions.end())
+      if (topofilter(revisions, roots.front(), filter))
         sorted.push_back(roots.front());
       for(gi i = graph.lower_bound(roots.front());
           i != graph.upper_bound(roots.front()); i++)
@@ -779,7 +787,7 @@ toposort(std::set<revision_id> const & revisions,
        i != leaves.end(); ++i)
     {
       L(F("new leaf: %s\n") % (*i));
-      if (revisions.empty() || revisions.find(*i) != revisions.end())
+      if (topofilter(revisions, *i, filter))
         sorted.push_back(*i);
     }
 }

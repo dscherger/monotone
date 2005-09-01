@@ -509,7 +509,7 @@ export_git_repo(system_path const & gitrepo,
   vector<revision_id> revlist; revlist.clear();
   // fill revlist with all the revisions, toposorted
   set<revision_id> empty; empty.clear();
-  toposort(empty, revlist, app);
+  toposort(empty, revlist, app, topo_any);
   //reverse(revlist.begin(), revlist.end());
 
   system_path headpath(gitrepo / "refs/heads/mtexport");
