@@ -504,7 +504,7 @@ export_git_repo(system_path const & gitrepo,
   git.branch = app.branch_name();
 
   if (headname.empty())
-    headname = "mtexport";
+    headname = "master";
   system_path headpath(gitrepo / "refs/heads" / headname);
 
   // Nothing shall disturb us!
