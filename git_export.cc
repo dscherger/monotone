@@ -7,6 +7,8 @@
 
 // Sponsored by Google's Summer of Code and SuSE
 
+// This whole thing needs massive cleanup and codesharing with git_import.cc.
+
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -211,8 +213,29 @@ capture_cmd_io(boost::format const & fmt, data const &input, filebuf &fbout)
     F("git command %s failed") % str);
   fbout.open(outtmpfile.c_str(), ios::in);
   close(fd);
-  //delete_file(system_path(outtmpfile));
-  //delete_file(system_path(intmpfile));
+  delete_file(system_path(outtmpfile));
+  delete_file(system_path(intmpfile));
+}
+
+// XXX: Code duplication with git_db::load_revs().
+static void
+get_gitrev_ancestry(git_object_id revision, set<git_object_id> &ancestry)
+{
+  filebuf fb;
+  capture_cmd_output(F("git-rev-list %s") % revision(), fb);
+  istream stream(&fb);
+
+  stack<git_object_id> st;
+  while (!stream.eof())
+    {
+      char revbuf[41];
+      stream.getline(revbuf, 41);
+      if (strlen(revbuf) < 40)
+        continue;
+      L(F("noted revision %s") % revbuf);
+      ancestry.insert(git_object_id(string(revbuf)));
+    }
+  L(F("Loaded all revisions"));
 }
 
 
@@ -433,6 +456,17 @@ load_cert(app_state &app, revision_id rid, cert_name name, string &content)
   L(F("... '%s'") % content);
 }
 
+static void
+historical_monorev_to_gitrev(git_history &git, app_state &app,
+                             revision_id rid, git_object_id &gitrid)
+{
+  cert_name commitid_name(gitcommit_id_cert_name);
+  string commitid;
+  load_cert(app, rid, commitid_name, commitid);
+  N(!commitid.empty(), F("Current commit's parent %s was not imported yet?!") % rid.inner());
+  gitrid = git_object_id(commitid);
+}
+
 static bool
 export_git_revision(git_history &git, app_state &app, revision_id rid, git_object_id gitcid)
 {
@@ -456,11 +490,18 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
     {
       if (null_id(edge_old_revision(e)))
 	continue;
+
       L(F("Considering edge %s -> %s") % rid.inner() % edge_old_revision(e).inner());
       map<revision_id, git_object_id>::const_iterator i;
       i = git.commitmap.find(edge_old_revision(e));
-      I(i != git.commitmap.end());
-      parents.insert(i->second);
+      git_object_id parent_gitcid;
+      if (i != git.commitmap.end())
+        {
+	  parent_gitcid = i->second;
+	} else {
+	  historical_monorev_to_gitrev(git, app, edge_old_revision(e), parent_gitcid);
+	}
+      parents.insert(parent_gitcid);
     }
 
   cert_name author_name(author_cert_name);
@@ -486,6 +527,54 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
 }
 
 
+static void
+add_gitrevs_descendants(git_history &git, app_state &app,
+                        set<revision_id> &list, set<git_object_id> gitrevs)
+{
+  queue<revision_id> frontier;
+  set<revision_id> seen;
+
+  set<revision_id> heads;
+  get_branch_heads(git.branch, app, heads);
+  for (set<revision_id>::const_iterator i = heads.begin();
+       i != heads.end(); ++i)
+    frontier.push(*i);
+
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.front(); frontier.pop();
+
+      if (seen.find(rid) != seen.end())
+        continue;
+      seen.insert(rid);
+
+      revision_set rev;
+      app.db.get_revision(rid, rev);
+
+      vector<revision<cert> > certs;
+      app.db.get_revision_certs(rid, gitcommit_id_cert_name, certs);
+      I(certs.size() < 2);
+      if (certs.size() > 0)
+        {
+          // This is a GIT commit, then.
+          cert_value cv;
+          decode_base64(certs[0].inner().value, cv);
+          git_object_id gitoid = cv();
+
+	  if (gitrevs.find(cv()) != gitrevs.end())
+	    continue;
+        }
+      list.insert(rid);
+
+      for (edge_map::const_iterator e = rev.edges.begin();
+           e != rev.edges.end(); ++e)
+        {
+          frontier.push(edge_old_revision(e));
+        }
+    }
+}
+
+
 git_history::git_history()
   : staging(this), n_revs("revisions", "r", 1), n_objs("objects", "o", 4)
 {
@@ -506,17 +595,30 @@ export_git_repo(system_path const & gitrepo,
   git_history git;
   git.branch = app.branch_name();
 
-  vector<revision_id> revlist; revlist.clear();
-  // fill revlist with all the revisions, toposorted
-  set<revision_id> empty; empty.clear();
-  toposort(empty, revlist, app, topo_any);
-  //reverse(revlist.begin(), revlist.end());
-
   system_path headpath(gitrepo / "refs/heads/mtexport");
 
   // Nothing shall disturb us!
   transaction_guard guard(app.db);
   app.db.ensure_open();
+
+  set<revision_id> filter;
+  if (file_exists(headpath))
+    {
+      ifstream file(headpath.as_external().c_str(), ios_base::in);
+      N(file, F("cannot open file %s for reading") % headpath);
+      string line;
+      stream_grabline(file, line);
+      I(line.length() == 40);
+      git_object_id gitrev(line);
+      set<git_object_id> ancestry;
+      get_gitrev_ancestry(gitrev, ancestry);
+      add_gitrevs_descendants(git, app, filter, ancestry);
+    }
+
+  vector<revision_id> revlist; revlist.clear();
+  // fill revlist with all the revisions, toposorted
+  toposort(filter, revlist, app, topo_include);
+  //reverse(revlist.begin(), revlist.end());
 
   for (vector<revision_id>::const_iterator i = revlist.begin();
        i != revlist.end(); ++i)
