@@ -8,9 +8,6 @@
 // Based on cvs_import by graydon hoare <graydon@pobox.com>
 // Sponsored by Google's Summer of Code and SuSE
 
-// TODO:
-// * Export, incremental export
-
 #include <algorithm>
 #include <iostream>
 #include <fstream>
