@@ -395,6 +395,26 @@ export_git_tree(git_history &git, app_state &app, manifest_id mid)
 }
 
 
+static bool
+has_cert(app_state &app, revision_id rid, cert_name name, string content)
+{
+  L(F("Has cert '%s' of value '%s'?") % name % content);
+
+  vector< revision<cert> > certs;
+  app.db.get_revision_certs(rid, name, certs);
+  erase_bogus_certs(certs, app);
+  for (vector< revision<cert> >::const_iterator i = certs.begin();
+       i != certs.end(); ++i)
+    {
+      cert_value tv;
+      decode_base64(i->inner().value, tv);
+      if (content == tv())
+	return true;
+    }
+  L(F("... nope"));
+  return false;
+}
+
 static void
 load_cert(app_state &app, revision_id rid, cert_name name, string &content)
 {
@@ -413,10 +433,18 @@ load_cert(app_state &app, revision_id rid, cert_name name, string &content)
   L(F("... '%s'") % content);
 }
 
-static git_object_id
-export_git_revision(git_history &git, app_state &app, revision_id rid)
+static bool
+export_git_revision(git_history &git, app_state &app, revision_id rid, git_object_id gitcid)
 {
   L(F("Exporting commit '%s'") % rid.inner());
+
+  cert_name branch_name(branch_cert_name);
+
+  if (!has_cert(app, rid, branch_name, git.branch))
+    {
+      L(F("Skipping, not on my branch."));
+      return false;
+    }
 
   revision_set rev;
   app.db.get_revision(rid, rev);
@@ -452,9 +480,9 @@ export_git_revision(git_history &git, app_state &app, revision_id rid)
   string logmsg;
   load_cert(app, rid, changelog_name, logmsg);
 
-  git_object_id gitcid = git.staging.commit_save(gittid, parents, author, committer, data(logmsg));
+  gitcid = git.staging.commit_save(gittid, parents, author, committer, data(logmsg));
   git.commitmap.insert(make_pair(rid, gitcid));
-  return gitcid;
+  return true;
 }
 
 
@@ -476,6 +504,7 @@ export_git_repo(system_path const & gitrepo,
 
   set_git_env("GIT_DIR", gitrepo.as_external());
   git_history git;
+  git.branch = app.branch_name();
 
   vector<revision_id> revlist; revlist.clear();
   // fill revlist with all the revisions, toposorted
@@ -496,7 +525,9 @@ export_git_repo(system_path const & gitrepo,
 	continue;
 
       ui.set_tick_trailer((*i).inner()());
-      git_object_id gitcid = export_git_revision(git, app, *i);
+      git_object_id gitcid;
+      if (!export_git_revision(git, app, *i, gitcid))
+	continue;
 
       ofstream file(headpath.as_external().c_str(),
 	            ios_base::out | ios_base::trunc);
