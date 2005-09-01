@@ -550,7 +550,7 @@ export_git_repo(system_path const & gitrepo,
       try
         {
 	  revision_id rev;
-          historical_gitrev_to_monorev(git, app, gitrev, rev);
+          historical_gitrev_to_monorev(git.branch, NULL, app, gitrev, rev);
         }
       catch (std::exception &e)
         {

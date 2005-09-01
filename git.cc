@@ -47,6 +47,8 @@
 #include "file_io.hh"
 #include "git.hh"
 #include "mkstemp.hh"
+#include "revision.hh"
+#include "transforms.hh"
 
 using namespace std;
 using boost::shared_ptr;
@@ -153,7 +155,8 @@ capture_git_cmd_io(boost::format const & fmt, data const &input, filebuf &fbout)
 // this is used for incremental import. Being smart, it also
 // populates the commitmap with GIT commits it finds along the way.
 void
-historical_gitrev_to_monorev(git_history &git, app_state &app,
+historical_gitrev_to_monorev(string const &branch, git_mt_commitmap *commitmap,
+			     app_state &app,
                              git_object_id gitrid, revision_id &found_rid)
 {
   queue<revision_id> frontier;
@@ -162,7 +165,7 @@ historical_gitrev_to_monorev(git_history &git, app_state &app,
   // All the ancestry should be at least already in our branch, so there is
   // no need to work over the whole database.
   set<revision_id> heads;
-  get_branch_heads(git.branch, app, heads);
+  get_branch_heads(branch, app, heads);
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
     frontier.push(*i);
@@ -188,7 +191,8 @@ historical_gitrev_to_monorev(git_history &git, app_state &app,
           decode_base64(certs[0].inner().value, cv);
           git_object_id gitoid = cv();
 
-          git.commitmap[gitoid()] = make_pair(rid, rev.new_manifest);
+	  if (commitmap)
+            (*commitmap)[gitoid()] = make_pair(rid, rev.new_manifest);
 
           if (gitoid == gitrid)
             {

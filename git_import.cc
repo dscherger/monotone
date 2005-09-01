@@ -101,7 +101,7 @@ git_history
 {
   git_db db;
 
-  map<git_object_id, pair<revision_id, manifest_id> > commitmap;
+  git_mt_commitmap commitmap;
   map<git_object_id, file_id> filemap;
 
   ticker n_revs;
@@ -475,7 +475,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
             }
           else
             {
-              historical_gitrev_to_monorev(git, app, param, parent_rev);
+              historical_gitrev_to_monorev(git.branch, &git.commitmap, app, param, parent_rev);
               app.db.get_revision_manifest(parent_rev, parent_mid);
             }
 
@@ -669,7 +669,7 @@ resolve_git_tag(git_history &git, app_state &app, string &name,
     }
   else if (type == "commit")
     {
-      historical_gitrev_to_monorev(git, app, gitoid, rev);
+      historical_gitrev_to_monorev(git.branch, &git.commitmap, app, gitoid, rev);
       return true;
     }
   else
