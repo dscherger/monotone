@@ -9,6 +9,7 @@
 #include "vocab.hh"
 #include "database.hh"
 
-void export_git_repo(system_path const & gitrepo, app_state & app);
+void export_git_repo(system_path const & gitrepo, string const & headname,
+                     app_state & app);
 
 #endif // __GIT_EXPORT_HH__

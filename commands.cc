@@ -3461,22 +3461,32 @@ CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS reposit
 
 CMD(git, N_("git"),
     N_("import GITREPO\n"
-       "export GITREPO"),
+       "export GITREPO [HEADNAME]"),
     N_("import/export from/to a GIT repository; can handle incremental\n"
        "importing/exporting and exporting back to a repository you\n"
        "previously imported from"),
     OPT_BRANCH_NAME)
 {
-  if (args.size() != 2)
+  if (args.size() < 2)
     throw usage(name);
 
   vector<utf8>::const_iterator i = args.begin();
   ++i;
   vector<utf8> removed (i, args.end());
   if (idx(args, 0)() == "import")
-    import_git_repo(system_path(idx(removed, 0)), app);
+    {
+      if (args.size() > 2)
+	throw usage(name);
+      import_git_repo(system_path(idx(removed, 0)), app);
+    }
   else if (idx(args, 0)() == "export")
-    export_git_repo(system_path(idx(removed, 0)), app);
+    {
+      if (args.size() > 3)
+	throw usage(name);
+      export_git_repo(system_path(idx(removed, 0)),
+		      args.size() == 3 ? idx(removed, 1) : "",
+		      app);
+    }
   else
     throw usage(name);
 }

@@ -486,6 +486,7 @@ git_history::git_history()
 
 void
 export_git_repo(system_path const & gitrepo,
+                string const &headname,
                 app_state & app)
 {
   require_path_is_directory(gitrepo,
@@ -502,7 +503,9 @@ export_git_repo(system_path const & gitrepo,
   git_history git;
   git.branch = app.branch_name();
 
-  system_path headpath(gitrepo / "refs/heads/mtexport");
+  if (headname.empty())
+    headname = "mtexport";
+  system_path headpath(gitrepo / "refs/heads" / headname);
 
   // Nothing shall disturb us!
   transaction_guard guard(app.db);
@@ -528,7 +531,7 @@ export_git_repo(system_path const & gitrepo,
         }
       catch (std::exception &e)
         {
-	  N(false, "head mtexport is not subset of our tree; perhaps import first?");
+	  N(false, F("head %s is not subset of our tree; perhaps import first?") % headname);
 	}
     }
 
