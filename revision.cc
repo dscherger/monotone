@@ -733,10 +733,10 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
 }
 
 static bool
-topofilter(list<revision_id> const &revs, revision_id const &rev,
+topofilter(std::set<revision_id> const &revs, revision_id const &rev,
            toposort_filter filter)
 {
-  if (filter == topo_any)
+  if (filter == topo_all)
     return true;
   bool in_revs = (revs.find(rev) != revs.end());
   return (filter == topo_include) ? in_revs : !in_revs;

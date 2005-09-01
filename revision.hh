@@ -139,7 +139,7 @@ is_ancestor(revision_id const & ancestor,
             revision_id const & descendent,
             app_state & app);
 
-enum { topo_all, topo_include, topo_exclude } toposort_filter;
+enum toposort_filter { topo_all, topo_include, topo_exclude };
 
 void
 toposort(std::set<revision_id> const & revisions,
