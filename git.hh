@@ -34,4 +34,7 @@ int git_tmpfile(std::string &tmpfile);
 void capture_git_cmd_output(boost::format const &fmt, std::filebuf &fbout);
 void capture_git_cmd_io(boost::format const &fmt, data const &input, std::filebuf &fbout);
 
+void historical_gitrev_to_monorev(git_history &git, app_state &app,
+                                  git_object_id gitrid, revision_id &found_rid);
+
 #endif // __GIT_HH__

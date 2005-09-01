@@ -520,6 +520,16 @@ export_git_repo(system_path const & gitrepo,
       set<git_object_id> ancestry;
       get_gitrev_ancestry(gitrev, ancestry);
       add_gitrevs_descendants(git, app, filter, ancestry);
+
+      try
+        {
+	  revision_id rev;
+          historical_gitrev_to_monorev(git, app, gitrev, rev);
+        }
+      catch (std::exception &e)
+        {
+	  N(false, "head mtexport is not subset of our tree; perhaps import first?");
+	}
     }
 
   vector<revision_id> revlist; revlist.clear();

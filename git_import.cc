@@ -313,67 +313,6 @@ git_heads_on_branch(git_history &git, app_state &app, set<git_object_id> &git_he
     }
 }
 
-// Look up given GIT commit id in present monotone history;
-// this is used for incremental import. Being smart, it also
-// populates the commitmap with GIT commits it finds along the way.
-static void
-historical_gitrev_to_monorev(git_history &git, app_state &app,
-                             git_object_id gitrid, revision_id &found_rid)
-{
-  queue<revision_id> frontier;
-  set<revision_id> seen;
-
-  // All the ancestry should be at least already in our branch, so there is
-  // no need to work over the whole database.
-  set<revision_id> heads;
-  get_branch_heads(git.branch, app, heads);
-  for (set<revision_id>::const_iterator i = heads.begin();
-       i != heads.end(); ++i)
-    frontier.push(*i);
-
-  while (!frontier.empty())
-    {
-      revision_id rid = frontier.front(); frontier.pop();
-
-      if (seen.find(rid) != seen.end())
-        continue;
-      seen.insert(rid);
-
-      revision_set rev;
-      app.db.get_revision(rid, rev);
-
-      vector<revision<cert> > certs;
-      app.db.get_revision_certs(rid, gitcommit_id_cert_name, certs);
-      I(certs.size() < 2);
-      if (certs.size() > 0)
-        {
-          // This is a GIT commit, then.
-          cert_value cv;
-          decode_base64(certs[0].inner().value, cv);
-          git_object_id gitoid = cv();
-
-          git.commitmap[gitoid()] = make_pair(rid, rev.new_manifest);
-
-          if (gitoid == gitrid)
-            {
-              found_rid = rid;
-              return;
-            }
-        }
-
-      for (edge_map::const_iterator e = rev.edges.begin();
-           e != rev.edges.end(); ++e)
-        {
-          frontier.push(edge_old_revision(e));
-        }
-    }
-
-  N(false,
-    F("Wicked revision tree - incremental import wanted to import a GIT commit\n"
-      "whose parent is not in the Monotone database yet. This means a hole must\n"
-      "have popped up in the Monotone revision history."));
-}
-
 // extract_path_set() is silly and wipes its playground first
 static void
 extract_path_set_cont(manifest_map const & man, path_set & paths)
