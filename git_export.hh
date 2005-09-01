@@ -9,7 +9,8 @@
 #include "vocab.hh"
 #include "database.hh"
 
-void export_git_repo(system_path const & gitrepo, string const & headname,
+void export_git_repo(system_path const & gitrepo,
+                     std::string const & headname,
                      app_state & app);
 
 #endif // __GIT_EXPORT_HH__

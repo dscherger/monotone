@@ -3470,22 +3470,22 @@ CMD(git, N_("git"),
   if (args.size() < 2)
     throw usage(name);
 
-  vector<utf8>::const_iterator i = args.begin();
-  ++i;
-  vector<utf8> removed (i, args.end());
   if (idx(args, 0)() == "import")
     {
       if (args.size() > 2)
 	throw usage(name);
-      import_git_repo(system_path(idx(removed, 0)), app);
+      import_git_repo(system_path(idx(args, 1)), app);
     }
   else if (idx(args, 0)() == "export")
     {
       if (args.size() > 3)
 	throw usage(name);
-      export_git_repo(system_path(idx(removed, 0)),
-		      args.size() == 3 ? idx(removed, 1) : "",
-		      app);
+      if (args.size() == 3)
+	export_git_repo(system_path(idx(args, 1)),
+			idx(args, 2)(), app);
+      else
+	export_git_repo(system_path(idx(args, 1)),
+			"", app);
     }
   else
     throw usage(name);
