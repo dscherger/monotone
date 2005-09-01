@@ -236,7 +236,9 @@ git_object_id
 git_staging::commit_save(git_object_id const &tree,
                          set<git_object_id> const &parents,
                          git_person const &author,
+			 boost::posix_time::ptime atime,
 			 git_person const &committer,
+			 boost::posix_time::ptime ctime,
 			 data const &logmsg)
 {
   ++git->n_revs;
@@ -245,8 +247,10 @@ git_staging::commit_save(git_object_id const &tree,
   L(F("Author: %s/%s, Committer: %s/%s") % author.name % author.email % committer.name % committer.email);
   set_git_env("GIT_AUTHOR_NAME", author.name);
   set_git_env("GIT_AUTHOR_EMAIL", author.email);
+  set_git_env("GIT_AUTHOR_DATE", to_iso_extended_string(atime));
   set_git_env("GIT_COMMITTER_NAME", committer.name);
   set_git_env("GIT_COMMITTER_EMAIL", committer.email);
+  set_git_env("GIT_COMMITTER_DATE", to_iso_extended_string(ctime));
   L(F("Logmsg: %s") % logmsg());
   data mylogmsg = data(logmsg() + "\n");
 
@@ -411,11 +415,17 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
     }
 
   cert_name author_name(author_cert_name);
+  cert_name date_name(date_cert_name);
   cert_name committer_name(gitcommit_committer_cert_name);
   cert_name changelog_name(changelog_cert_name);
 
   git_person author;
   load_cert(app, rid, author_name, author.email);
+
+  boost::posix_time::ptime atime;
+  string atimestr;
+  load_cert(app, rid, date_name, atimestr);
+  atime = boost::posix_time::from_iso_string(atimestr);
 
   git_person committer;
   string commitline;
@@ -423,11 +433,17 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
   committer.name = commitline.substr(0, commitline.find("<") - 1);
   commitline.erase(0, commitline.find("<") + 1);
   committer.email = commitline.substr(0, commitline.find(">"));
+  commitline.erase(0, commitline.find(">") + 2);
+  boost::posix_time::ptime ctime;
+  ctime = boost::posix_time::from_iso_string(commitline.substr(0, commitline.find(" ")));
 
   string logmsg;
   load_cert(app, rid, changelog_name, logmsg);
 
-  gitcid = git.staging.commit_save(gittid, parents, author, committer, data(logmsg));
+  gitcid = git.staging.commit_save(gittid, parents,
+                                   author, atime,
+				   committer, ctime,
+				   data(logmsg));
   git.commitmap.insert(make_pair(rid, gitcid));
 
   packet_db_writer dbw(app);
