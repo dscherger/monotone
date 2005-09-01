@@ -29,6 +29,7 @@
 #include "diff_patch.hh"
 #include "file_io.hh"
 #include "git.hh"
+#include "git_export.hh"
 #include "keys.hh"
 #include "manifest.hh"
 #include "netsync.hh"
@@ -3465,6 +3466,15 @@ CMD(git_import, "git", "GITREPO", "import given head from GIT repository",
     throw usage(name);
 
   import_git_repo(system_path(idx(args, 0)), app);
+}
+
+CMD(git_export, "git", "GITREPO", "export from Monotone to given GIT repository",
+    OPT_BRANCH_NAME)
+{
+  if (args.size() != 1)
+    throw usage(name);
+
+  export_git_repo(system_path(idx(args, 0)), app);
 }
 
 static void
