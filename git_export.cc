@@ -194,23 +194,25 @@ capture_cmd_io(boost::format const & fmt, data const &input, filebuf &fbout)
     }
 
   string intmpfile;
-  int fd = git_tmpfile(intmpfile);
-  filebuf fb;
-  fb.open(intmpfile.c_str(), ios::out);
-  close(fd);
-  ostream stream(&fb);
-  stream << input();
+  {
+    int fd = git_tmpfile(intmpfile);
+    filebuf fb;
+    fb.open(intmpfile.c_str(), ios::out);
+    close(fd);
+    ostream stream(&fb);
+    stream << input();
+  }
 
   string outtmpfile;
-  fd = git_tmpfile(outtmpfile);
+  int fd = git_tmpfile(outtmpfile);
   string cmdline("(" + str + ") <" + intmpfile + " >" + outtmpfile);
   L(F("Feeding cmd input: %s") % cmdline);
   N(system(cmdline.c_str()) == 0,
     F("git command %s failed") % str);
   fbout.open(outtmpfile.c_str(), ios::in);
   close(fd);
-  delete_file(system_path(outtmpfile));
-  delete_file(system_path(intmpfile));
+  //delete_file(system_path(outtmpfile));
+  //delete_file(system_path(intmpfile));
 }
 
 
@@ -318,10 +320,13 @@ git_staging::commit_save(git_object_id const &tree,
   ++git->n_revs;
   ++git->n_objs;
 
+  L(F("Author: %s/%s, Committer: %s/%s") % author.name % author.email % committer.name % committer.email);
   set_git_env("GIT_AUTHOR_NAME", author.name);
   set_git_env("GIT_AUTHOR_EMAIL", author.email);
   set_git_env("GIT_COMMITTER_NAME", committer.name);
   set_git_env("GIT_COMMITTER_EMAIL", committer.email);
+  L(F("Logmsg: %s") % logmsg());
+  data mylogmsg = data(logmsg() + "\n");
 
   string cmdline("git-commit-tree " + tree() + " ");
   for (set<git_object_id>::const_iterator i = parents.begin();
@@ -330,7 +335,7 @@ git_staging::commit_save(git_object_id const &tree,
       cmdline += "-p " + (*i)() + " ";
     }
   filebuf fb;
-  capture_cmd_io(F("%s") % cmdline, logmsg, fb);
+  capture_cmd_io(F("%s") % cmdline, mylogmsg, fb);
   istream stream(&fb);
   string line;
   stream_grabline(stream, line);
@@ -391,7 +396,7 @@ export_git_tree(git_history &git, app_state &app, manifest_id mid)
 
 
 static void
-load_cert(app_state &app, revision_id rid, cert_name name, string content)
+load_cert(app_state &app, revision_id rid, cert_name name, string &content)
 {
   L(F("Loading cert '%s'") % name);
 
