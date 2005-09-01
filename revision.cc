@@ -735,6 +735,8 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
 // this function actually toposorts the whole graph, and then filters by the
 // passed in set.  if anyone ever needs to toposort the whole graph, then,
 // this function would be a good thing to generalize...
+//
+// if @revisions is empty, no filtering is performed
 void
 toposort(std::set<revision_id> const & revisions,
          std::vector<revision_id> & sorted,
@@ -762,7 +764,7 @@ toposort(std::set<revision_id> const & revisions,
       // now stick them in our ordering (if wanted) and remove them from the
       // graph, calculating the new roots as we go
       L(F("new root: %s\n") % (roots.front()));
-      if (revisions.find(roots.front()) != revisions.end())
+      if (revisions.empty() || revisions.find(roots.front()) != revisions.end())
         sorted.push_back(roots.front());
       for(gi i = graph.lower_bound(roots.front());
           i != graph.upper_bound(roots.front()); i++)
@@ -777,7 +779,7 @@ toposort(std::set<revision_id> const & revisions,
        i != leaves.end(); ++i)
     {
       L(F("new leaf: %s\n") % (*i));
-      if (revisions.find(*i) != revisions.end())
+      if (revisions.empty() || revisions.find(*i) != revisions.end())
         sorted.push_back(*i);
     }
 }

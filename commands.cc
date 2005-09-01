@@ -28,6 +28,8 @@
 #include "database_check.hh"
 #include "diff_patch.hh"
 #include "file_io.hh"
+#include "git_import.hh"
+#include "git_export.hh"
 #include "keys.hh"
 #include "manifest.hh"
 #include "netsync.hh"
@@ -3454,7 +3456,25 @@ CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS reposit
   if (args.size() != 1)
     throw usage(name);
 
-  import_cvs_repo(system_path(idx(args, 0)()), app);
+  import_cvs_repo(system_path(idx(args, 0)), app);
+}
+
+CMD(git_import, "git", "GITREPO", "import given head from GIT repository",
+    OPT_BRANCH_NAME)
+{
+  if (args.size() != 1)
+    throw usage(name);
+
+  import_git_repo(system_path(idx(args, 0)), app);
+}
+
+CMD(git_export, "git", "GITREPO", "export from Monotone to given GIT repository",
+    OPT_BRANCH_NAME)
+{
+  if (args.size() != 1)
+    throw usage(name);
+
+  export_git_repo(system_path(idx(args, 0)), app);
 }
 
 static void

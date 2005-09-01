@@ -1,0 +1,517 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
+// vim:sw=2:
+// Copyright (C) 2005  Petr Baudis <pasky@suse.cz>
+// all rights reserved.
+// licensed to the public under the terms of the GNU GPL (>= 2)
+// see the file COPYING for details
+
+// Sponsored by Google's Summer of Code and SuSE
+
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <iterator>
+#include <list>
+#include <map>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <queue>
+#include <stdlib.h>
+
+#ifndef WIN32
+
+#include <unistd.h>
+#include <sys/stat.h> // mkdir()
+
+#include <stdio.h>
+#include <string.h> // strdup(), woo-hoo!
+
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/tokenizer.hpp>
+
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/convenience.hpp>
+
+#include "botan/botan.h"
+
+#include "app_state.hh"
+#include "cert.hh"
+#include "constants.hh"
+#include "database.hh"
+#include "file_io.hh"
+#include "git_export.hh"
+#include "keys.hh"
+#include "manifest.hh"
+#include "mkstemp.hh"
+#include "packet.hh"
+#include "sanity.hh"
+#include "transforms.hh"
+#include "ui.hh"
+
+using namespace std;
+using boost::shared_ptr;
+using boost::scoped_ptr;
+
+typedef hexenc<id> git_object_id;
+
+struct
+git_person
+{
+  string name, email;
+};
+
+struct
+git_tree_entry
+{
+  bool execute;
+  git_object_id blob_id;
+  file_path path;
+};
+
+struct git_history;
+
+// staging area for exporting
+struct
+git_staging
+{
+  system_path path;
+  git_history *git;
+
+  git_staging(git_history *g);
+  ~git_staging();
+
+  git_object_id blob_save(data const &blob);
+  git_object_id tree_save(set<shared_ptr<git_tree_entry> > const &entries);
+  git_object_id commit_save(git_object_id const &tree,
+                            set<git_object_id> const &parents,
+                            git_person const &author,
+			    git_person const &ommitter,
+			    data const &logmsg);
+
+private:
+  system_path index_file;
+};
+
+
+// This is pretty much the _reverse_ of git_import.cc's git_history!
+struct
+git_history
+{
+  git_staging staging;
+
+  map<revision_id, git_object_id> commitmap;
+  map<manifest_id, git_object_id> treemap;
+  map<file_id, git_object_id> filemap;
+
+  ticker n_revs;
+  ticker n_objs;
+
+  string branch;
+
+  git_history();
+};
+
+
+
+static string const gitcommit_id_cert_name = "gitcommit-id";
+static string const gitcommit_committer_cert_name = "gitcommit-committer";
+
+/*** The raw GIT interface */
+
+static void
+set_git_env(string const & name, string const & value)
+{
+  char *env_entry = strdup((name + "=" + value).c_str());
+  putenv(env_entry);
+}
+
+static void
+stream_grabline(istream &stream, string &line)
+{
+  // You can't hate C++ as much as I do.
+  char linebuf[256];
+  stream.getline(linebuf, 256);
+  line = linebuf;
+}
+
+
+static int
+git_tmpfile(string &tmpfile)
+{
+  char *tmpdir = getenv("TMPDIR");
+  if (!tmpdir)
+    tmpdir = "/tmp";
+
+  tmpfile = string(tmpdir);
+  tmpfile += "/mtgit.XXXXXX";
+  return monotone_mkstemp(tmpfile);
+}
+
+static void
+capture_cmd_output(boost::format const & fmt, filebuf &fb)
+{
+  string str;
+  try
+    {
+      str = fmt.str();
+    }
+  catch (std::exception & e)
+    {
+      P(F("capture_cmd_output() formatter failed: %s") % e.what());
+      throw e;
+    }
+
+  string tmpfile;
+  int fd = git_tmpfile(tmpfile);
+  string cmdline("(" + str + ") >" + tmpfile);
+  L(F("Capturing cmd output: %s") % cmdline);
+  N(system(cmdline.c_str()) == 0,
+    F("git command %s failed") % str);
+  fb.open(tmpfile.c_str(), ios::in);
+  close(fd);
+  delete_file(system_path(tmpfile));
+}
+
+static void
+capture_cmd_io(boost::format const & fmt, data const &input, filebuf &fbout)
+{
+  string str;
+  try
+    {
+      str = fmt.str();
+    }
+  catch (std::exception & e)
+    {
+      P(F("capture_cmd_io() formatter failed: %s") % e.what());
+      throw e;
+    }
+
+  string intmpfile;
+  int fd = git_tmpfile(intmpfile);
+  filebuf fb;
+  fb.open(intmpfile.c_str(), ios::out);
+  close(fd);
+  ostream stream(&fb);
+  stream << input();
+
+  string outtmpfile;
+  fd = git_tmpfile(outtmpfile);
+  string cmdline("(" + str + ") <" + intmpfile + " >" + outtmpfile);
+  L(F("Feeding cmd input: %s") % cmdline);
+  N(system(cmdline.c_str()) == 0,
+    F("git command %s failed") % str);
+  fbout.open(outtmpfile.c_str(), ios::in);
+  close(fd);
+  delete_file(system_path(outtmpfile));
+  delete_file(system_path(intmpfile));
+}
+
+
+git_staging::git_staging(git_history *g)
+  : git(g)
+{
+  // Make a temporary staging directory:
+  char *tmpdir = getenv("TMPDIR");
+  if (!tmpdir)
+    tmpdir = "/tmp";
+  string tmpfile(tmpdir);
+  tmpfile += "/mtexport.XXXXXX";
+  int fd = monotone_mkstemp(tmpfile);
+
+  // Hope for the racy best.
+  close(fd);
+  delete_file(system_path(tmpfile));
+
+  N(mkdir(tmpfile.c_str(), 0700) == 0, F("mkdir(%s) failed") % tmpfile);
+
+
+  path = system_path(tmpfile);
+  index_file = path / "index";
+}
+
+git_staging::~git_staging()
+{
+  rmdir(path.as_external().c_str());
+}
+
+git_object_id
+git_staging::blob_save(data const &blob)
+{
+  ++git->n_objs;
+
+  string strpath = path.as_external();
+  string blobpath = (path / "blob").as_external();
+  {
+    ofstream file(blobpath.c_str(), ios_base::out | ios_base::trunc | ios_base::binary);
+    N(file, F("cannot open file %s for writing") % blobpath);
+    Botan::Pipe pipe(new Botan::DataSink_Stream(file));
+    pipe.process_msg(blob());
+  }
+
+  set_git_env("GIT_INDEX_FILE", index_file.as_external());
+
+  string cmdline("cd '" + strpath + "' && git-update-cache --add blob");
+  L(F("Invoking: %s") % cmdline);
+  N(system(cmdline.c_str()) == 0, F("Adding '%s' failed") % blobpath);
+
+  filebuf fb;
+  capture_cmd_output(F("cd '%s' && git-ls-files --stage") % strpath, fb);
+  istream stream(&fb);
+  string line;
+  stream_grabline(stream, line);
+  N(line.length() >= 40, F("Invalid generated index, containing: '%s'") % line);
+  git_object_id gitoid(line.substr(line.find(" ") + 1, 40));
+
+  delete_file(index_file);
+  delete_file(path / "blob");
+
+  return gitoid;
+}
+
+git_object_id
+git_staging::tree_save(set<shared_ptr<git_tree_entry> > const &entries)
+{
+  ++git->n_objs;
+
+  set_git_env("GIT_INDEX_FILE", index_file.as_external());
+
+  string cmdline("git-update-cache --add ");
+  for (set<shared_ptr<git_tree_entry> >::const_iterator i = entries.begin();
+       i != entries.end(); ++i)
+    {
+      cmdline += "--cacheinfo ";
+      cmdline += (*i)->execute ? "777" : "666";
+      cmdline += " " + (*i)->blob_id();
+      // FIXME: Quote!
+      cmdline += " '" + (*i)->path.as_external() + "' ";
+    }
+  L(F("Invoking: %s") % cmdline);
+  N(system(cmdline.c_str()) == 0, F("Writing tree index failed"));
+
+  filebuf fb;
+  capture_cmd_output(F("git-write-tree"), fb);
+  istream stream(&fb);
+  string line;
+  stream_grabline(stream, line);
+  N(line.length() == 40, F("Invalid git-write-tree output: %s") % line);
+  git_object_id gittid(line);
+
+  delete_file(index_file);
+
+  return gittid;
+}
+
+git_object_id
+git_staging::commit_save(git_object_id const &tree,
+                         set<git_object_id> const &parents,
+                         git_person const &author,
+			 git_person const &committer,
+			 data const &logmsg)
+{
+  ++git->n_revs;
+  ++git->n_objs;
+
+  set_git_env("GIT_AUTHOR_NAME", author.name);
+  set_git_env("GIT_AUTHOR_EMAIL", author.email);
+  set_git_env("GIT_COMMITTER_NAME", committer.name);
+  set_git_env("GIT_COMMITTER_EMAIL", committer.email);
+
+  string cmdline("git-commit-tree " + tree() + " ");
+  for (set<git_object_id>::const_iterator i = parents.begin();
+       i != parents.end(); ++i)
+    {
+      cmdline += "-p " + (*i)() + " ";
+    }
+  filebuf fb;
+  capture_cmd_io(F("%s") % cmdline, logmsg, fb);
+  istream stream(&fb);
+  string line;
+  stream_grabline(stream, line);
+  N(line.length() == 40, F("Invalid git-commit-tree output: %s") % line);
+  git_object_id gitcid(line);
+  return gitcid;
+}
+
+
+static git_object_id
+export_git_blob(git_history &git, app_state &app, file_id fid)
+{
+  L(F("Exporting file '%s'") % fid.inner());
+
+  map<file_id, git_object_id>::const_iterator i = git.filemap.find(fid);
+  if (i != git.filemap.end())
+    {
+      return i->second;
+    }
+
+  file_data fdata;
+  app.db.get_file_version(fid, fdata);
+  git_object_id gitbid = git.staging.blob_save(fdata.inner());
+  git.filemap.insert(make_pair(fid, gitbid));
+  return gitbid;
+}
+
+static git_object_id
+export_git_tree(git_history &git, app_state &app, manifest_id mid)
+{
+  L(F("Exporting tree '%s'") % mid.inner());
+
+  map<manifest_id, git_object_id>::const_iterator i = git.treemap.find(mid);
+  if (i != git.treemap.end())
+    {
+      return i->second;
+    }
+
+  manifest_map manifest;
+  app.db.get_manifest(mid, manifest);
+
+  set<shared_ptr<git_tree_entry> > tree;
+
+  for (manifest_map::const_iterator i = manifest.begin();
+       i != manifest.end(); ++i)
+    {
+      L(F("Queuing '%s' [%s]") % manifest_entry_path(*i) % manifest_entry_id(*i));
+      shared_ptr<git_tree_entry> entry(new git_tree_entry);
+      entry->blob_id = export_git_blob(git, app, manifest_entry_id(*i));
+      entry->path = manifest_entry_path(*i);
+      tree.insert(entry);
+    }
+
+  git_object_id gittid = git.staging.tree_save(tree);
+  git.treemap.insert(make_pair(mid, gittid));
+  return gittid;
+}
+
+
+static void
+load_cert(app_state &app, revision_id rid, cert_name name, string content)
+{
+  L(F("Loading cert '%s'") % name);
+
+  vector< revision<cert> > certs;
+  app.db.get_revision_certs(rid, name, certs);
+  erase_bogus_certs(certs, app);
+  if (certs.begin() == certs.end())
+    return;
+
+  cert_value tv;
+  decode_base64(certs.begin()->inner().value, tv);
+  content = tv();
+
+  L(F("... '%s'") % content);
+}
+
+static git_object_id
+export_git_revision(git_history &git, app_state &app, revision_id rid)
+{
+  L(F("Exporting commit '%s'") % rid.inner());
+
+  revision_set rev;
+  app.db.get_revision(rid, rev);
+  git_object_id gittid = export_git_tree(git, app, rev.new_manifest);
+
+  set<git_object_id> parents;
+  for (edge_map::const_iterator e = rev.edges.begin();
+      e != rev.edges.end(); ++e)
+    {
+      if (null_id(edge_old_revision(e)))
+	continue;
+      L(F("Considering edge %s -> %s") % rid.inner() % edge_old_revision(e).inner());
+      map<revision_id, git_object_id>::const_iterator i;
+      i = git.commitmap.find(edge_old_revision(e));
+      I(i != git.commitmap.end());
+      parents.insert(i->second);
+    }
+
+  cert_name author_name(author_cert_name);
+  cert_name committer_name(gitcommit_committer_cert_name);
+  cert_name changelog_name(changelog_cert_name);
+
+  git_person author;
+  load_cert(app, rid, author_name, author.email);
+
+  git_person committer;
+  string commitline;
+  load_cert(app, rid, committer_name, commitline);
+  committer.name = commitline.substr(0, commitline.find("<") - 1);
+  commitline.erase(0, commitline.find("<") + 1);
+  committer.email = commitline.substr(0, commitline.find(">"));
+
+  string logmsg;
+  load_cert(app, rid, changelog_name, logmsg);
+
+  git_object_id gitcid = git.staging.commit_save(gittid, parents, author, committer, data(logmsg));
+  git.commitmap.insert(make_pair(rid, gitcid));
+  return gitcid;
+}
+
+
+git_history::git_history()
+  : staging(this), n_revs("revisions", "r", 1), n_objs("objects", "o", 4)
+{
+}
+
+
+void
+export_git_repo(system_path const & gitrepo,
+                app_state & app)
+{
+  require_path_is_directory(gitrepo,
+                            F("repo %s does not exist") % gitrepo,
+                            F("repo %s is not a directory") % gitrepo);
+
+  N(app.branch_name() != "", F("need base --branch argument for exporting"));
+
+  set_git_env("GIT_DIR", gitrepo.as_external());
+  git_history git;
+
+  vector<revision_id> revlist; revlist.clear();
+  // fill revlist with all the revisions, toposorted
+  set<revision_id> empty; empty.clear();
+  toposort(empty, revlist, app);
+  //reverse(revlist.begin(), revlist.end());
+
+  system_path headpath(gitrepo / "refs/heads/mtexport");
+
+  // Nothing shall disturb us!
+  transaction_guard guard(app.db);
+  app.db.ensure_open();
+
+  for (vector<revision_id>::const_iterator i = revlist.begin();
+       i != revlist.end(); ++i)
+    {
+      if (null_id(*i))
+	continue;
+
+      ui.set_tick_trailer((*i).inner()());
+      git_object_id gitcid = export_git_revision(git, app, *i);
+
+      ofstream file(headpath.as_external().c_str(),
+	            ios_base::out | ios_base::trunc);
+      N(file, F("cannot open file %s for writing") % headpath);
+      file << gitcid() << endl;
+    }
+  ui.set_tick_trailer("");
+
+  guard.commit();
+
+  return;
+}
+
+#else // WIN32
+
+void
+export_git_repo(system_path const & gitrepo,
+                app_state & app)
+{
+  E("git export not supported on win32");
+}
+
+#endif

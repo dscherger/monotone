@@ -512,7 +512,7 @@ make_simple_cert(hexenc<id> const & id,
   c = t;
 }
 
-static void 
+void 
 put_simple_revision_cert(revision_id const & id,
                         cert_name const & nm,
                         cert_value const & val,

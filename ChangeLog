@@ -1,3 +1,37 @@
+2005-08-30  Nathaniel Smith  <njs@pobox.com>
+
+	* file_io.cc (walk_tree_absolute): Implement.
+
+2005-08-30  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (cvs_import, git_import): Fixup after merge.
+	* git.hh (import_git_repo): Port to paths.cc.
+	* git.cc: Port to paths.cc generally.
+	* file_io.hh (absolute_tree_walker, walk_tree_absolute): New
+	interface (still needs implementing).
+
+2005-08-20  Petr Baudis  <pasky@suse.cz>
+	* git.cc: Support for incremental imports - when you pull new
+	stuff to your GIT repository, you can then re-run git_import
+	and it will import the new stuff to a Monotone branch.
+
+2005-08-20  Petr Baudis  <pasky@suse.cz>
+	* cert.hh, cert.cc: Publish put_simple_revision_cert() - that
+	hints that it is ok to do custom certificates and lets us easily
+	do so from the GIT importer.
+	* git.cc: Associate a gitcommit cert containing commit and author
+	information with each imported commit. This will be especially
+	important for incremental imports.
+
+2005-08-18  Petr Baudis  <pasky@suse.cz>
+	* Makefile.am, git.hh, git.cc: Initial support for importing from
+	GIT repositories to Monotone. This is pretty basic yet, full of
+	TODOs, can't do tags nor incremental imports, does not record
+	executability of files, and does not attach git certs to the
+	imported commits. But it more-or-less successfully imports history
+	of the GIT project itself, although it takes its time.
+	* commands.cc: git_import command.
+
 2005-09-01  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* testsuite.at: Increase entropy used to generate port numbers
