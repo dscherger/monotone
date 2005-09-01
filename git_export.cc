@@ -86,8 +86,10 @@ git_staging
   git_object_id tree_save(set<shared_ptr<git_tree_entry> > const &entries);
   git_object_id commit_save(git_object_id const &tree,
                             set<git_object_id> const &parents,
-                            git_person const &author,
-			    git_person const &ommitter,
+			    git_person const &author,
+			    boost::posix_time::ptime const &atime,
+			    git_person const &committer,
+			    boost::posix_time::ptime const &ctime,
 			    data const &logmsg);
 
 private:
@@ -236,9 +238,9 @@ git_object_id
 git_staging::commit_save(git_object_id const &tree,
                          set<git_object_id> const &parents,
                          git_person const &author,
-			 boost::posix_time::ptime atime,
+			 boost::posix_time::ptime const &atime,
 			 git_person const &committer,
-			 boost::posix_time::ptime ctime,
+			 boost::posix_time::ptime const &ctime,
 			 data const &logmsg)
 {
   ++git->n_revs;
@@ -509,7 +511,7 @@ git_history::git_history()
 
 void
 export_git_repo(system_path const & gitrepo,
-                string const &headname,
+                string const &headname_,
                 app_state & app)
 {
   require_path_is_directory(gitrepo,
@@ -526,8 +528,7 @@ export_git_repo(system_path const & gitrepo,
   git_history git;
   git.branch = app.branch_name();
 
-  if (headname.empty())
-    headname = "master";
+  string headname(headname_.empty() ? "master" : headname_);
   system_path headpath(gitrepo / "refs/heads" / headname);
 
   // Nothing shall disturb us!
