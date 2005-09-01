@@ -2260,32 +2260,6 @@ CMD(attr, N_("working copy"), N_("set FILE ATTR VALUE\nget FILE [ATTR]\ndrop FIL
     }
 }
 
-static boost::posix_time::ptime
-string_to_datetime(std::string const & s)
-{
-  try
-    {
-      // boost::posix_time is lame: it can parse "basic" ISO times, of the
-      // form 20000101T120000, but not "extended" ISO times, of the form
-      // 2000-01-01T12:00:00.  So do something stupid to convert one to the
-      // other.
-      std::string tmp = s;
-      std::string::size_type pos = 0;
-      while ((pos = tmp.find_first_of("-:")) != string::npos)
-        tmp.erase(pos, 1);
-      return boost::posix_time::from_iso_string(tmp);
-    }
-  catch (std::out_of_range &e)
-    {
-      N(false, F("failed to parse date string '%s': %s") % s % e.what());
-    }
-  catch (std::exception &)
-    {
-      N(false, F("failed to parse date string '%s'") % s);
-    }
-  I(false);
-}
-
 CMD(commit, N_("working copy"), N_("[PATH]..."), 
     N_("commit working copy to database"),
     OPT_BRANCH_NAME % OPT_MESSAGE % OPT_MSGFILE % OPT_DATE % OPT_AUTHOR % OPT_DEPTH)

@@ -427,7 +427,7 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
   boost::posix_time::ptime atime;
   string atimestr;
   load_cert(app, rid, date_name, atimestr);
-  atime = boost::posix_time::from_iso_string(atimestr);
+  atime = string_to_datetime(atimestr);
 
   git_person committer;
   string commitline;

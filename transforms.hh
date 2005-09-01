@@ -13,6 +13,8 @@
 
 #include <vector>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 // this file contans various sorts of string transformations. each
 // transformation should be self-explanatory from its type signature. see
 // transforms.cc for the implementations (most of which are delegations to
@@ -197,5 +199,7 @@ void externalize_var_domain(var_domain const & d, external & ext);
 
 // line-ending conversion
 void line_end_convert(std::string const & linesep, std::string const & src, std::string & dst);
+
+boost::posix_time::ptime string_to_datetime(std::string const & s);
 
 #endif // __TRANSFORMS_HH__

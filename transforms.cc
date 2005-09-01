@@ -14,6 +14,7 @@
 
 #include <boost/tokenizer.hpp>
 #include <boost/scoped_array.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "botan/botan.h"
 #include "botan/gzip.h"
@@ -817,6 +818,33 @@ line_end_convert(string const & linesep, string const & src, string & dst)
   if (src.size() >= linesep.size() &&
       (src.compare(src.size() - linesep.size(), linesep.size(), linesep) == 0))
     dst += linesep_str;
+}
+
+
+boost::posix_time::ptime
+string_to_datetime(std::string const & s)
+{
+  try
+    {
+      // boost::posix_time is lame: it can parse "basic" ISO times, of the
+      // form 20000101T120000, but not "extended" ISO times, of the form
+      // 2000-01-01T12:00:00.  So do something stupid to convert one to the
+      // other.
+      std::string tmp = s;
+      std::string::size_type pos = 0;
+      while ((pos = tmp.find_first_of("-:")) != string::npos)
+        tmp.erase(pos, 1);
+      return boost::posix_time::from_iso_string(tmp);
+    }
+  catch (std::out_of_range &e)
+    {
+      N(false, F("failed to parse date string '%s': %s") % s % e.what());
+    }
+  catch (std::exception &)
+    {
+      N(false, F("failed to parse date string '%s'") % s);
+    }
+  I(false);
 }
 
 
