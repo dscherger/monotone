@@ -536,6 +536,7 @@ export_git_repo(system_path const & gitrepo,
   app.db.ensure_open();
 
   set<revision_id> filter;
+  toposort_filter filtertype = topo_all;
   if (file_exists(headpath))
     {
       ifstream file(headpath.as_external().c_str(), ios_base::in);
@@ -547,6 +548,7 @@ export_git_repo(system_path const & gitrepo,
       set<git_object_id> ancestry;
       get_gitrev_ancestry(gitrev, ancestry);
       add_gitrevs_descendants(git, app, filter, ancestry);
+      filtertype = topo_include;
 
       try
         {
@@ -561,7 +563,7 @@ export_git_repo(system_path const & gitrepo,
 
   vector<revision_id> revlist; revlist.clear();
   // fill revlist with all the revisions, toposorted
-  toposort(filter, revlist, app, topo_include);
+  toposort(filter, revlist, app, filtertype);
   //reverse(revlist.begin(), revlist.end());
 
   for (vector<revision_id>::const_iterator i = revlist.begin();
