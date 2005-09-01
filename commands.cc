@@ -3459,7 +3459,7 @@ CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS reposit
   import_cvs_repo(system_path(idx(args, 0)), app);
 }
 
-CMD(git, N_("interface with the GIT version control system"),
+CMD(git, N_("git"),
     N_("import GITREPO\n"
        "export GITREPO"),
     N_("import/export from/to a GIT repository; can handle incremental\n"
