@@ -494,6 +494,10 @@ export_git_repo(system_path const & gitrepo,
 
   N(app.branch_name() != "", F("need base --branch argument for exporting"));
 
+  set<revision_id> heads;
+  get_branch_heads(app.branch_name(), app, heads);
+  N(heads.size() == 1, F("the to-be-exported branch has to have exactly one head"));
+
   set_git_env("GIT_DIR", gitrepo.as_external());
   git_history git;
   git.branch = app.branch_name();
