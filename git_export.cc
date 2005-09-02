@@ -488,12 +488,12 @@ add_gitrevs_descendants(git_history &git, app_state &app,
 
       vector<revision<cert> > certs;
       app.db.get_revision_certs(rid, gitcommit_id_cert_name, certs);
-      I(certs.size() < 2);
-      if (certs.size() > 0)
+      for (vector<revision<cert> >::const_iterator c = certs.begin();
+	   c != certs.end(); c++)
         {
           // This is a GIT commit, then.
           cert_value cv;
-          decode_base64(certs[0].inner().value, cv);
+          decode_base64(c->inner().value, cv);
           git_object_id gitoid = cv();
 
 	  if (gitrevs.find(cv()) != gitrevs.end())

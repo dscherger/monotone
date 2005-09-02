@@ -291,12 +291,12 @@ git_heads_on_branch(git_history &git, app_state &app, set<git_object_id> &git_he
 
       vector<revision<cert> > certs;
       app.db.get_revision_certs(rid, gitcommit_id_cert_name, certs);
-      I(certs.size() < 2);
-      if (certs.size() > 0)
+      for (vector<revision<cert> >::const_iterator c = certs.begin();
+	   c != certs.end(); c++)
         {
           // This is a GIT commit, then.
           cert_value cv;
-          decode_base64(certs[0].inner().value, cv);
+          decode_base64(c->inner().value, cv);
           git_object_id gitrid = cv();
 
           git.commitmap[gitrid()] = make_pair(rid, rev.new_manifest);
