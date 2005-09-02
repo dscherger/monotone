@@ -483,6 +483,7 @@ add_gitrevs_descendants(git_history &git, app_state &app,
         continue;
       seen.insert(rid);
 
+      L(F("descendant search: Considering %s") % rid.inner());
       revision_set rev;
       app.db.get_revision(rid, rev);
 
@@ -495,6 +496,7 @@ add_gitrevs_descendants(git_history &git, app_state &app,
           cert_value cv;
           decode_base64(c->inner().value, cv);
           git_object_id gitoid = cv();
+	  L(F("... git ID %s") % gitoid());
 
 	  if (gitrevs.find(cv()) != gitrevs.end())
 	    continue;
@@ -504,7 +506,8 @@ add_gitrevs_descendants(git_history &git, app_state &app,
       for (edge_map::const_iterator e = rev.edges.begin();
            e != rev.edges.end(); ++e)
         {
-          frontier.push(edge_old_revision(e));
+	  if (!null_id(edge_old_revision(e)))
+	    frontier.push(edge_old_revision(e));
         }
     }
 }
