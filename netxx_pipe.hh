@@ -68,8 +68,9 @@ public:
     // use WriteFileEx/ReadFileEx with Overlap?
       bool is_pipe;
       PipeStream *pipe;
+      ready_type ready_t;
     public:
-      PipeCompatibleProbe() : is_pipe(), pipe() {}
+      PipeCompatibleProbe() : is_pipe(), pipe(), ready_t() {}
       void clear()
       { if (is_pipe) { pipe=0; is_pipe=false; } else Probe::clear(); }
       result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);

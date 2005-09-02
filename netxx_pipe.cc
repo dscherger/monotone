@@ -186,8 +186,8 @@ const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 #define FAIL_IF(FUN,ARGS,CHECK) \
   do \
   if (FUN ARGS CHECK) \
-  { W(F(##FUN " failed %d\n") % GetLastError()); \
-    throw oops(##FUN " failed"); \
+  { W(F(#FUN " failed %d\n") % GetLastError()); \
+    throw oops(#FUN " failed"); \
   } \
   while (0)
 
@@ -196,6 +196,7 @@ const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 //   perhaps there is a more efficient/less complicated way (tell me if you know)
 Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
 { if (!is_pipe) return Probe::ready(timeout,rt);
+  if (rt==ready_none) rt=ready_t; // remembered from add
   if (rt&ready_write) return std::make_pair(pipe->get_writefd(),ready_write);
   if (rt&ready_read)
   { if (pipe->bytes_available) return std::make_pair(pipe->get_readfd(),ready_read);
@@ -204,19 +205,19 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
     DWORD bytes_read=0;
     FAIL_IF( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0);
     if (!bytes_read)
-    { FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,timeout.get_sec()),!=0);
-      FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),!=0);
+    { FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,timeout.get_sec()),==WAIT_FAILED);
+      FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0);
       if (!bytes_read)
-      { FAIL_IF( CancelIO,(h_read),!=0);
+      { FAIL_IF( CancelIo,(h_read),==0);
         std::make_pair(socket_type(-1),ready_none);
       }
     }
     I(bytes_read==1);
     pipe->bytes_available=bytes_read;
     FAIL_IF( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0);
-    FAIL_IF( CancelIO,(h_read),!=0);
+    FAIL_IF( CancelIo,(h_read),==0);
     if (!bytes_read)
-    { FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),!=0);
+    { FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0);
       I(!bytes_read);
     }
     else
@@ -232,6 +233,7 @@ void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
   assert(!pipe);
   is_pipe=true;
   pipe=&ps;
+  ready_t=rt;
 }
 
 void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
