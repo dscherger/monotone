@@ -3358,9 +3358,7 @@ call_server(protocol_role role,
         }
 
       probe.clear();
-      Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess.str);
-      if (!pipe) probe.add(*(sess.str), sess.which_events());
-      else probe.add(*pipe, sess.which_events());
+      probe.add(*(sess.str), sess.which_events());
       Netxx::Probe::result_type res = probe.ready(armed ? instant : timeout);
       Netxx::Probe::ready_type event = res.second;
       Netxx::socket_type fd = res.first;
@@ -3716,6 +3714,7 @@ serve_single_connection(//protocol_role role,
   
   if (sess->str->get_socketfd()!=-1) 
     sessions[sess->str->get_socketfd()]=sess;
+  // pipes have two filedescriptors
   Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess->str);
   if (pipe) 
   { sessions[pipe->get_writefd()]=sess;
