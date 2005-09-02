@@ -121,7 +121,7 @@ void cvs_client::underflow()
   probe.add(*stream, Netxx::Probe::ready_read);
 try_again:
   Netxx::Probe::result_type res = probe.ready(Netxx::Timeout(30L)); // 30 seconds
-  if (!(res.first&Netxx::Probe::ready_read))
+  if (!(res.second&Netxx::Probe::ready_read))
     throw oops("timeout reading from CVS server");
   ssize_t avail_in=stream->read(buf,sizeof buf);
   if (avail_in<1) 
