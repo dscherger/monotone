@@ -386,11 +386,15 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
 
   cert_name branch_name(branch_cert_name);
 
+#if 0
+  // See 88020b6892b125ad3ac5888cc90c2df4d33ab476 in Monotone's
+  // revision history.
   if (!has_cert(app, rid, branch_name, git.branch))
     {
       L(F("Skipping, not on my branch."));
       return false;
     }
+#endif
 
   revision_set rev;
   app.db.get_revision(rid, rev);
@@ -459,6 +463,40 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
   put_simple_revision_cert(rid, gitcommit_id_cert_name, gitcid(), app, dbw);
 
   return true;
+}
+
+
+// Like database::get_revision_ancestry() but for just a single branch
+static void
+get_branch_ancestry(string const &branch, app_state &app,
+                    set<revision_id> &list)
+{
+  queue<revision_id> frontier;
+
+  set<revision_id> heads;
+  get_branch_heads(git.branch, app, heads);
+  for (set<revision_id>::const_iterator i = heads.begin();
+       i != heads.end(); ++i)
+    frontier.push(*i);
+
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.front(); frontier.pop();
+
+      if (list.find(rid) != list.end())
+        continue;
+      list.insert(rid);
+
+      revision_set rev;
+      app.db.get_revision(rid, rev);
+
+      for (edge_map::const_iterator e = rev.edges.begin();
+           e != rev.edges.end(); ++e)
+        {
+	  if (!null_id(edge_old_revision(e)))
+	    frontier.push(edge_old_revision(e));
+        }
+    }
 }
 
 
@@ -569,6 +607,11 @@ export_git_repo(system_path const & gitrepo,
         {
 	  N(false, F("head %s is not subset of our tree; perhaps import first?") % headname);
 	}
+    }
+  else
+    {
+      get_branch_ancestry(git.branch, app, filter);
+      filtertype = topo_include;
     }
 
   vector<revision_id> revlist; revlist.clear();
