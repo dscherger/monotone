@@ -312,15 +312,17 @@ export_git_tree(git_history &git, app_state &app, manifest_id mid)
   for (manifest_map::const_iterator i = manifest.begin();
        i != manifest.end(); ++i)
     {
-      L(F("Queuing '%s' [%s]") % manifest_entry_path(*i) % manifest_entry_id(*i));
       shared_ptr<git_tree_entry> entry(new git_tree_entry);
       entry->blob_id = export_git_blob(git, app, manifest_entry_id(*i));
       entry->path = manifest_entry_path(*i);
 
       string attrval;
+      entry->execute = false;
       if (find_in_attr_map(attrs, entry->path, "execute", attrval))
 	entry->execute = (attrval == "true");
 
+      L(F("Queuing '%s' [%s:%s] (%d)") % entry->path % manifest_entry_id(*i)
+	% entry->blob_id() % entry->execute);
       tree.insert(entry);
     }
 
