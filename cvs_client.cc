@@ -15,6 +15,7 @@
 #include "sanity.hh"
 #include "cvs_client.hh"
 #include <boost/lexical_cast.hpp>
+#include <netxx/stream.h>
 
 // copied from netsync.cc from the ssh branch
 static pid_t pipe_and_fork(int *fd1,int *fd2)
@@ -55,7 +56,7 @@ void cvs_client::writestr(const std::string &s, bool flush)
 { if (s.size()) L(F("writestr(%s") % s); // s mostly contains the \n char
   if (!gzip_level)
   { if (s.size() && byte_out_ticker.get())
-      (*byte_out_ticker)+=write(writefd,s.c_str(),s.size());
+      (*byte_out_ticker)+=stream->write(s.c_str(),s.size());
     return;
   }
   char outbuf[1024];
@@ -71,7 +72,7 @@ void cvs_client::writestr(const std::string &s, bool flush)
     }
     unsigned written=sizeof(outbuf)-compress.avail_out;
     if (written && byte_out_ticker.get())
-      (*byte_out_ticker)+=write(writefd,outbuf,written);
+      (*byte_out_ticker)+=stream->write(outbuf,written);
     else break;
   }
 }
@@ -114,26 +115,15 @@ std::string cvs_client::read_n(unsigned len)
   return result;
 }
 
-// are there chars available? get them block if none is available, then
-// get as much as possible
 void cvs_client::underflow()
 { char buf[1024],buf2[1024];
-try_again:
   Netxx::PipeCompatibleProbe probe;
-  Netxx::Timeout timeout(30L); // 30 seconds
-      Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess.str);
-      if (!pipe) probe.add(*(sess.str), sess.which_events());
-      else probe.add(*pipe, sess.which_events());  
-  Netxx::Probe::result_type res = probe.ready(timeout);
-#if 0
-  fd_set rfds;
-  
-  FD_ZERO(&rfds);
-  FD_SET(readfd, &rfds);
-  if (select(readfd+1, &rfds, 0, 0, 0)!=1)
-    throw oops("select error "+std::string(strerror(errno)));
-#endif    
-  ssize_t avail_in=read(readfd,buf,sizeof buf);
+  probe.add(*stream, Netxx::Probe::ready_read);
+try_again:
+  Netxx::Probe::result_type res = probe.ready(Netxx::Timeout(30L)); // 30 seconds
+  if (!(res.first&Netxx::Probe::ready_read))
+    throw oops("timeout reading from CVS server");
+  ssize_t avail_in=stream->read(buf,sizeof buf);
   if (avail_in<1) 
     throw oops("read error "+std::string(strerror(errno)));
   if (byte_in_ticker.get())
@@ -247,7 +237,7 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 
 cvs_client::cvs_client(const std::string &repository, const std::string &_module,
         bool do_connect)
-    : readfd(-1), writefd(-1), byte_in_ticker(), byte_out_ticker(),
+    : byte_in_ticker(), byte_out_ticker(),
       gzip_level(), pserver(), module(_module)
 { // parse the arguments
   { unsigned len;
@@ -288,28 +278,9 @@ void cvs_client::connect()
   memset(&decompress,0,sizeof decompress);
 
   if (pserver)
-  { // it looks like I run into the same problems on Win32 again and again:
-    //  pipes and sockets, so this is not portable except by using the
-    //  Netxx::PipeStream from the ssh branch ... postponed
-    static const int pserver_port=2401;
-    writefd = socket(PF_INET, SOCK_STREAM, 0);
-    I(writefd>=0);
-    struct hostent *ptHost = gethostbyname(host.c_str());
-    if (!ptHost)
-    { L(F("Can't find address for host %s\n") % host);
-      throw oops("gethostbyname " + host + " failed");
-    }
-    struct sockaddr_in tAddr;
-    tAddr.sin_family = AF_INET;
-    tAddr.sin_port = htons(pserver_port);
-    tAddr.sin_addr = *(struct in_addr *)(ptHost->h_addr);
-    if (::connect(writefd, (struct sockaddr*)&tAddr, sizeof(tAddr)))
-    { L(F("Can't connect to port %d on %s\n") % pserver_port % host);
-      throw oops("connect to port "+boost::lexical_cast<std::string>(pserver_port)
-              +" on "+host+" failed");
-    }
-    readfd=writefd;
-    fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
+  { Netxx::Address addr(host.c_str(), 2401);
+    stream=boost::shared_ptr<Netxx::StreamBase>(new Netxx::Stream(addr, Netxx::Timeout(30)));
+    
     writestr("BEGIN AUTH REQUEST\n");
     writestr(root+"\n");
     writestr(user+"\n");
@@ -343,52 +314,35 @@ void cvs_client::connect()
       L(F("localhost's name %s\n") % localhost_name);
     }
     if (host==localhost_name) host="";
-    int fd1[2],fd2[2];
-    pid_t child=pipe_and_fork(fd1,fd2);
-    if (child<0) 
-    {  throw oops("pipe/fork failed "+std::string(strerror(errno)));
-    }
-    else if (!child)
-    { const unsigned newsize=64;
-      const char *newargv[newsize];
-      unsigned newargc=0;
-      std::string argbuf;
-      if (host.empty())
-      { const char *cvs_client_log=getenv("CVS_CLIENT_LOG");
-        if (!cvs_client_log)
-        { newargv[newargc++]="cvs";
-          newargv[newargc++]="server";
-        }
-        else
-        { newargv[newargc++]="sh";
-          newargv[newargc++]="-c";
-          argbuf=std::string("tee \"")+cvs_client_log+".in"+
-              "\" | cvs server | tee \""+cvs_client_log+".out\"";
-          newargv[newargc++]=argbuf.c_str();
-        }
-      }
-      else
-      { const char *rsh=getenv("CVS_RSH");
-        if (!rsh) rsh="rsh";
-        newargv[newargc++]=rsh;
-        if (!user.empty())
-        { newargv[newargc++]="-l";
-          newargv[newargc++]=user.c_str();
-        }
-        newargv[newargc++]=host.c_str();
-        newargv[newargc++]="cvs server";
-      }
-      newargv[newargc]=0;
-      
-      execvp(newargv[0],const_cast<char*const*>(newargv));
-      perror(newargv[0]);
-      exit(errno);
-    }
-    readfd=fd1[0];
-    writefd=fd2[1];
-    fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
     
+    std::string cmd;
+    std::vector<std::string> args;
+    if (host.empty())
+    { const char *cvs_client_log=getenv("CVS_CLIENT_LOG");
+      if (!cvs_client_log)
+      { cmd="cvs";
+        args.push_back("server");
+      }
+      else // ugly hack :-(
+      { cmd="sh";
+        args.push_back("-c");
+        args.push_back(std::string("tee \"")+cvs_client_log+".in"+
+            "\" | cvs server | tee \""+cvs_client_log+".out\"");
+      }
+    }
+    else
+    { const char *rsh=getenv("CVS_RSH");
+      if (!rsh) rsh="rsh";
+      cmd=rsh;
+      if (!user.empty())
+      { args.push_back("-l");
+        args.push_back(user);
+      }
+      args.push_back(host);
+      args.push_back("cvs server");
+    }
     if (host.empty()) host=localhost_name;
+    stream=boost::shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream(cmd,args));
   }
   
   InitZipStream(0);
@@ -420,10 +374,7 @@ void cvs_client::drop_connection()
   deflateEnd(&compress);
   inflateEnd(&decompress);
   gzip_level=0;
-  if (readfd!=-1) 
-  { close(readfd); readfd=-1; }
-  if (writefd!=-1) 
-  { close(writefd); writefd=-1; }
+  stream.reset();
 }
 
 cvs_client::~cvs_client()
