@@ -562,6 +562,16 @@ export_git_repo(system_path const & gitrepo,
                 string const &headname_,
                 app_state & app)
 {
+  {
+    // early short-circuit to avoid failure after lots of work
+    // We need to write to the repository to save the gitcommit-id certs
+    // to faciliate incremental exports and export-imports.
+    rsa_keypair_id key;
+    N(guess_default_key(key,app),
+        F("no unique private key for cert construction"));
+    require_password(key, app);
+  }
+
   require_path_is_directory(gitrepo,
                             F("repo %s does not exist") % gitrepo,
                             F("repo %s is not a directory") % gitrepo);
