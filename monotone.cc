@@ -231,7 +231,6 @@ coption_string(int o)
 int 
 cpp_main(int argc, char ** argv)
 {
-
   clean_shutdown = false;
   int ret = 0;
 
