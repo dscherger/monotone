@@ -430,14 +430,21 @@ export_git_revision(git_history &git, app_state &app, revision_id rid, git_objec
   atime = string_to_datetime(atimestr);
 
   git_person committer;
+  boost::posix_time::ptime ctime;
   string commitline;
   load_cert(app, rid, committer_name, commitline);
-  committer.name = commitline.substr(0, commitline.find("<") - 1);
-  commitline.erase(0, commitline.find("<") + 1);
-  committer.email = commitline.substr(0, commitline.find(">"));
-  commitline.erase(0, commitline.find(">") + 2);
-  boost::posix_time::ptime ctime;
-  ctime = boost::posix_time::from_iso_string(commitline.substr(0, commitline.find(" ")));
+  if (!commitline.empty())
+    {
+      committer.name = commitline.substr(0, commitline.find("<") - 1);
+      commitline.erase(0, commitline.find("<") + 1);
+      committer.email = commitline.substr(0, commitline.find(">"));
+      commitline.erase(0, commitline.find(">") + 2);
+      ctime = boost::posix_time::from_iso_string(commitline.substr(0, commitline.find(" ")));
+    }
+  else
+    {
+      ctime = boost::posix_time::second_clock::universal_time();
+    }
 
   string logmsg;
   load_cert(app, rid, changelog_name, logmsg);

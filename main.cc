@@ -270,7 +270,7 @@ main_with_signal_handlers(int argc, char **argv)
     
     sigaction(SIGFPE , &all_signals_action, &old_SIGFPE_action);
     sigaction(SIGTRAP, &all_signals_action, &old_SIGTRAP_action);
-    sigaction(SIGSEGV, &all_signals_action, &old_SIGSEGV_action);
+    //sigaction(SIGSEGV, &all_signals_action, &old_SIGSEGV_action);
     sigaction(SIGBUS , &all_signals_action, &old_SIGBUS_action);
     sigaction(SIGABRT, &all_signals_action, &old_SIGABRT_action);
 
@@ -310,7 +310,7 @@ main_with_signal_handlers(int argc, char **argv)
     
     sigaction(SIGFPE , &old_SIGFPE_action , sigaction_ptr());
     sigaction(SIGTRAP, &old_SIGTRAP_action, sigaction_ptr());
-    sigaction(SIGSEGV, &old_SIGSEGV_action, sigaction_ptr());
+    //sigaction(SIGSEGV, &old_SIGSEGV_action, sigaction_ptr());
     sigaction(SIGBUS , &old_SIGBUS_action , sigaction_ptr());
     sigaction(SIGABRT, &old_SIGABRT_action, sigaction_ptr());
     
