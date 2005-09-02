@@ -629,6 +629,7 @@ export_git_repo(system_path const & gitrepo,
   toposort(filter, revlist, app, filtertype);
   //reverse(revlist.begin(), revlist.end());
 
+  git_object_id gitcid;
   for (vector<revision_id>::const_iterator i = revlist.begin();
        i != revlist.end(); ++i)
     {
@@ -636,18 +637,16 @@ export_git_repo(system_path const & gitrepo,
 	continue;
 
       ui.set_tick_trailer((*i).inner()());
-      git_object_id gitcid;
-      if (!export_git_revision(git, app, *i, gitcid))
-	continue;
-
-      ofstream file(headpath.as_external().c_str(),
-	            ios_base::out | ios_base::trunc);
-      N(file, F("cannot open file %s for writing") % headpath);
-      file << gitcid() << endl;
+      export_git_revision(git, app, *i, gitcid);
     }
   ui.set_tick_trailer("");
 
   guard.commit();
+
+  ofstream file(headpath.as_external().c_str(),
+                ios_base::out | ios_base::trunc);
+  N(file, F("cannot open file %s for writing") % headpath);
+  file << gitcid() << endl;
 
   return;
 }
