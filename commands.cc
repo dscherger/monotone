@@ -12,13 +12,10 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <fstream>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/exception.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "commands.hh"
@@ -50,6 +47,7 @@
 #include "annotate.hh"
 #include "options.hh"
 #include "globish.hh"
+#include "paths.hh"
 
 //
 // this file defines the task-oriented "top level" commands which can be
@@ -103,6 +101,9 @@ namespace commands
 
   struct command 
   {
+    // NB: these strings are stred _un_translated
+    // because we cannot translate them until after main starts, by which time
+    // the command objects have all been constructed.
     string name;
     string cmdgroup;
     string params;
@@ -121,8 +122,10 @@ namespace commands
 
   bool operator<(command const & self, command const & other)
   {
-    return ((self.cmdgroup < other.cmdgroup)
-            || ((self.cmdgroup == other.cmdgroup) && (self.name < other.name)));
+    // *twitch*
+    return ((std::string(_(self.cmdgroup.c_str())) < std::string(_(other.cmdgroup.c_str())))
+            || ((self.cmdgroup == other.cmdgroup)
+                && (std::string(_(self.name.c_str())) < (std::string(_(other.name.c_str()))))));
   }
 
 
@@ -162,6 +165,14 @@ namespace commands
     return cmd;
   }
 
+  const char * safe_gettext(const char * msgid)
+  {
+    if (strlen(msgid) == 0)
+      return msgid;
+
+    return _(msgid);
+  }
+
   void explain_usage(string const & cmd, ostream & out)
   {
     map<string,command *>::const_iterator i;
@@ -172,13 +183,13 @@ namespace commands
 
     if (i != cmds.end())
       {
-        string params = i->second->params;
+        string params = safe_gettext(i->second->params.c_str());
         vector<string> lines;
         split_into_lines(params, lines);
         for (vector<string>::const_iterator j = lines.begin();
              j != lines.end(); ++j)
           out << "     " << i->second->name << " " << *j << endl;
-        split_into_lines(i->second->desc, lines);
+        split_into_lines(safe_gettext(i->second->desc.c_str()), lines);
         for (vector<string>::const_iterator j = lines.begin();
              j != lines.end(); ++j)
           out << "       " << *j << endl;
@@ -187,7 +198,7 @@ namespace commands
       }
 
     vector<command *> sorted;
-    out << "commands:" << endl;
+    out << _("commands:") << endl;
     for (i = cmds.begin(); i != cmds.end(); ++i)
       {
         sorted.push_back(i->second);
@@ -209,7 +220,7 @@ namespace commands
           {
             curr_group = idx(sorted, i)->cmdgroup;
             out << endl;
-            out << "  " << idx(sorted, i)->cmdgroup;
+            out << "  " << safe_gettext(idx(sorted, i)->cmdgroup.c_str());
             col = idx(sorted, i)->cmdgroup.size() + 2;
             while (col++ < (col2 + 3))
               out << ' ';
@@ -279,13 +290,13 @@ CMD(C, realcommand##_cmd.cmdgroup, realcommand##_cmd.params,         \
 
 struct pid_file
 {
-  explicit pid_file(fs::path const & p)
+  explicit pid_file(system_path const & p)
     : path(p)
   {
     if (path.empty())
       return;
-    N(!fs::exists(path), F("pid file '%s' already exists") % path.string());
-    file.open(path);
+    require_path_is_nonexistent(path, F("pid file '%s' already exists") % path);
+    file.open(path.as_external().c_str());
     file << get_process_id();
     file.flush();
   }
@@ -295,16 +306,16 @@ struct pid_file
     if (path.empty())
       return;
     pid_t pid;
-    fs::ifstream(path) >> pid;
+    std::ifstream(path.as_external().c_str()) >> pid;
     if (pid == get_process_id()) {
       file.close();
-      fs::remove(path);
+      delete_file(path);
     }
   }
 
 private:
-  fs::ofstream file;
-  fs::path path;
+  std::ofstream file;
+  system_path path;
 };
 
 static void
@@ -354,10 +365,12 @@ get_log_message(revision_set const & cs,
   write_revision_set(cs, summary);
   read_user_log(user_log_message);
   commentary += "----------------------------------------------------------------------\n";
-  commentary += "Enter Log.  Lines beginning with `MT:' are removed automatically\n";
+  commentary += _("Enter a description of this change.\n"
+                  "Lines beginning with `MT:' are removed automatically.\n");
   commentary += "\n";
   commentary += summary();
   commentary += "----------------------------------------------------------------------\n";
+
   N(app.lua.hook_edit_comment(commentary, user_log_message(), log_message),
     F("edit of log message failed"));
 }
@@ -367,8 +380,12 @@ notify_if_multiple_heads(app_state & app) {
   set<revision_id> heads;
   get_branch_heads(app.branch_name(), app, heads);
   if (heads.size() > 1) {
-    P(F("note: branch '%s' has multiple heads\nnote: perhaps consider 'monotone merge'")
-      % app.branch_name);
+    std::string prefixedline;
+    prefix_lines_with(_("note: "),
+                      _("branch '%s' has multiple heads\n"
+                        "perhaps consider 'monotone merge'"),
+                      prefixedline);
+    P(boost::format(prefixedline) % app.branch_name);
   }
 }
 
@@ -453,62 +470,35 @@ complete(app_state & app,
   P(F("expanded to '%s'\n") %  completion);  
 }
 
-static void 
-complete(app_state & app, 
-         string const & str,
-         manifest_id & completion)
-{
-  N(str.find_first_not_of(constants::legal_id_bytes) == string::npos,
-    F("non-hex digits in id"));
-  if (str.size() == constants::idlen)
-    {
-      completion = manifest_id(str);
-      return;
-    }
-  set<manifest_id> completions;
-  app.db.complete(str, completions);
-  N(completions.size() != 0,
-    F("partial id '%s' does not have a unique expansion") % str);
-  if (completions.size() > 1)
-    {
-      string err = (F("partial id '%s' has multiple ambiguous expansions: \n") % str).str();
-      for (set<manifest_id>::const_iterator i = completions.begin();
-           i != completions.end(); ++i)
-        err += (i->inner()() + "\n");
-      N(completions.size() == 1, boost::format(err));
-    }
-  completion = *(completions.begin());  
-  P(F("expanding partial id '%s'\n") % str);
-  P(F("expanded to '%s'\n") %  completion);
-}
 
+template<typename ID>
 static void 
 complete(app_state & app, 
          string const & str,
-         file_id & completion)
+         ID & completion)
 {
   N(str.find_first_not_of(constants::legal_id_bytes) == string::npos,
     F("non-hex digits in id"));
   if (str.size() == constants::idlen)
     {
-      completion = file_id(str);
+      completion = ID(str);
       return;
     }
-  set<file_id> completions;
+  set<ID> completions;
   app.db.complete(str, completions);
   N(completions.size() != 0,
-    F("partial id '%s' does not have a unique expansion") % str);
+    F("partial id '%s' does not have an expansion") % str);
   if (completions.size() > 1)
     {
       string err = (F("partial id '%s' has multiple ambiguous expansions: \n") % str).str();
-      for (set<file_id>::const_iterator i = completions.begin();
+      for (typename set<ID>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         err += (i->inner()() + "\n");
       N(completions.size() == 1, boost::format(err));
     }
   completion = *(completions.begin());  
-  P(F("expanding partial id '%s'\n") % str);
-  P(F("expanded to '%s'\n") %  completion);
+  P(F("expanded partial id '%s' to '%s'\n")
+    % str % completion);
 }
 
 static void 
@@ -544,6 +534,21 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
   // particular.
   sort(certs.begin(), certs.end());
 
+  string str     = _("Key   : %s\n"
+                     "Sig   : %s\n"
+                     "Name  : %s\n"
+                     "Value : %s\n");
+  string extra_str = "      : %s\n";
+
+  string::size_type colon_pos = str.find(':');
+
+  if (colon_pos != string::npos)
+    {
+      string substr(str, 0, colon_pos);
+      colon_pos = length(substr);
+      extra_str = string(colon_pos, ' ') + ": %s\n";
+    }
+
   for (size_t i = 0; i < certs.size(); ++i)
     {
       cert_status status = check_cert(app, idx(certs, i));
@@ -563,13 +568,13 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
       switch (status)
         {
         case cert_ok:
-          stat = "ok";
+          stat = _("ok");
           break;
         case cert_bad:
-          stat = "bad";
+          stat = _("bad");
           break;
         case cert_unknown:
-          stat = "unknown";
+          stat = _("unknown");
           break;
         }
 
@@ -577,14 +582,15 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
       split_into_lines(washed, lines);
       I(lines.size() > 0);
 
-      cout << "-----------------------------------------------------------------" << endl
-           << "Key   : " << idx(certs, i).key() << endl
-           << "Sig   : " << stat << endl           
-           << "Name  : " << idx(certs, i).name() << endl           
-           << "Value : " << idx(lines, 0) << endl;
+      cout << std::string(guess_terminal_width(), '-') << '\n'
+           << boost::format(str)
+        % idx(certs, i).key()
+        % stat
+        % idx(certs, i).name()
+        % idx(lines, 0);
       
       for (size_t i = 1; i < lines.size(); ++i)
-        cout << "      : " << idx(lines, i) << endl;
+        cout << boost::format(extra_str) % idx(lines, i);
     }  
 
   if (certs.size() > 0)
@@ -720,8 +726,8 @@ changes_summary::add_change_set(change_set const & cs)
   for (change_set::delta_map::const_iterator i = cs.deltas.begin();
        i != cs.deltas.end(); i++)
     {
-      if (pr.added_files.find(i->first()) == pr.added_files.end())
-        modified_files.insert(i->first());
+      if (pr.added_files.find(i->first) == pr.added_files.end())
+        modified_files.insert(i->first);
     }
 }
 
@@ -735,7 +741,7 @@ print_indented_set(std::ostream & os,
   for (std::set<file_path>::const_iterator i = s.begin();
        i != s.end(); i++)
     {
-      const std::string str = (*i)();
+      const std::string str = boost::lexical_cast<std::string>(*i);
       if (cols > 8 && cols + str.size() + 1 >= max_cols)
         {
           cols = 8;
@@ -793,7 +799,7 @@ changes_summary::print(std::ostream & os, size_t max_cols) const
     }
 }
 
-CMD(genkey, _("key and cert"), _("KEYID"), _("generate an RSA key-pair"), OPT_NONE)
+CMD(genkey, N_("key and cert"), N_("KEYID"), N_("generate an RSA key-pair"), OPT_NONE)
 {
   if (args.size() != 1)
     throw usage(name);
@@ -815,7 +821,7 @@ CMD(genkey, _("key and cert"), _("KEYID"), _("generate an RSA key-pair"), OPT_NO
   guard.commit();
 }
 
-CMD(dropkey, _("key and cert"), _("KEYID"), _("drop a public and private key"), OPT_NONE)
+CMD(dropkey, N_("key and cert"), N_("KEYID"), N_("drop a public and private key"), OPT_NONE)
 {
   bool key_deleted = false;
   
@@ -847,8 +853,8 @@ CMD(dropkey, _("key and cert"), _("KEYID"), _("drop a public and private key"), 
   guard.commit();
 }
 
-CMD(chkeypass, _("key and cert"), _("KEYID"),
-    _("change passphrase of a private RSA key"),
+CMD(chkeypass, N_("key and cert"), N_("KEYID"),
+    N_("change passphrase of a private RSA key"),
     OPT_NONE)
 {
   if (args.size() != 1)
@@ -871,8 +877,8 @@ CMD(chkeypass, _("key and cert"), _("KEYID"),
   guard.commit();
 }
 
-CMD(cert, _("key and cert"), _("REVISION CERTNAME [CERTVAL]"),
-    _("create a cert for a revision"), OPT_NONE)
+CMD(cert, N_("key and cert"), N_("REVISION CERTNAME [CERTVAL]"),
+    N_("create a cert for a revision"), OPT_NONE)
 {
   if ((args.size() != 3) && (args.size() != 2))
     throw usage(name);
@@ -911,8 +917,8 @@ CMD(cert, _("key and cert"), _("REVISION CERTNAME [CERTVAL]"),
   guard.commit();
 }
 
-CMD(trusted, _("key and cert"), _("REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]"),
-    _("test whether a hypothetical cert would be trusted\n"
+CMD(trusted, N_("key and cert"), N_("REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]"),
+    N_("test whether a hypothetical cert would be trusted\n"
       "by current settings"),
     OPT_NONE)
 {
@@ -940,18 +946,25 @@ CMD(trusted, _("key and cert"), _("REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]")
   bool trusted = app.lua.hook_get_revision_cert_trust(signers, ident,
                                                       name, value);
 
-  cout << "if a cert on: " << ident << endl
-       << "with key: " << name << endl
-       << "and value: " << value << endl
-       << "was signed by: ";
-  for (set<rsa_keypair_id>::const_iterator i = signers.begin(); i != signers.end(); ++i)
-    cout << *i << " ";
-  cout << endl
-       << "it would be: " << (trusted ? "trusted" : "UNtrusted") << endl;
+
+  ostringstream all_signers;
+  copy(signers.begin(), signers.end(),
+       ostream_iterator<rsa_keypair_id>(all_signers, " "));
+
+  cout << F("if a cert on: %s\n"
+            "with key: %s\n"
+            "and value: %s\n"
+            "was signed by: %s\n"
+            "it would be: %s\n")
+    % ident
+    % name
+    % value
+    % all_signers.str()
+    % (trusted ? _("trusted") : _("UNtrusted"));
 }
 
-CMD(tag, _("review"), _("REVISION TAGNAME"),
-    _("put a symbolic tag cert on a revision version"), OPT_NONE)
+CMD(tag, N_("review"), N_("REVISION TAGNAME"),
+    N_("put a symbolic tag cert on a revision version"), OPT_NONE)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -963,8 +976,8 @@ CMD(tag, _("review"), _("REVISION TAGNAME"),
 }
 
 
-CMD(testresult, _("review"), _("ID (pass|fail|true|false|yes|no|1|0)"), 
-    _("note the results of running a test on a revision"), OPT_NONE)
+CMD(testresult, N_("review"), N_("ID (pass|fail|true|false|yes|no|1|0)"), 
+    N_("note the results of running a test on a revision"), OPT_NONE)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -975,8 +988,8 @@ CMD(testresult, _("review"), _("ID (pass|fail|true|false|yes|no|1|0)"),
   cert_revision_testresult(r, idx(args, 1)(), app, dbw);
 }
 
-CMD(approve, _("review"), _("REVISION"), 
-    _("approve of a particular revision"),
+CMD(approve, N_("review"), N_("REVISION"), 
+    N_("approve of a particular revision"),
     OPT_BRANCH_NAME)
 {
   if (args.size() != 1)
@@ -992,8 +1005,8 @@ CMD(approve, _("review"), _("REVISION"),
 }
 
 
-CMD(disapprove, _("review"), _("REVISION"), 
-    _("disapprove of a particular revision"),
+CMD(disapprove, N_("review"), N_("REVISION"), 
+    N_("disapprove of a particular revision"),
     OPT_BRANCH_NAME)
 {
   if (args.size() != 1)
@@ -1038,8 +1051,8 @@ CMD(disapprove, _("review"), _("REVISION"),
   }
 }
 
-CMD(comment, _("review"), _("REVISION [COMMENT]"),
-    _("comment on a particular revision"), OPT_NONE)
+CMD(comment, N_("review"), N_("REVISION [COMMENT]"),
+    N_("comment on a particular revision"), OPT_NONE)
 {
   if (args.size() != 1 && args.size() != 2)
     throw usage(name);
@@ -1062,8 +1075,8 @@ CMD(comment, _("review"), _("REVISION [COMMENT]"),
 
 
 
-CMD(add, _("working copy"), _("PATH..."),
-    _("add files to working copy"), OPT_NONE)
+CMD(add, N_("working copy"), N_("PATH..."),
+    N_("add files to working copy"), OPT_NONE)
 {
   if (args.size() < 1)
     throw usage(name);
@@ -1078,7 +1091,7 @@ CMD(add, _("working copy"), _("PATH..."),
 
   vector<file_path> paths;
   for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
-    paths.push_back(app.prefix(*i));
+    paths.push_back(file_path_external(*i));
 
   build_additions(paths, m_old, app, work);
 
@@ -1087,8 +1100,8 @@ CMD(add, _("working copy"), _("PATH..."),
   update_any_attrs(app);
 }
 
-CMD(drop, _("working copy"), _("PATH..."),
-    _("drop files from working copy"), OPT_NONE)
+CMD(drop, N_("working copy"), N_("PATH..."),
+    N_("drop files from working copy"), OPT_EXECUTE)
 {
   if (args.size() < 1)
     throw usage(name);
@@ -1103,7 +1116,7 @@ CMD(drop, _("working copy"), _("PATH..."),
 
   vector<file_path> paths;
   for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
-    paths.push_back(app.prefix(*i));
+    paths.push_back(file_path_external(*i));
 
   build_deletions(paths, m_old, app, work);
 
@@ -1114,9 +1127,9 @@ CMD(drop, _("working copy"), _("PATH..."),
 
 ALIAS(rm, drop);
 
-CMD(rename, _("working copy"), _("SRC DST"),
-    _("rename entries in the working copy"),
-    OPT_NONE)
+CMD(rename, N_("working copy"), N_("SRC DST"),
+    N_("rename entries in the working copy"),
+    OPT_EXECUTE)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -1129,7 +1142,9 @@ CMD(rename, _("working copy"), _("SRC DST"),
   change_set::path_rearrangement work;
   get_path_rearrangement(work);
 
-  build_rename(app.prefix(idx(args, 0)()), app.prefix(idx(args, 1)()), m_old, work);
+  build_rename(file_path_external(idx(args, 0)),
+               file_path_external(idx(args, 1)),
+               m_old, app, work);
   
   put_path_rearrangement(work);
   
@@ -1141,7 +1156,7 @@ ALIAS(mv, rename)
 // fload and fmerge are simple commands for debugging the line
 // merger.
 
-CMD(fload, _("debug"), _(""), _("load file contents into db"), OPT_NONE)
+CMD(fload, N_("debug"), "", N_("load file contents into db"), OPT_NONE)
 {
   string s = get_stdin();
 
@@ -1154,8 +1169,8 @@ CMD(fload, _("debug"), _(""), _("load file contents into db"), OPT_NONE)
   dbw.consume_file_data(f_id, f_data);  
 }
 
-CMD(fmerge, _("debug"), _("<parent> <left> <right>"),
-    _("merge 3 files and output result"),
+CMD(fmerge, N_("debug"), N_("<parent> <left> <right>"),
+    N_("merge 3 files and output result"),
     OPT_NONE)
 {
   if (args.size() != 3)
@@ -1187,7 +1202,7 @@ CMD(fmerge, _("debug"), _("<parent> <left> <right>"),
   
 }
 
-CMD(status, _("informative"), _("[PATH]..."), _("show status of working copy"),
+CMD(status, N_("informative"), N_("[PATH]..."), N_("show status of working copy"),
     OPT_DEPTH % OPT_BRIEF)
 {
   revision_set rs;
@@ -1244,8 +1259,8 @@ CMD(status, _("informative"), _("[PATH]..."), _("show status of working copy"),
     }
 }
 
-CMD(identify, _("working copy"), _("[PATH]"),
-    _("calculate identity of PATH or stdin"),
+CMD(identify, N_("working copy"), N_("[PATH]"),
+    N_("calculate identity of PATH or stdin"),
     OPT_NONE)
 {
   if (!(args.size() == 0 || args.size() == 1))
@@ -1255,7 +1270,7 @@ CMD(identify, _("working copy"), _("[PATH]"),
 
   if (args.size() == 1)
     {
-      read_localized_data(file_path(idx(args, 0)()), dat, app.lua);
+      read_localized_data(file_path_external(idx(args, 0)), dat, app.lua);
     }
   else
     {
@@ -1267,10 +1282,10 @@ CMD(identify, _("working copy"), _("[PATH]"),
   cout << ident << endl;
 }
 
-CMD(cat, _("informative"),
-    _("(file|manifest|revision) [ID]\n"
+CMD(cat, N_("informative"),
+    N_("(file|manifest|revision) [ID]\n"
       "file REVISION FILENAME"),
-    _("write file, manifest, or revision from database to stdout"),
+    N_("write file, manifest, or revision from database to stdout"),
     OPT_NONE)
 {
   if (args.size() < 1 || args.size() > 3)
@@ -1292,11 +1307,17 @@ CMD(cat, _("informative"),
           N(app.db.file_version_exists(ident),
             F("no file version %s found in database") % ident);
         }
-      else
+      else if (args.size() == 3)
         {
           revision_id rid;
           complete(app, idx(args, 1)(), rid);
-          file_path fp = app.prefix(idx(args, 2));
+          // paths are interpreted as standard external ones when we're in a
+          // working copy, but as project-rooted external ones otherwise
+          file_path fp;
+          if (app.found_working_copy)
+            fp = file_path_external(idx(args, 2));
+          else
+            fp = file_path_internal_from_user(idx(args, 2));
           manifest_id mid;
           app.db.get_revision_manifest(rid, mid);
           manifest_map m;
@@ -1305,6 +1326,8 @@ CMD(cat, _("informative"),
           N(i != m.end(), F("no file '%s' found in revision '%s'\n") % fp % rid);
           ident = manifest_entry_id(i);
         }
+      else
+        throw usage(name);
       
       file_data dat;
       L(F("dumping file %s\n") % ident);
@@ -1372,15 +1395,17 @@ CMD(cat, _("informative"),
 }
 
 
-CMD(checkout, _("tree"), _("[DIRECTORY]\n"),
-    _("check out a revision from database into directory.\n"
+CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
+    N_("check out a revision from database into directory.\n"
     "If a revision is given, that's the one that will be checked out.\n"
     "Otherwise, it will be the head of the branch (given or implicit).\n"
     "If no directory is given, the branch name will be used as directory"),
     OPT_BRANCH_NAME % OPT_REVISION)
 {
   revision_id ident;
-  string dir;
+  system_path dir;
+  // we have a special case for "checkout .", i.e., to current dir
+  bool checkout_dot = false;
 
   if (args.size() > 1 || app.revision_selectors.size() > 1)
     throw usage(name);
@@ -1389,12 +1414,14 @@ CMD(checkout, _("tree"), _("[DIRECTORY]\n"),
     {
       // no checkout dir specified, use branch name for dir
       N(!app.branch_name().empty(), F("need --branch argument for branch-based checkout"));
-      dir = app.branch_name();
+      dir = system_path(app.branch_name());
     }
   else
     {
       // checkout to specified dir
-      dir = idx(args, 0)();
+      dir = system_path(idx(args, 0));
+      if (idx(args, 0) == utf8("."))
+        checkout_dot = true;
     }
 
   if (app.revision_selectors.size() == 0)
@@ -1434,6 +1461,10 @@ CMD(checkout, _("tree"), _("[DIRECTORY]\n"),
         % ident % app.branch_name);
     }
 
+  if (!checkout_dot)
+    require_path_is_nonexistent(dir,
+                                F("checkout directory '%s' already exists")
+                                % dir);
   app.create_working_copy(dir);
 
   transaction_guard guard(app.db);
@@ -1471,7 +1502,7 @@ CMD(checkout, _("tree"), _("[DIRECTORY]\n"),
 
 ALIAS(co, checkout)
 
-CMD(heads, _("tree"), _(""), _("show unmerged head revisions of branch"),
+CMD(heads, N_("tree"), "", N_("show unmerged head revisions of branch"),
     OPT_BRANCH_NAME)
 {
   set<revision_id> heads;
@@ -1621,7 +1652,7 @@ ls_unknown (app_state & app, bool want_ignored, vector<utf8> const & args)
 
   extract_path_set(m_new, known);
   file_itemizer u(app, known, unknown, ignored);
-  walk_tree(u);
+  walk_tree(file_path(), u);
 
   if (want_ignored)
     for (path_set::const_iterator i = ignored.begin(); i != ignored.end(); ++i)
@@ -1660,13 +1691,13 @@ ls_missing (app_state & app, vector<utf8> const & args)
 
   for (path_set::const_iterator i = new_paths.begin(); i != new_paths.end(); ++i)
     {
-      if (app.restriction_includes(*i) && !file_exists(*i))     
+      if (app.restriction_includes(*i) && !path_exists(*i))     
         cout << *i << endl;
     }
 }
 
-CMD(list, _("informative"), 
-    _("certs ID\n"
+CMD(list, N_("informative"), 
+    N_("certs ID\n"
       "keys [PATTERN]\n"
       "branches\n"
       "epochs [BRANCH [...]]\n"
@@ -1676,7 +1707,7 @@ CMD(list, _("informative"),
       "unknown\n"
       "ignored\n"
       "missing"),
-    _("show database objects, or the current working copy manifest,\n"
+    N_("show database objects, or the current working copy manifest,\n"
       "or unknown, intentionally ignored, or missing state files"),
     OPT_DEPTH)
 {
@@ -1713,8 +1744,8 @@ CMD(list, _("informative"),
 ALIAS(ls, list)
 
 
-CMD(mdelta, _("packet i/o"), _("OLDID NEWID"),
-    _("write manifest delta packet to stdout"),
+CMD(mdelta, N_("packet i/o"), N_("OLDID NEWID"),
+    N_("write manifest delta packet to stdout"),
     OPT_NONE)
 {
   if (args.size() != 2)
@@ -1728,9 +1759,9 @@ CMD(mdelta, _("packet i/o"), _("OLDID NEWID"),
   complete(app, idx(args, 0)(), m_old_id);
   complete(app, idx(args, 1)(), m_new_id);
 
-  N(app.db.manifest_version_exists(m_old_id), F("no such manifest %s") % m_old_id);
+  N(app.db.manifest_version_exists(m_old_id), F("no such manifest '%s'") % m_old_id);
   app.db.get_manifest(m_old_id, m_old);
-  N(app.db.manifest_version_exists(m_new_id), F("no such manifest %s") % m_new_id);
+  N(app.db.manifest_version_exists(m_new_id), F("no such manifest '%s'") % m_new_id);
   app.db.get_manifest(m_new_id, m_new);
 
   delta del;
@@ -1739,8 +1770,8 @@ CMD(mdelta, _("packet i/o"), _("OLDID NEWID"),
                             manifest_delta(del));
 }
 
-CMD(fdelta, _("packet i/o"), _("OLDID NEWID"),
-    _("write file delta packet to stdout"),
+CMD(fdelta, N_("packet i/o"), N_("OLDID NEWID"),
+    N_("write file delta packet to stdout"),
     OPT_NONE)
 {
   if (args.size() != 2)
@@ -1754,16 +1785,16 @@ CMD(fdelta, _("packet i/o"), _("OLDID NEWID"),
   complete(app, idx(args, 0)(), f_old_id);
   complete(app, idx(args, 1)(), f_new_id);
 
-  N(app.db.file_version_exists(f_old_id), F("no such file %s") % f_old_id);
+  N(app.db.file_version_exists(f_old_id), F("no such file '%s'") % f_old_id);
   app.db.get_file_version(f_old_id, f_old_data);
-  N(app.db.file_version_exists(f_new_id), F("no such file %s") % f_new_id);
+  N(app.db.file_version_exists(f_new_id), F("no such file '%s'") % f_new_id);
   app.db.get_file_version(f_new_id, f_new_data);
   delta del;
   diff(f_old_data.inner(), f_new_data.inner(), del);
   pw.consume_file_delta(f_old_id, f_new_id, file_delta(del));  
 }
 
-CMD(rdata, _("packet i/o"), _("ID"), _("write revision data packet to stdout"),
+CMD(rdata, N_("packet i/o"), N_("ID"), N_("write revision data packet to stdout"),
     OPT_NONE)
 {
   if (args.size() != 1)
@@ -1776,12 +1807,12 @@ CMD(rdata, _("packet i/o"), _("ID"), _("write revision data packet to stdout"),
 
   complete(app, idx(args, 0)(), r_id);
 
-  N(app.db.revision_exists(r_id), F("no such revision %s") % r_id);
+  N(app.db.revision_exists(r_id), F("no such revision '%s'") % r_id);
   app.db.get_revision(r_id, r_data);
   pw.consume_revision_data(r_id, r_data);  
 }
 
-CMD(mdata, _("packet i/o"), _("ID"), _("write manifest data packet to stdout"),
+CMD(mdata, N_("packet i/o"), N_("ID"), N_("write manifest data packet to stdout"),
     OPT_NONE)
 {
   if (args.size() != 1)
@@ -1794,13 +1825,13 @@ CMD(mdata, _("packet i/o"), _("ID"), _("write manifest data packet to stdout"),
 
   complete(app, idx(args, 0)(), m_id);
 
-  N(app.db.manifest_version_exists(m_id), F("no such manifest %s") % m_id);
+  N(app.db.manifest_version_exists(m_id), F("no such manifest '%s'") % m_id);
   app.db.get_manifest_version(m_id, m_data);
   pw.consume_manifest_data(m_id, m_data);  
 }
 
 
-CMD(fdata, _("packet i/o"), _("ID"), _("write file data packet to stdout"),
+CMD(fdata, N_("packet i/o"), N_("ID"), N_("write file data packet to stdout"),
     OPT_NONE)
 {
   if (args.size() != 1)
@@ -1813,13 +1844,13 @@ CMD(fdata, _("packet i/o"), _("ID"), _("write file data packet to stdout"),
 
   complete(app, idx(args, 0)(), f_id);
 
-  N(app.db.file_version_exists(f_id), F("no such file %s") % f_id);
+  N(app.db.file_version_exists(f_id), F("no such file '%s'") % f_id);
   app.db.get_file_version(f_id, f_data);
   pw.consume_file_data(f_id, f_data);  
 }
 
 
-CMD(certs, _("packet i/o"), _("ID"), _("write cert packets to stdout"),
+CMD(certs, N_("packet i/o"), N_("ID"), N_("write cert packets to stdout"),
     OPT_NONE)
 {
   if (args.size() != 1)
@@ -1837,7 +1868,7 @@ CMD(certs, _("packet i/o"), _("ID"), _("write cert packets to stdout"),
     pw.consume_revision_cert(idx(certs, i));
 }
 
-CMD(pubkey, _("packet i/o"), _("ID"), _("write public key packet to stdout"),
+CMD(pubkey, N_("packet i/o"), N_("ID"), N_("write public key packet to stdout"),
     OPT_NONE)
 {
   if (args.size() != 1)
@@ -1853,7 +1884,7 @@ CMD(pubkey, _("packet i/o"), _("ID"), _("write public key packet to stdout"),
   pw.consume_public_key(ident, key);
 }
 
-CMD(privkey, _("packet i/o"), _("ID"), _("write private key packet to stdout"),
+CMD(privkey, N_("packet i/o"), N_("ID"), N_("write private key packet to stdout"),
     OPT_NONE)
 {
   if (args.size() != 1)
@@ -1873,18 +1904,36 @@ CMD(privkey, _("packet i/o"), _("ID"), _("write private key packet to stdout"),
 }
 
 
-CMD(read, _("packet i/o"), _(""), _("read packets from stdin"),
+CMD(read, N_("packet i/o"), "[FILE1 [FILE2 [...]]]",
+    N_("read packets from files or stdin"),
     OPT_NONE)
 {
   packet_db_writer dbw(app, true);
-  size_t count = read_packets(cin, dbw);
-  N(count != 0, F("no packets found on stdin"));
+  size_t count = 0;
+  if (args.empty())
+    {
+      count += read_packets(cin, dbw);
+      N(count != 0, F("no packets found on stdin"));
+    }
+  else
+    {
+      for (std::vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
+        {
+          data dat;
+          read_data(system_path(*i), dat);
+          istringstream ss(dat());
+          count += read_packets(ss, dbw);
+        }
+      N(count != 0, FP("no packets found in given file",
+                       "no packets found in given files",
+                       args.size()));
+    }
   P(FP("read %d packet", "read %d packets", count) % count);
 }
 
 
-CMD(reindex, _("network"), _(""),
-    _("rebuild the indices used to sync over the network"),
+CMD(reindex, N_("network"), "",
+    N_("rebuild the indices used to sync over the network"),
     OPT_NONE)
 {
   if (args.size() > 0)
@@ -1972,8 +2021,8 @@ process_netsync_args(std::string const & name,
     }
 }
 
-CMD(push, _("network"), _("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
-    _("push branches matching PATTERN to netsync server at ADDRESS"),
+CMD(push, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
+    N_("push branches matching PATTERN to netsync server at ADDRESS"),
     OPT_SET_DEFAULT % OPT_EXCLUDE)
 {
   utf8 addr, include_pattern, exclude_pattern;
@@ -1987,8 +2036,8 @@ CMD(push, _("network"), _("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
                        include_pattern, exclude_pattern, app);  
 }
 
-CMD(pull, _("network"), _("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
-    _("pull branches matching PATTERN from netsync server at ADDRESS"),
+CMD(pull, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
+    N_("pull branches matching PATTERN from netsync server at ADDRESS"),
     OPT_SET_DEFAULT % OPT_EXCLUDE)
 {
   utf8 addr, include_pattern, exclude_pattern;
@@ -2001,8 +2050,8 @@ CMD(pull, _("network"), _("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
                        include_pattern, exclude_pattern, app);  
 }
 
-CMD(sync, _("network"), _("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
-    _("sync branches matching PATTERN with netsync server at ADDRESS"),
+CMD(sync, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
+    N_("sync branches matching PATTERN with netsync server at ADDRESS"),
     OPT_SET_DEFAULT % OPT_EXCLUDE)
 {
   utf8 addr, include_pattern, exclude_pattern;
@@ -2016,8 +2065,8 @@ CMD(sync, _("network"), _("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
                        include_pattern, exclude_pattern, app);  
 }
 
-CMD(serve, _("network"), _("ADDRESS[:PORTNUMBER] PATTERN ..."),
-    _("listen on ADDRESS and serve the specified branches to connecting clients"),
+CMD(serve, N_("network"), N_("ADDRESS[:PORTNUMBER] PATTERN ..."),
+    N_("listen on ADDRESS and serve the specified branches to connecting clients"),
     OPT_PIDFILE % OPT_EXCLUDE)
 {
   if (args.size() < 2)
@@ -2040,8 +2089,8 @@ CMD(serve, _("network"), _("ADDRESS[:PORTNUMBER] PATTERN ..."),
 }
 
 
-CMD(db, _("database"), 
-    _("init\n"
+CMD(db, N_("database"), 
+    N_("init\n"
       "info\n"
       "version\n"
       "dump\n"
@@ -2055,7 +2104,7 @@ CMD(db, _("database"),
       "changesetify\n"
       "rebuild\n"
       "set_epoch BRANCH EPOCH\n"), 
-    _("manipulate database state"),
+    N_("manipulate database state"),
     OPT_NONE)
 {
   if (args.size() == 1)
@@ -2108,8 +2157,8 @@ CMD(db, _("database"),
     throw usage(name);
 }
 
-CMD(attr, _("working copy"), _("set FILE ATTR VALUE\nget FILE [ATTR]\ndrop FILE"), 
-    _("set, get or drop file attributes"),
+CMD(attr, N_("working copy"), N_("set FILE ATTR VALUE\nget FILE [ATTR]\ndrop FILE"), 
+    N_("set, get or drop file attributes"),
     OPT_NONE)
 {
   if (args.size() < 2 || args.size() > 4)
@@ -2128,8 +2177,8 @@ CMD(attr, _("working copy"), _("set FILE ATTR VALUE\nget FILE [ATTR]\ndrop FILE"
       read_attr_map(attr_data, attrs);
     }
   
-  file_path path = app.prefix(idx(args,1)());
-  N(file_exists(path), F("file '%s' not found") % path);
+  file_path path = file_path_external(idx(args,1));
+  N(file_exists(path), F("no such file '%s'") % path);
 
   bool attrs_modified = false;
 
@@ -2235,8 +2284,8 @@ string_to_datetime(std::string const & s)
   I(false);
 }
 
-CMD(commit, _("working copy"), _("[PATH]..."), 
-    _("commit working copy to database"),
+CMD(commit, N_("working copy"), N_("[PATH]..."), 
+    N_("commit working copy to database"),
     OPT_BRANCH_NAME % OPT_MESSAGE % OPT_MSGFILE % OPT_DATE % OPT_AUTHOR % OPT_DEPTH)
 {
   string log_message("");
@@ -2266,8 +2315,10 @@ CMD(commit, _("working copy"), _("[PATH]..."),
   guess_branch(edge_old_revision(rs.edges.begin()), app, branchname);
 
   P(F("beginning commit on branch '%s'\n") % branchname);
-  L(F("new manifest %s\n") % rs.new_manifest);
-  L(F("new revision %s\n") % rid);
+  L(F("new manifest '%s'\n"
+      "new revision '%s'\n")
+    % rs.new_manifest
+    % rid);
 
   // can't have both a --message and a --message-file ...
   N(app.message().length() == 0 || app.message_file().length() == 0,
@@ -2297,7 +2348,7 @@ CMD(commit, _("working copy"), _("[PATH]..."),
     {
       get_log_message(rs, app, log_message);
       N(log_message.find_first_not_of(" \r\t\n") != string::npos,
-        F("empty log message"));
+        F("empty log message; commit canceled"));
       // we write it out so that if the commit fails, the log
       // message will be preserved for a retry
       write_user_log(data(log_message));
@@ -2565,8 +2616,8 @@ dump_diffs(change_set::delta_map const & deltas,
             {
               split_into_lines(data_old(), old_lines);
               split_into_lines(data_new(), new_lines);
-              make_diff(delta_entry_path(i)(), 
-                        delta_entry_path(i)(), 
+              make_diff(delta_entry_path(i).as_internal(), 
+                        delta_entry_path(i).as_internal(), 
                         delta_entry_src(i),
                         delta_entry_dst(i),
                         old_lines, new_lines,
@@ -2576,8 +2627,8 @@ dump_diffs(change_set::delta_map const & deltas,
     }
 }
 
-CMD(diff, _("informative"), _("[PATH]..."), 
-    _("show current diffs on stdout.\n"
+CMD(diff, N_("informative"), N_("[PATH]..."), 
+    N_("show current diffs on stdout.\n"
     "If one revision is given, the diff between the working directory and\n"
     "that revision is shown.  If two revisions are given, the diff between\n"
     "them is given.  If no format is specified, unified is used by default."),
@@ -2590,6 +2641,11 @@ CMD(diff, _("informative"), _("[PATH]..."),
   bool new_is_archived;
   diff_type type = app.diff_format;
   ostringstream header;
+
+  if (app.diff_args_provided)
+    N(app.diff_format == external_diff,
+      F("--diff-args requires --external\n"
+        "try adding --external or removing --diff-args?"));
 
   change_set composite;
 
@@ -2704,7 +2760,7 @@ CMD(diff, _("informative"), _("[PATH]..."),
     dump_diffs(composite.deltas, app, new_is_archived, type);
 }
 
-CMD(lca, _("debug"), _("LEFT RIGHT"), _("print least common ancestor"), OPT_NONE)
+CMD(lca, N_("debug"), N_("LEFT RIGHT"), N_("print least common ancestor"), OPT_NONE)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -2717,11 +2773,11 @@ CMD(lca, _("debug"), _("LEFT RIGHT"), _("print least common ancestor"), OPT_NONE
   if (find_least_common_ancestor(left, right, anc, app))
     std::cout << describe_revision(app, anc) << std::endl;
   else
-    std::cout << "no common ancestor found" << std::endl;
+    std::cout << _("no common ancestor found") << std::endl;
 }
 
 
-CMD(lcad, _("debug"), _("LEFT RIGHT"), _("print least common ancestor / dominator"),
+CMD(lcad, N_("debug"), N_("LEFT RIGHT"), N_("print least common ancestor / dominator"),
     OPT_NONE)
 {
   if (args.size() != 2)
@@ -2735,7 +2791,7 @@ CMD(lcad, _("debug"), _("LEFT RIGHT"), _("print least common ancestor / dominato
   if (find_common_ancestor_for_merge(left, right, anc, app))
     std::cout << describe_revision(app, anc) << std::endl;
   else
-    std::cout << "no common ancestor/dominator found" << std::endl;
+    std::cout << _("no common ancestor/dominator found") << std::endl;
 }
 
 
@@ -2783,8 +2839,8 @@ write_file_targets(change_set const & cs,
 //   cout << "change set '" << name << "'\n" << dat << endl;
 // }
 
-CMD(update, _("working copy"), _(""),
-    _("update working copy.\n"
+CMD(update, N_("working copy"), "",
+    N_("update working copy.\n"
     "If a revision is given, base the update on that revision.  If not,\n"
     "base the update on the head of the branch (given or implicit)."),
     OPT_BRANCH_NAME % OPT_REVISION)
@@ -2913,7 +2969,7 @@ CMD(update, _("working copy"), _(""),
       remaining = chosen_to_merged;
     }
   
-  local_path tmp_root((mkpath(book_keeping_dir) / mkpath("tmp")).string());
+  bookkeeping_path tmp_root = bookkeeping_root / "tmp";
   if (directory_exists(tmp_root))
     delete_dir_recursive(tmp_root);
 
@@ -3059,7 +3115,7 @@ try_one_merge(revision_id const & left_id,
 }                         
 
 
-CMD(merge, _("tree"), _(""), _("merge unmerged heads of branch"),
+CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
     OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR % OPT_LCA)
 {
   set<revision_id> heads;
@@ -3108,8 +3164,8 @@ CMD(merge, _("tree"), _(""), _("merge unmerged heads of branch"),
   P(F("note: your working copies have not been updated\n"));
 }
 
-CMD(propagate, _("tree"), _("SOURCE-BRANCH DEST-BRANCH"), 
-    _("merge from one branch to another asymmetrically"),
+CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"), 
+    N_("merge from one branch to another asymmetrically"),
     OPT_DATE % OPT_AUTHOR % OPT_LCA)
 {
   //   this is a special merge operator, but very useful for people maintaining
@@ -3193,17 +3249,17 @@ CMD(propagate, _("tree"), _("SOURCE-BRANCH DEST-BRANCH"),
     }
 }
 
-CMD(refresh_inodeprints, _("tree"), _(""), _("refresh the inodeprint cache"),
+CMD(refresh_inodeprints, N_("tree"), "", N_("refresh the inodeprint cache"),
     OPT_NONE)
 {
   enable_inodeprints();
   maybe_update_inodeprints(app);
 }
 
-CMD(explicit_merge, _("tree"),
-    _("LEFT-REVISION RIGHT-REVISION DEST-BRANCH\n"
+CMD(explicit_merge, N_("tree"),
+    N_("LEFT-REVISION RIGHT-REVISION DEST-BRANCH\n"
       "LEFT-REVISION RIGHT-REVISION COMMON-ANCESTOR DEST-BRANCH"),
-    _("merge two explicitly given revisions, placing result in given branch"),
+    N_("merge two explicitly given revisions, placing result in given branch"),
     OPT_DATE % OPT_AUTHOR)
 {
   revision_id left, right, ancestor;
@@ -3259,8 +3315,8 @@ CMD(explicit_merge, _("tree"),
   P(F("[merged] %s\n") % merged);
 }
 
-CMD(complete, _("informative"), _("(revision|manifest|file|key) PARTIAL-ID"),
-    _("complete partial id"),
+CMD(complete, N_("informative"), N_("(revision|manifest|file|key) PARTIAL-ID"),
+    N_("complete partial id"),
     OPT_VERBOSE)
 {
   if (args.size() != 2)
@@ -3316,8 +3372,8 @@ CMD(complete, _("informative"), _("(revision|manifest|file|key) PARTIAL-ID"),
 }
 
 
-CMD(revert, _("working copy"), _("[PATH]..."), 
-    _("revert file(s), dir(s) or entire working copy"), OPT_DEPTH)
+CMD(revert, N_("working copy"), N_("[PATH]..."), 
+    N_("revert file(s), dir(s) or entire working copy"), OPT_DEPTH)
 {
   manifest_map m_old;
   revision_id old_revision_id;
@@ -3376,8 +3432,8 @@ CMD(revert, _("working copy"), _("[PATH]..."),
 }
 
 
-CMD(rcs_import, _("debug"), _("RCSFILE..."),
-    _("parse versions in RCS files\n"
+CMD(rcs_import, N_("debug"), N_("RCSFILE..."),
+    N_("parse versions in RCS files\n"
       "this command doesn't reconstruct or import revisions.  you probably want cvs_import"),
     OPT_BRANCH_NAME)
 {
@@ -3387,18 +3443,18 @@ CMD(rcs_import, _("debug"), _("RCSFILE..."),
   for (vector<utf8>::const_iterator i = args.begin();
        i != args.end(); ++i)
     {
-      test_parse_rcs_file(mkpath((*i)()), app.db);
+      test_parse_rcs_file(system_path((*i)()), app.db);
     }
 }
 
 
-CMD(cvs_import, _("rcs"), _("CVSROOT"), _("import all versions in CVS repository"),
+CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS repository"),
     OPT_BRANCH_NAME)
 {
   if (args.size() != 1)
     throw usage(name);
 
-  import_cvs_repo(mkpath(idx(args, 0)()), app);
+  import_cvs_repo(system_path(idx(args, 0)()), app);
 }
 
 static void
@@ -3455,12 +3511,11 @@ log_certs(app_state & app, revision_id id, cert_name name)
 }
 
 
-CMD(annotate, _("informative"), _("PATH"),
-    _("print annotated copy of the file from REVISION"),
+CMD(annotate, N_("informative"), N_("PATH"),
+    N_("print annotated copy of the file from REVISION"),
     OPT_REVISION)
 {
   revision_id rid;
-  file_path file;
 
   if (app.revision_selectors.size() == 0)
     app.require_working_copy();
@@ -3468,7 +3523,7 @@ CMD(annotate, _("informative"), _("PATH"),
   if ((args.size() != 1) || (app.revision_selectors.size() > 1))
     throw usage(name);
 
-  file=file_path(idx(args, 0)());
+  file_path file = file_path_external(idx(args, 0));
   if (app.revision_selectors.size() == 0)
     get_revision_id(rid);
   else 
@@ -3486,15 +3541,15 @@ CMD(annotate, _("informative"), _("PATH"),
   app.db.get_manifest(rev.new_manifest, mm);
   manifest_map::const_iterator i = mm.find(file);
   N(i != mm.end(),
-    F("No such file '%s' in revision %s\n") % file % rid);
+    F("no such file '%s' in revision '%s'\n") % file % rid);
   file_id fid = manifest_entry_id(*i);
   L(F("annotate for file_id %s\n") % manifest_entry_id(*i));
 
   do_annotate(app, file, fid, rid);
 }
 
-CMD(log, _("informative"), _("[FILE]"),
-    _("print history in reverse order (filtering by 'FILE').  If one or more\n"
+CMD(log, N_("informative"), N_("[FILE]"),
+    N_("print history in reverse order (filtering by 'FILE').  If one or more\n"
     "revisions are given, use them as a starting point."),
     OPT_LAST % OPT_REVISION % OPT_BRIEF % OPT_DIFFS % OPT_NO_MERGES)
 {
@@ -3507,7 +3562,7 @@ CMD(log, _("informative"), _("[FILE]"),
     throw usage(name);
 
   if (args.size() > 0)
-     file=file_path(idx(args, 0)()); /* specified a file */
+    file = file_path_external(idx(args, 0)); /* specified a file */
 
   set< pair<file_path, revision_id> > frontier;
 
@@ -3548,7 +3603,7 @@ CMD(log, _("informative"), _("[FILE]"),
           file = i->first;
           rid = i->second;
 
-          bool print_this = file().empty();
+          bool print_this = file.empty();
           set<  revision<id> > parents;
           vector< revision<cert> > tmp;
 
@@ -3575,7 +3630,7 @@ CMD(log, _("informative"), _("[FILE]"),
               ancestors.insert(edge_old_revision(e));
 
               change_set const & cs = edge_changes(e);
-              if (! file().empty())
+              if (! file.empty())
                 {
                   if (cs.rearrangement.has_deleted_file(file) ||
                       cs.rearrangement.has_renamed_file_src(file))
@@ -3661,23 +3716,23 @@ CMD(log, _("informative"), _("[FILE]"),
     }
 }
 
-
-CMD(setup, _("tree"), _("DIRECTORY"), _("setup a new working copy directory"),
+CMD(setup, N_("tree"), N_("DIRECTORY"), N_("setup a new working copy directory"),
     OPT_BRANCH_NAME)
 {
-  string dir;
-
   if (args.size() != 1)
     throw usage(name);
 
-  dir = idx(args,0)();
+  N(!app.branch_name().empty(), F("need --branch argument for setup"));
+  app.db.ensure_open();
+
+  string dir = idx(args,0)();
   app.create_working_copy(dir);
   revision_id null;
   put_revision_id(null);
 }
 
-CMD(automate, _("automation"),
-    _("interface_version\n"
+CMD(automate, N_("automation"),
+    N_("interface_version\n"
       "heads [BRANCH]\n"
       "ancestors REV1 [REV2 [REV3 [...]]]\n"
       "attributes [FILE]\n"
@@ -3693,7 +3748,7 @@ CMD(automate, _("automation"),
       "stdio\n"
       "certs REV\n"
       "select SELECTOR\n"),
-    _("automation interface"), 
+    N_("automation interface"), 
     OPT_NONE)
 {
   if (args.size() == 0)
@@ -3707,8 +3762,8 @@ CMD(automate, _("automation"),
   automate_command(cmd, cmd_args, name, app, cout);
 }
 
-CMD(set, _("vars"), _("DOMAIN NAME VALUE"),
-    _("set the database variable NAME to VALUE, in domain DOMAIN"),
+CMD(set, N_("vars"), N_("DOMAIN NAME VALUE"),
+    N_("set the database variable NAME to VALUE, in domain DOMAIN"),
     OPT_NONE)
 {
   if (args.size() != 3)
@@ -3723,8 +3778,8 @@ CMD(set, _("vars"), _("DOMAIN NAME VALUE"),
   app.db.set_var(std::make_pair(d, n), v);
 }
 
-CMD(unset, _("vars"), _("DOMAIN NAME"),
-    _("remove the database variable NAME in domain DOMAIN"),
+CMD(unset, N_("vars"), N_("DOMAIN NAME"),
+    N_("remove the database variable NAME in domain DOMAIN"),
     OPT_NONE)
 {
   if (args.size() != 2)

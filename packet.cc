@@ -17,6 +17,7 @@
 #include "revision.hh"
 #include "sanity.hh"
 #include "transforms.hh"
+#include "keys.hh"
 
 using namespace std;
 using boost::shared_ptr;
@@ -982,7 +983,7 @@ packet_db_writer::consume_public_key(rsa_keypair_id const & ident,
     {
       base64<rsa_pub_key> tmp;
       pimpl->app.db.get_key(ident, tmp);
-      if (!(tmp() == k()))
+      if (!keys_match(ident, tmp, ident, k))
         W(F("key '%s' is not equal to key '%s' in database\n") % ident % ident);
       L(F("skipping existing public key %s\n") % ident);
     }
@@ -1506,7 +1507,7 @@ packet_roundabout_test()
     manifest_map mm;
     manifest_data mdata;
     manifest_id mid;
-    mm.insert(make_pair(file_path("foo/bar.txt"),
+    mm.insert(make_pair(file_path_internal("foo/bar.txt"),
                         file_id(hexenc<id>("cfb81b30ab3133a31b52eb50bd1c86df67eddec4"))));
     write_manifest_map(mm, mdata);
     calculate_ident(mdata, mid);
@@ -1517,9 +1518,9 @@ packet_roundabout_test()
     manifest_data mdata2;
     manifest_id mid2;
     manifest_delta mdelta;
-    mm2.insert(make_pair(file_path("foo/bar.txt"),
+    mm2.insert(make_pair(file_path_internal("foo/bar.txt"),
                          file_id(hexenc<id>("5b20eb5e5bdd9cd674337fc95498f468d80ef7bc"))));
-    mm2.insert(make_pair(file_path("bunk.txt"),
+    mm2.insert(make_pair(file_path_internal("bunk.txt"),
                          file_id(hexenc<id>("54f373ed07b4c5a88eaa93370e1bbac02dc432a8"))));
     write_manifest_map(mm2, mdata2);
     calculate_ident(mdata2, mid2);

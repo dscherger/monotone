@@ -43,20 +43,20 @@ sanity::~sanity()
 void 
 sanity::dump_buffer()
 {
-  if (filename != "")
+  if (!filename.empty())
     {
-      ofstream out(filename.c_str());
+      ofstream out(filename.as_external().c_str());
       if (out)
         {
           copy(logbuf.begin(), logbuf.end(), ostream_iterator<char>(out));
           copy(gasp_dump.begin(), gasp_dump.end(), ostream_iterator<char>(out));
-          ui.inform(string("wrote debugging log to ") + filename + "\n");
+          ui.inform((F("wrote debugging log to %s") % filename).str());
         }
       else
-        ui.inform("failed to write debugging log to " + filename + "\n");
+        ui.inform((F("failed to write debugging log to %s") % filename).str());
     }
   else
-    ui.inform(string("discarding debug log (maybe you want --debug or --dump?)\n"));
+    ui.inform("discarding debug log (maybe you want --debug or --dump?)");
 }
 
 void 
@@ -95,23 +95,29 @@ sanity::set_relaxed(bool rel)
   relaxed = rel;
 }
 
+string
+sanity::do_format(format const & fmt, char const * file, int line)
+{
+  try
+    {
+      return fmt.str();
+    }
+  catch (std::exception & e)
+    {
+      ui.inform(F("fatal: formatter failed on %s:%d: %s")
+		% file
+		% line
+		% e.what());
+      throw;
+    }
+}
+
+
 void 
 sanity::log(format const & fmt, 
             char const * file, int line)
 {
-  string str;
-  try 
-    {
-      str = fmt.str();
-    }
-  catch (std::exception & e)
-    {
-      ui.inform("fatal: formatter failed on " 
-                + string(file) 
-                + ":" + boost::lexical_cast<string>(line) 
-                + ": " + e.what());
-      throw e;
-    }
+  string str = do_format(fmt, file, line);
   
   if (str.size() > constants::log_line_sz)
     {
@@ -130,19 +136,8 @@ void
 sanity::progress(format const & fmt, 
                  char const * file, int line)
 {
-  string str;
-  try 
-    {
-      str = fmt.str();
-    }
-  catch (std::exception & e)
-    {
-      ui.inform("fatal: formatter failed on " 
-                + string(file) 
-                + ":" + boost::lexical_cast<string>(line) 
-                + ": " + e.what());
-      throw e;
-    }
+  string str = do_format(fmt, file, line);
+
   if (str.size() > constants::log_line_sz)
     {
       str.resize(constants::log_line_sz);
@@ -160,19 +155,8 @@ void
 sanity::warning(format const & fmt, 
                 char const * file, int line)
 {
-  string str;
-  try 
-    {
-      str = fmt.str();
-    }
-  catch (std::exception & e)
-    {
-      ui.inform("fatal: formatter failed on " 
-                + string(file) 
-                + ":" + boost::lexical_cast<string>(line) 
-                + ": " + e.what());
-      throw e;
-    }
+  string str = do_format(fmt, file, line);
+
   if (str.size() > constants::log_line_sz)
     {
       str.resize(constants::log_line_sz);
@@ -194,7 +178,7 @@ sanity::naughty_failure(string const & expr, format const & explain,
   string message;
   log(format("%s:%d: usage constraint '%s' violated\n") % file % line % expr,
       file.c_str(), line);
-  prefix_lines_with("misuse: ", explain.str(), message);
+  prefix_lines_with(_("misuse: "), explain.str(), message);
   throw informative_failure(message);
 }
 
@@ -205,7 +189,7 @@ sanity::error_failure(string const & expr, format const & explain,
   string message;
   log(format("%s:%d: detected error '%s' violated\n") % file % line % expr,
       file.c_str(), line);
-  prefix_lines_with("error: ", explain.str(), message);
+  prefix_lines_with(_("error: "), explain.str(), message);
   throw informative_failure(message);
 }
 

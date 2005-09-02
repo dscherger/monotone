@@ -100,8 +100,8 @@ get_passphrase(lua_hooks & lua,
           if (confirm_phrase)
             {
               ui.ensure_clean_line();
-              read_password(string("confirm passphrase for key ID [") + keyid() + "]: ",
-                            pass2, constants::maxpasswd);
+              read_password((F("confirm passphrase for key ID [%s]: ") % keyid()).str(),
+                              pass2, constants::maxpasswd);
               cout << endl;
               if (strlen(pass1) == 0 || strlen(pass2) == 0)
                 {
@@ -181,8 +181,10 @@ generate_key_pair(lua_hooks & lua,              // to hook for phrase
   // if all that worked, we can return our results to caller
   encode_base64(raw_priv_key, priv_out);
   encode_base64(raw_pub_key, pub_out);
-  L(F("generated %d-byte public key\n") % pub_out().size());
-  L(F("generated %d-byte (encrypted) private key\n") % priv_out().size());
+  L(F("generated %d-byte public key\n"
+      "generated %d-byte (encrypted) private key\n")
+    % pub_out().size()
+    % priv_out().size());
 }
 
 void
@@ -470,6 +472,32 @@ key_hash_code(rsa_keypair_id const & id,
 {
   data tdat(id() + ":" + remove_ws(priv()));
   calculate_ident(tdat, out);
+}
+
+// helper to compare if two keys have the same hash
+// (ie are the same key)
+bool 
+keys_match(rsa_keypair_id const & id1,
+           base64<rsa_pub_key> const & key1,
+           rsa_keypair_id const & id2,
+           base64<rsa_pub_key> const & key2)
+{
+  hexenc<id> hash1, hash2;
+  key_hash_code(id1, key1, hash1);
+  key_hash_code(id2, key2, hash2);
+  return hash1 == hash2;
+}
+
+bool 
+keys_match(rsa_keypair_id const & id1,
+           base64< arc4<rsa_priv_key> > const & key1,
+           rsa_keypair_id const & id2,
+           base64< arc4<rsa_priv_key> > const & key2)
+{
+  hexenc<id> hash1, hash2;
+  key_hash_code(id1, key1, hash1);
+  key_hash_code(id2, key2, hash2);
+  return hash1 == hash2;
 }
 
 void

@@ -30,6 +30,7 @@
 #include "ui.hh"
 #include "mt_version.hh"
 #include "options.hh"
+#include "paths.hh"
 
 // main option processing and exception handling code
 
@@ -66,6 +67,7 @@ struct poptOption coptions[] =
     {"external", 0, POPT_ARG_NONE, NULL, OPT_EXTERNAL_DIFF, gettext_noop("Use external diff hook for generating diffs"), NULL},
     {"diff-args", 0, POPT_ARG_STRING, &argstr, OPT_EXTERNAL_DIFF_ARGS, gettext_noop("Argument to pass external diff hook"), NULL},
     {"lca", 0, POPT_ARG_NONE, NULL, OPT_LCA, gettext_noop("Use least common ancestor as ancestor for merge"), NULL},
+    {"execute", 'e', POPT_ARG_NONE, NULL, OPT_EXECUTE, gettext_noop("Perform the associated file operation"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -261,6 +263,7 @@ cpp_main(int argc, char ** argv)
 
   // Set up secure memory allocation etc
   Botan::Init::initialize();
+  Botan::set_default_allocator("malloc");
   
   // decode all argv values into a UTF-8 array
 
@@ -317,15 +320,15 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_RCFILE:
-              app.add_rcfile(absolutify_for_command_line(tilde_expand(string(argstr))));
+              app.add_rcfile(string(argstr));
               break;
 
             case OPT_DUMP:
-              global_sanity.filename = absolutify(tilde_expand(string(argstr)));
+              global_sanity.filename = system_path(argstr);
               break;
 
             case OPT_DB_NAME:
-              app.set_database(absolutify(tilde_expand(string(argstr))));
+              app.set_database(system_path(argstr));
               break;
 
             case OPT_TICKER:
@@ -366,7 +369,7 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_MSGFILE:
-              app.set_message_file(absolutify_for_command_line(tilde_expand(string(argstr))));
+              app.set_message_file(string(argstr));
               break;
 
             case OPT_DATE:
@@ -378,7 +381,7 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_ROOT:
-              app.set_root(string(argstr));
+              app.set_root(system_path(argstr));
               break;
 
             case OPT_LAST:
@@ -410,7 +413,7 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_PIDFILE:
-              app.set_pidfile(absolutify(tilde_expand(string(argstr))));
+              app.set_pidfile(system_path(argstr));
               break;
 
             case OPT_ARGFILE:
@@ -435,6 +438,10 @@ cpp_main(int argc, char ** argv)
 
             case OPT_LCA:
               app.use_lca = true;
+              break;
+
+            case OPT_EXECUTE:
+              app.execute = true;
               break;
 
             case OPT_HELP:
@@ -521,7 +528,7 @@ cpp_main(int argc, char ** argv)
       if (count != 0)
         {
           ostringstream sstr;
-          sstr << "Options specific to 'monotone " << u.which << "':";
+          sstr << F("Options specific to 'monotone %s':") % u.which;
           options[0].descrip = strdup(sstr.str().c_str());
 
           options[0].argInfo |= POPT_ARGFLAG_DOC_HIDDEN;

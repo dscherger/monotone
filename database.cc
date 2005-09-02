@@ -15,8 +15,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #include <sqlite3.h>
 
@@ -61,7 +59,7 @@ extern "C" {
   const char *sqlite3_column_text_s(sqlite3_stmt*, int col);
 }
 
-database::database(fs::path const & fn) :
+database::database(system_path const & fn) :
   filename(fn),
   // nb. update this if you change the schema. unfortunately we are not
   // using self-digesting schemas due to comment irregularities and
@@ -131,28 +129,26 @@ database::set_app(app_state * app)
 }
 
 static void 
-check_sqlite_format_version(fs::path const & filename)
+check_sqlite_format_version(system_path const & filename)
 {
-  if (fs::exists(filename))
+  require_path_is_file(filename,
+                       F("database %s does not exist") % filename,
+                       F("%s is a directory, not a database") % filename);
+  
+  // sqlite 3 files begin with this constant string
+  // (version 2 files begin with a different one)
+  std::string version_string("SQLite format 3");
+  
+  std::ifstream file(filename.as_external().c_str());
+  N(file, F("unable to probe database version in file %s") % filename);
+  
+  for (std::string::const_iterator i = version_string.begin();
+       i != version_string.end(); ++i)
     {
-      N(!fs::is_directory(filename), 
-        F("database %s is a directory\n") % filename.string());
- 
-      // sqlite 3 files begin with this constant string
-      // (version 2 files begin with a different one)
-      std::string version_string("SQLite format 3");
-
-      std::ifstream file(filename.string().c_str());
-      N(file, F("unable to probe database version in file %s") % filename.string());
-
-      for (std::string::const_iterator i = version_string.begin();
-           i != version_string.end(); ++i)
-        {
-          char c;
-          file.get(c);
-          N(c == *i, F("database %s is not an sqlite version 3 file, "
-                       "try dump and reload") % filename.string());            
-        }
+      char c;
+      file.get(c);
+      N(c == *i, F("database %s is not an sqlite version 3 file, "
+                   "try dump and reload") % filename);            
     }
 }
 
@@ -166,7 +162,26 @@ assert_sqlite3_ok(sqlite3 *s)
   
   const char * errmsg = sqlite3_errmsg(s);
 
-  E(errcode == SQLITE_OK, F("sqlite error [%d]: %s") % errcode % errmsg);
+  // sometimes sqlite is not very helpful
+  // so we keep a table of errors people have gotten and more helpful versions
+  if (errcode != SQLITE_OK)
+    {
+      // first log the code so we can find _out_ what the confusing code
+      // was... note that code does not uniquely identify the errmsg, unlike
+      // errno's.
+      L(F("sqlite error: %d: %s") % errcode % errmsg);
+    }
+  std::string auxiliary_message = "";
+  if (errcode == SQLITE_ERROR)
+    {
+      auxiliary_message = _("make sure database and containing directory are writeable");
+    }
+  // if the last message is empty, the \n will be stripped off too
+  E(errcode == SQLITE_OK,
+    // kind of string surgery to avoid ~duplicate strings
+    boost::format("%s\n%s")
+                  % (F("sqlite error: %d: %s") % errcode % errmsg).str()
+                  % auxiliary_message);
 }
 
 struct sqlite3 * 
@@ -174,22 +189,18 @@ database::sql(bool init)
 {
   if (! __sql)
     {
-      N(!filename.empty(), F("no database specified"));
+      check_filename();
 
       if (! init)
         {
-          N(fs::exists(filename), 
-            F("database %s does not exist") % filename.string());
-          N(!fs::is_directory(filename), 
-            F("database %s is a directory") % filename.string());
+          require_path_is_file(filename,
+                               F("database %s does not exist") % filename,
+                               F("database %s is a directory") % filename);
+          check_sqlite_format_version(filename);
         }
 
-      check_sqlite_format_version(filename);
-      int error;
-      error = sqlite3_open(filename.string().c_str(), &__sql);
-      if (error)
-        throw oops(string("could not open database: ") + filename.string() + 
-                   (": " + string(sqlite3_errmsg(__sql))));
+      open();
+
       if (init)
         {
           sqlite3_exec(__sql, schema_constant, NULL, NULL, NULL);
@@ -209,15 +220,16 @@ database::initialize()
   if (__sql)
     throw oops("cannot initialize database while it is open");
 
-  N(!fs::exists(filename),
-    F("could not initialize database: %s: already exists") 
-    % filename.string());
+  require_path_is_nonexistent(filename,
+                              F("could not initialize database: %s: already exists") 
+                              % filename);
 
-  fs::path journal = mkpath(filename.string() + "-journal");
-  N(!fs::exists(journal),
-    F("existing (possibly stale) journal file '%s' "
-      "has same stem as new database '%s'")
-    % journal.string() % filename.string());
+  system_path journal(filename.as_internal() + "-journal");
+  require_path_is_nonexistent(journal,
+                              F("existing (possibly stale) journal file '%s' "
+                                "has same stem as new database '%s'\n"
+                                "cancelling database creation")
+                              % journal % filename);
 
   sqlite3 *s = sql(true);
   I(s != NULL);
@@ -330,14 +342,12 @@ database::load(istream & in)
   char buf[constants::bufsz];
   string tmp;
 
-  N(filename.string() != "",
-    F("need database name"));
-  N(!fs::exists(filename),
-    F("cannot create %s; it already exists\n") % filename.string());
-  int error = sqlite3_open(filename.string().c_str(), &__sql);
-  if (error)
-    throw oops(string("could not open database: ") + filename.string() + 
-               (string(sqlite3_errmsg(__sql))));
+  check_filename();
+
+  require_path_is_nonexistent(filename,
+                              F("cannot create %s; it already exists") % filename);
+
+  open();
 
   while(in)
     {
@@ -353,7 +363,8 @@ database::load(istream & in)
       tmp.erase(0, len);
     }
 
-  sqlite3_exec(__sql, tmp.c_str(), NULL, NULL, NULL);
+  if (!tmp.empty())
+    sqlite3_exec(__sql, tmp.c_str(), NULL, NULL, NULL);
   assert_sqlite3_ok(__sql);
 }
 
@@ -376,87 +387,91 @@ database::debug(string const & sql, ostream & out)
     }
 }
 
+
+namespace
+{
+  unsigned long
+  add(unsigned long count, unsigned long & total)
+  {
+    total += count;
+    return count;
+  }
+}
+
 void 
 database::info(ostream & out)
 {
   string id;
   calculate_schema_id(sql(), id);
-  unsigned long space = 0, tmp;
-  out << "schema version    : " << id << endl;
 
-  out << "counts:" << endl;
-  out << "  full manifests  : " << count("manifests") << endl;
-  out << "  manifest deltas : " << count("manifest_deltas") << endl;
-  out << "  full files      : " << count("files") << endl;
-  out << "  file deltas     : " << count("file_deltas") << endl;
-  out << "  revisions       : " << count("revisions") << endl;
-  out << "  ancestry edges  : " << count("revision_ancestry") << endl;
-  out << "  certs           : " << count("revision_certs") << endl;
+  unsigned long total = 0UL;
 
-  out << "bytes:" << endl;
-  // FIXME: surely there is a less lame way to do this, that doesn't require
-  // updating every time the schema changes?
-  tmp = space_usage("manifests", "id || data");
-  space += tmp;
-  out << "  full manifests  : " << tmp << endl;
+#define SPACE_USAGE(TABLE, COLS) add(space_usage(TABLE, COLS), total)
 
-  tmp = space_usage("manifest_deltas", "id || base || delta");
-  space += tmp;
-  out << "  manifest deltas : " << tmp << endl;
+  out << \
+    F("schema version    : %s\n"
+      "counts:\n"
+      "  full manifests  : %u\n"
+      "  manifest deltas : %u\n"
+      "  full files      : %u\n"
+      "  file deltas     : %u\n"
+      "  revisions       : %u\n"
+      "  ancestry edges  : %u\n"
+      "  certs           : %u\n"
+      "bytes:\n"
+      "  full manifests  : %u\n"
+      "  manifest deltas : %u\n"
+      "  full files      : %u\n"
+      "  file deltas     : %u\n"
+      "  revisions       : %u\n"
+      "  cached ancestry : %u\n"
+      "  certs           : %u\n"
+      "  total           : %u\n"
+      )
+    % id
+    // counts
+    % count("manifests")
+    % count("manifest_deltas")
+    % count("files")
+    % count("file_deltas")
+    % count("revisions")
+    % count("revision_ancestry")
+    % count("revision_certs")
+    // bytes
+    % SPACE_USAGE("manifests", "id || data")
+    % SPACE_USAGE("manifest_deltas", "id || base || delta")
+    % SPACE_USAGE("files", "id || data")
+    % SPACE_USAGE("file_deltas", "id || base || delta")
+    % SPACE_USAGE("revisions", "id || data")
+    % SPACE_USAGE("revision_ancestry", "parent || child")
+    % SPACE_USAGE("revision_certs", "hash || id || name || value || keypair || signature")
+    % total;
 
-  tmp = space_usage("files", "id || data");
-  space += tmp;
-  out << "  full files      : " << tmp << endl;
-
-  tmp = space_usage("file_deltas", "id || base || delta");
-  space += tmp;
-  out << "  file deltas     : " << tmp << endl;
-
-  tmp = space_usage("revisions", "id || data");
-  space += tmp;
-  out << "  revisions       : " << tmp << endl;
-
-  tmp = space_usage("revision_ancestry", "parent || child");
-  space += tmp;
-  out << "  cached ancestry : " << tmp << endl;
-
-  tmp = space_usage("revision_certs", "hash || id || name || value || keypair || signature");
-  space += tmp;
-  out << "  certs           : " << tmp << endl;
-
-  out << "  total           : " << space << endl;
+#undef SPACE_USAGE
 }
 
 void 
 database::version(ostream & out)
 {
   string id;
-  N(filename.string() != "",
-    F("need database name"));
-  int error = sqlite3_open(filename.string().c_str(), &__sql);
-  if (error)
-    {
-      sqlite3_close(__sql);
-      throw oops(string("could not open database: ") + filename.string() + 
-                 (": " + string(sqlite3_errmsg(__sql))));
-    }
+
+  check_filename();
+  open();
+
   calculate_schema_id(__sql, id);
+
   sqlite3_close(__sql);
-  out << "database schema version: " << id << endl;
+
+  out << F("database schema version: %s") % id << endl;
 }
 
 void 
 database::migrate()
 {  
-  N(filename.string() != "",
-    F("need database name"));
-  int error = sqlite3_open(filename.string().c_str(), &__sql);
-  if (error)
-    {
-      sqlite3_close(__sql);
-      throw oops(string("could not open database: ") + filename.string() + 
-                 (": " + string(sqlite3_errmsg(__sql))));
-    }
+  check_filename();
+
+  open();
+
   migrate_monotone_schema(__sql);
   sqlite3_close(__sql);
 }
@@ -660,11 +675,11 @@ database::fetch(results & res,
 // general application-level logic
 
 void 
-database::set_filename(fs::path const & file)
+database::set_filename(system_path const & file)
 {
   if (__sql)
     {
-      throw oops("cannot change filename to " + file.string() + " while db is open");
+      throw oops((F("cannot change filename to %s while db is open") % file).str());
     }
   filename = file;
 }
@@ -850,7 +865,7 @@ struct version_cache
     while (!cache.empty() 
            && use + dat().size() > capacity)
       {      
-        std::string key = (F("%08.8x%08.8x%08.8x%08.8x%08.8x") 
+        std::string key = (boost::format("%08.8x%08.8x%08.8x%08.8x%08.8x") 
                            % rand() % rand() % rand() % rand() % rand()).str();
         std::map<hexenc<id>, data>::const_iterator i;
         i = cache.lower_bound(hexenc<id>(key));
@@ -2428,6 +2443,26 @@ database::get_branches(vector<string> & names)
         names.push_back(name());
       }
 }
+
+
+void
+database::check_filename()
+{
+  N(!filename.empty(), F("no database specified"));
+}
+
+
+void
+database::open()
+{
+  int error;
+
+  error = sqlite3_open(filename.as_external().c_str(), &__sql);
+
+  N(!error, (F("could not open database '%s': %s")
+             % filename % string(sqlite3_errmsg(__sql))));
+}
+
 
 // transaction guards
 
