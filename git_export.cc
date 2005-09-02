@@ -474,7 +474,7 @@ get_branch_ancestry(string const &branch, app_state &app,
   queue<revision_id> frontier;
 
   set<revision_id> heads;
-  get_branch_heads(git.branch, app, heads);
+  get_branch_heads(branch, app, heads);
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
     frontier.push(*i);
