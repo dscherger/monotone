@@ -155,7 +155,7 @@ git_staging::git_staging(git_history *g)
   close(fd);
   delete_file(system_path(tmpfile));
 
-  N(mkdir(tmpfile.c_str(), 0700) == 0, F("mkdir(%s) failed") % tmpfile);
+  E(mkdir(tmpfile.c_str(), 0700) == 0, F("mkdir(%s) failed") % tmpfile);
 
 
   path = system_path(tmpfile);
@@ -176,7 +176,7 @@ git_staging::blob_save(data const &blob)
   string blobpath = (path / "blob").as_external();
   {
     ofstream file(blobpath.c_str(), ios_base::out | ios_base::trunc | ios_base::binary);
-    N(file, F("cannot open file %s for writing") % blobpath);
+    E(file, F("cannot open file %s for writing") % blobpath);
     Botan::Pipe pipe(new Botan::DataSink_Stream(file));
     pipe.process_msg(blob());
   }
@@ -185,14 +185,14 @@ git_staging::blob_save(data const &blob)
 
   string cmdline("cd '" + strpath + "' && git-update-cache --add blob");
   L(F("Invoking: %s") % cmdline);
-  N(system(cmdline.c_str()) == 0, F("Adding '%s' failed") % blobpath);
+  E(system(cmdline.c_str()) == 0, F("Adding '%s' failed") % blobpath);
 
   filebuf fb;
   capture_git_cmd_output(F("cd '%s' && git-ls-files --stage") % strpath, fb);
   istream stream(&fb);
   string line;
   stream_grabline(stream, line);
-  N(line.length() >= 40, F("Invalid generated index, containing: '%s'") % line);
+  E(line.length() >= 40, F("Invalid generated index, containing: '%s'") % line);
   git_object_id gitoid(line.substr(line.find(" ") + 1, 40));
 
   delete_file(index_file);
@@ -219,14 +219,14 @@ git_staging::tree_save(set<shared_ptr<git_tree_entry> > const &entries)
       cmdline += " '" + (*i)->path.as_external() + "' ";
     }
   L(F("Invoking: %s") % cmdline);
-  N(system(cmdline.c_str()) == 0, F("Writing tree index failed"));
+  E(system(cmdline.c_str()) == 0, F("Writing tree index failed"));
 
   filebuf fb;
   capture_git_cmd_output(F("git-write-tree"), fb);
   istream stream(&fb);
   string line;
   stream_grabline(stream, line);
-  N(line.length() == 40, F("Invalid git-write-tree output: %s") % line);
+  E(line.length() == 40, F("Invalid git-write-tree output: %s") % line);
   git_object_id gittid(line);
 
   delete_file(index_file);
@@ -267,7 +267,7 @@ git_staging::commit_save(git_object_id const &tree,
   istream stream(&fb);
   string line;
   stream_grabline(stream, line);
-  N(line.length() == 40, F("Invalid git-commit-tree output: %s") % line);
+  E(line.length() == 40, F("Invalid git-commit-tree output: %s") % line);
   git_object_id gitcid(line);
   return gitcid;
 }
@@ -375,7 +375,7 @@ historical_monorev_to_gitrev(git_history &git, app_state &app,
   cert_name commitid_name(gitcommit_id_cert_name);
   string commitid;
   load_cert(app, rid, commitid_name, commitid);
-  N(!commitid.empty(), F("Current commit's parent %s was not imported yet?!") % rid.inner());
+  E(!commitid.empty(), F("Current commit's parent %s was not imported yet?!") % rid.inner());
   gitrid = git_object_id(commitid);
 }
 
