@@ -32,6 +32,47 @@
 	of the GIT project itself, although it takes its time.
 	* commands.cc: git_import command.
 
+2005-09-01  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* lua.cc, std_hooks.lua: use proper regexes for .mt-ignore
+	taken from a patch from Martin Dvorak
+	* contrib/monotone-cvs-ignore.lua: New file, from the same patch.
+	supports .cvsignore files
+	* tests/t_mt_ignore.at: check that a missing .mt-ignore
+	doesn't cause problems
+
+2005-09-01  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_mt_ignore.at: use RAW_MONOTONE instead of ugly --rcfile
+	Also actually do "mtn add" this time.
+
+2005-09-01  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_mt_ignore.at: new test, checks that .mt-ignore works
+	* testsuite.at: add it
+
+2005-09-01  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* std_hooks.lua: support .mt-ignore
+	* monotone.texi: mention .mt-ignore and MT/wanted-testresults under
+	"Existing control files"
+	* .mt-ignore: ignore testsuite.dir
+
+2005-09-01  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* ui.cc (user_interface): Avoid calling sync_with_stdio(false) on
+	Win32 for now to work around a bug in MinGW where unsynchronized
+	std::cin returns EOF earlier when reading a stream with DOS
+	newlines.  Resolves 'db load' failure reported by Howard Spindel.
+	* database.cc (load): Don't bother executing an empty string.
+	* commands.cc (ALIAS(import, setup)): Remove alias.
+
+2005-09-01  Matt Johnston  <matt@ucc.asn.au>
+
+	* schema.sql: add BEGIN, COMMIT to make it a single transaction,
+	improves db init performance significantly on OS X (avoids many
+	disk-cache flushes).
+
 2005-09-01  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* testsuite.at: Increase entropy used to generate port numbers
@@ -50,9 +91,10 @@
 
 2005-08-31  Richard Levitte  <richard@levitte.org>
 
-	* lua.cc, std_hooks.lua: Rename monotone_guess_binary_filename_for_lua
-	and guess_binary_filename to monotone_guess_binary_file_contents_for_lua
-	and guess_binary_file_contents.
+	* lua.cc, std_hooks.lua: Rename
+	monotone_guess_binary_filename_for_lua and guess_binary_filename
+	to monotone_guess_binary_file_contents_for_lua and
+	guess_binary_file_contents.
 
 2005-08-31  Nathaniel Smith  <njs@pobox.com>
 
@@ -63,16 +105,6 @@
 2005-08-30  Benoît Dejean  <benoit@placenet.org>
 
 	* file_io.cc (walk_tree): Fixed format.
-
-	Someone should fix these new warnings for ppl with signed chars.
-
-	In function void set_char_is_binary(char, bool)
-	133: warning: array subscript has type char
-	In function void init_char_is_binary()
-	147: warning: comparison between signed and unsigned integer expressions
-	In function bool guess_binary(const std::string&)
-	160: warning: comparison between signed and unsigned integer expressions
-	162: warning: array subscript has type char
 
 2005-08-31  Marcel van der Boom  <marcel@hsdev.com>
 
