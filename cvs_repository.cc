@@ -506,7 +506,7 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
       if (fn==newm.end())
       {  
         L(F("deleting file '%s'\n") % f->first);              
-        cs.delete_file(f->first);
+        cs.delete_file(file_path_internal(f->first));
         cvs_delta[f->first]=remove_state;
       }
       else 
@@ -520,7 +520,7 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
               L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % fn->first % f->second->sha1sum % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              cs.apply_delta(fn->first, f->second->sha1sum, fn->second->sha1sum);
+              cs.apply_delta(file_path_internal(fn->first), f->second->sha1sum, fn->second->sha1sum);
               cvs_delta[f->first]=fn->second;
             }
         }  
@@ -532,7 +532,7 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
       {  
         L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum().empty());
-        cs.add_file(f->first, f->second->sha1sum);
+        cs.add_file(file_path_internal(f->first), f->second->sha1sum);
         cvs_delta[f->first]=f->second;
       }
     }
@@ -1081,7 +1081,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
             i!=cs.rearrangement.deleted_files.end(); ++i)
     { commit_arg a;
-      a.file=(*i)();
+      a.file=i->as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.removed=true;
@@ -1095,7 +1095,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
                             =cs.rearrangement.renamed_files.begin();
             i!=cs.rearrangement.renamed_files.end(); ++i)
     { commit_arg a; // remove
-      a.file=i->first();
+      a.file=i->first.as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.removed=true;
@@ -1105,7 +1105,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       L(F("rename from %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
       
       a=commit_arg(); // add
-      a.file=i->second();
+      a.file=i->second.as_internal();
       I(!old->second->sha1sum().empty());
       file_data dat;
       app.db.get_file_version(old->second->sha1sum,dat);
@@ -1120,7 +1120,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
             i!=cs.deltas.end(); ++i)
     { 
       commit_arg a;
-      a.file=i->first();
+      a.file=i->first.as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       if (old!=parent_manifest.end())
       { a.old_revision=old->second->cvs_version;
@@ -1151,7 +1151,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
         fs.log_msg=e.changelog;
         fs.author=e.author;
         fs.keyword_substitution=i->second.second;
-        change_set::delta_map::const_iterator mydelta=cs.deltas.find(i->first);
+        change_set::delta_map::const_iterator mydelta=cs.deltas.find(file_path_internal(i->first));
         I(mydelta!=cs.deltas.end());
         fs.sha1sum=mydelta->second.second.inner();
         std::pair<std::set<file_state>::iterator,bool> newelem=
@@ -1397,7 +1397,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           e.xfiles.insert(std::make_pair(path,cfs)); // remove_state));
         }
         else
-        { manifest_map::const_iterator iter_file_id=manifest.find(monotone_path);
+        { manifest_map::const_iterator iter_file_id=manifest.find(file_path_internal(monotone_path));
           I(iter_file_id!=manifest.end());
           fs.sha1sum=iter_file_id->second.inner();
           fs.log_msg=e.changelog;
@@ -1738,7 +1738,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         // @@ import the file and check whether it is (un-)changed
         fs.log_msg="initial cvs content";
         data new_data;
-        read_localized_data(filename, new_data, app.lua);
+        read_localized_data(file_path_internal(filename), new_data, app.lua);
         store_contents(new_data, fs.sha1sum);
         f->second.known_states.insert(fs);
       }
@@ -1786,7 +1786,7 @@ void cvs_repository::takeover()
 //  I(!mkdir("MT",0777));
 //  app.create_working_copy(".");
 //  app.write_options();
-  app.create_working_copy(".");
+  app.create_working_copy(system_path("."));
 #if 0  
   local_path mt(app.book_keeping_dir);
 
