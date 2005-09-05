@@ -1147,7 +1147,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
       writestr("Unchanged "+bname+"\n");
     }
-    else I(file_revisions.size()==1); // this is only designed to work this way
+//    else I(file_revisions.size()==1); // this is only designed to work this way
   }
   if (file_revisions.size()==1 && !file_revisions.begin()->new_revision.empty())
   { if (file_revisions.begin()->old_revision.empty())
