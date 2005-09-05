@@ -524,7 +524,7 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
             !app.db.public_key_exists(idx(certs, i).key))
-          P(F("warning: no public key '%s' found in database\n")
+          P(F("no public key '%s' found in database")
             % idx(certs, i).key);
         checked.insert(idx(certs, i).key);
       }
@@ -663,7 +663,7 @@ kill_rev_locally(app_state& app, std::string const& id)
   revision_id ident;
   complete(app, id, ident);
   N(app.db.revision_exists(ident),
-    F("no revision %s found in database") % ident);
+    F("no such revision '%s'") % ident);
 
   //check that the revision does not have any children
   set<revision_id> children;
@@ -1283,113 +1283,45 @@ CMD(identify, N_("working copy"), N_("[PATH]"),
 }
 
 CMD(cat, N_("informative"),
-    N_("(file|manifest|revision) [ID]\n"
-      "file REVISION FILENAME"),
-    N_("write file, manifest, or revision from database to stdout"),
-    OPT_NONE)
+    N_("FILENAME"),
+    N_("write file from database to stdout"),
+    OPT_REVISION)
 {
-  if (args.size() < 1 || args.size() > 3)
+  if (args.size() != 1)
     throw usage(name);
-  if (args.size() == 3 && idx(args, 0)() != "file")
-    throw usage(name);
+
+  if (app.revision_selectors.size() == 0)
+    app.require_working_copy();
 
   transaction_guard guard(app.db);
 
-  if (idx(args, 0)() == "file")
-    {
-      file_id ident;
-      if (args.size() == 1)
-        throw usage(name);
-      else if (args.size() == 2)
-        {
-          complete(app, idx(args, 1)(), ident);
-          
-          N(app.db.file_version_exists(ident),
-            F("no file version %s found in database") % ident);
-        }
-      else if (args.size() == 3)
-        {
-          revision_id rid;
-          complete(app, idx(args, 1)(), rid);
-          // paths are interpreted as standard external ones when we're in a
-          // working copy, but as project-rooted external ones otherwise
-          file_path fp;
-          if (app.found_working_copy)
-            fp = file_path_external(idx(args, 2));
-          else
-            fp = file_path_internal_from_user(idx(args, 2));
-          manifest_id mid;
-          app.db.get_revision_manifest(rid, mid);
-          manifest_map m;
-          app.db.get_manifest(mid, m);
-          manifest_map::const_iterator i = m.find(fp);
-          N(i != m.end(), F("no file '%s' found in revision '%s'\n") % fp % rid);
-          ident = manifest_entry_id(i);
-        }
-      else
-        throw usage(name);
-      
-      file_data dat;
-      L(F("dumping file %s\n") % ident);
-      app.db.get_file_version(ident, dat);
-      cout.write(dat.inner()().data(), dat.inner()().size());
-    }
-  else if (idx(args, 0)() == "manifest")
-    {
-      manifest_data dat;
-      manifest_id ident;
-
-      if (args.size() == 1)
-        {
-          revision_set rev;
-          manifest_map m_old, m_new;
-
-          app.require_working_copy();
-          calculate_unrestricted_revision(app, rev, m_old, m_new);
-
-          calculate_ident(m_new, ident);
-          write_manifest_map(m_new, dat);
-        }
-      else
-        {
-          complete(app, idx(args, 1)(), ident);
-          N(app.db.manifest_version_exists(ident),
-            F("no manifest version %s found in database") % ident);
-          app.db.get_manifest_version(ident, dat);
-        }
-
-      L(F("dumping manifest %s\n") % ident);
-      cout.write(dat.inner()().data(), dat.inner()().size());
-    }
-
-  else if (idx(args, 0)() == "revision")
-    {
-      revision_data dat;
-      revision_id ident;
-
-      if (args.size() == 1)
-        {
-          revision_set rev;
-          manifest_map m_old, m_new;
-
-          app.require_working_copy();
-          calculate_unrestricted_revision(app, rev, m_old, m_new);
-          calculate_ident(rev, ident);
-          write_revision_set(rev, dat);
-        }
-      else
-        {
-          complete(app, idx(args, 1)(), ident);
-          N(app.db.revision_exists(ident),
-            F("no revision %s found in database") % ident);
-          app.db.get_revision(ident, dat);
-        }
-
-      L(F("dumping revision %s\n") % ident);
-      cout.write(dat.inner()().data(), dat.inner()().size());
-    }
+  file_id ident;
+  revision_id rid;
+  if (app.revision_selectors.size() == 0)
+    get_revision_id(rid);
   else 
-    throw usage(name);
+    complete(app, idx(app.revision_selectors, 0)(), rid);
+  N(app.db.revision_exists(rid), F("no such revision '%s'") % rid);
+
+  // paths are interpreted as standard external ones when we're in a
+  // working copy, but as project-rooted external ones otherwise
+  file_path fp;
+  if (app.found_working_copy)
+    fp = file_path_external(idx(args, 0));
+  else
+    fp = file_path_internal_from_user(idx(args, 0));
+  manifest_id mid;
+  app.db.get_revision_manifest(rid, mid);
+  manifest_map m;
+  app.db.get_manifest(mid, m);
+  manifest_map::const_iterator i = m.find(fp);
+  N(i != m.end(), F("no file '%s' found in revision '%s'\n") % fp % rid);
+  ident = manifest_entry_id(i);
+  
+  file_data dat;
+  L(F("dumping file %s\n") % ident);
+  app.db.get_file_version(ident, dat);
+  cout.write(dat.inner()().data(), dat.inner()().size());
 
   guard.commit();
 }
@@ -1439,7 +1371,7 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
       // use specified revision
       complete(app, idx(app.revision_selectors, 0)(), ident);
       N(app.db.revision_exists(ident),
-        F("no revision %s found in database") % ident);
+        F("no such revision '%s'") % ident);
       
       cert_value b;
       guess_branch(ident, app, b);
@@ -2273,13 +2205,9 @@ string_to_datetime(std::string const & s)
         tmp.erase(pos, 1);
       return boost::posix_time::from_iso_string(tmp);
     }
-  catch (std::out_of_range &e)
+  catch (std::exception &e)
     {
       N(false, F("failed to parse date string '%s': %s") % s % e.what());
-    }
-  catch (std::exception &)
-    {
-      N(false, F("failed to parse date string '%s'") % s);
     }
   I(false);
 }
@@ -2674,7 +2602,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       manifest_map m_old;
       complete(app, idx(app.revision_selectors, 0)(), r_old_id);
       N(app.db.revision_exists(r_old_id),
-        F("revision %s does not exist") % r_old_id);
+        F("no such revision '%s'") % r_old_id);
       app.db.get_revision(r_old_id, r_old);
       calculate_unrestricted_revision(app, r_new, m_old, m_new);
       I(r_new.edges.size() == 1 || r_new.edges.size() == 0);
@@ -2689,10 +2617,10 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       complete(app, idx(app.revision_selectors, 0)(), r_old_id);
       complete(app, idx(app.revision_selectors, 1)(), r_new_id);
       N(app.db.revision_exists(r_old_id),
-        F("revision %s does not exist") % r_old_id);
+        F("no such revision '%s'") % r_old_id);
       app.db.get_revision(r_old_id, r_old);
       N(app.db.revision_exists(r_new_id),
-        F("revision %s does not exist") % r_new_id);
+        F("no such revision '%s'") % r_new_id);
       app.db.get_revision(r_new_id, r_new);
       app.db.get_revision_manifest(r_new_id, m_new_id);
       app.db.get_manifest(m_new_id, m_new);
@@ -2890,7 +2818,7 @@ CMD(update, N_("working copy"), "",
     {
       complete(app, app.revision_selectors[0](), r_chosen_id);
       N(app.db.revision_exists(r_chosen_id),
-        F("no revision %s found in database") % r_chosen_id);
+        F("no such revision '%s'") % r_chosen_id);
     }
 
   notify_if_multiple_heads(app);
@@ -3747,7 +3675,10 @@ CMD(automate, N_("automation"),
       "inventory\n"
       "stdio\n"
       "certs REV\n"
-      "select SELECTOR\n"),
+      "select SELECTOR\n"
+      "get_file ID\n"
+      "get_manifest [ID]\n"
+      "get_revision [ID]\n"),
     N_("automation interface"), 
     OPT_NONE)
 {
