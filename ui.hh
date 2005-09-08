@@ -86,6 +86,8 @@ public:
   void set_tick_writer(tick_writer * t_writer);
   void ensure_clean_line();
 
+  const std::locale user_locale;
+
 private:  
   std::set<std::string> issued_warnings;  
 
