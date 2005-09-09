@@ -9,14 +9,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
+//#include <sys/socket.h>
+//#include <netdb.h>
+//#include <netinet/in.h>
 #include "sanity.hh"
 #include "cvs_client.hh"
 #include <boost/lexical_cast.hpp>
 #include <netxx/stream.h>
 
+#if 0
 // copied from netsync.cc from the ssh branch
 static pid_t pipe_and_fork(int *fd1,int *fd2)
 { pid_t result=-1;
@@ -51,6 +52,7 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
 #endif  
   return result;
 }
+#endif
 
 void cvs_client::writestr(const std::string &s, bool flush)
 { if (s.size()) L(F("writestr(%s") % s); // s mostly contains the \n char
@@ -300,7 +302,7 @@ void cvs_client::connect()
       if (gethostname(domainname,sizeof domainname))
         throw oops("gethostname "+std::string(strerror(errno)));
       domainname[sizeof(domainname)-1]=0;
-#ifndef __sun
+#if !defined(__sun) && !defined(WIN32)
       unsigned len=strlen(domainname);
       if (len && len<sizeof(domainname)-2)
       { domainname[len]='.';
@@ -550,12 +552,18 @@ static time_t timezone2time_t(const struct tm &tm, int offset_min)
   result=timegm(&tm);
 #else // ugly
   const char *tz=getenv("TZ");
+#ifdef WIN32
+  putenv("TZ=UTC");
+#else
   setenv("TZ","",true);
+#endif
   tzset();
   result=mktime(const_cast<struct tm*>(&tm));
+#ifndef WIN32
   if (tz) setenv("TZ", tz, true);
   else unsetenv("TZ");
   tzset();
+#endif
 #endif
 //  L(F("result %ld\n") % result);
   return result;

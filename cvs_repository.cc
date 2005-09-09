@@ -14,6 +14,10 @@
 #include <fstream>
 #include <sys/stat.h>
 
+#ifdef WIN32
+#define sleep(x) _sleep(x)
+#endif
+
 #define BACKWARD_COMPATIBLE
 
 using namespace std;
