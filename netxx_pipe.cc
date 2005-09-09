@@ -57,6 +57,7 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
+#include <netxx/streamserver.h>
 #endif
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
@@ -146,7 +147,7 @@ Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
 #else
   return ::read(readfd,buffer,length);
 #endif
-}
+	}
 
 Netxx::signed_size_type Netxx::PipeStream::write(const void *buffer, size_type length)
 { return ::write(writefd,buffer,length);
@@ -237,13 +238,21 @@ void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
 }
 
 void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
-{ try
+{ // L(F("PCP::add()\n"));
+  try
   { add(const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
+    // L(F("... was a pipe\n"));
   }
   catch (...)
   { assert(!is_pipe);
     Probe::add(sb,rt);
+    // L(F("... was a socket\n"));
   }
+}
+
+void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
+{ assert(!ip_pipe);
+  Probe::add(ss,rt);
 }
 #endif
 

@@ -3448,7 +3448,7 @@ call_server(protocol_role role,
 }
 
 static void 
-arm_sessions_and_calculate_probe(Netxx::Probe & probe,
+arm_sessions_and_calculate_probe(Netxx::PipeCompatibleProbe & probe,
                                  map<Netxx::socket_type, shared_ptr<session> > & sessions,
                                  set<Netxx::socket_type> & armed_sessions)
 {
@@ -3626,7 +3626,7 @@ serve_connections(protocol_role role,
                   unsigned long timeout_seconds,
                   unsigned long session_limit)
 {
-  Netxx::Probe probe;  
+  Netxx::PipeCompatibleProbe probe;  
 
   Netxx::Timeout 
     forever, 
