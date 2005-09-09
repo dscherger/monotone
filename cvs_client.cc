@@ -299,9 +299,13 @@ void cvs_client::connect()
     { // get localhost's name
       char domainname[1024];
       *domainname=0;
+#ifdef WIN32
+      strcpy(domainname,"localhost"); // gethostname does not work here ...
+#else
       if (gethostname(domainname,sizeof domainname))
         throw oops("gethostname "+std::string(strerror(errno)));
       domainname[sizeof(domainname)-1]=0;
+#endif
 #if !defined(__sun) && !defined(WIN32)
       unsigned len=strlen(domainname);
       if (len && len<sizeof(domainname)-2)
