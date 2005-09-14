@@ -26,6 +26,9 @@ class ReadableFS:
     def exists(self, filename):
         raise NotImplementedError
 
+    def size(self, filename):
+        raise NotImplementedError
+
 
 class WriteableFS (ReadableFS):
     # returns an object that supports write(), flush(), close() with standard
@@ -38,7 +41,12 @@ class WriteableFS (ReadableFS):
     def put(self, files):
         raise NotImplementedError
 
-    def delete(self, filename):
+    # in case put() cannot be made atomic (ftp, ntfs, maybe other situations),
+    # puts should still be done in a way that they can be rolled back.
+    # This function checks for puts that were not completed, and if any are
+    # found, rolls them back.
+    # files is an iterable of filenames
+    def rollback_interrupted_puts(self, filenames):
         raise NotImplementedError
 
     # returns true if mkdir succeeded, false if failed
@@ -49,8 +57,6 @@ class WriteableFS (ReadableFS):
     def rmdir(self, filename):
         raise NotImplementedError
 
-    def truncate(self, filename, length):
-        raise NotImplementedError
 
 class LocalReadableFS(ReadableFS):
     def __init__(self, dir):
@@ -82,6 +88,9 @@ class LocalReadableFS(ReadableFS):
     def exists(self, filename):
         return os.path.exists(self._fname(filename))
 
+    def size(self, filename):
+        return os.stat(self._fname(filename)).st_size
+
 class LocalWriteableFs(LocalReadableFS, WriteableFS):
     def open_append(self, filename):
         return open(self._fname(filename), "ab")
@@ -94,8 +103,9 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
             tmph.close()
             os.rename(tmpname, self._fname(fn))
 
-    def delete(self, filename):
-        os.unlink(self._fname(filename))
+    def rollback_interrupted_puts(self, filenames):
+        # we have atomic put
+        pass
 
     def mkdir(self, filename):
         try:
@@ -106,6 +116,3 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
 
     def rmdir(self, filename):
         os.rmdir(self._fname(filename))
-
-    def truncate(self, filename, length):
-        open(self._fname(filename), "ab").truncate(length)
