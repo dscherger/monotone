@@ -20,12 +20,20 @@ class ReadableFS:
     # bytes is an iterable of pairs (offset, length)
     # this is a generator
     # it yields nested tuples ((offset, length), data)
+    # subclasses should implement _real_fetch_bytes which has the same API;
+    # but will receive massaged (seek-optimized) arguments
     def fetch_bytes(self, filename, bytes):
+        # FIXME: implement block coalescing/decoalescing, and sort to optimize
+        # seeks.
+        return self._real_fetch_bytes(filename, bytes)
+
+    def _real_fetch_bytes(self, filename, bytes):
         raise NotImplementedError
 
     def exists(self, filename):
         raise NotImplementedError
 
+    # Must return 0 for non-existent files
     def size(self, filename):
         raise NotImplementedError
 
@@ -89,7 +97,10 @@ class LocalReadableFS(ReadableFS):
         return os.path.exists(self._fname(filename))
 
     def size(self, filename):
-        return os.stat(self._fname(filename)).st_size
+        try:
+            return os.stat(self._fname(filename)).st_size
+        except OSError:
+            return 0
 
 class LocalWriteableFs(LocalReadableFS, WriteableFS):
     def open_append(self, filename):
@@ -110,7 +121,7 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
     def mkdir(self, filename):
         try:
             os.mkdir(self._fname(filename))
-        except IOError:
+        except OSError:
             return 0
         return 1
 
