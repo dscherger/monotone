@@ -16,8 +16,8 @@ class HashFile:
     def get(self, item):
         return self.items[item]
 
-    def __in__(self, item):
-        return item in self.items
+    def __contains__(self, item):
+        return self.items.has_key(item)
 
     def assign(self, item, values):
         assert len(values) == len(self.values)
@@ -45,7 +45,7 @@ class HashFile:
         for key, values in self:
             value_txt = " ".join([str(v) for v in values])
             lines.append("%s %s %s" % (self.prefix, key, value_txt))
-        return zlib.compress("".join(lines))
+        return zlib.compress("\n".join(lines))
 
     # yields (key, values)
     def new_in_me(self, versus):
@@ -198,6 +198,7 @@ class MerkleDir:
         child_hashes = self._get_child_hashes(bins.iterkeys())
         for k in bins.iterkeys():
             for id, location in bins[k]:
+                assert id not in child_hashes[k]
                 child_hashes[k].assign(id, location)
         print ("writing hashes for %s new ids to %s hash files"
                % (len(self._ids_to_flush), len(bins)))
@@ -228,11 +229,26 @@ class MerkleDir:
     # (FIXME: perhaps should split this up more; for large chunks (e.g.,
     # initial imports) this will load the entire chunk into memory)
     def all_chunks(self):
-        id_to_locations = dict(self._all_chunk_locations())
-        if id_to_locations:
+        return self.get_chunks(self._all_chunk_locations())
+
+    # id_locations is an iterable over (id, location) tuples
+    # yields (id, data) tuples
+    def get_chunks(self, id_locations):
+        locations_to_ids = {}
+        for id, location in id_locations:
+            if location[1] == 0:
+                # just go ahead and process null-length chunks directly,
+                # rather than calling fetch_bytes on them -- these are the
+                # only chunks for which the location->chunk map may not be
+                # one-to-one.
+                yield (id, "")
+            else:
+                assert not locations_to_ids.has_key(location)
+                locations_to_ids[location] = id
+        if locations_to_ids:
             for loc, data in self._fs.fetch_bytes(self._data_file,
-                                                  id_to_locations.values()):
-                yield id_to_locations[loc], data
+                                                  locations_to_ids.keys()):
+                yield locations_to_ids[loc], data
 
     def flush(self):
         if self._locked:
@@ -247,18 +263,16 @@ class MerkleDir:
             target_root = target._get_root_hash()
             new_stuff = list(source_root.new_or_different_in_me(target_root))
             source_children = self._get_child_hashes(new_stuff)
-            target_children = self._get_child_hashes(new_stuff)
+            target_children = target._get_child_hashes(new_stuff)
             locations = {}
             for prefix in new_stuff:
-                new_in_source = source_children[prefix].new_in_me(target_children[prefix])
-                for id, location in new_in_source:
-                    locations[location] = id
-                for source_location, data in self._fs.fetch_bytes(self._data_file,
-                                                                  locations.keys()):
-                    id = locations[source_location]
-                target.add(id, data)
-                if new_chunk_callback is not None:
-                    new_chunk_callback(id, data)
+                source_hash = source_children[prefix]
+                target_hash = target_children[prefix]
+                new_in_source = list(source_hash.new_in_me(target_hash))
+                for id, data in self.get_chunks(new_in_source):
+                    target.add(id, data)
+                    if new_chunk_callback is not None:
+                        new_chunk_callback(id, data)
             target.flush()
             target.commit()
         except:
