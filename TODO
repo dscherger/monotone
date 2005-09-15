@@ -2,6 +2,7 @@
 * merkle dir stuff that doesn't require loading entire chunks into
    memory all the time
 * ftp/sftp/http
+   - with pipelining
 * possibly better rollback stuff?
   - e.g., truncate when possible
   - include some info in the lockdir on who has things locked, to aid

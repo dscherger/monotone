@@ -309,6 +309,10 @@ class MerkleDir:
     def all_chunks(self):
         return self.get_chunks(self._all_chunk_locations())
 
+    def all_ids(self):
+        for id, location in self._all_chunk_locations():
+            yield id
+
     # id_locations is an iterable over (id, location) tuples
     # yields (id, data) tuples
     def get_chunks(self, id_locations):

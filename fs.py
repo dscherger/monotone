@@ -3,6 +3,12 @@
 import os
 import os.path
 
+def readable_fs_for_url(url):
+    return LocalReadableFS(url)
+
+def writeable_fs_for_url(url):
+    return LocalWriteableFs(url)
+
 class ReadableFS:
     # All operators are blocking
 
@@ -33,15 +39,17 @@ class ReadableFS:
     def exists(self, filename):
         raise NotImplementedError
 
-    # Must return 0 for non-existent files
-    def size(self, filename):
-        raise NotImplementedError
-
 
 class WriteableFS (ReadableFS):
     # returns an object that supports write(), flush(), close() with standard
     # file object semantics
     def open_append(self, filename):
+        raise NotImplementedError
+
+    # Must return 0 for non-existent files
+    # you might think this was a ReadableFS sort of thing, except that it's
+    # only used in conjunction with open_append.
+    def size(self, filename):
         raise NotImplementedError
 
     # files is a map {filename -> contents of file}
