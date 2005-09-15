@@ -1,3 +1,53 @@
+2005-09-14  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/ciabot_monotone_hookversion.py: CIA bot client script
+	meant to be called from the note_netsync_revision_received hook.
+	* lua.{cc,hh}: hook_note_commit and hook_note_netsync_revision_received
+	now take the text of the revision as an argument.
+	* netsync.cc, commands.cc: Give hooks new argument.
+	* monotone.texi: Update documentation for those hooks.
+
+2005-09-11  Benoît Dejean  <benoit@placenet.org>
+
+	* database.cc
+	* database_check.cc
+	* netsync.cc
+	* po/POTFILES.in
+	* po/POTFILES.skip
+	* rcs_import.cc: More i18n strings.
+
+2005-09-07  Jim Meyering  <jim@meyering.net>
+	
+	* tests/t_rename_dir_cross_level.at: When invoking mv to rename
+	a directory, do not include a trailing slash on the target -- that
+	is not portable.                                                  
+                       
+	* Makefile.am (TESTS_ENVIRONMENT): Ensure that PATH starts with
+	the current directory, so we test the just-built monotone binary,
+	not some older version.                                          
+
+2005-09-07  Benoît Dejean  <benoit@placenet.org>
+
+	* std_hooks.lua: Don't spawn emacs with '-no-init-file'.
+
+2005-09-09  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* paths.cc (save_initial_path): Default Boost's fs::path to
+	fs::native grammar.
+	* tests/t_unreadable_{db,MT}.at: Disable on Win32 for now.
+	* paths.cc: Consistency--use WIN32 rather than _WIN32.
+	* file_io.cc (walk_tree): Correct test for file existence.
+
+2005-09-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* Makefile.am: Add '-f' argument to 'mv'; avoids build waiting on
+	 user confirmation in some cases.
+
+2005-09-08  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Certificates): Remove mention of fcerts and
+	mcerts.
+
 2005-09-07  Benoît Dejean  <benoit@placenet.org>
 
 	* ui.{cc,hh}: Added user_inferface::user_locale.
