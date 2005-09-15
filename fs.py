@@ -14,6 +14,9 @@ def readable_fs_for_url(url):
     elif scheme in ("http", "https", "ftp"):
         import fs_http
         return fs_http.HTTPReadableFS(url)
+    elif scheme == "sftp":
+        import fs_sftp
+        return fs_sftp.SFTPReadableFS(host, path)
     else:
         raise BadURL, url
 
@@ -21,6 +24,9 @@ def writeable_fs_for_url(url):
     (scheme, host, path, param, query, frag) = urlparse(url, "file")
     if scheme == "file":
         return LocalWriteableFs(path)
+    elif scheme == "sftp":
+        import fs_sftp
+        return fs_sftp.SFTPWriteableFS(host, path)
     else:
         raise BadURL, url
 
@@ -116,15 +122,15 @@ class LocalReadableFS(ReadableFS):
             f.seek(offset)
             yield ((offset, length), f.read(length))
 
+class LocalWriteableFs(LocalReadableFS, WriteableFS):
+    def open_append(self, filename):
+        return open(self._fname(filename), "ab")
+
     def size(self, filename):
         try:
             return os.stat(self._fname(filename)).st_size
         except OSError:
             return 0
-
-class LocalWriteableFs(LocalReadableFS, WriteableFS):
-    def open_append(self, filename):
-        return open(self._fname(filename), "ab")
 
     def put(self, filenames):
         for fn, data in filenames.iteritems():
