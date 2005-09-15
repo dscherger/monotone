@@ -79,7 +79,7 @@ import zlib
 #       -- check for any missing files left by non-atomic renames
 #       -- remove the lockdir
 
-class HashFile:
+class _HashFile:
     prefix = ""
     values = ()
 
@@ -138,12 +138,12 @@ class HashFile:
             elif versus.get(key) != value:
                 yield key
 
-class RootHash(HashFile):
+class _RootHash(_HashFile):
     prefix = "subtree"
     values = ("hash",)
     value_type = str
 
-class ChildHash(HashFile):
+class _ChildHash(_HashFile):
     prefix = "chunk"
     values = ("offset", "length")
     value_type = int
@@ -213,7 +213,7 @@ class MerkleDir:
         if self._root_hash is not None:
             return self._root_hash
         data = self._fs.fetch([self._hashes_prefix])[self._hashes_prefix]
-        self._root_hash = RootHash()
+        self._root_hash = _RootHash()
         if data is not None:
             self._root_hash.load(data)
         return self._root_hash
@@ -224,7 +224,7 @@ class MerkleDir:
         self._fs.put({self._hashes_prefix: obj.export()})
 
     # pass an iterable of prefixes
-    # returns a dict {prefix -> ChildHash object}
+    # returns a dict {prefix -> _ChildHash object}
     def _get_child_hashes(self, prefixes):
         child_hashes = {}
         needed = []
@@ -236,7 +236,7 @@ class MerkleDir:
         if needed:
             datas = self._fs.fetch([self._hashes_prefix + n for n in needed])
             for fname, data in datas.items():
-                ch = ChildHash()
+                ch = _ChildHash()
                 if data is not None:
                     ch.load(data)
                 prefix = fname[len(self._hashes_prefix):]

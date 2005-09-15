@@ -5,6 +5,22 @@ import re
 class MonotoneError (Exception):
     pass
 
+class Feeder:
+    def __init__(self, process):
+        self.process = process
+
+    # this is technically broken; we might deadlock.
+    # subprocess.Popen.communicate uses threads to do this; that'd be
+    # better.
+    def write(self, data):
+        self.process.stdin.write(data)
+
+    def close(self):
+        self.process.stdin.close()
+        stdout, stderr = process.communicate()
+        if process.returncode:
+            raise MonotoneError, stderr
+
 class Monotone:
     def __init__(self, db, executable="monotone"):
         self.db = db
@@ -70,20 +86,12 @@ class Monotone:
         return stdout
 
     # feeds stuff into 'monotone read'
-    def feed(self, iterator):
+    def feeder(self):
         process = subprocess.Popen([self.executable, "--db", self.db, "read"],
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        # this is technically broken; we might deadlock.
-        # subprocess.Popen.communicate uses threads to do this; that'd be
-        # better.
-        for chunk in iterator:
-            process.stdin.write(chunk)
-        process.stdin.close()
-        stdout, stderr = process.communicate()
-        if process.returncode:
-            raise MonotoneError, stderr
+        return Feeder(process)
 
     # copied wholesale from viewmtn (08fd7bf8143512bfcabe5f65cf40013e10b89d28)'s
     # monotone.py.  hacked to remove the []s from hash values, and to leave in

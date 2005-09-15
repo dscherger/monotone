@@ -3,20 +3,20 @@ from sets import Set
 import os
 import os.path
 from cStringIO import StringIO
-import merkle_dir
-import fs
+from merkle_dir import MerkleDir
+from fs import readable_fs_for_url, writeable_fs_for_url
 import zlib
 
 def do_full_import(monotone, url):
     monotone.ensure_db()
-    md = merkle_dir.MerkleDir(fs.readable_fs_for_url(url))
-    def all_data():
-        for id, data in md.all_chunks():
-            yield zlib.decompress(data)
-    monotone.feed(all_data())
+    md = MerkleDir(readable_fs_for_url(url))
+    feeder = monotone.feeder()
+    for id, data in md.all_chunks():
+        feeder.write(zlib.decompress(data))
+    feeder.close()
 
 def do_export(monotone, url):
-    md = merkle_dir.MerkleDir(fs.writeable_fs_for_url(url))
+    md = MerkleDir(writeable_fs_for_url(url))
     md.begin()
     curr_ids = Set(md.all_ids())
     for rid in monotone.toposort(monotone.revisions_list()):
@@ -60,3 +60,49 @@ def do_export(monotone, url):
                     rdata.write(monotone.get_file_packet(new_fid))
             md.add(rid, zlib.compress(rdata.getvalue()))
     md.commit()
+
+
+def do_push(monotone, local_url, target_url):
+    print "Exporting changes from monotone db to %s" % (local_url,)
+    do_export(monotone, local_url)
+    print "Pushing changes from %s to %s" % (local_url, target_url)
+    local_md = MerkleDir(readable_fs_for_url(local_url))
+    target_md = MerkleDir(writeable_fs_for_url(target_url))
+    added = 0
+    def count_new(id, data):
+        added += 1
+    local_md.push(target_md, count_new)
+    print "Pushed %s packets to %s" % (added, target_url)
+
+def do_pull(monotone, local_url, source_url):
+    print "Pulling changes from %s to %s" % (source_url, local_url)
+    local_md = MerkleDir(writeable_fs_for_url(local_url))
+    source_md = MerkleDir(readable_fs_for_url(source_url))
+    feeder = monotone.feeder()
+    added = 0
+    def feed_new(id, data):
+        feeder.write(zlib.decompress(data))
+        added += 1
+    local_md.pull(source_md, feed_new)
+    feeder.close()
+    print "Pulled and imported %s packets from %s" % (added, source_url)
+
+def do_sync(monotone, local_url, other_url):
+    print "Exporting changes from monotone db to %s" % (local_url,)
+    do_export(monotone, local_url)
+    print "Synchronizing %s and %s" % (local_url, other_url)
+    local_md = MerkleDir(writeable_fs_for_url(local_url))
+    other_md = MerkleDir(writeable_fs_for_url(other_url))
+    feeder = monotone.feeder()
+    pulled = 0
+    pushed = 0
+    def feed_pull(id, data):
+        feeder.write(zlib.decompress(data))
+        pulled += 1
+    def count_push(id, data):
+        pushed += 1
+    local_md.sync(other_md, feed_pull, count_push)
+    feeder.close()
+    print "Pulled and imported %s packets from %s" % (pulled, other_url)
+    print "Pushed %s packets to %s" % (pushed, other_url)
+
