@@ -280,7 +280,7 @@ class MerkleDir:
             raise
 
     def pull(self, source, new_chunk_callback=None):
-        source.push(self, new_chunk_callback=new_chunk_callback)
+        source.push(self, new_chunk_callback)
 
     def sync(self, other,
              new_self_chunk_callback=None, new_other_chunk_callback=None):

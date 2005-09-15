@@ -41,6 +41,15 @@ def new_in(thing, versus):
             new[key] = val
     return new
 
+class expecting_callback:
+    def __init__(self, in_source, in_target):
+        self.expected = new_in(in_source, in_target)
+    def __call__(self, id, data):
+        assert self.expected[id] == data
+        del self.expected[id]
+    def check_done(self):
+        assert len(self.expected) == 0
+
 def run_tests():
     random.seed(0)
 
@@ -81,13 +90,26 @@ def run_tests():
                 verb = random.choice(["push", "pull", "sync", "nothing"])
                 print "%s(%s, %s)" % (verb, subject_name, object_name)
                 if verb == "push":
-                    subject.push(object)
+                    new_in_subj_callback = expecting_callback(in_subject,
+                                                              in_object)
+                    subject.push(object, new_in_subj_callback)
+                    new_in_subj_callback.check_done()
                     in_object.update(in_subject)
                 elif verb == "pull":
-                    subject.pull(object)
+                    new_in_obj_callback = expecting_callback(in_object,
+                                                             in_subject)
+                    subject.pull(object, new_in_obj_callback)
+                    new_in_obj_callback.check_done()
                     in_subject.update(in_object)
                 elif verb == "sync":
-                    subject.sync(object)
+                    new_in_subj_callback = expecting_callback(in_subject,
+                                                              in_object)
+                    new_in_obj_callback = expecting_callback(in_object,
+                                                             in_subject)
+                    subject.sync(object,
+                                 new_in_obj_callback, new_in_subj_callback)
+                    new_in_subj_callback.check_done()
+                    new_in_obj_callback.check_done()
                     in_subject.update(in_object)
                     in_object.update(in_subject)
                 elif verb == "nothing":
