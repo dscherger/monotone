@@ -8,7 +8,7 @@ class HTTPReadableFS(fs.ReadableFS):
         self.url = url
 
     def _url(self, filename):
-        return FIXME
+        return urlparse.urljoin(self.url, filename)
 
     def open_read(self, filename):
         return urlgrabber.urlopen(self._url(filename))

@@ -1,13 +1,28 @@
 # interface to FS-like things
 
+import urlparse
 import os
 import os.path
 
+class BadURL(Exception):
+    pass
+
 def readable_fs_for_url(url):
-    return LocalReadableFS(url)
+    (scheme, host, path, param, query, frag) = urlparse(url, "file")
+    if scheme == "file":
+        return LocalReadableFS(path)
+    elif scheme in ("http", "https", "ftp"):
+        import fs_http
+        return fs_http.HTTPReadableFS(url)
+    else:
+        raise BadURL, url
 
 def writeable_fs_for_url(url):
-    return LocalWriteableFs(url)
+    (scheme, host, path, param, query, frag) = urlparse(url, "file")
+    if scheme == "file":
+        return LocalWriteableFs(path)
+    else:
+        raise BadURL, url
 
 class ReadableFS:
     # All operators are blocking
