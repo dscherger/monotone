@@ -147,7 +147,7 @@ Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
 #else
   return ::read(readfd,buffer,length);
 #endif
-	}
+}
 
 Netxx::signed_size_type Netxx::PipeStream::write(const void *buffer, size_type length)
 { return ::write(writefd,buffer,length);
