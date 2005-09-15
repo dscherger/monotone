@@ -171,6 +171,7 @@ class MerkleDir:
     
     def begin(self):
         if not self._locked:
+            self._fs.ensure_dir()
             if not self._fs.mkdir(self._lock_file):
                 raise LockError
             # okay, we succeeded in getting the write lock.  Let's open things

@@ -36,9 +36,6 @@ class ReadableFS:
     def _real_fetch_bytes(self, filename, bytes):
         raise NotImplementedError
 
-    def exists(self, filename):
-        raise NotImplementedError
-
 
 class WriteableFS (ReadableFS):
     # returns an object that supports write(), flush(), close() with standard
@@ -73,6 +70,9 @@ class WriteableFS (ReadableFS):
     def rmdir(self, filename):
         raise NotImplementedError
 
+    # ensure that the directory that this fs is running over exists, etc.
+    def ensure_dir(self):
+        raise NotImplementedError
 
 class LocalReadableFS(ReadableFS):
     def __init__(self, dir):
@@ -100,9 +100,6 @@ class LocalReadableFS(ReadableFS):
         for offset, length in bytes:
             f.seek(offset)
             yield ((offset, length), f.read(length))
-
-    def exists(self, filename):
-        return os.path.exists(self._fname(filename))
 
     def size(self, filename):
         try:
@@ -135,3 +132,9 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
 
     def rmdir(self, filename):
         os.rmdir(self._fname(filename))
+
+    def ensure_dir(self):
+        name = self._fname("")
+        if os.path.exists(name):
+            return
+        os.mkdirs(name)

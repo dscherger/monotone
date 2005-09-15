@@ -7,6 +7,10 @@ from merkle_dir import MerkleDir
 from fs import readable_fs_for_url, writeable_fs_for_url
 import zlib
 
+def do_rollback(url):
+    md = MerkleDir(writeable_fs_for_url(url))
+    md.rollback()
+
 def do_full_import(monotone, url):
     monotone.ensure_db()
     md = MerkleDir(readable_fs_for_url(url))
@@ -106,3 +110,9 @@ def do_sync(monotone, local_url, other_url):
     print "Pulled and imported %s packets from %s" % (pulled, other_url)
     print "Pushed %s packets to %s" % (pushed, other_url)
 
+def main(name, args):
+    
+
+if __name__ = __main__:
+    import sys
+    main(sys.argv[0], sys.argv[1:])
