@@ -1,0 +1,9 @@
+* packet commands -> automate?
+* merkle dir stuff that doesn't require loading entire chunks into
+   memory all the time
+* ftp/sftp/http
+* possibly better rollback stuff?
+  - e.g., truncate when possible
+  - include some info in the lockdir on who has things locked, to aid
+   in detecting staleness of locks
+* file reader needs to do the pause/retry thing on missing files

@@ -3,6 +3,82 @@ import os
 import os.path
 import zlib
 
+# What's on disk:
+#   We write all interesting data out to a file DATA
+#     It consists of a bunch of "chunks", appended one after another
+#     each chunk is a raw block of bytes, as passed to add()
+#   each chunk has a unique id.  it is assumed that the id<->data mapping is
+#     immutable; in particular, when transferring, we assumed that if we have
+#     an id already, then we already have the corresponding data
+#   ids should probably be hashes of something or the other; they don't
+#     actually have to be, but we do rely on them "looking like" hex encoded
+#     hashes (e.g., first 2 characters are randomly distributed, doesn't
+#     contain spaces, etc.)
+#   the HASHES files implement the merkle trie algorithm
+#   we chop off our merkle tree at depth 2; this should give good loading for
+#     even very large projects, and is not so large that we pay excessive
+#     overhead on smaller projects
+#   this means there are two kinds of HASHES files -- the root file
+#     ("HASHES_"), and the child files ("HASHES_<2 digits of hex>")
+#   both kinds of HASHES_ files are deflated (not gzipped) as a whole
+#   both sorts of files are sorted asciibetically
+#   the child files contain a bunch of lines of the form:
+#       chunk <id> <offset> <length>
+#     where <id> begins with the 2 hex digits that this file is responsible
+#     for, and <offset> and <length> are the location of the corresponding
+#     data in DATA.
+#   the root file contains a bunch of lines of the form:
+#       subtree <prefix> <hash> <filename>
+#     where <prefix> is the prefix of the tree being referred to (always two
+#     digits), <filename> is the child file containing the corresponding
+#     information, and <hash> is the sha1 of the string
+#     "<id1>\0<id2>\0...<idn>\0", for all ids mentioned in <filename>.
+#
+#   Finally, there may be a directory "_lock".  This is used for locking; see
+#   below.
+#
+# Transaction handling:
+#   Readers pay no attention to transactions or writers.  Writers assume the
+#     full burden of keeping the repo fully consistent at all times.
+#   Writers:
+#     -- first acquire a lock by creating the directory _lock.  This ensures
+#        that only one writer will run at a time.
+#     -- append everything they want to append to DATA.  Until this part of
+#        the file is referenced by HASHES files, it won't be noticed.
+#        Before appending any particular item, they read child hash file that
+#        would reference it, and make sure that it does not already exist.
+#        If interrupted at this point, unreferenced garbage may be left in
+#        DATA, but this is harmless.
+#     -- start atomically replacing child hash files.
+#        During this phase, the root hash file will lag behind the child hash
+#        files -- it will describe them as containing less than they actually
+#        do.  This does not cause any problems, because
+#           a) when determining whether an id exists, we always read the child
+#              hash file (as noted in previous step)
+#           b) the only things that can happen to readers are that they fetch
+#              a file that is _even newer_ than they were expecting (in which
+#              case, they actually wanted it _even more_ than they realized),
+#              or that they skip a file that has been replaced, but was
+#              unininteresting before being replaced.
+#        This does mean that a pull is not guaranteed to fetch everything that
+#        was included in the most recent push; it may instead fetch only some
+#        random subset.  Users of this library must be robust against this
+#        possibility -- even if two items A and B were added at the same time,
+#        a client may receive only A, or only B.
+#
+#        In some situations (FTP, NTFS, ...) it is actually impossible to
+#        atomically replace a file.  In these cases we simply bite the bullet
+#        and have a very small race condition, while each file is being
+#        swapped around.  If readers try to open a file but find it does not
+#        exist, they should try again after a short pause, before giving up.
+#     -- atomically replace the root hash file (subject again to the above
+#        proviso)
+#     -- remove the lockdir
+#  Rollback:
+#     If a connection is interrupted uncleanly, or there is a stale lock, we:
+#       -- check for any missing files left by non-atomic renames
+#       -- remove the lockdir
+
 class HashFile:
     prefix = ""
     values = ()
@@ -45,6 +121,7 @@ class HashFile:
         for key, values in self:
             value_txt = " ".join([str(v) for v in values])
             lines.append("%s %s %s" % (self.prefix, key, value_txt))
+        lines.sort()
         return zlib.compress("\n".join(lines))
 
     # yields (key, values)
@@ -206,6 +283,7 @@ class MerkleDir:
         self._ids_to_flush = []
 
     #### Adding new items
+    # can only be called from inside a transaction.
     def add(self, id, data):
         self._need_lock()
         assert None not in (self._data_handle,
