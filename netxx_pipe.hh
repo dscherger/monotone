@@ -36,6 +36,7 @@ you have to abstract some difficulties:
 namespace Netxx {
 #ifdef WIN32
 class PipeCompatibleProbe;
+class StreamServer;
 #endif
 
 class PipeStream : public StreamBase 
@@ -76,6 +77,7 @@ public:
       result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
       void add(PipeStream &ps, ready_type rt=ready_none);
       void add(const StreamBase &sb, ready_type rt=ready_none);
+      void add(const StreamServer &ss, ready_type rt=ready_none);
       void remove(const PipeStream &ps);
 #if 0 // should be covered by StreamBase      
       template <typename T> void add (const T &t, ready_type rt=ready_none)
