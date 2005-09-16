@@ -1139,8 +1139,11 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     }
 
     I(!commits.empty());
+    std::string changelog;
+    changelog="Monotone revision "+e.revision()+" author "+e.author
+        +" time "+cvs_client::time_t2rfc822(e.time)+"\n\n"+e.changelog;
     std::map<std::string,std::pair<std::string,std::string> > result
-      =Commit(e.changelog,e.time,commits);
+      =Commit(changelog,e.time,commits);
     if (result.empty()) { fail=true; return edges.end(); }
     
     e.delta_base=parent->revision;
