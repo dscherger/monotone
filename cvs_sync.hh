@@ -156,6 +156,7 @@ private:
   
   void store_modules();
   void retrieve_modules();
+  std::string gather_merge_information(revision_id const& id);
   
 public: // semi public interface for push/pull
   void prime();

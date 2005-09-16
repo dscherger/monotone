@@ -1142,6 +1142,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     std::string changelog;
     changelog="Monotone revision "+e.revision()+" author "+e.author
         +" time "+cvs_client::time_t2rfc822(e.time)+"\n\n"+e.changelog;
+    // gather information CVS does not know about into the changelog
+    changelog+=gather_merge_information(e.revision);
     std::map<std::string,std::pair<std::string,std::string> > result
       =Commit(changelog,e.time,commits);
     if (result.empty()) { fail=true; return edges.end(); }
@@ -1183,6 +1185,47 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
   W(F("no matching parent found\n"));
   fail=true;
   return edges.end();
+}
+
+std::string cvs_repository::gather_merge_information(revision_id const& id)
+{ std::set<revision_id> parents;
+  app.db.get_revision_parents(id,parents);
+  std::string result;
+  for (std::set<revision_id>::const_iterator i=parents.begin();i!=parents.end();++i)
+  { std::vector< revision<cert> > certs;
+    app.db.get_revision_certs(*i,certs);
+    std::vector< revision<cert> >::const_iterator j=certs.begin();
+    std::string to_match=host+":"+root+"\t"+module+"\n";
+    for (;j!=certs.end();++j)
+    { if (j->inner().name()!=cvs_cert_name) continue;
+      cert_value value;
+      decode_base64(j->inner().value, value);
+      if (value().size()<to_match.size()) continue;
+      if (value().substr(0,to_match.size())!=to_match) continue;
+    }
+    // this revision is already in _this_ repository
+    if (j!=certs.end()) continue;
+    
+    std::string author,changelog;
+    time_t date=0;
+    for (j=certs.begin();j!=certs.end();++j)
+    { cert_value value;
+      decode_base64(j->inner().value, value);   
+      if (j->inner().name()==date_cert_name)
+      { date=cvs_repository::posix2time_t(value());
+      }
+      else if (j->inner().name()==author_cert_name)
+      { author=value();
+      }
+      else if (j->inner().name()==changelog_cert_name)
+      { changelog=value();
+      }
+    }
+    result+="\n-------------------\n"
+        "Monotone revision "+i->inner()()+" author "+author
+        +" time "+cvs_client::time_t2rfc822(date)+"\n\n"+changelog;
+  }
+  return result;
 }
 
 void cvs_repository::commit()
