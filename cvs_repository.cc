@@ -964,7 +964,12 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
   { content+="+"+e.delta_base.inner()()+"\n";
   }
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
-  { content+=i->second->cvs_version;
+  { if (i->second->cvs_version.empty())
+    { W(F("blocking attempt to certify an empty CVS revision\n"
+        "(this is normal for a cvs_takeover of a locally modified tree)\n"));
+      return;
+    }
+    content+=i->second->cvs_version;
     if (!i->second->keyword_substitution.empty())
       content+="/"+i->second->keyword_substitution;
     content+=" "+i->first+"\n";
@@ -1460,6 +1465,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       }
       revision_lookup[e.revision]=edges.insert(e).first;
     }
+    else L(F("cvs cert %s ignored (!=%s)") % cvs_revisions % needed_cert);
   }
   // because some manifests might have been absolute (not delta encoded)
   // we possibly did not notice removes. check for them
