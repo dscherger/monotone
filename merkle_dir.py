@@ -82,7 +82,6 @@ import zlib
 #        is interrupted, it can be rolled back over, say, the local-fs
 #        transport.
 #     -- 
-
 #  In these cases we simply bite the bullet
 #        and have a very small race condition, while each file is being
 #        swapped around.  If readers try to open a file but find it does not

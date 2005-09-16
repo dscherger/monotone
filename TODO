@@ -1,14 +1,34 @@
-* packet commands -> automate? (combines with next item:)
+* clean up rollback
+   - right now, design is that rollback is tied to the transport that
+   may get interrupted.  this is all wrong; it should be generic for
+   all transports.  possibly it should be moved into merkle_dir
+   itself, i.e., change the WriteableFS layer to provide something
+   like non-clobbering "rename".  Places that are confused:
+     - incomplete comment at top of merkle_dir.py
+     - unused method rollback_name in WriteableFS
+     - SFTP's put and rollback code
+     - local transport's non-existent rollback code
+* write command-line frontend
+* document license (GPL)
+* add README
+* should readers do the pause/retry dance?  (makes them very slow when
+   files simply don't exist, which is common, to only protect against
+   a very small race condition... hrm.)
+* ftp write
+   - size() requires parsing ls output (ftp SIZE command gives wrong
+   data).  "ftputil" package may be useful here.  (DJB also has a db
+   of possible LIST outputs, but can't use directly because of DJB
+   copyright weirdness)
+   - probably refactor SFTP file write, so both methods dealing with
+   non-atomic rename can share code.
+* packet commands -> automate (combines with next item:)
 * use automate stdio interface (and automate get_revision) to make
    export much faster
 * merkle dir stuff that doesn't require loading entire chunks into
    memory all the time
-* ftp write
-   - probably refactor SFTP file write stuff
 * pipelining on http read? (is urlgrabber thread-safe?)
 * possibly better rollback stuff?
   - truncate DATA when possible? (local, sftp (with a simple call
    to a private method)
   - include some info in the lockdir on who has things locked, to aid
    in detecting staleness of locks
-* file reader needs to do the pause/retry thing on missing files
