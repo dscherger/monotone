@@ -21,50 +21,70 @@ def do_full_import(monotone, url):
 
 def do_export(monotone, url):
     md = MerkleDir(writeable_fs_for_url(url))
-    md.begin()
-    curr_ids = Set(md.all_ids())
-    for rid in monotone.toposort(monotone.revisions_list()):
-        certs = monotone.get_cert_packets(rid)
-        for cert in certs:
-            id = sha.new(cert).hexdigest()
-            if id not in curr_ids:
-                data = zlib.compress(cert)
-                md.add(id, data)
-        if rid not in curr_ids:
-            rdata = StringIO()
-            revision_text = monotone.get_revision(rid)
-            revision_parsed = monotone.basic_io_parser(revision_text)
-            new_manifest = None
-            old_manifest = ""
-            new_files = {}
-            for stanza in revision_parsed:
-                stanza_type = stanza[0][0]
-                if stanza_type == "new_manifest":
-                    new_manifest = stanza[0][1]
-                elif stanza_type == "old_revision":
-                    if not old_manifest:
-                        old_manifest = stanza[1][1]
-                elif stanza_type == "patch":
-                    old_fid = stanza[1][1]
-                    new_fid = stanza[2][1]
-                    if not new_files.has_key(new_fid):
-                        new_files[new_fid] = None
-                    if old_fid:
-                        new_files[new_fid] = old_fid
+    try:
+        md.begin()
+        curr_ids = Set(md.all_ids())
+        for rid in monotone.toposort(monotone.revisions_list()):
+            certs = monotone.get_cert_packets(rid)
+            for cert in certs:
+                id = sha.new(cert).hexdigest()
+                if id not in curr_ids:
+                    data = zlib.compress(cert)
+                    md.add(id, data)
+            if rid not in curr_ids:
+                rdata = StringIO()
+                revision_text = monotone.get_revision(rid)
+                revision_parsed = monotone.basic_io_parser(revision_text)
+                new_manifest = None
+                old_manifest = ""
+                new_files = {}
+                for stanza in revision_parsed:
+                    stanza_type = stanza[0][0]
+                    if stanza_type == "new_manifest":
+                        new_manifest = stanza[0][1]
+                    elif stanza_type == "old_revision":
+                        if not old_manifest:
+                            old_manifest = stanza[1][1]
+                    elif stanza_type == "patch":
+                        old_fid = stanza[1][1]
+                        new_fid = stanza[2][1]
+                        if not new_files.has_key(new_fid):
+                            new_files[new_fid] = None
+                        if old_fid:
+                            new_files[new_fid] = old_fid
 
-            rdata.write(monotone.get_revision_packet(rid))
-            if old_manifest:
-                rdata.write(monotone.get_manifest_delta_packet(old_manifest, new_manifest))
-            else:
-                rdata.write(monotone.get_manifest_packet(new_manifest))
-            for new_fid, old_fid in new_files.items():
-                if old_fid:
-                    rdata.write(monotone.get_file_delta_packet(old_fid, new_fid))
+                rdata.write(monotone.get_revision_packet(rid))
+                if old_manifest:
+                    rdata.write(monotone.get_manifest_delta_packet(old_manifest,
+                                                                   new_manifest))
                 else:
-                    rdata.write(monotone.get_file_packet(new_fid))
-            md.add(rid, zlib.compress(rdata.getvalue()))
-    md.commit()
+                    rdata.write(monotone.get_manifest_packet(new_manifest))
+                for new_fid, old_fid in new_files.items():
+                    if old_fid:
+                        rdata.write(monotone.get_file_delta_packet(old_fid,
+                                                                   new_fid))
+                    else:
+                        rdata.write(monotone.get_file_packet(new_fid))
+                md.add(rid, zlib.compress(rdata.getvalue()))
+        md.commit()
+    except LockError:
+        raise
+    except:
+        md.rollback()
 
+class CounterCallback:
+    def __init__(self):
+        self.added = 0
+    def __call__(self, id, data):
+        self.added += 1
+
+class FeederCallback:
+    def __init__(self, feeder):
+        self.added = 0
+        self.feeder = feeder
+    def __call__(self, id, data):
+        self.added += 1
+        self.feeder.write(zlib.decompress(data))
 
 def do_push(monotone, local_url, target_url):
     print "Exporting changes from monotone db to %s" % (local_url,)
@@ -72,24 +92,19 @@ def do_push(monotone, local_url, target_url):
     print "Pushing changes from %s to %s" % (local_url, target_url)
     local_md = MerkleDir(readable_fs_for_url(local_url))
     target_md = MerkleDir(writeable_fs_for_url(target_url))
-    added = 0
-    def count_new(id, data):
-        added += 1
-    local_md.push(target_md, count_new)
-    print "Pushed %s packets to %s" % (added, target_url)
+    c = CounterCallback()
+    local_md.push(target_md, c)
+    print "Pushed %s packets to %s" % (c.added, target_url)
 
 def do_pull(monotone, local_url, source_url):
     print "Pulling changes from %s to %s" % (source_url, local_url)
     local_md = MerkleDir(writeable_fs_for_url(local_url))
     source_md = MerkleDir(readable_fs_for_url(source_url))
     feeder = monotone.feeder()
-    added = 0
-    def feed_new(id, data):
-        feeder.write(zlib.decompress(data))
-        added += 1
-    local_md.pull(source_md, feed_new)
+    fc = FeederCallback(feeder)
+    local_md.pull(source_md, fc)
     feeder.close()
-    print "Pulled and imported %s packets from %s" % (added, source_url)
+    print "Pulled and imported %s packets from %s" % (fc.added, source_url)
 
 def do_sync(monotone, local_url, other_url):
     print "Exporting changes from monotone db to %s" % (local_url,)
@@ -98,17 +113,12 @@ def do_sync(monotone, local_url, other_url):
     local_md = MerkleDir(writeable_fs_for_url(local_url))
     other_md = MerkleDir(writeable_fs_for_url(other_url))
     feeder = monotone.feeder()
-    pulled = 0
-    pushed = 0
-    def feed_pull(id, data):
-        feeder.write(zlib.decompress(data))
-        pulled += 1
-    def count_push(id, data):
-        pushed += 1
-    local_md.sync(other_md, feed_pull, count_push)
+    pull_fc = FeederCallback(feeder)
+    push_c = CounterCallback()
+    local_md.sync(other_md, pull_fc, push_c)
     feeder.close()
-    print "Pulled and imported %s packets from %s" % (pulled, other_url)
-    print "Pushed %s packets to %s" % (pushed, other_url)
+    print "Pulled and imported %s packets from %s" % (pull_fc.added, other_url)
+    print "Pushed %s packets to %s" % (push_c.added, other_url)
 
 def main(name, args):
     pass

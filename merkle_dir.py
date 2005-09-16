@@ -249,6 +249,8 @@ class MerkleDir:
     # automatically updates root hash as well
     def _set_child_hashes(self, objs):
         self._need_lock()
+        if not objs:
+            return
         root_hash = self._get_root_hash()
         put_request = {}
         for prefix, obj in objs.iteritems():
@@ -279,7 +281,7 @@ class MerkleDir:
                 assert id not in child_hashes[k]
                 child_hashes[k].assign(id, location)
         print ("writing hashes for %s new ids to %s hash files"
-               % (len(self._ids_to_flush), len(bins)))
+               % (len(self._ids_to_flush), len(child_hashes)))
         self._set_child_hashes(child_hashes)
         self._ids_to_flush = []
 
@@ -360,8 +362,9 @@ class MerkleDir:
                 target.add(id, data)
                 if new_chunk_callback is not None:
                     new_chunk_callback(id, data)
-            target.flush()
             target.commit()
+        except LockError:
+            raise
         except:
             target.rollback()
             raise

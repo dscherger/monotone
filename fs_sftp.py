@@ -3,6 +3,7 @@ import paramiko
 import getpass
 import fs
 import os.path
+import posixpath
 import base64
 
 # All of this heavily cribbed from demo{,_simple}.py in the paramiko
@@ -42,7 +43,8 @@ def get_user_password_host_port(hostspec):
         else:
             username = userspec
     if hostspec.find(":") >= 0:
-        hostname, port = hostspec.split(":")
+        hostname, port_str = hostspec.split(":")
+        port = int(port_str)
     else:
         hostname = hostspec
         port = 22
@@ -99,7 +101,17 @@ class SFTPWriteableFS(SFTPReadableFS, fs.WriteableFS):
         return self.client.open(self._fname(filename), "ab")
 
     def size(self, filename):
-        return self.client.stat(self._fname(filename)).st_size
+        try:
+            return self.client.stat(self._fname(filename)).st_size
+        except IOError:
+            return 0
+
+    def _exists(self, full_fn):
+        try:
+            self.client.stat(full_fn)
+        except IOError:
+            return False
+        return True
 
     def put(self, filenames):
         for fn, data in filenames.iteritems():
@@ -107,11 +119,42 @@ class SFTPWriteableFS(SFTPReadableFS, fs.WriteableFS):
             tmph = self.client.open(tmpname, "wb")
             tmph.write(data)
             tmph.close()
-            self.client.rename(tmpname, self._fname(fn))
+            ## This is a race!  SFTP (at least until protocol draft 3, which
+            ## is what paramiko and openssh both implement) only has
+            ## non-clobbering rename.
+            full_fn = self._fname(fn)
+            # clobber any backup unconditionally, just in case, ignoring
+            # errors
+            try:
+                self.client.remove(full_fn + ".back")
+            except IOError:
+                pass
+            # then try moving it out of the way, again ignoring errors (maybe
+            # it doesn't exist to move, which is fine)
+            try:
+                self.client.rename(full_fn, full_fn + ".back")
+            except IOError:
+                pass
+            # finally, try clobbering it; this is he only operation that we
+            # actually care about the success of, and this time we do check
+            # for errors -- but do a local rollback if we can.
+            try:
+                self.client.rename(tmpname, full_fn)
+            except IOError:
+                if self._exists(full_fn + ".back"):
+                    self.client.rename(full_fn + ".back", full_fn)
+                raise
+            # and clobber the backup we made (if it exists)
+            try:
+                self.client.remove(full_fn + ".back")
+            except IOError:
+                pass
 
     def rollback_interrupted_puts(self, filenames):
-        # for now, we assume we have atomic put
-        pass
+        for fn in filenames:
+            full_fn = self._fname(fn)
+            if not self._exists(full_fn) and self._exists(full_fn + ".back"):
+                self.client.rename(full_fn + ".back", full_fn)
 
     def mkdir(self, filename):
         try:
@@ -121,23 +164,31 @@ class SFTPWriteableFS(SFTPReadableFS, fs.WriteableFS):
         return 1
 
     def rmdir(self, filename):
-        self.client.rmdir(self._fname(filename))
-
-    def ensure_dir(self):
         try:
-            self.client.stat(self._fname(""))
-            return
+            self.client.rmdir(self._fname(filename))
         except IOError:
+            pass
+
+    def ensure_dir(self, absdir=None):
+        if absdir is None:
+            absdir = self._fname("")
+        absdir = posixpath.normpath(absdir)
+        print "ensuring dir %s" % absdir
+        try:
+            self.client.stat(absdir)
+            print "stat succeeded"
+            return
+        except IOError, e:
+            print "stat failed: %s" % (e,)
             pass  # fall through to actually create dir
-        pieces = []
-        rest = self.dir
-        while rest:
-            (rest, next_piece) = os.path.split(rest)
-            pieces.insert(0, next_piece)
-        sofar = ""
-        for piece in pieces:
-            sofar = os.path.join(sofar, piece)
-            try:
-                self.client.mkdir(sofar)
-            except OSError:
-                pass
+        # logic cribbed from os.makedirs in python dist
+        head, tail = os.path.split(absdir)
+        if not tail:
+            head, tail = os.path.split(head)
+        if head and tail:
+            print "recursing to %s" % head
+            self.ensure_dir(head)
+        if tail == ".":
+            return
+        print "actually making %s" % absdir
+        self.client.mkdir(absdir)

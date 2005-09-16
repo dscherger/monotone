@@ -1,15 +1,19 @@
 # interface to FS-like things
 
-from urlparse import urlsplit
+import urlparse
 import os
 import os.path
 
 class BadURL(Exception):
     pass
 
+# This is necessary to properly parse sftp:// urls
+urlparse.uses_netloc.append("sftp")
+
 def readable_fs_for_url(url):
-    (scheme, host, path, query, frag) = urlsplit(url, "file")
+    (scheme, host, path, query, frag) = urlparse.urlsplit(url, "file")
     if scheme == "file":
+        assert not host
         return LocalReadableFS(path)
     elif scheme in ("http", "https", "ftp"):
         import fs_http
@@ -21,8 +25,9 @@ def readable_fs_for_url(url):
         raise BadURL, url
 
 def writeable_fs_for_url(url):
-    (scheme, host, path, query, frag) = urlsplit(url, "file")
+    (scheme, host, path, query, frag) = urlparse.urlsplit(url, "file")
     if scheme == "file":
+        assert not host
         return LocalWriteableFs(path)
     elif scheme == "sftp":
         import fs_sftp
@@ -109,11 +114,15 @@ class WriteableFS (ReadableFS):
     def rollback_interrupted_puts(self, filenames):
         raise NotImplementedError
 
+    def rollback_name(self, filename):
+        return filename + ".back"
+
     # returns true if mkdir succeeded, false if failed
     # used for locking
     def mkdir(self, filename):
         raise NotImplementedError
 
+    # should be a no-op if dir does not exist
     def rmdir(self, filename):
         raise NotImplementedError
 
@@ -178,7 +187,10 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
         return 1
 
     def rmdir(self, filename):
-        os.rmdir(self._fname(filename))
+        try:
+            os.rmdir(self._fname(filename))
+        except OSError:
+            pass
 
     def ensure_dir(self):
         name = self._fname("")

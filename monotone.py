@@ -6,19 +6,30 @@ class MonotoneError (Exception):
     pass
 
 class Feeder:
-    def __init__(self, process):
-        self.process = process
+    def __init__(self, args):
+        # We delay the actual process spawn, so as to avoid running monotone
+        # unless some packets are actually written (this is more efficient,
+        # and also avoids spurious errors from monotone when 'read' doesn't
+        # actually succeed in reading anything).
+        self.args = args
+        self.process = None
 
     # this is technically broken; we might deadlock.
     # subprocess.Popen.communicate uses threads to do this; that'd be
     # better.
     def write(self, data):
+        if self.process is None:
+            self.process = subprocess.Popen(self.args,
+                                            stdin=subprocess.PIPE,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE)
         self.process.stdin.write(data)
 
     def close(self):
-        self.process.stdin.close()
-        stdout, stderr = process.communicate()
-        if process.returncode:
+        if self.process is None:
+            return
+        stdout, stderr = self.process.communicate()
+        if self.process.returncode:
             raise MonotoneError, stderr
 
 class Monotone:
@@ -29,8 +40,11 @@ class Monotone:
     def init_db(self):
         self.run_monotone(["db", "init"])
 
+    def db_exists(self):
+        return os.path.exists(self.db)
+
     def ensure_db(self):
-        if not os.path.exists(self.db):
+        if not self.db_exists():
             self.init_db()
 
     def revisions_list(self):
@@ -87,11 +101,8 @@ class Monotone:
 
     # feeds stuff into 'monotone read'
     def feeder(self):
-        process = subprocess.Popen([self.executable, "--db", self.db, "read"],
-                                   stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        return Feeder(process)
+        args = [self.executable, "--db", self.db, "read"]
+        return Feeder(args)
 
     # copied wholesale from viewmtn (08fd7bf8143512bfcabe5f65cf40013e10b89d28)'s
     # monotone.py.  hacked to remove the []s from hash values, and to leave in
