@@ -16,8 +16,8 @@ def readable_fs_for_url(url):
         assert not host
         return LocalReadableFS(path)
     elif scheme in ("http", "https", "ftp"):
-        import fs_http
-        return fs_http.HTTPReadableFS(url)
+        import fs_read_httpftp
+        return fs_read_httpftp.HTTPFTPReadableFS(url)
     elif scheme == "sftp":
         import fs_sftp
         return fs_sftp.SFTPReadableFS(host, path)

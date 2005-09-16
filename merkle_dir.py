@@ -67,10 +67,7 @@ import zlib
 #        a client may receive only A, or only B.
 #
 #        In some situations (FTP, NTFS, ...) it is actually impossible to
-#        atomically replace a file.  In these cases we simply bite the bullet
-#        and have a very small race condition, while each file is being
-#        swapped around.  If readers try to open a file but find it does not
-#        exist, they should try again after a short pause, before giving up.
+#        atomically replace a file.  See below.
 #     -- atomically replace the root hash file (subject again to the above
 #        proviso)
 #     -- remove the lockdir
@@ -78,6 +75,18 @@ import zlib
 #     If a connection is interrupted uncleanly, or there is a stale lock, we:
 #       -- check for any missing files left by non-atomic renames
 #       -- remove the lockdir
+#
+#  Atomic update:
+#     -- We use atomic updates when we can.  When we can't, we have
+#        systematic handling, to make sure that if a, say, session using SFTP
+#        is interrupted, it can be rolled back over, say, the local-fs
+#        transport.
+#     -- 
+
+#  In these cases we simply bite the bullet
+#        and have a very small race condition, while each file is being
+#        swapped around.  If readers try to open a file but find it does not
+#        exist, they should try again after a short pause, before giving up.
 
 class _HashFile:
     prefix = ""

@@ -100,6 +100,7 @@ def do_pull(monotone, local_url, source_url):
     print "Pulling changes from %s to %s" % (source_url, local_url)
     local_md = MerkleDir(writeable_fs_for_url(local_url))
     source_md = MerkleDir(readable_fs_for_url(source_url))
+    monotone.ensure_db()
     feeder = monotone.feeder()
     fc = FeederCallback(feeder)
     local_md.pull(source_md, fc)

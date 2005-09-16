@@ -1,10 +1,14 @@
-* packet commands -> automate?
+* packet commands -> automate? (combines with next item:)
+* use automate stdio interface (and automate get_revision) to make
+   export much faster
 * merkle dir stuff that doesn't require loading entire chunks into
    memory all the time
-* ftp/sftp/http
-   - with pipelining
+* ftp write
+   - probably refactor SFTP file write stuff
+* pipelining on http read? (is urlgrabber thread-safe?)
 * possibly better rollback stuff?
-  - e.g., truncate when possible
+  - truncate DATA when possible? (local, sftp (with a simple call
+   to a private method)
   - include some info in the lockdir on who has things locked, to aid
    in detecting staleness of locks
 * file reader needs to do the pause/retry thing on missing files
