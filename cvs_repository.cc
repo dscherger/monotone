@@ -1202,6 +1202,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
       decode_base64(j->inner().value, value);
       if (value().size()<to_match.size()) continue;
       if (value().substr(0,to_match.size())!=to_match) continue;
+      break;
     }
     // this revision is already in _this_ repository
     if (j!=certs.end()) continue;
@@ -1224,6 +1225,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
     result+="\n-------------------\n"
         "Monotone revision "+i->inner()()+" author "+author
         +" time "+cvs_client::time_t2rfc822(date)+"\n\n"+changelog;
+    result+=gather_merge_information(*i);
   }
   return result;
 }
