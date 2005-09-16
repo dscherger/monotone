@@ -21,6 +21,8 @@
    copyright weirdness)
    - probably refactor SFTP file write, so both methods dealing with
    non-atomic rename can share code.
+* make sftp support nicer (support agents, keys, etc. -- see demo.py
+   in the real paramiko distribution)
 * packet commands -> automate (combines with next item:)
 * use automate stdio interface (and automate get_revision) to make
    export much faster
