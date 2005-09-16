@@ -135,6 +135,7 @@ protected:
   std::string host; // for author certification
   
   void reconnect();
+  static std::string localhost_name();
 public:  
   cvs_client(const std::string &repository, const std::string &module, bool connect=true);
   ~cvs_client();

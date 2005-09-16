@@ -270,6 +270,32 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
   memset(&decompress,0,sizeof decompress);
 
   if (do_connect) connect();
+  else if (!pserver && host.empty()) host=localhost_name();
+}
+
+std::string cvs_client::localhost_name()
+{ // get localhost's name
+  char domainname[1024];
+  *domainname=0;
+#ifdef WIN32
+  strcpy(domainname,"localhost"); // gethostname does not work here ...
+#else
+  if (gethostname(domainname,sizeof domainname))
+    throw oops("gethostname "+std::string(strerror(errno)));
+  domainname[sizeof(domainname)-1]=0;
+#endif
+#if !defined(__sun) && !defined(WIN32)
+  unsigned len=strlen(domainname);
+  if (len && len<sizeof(domainname)-2)
+  { domainname[len]='.';
+    domainname[++len]=0;
+  }
+  if (getdomainname(domainname+len,sizeof(domainname)-len))
+    throw oops("getdomainname "+std::string(strerror(errno)));
+  domainname[sizeof(domainname)-1]=0;
+#endif
+  L(F("localhost's name %s\n") % domainname);
+  return domainname;
 }
 
 void cvs_client::connect()
@@ -295,31 +321,9 @@ void cvs_client::connect()
     }
   }
   else // rsh
-  { std::string localhost_name;
-    { // get localhost's name
-      char domainname[1024];
-      *domainname=0;
-#ifdef WIN32
-      strcpy(domainname,"localhost"); // gethostname does not work here ...
-#else
-      if (gethostname(domainname,sizeof domainname))
-        throw oops("gethostname "+std::string(strerror(errno)));
-      domainname[sizeof(domainname)-1]=0;
-#endif
-#if !defined(__sun) && !defined(WIN32)
-      unsigned len=strlen(domainname);
-      if (len && len<sizeof(domainname)-2)
-      { domainname[len]='.';
-        domainname[++len]=0;
-      }
-      if (getdomainname(domainname+len,sizeof(domainname)-len))
-        throw oops("getdomainname "+std::string(strerror(errno)));
-      domainname[sizeof(domainname)-1]=0;
-#endif
-      localhost_name=domainname;
-      L(F("localhost's name %s\n") % localhost_name);
-    }
-    if (host==localhost_name) host="";
+  { std::string local_name=localhost_name();
+
+    if (host==local_name) host="";
     
     std::string cmd;
     std::vector<std::string> args;
@@ -347,7 +351,7 @@ void cvs_client::connect()
       args.push_back(host);
       args.push_back("cvs server");
     }
-    if (host.empty()) host=localhost_name;
+    if (host.empty()) host=local_name;
     stream=boost::shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream(cmd,args));
   }
   
