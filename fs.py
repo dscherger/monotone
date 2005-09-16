@@ -1,6 +1,6 @@
 # interface to FS-like things
 
-import urlparse
+from urlparse import urlsplit
 import os
 import os.path
 
@@ -8,7 +8,7 @@ class BadURL(Exception):
     pass
 
 def readable_fs_for_url(url):
-    (scheme, host, path, param, query, frag) = urlparse(url, "file")
+    (scheme, host, path, query, frag) = urlsplit(url, "file")
     if scheme == "file":
         return LocalReadableFS(path)
     elif scheme in ("http", "https", "ftp"):
@@ -21,7 +21,7 @@ def readable_fs_for_url(url):
         raise BadURL, url
 
 def writeable_fs_for_url(url):
-    (scheme, host, path, param, query, frag) = urlparse(url, "file")
+    (scheme, host, path, query, frag) = urlsplit(url, "file")
     if scheme == "file":
         return LocalWriteableFs(path)
     elif scheme == "sftp":
@@ -44,15 +44,41 @@ class ReadableFS:
     def fetch(self, filenames):
         raise NotImplementedError
 
-    # bytes is an iterable of pairs (offset, length)
+    # bytes_iter is an iterable of pairs (offset, length)
     # this is a generator
     # it yields nested tuples ((offset, length), data)
     # subclasses should implement _real_fetch_bytes which has the same API;
     # but will receive massaged (seek-optimized) arguments
-    def fetch_bytes(self, filename, bytes):
-        # FIXME: implement block coalescing/decoalescing, and sort to optimize
-        # seeks.
-        return self._real_fetch_bytes(filename, bytes)
+    def fetch_bytes(self, filename, bytes_iter):
+        bytes = list(bytes_iter)
+        bytes.sort()
+        coalesced_map = {}
+        curr_offset = 0
+        curr_length = 0
+        covered_pieces = []
+        for offset, length in bytes:
+            if offset == curr_offset + curr_length:
+                curr_length += length
+            else:
+                if covered_pieces:
+                    coalesced_map[(curr_offset, curr_length)] = covered_pieces
+                    covered_pieces = []
+                curr_offset = offset
+                curr_length = length
+            covered_pieces.append((offset, length))
+        if covered_pieces:
+            coalesced_map[(curr_offset, curr_length)] = covered_pieces
+        coalesced_bytes = coalesced_map.keys()
+        coalesced_bytes.sort()
+        for (c_offset, c_length), c_data \
+                in self._real_fetch_bytes(filename, coalesced_bytes):
+            assert len(c_data) == c_length
+            covered_pieces = coalesced_map[(c_offset, c_length)]
+            internal_offset = 0
+            for offset, length in covered_pieces:
+                yield ((offset, length),
+                       c_data[internal_offset:internal_offset+length])
+                internal_offset += length
 
     def _real_fetch_bytes(self, filename, bytes):
         raise NotImplementedError
@@ -116,7 +142,7 @@ class LocalReadableFS(ReadableFS):
                 files[fn] = None
         return files
 
-    def fetch_bytes(self, filename, bytes):
+    def _real_fetch_bytes(self, filename, bytes):
         f = open(self._fname(filename), "rb")
         for offset, length in bytes:
             f.seek(offset)
@@ -158,4 +184,4 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
         name = self._fname("")
         if os.path.exists(name):
             return
-        os.mkdirs(name)
+        os.makedirs(name)

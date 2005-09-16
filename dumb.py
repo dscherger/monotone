@@ -111,8 +111,8 @@ def do_sync(monotone, local_url, other_url):
     print "Pushed %s packets to %s" % (pushed, other_url)
 
 def main(name, args):
-    
+    pass
 
-if __name__ = __main__:
+if __name__ == "__main__":
     import sys
     main(sys.argv[0], sys.argv[1:])

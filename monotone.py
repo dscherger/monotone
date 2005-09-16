@@ -41,7 +41,7 @@ class Monotone:
         output = self.run_monotone(["automate", "toposort", "-@-"],
                                    "\n".join(revisions) + "\n")
         sorted = output.split()
-        assert len(sorted) = len(revisions)
+        assert len(sorted) == len(revisions)
         return sorted
 
     def get_revision(self, rid):

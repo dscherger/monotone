@@ -348,14 +348,18 @@ class MerkleDir:
             source_children = self._get_child_hashes(new_stuff)
             target_children = target._get_child_hashes(new_stuff)
             locations = {}
+            new_chunks = []
             for prefix in new_stuff:
                 source_hash = source_children[prefix]
                 target_hash = target_children[prefix]
-                new_in_source = list(source_hash.new_in_me(target_hash))
-                for id, data in self.get_chunks(new_in_source):
-                    target.add(id, data)
-                    if new_chunk_callback is not None:
-                        new_chunk_callback(id, data)
+                new_chunks += list(source_hash.new_in_me(target_hash))
+            # we build up a list of all chunks and then fetch them in a single
+            # call, to give the chunk optimized and pipelining maximum
+            # opportunity to work
+            for id, data in self.get_chunks(new_chunks):
+                target.add(id, data)
+                if new_chunk_callback is not None:
+                    new_chunk_callback(id, data)
             target.flush()
             target.commit()
         except:

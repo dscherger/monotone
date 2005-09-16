@@ -3,6 +3,7 @@ import paramiko
 import getpass
 import fs
 import os.path
+import base64
 
 # All of this heavily cribbed from demo{,_simple}.py in the paramiko
 # distribution, which is LGPL.
@@ -33,7 +34,7 @@ def load_host_keys():
     return keys
 
 def get_user_password_host_port(hostspec):
-    username, password, hostname, port = None, None, None
+    username, password, hostname, port = None, None, None, None
     if hostspec.find("@") >= 0:
         userspec, hostspec = hostspec.split("@")
         if userspec.find(":") >= 0:
@@ -51,7 +52,7 @@ def get_user_password_host_port(hostspec):
     # FIXME: support agents etc. (see demo.py in paramiko dist)
     if password is None:
         password = getpass.getpass("Password for %s@%s: " % (username, hostname))
-    return username, password, hostname
+    return username, password, hostname, port
 
 def get_host_key(hostname):
     hkeys = load_host_keys()
@@ -68,7 +69,7 @@ class SFTPReadableFS(fs.ReadableFS):
         self.transport = paramiko.Transport((hostname, port))
         self.transport.connect(username=username, password=password,
                                hostkey=hostkey)
-        self.client = t.open_sftp_client()
+        self.client = self.transport.open_sftp_client()
         
     def _fname(self, filename):
         return os.path.join(self.dir, filename)
@@ -115,7 +116,7 @@ class SFTPWriteableFS(SFTPReadableFS, fs.WriteableFS):
     def mkdir(self, filename):
         try:
             self.client.mkdir(self._fname(filename))
-        except OSError:
+        except IOError:
             return 0
         return 1
 
@@ -126,7 +127,7 @@ class SFTPWriteableFS(SFTPReadableFS, fs.WriteableFS):
         try:
             self.client.stat(self._fname(""))
             return
-        except OSError:
+        except IOError:
             pass  # fall through to actually create dir
         pieces = []
         rest = self.dir
