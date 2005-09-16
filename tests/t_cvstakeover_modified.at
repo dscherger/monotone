@@ -47,7 +47,6 @@ AT_CHECK(MONOTONE --branch testbranch cvs_push, [0], [ignore], [ignore])
 ########
 # check presence of files
 
-AT_CHECK(MONOTONE automate get_file $TSHA1, [], [ignore])
 AT_CHECK(MONOTONE automate get_file $TSHA2, [], [ignore])
 
 # also check that CVS sees this newly changed file
