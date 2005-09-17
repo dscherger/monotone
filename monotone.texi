@@ -3060,7 +3060,8 @@ branches over CVS hand-operated tagging and merging.
 You can experiment with bigger reworkings without putting them on the server.
 @end itemize
 
-How to use it:
+@subsection How to use it:
+@anchor{cvssync}
 
 Change your working directory to the topmost directory of a CVS project and
 enter
@@ -3120,7 +3121,8 @@ the server and attach it to the merge.
 If you change into your working directory you can omit specifying the branch
 as usual.
 
-Design Goals
+@page
+@subsection Design Goals
 
 @itemize
 @item
@@ -3132,7 +3134,7 @@ Synchronizing between multiple CVS servers for the same project should be
 possible (though this might get confusing and inconvenient).
 @end itemize
 
-Shortcomings
+@subsection Shortcomings
 
 @itemize
 @item
@@ -3153,7 +3155,7 @@ relies on checkin time to reconstruct the graph instead of RCS revisions
 no project creation on a CVS server (initial import)
 @end itemize
 
-Advanced Use:
+@subsection Advanced Use:
 
 @itemize
 @item
@@ -3163,7 +3165,7 @@ Specifying a @code{--direction} when a fork occurs during cvs_push. (not yet
 implemented)
 @end itemize
 
-Future directions:
+@subsection Future directions:
 
 Perhaps multiple repository pull (mass update) in one command.
 
@@ -3824,6 +3826,11 @@ After running this command, you are guaranteed that your working copy is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
+@item monotone [--branch @var{destination}] cvs_takeover [@var{module}]
+Imports a CVS checkout into a monotone database for future editing. If files
+were locally changed this creates two revisions. 
+See also @xref{cvssync,,cvssync introduction}.
+
 @end ftable
 
 @page
@@ -3909,6 +3916,11 @@ any character, to match exactly that character --- this might be useful
 in case someone, for some odd reason, decides to put a ``*'' into their
 branch name.
 
+@item monotone cvs_pull [--since @var{time}] [--cvsbranch @var{branch}] [@var{repository} @var{module}]
+@itemx monotone cvs_push [--since @var{time}] [--cvsbranch @var{branch}] [@var{repository} @var{module}]
+These commands communicate with a CVS server. @code{cvs_pull} works like
+@code{cvs update} and @code{cvs_push} is like @code{cvs commit}.
+See also @xref{cvssync,,cvssync introduction}.
 @end ftable
 
 
@@ -7104,6 +7116,15 @@ Import all file versions in RCS files. Does not reconstruct revisions
 across the entire tree.  You do not want this command, it is for
 debugging; use cvs_import.
 @comment TROFF INPUT: .TP
+
+@item @b{cvs_pull} @i{[--since=time]} @i{[--cvsbranch=branch]} @i{[repository module]}
+Import revisions from a CVS server
+
+@item @b{cvs_push} @i{[--cvsbranch=branch]} @i{[repository module]}
+Commit revisions to a CVS server
+
+@item @b{cvs_takeover} @i{[module]}
+Put a CVS working directory under monotone's control.
 
 @item @b{checkout} @i{[--revision=revision-id]} @i{[<directory>]}
 @itemx @b{co} @i{[--revision=revision-id]} @i{[<directory>]}
