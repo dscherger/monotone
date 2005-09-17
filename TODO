@@ -1,4 +1,3 @@
-* include pubkeys
 * clean up rollback
    - right now, design is that rollback is tied to the transport that
    may get interrupted.  this is all wrong; it should be generic for
