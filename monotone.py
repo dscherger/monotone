@@ -61,6 +61,9 @@ class Monotone:
     def get_revision(self, rid):
         return self.run_monotone(["cat", "revision", rid])
 
+    def get_pubkey_packet(self, keyid):
+        return self.run_monotone(["pubkey"], keyid)
+        
     def get_revision_packet(self, rid):
         return self.run_monotone(["rdata", rid])
 
@@ -87,6 +90,17 @@ class Monotone:
                 curr_packet = ""
         assert not curr_packet
         return packets
+
+    def key_names(self):
+        output = self.run_monotone(["ls", "keys"])
+        lines = output.split("\n")
+        ids = {}
+        for l in lines:
+            if not l.strip() or l.strip() in ("[public keys]", "[private keys]"):
+                continue
+            fpr, keyid = l.strip().split()
+            ids[keyid] = None
+        return ids.keys()
 
     # returns output as a string, raises an error on error
     def run_monotone(self, args, input=None):

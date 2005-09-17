@@ -23,6 +23,13 @@ def do_export(monotone, url):
     md = MerkleDir(writeable_fs_for_url(url))
     try:
         md.begin()
+        keys = monotone.keys()
+        for k in keys:
+            kp = monotone.get_pubkey_packet(k)
+            id = sha.new(kp).hexdigest()
+            if id not in curr_ids:
+                data = zlib.compress(kp)
+                md.add(id, data)
         curr_ids = Set(md.all_ids())
         for rid in monotone.toposort(monotone.revisions_list()):
             certs = monotone.get_cert_packets(rid)

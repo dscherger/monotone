@@ -27,6 +27,10 @@
 * packet commands -> automate (combines with next item:)
 * use automate stdio interface (and automate get_revision) to make
    export much faster
+* better automate-ish way to deal with keys and certs (perhaps certs
+   should get their own top-level ids, they already have hashes in the
+   db... then we could have commands to list certs, dump info on a
+   given cert, get a packet for a given cert, etc.)
 * merkle dir stuff that doesn't require loading entire chunks into
    memory all the time
 * pipelining on http read? (is urlgrabber thread-safe?)
@@ -35,3 +39,11 @@
    to a private method)
   - include some info in the lockdir on who has things locked, to aid
    in detecting staleness of locks
+* HTTP write support using a server-side CGI (CGI, PHP, whatever
+   people want support for
+
+* automate merkle_hash <include-pattern> <exclude-pattern> <tree name> <prefix>
+   could do many of the same tricks as this code, but eliminate the
+   unsightly local fs repo, and make it easier for remote sides to use
+   unusual representations (e.g., viewmtn could bake support in,
+   backed against its real monotone db)... (more speculative)
