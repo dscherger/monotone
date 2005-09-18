@@ -3,7 +3,7 @@ from sets import Set
 import os
 import os.path
 from cStringIO import StringIO
-from merkle_dir import MerkleDir
+from merkle_dir import MerkleDir, LockError
 from fs import readable_fs_for_url, writeable_fs_for_url
 import zlib
 
@@ -78,6 +78,7 @@ def do_export(monotone, url):
         raise
     except:
         md.rollback()
+        raise
 
 class CounterCallback:
     def __init__(self):
