@@ -1884,7 +1884,7 @@ void cvs_sync::takeover(app_state &app, const std::string &_module)
   }
   test_key_availability(app);
   cvs_sync::cvs_repository repo(app,root,module,false);
-  // 2DO: validate directory to match the structure
+  // FIXME: validate directory to match the structure
   repo.takeover();
 }
 

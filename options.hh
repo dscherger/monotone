@@ -30,7 +30,6 @@
 #define OPT_ALL_FILES 21
 #define OPT_PIDFILE 22
 #define OPT_MSGFILE 23
-#define OPT_SINCE 99 // use a custom number ...
 #define OPT_BRIEF 24
 #define OPT_DIFFS 25
 #define OPT_NO_MERGES 26
@@ -44,3 +43,4 @@
 #define OPT_EXTERNAL_DIFF_ARGS 34
 #define OPT_LCA 35
 #define OPT_EXECUTE 36
+#define OPT_SINCE 37
