@@ -3138,8 +3138,6 @@ possible (though this might get confusing and inconvenient).
 
 @itemize
 @item
-@code{--revision} is not yet implemented.
-@item
 missing side branch support (@code{--cvsbranch})
 @item
 creating new subdirectories on the CVS server is unimplemented
@@ -3159,10 +3157,11 @@ no project creation on a CVS server (initial import)
 
 @itemize
 @item
-Working with CVS branches. @code{--cvsbranch}? (not yet implemented)
+If a fork occurs during @code{cvs_push} you are instructed to select a 
+direction using the @code{--revision} option. Simply choose the branch you
+want to see in details in CVS and specify its revision.
 @item
-Specifying a @code{--revision} when a fork occurs during cvs_push. (not yet 
-implemented)
+Working with CVS branches. @code{--cvsbranch}? (not yet implemented)
 @end itemize
 
 @subsection Future directions:
