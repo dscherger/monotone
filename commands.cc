@@ -3667,7 +3667,8 @@ CMD(setup, N_("tree"), N_("DIRECTORY"), N_("setup a new working copy directory")
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(cvs_pull, "network", "[CVS-REPOSITORY CVS-MODULE]",
-    "(re-)import a module from a remote cvs repository", OPT_BRANCH_NAME % OPT_SINCE)
+    "(re-)import a module from a remote cvs repository", 
+    OPT_BRANCH_NAME % OPT_SINCE)
 {
 
   if (args.size() != 2 && args.size() != 0) throw usage(name);
@@ -3683,8 +3684,9 @@ CMD(cvs_pull, "network", "[CVS-REPOSITORY CVS-MODULE]",
 }
 
 
-CMD(cvs_push, "network", "CVS-REPOSITORY CVS-MODULE",
-    "commit changes in local database to a remote cvs repository", OPT_BRANCH_NAME % OPT_SINCE)
+CMD(cvs_push, "network", "[CVS-REPOSITORY CVS-MODULE]",
+    "commit changes in local database to a remote cvs repository", 
+    OPT_BRANCH_NAME % OPT_REVISION)
 {
 
   if (args.size() != 2 && args.size() != 0) throw usage(name);

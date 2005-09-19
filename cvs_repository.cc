@@ -1261,16 +1261,31 @@ void cvs_repository::commit()
       }
     }
     if (children.empty()) return;
-    if (children.size()>1)
-    { W(F("several children found for %s:\n") % now.revision);
-      for (std::set<revision_id>::const_iterator i=children.begin();
-                    i!=children.end();++i)
-      { W(F("%s\n") % *i);
+    revision_id next;
+    if (children.size()>1) // && !ap.revision_selectors.size())
+    { for (std::vector<utf8>::const_iterator i=app.revision_selectors.begin();
+          i!=app.revision_selectors.end();++i)
+      { for (std::set<revision_id>::const_iterator j=children.begin();
+          j!=children.end();++j)
+        { if (revision_id(hexenc<id>((*i)()))==*j)
+          { next=*j;
+            break;
+          }
+        }
       }
-      return;
+      if (next.inner()().empty())
+      { W(F("several children found for %s:\n") % now.revision);
+        for (std::set<revision_id>::const_iterator i=children.begin();
+                    i!=children.end();++i)
+        { W(F("%s\n") % *i);
+        }
+        W(F("please specify direction using --revision\n"));
+        return;
+      }
     }
+    else next=*children.begin();
     bool fail=bool();
-    now_iter=commit(now_iter,*children.begin(),fail);
+    now_iter=commit(now_iter,next,fail);
     
     if (!fail)
       P(F("checked %s into cvs repository") % now.revision);
