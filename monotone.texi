@@ -3138,7 +3138,7 @@ possible (though this might get confusing and inconvenient).
 
 @itemize
 @item
-@code{--direction} is not yet implemented.
+@code{--revision} is not yet implemented.
 @item
 missing side branch support (@code{--cvsbranch})
 @item
@@ -3161,7 +3161,7 @@ no project creation on a CVS server (initial import)
 @item
 Working with CVS branches. @code{--cvsbranch}? (not yet implemented)
 @item
-Specifying a @code{--direction} when a fork occurs during cvs_push. (not yet 
+Specifying a @code{--revision} when a fork occurs during cvs_push. (not yet 
 implemented)
 @end itemize
 

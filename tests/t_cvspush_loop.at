@@ -42,12 +42,12 @@ AT_CHECK(MONOTONE merge, [0], [ignore], [ignore])
 AT_CHECK(MONOTONE --branch testbranch cvs_push, [0], [ignore], [ignore])
 
 # no change yet
-AT_CHECK(test -e $CVSROOT/test/A)
-AT_CHECK(test ! -e $CVSROOT/test/C)
+AT_CHECK([test -e $CVSROOT/test/A,v])
+AT_CHECK([test ! -e $CVSROOT/test/C,v])
 
 AT_CHECK(MONOTONE --revision $LEFT --branch testbranch cvs_push, [0], [ignore], [ignore])
-AT_CHECK(test -e $CVSROOT/test/Attic/A)
-AT_CHECK(test -e $CVSROOT/test/C)
+AT_CHECK([test -e $CVSROOT/test/Attic/A,v])
+AT_CHECK([test -e $CVSROOT/test/C,v])
 
 # I refrain to test file contents
 
