@@ -9,50 +9,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
-//#include <sys/socket.h>
-//#include <netdb.h>
-//#include <netinet/in.h>
 #include "sanity.hh"
 #include "cvs_client.hh"
 #include <boost/lexical_cast.hpp>
 #include <netxx/stream.h>
-
-#if 0
-// copied from netsync.cc from the ssh branch
-static pid_t pipe_and_fork(int *fd1,int *fd2)
-{ pid_t result=-1;
-  fd1[0]=-1; fd1[1]=-1;
-  fd2[0]=-1; fd2[1]=-1;
-#ifndef __WIN32__
-  if (pipe(fd1)) return -1;
-  if (pipe(fd2)) 
-  { close(fd1[0]); close(fd1[1]); return -1; }
-  result=fork();
-  if (result<0)
-  { close(fd1[0]); close(fd1[1]);
-    close(fd2[0]); close(fd2[1]);
-    return -1;
-  }
-  else if (!result)
-  { // fd1[1] for writing, fd2[0] for reading
-    close(fd1[0]);
-    close(fd2[1]);
-    if (dup2(fd2[0],0)!=0 || dup2(fd1[1],1)!=1) 
-    { perror("dup2");
-      exit(-1); // kill the useless child
-    }
-    close(fd1[1]);
-    close(fd2[0]);
-  }
-  else
-  { // fd1[0] for reading, fd2[1] for writing
-    close(fd1[1]);
-    close(fd2[0]);
-  }
-#endif  
-  return result;
-}
-#endif
 
 void cvs_client::writestr(const std::string &s, bool flush)
 { if (s.size()) L(F("writestr(%s") % s); // s mostly contains the \n char
@@ -150,23 +110,15 @@ try_again:
   if (inputbuffer.empty()) goto try_again;
 }
 
-// this mutable/const oddity is to avoid an 
-// "invalid initialization of non-const reference from a temporary" warning
-// when passing this class to stringtok (we cheat by using a const reference)
+// an adaptor giving push_back on insert providing containers (sets)
 template <typename Container>
- class push_back2insert_cl
-{ mutable Container &c;
+ class push_back2insert
+{ Container &c;
 public:
-  push_back2insert_cl(Container &_c) : c(_c) {}
+  push_back2insert(Container &_c) : c(_c) {}
   template <typename T>
    void push_back(const T &t) const { c.insert(t); }
 };
-
-// the creator function (so you don't need to specify the type
-template <typename Container>
- const push_back2insert_cl<Container> push_back2insert(Container &c)
-{ return push_back2insert_cl<Container>(c);
-}
 
 // inspired by code from Marcelo E. Magallon and the libstdc++ doku
 template <typename Container>
@@ -179,11 +131,6 @@ stringtok (Container &container, std::string const &in,
 
     while ( i < len )
     {
-        // eat leading whitespace
-        // i = in.find_first_not_of (delimiters, i);
-        // if (i == std::string::npos)
-        //    return;   // nothing left but white space
-
         // find the end of the token
         std::string::size_type j = in.find_first_of (delimiters, i);
 
@@ -199,13 +146,13 @@ stringtok (Container &container, std::string const &in,
     }
 }
 
-// "  AA  " s=2 e=3
 std::string trim(const std::string &s)
 { std::string::size_type start=s.find_first_not_of(" ");
   if (start==std::string::npos) return std::string();
   std::string::size_type end=s.find_last_not_of(" ");
   if (end==std::string::npos) end=s.size();
   else ++end;
+  // "  AA  " gives start=2 end=3, so substr(2,1) is correct
   return s.substr(start,end-start);
 }
 
@@ -368,7 +315,8 @@ void cvs_client::connect()
   std::string answer=readline();
   I(begins_with(answer,"Valid-requests "));
   // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
-  stringtok(push_back2insert(Valid_requests),answer.substr(15));
+  push_back2insert<stringset_t> adaptor(Valid_requests);
+  stringtok(adaptor,answer.substr(15));
   answer=readline();
   I(answer=="ok");
   
@@ -585,12 +533,12 @@ static time_t cvs111date2time_t(const std::string &t)
   I(t[16]==':');
   struct tm tm;
   memset(&tm,0,sizeof tm);
-  tm.tm_year=atoi(t.substr(0,4).c_str())-1900;
-  tm.tm_mon=atoi(t.substr(5,2).c_str())-1;
-  tm.tm_mday=atoi(t.substr(8,2).c_str());
-  tm.tm_hour=atoi(t.substr(11,2).c_str());
-  tm.tm_min=atoi(t.substr(14,2).c_str());
-  tm.tm_sec=atoi(t.substr(17,2).c_str());
+  tm.tm_year=boost::lexical_cast<int>(t.substr(0,4).c_str())-1900;
+  tm.tm_mon=boost::lexical_cast<int>(t.substr(5,2).c_str())-1;
+  tm.tm_mday=boost::lexical_cast<int>(t.substr(8,2).c_str());
+  tm.tm_hour=boost::lexical_cast<int>(t.substr(11,2).c_str());
+  tm.tm_min=boost::lexical_cast<int>(t.substr(14,2).c_str());
+  tm.tm_sec=boost::lexical_cast<int>(t.substr(17,2).c_str());
   // on my debian/woody server (1.11) this is UTC ...
   return timezone2time_t(tm,0); 
 }
@@ -604,13 +552,13 @@ static time_t rls_l2time_t(const std::string &t)
   I(t[20]=='+' || t[20]=='-');
   struct tm tm;
   memset(&tm,0,sizeof tm);
-  tm.tm_year=atoi(t.substr(0,4).c_str())-1900;
-  tm.tm_mon=atoi(t.substr(5,2).c_str())-1;
-  tm.tm_mday=atoi(t.substr(8,2).c_str());
-  tm.tm_hour=atoi(t.substr(11,2).c_str());
-  tm.tm_min=atoi(t.substr(14,2).c_str());
-  tm.tm_sec=atoi(t.substr(17,2).c_str());
-  int dst_offs=atoi(t.substr(20,5).c_str());
+  tm.tm_year=boost::lexical_cast<int>(t.substr(0,4).c_str())-1900;
+  tm.tm_mon=boost::lexical_cast<int>(t.substr(5,2).c_str())-1;
+  tm.tm_mday=boost::lexical_cast<int>(t.substr(8,2).c_str());
+  tm.tm_hour=boost::lexical_cast<int>(t.substr(11,2).c_str());
+  tm.tm_min=boost::lexical_cast<int>(t.substr(14,2).c_str());
+  tm.tm_sec=boost::lexical_cast<int>(t.substr(17,2).c_str());
+  int dst_offs=boost::lexical_cast<int>(t.substr(20,5).c_str());
 //  L(F("%d-%d-%d %d:%02d:%02d %04d") % tm.tm_year % tm.tm_mon % tm.tm_mday 
 //    % tm.tm_hour % tm.tm_min % tm.tm_sec % dst_offs );
   tm.tm_isdst=0;
@@ -647,13 +595,13 @@ static time_t mod_time2time_t(const std::string &t)
   memset(&tm,0,sizeof tm);
   I(parts[3][2]==':' && parts[3][5]==':');
   I(parts[4][0]=='+' || parts[4][0]=='-');
-  tm.tm_year=atoi(parts[2].c_str())-1900;
+  tm.tm_year=boost::lexical_cast<int>(parts[2].c_str())-1900;
   tm.tm_mon=monname2month(parts[1])-1;
-  tm.tm_mday=atoi(parts[0].c_str());
-  tm.tm_hour=atoi(parts[3].substr(0,2).c_str());
-  tm.tm_min=atoi(parts[3].substr(3,2).c_str());
-  tm.tm_sec=atoi(parts[3].substr(6,2).c_str());
-  int dst_offs=atoi(parts[4].c_str());
+  tm.tm_mday=boost::lexical_cast<int>(parts[0].c_str());
+  tm.tm_hour=boost::lexical_cast<int>(parts[3].substr(0,2).c_str());
+  tm.tm_min=boost::lexical_cast<int>(parts[3].substr(3,2).c_str());
+  tm.tm_sec=boost::lexical_cast<int>(parts[3].substr(6,2).c_str());
+  int dst_offs=boost::lexical_cast<int>(parts[4].c_str());
   tm.tm_isdst=0;
   return timezone2time_t(tm,dst_offs);
 }
@@ -672,12 +620,12 @@ time_t cvs_client::Entries2time_t(const std::string &t)
   struct tm tm;
   memset(&tm,0,sizeof tm);
   I(parts[3][2]==':' && parts[3][5]==':');
-  tm.tm_year=atoi(parts[4].c_str())-1900;
+  tm.tm_year=boost::lexical_cast<int>(parts[4].c_str())-1900;
   tm.tm_mon=monname2month(parts[1])-1;
-  tm.tm_mday=atoi(parts[2].c_str());
-  tm.tm_hour=atoi(parts[3].substr(0,2).c_str());
-  tm.tm_min=atoi(parts[3].substr(3,2).c_str());
-  tm.tm_sec=atoi(parts[3].substr(6,2).c_str());
+  tm.tm_mday=boost::lexical_cast<int>(parts[2].c_str());
+  tm.tm_hour=boost::lexical_cast<int>(parts[3].substr(0,2).c_str());
+  tm.tm_min=boost::lexical_cast<int>(parts[3].substr(3,2).c_str());
+  tm.tm_sec=boost::lexical_cast<int>(parts[3].substr(6,2).c_str());
   tm.tm_isdst=0;
   // at least for me it was UTC ...
   return timezone2time_t(tm,0);

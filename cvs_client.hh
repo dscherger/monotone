@@ -77,12 +77,10 @@ class cvs_client
     std::string new_content;
     
     commit_arg() : old_revision("0"), removed() {}
-//    commit_arg(const std::string &rev) : old_revision(rev), removed() {}
   };
 
 private:
   boost::shared_ptr<Netxx::StreamBase> stream;
-//  int readfd,writefd;
   std::auto_ptr<ticker> byte_in_ticker;
   std::auto_ptr<ticker> byte_out_ticker;
   typedef std::set<std::string> stringset_t;
@@ -107,7 +105,6 @@ private:
   std::string readline();
   std::string read_n(unsigned size);
 
-//  void ticker(bool newline=true) const;
   void SendCommand(const char *cmd,...);
   void SendCommand(const char *cmd, va_list ap);
   void SendArgument(const std::string &a);
@@ -131,7 +128,6 @@ private:
 protected:
   std::string root;
   std::string module;
-//  std::string rcs_root; // the real directory of the root (ask cvs.gnome.org)
   std::string host; // for author certification
   
   void reconnect();
