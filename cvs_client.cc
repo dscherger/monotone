@@ -136,6 +136,12 @@ void cvs_client::SendCommand(const char *cmd,va_list ap)
   writestr(cmd+std::string("\n"));
 }
 
+void cvs_client::SendCommand(std::string const& cmd, std::vector<std::string> const&args)
+{ for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
+    writestr("Argument "+*i+"\n");
+  writestr(cmd+"\n");
+}
+
 bool cvs_client::begins_with(const std::string &s, const std::string &sub, unsigned &len)
 { std::string::size_type sublen=sub.size();
   if (s.size()<sublen) return false;
@@ -1094,31 +1100,43 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     }
     if (!i->old_revision.empty())
     { std::string bname=basename(i->file);
-      writestr("Entry /"+bname+"/"+i->old_revision+"//"+i->keyword_substitution+"/\n");
+      std::string branchpart;
+      if (!branch.empty()) branchpart="T"+branch;
+      writestr("Entry /"+bname+"/"+i->old_revision+"//"
+                +i->keyword_substitution+"/"+branchpart+"\n");
       writestr("Unchanged "+bname+"\n");
     }
-//    else I(file_revisions.size()==1); // this is only designed to work this way
   }
   if (file_revisions.size()==1 && !file_revisions.begin()->new_revision.empty())
-  { if (file_revisions.begin()->old_revision.empty())
-      SendCommand("update","-d","-C","-A",
-        "-r",file_revisions.begin()->new_revision.c_str(),
-        "--",basename(file_revisions.begin()->file).c_str(),(void*)0);
+  { std::vector<std::string> args;
+    args.push_back("-d"); // create new directories
+    args.push_back("-C"); // ignore previous context
+    if (file_revisions.begin()->old_revision.empty())
+    {
+      if (branch.empty())
+        args.push_back("-A");
+    }
     else
-      SendCommand("update","-d","-C","-u",
-        "-r",file_revisions.begin()->new_revision.c_str(),
-        "--",basename(file_revisions.begin()->file).c_str(),(void*)0);
+      args.push_back("-u"); // send back diff
+    args.push_back("-r");
+    args.push_back(file_revisions.begin()->new_revision);
+    args.push_back(file_revisions.begin()->file);
+    SendCommand(std::string("update"),args);
   }
   else 
-  { // needed for 1.11
-    Directory(".");
-    SendCommand("update","-d","-C","-u",(void*)0);
+  { std::vector<std::string> args;
+    args.push_back("-d"); // create new directories
+    args.push_back("-C"); // ignore previous context
+    args.push_back("-u"); // send back diff
+    if (!branch.empty())
+      args.push_back("-r"+branch);
+    Directory("."); // needed for 1.11
+    SendCommand(std::string("update"),args);
   }
   std::vector<std::pair<std::string,std::string> > lresult;
   std::string dir,dir2,rcsfile;
   enum { st_normal, st_merge } state=st_normal;
 
-  std::vector<update_args> bugged;
   while (fetch_result(lresult))
   { I(!lresult.empty());
     unsigned len=0;
@@ -1185,12 +1203,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         if (result.file[0]=='/') result.file=rcs_file2path(result.file);
         result.contents=lresult[6].second; // strictly this is unnecessary ...
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
-        W(F("Update ->%s of %s exposed CVS bug\n") 
+        E(false, F("Update ->%s of %s exposed CVS bug\n") 
             % result.new_revision % result.file);
-        bugged.push_back(update_args(result.file,std::string(),
-                          result.new_revision,result.keyword_substitution));
-        result=update();
-        state=st_normal;
       }
       else if (lresult[0].second=="error")
       { I(state==st_merge);
@@ -1238,23 +1252,6 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     { W(F("Update: unrecognized response %s\n") % lresult[0].second);
     }
   }
-
-// cater for encountered bugs ...
-// actually this code should not be necessary with the current options
-// without -C some revisions interacted with each other badly
-  for (std::vector<update_args>::const_iterator i=bugged.begin();
-                                                  i!=bugged.end();++i)
-  { result=update();
-    checkout result2=CheckOut(i->file,i->new_revision);
-    result.contents=result2.contents;
-    result.patch=std::string();
-    result.checksum=std::string();
-    result.removed=result2.dead;
-    result.new_revision=i->new_revision;
-    result.keyword_substitution=result2.keyword_substitution;
-    result.file=i->file;
-    cb(result);
-  }
 }
 
 void cvs_client::parse_entry(const std::string &line, std::string &new_revision, 
@@ -1284,8 +1281,11 @@ std::map<std::string,std::pair<std::string,std::string> >
       Directory(olddir);
     }
     std::string bname=basename(i->file);
+    std::string branchpart;
+    if (!branch.empty()) branchpart="T"+branch;
     writestr("Entry /"+bname+"/"+(i->removed?"-":"")
-          +i->old_revision+"//"+i->keyword_substitution+"/\n");
+          +i->old_revision+"//"+i->keyword_substitution+"/"
+          +branchpart+"\n");
     if (!i->removed)
     { writestr("Checkin-time "+time_t2rfc822(when)+"\n");
       writestr("Modified "+bname+"\n");

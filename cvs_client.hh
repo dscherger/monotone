@@ -112,6 +112,7 @@ private:
 
   void SendCommand(const char *cmd,...);
   void SendCommand(const char *cmd, va_list ap);
+  void SendCommand(std::string const& cmd, std::vector<std::string> const&args);
   void SendArgument(const std::string &a);
   // false if none available
   bool fetch_result(std::string &result);

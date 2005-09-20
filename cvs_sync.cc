@@ -655,15 +655,10 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   I(srev.is_parent_of(s2->cvs_version));
   if (s->dead)
   { 
-#if 0  
-    cvs_client::checkout c=CheckOut2(file,s2->cvs_version);
-    I(!c.dead); // dead->dead is no change, so shouldn't get a number
-#else
     // this might fail (?) because we issued an Entry somewhere above
     // but ... we can specify the correct directory!
     cvs_client::update c=Update(file,s2->cvs_version);
-    I(!c.removed);
-#endif    
+    I(!c.removed); // dead->dead is no change, so shouldn't get a number
     I(!s2->dead);
     // I(s2->since_when==c.mod_time);
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
@@ -738,7 +733,9 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   { std::set<cvs_edge>::iterator next_edge=e;
     ++next_edge;
     for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
-    { I(!f->second.known_states.empty());
+    { I(!branch.empty() || !f->second.known_states.empty());
+      // this file does not belong to this branch
+      if (f->second.known_states.empty()) continue; 
       if (!(*(f->second.known_states.begin()) <= (*e)))
       // the file does not exist yet (first is not below/equal current edge)
       { L(F("%s before beginning %d/%d+%d\n") % f->first 
@@ -746,15 +743,6 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
             % e->time % (e->time2-e->time));
         continue; 
       }
-#if 0        
-      if ((*(f->second.known_states.rend()) < (*e)))
-      // the last revision was already processed (it remains this state)
-      { W(F("%s beyond end %d/%d+%d\n") % f->first 
-            % f->second.known_states.rend()->since_when
-            % e->time % (e->time2-e->time));
-        continue;
-      }
-#endif
       cvs_manifest::iterator mi=current_manifest.find(f->first);
       if (mi==current_manifest.end()) // the file is currently dead
       { cvs_file_state s=f->second.known_states.end();
@@ -901,14 +889,14 @@ void cvs_repository::prime()
   { std::vector<std::string> args;
     
     if (!branch.empty())
-    { args.push_back("-r");
-      args.push_back(branch);
-    }
+      args.push_back("-r"+branch);
+    else 
+      args.push_back("-b");
+      
     if (sync_since!=-1) 
     { args.push_back("-d"); 
       size_t date_index=args.size();
       args.push_back(time_t2rfc822(sync_since));
-      args.push_back("-b");
       // state _at_ this point in time
       Log(prime_log_cb(*this,i,sync_since),i->first,args);
       // -d Jun 20 09:38:29 1997<
@@ -917,9 +905,7 @@ void cvs_repository::prime()
       Log(prime_log_cb(*this,i,sync_since),i->first,args);
     }
     else 
-    { args.push_back("-b");
       Log(prime_log_cb(*this,i),i->first,args);
-    }
   }
   // remove duplicate states (because some edges were added by the 
   // get_all_files method)
@@ -941,7 +927,8 @@ void cvs_repository::prime()
   // get the contents
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { std::string file_contents;
-    I(!i->second.known_states.empty());
+    I(!branch.empty() || !i->second.known_states.empty());
+    if (!i->second.known_states.empty())
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
       cvs_client::update c=Update(i->first,s2->cvs_version);
       store_checkout(s2,c,file_contents);
@@ -956,14 +943,6 @@ void cvs_repository::prime()
   }
   drop_connection();
 
-#if 0
-  if (sync_since!=-1 && edges.empty() && !files.empty())
-    // no change happened since sync_since, so we didn't see an edge,
-    // fake one
-  { cvs_edge new_edge("initial state for cvs_pull --since",sync_since,app.signing_key());
-    edges.insert(new_edge);
-  }
-#endif  
   // fill in file states at given point
   fill_manifests(edges.begin());
   

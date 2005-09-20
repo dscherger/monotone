@@ -33,6 +33,7 @@ AT_CHECK(test -e $CVSROOT/CVSROOT/history)
 
 AT_CHECK(mkdir cvstemp)
 AT_CHECK(cp d_import cvstemp/A)
+AT_CHECK(cp d_import cvstemp/A2)
 AT_CHECK([cd cvstemp ; cvs -q -d $CVSROOT import -m 'initial import' test vendor_tag initial_import], [], [ignore], [ignore])
 
 # change the repository in various ways
@@ -40,7 +41,9 @@ AT_CHECK([cd cvstemp ; cvs -q -d $CVSROOT import -m 'initial import' test vendor
 AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
 AT_CHECK([cd test;cvs -Q tag -b branch])
 AT_CHECK(cp d_add test/B)
+AT_CHECK(cp d_add test/B2)
 AT_CHECK([cd test;cvs -Q add B])
+AT_CHECK([cd test;cvs -Q add B2])
 AT_CHECK([sleep 1;cd test;cvs -Q ci -m 'B added to HEAD'])
 
 AT_CHECK([cd test;cvs update -r branch], [], [ignore], [ignore])
@@ -67,18 +70,19 @@ AT_CHECK(MONOTONE --branch=testbranch cvs_pull $CVSROOT test branch, [], [ignore
 
 # check presence of files
 
-#AT_CHECK(MONOTONE automate get_file $TSHA0, [], [ignore])
+AT_CHECK(MONOTONE automate get_file $TSHA0, [], [ignore])
 #AT_CHECK(MONOTONE automate get_file $TSHA1, [], [ignore])
-#AT_CHECK(MONOTONE automate get_file $TSHA2, [], [ignore])
-#AT_CHECK(MONOTONE automate get_file $TSHA3, [], [ignore])
-#AT_CHECK(MONOTONE automate get_file $TSHA4, [], [ignore])
+AT_CHECK(MONOTONE automate get_file $TSHA2, [], [ignore])
+AT_CHECK(MONOTONE automate get_file $TSHA3, [], [ignore])
+AT_CHECK(MONOTONE automate get_file $TSHA4, [], [ignore])
 
 # also check that history is okay -- has a unique head, and it's the
 # right one.
 
-#AT_CHECK(MONOTONE checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
-#AT_CHECK(cmp d_readd mtcodir/A)
-#AT_CHECK(cmp d_change mtcodir/B)
-#AT_CHECK(cmp d_subdir mtcodir/dir/D)
+AT_CHECK(MONOTONE checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+AT_CHECK(cmp d_import mtcodir/A2)
+AT_CHECK(cmp d_readd mtcodir/A)
+AT_CHECK(cmp d_change mtcodir/B)
+AT_CHECK(cmp d_subdir mtcodir/dir/D)
 
 AT_CLEANUP
