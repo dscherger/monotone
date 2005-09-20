@@ -43,7 +43,7 @@ AT_CHECK(cp d_add test/B)
 AT_CHECK([cd test;cvs -Q add B])
 AT_CHECK([sleep 1;cd test;cvs -Q ci -m 'B added to HEAD'])
 
-AT_CHECK([cd test;cvs update -r branch])
+AT_CHECK([cd test;cvs update -r branch], [], [ignore], [ignore])
 AT_CHECK([cd test;cvs -Q delete -f A])
 AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A removed'])
 

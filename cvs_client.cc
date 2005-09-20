@@ -715,6 +715,20 @@ void cvs_client::Log_internal(const rlog_callbacks &cb,const std::string &file,v
   processLogOutput(cb);
 }
 
+void cvs_client::Log_internal(const rlog_callbacks &cb,const std::string &file,
+                              std::vector<std::string> const &args)
+{ Directory(dirname(std::string(file)));
+  std::string bname=basename(std::string(file));
+  writestr("Entry /"+bname+"/1.1.1.1//-kb/\n");
+  writestr("Unchanged "+bname+"\n");
+  for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
+    writestr("Argument "+*i+"\n");
+  writestr("Argument --\n"
+        "Argument "+bname+"\n"
+        "log\n");
+  processLogOutput(cb);
+}
+
 void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
 { primeModules();
   va_list ap,ap2;
@@ -728,6 +742,12 @@ void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
     Log_internal(cb,file,ap2);
   }
   va_end(ap);
+}
+
+void cvs_client::Log(const rlog_callbacks &cb,std::string const& file,
+                                      std::vector<std::string> const& args)
+{ primeModules();
+  Log_internal(cb,file,args);
 }
 
 // dummy is needed to satisfy va_start (cannot pass objects of non-POD type)

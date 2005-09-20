@@ -898,19 +898,31 @@ void cvs_repository::prime()
   revision_ticker.reset(0);
   cvs_edges_ticker.reset(new ticker("edges", "E", 10));
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
-  { // -d D< (sync_since)
-    if (sync_since!=-1) 
-    { Log(prime_log_cb(*this,i,sync_since),i->first.c_str(),
-          "-d",(time_t2rfc822(sync_since)).c_str(),
-          "-b",(void*)0);
-      Log(prime_log_cb(*this,i),i->first.c_str(),
-          "-d",(time_t2rfc822(sync_since)+"<").c_str(),
-          "-b",(void*)0);
+  { std::vector<std::string> args;
+    
+    if (!branch.empty())
+    { args.push_back("-r");
+      args.push_back(branch);
     }
-    else Log(prime_log_cb(*this,i),i->first.c_str(),"-b",(void*)0);
+    if (sync_since!=-1) 
+    { args.push_back("-d"); 
+      size_t date_index=args.size();
+      args.push_back(time_t2rfc822(sync_since));
+      args.push_back("-b");
+      // state _at_ this point in time
+      Log(prime_log_cb(*this,i,sync_since),i->first,args);
+      // -d Jun 20 09:38:29 1997<
+      args[date_index]+='<';
+      // state _since_ this point in time
+      Log(prime_log_cb(*this,i,sync_since),i->first,args);
+    }
+    else 
+    { args.push_back("-b");
+      Log(prime_log_cb(*this,i),i->first,args);
+    }
   }
   // remove duplicate states (because some edges were added by the 
-  // get_all_files method
+  // get_all_files method)
   for (std::set<cvs_edge>::iterator i=edges.begin();i!=edges.end();)
   { if (i->changelog_valid || i->author.size()) { ++i; continue; }
     std::set<cvs_edge>::iterator j=i;
@@ -918,7 +930,6 @@ void cvs_repository::prime()
     I(j!=edges.end());
     I(j->time==i->time);
     I(i->xfiles.empty());
-//    I(i->revision.empty());
     edges.erase(i);
     if (cvs_edges_ticker.get()) --(*cvs_edges_ticker);
     i=j; 

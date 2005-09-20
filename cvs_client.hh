@@ -102,6 +102,8 @@ private:
   void processLogOutput(const rlog_callbacks &cb);
   void connect();
   void primeModules();
+  void Log_internal(const rlog_callbacks &cb,const std::string &file,
+                                    std::vector<std::string> const &args);
   void Log_internal(const rlog_callbacks &cb,const std::string &file,va_list ap);
 
   void writestr(const std::string &s, bool flush=false);
@@ -147,6 +149,8 @@ public:
   
   void RLog(const rlog_callbacks &cb,bool dummy,...);
   void Log(const rlog_callbacks &cb,const char *file,...);
+  void Log(const rlog_callbacks &cb,const std::string &file,
+                                    std::vector<std::string> const &args);
   void RList(const rlist_callbacks &cb,bool dummy,...);
   struct checkout CheckOut(const std::string &file, const std::string &revision);
   struct update Update(const std::string &file, 
