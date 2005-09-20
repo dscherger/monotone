@@ -122,6 +122,14 @@ private:
   
   time_t sync_since;
 
+public:
+  std::string create_cvs_cert_header() const;
+  static void parse_cvs_cert_header(revision<cert> const& c, 
+      std::string &repository, std::string& module, std::string& branch);
+  static std::string::size_type parse_cvs_cert_header(cert_value const& value, 
+      std::string &repository, std::string& module, std::string& branch);
+      
+private:
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
   void get_all_files();
@@ -187,9 +195,9 @@ public:
 };
 
 void pull(const std::string &repository, const std::string &module,
-            app_state &app);
+            std::string const& branch, app_state &app);
 void push(const std::string &repository, const std::string &module,
-            app_state &app);
+            std::string const& branch, app_state &app);
 void admin(const std::string &command, const std::string &arg, app_state &app);
 void takeover(app_state &app, const std::string &module);
 } // end namespace cvs_sync

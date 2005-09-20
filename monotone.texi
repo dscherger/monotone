@@ -3138,9 +3138,7 @@ possible (though this might get confusing and inconvenient).
 
 @itemize
 @item
-missing side branch support (@code{--cvsbranch})
-@item
-creating new subdirectories on the CVS server is unimplemented
+creating new subdirectories on the CVS server is yet unimplemented
 @item
 a patch (MD5) failure is not handled gracefully
 @item
@@ -3161,7 +3159,8 @@ If a fork occurs during @code{cvs_push} you are instructed to select a
 direction using the @code{--revision} option. Simply choose the branch you
 want to see in details in CVS and specify its revision.
 @item
-Working with CVS branches. @code{--cvsbranch}? (not yet implemented)
+Working with CVS branches and tags. To be written once I gathered 
+my own experience with this feature.
 @end itemize
 
 @subsection Future directions:
@@ -3915,8 +3914,8 @@ any character, to match exactly that character --- this might be useful
 in case someone, for some odd reason, decides to put a ``*'' into their
 branch name.
 
-@item monotone cvs_pull [--since @var{time}] [--cvsbranch @var{branch}] [@var{repository} @var{module}]
-@itemx monotone cvs_push [--since @var{time}] [--cvsbranch @var{branch}] [@var{repository} @var{module}]
+@item monotone cvs_pull [--since @var{time}] [@var{repository} @var{module} [@var{cvsbranch}]]
+@itemx monotone cvs_push [@var{repository} @var{module} [@var{cvsbranch}]]
 These commands communicate with a CVS server. @code{cvs_pull} works like
 @code{cvs update} and @code{cvs_push} is like @code{cvs commit}.
 See also @xref{cvssync,,cvssync introduction}.
@@ -7116,10 +7115,10 @@ across the entire tree.  You do not want this command, it is for
 debugging; use cvs_import.
 @comment TROFF INPUT: .TP
 
-@item @b{cvs_pull} @i{[--since=time]} @i{[--cvsbranch=branch]} @i{[repository module]}
-Import revisions from a CVS server
+@item @b{cvs_pull} @i{[--since=time]} @i{[repository module [cvsbranch]]}
+Import revisions from a CVS server (check out or update)
 
-@item @b{cvs_push} @i{[--cvsbranch=branch]} @i{[repository module]}
+@item @b{cvs_push} @i{[repository module [cvsbranch]]}
 Commit revisions to a CVS server
 
 @item @b{cvs_takeover} @i{[module]}

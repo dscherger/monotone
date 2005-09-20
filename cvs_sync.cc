@@ -13,12 +13,11 @@
 #include <boost/date_time/gregorian/greg_date.hpp>
 #include <fstream>
 #include <sys/stat.h>
+#include "stringtok.hh"
 
 #ifdef WIN32
 #define sleep(x) _sleep(x)
 #endif
-
-#define BACKWARD_COMPATIBLE
 
 using namespace std;
 
@@ -59,12 +58,6 @@ construct_version(vector< piece > const & source_lines,
 }
 
 using namespace cvs_sync;
-
-#if 0
-std::ostream &operator<<(std::ostream &o, const file_state &f)
-{ return o << f.since_when << ' ' << f.cvs_version << ' ' << f.dead;
-}
-#endif
 
 bool file_state::operator<(const file_state &b) const
 { return since_when<b.since_when
@@ -282,33 +275,13 @@ struct cvs_repository::get_all_files_log_cb : rlog_callbacks
         const std::string &state,const std::string &log) const {}
 };
 
-#if 0
-struct cvs_repository::get_all_files_list_cb : rlist_callbacks
-{ cvs_repository &repo;
-  get_all_files_list_cb(cvs_repository &r) : repo(r) {}
-  virtual void file(const std::string &name, time_t last_change,
-        const std::string &last_rev, bool dead) const
-  { repo.files[name].known_states.insert(file_state(last_change,last_rev,dead));
-// this does hurt more than help
-//    repo.edges.insert(cvs_edge(last_change));
-  }
-};
-#endif
-
 // get all available files and their newest revision
 void cvs_repository::get_all_files()
 { if (edges.empty())
-  { 
-#if 0 // seems to be more efficient but it's hard to guess the directory the
+  { // rlist seems to be more efficient but it's hard to guess the directory the
     // server talks about
-    if (CommandValid("rlist"))
-    { RList(get_all_files_list_cb(*this),false,"-l","-R","-d","--",module.c_str(),(void*)0);
-    }
-    else // less efficient? ...
-#endif    
-    { I(CommandValid("rlog"));
-      RLog(get_all_files_log_cb(*this),false,"-N","-h","--",module.c_str(),(void*)0);
-    }
+    I(CommandValid("rlog"));
+    RLog(get_all_files_log_cb(*this),false,"-N","-h","--",module.c_str(),(void*)0);
   }
 }
 
@@ -340,6 +313,43 @@ std::string debug_files(const std::map<std::string,file_history> &files)
     result += ")\n";
   }
   return result;
+}
+
+// returns the length of the first line (header) and fills in fields
+std::string::size_type cvs_repository::parse_cvs_cert_header(cert_value const& value, 
+      std::string &repository, std::string& module, std::string& branch)
+{ 
+  std::string::size_type nlpos=value().find('\n');
+  I(nlpos!=std::string::npos);
+  std::string repo=value().substr(0,nlpos);
+  std::string::size_type modulebegin=repo.find('\t'); 
+  I(modulebegin!=std::string::npos);
+  std::string::size_type branchbegin=repo.find(modulebegin,'\t');
+  std::string::size_type modulelen=std::string::npos;
+  
+  if (branchbegin!=std::string::npos)
+  { branch=repo.substr(branchbegin+1);
+    modulelen=branchbegin-modulebegin-1;
+  }
+  repository=repo.substr(0,modulebegin);
+  module=repo.substr(modulebegin+1,modulelen);
+  return nlpos;
+}
+
+void cvs_repository::parse_cvs_cert_header(revision<cert> const& c, 
+      std::string &repository, std::string& module, std::string& branch)
+{
+  cert_value value;
+  decode_base64(c.inner().value, value);
+  parse_cvs_cert_header(value, repository, module, branch);
+}
+
+std::string cvs_repository::create_cvs_cert_header() const
+{ 
+  // I assume that at least TAB is uncommon in path names - even on Windows
+  std::string result=host+":"+root+"\t"+module;
+  if (!branch.empty()) result+="\t"+branch;
+  return result+"\n";
 }
 
 std::string cvs_repository::debug() const
@@ -922,13 +932,8 @@ void cvs_repository::prime()
   { std::string file_contents;
     I(!i->second.known_states.empty());
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
-#if 0    
-      cvs_client::checkout c=CheckOut2(i->first,s2->cvs_version);
-      store_checkout(s2,c,file_contents);
-#else
       cvs_client::update c=Update(i->first,s2->cvs_version);
       store_checkout(s2,c,file_contents);
-#endif      
     }
     for (std::set<file_state>::iterator s=i->second.known_states.begin();
           s!=i->second.known_states.end();++s)
@@ -958,8 +963,8 @@ void cvs_repository::prime()
 }
 
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
-{ // I assume that at least TAB is uncommon in path names - even on Windows
-  std::string content=host+":"+root+"\t"+module+"\n";
+{ 
+  std::string content=create_cvs_cert_header();
   if (!e.delta_base.inner()().empty()) 
   { content+="+"+e.delta_base.inner()()+"\n";
   }
@@ -1192,7 +1197,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
   { std::vector< revision<cert> > certs;
     app.db.get_revision_certs(*i,certs);
     std::vector< revision<cert> >::const_iterator j=certs.begin();
-    std::string to_match=host+":"+root+"\t"+module+"\n";
+    std::string to_match=create_cvs_cert_header();
     for (;j!=certs.end();++j)
     { if (j->inner().name()!=cvs_cert_name) continue;
       cert_value value;
@@ -1287,8 +1292,12 @@ void cvs_repository::commit()
   store_modules();
 }
 
-// this is somewhat clumsy ... rethink it  
+// look for _any_ cvs cert in the given monotone branch and assign
+// its value to repository, module, branch
+
+// this is somewhat clumsy ... but works well enough
 static void guess_repository(std::string &repository, std::string &module,
+        std::string & branch,
         std::vector< revision<cert> > &certs, app_state &app)
 { I(!app.branch_name().empty());
   app.db.get_revision_certs(cvs_cert_name, certs); 
@@ -1304,22 +1313,13 @@ static void guess_repository(std::string &repository, std::string &module,
           bi!=branch_certs.end();++bi)
     { // actually this finds an arbitrary element of the set intersection
       if (ci->inner().ident==bi->inner().ident)
-      { cert_value value;
-        decode_base64(ci->inner().value, value);
-        std::string::size_type nlpos=value().find('\n');
-        I(nlpos!=std::string::npos);
-        std::string repo=value().substr(0,nlpos);
-        std::string::size_type lastslash=repo.find('\t'); 
-#ifdef BACKWARD_COMPATIBLE
-        if (lastslash==std::string::npos) lastslash=repo.rfind('/');
-#endif
-        I(lastslash!=std::string::npos);
-        // this is naive ... but should work most of the time
-        // we should not separate repo and module by '/'
-        // but I do not know a much better separator
-        repository=repo.substr(0,lastslash);
-        module=repo.substr(lastslash+1);
-        L(F("using module '%s' in repository '%s'\n") % module % repository);
+      { 
+        cvs_repository::parse_cvs_cert_header(*ci,repository,module,branch);
+        if (branch.empty())
+          L(F("using module '%s' in repository '%s'\n") % module % repository);
+        else
+          L(F("using branch '%s' of module '%s' in repository '%s'\n") 
+                % branch % module % repository);
         goto break_outer;
       }
     }
@@ -1328,14 +1328,14 @@ static void guess_repository(std::string &repository, std::string &module,
 }
 
 void cvs_sync::push(const std::string &_repository, const std::string &_module,
-            app_state &app)
+            std::string const& _branch, app_state &app)
 { test_key_availability(app);
   // make the variables changeable
-  std::string repository=_repository, module=_module;
+  std::string repository=_repository, module=_module, branch=_branch;
   std::vector< revision<cert> > certs;
   if (repository.empty() || module.empty())
-    guess_repository(repository, module, certs, app);
-  cvs_sync::cvs_repository repo(app,repository,module);
+    guess_repository(repository, module, branch, certs, app);
+  cvs_sync::cvs_repository repo(app,repository,module,branch);
 // turned off for DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo.GzipStream(3);
@@ -1354,17 +1354,17 @@ void cvs_sync::push(const std::string &_repository, const std::string &_module,
 }
 
 void cvs_sync::pull(const std::string &_repository, const std::string &_module,
-            app_state &app)
+            std::string const& _branch, app_state &app)
 { test_key_availability(app);
   // make the variables changeable
-  std::string repository=_repository, module=_module;
+  std::string repository=_repository, module=_module, branch=_branch;
   
   std::vector< revision<cert> > certs;
 
   if (repository.empty() || module.empty())
-    guess_repository(repository, module, certs, app);
-  cvs_sync::cvs_repository repo(app,repository,module);
-// turned off for DEBUGGING
+    guess_repository(repository, module, branch, certs, app);
+  cvs_sync::cvs_repository repo(app,repository,module,branch);
+// turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo.GzipStream(3);
   transaction_guard guard(app.db);
@@ -1398,20 +1398,13 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
   std::auto_ptr<ticker> cert_ticker;
   cert_ticker.reset(new ticker("cvs certs", "C", 10));
 
-  std::string needed_cert=host+":"+root+"\t"+module+"\n";
-#ifdef BACKWARD_COMPATIBLE
-  std::string needed_cert_old=host+":"+root+"/"+module+"\n";
-#endif  
+  std::string needed_cert=create_cvs_cert_header();
   for (vector<revision<cert> >::const_iterator i=certs.begin(); i!=certs.end(); ++i)
   { // populate data structure using these certs
     cert_value cvs_revisions;
     decode_base64(i->inner().value, cvs_revisions);
     if (cvs_revisions().size()>needed_cert.size() 
-      && (cvs_revisions().substr(0,needed_cert.size())==needed_cert
-#ifdef BACKWARD_COMPATIBLE
-         || cvs_revisions().substr(0,needed_cert_old.size())==needed_cert_old
-#endif
-      ))
+      && (cvs_revisions().substr(0,needed_cert.size())==needed_cert))
     { // parse and add the cert
       ++(*cert_ticker);
       cvs_edge e(i->inner().ident,app);
@@ -1659,28 +1652,22 @@ void cvs_sync::admin(const std::string &command, const std::string &arg,
   // we default to the first repository found (which might not be what you wanted)
   if (command=="manifest" && arg.size()==constants::idlen)
   { revision_id rid(arg);
-    // easy but not very efficient way, better would be to retrieve revisions
-    // recursively (perhaps?)
+    // easy but not very efficient way, since we parse all revisions to decode
+    // the delta encoding
+    // (perhaps?) it would be better to retrieve needed revisions recursively
     std::vector< revision<cert> > certs;
     app.db.get_revision_certs(rid,cvs_cert_name,certs);
+    // erase_bogus_certs ?
     N(!certs.empty(),F("revision has no 'cvs-revisions' certificates\n"));
     
-    cert_value cvs_revisions;
-    decode_base64(certs.front().inner().value, cvs_revisions);
-    std::string::size_type nl=cvs_revisions().find('\n');
-    I(nl!=std::string::npos);
-    std::string line=cvs_revisions().substr(0,nl);
-    std::string::size_type slash=line.rfind('/');
-    I(slash!=std::string::npos);
-    cvs_sync::cvs_repository repo(app,line.substr(0,slash),line.substr(slash+1),false);
+    std::string repository,module,branch;
+    cvs_repository::parse_cvs_cert_header(certs.front(), repository, module, branch);
+    cvs_sync::cvs_repository repo(app,repository,module,branch,false);
     app.db.get_revision_certs(cvs_cert_name, certs);
-    // erase_bogus_certs ?
     repo.process_certs(certs);
-    std::cout << line << '\n';
     std::cout << debug_manifest(repo.get_files(rid));
     return;
   }
-  
 }
 
 const cvs_manifest &cvs_repository::get_files(const revision_id &rid)
@@ -1700,37 +1687,6 @@ struct cvs_client::checkout cvs_repository::CheckOut2(const std::string &file, c
   }
 }
 
-// inspired by code from Marcelo E. Magallon and the libstdc++ doku
-template <typename Container>
-void
-stringtok (Container &container, std::string const &in,
-           const char * const delimiters = " \t\n")
-{
-    const std::string::size_type len = in.length();
-          std::string::size_type i = 0;
-
-    while ( i < len )
-    {
-        // eat leading whitespace
-        // i = in.find_first_not_of (delimiters, i);
-        // if (i == std::string::npos)
-        //    return;   // nothing left but white space
-
-        // find the end of the token
-        std::string::size_type j = in.find_first_of (delimiters, i);
-
-        // push token
-        if (j == std::string::npos) {
-            container.push_back (in.substr(i));
-            return;
-        } else
-            container.push_back (in.substr(i, j-i));
-
-        // set up for next loop
-        i = j + 1;
-    }
-}
-
 void cvs_client::validate_path(const std::string &local, const std::string &server)
 { for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();
       i!=server_dir.end();++i)
@@ -1743,7 +1699,8 @@ void cvs_client::validate_path(const std::string &local, const std::string &serv
 }
 
 void cvs_repository::takeover_dir(const std::string &path)
-{ { std::string repository;
+{ // remember the server path for this subdirectory
+  { std::string repository;
     std::ifstream cvs_repository((path+"CVS/Repository").c_str());
     N(cvs_repository.good(), F("can't open %sCVS/Repository\n") % path);
     std::getline(cvs_repository,repository);
@@ -1859,13 +1816,21 @@ void cvs_repository::takeover()
 
 // read in directory put into db
 void cvs_sync::takeover(app_state &app, const std::string &_module)
-{ std::string root,module=_module;
+{ std::string root,module=_module,branch;
 
   N(access("MT",F_OK),F("Found a MT file or directory, already under monotone's control?"));
   { fstream cvs_root("CVS/Root");
     N(cvs_root.good(),
       F("can't open ./CVS/Root, please change into the working directory\n"));
     std::getline(cvs_root,root);
+  }
+  { fstream cvs_branch("CVS/Tag");
+    if (cvs_branch.good())
+    { std::getline(cvs_branch,branch);
+      I(!branch.empty());
+      I(branch[0]=='T');
+      branch.erase(0,1);
+    }
   }
   if (module.empty())
   { fstream cvs_repository("CVS/Repository");
@@ -1875,15 +1840,15 @@ void cvs_sync::takeover(app_state &app, const std::string &_module)
     W(F("Guessing '%s' as the module name\n") % module);
   }
   test_key_availability(app);
-  cvs_sync::cvs_repository repo(app,root,module,false);
-  // FIXME: validate directory to match the structure
+  cvs_sync::cvs_repository repo(app,root,module,branch,false);
+  // FIXME? check that directory layout matches the module structure
   repo.takeover();
 }
 
 void cvs_repository::store_modules()
 { const std::map<std::string,std::string> &sd=GetServerDir();
   std::string value;
-  std::string name=host+":"+root+"\t"+module+"\n";
+  std::string name=create_cvs_cert_header();
   for (std::map<std::string,std::string>::const_iterator i=sd.begin();
         i!=sd.end();++i)
   { value+=i->first+"\t"+i->second+"\n";
@@ -1898,7 +1863,7 @@ void cvs_repository::store_modules()
 
 void cvs_repository::retrieve_modules()
 { if (!GetServerDir().empty()) return;
-  std::string name=host+":"+root+"\t"+module+"\n";
+  std::string name=create_cvs_cert_header();
   std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
   var_value value;
   try {

@@ -3666,37 +3666,39 @@ CMD(setup, N_("tree"), N_("DIRECTORY"), N_("setup a new working copy directory")
 
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
-CMD(cvs_pull, "network", "[CVS-REPOSITORY CVS-MODULE]",
+CMD(cvs_pull, "network", "[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]",
     "(re-)import a module from a remote cvs repository", 
     OPT_BRANCH_NAME % OPT_SINCE)
 {
+  if (args.size() == 1 || args.size() > 3) throw usage(name);
 
-  if (args.size() != 2 && args.size() != 0) throw usage(name);
-
-  string repository,module;
-  if (args.size() == 2)
+  string repository,module,branch;
+  if (args.size() >= 2)
   { repository = idx(args, 0)();
     module = idx(args, 1)();
+    if (args.size()==3) 
+      branch=idx(args, 2)();
   }
   N(!app.branch_name().empty(), F("no destination branch specified\n"));
       
-  cvs_sync::pull(repository,module,app);
+  cvs_sync::pull(repository,module,branch,app);
 }
 
 
-CMD(cvs_push, "network", "[CVS-REPOSITORY CVS-MODULE]",
+CMD(cvs_push, "network", "[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]",
     "commit changes in local database to a remote cvs repository", 
     OPT_BRANCH_NAME % OPT_REVISION)
 {
+  if (args.size() == 1 || args.size() > 3) throw usage(name);
 
-  if (args.size() != 2 && args.size() != 0) throw usage(name);
-
-  string repository,module;
-  if (args.size() == 2)
+  string repository,module,branch;
+  if (args.size() >= 2)
   { repository = idx(args, 0)();
     module = idx(args, 1)();
+    if (args.size()==3) 
+      branch=idx(args, 2)();
   }
-  cvs_sync::push(repository,module,app);
+  cvs_sync::push(repository,module,branch,app);
 }
 
 
