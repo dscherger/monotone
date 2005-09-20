@@ -1120,7 +1120,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       args.push_back("-u"); // send back diff
     args.push_back("-r");
     args.push_back(file_revisions.begin()->new_revision);
-    args.push_back(file_revisions.begin()->file);
+    args.push_back(basename(file_revisions.begin()->file));
     SendCommand(std::string("update"),args);
   }
   else 
