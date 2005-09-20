@@ -1305,7 +1305,8 @@ std::map<std::string,std::pair<std::string,std::string> >
     { writestr("Checkin-time "+time_t2rfc822(when)+"\n");
       writestr("Modified "+bname+"\n");
       writestr("u=rw,g=r,o=r\n"); // standard mode
-      writestr((F("%d\n") % i->new_content.size()).str());
+      // do _not_ translate this into locale format (e.g. F() )
+      writestr((boost::format("%d\n") % i->new_content.size()).str());
       writestr(i->new_content);
     }
   }
