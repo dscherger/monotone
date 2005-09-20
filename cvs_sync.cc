@@ -981,9 +981,10 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
 }
 
 cvs_repository::cvs_repository(app_state &_app, const std::string &repository, 
-            const std::string &module, bool connect)
-      : cvs_client(repository,module,connect), app(_app), file_id_ticker(), 
-        revision_ticker(), cvs_edges_ticker(), remove_state(), sync_since(-1)
+            const std::string &module, const std::string &branch, bool connect)
+      : cvs_client(repository,module,branch,connect), app(_app), 
+        file_id_ticker(), revision_ticker(), cvs_edges_ticker(), 
+        remove_state(), sync_since(-1)
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
   remove_state=remove_set.insert(file_state(0,"-",true)).first;
@@ -1047,15 +1048,6 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
     }
   }
 }
-
-#if 0
-std::ostream &operator<<(std::ostream &o, const cvs_manifest &mf)
-{ for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
-  { o << i->first << ' ' << i->second->cvs_version << ',';
-  }
-  return o;
-}
-#endif
 
 std::set<cvs_edge>::iterator cvs_repository::commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)

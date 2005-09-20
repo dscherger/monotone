@@ -185,9 +185,9 @@ bool cvs_client::begins_with(const std::string &s, const std::string &sub)
 }
 
 cvs_client::cvs_client(const std::string &repository, const std::string &_module,
-        bool do_connect)
+        std::string const &_branch, bool do_connect)
     : byte_in_ticker(), byte_out_ticker(),
-      gzip_level(), pserver(), module(_module)
+      gzip_level(), pserver(), module(_module), branch(_branch)
 { // parse the arguments
   { unsigned len;
     std::string d_arg=repository;

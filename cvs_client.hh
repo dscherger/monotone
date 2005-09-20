@@ -12,6 +12,9 @@
 #include "netxx_pipe.hh"
 #include <boost/shared_ptr.hpp>
 
+/* this class encapsulates all communication with a CVS server over a pipe
+   or network link */
+
 class cvs_client
 {public:
   struct update
@@ -128,12 +131,14 @@ private:
 protected:
   std::string root;
   std::string module;
+  std::string branch;
   std::string host; // for author certification
   
   void reconnect();
   static std::string localhost_name();
 public:  
-  cvs_client(const std::string &repository, const std::string &module, bool connect=true);
+  cvs_client(const std::string &repository, const std::string &module, 
+          std::string const& branch=std::string(), bool connect=true);
   ~cvs_client();
              
   static bool begins_with(const std::string &s, const std::string &sub, unsigned &len);

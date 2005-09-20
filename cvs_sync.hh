@@ -172,7 +172,9 @@ public: // semi public interface for push/pull
   void takeover();
   
 public:  
-  cvs_repository(app_state &app, const std::string &repository, const std::string &module, bool connect=true);
+  cvs_repository(app_state &app, const std::string &repository, 
+      const std::string &module, const std::string &branch=std::string(),
+      bool connect=true);
 
   std::string debug() const;
   
