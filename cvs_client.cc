@@ -498,7 +498,7 @@ static time_t timezone2time_t(const struct tm &tm, int offset_min)
 
 static time_t cvs111date2time_t(const std::string &t)
 { // 2000/11/10 14:43:25
-  I(t.size()==19);
+  E(t.size()==19, F("cvs111date2time_t unknown format '%s'\n") % t);
   I(t[4]=='/' && t[7]=='/');
   I(t[10]==' ' && t[13]==':');
   I(t[16]==':');
@@ -516,7 +516,7 @@ static time_t cvs111date2time_t(const std::string &t)
 
 static time_t rls_l2time_t(const std::string &t)
 { // 2003-11-26 09:20:57 +0000
-  I(t.size()==25);
+  E(t.size()==25, F("rls_l2time_t unknown format '%s'\n") % t);
   I(t[4]=='-' && t[7]=='-');
   I(t[10]==' ' && t[13]==':');
   I(t[16]==':' && t[19]==' ');
