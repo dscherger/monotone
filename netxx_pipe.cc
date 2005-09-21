@@ -302,10 +302,13 @@ simple_pipe_test()
   Netxx::PipeCompatibleProbe probe;
   Netxx::Timeout timeout(2L), instant(0,1);
   probe.clear();
-  probe.add(static_cast<Netxx::StreamBase&>(pipe), 
-                  Netxx::Probe::ready_read | Netxx::Probe::ready_oobd);
-  Netxx::Probe::result_type res = probe.ready(timeout);
-  L(F("probe %d/%d\n") % res.first % res.second);
+  probe.add(pipe, Netxx::Probe::ready_write);
+  Netxx::Probe::result_type res = probe.ready(instant);
+  L(F("probe for write %d/%d\n") % res.first % res.second);
+  probe.clear();
+  probe.add(pipe, Netxx::Probe::ready_read | Netxx::Probe::ready_oobd);
+  res = probe.ready(timeout);
+  L(F("probe for read %d/%d\n") % res.first % res.second);
   do
   { bytes=pipe.read(buf,sizeof buf);
     if (bytes<=0) break;
