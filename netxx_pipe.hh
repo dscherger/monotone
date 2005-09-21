@@ -34,14 +34,12 @@ you have to abstract some difficulties:
 */
 
 namespace Netxx {
-#ifdef WIN32
 class PipeCompatibleProbe;
 class StreamServer;
-#endif
 
 class PipeStream : public StreamBase 
 {   int readfd, writefd;
-    ProbeInfo pi_;
+//    ProbeInfo pi_;
     int child;
 #ifdef WIN32
     char readbuf[1024];
@@ -87,6 +85,10 @@ public:
 #endif
   };
 #else
-  typedef Probe PipeCompatibleProbe; 
+  struct PipeCompatibleProbe : Probe
+  { void add(PipeStream &ps, ready_type rt=ready_none);
+    void add(const StreamBase &sb, ready_type rt=ready_none);
+    void add(const StreamServer &ss, ready_type rt=ready_none);
+  };
 #endif
 }

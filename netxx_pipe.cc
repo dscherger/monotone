@@ -9,8 +9,8 @@
 
 Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
   : readfd(_readfd), writefd(_writefd), child()
-{ pi_.add_socket(readfd);
-  pi_.add_socket(writefd);
+{ //pi_.add_socket(readfd);
+  //pi_.add_socket(writefd);
 }
 
 #ifndef __WIN32__
@@ -57,8 +57,8 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
-#include <netxx/streamserver.h>
 #endif
+#include <netxx/streamserver.h>
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
   : readfd(), writefd(), child()
@@ -129,8 +129,8 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
     writefd=fd2[1];
     fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
 #endif
-  pi_.add_socket(readfd);
-  pi_.add_socket(writefd);
+//  pi_.add_socket(readfd);
+//  pi_.add_socket(writefd);
 }
 
 Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
@@ -179,7 +179,7 @@ class PipeProbe : public Netxx::ProbeInfo
 #endif
 
 const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
-{ return &pi_;
+{ return 0;
 }
 
 #ifdef WIN32
@@ -254,6 +254,27 @@ void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
 { assert(!ip_pipe);
   Probe::add(ss,rt);
 }
+#else // unix
+void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
+{
+  if (rt==ready_none || rt&ready_read) add_socket(ps.get_readfd(),ready_read);
+  if (rt==ready_none || rt&ready_write) add_socket(ps.get_writefd(),ready_write);
+}
+
+void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
+{
+  try
+  { add(const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
+  }
+  catch (...)
+  { Probe::add(sb,rt);
+  }
+}
+
+void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
+{
+  Probe::add(ss,rt);
+}
 #endif
 
 #ifdef BUILD_UNIT_TESTS
@@ -281,10 +302,13 @@ simple_pipe_test()
   Netxx::PipeCompatibleProbe probe;
   Netxx::Timeout timeout(2L), instant(0,1);
   probe.clear();
-  probe.add(static_cast<Netxx::StreamBase&>(pipe), 
-                  Netxx::Probe::ready_read | Netxx::Probe::ready_oobd);
-  Netxx::Probe::result_type res = probe.ready(timeout);
-  L(F("probe %d/%d\n") % res.first % res.second);
+  probe.add(pipe, Netxx::Probe::ready_write);
+  Netxx::Probe::result_type res = probe.ready(instant);
+  L(F("probe for write %d/%d\n") % res.first % res.second);
+  probe.clear();
+  probe.add(pipe, Netxx::Probe::ready_read | Netxx::Probe::ready_oobd);
+  res = probe.ready(timeout);
+  L(F("probe for read %d/%d\n") % res.first % res.second);
   do
   { bytes=pipe.read(buf,sizeof buf);
     if (bytes<=0) break;
