@@ -1738,7 +1738,10 @@ void cvs_repository::takeover_dir(const std::string &path)
         // parts[3]=date
         // parts[4]=keyword subst
         // parts[5]='T'tag
-        time_t modtime=cvs_client::Entries2time_t(parts[3]);
+        time_t modtime=-1;
+        try
+        { modtime=cvs_client::Entries2time_t(parts[3]);
+        } catch (std::exception &e) {}
         I(files.find(filename)==files.end());
         std::map<std::string,file_history>::iterator f
             =files.insert(std::make_pair(filename,file_history())).first;

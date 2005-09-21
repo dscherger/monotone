@@ -130,7 +130,8 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
     fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
 #endif
   pi_.add_socket(readfd);
-  pi_.add_socket(writefd);
+#warning FIXME!
+//  pi_.add_socket(writefd);
 }
 
 Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
