@@ -4,6 +4,9 @@ AT_SETUP([pull of CVS side branch])
 
 MONOTONE_SETUP
 
+# This test is a bug report.
+AT_XFAIL_IF(true)
+
 AT_DATA(d_import, [initial import
 ])
 AT_DATA(d_add, [file added
