@@ -48,6 +48,7 @@ MOST_SOURCES =								\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
          package_revision.c package_revision.h				\
+         cvs_client.cc cvs_sync.cc					\
          package_full_revision.c package_full_revision.h options.hh     \
          i18n.h netxx_pipe.cc
 
@@ -95,6 +96,7 @@ BOTAN_SOURCES =                                                                 
         botan/if_algo.cpp botan/inifile.cpp botan/init.cpp		\
         botan/kdf.cpp botan/keypair.cpp botan/look_pk.cpp		\
         botan/lookup.cpp botan/make_prm.cpp botan/mdx_hash.cpp		\
+        botan/md5.cpp							\
         botan/mem_pool.cpp botan/mgf1.cpp botan/mlock.cpp		\
         botan/mod_exp.cpp botan/mode_pad.cpp botan/modebase.cpp		\
         botan/mp_comba.cpp botan/mp_core.cpp botan/mp_fkmul.cpp		\

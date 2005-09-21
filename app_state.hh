@@ -46,6 +46,7 @@ public:
   utf8 date;
   utf8 author;
   system_path search_root;
+  utf8 sync_since;
   std::vector<utf8> revision_selectors;
   std::set<utf8> exclude_patterns;
   std::vector<utf8> extra_rcfiles;
@@ -99,6 +100,7 @@ public:
   void set_date(utf8 const & date);
   void set_author(utf8 const & author);
   void set_depth(long depth);
+  void set_since(utf8 const & since);
   void set_last(long last);
   void set_pidfile(system_path const & pidfile);
   void add_revision(utf8 const & selector);
