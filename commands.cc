@@ -3712,11 +3712,11 @@ CMD(cvs_takeover, "working copy", "[CVS-MODULE]",
   cvs_sync::takeover(app, module);
 }
 
-CMD(cvs_admin, "network", "COMMAND ARG",
-    "e.g. manifest REVISION", OPT_BRANCH_NAME)
+CMD(cvs_debug, "network", "COMMAND ARG",
+    "e.g. manifest REVISION give you a list of cvs revisions per file", OPT_BRANCH_NAME)
 {
   if (args.size() != 2) throw usage(name);
-  cvs_sync::admin(idx(args, 0)(), idx(args, 1)(), app);
+  cvs_sync::debug(idx(args, 0)(), idx(args, 1)(), app);
 }
 
 

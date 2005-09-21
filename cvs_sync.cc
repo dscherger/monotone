@@ -1644,7 +1644,7 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
   return e.xfiles;
 }
 
-void cvs_sync::admin(const std::string &command, const std::string &arg, 
+void cvs_sync::debug(const std::string &command, const std::string &arg, 
             app_state &app)
 { 
   // we default to the first repository found (which might not be what you wanted)
