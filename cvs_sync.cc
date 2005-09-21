@@ -316,6 +316,7 @@ std::string debug_files(const std::map<std::string,file_history> &files)
 std::string::size_type cvs_repository::parse_cvs_cert_header(cert_value const& value, 
       std::string &repository, std::string& module, std::string& branch)
 { 
+  MM(value());
   std::string::size_type nlpos=value().find('\n');
   I(nlpos!=std::string::npos);
   std::string repo=value().substr(0,nlpos);
@@ -409,7 +410,9 @@ struct cvs_repository::prime_log_cb : rlog_callbacks
 
 void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string &tag, 
         const std::string &revision) const
-{ I(i->first==file);
+{ MM(file);
+  MM(tag);
+  I(i->first==file);
   std::map<std::string,std::string> &tagslot=repo.tags[tag];
   tagslot[file]=revision;
 }
@@ -560,11 +563,14 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
 { cvs_file_state s2=s;
   ++s2;
   if (s2==end) return;
+  MM(s->since_when);
+  MM(s2->since_when);
   I(s->since_when!=s2->since_when);
   // checkins must not overlap (next revision must lie beyond edge)
   if ((*s2) <= (*e))
   { W(F("splitting edge %ld-%ld at %ld\n") % e->time % e->time2 % s2->since_when);
     cvs_edge new_edge=*e;
+    MM(e->time);
     I(s2->since_when-1>=e->time);
     e->time2=s2->since_when-1;
     new_edge.time=s2->since_when;
@@ -578,6 +584,10 @@ void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
     j++; // next one
     if (j==edges.end()) break;
     
+    MM(j->time2);
+    MM(j->time);
+    MM(i->time2);
+    MM(i->time);
     I(j->time2==j->time); // make sure we only do this once
     I(i->time2<=j->time); // should be sorted ...
     if (!i->similar_enough(*j)) 
@@ -648,6 +658,9 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
         std::string &contents)
 {
   cvs_revision_nr srev(s->cvs_version);
+  MM(file);
+  MM(s->cvs_version);
+  MM(s2->cvs_version);
   I(srev.is_parent_of(s2->cvs_version));
   if (s->dead)
   { 
@@ -883,6 +896,7 @@ void cvs_repository::prime()
   cvs_edges_ticker.reset(new ticker("edges", "E", 10));
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { std::vector<std::string> args;
+    MM(i->first);
     
     if (!branch.empty())
       args.push_back("-r"+branch);
@@ -909,6 +923,8 @@ void cvs_repository::prime()
   { if (i->changelog_valid || i->author.size()) { ++i; continue; }
     std::set<cvs_edge>::iterator j=i;
     j++;
+    MM(i->time);
+    MM(j->time);
     I(j!=edges.end());
     I(j->time==i->time);
     I(i->xfiles.empty());
@@ -923,6 +939,7 @@ void cvs_repository::prime()
   // get the contents
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { std::string file_contents;
+    MM(i->first);
     I(!branch.empty() || !i->second.known_states.empty());
     if (!i->second.known_states.empty())
     { std::set<file_state>::iterator s2=i->second.known_states.begin();
@@ -1543,13 +1560,8 @@ void cvs_repository::update()
     { last=f->second.known_states.begin();
       I(last!=f->second.known_states.end());
       std::set<file_state>::iterator s2=last;
-#if 0      
-      cvs_client::checkout c=CheckOut2(i->file,s2->cvs_version);
-      store_checkout(s2,c,file_contents);
-#else
       cvs_client::update c=Update(i->file,s2->cvs_version);
       store_checkout(s2,c,file_contents);
-#endif
     }
     else
     { I(!last->sha1sum().empty());
@@ -1686,6 +1698,7 @@ void cvs_client::validate_path(const std::string &local, const std::string &serv
 
 void cvs_repository::takeover_dir(const std::string &path)
 { // remember the server path for this subdirectory
+  MM(path);
   { std::string repository;
     std::ifstream cvs_repository((path+"CVS/Repository").c_str());
     N(cvs_repository.good(), F("can't open %sCVS/Repository\n") % path);
@@ -1705,6 +1718,7 @@ void cvs_repository::takeover_dir(const std::string &path)
     if (!cvs_Entries.good()) break;
     if (!line.empty())
     { std::vector<std::string> parts;
+      MM(line);
       stringtok(parts,line,"/");
       // empty last part will not get created
       if (parts.size()==5) parts.push_back(std::string());
@@ -1813,6 +1827,7 @@ void cvs_sync::takeover(app_state &app, const std::string &_module)
   { fstream cvs_branch("CVS/Tag");
     if (cvs_branch.good())
     { std::getline(cvs_branch,branch);
+      MM(branch);
       I(!branch.empty());
       I(branch[0]=='T');
       branch.erase(0,1);
@@ -1861,6 +1876,7 @@ void cvs_repository::retrieve_modules()
   index_deltatext(value_s,pieces);
   for (std::vector<piece>::const_iterator p=pieces.begin();p!=pieces.end();++p)
   { std::string line=**p;
+    MM(line);
     I(!line.empty());
     std::string::size_type tab=line.find('\t');
     I(tab!=std::string::npos);

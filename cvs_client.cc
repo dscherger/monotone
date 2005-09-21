@@ -279,6 +279,7 @@ void cvs_client::connect()
 
   writestr("valid-requests\n");
   std::string answer=readline();
+  MM(answer);
   I(begins_with(answer,"Valid-requests "));
   // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
   push_back2insert<stringset_t> adaptor(Valid_requests);
@@ -349,6 +350,7 @@ bool cvs_client::fetch_result(std::vector<std::pair<std::string,std::string> > &
   std::list<std::string> active_tags;
 loop:
   std::string x=readline();
+  MM(x);
   unsigned len=0;
   if (x.size()<2) goto error;
   if (begins_with(x,"E ",len)) 
@@ -493,6 +495,7 @@ static time_t timezone2time_t(const struct tm &tm, int offset_min)
 
 static time_t cvs111date2time_t(const std::string &t)
 { // 2000/11/10 14:43:25
+  MM(t);
   E(t.size()==19, F("cvs111date2time_t unknown format '%s'\n") % t);
   I(t[4]=='/' && t[7]=='/');
   I(t[10]==' ' && t[13]==':');
@@ -511,6 +514,7 @@ static time_t cvs111date2time_t(const std::string &t)
 
 static time_t rls_l2time_t(const std::string &t)
 { // 2003-11-26 09:20:57 +0000
+  MM(t);
   E(t.size()==25, F("rls_l2time_t unknown format '%s'\n") % t);
   I(t[4]=='-' && t[7]=='-');
   I(t[10]==' ' && t[13]==':');
@@ -539,7 +543,8 @@ static time_t rls_l2time_t(const std::string &t)
 // Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
 // Apr,Aug,Dec,Feb,Jan,Jul,Jun,Mar,May,Nov,Oct,Sep
 static time_t monname2month(const std::string &x)
-{ I(x.size()==3);
+{ MM(x);
+  I(x.size()==3);
   // I hope this will never get internationalized
   if (x[0]=='O') return 10;
   if (x[0]=='S') return 9;
@@ -555,6 +560,7 @@ static time_t monname2month(const std::string &x)
 
 static time_t mod_time2time_t(const std::string &t)
 { std::vector<std::string> parts;
+  MM(t);
   stringtok(parts,t);
   I(parts.size()==5);
   struct tm tm;
@@ -573,7 +579,8 @@ static time_t mod_time2time_t(const std::string &t)
 }
 
 time_t cvs_client::Entries2time_t(const std::string &t)
-{ I(t.size()==24);
+{ MM(t);
+  I(t.size()==24);
   I(t[3]==' ');
   I(t[7]==' ');
   std::vector<std::string> parts;
@@ -609,7 +616,8 @@ std::string cvs_client::time_t2rfc822(time_t t)
 }
 
 void cvs_client::Directory(const std::string &path)
-{ if (path.empty() || path==".") // ???
+{ MM(path);
+  if (path.empty() || path==".") // ???
   { std::map<std::string,std::string>::const_iterator i=server_dir.find("");
     I(i!=server_dir.end());
     writestr("Directory .\n"+i->second+"\n");
@@ -644,7 +652,8 @@ void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
   enum { st_dir, st_file } state=st_dir;
   std::string directory;
   while (fetch_result(lresult))
-  { switch(state)
+  { L(F("result %s\n") % combine_result(lresult));
+    switch(state)
     { case st_dir:
       { std::string result=combine_result(lresult);
         I(result.size()>=2);
@@ -780,6 +789,8 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
   {reswitch:
     L(F("state %d\n") % int(state));
     I(!lresult.empty());
+    MM(lresult[0].first);
+    MM(lresult[0].second);
     E(lresult[0].first!="CMD" || lresult[0].second!="error", F("log failed"));
     switch(state)
     { case st_head:
@@ -912,6 +923,8 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
 { primeModules();
   std::string file=_file;
   struct checkout result;
+  MM(file);
+  MM(revision);
   // Directory("");
   std::string usemodule=module;
   { std::map<std::string,std::string>::reverse_iterator i;
@@ -1248,6 +1261,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
 void cvs_client::parse_entry(const std::string &line, std::string &new_revision, 
                             std::string &keyword_substitution)
 {
+  MM(line);
   std::vector<std::string> parts;
   stringtok(parts,line,"/");
   // empty last part will not get created
