@@ -563,14 +563,14 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
 { cvs_file_state s2=s;
   ++s2;
   if (s2==end) return;
-  MM(s->since_when);
-  MM(s2->since_when);
+  MM(boost::lexical_cast<std::string>(s->since_when));
+  MM(boost::lexical_cast<std::string>(s2->since_when));
   I(s->since_when!=s2->since_when);
   // checkins must not overlap (next revision must lie beyond edge)
   if ((*s2) <= (*e))
   { W(F("splitting edge %ld-%ld at %ld\n") % e->time % e->time2 % s2->since_when);
     cvs_edge new_edge=*e;
-    MM(e->time);
+    MM(boost::lexical_cast<std::string>(e->time));
     I(s2->since_when-1>=e->time);
     e->time2=s2->since_when-1;
     new_edge.time=s2->since_when;
@@ -584,10 +584,10 @@ void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
     j++; // next one
     if (j==edges.end()) break;
     
-    MM(j->time2);
-    MM(j->time);
-    MM(i->time2);
-    MM(i->time);
+    MM(boost::lexical_cast<std::string>(j->time2));
+    MM(boost::lexical_cast<std::string>(j->time));
+    MM(boost::lexical_cast<std::string>(i->time2));
+    MM(boost::lexical_cast<std::string>(i->time));
     I(j->time2==j->time); // make sure we only do this once
     I(i->time2<=j->time); // should be sorted ...
     if (!i->similar_enough(*j)) 
@@ -923,8 +923,8 @@ void cvs_repository::prime()
   { if (i->changelog_valid || i->author.size()) { ++i; continue; }
     std::set<cvs_edge>::iterator j=i;
     j++;
-    MM(i->time);
-    MM(j->time);
+    MM(boost::lexical_cast<std::string>(i->time));
+    MM(boost::lexical_cast<std::string>(j->time));
     I(j!=edges.end());
     I(j->time==i->time);
     I(i->xfiles.empty());
