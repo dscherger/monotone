@@ -3708,9 +3708,9 @@ CMD(cvs_takeover, "working copy", "[CVS-MODULE]",
   if (args.size() > 1) throw usage(name);
   string module;
   if (args.size() == 1) module = idx(args, 0)();
+  N(!app.branch_name().empty(), F("no destination branch specified\n"));
   cvs_sync::takeover(app, module);
 }
-
 
 CMD(cvs_admin, "network", "COMMAND ARG",
     "e.g. manifest REVISION", OPT_BRANCH_NAME)
