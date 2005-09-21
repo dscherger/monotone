@@ -81,7 +81,8 @@ void cvs_client::underflow()
   Netxx::PipeCompatibleProbe probe;
   probe.add(*stream, Netxx::Probe::ready_read);
 try_again:
-  Netxx::Probe::result_type res = probe.ready(Netxx::Timeout(120L)); // 120 seconds
+  Netxx::Probe::result_type res = probe.ready(Netxx::Timeout(60L),
+                      Netxx::Probe::ready_read); // 60 seconds
   E((res.second&Netxx::Probe::ready_read),F("timeout reading from CVS server"));
   ssize_t avail_in=stream->read(buf,sizeof buf);
   E(avail_in>0, F("read error %s") % strerror(errno));
