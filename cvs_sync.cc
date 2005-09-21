@@ -114,15 +114,12 @@ static void cvs_sync::process_one_hunk(vector< piece > const & source,
           cursor += len;
         }
       else 
-        throw oops("unknown directive '" + directive + "'");
+        E(false,F("unknown directive '%s'\n") % directive);
     } 
   catch (std::out_of_range & oor)
     {
-      throw oops("std::out_of_range while processing " + directive 
-                 + " with source.size() == " 
-                 + boost::lexical_cast<string>(source.size())
-                 + " and cursor == "
-                 + boost::lexical_cast<string>(cursor));
+      E(false, F("out_of_range while processing '%s' with source.size() == %d and cursor == %d")
+          % directive % source.size() % cursor);
     }  
 }
 
@@ -629,9 +626,8 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
     }
     else
-    { L(F("MD5 sum %s<>%s") % u.checksum 
+    { E(false, F("MD5 sum %s<>%s") % u.checksum 
           % xform<Botan::Hex_Encoder>(std::string(hashval.begin(),hashval.end())));
-      throw oops("MD5 sum wrong");
     }
   }
   else

@@ -30,9 +30,7 @@ void cvs_client::writestr(const std::string &s, bool flush)
   { compress.next_out=(Bytef*)outbuf;
     compress.avail_out=sizeof outbuf;
     int err=deflate(&compress,flush?Z_SYNC_FLUSH:Z_NO_FLUSH);
-    if (err!=Z_OK && err!=Z_BUF_ERROR) 
-    { throw oops("deflate error "+ boost::lexical_cast<std::string>(err));
-    }
+    E(err==Z_OK || err==Z_BUF_ERROR, F("deflate error %d") % err);
     unsigned written=sizeof(outbuf)-compress.avail_out;
     if (written && byte_out_ticker.get())
       (*byte_out_ticker)+=stream->write(outbuf,written);
@@ -48,7 +46,7 @@ std::string cvs_client::readline()
   std::string result;
   for (;;)
   { if (inputbuffer.empty()) underflow(); 
-    if (inputbuffer.empty()) throw oops("no data avail");
+    E(!inputbuffer.empty(),F("no data avail"));
     std::string::size_type eol=inputbuffer.find('\n');
     if (eol==std::string::npos)
     { result+=inputbuffer;
@@ -84,11 +82,9 @@ void cvs_client::underflow()
   probe.add(*stream, Netxx::Probe::ready_read);
 try_again:
   Netxx::Probe::result_type res = probe.ready(Netxx::Timeout(30L)); // 30 seconds
-  if (!(res.second&Netxx::Probe::ready_read))
-    throw oops("timeout reading from CVS server");
+  E((res.second&Netxx::Probe::ready_read),F("timeout reading from CVS server"));
   ssize_t avail_in=stream->read(buf,sizeof buf);
-  if (avail_in<1) 
-    throw oops("read error "+std::string(strerror(errno)));
+  E(avail_in>0, F("read error %s") % strerror(errno));
   if (byte_in_ticker.get())
     (*byte_in_ticker)+=avail_in;
   if (!gzip_level)
@@ -101,9 +97,7 @@ try_again:
   { decompress.next_out=(Bytef*)buf2;
     decompress.avail_out=sizeof(buf2);
     int err=inflate(&decompress,Z_NO_FLUSH);
-    if (err!=Z_OK && err!=Z_BUF_ERROR) 
-    { throw oops("inflate error "+boost::lexical_cast<std::string>(err));
-    }
+    E(err==Z_OK || err==Z_BUF_ERROR, F("inflate error %d") % err);
     unsigned bytes_in=sizeof(buf2)-decompress.avail_out;
     if (bytes_in) inputbuffer+=std::string(buf2,buf2+bytes_in);
     else break;
@@ -198,8 +192,8 @@ std::string cvs_client::localhost_name()
 #ifdef WIN32
   strcpy(domainname,"localhost"); // gethostname does not work here ...
 #else
-  if (gethostname(domainname,sizeof domainname))
-    throw oops("gethostname "+std::string(strerror(errno)));
+  E(!gethostname(domainname,sizeof domainname),
+    F("gethostname %s\n") % strerror(errno));
   domainname[sizeof(domainname)-1]=0;
 #endif
 #if !defined(__sun) && !defined(WIN32)
@@ -208,8 +202,8 @@ std::string cvs_client::localhost_name()
   { domainname[len]='.';
     domainname[++len]=0;
   }
-  if (getdomainname(domainname+len,sizeof(domainname)-len))
-    throw oops("getdomainname "+std::string(strerror(errno)));
+  E(!getdomainname(domainname+len,sizeof(domainname)-len),
+    F("getdomainname %s\n") % strerror(errno));
   domainname[sizeof(domainname)-1]=0;
 #endif
   L(F("localhost's name %s\n") % domainname);
@@ -233,10 +227,7 @@ void cvs_client::connect()
     writestr(pserver_password(":pserver:"+user+"@"+host+":"+root)+"\n");
     writestr("END AUTH REQUEST\n");
     std::string answer=readline();
-    if (answer!="I LOVE YOU")
-    { L(F("pserver Authentification failed\n"));
-      throw oops("pserver auth failed: "+answer);
-    }
+    E(answer=="I LOVE YOU", F("pserver Authentification failed\n"));
   }
   else // rsh
   { std::string local_name=localhost_name();
@@ -317,9 +308,9 @@ void cvs_client::reconnect()
 
 void cvs_client::InitZipStream(int level)
 { int error=deflateInit(&compress,level);
-  if (error!=Z_OK) throw oops("deflateInit "+boost::lexical_cast<std::string>(error));
+  E(error==Z_OK,F("deflateInit %d\n") % error);
   error=inflateInit(&decompress);
-  if (error!=Z_OK) throw oops("inflateInit "+boost::lexical_cast<std::string>(error));
+  E(error==Z_OK,F("inflateInit %d\n") % error);
 }
 
 void cvs_client::GzipStream(int level)
@@ -329,7 +320,7 @@ void cvs_client::GzipStream(int level)
   cmd+='\n';
   writestr(cmd);
   int error=deflateParams(&compress,level,Z_DEFAULT_STRATEGY);
-  if (error!=Z_OK) throw oops("deflateParams "+boost::lexical_cast<std::string>(error));
+  E(error==Z_OK,F("deflateParams %d\n") % error);
   gzip_level=level;
 }
 
@@ -785,9 +776,7 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
   {reswitch:
     L(F("state %d\n") % int(state));
     I(!lresult.empty());
-    if (lresult[0].first=="CMD" && lresult[0].second=="error")
-    { throw oops("log failed");
-    }
+    E(lresult[0].first!="CMD" || lresult[0].second!="error", F("log failed"));
     switch(state)
     { case st_head:
       { std::string result=combine_result(lresult);
@@ -946,7 +935,8 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
     { case st_co:
       { I(!lresult.empty());
         if (lresult[0].first=="CMD")
-        { if (lresult[0].second=="Clear-sticky")
+        { E(lresult[0].second!="error", F("failed to check out %s\n") % file);
+          if (lresult[0].second=="Clear-sticky")
           { I(lresult.size()==3);
             I(lresult[1].first=="dir");
             dir=lresult[1].second;
@@ -990,9 +980,6 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
             L(F("found commit template %s:\n%s") % lresult[2].second % lresult[4].second);
             // FIX actually do something with the template?
             result.committemplate = lresult[4].second;
-          }
-          else if (lresult[0].second=="error")
-          { throw oops("failed to check out "+file);
           }
           else
           { W(F("CheckOut: unrecognized CMD %s\n") % lresult[0].second);
