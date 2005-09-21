@@ -261,6 +261,10 @@ void cvs_client::connect()
       args.push_back("cvs server");
     }
     if (host.empty()) host=local_name;
+    L(F("spawning pipe to '%s' ") % cmd);
+    for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
+      L(F("'%s' ") % *i);
+    L(F("\n"));
     stream=boost::shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream(cmd,args));
   }
   
