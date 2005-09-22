@@ -747,7 +747,7 @@ void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
   va_copy(ap2,ap);
   try {
   Log_internal(cb,file,ap);
-  } catch (oops &e)
+  } catch (...)
   { W(F("trying to reconnect, perhaps the server is confused\n"));
     reconnect();
     Log_internal(cb,file,ap2);
@@ -758,7 +758,13 @@ void cvs_client::Log(const rlog_callbacks &cb,const char *file,...)
 void cvs_client::Log(const rlog_callbacks &cb,std::string const& file,
                                       std::vector<std::string> const& args)
 { primeModules();
+  try {
   Log_internal(cb,file,args);
+  } catch (...)
+  { W(F("trying to reconnect, perhaps the server is confused\n"));
+    reconnect();
+    Log_internal(cb,file,args);
+  }
 }
 
 // dummy is needed to satisfy va_start (cannot pass objects of non-POD type)
