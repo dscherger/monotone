@@ -47,6 +47,7 @@ public:
   utf8 author;
   system_path search_root;
   utf8 sync_since;
+  bool cvspull_full;
   std::vector<utf8> revision_selectors;
   std::set<utf8> exclude_patterns;
   std::vector<utf8> extra_rcfiles;

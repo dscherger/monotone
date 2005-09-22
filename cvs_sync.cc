@@ -1395,7 +1395,7 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
   transaction_guard guard(app.db);
 
   if (certs.empty()) app.db.get_revision_certs(cvs_cert_name, certs); 
-  repo.process_certs(certs);
+  if (!app.cvspull_full) repo.process_certs(certs);
   
   // initial checkout
   if (repo.empty()) 
@@ -1498,23 +1498,30 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
   for (std::set<cvs_edge>::const_iterator i=edges.begin();
       i!=edges.end();++i)
   { if (last!=edges.end() && i->delta_base.inner()().empty())
-    { cvs_manifest old=get_files(*last),new_m=get_files(*i);
-      for (cvs_manifest::iterator j=old.begin();j!=old.end();++j)
-      { cvs_manifest::iterator new_iter=new_m.find(j->first);
-        if (new_iter==new_m.end()) // this file get's removed here
-        { file_state fs;
-          fs.since_when=i->time;
-          cvs_revision_nr rev=j->second->cvs_version;
-          ++rev;
-          fs.cvs_version=rev.get_string();
-          fs.log_msg=i->changelog;
-          fs.author=i->author;
-          fs.dead=true;
-          L(F("file %s gets removed at %s\n") % j->first % i->revision());
-          remember(files[j->first].known_states,fs);
+      try
+      { cvs_manifest old=get_files(*last),new_m=get_files(*i);
+        for (cvs_manifest::iterator j=old.begin();j!=old.end();++j)
+        { cvs_manifest::iterator new_iter=new_m.find(j->first);
+          if (new_iter==new_m.end()) // this file get's removed here
+          { file_state fs;
+            fs.since_when=i->time;
+            cvs_revision_nr rev=j->second->cvs_version;
+            ++rev;
+            fs.cvs_version=rev.get_string();
+            fs.log_msg=i->changelog;
+            fs.author=i->author;
+            fs.dead=true;
+            L(F("file %s gets removed at %s\n") % j->first % i->revision());
+            remember(files[j->first].known_states,fs);
+          }
         }
       }
-    }
+      catch (informative_failure &e)
+      { W(F("failed to reconstruct CVS revision structure:\n"
+            "%s\n"
+            "I can't figure out which files got removed on %s->%s\n")
+            % e.what % last->revision() % i->revision());
+      }
     last=i;
   }
   if (global_sanity.debug) L(F("%s") % debug());

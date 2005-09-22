@@ -35,6 +35,7 @@ static string const key_option("key");
 app_state::app_state() 
   : branch_name(""), db(system_path()), stdhooks(true), rcfiles(true), diffs(false),
     no_merges(false), set_default(false), verbose(false), search_root("/"),
+    cvspull_full(), 
     depth(-1), last(-1), diff_format(unified_diff), diff_args_provided(false),
     use_lca(false), execute(false)
 {
