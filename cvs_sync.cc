@@ -73,13 +73,15 @@ bool cvs_sync::operator<(const file_state &s,const cvs_edge &e)
 }
 
 // whether time is below span or (within span and lesser/equal author,changelog)
-bool cvs_sync::operator<=(const file_state &s,const cvs_edge &e)
+bool 
+cvs_sync::operator<=(const file_state &s,const cvs_edge &e)
 { return s.since_when<e.time ||
     (s.since_when<=e.time2 && (s.author<=e.author ||
     (s.author==e.author && s.log_msg<=e.changelog)));
 }
 
-static void cvs_sync::process_one_hunk(vector< piece > const & source,
+static void 
+cvs_sync::process_one_hunk(vector< piece > const & source,
                  vector< piece > & dest,
                  vector< piece >::const_iterator & i,
                  int & cursor)
@@ -88,12 +90,13 @@ static void cvs_sync::process_one_hunk(vector< piece > const & source,
   assert(directive.size() > 1);
   ++i;
 
-  char code;
-  int pos, len;
-  sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len);
-
   try 
     {
+      char code;
+      int pos, len;
+      if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
+              throw oops("illformed directive '" + directive + "'");
+
       if (code == 'a')
         {
           // 'ax y' means "copy from source to dest until cursor == x, then
@@ -318,10 +321,10 @@ std::string::size_type cvs_repository::parse_cvs_cert_header(cert_value const& v
 { 
   MM(value());
   std::string::size_type nlpos=value().find('\n');
-  I(nlpos!=std::string::npos);
+  E(nlpos!=std::string::npos, F("malformed cvs-revision cert %s") % value());
   std::string repo=value().substr(0,nlpos);
   std::string::size_type modulebegin=repo.find('\t'); 
-  I(modulebegin!=std::string::npos);
+  E(modulebegin!=std::string::npos, F("malformed cvs-revision header %s") % repo);
   std::string::size_type branchbegin=repo.find(modulebegin,'\t');
   std::string::size_type modulelen=std::string::npos;
   
@@ -687,6 +690,18 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     { store_update(s,s2,u,contents);
     } catch (std::exception &e)
     { W(F("Update: patching failed with %s\n") % e.what());
+      cvs_client::update c=Update(file,s2->cvs_version);
+      if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
+      { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+      }
+      const_cast<std::string&>(s2->md5sum)="";
+      const_cast<unsigned&>(s2->patchsize)=0;
+      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      const_cast<unsigned&>(s2->size)=c.contents.size();
+      contents=c.contents;
+      const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+    } catch (informative_failure &e)
+    { W(F("Update: patching failed with %s\n") % e.what);
       cvs_client::update c=Update(file,s2->cvs_version);
       if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
       { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
@@ -1316,14 +1331,21 @@ static void guess_repository(std::string &repository, std::string &module,
           bi!=branch_certs.end();++bi)
     { // actually this finds an arbitrary element of the set intersection
       if (ci->inner().ident==bi->inner().ident)
-      { 
-        cvs_repository::parse_cvs_cert_header(*ci,repository,module,branch);
-        if (branch.empty())
-          L(F("using module '%s' in repository '%s'\n") % module % repository);
-        else
-          L(F("using branch '%s' of module '%s' in repository '%s'\n") 
+      { try
+        { cvs_repository::parse_cvs_cert_header(*ci,repository,module,branch);
+          if (branch.empty())
+            L(F("using module '%s' in repository '%s'\n") % module % repository);
+          else
+            L(F("using branch '%s' of module '%s' in repository '%s'\n") 
                 % branch % module % repository);
-        goto break_outer;
+          goto break_outer;
+        }
+        catch (std::exception &e)
+        { W(F("exception %s on revision %s\n") % e.what() % ci->inner().ident);
+        }
+        catch (informative_failure &e)
+        { W(F("exception %s on revision %s\n") % e.what % ci->inner().ident);
+        }
       }
     }
   break_outer: ;
@@ -1629,7 +1651,8 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
       deltas.push_back(current);
       std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
         cache_item=revision_lookup.find(current->delta_base);
-      I(cache_item!=revision_lookup.end());
+      E(cache_item!=revision_lookup.end(), 
+          F("missing cvs cert on base revision %s\n") % current->delta_base);
       current=&*(cache_item->second);
     }
     I(current->delta_base.inner()().empty());
@@ -1742,6 +1765,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         try
         { modtime=cvs_client::Entries2time_t(parts[3]);
         } catch (std::exception &e) {}
+        catch (informative_failure &e) {}
         I(files.find(filename)==files.end());
         std::map<std::string,file_history>::iterator f
             =files.insert(std::make_pair(filename,file_history())).first;
