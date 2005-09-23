@@ -1410,7 +1410,9 @@ std::vector<std::string> cvs_client::ExpandModules()
   std::vector<std::string> result;
   std::vector<std::pair<std::string,std::string> > lresult;
   while (fetch_result(lresult))
-  { I(lresult.size()==2);
+  { if (lresult.size()==1 && lresult[0].first=="CMD" && lresult[0].second=="error")
+      E(false, F("error accessing CVS module %s\n") % module);
+    I(lresult.size()==2);
     I(lresult[0].second=="Module-expansion");
     result.push_back(lresult[1].second);
   }
