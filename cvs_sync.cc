@@ -1038,6 +1038,7 @@ std::set<cvs_edge>::iterator cvs_repository::last_known_revision()
 
 time_t cvs_repository::posix2time_t(std::string posix_format)
 { std::string::size_type next_illegal=0;
+  MM(posix_format);
   while ((next_illegal=posix_format.find_first_of("-:"))!=std::string::npos)
         posix_format.erase(next_illegal,1);
   boost::posix_time::ptime tmp= boost::posix_time::from_iso_string(posix_format);
@@ -1158,7 +1159,16 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
           % a.new_content.size());
     }
 
-    I(!commits.empty());
+    if (commits.empty())
+    { W(F("revision %s: nothing to commit") % e.revision());
+          packet_db_writer dbw(app);
+      e.cm_delta_depth=++cm_delta_depth;
+      e.delta_base=parent->revision;
+      cert_cvs(e, dbw);
+      revision_lookup[e.revision]=edges.insert(e).first;
+      fail=false;
+      return --(edges.end());
+    }
     std::string changelog;
     changelog="Monotone revision "+e.revision()+" author "+e.author
         +" time "+cvs_client::time_t2rfc822(e.time)+"\n\n"+e.changelog;
