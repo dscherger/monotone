@@ -281,12 +281,14 @@ void cvs_client::connect()
   writestr("valid-requests\n");
   std::string answer=readline();
   MM(answer);
-  I(begins_with(answer,"Valid-requests "));
+  E(begins_with(answer,"Valid-requests "),
+      F("CVS server answered '%s' to Valid-requests\n") % answer);
   // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
   push_back2insert<stringset_t> adaptor(Valid_requests);
   stringtok(adaptor,answer.substr(15));
   answer=readline();
-  I(answer=="ok");
+  E(answer=="ok",
+      F("CVS server did not answer ok to Valid-requests: %s\n") % answer);
   
   I(CommandValid("UseUnchanged"));
   writestr("UseUnchanged\n");
