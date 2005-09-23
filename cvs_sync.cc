@@ -1223,6 +1223,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
   std::string result;
   for (std::set<revision_id>::const_iterator i=parents.begin();i!=parents.end();++i)
   { std::vector< revision<cert> > certs;
+    if (*i==revision_id()) continue;
     app.db.get_revision_certs(*i,certs);
     std::vector< revision<cert> >::const_iterator j=certs.begin();
     std::string to_match=create_cvs_cert_header();
