@@ -5,6 +5,9 @@
 #include "revdat.hh"
 #include "misc.hh"
 
+// getcwd
+#include <unistd.h>
+
 template<typename V, typename A, typename T>
 std::vector<V, A> & operator%(std::vector<V, A> & v, T t)
 {
@@ -84,6 +87,24 @@ rev_file_list::rev_file_list(revdat *r): col(),
         menu.append(*mi);
       }
   }
+
+  std::list<Gtk::TargetEntry> listTargets;
+  listTargets.push_back(Gtk::TargetEntry("text/uri-list"));
+  files.drag_source_set(listTargets);
+  files.signal_drag_data_get()
+    .connect(sigc::mem_fun(*this, &rev_file_list::drag_get));
+}
+
+void
+rev_file_list::drag_get(const Glib::RefPtr<Gdk::DragContext> & dc,
+                        Gtk::SelectionData& sel_data,
+                        guint a, guint b)
+{
+  int s = 512;
+  char *cwd = new char[s];
+  getcwd(cwd, s);
+  std::string dir(cwd);
+  sel_data.set(sel_data.get_target(), dir + "/" + current_file);
 }
 
 void
