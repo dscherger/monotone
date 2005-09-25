@@ -138,12 +138,14 @@ class Monotone:
                                     rv += c
                                     in_escape = False
                             else:
-                                    if c == '\\': in_escape = True
-                                    if c == '"':
+                                    if c == '\\':
+                                        in_escape = True
+                                    elif c == '"':
                                             if is_terminated:
                                                     raise Exception("basic_io parse error; string ends twice!")
                                             is_terminated = True
-                                    else: rv += c
+                                    else:
+                                        rv += c
                     return is_terminated, rv
             rv = []
             stanza = []
