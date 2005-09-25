@@ -1,0 +1,20 @@
+
+1. Building mtsh
+
+mtsh uses gtkmm-2.4 and the lexical_cast header from Boost, so you need the
+dev versions of these two libraries. You also need a system that supports
+fork()/pipe()/exec() .
+
+To build, run
+   ./bootstrap
+   ./configure
+   make
+
+
+2. Usage
+
+Run mtsh from a monotone working copy, or use the "Set working dir" button
+to go to one. You can also use "Set database" if you don't have a working
+copy -- in this case, you can only examine stored revisions and add file
+comments to them. When viewing a working copy, you can add, drop, rename,
+and revert files through a context menu on the file list.

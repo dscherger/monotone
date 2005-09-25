@@ -1,0 +1,57 @@
+#!/bin/sh
+# Usage: ChangeLog [<num>]
+# print the <num> most recent commit log entries
+# If <num> is not given, it defaults to 15
+# This script must be run from the root of a monotone working copy.
+
+# If you came here wanting to write a log of your changes, put them in
+# the commit message instead (MT/log if you want to record them prior
+# to commit)
+
+NUM=15
+
+if [ ! x$1 = x ] ; then
+	NUM=$(($1 - 1))
+fi
+
+REV=`cat MT/revision`
+
+# Get the contents of a cert
+LOG='/^Name.*changelog$/,/^----/! D; /^Name/ D; /^----/ D'
+DATE='/^Name.*date$/,/^----/! D; /^Name/ D; /^----/ D'
+AUTHOR='/^Name.*author$/,/^----/! D; /^Name/ D; /^----/ D'
+
+# Remove "duplicate" lines (When the date+author line is unneeded because
+# the same info is in the changelog cert (won't match exactly, but should
+# both start with ^${year} ))
+# Keep the line from the changelog, instead of the generated one
+RD=':b; N; /^[[:digit:]]\{4\}.*\n[[:digit:]]\{4\}/ { s/^.*\n//; b b; }; P; D'
+
+get()
+{
+	mtn ls certs "$2" | sed "$1" \
+	| sed 's/^[^\:]\+\: //g'
+}
+
+getrevs()
+{
+	mtn automate ancestors "$1" \
+	| mtn automate toposort -@- \
+	| tail -n "$2" | tac
+}
+
+getlogs()
+{
+	for i in "$REV" `getrevs "$REV" "$NUM"`; do
+		echo `get "$DATE" "$i"` '' `get "$AUTHOR" "$i"`
+		get "$LOG" "$i" | sed 's/^\([^[:digit:]\t]\)/\t\1/g'
+	done
+}
+
+
+if [ ! x$REV = x ]; then
+	getlogs | sed "$RD" | sed '/^$/ d' \
+	| sed 's/^\([[:digit:]]\{4\}.*\)$/\n\1\n/g'
+else
+	echo "MT/revision does not exist!" >&2
+fi

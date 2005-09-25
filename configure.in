@@ -1,0 +1,33 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.59)
+AC_INIT(mtsh, 0.1, BUG-REPORT-ADDRESS)
+AM_INIT_AUTOMAKE
+
+AC_CONFIG_SRCDIR([main.cc])
+AC_CONFIG_HEADER([config.h])
+
+# Checks for programs.
+AC_PROG_CXX
+
+# Checks for libraries.
+PKG_CHECK_MODULES(GTKMM, gtkmm-2.4 >= 2.4.0)
+AC_SUBST(GTKMM_CFLAGS)
+AC_SUBST(GTKMM_LIBS)
+
+# Checks for header files.
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS([unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_PID_T
+
+# Checks for library functions.
+AC_FUNC_FORK
+AC_HEADER_STDC
+AC_CHECK_FUNCS([dup2])
+AC_OUTPUT(Makefile)

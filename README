@@ -1,0 +1,4 @@
+mtsh is a small GUI for examining (and modifying) a monotone working copy. It
+also has limited support for viewing revisions stored in the database.
+
+see INSTALL for build instructions
