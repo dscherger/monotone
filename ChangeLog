@@ -1,3 +1,39 @@
+2005-09-25  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* sqlite/*: Update in-tree SQLite from 3.2.6 to 3.2.7.
+
+2005-09-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* ui.cc: fallback to the default locale if locale("") fails.
+
+2005-09-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/arc4.cpp: increase maximum keylength to 256 bytes.
+
+2005-09-24  Satoru SATOH <ss@gnome.gr.jp>
+
+	* po/ja.po: Updated Japanese translation.
+
+2005-09-22  Benoît Dejean  <benoit@placenet.org>
+
+	* netsync.cc: Reverted changes
+	from f0a632bf14468b6e03a488d6f1a64ef18b61d04c
+	to   4f7f638954c79c54460d04c3be111acad8b26dd3
+
+2005-09-22  Benoît Dejean  <benoit@placenet.org>
+
+	* lua.cc (monotone_gettext_for_lua): New function.
+	* po/POTFILES.in: Added std_hooks.lua.
+	* std_hooks.lua: One more string for i18n.
+
+2005-09-22  Benoît Dejean  <benoit@placenet.org>
+
+	* ui.{cc,hh} (get_user_locale): Returns a const &.
+
+2005-09-21  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: better error checking
+
 2005-09-20  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* restrictions.cc: Make calculate_unrestricted_revision work
@@ -121,7 +157,7 @@
 	* tests/t_rename_dir_cross_level.at: When invoking mv to rename
 	a directory, do not include a trailing slash on the target -- that
 	is not portable.                                                  
-                       
+
 	* Makefile.am (TESTS_ENVIRONMENT): Ensure that PATH starts with
 	the current directory, so we test the just-built monotone binary,
 	not some older version.                                          
