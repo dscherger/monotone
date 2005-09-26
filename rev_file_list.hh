@@ -108,9 +108,9 @@ class rev_file_list: public Gtk::VBox
   void menuundrop();
   void menurevert();
 
-  void rev_file_list::drag_get(const Glib::RefPtr<Gdk::DragContext> & dc,
-                               Gtk::SelectionData& sel_data,
-                               guint a, guint b);
+  void drag_get(const Glib::RefPtr<Gdk::DragContext> & dc,
+                Gtk::SelectionData& sel_data,
+                guint a, guint b);
 
   void dosel(Gtk::TreeModel::Path const & p);
   bool selchanged(Glib::RefPtr<Gtk::TreeModel> const & model,

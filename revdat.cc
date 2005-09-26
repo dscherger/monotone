@@ -190,6 +190,15 @@ void revdat::loadwork()
   rfl.set_files(res);
 }
 
+void revdat::clear()
+{
+  rfl.set_wc(false);
+  rfl.set_rev("");
+  std::vector<Glib::ustring> pvec;
+  std::vector<std::vector<inventory_item> > pchanges;
+  rfl.set_parents(pvec, pchanges);
+}
+
 void revdat::loadrev(std::string const & rev)
 {
   revision = rev;

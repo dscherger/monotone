@@ -14,6 +14,7 @@
 
 #include "monotone.hh"
 #include "revdat.hh"
+#include "misc.hh"
 
 // The toolbar generator doesn't understand this kind of item.
 // [Text entry here] [Go!]
@@ -51,6 +52,26 @@ class mainwin : public Gtk::Window
   txt_toolitem ti;
 public:
 
+  void update()
+  {
+    std::vector<std::string> rr;
+    if (!mtn.update(rr))
+      {
+        chooser c(rr);
+        int result = c.run();
+        if (result == Gtk::RESPONSE_OK)
+          {
+            std::string rev = c.result();
+            if (!rev.empty())
+              mtn.update(rev);
+          }
+      }
+  }
+
+  void sync()
+  {
+  }
+
   void setdb()
   {
     Gtk::FileChooserDialog dialog("Please choose a database",
@@ -70,7 +91,7 @@ public:
     if (result == Gtk::RESPONSE_OK)
       {
         mtn.set_db(dialog.get_filename());
-        do_refresh();
+        rd.clear();
       }
   }
   void setdir()
@@ -85,7 +106,7 @@ public:
       {
         mtn.set_dir(dialog.get_filename());
         chdir(dialog.get_filename().c_str());
-        do_refresh();
+        rd.loadwork();
       }
   }
   void do_refresh()
@@ -129,13 +150,34 @@ public:
       sigc::mem_fun(*this, &mainwin::do_commit));
     ag->add(Gtk::Action::create("Quit", Gtk::Stock::QUIT),
       sigc::mem_fun(*this, &mainwin::quit));
+    ag->add(Gtk::Action::create("File_menu", "_File"));
+    ag->add(Gtk::Action::create("Work_menu", "_Working dir"));
+//    ag->add(Gtk::Action::create("Database_menu", "_Database"));
+    ag->add(Gtk::Action::create("Update", Gtk::Stock::GO_UP, "Update"),
+      sigc::mem_fun(*this, &mainwin::update));
+//    ag->add(Gtk::Action::create("Sync", Gtk::Stock::NETWORK, "Sync"),
+//      sigc::mem_fun(*this, &mainwin::sync));
     ui = Gtk::UIManager::create();
     ui->insert_action_group(ag);
     Glib::ustring cmdxml =
         "<ui>"
+        "  <menubar name='Menubar'>"
+        "    <menu action='File_menu'>"
+        "      <menuitem action='Setdir'/>"
+        "      <menuitem action='Setdb'/>"
+        "      <menuitem action='Refresh'/>"
+        "      <separator/>"
+        "      <menuitem action='Quit'/>"
+        "    </menu>"
+        "    <menu action='Work_menu'>"
+        "      <menuitem action='Commit'/>"
+        "      <menuitem action='Update'/>"
+        "    </menu>"
+//        "    <menu action='Database_menu'>"
+//        "      <menuitem action='Sync'/>"
+//        "    </menu>"
+        "  </menubar>"
         "  <toolbar name='Toolbar'>"
-        "    <toolitem action='Setdir'/>"
-        "    <toolitem action='Setdb'/>"
         "    <toolitem action='Refresh'/>"
         "    <toolitem action='Workingcopy'/>"
         "    <toolitem action='Commit'/>"
@@ -148,7 +190,8 @@ public:
                        (ui->get_widget("/Toolbar"));
     ti.button.signal_clicked().connect(sigc::mem_fun(*this, &mainwin::to_rev));
     ti.entry.signal_activate().connect(sigc::mem_fun(*this, &mainwin::to_rev));
-    tb->insert(ti, 3);
+    tb->insert(ti, 1);
+    stuff.pack_start(*ui->get_widget("/Menubar"), Gtk::PACK_SHRINK);
     stuff.pack_start(*tb, Gtk::PACK_SHRINK);
     stuff.pack_end(rd);
     add(stuff);

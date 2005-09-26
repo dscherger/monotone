@@ -41,6 +41,7 @@ class monotone
   std::string dir;// chdir here before exec
   std::string db;// if not empty, add --db= to argument list for exec
   int from;
+  int errfrom;
   int to;
 
   bool execute(std::vector<std::string> args);
@@ -61,8 +62,9 @@ public:
   std::string command(std::string const & cmd,
                       std::vector<std::string> const & args);
   // run a command from the command line
-  std::string runcmd(std::string const & cmd,
-                      std::vector<std::string> const & args);
+  void runcmd(std::string const & cmd,
+              std::vector<std::string> const & args,
+              std::string & out, std::string & err);
 
   void inventory(std::vector<inventory_item> & out);
   std::vector<cert> certs(std::string const & rev);
@@ -82,6 +84,8 @@ public:
   void drop(std::string const & file);
   void revert(std::string const & file);
   void rename(std::string const & oldname, std::string const & newname);
+  bool update(std::vector<std::string> & opts);
+  void update(std::string const & rev);
 };
 
 #endif

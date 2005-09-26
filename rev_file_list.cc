@@ -279,7 +279,10 @@ void rev_file_list::set_parents(std::vector<Glib::ustring> const & pvec,
 void rev_file_list::set_rev(std::string const & r)
 {
   rev = r;
-  certs = rd->mtn->certs(r);
+  if (r.empty())
+    certs.clear();
+  else
+    certs = rd->mtn->certs(r);
 }
 
 void rev_file_list::pchange(int n)

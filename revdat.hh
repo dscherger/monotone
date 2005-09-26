@@ -31,6 +31,7 @@ public:
   std::string get_rev(){return rfl.get_rev();}
   bool get_wc(){return rfl.get_wc();}
   void loadrev(std::string const & rev);
+  void clear();
 };
 
 #endif

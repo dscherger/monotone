@@ -5,6 +5,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/select.h>
 #include <unistd.h>
 #include <cstring>
 #include <cerrno>
@@ -30,7 +31,8 @@ monotone::execute(std::vector<std::string> args)
 {
   int to_mtn[2];
   int from_mtn[2];
-  if (pipe(to_mtn) < 0 || pipe(from_mtn) < 0)
+  int err_mtn[2];
+  if (pipe(to_mtn) < 0 || pipe(from_mtn) < 0 || pipe(err_mtn) < 0)
     return false;
   pid = fork();
   if (pid < 0)
@@ -39,14 +41,18 @@ monotone::execute(std::vector<std::string> args)
       close(to_mtn[1]);
       close(from_mtn[0]);
       close(from_mtn[1]);
+      close(err_mtn[0]);
+      close(err_mtn[1]);
       return false;
     }
   else if (pid > 0)
     {
       close(to_mtn[0]);
       close(from_mtn[1]);
+      close(err_mtn[1]);
       to = to_mtn[1];
       from = from_mtn[0];
+      errfrom = err_mtn[0];
       return true;
     }
   else
@@ -56,10 +62,11 @@ monotone::execute(std::vector<std::string> args)
       chdir(dir.c_str());
       if (close(to_mtn[1]) < 0 || close(from_mtn[0]) < 0)
         return false;
-      if (close(0) < 0 || close(1) < 0)
+      if (close(0) < 0 || close(1) < 0 || close(2) < 0)
         return false;
-//        close(2);
-      if (dup2(to_mtn[0], 0) < 0 || dup2(from_mtn[1], 1) < 0)
+      if (dup2(to_mtn[0], 0) < 0
+          || dup2(from_mtn[1], 1) < 0
+          || dup2(err_mtn[1], 2) < 0)
         return false;
       char **arg = new char *[args.size() + 2];
       arg[0] = "monotone";
@@ -189,11 +196,14 @@ monotone::command(std::string const & cmd,
     ;
   return res;
 }
-std::string
+
+void
 monotone::runcmd(std::string const & cmd,
-                 std::vector<std::string> const & args)
+                 std::vector<std::string> const & args,
+                 std::string & out, std::string & err)
 {
-  std::string out;
+  out.clear();
+  err.clear();
   stop();// stop stdio
   std::vector<std::string> argg = args;
   argg.insert(argg.begin(), cmd);
@@ -201,15 +211,34 @@ monotone::runcmd(std::string const & cmd,
 
   int size = 2048;
   char *output = new char[size];
-  int r = 0;
+  char *errout = new char[size];
+  fd_set rd, ex;
   do
     {
-      out += std::string(output, r);
-      r = read(from, output, size);
-    } while (r >= 0 && !stopped());
+      FD_ZERO(&rd);
+      FD_ZERO(&ex);
+      FD_SET(from, &rd);
+      FD_SET(errfrom, &rd);
+      FD_SET(from, &ex);
+      FD_SET(errfrom, &ex);
+      int s = ::select(max(from, errfrom)+1, &rd, 0, &ex, 0);
+      if (FD_ISSET(from, &rd))
+        {
+          int r = read(from, output, size);
+          out += std::string(output, r);
+        }
+      if (FD_ISSET(errfrom, &rd))
+        {
+          int r = read(errfrom, errout, size);
+          err += std::string(errout, r);
+        }
+    } while (!stopped());
+  int r = read(from, output, size);
+  out += std::string(output, r);
+  r = read(errfrom, errout, size);
+  err += std::string(errout, r);
   delete[] output;
-
-  return out;
+  delete[] errout;
 }
 
 void
@@ -375,12 +404,14 @@ monotone::make_cert(std::string const & rev,
   args.push_back(rev);
   args.push_back(name);
   args.push_back(value);
-  runcmd("cert", args);
+  std::string ign1, ign2;
+  runcmd("cert", args, ign1, ign2);
 }
 std::string
 monotone::commit(std::vector<std::string> args)
 {
-  runcmd("commit", args);
+  std::string ign1, ign2;
+  runcmd("commit", args, ign1, ign2);
   args.clear();
   std::string res = command("get_revision", args);
   for (int begin = 0, end = res.find('\n'); begin != res.size();
@@ -398,9 +429,11 @@ monotone::commit(std::vector<std::string> args)
 std::string
 monotone::diff(std::string const & filename)
 {
+  std::string out, ign;
   std::vector<std::string> args;
   args.push_back(filename);
-  return runcmd("diff", args);
+  runcmd("diff", args, out, ign);
+  return out;
 }
 std::string
 monotone::diff(std::string const & filename,
@@ -411,7 +444,9 @@ monotone::diff(std::string const & filename,
   args.push_back(filename);
   args.push_back("--revision=" + rev1);
   args.push_back("--revision=" + rev2);
-  return runcmd("diff", args);
+  std::string out, ign;
+  runcmd("diff", args, out, ign);
+  return out;
 }
 std::string
 monotone::cat(std::string const & filename, std::string const & rev)
@@ -419,7 +454,9 @@ monotone::cat(std::string const & filename, std::string const & rev)
   std::vector<std::string> args;
   args.push_back(filename);
   args.push_back("--revision=" + rev);
-  return runcmd("cat", args);
+  std::string out, ign;
+  runcmd("cat", args, out, ign);
+  return out;
 }
 std::string
 monotone::get_revision(std::string const & rev)
@@ -438,29 +475,64 @@ monotone::get_manifest(std::string const & rev)
 void
 monotone::add(std::string const & file)
 {
+  std::string ign1, ign2;
   std::vector<std::string> args;
   args.push_back(file);
-  runcmd("add", args);
+  runcmd("add", args, ign1, ign2);
 }
 void
 monotone::drop(std::string const & file)
 {
+  std::string ign1, ign2;
   std::vector<std::string> args;
   args.push_back(file);
-  runcmd("drop", args);
+  runcmd("drop", args, ign1, ign2);
 }
 void
 monotone::revert(std::string const & file)
 {
+  std::string ign1, ign2;
   std::vector<std::string> args;
   args.push_back(file);
-  runcmd("revert", args);
+  runcmd("revert", args, ign1, ign2);
 }
 void
 monotone::rename(std::string const & oldname, std::string const & newname)
 {
+  std::string ign1, ign2;
   std::vector<std::string> args;
   args.push_back(oldname);
   args.push_back(newname);
-  runcmd("rename", args);
+  runcmd("rename", args, ign1, ign2);
+}
+
+bool
+monotone::update(std::vector<std::string> & opts)
+{
+  opts.clear();
+  std::string ign, err;
+  std::vector<std::string> args;
+  runcmd("update", args, ign, err);
+  int p = err.find("multiple update candidates");
+  if (p == std::string::npos)
+    return true;
+
+  p = err.find("monotone:   ", p + 1);
+  while (p != std::string::npos)
+    {
+      p = err.find(":", p);
+      p = err.find_first_not_of(" ", p + 1);
+      opts.push_back(err.substr(p, 40));
+      p = err.find("monotone:   ", p + 1);
+    }
+  return false;
+}
+
+void
+monotone::update(std::string const & rev)
+{
+  std::string ign, err;
+  std::vector<std::string> args;
+  args.push_back("--revision="+rev);
+  runcmd("update", args, ign, err);
 }
