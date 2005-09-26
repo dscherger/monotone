@@ -4,6 +4,9 @@
 # If <num> is not given, it defaults to 15
 # This script must be run from the root of a monotone working copy.
 
+# If you got this in a tarball, the real change log will be in ChangeLog.txt
+# This is the script used to generate it.
+
 # If you came here wanting to write a log of your changes, put them in
 # the commit message instead (MT/log if you want to record them prior
 # to commit)
