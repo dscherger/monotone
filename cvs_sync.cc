@@ -688,8 +688,8 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   { cvs_client::update u=Update(file,s->cvs_version,s2->cvs_version,s->keyword_substitution);
     try 
     { store_update(s,s2,u,contents);
-    } catch (std::exception &e)
-    { W(F("Update: patching failed with %s\n") % e.what());
+    } catch (informative_failure &e)
+    { W(F("Update: patching failed with %s\n") % e.what);
       cvs_client::update c=Update(file,s2->cvs_version);
       if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
       { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
@@ -700,8 +700,8 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
       const_cast<unsigned&>(s2->size)=c.contents.size();
       contents=c.contents;
       const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
-    } catch (informative_failure &e)
-    { W(F("Update: patching failed with %s\n") % e.what);
+    } catch (std::exception &e)
+    { W(F("Update: patching failed with %s\n") % e.what());
       cvs_client::update c=Update(file,s2->cvs_version);
       if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
       { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
@@ -1617,7 +1617,18 @@ void cvs_repository::update()
       if (s2==f->second.known_states.end()) break;
       if (s2->cvs_version==i->new_revision)
       { // we do not need to ask the host, we already did ...
-        store_update(last,s2,*i,initial_contents);
+        try
+        { store_update(last,s2,*i,initial_contents);
+        } catch (informative_failure &e)
+        { W(F("error during update: %s\n") % e.what);
+          // we _might_ try to use store delta ...
+          cvs_client::update c=Update(i->file,s2->cvs_version);
+          const_cast<std::string&>(s2->md5sum)="";
+          const_cast<unsigned&>(s2->patchsize)=0;
+          store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+          const_cast<unsigned&>(s2->size)=c.contents.size();
+          const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+        }
         break;
       }
       else
