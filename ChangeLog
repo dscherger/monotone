@@ -1,36 +1,391 @@
-2005-08-30  Nathaniel Smith  <njs@pobox.com>
+2005-09-27  Richard Levitte  <richard@levitte.org>
 
-	* file_io.cc (walk_tree_absolute): Implement.
+	* monotone.texi (Tutorial): It seems like texi2pdf gets quite
+	confused when a @chapter has a @subsection with a @section in
+	between.  The resulting PDF had a Tutorial that was a indexed as a
+	subsection under Concepts/Branches instead of being indexed as the
+	chapter it is, and most confusingly, it's last subsection
+	(Branching and Merging) ended up as a a separate chapter of it's
+	own...
 
-2005-08-30  Nathaniel Smith  <njs@pobox.com>
+2005-09-26  Benoît Dejean  <benoit@placenet.org>
 
-	* commands.cc (cvs_import, git_import): Fixup after merge.
-	* git.hh (import_git_repo): Port to paths.cc.
-	* git.cc: Port to paths.cc generally.
-	* file_io.hh (absolute_tree_walker, walk_tree_absolute): New
-	interface (still needs implementing).
+	* database.cc: Merged 3 strings.
 
-2005-08-20  Petr Baudis  <pasky@suse.cz>
-	* git.cc: Support for incremental imports - when you pull new
-	stuff to your GIT repository, you can then re-run git_import
-	and it will import the new stuff to a Monotone branch.
+2005-09-26  Matt Johnston  <matt@ucc.asn.au>
 
-2005-08-20  Petr Baudis  <pasky@suse.cz>
-	* cert.hh, cert.cc: Publish put_simple_revision_cert() - that
-	hints that it is ok to do custom certificates and lets us easily
-	do so from the GIT importer.
-	* git.cc: Associate a gitcommit cert containing commit and author
-	information with each imported commit. This will be especially
-	important for incremental imports.
+	* commands.cc: add 'help' command
+	* monotone.cc: add -h alias for --help
+	
+2005-09-25  Matt Johnston  <matt@ucc.asn.au>
 
-2005-08-18  Petr Baudis  <pasky@suse.cz>
-	* Makefile.am, git.hh, git.cc: Initial support for importing from
-	GIT repositories to Monotone. This is pretty basic yet, full of
-	TODOs, can't do tags nor incremental imports, does not record
-	executability of files, and does not attach git certs to the
-	imported commits. But it more-or-less successfully imports history
-	of the GIT project itself, although it takes its time.
-	* commands.cc: git_import command.
+	* netsync.cc: use lexical_cast on port numbers to avoid
+	strange-looking "port 5,253"
+
+2005-09-25  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* sqlite/*: Update in-tree SQLite from 3.2.6 to 3.2.7.
+
+2005-09-25  Benoît Dejean  <benoit@placenet.org>
+
+	* netsync.cc: 3 more i18n strings.
+
+2005-09-25  Benoît Dejean  <benoit@placenet.org>
+
+	* cert.cc (cert_signable_text): F() vs. boost::format.
+	* lua.cc (monotone_guess_binary_file_contents_for_lua),
+	(monotone_include_for_lua), (monotone_includedir_for_lua):
+	* rcs_import.cc (import_cvs_repo): Merged some strings.
+	
+2005-09-25  Benoît Dejean  <benoit@placenet.org>
+
+	* lua.cc (monotone_guess_binary_file_contents_for_lua):
+	Fixed signednes warning and istream usage.
+
+2005-09-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* ui.cc: fallback to the default locale if locale("") fails.
+
+2005-09-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/arc4.cpp: increase maximum keylength to 256 bytes.
+
+2005-09-24  Benoît Dejean  <benoit@placenet.org>
+
+	* ChangeLog: Fixed.
+	I don't understand how xxdiff works :/ Please help.
+
+2005-09-24  Satoru SATOH <ss@gnome.gr.jp>
+
+	* po/ja.po: Updated Japanese translation.
+
+2005-09-23  Benoît Dejean  <benoit@placenet.org>
+
+        * std_hooks.lua: More i18n strings.
+
+        I don't know how to handle lua
+        "multiline" ..
+        "strings" because gettext doesn't join them.
+
+2005-09-22  Benoît Dejean  <benoit@placenet.org>
+
+        * sanity.{cc,hh}: Uninlined F() and FP().
+        This happily saves ~100KB of .text on my ppc.
+
+2005-09-22  Benoît Dejean  <benoit@placenet.org>
+
+	* netsync.cc: Reverted changes
+	from f0a632bf14468b6e03a488d6f1a64ef18b61d04c
+	to   4f7f638954c79c54460d04c3be111acad8b26dd3
+
+2005-09-22  Benoît Dejean  <benoit@placenet.org>
+
+	* lua.cc (monotone_gettext_for_lua): New function.
+	* po/POTFILES.in: Added std_hooks.lua.
+	* std_hooks.lua: One more string for i18n.
+
+2005-09-22  Benoît Dejean  <benoit@placenet.org>
+
+	* ui.{cc,hh} (get_user_locale): Returns a const &.
+
+2005-09-21  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: better error checking
+
+2005-09-20  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* restrictions.cc: Make calculate_unrestricted_revision work
+	with --exclude
+	* tests/t_restriction_with_exclude_iprint.at: remove XFAIL
+
+2005-09-20  Patrick Mauritz <oxygene@studentenbude.ath.cx>
+
+	* configure.ac: solaris needs librt for fdatasync
+	* sqlite/parse.c: #line and #include interactions aren't defined
+
+2005-09-20  Matt Johnston  <matt@ucc.asn.au>
+
+	* database.cc (space_usage): workaround the issue that in sqlite
+	3.2.6, SUM({empty set}) returns NULL. (this is part of the sql spec,
+	see http://www.sqlite.org/cvstrac/tktview?tn=1413 and the comment for
+	SUM() in sqlite docs).
+
+2005-09-20  Matt Johnston  <matt@ucc.asn.au>
+
+	* ui.cc, ui.hh, sanity.hh: replace ui.user_locale with
+	get_user_locale(), so that we can guarantee that it will be
+	initialised when the global_sanity object (and probably other things)
+	are instantiated.
+
+2005-09-20  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_restriction_with_exclude_iprint.at: New test, variant of
+	t_restriction_exclude.at, but with inodeprints enabled.  Mark as
+	XFAILed.
+	* testsuite.at: Add new test.
+	* sqlite/*: Update in-tree SQLite from 3.2.2 to 3.2.6.
+	* Makefile.am: Add sqlite/{analyze,vbdefifo,complete}.c to
+	SQLITE_SOURCES
+	* schema_migration.cc (calculate_schema_id): Explicitly exclude
+	sqlite_stat1 table from schema ID calculation.  This is a new
+	magic table created by the 'analyze' command in SQLite >= 3.2.3.
+
+2005-09-18  Nathaniel Smith  <njs@pobox.com>
+
+	* po/ja.po: New translation from Satoru SATOH <ss@gnome.gr.jp>.
+	* AUTHORS: Add Satoru SATOH.
+	
+2005-09-18  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at: Tweak default 'eveything' netsync glob to
+	something that works around the MinGW/Win32 globbing issues for
+	now.
+	* tests/t_log_brief.at: Canonicalise output on Win32.
+
+2005-09-17  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: Remove stray "new int[2];' statements from
+	debugging. Remove connections from list when finished.
+
+2005-09-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* Makefile.am (EXTRA_DIST): add contrib/monotone-cvs-ignore.lua,
+	contrib/ciabot_monotone_hookversion.py, and contrib/usher.cc .
+	also remove duplicate of contrib/monoprof.sh
+
+2005-09-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netsync.cc: finish renaming things, so it compiles again...
+
+2005-09-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: A simple usher/proxy server. It asks connecting
+	clients for their include pattern, and then forwards the connection
+	to an appropriate (as given in a config file) monotone server. Note
+	that all servers operating behind one usher need to have the same
+	server key.
+
+2005-09-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netcmd.{cc,hh}, netsync.cc: new netcmd types: usher_cmd and
+	usher_reply_cmd. They are not included in the HMAC, and do not
+	occur during normal communication. Purpose: running multiple servers
+	from the same port. This allows a special server to ask for the
+	client's include pattern, and then forward the connection to a real
+	monotone server.
+
+2005-09-16  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/pkcs8.cpp: re-add the monotone-specific code for guessing if
+	a key is DER encoded or not.
+
+2005-09-16  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/*: update to Botan 1.4.6
+	* Makefile.am: ditto
+
+2005-09-15  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* app_state.{cc,hh}: restrictions now understand --exclude
+	* commands.cc: commit and revert now take OPT_EXCLUDE
+	* monotone.cc: update description of --exclude
+	* tests/t_restriction_with_exclude.at: new test
+	* testsuite.at: add it
+
+2005-09-14  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/ciabot_monotone_hookversion.py: CIA bot client script
+	meant to be called from the note_netsync_revision_received hook.
+	* lua.{cc,hh}: hook_note_commit and hook_note_netsync_revision_received
+	now take the text of the revision as an argument.
+	* netsync.cc, commands.cc: Give hooks new argument.
+	* monotone.texi: Update documentation for those hooks.
+
+2005-09-11  Benoît Dejean  <benoit@placenet.org>
+
+	* database.cc
+	* database_check.cc
+	* netsync.cc
+	* po/POTFILES.in
+	* po/POTFILES.skip
+	* rcs_import.cc: More i18n strings.
+
+2005-09-07  Jim Meyering  <jim@meyering.net>
+	
+	* tests/t_rename_dir_cross_level.at: When invoking mv to rename
+	a directory, do not include a trailing slash on the target -- that
+	is not portable.                                                  
+
+	* Makefile.am (TESTS_ENVIRONMENT): Ensure that PATH starts with
+	the current directory, so we test the just-built monotone binary,
+	not some older version.                                          
+
+2005-09-07  Benoît Dejean  <benoit@placenet.org>
+
+	* std_hooks.lua: Don't spawn emacs with '-no-init-file'.
+
+2005-09-09  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* paths.cc (save_initial_path): Default Boost's fs::path to
+	fs::native grammar.
+	* tests/t_unreadable_{db,MT}.at: Disable on Win32 for now.
+	* paths.cc: Consistency--use WIN32 rather than _WIN32.
+	* file_io.cc (walk_tree): Correct test for file existence.
+
+2005-09-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* Makefile.am: Add '-f' argument to 'mv'; avoids build waiting on
+	 user confirmation in some cases.
+
+2005-09-08  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Certificates): Remove mention of fcerts and
+	mcerts.
+
+2005-09-07  Benoît Dejean  <benoit@placenet.org>
+
+	* ui.{cc,hh}: Added user_inferface::user_locale.
+	* sanity.hh: Made F() and FP() locale aware.
+
+2005-09-06  Benoît Dejean  <benoit@placenet.org>
+
+	* monotone.cc: One more i18n string.
+
+2005-09-06  Benoît Dejean  <benoit@placenet.org>
+
+	* po/fr.po: Updated French translation.
+
+2005-09-06  Benoît Dejean  <benoit@placenet.org>
+
+	* commands.cc: No i18n for cert_revision_changelog.
+
+2005-09-06  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_netsync_read_permissions.at: Tweak tests so we aren't
+	trying to serve a bare '*'; works around test hangs due to glob
+	expansion sillyness on MinGW.
+	* tests/t_netsync_globs.at: Ditto.
+	* tests/t_netsync_exclude.at: Ditto.
+	* std_hooks.lua (ignore_file): Add Mac OS X (.DS_Store) and
+	Windows (desktop.ini) per-directory browser configuration files.
+
+
+2005-09-05  Benoît Dejean  <benoit@placenet.org>
+
+	* commands.cc: Fixed some strings (added ' around revisions).
+	Removed some whitespaces.
+	No i18n in diff output.
+
+2005-09-05  Benoît Dejean  <benoit@placenet.org>
+
+	* sanity.{cc,hh}: boost::format vs. F(). Merged boost::format
+	and moved non-template code to sanity.cc.
+
+2005-09-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* win32/terminal.cc (have_smart_terminal): We were returning false
+	in almost all circumstances; changed logic so that we at least
+	work when running in a cmd.exe window.
+
+2005-09-05  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc (dump_diffs): don't use the terminal width to
+	print ===== seperators.
+
+2005-09-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* paths.cc (find_and_go_to_working_copy): Create root and bookdir
+	paths as fs::native.
+	* main.cc: Tweak #ifdef to avoid exposing some unused SEH handling
+	on MinGW.
+	* configure.ac: Minor cleanup to Win32 configure test.
+
+2005-09-04  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.cc (options): Remove default from the help string for
+	--count, since none of the options listed are actually the
+	default.
+
+2005-09-04  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_unreadable_db.at, testsuite.at: New test.
+
+2005-09-03  Nathaniel Smith  <njs@pobox.com>
+
+	* po/Makevars (XGETTEXT_OPTIONS): N_ != ngettext.
+	Add c-format flags on F() and FP() calls (only partially
+	successful on latter, because of bug in xgettext).
+	
+2005-09-04  Grahame Bowland  <grahame@angrygoats.net>
+
+	* commands.cc: siplify the monotone cat command 
+	to "monotone cat [-r] FIELNAME" (as in bug #12597)
+	* monotone.texi: update documentation of "monotone cat"
+	* tests/t_add_edge.at, tests/t_cat_file_by_name.at, 
+	tests/t_change_empty_file.at, tests/t_cvsimport.at, 
+	tests/t_cvsimport_deleted_invar.at, tests/t_cvsimport_drepper.at, 
+	tests/t_cvsimport_drepper2.at, tests/t_cvsimport_manifest_cycle.at, 
+	tests/t_cvsimport_samelog.at, tests/t_database_check.at, 
+	tests/t_db_kill_rev_locally.at, tests/t_empty_id_completion.at, 
+	tests/t_epoch.at, tests/t_epoch_server.at, tests/t_erename.at, 
+	tests/t_i18n_file.at, tests/t_import.at, tests/t_merge_add_del.at, 
+	tests/t_movedel.at, tests/t_movepatch.at, tests/t_netsync.at, 
+	tests/t_netsync_exclude.at, tests/t_netsync_exclude_default.at, 
+	tests/t_netsync_globs.at, tests/t_netsync_nocerts.at, 
+	tests/t_netsync_permissions.at, tests/t_netsync_read_permissions.at, 
+	tests/t_netsync_single.at, tests/t_normalized_filenames.at, 
+	tests/t_persistent_server_revision.at, tests/t_remerge.at, 
+	tests/t_rename.at, tests/t_renamed.at, tests/t_scan.at, 
+	tests/t_set_default.at, tests/t_singlecvs.at, 
+	tests/t_update_with_pending_add.at, tests/t_update_with_pending_drop.at, 
+	tests/t_update_with_pending_rename.at, tests/t_versions.at: 
+	use automation interface rather than "monotone cat"
+
+2005-09-04  Grahame Bowland  <grahame@angrygoats.net>
+
+	* ChangeLog: fix up screwed up three-way merge
+
+2005-09-04  Grahame Bowland  <grahame@angrygoats.net>
+
+	* automate.cc, commands.cc: add "automate get_file", 
+	"automate get_revision" and "automate get_manifest" to 
+	automation interface.
+	* monotone.texi: document new automation commands
+	* tests/t_automate_get_file.at, tests/t_automate_get_revision_at, 
+	tests/t_automate_get_manifest.at: trivial testing of new 
+	automation commands for output as specified, make sure they 
+	do not complete IDs, make sure invalid IDs are caught.
+	* testsuite.at: add new tests
+
+2005-09-03  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_persistent_server_keys_2.at: 'commit' needs a commit
+	message.  Un-XFAIL.
+	* tests/t_netsync_unrelated.at: Fix 'setup' syntax.
+	* tests/t_add_vs_commit.at: BASE_REVISION needs to be in the root
+	of a working copy to work.  Un-XFAIL.
+	* tests/t_add_stomp_file.at: 'add' does not take a --branch
+	argument.  BASE_REVISION needs to be in the root of a working copy
+	to work.
+	* annotate.cc (build_parent_lineage): Don't access uninitialized
+	memory--use resize() rather than reserve().
+
+2005-09-02  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.cc: Use consistent case in option descriptions.
+
+2005-09-02  Nathaniel Smith  <njs@pobox.com>
+
+	* paths.{hh,cc}: Add split_path typedef.  Use it.
+
+2005-09-02  Matt Johnston  <matt@ucc.asn.au>
+
+	* lua.cc (monotone_guess_binary_file_contents_for_lua): use a
+	temporary char* buffer rather than &string[], extra copying seems
+	to have negligible performance impact.
+	* tests/perf-test.sh: change path from tests/ to contrib/, make
+	executable.
+	* tests/parse-accounting.pl: make executable.
 
 2005-09-01  Timothy Brownawell  <tbrownaw@gmail.com>
 
@@ -57,6 +412,25 @@
 	* monotone.texi: mention .mt-ignore and MT/wanted-testresults under
 	"Existing control files"
 	* .mt-ignore: ignore testsuite.dir
+
+2005-09-03  Benoît Dejean  <benoit@placenet.org>
+
+	* commands.cc (ls_certs):
+	* netsync.cc (load_data): Merged strings.
+
+2005-09-01  Benoît Dejean  <benoit@placenet.org>
+
+	* commands.cc: Merged one more "no such revision '%s'" string.
+
+2005-09-01  Benoît Dejean  <benoit@placenet.org>
+
+	* commands.cc: Merged all "no such revision '%s'" strings.
+	(string_to_datetime): Merged catch blocks in order to merge error
+	messages.
+
+2005-09-01  Benoît Dejean  <benoit@placenet.org>
+
+	* ChangeLog: Fixed.
 
 2005-09-01  Matthew Gregan  <kinetik@orcon.net.nz>
 
@@ -96,11 +470,37 @@
 	to monotone_guess_binary_file_contents_for_lua and
 	guess_binary_file_contents.
 
+2005-08-31  Benoît Dejean  <benoit@placenet.org>
+
+	* basic_io.cc (basic_io::input_source::err): Merged strings.
+
 2005-08-31  Nathaniel Smith  <njs@pobox.com>
 
 	* file_io.cc (set_char_is_binary, guess_binary): static_cast chars
 	to uint8_t before using as array indices.  Also replace some ints
 	with size_t's to quiet g++ warnings.
+
+2005-08-30  Nathaniel Smith  <njs@pobox.com>
+
+	* file_io.cc (walk_tree_absolute): Implement.
+
+2005-08-30  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (cvs_import, git_import): Fixup after merge.
+	* git.hh (import_git_repo): Port to paths.cc.
+	* git.cc: Port to paths.cc generally.
+	* file_io.hh (absolute_tree_walker, walk_tree_absolute): New
+	interface (still needs implementing).
+
+2005-08-30  Benoît Dejean  <benoit@placenet.org>
+
+	In function void set_char_is_binary(char, bool)
+	133: warning: array subscript has type char
+	In function void init_char_is_binary()
+	147: warning: comparison between signed and unsigned integer expressions
+	In function bool guess_binary(const std::string&)
+	160: warning: comparison between signed and unsigned integer expressions
+	162: warning: array subscript has type char
 
 2005-08-30  Benoît Dejean  <benoit@placenet.org>
 
@@ -843,6 +1243,19 @@
 	it in entirely.  Prepare for making it possible to control what
 	characters are considered "binary"
 
+2005-08-20  Petr Baudis  <pasky@suse.cz>
+	* git.cc: Support for incremental imports - when you pull new
+	stuff to your GIT repository, you can then re-run git_import
+	and it will import the new stuff to a Monotone branch.
+
+2005-08-20  Petr Baudis  <pasky@suse.cz>
+	* cert.hh, cert.cc: Publish put_simple_revision_cert() - that
+	hints that it is ok to do custom certificates and lets us easily
+	do so from the GIT importer.
+	* git.cc: Associate a gitcommit cert containing commit and author
+	information with each imported commit. This will be especially
+	important for incremental imports.
+
 2005-08-20  Nathaniel Smith  <njs@codesourcery.com>
 
 	* paths.cc (is_absolute): New function.
@@ -1309,6 +1722,15 @@
 	header when diffing against working copy.  Useful to identify what
 	revision a patch was created against.
 	* std_hooks.lua (ignore_file): Ignore Visual SourceSafe junk.
+
+2005-08-18  Petr Baudis  <pasky@suse.cz>
+	* Makefile.am, git.hh, git.cc: Initial support for importing from
+	GIT repositories to Monotone. This is pretty basic yet, full of
+	TODOs, can't do tags nor incremental imports, does not record
+	executability of files, and does not attach git certs to the
+	imported commits. But it more-or-less successfully imports history
+	of the GIT project itself, although it takes its time.
+	* commands.cc: git_import command.
 
 2005-08-18  Timothy Brownawell  <tbrownaw@gmail.com>
 

@@ -157,7 +157,7 @@ namespace commands
       }
     else if (matched.size() > 1) 
       {
-      string err = (F("command '%s' has multiple ambiguous expansions: \n") % cmd).str();
+      string err = (F("command '%s' has multiple ambiguous expansions:\n") % cmd).str();
       for (vector<string>::iterator i = matched.begin();
            i != matched.end(); ++i)
         err += (*i + "\n");
@@ -319,6 +319,19 @@ private:
   std::ofstream file;
   system_path path;
 };
+
+
+CMD(help, N_("informative"), N_("command [ARGS...]"), N_("display command help"), OPT_NONE)
+{
+	if (args.size() < 1)
+		throw usage("");
+
+	string full_cmd = complete_command(idx(args, 0)());
+	if (cmds.find(full_cmd) == cmds.end())
+		throw usage("");
+
+	throw usage(full_cmd);
+}
 
 static void
 maybe_update_inodeprints(app_state & app)
@@ -492,7 +505,7 @@ complete(app_state & app,
     F("partial id '%s' does not have an expansion") % str);
   if (completions.size() > 1)
     {
-      string err = (F("partial id '%s' has multiple ambiguous expansions: \n") % str).str();
+      string err = (F("partial id '%s' has multiple ambiguous expansions:\n") % str).str();
       for (typename set<ID>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
         err += (i->inner()() + "\n");
@@ -526,7 +539,7 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
             !app.db.public_key_exists(idx(certs, i).key))
-          P(F("warning: no public key '%s' found in database\n")
+          P(F("no public key '%s' found in database")
             % idx(certs, i).key);
         checked.insert(idx(certs, i).key);
       }
@@ -665,7 +678,7 @@ kill_rev_locally(app_state& app, std::string const& id)
   revision_id ident;
   complete(app, id, ident);
   N(app.db.revision_exists(ident),
-    F("no revision %s found in database") % ident);
+    F("no such revision '%s'") % ident);
 
   //check that the revision does not have any children
   set<revision_id> children;
@@ -1021,7 +1034,7 @@ CMD(disapprove, N_("review"), N_("REVISION"),
   app.db.get_revision(r, rev);
 
   N(rev.edges.size() == 1, 
-    F("revision %s has %d changesets, cannot invert\n") % r % rev.edges.size());
+    F("revision '%s' has %d changesets, cannot invert\n") % r % rev.edges.size());
 
   cert_value branchname;
   guess_branch(r, app, branchname);
@@ -1048,7 +1061,7 @@ CMD(disapprove, N_("review"), N_("REVISION"),
     cert_revision_in_branch(inv_id, branchname, app, dbw); 
     cert_revision_date_now(inv_id, app, dbw);
     cert_revision_author_default(inv_id, app, dbw);
-    cert_revision_changelog(inv_id, (F("disapproval of revision %s") % r).str(), app, dbw);
+    cert_revision_changelog(inv_id, (boost::format("disapproval of revision '%s'") % r).str(), app, dbw);
     guard.commit();
   }
 }
@@ -1285,113 +1298,45 @@ CMD(identify, N_("working copy"), N_("[PATH]"),
 }
 
 CMD(cat, N_("informative"),
-    N_("(file|manifest|revision) [ID]\n"
-      "file REVISION FILENAME"),
-    N_("write file, manifest, or revision from database to stdout"),
-    OPT_NONE)
+    N_("FILENAME"),
+    N_("write file from database to stdout"),
+    OPT_REVISION)
 {
-  if (args.size() < 1 || args.size() > 3)
+  if (args.size() != 1)
     throw usage(name);
-  if (args.size() == 3 && idx(args, 0)() != "file")
-    throw usage(name);
+
+  if (app.revision_selectors.size() == 0)
+    app.require_working_copy();
 
   transaction_guard guard(app.db);
 
-  if (idx(args, 0)() == "file")
-    {
-      file_id ident;
-      if (args.size() == 1)
-        throw usage(name);
-      else if (args.size() == 2)
-        {
-          complete(app, idx(args, 1)(), ident);
-          
-          N(app.db.file_version_exists(ident),
-            F("no file version %s found in database") % ident);
-        }
-      else if (args.size() == 3)
-        {
-          revision_id rid;
-          complete(app, idx(args, 1)(), rid);
-          // paths are interpreted as standard external ones when we're in a
-          // working copy, but as project-rooted external ones otherwise
-          file_path fp;
-          if (app.found_working_copy)
-            fp = file_path_external(idx(args, 2));
-          else
-            fp = file_path_internal_from_user(idx(args, 2));
-          manifest_id mid;
-          app.db.get_revision_manifest(rid, mid);
-          manifest_map m;
-          app.db.get_manifest(mid, m);
-          manifest_map::const_iterator i = m.find(fp);
-          N(i != m.end(), F("no file '%s' found in revision '%s'\n") % fp % rid);
-          ident = manifest_entry_id(i);
-        }
-      else
-        throw usage(name);
-      
-      file_data dat;
-      L(F("dumping file %s\n") % ident);
-      app.db.get_file_version(ident, dat);
-      cout.write(dat.inner()().data(), dat.inner()().size());
-    }
-  else if (idx(args, 0)() == "manifest")
-    {
-      manifest_data dat;
-      manifest_id ident;
-
-      if (args.size() == 1)
-        {
-          revision_set rev;
-          manifest_map m_old, m_new;
-
-          app.require_working_copy();
-          calculate_unrestricted_revision(app, rev, m_old, m_new);
-
-          calculate_ident(m_new, ident);
-          write_manifest_map(m_new, dat);
-        }
-      else
-        {
-          complete(app, idx(args, 1)(), ident);
-          N(app.db.manifest_version_exists(ident),
-            F("no manifest version %s found in database") % ident);
-          app.db.get_manifest_version(ident, dat);
-        }
-
-      L(F("dumping manifest %s\n") % ident);
-      cout.write(dat.inner()().data(), dat.inner()().size());
-    }
-
-  else if (idx(args, 0)() == "revision")
-    {
-      revision_data dat;
-      revision_id ident;
-
-      if (args.size() == 1)
-        {
-          revision_set rev;
-          manifest_map m_old, m_new;
-
-          app.require_working_copy();
-          calculate_unrestricted_revision(app, rev, m_old, m_new);
-          calculate_ident(rev, ident);
-          write_revision_set(rev, dat);
-        }
-      else
-        {
-          complete(app, idx(args, 1)(), ident);
-          N(app.db.revision_exists(ident),
-            F("no revision %s found in database") % ident);
-          app.db.get_revision(ident, dat);
-        }
-
-      L(F("dumping revision %s\n") % ident);
-      cout.write(dat.inner()().data(), dat.inner()().size());
-    }
+  file_id ident;
+  revision_id rid;
+  if (app.revision_selectors.size() == 0)
+    get_revision_id(rid);
   else 
-    throw usage(name);
+    complete(app, idx(app.revision_selectors, 0)(), rid);
+  N(app.db.revision_exists(rid), F("no such revision '%s'") % rid);
+
+  // paths are interpreted as standard external ones when we're in a
+  // working copy, but as project-rooted external ones otherwise
+  file_path fp;
+  if (app.found_working_copy)
+    fp = file_path_external(idx(args, 0));
+  else
+    fp = file_path_internal_from_user(idx(args, 0));
+  manifest_id mid;
+  app.db.get_revision_manifest(rid, mid);
+  manifest_map m;
+  app.db.get_manifest(mid, m);
+  manifest_map::const_iterator i = m.find(fp);
+  N(i != m.end(), F("no file '%s' found in revision '%s'\n") % fp % rid);
+  ident = manifest_entry_id(i);
+  
+  file_data dat;
+  L(F("dumping file '%s'\n") % ident);
+  app.db.get_file_version(ident, dat);
+  cout.write(dat.inner()().data(), dat.inner()().size());
 
   guard.commit();
 }
@@ -1441,7 +1386,7 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
       // use specified revision
       complete(app, idx(app.revision_selectors, 0)(), ident);
       N(app.db.revision_exists(ident),
-        F("no revision %s found in database") % ident);
+        F("no such revision '%s'") % ident);
       
       cert_value b;
       guess_branch(ident, app, b);
@@ -2260,9 +2205,31 @@ CMD(attr, N_("working copy"), N_("set FILE ATTR VALUE\nget FILE [ATTR]\ndrop FIL
     }
 }
 
+static boost::posix_time::ptime
+string_to_datetime(std::string const & s)
+{
+  try
+    {
+      // boost::posix_time is lame: it can parse "basic" ISO times, of the
+      // form 20000101T120000, but not "extended" ISO times, of the form
+      // 2000-01-01T12:00:00.  So do something stupid to convert one to the
+      // other.
+      std::string tmp = s;
+      std::string::size_type pos = 0;
+      while ((pos = tmp.find_first_of("-:")) != string::npos)
+        tmp.erase(pos, 1);
+      return boost::posix_time::from_iso_string(tmp);
+    }
+  catch (std::exception &e)
+    {
+      N(false, F("failed to parse date string '%s': %s") % s % e.what());
+    }
+  I(false);
+}
+
 CMD(commit, N_("working copy"), N_("[PATH]..."), 
     N_("commit working copy to database"),
-    OPT_BRANCH_NAME % OPT_MESSAGE % OPT_MSGFILE % OPT_DATE % OPT_AUTHOR % OPT_DEPTH)
+    OPT_BRANCH_NAME % OPT_MESSAGE % OPT_MSGFILE % OPT_DATE % OPT_AUTHOR % OPT_DEPTH % OPT_EXCLUDE)
 {
   string log_message("");
   revision_set rs;
@@ -2466,7 +2433,9 @@ CMD(commit, N_("working copy"), N_("[PATH]..."),
         decode_base64(i->inner().value, vtmp);
         certs.insert(make_pair(i->inner().name, vtmp));
       }
-    app.lua.hook_note_commit(rid, certs);
+    revision_data rdat;
+    app.db.get_revision(rid, rdat);
+    app.lua.hook_note_commit(rid, rdat, certs);
   }
 }
 
@@ -2524,7 +2493,8 @@ dump_diffs(change_set::delta_map const & deltas,
            bool new_is_archived,
            diff_type type)
 {
-  std::string patch_sep = std::string(guess_terminal_width(), '=');
+  // 60 is somewhat arbitrary, but less than 80
+  std::string patch_sep = std::string(60, '=');
   for (change_set::delta_map::const_iterator i = deltas.begin();
        i != deltas.end(); ++i)
     {
@@ -2650,7 +2620,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       manifest_map m_old;
       complete(app, idx(app.revision_selectors, 0)(), r_old_id);
       N(app.db.revision_exists(r_old_id),
-        F("revision %s does not exist") % r_old_id);
+        F("no such revision '%s'") % r_old_id);
       app.db.get_revision(r_old_id, r_old);
       calculate_unrestricted_revision(app, r_new, m_old, m_new);
       I(r_new.edges.size() == 1 || r_new.edges.size() == 0);
@@ -2665,10 +2635,10 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       complete(app, idx(app.revision_selectors, 0)(), r_old_id);
       complete(app, idx(app.revision_selectors, 1)(), r_new_id);
       N(app.db.revision_exists(r_old_id),
-        F("revision %s does not exist") % r_old_id);
+        F("no such revision '%s'") % r_old_id);
       app.db.get_revision(r_old_id, r_old);
       N(app.db.revision_exists(r_new_id),
-        F("revision %s does not exist") % r_new_id);
+        F("no such revision '%s'") % r_new_id);
       app.db.get_revision(r_new_id, r_new);
       app.db.get_revision_manifest(r_new_id, m_new_id);
       app.db.get_manifest(m_new_id, m_new);
@@ -2726,7 +2696,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
     }
   else
     {
-      cout << F("# no changes") << endl;
+      cout << "# no changes" << endl;
     }
   cout << "# " << endl;
 
@@ -2866,7 +2836,7 @@ CMD(update, N_("working copy"), "",
     {
       complete(app, app.revision_selectors[0](), r_chosen_id);
       N(app.db.revision_exists(r_chosen_id),
-        F("no revision %s found in database") % r_chosen_id);
+        F("no such revision '%s'") % r_chosen_id);
     }
 
   notify_if_multiple_heads(app);
@@ -3030,8 +3000,8 @@ try_one_merge(revision_id const & left_id,
     }
   else if (find_common_ancestor_for_merge(left_id, right_id, anc_id, app))
     {     
-      P(F("common ancestor %s found\n") % describe_revision(app, anc_id)); 
-      P(F("trying 3-way merge\n"));
+      P(F("common ancestor %s found\n"
+          "trying 3-way merge\n") % describe_revision(app, anc_id));
       
       app.db.get_revision(anc_id, anc_rev);
       app.db.get_manifest(anc_rev.new_manifest, anc_man);
@@ -3129,8 +3099,8 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
       packet_db_writer dbw(app);
       cert_revision_in_branch(merged, app.branch_name(), app, dbw);
 
-      string log = (F("merge of %s\n"
-                      "     and %s\n") % left % right).str();
+      string log = (boost::format("merge of %s\n"
+                                  "     and %s\n") % left % right).str();
       cert_revision_changelog(merged, log, app, dbw);
           
       guard.commit();
@@ -3213,8 +3183,8 @@ CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"),
 
       cert_revision_in_branch(merged, idx(args, 1)(), app, dbw);
 
-      string log = (F("propagate from branch '%s' (head %s)\n"
-                      "            to branch '%s' (head %s)\n")
+      string log = (boost::format("propagate from branch '%s' (head %s)\n"
+                                  "            to branch '%s' (head %s)\n")
                     % idx(args, 0) % (*src_i)
                     % idx(args, 1) % (*dst_i)).str();
 
@@ -3279,10 +3249,10 @@ CMD(explicit_merge, N_("tree"),
   
   cert_revision_in_branch(merged, branch, app, dbw);
   
-  string log = (F("explicit_merge of %s\n"
-                  "              and %s\n"
-                  "   using ancestor %s\n"
-                  "        to branch '%s'\n")
+  string log = (boost::format("explicit_merge of '%s'\n"
+                              "              and '%s'\n"
+                              "   using ancestor '%s'\n"
+                              "        to branch '%s'\n")
                 % left % right % ancestor % branch).str();
   
   cert_revision_changelog(merged, log, app, dbw);
@@ -3349,7 +3319,7 @@ CMD(complete, N_("informative"), N_("(revision|manifest|file|key) PARTIAL-ID"),
 
 
 CMD(revert, N_("working copy"), N_("[PATH]..."), 
-    N_("revert file(s), dir(s) or entire working copy"), OPT_DEPTH)
+    N_("revert file(s), dir(s) or entire working copy"), OPT_DEPTH % OPT_EXCLUDE)
 {
   manifest_map m_old;
   revision_id old_revision_id;
@@ -3410,7 +3380,8 @@ CMD(revert, N_("working copy"), N_("[PATH]..."),
 
 CMD(rcs_import, N_("debug"), N_("RCSFILE..."),
     N_("parse versions in RCS files\n"
-      "this command doesn't reconstruct or import revisions.  you probably want cvs_import"),
+       "this command doesn't reconstruct or import revisions."
+       "you probably want cvs_import"),
     OPT_BRANCH_NAME)
 {
   if (args.size() < 1)
@@ -3558,7 +3529,7 @@ CMD(annotate, N_("informative"), N_("PATH"),
 }
 
 CMD(log, N_("informative"), N_("[FILE]"),
-    N_("print history in reverse order (filtering by 'FILE').  If one or more\n"
+    N_("print history in reverse order (filtering by 'FILE'). If one or more\n"
     "revisions are given, use them as a starting point."),
     OPT_LAST % OPT_REVISION % OPT_BRIEF % OPT_DIFFS % OPT_NO_MERGES)
 {
@@ -3756,7 +3727,10 @@ CMD(automate, N_("automation"),
       "inventory\n"
       "stdio\n"
       "certs REV\n"
-      "select SELECTOR\n"),
+      "select SELECTOR\n"
+      "get_file ID\n"
+      "get_manifest [ID]\n"
+      "get_revision [ID]\n"),
     N_("automation interface"), 
     OPT_NONE)
 {

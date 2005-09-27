@@ -86,6 +86,7 @@ BOTAN_SOURCES =                                                                 
         botan/def_ops.cpp botan/defalloc.cpp botan/der_code.cpp		\
         botan/der_enc.cpp botan/divide.cpp botan/dl_algo.cpp		\
         botan/dl_get.cpp botan/dl_group.cpp botan/dl_param.cpp		\
+        botan/dl_cache.cpp \
         botan/dlies.cpp botan/eax.cpp botan/ecb.cpp botan/eme1.cpp	\
         botan/eme_pkcs.cpp botan/emsa1.cpp botan/emsa2.cpp		\
         botan/emsa3.cpp botan/emsa4.cpp botan/emsa_raw.cpp		\
@@ -107,7 +108,7 @@ BOTAN_SOURCES =                                                                 
         botan/pipe_rw.cpp botan/pk_algs.cpp botan/pk_core.cpp		\
         botan/pk_filts.cpp botan/pk_keys.cpp botan/pk_util.cpp		\
         botan/pkcs10.cpp botan/pkcs8.cpp botan/policy.cpp		\
-        botan/pow_mod.cpp botan/prf_ssl3.cpp botan/prf_tls.cpp		\
+        botan/pow_mod.cpp \
         botan/prf_x942.cpp botan/primes.cpp botan/pubkey.cpp		\
         botan/randpool.cpp botan/reducer.cpp botan/rng.cpp		\
         botan/rsa.cpp botan/s2k.cpp botan/secqueue.cpp			\
@@ -169,6 +170,8 @@ SQLITE_SOURCES = \
         sqlite/vdbe.c sqlite/vdbeapi.c sqlite/vdbeaux.c \
         sqlite/vdbemem.c sqlite/where.c \
 	sqlite/prepare.c sqlite/callback.c \
+	sqlite/analyze.c sqlite/vdbefifo.c \
+	sqlite/complete.c \
 	\
         sqlite/btree.h sqlite/config.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h \
         sqlite/os_common.h sqlite/os_unix.h sqlite/os_win.h \
@@ -346,12 +349,14 @@ EXTRA_DIST = $(man1_MANS) \
              contrib/monotone-nav.el \
              contrib/monotone.bash_completion \
              contrib/monotone.zsh_completion \
-             contrib/monoprof.sh \
              contrib/mtbrowse.sh \
              contrib/colorize \
              contrib/color-logs.sh \
              contrib/color-logs.conf \
              contrib/get_stdio.pl \
+             contrib/ciabot_monotone_hookversion.py \
+             contrib/monotone-cvs-ignore.lua \
+             contrib/usher.cc \
              win32/monotone.iss \
              $(wildcard $(srcdir)/debian/*)
 
@@ -364,7 +369,7 @@ monotone.pdf: monotone.texi version.texi std_hooks.lua $(PDF_FIGURES)
 monotone.dvi: monotone.texi version.texi std_hooks.lua $(EPS_FIGURES)
 
 #%.eps: %.epsi
-#	mv $< $@
+#	mv -f $< $@
 #
 #%.epsi: %.ps
 #	ps2epsi $< $@
@@ -381,6 +386,8 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 # testsuite stuff (could this possibly be more ugly?)
 
 TESTS = unit_tests $(srcdir)/testsuite
+
+TESTS_ENVIRONMENT=AUTOTEST_PATH="."
 
 mostlyclean-local:
 	rm -rf testsuite.dir testsuite.log package_full_revision_dist.txt
@@ -411,7 +418,7 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 $(srcdir)/testsuite: $(srcdir)/testsuite.at $(wildcard $(srcdir)/tests/t_*.at) \
                      $(srcdir)/package.m4 
 	autom4te --language=Autotest -I $(srcdir) $< -o $@.tmp
-	mv $@.tmp $@
+	mv -f $@.tmp $@
 
 # we generate some headers to copy data into the executable
 
@@ -431,12 +438,12 @@ apidocs:
 
 %.h: %.sql txt2c Makefile
 	./txt2c $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv $@.tmp $@
+	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
 %.h: %.lua txt2c Makefile
 	./txt2c $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv $@.tmp $@
+	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
 # A fake target so we can use MT/revision as a prerequisite, yet not
@@ -448,7 +455,7 @@ package_revision.txt: $(srcdir)/MT/revision
 	if [ ! -f $@ ]; then echo "unknown" > $@; fi
 package_revision.c: package_revision.txt txt2c Makefile
 	./txt2c --strip-trailing --no-static $< package_revision >$@.tmp
-	cmp -s $@.tmp $@ || mv $@.tmp $@
+	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
 .PHONY: package_full_revision.txt apidocs
@@ -465,7 +472,7 @@ package_full_revision_dist.txt: package_full_revision.txt
 	 echo '  further changes may have been made.') >> $@
 package_full_revision.c: package_full_revision.txt txt2c Makefile
 	./txt2c --no-static $< package_full_revision >$@.tmp
-	cmp -s $@.tmp $@ || mv $@.tmp $@
+	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
 # automake doesn't build html docs
