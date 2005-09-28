@@ -133,3 +133,6 @@ we can use log -r NAME to get the radix for the branch
 correct < when calculating manifests
 push: changelog on merge
 faster initial db-access (multimap? without timestamp access?)
+
+tests: md5sum failure
+  merge+commit without changes

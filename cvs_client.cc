@@ -360,6 +360,10 @@ loop:
   { W(F("%s\n") % x.substr(len));
     goto loop;
   }
+  if (x=="F ") 
+  { // flush stderr
+    goto loop;
+  }
   if (begins_with(x,"M ",len))
   { result.push_back(std::make_pair(std::string(),x.substr(len)));
     return true;
@@ -406,7 +410,7 @@ loop:
     result.push_back(std::make_pair("path",readline()));
     std::string length=readline();
     result.push_back(std::make_pair("length",length));
-    result.push_back(std::make_pair("data",read_n(atol(length.c_str()))));
+    result.push_back(std::make_pair("data",read_n(lexical_cast<long>(length.c_str()))));
     return true;
   }
   if (begins_with(x,"Mod-time ",len))
@@ -459,7 +463,14 @@ loop:
     result.push_back(std::make_pair("mode",readline()));
     std::string length=readline();
     result.push_back(std::make_pair("length",length));
-    result.push_back(std::make_pair("data",read_n(atol(length.c_str()))));
+    result.push_back(std::make_pair("data",read_n(lexical_cast<long>(length.c_str()))));
+    return true;
+  }
+  if (x=="Mbinary ")
+  { result.push_back(std::make_pair("CMD",x.substr(0,len-1)));
+    std::string length=readline();
+    result.push_back(std::make_pair("length",length));
+    result.push_back(std::make_pair("data",read_n(lexical_cast<long>(length.c_str()))));
     return true;
   }
   if (x=="error  ")
@@ -1000,7 +1011,7 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
           else if (lresult[0].second=="Template")
           { I(lresult.size()==5);
             I(lresult[3].first=="length");
-            long len = atol(lresult[3].second.c_str());
+            long len = lexical_cast<long>(lresult[3].second.c_str());
             I(len >= 0);
             I(lresult[4].second.size() == (size_t) len);
             L(F("found commit template %s:\n%s") % lresult[2].second % lresult[4].second);
