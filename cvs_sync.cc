@@ -844,7 +844,10 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     { W(F("null edge (empty cs) @%ld skipped\n") % e->time);
       continue;
     }
-    I(!e->xfiles.empty());
+    if (e->xfiles.empty())
+    { W(F("empty edge (no files) @%ld skipped\n") % e->time);
+      continue;
+    }
     apply_change_set(*cs, child_map);
     if (child_map.empty()) 
     { W(F("empty edge (no files in manifest) @%ld skipped\n") % e->time);
