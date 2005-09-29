@@ -375,6 +375,25 @@ parse_person_line(string &line, git_person &person, time_t &time)
     % person.name % person.email % time);
 }
 
+static void
+resolve_commit(git_history &git, app_state &app, git_object_id gitcid, revision_id &rev, manifest_id &mid)
+{
+  // given the topo order, we ought to have the parent hashed - except
+  // for incremental imports
+  map<git_object_id, pair<revision_id, manifest_id>
+      >::const_iterator cm = git.commitmap.find(gitcid());
+  if (cm != git.commitmap.end())
+    {
+      rev = cm->second.first;
+      mid = cm->second.second;
+    }
+  else
+    {
+      historical_gitrev_to_monorev(git.branch, &git.commitmap, app, gitcid(), rev);
+      app.db.get_revision_manifest(rev, mid);
+    }
+}
+
 static revision_id
 import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 {
@@ -386,7 +405,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   bool header = true;
   revision_set rev;
   edge_map edges;
-  vector<revision_id> parents;
+  vector<git_object_id> parents;
 
   manifest_map manifest;
   // XXX: it might be user policy decision whether to take author
@@ -462,7 +481,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
         }
       else if (keyword == "parent")
         {
-	  parents.push_back(revision_id(param));
+	  parents.push_back(param);
         }
       else if (keyword == "committer")
         {
@@ -482,20 +501,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
       revision_id parent_rev;
       manifest_id parent_mid;
 
-      // given the topo order, we ought to have the parent hashed - except
-      // for incremental imports
-      map<git_object_id, pair<revision_id, manifest_id>
-	  >::const_iterator cm = git.commitmap.find(parents[i].inner());
-      if (cm != git.commitmap.end())
-	{
-	  parent_rev = cm->second.first;
-	  parent_mid = cm->second.second;
-	}
-      else
-	{
-	  historical_gitrev_to_monorev(git.branch, &git.commitmap, app, parents[i].inner(), parent_rev);
-	  app.db.get_revision_manifest(parent_rev, parent_mid);
-	}
+      resolve_commit(git, app, parents[i], parent_rev, parent_mid);
 
       L(F("parent revision '%s'") % parent_rev.inner());
       L(F("parent manifest '%s', loading...") % parent_mid.inner());
@@ -507,8 +513,11 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
 	  // A merge. See the huge comment in
 	  // anc_graph::construct_revision_from_ancestry() if you want to
 	  // know why are we bothering with this stuff.
-
-	  change_set_for_merge(app, parents[i], parents[unsigned(1 - i)], parent_mid, rev.new_manifest, *changes);
+	  L(F("anti-suture protection..."));
+	  revision_id other_parent_rev;
+	  manifest_id other_parent_mid;
+	  resolve_commit(git, app, parents[unsigned(1 - i)], other_parent_rev, other_parent_mid);
+	  change_set_for_merge(app, parent_rev, other_parent_rev, parent_mid, rev.new_manifest, *changes);
 
 	} else {
 	  manifest_map parent_man;
