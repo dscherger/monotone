@@ -139,10 +139,13 @@ is_ancestor(revision_id const & ancestor,
             revision_id const & descendent,
             app_state & app);
 
+enum toposort_filter { topo_all, topo_include, topo_exclude };
+
 void
 toposort(std::set<revision_id> const & revisions,
          std::vector<revision_id> & sorted,
-         app_state & app);
+         app_state & app,
+	 toposort_filter filter = topo_include);
 
 void
 erase_ancestors(std::set<revision_id> & revisions, app_state & app);
@@ -163,6 +166,14 @@ calculate_arbitrary_change_set(revision_id const & start,
                                revision_id const & end,
                                app_state & app,
                                change_set & composed);
+
+void
+change_set_for_merge(app_state &app,
+		     revision_id const &parent_rid,
+		     revision_id const &other_parent_rid,
+                     manifest_id const &parent_man,
+		     manifest_id const &child_man,
+		     change_set &cs);
 
 void 
 build_changesets_from_manifest_ancestry(app_state & app);

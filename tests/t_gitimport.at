@@ -1,0 +1,60 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([importing GIT archive])
+
+MONOTONE_SETUP
+
+AT_DATA(importme.0, [version 0 of test file
+])
+
+AT_DATA(importme.1, [version 1 of test file
+])
+
+AT_DATA(importme.2, [version 2 of test file
+])
+
+AT_DATA(importme.3, [version 3 of test file
+])
+
+TSHA0=`SHA1(importme.0)`
+TSHA1=`SHA1(importme.1)`
+TSHA2=`SHA1(importme.2)`
+TSHA3=`SHA1(importme.3)`
+
+# build the git repository
+
+AT_CHECK(git-init-db, [], [ignore], [ignore])
+AT_CHECK(test -e .git)
+AT_CHECK(test -e .git/refs)
+AT_CHECK(test -e .git/refs/heads)
+
+# check out the working copy and make some commits
+
+AT_CHECK(cp importme.0 importme)
+AT_CHECK(git-update-cache --add importme, [], [ignore], [ignore])
+AT_CHECK(echo 'commit 0' | git-commit-tree $(git-write-tree) >.git/HEAD, [], [ignore], [ignore])
+AT_CHECK(cp importme.1 importme)
+AT_CHECK(git-update-cache importme, [], [ignore], [ignore])
+AT_CHECK(echo 'commit 1' | git-commit-tree $(git-write-tree) -p $(cat .git/HEAD) >.git/HEAD, [], [ignore], [ignore])
+AT_CHECK(cp importme.2 importme)
+AT_CHECK(git-update-cache importme, [], [ignore], [ignore])
+AT_CHECK(echo 'commit 2' | git-commit-tree $(git-write-tree) -p $(cat .git/HEAD) >.git/HEAD, [], [ignore], [ignore])
+AT_CHECK(cp importme.3 importme)
+AT_CHECK(git-update-cache importme, [], [ignore], [ignore])
+AT_CHECK(echo 'commit 3' | git-commit-tree $(git-write-tree) -p $(cat .git/HEAD) >.git/HEAD, [], [ignore], [ignore])
+
+# import into monotone and check presence of files
+
+AT_CHECK(MONOTONE --branch=testbranch git import .git, [], [ignore], [ignore])
+AT_CHECK(MONOTONE cat file $TSHA0, [], [ignore])
+AT_CHECK(MONOTONE cat file $TSHA1, [], [ignore])
+AT_CHECK(MONOTONE cat file $TSHA2, [], [ignore])
+AT_CHECK(MONOTONE cat file $TSHA3, [], [ignore])
+
+# also check that history is okay -- has a unique head, and it's the
+# right one.
+
+AT_CHECK(MONOTONE checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+AT_CHECK(cmp importme.3 mtcodir/importme)
+
+AT_CLEANUP

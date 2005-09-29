@@ -28,6 +28,8 @@
 #include "database_check.hh"
 #include "diff_patch.hh"
 #include "file_io.hh"
+#include "git_import.hh"
+#include "git_export.hh"
 #include "keys.hh"
 #include "manifest.hh"
 #include "netsync.hh"
@@ -3401,6 +3403,39 @@ CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS reposit
 
   import_cvs_repo(system_path(idx(args, 0)()), app);
 }
+
+CMD(git, N_("git"),
+    N_("import GITREPO\n"
+       "export GITREPO [HEADNAME]"),
+    N_("import/export from/to a GIT repository; can handle incremental\n"
+       "importing/exporting and exporting back to a repository you\n"
+       "previously imported from"),
+    OPT_BRANCH_NAME)
+{
+  if (args.size() < 2)
+    throw usage(name);
+
+  if (idx(args, 0)() == "import")
+    {
+      if (args.size() > 2)
+	throw usage(name);
+      import_git_repo(system_path(idx(args, 1)), app);
+    }
+  else if (idx(args, 0)() == "export")
+    {
+      if (args.size() > 3)
+	throw usage(name);
+      if (args.size() == 3)
+	export_git_repo(system_path(idx(args, 1)),
+			idx(args, 2)(), app);
+      else
+	export_git_repo(system_path(idx(args, 1)),
+			"", app);
+    }
+  else
+    throw usage(name);
+}
+
 
 static void
 log_certs(app_state & app, revision_id id, cert_name name,

@@ -96,6 +96,19 @@ void walk_tree(file_path const & path,
                tree_walker & walker,
                bool require_existing_path = true);
 
+// from anywhere, with native path
+class absolute_tree_walker
+{
+public:
+  virtual void visit_file(system_path const & path) = 0;
+  virtual ~absolute_tree_walker();
+};
+
+void
+walk_tree_absolute(system_path const & path,
+                   absolute_tree_walker & walker,
+                   bool require_existing_path = true);
+
 
 
 #endif // __FILE_IO_H__

@@ -492,6 +492,63 @@ walk_tree(file_path const & path,
     }
 }
 
+absolute_tree_walker::~absolute_tree_walker() {}
+
+static void 
+walk_tree_recursive(fs::path const & absolute,
+                    absolute_tree_walker & walker)
+{
+  fs::directory_iterator ei;
+  for(fs::directory_iterator di(absolute);
+      di != ei; ++di)
+    {
+      fs::path entry = *di;
+      
+      if (!fs::exists(entry) 
+          || di->string() == "." 
+          || di->string() == "..") 
+        ;                       // ignore
+      else if (fs::is_directory(entry))
+        walk_tree_recursive(entry, walker);
+      else
+        {
+          system_path p;
+          try 
+            {
+              // FIXME: BUG: this screws up charsets
+              p = system_path(entry.normalize().string());
+            }
+          catch (std::runtime_error const & c)
+            {
+              W(F("caught runtime error %s constructing file path for %s\n") 
+                % c.what() % entry.string());
+              continue;
+            }     
+          walker.visit_file(p);
+        }
+    }
+}
+
+void
+walk_tree_absolute(system_path const & path,
+                   absolute_tree_walker & walker,
+                   bool require_existing_path)
+{
+  switch (get_path_status(path))
+    {
+    case path::nonexistent:
+      N(require_existing_path, F("no such file or directory") % path);
+      walker.visit_file(path);
+      break;
+    case path::file:
+      walker.visit_file(path);
+      break;
+    case path::directory:
+      walk_tree_recursive(mkdir(path), walker);
+      break;
+    }
+}
+
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 

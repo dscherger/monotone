@@ -732,13 +732,23 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
     }
 }
 
+static bool
+topofilter(std::set<revision_id> const &revs, revision_id const &rev,
+           toposort_filter filter)
+{
+  if (filter == topo_all)
+    return true;
+  bool in_revs = (revs.find(rev) != revs.end());
+  return (filter == topo_include) ? in_revs : !in_revs;
+}
+
 // this function actually toposorts the whole graph, and then filters by the
-// passed in set.  if anyone ever needs to toposort the whole graph, then,
-// this function would be a good thing to generalize...
+// passed in set (unless filter is set to topo_all).
 void
 toposort(std::set<revision_id> const & revisions,
          std::vector<revision_id> & sorted,
-         app_state & app)
+         app_state & app,
+	 toposort_filter filter)
 {
   sorted.clear();
   typedef std::multimap<revision_id, revision_id>::iterator gi;
@@ -762,7 +772,7 @@ toposort(std::set<revision_id> const & revisions,
       // now stick them in our ordering (if wanted) and remove them from the
       // graph, calculating the new roots as we go
       L(F("new root: %s\n") % (roots.front()));
-      if (revisions.find(roots.front()) != revisions.end())
+      if (topofilter(revisions, roots.front(), filter))
         sorted.push_back(roots.front());
       for(gi i = graph.lower_bound(roots.front());
           i != graph.upper_bound(roots.front()); i++)
@@ -777,7 +787,7 @@ toposort(std::set<revision_id> const & revisions,
        i != leaves.end(); ++i)
     {
       L(F("new leaf: %s\n") % (*i));
-      if (revisions.find(*i) != revisions.end())
+      if (topofilter(revisions, *i, filter))
         sorted.push_back(*i);
     }
 }
@@ -1068,7 +1078,7 @@ calculate_arbitrary_change_set(revision_id const & start,
 // real enough error case that we need support code for it.
 
 
-static void 
+static void
 analyze_manifest_changes(app_state & app,
                          manifest_id const & parent, 
                          manifest_id const & child, 
@@ -1115,6 +1125,30 @@ analyze_manifest_changes(app_state & app,
         cs.add_file(manifest_entry_path(i),
                     manifest_entry_id(i));
     }
+}
+
+void
+change_set_for_merge(app_state &app, revision_id const &parent_rid, revision_id const &other_parent_rid,
+                     manifest_id const &parent_man, manifest_id const &child_man, change_set &cs)
+{
+  // this is stupidly inefficient, in that we do this whole expensive
+  // changeset finding thing twice in a row.  oh well.
+  revision_id lca;
+  std::set<file_path> need_killing_files;
+  if (find_least_common_ancestor(parent_rid, other_parent_rid, lca, app))
+    {
+      change_set parent_cs, other_parent_cs;
+      calculate_composite_change_set(lca, other_parent_rid, app, other_parent_cs);
+      calculate_composite_change_set(lca, parent_rid, app, parent_cs);
+      std::set_difference(other_parent_cs.rearrangement.deleted_files.begin(),
+			  other_parent_cs.rearrangement.deleted_files.end(),
+			  parent_cs.rearrangement.deleted_files.begin(),
+			  parent_cs.rearrangement.deleted_files.end(),
+			  std::inserter(need_killing_files,
+					need_killing_files.begin()));
+    }
+
+  analyze_manifest_changes(app, parent_man, child_man, need_killing_files, cs);
 }
 
 
@@ -1530,32 +1564,13 @@ anc_graph::construct_revision_from_ancestry(u64 child)
           u64 other_parent = idx(others, i);
           L(F("processing edge from child %d -> parent %d\n") % child % parent);
 
-          revision_id parent_rid = node_to_new_rev.find(parent)->second;
-          revision_id other_parent_rid = node_to_new_rev.find(other_parent)->second;
-          // this is stupidly inefficient, in that we do this whole expensive
-          // changeset finding thing twice in a row.  oh well.
-          revision_id lca;
-          std::set<file_path> need_killing_files;
-          if (find_least_common_ancestor(parent_rid, other_parent_rid, lca, app))
-            {
-              change_set parent_cs, other_parent_cs;
-              calculate_composite_change_set(lca, other_parent_rid, app, other_parent_cs);
-              calculate_composite_change_set(lca, parent_rid, app, parent_cs);
-              std::set_difference(other_parent_cs.rearrangement.deleted_files.begin(),
-                                  other_parent_cs.rearrangement.deleted_files.end(),
-                                  parent_cs.rearrangement.deleted_files.begin(),
-                                  parent_cs.rearrangement.deleted_files.end(),
-                                  std::inserter(need_killing_files,
-                                                need_killing_files.begin()));
-            }
-
-          L(F("parent node %d = revision %s\n") % parent % parent_rid);      
           manifest_id parent_man;
           get_node_manifest(parent, parent_man);
           boost::shared_ptr<change_set> cs(new change_set());
-          analyze_manifest_changes(app, parent_man, child_man, need_killing_files,
-                                   *cs);
-          rev.edges.insert(std::make_pair(parent_rid,
+	  change_set_for_merge(app, node_to_new_rev.find(parent)->second,
+			       node_to_new_rev.find(other_parent)->second,
+			       parent_man, child_man, *cs);
+          rev.edges.insert(std::make_pair(node_to_new_rev.find(parent)->second,
                                           std::make_pair(parent_man, cs)));
         }
     }
