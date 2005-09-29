@@ -45,7 +45,7 @@ AT_CHECK(echo 'commit 3' | git-commit-tree $(git-write-tree) -p $(cat .git/HEAD)
 
 # import into monotone and check presence of files
 
-AT_CHECK(MONOTONE --branch=testbranch git_import .git, [], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch git import .git, [], [ignore], [ignore])
 AT_CHECK(MONOTONE cat file $TSHA0, [], [ignore])
 AT_CHECK(MONOTONE cat file $TSHA1, [], [ignore])
 AT_CHECK(MONOTONE cat file $TSHA2, [], [ignore])
