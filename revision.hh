@@ -167,6 +167,14 @@ calculate_arbitrary_change_set(revision_id const & start,
                                app_state & app,
                                change_set & composed);
 
+void
+change_set_for_merge(app_state &app,
+		     revision_id const &parent_rid,
+		     revision_id const &other_parent_rid,
+                     manifest_id const &parent_man,
+		     manifest_id const &child_man,
+		     change_set &cs);
+
 void 
 build_changesets_from_manifest_ancestry(app_state & app);
 

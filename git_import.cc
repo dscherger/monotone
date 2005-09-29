@@ -386,6 +386,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
   bool header = true;
   revision_set rev;
   edge_map edges;
+  vector<revision_id> parents;
 
   manifest_map manifest;
   // XXX: it might be user policy decision whether to take author
@@ -461,41 +462,7 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
         }
       else if (keyword == "parent")
         {
-          revision_id parent_rev;
-          manifest_id parent_mid;
-
-          // given the topo order, we ought to have the parent hashed - except
-          // for incremental imports
-          map<git_object_id, pair<revision_id, manifest_id>
-              >::const_iterator i = git.commitmap.find(param);
-          if (i != git.commitmap.end())
-            {
-              parent_rev = i->second.first;
-              parent_mid = i->second.second;
-            }
-          else
-            {
-              historical_gitrev_to_monorev(git.branch, &git.commitmap, app, param, parent_rev);
-              app.db.get_revision_manifest(parent_rev, parent_mid);
-            }
-
-          manifest_map parent_man;
-          L(F("parent revision '%s'") % parent_rev.inner());
-          L(F("parent manifest '%s', loading...") % parent_mid.inner());
-          app.db.get_manifest(parent_mid, parent_man);
-
-          boost::shared_ptr<change_set> changes(new change_set());
-
-          // complete_change_set(parent_man, manifest, *changes);
-          full_change_set(parent_man, manifest, *changes);
-
-	  {
-	    data cset;
-	    write_change_set(*changes, cset);
-	    L(F("Changeset:\n%s") % cset());
-	  }
-
-          edges.insert(make_pair(parent_rev, make_pair(parent_mid, changes)));
+	  parents.push_back(revision_id(param));
         }
       else if (keyword == "committer")
         {
@@ -506,6 +473,60 @@ import_git_commit(git_history &git, app_state &app, git_object_id gitrid)
           parse_person_line(param, author, author_time);
         }
     }
+
+
+  // Add edges to parents:
+
+  for (unsigned i = 0; i < parents.size(); i++)
+    {
+      revision_id parent_rev;
+      manifest_id parent_mid;
+
+      // given the topo order, we ought to have the parent hashed - except
+      // for incremental imports
+      map<git_object_id, pair<revision_id, manifest_id>
+	  >::const_iterator cm = git.commitmap.find(parents[i].inner());
+      if (cm != git.commitmap.end())
+	{
+	  parent_rev = cm->second.first;
+	  parent_mid = cm->second.second;
+	}
+      else
+	{
+	  historical_gitrev_to_monorev(git.branch, &git.commitmap, app, parents[i].inner(), parent_rev);
+	  app.db.get_revision_manifest(parent_rev, parent_mid);
+	}
+
+      L(F("parent revision '%s'") % parent_rev.inner());
+      L(F("parent manifest '%s', loading...") % parent_mid.inner());
+
+      boost::shared_ptr<change_set> changes(new change_set());
+
+      if (parents.size() == 2)
+	{
+	  // A merge. See the huge comment in
+	  // anc_graph::construct_revision_from_ancestry() if you want to
+	  // know why are we bothering with this stuff.
+
+	  change_set_for_merge(app, parents[i], parents[unsigned(1 - i)], parent_mid, rev.new_manifest, *changes);
+
+	} else {
+	  manifest_map parent_man;
+	  app.db.get_manifest(parent_mid, parent_man);
+	  // Nothing to see here, please move along.
+	  // complete_change_set(parent_man, manifest, *changes);
+	  full_change_set(parent_man, manifest, *changes);
+	}
+
+      {
+	data cset;
+	write_change_set(*changes, cset);
+	L(F("Changeset:\n%s") % cset());
+      }
+
+      edges.insert(make_pair(parent_rev, make_pair(parent_mid, changes)));
+    }
+
 
   // Connect with the ancestry:
 
