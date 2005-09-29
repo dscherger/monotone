@@ -485,8 +485,8 @@ walk_tree(file_path const & path,
       walker.visit_file(path);
       break;
     case path::directory:
-      walk_tree_recursive(mkdir(system_path(path)),
-                          mkdir(path),
+      walk_tree_recursive(system_path(path).as_external(),
+                          path.as_external(),
                           walker);
       break;
     }

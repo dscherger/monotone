@@ -3430,7 +3430,7 @@ CMD(cvs_import, N_("rcs"), N_("CVSROOT"), N_("import all versions in CVS reposit
   if (args.size() != 1)
     throw usage(name);
 
-  import_cvs_repo(system_path(idx(args, 0)), app);
+  import_cvs_repo(system_path(idx(args, 0))(), app);
 }
 
 CMD(git, N_("git"),
