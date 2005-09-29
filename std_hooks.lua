@@ -25,7 +25,7 @@ end
 -- (e.g. on OS X)
 function execute_confirm(path, ...)   
    execute(path, unpack(arg))
-   print("Press enter when the subprocess has completed")
+   print(gettext("Press enter when the subprocess has completed"))
    io.read()
    return ret
 end
@@ -134,6 +134,11 @@ function ignore_file(name)
    if (string.find(name, "^.cdv/")) then return true end
    if (string.find(name, "^.git/")) then return true end
    if (string.find(name, "%.scc$")) then return true end
+   -- desktop/directory configuration metadata
+   if (string.find(name, "^.DS_Store$")) then return true end
+   if (string.find(name, "/.DS_Store$")) then return true end
+   if (string.find(name, "^desktop.ini$")) then return true end
+   if (string.find(name, "/desktop.ini$")) then return true end
    return false;
 end
 
@@ -184,7 +189,7 @@ function edit_comment(basetext, user_log_message)
    io.close(tmp)
 
    if (execute(exe, tname) ~= 0) then
-      io.write(string.format("Error running editor '%s' to enter log message\n",
+      io.write(string.format(gettext("Error running editor '%s' to enter log message\n"),
                              exe))
       os.remove(tname)
       return nil
@@ -331,17 +336,17 @@ function merge2_emacs_cmd(emacs, lfile, rfile, outfile)
    local elisp = "(ediff-merge-files \"%s\" \"%s\" nil \"%s\")"
    return 
    function()
-      return execute(emacs, "-no-init-file", "-eval", 
+      return execute(emacs, "-eval", 
                      string.format(elisp, lfile, rfile, outfile))
    end
 end
 
 function merge3_emacs_cmd(emacs, lfile, afile, rfile, outfile)
    local elisp = "(ediff-merge-files-with-ancestor \"%s\" \"%s\" \"%s\" nil \"%s\")"
-   local cmd_fmt = "%s -no-init-file -eval " .. elisp
+   local cmd_fmt = "%s -eval " .. elisp
    return 
    function()
-      execute(emacs, "-no-init-file", "-eval", 
+      execute(emacs, "-eval", 
               string.format(elisp, lfile, rfile, afile, outfile))
    end
 end
@@ -521,7 +526,7 @@ function merge2 (left_path, right_path, merged_path, left, right)
 
       if cmd ~=nil 
       then 
-         io.write (string.format("executing external 2-way merge command\n"))
+         io.write (string.format(gettext("executing external 2-way merge command\n")))
          cmd ()
          if tbl.meld_exists 
          then 
@@ -629,7 +634,7 @@ function merge3 (anc_path, left_path, right_path, merged_path, ancestor, left, r
       local cmd =   get_preferred_merge3_command (tbl) 
       if cmd ~=nil 
       then 
-         io.write (string.format("executing external 3-way merge command\n"))
+         io.write (string.format(gettext("executing external 3-way merge command\n")))
          cmd ()
          if tbl.meld_exists 
          then 
@@ -766,3 +771,4 @@ function external_diff(file_path, data_old, data_new, is_binary, diff_args, rev_
    os.remove (old_file);
    os.remove (new_file);
 end
+

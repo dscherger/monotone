@@ -254,11 +254,14 @@ int main(void)
 __wont_compile_
 #endif
 ],
-   AM_CONDITIONAL(WIN32_PLATFORM, true),
-   AM_CONDITIONAL(WIN32_PLATFORM, false),
+        ac_win32=yes,
+        ac_win32=no,
+        ac_win32=no)])
+if test "$ac_win32" = "yes"; then
+   AM_CONDITIONAL(WIN32_PLATFORM, true)
+else
    AM_CONDITIONAL(WIN32_PLATFORM, false)
-)])
-
+fi
 
 # Check for IPv6.  Let the user enable or disable it manually using a
 # three-state (yes|no|auto) --enable argument.
@@ -304,6 +307,7 @@ AH_TEMPLATE([USE_DLOPEN], [For LUA: use dlopen for loadlib])
 AC_SEARCH_LIBS([inet_aton], [resolv])
 AC_SEARCH_LIBS([accept], [socket])
 AC_SEARCH_LIBS([inet_ntoa], [nsl])
+AC_SEARCH_LIBS([fdatasync], [rt])
 AC_CHECK_LIB([z], [deflate], , AC_MSG_FAILURE([zlib is required]))
 
 # Now let the user specify whether he wants large file support or not in

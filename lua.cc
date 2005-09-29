@@ -524,7 +524,7 @@ extern "C"
   monotone_guess_binary_file_contents_for_lua(lua_State *L)
   {
     const char *path = lua_tostring(L, -1);
-    N(path, F("guess_binary called with an invalid parameter"));
+    N(path, F("%s called with an invalid parameter") % "guess_binary");
 
     std::ifstream file(path, ios_base::binary);
     if (!file) 
@@ -533,12 +533,12 @@ extern "C"
         return 1;
       }
     const int bufsize = 8192;
+    char tmpbuf[bufsize];
     string buf;
-    while(file.good()) 
+    while (file.read(tmpbuf, sizeof tmpbuf))
       {
-        buf.resize(bufsize);
-        file.read(&buf[0],bufsize);
-        buf.resize(file.gcount());
+        I(file.gcount() <= static_cast<int>(sizeof tmpbuf));
+        buf.assign(tmpbuf, file.gcount());
         if (guess_binary(buf)) 
           {
             lua_pushboolean(L, true);
@@ -553,7 +553,7 @@ extern "C"
   monotone_include_for_lua(lua_State *L)
   {
     const char *path = lua_tostring(L, -1);
-    N(path, F("Include called with an invalid parameter"));
+    N(path, F("%s called with an invalid parameter") % "Include");
     
     bool res =Lua(L)
     .loadfile(std::string(path, lua_strlen(L, -1)))
@@ -568,7 +568,7 @@ extern "C"
   monotone_includedir_for_lua(lua_State *L)
   {
     const char *pathstr = lua_tostring(L, -1);
-    N(pathstr, F("IncludeDir called with an invalid parameter"));
+    N(pathstr, F("%s called with an invalid parameter") % "IncludeDir");
 
     fs::path locpath(pathstr, fs::native);
     N(fs::exists(locpath), F("Directory '%s' does not exists") % pathstr);
@@ -608,6 +608,14 @@ extern "C"
     lua_pushboolean(L, boost::regex_search(str, what, boost::regex(re)));
     return 1;
   }
+
+  static int
+  monotone_gettext_for_lua(lua_State *L)
+  {
+    const char *msgid = lua_tostring(L, -1);
+    lua_pushstring(L, gettext(msgid));
+    return 1;
+  }
 }
 
 
@@ -637,6 +645,7 @@ lua_hooks::lua_hooks()
   lua_register(st, "guess_binary_file_contents", monotone_guess_binary_file_contents_for_lua);
   lua_register(st, "include", monotone_include_for_lua);
   lua_register(st, "includedir", monotone_includedir_for_lua);
+  lua_register(st, "gettext", monotone_gettext_for_lua);
 
   // add regex functions:
   lua_newtable(st);
@@ -1297,12 +1306,14 @@ lua_hooks::hook_get_linesep_conv(file_path const & p,
 
 bool 
 lua_hooks::hook_note_commit(revision_id const & new_id,
+                            revision_data const & rdat,
                             map<cert_name, cert_value> const & certs)
 {
   Lua ll(st);
   ll
     .func("note_commit")
-    .push_str(new_id.inner()());
+    .push_str(new_id.inner()())
+    .push_str(rdat.inner()());
 
   ll.push_table();
 
@@ -1314,12 +1325,13 @@ lua_hooks::hook_note_commit(revision_id const & new_id,
       ll.set_table();
     }
   
-  ll.call(2, 0);
+  ll.call(3, 0);
   return ll.ok();
 }
 
 bool 
 lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
+                                               revision_data const & rdat,
                             set<pair<rsa_keypair_id,
                                      pair<cert_name,
                                           cert_value> > > const & certs)
@@ -1327,7 +1339,8 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
   Lua ll(st);
   ll
     .func("note_netsync_revision_received")
-    .push_str(new_id.inner()());
+    .push_str(new_id.inner()())
+    .push_str(rdat.inner()());
 
   ll.push_table();
   
@@ -1350,7 +1363,7 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
       ll.set_table();
     }
 
-  ll.call(2, 0);
+  ll.call(3, 0);
   return ll.ok();
 }
 

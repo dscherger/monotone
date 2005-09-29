@@ -287,3 +287,27 @@ dump(std::string const & obj, std::string & out)
   out = obj;
 }
 
+
+void MusingBase::gasp(const std::string & objstr, std::string & out) const
+{
+  out = (boost::format("----- begin '%s' (in %s, at %s:%d)\n"
+		       "%s"
+		       "-----   end '%s' (in %s, at %s:%d)\n")
+	 % name % func % file % line
+	 % objstr
+	 % name % func % file % line
+	 ).str();
+}
+
+
+boost::format F(const char * str)
+{
+  return boost::format(gettext(str), get_user_locale());
+}
+
+
+boost::format FP(const char * str1, const char * strn, unsigned long count)
+{
+  return boost::format(ngettext(str1, strn, count), get_user_locale());
+}
+

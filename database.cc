@@ -195,7 +195,7 @@ database::sql(bool init)
         {
           require_path_is_file(filename,
                                F("database %s does not exist") % filename,
-                               F("database %s is a directory") % filename);
+                               F("%s is a directory, not a database") % filename);
           check_sqlite_format_version(filename);
         }
 
@@ -480,9 +480,9 @@ void
 database::rehash()
 {
   transaction_guard guard(*this);
-  ticker mcerts("mcerts", "m", 1);
-  ticker pubkeys("pubkeys", "+", 1);
-  ticker privkeys("privkeys", "!", 1);
+  ticker mcerts(_("mcerts"), "m", 1);
+  ticker pubkeys(_("pubkeys"), "+", 1);
+  ticker privkeys(_("privkeys"), "!", 1);
   
   {
     // rehash all mcerts
@@ -757,7 +757,9 @@ unsigned long
 database::space_usage(string const & table, string const & concatenated_columns)
 {
   results res;
-  string query = "SELECT SUM(LENGTH(" + concatenated_columns + ")) FROM " + table;
+  // COALESCE is required since SUM({empty set}) is NULL.
+  // the sqlite docs for SUM suggest this as a workaround
+  string query = "SELECT COALESCE(SUM(LENGTH(" + concatenated_columns + ")), 0) FROM " + table;
   fetch(res, one_col, one_row, query.c_str());
   return lexical_cast<unsigned long>(res[0][0]);
 }
