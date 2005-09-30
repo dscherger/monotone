@@ -1,3 +1,17 @@
+2005-09-30  Nathaniel Smith  <njs@pobox.com>
+
+	* debian/README.Debian, debian/TODO.Debian: Add debian files
+	left out of repository.
+
+2005-09-30  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Set date for 0.23.
+
+2005-09-30  Nathaniel Smith  <njs@pobox.com>
+
+	* testsuite.at: Whoops, forgot to hit save.  Remove
+	t_diff_changeset_bug.at.
+
 2005-09-30  Grahame Bowland  <grahame@angrygoats.net>
 
 	* paths.cc: remove unit tests for 
@@ -7,6 +21,12 @@
 
 	* configure.ac: only add gnu specific CFLAGS and CXXFLAGS for
 	gnu compilers
+
+2005-09-30  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_log_outside_working_dir.at: Fix summary line.
+	* tests/t_diff_changeset_bug.at: Remove redundant test
+	(cf. t_restricted_diff_unchanged.at).
 
 2005-09-30  Nathaniel Smith  <njs@pobox.com>
 
