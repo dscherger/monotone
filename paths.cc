@@ -27,6 +27,7 @@ struct access_tracker
   void set(T const & val, bool may_be_initialized)
   {
     I(may_be_initialized || !initialized);
+    I(!very_uninitialized);
     I(!used);
     initialized = true;
     value = val;
@@ -42,14 +43,19 @@ struct access_tracker
     I(initialized);
     return value;
   }
+  void may_not_initialize()
+  {
+    I(!initialized);
+    very_uninitialized = true;
+  }
   // for unit tests
   void unset()
   {
-    used = initialized = false;
+    used = initialized = very_uninitialized = false;
   }
   T value;
-  bool initialized, used;
-  access_tracker() : initialized(false), used(false) {};
+  bool initialized, used, very_uninitialized;
+  access_tracker() : initialized(false), used(false), very_uninitialized(false) {};
 };
 
 // paths to use in interpreting paths from various sources,
@@ -165,12 +171,19 @@ file_path::file_path(file_path::source_type type, std::string const & path)
     case internal:
       data = path;
       break;
-    case internal_from_user:
-      data = path;
-      N(is_valid_internal(path),
-        F("path '%s' is invalid") % path);
-      break;
     case external:
+      if (!initial_rel_path.initialized)
+	{
+	  // we are not in a working directory; treat this as an internal 
+	  // path, and set the access_tracker() into a very uninitialised 
+	  // state so that we will hit an exception if we do eventually 
+	  // enter a working directory
+	  initial_rel_path.may_not_initialize();
+	  data = path;
+	  N(is_valid_internal(path),
+	    F("path '%s' is invalid") % path);
+	  break;
+	}
       N(!path.empty(), F("empty path '%s' is invalid") % path);
       fs::path out, base, relative;
       try
@@ -534,16 +547,12 @@ static void test_file_path_internal()
   for (char const ** c = baddies; *c; ++c)
     {
       BOOST_CHECK_THROW(file_path_internal(*c), std::logic_error);
-      BOOST_CHECK_THROW(file_path_internal_from_user(std::string(*c)),
-                        informative_failure);
     }
   initial_rel_path.unset();
   initial_rel_path.set(file_path_internal("blah/blah/blah"), true);
   for (char const ** c = baddies; *c; ++c)
     {
       BOOST_CHECK_THROW(file_path_internal(*c), std::logic_error);
-      BOOST_CHECK_THROW(file_path_internal_from_user(std::string(*c)),
-                        informative_failure);
     }
 
   BOOST_CHECK(file_path().empty());
@@ -587,8 +596,6 @@ static void test_file_path_internal()
           for (std::vector<path_component>::const_iterator i = split_test.begin();
                i != split_test.end(); ++i)
             BOOST_CHECK(!null_name(*i));
-          file_path fp_user = file_path_internal_from_user(std::string(*c));
-          BOOST_CHECK(fp == fp_user);
         }
     }
 
@@ -935,6 +942,13 @@ static void test_access_tracker()
   BOOST_CHECK_THROW(a.set(3, false), std::logic_error);
   BOOST_CHECK(a.get() == 2);
   BOOST_CHECK_THROW(a.set(3, true), std::logic_error);
+  a.unset();
+  a.may_not_initialize();
+  BOOST_CHECK_THROW(a.set(1, false), std::logic_error);
+  BOOST_CHECK_THROW(a.set(2, true), std::logic_error);
+  a.unset();
+  a.set(1, false);
+  BOOST_CHECK_THROW(a.may_not_initialize(), std::logic_error);
 }
 
 void add_paths_tests(test_suite * suite)
