@@ -355,13 +355,13 @@ loop:
   std::string x=readline();
   MM(x);
   unsigned len=0;
+  if (x=="F" || x=="F ")
+  { // flush stderr
+    goto loop;
+  }
   if (x.size()<2) goto error;
   if (begins_with(x,"E ",len)) 
   { W(F("%s\n") % x.substr(len));
-    goto loop;
-  }
-  if (x=="F ") 
-  { // flush stderr
     goto loop;
   }
   if (begins_with(x,"M ",len))
