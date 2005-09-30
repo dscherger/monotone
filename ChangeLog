@@ -1,5 +1,13 @@
 2005-09-29  Matthew Gregan  <kinetik@orcon.net.nz>
 
+	* paths.cc: Restore two unit tests on Win32.
+
+2005-09-29  Richard Levitte  <richard@levitte.org>
+
+	* testsuite.at: Removed a spurious G...
+
+2005-09-29  Matthew Gregan  <kinetik@orcon.net.nz>
+
 	* paths.cc, win32/fs.cc: Fixes to allow unit tests to pass on Win32.
 
 2005-09-29  Marcel van der Boom  <marcel@hsdev.com>
