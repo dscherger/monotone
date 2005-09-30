@@ -2391,7 +2391,7 @@ CMD(commit, N_("working copy"), N_("[PATH]..."),
   
     cert_revision_in_branch(rid, branchname, app, dbw); 
     if (app.date().length() > 0)
-      cert_revision_date_time(rid, string_to_datetime(app.date()), app, dbw);
+      cert_revision_date_time(rid, ::string_to_datetime(app.date()), app, dbw);
     else
       cert_revision_date_now(rid, app, dbw);
     if (app.author().length() > 0)
@@ -3051,7 +3051,7 @@ try_one_merge(revision_id const & left_id,
   calculate_ident(merged_data, merged_id);
   dbw.consume_revision_data(merged_id, merged_data);
   if (app.date().length() > 0)
-    cert_revision_date_time(merged_id, string_to_datetime(app.date()), app, dbw);
+    cert_revision_date_time(merged_id, ::string_to_datetime(app.date()), app, dbw);
   else
     cert_revision_date_now(merged_id, app, dbw);
   if (app.author().length() > 0)
