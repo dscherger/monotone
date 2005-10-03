@@ -168,16 +168,6 @@ Netxx::socket_type Netxx::PipeStream::get_socketfd (void) const
 { return Netxx::socket_type(-1);
 }
 
-#if 0
-namespace {
-class PipeProbe : public Netxx::ProbeInfo
-{public:
-  virtual bool needs_pending_check (void) const;
-  virtual pending_type check_pending (socket_type, pending_type) const;
-};
-}
-#endif
-
 const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 { return 0;
 }
@@ -255,13 +245,15 @@ void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
   Probe::add(ss,rt);
 }
 #else // unix
-void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
+void
+Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
 {
   if (rt==ready_none || rt&ready_read) add_socket(ps.get_readfd(),ready_read);
   if (rt==ready_none || rt&ready_write) add_socket(ps.get_writefd(),ready_write);
 }
 
-void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
+void
+Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
 {
   try
   { add(const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
@@ -271,7 +263,8 @@ void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
   }
 }
 
-void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
+void
+Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
 {
   Probe::add(ss,rt);
 }
@@ -282,41 +275,48 @@ void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
 
 static void
 simple_pipe_test()
-{ std::vector<std::string> args;
-  std::string cmd;
-#ifdef WIN32
-  args.push_back("--version");
-  cmd="monotone";
-#else
-  args.push_back("-l");
-  args.push_back("/");
-  cmd="ls";
-#endif  
-  Netxx::PipeStream pipe(cmd,args);
-#ifndef WIN32
-  fcntl(pipe.get_readfd(),F_SETFL,fcntl(pipe.get_readfd(),F_GETFL)&~O_NONBLOCK);
-#endif
+{ Netxx::PipeStream pipe("cat",std::vector<std::string>());
+
   std::string result;
-  char buf[1024];
-  Netxx::signed_size_type bytes;
   Netxx::PipeCompatibleProbe probe;
-  Netxx::Timeout timeout(2L), instant(0,1);
+  Netxx::Timeout timeout(2L), short_time(0,500);
+  
+  // time out because no data is available
+  probe.clear();
+  probe.add(pipe, Netxx::Probe::ready_read);
+  Netxx::Probe::result_type res = probe.ready(short_time);
+  I(res.second==Netxx::Probe::ready_none);
+  
+  // write should be possible
   probe.clear();
   probe.add(pipe, Netxx::Probe::ready_write);
-  Netxx::Probe::result_type res = probe.ready(instant);
-  L(F("probe for write %d/%d\n") % res.first % res.second);
-  probe.clear();
-  probe.add(pipe, Netxx::Probe::ready_read | Netxx::Probe::ready_oobd);
-  res = probe.ready(timeout);
-  L(F("probe for read %d/%d\n") % res.first % res.second);
-  do
-  { bytes=pipe.read(buf,sizeof buf);
-    if (bytes<=0) break;
-    result+=std::string(buf,bytes);
-  } while (true);
+  res = probe.ready(short_time);
+  I(res.second&Netxx::Probe::ready_write);
+  I(res.first==pipe.get_writefd());
+  
+  // try binary transparency
+  for (int c=0; c<256; ++c)
+  { char buf[1024];
+    buf[0]=c;
+    buf[1]=255-c;
+    pipe.write(buf,2);
+    
+    std::string result;
+    while (result.size()<2)
+    { // wait for data to arrive
+      probe.clear();
+      probe.add(pipe, Netxx::Probe::ready_read);
+      res = probe.ready(timeout);
+      E(res.second&Netxx::Probe::ready_read, F("timeout reading data %d") % c);
+      I(res.first==pipe.get_readfd());
+      int bytes=pipe.read(buf,sizeof buf);
+      result+=std::string(buf,bytes);
+    }
+    I(result.size()==2);
+    I((unsigned char)(result[0])==c);
+    I((unsigned char)(result[1])==255-c);
+  }
   pipe.close();
-  BOOST_CHECK(!result.empty());
-  L(F("command output (%d bytes) is: %s\n") % result.size() % result);
 }
 
 void
