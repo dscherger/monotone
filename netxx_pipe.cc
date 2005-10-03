@@ -6,11 +6,12 @@
 
 #include <netxx_pipe.hh>
 #include "sanity.hh"
+#include "platform.hh"
+#include <netxx/streamserver.h>
 
 Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
   : readfd(_readfd), writefd(_writefd), child()
-{ //pi_.add_socket(readfd);
-  //pi_.add_socket(writefd);
+{
 }
 
 #ifndef __WIN32__
@@ -19,7 +20,7 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
 #include <sys/wait.h>
 #include <errno.h>
 
-// copied from netsync.cc from the ssh branch
+// create pipes for stdio and fork subprocess
 static pid_t pipe_and_fork(int *fd1,int *fd2)
 { pid_t result=-1;
   fd1[0]=-1; fd1[1]=-1;
@@ -57,80 +58,70 @@ static pid_t pipe_and_fork(int *fd1,int *fd2)
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
+#define FAIL_IF(FUN,ARGS,CHECK) \
+  E(!(FUN ARGS CHECK), F(#FUN " failed %d\n") % GetLastError())
 #endif
-#include <netxx/streamserver.h>
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
   : readfd(), writefd(), child()
-{ 
+{ const unsigned newsize=64;
+  const char *newargv[newsize];
+  I(args.size()<(sizeof(newargv)/sizeof(newargv[0])));
+  unsigned newargc=0;
+  newargv[newargc++]=cmd.c_str();
+  for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
+    newargv[newargc++]=i->c_str();
+  newargv[newargc]=0;
 #ifdef WIN32
-    int fd1[2],fd2[2];
-    fd1[0]=-1; fd1[1]=-1;
-    fd2[0]=-1; fd2[1]=-1;
-    if (_pipe(fd1,0,_O_BINARY)) throw oops("pipe failed");
-    if (_pipe(fd2,0,_O_BINARY)) // | O_NOINHERIT
-    { ::close(fd1[0]); ::close(fd1[1]); throw oops("pipe failed"); }
-    // abuse dup, use spawnvp?
-    PROCESS_INFORMATION piProcInfo;
-    STARTUPINFO siStartInfo;
-    memset(&piProcInfo,0,sizeof piProcInfo);
-    memset(&siStartInfo,0,sizeof siStartInfo);
-    siStartInfo.cb = sizeof siStartInfo;
-    siStartInfo.hStdError = (HANDLE)_get_osfhandle(2);
-    siStartInfo.hStdOutput = (HANDLE)_get_osfhandle(fd1[1]);
-    siStartInfo.hStdInput = (HANDLE)_get_osfhandle(fd2[0]);
-    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
-    // we do not quote correctly (blanks are much more common on Win32 than quotes)
-    std::string cmdline="\""+cmd+"\" ";
-    for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
-        cmdline+="\""+*i+"\" ";
-    L(F("cmdline '%s'\n") % cmdline);
-    bool result= CreateProcess(0,const_cast<CHAR*>(cmdline.c_str()),
-                        0,0,TRUE,0,0,0,&siStartInfo,&piProcInfo);
-    if (!result) 
-    { L(F("err %d\n") % GetLastError()); throw oops("CreateProcess failed"); }
-    ::close(fd1[1]);
-    ::close(fd2[0]);
-    child=long(piProcInfo.hProcess);
-    // setvbuf?
-    // COMMTIMEOUTS cto;
-    // memset(&cto,0,sizeof cto);
-    // cto.ReadIntervalTimeout=MAXDWORD;
-    // cto.ReadTotalTimeoutMultiplier=MAXDWORD;
-    // cto.ReadTotalTimeoutConstant=milliseconds;
-    // SetCommTimeouts(handle,&cto);
-    // non-blocking: RIT=MAXDWORD RTTM=0 RTTC=0
-    readfd=fd1[0];
-    writefd=fd2[1];
-    
-    memset(&overlap,0,sizeof overlap);
-    overlap.hEvent=CreateEvent(0,FALSE,FALSE,0); // TRUE,TRUE,0); ??
-    bytes_available=0;
-    I(overlap.hEvent!=0);
+  int fd1[2],fd2[2];
+  fd1[0]=-1; fd1[1]=-1;
+  fd2[0]=-1; fd2[1]=-1;
+  E(_pipe(fd1,0,_O_BINARY)==0, F("first pipe failed"));
+  if (_pipe(fd2,0,_O_BINARY)) // | O_NOINHERIT
+  { ::close(fd1[0]); ::close(fd1[1]); E(false,F("second pipe failed")); }
+  // abuse dup, use spawnvp?
+  PROCESS_INFORMATION piProcInfo;
+  STARTUPINFO siStartInfo;
+  memset(&piProcInfo,0,sizeof piProcInfo);
+  memset(&siStartInfo,0,sizeof siStartInfo);
+  siStartInfo.cb = sizeof siStartInfo;
+  siStartInfo.hStdError = (HANDLE)_get_osfhandle(2);
+  siStartInfo.hStdOutput = (HANDLE)_get_osfhandle(fd1[1]);
+  siStartInfo.hStdInput = (HANDLE)_get_osfhandle(fd2[0]);
+  siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+  // unfortunately munge_argv_into_cmdline does not take a vector<string>
+  // as its argument
+  I(args.size()<(sizeof(argv)/sizeof(argv[0])));
+  for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i,++pos)
+      argv[pos]=i->c_str();
+  argv[pos]=0;
+  std::string cmdline=munge_argv_into_cmdline(argv);
+  L(F("cmdline '%s'\n") % cmdline);
+  FAIL_IF(CreateProcess,(0,const_cast<CHAR*>(cmdline.c_str()),
+                      0,0,TRUE,0,0,0,&siStartInfo,&piProcInfo),==0);
+  ::close(fd1[1]);
+  ::close(fd2[0]);
+  child=long(piProcInfo.hProcess);
+  readfd=fd1[0];
+  writefd=fd2[1];
+  
+  memset(&overlap,0,sizeof overlap);
+  overlap.hEvent=CreateEvent(0,FALSE,FALSE,0);
+  bytes_available=0;
+  I(overlap.hEvent!=0);
 #else
-    int fd1[2],fd2[2];
-    child=pipe_and_fork(fd1,fd2);
-    if (child<0) 
-    {  throw oops("pipe/fork failed "+std::string(strerror(errno)));
-    }
-    else if (!child)
-    { const unsigned newsize=64;
-      const char *newargv[newsize];
-      unsigned newargc=0;
-      newargv[newargc++]=cmd.c_str();
-      for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
-        newargv[newargc++]=i->c_str();
-      newargv[newargc]=0;
-      execvp(newargv[0],const_cast<char*const*>(newargv));
-      perror(newargv[0]);
-      exit(errno);
-    }
-    readfd=fd1[0];
-    writefd=fd2[1];
-    fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
+  int fd1[2],fd2[2];
+  child=pipe_and_fork(fd1,fd2);
+  E(child>=0, F("pipe/fork failed %s") % strerror(errno));
+  if (!child)
+  { execvp(newargv[0],const_cast<char*const*>(newargv));
+    perror(newargv[0]);
+    exit(errno);
+  }
+  readfd=fd1[0];
+  writefd=fd2[1];
+  fcntl(readfd,F_SETFL,fcntl(readfd,F_GETFL)|O_NONBLOCK);
 #endif
-//  pi_.add_socket(readfd);
-//  pi_.add_socket(writefd);
 }
 
 Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
@@ -174,13 +165,6 @@ const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
 
 #ifdef WIN32
 
-#define FAIL_IF(FUN,ARGS,CHECK) \
-  do \
-  if (FUN ARGS CHECK) \
-  { W(F(#FUN " failed %d\n") % GetLastError()); \
-    throw oops(#FUN " failed"); \
-  } \
-  while (0)
 
 // to emulate the semantics of the select call we wait up to timeout for the
 // first byte and ask for more bytes with no timeout
