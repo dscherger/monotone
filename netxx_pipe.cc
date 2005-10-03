@@ -21,13 +21,19 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
 #include <errno.h>
 
 // create pipes for stdio and fork subprocess
-static pid_t pipe_and_fork(int *fd1,int *fd2)
-{ pid_t result=-1;
+static pid_t 
+pipe_and_fork(int *fd1,int *fd2)
+{ 
+  pid_t result=-1;
   fd1[0]=-1; fd1[1]=-1;
   fd2[0]=-1; fd2[1]=-1;
   if (pipe(fd1)) return -1;
   if (pipe(fd2)) 
-  { close(fd1[0]); close(fd1[1]); return -1; }
+  { 
+    close(fd1[0]); 
+    close(fd1[1]); 
+    return -1; 
+  }
   result=fork();
   if (result<0)
   { close(fd1[0]); close(fd1[1]);

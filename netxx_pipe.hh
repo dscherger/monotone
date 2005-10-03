@@ -56,8 +56,14 @@ public:
     virtual void close (void);
     virtual socket_type get_socketfd (void) const;
     virtual const ProbeInfo* get_probe_info (void) const;
-    int get_readfd(void) const { return readfd; }
-    int get_writefd(void) const { return writefd; }
+    int get_readfd(void) const 
+    {
+      return readfd; 
+    }
+    int get_writefd(void) const 
+    {
+      return writefd; 
+    }
 };
 
 #ifdef WIN32
@@ -71,7 +77,15 @@ public:
     public:
       PipeCompatibleProbe() : is_pipe(), pipe(), ready_t() {}
       void clear()
-      { if (is_pipe) { pipe=0; is_pipe=false; } else Probe::clear(); }
+      { 
+        if (is_pipe) 
+        {
+          pipe=0; 
+          is_pipe=false;
+        }
+        else 
+          Probe::clear(); 
+      }
       result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
       void add(PipeStream &ps, ready_type rt=ready_none);
       void add(const StreamBase &sb, ready_type rt=ready_none);
@@ -86,7 +100,8 @@ public:
   };
 #else
   struct PipeCompatibleProbe : Probe
-  { void add(PipeStream &ps, ready_type rt=ready_none);
+  { 
+    void add(PipeStream &ps, ready_type rt=ready_none);
     void add(const StreamBase &sb, ready_type rt=ready_none);
     void add(const StreamServer &ss, ready_type rt=ready_none);
   };
