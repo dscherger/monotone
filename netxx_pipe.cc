@@ -93,12 +93,13 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   fd2[0]=-1;
   fd2[1]=-1;
   E(_pipe(fd1,0,_O_BINARY)==0, F("first pipe failed"));
-  if (_pipe(fd2,0,_O_BINARY)) // | O_NOINHERIT
+  // there are ways to ensure that the parent side does not get inherited
+  // by the child (e.g. O_NOINHERIT), I don't use them for now
+  if (_pipe(fd2,0,_O_BINARY))
     { ::close(fd1[0]);
       ::close(fd1[1]);
       E(false,F("second pipe failed"));
     }
-  // abuse dup, use spawnvp?
   PROCESS_INFORMATION piProcInfo;
   STARTUPINFO siStartInfo;
   memset(&piProcInfo,0,sizeof piProcInfo);
@@ -173,7 +174,7 @@ void Netxx::PipeStream::close (void)
 {
   ::close(readfd);
   ::close(writefd);
-  // wait for Process to end (before???)
+  // wait for Process to end
 #ifdef WIN32
 
   WaitForSingleObject((HANDLE)child, INFINITE);
@@ -244,8 +245,7 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
   return std::make_pair(socket_type(-1),ready_none);
 }
 
-void Netxx::PipeCompatibleProbe::add
-  (PipeStream &ps, ready_type rt)
+void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
   {
     assert(!is_pipe);
     assert(!pipe);
@@ -254,35 +254,27 @@ void Netxx::PipeCompatibleProbe::add
     ready_t=rt;
   }
 
-void Netxx::PipeCompatibleProbe::add
-  (const StreamBase &sb, ready_type rt)
-  { // L(F("PCP::add()\n"));
+void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
+  { 
     try
       {
-        add
-          (const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
-        // L(F("... was a pipe\n"));
+        add(const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
       }
     catch (...)
       {
         assert(!is_pipe);
-        Probe::add
-          (sb,rt);
-        // L(F("... was a socket\n"));
+        Probe::add(sb,rt);
       }
   }
 
-void Netxx::PipeCompatibleProbe::add
-  (const StreamServer &ss, ready_type rt)
+void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
   {
     assert(!ip_pipe);
-    Probe::add
-      (ss,rt);
+    Probe::add(ss,rt);
   }
 #else // unix
 void
-Netxx::PipeCompatibleProbe::add
-  (PipeStream &ps, ready_type rt)
+Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
   {
     if (rt==ready_none || rt&ready_read)
       add_socket(ps.get_readfd(),ready_read);
@@ -291,27 +283,22 @@ Netxx::PipeCompatibleProbe::add
   }
 
 void
-Netxx::PipeCompatibleProbe::add
-  (const StreamBase &sb, ready_type rt)
+Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
   {
     try
       {
-        add
-          (const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
+        add(const_cast<PipeStream&>(dynamic_cast<const PipeStream&>(sb)),rt);
       }
     catch (...)
       {
-        Probe::add
-          (sb,rt);
+        Probe::add(sb,rt);
       }
   }
 
 void
-Netxx::PipeCompatibleProbe::add
-  (const StreamServer &ss, ready_type rt)
+Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
   {
-    Probe::add
-      (ss,rt);
+    Probe::add(ss,rt);
   }
 #endif
 
@@ -370,7 +357,6 @@ void
 add_pipe_tests(test_suite * suite)
 {
   I(suite);
-  suite->add
-  (BOOST_TEST_CASE(&simple_pipe_test));
+  suite->add(BOOST_TEST_CASE(&simple_pipe_test));
 }
 #endif

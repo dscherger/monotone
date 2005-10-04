@@ -41,7 +41,6 @@ namespace Netxx
   class PipeStream : public StreamBase
     {
       int readfd, writefd;
-      //    ProbeInfo pi_;
       int child;
 #ifdef WIN32
 
@@ -53,7 +52,8 @@ namespace Netxx
 #endif
 
     public:
-      explicit PipeStream (int readfd, int writefd); // Timeout?
+      // do we need Timeout for symmetry with Stream?
+      explicit PipeStream (int readfd, int writefd); 
       explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);
       virtual signed_size_type read (void *buffer, size_type length);
       virtual signed_size_type write (const void *buffer, size_type length);
@@ -93,38 +93,18 @@ namespace Netxx
           Probe::clear();
       }
       result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
-      void add
-        (PipeStream &ps, ready_type rt=ready_none);
-      void add
-        (const StreamBase &sb, ready_type rt=ready_none);
-      void add
-        (const StreamServer &ss, ready_type rt=ready_none);
-      void remove
-        (const PipeStream &ps);
-#if 0 // should be covered by StreamBase
-
-      template <typename T>
-      void add
-        (const T &t, ready_type rt=ready_none)
-        {
-          if (is_pipe)
-            throw std::runtime_error("stream added to a pipe probe");
-          Probe::add
-            (t,rt);
-        }
-#endif
-
+      void add(PipeStream &ps, ready_type rt=ready_none);
+      void add(const StreamBase &sb, ready_type rt=ready_none);
+      void add(const StreamServer &ss, ready_type rt=ready_none);
+      void remove(const PipeStream &ps);
     };
 #else
 
   struct PipeCompatibleProbe : Probe
     {
-      void add
-        (PipeStream &ps, ready_type rt=ready_none);
-      void add
-        (const StreamBase &sb, ready_type rt=ready_none);
-      void add
-        (const StreamServer &ss, ready_type rt=ready_none);
+      void add(PipeStream &ps, ready_type rt=ready_none);
+      void add(const StreamBase &sb, ready_type rt=ready_none);
+      void add(const StreamServer &ss, ready_type rt=ready_none);
     };
 #endif
 
