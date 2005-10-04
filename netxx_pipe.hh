@@ -13,10 +13,10 @@
 #endif
 
 /* What is this all for?
-
+ 
 If you want to transparently handle a pipe and a socket on unix and windows
 you have to abstract some difficulties:
-
+ 
  - sockets have a single filedescriptor for reading and writing
    pipes usually come in pairs (one for reading and one for writing)
    
@@ -33,77 +33,99 @@ you have to abstract some difficulties:
    
 */
 
-namespace Netxx {
-class PipeCompatibleProbe;
-class StreamServer;
+namespace Netxx
+  {
+  class PipeCompatibleProbe;
+  class StreamServer;
 
-class PipeStream : public StreamBase 
-{   int readfd, writefd;
-//    ProbeInfo pi_;
-    int child;
+  class PipeStream : public StreamBase
+    {
+      int readfd, writefd;
+      //    ProbeInfo pi_;
+      int child;
 #ifdef WIN32
-    char readbuf[1024];
-    unsigned bytes_available;
-    OVERLAPPED overlap;
-    
-    friend class PipeCompatibleProbe;
+
+      char readbuf[1024];
+      unsigned bytes_available;
+      OVERLAPPED overlap;
+
+      friend class PipeCompatibleProbe;
 #endif
-public:
-    explicit PipeStream (int readfd, int writefd); // Timeout?
-    explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);
-    virtual signed_size_type read (void *buffer, size_type length);
-    virtual signed_size_type write (const void *buffer, size_type length);
-    virtual void close (void);
-    virtual socket_type get_socketfd (void) const;
-    virtual const ProbeInfo* get_probe_info (void) const;
-    int get_readfd(void) const 
-    {
-      return readfd; 
-    }
-    int get_writefd(void) const 
-    {
-      return writefd; 
-    }
-};
+
+    public:
+      explicit PipeStream (int readfd, int writefd); // Timeout?
+      explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);
+      virtual signed_size_type read (void *buffer, size_type length);
+      virtual signed_size_type write (const void *buffer, size_type length);
+      virtual void close (void);
+      virtual socket_type get_socketfd (void) const;
+      virtual const ProbeInfo* get_probe_info (void) const;
+      int get_readfd(void) const
+        {
+          return readfd;
+        }
+      int get_writefd(void) const
+        {
+          return writefd;
+        }
+    };
 
 #ifdef WIN32
+
   class PipeCompatibleProbe : public Probe
-  { // We need to make sure that only pipes are connected, if Streams are
-    // connected the old Probe functions still apply
-    // use WriteFileEx/ReadFileEx with Overlap?
+    { // We need to make sure that only pipes are connected, if Streams are
+      // connected the old Probe functions still apply
+      // use WriteFileEx/ReadFileEx with Overlap?
       bool is_pipe;
       PipeStream *pipe;
       ready_type ready_t;
     public:
-      PipeCompatibleProbe() : is_pipe(), pipe(), ready_t() {}
+      PipeCompatibleProbe() : is_pipe(), pipe(), ready_t()
+      {}
       void clear()
-      { 
-        if (is_pipe) 
-        {
-          pipe=0; 
-          is_pipe=false;
-        }
-        else 
-          Probe::clear(); 
+      {
+        if (is_pipe)
+          {
+            pipe=0;
+            is_pipe=false;
+          }
+        else
+          Probe::clear();
       }
       result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
-      void add(PipeStream &ps, ready_type rt=ready_none);
-      void add(const StreamBase &sb, ready_type rt=ready_none);
-      void add(const StreamServer &ss, ready_type rt=ready_none);
-      void remove(const PipeStream &ps);
-#if 0 // should be covered by StreamBase      
-      template <typename T> void add (const T &t, ready_type rt=ready_none)
-      { if (is_pipe) throw std::runtime_error("stream added to a pipe probe");
-        Probe::add(t,rt);
-      }
+      void add
+        (PipeStream &ps, ready_type rt=ready_none);
+      void add
+        (const StreamBase &sb, ready_type rt=ready_none);
+      void add
+        (const StreamServer &ss, ready_type rt=ready_none);
+      void remove
+        (const PipeStream &ps);
+#if 0 // should be covered by StreamBase
+
+      template <typename T>
+      void add
+        (const T &t, ready_type rt=ready_none)
+        {
+          if (is_pipe)
+            throw std::runtime_error("stream added to a pipe probe");
+          Probe::add
+            (t,rt);
+        }
 #endif
-  };
+
+    };
 #else
+
   struct PipeCompatibleProbe : Probe
-  { 
-    void add(PipeStream &ps, ready_type rt=ready_none);
-    void add(const StreamBase &sb, ready_type rt=ready_none);
-    void add(const StreamServer &ss, ready_type rt=ready_none);
-  };
+    {
+      void add
+        (PipeStream &ps, ready_type rt=ready_none);
+      void add
+        (const StreamBase &sb, ready_type rt=ready_none);
+      void add
+        (const StreamServer &ss, ready_type rt=ready_none);
+    };
 #endif
+
 }
