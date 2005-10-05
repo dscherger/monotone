@@ -20,11 +20,12 @@
 #include "transforms.hh"
 #include "lcs.hh"
 #include "annotate.hh"
+#include "format.hh"
 
 
 
 class annotate_lineage_mapping;
-
+class annotate_formatter;
 
 class annotate_context {
 public:
@@ -46,6 +47,10 @@ public:
   bool is_complete() const;
 
   void dump() const;
+  std::ostream& write_annotations(boost::shared_ptr<annotate_formatter> frmt, std::ostream &os) const;
+
+  std::set<revision_id>::const_iterator begin_revisions() const { return annotate_revisions.begin(); }
+  std::set<revision_id>::const_iterator end_revisions() const { return annotate_revisions.end(); }
 
   std::string get_line(int line_index) const { return file_lines[line_index]; }
 
@@ -66,6 +71,8 @@ private:
 
   // similarly, lineages add entries here for all the lines from the UDOI they know about that they didn't copy
   std::set<size_t> touched_lines;
+
+  std::set<revision_id> annotate_revisions; // set of all revisions that appear in the annotations
 };
 
 
@@ -90,6 +97,7 @@ public:
   void merge(const annotate_lineage_mapping &other, const boost::shared_ptr<annotate_context> &acp);
 
   void credit_mapped_lines (boost::shared_ptr<annotate_context> acp) const;
+
   void set_copied_all_mapped (boost::shared_ptr<annotate_context> acp) const;
 
 private:
@@ -168,7 +176,57 @@ private:
 };
 
 
+class annotate_formatter {
+public:
+  annotate_formatter(app_state &app,
+                     std::set<revision_id>::const_iterator startrev,
+                     std::set<revision_id>::const_iterator endrev);
 
+  std::string format (const revision_id &rev, const std::string &line) const
+  {
+    std::map<revision_id, std::string>::const_iterator i = desc.find(rev);
+    //I(i != desc.end()); // FIX this is the same bug as the not-all-lines-annotated
+    if (i == desc.end())
+      return "FIXME!!! : " + line;
+
+    return i->second + line;
+  }
+
+protected:
+  std::map<revision_id, std::string> desc;
+};
+
+
+annotate_formatter::annotate_formatter(app_state &app,
+                                       std::set<revision_id>::const_iterator startrev,
+                                       std::set<revision_id>::const_iterator endrev)
+{
+  std::ostringstream res_stream;
+  utf8 fs = (app.default_format) ? utf8("%i: ") : app.format_string;
+  PrintFormatter pf(res_stream, app, fs);
+
+  size_t max_annotate_len = 0;
+  std::set<revision_id>::const_iterator i;
+  i = startrev;
+  while (i != endrev) {
+    pf.apply(*i);
+
+    size_t rs = res_stream.str().size();
+    max_annotate_len =  (rs > max_annotate_len) ? rs : max_annotate_len;
+
+    desc.insert(std::make_pair(*i, res_stream.str()));
+    res_stream.str("");
+    i++;
+  }
+
+  // justify the annotate strings
+  std::map<revision_id, std::string>::iterator j = desc.begin();
+  while (j != desc.end()) {
+    size_t extra_spaces = max_annotate_len - j->second.size();
+    j->second = std::string(extra_spaces, ' ') + j->second;
+    j++;
+  }
+}
 
 
 annotate_context::annotate_context(file_id fid, app_state &app)
@@ -215,6 +273,7 @@ annotate_context::evaluate(revision_id rev)
                       copied_lines.begin(), copied_lines.end(),
                       inserter(credit_lines, credit_lines.begin()));
 
+  size_t old_lines_completed = annotated_lines_completed;
   std::set<size_t>::const_iterator i;
   for (i = credit_lines.begin(); i != credit_lines.end(); i++) {
     I(*i >= 0 && *i < annotations.size());
@@ -227,6 +286,9 @@ annotate_context::evaluate(revision_id rev)
       //L(F("evaluate LEAVING annotations[%d] -> %s\n") % *i % annotations[*i]);
     }
   }
+
+  if (old_lines_completed != annotated_lines_completed)
+      annotate_revisions.insert(rev);
 
   copied_lines.clear();
   touched_lines.clear();
@@ -306,6 +368,17 @@ annotate_context::dump() const
 
     lastid = annotations[i];
   }
+}
+
+
+std::ostream& 
+annotate_context::write_annotations(boost::shared_ptr<annotate_formatter> frmt, std::ostream &os) const
+{
+  for (size_t i=0; i<file_lines.size(); i++) {
+    os << frmt->format(annotations[i], file_lines[i]) << std::endl;
+  }
+
+  return os;
 }
 
 
@@ -667,5 +740,7 @@ do_annotate (app_state &app, file_path fpath, file_id fid, revision_id rid)
   acp->annotate_equivalent_lines();
   I(acp->is_complete());
 
+  boost::shared_ptr<annotate_formatter> frmt(new annotate_formatter(app, acp->begin_revisions(), acp->end_revisions()));
+  acp->write_annotations(frmt, std::cout);
   acp->dump();
 }

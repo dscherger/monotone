@@ -77,6 +77,8 @@ class app_state;
 
 void extract_path_set(manifest_map const & man, path_set & paths);
 
+void extract_path_set(manifest_map const & man, path_set & paths);
+
 void classify_manifest_paths(app_state & app,
                              manifest_map const & man, 
                              path_set & missing,

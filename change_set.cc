@@ -2990,6 +2990,116 @@ dump(change_set const & cs, std::string & out)
   out = tmp();
 }
 
+// changes_summary
+
+changes_summary::changes_summary() : 
+  empty(true)
+{
+}
+
+void
+changes_summary::add_change_set(change_set const & cs)
+{
+  if (cs.empty())
+    return;
+  empty = false;
+
+  change_set::path_rearrangement const & pr = cs.rearrangement;
+
+  for (std::set<file_path>::const_iterator i = pr.deleted_files.begin();
+       i != pr.deleted_files.end(); i++)
+    deleted_files.insert(*i);
+
+  for (std::set<file_path>::const_iterator i = pr.deleted_dirs.begin();
+       i != pr.deleted_dirs.end(); i++)
+    deleted_dirs.insert(*i);
+
+  for (std::map<file_path, file_path>::const_iterator
+       i = pr.renamed_files.begin(); i != pr.renamed_files.end(); i++)
+    renamed_files.insert(*i);
+
+  for (std::map<file_path, file_path>::const_iterator
+       i = pr.renamed_dirs.begin(); i != pr.renamed_dirs.end(); i++)
+    renamed_dirs.insert(*i);
+
+  for (std::set<file_path>::const_iterator i = pr.added_files.begin();
+       i != pr.added_files.end(); i++)
+    added_files.insert(*i);
+
+  for (change_set::delta_map::const_iterator i = cs.deltas.begin();
+       i != cs.deltas.end(); i++)
+    {
+      if (pr.added_files.find(i->first()) == pr.added_files.end())
+        modified_files.insert(i->first());
+    }
+}
+
+void
+changes_summary::print_indented_set(std::ostream & os, size_t max_cols, const std::set<file_path> &sfp) const
+{
+  size_t cols = 8;
+  os << "       ";
+  for (std::set<file_path>::const_iterator i = sfp.begin(); i != sfp.end(); ++i)
+    {
+      const std::string str = (*i)();
+      if (cols > 8 && cols + str.size() + 1 >= max_cols)
+        {
+          cols = 8;
+          os << std::endl << "       ";
+        }
+      os << " " << str;
+      cols += str.size() + 1;
+    }
+  os << std::endl;
+}
+
+void
+changes_summary::print(std::ostream & os, size_t max_cols) const
+{
+  if (! deleted_files.empty())
+    {
+      os << "Deleted files:" << std::endl;
+      print_indented_set(os, max_cols, deleted_files);
+    }
+
+  if (! deleted_dirs.empty())
+    {
+      os << "Deleted directories:" << std::endl;
+      print_indented_set(os, max_cols, deleted_dirs);
+    }
+
+  if (! renamed_files.empty())
+    {
+      os << "Renamed files:" << std::endl;
+      for (std::map<file_path, file_path>::const_iterator
+           i = renamed_files.begin();
+           i != renamed_files.end(); i++)
+        os << "        " << i->first << " to " << i->second << std::endl;
+    }
+
+  if (! renamed_dirs.empty())
+    {
+      os << "Renamed directories:" << std::endl;
+      for (std::map<file_path, file_path>::const_iterator
+           i = renamed_dirs.begin();
+           i != renamed_dirs.end(); i++)
+        os << "        " << i->first << " to " << i->second << std::endl;
+    }
+
+  if (! added_files.empty())
+    {
+      os << "Added files:" << std::endl;
+      print_indented_set(os, max_cols, added_files);
+    }
+
+  if (! modified_files.empty())
+    {
+      os << "Modified files:" << std::endl;
+      print_indented_set(os, max_cols, modified_files);
+    }
+}
+
+
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 #include "sanity.hh"

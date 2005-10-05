@@ -186,6 +186,11 @@ void tick_write_count::clear_line()
   clog << endl;
 }
 
+void tick_write_count::clear_line()
+{
+  clog << endl;
+}
+
 
 tick_write_dot::tick_write_dot()
 {
@@ -250,6 +255,11 @@ void tick_write_dot::write_ticks()
 
   clog << tickline1 << tickline2;
   clog.flush();
+}
+
+void tick_write_dot::clear_line()
+{
+  clog << endl;
 }
 
 void tick_write_dot::clear_line()

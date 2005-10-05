@@ -3456,7 +3456,7 @@ log_certs(app_state & app, revision_id id, cert_name name)
 
 CMD(annotate, N_("informative"), N_("PATH"),
     N_("print annotated copy of the file from REVISION"),
-    OPT_REVISION)
+    OPT_REVISION % OPT_FORMAT)
 {
   revision_id rid;
 
@@ -3565,12 +3565,10 @@ CMD(log, N_("informative"), N_("[FILE]"),
 
           changes_summary csum;
           
-          set<revision_id> ancestors;
-
           for (edge_map::const_iterator e = rev.edges.begin();
                e != rev.edges.end(); ++e)
             {
-              ancestors.insert(edge_old_revision(e));
+              csum.ancestors.insert(edge_old_revision(e));
 
               change_set const & cs = edge_changes(e);
               if (! file.empty())
@@ -3620,7 +3618,7 @@ CMD(log, N_("informative"), N_("[FILE]"),
                 cout << "Revision: " << rid << endl;
 
                 for (set<revision_id>::const_iterator anc = ancestors.begin();
-                     anc != ancestors.end(); ++anc)
+                     anc != csum.ancestors.end(); ++anc)
                   cout << "Ancestor: " << *anc << endl;
 
                 log_certs(app, rid, author_name, "Author: ", false);
@@ -3695,7 +3693,7 @@ CMD(automate, N_("automation"),
       "get_manifest [ID]\n"
       "get_revision [ID]\n"),
     N_("automation interface"), 
-    OPT_NONE)
+    OPT_FORMAT % OPT_XML)
 {
   if (args.size() == 0)
     throw usage(name);

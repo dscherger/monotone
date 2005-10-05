@@ -1,7 +1,7 @@
 [Setup]
 AppName=monotone
 AppVerName=monotone 0.23
-AppCopyright=Copyright © 2002-2005 Graydon Hoare et al.
+AppCopyright=Copyright  2002-2005 Graydon Hoare et al.
 DefaultDirName={pf}\monotone
 DefaultGroupName=monotone
 MinVersion=0,5.0

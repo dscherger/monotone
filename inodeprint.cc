@@ -10,7 +10,6 @@
 #include <iostream>
 #include <algorithm>
 #include <iterator>
-
 #include "app_state.hh"
 #include "manifest.hh"
 #include "inodeprint.hh"

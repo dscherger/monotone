@@ -1,0 +1,49 @@
+AT_SETUP([test automate output formatting])
+MONOTONE_SETUP
+
+# Common formatting specifiers:
+#
+# %a : value of author certificate
+# %b : value of branch certificate
+# %d : value of date certificate
+# %e : value of comment certificate
+# %i : revision id
+# %l : value of changelog certificate
+# %s : value of testresult certificate
+# %t : value of tag certificate
+# %m : manifest id
+#
+# Changeset Placeholders:
+#
+# %P : ancestors (marker @P) 
+# %A : added files (marker @A)
+# %D : deleted files (marker @D)
+# %E : deleted dirs (marker @E)
+# %R : renamed files (marker @R)
+# %C : renamed dirs (marker @C)
+# %M : modified files (marker @M)
+#
+# The %P,%A,%D,%E,%M changeset placeholders supports the private
+# specifier %f, substituted with the file/directory/ancestor name/id
+# The %R and %M placeholders supports the specifiers %f, current
+# file/directory name and %o, old file/directory name.
+#
+# Plus, all format string support the  \n, \r, \a, \t, \b, \f, \v
+# modifiers with the usual c-like meaning.
+# \\, \% and \@ are used to obtain the \, % and @ char respectively.
+#
+# The default format string is '%i\n'. 
+#
+
+ADD_FILE(foo0, [one line file
+])
+COMMIT(testbranch)
+REV0=`BASE_REVISION`
+
+AT_CHECK(MONOTONE automate heads --format="%i %b\n", [], [stdout], [ignore])
+AT_CHECK(echo $REV0 > tmp)
+AT_CHECK(cmp stdout tmp, [1], [ignore], [ignore]) # make sure cmp fails for just the rev
+AT_CHECK(echo $REV0 testbranch > tmp)
+AT_CHECK(cmp stdout tmp)
+
+AT_CLEANUP
