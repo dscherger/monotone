@@ -673,12 +673,6 @@ function expand_selector(str)
       return ("c:" .. str)
    end
 
-   -- something which looks like a generic cert pattern
-   if string.find(str, "^[^=]*=.*$")
-   then
-      return ("c:" .. str)
-   end
-
    -- something which looks like an email address
    if string.find(str, "[%w%-_]+@[%w%-_]+")
    then
