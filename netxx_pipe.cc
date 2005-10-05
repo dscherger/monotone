@@ -215,8 +215,13 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
       FAIL_IF( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0);
       if (!bytes_read)
         {
-          FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,timeout.get_sec()),==WAIT_FAILED);
+	  int seconds=timeout.get_sec();
+	  // WaitForSingleObject is inaccurate
+	  if (!seconds && timeout.get_usec()) seconds=1;
+	  L(F("WaitForSingleObject(,%d)\n") % seconds);
+          FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,seconds),==WAIT_FAILED);
           FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0);
+	  L(F("GetOverlappedResult(,,%d,)\n") % bytes_read);
           if (!bytes_read)
             {
               FAIL_IF( CancelIo,(h_read),==0);
@@ -225,7 +230,9 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
         }
       I(bytes_read==1);
       pipe->bytes_available=bytes_read;
+      L(F("ReadFile\n"));
       FAIL_IF( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0);
+      L(F("CancelIo\n"));
       FAIL_IF( CancelIo,(h_read),==0);
       if (!bytes_read)
         {
