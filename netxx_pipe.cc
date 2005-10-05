@@ -111,11 +111,7 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
   // unfortunately munge_argv_into_cmdline does not take a vector<string>
   // as its argument
-  I(args.size()<(sizeof(argv)/sizeof(argv[0])));
-  for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i,++pos)
-    argv[pos]=i->c_str();
-  argv[pos]=0;
-  std::string cmdline=munge_argv_into_cmdline(argv);
+  std::string cmdline=munge_argv_into_cmdline(newargv);
   L(F("cmdline '%s'\n") % cmdline);
   FAIL_IF(CreateProcess,(0,const_cast<CHAR*>(cmdline.c_str()),
                          0,0,TRUE,0,0,0,&siStartInfo,&piProcInfo),==0);

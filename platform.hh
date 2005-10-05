@@ -29,7 +29,7 @@ int process_sleep(unsigned int seconds);
 
 // for pipe creation on Win32
 #ifdef WIN32
-std::string munge_argv_into_cmdline(const char* const argv[])
+std::string munge_argv_into_cmdline(const char* const argv[]);
 #endif
 
 // for term selection
