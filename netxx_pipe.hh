@@ -29,7 +29,8 @@ you have to abstract some difficulties:
  
  => so Netxx::PipeCompatibleProbe is a Netxx::Probe like class which
    _can_ handle pipes on windows (emulating select is difficult at best!)
-   (on unix Probe and PipeCompatibleProbe are identical)
+   (on unix Probe and PipeCompatibleProbe are nearly identical: with pipes 
+   you should not select for both read and write on the same descriptor)
    
 */
 
@@ -72,11 +73,12 @@ namespace Netxx
 
 #ifdef WIN32
 
+  // this probe can either handle _one_ PipeStream or several network Streams
+  // so if !is_pipe this acts like a Probe
   class PipeCompatibleProbe : public Probe
-    { // We need to make sure that only pipes are connected, if Streams are
-      // connected the old Probe functions still apply
-      // use WriteFileEx/ReadFileEx with Overlap?
+    { 
       bool is_pipe;
+      // only meaningful if is_pipe is true
       PipeStream *pipe;
       ready_type ready_t;
     public:
@@ -92,6 +94,7 @@ namespace Netxx
         else
           Probe::clear();
       }
+      // this function does all the hard work (emulating a select)
       result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
       void add(PipeStream &ps, ready_type rt=ready_none);
       void add(const StreamBase &sb, ready_type rt=ready_none);
@@ -100,6 +103,8 @@ namespace Netxx
     };
 #else
 
+  // we only act specially if a PipeStream is added (directly or via the 
+  // StreamBase parent reference)
   struct PipeCompatibleProbe : Probe
     {
       void add(PipeStream &ps, ready_type rt=ready_none);

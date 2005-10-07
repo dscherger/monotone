@@ -19,7 +19,8 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
 #include <sys/wait.h>
 #include <errno.h>
 
-// create pipes for stdio and fork subprocess
+// create pipes for stdio and fork subprocess, 
+// returns -1 on error, 0 to child and PID to parent
 static pid_t
 pipe_and_fork(int *fd1,int *fd2)
 {
@@ -77,6 +78,8 @@ pipe_and_fork(int *fd1,int *fd2)
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
     : readfd(), writefd(), child()
 {
+  // unfortunately neither munge_argv_into_cmdline nor execvp
+  // do take a vector<string> as argument
   const unsigned newsize=64;
   const char *newargv[newsize];
   I(args.size()<(sizeof(newargv)/sizeof(newargv[0])));
@@ -94,12 +97,15 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   fd2[1]=-1;
   E(_pipe(fd1,0,_O_BINARY)==0, F("first pipe failed"));
   // there are ways to ensure that the parent side does not get inherited
-  // by the child (e.g. O_NOINHERIT), I don't use them for now
+  // by the child (using O_NOINHERIT), I don't use them for now because
+  // this further complicates things (involving DuplicateHandle and close)
+  // two additional unused descriptors should not create a problem ...
   if (_pipe(fd2,0,_O_BINARY))
     { ::close(fd1[0]);
       ::close(fd1[1]);
       E(false,F("second pipe failed"));
     }
+  // set up the child with the pipes as stdin/stdout and inheriting stderr
   PROCESS_INFORMATION piProcInfo;
   STARTUPINFO siStartInfo;
   memset(&piProcInfo,0,sizeof piProcInfo);
@@ -109,8 +115,6 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   siStartInfo.hStdOutput = (HANDLE)_get_osfhandle(fd1[1]);
   siStartInfo.hStdInput = (HANDLE)_get_osfhandle(fd2[0]);
   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
-  // unfortunately munge_argv_into_cmdline does not take a vector<string>
-  // as its argument
   std::string cmdline=munge_argv_into_cmdline(newargv);
   L(F("cmdline '%s'\n") % cmdline);
   FAIL_IF(CreateProcess,(0,const_cast<CHAR*>(cmdline.c_str()),
@@ -121,6 +125,7 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   readfd=fd1[0];
   writefd=fd2[1];
 
+  // create infrastructure for overlapping I/O
   memset(&overlap,0,sizeof overlap);
   overlap.hEvent=CreateEvent(0,FALSE,FALSE,0);
   bytes_available=0;
@@ -142,7 +147,9 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
 #endif
 }
 
-Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
+// non blocking read
+Netxx::signed_size_type 
+Netxx::PipeStream::read (void *buffer, size_type length)
 {
 #ifdef WIN32
   if (length>bytes_available)
@@ -161,12 +168,14 @@ Netxx::signed_size_type Netxx::PipeStream::read (void *buffer, size_type length)
 #endif
 }
 
-Netxx::signed_size_type Netxx::PipeStream::write(const void *buffer, size_type length)
+Netxx::signed_size_type 
+Netxx::PipeStream::write(const void *buffer, size_type length)
 {
   return ::write(writefd,buffer,length);
 }
 
-void Netxx::PipeStream::close (void)
+void 
+Netxx::PipeStream::close (void)
 {
   ::close(readfd);
   ::close(writefd);
@@ -181,23 +190,25 @@ void Netxx::PipeStream::close (void)
 #endif
 }
 
-Netxx::socket_type Netxx::PipeStream::get_socketfd (void) const
-  {
+Netxx::socket_type
+Netxx::PipeStream::get_socketfd (void) const
+{
     return Netxx::socket_type(-1);
-  }
+}
 
-const Netxx::ProbeInfo* Netxx::PipeStream::get_probe_info (void) const
-  {
+const Netxx::ProbeInfo* 
+Netxx::PipeStream::get_probe_info (void) const
+{
     return 0;
-  }
+}
 
 #ifdef WIN32
-
 
 // to emulate the semantics of the select call we wait up to timeout for the
 // first byte and ask for more bytes with no timeout
 //   perhaps there is a more efficient/less complicated way (tell me if you know)
-Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
+Netxx::Probe::result_type 
+Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
 {
   if (!is_pipe)
     return Probe::ready(timeout,rt);
@@ -212,11 +223,13 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
 
       HANDLE h_read=(HANDLE)_get_osfhandle(pipe->get_readfd());
       DWORD bytes_read=0;
+      // ask for the first byte
       FAIL_IF( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0);
       if (!bytes_read)
         {
+          // wait with timeout for the first byte
 	  int seconds=timeout.get_sec();
-	  // WaitForSingleObject is inaccurate
+	  // WaitForSingleObject is only accurate to seconds
 	  if (!seconds && timeout.get_usec()) seconds=1;
 	  L(F("WaitForSingleObject(,%d)\n") % seconds);
           FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,seconds),==WAIT_FAILED);
@@ -230,6 +243,7 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
         }
       I(bytes_read==1);
       pipe->bytes_available=bytes_read;
+      // ask for more bytes but do _not_ wait
       L(F("ReadFile\n"));
       FAIL_IF( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0);
       L(F("CancelIo\n"));
@@ -241,6 +255,7 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
         }
       else
         {
+          // do we need to call and add GetOverlappedResult here?
           pipe->bytes_available+=bytes_read;
         }
       return std::make_pair(pipe->get_readfd(),ready_read);
@@ -248,7 +263,8 @@ Netxx::Probe::result_type Netxx::PipeCompatibleProbe::ready(const Timeout &timeo
   return std::make_pair(socket_type(-1),ready_none);
 }
 
-void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
+void 
+Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
   {
     assert(!is_pipe);
     assert(!pipe);
@@ -257,7 +273,8 @@ void Netxx::PipeCompatibleProbe::add(PipeStream &ps, ready_type rt)
     ready_t=rt;
   }
 
-void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
+void 
+Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
   { 
     try
       {
@@ -270,7 +287,8 @@ void Netxx::PipeCompatibleProbe::add(const StreamBase &sb, ready_type rt)
       }
   }
 
-void Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
+void 
+Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
   {
     assert(!ip_pipe);
     Probe::add(ss,rt);
