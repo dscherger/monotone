@@ -267,7 +267,6 @@ session
   app_state & app;
 
   string peer_id;
-//  Netxx::socket_type fd;
   shared_ptr<Netxx::StreamBase> str;  
 
   string_queue inbuf; 
