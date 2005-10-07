@@ -1645,7 +1645,12 @@ $ monotone --db=jim.db serve jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
 @end smallexample
 
 This command sets up a single listener loop on the host
-@code{jim-laptop.juicebot.co.jp}, serving all branches matching
+@code{jim-laptop.juicebot.co.jp}@footnote{Make sure that the name 
+resolves to the right IP address. E.g. by checking @code{ping
+jim-laptop.juicebot.co.jp}. A server listening on localhost
+(127.0.0.1) will not be reachable by other computers. If you don't want 
+to think about interfaces and addresses start monotone on @code{0.0.0.0}.
+}, serving all branches matching
 @code{jp.co.juicebot.jb7*}. This will naturally include the
 @code{jp.co.juicebot.jb7} branch, and any sub-branches.  The quotes
 around @code{"jp.co.juicebot.jb7*"} are there to protect the @code{*}
@@ -5018,9 +5023,11 @@ renames.
 
 @item Sample output:
 
+All basic status codes:
+
 @verbatim
   M 0 0 missing
- AP 0 0 added patched
+ AP 0 0 added
 D   0 0 dropped
 R   1 0 renamed-from-this
  R  0 1 renamed-to-this
@@ -5028,57 +5035,81 @@ R   1 0 renamed-from-this
     0 0 unchanged
   U 0 0 unknown
   I 0 0 ignored
+@end verbatim
 
-# swapped but not moved
+Two files swapped:
 
-RRP 1 2 unchanged
-RRP 2 1 original
-
-# swapped and moved
-
+@verbatim
 RR  1 2 unchanged
 RR  2 1 original
+@end verbatim
 
-# rename foo bar; add foo
+Recorded with monotone that two files were swapped, but they were not
+actually swapped in the filesystem.  Thus they both appear as patched:
 
+@verbatim
+RRP 1 2 unchanged
+RRP 2 1 original
+@end verbatim
+
+Rename @file{foo} to @file{bar}; add new file @file{foo}:
+
+@verbatim
 RAP 1 0 foo
  R  0 1 bar
+@end verbatim
 
-# rotated but not moved dropped -> missing -> original -> dropped
+Rotated files @file{foo} -> @file{bar} -> @file{baz} -> @file{foo}:
 
-RRP 1 3 dropped
-RRP 2 1 missing
-RRP 3 2 original
+@verbatim
+RR  1 3 foo
+RR  2 1 bar
+RR  3 2 baz
+@end verbatim
 
-# rotated and moved
+Recorded the rotation of files @file{foo} -> @file{bar} -> @file{baz} ->
+@file{foo}, but the actual files in the working directory were not
+moved, so monotone interprets all files as having been patched:
 
-RR  1 3 dropped
-RR  2 1 missing
-RR  3 2 original
+@verbatim
+RRP 1 3 foo
+RRP 2 1 bar
+RRP 3 2 baz
+@end verbatim
 
-# dropped but not removed and thus unknown
+Dropped but not removed and thus unknown:
 
+@verbatim
 D U 0 0 dropped
+@end verbatim
 
-# added but removed and thus missing
+Added a non-existent file which is thus missing:
 
+@verbatim
  AM 0 0 added
+@end verbatim
 
-# renamed but not moved and thus unknown source and missing target
+Recorded a rename, but not moved in the filesystem, and thus unknown
+source and missing target:
 
+@verbatim
 R U 1 0 original
  RM 0 1 renamed
+@end verbatim
 
-# moved but not renamed and thus missing source and unknown target
+Moved in the filesystem but no rename recorded, and thus missing source
+and unknown target:
 
+@verbatim
   M 0 0 original
   U 0 0 renamed
+@end verbatim
 
-# renamed and patched
+Renamed and patched:
 
+@verbatim
 R   1 0 original
  RP 0 1 renamed
-
 @end verbatim
 
 @item Output format:
@@ -5167,6 +5198,34 @@ are not valid, detailed below.
 'RRI' rename source and target and target ignored (seems invalid, but may be possible?)
 'RRM' rename source and target and target missing
 @end verbatim
+
+The two numbers are used to match up the pre-state and post-state of a
+rename.  Imagine a situation where there are two renames.
+@command{automate inventory} will print something like:
+
+@verbatim
+R   1 0 a
+R   2 0 b
+ R  0 2 c
+ R  0 1 d
+@end verbatim
+
+Here the status characters tell us that @file{a} and @file{b} were
+renamed, and we can tell that one was renamed to @file{c} and one was
+renamed to @file{d}, but we can't tell which was renamed to which.  To
+do that, we have to refer to the numbers.  The numbers do not themselves
+mean anything; their only purpose is to let you match up the two
+``ends'' of a rename.  The 1 in the left column by @file{a} means that
+@file{a} was the source of a rename, and the 1 in the right column by
+@file{d} means that @file{d} was the target of that same rename.
+Similarly, the two 2's tell us that @file{b} was renamed to @file{c}.
+
+There are two columns of numbers because the same file can
+simultaneously be the target and source of a rename.  The number '0' is
+used as a meaningless placeholder in all cases where a file is not a
+source or target of a rename.  Any non-zero number that occurs at all
+will occur exactly once in the first column and exactly once in the
+second column.
 
 Full support for versioned directories is not yet complete and the
 inventory will only list entries for renamed or dropped

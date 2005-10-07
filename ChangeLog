@@ -1,3 +1,52 @@
+2005-10-06  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* std_hooks.lua (merge3_emacs_cmd): Minor cleanup.
+	* std_hooks.lua: Pass '--eval' rather than '-eval' to Emacs; the
+	CVS emacsclient does not consider '-eval' as valid.
+	* platform.hh, unix/fs.cc, win32/fs.cc (rename_clobberingly): New
+	function for best-effort atomic renames.  This will probably never
+	be atomic on Win32.
+	* file_io.cc (write_data_impl): Append process ID to temporary
+	file name so that multiple monotone processes operating on the
+	same working copy are less likely to clobber each other.  Use
+	rename_clobberingly().
+	* ui.cc (user_interface): Allow std::cout to raise
+	ios_base::failure exceptions if stream goes bad (e.g. stream
+	receives EPIPE).
+	* monotone.cc (cpp_main): Catch ios_base::failure exceptions and
+	exit cleanly.
+	* main.cc (main_with_signal_handlers): Install handler to ignore
+	SIGPIPE.
+	* Makefile.am: Remove platform_netsync.cc references.
+	* {unix,win32}/platform_netsync.cc: Remove files.
+	* platform.hh, netsync.cc (run_netsync_protocol):
+	Remove {start,end}_platform_netsync() calls.
+
+2005-10-04  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Automation): Document the mysterious columns of
+	numbers in 'automate inventory' output format.
+
+2005-10-04  Matt Johnston  <matt@ucc.asn.au>
+
+	* botan/, Makefile.am: update to Botan 1.4.7
+
+2005-10-03  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Automation): Clean up formatting and description
+	of 'automate inventory' sample output.
+
+2005-10-02  Marcel van der Boom  <marcel@hsdev.com>
+
+	* commands.cc (CMD(checkout)): Check for non-existant checkout dir
+	earlier, so we can fail earlier.
+
+2005-09-30  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (AM_CFLAGS, AM_CXXFLAGS): Add
+	-DBOOST_SP_DISABLE_THREADS (disables thread-safe shared_ptr
+	reference counting).
+
 2005-09-30  Nathaniel Smith  <njs@pobox.com>
 
 	* debian/README.Debian, debian/TODO.Debian: Add debian files
@@ -112,6 +161,14 @@
 	chapter it is, and most confusingly, it's last subsection
 	(Branching and Merging) ended up as a a separate chapter of it's
 	own...
+
+2005-09-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* netsync.cc (ancestry_fetcher): new approach to requesting file
+	and manifest deltas and full data. Tries to be more efficient
+	for the vcache of recontstructed data, and conceptually simpler
+
+	* tests/t_netsync_unrelated.at: passes, remove XFAIL
 
 2005-09-26  Benoît Dejean  <benoit@placenet.org>
 
@@ -12218,3 +12275,4 @@
 2003-04-06  graydon hoare  <graydon@pobox.com>
 
 	* initial release.
+
