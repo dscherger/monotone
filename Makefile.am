@@ -245,7 +245,7 @@ monotone_LDFLAGS =
 monotone_CPPFLAGS = -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite
 
 unit_tests_LDFLAGS = 
-unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite -I.
+unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite
 
 # conditionals from configury
 
