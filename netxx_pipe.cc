@@ -72,7 +72,7 @@ pipe_and_fork(int *fd1,int *fd2)
 #include <io.h>
 #include <fcntl.h>
 #define FAIL_IF(FUN,ARGS,CHECK) \
-  E(!(FUN ARGS CHECK), F(#FUN " failed %d\n") % GetLastError())
+  E(!((FUN ARGS) CHECK), F(#FUN " failed %d\n") % GetLastError())
 #endif
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
@@ -95,16 +95,28 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   fd1[1]=-1;
   fd2[0]=-1;
   fd2[1]=-1;
-  E(_pipe(fd1,0,_O_BINARY)==0, F("first pipe failed"));
-  // there are ways to ensure that the parent side does not get inherited
-  // by the child (using O_NOINHERIT), I don't use them for now because
-  // this further complicates things (involving DuplicateHandle and close)
-  // two additional unused descriptors should not create a problem ...
-  if (_pipe(fd2,0,_O_BINARY))
-    { ::close(fd1[0]);
-      ::close(fd1[1]);
-      E(false,F("second pipe failed"));
-    }
+  E(_pipe(fd2,0,_O_BINARY)==0, F("first pipe failed"));
+  char pipename[256];
+  static int serial;
+  // yes, since we have to use named pipes because of nonblocking read
+  // (so called overlapped I/O) we could as well use one bidirectional
+  // pipe. I prefer two pipes to resemble the unix case.
+  snprintf(pipename,sizeof pipename,"\\\\.\\pipe\\netxx_pipe_%d_%d",
+		GetCurrentProcessId(),++serial);
+  HANDLE readhandle=0,writehandle=0;
+  FAIL_IF(readhandle=CreateNamedPipe,(pipename, 
+             PIPE_ACCESS_INBOUND|FILE_FLAG_OVERLAPPED,
+	     PIPE_TYPE_BYTE | PIPE_WAIT,
+	     1,4096,4096,1000,0),==INVALID_HANDLE_VALUE);
+  FAIL_IF(writehandle=CreateFile,(pipename,GENERIC_WRITE,0,0,OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,0),==INVALID_HANDLE_VALUE);
+  // MinGW defines this function to take a long, not a HANDLE :-(
+  FAIL_IF(fd1[0]=_open_osfhandle,(long(readhandle),O_BINARY|O_RDONLY),==-1);
+  FAIL_IF(fd1[1]=_open_osfhandle,(long(writehandle),O_BINARY|O_WRONLY),==-1);
+
+  // mark these file handles as not inheritable
+  SetHandleInformation( (HANDLE)_get_osfhandle(fd1[0]), HANDLE_FLAG_INHERIT, 0);
+  SetHandleInformation( (HANDLE)_get_osfhandle(fd2[1]), HANDLE_FLAG_INHERIT, 0);
   // set up the child with the pipes as stdin/stdout and inheriting stderr
   PROCESS_INFORMATION piProcInfo;
   STARTUPINFO siStartInfo;
@@ -127,7 +139,7 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
 
   // create infrastructure for overlapping I/O
   memset(&overlap,0,sizeof overlap);
-  overlap.hEvent=CreateEvent(0,FALSE,FALSE,0);
+  overlap.hEvent=CreateEvent(0,FALSE,FALSE,0); // or TRUE,TRUE?
   bytes_available=0;
   I(overlap.hEvent!=0);
 #else
