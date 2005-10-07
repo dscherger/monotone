@@ -137,7 +137,7 @@ PrintFormatter::print_cset_single (const std::string::
               switch (*i)
                 {
                 case 'f':
-                  out << (*f) ();
+                  out << *f;
                   break;
                 case '%':
                   out << '%';
@@ -177,10 +177,10 @@ PrintFormatter::print_cset_pair (const std::string::const_iterator & startfmt,
               switch (*i)
                 {
                 case 'o':
-                  out << f->first ();
+                  out << f->first;
                   break;
                 case 'f':
-                  out << f->second ();
+                  out << f->second;
                   break;
                 case '%':
                   out << '%';
@@ -683,15 +683,15 @@ XMLFormatter::xml_changeset (const revision_set & rev)
       for (f = pr.deleted_dirs.begin (); f != pr.deleted_dirs.end (); ++f)
         {
           xw.tag ("delete-dir");
-          xw.attr ("name", (*f) ());
+          xw.attr ("name", *f);
           xml_delta (*f, cs.deltas);
           xw.end ();
         }
       for (m = pr.renamed_dirs.begin (); m != pr.renamed_dirs.end (); ++m)
         {
           xw.tag ("rename-dir");
-          xw.attr ("name", m->second ());
-          xw.attr ("old-name", m->first ());
+          xw.attr ("name", m->second);
+          xw.attr ("old-name", m->first);
           xml_delta (m->second, cs.deltas);
           xml_delta (m->first, cs.deltas);
           xw.end ();
@@ -699,22 +699,22 @@ XMLFormatter::xml_changeset (const revision_set & rev)
       for (f = pr.added_files.begin (); f != pr.added_files.end (); ++f)
         {
           xw.tag ("add-file");
-          xw.attr ("name", (*f) ());
+          xw.attr ("name", *f);
           xml_delta (*f, cs.deltas);
           xw.end ();
         }
       for (f = pr.deleted_files.begin (); f != pr.deleted_files.end (); ++f)
         {
           xw.tag ("delete_file");
-          xw.attr ("name", (*f) ());
+          xw.attr ("name", *f);
           xml_delta (*f, cs.deltas);
           xw.end ();
         }
       for (m = pr.renamed_files.begin (); m != pr.renamed_files.end (); ++m)
         {
           xw.tag ("rename_file");
-          xw.attr ("name", m->second ());
-          xw.attr ("old-name", m->first ());
+          xw.attr ("name", m->second);
+          xw.attr ("old-name", m->first);
           xml_delta (m->second, cs.deltas);
           xml_delta (m->first, cs.deltas);
           xw.end ();
@@ -724,13 +724,13 @@ XMLFormatter::xml_changeset (const revision_set & rev)
       for (change_set::delta_map::const_iterator i = cs.deltas.begin ();
            i != cs.deltas.end (); i++)
         {
-          if (pr.added_files.find (i->first ()) == pr.added_files.end ())
-            modified_files.insert (i->first ());
+          if (pr.added_files.find (i->first) == pr.added_files.end ())
+            modified_files.insert (i->first);
         }
       for (f = modified_files.begin (); f != modified_files.end (); ++f)
         {
           xw.tag ("change-file");
-          xw.attr ("name", (*f) ());
+          xw.attr ("name", *f);
           xml_delta (*f, cs.deltas);
           xw.end ();
         }

@@ -3029,8 +3029,8 @@ changes_summary::add_change_set(change_set const & cs)
   for (change_set::delta_map::const_iterator i = cs.deltas.begin();
        i != cs.deltas.end(); i++)
     {
-      if (pr.added_files.find(i->first()) == pr.added_files.end())
-        modified_files.insert(i->first());
+      if (pr.added_files.find(i->first) == pr.added_files.end())
+        modified_files.insert(i->first);
     }
 }
 
@@ -3041,7 +3041,7 @@ changes_summary::print_indented_set(std::ostream & os, size_t max_cols, const st
   os << "       ";
   for (std::set<file_path>::const_iterator i = sfp.begin(); i != sfp.end(); ++i)
     {
-      const std::string str = (*i)();
+      const std::string str = boost::lexical_cast<std::string>(*i);
       if (cols > 8 && cols + str.size() + 1 >= max_cols)
         {
           cols = 8;
