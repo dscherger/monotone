@@ -93,13 +93,17 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   fd2[0]=-1;
   fd2[1]=-1;
   E(_pipe(fd1,0,_O_BINARY)==0, F("first pipe failed"));
-  // there are ways to ensure that the parent side does not get inherited
-  // by the child (e.g. O_NOINHERIT), I don't use them for now
   if (_pipe(fd2,0,_O_BINARY))
     { ::close(fd1[0]);
       ::close(fd1[1]);
       E(false,F("second pipe failed"));
     }
+  // it looks like we have to use CreateNamedPipe and CreateFile (OPEN_EXISTING)
+  // if we do not want the pipe to block
+
+  // mark these file handles as not inheritable
+  SetHandleInformation( (HANDLE)_get_osfhandle(fd1[0]), HANDLE_FLAG_INHERIT, 0);
+  SetHandleInformation( (HANDLE)_get_osfhandle(fd2[1]), HANDLE_FLAG_INHERIT, 0);
   PROCESS_INFORMATION piProcInfo;
   STARTUPINFO siStartInfo;
   memset(&piProcInfo,0,sizeof piProcInfo);
@@ -120,6 +124,10 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   child=long(piProcInfo.hProcess);
   readfd=fd1[0];
   writefd=fd2[1];
+
+  HANDLE h_nonblockwrite = ReOpenFile((HANDLE)_get_osfhandle(readfd),FILE_READ_DATA,0,FILE_FLAG_OVERLAPPED));
+  ::close(readfd);
+  readfd=_open_osfhandle(h_nonblockwrite);
 
   memset(&overlap,0,sizeof overlap);
   overlap.hEvent=CreateEvent(0,FALSE,FALSE,0);
