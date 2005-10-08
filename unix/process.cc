@@ -121,8 +121,3 @@ pid_t get_process_id()
 {
         return getpid();
 }
-
-pid_t get_process_id()
-{
-  return getpid();
-}

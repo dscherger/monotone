@@ -51,7 +51,6 @@ MOST_SOURCES =								\
 	 netio.hh smap.hh gettext.h					\
          package_revision.c package_revision.h				\
          package_full_revision.c package_full_revision.h options.hh     \
-         format.cc format.hh                                            \
          i18n.h hash_map.hh
 
 NETXX_SOURCES =									\

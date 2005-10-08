@@ -46,7 +46,7 @@ contributing authors, including:
   Christian Kollee <stuka@pestilenz.org>
   Faheem Mitha <faheem@email.unc.edu>
   Neil Conway <neilc@samurai.com>
-  Wojciech MiÅkowski <wmilkowski@interia.pl>
+  Wojciech Miłkowski <wmilkowski@interia.pl>
   Georg-W. Koltermann <Georg.Koltermann@mscsoftware.com>
   Daniel Berlin <dberlin@dberlin.org>
   Jon Bright <jon@siliconcircus.org>
@@ -250,7 +250,7 @@ X Consortium public license, nowadays called the "X.Net, Inc. License".
 It's reproduced in popt/COPYING.
 
 
-The file contrib/colorize is a copy of a perl script written by CÃ©dric
+The file contrib/colorize is a copy of a perl script written by Cédric
 Bouvier, which is released under the GNU GPL.
 
 
