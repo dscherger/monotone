@@ -101,7 +101,7 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   // yes, since we have to use named pipes because of nonblocking read
   // (so called overlapped I/O) we could as well use one bidirectional
   // pipe. I prefer two pipes to resemble the unix case.
-  snprintf(pipename,sizeof pipename,"\\\\.\\pipe\\netxx_pipe_%d_%d",
+  snprintf(pipename,sizeof pipename,"\\\\.\\pipe\\netxx_pipe_%ld_%d",
 		GetCurrentProcessId(),++serial);
   HANDLE readhandle=0,writehandle=0;
   FAIL_IF(readhandle=CreateNamedPipe,(pipename, 
@@ -117,6 +117,7 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   // mark these file handles as not inheritable
   SetHandleInformation( (HANDLE)_get_osfhandle(fd1[0]), HANDLE_FLAG_INHERIT, 0);
   SetHandleInformation( (HANDLE)_get_osfhandle(fd2[1]), HANDLE_FLAG_INHERIT, 0);
+  SetHandleInformation( (HANDLE)_get_osfhandle(fd2[0]), HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
   // set up the child with the pipes as stdin/stdout and inheriting stderr
   PROCESS_INFORMATION piProcInfo;
   STARTUPINFO siStartInfo;
@@ -139,7 +140,7 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
 
   // create infrastructure for overlapping I/O
   memset(&overlap,0,sizeof overlap);
-  overlap.hEvent=CreateEvent(0,FALSE,FALSE,0); // or TRUE,TRUE?
+  overlap.hEvent=CreateEvent(0,TRUE,TRUE,0); // FALSE,FALSE,0); // or TRUE,TRUE?
   bytes_available=0;
   I(overlap.hEvent!=0);
 #else
@@ -340,7 +341,8 @@ Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
 
 static void
 simple_pipe_test()
-{
+{ try 
+  {
   Netxx::PipeStream pipe("cat",std::vector<std::string>());
 
   std::string result;
@@ -384,6 +386,11 @@ simple_pipe_test()
       I((unsigned char)(result[1])==255-c);
     }
   pipe.close();
+  } catch (informative_failure &e) // for some reason boost does not provide
+	// enough information
+  { W(F("Failure %s\n") % e.what);
+    throw;
+  }
 }
 
 void
