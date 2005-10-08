@@ -7,6 +7,10 @@
 
 // getcwd
 #include <unistd.h>
+// rand, srand
+#include <cstdlib>
+// rename
+#include <cstdio>
 
 template<typename V, typename A, typename T>
 std::vector<V, A> & operator%(std::vector<V, A> & v, T t)
@@ -189,9 +193,31 @@ rev_file_list::menurename()
     }
 }
 
-void// not yet supported by monotone
+void// not supported by monotone
 rev_file_list::menuundrop()
 {
+  std::string name = Glib::ustring(menurow[col.postname]);
+  if (name.empty())
+    name = Glib::ustring(menurow[col.prename]);
+  std::string tmpname = "undrop-temp-file-";
+  srand(time(0));
+  srand(rand());
+  char c[] = "0123456789abc";
+  for (int i = 0; i < 6; ++i)
+    tmpname += c[rand() % 13];
+  std::string fullname;
+  if (!rd->mtn->get_dir().empty())
+    {
+      fullname = rd->mtn->get_dir() + "/" + name;
+      tmpname = rd->mtn->get_dir() + "/" + tmpname;
+    }
+  else
+    fullname = name;
+  rename(fullname.c_str(), tmpname.c_str());
+  rd->mtn->revert(name);
+  rename(tmpname.c_str(), fullname.c_str());
+  menurow[col.status] = states::unchanged;
+  needscan = true;
 }
 
 void
@@ -202,10 +228,9 @@ rev_file_list::menurevert()
   else
     menurow[col.status] = states::unchanged;
   menurow[col.changed] = false;
-  std::string name = Glib::ustring(menurow[col.name]);
-  int n = name.find("\n");
-  if (n != std::string::npos)
-    name = name.substr(n + 1);
+  std::string name = Glib::ustring(menurow[col.postname]);
+  if (name.empty())
+    name = Glib::ustring(menurow[col.prename]);
   rd->mtn->revert(name);
   needscan = true;
 }
@@ -239,7 +264,6 @@ void rev_file_list::clicked(GdkEventButton *b)
   else if (menurow[col.status] == states::unchanged)
     drop_ = rename_ = true;
   std::vector<bool> v;
-  undrop_ = false;// not yet supported
   set_menu(v % add_ % drop_ % rename_ % undrop_ % revert_);
   menu.popup(b->button, b->time);
   menu.show_all_children();
