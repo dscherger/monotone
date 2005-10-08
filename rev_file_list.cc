@@ -29,7 +29,7 @@ namespace states
 rev_file_list::rev_file_list(revdat *r): col(),
   show_changed("Changed"), show_unchanged("Unchanged"),
   show_ignored("Ignored"), show_unknown("Unknown"), parents(this), wc(true),
-  filelist(Gtk::ListStore::create(col)), files(filelist), rd(r)
+  filelist(Gtk::TreeStore::create(col)), files(filelist), rd(r)
 {
   needscan = false;
   p_buttons.pack_start(show_changed);
@@ -58,7 +58,8 @@ rev_file_list::rev_file_list(revdat *r): col(),
     }
   }
   files.append_column("State", col.status);
-  files.append_column("File name", col.name);
+  int namecol = files.append_column("File name", col.name);
+  files.set_expander_column(*files.get_column(namecol-1));
   filewin.add(files);
   pack_end(filewin);
   files.signal_row_activated()
@@ -113,7 +114,9 @@ rev_file_list::menuadd()
   menurow[col.included] = true;
   menurow[col.changed] = true;
   menurow[col.status] = states::added;
-  std::string name = Glib::ustring(menurow[col.name]);
+  std::string name = Glib::ustring(menurow[col.postname]);
+  if (name.empty())
+    name = Glib::ustring(menurow[col.prename]);
   rd->mtn->add(name);
   needscan = true;
 }
@@ -133,10 +136,9 @@ rev_file_list::menudrop()
       menurow[col.changed] = true;
       menurow[col.status] = states::dropped;
     }
-  std::string name = Glib::ustring(menurow[col.name]);
-  int n = name.find("\n");
-  if (n != std::string::npos)
-    name = name.substr(n + 1);
+  std::string name = Glib::ustring(menurow[col.postname]);
+  if (name.empty())
+    name = Glib::ustring(menurow[col.prename]);
   rd->mtn->drop(name);
   needscan = true;
 }
@@ -157,15 +159,9 @@ rev_file_list::menurename()
       if (newname.find(cwd) != 0)
         return;
       newname = newname.substr(cwd.size() + 1);
-      std::string old = Glib::ustring(menurow[col.name]);
-      int n = old.find("\n");
-      std::string n1(old), n2(old);
-      if (n != std::string::npos)
-        {
-          n1 = old.substr(0, n);
-          n2 = old.substr(n + 1);
-        }
-      if (newname == n2)
+      std::string n1 = Glib::ustring(menurow[col.prename]);
+      std::string n2 = Glib::ustring(menurow[col.postname]);
+      if (newname == n2 || (n2.empty() && newname == n1))
         return;
       rd->mtn->rename(n2, newname);
       if (newname == n1)
@@ -328,10 +324,9 @@ rev_file_list::get_sel(std::vector<Glib::ustring> & inc,
     {
       if (!(*i)[col.changed])
         continue;
-      Glib::ustring n = (*i)[col.name];
-      int nl = n.find('\n');
-      if (nl < n.size())
-        n = n.substr(nl + 1);
+      Glib::ustring n = (*i)[col.postname];
+      if (n.empty())
+        n = (*i)[col.prename];
       if ((*i)[col.included])
         inc.push_back(n);
       else
@@ -362,10 +357,9 @@ rev_file_list::dosel(Gtk::TreeModel::Path const & p)
 {
   Gtk::TreeModel::Row row = *filelist->get_iter(p);
   std::string filename, fullname;
-  filename = Glib::ustring(row[col.name]).raw();
-  int n = filename.find("\n");
-  if (n != std::string::npos)
-    filename = filename.substr(n + 1);
+  filename = Glib::ustring(row[col.postname]).raw();
+  if (filename.empty())
+    filename = Glib::ustring(row[col.prename]).raw();
   if (!rd->mtn->get_dir().empty())
     fullname = rd->mtn->get_dir() + "/" + filename;
   else
@@ -423,6 +417,7 @@ rev_file_list::rescan()
     comments[current_file] = rd->rfi.get_comment();
   rd->rfi.set_comment(std::vector<Glib::ustring>(), "");
   current_file = "";
+  std::map<Glib::ustring, Gtk::TreeModel::RowReference> dirs;
 
   while (!filelist->children().empty())
     filelist->erase(filelist->children().begin());
@@ -456,7 +451,42 @@ rev_file_list::rescan()
           if (!show_changed.get_active())
             continue;
         }
-      Gtk::ListStore::Row row = *filelist->append();
+      Gtk::TreeModel::Children parent_row = filelist->children();
+      Glib::ustring workstr = i->postname;
+      if (workstr.empty())
+        workstr = i->prename;
+      std::vector<Glib::ustring> stk;
+      while (true)
+        {
+          Glib::ustring pdir = workstr.substr(0, workstr.rfind('/'));
+          std::map<Glib::ustring, Gtk::TreeModel::RowReference>::iterator
+            j = dirs.find(pdir);
+          if (j != dirs.end() || pdir.size() == workstr.size())
+            {
+              if (j != dirs.end())
+                {
+                  Gtk::TreeModel::Path p = j->second.get_path();
+                  Gtk::TreeModel::iterator iter = filelist->get_iter(p);
+                  parent_row = iter->children();
+                }
+              while (!stk.empty())
+                {
+                  Gtk::TreeModel::iterator row = filelist->append(parent_row);
+                  (*row)[col.name] = workstr.substr(workstr.rfind('/')+1);
+                  dirs.insert(std::make_pair(workstr,
+                    Gtk::TreeModel::RowReference(filelist,
+                                                 filelist->get_path(row))));
+                  parent_row = row->children();
+                  workstr = stk.back();
+                  stk.pop_back();
+                }
+              break;
+            }
+          stk.push_back(workstr);
+          workstr = pdir;
+        }
+      Gtk::TreeModel::iterator iter = filelist->append(parent_row);
+      Gtk::TreeModel::Row row = *iter;
       row[col.included] = changed;
       row[col.changed] = wc && changed;
       if (i->prename.empty())
@@ -475,13 +505,17 @@ rev_file_list::rescan()
       else
         row[col.status] = states::unchanged;
 
+      row[col.prename] = i->prename;
+      row[col.postname] = i->postname;
+      Glib::ustring preleaf = i->prename.substr(i->prename.rfind('/')+1);
+      Glib::ustring postleaf = i->postname.substr(i->postname.rfind('/')+1);
       if (i->prename.size() && i->postname.size()
                 && i->prename != i->postname)
-        row[col.name] = i->prename + "\n" + i->postname;
+        row[col.name] = i->prename + "\n" + postleaf;
       else if (i->prename.size())
-        row[col.name] = i->prename;
+        row[col.name] = preleaf;
       else
-        row[col.name] = i->postname;
+        row[col.name] = postleaf;
     }
 }
 

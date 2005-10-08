@@ -73,7 +73,10 @@ class rev_file_list: public Gtk::VBox
     Gtk::TreeModelColumn<bool> included;
     Gtk::TreeModelColumn<Glib::ustring> status;
     Gtk::TreeModelColumn<Glib::ustring> name;
-    cols() {add(changed); add(included); add(status); add(name);}
+    Gtk::TreeModelColumn<Glib::ustring> prename;
+    Gtk::TreeModelColumn<Glib::ustring> postname;
+    cols() {add(changed); add(included); add(status); add(name);
+            add(prename); add(postname);}
   };
   cols col;
 
@@ -86,7 +89,7 @@ class rev_file_list: public Gtk::VBox
   psel parents;
 
   bool wc;
-  Glib::RefPtr<Gtk::ListStore> filelist;
+  Glib::RefPtr<Gtk::TreeStore> filelist;
   Gtk::TreeView files;
   Gtk::ScrolledWindow filewin;
   std::vector<inventory_item> inventory;
