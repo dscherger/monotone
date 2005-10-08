@@ -25,6 +25,7 @@
 #include "transforms.hh"
 #include "vocab.hh"
 #include "keys.hh"
+#include "format.hh"
 
 static std::string const interface_version = "1.1";
 
@@ -73,8 +74,9 @@ automate_heads(std::vector<utf8> args,
   }
   std::set<revision_id> heads;
   get_branch_heads(app.branch_name(), app, heads);
-  for (std::set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
-    output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(heads.begin(), heads.end(), fmt);
 }
 
 // Name: ancestors
@@ -121,10 +123,9 @@ automate_ancestors(std::vector<utf8> args,
           }
       }
     }
-  for (std::set<revision_id>::const_iterator i = ancestors.begin();
-       i != ancestors.end(); ++i)
-    if (!null_id(*i))
-      output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(ancestors.begin(), ancestors.end(), fmt);
 }
 
 
@@ -170,9 +171,9 @@ automate_descendents(std::vector<utf8> args,
             }
         }
     }
-  for (std::set<revision_id>::const_iterator i = descendents.begin();
-       i != descendents.end(); ++i)
-    output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(descendents.begin(), descendents.end(), fmt);
 }
 
 
@@ -203,8 +204,9 @@ automate_erase_ancestors(std::vector<utf8> args,
       revs.insert(rid);
     }
   erase_ancestors(revs, app);
-  for (std::set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
-    output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(revs.begin(), revs.end(), fmt);
 }
 
 // Name: attributes
@@ -280,9 +282,9 @@ automate_toposort(std::vector<utf8> args,
     }
   std::vector<revision_id> sorted;
   toposort(revs, sorted, app);
-  for (std::vector<revision_id>::const_iterator i = sorted.begin();
-       i != sorted.end(); ++i)
-    output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(sorted.begin(), sorted.end(), fmt);
 }
 
 // Name: ancestry_difference
@@ -326,9 +328,9 @@ automate_ancestry_difference(std::vector<utf8> args,
 
   std::vector<revision_id> sorted;
   toposort(ancestors, sorted, app);
-  for (std::vector<revision_id>::const_iterator i = sorted.begin();
-       i != sorted.end(); ++i)
-    output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(sorted.begin(), sorted.end(), fmt);
 }
 
 // Name: leaves
@@ -361,8 +363,9 @@ automate_leaves(std::vector<utf8> args,
   for (std::multimap<revision_id, revision_id>::const_iterator i = graph.begin();
        i != graph.end(); ++i)
     leaves.erase(i->first);
-  for (std::set<revision_id>::const_iterator i = leaves.begin(); i != leaves.end(); ++i)
-    output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(leaves.begin(), leaves.end(), fmt);
 }
 
 // Name: parents
@@ -387,10 +390,9 @@ automate_parents(std::vector<utf8> args,
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   std::set<revision_id> parents;
   app.db.get_revision_parents(rid, parents);
-  for (std::set<revision_id>::const_iterator i = parents.begin();
-       i != parents.end(); ++i)
-      if (!null_id(*i))
-          output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(parents.begin(), parents.end(), fmt);
 }
 
 // Name: children
@@ -415,10 +417,9 @@ automate_children(std::vector<utf8> args,
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   std::set<revision_id> children;
   app.db.get_revision_children(rid, children);
-  for (std::set<revision_id>::const_iterator i = children.begin();
-       i != children.end(); ++i)
-      if (!null_id(*i))
-          output << (*i).inner()() << std::endl;
+
+  FormatFunc fmt(output, app);
+  for_each(children.begin(), children.end(), fmt);
 }
 
 // Name: graph
@@ -504,9 +505,12 @@ automate_select(std::vector<utf8> args,
   selectors::selector_type ty = selectors::sel_ident;
   selectors::complete_selector("", sels, ty, completions, app);
 
+  std::vector<revision_id> revs;
   for (std::set<std::string>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
-    output << *i << std::endl;
+      revs.push_back(revision_id(*i));
+  FormatFunc fmt(output, app);
+  for_each(revs.begin(), revs.end(), fmt);
 }
 
 // consider a changeset with the following

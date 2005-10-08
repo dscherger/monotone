@@ -209,4 +209,27 @@ parse_path_rearrangement(basic_io::parser & pa,
 
 void dump(change_set const & cs, std::string & out);
 
+// The changes_summary structure holds a list all of files and directories
+// affected in a revision, and is useful in the 'log' command to print this
+// information easily.  It has to be constructed from all change_set objects
+// that belong to a revision.
+struct
+changes_summary
+{
+  bool empty;
+  std::set<revision_id> ancestors;
+  std::set<file_path> deleted_files;
+  std::set<file_path> deleted_dirs;
+  std::map<file_path, file_path> renamed_files;
+  std::map<file_path, file_path> renamed_dirs;
+  std::set<file_path> added_files;
+  std::set<file_path> modified_files;
+
+
+  changes_summary();
+  void add_change_set(change_set const & cs);
+  void print(std::ostream & os, size_t max_cols) const;
+  void print_indented_set(std::ostream & os, size_t max_cols, const std::set<file_path> &sfp) const;
+};
+
 #endif // __CHANGE_SET_HH__

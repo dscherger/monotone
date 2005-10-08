@@ -38,6 +38,7 @@ app_state::app_state()
     rcfiles(true), diffs(false),
     no_merges(false), set_default(false), verbose(false), search_root("/"),
     depth(-1), last(-1), diff_format(unified_diff), diff_args_provided(false),
+    format_string("%i\\n"), default_format(true), xml_enabled(false),
     use_lca(false), execute(false)
 {
   db.set_app(this);
@@ -344,6 +345,24 @@ void
 app_state::set_pidfile(system_path const & p)
 {
   pidfile = p;
+}
+
+void
+app_state::set_format_string(utf8 const & f)
+{
+  format_string = f;
+}
+
+void
+app_state::set_default_format(bool val)
+{
+  default_format = val;
+}
+
+void
+app_state::set_xml_enabled()
+{
+  xml_enabled = true;
 }
 
 void

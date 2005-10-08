@@ -4530,6 +4530,8 @@ This section contains subcommands of the @code{monotone automate}
 command, used for scripting monotone.  All give output on stdout; they
 may also give useful chatter on stderr, including warnings and error
 messages.
+Any command emitting revision ids support optional formatting
+specifiers (@pxref{Formatting automate output}).
 
 
 @ftable @command
@@ -5628,6 +5630,108 @@ None.
 @end table
 
 @end ftable
+
+@page
+@node Formatting automate output,,,Automation
+@subsection Formatting automate output
+
+Every automation command emitting lists of revision ids supports two
+optional formatting specifiers:
+
+
+@option{--xml}
+Generate an xml document based on automate output and containing full
+revision and changeset data.
+
+@option{--format=@i{<format string>}}
+Applies the specified format string at automate output.
+
+
+The format string is made by a common part, applied to each revision,
+and one or more optional changeset subformats, applied to changeset
+data.
+Changeset subformats are enclosed beetween braces and start with an
+uppercase formatting specifier, e.g. an expression using the 'added
+files' subformat is %A@{...@} .
+Everything inside the braces is repeated for every matching
+changeset item.  For example, %A@{add: %f\n@} prints every added file
+prefixed by 'add: ' and followed by a newline.
+Some formatting specifier have also a short form, obtained prepending
+an 's' to the specifier code. As an example, the short form of the %d
+specifier is %sd.
+
+Base formatting specifiers:
+@verbatim
+%[s]a : value of author certificate
+%[s]b : value of branch certificate
+%[s]d : value of date certificate
+%e : value of comment certificate
+%[s]i : revision id
+%l : value of changelog certificate
+%r : value of testresult certificate
+%t : value of tag certificate
+%[s]m : manifest id
+%+ : terminates formatting for the current revision. The next revision
+will be formatted by the specifiers following %+
+%% : the '%' character. Could also be obtained by \% (see below)
+@end verbatim
+
+Changeset formatting specifiers:
+@verbatim
+%P : ancestors
+%A : added files 
+%D : deleted files 
+%E : deleted dirs 
+%R : renamed files 
+%C : renamed dirs 
+%M : modified files 
+@end verbatim
+
+The short forms have the following meanings: for ids, the first 8
+characters.  For author, everything before the first @ symbol.  For
+branch, everything after the last '.' character.  For date, everything
+before the first 'T' character.
+
+%P,%A,%D,%E,%M supports the private specifier %f, substituted with the
+file/directory/ancestor name/id. 
+%R and %M supports the specifiers %f, current file/directory name and
+%o, old file/directory name. 
+
+Plus, all format string support the \n, \r, \a, \t, \b, \f, \v
+modifiers with the usual c-like meaning.
+\\, \% and \@} are used to obtain the \, % and @} char respectively.
+
+The default format string is '%i\n'. 
+
+The specifier %+ is used to apply alternating format strings to
+different revisions. When found, a %+ specifiers terminates the
+formatting of current revision.
+The next revision to be formatted will 'see' only the format string
+following the %s.
+To have a two column author output you will use a '%a %+ %a\n' format
+string.
+Note: without the %+, the formatting specifiers could still be given
+multiple times, but their output will refer to the same revision.
+Consider as an example two commits, one by jim@@juicebot.co.jp and one
+by beth@@juicebot.co.jp. 
+
+The format string '%a %a\n' will give you
+
+@smallexample
+@group
+jim@@juicebot.co.jp jim@@juicebot.co.jp
+beth@@juicebot.co.jp beth@@juicebot.co.jp
+@end group
+@end smallexample
+
+where '%a %+ %a\n' gives instead
+
+@smallexample
+@group
+jim@@juicebot.co.jp  beth@@juicebot.co.jp
+@end group
+@end smallexample
+
 
 @page
 @node    RCS
@@ -7296,6 +7400,68 @@ if needed.
 
 @item @b{-@@} @i{<file>}
 An alias for @b{--xargs=}@i{<file>}.
+
+@item @b{--format=}@i{<format string>}
+Applies the specified format string at automate or annotate output.
+The format string is made by a common part, applied to each revision,
+and one or more optional changeset subformats, applied to changeset
+data.
+Special changeset placeholders put in the common expression are
+substituted by the formatted changeset informations.
+The common formatting expression is separated from the changeset ones
+by apposite markers. 
+
+Common formatting specifiers:
+@verbatim
+%a  : value of author certificate
+%sa : shortened value of author certificate
+%b  : value of branch certificate
+%sb : shortened value of branch certificate
+%d  : value of date certificate
+%sd : shortened value of date certificate
+%e  : value of comment certificate
+%i  : revision id
+%si : shortened revision id
+%l  : value of changelog certificate
+%r  : value of testresult certificate
+%t  : value of tag certificate
+%m  : manifest id
+%sm : shortened manifest id
+%+  : terminates formatting for the current revision. The next revision
+will be formatted by the specifiers following %+
+%%  : the % character. It could also be obtained with '\%' (see below)
+@end verbatim
+
+The short forms have the following meanings: for ids, the first 8
+characters.  For author, everything before the first @ symbol.  For
+branch, everything after the last '.' character.  For date, everything
+before the first 'T' character.
+
+Changeset formatting specifiers:
+@verbatim
+%P : ancestors
+%A : added files 
+%D : deleted files 
+%E : deleted dirs 
+%R : renamed files 
+%C : renamed dirs 
+%M : modified files 
+@end verbatim
+
+%P,%A,%D,%E,%M supports the private specifier %f, substituted with the
+file/directory/ancestor name/id. 
+%R and %M supports the specifiers %f, current file/directory name and
+%o, old file/directory name. 
+
+Plus, all format string support the  \n, \r, \a, \t, \b, \f, \v
+modifiers with the usual c-like meaning.
+\\, \% and \@} are used to obtain the \, % and @} chars respectively.
+
+The default format string is '%i\n'. 
+
+@item @b{--xml}
+Generate an xml document based on automate output and containing full
+revision and changeset data.
 
 @comment TROFF INPUT: .SH ENVIRONMENT
 

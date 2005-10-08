@@ -68,6 +68,8 @@ struct poptOption coptions[] =
     {"diff-args", 0, POPT_ARG_STRING, &argstr, OPT_EXTERNAL_DIFF_ARGS, gettext_noop("argument to pass external diff hook"), NULL},
     {"lca", 0, POPT_ARG_NONE, NULL, OPT_LCA, gettext_noop("use least common ancestor as ancestor for merge"), NULL},
     {"execute", 'e', POPT_ARG_NONE, NULL, OPT_EXECUTE, gettext_noop("perform the associated file operation"), NULL},
+    {"format", 0, POPT_ARG_STRING, &argstr, OPT_FORMAT, "specifies a format string on automate output", NULL},
+    {"xml", 0, POPT_ARG_NONE, NULL, OPT_XML, "automate output will be in XML", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -447,6 +449,15 @@ cpp_main(int argc, char ** argv)
 
             case OPT_EXECUTE:
               app.execute = true;
+              break;
+
+            case OPT_FORMAT:
+              app.set_default_format(false);
+              app.set_format_string(string(argstr));
+              break;
+
+            case OPT_XML:
+              app.set_xml_enabled();
               break;
 
             case OPT_HELP:

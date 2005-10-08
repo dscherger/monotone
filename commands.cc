@@ -722,130 +722,6 @@ kill_rev_locally(app_state& app, std::string const& id)
   app.db.delete_existing_rev_and_certs(ident);
 }
 
-// The changes_summary structure holds a list all of files and directories
-// affected in a revision, and is useful in the 'log' command to print this
-// information easily.  It has to be constructed from all change_set objects
-// that belong to a revision.
-struct
-changes_summary
-{
-  bool empty;
-  change_set::path_rearrangement rearrangement;
-  std::set<file_path> modified_files;
-
-  changes_summary(void);
-  void add_change_set(change_set const & cs);
-  void print(std::ostream & os, size_t max_cols) const;
-};
-
-changes_summary::changes_summary(void) : empty(true)
-{
-}
-
-void
-changes_summary::add_change_set(change_set const & cs)
-{
-  if (cs.empty())
-    return;
-  empty = false;
-
-  change_set::path_rearrangement const & pr = cs.rearrangement;
-
-  for (std::set<file_path>::const_iterator i = pr.deleted_files.begin();
-       i != pr.deleted_files.end(); i++)
-    rearrangement.deleted_files.insert(*i);
-
-  for (std::set<file_path>::const_iterator i = pr.deleted_dirs.begin();
-       i != pr.deleted_dirs.end(); i++)
-    rearrangement.deleted_dirs.insert(*i);
-
-  for (std::map<file_path, file_path>::const_iterator
-       i = pr.renamed_files.begin(); i != pr.renamed_files.end(); i++)
-    rearrangement.renamed_files.insert(*i);
-
-  for (std::map<file_path, file_path>::const_iterator
-       i = pr.renamed_dirs.begin(); i != pr.renamed_dirs.end(); i++)
-    rearrangement.renamed_dirs.insert(*i);
-
-  for (std::set<file_path>::const_iterator i = pr.added_files.begin();
-       i != pr.added_files.end(); i++)
-    rearrangement.added_files.insert(*i);
-
-  for (change_set::delta_map::const_iterator i = cs.deltas.begin();
-       i != cs.deltas.end(); i++)
-    {
-      if (pr.added_files.find(i->first) == pr.added_files.end())
-        modified_files.insert(i->first);
-    }
-}
-
-static void 
-print_indented_set(std::ostream & os, 
-                   set<file_path> const & s,
-                   size_t max_cols)
-{
-  size_t cols = 8;
-  os << "       ";
-  for (std::set<file_path>::const_iterator i = s.begin();
-       i != s.end(); i++)
-    {
-      const std::string str = boost::lexical_cast<std::string>(*i);
-      if (cols > 8 && cols + str.size() + 1 >= max_cols)
-        {
-          cols = 8;
-          os << endl << "       "; 
-        }
-      os << " " << str;
-      cols += str.size() + 1;
-    }
-  os << endl;
-}
-
-void
-changes_summary::print(std::ostream & os, size_t max_cols) const
-{
-  if (! rearrangement.deleted_files.empty())
-    {
-      os << "Deleted files:" << endl;
-      print_indented_set(os, rearrangement.deleted_files, max_cols);
-    }
-  
-  if (! rearrangement.deleted_dirs.empty())
-    {
-      os << "Deleted directories:" << endl;
-      print_indented_set(os, rearrangement.deleted_dirs, max_cols);
-    }
-
-  if (! rearrangement.renamed_files.empty())
-    {
-      os << "Renamed files:" << endl;
-      for (std::map<file_path, file_path>::const_iterator
-           i = rearrangement.renamed_files.begin();
-           i != rearrangement.renamed_files.end(); i++)
-        os << "        " << i->first << " to " << i->second << endl;
-    }
-
-  if (! rearrangement.renamed_dirs.empty())
-    {
-      os << "Renamed directories:" << endl;
-      for (std::map<file_path, file_path>::const_iterator
-           i = rearrangement.renamed_dirs.begin();
-           i != rearrangement.renamed_dirs.end(); i++)
-        os << "        " << i->first << " to " << i->second << endl;
-    }
-
-  if (! rearrangement.added_files.empty())
-    {
-      os << "Added files:" << endl;
-      print_indented_set(os, rearrangement.added_files, max_cols);
-    }
-
-  if (! modified_files.empty())
-    {
-      os << "Modified files:" << endl;
-      print_indented_set(os, modified_files, max_cols);
-    }
-}
 
 CMD(genkey, N_("key and cert"), N_("KEYID"), N_("generate an RSA key-pair"), OPT_NONE)
 {
@@ -3505,7 +3381,7 @@ log_certs(app_state & app, revision_id id, cert_name name)
 
 CMD(annotate, N_("informative"), N_("PATH"),
     N_("print annotated copy of the file from REVISION"),
-    OPT_REVISION)
+    OPT_REVISION % OPT_FORMAT)
 {
   revision_id rid;
 
@@ -3614,12 +3490,10 @@ CMD(log, N_("informative"), N_("[FILE]"),
 
           changes_summary csum;
           
-          set<revision_id> ancestors;
-
           for (edge_map::const_iterator e = rev.edges.begin();
                e != rev.edges.end(); ++e)
             {
-              ancestors.insert(edge_old_revision(e));
+              csum.ancestors.insert(edge_old_revision(e));
 
               change_set const & cs = edge_changes(e);
               if (! file.empty())
@@ -3668,8 +3542,8 @@ CMD(log, N_("informative"), N_("[FILE]"),
                      << endl;
                 cout << "Revision: " << rid << endl;
 
-                for (set<revision_id>::const_iterator anc = ancestors.begin();
-                     anc != ancestors.end(); ++anc)
+                for (set<revision_id>::const_iterator anc = csum.ancestors.begin();
+                     anc != csum.ancestors.end(); ++anc)
                   cout << "Ancestor: " << *anc << endl;
 
                 log_certs(app, rid, author_name, "Author: ", false);
@@ -3745,7 +3619,7 @@ CMD(automate, N_("automation"),
       "get_revision [ID]\n"
       "keys\n"),
     N_("automation interface"), 
-    OPT_NONE)
+    OPT_FORMAT % OPT_XML)
 {
   if (args.size() == 0)
     throw usage(name);
