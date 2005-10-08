@@ -32,9 +32,6 @@ Put a symbolic tag cert on a revision.
 \fBtestresult\fP \fI<id> (0|1|true|false|yes|no|pass|fail)\fP
 Indicate a passing or failing test result on a revision.
 .TP
-\fBagraph\fP
-Dump revision graph to stdout in VCG format.
-.TP
 \fBdiff \fI[--revision=<id1> [--revision=<id2>] ] [<pathname>...]\fP
 Show diffs between working copy and database.
 .TP
@@ -104,8 +101,8 @@ Write private key packet to stdout.
 \fBpubkey\fP \fI<id>\fP
 Write public key packet to stdout.
 .TP
-\fBread\fP
-Read packets from stdin. 
+\fBread\fP \fI[<file1> [<file2> [...]]]\fP
+Read packets from files or stdin. 
 .TP
 \fBcvs_import\fP \fI<cvsroot>/<module>\fP
 Import all versions in CVS module. Reconstructs revisions and converts

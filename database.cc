@@ -15,8 +15,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #include <sqlite3.h>
 
@@ -61,14 +59,14 @@ extern "C" {
   const char *sqlite3_column_text_s(sqlite3_stmt*, int col);
 }
 
-database::database(fs::path const & fn) :
+database::database(system_path const & fn) :
   filename(fn),
   // nb. update this if you change the schema. unfortunately we are not
   // using self-digesting schemas due to comment irregularities and
   // non-alphabetic ordering of tables in sql source files. we could create
   // a temporary db, write our intended schema into it, and read it back,
   // but this seems like it would be too rude. possibly revisit this issue.
-  schema("1509fd75019aebef5ac3da3a5edf1312393b70e9"),
+  schema("bd86f9a90b5d552f0be1fa9aee847ea0f317778b"),
   __sql(NULL),
   transaction_level(0)
 {}
@@ -131,28 +129,26 @@ database::set_app(app_state * app)
 }
 
 static void 
-check_sqlite_format_version(fs::path const & filename)
+check_sqlite_format_version(system_path const & filename)
 {
-  if (fs::exists(filename))
+  require_path_is_file(filename,
+                       F("database %s does not exist") % filename,
+                       F("%s is a directory, not a database") % filename);
+  
+  // sqlite 3 files begin with this constant string
+  // (version 2 files begin with a different one)
+  std::string version_string("SQLite format 3");
+  
+  std::ifstream file(filename.as_external().c_str());
+  N(file, F("unable to probe database version in file %s") % filename);
+  
+  for (std::string::const_iterator i = version_string.begin();
+       i != version_string.end(); ++i)
     {
-      N(!fs::is_directory(filename), 
-        F("database %s is a directory\n") % filename.string());
- 
-      // sqlite 3 files begin with this constant string
-      // (version 2 files begin with a different one)
-      std::string version_string("SQLite format 3");
-
-      std::ifstream file(filename.string().c_str());
-      N(file, F("unable to probe database version in file %s") % filename.string());
-
-      for (std::string::const_iterator i = version_string.begin();
-           i != version_string.end(); ++i)
-        {
-          char c;
-          file.get(c);
-          N(c == *i, F("database %s is not an sqlite version 3 file, "
-                       "try dump and reload") % filename.string());            
-        }
+      char c;
+      file.get(c);
+      N(c == *i, F("database %s is not an sqlite version 3 file, "
+                   "try dump and reload") % filename);            
     }
 }
 
@@ -166,7 +162,26 @@ assert_sqlite3_ok(sqlite3 *s)
   
   const char * errmsg = sqlite3_errmsg(s);
 
-  E(errcode == SQLITE_OK, F("sqlite error [%d]: %s") % errcode % errmsg);
+  // sometimes sqlite is not very helpful
+  // so we keep a table of errors people have gotten and more helpful versions
+  if (errcode != SQLITE_OK)
+    {
+      // first log the code so we can find _out_ what the confusing code
+      // was... note that code does not uniquely identify the errmsg, unlike
+      // errno's.
+      L(F("sqlite error: %d: %s") % errcode % errmsg);
+    }
+  std::string auxiliary_message = "";
+  if (errcode == SQLITE_ERROR)
+    {
+      auxiliary_message = _("make sure database and containing directory are writeable");
+    }
+  // if the last message is empty, the \n will be stripped off too
+  E(errcode == SQLITE_OK,
+    // kind of string surgery to avoid ~duplicate strings
+    boost::format("%s\n%s")
+                  % (F("sqlite error: %d: %s") % errcode % errmsg).str()
+                  % auxiliary_message);
 }
 
 struct sqlite3 * 
@@ -174,22 +189,18 @@ database::sql(bool init)
 {
   if (! __sql)
     {
-      N(!filename.empty(), F("no database specified"));
+      check_filename();
 
       if (! init)
         {
-          N(fs::exists(filename), 
-            F("database %s does not exist") % filename.string());
-          N(!fs::is_directory(filename), 
-            F("database %s is a directory") % filename.string());
+          require_path_is_file(filename,
+                               F("database %s does not exist") % filename,
+                               F("%s is a directory, not a database") % filename);
+          check_sqlite_format_version(filename);
         }
 
-      check_sqlite_format_version(filename);
-      int error;
-      error = sqlite3_open(filename.string().c_str(), &__sql);
-      if (error)
-        throw oops(string("could not open database: ") + filename.string() + 
-                   (": " + string(sqlite3_errmsg(__sql))));
+      open();
+
       if (init)
         {
           sqlite3_exec(__sql, schema_constant, NULL, NULL, NULL);
@@ -209,15 +220,16 @@ database::initialize()
   if (__sql)
     throw oops("cannot initialize database while it is open");
 
-  N(!fs::exists(filename),
-    F("could not initialize database: %s: already exists") 
-    % filename.string());
+  require_path_is_nonexistent(filename,
+                              F("could not initialize database: %s: already exists") 
+                              % filename);
 
-  fs::path journal = mkpath(filename.string() + "-journal");
-  N(!fs::exists(journal),
-    F("existing (possibly stale) journal file '%s' "
-      "has same stem as new database '%s'")
-    % journal.string() % filename.string());
+  system_path journal(filename.as_internal() + "-journal");
+  require_path_is_nonexistent(journal,
+                              F("existing (possibly stale) journal file '%s' "
+                                "has same stem as new database '%s'\n"
+                                "cancelling database creation")
+                              % journal % filename);
 
   sqlite3 *s = sql(true);
   I(s != NULL);
@@ -240,7 +252,7 @@ dump_row_cb(void *data, int n, char **vals, char **cols)
   I(dump != NULL);
   I(vals != NULL);
   I(dump->out != NULL);
-  *(dump->out) << F("INSERT INTO %s VALUES(") % dump->table_name;
+  *(dump->out) << boost::format("INSERT INTO %s VALUES(") % dump->table_name;
   for (int i = 0; i < n; ++i)
     {
       if (i != 0)
@@ -330,14 +342,12 @@ database::load(istream & in)
   char buf[constants::bufsz];
   string tmp;
 
-  N(filename.string() != "",
-    F("need database name"));
-  N(!fs::exists(filename),
-    F("cannot create %s; it already exists\n") % filename.string());
-  int error = sqlite3_open(filename.string().c_str(), &__sql);
-  if (error)
-    throw oops(string("could not open database: ") + filename.string() + 
-               (string(sqlite3_errmsg(__sql))));
+  check_filename();
+
+  require_path_is_nonexistent(filename,
+                              F("cannot create %s; it already exists") % filename);
+
+  open();
 
   while(in)
     {
@@ -353,7 +363,8 @@ database::load(istream & in)
       tmp.erase(0, len);
     }
 
-  sqlite3_exec(__sql, tmp.c_str(), NULL, NULL, NULL);
+  if (!tmp.empty())
+    sqlite3_exec(__sql, tmp.c_str(), NULL, NULL, NULL);
   assert_sqlite3_ok(__sql);
 }
 
@@ -376,88 +387,92 @@ database::debug(string const & sql, ostream & out)
     }
 }
 
+
+namespace
+{
+  unsigned long
+  add(unsigned long count, unsigned long & total)
+  {
+    total += count;
+    return count;
+  }
+}
+
 void 
 database::info(ostream & out)
 {
   string id;
   calculate_schema_id(sql(), id);
-  unsigned long space = 0, tmp;
-  out << "schema version    : " << id << endl;
 
-  out << "counts:" << endl;
-  out << "  full manifests  : " << count("manifests") << endl;
-  out << "  manifest deltas : " << count("manifest_deltas") << endl;
-  out << "  full files      : " << count("files") << endl;
-  out << "  file deltas     : " << count("file_deltas") << endl;
-  out << "  revisions       : " << count("revisions") << endl;
-  out << "  ancestry edges  : " << count("revision_ancestry") << endl;
-  out << "  certs           : " << count("revision_certs") << endl;
+  unsigned long total = 0UL;
 
-  out << "bytes:" << endl;
-  // FIXME: surely there is a less lame way to do this, that doesn't require
-  // updating every time the schema changes?
-  tmp = space_usage("manifests", "id || data");
-  space += tmp;
-  out << "  full manifests  : " << tmp << endl;
+#define SPACE_USAGE(TABLE, COLS) add(space_usage(TABLE, COLS), total)
 
-  tmp = space_usage("manifest_deltas", "id || base || delta");
-  space += tmp;
-  out << "  manifest deltas : " << tmp << endl;
+  out << \
+    F("schema version    : %s\n"
+      "counts:\n"
+      "  full manifests  : %u\n"
+      "  manifest deltas : %u\n"
+      "  full files      : %u\n"
+      "  file deltas     : %u\n"
+      "  revisions       : %u\n"
+      "  ancestry edges  : %u\n"
+      "  certs           : %u\n"
+      "bytes:\n"
+      "  full manifests  : %u\n"
+      "  manifest deltas : %u\n"
+      "  full files      : %u\n"
+      "  file deltas     : %u\n"
+      "  revisions       : %u\n"
+      "  cached ancestry : %u\n"
+      "  certs           : %u\n"
+      "  total           : %u\n"
+      )
+    % id
+    // counts
+    % count("manifests")
+    % count("manifest_deltas")
+    % count("files")
+    % count("file_deltas")
+    % count("revisions")
+    % count("revision_ancestry")
+    % count("revision_certs")
+    // bytes
+    % SPACE_USAGE("manifests", "id || data")
+    % SPACE_USAGE("manifest_deltas", "id || base || delta")
+    % SPACE_USAGE("files", "id || data")
+    % SPACE_USAGE("file_deltas", "id || base || delta")
+    % SPACE_USAGE("revisions", "id || data")
+    % SPACE_USAGE("revision_ancestry", "parent || child")
+    % SPACE_USAGE("revision_certs", "hash || id || name || value || keypair || signature")
+    % total;
 
-  tmp = space_usage("files", "id || data");
-  space += tmp;
-  out << "  full files      : " << tmp << endl;
-
-  tmp = space_usage("file_deltas", "id || base || delta");
-  space += tmp;
-  out << "  file deltas     : " << tmp << endl;
-
-  tmp = space_usage("revisions", "id || data");
-  space += tmp;
-  out << "  revisions       : " << tmp << endl;
-
-  tmp = space_usage("revision_ancestry", "parent || child");
-  space += tmp;
-  out << "  cached ancestry : " << tmp << endl;
-
-  tmp = space_usage("revision_certs", "hash || id || name || value || keypair || signature");
-  space += tmp;
-  out << "  certs           : " << tmp << endl;
-
-  out << "  total           : " << space << endl;
+#undef SPACE_USAGE
 }
 
 void 
 database::version(ostream & out)
 {
   string id;
-  N(filename.string() != "",
-    F("need database name"));
-  int error = sqlite3_open(filename.string().c_str(), &__sql);
-  if (error)
-    {
-      sqlite3_close(__sql);
-      throw oops(string("could not open database: ") + filename.string() + 
-                 (": " + string(sqlite3_errmsg(__sql))));
-    }
+
+  check_filename();
+  open();
+
   calculate_schema_id(__sql, id);
+
   sqlite3_close(__sql);
-  out << "database schema version: " << id << endl;
+
+  out << F("database schema version: %s") % id << endl;
 }
 
 void 
 database::migrate()
 {  
-  N(filename.string() != "",
-    F("need database name"));
-  int error = sqlite3_open(filename.string().c_str(), &__sql);
-  if (error)
-    {
-      sqlite3_close(__sql);
-      throw oops(string("could not open database: ") + filename.string() + 
-                 (": " + string(sqlite3_errmsg(__sql))));
-    }
-  migrate_monotone_schema(__sql);
+  check_filename();
+
+  open();
+
+  migrate_monotone_schema(__sql, __app);
   sqlite3_close(__sql);
 }
 
@@ -465,9 +480,9 @@ void
 database::rehash()
 {
   transaction_guard guard(*this);
-  ticker mcerts("mcerts", "m", 1);
-  ticker pubkeys("pubkeys", "+", 1);
-  ticker privkeys("privkeys", "!", 1);
+  ticker mcerts(_("mcerts"), "m", 1);
+  ticker pubkeys(_("pubkeys"), "+", 1);
+  ticker privkeys(_("privkeys"), "!", 1);
   
   {
     // rehash all mcerts
@@ -499,22 +514,6 @@ database::rehash()
         ++pubkeys;
       }
   }
-
-  {
-    // rehash all privkeys
-    results res;
-    fetch(res, 2, any_rows, "SELECT id, keydata FROM private_keys");
-    execute("DELETE FROM private_keys");
-    for (size_t i = 0; i < res.size(); ++i)
-      {
-        hexenc<id> tmp;
-        key_hash_code(rsa_keypair_id(res[i][0]), base64< arc4<rsa_priv_key> >(res[i][1]), tmp);
-        execute("INSERT INTO private_keys VALUES(?, ?, ?)", 
-                tmp().c_str(), res[i][0].c_str(), res[i][1].c_str());
-        ++privkeys;
-      }
-  }
-
   guard.commit();
 }
 
@@ -660,11 +659,11 @@ database::fetch(results & res,
 // general application-level logic
 
 void 
-database::set_filename(fs::path const & file)
+database::set_filename(system_path const & file)
 {
   if (__sql)
     {
-      throw oops("cannot change filename to " + file.string() + " while db is open");
+      throw oops((F("cannot change filename to %s while db is open") % file).str());
     }
   filename = file;
 }
@@ -742,7 +741,9 @@ unsigned long
 database::space_usage(string const & table, string const & concatenated_columns)
 {
   results res;
-  string query = "SELECT SUM(LENGTH(" + concatenated_columns + ")) FROM " + table;
+  // COALESCE is required since SUM({empty set}) is NULL.
+  // the sqlite docs for SUM suggest this as a workaround
+  string query = "SELECT COALESCE(SUM(LENGTH(" + concatenated_columns + ")), 0) FROM " + table;
   fetch(res, one_col, one_row, query.c_str());
   return lexical_cast<unsigned long>(res[0][0]);
 }
@@ -850,7 +851,7 @@ struct version_cache
     while (!cache.empty() 
            && use + dat().size() > capacity)
       {      
-        std::string key = (F("%08.8x%08.8x%08.8x%08.8x%08.8x") 
+        std::string key = (boost::format("%08.8x%08.8x%08.8x%08.8x%08.8x") 
                            % rand() % rand() % rand() % rand() % rand()).str();
         std::map<hexenc<id>, data>::const_iterator i;
         i = cache.lower_bound(hexenc<id>(key));
@@ -1431,11 +1432,9 @@ database::delete_tag_named(cert_value const & tag)
 
 void 
 database::get_key_ids(string const & pattern,
-                      vector<rsa_keypair_id> & pubkeys,
-                      vector<rsa_keypair_id> & privkeys)
+                      vector<rsa_keypair_id> & pubkeys)
 {
   pubkeys.clear();
-  privkeys.clear();
   results res;
 
   if (pattern != "")
@@ -1448,17 +1447,6 @@ database::get_key_ids(string const & pattern,
 
   for (size_t i = 0; i < res.size(); ++i)
     pubkeys.push_back(res[i][0]);
-
-  if (pattern != "")
-    fetch(res, one_col, any_rows, 
-          "SELECT id FROM private_keys WHERE id GLOB ?",
-          pattern.c_str());
-  else
-    fetch(res, one_col, any_rows, 
-          "SELECT id FROM private_keys");
-
-  for (size_t i = 0; i < res.size(); ++i)
-    privkeys.push_back(res[i][0]);
 }
 
 void 
@@ -1470,12 +1458,6 @@ database::get_keys(string const & table, vector<rsa_keypair_id> & keys)
   fetch(res, one_col, any_rows, query.c_str());
   for (size_t i = 0; i < res.size(); ++i)
     keys.push_back(res[i][0]);
-}
-
-void 
-database::get_private_keys(vector<rsa_keypair_id> & keys)
-{
-  get_keys("private_keys", keys);
 }
 
 void 
@@ -1510,25 +1492,6 @@ database::public_key_exists(rsa_keypair_id const & id)
   return false;
 }
 
-bool 
-database::private_key_exists(rsa_keypair_id const & id)
-{
-  results res;
-  fetch(res, one_col, any_rows,
-        "SELECT id FROM private_keys WHERE id = ?",
-        id().c_str());
-  I((res.size() == 1) || (res.size() == 0));
-  if (res.size() == 1)
-    return true;
-  return false;
-}
-
-bool 
-database::key_exists(rsa_keypair_id const & id)
-{
-  return public_key_exists(id) || private_key_exists(id);
-}
-
 void 
 database::get_pubkey(hexenc<id> const & hash, 
                      rsa_keypair_id & id,
@@ -1554,17 +1517,6 @@ database::get_key(rsa_keypair_id const & pub_id,
 }
 
 void 
-database::get_key(rsa_keypair_id const & priv_id, 
-                  base64< arc4<rsa_priv_key> > & priv_encoded)
-{
-  results res;
-  fetch(res, one_col, one_col, 
-        "SELECT keydata FROM private_keys WHERE id = ?", 
-        priv_id().c_str());
-  priv_encoded = res[0][0];
-}
-
-void 
 database::put_key(rsa_keypair_id const & pub_id, 
                   base64<rsa_pub_key> const & pub_encoded)
 {
@@ -1575,36 +1527,6 @@ database::put_key(rsa_keypair_id const & pub_id,
     F("another key with name '%s' already exists") % pub_id);
   execute("INSERT INTO public_keys VALUES(?, ?, ?)", 
           thash().c_str(), pub_id().c_str(), pub_encoded().c_str());
-}
-
-void 
-database::put_key(rsa_keypair_id const & priv_id, 
-                  base64< arc4<rsa_priv_key> > const & priv_encoded)
-{
-  hexenc<id> thash;
-  key_hash_code(priv_id, priv_encoded, thash);
-  E(!private_key_exists(priv_id),
-    F("another key with name '%s' already exists") % priv_id);
-  execute("INSERT INTO private_keys VALUES(?, ?, ?)", 
-          thash().c_str(), priv_id().c_str(), priv_encoded().c_str());
-}
-
-void 
-database::put_key_pair(rsa_keypair_id const & id, 
-                       base64<rsa_pub_key> const & pub_encoded,
-                       base64< arc4<rsa_priv_key> > const & priv_encoded)
-{
-  transaction_guard guard(*this);
-  put_key(id, pub_encoded);
-  put_key(id, priv_encoded);
-  guard.commit();
-}
-
-void
-database::delete_private_key(rsa_keypair_id const & pub_id)
-{
-  execute("DELETE FROM private_keys WHERE id = ?",
-          pub_id().c_str());
 }
 
 void
@@ -2086,16 +2008,7 @@ database::complete(string const & partial,
         pattern.c_str());
 
   for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(make_pair(key_id(res[i][0]), utf8(res[i][1])));  
-
-  res.clear();
-
-  fetch(res, 2, any_rows,
-        "SELECT hash, id FROM private_keys WHERE hash GLOB ?",
-        pattern.c_str());
-
-  for (size_t i = 0; i < res.size(); ++i)
-    completions.insert(make_pair(key_id(res[i][0]), utf8(res[i][1])));  
+    completions.insert(make_pair(key_id(res[i][0]), utf8(res[i][1])));
 }
 
 using selectors::selector_type;
@@ -2163,7 +2076,7 @@ void database::complete(selector_type ty,
           if (i->first == selectors::sel_ident)
             {
               lim += "SELECT id FROM revision_certs ";
-              lim += (F("WHERE id GLOB '%s*'") 
+              lim += (boost::format("WHERE id GLOB '%s*'") 
                       % i->second).str();
             }
           else if (i->first == selectors::sel_cert)
@@ -2181,13 +2094,13 @@ void database::complete(selector_type ty,
                       spot++;
                       certvalue = i->second.substr(spot);
                       lim += "SELECT id FROM revision_certs ";
-                      lim += (F("WHERE name='%s' AND unbase64(value) glob '%s'")
+                      lim += (boost::format("WHERE name='%s' AND unbase64(value) glob '%s'")
                               % certname % certvalue).str();
                     }
                   else
                     {
                       lim += "SELECT id FROM revision_certs ";
-                      lim += (F("WHERE name='%s'")
+                      lim += (boost::format("WHERE name='%s'")
                               % i->second).str();
                     }
 
@@ -2196,11 +2109,11 @@ void database::complete(selector_type ty,
           else if (i->first == selectors::sel_unknown)
             {
               lim += "SELECT id FROM revision_certs ";
-              lim += (F(" WHERE (name='%s' OR name='%s' OR name='%s')")
+              lim += (boost::format(" WHERE (name='%s' OR name='%s' OR name='%s')")
                       % author_cert_name 
                       % tag_cert_name 
                       % branch_cert_name).str();
-              lim += (F(" AND unbase64(value) glob '*%s*'")
+              lim += (boost::format(" AND unbase64(value) glob '*%s*'")
                       % i->second).str();     
             }
           else
@@ -2209,17 +2122,17 @@ void database::complete(selector_type ty,
               string prefix;
               string suffix;
               selector_to_certname(i->first, certname, prefix, suffix);
-              lim += (F("SELECT id FROM revision_certs WHERE name='%s' AND ") % certname).str();
+              lim += (boost::format("SELECT id FROM revision_certs WHERE name='%s' AND ") % certname).str();
               switch (i->first)
                 {
                 case selectors::sel_earlier:
-                  lim += (F("unbase64(value) <= X'%s'") % encode_hexenc(i->second)).str();
+                  lim += (boost::format("unbase64(value) <= X'%s'") % encode_hexenc(i->second)).str();
                   break;
                 case selectors::sel_later:
-                  lim += (F("unbase64(value) > X'%s'") % encode_hexenc(i->second)).str();
+                  lim += (boost::format("unbase64(value) > X'%s'") % encode_hexenc(i->second)).str();
                   break;
                 default:
-                  lim += (F("unbase64(value) glob '%s%s%s'")
+                  lim += (boost::format("unbase64(value) glob '%s%s%s'")
                           % prefix % i->second % suffix).str();
                   break;
                 }
@@ -2235,7 +2148,7 @@ void database::complete(selector_type ty,
   string query;
   if (ty == selectors::sel_ident)
     {
-      query = (F("SELECT id FROM %s") % lim).str();
+      query = (boost::format("SELECT id FROM %s") % lim).str();
     }
   else 
     {
@@ -2245,7 +2158,7 @@ void database::complete(selector_type ty,
       if (ty == selectors::sel_unknown)
         {               
           query += 
-            (F(" (name='%s' OR name='%s' OR name='%s')")
+            (boost::format(" (name='%s' OR name='%s' OR name='%s')")
              % author_cert_name 
              % tag_cert_name 
              % branch_cert_name).str();
@@ -2255,12 +2168,12 @@ void database::complete(selector_type ty,
           string certname;
           selector_to_certname(ty, certname, prefix, suffix);
           query += 
-            (F(" (name='%s')") % certname).str();
+            (boost::format(" (name='%s')") % certname).str();
         }
         
-      query += (F(" AND (unbase64(value) GLOB '%s%s%s')")
+      query += (boost::format(" AND (unbase64(value) GLOB '%s%s%s')")
                 % prefix % partial % suffix).str();
-      query += (F(" AND (id IN %s)") % lim).str();
+      query += (boost::format(" AND (id IN %s)") % lim).str();
     }
 
   // std::cerr << query << std::endl;    // debug expr
@@ -2428,6 +2341,33 @@ database::get_branches(vector<string> & names)
         names.push_back(name());
       }
 }
+
+
+void
+database::check_filename()
+{
+  N(!filename.empty(), F("no database specified"));
+}
+
+
+bool
+database::database_specified()
+{
+  return !filename.empty();
+}
+
+
+void
+database::open()
+{
+  int error;
+
+  error = sqlite3_open(filename.as_external().c_str(), &__sql);
+
+  N(!error, (F("could not open database '%s': %s")
+             % filename % string(sqlite3_errmsg(__sql))));
+}
+
 
 // transaction guards
 

@@ -124,7 +124,8 @@ assert_reporting_function(int reportType, char* userMessage, int* retVal)
 }
 #endif
 
-#ifdef MS_STRUCTURED_EXCEPTION_HANDLING
+#if defined(MS_STRUCTURED_EXCEPTION_HANDLING)
+#if !defined(__BORLANDC__) && !defined(__MINGW32__)
 struct
 ms_se_exception 
 {
@@ -201,6 +202,7 @@ report_ms_se_error(unsigned int id)
       report_error("unrecognized exception or signal");
     }
 }
+#endif
 
 #if (defined(__BORLANDC__) && defined(_Windows))
 // this works for Borland but not other Win32 compilers (which trap too many cases)
@@ -258,21 +260,28 @@ main_with_signal_handlers(int argc, char **argv)
 {
     typedef struct sigaction* sigaction_ptr;
     static struct sigaction all_signals_action;
+    static struct sigaction ignore_signals_action;
     struct sigaction old_SIGFPE_action;
     struct sigaction old_SIGTRAP_action;
     struct sigaction old_SIGSEGV_action;
     struct sigaction old_SIGBUS_action;
     struct sigaction old_SIGABRT_action;
+    struct sigaction old_SIGPIPE_action;
 
     all_signals_action.sa_flags   = 0;
     all_signals_action.sa_handler = &unix_style_signal_handler;
     sigemptyset(&all_signals_action.sa_mask);
     
+    ignore_signals_action.sa_flags   = 0;
+    ignore_signals_action.sa_handler = SIG_IGN;
+    sigemptyset(&ignore_signals_action.sa_mask);
+
     sigaction(SIGFPE , &all_signals_action, &old_SIGFPE_action);
     sigaction(SIGTRAP, &all_signals_action, &old_SIGTRAP_action);
     sigaction(SIGSEGV, &all_signals_action, &old_SIGSEGV_action);
     sigaction(SIGBUS , &all_signals_action, &old_SIGBUS_action);
     sigaction(SIGABRT, &all_signals_action, &old_SIGABRT_action);
+    sigaction(SIGPIPE, &ignore_signals_action, &old_SIGPIPE_action);
 
     int result = 0;
     bool trapped_signal = false;
@@ -313,6 +322,7 @@ main_with_signal_handlers(int argc, char **argv)
     sigaction(SIGSEGV, &old_SIGSEGV_action, sigaction_ptr());
     sigaction(SIGBUS , &old_SIGBUS_action , sigaction_ptr());
     sigaction(SIGABRT, &old_SIGABRT_action, sigaction_ptr());
+    sigaction(SIGPIPE, &old_SIGPIPE_action, sigaction_ptr());
     
     if(trapped_signal) 
       throw unix_signal_exception(em);
@@ -431,7 +441,7 @@ main_with_many_flavours_of_exception(int argc, char **argv)
         report_error("std::exception: ", ex.what()); 
       }
 
-#if defined(MS_STRUCTURED_EXCEPTION_HANDLING)
+#if defined(MS_STRUCTURED_EXCEPTION_HANDLING) && !defined(__BORLANDC__) && !defined(__MINGW32__)
     catch(ms_se_exception const & ex)
       { 
         report_ms_se_error(ex.exception_id); 

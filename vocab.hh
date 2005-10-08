@@ -10,6 +10,8 @@
 #include <string>
 #include <iosfwd>
 
+#include <config.h>
+
 // the purpose of this file is to wrap things which are otherwise strings
 // in a bit of typesafety, set up enumerations and tuple-types, and
 // generally describe the "vocabulary" (nouns anyways) that modules in this
@@ -108,11 +110,14 @@ void dump(ty const &, std::string &);
 ATOMIC(ty)                                             \
 inline void verify(ty &) {}
 
+#ifdef HAVE_EXTERN_TEMPLATE
 #define EXTERN extern
+#else
+#define EXTERN /* */
+#endif
 
 #include "vocab_terms.hh"
 
-#undef EXTERN
 #undef ATOMIC
 #undef ATOMIC_NOVERIFY
 #undef DECORATE
@@ -137,6 +142,19 @@ typedef     file< delta >      file_delta;
 
 typedef std::pair<var_domain, var_name> var_key;
 
+
+struct keypair
+{
+  base64<rsa_pub_key> pub;
+  base64<rsa_priv_key> priv;
+  keypair()
+  {}
+  keypair(base64<rsa_pub_key> const & a,
+          base64<rsa_priv_key> const & b)
+   : pub(a), priv(b)
+  {}
+};
+
 // fs::path is our "generic" safe path type, pointing potentially anywhere
 // in the filesystem. if you want to *define* or work with any of these you
 // need to include boost/filesystem/path.hpp.
@@ -147,9 +165,11 @@ namespace fs = boost::filesystem;
 // kludge: certs are derived types. what else can we do?
 #ifndef __CERT_HH__
 #include "cert.hh"
-extern template class revision<cert>;
-extern template class manifest<cert>;
+EXTERN template class revision<cert>;
+EXTERN template class manifest<cert>;
 #endif
+
+#undef EXTERN
 
 // diff type
 enum diff_type
@@ -158,6 +178,25 @@ enum diff_type
   context_diff,
   external_diff
 };
+
+// do these belong here?
+inline bool 
+null_id(file_id const & i)
+{
+  return i.inner()().empty();
+}
+
+inline bool 
+null_id(manifest_id const & i)
+{
+  return i.inner()().empty();
+}
+
+inline bool 
+null_id(revision_id const & i)
+{
+  return i.inner()().empty();
+}
 
 
 #endif // __VOCAB_HH__

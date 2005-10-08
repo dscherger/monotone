@@ -7,17 +7,9 @@
 // see the file COPYING for details
 
 #include <string>
-#include <ext/hash_map>
 
+#include "hash_map.hh"
 #include "sanity.hh"
-
-struct string_hash
-{
-  size_t operator()(std::string const & s) const
-  {
-    return __gnu_cxx::__stl_hash_string(s.c_str());
-  }
-};
 
 struct string_eq
 {
@@ -32,13 +24,17 @@ template <typename T>
 struct 
 interner 
 {
-  typedef typename __gnu_cxx::hash_map<std::string, T, 
-                                       string_hash, 
+  typedef typename hashmap::hash_map<std::string, T, 
+                                       hashmap::string_hash, 
                                        string_eq> hmap;
 
   hmap fwd;
   std::vector<std::string> rev;
   interner() {}
+  interner(std::string const & init_str, T init_value)
+  {
+    I(intern(init_str) == init_value);
+  }
   std::string lookup (T in) const
   {
     std::vector<std::string>::size_type k = static_cast<std::vector<std::string>::size_type>(in);

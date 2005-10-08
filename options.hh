@@ -42,5 +42,7 @@
 #define OPT_EXTERNAL_DIFF 33
 #define OPT_EXTERNAL_DIFF_ARGS 34
 #define OPT_LCA 35
-#define OPT_FORMAT 36
-#define OPT_XML 37
+#define OPT_EXECUTE 36
+#define OPT_KEY_DIR 37
+#define OPT_FORMAT 38
+#define OPT_XML 39

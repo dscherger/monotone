@@ -25,7 +25,7 @@
 
 
 class annotate_lineage_mapping;
-
+class annotate_formatter;
 
 class annotate_context {
 public:
@@ -46,6 +46,7 @@ public:
   /// return true if we have no more unassigned lines
   bool is_complete() const;
 
+  void dump() const;
   std::ostream& write_annotations(boost::shared_ptr<annotate_formatter> frmt, std::ostream &os) const;
 
   std::set<revision_id>::const_iterator begin_revisions() const { return annotate_revisions.begin(); }
@@ -96,6 +97,7 @@ public:
   void merge(const annotate_lineage_mapping &other, const boost::shared_ptr<annotate_context> &acp);
 
   void credit_mapped_lines (boost::shared_ptr<annotate_context> acp) const;
+
   void set_copied_all_mapped (boost::shared_ptr<annotate_context> acp) const;
 
 private:
@@ -350,6 +352,25 @@ annotate_context::is_complete() const
 }
 
 
+void
+annotate_context::dump() const
+{
+  revision_id nullid;
+  I(annotations.size() == file_lines.size());
+
+  revision_id lastid = nullid;
+  for (size_t i=0; i<file_lines.size(); i++) {
+    //I(! (annotations[i] == nullid) );
+    if (false) //(lastid == annotations[i])
+      std::cout << "                                        : " << file_lines[i] << std::endl;
+    else
+      std::cout << annotations[i] << ": " << file_lines[i] << std::endl;
+
+    lastid = annotations[i];
+  }
+}
+
+
 std::ostream& 
 annotate_context::write_annotations(boost::shared_ptr<annotate_formatter> frmt, std::ostream &os) const
 {
@@ -442,7 +463,7 @@ annotate_lineage_mapping::build_parent_lineage (boost::shared_ptr<annotate_conte
 
   // do the copied lines thing for our annotate_context
   std::vector<long> lcs_src_lines;
-  lcs_src_lines.reserve(lcs.size());
+  lcs_src_lines.resize(lcs.size());
   size_t i, j;
   i = j = 0;
   while (i < file_interned.size() && j < lcs.size()) {
@@ -590,8 +611,7 @@ do_annotate_node (const annotate_node_work &work_unit,
       file_path parent_fpath = apply_change_set_inverse(cs, work_unit.node_fpath);
       L(F("file %s in parent revision %s is %s\n") % work_unit.node_fpath % parent_revision % parent_fpath);
 
-      I(!(parent_fpath == std::string("")));
-      I(parent_fpath().size() > 0);
+      I(!parent_fpath.empty());
 
       change_set::delta_map::const_iterator fdelta_iter = cs.deltas.find(parent_fpath);
       file_id parent_fid = work_unit.node_fid;
@@ -722,4 +742,5 @@ do_annotate (app_state &app, file_path fpath, file_id fid, revision_id rid)
 
   boost::shared_ptr<annotate_formatter> frmt(new annotate_formatter(app, acp->begin_revisions(), acp->end_revisions()));
   acp->write_annotations(frmt, std::cout);
+  acp->dump();
 }

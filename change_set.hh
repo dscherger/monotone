@@ -74,25 +74,7 @@ change_set
 inline bool 
 null_name(file_path const & p)
 {
-  return p().empty();
-}
-
-inline bool 
-null_id(file_id const & i)
-{
-  return i.inner()().empty();
-}
-
-inline bool 
-null_id(manifest_id const & i)
-{
-  return i.inner()().empty();
-}
-
-inline bool 
-null_id(revision_id const & i)
-{
-  return i.inner()().empty();
+  return p.empty();
 }
 
 inline file_path const & 
@@ -115,7 +97,7 @@ delta_entry_dst(change_set::delta_map::const_iterator i)
 
 void
 apply_rearrangement_to_filesystem(change_set::path_rearrangement const & re,
-                                  local_path const & temporary_root);
+                                  bookkeeping_path const & temporary_root);
 
 
 // merging and concatenating 
@@ -226,7 +208,6 @@ parse_path_rearrangement(basic_io::parser & pa,
 // debugging
 
 void dump(change_set const & cs, std::string & out);
-
 
 // The changes_summary structure holds a list all of files and directories
 // affected in a revision, and is useful in the 'log' command to print this

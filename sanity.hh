@@ -13,11 +13,15 @@
 
 #include "boost/format.hpp"
 #include "boost/circular_buffer.hpp"
+#include "boost/current_function.hpp"
 
 #include <config.h> // Required for ENABLE_NLS
-#include "gettext.h"
+#include "i18n.h"
+#include "ui.hh"
 
 #include "quick_alloc.hh" // to get the QA() macro
+
+#include "paths.hh"
 
 #ifdef __GNUC__
 #define NORETURN __attribute__((noreturn))
@@ -54,7 +58,7 @@ struct sanity {
   bool quiet;
   bool relaxed;
   boost::circular_buffer<char> logbuf;
-  std::string filename;
+  system_path filename;
   std::string gasp_dump;
   bool already_dumping;
   std::vector<MusingI const *> musings;
@@ -77,14 +81,21 @@ struct sanity {
                      unsigned long idx,
                      std::string const & file, int line) NORETURN;
   void gasp();
+
+private:
+  std::string do_format(boost::format const & fmt,
+                        char const * file, int line);
 };
 
 typedef std::runtime_error oops;
 
 extern sanity global_sanity;
 
-// F is for when you want to build a boost formatter
-#define F(str) boost::format(gettext(str))
+// F is for when you want to build a boost formatter for display
+boost::format F(const char * str);
+
+// FP is for when you want to build a boost formatter for displaying a plural
+boost::format FP(const char * str1, const char * strn, unsigned long count);
 
 // L is for logging, you can log all you want
 #define L(fmt) global_sanity.log(fmt, __FILE__, __LINE__)
@@ -210,29 +221,41 @@ public:
   virtual void gasp(std::string & out) const = 0;
 };
 
+
+class MusingBase
+{
+  char const * name;
+  char const * file;
+  char const * func;
+  int line;
+
+protected:
+  MusingBase(char const * name, char const * file, int line, char const * func)
+    : name(name), file(file), func(func), line(line)  {}
+
+  void gasp(const std::string & objstr, std::string & out) const;
+};
+
+
 template <typename T>
-class Musing : public MusingI
+class Musing : public MusingI, private MusingBase
 {
 public:
   Musing(T const & obj, char const * name, char const * file, int line, char const * func)
-    : obj(obj), name(name), file(file), line(line), func(func) {}
+    : MusingBase(name, file, line, func), obj(obj) {}
   virtual void gasp(std::string & out) const;
 private:
   T const & obj;
-  char const * name;
-  char const * file;
-  int line;
-  char const * func;
 };
+
 
 template <typename T> void
 Musing<T>::gasp(std::string & out) const
 {
-  out = (F("----- begin '%s' (in %s, at %s:%d)\n") % name % func % file % line).str();
   std::string tmp;
   dump(obj, tmp);
-  out += tmp;
-  out += (F("-----   end '%s' (in %s, at %s:%d)\n") % name % func % file % line).str();
+
+  MusingBase::gasp(tmp, out);
 }
 
 // Yes, this is insane.  No, it doesn't work if you do something more sane.
@@ -243,9 +266,14 @@ Musing<T>::gasp(std::string & out) const
 // them.)  However, while fake_M does nothing directly, it doesn't pass its
 // line argument to ##; therefore, its line argument is fully expanded before
 // being passed to real_M.
-#define real_M(obj, line) Musing<typeof(obj)> this_is_a_musing_fnord_object_ ## line (obj, #obj, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#ifdef HAVE_TYPEOF
+// even worse, this is g++ only!
+#define real_M(obj, line) Musing<typeof(obj)> this_is_a_musing_fnord_object_ ## line (obj, #obj, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
 #define fake_M(obj, line) real_M(obj, line)
 #define MM(obj) fake_M(obj, __LINE__)
+#else
+#define MM(obj) /* */ 
+#endif
 
 void dump(std::string const & obj, std::string & out);
 

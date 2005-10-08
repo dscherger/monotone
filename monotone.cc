@@ -30,6 +30,7 @@
 #include "ui.hh"
 #include "mt_version.hh"
 #include "options.hh"
+#include "paths.hh"
 
 // main option processing and exception handling code
 
@@ -47,25 +48,26 @@ long arglong = 0;
 
 struct poptOption coptions[] =
   {
-    {"branch", 'b', POPT_ARG_STRING, &argstr, OPT_BRANCH_NAME, "select branch cert for operation", NULL},
-    {"revision", 'r', POPT_ARG_STRING, &argstr, OPT_REVISION, "select revision id for operation", NULL},
-    {"message", 'm', POPT_ARG_STRING, &argstr, OPT_MESSAGE, "set commit changelog message", NULL},
-    {"message-file", 0, POPT_ARG_STRING, &argstr, OPT_MSGFILE, "set filename containing commit changelog message", NULL},
-    {"date", 0, POPT_ARG_STRING, &argstr, OPT_DATE, "override date/time for commit", NULL},
-    {"author", 0, POPT_ARG_STRING, &argstr, OPT_AUTHOR, "override author for commit", NULL},
-    {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, "limit the number of levels of directories to descend", NULL},
-    {"last", 0, POPT_ARG_LONG, &arglong, OPT_LAST, "limit the log output to the given number of entries", NULL},
-    {"pid-file", 0, POPT_ARG_STRING, &argstr, OPT_PIDFILE, "record process id of server", NULL},
-    {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, "print a brief version of the normal output", NULL},
-    {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, "print diffs along with logs", NULL},
-    {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, "skip merges when printing logs", NULL},
-    {"set-default", 0, POPT_ARG_NONE, NULL, OPT_SET_DEFAULT, "use the current arguments as the future default", NULL},
-    {"exclude", 0, POPT_ARG_STRING, &argstr, OPT_EXCLUDE, "leave out branches matching a pattern", NULL},
-    {"unified", 0, POPT_ARG_NONE, NULL, OPT_UNIFIED_DIFF, "Use unified diff format", NULL},
-    {"context", 0, POPT_ARG_NONE, NULL, OPT_CONTEXT_DIFF, "Use context diff format", NULL},
-    {"external", 0, POPT_ARG_NONE, NULL, OPT_EXTERNAL_DIFF, "Use external diff hook for generating diffs", NULL},
-    {"diff-args", 0, POPT_ARG_STRING, &argstr, OPT_EXTERNAL_DIFF_ARGS, "Argument to pass external diff hook", NULL},
-    {"lca", 0, POPT_ARG_NONE, NULL, OPT_LCA, "Use least common ancestor as ancestor for merge", NULL},
+    {"branch", 'b', POPT_ARG_STRING, &argstr, OPT_BRANCH_NAME, gettext_noop("select branch cert for operation"), NULL},
+    {"revision", 'r', POPT_ARG_STRING, &argstr, OPT_REVISION, gettext_noop("select revision id for operation"), NULL},
+    {"message", 'm', POPT_ARG_STRING, &argstr, OPT_MESSAGE, gettext_noop("set commit changelog message"), NULL},
+    {"message-file", 0, POPT_ARG_STRING, &argstr, OPT_MSGFILE, gettext_noop("set filename containing commit changelog message"), NULL},
+    {"date", 0, POPT_ARG_STRING, &argstr, OPT_DATE, gettext_noop("override date/time for commit"), NULL},
+    {"author", 0, POPT_ARG_STRING, &argstr, OPT_AUTHOR, gettext_noop("override author for commit"), NULL},
+    {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, gettext_noop("limit the number of levels of directories to descend"), NULL},
+    {"last", 0, POPT_ARG_LONG, &arglong, OPT_LAST, gettext_noop("limit the log output to the given number of entries"), NULL},
+    {"pid-file", 0, POPT_ARG_STRING, &argstr, OPT_PIDFILE, gettext_noop("record process id of server"), NULL},
+    {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, gettext_noop("print a brief version of the normal output"), NULL},
+    {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, gettext_noop("print diffs along with logs"), NULL},
+    {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, gettext_noop("skip merges when printing logs"), NULL},
+    {"set-default", 0, POPT_ARG_NONE, NULL, OPT_SET_DEFAULT, gettext_noop("use the current arguments as the future default"), NULL},
+    {"exclude", 0, POPT_ARG_STRING, &argstr, OPT_EXCLUDE, gettext_noop("leave out anything described by its argument"), NULL},
+    {"unified", 0, POPT_ARG_NONE, NULL, OPT_UNIFIED_DIFF, gettext_noop("use unified diff format"), NULL},
+    {"context", 0, POPT_ARG_NONE, NULL, OPT_CONTEXT_DIFF, gettext_noop("use context diff format"), NULL},
+    {"external", 0, POPT_ARG_NONE, NULL, OPT_EXTERNAL_DIFF, gettext_noop("use external diff hook for generating diffs"), NULL},
+    {"diff-args", 0, POPT_ARG_STRING, &argstr, OPT_EXTERNAL_DIFF_ARGS, gettext_noop("argument to pass external diff hook"), NULL},
+    {"lca", 0, POPT_ARG_NONE, NULL, OPT_LCA, gettext_noop("use least common ancestor as ancestor for merge"), NULL},
+    {"execute", 'e', POPT_ARG_NONE, NULL, OPT_EXECUTE, gettext_noop("perform the associated file operation"), NULL},
     {"format", 0, POPT_ARG_STRING, &argstr, OPT_FORMAT, "specifies a format string on automate output", NULL},
     {"xml", 0, POPT_ARG_NONE, NULL, OPT_XML, "automate output will be in XML", NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
@@ -76,21 +78,22 @@ struct poptOption options[] =
     // Use the coptions table as well.
     { NULL, 0, POPT_ARG_INCLUDE_TABLE, coptions, 0, NULL, NULL },
 
-    {"debug", 0, POPT_ARG_NONE, NULL, OPT_DEBUG, "print debug log to stderr while running", NULL},
-    {"dump", 0, POPT_ARG_STRING, &argstr, OPT_DUMP, "file to dump debugging log to, on failure", NULL},
-    {"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, "suppress log and progress messages", NULL},
-    {"help", 0, POPT_ARG_NONE, NULL, OPT_HELP, "display help message", NULL},
-    {"version", 0, POPT_ARG_NONE, NULL, OPT_VERSION, "print version number, then exit", NULL},
-    {"full-version", 0, POPT_ARG_NONE, NULL, OPT_FULL_VERSION, "print detailed version number, then exit", NULL},
-    {"xargs", '@', POPT_ARG_STRING, &argstr, OPT_ARGFILE, "insert command line arguments taken from the given file", NULL},
-    {"ticker", 0, POPT_ARG_STRING, &argstr, OPT_TICKER, "set ticker style (count|dot|none) [count]", NULL},
-    {"nostd", 0, POPT_ARG_NONE, NULL, OPT_NOSTD, "do not load standard lua hooks", NULL},
-    {"norc", 0, POPT_ARG_NONE, NULL, OPT_NORC, "do not load ~/.monotone/monotonerc or MT/monotonerc lua files", NULL},
-    {"rcfile", 0, POPT_ARG_STRING, &argstr, OPT_RCFILE, "load extra rc file", NULL},
-    {"key", 'k', POPT_ARG_STRING, &argstr, OPT_KEY_NAME, "set key for signatures", NULL},
-    {"db", 'd', POPT_ARG_STRING, &argstr, OPT_DB_NAME, "set name of database", NULL},
-    {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, "limit search for working copy to specified root", NULL},
-    {"verbose", 0, POPT_ARG_NONE, NULL, OPT_VERBOSE, "verbose completion output", NULL},
+    {"debug", 0, POPT_ARG_NONE, NULL, OPT_DEBUG, gettext_noop("print debug log to stderr while running"), NULL},
+    {"dump", 0, POPT_ARG_STRING, &argstr, OPT_DUMP, gettext_noop("file to dump debugging log to, on failure"), NULL},
+    {"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, gettext_noop("suppress log and progress messages"), NULL},
+    {"help", 'h', POPT_ARG_NONE, NULL, OPT_HELP, gettext_noop("display help message"), NULL},
+    {"version", 0, POPT_ARG_NONE, NULL, OPT_VERSION, gettext_noop("print version number, then exit"), NULL},
+    {"full-version", 0, POPT_ARG_NONE, NULL, OPT_FULL_VERSION, gettext_noop("print detailed version number, then exit"), NULL},
+    {"xargs", '@', POPT_ARG_STRING, &argstr, OPT_ARGFILE, gettext_noop("insert command line arguments taken from the given file"), NULL},
+    {"ticker", 0, POPT_ARG_STRING, &argstr, OPT_TICKER, gettext_noop("set ticker style (count|dot|none)"), NULL},
+    {"nostd", 0, POPT_ARG_NONE, NULL, OPT_NOSTD, gettext_noop("do not load standard lua hooks"), NULL},
+    {"norc", 0, POPT_ARG_NONE, NULL, OPT_NORC, gettext_noop("do not load ~/.monotone/monotonerc or MT/monotonerc lua files"), NULL},
+    {"rcfile", 0, POPT_ARG_STRING, &argstr, OPT_RCFILE, gettext_noop("load extra rc file"), NULL},
+    {"key", 'k', POPT_ARG_STRING, &argstr, OPT_KEY_NAME, gettext_noop("set key for signatures"), NULL},
+    {"db", 'd', POPT_ARG_STRING, &argstr, OPT_DB_NAME, gettext_noop("set name of database"), NULL},
+    {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, gettext_noop("limit search for working copy to specified root"), NULL},
+    {"verbose", 0, POPT_ARG_NONE, NULL, OPT_VERBOSE, gettext_noop("verbose completion output"), NULL},
+    {"keydir", 0, POPT_ARG_STRING, &argstr, OPT_KEY_DIR, gettext_noop("set location of key store"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -205,8 +208,8 @@ my_poptStuffArgFile(poptContext con, utf8 const & filename)
       // the argv array be null-terminated.
       I(argv[argc] == NULL);
       N((rc = poptStuffArgs(con, argv)) >= 0,
-	F("weird error when stuffing arguments read from %s: %s\n")
-	% filename % poptStrerror(rc));
+        F("weird error when stuffing arguments read from %s: %s\n")
+        % filename % poptStrerror(rc));
     }
 
   free(argv);
@@ -237,8 +240,7 @@ cpp_main(int argc, char ** argv)
 
   // go-go gadget i18n
 
-  setlocale(LC_CTYPE, "");
-  setlocale(LC_MESSAGES, "");
+  setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
 
@@ -259,12 +261,12 @@ cpp_main(int argc, char ** argv)
     L(F("command line: %s\n") % cmdline_ss.str());
   }
 
-  L(F("set locale: LC_CTYPE=%s, LC_MESSAGES=%s\n")
-    % (setlocale(LC_CTYPE, NULL) == NULL ? "n/a" : setlocale(LC_CTYPE, NULL))
-    % (setlocale(LC_MESSAGES, NULL) == NULL ? "n/a" : setlocale(LC_MESSAGES, NULL)));
+  L(F("set locale: LC_ALL=%s\n")
+    % (setlocale(LC_ALL, NULL) == NULL ? "n/a" : setlocale(LC_ALL, NULL)));
 
   // Set up secure memory allocation etc
   Botan::Init::initialize();
+  Botan::set_default_allocator("malloc");
   
   // decode all argv values into a UTF-8 array
 
@@ -287,12 +289,11 @@ cpp_main(int argc, char ** argv)
   bool requested_help = false;
   set<int> used_local_options;
 
-  poptSetOtherOptionHelp(ctx(), "[OPTION...] command [ARGS...]\n");
+  poptSetOtherOptionHelp(ctx(), _("[OPTION...] command [ARGS...]\n"));
 
   try
     {
       app_state app;
-      app.set_default_format(true);
 
       while ((opt = poptGetNextOpt(ctx())) > 0)
         {
@@ -322,15 +323,19 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_RCFILE:
-              app.add_rcfile(absolutify_for_command_line(tilde_expand(string(argstr))));
+              app.add_rcfile(string(argstr));
               break;
 
             case OPT_DUMP:
-              global_sanity.filename = absolutify(tilde_expand(string(argstr)));
+              global_sanity.filename = system_path(argstr);
               break;
 
             case OPT_DB_NAME:
-              app.set_database(absolutify(tilde_expand(string(argstr))));
+              app.set_database(system_path(argstr));
+              break;
+
+            case OPT_KEY_DIR:
+              app.set_key_dir(system_path(argstr));
               break;
 
             case OPT_TICKER:
@@ -371,7 +376,7 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_MSGFILE:
-              app.set_message_file(absolutify_for_command_line(tilde_expand(string(argstr))));
+              app.set_message_file(string(argstr));
               break;
 
             case OPT_DATE:
@@ -383,7 +388,7 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_ROOT:
-              app.set_root(string(argstr));
+              app.set_root(system_path(argstr));
               break;
 
             case OPT_LAST:
@@ -415,7 +420,7 @@ cpp_main(int argc, char ** argv)
               break;
 
             case OPT_PIDFILE:
-              app.set_pidfile(absolutify(tilde_expand(string(argstr))));
+              app.set_pidfile(system_path(argstr));
               break;
 
             case OPT_ARGFILE:
@@ -440,6 +445,10 @@ cpp_main(int argc, char ** argv)
 
             case OPT_LCA:
               app.use_lca = true;
+              break;
+
+            case OPT_EXECUTE:
+              app.execute = true;
               break;
 
             case OPT_FORMAT:
@@ -535,7 +544,7 @@ cpp_main(int argc, char ** argv)
       if (count != 0)
         {
           ostringstream sstr;
-          sstr << "Options specific to 'monotone " << u.which << "':";
+          sstr << F("Options specific to 'monotone %s':") % u.which;
           options[0].descrip = strdup(sstr.str().c_str());
 
           options[0].argInfo |= POPT_ARGFLAG_DOC_HIDDEN;
@@ -552,6 +561,11 @@ cpp_main(int argc, char ** argv)
   catch (informative_failure & inf)
   {
     ui.inform(inf.what);
+    clean_shutdown = true;
+    return 1;
+  }
+  catch (std::ios_base::failure const & ex)
+  {
     clean_shutdown = true;
     return 1;
   }

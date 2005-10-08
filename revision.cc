@@ -73,6 +73,8 @@ revision_set::is_merge_node() const
 
 revision_set::revision_set(revision_set const & other)
 {
+  /* behave like normal constructor if other is empty */
+  if (null_id(other.new_manifest) && other.edges.empty()) return;
   other.check_sane();
   new_manifest = other.new_manifest;
   edges = other.edges;
@@ -253,6 +255,10 @@ check_sane_history(revision_id const & child_id,
       // that we haven't yet figured out whether this is a valid merge or
       // not.  so find out.
       change_set cs_parent_left, cs_parent_right, cs_left, cs_right;
+      MM(cs_parent_left);
+      MM(cs_parent_right);
+      MM(cs_left);
+      MM(cs_right);
       calculate_composite_change_set(lca, parent_left, app, cs_parent_left);
       calculate_composite_change_set(lca, parent_right, app, cs_parent_right);
       concatenate_change_sets(cs_parent_left, left_edge, cs_left);
@@ -309,10 +315,12 @@ ensure_parents_loaded(ctx child,
   // The null revision is not a parent for purposes of finding common
   // ancestors.
   for (std::set<revision_id>::iterator p = imm_parents.begin();
-       p != imm_parents.end(); ++p)
+       p != imm_parents.end(); )
     {
       if (null_id(*p))
-        imm_parents.erase(p);
+        imm_parents.erase(p++);
+      else
+        ++p;
     }
               
   shared_bitmap bits = shared_bitmap(new bitmap(parents.size()));

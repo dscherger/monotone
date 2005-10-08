@@ -27,13 +27,19 @@ namespace Botan {
   class Gzip_Decompression;
 }
 
+#ifdef HAVE_EXTERN_TEMPLATE
+#define EXTERN extern
+#else
+#define EXTERN /* */
+#endif
+
 template<typename XFM> std::string xform(std::string const &);
-extern template std::string xform<Botan::Base64_Encoder>(std::string const &);
-extern template std::string xform<Botan::Base64_Decoder>(std::string const &);
-extern template std::string xform<Botan::Hex_Encoder>(std::string const &);
-extern template std::string xform<Botan::Hex_Decoder>(std::string const &);
-extern template std::string xform<Botan::Gzip_Compression>(std::string const &);
-extern template std::string xform<Botan::Gzip_Decompression>(std::string const &);
+EXTERN template std::string xform<Botan::Base64_Encoder>(std::string const &);
+EXTERN template std::string xform<Botan::Base64_Decoder>(std::string const &);
+EXTERN template std::string xform<Botan::Hex_Encoder>(std::string const &);
+EXTERN template std::string xform<Botan::Hex_Decoder>(std::string const &);
+EXTERN template std::string xform<Botan::Gzip_Compression>(std::string const &);
+EXTERN template std::string xform<Botan::Gzip_Decompression>(std::string const &);
 
 // base64 encoding
 
@@ -82,13 +88,13 @@ void encode_gzip(std::string const & in, gzip<T> & out)
 
 template <typename T>
 void pack(T const & in, base64< gzip<T> > & out);
-extern template void pack<data>(data const &, base64< gzip<data> > &);
-extern template void pack<delta>(delta const &, base64< gzip<delta> > &);
+EXTERN template void pack<data>(data const &, base64< gzip<data> > &);
+EXTERN template void pack<delta>(delta const &, base64< gzip<delta> > &);
 
 template <typename T>
 void unpack(base64< gzip<T> > const & in, T & out);
-extern template void unpack<data>(base64< gzip<data> > const &, data &);
-extern template void unpack<delta>(base64< gzip<delta> > const &, delta &);
+EXTERN template void unpack<data>(base64< gzip<data> > const &, data &);
+EXTERN template void unpack<delta>(base64< gzip<delta> > const &, delta &);
 
 
 // diffing and patching
@@ -168,13 +174,12 @@ void charset_convert(std::string const & src_charset, std::string const & dst_ch
                      std::string const & src, std::string & dst);
 void system_to_utf8(external const & system, utf8 & utf);
 void utf8_to_system(utf8 const & utf, external & system);
+void utf8_to_system(utf8 const & utf, std::string & system);
 void ace_to_utf8(ace const & ac, utf8 & utf);
 void utf8_to_ace(utf8 const & utf, ace & a);
 
-fs::path localized(file_path const & path);
-fs::path localized(local_path const & path);
-fs::path localized(utf8 const & path);
-std::string localized_as_string(file_path const & path);
+// returns length in characters (not bytes)
+size_t length(utf8 const & utf);
 
 // specific internal / external conversions for various vocab terms
 void internalize_cert_name(utf8 const & utf, cert_name & c);

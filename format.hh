@@ -106,6 +106,14 @@ public:
   void end();
   void attr(const utf8 &attrname, const utf8 &value);
   void attr(const std::string &attrname, const utf8 &value){ attr(utf8(attrname), value);}
+  void attr(const utf8 &attrname, const file_path &value)
+    { 
+      attr(utf8(attrname), boost::lexical_cast<std::string>(value));
+    }
+  void attr(const std::string &attrname, const file_path &value)
+    { 
+      attr(utf8(attrname), boost::lexical_cast<std::string>(value));
+    }
 
 private:  
   void encode(const utf8 & opq);

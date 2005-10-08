@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -19,9 +20,11 @@ extern "C" {
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/regex.hpp>
 
 #include <set>
 #include <map>
+#include <fstream>
 
 #include "app_state.hh"
 #include "file_io.hh"
@@ -31,6 +34,7 @@ extern "C" {
 #include "vocab.hh"
 #include "platform.hh"
 #include "transforms.hh"
+#include "paths.hh"
 
 // defined in {std,test}_hooks.lua, converted
 #include "test_hooks.h"
@@ -39,12 +43,45 @@ extern "C" {
 using namespace std;
 using boost::lexical_cast;
 
-/*
 static int panic_thrower(lua_State * st)
 {
   throw oops("lua panic");
 }
-*/
+
+// adapted from "programming in lua", section 24.2.3
+// http://www.lua.org/pil/24.2.3.html
+// output is from bottom (least accessible) to top (most accessible, where
+// push and pop happen).
+static std::string
+dump_stack(lua_State * st)
+{
+  std::string out;
+  int i;
+  int top = lua_gettop(st);
+  for (i = 1; i <= top; i++) {  /* repeat for each level */
+    int t = lua_type(st, i);
+    switch (t) {
+    case LUA_TSTRING:  /* strings */
+      out += (boost::format("`%s'") % std::string(lua_tostring(st, i), lua_strlen(st, i))).str();
+      break;
+      
+    case LUA_TBOOLEAN:  /* booleans */
+      out += (lua_toboolean(st, i) ? "true" : "false");
+      break;
+      
+    case LUA_TNUMBER:  /* numbers */
+      out += (boost::format("%g") % lua_tonumber(st, i)).str();
+      break;
+      
+    default:  /* other values */
+      out += (boost::format("%s") % lua_typename(st, t)).str();
+      break;
+      
+    }
+    out += "  ";  /* put a separator */
+  }
+  return out;
+}
 
 // This Lua object represents a single imperative transaction with the lua
 // interpreter. if it fails at any point, all further commands in the
@@ -67,8 +104,15 @@ Lua
     lua_settop(st, 0);
   }
 
+  void fail(std::string const & reason)
+  {
+    L(F("lua failure: %s; stack = %s\n") % reason % dump_stack(st));
+    failed = true;
+  }
+
   bool ok() 
   { 
+    L(F("Lua::ok(): failed = %i") % failed);
     return !failed; 
   }
 
@@ -76,7 +120,8 @@ Lua
   {
     I(lua_isstring(st, -1));
     string err = string(lua_tostring(st, -1), lua_strlen(st, -1));
-    W(F("%s\n") % err);
+    W(boost::format("%s\n") % err);
+    L(F("lua stack: %s") % dump_stack(st));
     lua_pop(st, 1);
     failed = true;
   }
@@ -88,14 +133,12 @@ Lua
     if (failed) return *this;
     if (!lua_istable (st, idx)) 
       { 
-        L(F("lua istable() failed\n")); 
-        failed = true; 
+        fail("istable() in get");
         return *this; 
       }
     if (lua_gettop (st) < 1) 
       { 
-        L(F("lua stack top > 0 failed\n")); 
-        failed = true; 
+        fail("stack top > 0 in get");
         return *this; 
       }
     lua_gettable(st, idx); 
@@ -107,10 +150,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isfunction (st, -1)) 
-      { 
-        L(F("lua isfunction() failed in get_fn\n")); 
-        failed = true; 
-      }
+      fail("isfunction() in get_fn");
     return *this; 
   }
 
@@ -119,10 +159,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_istable (st, -1)) 
-      { 
-        L(F("lua istable() failed in get_tab\n")); 
-        failed = true; 
-      }
+      fail("istable() in get_tab");
     return *this; 
   }
 
@@ -131,10 +168,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isstring (st, -1)) 
-      { 
-        L(F("lua isstring() failed in get_str\n")); 
-        failed = true; 
-      }
+      fail("isstring() in get_str");
     return *this; 
   }
 
@@ -143,10 +177,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isnumber (st, -1)) 
-      { 
-        L(F("lua isnumber() failed in get_num\n")); 
-        failed = true; 
-      }
+      fail("isnumber() in get_num");
     return *this; 
   }
 
@@ -155,10 +186,7 @@ Lua
     if (failed) return *this;
     get(idx);
     if (!lua_isboolean (st, -1)) 
-      { 
-        L(F("lua isboolean() failed in get_bool\n")); 
-        failed = true; 
-      }
+      fail("isboolean() in get_bool");
     return *this; 
   }
 
@@ -169,11 +197,11 @@ Lua
     if (failed) return *this;
     if (!lua_isstring (st, -1)) 
       { 
-        L(F("lua isstring() failed in extract_str\n")); 
-        failed = true; 
+        fail("isstring() in extract_str");
         return *this;
       }
     str = string(lua_tostring(st, -1), lua_strlen(st, -1));
+    L(F("lua: extracted string = %s") % str);
     return *this;
   }
 
@@ -182,11 +210,11 @@ Lua
     if (failed) return *this;
     if (!lua_isnumber (st, -1)) 
       { 
-        L(F("lua isnumber() failed in extract_int\n")); 
-        failed = true; 
+        fail("isnumber() in extract_int");
         return *this;
       }
     i = static_cast<int>(lua_tonumber(st, -1));
+    L(F("lua: extracted int = %i") % i);
     return *this;
   }
 
@@ -195,11 +223,11 @@ Lua
     if (failed) return *this;
     if (!lua_isnumber (st, -1)) 
       { 
-        L(F("lua isnumber() failed in extract_double\n")); 
-        failed = true; 
+        fail("isnumber() in extract_double");
         return *this;
       }
     i = lua_tonumber(st, -1);
+    L(F("lua: extracted double = %i") % i);
     return *this;
   }
 
@@ -209,11 +237,11 @@ Lua
     if (failed) return *this;
     if (!lua_isboolean (st, -1)) 
       { 
-        L(F("lua isboolean() failed in extract_bool\n")); 
-        failed = true; 
+        fail("isboolean() in extract_bool");
         return *this;
       }
     i = (lua_toboolean(st, -1) == 1);
+    L(F("lua: extracted bool = %i") % i);
     return *this;
   }
 
@@ -225,8 +253,7 @@ Lua
     if (failed) return *this;
     if (!lua_istable(st, -1)) 
       { 
-        L(F("lua istable() failed in begin\n")); 
-        failed = true; 
+        fail("istable() in begin");
         return *this;
       }
     I(lua_checkstack (st, 1));
@@ -239,8 +266,7 @@ Lua
     if (failed) return false;
     if (!lua_istable(st, -2)) 
       { 
-        L(F("lua istable() failed in next\n")); 
-        failed = true; 
+        fail("istable() in next");
         return false;
       }
     I(lua_checkstack (st, 1));
@@ -326,8 +352,7 @@ Lua
     if (failed) return *this;
     if (lua_gettop (st) < count) 
       { 
-        L(F("lua stack top >= count failed\n")); 
-        failed = true; 
+        fail("stack top is not >= count in pop");
         return *this; 
       }
     lua_pop(st, count); 
@@ -336,6 +361,7 @@ Lua
 
   Lua & func(string const & fname)
   {
+    L(F("loading lua hook %s") % fname);
     if (!failed) 
       {
         if (missing_functions.find(fname) != missing_functions.end())
@@ -495,11 +521,31 @@ extern "C"
   }
 
   static int
-  monotone_guess_binary_for_lua(lua_State *L)
+  monotone_guess_binary_file_contents_for_lua(lua_State *L)
   {
     const char *path = lua_tostring(L, -1);
-    N(path, F("guess_binary called with an invalid parameter"));
-    lua_pushboolean(L, guess_binary(std::string(path, lua_strlen(L, -1))));
+    N(path, F("%s called with an invalid parameter") % "guess_binary");
+
+    std::ifstream file(path, ios_base::binary);
+    if (!file) 
+      {
+        lua_pushnil(L);
+        return 1;
+      }
+    const int bufsize = 8192;
+    char tmpbuf[bufsize];
+    string buf;
+    while (file.read(tmpbuf, sizeof tmpbuf))
+      {
+        I(file.gcount() <= static_cast<int>(sizeof tmpbuf));
+        buf.assign(tmpbuf, file.gcount());
+        if (guess_binary(buf)) 
+          {
+            lua_pushboolean(L, true);
+            return 1;
+          }
+      }
+    lua_pushboolean(L, false);
     return 1;
   }
   
@@ -507,7 +553,7 @@ extern "C"
   monotone_include_for_lua(lua_State *L)
   {
     const char *path = lua_tostring(L, -1);
-    N(path, F("Include called with an invalid parameter"));
+    N(path, F("%s called with an invalid parameter") % "Include");
     
     bool res =Lua(L)
     .loadfile(std::string(path, lua_strlen(L, -1)))
@@ -522,9 +568,9 @@ extern "C"
   monotone_includedir_for_lua(lua_State *L)
   {
     const char *pathstr = lua_tostring(L, -1);
-    N(pathstr, F("IncludeDir called with an invalid parameter"));
+    N(pathstr, F("%s called with an invalid parameter") % "IncludeDir");
 
-    fs::path locpath(pathstr);
+    fs::path locpath(pathstr, fs::native);
     N(fs::exists(locpath), F("Directory '%s' does not exists") % pathstr);
     N(fs::is_directory(locpath), F("'%s' is not a directory") % pathstr);
 
@@ -551,6 +597,31 @@ extern "C"
     lua_pushboolean(L, true); 
     return 1;
   }
+
+  static int
+  monotone_regex_search_for_lua(lua_State *L)
+  {
+    const char *re = lua_tostring(L, -2);
+    const char *str = lua_tostring(L, -1);
+    boost::cmatch what;
+
+    try {
+      lua_pushboolean(L, boost::regex_search(str, what, boost::regex(re)));
+    } catch(boost::bad_pattern e) {
+      lua_pushstring(L, e.what());
+      lua_error(L);
+      return 0;
+    }
+    return 1;
+  }
+
+  static int
+  monotone_gettext_for_lua(lua_State *L)
+  {
+    const char *msgid = lua_tostring(L, -1);
+    lua_pushstring(L, gettext(msgid));
+    return 1;
+  }
 }
 
 
@@ -559,8 +630,7 @@ lua_hooks::lua_hooks()
   st = lua_open ();  
   I(st);
 
-  // no atpanic support in 4.x
-  // lua_atpanic (st, &panic_thrower);
+  lua_atpanic (st, &panic_thrower);
 
   luaopen_base(st);
   luaopen_io(st);
@@ -578,9 +648,22 @@ lua_hooks::lua_hooks()
   lua_register(st, "wait", monotone_wait_for_lua);
   lua_register(st, "kill", monotone_kill_for_lua);
   lua_register(st, "sleep", monotone_sleep_for_lua);
-  lua_register(st, "guess_binary", monotone_guess_binary_for_lua);
+  lua_register(st, "guess_binary_file_contents", monotone_guess_binary_file_contents_for_lua);
   lua_register(st, "include", monotone_include_for_lua);
   lua_register(st, "includedir", monotone_includedir_for_lua);
+  lua_register(st, "gettext", monotone_gettext_for_lua);
+
+  // add regex functions:
+  lua_newtable(st);
+  lua_pushstring(st, "regex");
+  lua_pushvalue(st, -2);
+  lua_settable(st, LUA_GLOBALSINDEX);
+
+  lua_pushstring(st, "search");
+  lua_pushcfunction(st, monotone_regex_search_for_lua);
+  lua_settable(st, -3);
+
+  lua_pop(st, 1);
 }
 
 lua_hooks::~lua_hooks()
@@ -629,15 +712,15 @@ lua_hooks::add_std_hooks()
 }
 
 void 
-lua_hooks::default_rcfilename(fs::path & file)
+lua_hooks::default_rcfilename(system_path & file)
 {
-  file = mkpath(get_homedir()) / mkpath(".monotone/monotonerc");
+  file = system_path(get_homedir()) / ".monotone/monotonerc";
 }
 
 void 
-lua_hooks::working_copy_rcfilename(fs::path & file)
+lua_hooks::working_copy_rcfilename(bookkeeping_path & file)
 {
-  file = mkpath(book_keeping_dir) / mkpath("monotonerc");
+  file = bookkeeping_root / "monotonerc";
 }
 
 
@@ -647,7 +730,7 @@ lua_hooks::load_rcfile(utf8 const & rc)
   I(st);
   if (rc() != "-")
     {
-      fs::path locpath(localized(rc));
+      fs::path locpath(system_path(rc).as_external(), fs::native);
       if (fs::exists(locpath) && fs::is_directory(locpath))
         {
           // directory, iterate over it, skipping subdirs, taking every filename,
@@ -663,7 +746,7 @@ lua_hooks::load_rcfile(utf8 const & rc)
           std::sort(arr.begin(), arr.end());
           for (std::vector<fs::path>::iterator i= arr.begin(); i != arr.end(); ++i)
             {
-              load_rcfile(*i, true);
+              load_rcfile(system_path(i->native_directory_string()), true);
             }
           return; // directory read, skip the rest ...
         }
@@ -677,20 +760,20 @@ lua_hooks::load_rcfile(utf8 const & rc)
 }
 
 void 
-lua_hooks::load_rcfile(fs::path const & rc, bool required)
+lua_hooks::load_rcfile(any_path const & rc, bool required)
 {
   I(st);  
-  if (fs::exists(rc))
+  if (path_exists(rc))
     {
-      L(F("opening rcfile '%s' ...\n") % rc.string());
-      N(run_file(st, rc.string()),
-        F("lua error while loading '%s'") % rc.string());
-      L(F("'%s' is ok\n") % rc.string());
+      L(F("opening rcfile '%s' ...\n") % rc);
+      N(run_file(st, rc.as_external()),
+        F("lua error while loading '%s'") % rc);
+      L(F("'%s' is ok\n") % rc);
     }
   else
     {
-      N(!required, F("rcfile '%s' does not exist") % rc.string());
-      L(F("skipping nonexistent rcfile '%s'\n") % rc.string());
+      N(!required, F("rcfile '%s' does not exist") % rc);
+      L(F("skipping nonexistent rcfile '%s'\n") % rc);
     }
 }
 
@@ -738,14 +821,14 @@ bool
 lua_hooks::hook_expand_date(std::string const & sel, 
                             std::string & exp)
 {
-        exp.clear();
+  exp.clear();
   bool res= Lua(st)
     .func("expand_date")
     .push_str(sel)
     .call(1,1)
     .extract_str(exp)
     .ok();
-        return res && exp.size();
+  return res && exp.size();
 }
 
 bool 
@@ -765,8 +848,8 @@ lua_hooks::hook_get_branch_key(cert_value const & branchname,
 }
 
 bool 
-lua_hooks::hook_get_priv_key(rsa_keypair_id const & k,
-                               base64< arc4<rsa_priv_key> > & priv_key )
+lua_hooks::hook_get_key_pair(rsa_keypair_id const & k,
+                             keypair & kp)
 {
   string key;
   bool ok = Lua(st)
@@ -776,7 +859,11 @@ lua_hooks::hook_get_priv_key(rsa_keypair_id const & k,
     .extract_str(key)
     .ok();
 
-  priv_key = key;
+  size_t pos = key.find("#");
+  if (pos == std::string::npos)
+    return false;
+  kp.pub = key.substr(0, pos);
+  kp.priv = key.substr(pos+1);
   return ok;
 }
 
@@ -812,7 +899,7 @@ lua_hooks::hook_ignore_file(file_path const & p)
   bool ignore_it = false;
   bool exec_ok = Lua(st)
     .func("ignore_file")
-    .push_str(p())
+    .push_str(p.as_external())
     .call(1,1)
     .extract_bool(ignore_it)
     .ok();
@@ -946,9 +1033,9 @@ lua_hooks::hook_merge2(file_path const & left_path,
   string res;
   bool ok = Lua(st)
     .func("merge2")
-    .push_str(left_path())
-    .push_str(right_path())
-    .push_str(merged_path())
+    .push_str(left_path.as_external())
+    .push_str(right_path.as_external())
+    .push_str(merged_path.as_external())
     .push_str(left())
     .push_str(right())
     .call(5,1)
@@ -971,10 +1058,10 @@ lua_hooks::hook_merge3(file_path const & anc_path,
   string res;
   bool ok = Lua(st)
     .func("merge3")
-    .push_str(anc_path())
-    .push_str(left_path())
-    .push_str(right_path())
-    .push_str(merged_path())
+    .push_str(anc_path.as_external())
+    .push_str(left_path.as_external())
+    .push_str(right_path.as_external())
+    .push_str(merged_path.as_external())
     .push_str(ancestor())
     .push_str(left())
     .push_str(right())
@@ -994,13 +1081,13 @@ lua_hooks::hook_resolve_file_conflict(file_path const & anc,
   string tmp;
   bool ok = Lua(st)
     .func("resolve_file_conflict")
-    .push_str(anc())
-    .push_str(a())
-    .push_str(b())
+    .push_str(anc.as_external())
+    .push_str(a.as_external())
+    .push_str(b.as_external())
     .call(3,1)
     .extract_str(tmp)
     .ok();
-  res = tmp;
+  res = file_path_internal(tmp);
   return ok;
 }
 
@@ -1013,13 +1100,13 @@ lua_hooks::hook_resolve_dir_conflict(file_path const & anc,
   string tmp;
   bool ok = Lua(st)
     .func("resolve_dir_conflict")
-    .push_str(anc())
-    .push_str(a())
-    .push_str(b())
+    .push_str(anc.as_external())
+    .push_str(a.as_external())
+    .push_str(b.as_external())
     .call(3,1)
     .extract_str(tmp)
     .ok();
-  res = tmp;
+  res = file_path_internal(tmp);
   return ok;  
 }
 
@@ -1037,7 +1124,7 @@ lua_hooks::hook_external_diff(file_path const & path,
 
   ll
     .func("external_diff")
-    .push_str(path());
+    .push_str(path.as_external());
 
   if (oldrev.length() != 0)
     ll.push_str(data_old());
@@ -1129,12 +1216,14 @@ lua_hooks::hook_init_attributes(file_path const & filename,
 
   ll
     .push_str("attr_init_functions")
-    .get_tab()
-    .push_nil();
-
+    .get_tab();
+  
+  L(F("calling attr_init_function for %s") % filename);
+  ll.begin();
   while (ll.next())
     {
-      ll.push_str(filename());
+      L(F("  calling an attr_init_function for %s") % filename);
+      ll.push_str(filename.as_external());
       ll.call(1, 1);
 
       if (lua_isstring(st, -1))
@@ -1146,9 +1235,13 @@ lua_hooks::hook_init_attributes(file_path const & filename,
           ll.extract_str(key);
 
           attrs[key] = value;
+          L(F("  added attr %s = %s") % key % value);
         }
       else
-        ll.pop();
+        {
+          L(F("  no attr added"));
+          ll.pop();
+        }
     }
 
   return ll.pop().ok();
@@ -1164,7 +1257,7 @@ lua_hooks::hook_apply_attribute(string const & attr,
     .get_tab()
     .push_str(attr)
     .get_fn(-2)
-    .push_str(filename())
+    .push_str(filename.as_external())
     .push_str(value)
     .call(2,0)
     .ok();
@@ -1189,7 +1282,7 @@ lua_hooks::hook_get_charset_conv(file_path const & p,
   Lua ll(st);
   ll
     .func("get_charset_conv")
-    .push_str(p())
+    .push_str(p.as_external())
     .call(1,1)
     .begin();
   
@@ -1209,7 +1302,7 @@ lua_hooks::hook_get_linesep_conv(file_path const & p,
   Lua ll(st);
   ll
     .func("get_linesep_conv")
-    .push_str(p())
+    .push_str(p.as_external())
     .call(1,1)
     .begin();
   
@@ -1223,12 +1316,14 @@ lua_hooks::hook_get_linesep_conv(file_path const & p,
 
 bool 
 lua_hooks::hook_note_commit(revision_id const & new_id,
+                            revision_data const & rdat,
                             map<cert_name, cert_value> const & certs)
 {
   Lua ll(st);
   ll
     .func("note_commit")
-    .push_str(new_id.inner()());
+    .push_str(new_id.inner()())
+    .push_str(rdat.inner()());
 
   ll.push_table();
 
@@ -1240,12 +1335,13 @@ lua_hooks::hook_note_commit(revision_id const & new_id,
       ll.set_table();
     }
   
-  ll.call(2, 0);
+  ll.call(3, 0);
   return ll.ok();
 }
 
 bool 
 lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
+                                               revision_data const & rdat,
                             set<pair<rsa_keypair_id,
                                      pair<cert_name,
                                           cert_value> > > const & certs)
@@ -1253,7 +1349,8 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
   Lua ll(st);
   ll
     .func("note_netsync_revision_received")
-    .push_str(new_id.inner()());
+    .push_str(new_id.inner()())
+    .push_str(rdat.inner()());
 
   ll.push_table();
   
@@ -1276,7 +1373,7 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
       ll.set_table();
     }
 
-  ll.call(2, 0);
+  ll.call(3, 0);
   return ll.ok();
 }
 
