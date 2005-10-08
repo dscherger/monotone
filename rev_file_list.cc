@@ -379,11 +379,15 @@ rev_file_list::dosel(Gtk::TreeModel::Path const & p)
       else
         rd->rfi.set_diff(rd->mtn->diff(filename, parent, rev));
     }
+  else
+    rd->rfi.set_diff("No diff available.");
 
     if (wc)
       rd->rfi.set_contents(readfile(fullname));
     else if (row[col.status] != states::dropped)
       rd->rfi.set_contents(rd->mtn->cat(filename, rev));
+    else
+      rd->rfi.set_contents("File dropped -- contents not available");
 
   std::vector<Glib::ustring> c;
   for (std::vector<cert>::iterator i = certs.begin(); i != certs.end(); ++i)

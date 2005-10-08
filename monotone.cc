@@ -15,6 +15,10 @@
 
 #include <boost/lexical_cast.hpp>
 
+// For future reference: CreateProcess and WaitForMultipleObjects on win32
+// to replace fork/exec and select?
+// Put in a 'class Platform {};'?
+
 inline int max(int a, int b) {return (a>b)?a:b;}
 
 monotone::monotone(): pid(-1)
