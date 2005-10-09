@@ -11,6 +11,7 @@ MOST_SOURCES =								\
          work.cc work.hh						\
          cert.cc cert.hh						\
          database.cc database.hh					\
+         key_store.cc key_store.hh					\
          file_io.cc file_io.hh						\
          keys.cc keys.hh						\
          manifest.cc manifest.hh					\
@@ -49,7 +50,7 @@ MOST_SOURCES =								\
 	 netio.hh smap.hh gettext.h					\
          package_revision.c package_revision.h				\
          package_full_revision.c package_full_revision.h options.hh     \
-         i18n.h hash_map.hh netxx_pipe.cc
+         i18n.h hash_map.hh
 
 NETXX_SOURCES =									\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx			\
@@ -113,8 +114,9 @@ BOTAN_SOURCES =                                                                 
         botan/ui.cpp botan/util.cpp botan/x509_ca.cpp			\
         botan/x509_crl.cpp botan/x509_key.cpp botan/x509_obj.cpp	\
         botan/x509cert.cpp botan/x509find.cpp botan/x509opt.cpp		\
-        botan/x509self.cpp botan/x509stor.cpp \
-        botan/def_alg.cpp botan/def_mode.cpp botan/sha256.cpp \
+        botan/des.cpp botan/des_tab.cpp botan/pkcs5.cpp 		\
+        botan/x509self.cpp botan/x509stor.cpp 				\
+        botan/def_alg.cpp botan/def_mode.cpp botan/sha256.cpp 		\
         \
         botan/aes.h botan/botan.h botan/def_eng.h botan/es_win32.h	\
         botan/lookup.h botan/omac.h botan/randpool.h botan/version.h	\
@@ -146,8 +148,9 @@ BOTAN_SOURCES =                                                                 
         botan/data_src.h botan/es_egd.h botan/look_add.h botan/ofb.h	\
         botan/pk_util.h botan/ui.h botan/blinding.h botan/defalloc.h	\
         botan/es_file.h botan/look_pk.h botan/oids.h botan/pubkey.h	\
-        botan/util.h botan/charset.h botan/hash_id.h \
-		botan/x931_rng.cpp botan/x931_rng.h botan/sha256.h
+        botan/util.h botan/charset.h botan/hash_id.h 			\
+        botan/des.h botan/pkcs5.h					\
+	botan/x931_rng.cpp botan/x931_rng.h botan/sha256.h
 
 
 BOOST_SANDBOX_SOURCES = \
