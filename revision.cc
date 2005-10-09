@@ -1383,6 +1383,54 @@ u64 anc_graph::add_node_for_old_manifest(manifest_id const & man)
   return node;
 }
 
+static void
+fixup_non_normalized_manifest(manifest_id & mid, app_state & app)
+{
+  manifest_data mdat;
+  app.db.get_manifest_version(mid, mdat);
+  manifest_map mm;
+  try
+    {
+      read_manifest_map(mdat, mm);
+    }
+  catch (invariant_failure)
+    {
+      // this manifest is bad, we need to fix it up.
+      // our normal parser will refuse to work, so parse it by hand, and use
+      // boost normalization code to fix up paths
+      // this code is basically copied from read_manifest_map in manifest.cc.
+        std::string::size_type pos = 0;
+        while (pos != mdat.inner()().size())
+          {
+            // whenever we get here, pos points to the beginning of a manifest
+            // line
+            // manifest file has 40 characters hash, then 2 characters space, then
+            // everything until next \n is filename.
+            std::string ident = mdat.inner()().substr(pos, constants::idlen);
+            std::string::size_type file_name_begin = pos + constants::idlen + 2;
+            pos = dat().find('\n', file_name_begin);
+            std::string file_name;
+            if (pos == std::string::npos)
+              file_name = mdat.inner()().substr(file_name_begin);
+            else
+              file_name = mdat.inner()().substr(file_name_begin, pos - file_name_begin);
+            // normalize the path
+            file_name = fs::path(file_name, fs::native).normalize().string();
+            // insert it into the manifest
+            mm.insert(manifest_entry(file_path_internal(file_name),
+                                     hexenc<id>(ident)));
+            // skip past the '\n'
+            ++pos;
+          }
+      write_manifest_map(mm, mdat);
+      // store the new manifest (not bothering with clever delta storage
+      // stuff)
+      app.db.put_manifest_version(mdat);
+      // overwrite the caller's manifest id with the new, corrected one
+      calculate_ident(mdat, mid);
+    }
+}
+
 u64 anc_graph::add_node_for_old_revision(revision_id const & rev)
 {
   I(existing_graph);
@@ -1395,6 +1443,7 @@ u64 anc_graph::add_node_for_old_revision(revision_id const & rev)
       
       manifest_id man;
       app.db.get_revision_manifest(rev, man);
+      fixup_non_normalized_manifest(man);
       
       L(F("node %d = revision %s = manifest %s\n") % node % rev % man);
       old_rev_to_node.insert(std::make_pair(rev, node));

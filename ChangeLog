@@ -1,3 +1,9 @@
+2005-10-08  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (fixup_non_normalized_manifest): Add some klugey
+	gunk to fix up manifests with non-normalized paths (as the colinux
+	folks have).  Not tested.
+
 2005-09-30  Nathaniel Smith  <njs@pobox.com>
 
 	* NEWS: Set date for 0.23.
