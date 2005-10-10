@@ -19,6 +19,20 @@ std::vector<V, A> & operator%(std::vector<V, A> & v, T t)
   return v;
 }
 
+bool operator<(trr const & l, trr const & r)
+{
+  Glib::ustring ls = l.get_path().to_string();
+  Glib::ustring rs = r.get_path().to_string();
+  return ls < rs;
+}
+
+bool operator==(trr const & l, trr const & r)
+{
+  Glib::ustring ls = l.get_path().to_string();
+  Glib::ustring rs = r.get_path().to_string();
+  return ls == rs;
+}
+
 namespace states
 {
   const std::string added("add");
@@ -115,6 +129,7 @@ rev_file_list::drag_get(const Glib::RefPtr<Gdk::DragContext> & dc,
 void
 rev_file_list::menuadd()
 {
+  Gtk::TreeModel::Row menurow = *menuiter;
   menurow[col.included] = true;
   menurow[col.changed] = true;
   menurow[col.status] = states::added;
@@ -128,6 +143,7 @@ rev_file_list::menuadd()
 void
 rev_file_list::menudrop()
 {
+  Gtk::TreeModel::Row menurow = *menuiter;
   if (menurow[col.status] == states::added)
     {
       menurow[col.included] = false;
@@ -150,6 +166,7 @@ rev_file_list::menudrop()
 void
 rev_file_list::menurename()
 {
+  Gtk::TreeModel::Row menurow = *menuiter;
   Gtk::FileChooserDialog dialog("Please choose a new name",
                                 Gtk::FILE_CHOOSER_ACTION_SAVE, "");
   dialog.set_transient_for(*rd->window);
@@ -168,9 +185,10 @@ rev_file_list::menurename()
       if (newname == n2 || (n2.empty() && newname == n1))
         return;
       rd->mtn->rename(n2, newname);
+      menurow[col.postname] = newname;
       if (newname == n1)
         {// undo rename
-          menurow[col.name] = newname;
+          recalc_name(menuiter);
           if (menurow[col.status] == states::renamed)
             {
               menurow[col.included] = false;
@@ -185,10 +203,7 @@ rev_file_list::menurename()
           menurow[col.changed] = true;
           menurow[col.status] = states::renamed;
         }
-      if (menurow[col.status] == states::added)
-        menurow[col.name] = newname;
-      else
-        menurow[col.name] = n1 + "\n" + newname;
+      recalc_name(menuiter);
       needscan = true;
     }
 }
@@ -196,6 +211,7 @@ rev_file_list::menurename()
 void// not supported by monotone
 rev_file_list::menuundrop()
 {
+  Gtk::TreeModel::Row menurow = *menuiter;
   std::string name = Glib::ustring(menurow[col.postname]);
   if (name.empty())
     name = Glib::ustring(menurow[col.prename]);
@@ -223,6 +239,7 @@ rev_file_list::menuundrop()
 void
 rev_file_list::menurevert()
 {
+  Gtk::TreeModel::Row menurow = *menuiter;
   if (menurow[col.status] == states::added)
     menurow[col.status] = states::unknown;
   else
@@ -232,6 +249,7 @@ rev_file_list::menurevert()
   if (name.empty())
     name = Glib::ustring(menurow[col.prename]);
   rd->mtn->revert(name);
+  recalc_name(menuiter);
   needscan = true;
 }
 
@@ -250,7 +268,8 @@ void rev_file_list::clicked(GdkEventButton *b)
     return;
   bool add_(false), drop_(false), rename_(false);
   bool undrop_(false), unmove_(false), revert_(false);
-  menurow = *filelist->get_iter(path);
+  menuiter = filelist->get_iter(path);
+  Gtk::TreeModel::Row menurow = *menuiter;
   if (menurow[col.status] == states::added)
     drop_ = rename_ = revert_ = true;
   else if (menurow[col.status] == states::patched)
@@ -424,6 +443,41 @@ rev_file_list::dosel(Gtk::TreeModel::Path const & p)
 }
 
 void
+rev_file_list::recalc_name(Gtk::TreeModel::iterator & i)
+{
+  Glib::ustring pre = (*i)[col.prename];
+  Glib::ustring post = (*i)[col.postname];
+  Glib::ustring disp;
+  std::map<trr, Glib::ustring>::iterator j = rdirs.end();
+  if (filelist->iter_depth(i))
+    {
+      Gtk::TreeModel::iterator k = i->parent();
+      Gtk::TreeModel::RowReference ref(filelist, filelist->get_path(k));
+      j = rdirs.find(ref);
+    }
+  Glib::ustring parent;
+  if (j != rdirs.end())
+    parent = j->second + "/";
+  if (pre.find(parent) == 0)
+    pre = pre.substr(parent.size());
+  else
+    pre = "/" + pre;
+  if (post.find(parent) == 0)
+    post = post.substr(parent.size());
+  else
+    post = "/" + post;
+  if (pre.empty())
+    disp = post;
+  else if (post.empty())
+    disp = pre;
+  else if (pre == post)
+    disp = pre;
+  else
+    disp = pre + "\n" + post;
+  (*i)[col.name] = disp;
+}
+
+void
 rev_file_list::rescan()
 {
   if (needscan)
@@ -441,7 +495,8 @@ rev_file_list::rescan()
     comments[current_file] = rd->rfi.get_comment();
   rd->rfi.set_comment(std::vector<Glib::ustring>(), "");
   current_file = "";
-  std::map<Glib::ustring, Gtk::TreeModel::RowReference> dirs;
+  dirs.clear();
+  rdirs.clear();
 
   while (!filelist->children().empty())
     filelist->erase(filelist->children().begin());
@@ -479,12 +534,16 @@ rev_file_list::rescan()
       Glib::ustring workstr = i->postname;
       if (workstr.empty())
         workstr = i->prename;
+      if (workstr.empty())
+        {
+//          std::cout<<"Nameless item!\n";
+          continue;
+        }
       std::vector<Glib::ustring> stk;
       while (true)
         {
           Glib::ustring pdir = workstr.substr(0, workstr.rfind('/'));
-          std::map<Glib::ustring, Gtk::TreeModel::RowReference>::iterator
-            j = dirs.find(pdir);
+          std::map<Glib::ustring, trr>::iterator j = dirs.find(pdir);
           if (j != dirs.end() || pdir.size() == workstr.size())
             {
               if (j != dirs.end())
@@ -496,10 +555,15 @@ rev_file_list::rescan()
               while (!stk.empty())
                 {
                   Gtk::TreeModel::iterator row = filelist->append(parent_row);
-                  (*row)[col.name] = workstr.substr(workstr.rfind('/')+1);
-                  dirs.insert(std::make_pair(workstr,
-                    Gtk::TreeModel::RowReference(filelist,
-                                                 filelist->get_path(row))));
+                  Glib::ustring leaf = workstr.substr(workstr.rfind('/')+1);
+                  (*row)[col.name] = leaf;
+                  (*row)[col.prename] = workstr;
+                  (*row)[col.postname] = workstr;
+                  (*row)[col.status] = " ";
+                  Gtk::TreeModel::RowReference
+                    rr(filelist, filelist->get_path(row));
+                  dirs.insert(std::make_pair(workstr, rr));
+                  rdirs.insert(std::make_pair(rr, workstr));
                   parent_row = row->children();
                   workstr = stk.back();
                   stk.pop_back();
@@ -531,15 +595,7 @@ rev_file_list::rescan()
 
       row[col.prename] = i->prename;
       row[col.postname] = i->postname;
-      Glib::ustring preleaf = i->prename.substr(i->prename.rfind('/')+1);
-      Glib::ustring postleaf = i->postname.substr(i->postname.rfind('/')+1);
-      if (i->prename.size() && i->postname.size()
-                && i->prename != i->postname)
-        row[col.name] = i->prename + "\n" + postleaf;
-      else if (i->prename.size())
-        row[col.name] = preleaf;
-      else
-        row[col.name] = postleaf;
+      recalc_name(iter);
     }
 }
 

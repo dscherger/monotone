@@ -18,6 +18,10 @@
 
 class revdat;
 
+struct trr: public Gtk::TreeRowReference
+{
+  trr(Gtk::TreeRowReference const & r): Gtk::TreeRowReference(r) {}
+};
 
 class rev_file_list: public Gtk::VBox
 {
@@ -102,8 +106,10 @@ class rev_file_list: public Gtk::VBox
   std::string current_file;
 
   Gtk::Menu menu;
-  Gtk::TreeModel::Row menurow;
+  Gtk::TreeModel::iterator menuiter;
   bool needscan;
+  std::map<Glib::ustring, trr> dirs;
+  std::map<trr, Glib::ustring> rdirs;
 
   void menuadd();
   void menudrop();
@@ -122,6 +128,7 @@ class rev_file_list: public Gtk::VBox
   void selfile(Gtk::TreeModel::Path const & p, Gtk::TreeView::Column *c);
   void clicked(GdkEventButton *b);
   void set_menu(std::vector<bool> const & v);
+  void recalc_name(Gtk::TreeModel::iterator & i);
 public:
   rev_file_list(revdat *r);
   void set_wc(bool w);

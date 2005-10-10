@@ -505,6 +505,7 @@ monotone::rename(std::string const & oldname, std::string const & newname)
 {
   std::string ign1, ign2;
   std::vector<std::string> args;
+  args.push_back("--execute");
   args.push_back(oldname);
   args.push_back(newname);
   runcmd("rename", args, ign1, ign2);
