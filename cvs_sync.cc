@@ -1022,7 +1022,7 @@ static void test_key_availability(app_state &app)
 {
   // early short-circuit to avoid failure after lots of work
   rsa_keypair_id key;
-  N(guess_default_key(key,app), F("could not guess default signing key"));
+  get_user_key(key, app);
   // Require the password early on, so that we don't do lots of work
   // and then die.
   app.signing_key = key;

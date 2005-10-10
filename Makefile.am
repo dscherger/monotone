@@ -44,7 +44,7 @@ MOST_SOURCES =								\
          globish.cc globish.hh                                          \
          string_queue.cc string_queue.hh                                \
          paths.cc paths.hh                                              \
-                                                                        \
+         piece_table.cc netxx_pipe.cc					\
 	 cleanup.hh unit_tests.hh interner.hh				\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
