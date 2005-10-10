@@ -65,7 +65,6 @@ piece::piece_store::index_deltatext(std::string const & dt,
     }
 }
 
-
 static void 
 process_one_hunk(piece::piece_table const & source,
                  piece::piece_table & dest,
@@ -81,7 +80,7 @@ process_one_hunk(piece::piece_table const & source,
       char code;
       int pos, len;
       if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
-              throw oops("illformed directive '" + directive + "'");
+              E(false, F("illformed directive '%s'\n") % directive);
 
       if (code == 'a')
         {
@@ -102,16 +101,13 @@ process_one_hunk(piece::piece_table const & source,
           I(cursor == pos - 1);
           cursor += len;
         }
-      else 
-        throw oops("unknown directive '" + directive + "'");
+      else
+        E(false,F("unknown directive '%s'\n") % directive);
     } 
   catch (std::out_of_range & oor)
     {
-      throw oops("std::out_of_range while processing " + directive 
-                 + " with source.size() == " 
-                 + boost::lexical_cast<string>(source.size())
-                 + " and cursor == "
-                 + boost::lexical_cast<string>(cursor));
+      E(false, F("out_of_range while processing '%s' with source.size() == %d and cursor == %d")
+          % directive % source.size() % cursor);
     }  
 }
 
@@ -134,3 +130,20 @@ piece::apply_diff(piece_table const & source_lines,
     dest_lines.push_back(source_lines[cursor++]);
 }
 
+void
+piece::reset()
+{ 
+  global_pieces.reset();
+}
+
+void
+piece::index_deltatext(std::string const & dt, piece_table & pieces)
+{
+  global_pieces.index_deltatext(dt,pieces);
+}
+
+void
+piece::build_string(piece_table const & pieces, std::string & out)
+{
+  global_pieces.build_string(pieces, out);
+}

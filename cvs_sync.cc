@@ -14,6 +14,7 @@
 #include <fstream>
 #include <sys/stat.h>
 #include "stringtok.hh"
+#include "piece_table.hh"
 
 #ifdef WIN32
 #define sleep(x) _sleep(x)
@@ -24,38 +25,7 @@ using namespace std;
 // since the piece methods in rcs_import depend on rcs_file I cannot reuse them
 // I rely on string handling reference counting (which is not that bad IIRC)
 //  -> investigate under which conditions a string gets copied
-namespace cvs_sync
-{
 static std::string const cvs_cert_name="cvs-revisions";
-
-struct 
-piece
-{
-  piece(string::size_type p, string::size_type l, const std::string &_s) :
-    pos(p), len(l), s(_s) {}
-  string::size_type pos;
-  string::size_type len;
-  string s;
-  const string operator*() const
-  { return s.substr(pos,len); }
-};
-
-
-static void 
-index_deltatext(std::string const & dt, vector<piece> & pieces);
-static void 
-process_one_hunk(vector< piece > const & source,
-                 vector< piece > & dest,
-                 vector< piece >::const_iterator & i,
-                 int & cursor);
-static void 
-build_string(vector<piece> const & pieces, string & out);
-static void
-construct_version(vector< piece > const & source_lines,
-                  vector< piece > & dest_lines,
-                  string const & deltatext);
-
-}
 
 using namespace cvs_sync;
 
@@ -78,103 +48,6 @@ cvs_sync::operator<=(const file_state &s,const cvs_edge &e)
 { return s.since_when<e.time ||
     (s.since_when<=e.time2 && (s.author<=e.author ||
     (s.author==e.author && s.log_msg<=e.changelog)));
-}
-
-static void 
-cvs_sync::process_one_hunk(vector< piece > const & source,
-                 vector< piece > & dest,
-                 vector< piece >::const_iterator & i,
-                 int & cursor)
-{
-  string directive = **i;
-  assert(directive.size() > 1);
-  ++i;
-
-  try 
-    {
-      char code;
-      int pos, len;
-      if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
-              throw oops("illformed directive '" + directive + "'");
-
-      if (code == 'a')
-        {
-          // 'ax y' means "copy from source to dest until cursor == x, then
-          // copy y lines from delta, leaving cursor where it is"
-          while (cursor < pos)
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos);
-          while (len--)
-            dest.push_back(*i++);
-        }
-      else if (code == 'd')
-        {      
-          // 'dx y' means "copy from source to dest until cursor == x-1,
-          // then increment cursor by y, ignoring those y lines"
-          while (cursor < (pos - 1))
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos - 1);
-          cursor += len;
-        }
-      else 
-        E(false,F("unknown directive '%s'\n") % directive);
-    } 
-  catch (std::out_of_range & oor)
-    {
-      E(false, F("out_of_range while processing '%s' with source.size() == %d and cursor == %d")
-          % directive % source.size() % cursor);
-    }  
-}
-
-static void 
-cvs_sync::build_string(vector<piece> const & pieces, string & out)
-{
-  out.clear();
-  out.reserve(pieces.size() * 60);
-  for(vector<piece>::const_iterator i = pieces.begin();
-      i != pieces.end(); ++i)
-    out.append(i->s, i->pos, i->len);
-}
-
-static void 
-cvs_sync::index_deltatext(std::string const & dt, vector<piece> & pieces)
-{
-  pieces.clear();
-  pieces.reserve(dt.size() / 30);  
-  string::size_type begin = 0;
-  string::size_type end = dt.find('\n');
-  while(end != string::npos)
-    {
-      // nb: the piece includes the '\n'
-      pieces.push_back(piece(begin, (end - begin) + 1, dt));
-      begin = end + 1;
-      end = dt.find('\n', begin);
-    }
-  if (begin != dt.size())
-    {
-      // the text didn't end with '\n', so neither does the piece
-      end = dt.size();
-      pieces.push_back(piece(begin, end - begin, dt));
-    }
-}
-
-static void
-cvs_sync::construct_version(vector< piece > const & source_lines,
-                  vector< piece > & dest_lines,
-                  string const & deltatext)
-{
-  dest_lines.clear();
-  dest_lines.reserve(source_lines.size());
-
-  vector<piece> deltalines;
-  index_deltatext(deltatext, deltalines);
-  
-  int cursor = 0;
-  for (vector<piece>::const_iterator i = deltalines.begin(); 
-       i != deltalines.end(); )
-    process_one_hunk(source_lines, dest_lines, i, cursor);
-  while (cursor < static_cast<int>(source_lines.size()))
-    dest_lines.push_back(source_lines[cursor++]);
 }
 
 /* supported by the woody version:
@@ -479,9 +352,9 @@ void cvs_repository::store_contents(const data &dat, hexenc<id> &sha1sum)
   }
 }
 
-static void apply_delta(vector<piece> &contents, const std::string &patch)
-{ vector<piece> after;
-  construct_version(contents,after,patch);
+static void apply_delta(piece::piece_table &contents, const std::string &patch)
+{ piece::piece_table after;
+  piece::apply_diff(contents,after,patch);
   std::swap(contents,after);
 }
 
@@ -622,10 +495,11 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     { W(F("update time %ld and log time %ld disagree\n") % u.mod_time % s2->since_when);
     }
     std::string old_contents=contents;
-    { std::vector<piece> file_contents;
-      index_deltatext(contents,file_contents);
+    { piece::piece_table file_contents;
+      piece::index_deltatext(contents,file_contents);
       apply_delta(file_contents, u.patch);
-      build_string(file_contents, contents);
+      piece::build_string(file_contents, contents);
+      piece::reset();
     }
     // check md5
     Botan::MD5 hash;
@@ -1448,16 +1322,16 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       ++(*cert_ticker);
       cvs_edge e(i->inner().ident,app);
 
-      std::vector<piece> pieces;
+      piece::piece_table pieces;
       // in Zeilen aufteilen
-      index_deltatext(cvs_revisions(),pieces);
+      piece::index_deltatext(cvs_revisions(),pieces);
       I(!pieces.empty());
       manifest_id mid;
       app.db.get_revision_manifest(i->inner().ident,mid);
       manifest_map manifest;
       app.db.get_manifest(mid,manifest);
       //      manifest;
-      std::vector<piece>::const_iterator p=pieces.begin()+1;
+      piece::piece_table::const_iterator p=pieces.begin()+1;
       if ((**p)[0]=='+') // this is a delta encoded manifest
       { hexenc<id> h=(**p).substr(1,40); // remember to omit the trailing \n
         e.delta_base=revision_id(h);
@@ -1502,6 +1376,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           e.xfiles.insert(std::make_pair(path,cfs));
         }
       }
+      piece::reset();
       revision_lookup[e.revision]=edges.insert(e).first;
     }
     else L(F("cvs cert %s ignored (!=%s)") % cvs_revisions % needed_cert);
@@ -1930,10 +1805,10 @@ void cvs_repository::retrieve_modules()
     app.db.get_var(key,value);
   } catch (logic_error &e) { return; }
   std::map<std::string,std::string> sd;
-  std::vector<piece> pieces;
+  piece::piece_table pieces;
   std::string value_s=value();
-  index_deltatext(value_s,pieces);
-  for (std::vector<piece>::const_iterator p=pieces.begin();p!=pieces.end();++p)
+  piece::index_deltatext(value_s,pieces);
+  for (piece::piece_table::const_iterator p=pieces.begin();p!=pieces.end();++p)
   { std::string line=**p;
     MM(line);
     I(!line.empty());
@@ -1943,5 +1818,6 @@ void cvs_repository::retrieve_modules()
     line.erase(line.size()-1,1);
     sd[line.substr(0,tab)]=line.substr(tab+1);
   }
+  piece::reset();
   SetServerDir(sd);
 }

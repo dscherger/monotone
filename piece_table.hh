@@ -10,6 +10,11 @@
 
 // piece table stuff
 
+/* 
+ * this code efficiently constructs a new revision of a file by breaking
+ * it into lines and applying a rcs diff
+ */
+
 struct 
 piece
 {
@@ -31,6 +36,7 @@ piece
                   piece_table & dest_lines,
                   std::string const & deltatext);
 
+  // free allocated storage (invalidates all existing pieces)
   static void reset();
 };
 
