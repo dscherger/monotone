@@ -1,1 +1,14 @@
-Nothing to see here, please move along.
+mtsh 0.2	2005-10-09
+	The file list now shows a proper tree, instead of a flat list.
+	
+	mtsh now has primitive "undrop" support
+	
+	The "File diff" and "File contents" tabs now get reset when a
+	file that they can't be generated for is selected. Previously, they'd
+	keep showing the contents of the previous file.
+
+mtsh 0.1x
+	Fix annoying crashes, and make the file list a drag&drop source.
+
+mtsh 0.1
+	Initial release.
