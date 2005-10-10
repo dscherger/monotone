@@ -379,7 +379,6 @@ write_data_impl(any_path const & p,
 
   make_dir_for(p);
 
-                                             get_process_id()).str();
   {
     // data.tmp opens
     ofstream file(tmp.as_external().c_str(),
@@ -404,6 +403,8 @@ write_data_impl(any_path const & p,
   bookkeeping_path tmp = bookkeeping_root / (boost::format("data.tmp.%d") %
                                              get_process_id()).str();
   write_data_impl(p, dat, tmp);
+}
+
 void 
 write_data(file_path const & path, data const & dat)
 { 
