@@ -20,6 +20,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include "botan/botan.h"
 
@@ -1393,12 +1394,12 @@ fixup_non_normalized_manifest(manifest_id & mid, app_state & app)
     {
       read_manifest_map(mdat, mm);
     }
-  catch (invariant_failure)
+  catch (std::logic_error)
     {
-      // this manifest is bad, we need to fix it up.
-      // our normal parser will refuse to work, so parse it by hand, and use
-      // boost normalization code to fix up paths
-      // this code is basically copied from read_manifest_map in manifest.cc.
+        // this manifest is bad, we need to fix it up.
+        // our normal parser will refuse to work, so parse it by hand, and use
+        // boost normalization code to fix up paths
+        // this code is basically copied from read_manifest_map in manifest.cc.
         std::string::size_type pos = 0;
         while (pos != mdat.inner()().size())
           {
@@ -1408,7 +1409,7 @@ fixup_non_normalized_manifest(manifest_id & mid, app_state & app)
             // everything until next \n is filename.
             std::string ident = mdat.inner()().substr(pos, constants::idlen);
             std::string::size_type file_name_begin = pos + constants::idlen + 2;
-            pos = dat().find('\n', file_name_begin);
+            pos = mdat.inner()().find('\n', file_name_begin);
             std::string file_name;
             if (pos == std::string::npos)
               file_name = mdat.inner()().substr(file_name_begin);
@@ -1425,9 +1426,10 @@ fixup_non_normalized_manifest(manifest_id & mid, app_state & app)
       write_manifest_map(mm, mdat);
       // store the new manifest (not bothering with clever delta storage
       // stuff)
-      app.db.put_manifest_version(mdat);
       // overwrite the caller's manifest id with the new, corrected one
       calculate_ident(mdat, mid);
+      if (!app.db.manifest_version_exists(mid))
+           app.db.put_manifest(mid, mdat);
     }
 }
 
@@ -1443,7 +1445,7 @@ u64 anc_graph::add_node_for_old_revision(revision_id const & rev)
       
       manifest_id man;
       app.db.get_revision_manifest(rev, man);
-      fixup_non_normalized_manifest(man);
+      fixup_non_normalized_manifest(man, app);
       
       L(F("node %d = revision %s = manifest %s\n") % node % rev % man);
       old_rev_to_node.insert(std::make_pair(rev, node));

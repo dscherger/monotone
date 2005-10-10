@@ -1,3 +1,8 @@
+2005-10-10  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (fixup_non_normalized_manifest): Fixes to this kluge,
+	from Nuno Lucas.  Seems to actually work now.
+
 2005-10-08  Nathaniel Smith  <njs@pobox.com>
 
 	* revision.cc (fixup_non_normalized_manifest): Add some klugey
