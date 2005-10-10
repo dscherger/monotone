@@ -44,3 +44,5 @@
 #define OPT_LCA 35
 #define OPT_EXECUTE 36
 #define OPT_KEY_DIR 37
+#define OPT_SINCE 38
+#define OPT_FULL 39
