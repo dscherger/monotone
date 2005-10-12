@@ -293,10 +293,19 @@ void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string
   tagslot[file]=revision;
 }
 
+// very short form to 
+std::string time_t2human(const time_t &t)
+{ struct tm *tm;
+  tm=gmtime(&t);
+  return (boost::format("%02d%02d%02dT%02d%02d%02d") % (tm->tm_year%100) 
+      % (tm->tm_mon+1) % tm->tm_mday % tm->tm_hour % tm->tm_min 
+      % tm->tm_sec).str();
+}
+
 void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
         const std::string &revision,const std::string &_author,
         const std::string &dead,const std::string &_message) const
-{ L(F("prime_log_cb %s:%s %d %s %d %s\n") % file % revision % checkin_time
+{ L(F("prime_log_cb %s:%s %s %s %d %s\n") % file % revision % time_t2human(checkin_time)
         % _author % _message.size() % dead);
   std::string author=_author;
   std::string message=_message;
@@ -636,9 +645,9 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
       if (f->second.known_states.empty()) continue; 
       if (!(*(f->second.known_states.begin()) <= (*e)))
       // the file does not exist yet (first is not below/equal current edge)
-      { L(F("%s before beginning %d/%d+%d\n") % f->first 
-            % f->second.known_states.begin()->since_when
-            % e->time % (e->time2-e->time));
+      { L(F("%s before beginning %s/%s+%d\n") % f->first 
+            % time_t2human(f->second.known_states.begin()->since_when)
+            % time_t2human(e->time) % (e->time2-e->time));
         continue; 
       }
       cvs_manifest::iterator mi=current_manifest.find(f->first);
@@ -651,9 +660,9 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
              && (*s2)<=(*e)
              && ( next_edge==edges.end() || ((*s2)<(*next_edge)) );
              ++s2)
-        { L(F("%s matches %d/%d+%d\n") % f->first 
-            % s2->since_when
-            % e->time % (e->time2-e->time));
+        { L(F("%s matches %s/%s+%d\n") % f->first 
+            % time_t2human(s2->since_when)
+            % time_t2human(e->time) % (e->time2-e->time));
           s=s2;
         }
           
@@ -1047,8 +1056,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       return --(edges.end());
     }
     std::string changelog;
-    changelog="Monotone revision "+e.revision()+" author "+e.author
-        +" time "+cvs_client::time_t2rfc822(e.time)+"\n\n"+e.changelog;
+    changelog=e+changelog+"\nmonotone "+e.author+" "
+        +cvs_client::time_t2rfc822(e.time)+" "+e.revision()+"\n";
     // gather information CVS does not know about into the changelog
     changelog+=gather_merge_information(e.revision);
     std::map<std::string,std::pair<std::string,std::string> > result
@@ -1546,7 +1555,7 @@ static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
 }
 
 const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
-{ L(F("get_files(%d %s) %s %d\n") % e.time % e.revision % e.delta_base % e.xfiles.size());
+{ L(F("get_files(%s %s) %s %d\n") % time_t2human(e.time) % e.revision % e.delta_base % e.xfiles.size());
   if (!e.delta_base.inner()().empty())
   { cvs_manifest calculated_manifest;
     // this is non-recursive by reason ...
@@ -1594,6 +1603,17 @@ void cvs_sync::debug(const std::string &command, const std::string &arg,
     app.db.get_revision_certs(cvs_cert_name, certs);
     repo.process_certs(certs);
     std::cout << debug_manifest(repo.get_files(rid));
+    return;
+  }
+  else if (command=="history")
+  { 
+    std::string repository, module, branch;
+    
+    std::vector< revision<cert> > certs;
+    guess_repository(repository, module, branch, certs, app);
+    cvs_sync::cvs_repository repo(app,repository,module,branch,false);
+    repo.process_certs(certs);
+    std::cout << repo.debug();
     return;
   }
 }

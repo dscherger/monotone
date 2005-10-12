@@ -1316,7 +1316,7 @@ std::map<std::string,std::pair<std::string,std::string> >
       writestr("Modified "+bname+"\n");
       writestr("u=rw,g=r,o=r\n"); // standard mode
       // do _not_ translate this into locale format (e.g. F() )
-      writestr((boost::format("%d\n") % i->new_content.size()).str());
+      writestr(boost::lexical_cast<std::string>(i->new_content.size())+"\n");
       writestr(i->new_content);
     }
   }
