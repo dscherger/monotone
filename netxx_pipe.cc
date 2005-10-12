@@ -71,8 +71,13 @@ pipe_and_fork(int *fd1,int *fd2)
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
+// error if function does not return the correct value
+// (unfortunately E has inverse logic)
 #define FAIL_IF(FUN,ARGS,CHECK) \
   E(!((FUN ARGS) CHECK), F(#FUN " failed %d\n") % GetLastError())
+// error if condition is not met and GetLastError is not expected value
+#define FAIL_IF4(FUN,ARGS,CHECK,OK) \
+  E(!((FUN ARGS) CHECK && GetLastError()!=OK), F(#FUN " failed %d\n") % GetLastError())
 #endif
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
@@ -90,12 +95,14 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   newargv[newargc]=0;
 #ifdef WIN32
 
-  int fd1[2],fd2[2];
-  fd1[0]=-1;
-  fd1[1]=-1;
-  fd2[0]=-1;
-  fd2[1]=-1;
-  E(_pipe(fd2,0,_O_BINARY)==0, F("first pipe failed"));
+  // mark some files as inheritable by the child
+  SECURITY_ATTRIBUTES inherit;
+  memset(&inherit,0,sizeof inherit);
+  inherit.nLength=sizeof inherit;
+  inherit.bInheritHandle = TRUE;
+
+  HANDLE hStdinR=0, hStdinW=0;
+  FAIL_IF(CreatePipe,(&hStdinR,&hStdinW,&inherit,sizeof readbuf),==0);
   char pipename[256];
   static int serial;
   // yes, since we have to use named pipes because of nonblocking read
@@ -103,21 +110,17 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   // pipe. I prefer two pipes to resemble the unix case.
   snprintf(pipename,sizeof pipename,"\\\\.\\pipe\\netxx_pipe_%ld_%d",
 		GetCurrentProcessId(),++serial);
-  HANDLE readhandle=0,writehandle=0;
-  FAIL_IF(readhandle=CreateNamedPipe,(pipename, 
+  HANDLE hStdoutR=0,hStdoutW=0;
+  FAIL_IF(hStdoutR=CreateNamedPipe,(pipename, 
              PIPE_ACCESS_INBOUND|FILE_FLAG_OVERLAPPED,
 	     PIPE_TYPE_BYTE | PIPE_WAIT,
-	     1,4096,4096,1000,0),==INVALID_HANDLE_VALUE);
-  FAIL_IF(writehandle=CreateFile,(pipename,GENERIC_WRITE,0,0,OPEN_EXISTING,
+	     1,sizeof readbuf,sizeof readbuf,1000,0),
+	  ==INVALID_HANDLE_VALUE);
+  FAIL_IF(hStdoutW=CreateFile,(pipename,GENERIC_WRITE,0,&inherit,OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL,0),==INVALID_HANDLE_VALUE);
-  // MinGW defines this function to take a long, not a HANDLE :-(
-  FAIL_IF(fd1[0]=_open_osfhandle,(long(readhandle),O_BINARY|O_RDONLY),==-1);
-  FAIL_IF(fd1[1]=_open_osfhandle,(long(writehandle),O_BINARY|O_WRONLY),==-1);
 
-  // mark these file handles as not inheritable
-  SetHandleInformation( (HANDLE)_get_osfhandle(fd1[0]), HANDLE_FLAG_INHERIT, 0);
-  SetHandleInformation( (HANDLE)_get_osfhandle(fd2[1]), HANDLE_FLAG_INHERIT, 0);
-  SetHandleInformation( (HANDLE)_get_osfhandle(fd2[0]), HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+  // mark this file handle as not inheritable
+  SetHandleInformation( hStdinW, HANDLE_FLAG_INHERIT, 0);
   // set up the child with the pipes as stdin/stdout and inheriting stderr
   PROCESS_INFORMATION piProcInfo;
   STARTUPINFO siStartInfo;
@@ -125,22 +128,22 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   memset(&siStartInfo,0,sizeof siStartInfo);
   siStartInfo.cb = sizeof siStartInfo;
   siStartInfo.hStdError = (HANDLE)_get_osfhandle(2);
-  siStartInfo.hStdOutput = (HANDLE)_get_osfhandle(fd1[1]);
-  siStartInfo.hStdInput = (HANDLE)_get_osfhandle(fd2[0]);
+  siStartInfo.hStdOutput = hStdoutW;
+  siStartInfo.hStdInput = hStdinR;
   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
   std::string cmdline=munge_argv_into_cmdline(newargv);
   L(F("cmdline '%s'\n") % cmdline);
   FAIL_IF(CreateProcess,(0,const_cast<CHAR*>(cmdline.c_str()),
                          0,0,TRUE,0,0,0,&siStartInfo,&piProcInfo),==0);
-  ::close(fd1[1]);
-  ::close(fd2[0]);
   child=long(piProcInfo.hProcess);
-  readfd=fd1[0];
-  writefd=fd2[1];
+  // create normal file descriptors for these handles
+  // MinGW defines this function to take a long, not a HANDLE :-(
+  FAIL_IF(readfd=_open_osfhandle,(long(hStdoutR),O_BINARY|O_RDONLY),==-1);
+  FAIL_IF(writefd=_open_osfhandle,(long(hStdinW),O_BINARY|O_WRONLY),==-1);
 
   // create infrastructure for overlapping I/O
   memset(&overlap,0,sizeof overlap);
-  overlap.hEvent=CreateEvent(0,TRUE,TRUE,0); // FALSE,FALSE,0); // or TRUE,TRUE?
+  overlap.hEvent=CreateEvent(0,TRUE,TRUE,0);
   bytes_available=0;
   I(overlap.hEvent!=0);
 #else
@@ -237,29 +240,25 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
       HANDLE h_read=(HANDLE)_get_osfhandle(pipe->get_readfd());
       DWORD bytes_read=0;
       // ask for the first byte
-      FAIL_IF( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0);
+      FAIL_IF4( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0,ERROR_IO_PENDING);
       if (!bytes_read)
         {
           // wait with timeout for the first byte
-	  int seconds=timeout.get_sec();
-	  // WaitForSingleObject is only accurate to seconds
-	  if (!seconds && timeout.get_usec()) seconds=1;
-	  L(F("WaitForSingleObject(,%d)\n") % seconds);
-          FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,seconds),==WAIT_FAILED);
-          FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0);
+	  int milliseconds=timeout.get_sec()*1000+timeout.get_usec()/1000;
+	  L(F("WaitForSingleObject(,%d)\n") % milliseconds);
+          FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,milliseconds),==WAIT_FAILED);
+          FAIL_IF4( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0,ERROR_IO_INCOMPLETE);
 	  L(F("GetOverlappedResult(,,%d,)\n") % bytes_read);
           if (!bytes_read)
             {
               FAIL_IF( CancelIo,(h_read),==0);
-              std::make_pair(socket_type(-1),ready_none);
+              return std::make_pair(socket_type(-1),ready_none);
             }
         }
       I(bytes_read==1);
       pipe->bytes_available=bytes_read;
       // ask for more bytes but do _not_ wait
-      L(F("ReadFile\n"));
-      FAIL_IF( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0);
-      L(F("CancelIo\n"));
+      FAIL_IF4( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0,ERROR_IO_PENDING);
       FAIL_IF( CancelIo,(h_read),==0);
       if (!bytes_read)
         {
@@ -271,6 +270,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
           // do we need to call and add GetOverlappedResult here?
           pipe->bytes_available+=bytes_read;
         }
+      L(F("%d bytes available\n") % pipe->bytes_available);
       return std::make_pair(pipe->get_readfd(),ready_read);
     }
   return std::make_pair(socket_type(-1),ready_none);
@@ -347,7 +347,7 @@ simple_pipe_test()
 
   std::string result;
   Netxx::PipeCompatibleProbe probe;
-  Netxx::Timeout timeout(2L), short_time(0,500);
+  Netxx::Timeout timeout(2L), short_time(0,1000);
 
   // time out because no data is available
   probe.clear();
