@@ -134,6 +134,15 @@ bool cvs_revision_nr::is_branch() const
 
 // cvs_repository ----------------------
 
+// very short form to output in logs etc.
+std::string time_t2human(const time_t &t)
+{ struct tm *tm;
+  tm=gmtime(&t);
+  return (boost::format("%02d%02d%02dT%02d%02d%02d") % (tm->tm_year%100) 
+      % (tm->tm_mon+1) % tm->tm_mday % tm->tm_hour % tm->tm_min 
+      % tm->tm_sec).str();
+}
+
 struct cvs_repository::get_all_files_log_cb : rlog_callbacks
 { cvs_repository &repo;
   get_all_files_log_cb(cvs_repository &r) : repo(r) {}
@@ -233,7 +242,7 @@ std::string cvs_repository::debug() const
   result+= "Edges :\n";
   for (std::set<cvs_edge>::const_iterator i=edges.begin();
       i!=edges.end();++i)
-  { result+= "[" + boost::lexical_cast<string>(i->time);
+  { result+= "[" + time_t2human(i->time);
     if (i->time!=i->time2) result+= "+" + boost::lexical_cast<string>(i->time2-i->time);
     if (!i->revision().empty()) result+= "," + i->revision().substr(0,4);
     if (!i->xfiles.empty()) 
@@ -291,15 +300,6 @@ void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string
   I(i->first==file);
   std::map<std::string,std::string> &tagslot=repo.tags[tag];
   tagslot[file]=revision;
-}
-
-// very short form to 
-std::string time_t2human(const time_t &t)
-{ struct tm *tm;
-  tm=gmtime(&t);
-  return (boost::format("%02d%02d%02dT%02d%02d%02d") % (tm->tm_year%100) 
-      % (tm->tm_mon+1) % tm->tm_mday % tm->tm_hour % tm->tm_min 
-      % tm->tm_sec).str();
 }
 
 void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
