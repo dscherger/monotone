@@ -72,11 +72,12 @@ pipe_and_fork(int *fd1,int *fd2)
 #include <io.h>
 #include <fcntl.h>
 // error if function does not return the correct value
+// (unfortunately E has inverse logic)
 #define FAIL_IF(FUN,ARGS,CHECK) \
   E(!((FUN ARGS) CHECK), F(#FUN " failed %d\n") % GetLastError())
 // error if condition is not met and GetLastError is not expected value
 #define FAIL_IF4(FUN,ARGS,CHECK,OK) \
-  E(!((FUN ARGS) CHECK) && GetLastError()!=OK, F(#FUN " failed %d\n") % GetLastError())
+  E(!((FUN ARGS) CHECK && GetLastError()!=OK), F(#FUN " failed %d\n") % GetLastError())
 #endif
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
@@ -249,20 +250,20 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
 	  int milliseconds=timeout.get_sec()*1000+timeout.get_usec()/1000;
 	  L(F("WaitForSingleObject(,%d)\n") % milliseconds);
           FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,milliseconds),==WAIT_FAILED);
-          FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0);
+          FAIL_IF4( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0,ERROR_IO_INCOMPLETE);
 	  L(F("GetOverlappedResult(,,%d,)\n") % bytes_read);
           if (!bytes_read)
             {
               FAIL_IF( CancelIo,(h_read),==0);
-              std::make_pair(socket_type(-1),ready_none);
+              return std::make_pair(socket_type(-1),ready_none);
             }
         }
       I(bytes_read==1);
       pipe->bytes_available=bytes_read;
       // ask for more bytes but do _not_ wait
-      L(F("ReadFile\n"));
+      //L(F("ReadFile\n"));
       FAIL_IF4( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0,ERROR_IO_PENDING);
-      L(F("CancelIo\n"));
+      //L(F("CancelIo\n"));
       FAIL_IF( CancelIo,(h_read),==0);
       if (!bytes_read)
         {
@@ -274,6 +275,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
           // do we need to call and add GetOverlappedResult here?
           pipe->bytes_available+=bytes_read;
         }
+      L(F("%d bytes available\n") % pipe->bytes_available);
       return std::make_pair(pipe->get_readfd(),ready_read);
     }
   return std::make_pair(socket_type(-1),ready_none);
@@ -350,7 +352,7 @@ simple_pipe_test()
 
   std::string result;
   Netxx::PipeCompatibleProbe probe;
-  Netxx::Timeout timeout(2L), short_time(0,500);
+  Netxx::Timeout timeout(2L), short_time(0,1000);
 
   // time out because no data is available
   probe.clear();
