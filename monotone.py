@@ -59,10 +59,10 @@ class Monotone:
         return sorted
 
     def get_revision(self, rid):
-        return self.run_monotone(["cat", "revision", rid])
+        return self.run_monotone(["automate", "get_revision", rid])
 
     def get_pubkey_packet(self, keyid):
-        return self.run_monotone(["pubkey"], keyid)
+        return self.run_monotone(["pubkey", keyid])
         
     def get_revision_packet(self, rid):
         return self.run_monotone(["rdata", rid])
@@ -92,14 +92,15 @@ class Monotone:
         return packets
 
     def key_names(self):
-        output = self.run_monotone(["ls", "keys"])
-        lines = output.split("\n")
+        output = self.run_monotone(["automate", "keys"])
+        print output
+        keys_parsed = self.basic_io_parser(output)
         ids = {}
-        for l in lines:
-            if not l.strip() or l.strip() in ("[public keys]", "[private keys]"):
-                continue
-            fpr, keyid = l.strip().split()
-            ids[keyid] = None
+        for stanza in keys_parsed:
+            assert stanza[0][0] == "name"
+            key_name = stanza[0][1]
+            ids[key_name] = None
+
         return ids.keys()
 
     # returns output as a string, raises an error on error
