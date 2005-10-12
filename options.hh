@@ -45,3 +45,5 @@
 #define OPT_EXECUTE 36
 #define OPT_KEY_DIR 37
 #define OPT_BIND 38
+#define OPT_SINCE 39
+#define OPT_FULL 40
