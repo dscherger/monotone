@@ -90,12 +90,14 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   newargv[newargc]=0;
 #ifdef WIN32
 
-  int fd1[2],fd2[2];
-  fd1[0]=-1;
-  fd1[1]=-1;
-  fd2[0]=-1;
-  fd2[1]=-1;
-  E(_pipe(fd2,0,_O_BINARY)==0, F("first pipe failed"));
+  SECURITY_ATTRIBUTES inherit;
+  memset(&inherit,0,sizeof inherit);
+  inherit.nLength=sizeof inherit;
+  inherit.bInheritHandle = TRUE;
+
+  // E(_pipe(fd2,0,_O_BINARY)==0, F("first pipe failed"));
+  HANDLE hStdinR=0, hStdinW=0;
+  FAIL_IF(CreatePipe,(&hStdinR,&hStdinW,&inherit,sizeof readbuf),==0);
   char pipename[256];
   static int serial;
   // yes, since we have to use named pipes because of nonblocking read
@@ -107,17 +109,15 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   FAIL_IF(readhandle=CreateNamedPipe,(pipename, 
              PIPE_ACCESS_INBOUND|FILE_FLAG_OVERLAPPED,
 	     PIPE_TYPE_BYTE | PIPE_WAIT,
-	     1,4096,4096,1000,0),==INVALID_HANDLE_VALUE);
-  FAIL_IF(writehandle=CreateFile,(pipename,GENERIC_WRITE,0,0,OPEN_EXISTING,
+	     1,sizeof readbuf,sizeof readbuf,1000,0),
+	  ==INVALID_HANDLE_VALUE);
+  FAIL_IF(writehandle=CreateFile,(pipename,GENERIC_WRITE,0,&inherit,OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL,0),==INVALID_HANDLE_VALUE);
-  // MinGW defines this function to take a long, not a HANDLE :-(
-  FAIL_IF(fd1[0]=_open_osfhandle,(long(readhandle),O_BINARY|O_RDONLY),==-1);
-  FAIL_IF(fd1[1]=_open_osfhandle,(long(writehandle),O_BINARY|O_WRONLY),==-1);
 
   // mark these file handles as not inheritable
-  SetHandleInformation( (HANDLE)_get_osfhandle(fd1[0]), HANDLE_FLAG_INHERIT, 0);
-  SetHandleInformation( (HANDLE)_get_osfhandle(fd2[1]), HANDLE_FLAG_INHERIT, 0);
-  SetHandleInformation( (HANDLE)_get_osfhandle(fd2[0]), HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+  SetHandleInformation( hStdinW, HANDLE_FLAG_INHERIT, 0);
+  // SetHandleInformation( writehandle, HANDLE_FLAG_INHERIT, 0);
+  // SetHandleInformation( (HANDLE)_get_osfhandle(fd2[0]), HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
   // set up the child with the pipes as stdin/stdout and inheriting stderr
   PROCESS_INFORMATION piProcInfo;
   STARTUPINFO siStartInfo;
@@ -125,18 +125,19 @@ Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::st
   memset(&siStartInfo,0,sizeof siStartInfo);
   siStartInfo.cb = sizeof siStartInfo;
   siStartInfo.hStdError = (HANDLE)_get_osfhandle(2);
-  siStartInfo.hStdOutput = (HANDLE)_get_osfhandle(fd1[1]);
-  siStartInfo.hStdInput = (HANDLE)_get_osfhandle(fd2[0]);
+  siStartInfo.hStdOutput = writehandle;
+  siStartInfo.hStdInput = hStdinR;
   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
   std::string cmdline=munge_argv_into_cmdline(newargv);
   L(F("cmdline '%s'\n") % cmdline);
   FAIL_IF(CreateProcess,(0,const_cast<CHAR*>(cmdline.c_str()),
                          0,0,TRUE,0,0,0,&siStartInfo,&piProcInfo),==0);
-  ::close(fd1[1]);
-  ::close(fd2[0]);
+  //::close(fd1[1]);
+  //::close(fd2[0]);
   child=long(piProcInfo.hProcess);
-  readfd=fd1[0];
-  writefd=fd2[1];
+  // MinGW defines this function to take a long, not a HANDLE :-(
+  FAIL_IF(readfd=_open_osfhandle,(long(readhandle),O_BINARY|O_RDONLY),==-1);
+  FAIL_IF(writefd=_open_osfhandle,(long(hStdinW),O_BINARY|O_WRONLY),==-1);
 
   // create infrastructure for overlapping I/O
   memset(&overlap,0,sizeof overlap);
@@ -352,6 +353,7 @@ simple_pipe_test()
   // time out because no data is available
   probe.clear();
   probe.add(pipe, Netxx::Probe::ready_read);
+  Sleep(300000);
   Netxx::Probe::result_type res = probe.ready(short_time);
   I(res.second==Netxx::Probe::ready_none);
 
