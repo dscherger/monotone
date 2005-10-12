@@ -71,8 +71,12 @@ pipe_and_fork(int *fd1,int *fd2)
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
+// error if function does not return the correct value
 #define FAIL_IF(FUN,ARGS,CHECK) \
   E(!((FUN ARGS) CHECK), F(#FUN " failed %d\n") % GetLastError())
+// error if condition is not met and GetLastError is not expected value
+#define FAIL_IF4(FUN,ARGS,CHECK,OK) \
+  E(!((FUN ARGS) CHECK) && GetLastError()!=OK, F(#FUN " failed %d\n") % GetLastError())
 #endif
 
 Netxx::PipeStream::PipeStream (const std::string &cmd, const std::vector<std::string> &args)
@@ -238,15 +242,13 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
       HANDLE h_read=(HANDLE)_get_osfhandle(pipe->get_readfd());
       DWORD bytes_read=0;
       // ask for the first byte
-      FAIL_IF( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0);
+      FAIL_IF4( ReadFile,(h_read,pipe->readbuf,1,&bytes_read,&pipe->overlap),==0,ERROR_IO_PENDING);
       if (!bytes_read)
         {
           // wait with timeout for the first byte
-	  int seconds=timeout.get_sec();
-	  // WaitForSingleObject is only accurate to seconds
-	  if (!seconds && timeout.get_usec()) seconds=1;
-	  L(F("WaitForSingleObject(,%d)\n") % seconds);
-          FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,seconds),==WAIT_FAILED);
+	  int milliseconds=timeout.get_sec()*1000+timeout.get_usec()/1000;
+	  L(F("WaitForSingleObject(,%d)\n") % milliseconds);
+          FAIL_IF( WaitForSingleObject,(pipe->overlap.hEvent,milliseconds),==WAIT_FAILED);
           FAIL_IF( GetOverlappedResult,(h_read,&pipe->overlap,&bytes_read,FALSE),==0);
 	  L(F("GetOverlappedResult(,,%d,)\n") % bytes_read);
           if (!bytes_read)
@@ -259,7 +261,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
       pipe->bytes_available=bytes_read;
       // ask for more bytes but do _not_ wait
       L(F("ReadFile\n"));
-      FAIL_IF( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0);
+      FAIL_IF4( ReadFile,(h_read,pipe->readbuf+1,sizeof pipe->readbuf-1,&bytes_read,&pipe->overlap),==0,ERROR_IO_PENDING);
       L(F("CancelIo\n"));
       FAIL_IF( CancelIo,(h_read),==0);
       if (!bytes_read)
@@ -353,7 +355,7 @@ simple_pipe_test()
   // time out because no data is available
   probe.clear();
   probe.add(pipe, Netxx::Probe::ready_read);
-  Sleep(300000);
+  //Sleep(300000);
   Netxx::Probe::result_type res = probe.ready(short_time);
   I(res.second==Netxx::Probe::ready_none);
 
