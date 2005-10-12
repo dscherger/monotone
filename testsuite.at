@@ -19,7 +19,7 @@ m4_define([MONOTONE], [$PREEXECUTE $_MT_EXEC --rcfile=$_ROOT_DIR/test_hooks.lua 
 m4_define([RAW_MONOTONE], [$PREEXECUTE monotone --norc])
 m4_define([SHA1], [monotone --norc identify $1])
 m4_define([BASE_REVISION], [cat MT/revision])
-m4_define([WORKING_REVISION], [monotone --norc cat revision | monotone --norc identify])
+m4_define([WORKING_REVISION], [monotone --norc automate get_revision | monotone --norc identify])
 m4_define([CANONICALISE], [
 if test "$OSTYPE" == "msys"; then
   dos2unix -q -o $1
@@ -180,19 +180,19 @@ CHECK_SAME_STDOUT(MONOTONE --db=$1 ls keys, MONOTONE --db=$2 ls keys)
 REVS=`MONOTONE --db=$1 complete revision ""`
 for R in $REVS; do
   CHECK_SAME_STDOUT(MONOTONE --db=$1 ls certs $R, MONOTONE --db=$2 ls certs $R)
-  CHECK_SAME_STDOUT(MONOTONE --db=$1 cat revision $R, MONOTONE --db=$2 cat revision $R)
+  CHECK_SAME_STDOUT(MONOTONE --db=$1 automate get_revision $R, MONOTONE --db=$2 automate get_revision $R)
 done
 
 CHECK_SAME_STDOUT(MONOTONE --db=$1 complete manifest "", MONOTONE --db=$2 complete manifest "")
 MANIFESTS=`MONOTONE --db=$1 complete manifest ""`
 for M in $MANIFESTS; do
-  CHECK_SAME_STDOUT(MONOTONE --db=$1 cat manifest $M, MONOTONE --db=$2 cat manifest $M)
+  CHECK_SAME_STDOUT(MONOTONE --db=$1 automate get_manifest $M, MONOTONE --db=$2 automate get_manifest $M)
 done
 
 CHECK_SAME_STDOUT(MONOTONE --db=$1 complete file "", MONOTONE --db=$2 complete file "")
 FILES=`MONOTONE --db=$1 complete file ""`
 for F in $FILES; do
-  CHECK_SAME_STDOUT(MONOTONE --db=$1 cat file $F, MONOTONE --db=$2 cat file $F)
+  CHECK_SAME_STDOUT(MONOTONE --db=$1 automate get_file $F, MONOTONE --db=$2 automate get_file $F)
 done
 ])
 
@@ -388,13 +388,13 @@ m4_define([NETSYNC_ADDRESS], [localhost:$_PORT])
 # note that NETSYNC_SERVE_START is _not_ a special case of this macro.
 m4_define([NETSYNC_SERVE_N_START], [
 NETSYNC_KILLHARD
-MONOTONE --db=test$1.db --keydir=keys$1 --rcfile=netsync.lua --pid-file=monotone_at.pid --dump=MT/server_dump serve NETSYNC_ADDRESS m4_if($2, [], "{}*", $2) &
+MONOTONE --db=test$1.db --keydir=keys$1 --rcfile=netsync.lua --pid-file=monotone_at.pid --dump=MT/server_dump --bind=NETSYNC_ADDRESS serve m4_if($2, [], "{}*", $2) &
 sleep 4
 ])
 # run as NETSYNC_SERVE_START(pattern)
 m4_define([NETSYNC_SERVE_START], [
 NETSYNC_KILLHARD
-MONOTONE --rcfile=netsync.lua --pid-file=monotone_at.pid --dump=MT/server_dump serve NETSYNC_ADDRESS m4_if($1, [], "{}*", $1) &
+MONOTONE --rcfile=netsync.lua --pid-file=monotone_at.pid --dump=MT/server_dump --bind=NETSYNC_ADDRESS serve m4_if($1, [], "{}*", $1) &
 sleep 4
 ])
 # run as NETSYNC_SERVE_STOP

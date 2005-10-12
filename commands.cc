@@ -174,6 +174,25 @@ namespace commands
     return _(msgid);
   }
 
+  // returns the columns needed for printing the translated msgid
+  size_t message_width(const char * msgid)
+  {
+    const char * msg = safe_gettext(msgid);
+
+    // convert from multi-byte to wide-char string
+    size_t wchars = mbstowcs(0, msg, 0) + 1;
+    if (wchars == (size_t)-1)
+      return std::strlen(msgid); // conversion failed; punt and return original length
+    boost::scoped_array<wchar_t> wmsg(new wchar_t[wchars]);
+    mbstowcs(wmsg.get(), msg, wchars);
+
+    // and get printed width
+    size_t width = wcswidth(wmsg.get(), wchars);
+
+    return width;
+  }
+
+
   void explain_usage(string const & cmd, ostream & out)
   {
     map<string,command *>::const_iterator i;
@@ -212,7 +231,8 @@ namespace commands
     size_t col2 = 0;
     for (size_t i = 0; i < sorted.size(); ++i)
       {
-        col2 = col2 > idx(sorted, i)->cmdgroup.size() ? col2 : idx(sorted, i)->cmdgroup.size();
+        size_t cmp = message_width(idx(sorted, i)->cmdgroup.c_str());
+        col2 = col2 > cmp ? col2 : cmp;
       }
 
     for (size_t i = 0; i < sorted.size(); ++i)
@@ -222,7 +242,7 @@ namespace commands
             curr_group = idx(sorted, i)->cmdgroup;
             out << endl;
             out << "  " << safe_gettext(idx(sorted, i)->cmdgroup.c_str());
-            col = idx(sorted, i)->cmdgroup.size() + 2;
+            col = message_width(idx(sorted, i)->cmdgroup.c_str()) + 2;
             while (col++ < (col2 + 3))
               out << ' ';
           }
@@ -1947,34 +1967,39 @@ process_netsync_args(std::string const & name,
                      utf8 & addr,
                      utf8 & include_pattern, utf8 & exclude_pattern,
                      bool use_defaults,
+                     bool serve_mode,
                      app_state & app)
 {
   // handle host argument
-  if (args.size() >= 1)
+  if (!serve_mode)
     {
-      addr = idx(args, 0);
-      if (use_defaults
-          && (!app.db.var_exists(default_server_key) || app.set_default))
+      if (args.size() >= 1)
         {
-          P(F("setting default server to %s\n") % addr);
-          app.db.set_var(default_server_key, var_value(addr()));
+          addr = idx(args, 0);
+          if (use_defaults
+              && (!app.db.var_exists(default_server_key) || app.set_default))
+            {
+              P(F("setting default server to %s\n") % addr);
+              app.db.set_var(default_server_key, var_value(addr()));
+            }
         }
-    }
-  else
-    {
-      N(use_defaults, F("no hostname given"));
-      N(app.db.var_exists(default_server_key),
-        F("no server given and no default server set"));
-      var_value addr_value;
-      app.db.get_var(default_server_key, addr_value);
-      addr = utf8(addr_value());
-      L(F("using default server address: %s\n") % addr);
+      else
+        {
+          N(use_defaults, F("no hostname given"));
+          N(app.db.var_exists(default_server_key),
+            F("no server given and no default server set"));
+          var_value addr_value;
+          app.db.get_var(default_server_key, addr_value);
+          addr = utf8(addr_value());
+          L(F("using default server address: %s\n") % addr);
+        }
     }
 
   // handle include/exclude args
-  if (args.size() >= 2 || !app.exclude_patterns.empty())
+  if (serve_mode || (args.size() >= 2 || !app.exclude_patterns.empty()))
     {
-      std::set<utf8> patterns(args.begin() + 1, args.end());
+      int pattern_offset = (serve_mode ? 0 : 1);
+      std::set<utf8> patterns(args.begin() + pattern_offset, args.end());
       combine_and_check_globish(patterns, include_pattern);
       combine_and_check_globish(app.exclude_patterns, exclude_pattern);
       if (use_defaults &&
@@ -2015,7 +2040,7 @@ CMD(push, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
     OPT_SET_DEFAULT % OPT_EXCLUDE)
 {
   utf8 addr, include_pattern, exclude_pattern;
-  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, app);
+  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, false, app);
 
   rsa_keypair_id key;
   get_user_key(key, app);
@@ -2030,7 +2055,7 @@ CMD(pull, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
     OPT_SET_DEFAULT % OPT_EXCLUDE)
 {
   utf8 addr, include_pattern, exclude_pattern;
-  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, app);
+  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, false, app);
 
   if (app.signing_key() == "")
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication\n"));
@@ -2044,7 +2069,7 @@ CMD(sync, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
     OPT_SET_DEFAULT % OPT_EXCLUDE)
 {
   utf8 addr, include_pattern, exclude_pattern;
-  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, app);
+  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, false, app);
 
   rsa_keypair_id key;
   get_user_key(key, app);
@@ -2054,11 +2079,11 @@ CMD(sync, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
                        include_pattern, exclude_pattern, app);  
 }
 
-CMD(serve, N_("network"), N_("ADDRESS[:PORTNUMBER] PATTERN ..."),
-    N_("listen on ADDRESS and serve the specified branches to connecting clients"),
-    OPT_PIDFILE % OPT_EXCLUDE)
+CMD(serve, N_("network"), N_("PATTERN ..."),
+    N_("serve the branches specified by PATTERNs to connecting clients"),
+    OPT_BIND % OPT_PIDFILE % OPT_EXCLUDE)
 {
-  if (args.size() < 2)
+  if (args.size() < 1)
     throw usage(name);
 
   pid_file pid(app.pidfile);
@@ -2071,9 +2096,9 @@ CMD(serve, N_("network"), N_("ADDRESS[:PORTNUMBER] PATTERN ..."),
     F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
   require_password(key, app);
 
-  utf8 addr, include_pattern, exclude_pattern;
-  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, false, app);
-  run_netsync_protocol(server_voice, source_and_sink_role, addr,
+  utf8 dummy_addr, include_pattern, exclude_pattern;
+  process_netsync_args(name, args, dummy_addr, include_pattern, exclude_pattern, false, true, app);
+  run_netsync_protocol(server_voice, source_and_sink_role, app.bind_address,
                        include_pattern, exclude_pattern, app);  
 }
 

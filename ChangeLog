@@ -1,3 +1,55 @@
+2005-10-12  Matt Johnston  <matt@ucc.asn.au>
+
+	* monotone.cc: return with exit code of 2 on usage output
+	* testsuite.at: turn "cat_foo" into "automate get_foo"
+	* tests/t_empty_env.at, tests/t_null.at, tests/t_at_sign.at,
+	tests/t_unreadable_db.at, tests/t_cmdline_options.at: expect 2 exit code
+	* tests/t_cross.at: update to the changeset paradigm of immutable
+	ancestors.
+
+2005-10-11  Emile Snyder <emile@alumni.reed.edu>
+
+	* app_state.{cc,hh}: new bind_address and bind_port class members.
+	* options.hh: new OPT_BIND for serve command.
+	* monotone.cc: handle OPT_BIND.
+	* commands.cc (process_netsync_args, CMD(serve)): use values from
+	the new --bind=[addr]:port option for 'monotone serve' rather than
+	the positional argument.  default to binding all interfaces.
+	* monotone.texi: document new serve syntax
+	* netsync.cc (serve_connections): use empty address argument to
+	mean bind all interfaces.
+	* netxx/address.cxx (Address::add_all_addresses): set port_ member
+	from passed in port argument.
+	* testsuite.at, tests/t_netsync_single.at: use new --bind syntax
+	for serve commands.
+	
+2005-10-11  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* commands.cc (message_width, explain_usage): New function to
+	calculate display width of translated strings.  Use it in
+	explain_usage.
+	Patch from Thomas Moschny <thomas.moschny@gmx.de>
+	* certs.cc (get_user_key): Correct logic in N() test for multiple
+	keys.  Resolves bug reported by Malte Thoma.
+
+2005-10-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Make netsync shutdown work properly.
+	* netsync.cc (session::which_events): Only ask to read if not armed.
+	A read failure will discard all read-but-not-processed commands.
+	* netsync.cc (session::maybe_say_goodbye): Only say goodbye once.
+	Repeated goodbyes means that one side *will* have a full write-queue
+	when the connection is torn down.
+
+2005-10-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_automate_stdio.at: Add comment here too.
+
+2005-10-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/get_stdio.pl: Add comments. I'm told it was "obtuse",
+	hopefully this will help somewhat.
+
 2005-10-10  Matt Johnston  <matt@ucc.asn.au>
 
 	* configure.ac, Makefile.am: add {MONOTONE,LIB3RDPARTY}_C{,XX}FLAGS
