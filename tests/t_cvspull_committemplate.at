@@ -18,8 +18,9 @@ AT_DATA(importme.3, [version 3 of test file
 
 AT_DATA(committemplate, [This is my commit template
 ])
-AT_DATA(newrcsinfo, [ALL `pwd`/committemplate
-])
+AT_CHECK(echo `pwd`/committemplate >newrcsinfo)
+#AT_DATA(newrcsinfo, [ALL `pwd`/committemplate
+#])
 
 TSHA0=`SHA1(importme.0)`
 TSHA1=`SHA1(importme.1)`
