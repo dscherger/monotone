@@ -453,7 +453,8 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
   I(s->since_when!=s2->since_when);
   // checkins must not overlap (next revision must lie beyond edge)
   if ((*s2) <= (*e))
-  { W(F("splitting edge %ld-%ld at %ld\n") % e->time % e->time2 % s2->since_when);
+  { W(F("splitting edge %s-%s at %s\n") % time_t2human(e->time) 
+        % time_t2human(e->time2) % time_t2human(s2->since_when));
     cvs_edge new_edge=*e;
     MM(boost::lexical_cast<std::string>(e->time));
     I(s2->since_when-1>=e->time);
@@ -481,7 +482,7 @@ void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
     I(i->author==j->author);
     I(i->changelog==j->changelog);
     I(i->time2<j->time); // should be non overlapping ...
-    L(F("joining %ld-%ld+%ld\n") % i->time % i->time2 % j->time);
+    L(F("joining %s-%s+%s\n") % time_t2human(i->time) % time_t2human(i->time2) % time_t2human(j->time));
     i->time2=j->time;
     edges.erase(j);
   }
@@ -501,7 +502,7 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
     // I(s2->since_when==u.mod_time);
     if (u.mod_time!=s2->since_when && u.mod_time!=-1)
-    { W(F("update time %ld and log time %ld disagree\n") % u.mod_time % s2->since_when);
+    { W(F("update time %s and log time %s disagree\n") % time_t2human(u.mod_time) % time_t2human(s2->since_when));
     }
     std::string old_contents=contents;
     { piece::piece_table file_contents;
@@ -557,7 +558,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     I(!s2->dead);
     // I(s2->since_when==c.mod_time);
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
-    { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+    { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
     store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
@@ -575,7 +576,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     { W(F("Update: patching failed with %s\n") % e.what);
       cvs_client::update c=Update(file,s2->cvs_version);
       if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
-      { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+      { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
@@ -587,7 +588,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     { W(F("Update: patching failed with %s\n") % e.what());
       cvs_client::update c=Update(file,s2->cvs_version);
       if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
-      { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+      { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
@@ -605,7 +606,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
   if (!c.dead)
   { // I(c.mod_time==s2->since_when);
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
-    { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+    { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
     store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
@@ -620,7 +621,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
   if (!c.removed)
   { // I(c.mod_time==s2->since_when);
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
-    { W(F("checkout time %ld and log time %ld disagree\n") % c.mod_time % s2->since_when);
+    { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
     store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
@@ -724,16 +725,16 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
       e->cm_delta_depth=cm_delta_depth+1;
     }
     if (cs->empty())
-    { W(F("null edge (empty cs) @%ld skipped\n") % e->time);
+    { W(F("null edge (empty cs) @%s skipped\n") % time_t2human(e->time));
       continue;
     }
     if (e->xfiles.empty())
-    { W(F("empty edge (no files) @%ld skipped\n") % e->time);
+    { W(F("empty edge (no files) @%s skipped\n") % time_t2human(e->time));
       continue;
     }
     apply_change_set(*cs, child_map);
     if (child_map.empty()) 
-    { W(F("empty edge (no files in manifest) @%ld skipped\n") % e->time);
+    { W(F("empty edge (no files in manifest) @%s skipped\n") % time_t2human(e->time));
       // perhaps begin a new tree:
       // parent_rid=revision_id();
       // parent_mid=manifest_id();
@@ -1056,7 +1057,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       return --(edges.end());
     }
     std::string changelog;
-    changelog=e+changelog+"\nmonotone "+e.author+" "
+    changelog=e.changelog+"\nmonotone "+e.author+" "
         +cvs_client::time_t2rfc822(e.time)+" "+e.revision()+"\n";
     // gather information CVS does not know about into the changelog
     changelog+=gather_merge_information(e.revision);
