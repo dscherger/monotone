@@ -1792,7 +1792,7 @@ void cvs_repository::store_modules()
   var_value oldval;
   try 
   { app.db.get_var(key,oldval);
-  } catch (logic_error &e) {}
+  } catch (...) {}
   if (oldval()!=value) app.db.set_var(key, value);
 }
 
@@ -1803,7 +1803,7 @@ void cvs_repository::retrieve_modules()
   var_value value;
   try {
     app.db.get_var(key,value);
-  } catch (logic_error &e) { return; }
+  } catch (...) { return; }
   std::map<std::string,std::string> sd;
   piece::piece_table pieces;
   std::string value_s=value();
