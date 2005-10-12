@@ -69,6 +69,7 @@ struct poptOption coptions[] =
     {"diff-args", 0, POPT_ARG_STRING, &argstr, OPT_EXTERNAL_DIFF_ARGS, gettext_noop("argument to pass external diff hook"), NULL},
     {"lca", 0, POPT_ARG_NONE, NULL, OPT_LCA, gettext_noop("use least common ancestor as ancestor for merge"), NULL},
     {"execute", 'e', POPT_ARG_NONE, NULL, OPT_EXECUTE, gettext_noop("perform the associated file operation"), NULL},
+    {"bind", 0, POPT_ARG_STRING, &argstr, OPT_BIND, gettext_noop("address:port to listen on (default :5253)"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -450,6 +451,17 @@ cpp_main(int argc, char ** argv)
               app.execute = true;
               break;
 
+            case OPT_BIND:
+              {
+                std::string arg(argstr);
+                size_t colon = arg.find(':');
+                std::string addr_part = (colon == std::string::npos ? arg : arg.substr(0, colon));
+                std::string port_part = (colon == std::string::npos ? "" :  arg.substr(colon+1, arg.size() - colon));
+                app.bind_address = utf8(addr_part);
+                app.bind_port = utf8(port_part);
+              }
+              break;
+
             case OPT_HELP:
             default:
               requested_help = true;
@@ -545,7 +557,7 @@ cpp_main(int argc, char ** argv)
       cout << endl;
       commands::explain_usage(u.which, cout);
       clean_shutdown = true;
-      return 0;
+      return 2;
     }
   }
   catch (informative_failure & inf)

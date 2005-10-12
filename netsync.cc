@@ -1087,17 +1087,18 @@ session::analyze_ancestry_graph()
 
 Netxx::Probe::ready_type 
 session::which_events() const
-{    
+{
+  // Only ask to read if we're not armed.
   if (outbuf.empty())
     {
-      if (inbuf.size() < constants::netcmd_maxsz)
+      if (inbuf.size() < constants::netcmd_maxsz && !armed)
         return Netxx::Probe::ready_read | Netxx::Probe::ready_oobd;
       else
         return Netxx::Probe::ready_oobd;
     }
   else
     {
-      if (inbuf.size() < constants::netcmd_maxsz)
+      if (inbuf.size() < constants::netcmd_maxsz && !armed)
         return Netxx::Probe::ready_write | Netxx::Probe::ready_read | Netxx::Probe::ready_oobd;
       else
         return Netxx::Probe::ready_write | Netxx::Probe::ready_oobd;
@@ -2998,7 +2999,7 @@ void
 session::maybe_say_goodbye()
 {
   if (done_all_refinements() &&
-      got_all_data())
+      got_all_data() && !sent_goodbye)
     queue_bye_cmd();
 }
 
@@ -3132,7 +3133,7 @@ call_server(protocol_role role,
           P(F("got OOB data on fd %d (peer %s), disconnecting\n") 
             % fd % sess.peer_id);
           return;
-        }      
+        }
 
       if (armed)
         {
@@ -3149,8 +3150,8 @@ call_server(protocol_role role,
           P(F("successful exchange with %s\n") 
             % sess.peer_id);
           return;
-        }         
-    }  
+        }
+    }
 }
 
 static void 
@@ -3339,10 +3340,17 @@ serve_connections(protocol_role role,
     timeout(static_cast<long>(timeout_seconds)), 
     instant(0,1);
 
-  Netxx::Address addr(address().c_str(), default_port, true);
+  if (length(app.bind_port))
+    default_port = ::atoi(app.bind_port().c_str());
+  Netxx::Address addr;
+  if (length(app.bind_address)) 
+      addr.add_address(app.bind_address().c_str(), default_port);
+  else
+      addr.add_all_addresses (default_port);
 
+  const char *name = addr.get_name();
   P(F("beginning service on %s : %s\n") 
-    % addr.get_name() % lexical_cast<string>(addr.get_port()));
+    % (name != NULL ? name : "all interfaces") % lexical_cast<string>(addr.get_port()));
 
   Netxx::StreamServer server(addr, timeout);
   
