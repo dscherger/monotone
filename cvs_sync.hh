@@ -152,7 +152,7 @@ private:
   void store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
   void cert_cvs(const cvs_edge &e, packet_consumer & pc);
-  cvs_file_state remember(std::set<file_state> &s,const file_state &fs);
+  cvs_file_state remember(std::set<file_state> &s,const file_state &fs, std::string const& filename);
   void join_edge_parts(std::set<cvs_edge>::iterator i);
   std::set<cvs_edge>::iterator last_known_revision();
   std::set<cvs_edge>::iterator commit(

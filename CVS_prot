@@ -131,10 +131,15 @@ we can use log -r NAME to get the radix for the branch
 
 -------------------- TODO ------------------------------
 correct < when calculating manifests
-push: changelog on merge
 faster initial db-access (multimap? without timestamp access?)
 
 tests: md5sum failure
   merge+commit without changes
 
 enhancement: erase_ancestors will drastically reduce memory footprint
+	use interner for cvs_revisions, author and changelog
+
+tests: time jump import
+  takeover modified, cvs commit changed (conflict), pull (MD5 sum failure)
+  pull, repull, merge, commit, push
+  takeover modified, repull, merge+push (two contents for one revision)

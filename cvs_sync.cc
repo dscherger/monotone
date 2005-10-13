@@ -183,7 +183,7 @@ std::string cvs_repository::debug_file(std::string const& name)
   for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
         j!=i->second.known_states.end();++j)
   { result+="since "+time_t2human(j->since_when);
-    result+="V"+j->cvs_version+" ";
+    result+=" V"+j->cvs_version+" ";
     if (j->dead) result+= "dead";
     else if (j->size) result+= boost::lexical_cast<string>(j->size);
     else if (j->patchsize) result+= "p" + boost::lexical_cast<string>(j->patchsize);
@@ -712,6 +712,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   }
 }
 
+// commit CVS revisions to monotone (pull)
 void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
 { cvs_manifest parent_manifest;
   revision_id parent_rid;
@@ -722,11 +723,13 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   unsigned cm_delta_depth=0;
   
   cvs_edges_ticker.reset(0);
+  L(F("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision());
   revision_ticker.reset(new ticker("revisions", "R", 3));
 //  const cvs_manifest *oldmanifestp=&empty;
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
     --before;
+    L(F("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
     I(!before->revision().empty());
     parent_rid=before->revision;
     app.db.get_revision_manifest(parent_rid,parent_mid);
@@ -739,6 +742,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   { boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
+    L(F("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
     if (build_change_set(*this,parent_manifest,e->xfiles,*cs,remove_state,cm_delta_depth))
     { e->delta_base=parent_rid;
       e->cm_delta_depth=cm_delta_depth+1;
@@ -1322,11 +1326,22 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
   guard.commit();      
 }
 
-cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state &fs)
+cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state &fs, std::string const& filename)
 { for (std::set<file_state>::iterator i=s.begin();i!=s.end();++i)
   { if (i->cvs_version==fs.cvs_version)
-    { if (i->since_when>fs.since_when) 
+    { if (i->since_when>fs.since_when) // i->since_when has to be the minimum
         const_cast<time_t&>(i->since_when)=fs.since_when;
+      static file_id emptysha1sum;
+      if (emptysha1sum.inner()().empty())
+        calculate_ident(data(),const_cast<hexenc<id>&>(emptysha1sum.inner()));
+      if (i->log_msg=="last cvs update (modified)" 
+            && i->sha1sum==emptysha1sum.inner()
+            && i->author==("unknown@"+host))
+      { W(F("replacing fake contents for %s V%s\n")
+            % filename % i->cvs_version);
+        const_cast<hexenc<id>&>(i->sha1sum)=fs.sha1sum;
+        const_cast<std::string&>(i->log_msg)=fs.log_msg;
+      }
       return i;
     }
   }
@@ -1392,7 +1407,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           fs.log_msg=e.changelog;
           fs.author=e.author;
           fs.dead=true;
-          cvs_file_state cfs=remember(files[path].known_states,fs);
+          cvs_file_state cfs=remember(files[path].known_states,fs,path);
           e.xfiles.insert(std::make_pair(path,cfs)); // remove_state));
         }
         else
@@ -1401,7 +1416,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           fs.sha1sum=iter_file_id->second.inner();
           fs.log_msg=e.changelog;
           fs.author=e.author;
-          cvs_file_state cfs=remember(files[path].known_states,fs);
+          cvs_file_state cfs=remember(files[path].known_states,fs,path);
           e.xfiles.insert(std::make_pair(path,cfs));
         }
       }
@@ -1430,7 +1445,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
             fs.author=i->author;
             fs.dead=true;
             L(F("file %s gets removed at %s\n") % j->first % i->revision());
-            remember(files[j->first].known_states,fs);
+            remember(files[j->first].known_states,fs,j->first);
           }
         }
       }
