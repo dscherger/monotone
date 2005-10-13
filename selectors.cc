@@ -26,7 +26,7 @@ namespace selectors
 
     if (first_selector)
       {
-        if (sel[0] == 'h' && sel[1] == ':')
+        if (sel[0] == 'H' && sel[1] == ':')
           {
             get_heads = true;
             sel.erase(0,2);

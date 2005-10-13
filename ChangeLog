@@ -1,3 +1,9 @@
+2005-10-14  Richard Levitte  <richard@levitte.org>
+
+	* selectors.cc (selectors): Rename h: to H: because another
+	development has emerged for h:.
+	* tests/t_heads_of_certs.at: Adapt.
+
 2005-10-12  Matt Johnston  <matt@ucc.asn.au>
 
 	* monotone.cc: return with exit code of 2 on usage output
