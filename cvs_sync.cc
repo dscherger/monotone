@@ -1163,9 +1163,9 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
       { changelog=value();
       }
     }
-    result+="\n-------------------\n"
-        "Monotone revision "+i->inner()()+" author "+author
-        +" time "+cvs_client::time_t2rfc822(date)+"\n\n"+changelog;
+    result+="-------------------\n"
+        +changelog+"\nmonotone "+author+" "
+        +cvs_client::time_t2rfc822(date)+" "+i->inner()()+"\n";
     result+=gather_merge_information(*i);
   }
   return result;
