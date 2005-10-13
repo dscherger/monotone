@@ -136,3 +136,5 @@ faster initial db-access (multimap? without timestamp access?)
 
 tests: md5sum failure
   merge+commit without changes
+
+enhancement: erase_ancestors will drastically reduce memory footprint

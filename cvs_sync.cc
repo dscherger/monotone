@@ -176,6 +176,24 @@ std::string debug_manifest(const cvs_manifest &mf)
   return result;
 }
 
+std::string cvs_repository::debug_file(std::string const& name)
+{ std::map<std::string,file_history>::const_iterator i=files.find(name);
+  E(i!=files.end(),F("file '%s' not found\n") % name);
+  std::string result;
+  for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
+        j!=i->second.known_states.end();++j)
+  { result+="since "+time_t2human(j->since_when);
+    result+="V"+j->cvs_version+" ";
+    if (j->dead) result+= "dead";
+    else if (j->size) result+= boost::lexical_cast<string>(j->size);
+    else if (j->patchsize) result+= "p" + boost::lexical_cast<string>(j->patchsize);
+    else if (!j->sha1sum().empty()) result+= j->sha1sum().substr(0,4) + j->keyword_substitution;
+    result+=" "+j->log_msg.substr(0,20)+"\n";
+  }
+  return result;
+}
+
+#if 0
 std::string debug_files(const std::map<std::string,file_history> &files)
 { std::string result;
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
@@ -196,6 +214,7 @@ std::string debug_files(const std::map<std::string,file_history> &files)
   }
   return result;
 }
+#endif
 
 // returns the length of the first line (header) and fills in fields
 std::string::size_type cvs_repository::parse_cvs_cert_header(cert_value const& value, 
@@ -1604,18 +1623,16 @@ void cvs_sync::debug(const std::string &command, const std::string &arg,
     app.db.get_revision_certs(cvs_cert_name, certs);
     repo.process_certs(certs);
     std::cout << debug_manifest(repo.get_files(rid));
-    return;
   }
-  else if (command=="history")
+  else if (command=="history") // filename or empty
   { 
     std::string repository, module, branch;
-    
     std::vector< revision<cert> > certs;
     guess_repository(repository, module, branch, certs, app);
     cvs_sync::cvs_repository repo(app,repository,module,branch,false);
     repo.process_certs(certs);
-    std::cout << repo.debug();
-    return;
+    if (arg.empty()) std::cout << repo.debug();
+    else std::cout << repo.debug_file(arg);
   }
 }
 
