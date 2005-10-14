@@ -1562,15 +1562,13 @@ void cvs_repository::update()
   
   std::set<cvs_edge>::iterator dummy_iter=now_iter;
   ++dummy_iter;
-  join_edge_parts(dummy_iter);
-  
-//  if (global_sanity.debug) 
-//    std::cerr << debug();
-  fill_manifests(dummy_iter);
-  if (global_sanity.debug) 
-//    std::cerr << debug();
-    L(F("%s") % debug());
-  commit_revisions(dummy_iter);
+  if (dummy_iter!=edges.end())
+  {
+    join_edge_parts(dummy_iter);
+    fill_manifests(dummy_iter);
+    if (global_sanity.debug) L(F("%s") % debug());
+    commit_revisions(dummy_iter);
+  }
   
   store_modules();
 }
