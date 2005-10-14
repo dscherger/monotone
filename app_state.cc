@@ -39,7 +39,7 @@ app_state::app_state()
     no_merges(false), set_default(false), verbose(false), search_root("/"),
     cvspull_full(), 
     depth(-1), last(-1), diff_format(unified_diff), diff_args_provided(false),
-    use_lca(false), execute(false), bind_address(""), bind_port("")
+    use_lca(false), execute(false), bind_address(""), bind_port(""), missing(false)
 {
   db.set_app(this);
 }
