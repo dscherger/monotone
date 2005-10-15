@@ -29,6 +29,15 @@ class rev_file_info: public Gtk::Notebook
   Gtk::ScrolledWindow fcontwin;
   Gtk::ScrolledWindow fdiffwin;
   Glib::RefPtr<Gtk::TextMark> commentend;
+  Glib::RefPtr<Gtk::TextTag> current;
+
+  void diff_clicked(GdkEventButton *b);
+  Glib::RefPtr<Gtk::TextTag>
+   hypertag(Glib::RefPtr<Gtk::TextBuffer> b, int line, int eline);
+  bool tag_event(Glib::RefPtr<Glib::Object> const &p,
+                   GdkEvent *e, Gtk::TextIter const &it,
+                   int line, int eline);
+  void link_tag_to(Glib::RefPtr<Gtk::TextTag> &t, int line, int eline);
 public:
   rev_file_info();
 
