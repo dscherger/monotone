@@ -35,6 +35,8 @@ struct cert
   bool trusted;
 };
 
+typedef void(*longwait_callback)();
+
 class monotone
 {
   pid_t pid;
@@ -50,9 +52,11 @@ class monotone
   bool stopped();
   bool read_header(int & cmdnum, int & err, bool & more, int & size);
   bool read_packet(std::string & out);
+  longwait_callback lwcb;
 public:
   monotone();
   ~monotone();
+  void set_longwait_callback(longwait_callback lc);
   void set_dir(std::string const & s){dir = s; stop();}
   void set_db(std::string const & s){db = s; stop();}
   std::string get_dir(){return dir;}

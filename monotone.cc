@@ -4,6 +4,7 @@
 #include "monotone.hh"
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/select.h>
 #include <unistd.h>
@@ -21,13 +22,19 @@
 
 inline int max(int a, int b) {return (a>b)?a:b;}
 
-monotone::monotone(): pid(-1)
+monotone::monotone(): pid(-1), lwcb(0)
 {
 }
 
 monotone::~monotone()
 {
   stop();
+}
+
+void
+monotone::set_longwait_callback(longwait_callback lc)
+{
+  lwcb = lc;
 }
 
 bool
@@ -107,6 +114,8 @@ monotone::stop()
 bool
 monotone::stopped()
 {
+  if (lwcb)
+  	lwcb();
   if (pid == -1)
     return true;
   int r = waitpid(pid, 0, WNOHANG);
@@ -123,7 +132,7 @@ monotone::read_header(int & cmdnum, int & err, bool & more, int & size)
   int got = 0;
   int minsize = 8;
   int c1(0), c2(0), c3(0), c4(0);
-  while (!c4 && !stopped())
+  while (!stopped() && !c4)
     {
       int r = read(from, head+got, minsize-got);
       got += r;
@@ -177,7 +186,7 @@ monotone::read_packet(std::string & out)
       int r = read(from, output, size - got);
       got += r;
       out += std::string(output, r);
-    } while (got != size && !stopped());
+    } while (!stopped() && got != size);
   if (stopped())
     return false;
   return m;
@@ -196,7 +205,7 @@ monotone::command(std::string const & cmd,
     s << i->size() << ":" << *i;
   std::string c = "l" + s.str() + "e";
   write(to, c.c_str(), c.size());
-  while(read_packet(res) && !stopped())
+  while(!stopped() && read_packet(res))
     ;
   return res;
 }
@@ -219,13 +228,16 @@ monotone::runcmd(std::string const & cmd,
   fd_set rd, ex;
   do
     {
+      timeval timeout;
+      timeout.tv_sec = 0;
+      timeout.tv_usec = 100000;
       FD_ZERO(&rd);
       FD_ZERO(&ex);
       FD_SET(from, &rd);
       FD_SET(errfrom, &rd);
       FD_SET(from, &ex);
       FD_SET(errfrom, &ex);
-      int s = ::select(max(from, errfrom)+1, &rd, 0, &ex, 0);
+      int s = ::select(max(from, errfrom)+1, &rd, 0, &ex, &timeout);
       if (FD_ISSET(from, &rd))
         {
           int r = read(from, output, size);

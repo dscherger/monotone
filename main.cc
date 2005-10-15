@@ -42,6 +42,12 @@ public:
   }
 };
 
+void on_delay()
+{
+  while (Gtk::Main::events_pending())
+    Gtk::Main::iteration();
+}
+
 class mainwin : public Gtk::Window
 {
   monotone mtn;
@@ -136,6 +142,7 @@ public:
   }
   mainwin(): rd(&mtn, this)
   {
+    mtn.set_longwait_callback(&on_delay);
     set_default_size(675, 400);
     ag = Gtk::ActionGroup::create();
     ag->add(Gtk::Action::create("Setdir", Gtk::Stock::OPEN, "Set working dir"),
