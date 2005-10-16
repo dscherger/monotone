@@ -1,3 +1,44 @@
+2005-10-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* app_state.{cc,hh}, key_store.cc: change how the keystore directory
+	is initialized; was using app.confdir before it was ready
+
+2005-10-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Make the configuration directory configurable and available to lua
+	* lua.cc: export new function to lua, "get_confdir"
+	* app_state.{cc,hh} monotone.cc options.hh: new option --confdir,
+	make the configuration directory something other than ~/.monotone
+	* lua.{cc,hh}: make the app_state availabe to lua callbacks
+	* key_store.cc: use get_confdir instead of hardcoded
+	* lua.cc: use get_confdir instead of hardcoded
+	* tests/t_config_confdir.at: test --confdir and lua get_confdir
+	* testsuite.at: add it
+
+2005-10-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Teach client to optionally push unused keys; new pubkeys can now be
+	given to a server without restarting it.
+	* app_state.{cc,hh}, monotone.cc, options.hh:
+	new command-specific-option --key-to-push=<key> , used to sync/push
+	a key that hasn't signed anything
+	* netsync.cc: make it work
+	* commands.cc: push and sync take it
+	* tests/t_netsync_pubkey.at: test it
+
+2005-10-16  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Don't add boost_unit_test_framework to global
+	LIBS, we will link against it directly when needed.
+	* Makefile.am: Only allow unit_tests to be built if
+	boost_unit_test_framework was available at configure time.
+
+2005-10-15  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Use boost_filesystem as the library to test for
+	when trying to guess a suitable BOOST_SUFFIX.  Make a missing
+	boost_unit_test_framework library a non-fatal error.
+
 2005-10-14  Emile Snyder  <emile@alumni.reed.edu>
 
 	* commands.cc: Fix breakage I introduced with the --unknown flag.
