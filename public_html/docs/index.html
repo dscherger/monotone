@@ -1,0 +1,167 @@
+<html lang="en">
+<head>
+<link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="../index.html#dir" title="(dir)">
+<link rel="next" href="Concepts.html#Concepts" title="Concepts">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body>
+<h1 class="settitle">monotone documentation</h1>
+<div class="node">
+<p>
+<a name="Top"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Concepts.html#Concepts">Concepts</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="../index.html#dir">(dir)</a>
+<hr><br>
+</div>
+
+<h2 class="unnumbered">Top</h2>
+
+<p>Monotone Documentation
+
+   <p>Monotone is a distributed version control tool. It can help automate
+many tedious and error-prone tasks in group software development.
+     <ul>
+<li>Store multiple versions of files you are working on efficiently. 
+<li>Transmit changes to files between you and your colleagues. 
+<li>Merge changes you make with those your colleagues make. 
+<li>Make notes about your opinion of the quality of versions of files. 
+<li>Make decisions about using or ignoring versions, depending on the notes
+you receive from others. 
+</ul>
+
+   <p>Please be aware that monotone is a slightly unorthodox version control
+tool, and many of its concepts are slightly similar &mdash; but
+significantly different &mdash; from concepts with similar names in other
+version control tools.
+
+<ul class="menu">
+<li><a accesskey="1" href="Concepts.html#Concepts">Concepts</a>:             Taxonomy of monotone
+<li><a accesskey="2" href="Tutorial.html#Tutorial">Tutorial</a>:             A detailed example of using monotone
+<li><a accesskey="3" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>:        Going beyond the basics
+<li><a accesskey="4" href="CVS-Phrasebook.html#CVS-Phrasebook">CVS Phrasebook</a>:       Transitional guide for CVS users
+<li><a accesskey="5" href="Command-Reference.html#Command-Reference">Command Reference</a>:    Details of each monotone command
+<li><a accesskey="6" href="Hook-Reference.html#Hook-Reference">Hook Reference</a>:       Functions which extend monotone
+<li><a accesskey="7" href="Special-Topics.html#Special-Topics">Special Topics</a>:       Extra explanations and details
+<li><a accesskey="8" href="Man-Page.html#Man-Page">Man Page</a>:             That other document
+<li><a accesskey="9" href="Default-hooks.html#Default-hooks">Default hooks</a>:        The standard hook definitions
+<li><a href="Index.html#Index">Index</a>:                Index of concepts and functions
+</ul>
+
+   <p>Complete table of contents
+
+<div class="contents">
+<h2>Table of Contents</h2>
+<ul>
+<li><a name="toc_Top" href="index.html#Top">Top</a>
+<li><a name="toc_Concepts" href="Concepts.html#Concepts">1 Concepts</a>
+<ul>
+<li><a href="Versions-of-files.html#Versions-of-files">1.1 Versions of files</a>
+<li><a href="Versions-of-trees.html#Versions-of-trees">1.2 Versions of trees</a>
+<li><a href="Historical-records.html#Historical-records">1.3 Historical records</a>
+<li><a href="Certificates.html#Certificates">1.4 Certificates</a>
+<li><a href="Storage-and-workflow.html#Storage-and-workflow">1.5 Storage and workflow</a>
+<li><a href="Forks-and-merges.html#Forks-and-merges">1.6 Forks and merges</a>
+<li><a href="Branches.html#Branches">1.7 Branches</a>
+<ul>
+<li><a href="Branches.html#Branches">1.7.1 Branch Names</a>
+</li></ul>
+</li></ul>
+<li><a name="toc_Tutorial" href="Tutorial.html#Tutorial">2 Tutorial</a>
+<ul>
+<li><a href="Tutorial.html#Tutorial">2.1 Issues</a>
+<ul>
+<li><a href="Tutorial.html#Tutorial">2.1.1 Standard Options</a>
+<li><a href="Tutorial.html#Tutorial">2.1.2 Revision Selectors</a>
+</li></ul>
+<li><a href="Tutorial.html#Tutorial">2.2 The Fictional Project</a>
+<li><a href="Creating-a-Database.html#Creating-a-Database">2.3 Creating a Database</a>
+<li><a href="Generating-Keys.html#Generating-Keys">2.4 Generating Keys</a>
+<li><a href="Starting-a-New-Project.html#Starting-a-New-Project">2.5 Starting a New Project</a>
+<li><a href="Adding-Files.html#Adding-Files">2.6 Adding Files</a>
+<li><a href="Committing-Work.html#Committing-Work">2.7 Committing Work</a>
+<li><a href="Network-Service.html#Network-Service">2.8 Network Service</a>
+<li><a href="Making-Changes.html#Making-Changes">2.9 Making Changes</a>
+<li><a href="Dealing-with-a-Fork.html#Dealing-with-a-Fork">2.10 Dealing with a Fork</a>
+<li><a href="Branching-and-Merging.html#Branching-and-Merging">2.11 Branching and Merging</a>
+</li></ul>
+<li><a name="toc_Advanced-Uses" href="Advanced-Uses.html#Advanced-Uses">3 Advanced Uses</a>
+<ul>
+<li><a href="Selectors.html#Selectors">3.1 Selectors</a>
+<li><a href="Restrictions.html#Restrictions">3.2 Restrictions</a>
+<li><a href="Scripting.html#Scripting">3.3 Scripting</a>
+<li><a href="Inodeprints.html#Inodeprints">3.4 Inodeprints</a>
+<li><a href="Quality-Assurance.html#Quality-Assurance">3.5 Quality Assurance</a>
+<li><a href="Vars.html#Vars">3.6 Vars</a>
+<li><a href="Reserved-Files.html#Reserved-Files">3.7 Reserved Files</a>
+<li><a href="Reserved-Certs.html#Reserved-Certs">3.8 Reserved Certs</a>
+<li><a href="Naming-Conventions.html#Naming-Conventions">3.9 Naming Conventions</a>
+<li><a href="File-Attributes.html#File-Attributes">3.10 File Attributes</a>
+<li><a href="Merging.html#Merging">3.11 Merging</a>
+<li><a href="Migrating-and-Dumping.html#Migrating-and-Dumping">3.12 Migrating and Dumping</a>
+<li><a href="Importing-from-CVS.html#Importing-from-CVS">3.13 Importing from CVS</a>
+</li></ul>
+<li><a name="toc_CVS-Phrasebook" href="CVS-Phrasebook.html#CVS-Phrasebook">4 CVS Phrasebook</a>
+<li><a name="toc_Command-Reference" href="Command-Reference.html#Command-Reference">5 Command Reference</a>
+<ul>
+<li><a href="Tree.html#Tree">5.1 Tree</a>
+<li><a href="Working-Copy.html#Working-Copy">5.2 Working Copy</a>
+<li><a href="Network.html#Network">5.3 Network</a>
+<li><a href="Informative.html#Informative">5.4 Informative</a>
+<li><a href="Key-and-Cert.html#Key-and-Cert">5.5 Key and Cert</a>
+<li><a href="Certificate.html#Certificate">5.6 Certificate</a>
+<li><a href="Packet-I_002fO.html#Packet-I_002fO">5.7 Packet I/O</a>
+<li><a href="Database.html#Database">5.8 Database</a>
+<li><a href="Automation.html#Automation">5.9 Automation</a>
+<li><a href="RCS.html#RCS">5.10 RCS</a>
+</li></ul>
+<li><a name="toc_Hook-Reference" href="Hook-Reference.html#Hook-Reference">6 Hook Reference</a>
+<ul>
+<li><a href="Hooks.html#Hooks">6.1 Hooks</a>
+<li><a href="Additional-Lua-Functions.html#Additional-Lua-Functions">6.2 Additional Lua Functions</a>
+</li></ul>
+<li><a name="toc_Special-Topics" href="Special-Topics.html#Special-Topics">7 Special Topics</a>
+<ul>
+<li><a href="Internationalization.html#Internationalization">7.1 Internationalization</a>
+<li><a href="Hash-Integrity.html#Hash-Integrity">7.2 Hash Integrity</a>
+<li><a href="Rebuilding-ancestry.html#Rebuilding-ancestry">7.3 Rebuilding ancestry</a>
+</li></ul>
+<li><a name="toc_Man-Page" href="Man-Page.html#Man-Page">8 Man Page</a>
+<ul>
+<li><a href="NAME.html#NAME">8.1 NAME</a>
+<li><a href="SYNOPSIS.html#SYNOPSIS">8.2 SYNOPSIS</a>
+<ul>
+<li><a href="Note.html#Note">8.2.1 Note</a>
+<li><a href="Commands.html#Commands">8.2.2 Commands</a>
+</li></ul>
+<li><a href="DESCRIPTION.html#DESCRIPTION">8.3 DESCRIPTION</a>
+<li><a href="OPTIONS.html#OPTIONS">8.4 OPTIONS</a>
+<li><a href="ENVIRONMENT.html#ENVIRONMENT">8.5 ENVIRONMENT</a>
+<li><a href="FILES.html#FILES">8.6 FILES</a>
+<li><a href="NOTES.html#NOTES">8.7 NOTES</a>
+<li><a href="SEE-ALSO.html#SEE-ALSO">8.8 SEE ALSO</a>
+<li><a href="BUGS.html#BUGS">8.9 BUGS</a>
+<li><a href="AUTHOR.html#AUTHOR">8.10 AUTHOR</a>
+</li></ul>
+<li><a name="toc_Default-hooks" href="Default-hooks.html#Default-hooks">Appendix A Default hooks</a>
+<li><a name="toc_Index" href="Index.html#Index">Index</a>
+</li></ul>
+</div>
+
+   </body></html>
+

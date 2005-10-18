@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="en">
+<head>
+  <title>monotone self-hosting</title>
+  <link type="text/css" rel="stylesheet" href="monotone.css" />
+  <link rel="home" title="monotone homepage" href="index.html" />
+</head>
+<body>
+
+<h1>Self Hosting</h1>
+<p>
+Monotone development is self-hosting. This means that once you
+have a copy of monotone, you can use it to track the development of
+monotone from your own machine, rather than using CVS. 
+</p>
+
+<h2>Using my netsync server</h2>
+
+<p>
+I have set up a netsync server (a copy of monotone serving the netsync
+protocol) which I will store my own versions of monotone in, including
+releases and merges from other people and whatnot. This can be read by
+anyone, but only I (and, well, perhaps a couple other people if they
+ask nicely) can add things to it, since it's mine. If you want to
+develop monotone yourself, you should try to make your own server for
+hosting your own changes (see <a href="#yourserver">later
+on</a>). Setting yourself up to read from my server is pretty
+simple. Just follow these three steps:
+</p>
+
+<ol>
+<li><p>Get or build a copy of the most recent monotone release.</p></li>
+
+<li>
+<p>Initialize a database, which is just a regular file you'll store
+versions and certificates into.</p>
+<div class="code">
+$ <span class="input">monotone --db=monotone.db db init</span>
+</div>
+</li>
+
+<li>
+<p>
+Run this command, you should get something similar to these
+results:
+</p>
+
+<div class="code">
+$ <span class="input">monotone --db=monotone.db pull venge.net "net.venge.monotone*"</span>
+monotone: setting default server to venge.net
+monotone: setting default pattern to net.venge.monotone*
+monotone: warning: doing anonymous pull
+monotone: connecting to venge.net
+monotone: rebuilding merkle trees for collection net.venge.monotone
+monotone: first time connecting to server venge.net
+monotone: I'll assume it's really them, but you might want to
+monotone: double-check their key's fingerprint: 70a0f283898a18815a83df37c902e5f1492e9aa2
+monotone: warning: saving public key for monotone@off.net to database
+monotone: [bytes in: 2403476] [bytes out: 71436]
+monotone: exchanged goodbyes and flushed output on fd 5 (peer venge.net), disconnecting
+</div>
+
+<p>
+Note the key fingerprint in that output; you may wish to verify that
+it really is 70a0f283898a18815a83df37c902e5f1492e9aa2.
+</p>
+
+<p>
+This is your initial pull so it will take a bit of time, as it has to
+transfer a few megabytes of history to you. Subsequent pulls will
+be much faster. When you're done pulling you can take a look at the
+heads of the branch you picked up. You should get something like this
+(though perhaps with a different head version):</p>
+
+
+<div class="code">
+$ <span class="input">monotone --db=monotone.db --branch=net.venge.monotone heads</span>
+monotone: fetching heads of branch 'net.venge.monotone'
+branch 'net.venge.monotone' is currently merged:
+ba5689776a6f05e23e548f5593c967e55eaf8f2a graydon@dub.venge.net 2004-05-13T03:27:48
+</div>
+
+<p>
+You can now look at the certs on a particular version; we will use the
+version tagged as <tt>monotone-0.12</tt>:
+</p>
+
+<div class="code">
+$ <span class="input">monotone --db=monotone.db ls certs t:monotone-0.12</span>
+monotone: expanding selection 't:monotone-0.12'
+monotone: expanded to '6742d43b00fdf589fe0cf146ac889181dc03600b'
+-----------------------------------------------------------------
+Key   : graydon@pobox.com
+Sig   : ok
+Name  : ancestor
+Value : 68a22673a46acf5a5ae9ab2911d22cfc9e1bf116
+-----------------------------------------------------------------
+Key   : graydon@pobox.com
+Sig   : ok
+Name  : branch
+Value : net.venge.monotone
+-----------------------------------------------------------------
+Key   : graydon@pobox.com
+Sig   : ok
+Name  : date
+Value : 2004-05-03T03:44:22
+-----------------------------------------------------------------
+Key   : graydon@pobox.com
+Sig   : ok
+Name  : author
+Value : graydon@dub.venge.net
+-----------------------------------------------------------------
+Key   : graydon@pobox.com
+Sig   : ok
+Name  : changelog
+Value : remove depot.cgi from spec
+-----------------------------------------------------------------
+Key   : graydon@pobox.com
+Sig   : ok
+Name  : tag
+Value : monotone-0.12
+
+</div>
+
+<p>
+And you can also check out that version:
+</p>
+
+<div class="code">
+$ <span class="input">monotone --db=monotone.db checkout -r t:monotone-0.12 monotone</span>
+monotone: expanding selection 't:monotone-0.12'
+monotone: expanded to '6742d43b00fdf589fe0cf146ac889181dc03600b'
+</div>
+
+</li>
+
+<li>
+<p>
+That's it, you're done! You will now find yourself with a checked out
+working copy in the directory <tt>monotone</tt>, which you can edit,
+merge, commit, etc. In the future, you can pull new versions from my
+server and update your working copy from your database using this pair
+of commands:
+</p>
+
+<div class="code">
+$ <span class="input">cd monotone</span>
+...
+$ <span class="input">monotone pull</span>
+...
+$ <span class="input">monotone update</span>
+...
+</div>
+</li>
+
+</ol>
+
+<a name="yourserver">
+<h2>Making your own server</h2>
+</a>
+
+<p>
+Setting up your own server is covered in the <a
+href="docs/Network-Service.html">"Network Service"</a>
+section of the <a href="docs/index.html">documentation</a>. Once you
+have your own server running, if you want me to fetch changes directrly
+from it (and merge them with my monotone versions) you should send an
+email with your server's host name, collection name, and public key,
+to the <a
+href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">mailing
+list</a>.
+</p>
+
+<p>If you have difficulty setting up a server, or are feeling lazy and
+would like us to host one for you, send an email to the <a
+href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">list</a>. For
+projects of a reasonable size, or if you just want to play around,
+we'd be happy to host an extra server for you.</p>
+
+</body> 
+</html>
+

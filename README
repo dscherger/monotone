@@ -1,0 +1,12 @@
+
+The public_html directory should correspond to what you find at
+http://venge.net/monotone/
+
+I put it in a subdirectory so that stuff like this README and scripts
+to auto-upload changes to the website, etc.., could be checked into
+the same project without the hassle of figuring out which should get
+uploaded.
+
+Initially got files doing 'wget -r --exclude-directories=/downloads
+http://venge.net/monotone/', but for some reason that wasn't actually
+excluding the downloads directory.  Not sure what's up with that.

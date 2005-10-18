@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="en">
+<head>
+  <title>summer of monotone</title>
+  <link type="text/css" rel="stylesheet" href="monotone.css" />
+</head>
+<body>
+<h2>Google Summer of Code</h2>
+<p>
+Google is organizing a fantastic opportunity for students to help out
+with FLOSS development this summer, and get paid for doing it.  More
+information is available on <a href="http://code.google.com/summerofcode.html">their site</a>.
+<A href="http://venge.net/monotone">Monotone</a> is a distributed
+version control system, in the same space as CVS, Subversion,
+Arch, Darcs, and <a href="others.html">others</a>.
+</p>
+<p>
+If you've been wanting to get more involved in the monotone project,
+have some relevant experience, and are a student, then here are some
+project ideas that might be worth submitting.  If you <i>are</i>
+interested in applying, you should probably drop by <a
+href="irc://irc.oftc.net/#monotone">#monotone on irc.oftc.net</a>; I'm
+often around (nick "njs"), as are others, and we can help you figure
+out what would be a good match (possibly something that's not even on
+this list!), give more details on each of them, etc.  Or suggest your
+own ideas...
+</p>
+<p>
+UI improvements:
+</p>
+<ul>
+<li>There's currently a somewhat clunky <a href="http://grahame.angrygoats.net/viewmtn.shtml">web interface</a> to Monotone
+    repositories; it could do with a great deal of cleaning up and
+    polish.  One interesting idea would be to provide a "google maps"
+    like interface to history browsing; this could greatly improve on
+    the state of the art in web VCS interfaces, while being quite
+    interesting to anyone with an interest in Javascript, DHTML,
+    and so on.  Some more detailed ideas <a href="http://www.loglibrary.com/dialogue/view/73">are available</a>.</li>
+<li>An interactive merge tool that uses the new "precise
+    codeville-merge" algorithm.  Precise cdv-merge is greatly superior
+    to traditional 3-way merge, but while there are many slick
+    interfaces to make doing 3-way merge easy, there are none for
+    cdv-merge.  Such a tool would benefit multiple VCS projects, and
+    has interesting challenges, while still being within the scope of
+    a 2-month project.</li>
+</ul>
+<p>
+Core improvements:
+</p>
+<ul>
+<li>Merge-via-working-directory: A major UI problem in monotone has
+    been that merges happen directly against the repository, rather
+    than into a working directory where they can be inspected before
+    being committed.  We know how to do this; but no-one's had the
+    time.</li>
+<li>Make cvs_import work better: Importing history from CVS turns out
+    to be a much harder problem than one might think.  Monotone has a cvs importer,
+    but it's buggy.  The project would be to make it less buggy.  We
+    suspect this is solvable, since cvs2svn does quite a good job with
+    the more annoying parts of the problem, but someone needs to figure
+    out how cvs2svn manages it, and make it work for monotone.</li>
+<li>git_import: The linux kernel has recently started using a tool
+    "git" for managing development.  git is conceptually very close to
+    monotone, but with arguably inferior merging, communication, and
+    storage systems, while monotone is catching up with it in speed.
+    Some kernel developers might prefer to use monotone, given the
+    choice; give them that option by writing an incremental, lossless
+    history importer from git.</li>
+<li>Distributed trust delegation: Monotone is designed around a novel
+    security model, designed for development efforts that cut across
+    organizational and trust boundaries -- so users have a great deal
+    of flexibility in whose code they trust, and under what
+    circumstances.  However, to make this ergonomic in practice, users
+    need to be able to defer some decisions to others --
+    to say "I trust the main developers to tell me who gets commit
+    access", for instance.  We have a plausible design sketch for how
+    to do this, but again, time constraints have prevented its
+    implementation; implement it.  This project would be pushing the
+    state-of-the-art in distributed systems security; I'm not aware of
+    any other work that has addressed this particular problem.  Some
+    more detailed discussion <a href="http://frances.vorpus.org/~njs/mt-permission.log">is available</a>.</li>
+<li>monotone-agent: Monotone needs passwords to unlock keys; typing
+    passwords is annoying.  Either implement a "monotone-agent"
+    analogous to ssh-agent, or else teach monotone to use ssh-agent
+    directly.</li>
+</ul>
+<p>
+Other:
+</p>
+<ul>
+<li>Make botan faster: Botan is a nice C++ library for crypto.  Crypto++
+    is a somewhat grungier C++ library for crypto.  We would like to use Botan,
+    but at the moment we use Crypto++, because Botan is slower.  This is probably
+    just a matter of finding the various fast crypto kernels that float aorund on the
+    net (or are in Crypto++), porting them to Botan's framework, and submitting for
+    inclusion upstream.</li>
+<li>Portable asynchronous programming library: This is somewhat
+    different from the other projects.  Several features that would be
+    very nice in monotone (network proxy support, for instance) have
+    been delayed by the difficulty of writing portable (POSIX+Win32)
+    code to deal with pipes, sockets, and processes.  Coincidentally,
+    we also have the prototype of a library to deal with these issues,
+    that could be useful for many projects.  (Basically, a C++ version
+    of the Python "Twisted" library.)  It hasn't received much
+    attention from the core developers, due to a desire to avoid
+    losing focus, but this could be a very valuable project for
+    someone to pick up.  This would be excellent experience for anyone
+    interested in learning the nitty-gritty of asynchronous
+    programming, though some prior knowledge of the area is probably required.</li>
+</ul>
+<h2>Applying</h2>
+<p>
+My understanding is that each project will review applications submitted for it.
+So here are some guidelines for things that <I>I</I> would like seeing in
+applications (and possibly other project reviewers would like too):
+</p>
+<ul>
+<li><b>Experience</b>: I can't teach people to code.  Sorry; just not enough hours
+in the day.  Therefore, it is very helpful to see some evidence that you can code,
+and will be able to get up to speed and contributing quickly (the whole thing is
+only 2 months!).  The goal is to provide something valuable to you, <i>and</i> to
+the project (and the public generally).  Convince me you can and will do this.</li>
+<li><b>Have I seen your code?/Is there somewhere I could go to see
+your code?</b>: Same reason as above, but an even better indicator.</li>
+<li><b>How much time are you thinking to put in?</b>: roughly speaking.</li>
+<li><b>What's your goal afterwards?</b>: Do you want to finish a project and stop after August?
+Or do you see this as a way to kickstart work want to continue afterwards?  This has
+a big effect on what a reasonable goal is.</li>
+<li><b>Meta-point</b>: Convince me you're reasonable, you've thought about what you want
+to do, why you want to do it, that it's plausible for you to accomplish what you want, that you'll benefit from
+doing so, and that it's worth doing.  Summer of Code is going to have somewhere under a 10% acceptance
+rate, and to stand out you need to show that you're one of those &lt;10% who are worth spending
+the time and money on.</li>
+</ul>
+<p>
+Other things to consider: software development and schedules don't,
+in practice, really mix.  The goals of having a well-defined project to work on, and of
+actually making effective use of your time, can often be in direct conflict.
+So while working out a project plan is a great idea to get started, don't expect
+it to necessarily define what you'll do; FLOSS development works best when you
+work on the things you want to do, that you find tractable, and that make sense
+within the community.  Expect other people to tell you that your code sucks, or that
+it rocks, or that someone else will wander in and do half of the work you were planning
+to.  End conclusion: expect projects above to be starting points, not exhaustive plans.  (Of course,
+some people may find that they work all summer on one thing, and finish it right at the
+end.  Weirder things have happened.)
+</p>
+<p>
+And, special tip for those who made it to the bottom of the page:
+the absolute best way to get any FLOSS developer interested, and the
+absolute first thing you should do when interested in starting to work
+on a project, is to write some sort of useful, simple patch and send it
+in.  Monotone has a <a href="quickies.html">list of ideas</a> for such patches.
+</p>
+</body>
+</html>

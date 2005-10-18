@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="en">
+<head>
+  <title>other programs that work with monotone</title>
+  <link type="text/css" rel="stylesheet" href="monotone.css" />
+</head>
+<body>
+<h2>monotone interfaces, frontends, and tools</h2>
+</a>
+<p>
+some people have written programs that interface with monotone to do
+interesting things.  this page tries to collect them.  (and if you've
+written something that isn't here... let <a href="mailto:monotone-devel@nongnu.org">us know</a>!)
+</p>
+
+<ul>
+<li><b><a href="http://oandrieu.nerim.net/monotone-viz/">monotone-viz</a></b>:
+        GTK+ app for browsing and visualizing history</li>
+<li>monotone.el: Emacs integration for monotone.  In <tt>contrib/</tt> directory of monotone's
+    source tree.
+    <a href="http://grahame.angrygoats.net/viewmtn/fileinbranch.psp?branch=net.venge.monotone&path=contrib/monotone.el">Latest version</a> (via viewmtn).
+    </li>
+<li><b><a href="http://grahame.angrygoats.net/viewmtn.shtml">viewmtn</a></b>: a web interface to a
+    monotone repository.
+<li><b><a href="https://netfiles.uiuc.edu/brownawe/www/mtsh/">mtsh</a></b>: GTK+ wrapper for monotone focusing
+    on working copy operations -- add, drop, revert, rename, commit, update, diff, and browsing.  Has a mechanism
+    for per-file commit comments.</li>
+<li>shell completion: monotone ships with completion scripts for both bash and zsh, in the <tt>contrib/</tt>
+    directory of monotone's source tree.
+    Latest versions for <a href="http://grahame.angrygoats.net/viewmtn/fileinbranch.psp?branch=net.venge.monotone&path=contrib/monotone.bash_completion">bash</a> and <a href="http://grahame.angrygoats.net/viewmtn/fileinbranch.psp?branch=net.venge.monotone&path=contrib/monotone.zsh_completion">zsh</a> (via viewmtn).
+<li>"dumb server" support, for publishing repositories via ordinary ftp/http/sftp/local filesystem: in branch
+    <a href="http://viewmtn.angrygoats.net//branch.psp?branch=net.venge.monotone.dumb">net.venge.monotone.dumb</a>.
+    Currently still needs a command-line interface to be usable, but hard parts are working.  Help wanted.</li>
+<li><b><a href="http://www.midwinter.com/~lch/programming/m7/">m7</a></b>:
+    Experimental drop-in command-line wrapper for monotone. Uses
+    certs to add local incrementing version numbers, and an
+    enhanced annotate front-end.
+<li><b>monotree</b>: java app for browsing and visualizing history; more portable than monotone-viz.
+    In branch <tt>net.venge.monotone.contrib.monotree</tt>.</li>
+<li><b><a href="http://rscm.rubyforge.org/classes/RSCM/Monotone.html">RSCM::Monotone</a></b>: a
+    <a href="http://www.ruby-lang.org/">ruby</a> interface to monotone.</li>
+<li><b><a href="http://www.scannedinavian.org/DarcsWiki/Tailor">Tailor</a></b>: a program that can
+    (among other things) convert Subversion, CVS, and Darcs repositories to monotone.  (Note that
+    monotone can also import CVS repositories without using any external tools.)</li>
+<li>monotone-import.pl: A script to ease importing other people's source distributions into a monotone
+    branch, useful for tracking "vendor branches" and the like.  In <tt>contrib/</tt> directory of
+    monotone's source tree.
+    <a href="http://grahame.angrygoats.net/viewmtn/fileinbranch.psp?branch=net.venge.monotone&path=contrib/monotone-import.pl">Latest version</a> (via viewmtn).
+    </li>
+<li>monotone-notify.pl: A script to watch a monotone repository and, for example, send emails on
+    commits.  In <tt>contrib/</tt> directory of monotone's source tree.
+    <a href="http://grahame.angrygoats.net/viewmtn/fileinbranch.psp?branch=net.venge.monotone&path=contrib/monotone-notify.pl">Latest version</a> (via viewmtn).
+    </li>
+<li>ciabot_monotone.py: A notification script for <a href="http://cia.navi.cx">CIA</a>.  In
+    <tt>contrib/</tt> directory of monotone's source tree.
+    <a href="http://grahame.angrygoats.net/viewmtn/fileinbranch.psp?branch=net.venge.monotone&path=contrib/ciabot_monotone.py">Latest version</a> (via viewmtn).
+    </li>
+<li>Script for importing maildir-format mailboxes to monotone, for offline reading and syncing:
+    <a href="http://lists.gnu.org/archive/html/monotone-devel/2005-09/msg00234.html">on the list</a></li>
+<li><b><a href="http://www.ethereal.com">Ethereal</a></b>: a fantastic
+    network traffic analyzer, that has support for decoding monotone's 'netsync' protocol.
+</ul>
+</body>
+</html>

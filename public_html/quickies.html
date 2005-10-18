@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="en">
+<head>
+  <title>quickie tasks</title>
+  <link type="text/css" rel="stylesheet" href="monotone.css" />
+</head>
+<body>
+<h2>quickie tasks</h2>
+<p>
+These are some small, uncontroversial tasks.  As such, they're ideal for
+anyone who wants to get involved with the project; there's always some
+overhead with getting into a new code base, figuring out how things fit
+together, how to send acceptable patches, all that, and the quickest
+way to get through it is to make your first patch something small, so
+you don't also have to worry about complicated design issues at the
+same time.  (Of course, some people do great just diving in; there's no
+rule that says you <i>have</i> to do this.)
+</p>
+<p>
+So, here are some smaller tasks, that very much need doing, that
+fit the above bill:
+</p>
+<ul>
+<li>'serve' should not have 'serve &lt;address&gt; ...' syntax, but rather
+    take an optional argument (maybe '--bind'?) to specify the address to
+    bind to.  This argument should also allow just a port ('--bind=:5253').</li>
+<li>implement a 'head selector': syntax would be 'h:net.venge.monotone' to mean
+    a head of the net.venge.monotone branch. (a little harder) (there is a patch for this on the mailing list, needs test/doc)</li>
+<li>support for .mt-template.  This is a versioned file, that is used as the default for log messages.
+    This might be helpful so you can put in fields for bug numbers, standardize your log message
+    format, etc.  Implementation is to make it the default value of MT/log.  One tricky bit is that
+    commits should be canceled if given an empty or _unchanged_ log message; currently they are canceled
+    only on an empty log message.</li>
+<li>related to above: hook to validate log messages -- commit is impossible unless this hook is made happy.
+    <a href="http://article.gmane.org/gmane.comp.version-control.monotone.devel/4373">discussion thread</a>.</li>
+<li>better error reporting in netsync -- lots of times netsync will deny access by simply shutting down
+    the connection with no explanation; fix this</li>
+<li>log only takes a single filename to log.  teach it to use the restrictions
+    code instead, and accept arbitrary restrictions.</li>
+<li>log should order its output in topological order.  what this means is just that if revision A is an ancestor
+    of revision B, it should always print B before A.  it doesn't quite do this right now; if there are two ways
+    to get to B, and only the longer of them goes via A, then A can be printed first.</li>
+<li>'revert -rREV' -- allow reversion to arbitrary older versions.  This should be a much more understandable
+    UI to backing out changes than 'disapprove'.  (Note that you need to apply the inverse changeset,
+    not just recreate the old manifest.  If this doesn't mean anything to you, just ask :-).)  (or possibly
+    it should do a 3-way merge?)</li>
+<li>'drop --missing'</li>
+<li>'revert --missing'</li>
+<li>'add --new'</li>
+<li>teach merge to order merges more sensibly.  when merging 3 or more heads, merge will pick some order to merge
+    them in, pairwise.  right now, we do it in arbitrary order (alphabetically, I think).  this is not the
+    best order.  the best order is to merge nearby nodes first -- e.g., if you have A -> B -> C, B -> D, A -> E -> F,
+    so you're merging C and D and F, you want to do merge(merge(C, D), F), not anything else.  (maybe this will be
+    less important once we get away from 3-way merging, but with 3-way merging in particular it's very important.)</li>
+<li>two-argument disapprove: should be some way to apply disapprove to a range of revisions, not just a single one.
+    (basically just means committing the changeset diff(LASTREV,FIRSTREV) as a child of LASTREV.)  be careful about
+    merge nodes in the span to disapprove.</li>
+<li>on commit, when MT/log is non-empty and we pop up the editor containing it, insert a magical line
+    that must be deleted to confirm the commit.  This makes it easy to cancel out of a commit, without
+    the unintuitive and annoying approach of manually deleting all text.</li>
+<li>add support for more merge tools -- SVK is one source of these, they support a number that we don't.
+    see SVK/Resolve/* in their source tree.</li>
+<li>update tutorial to describe Jim _not_ using his main db to serve from</li>
+<li>new command 'clone' that is just 'db init && pull'.  change tutorial to show Abe and Beth using this to create
+    their db's.</li>
+<li>add support for merging by writing out a temp file with conflict markers and then spawning EDITOR on
+    it, which should work even when people don't have a real merge tool installed.  (Probably refuse to
+    accept the merged file if it still contains conflict markers in the text.)</li>
+<li>add a test for context diff output</li>
+<li>write a test for any bugs in the <a href="https://savannah.nongnu.org/bugs/index.php?group=monotone">tracker</a>
+    labeled [NEED TEST].</li>
+</ul>
+</body>
+</html>
