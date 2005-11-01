@@ -1623,23 +1623,20 @@ monotone: read 2 packets
 @end smallexample
 
 Now Jim's monotone is able to identify Beth and Abe, and he is ready to
-give them permission to access his database.  He does this by adding a
-small amount of extra information to his @file{monotonerc} file:
+give them permission to access his database.  He does this by editing a
+pair of small files in his @file{~/.monotone} directory:
 
 @smallexample
 @group
-$ cat >>~/.monotone/monotonerc
-function get_netsync_read_permitted (branch, identity)
-  if (identity == "abe@@juicebot.co.jp") then return true end
-  if (identity == "beth@@juicebot.co.jp") then return true end
-  return false
-end
+$ cat >>~/.monotone/read-permissions
+[*]
+abe@@juicebot.co.jp
+beth@@juicebot.co.jp
+^D
 
-function get_netsync_write_permitted (identity)
-  if (identity == "abe@@juicebot.co.jp") then return true end
-  if (identity == "beth@@juicebot.co.jp") then return true end
-  return false
-end
+$ cat >>~/.monotone/write-permissions
+abe@@juicebot.co.jp
+beth@@juicebot.co.jp
 ^D
 @end group
 @end smallexample
@@ -5900,8 +5897,36 @@ end
 Returns @code{true} if a peer authenticated as key @var{identity}
 should be allowed to read from your database certs, revisions,
 manifests, and files associated with @var{branch}; otherwise @code{false}.
-This hook has no default definition, therefore the default behavior is
-to deny all reads.
+The default definition of this hook reads a file @file{read-permissions} in
+the configuration directory. This file looks like
+@smallexample
+@group
+pattern "net.example.project.@{private,security@}*"
+allow "joe@@example.net"
+allow "jim@@example.net"
+
+pattern "net.example.@{public,project@}*"
+allow "*"
+@end group
+@end smallexample
+This example allows everyone access to branches @code{net.example.project} and
+@code{net.example.public} and their sub-branches, except for the branches in
+@code{net.example.security} and @code{net.example.private}, which are only
+readable by Joe and Jim.
+
+The file is divided into stanzas of one @code{pattern} line followed by any
+number of @code{allow} and @code{deny} lines, and possibly a @code{continue}
+line. Lines which do not consist of one of these words followed by an argument
+in quotes will be ignored. A stanza is processed if the argument to
+@code{pattern} is a glob that matches @var{branch}. Any keys which match an
+@code{allow} line are given access, and any keys which match a @code{deny} line
+are denied access. If there is a @code{continue "true"} line, then if the key
+is not granted or denied access in this stanza the next matching stanza will be
+processed. If there is not a @code{continue "true"} line, then any key which
+has not been given access will be denied access even if it doesn't match any
+@code{deny} lines. Thus, deny lines are redundant unless there is also a
+@code{continue "true"} line.
+
 
 If a client connects anonymously, this hook will be called with a
 @var{identity} of @code{nil}.
@@ -5917,8 +5942,10 @@ key fingerprints of each key in your database, as key ID strings are
 
 Returns @code{true} if a peer authenticated as key @var{identity} should
 be allowed to write into your database certs, revisions, manifests, and
-files; otherwise @code{false}.  This hook has no default definition,
-therefore the default behavior is to deny all writes.
+files; otherwise @code{false}. The default definition of this hook reads a file
+@file{write-permissions} in the configuration directory which contains a list
+of keys, one per line, which are allowed write access. The special value
+@code{*} means to allow access to anyone whose public key we already have.
 
 If a client connects anonymously, it will be unconditionally denied
 write access; this hook will @emph{not} be called with a @var{identity}
@@ -7144,10 +7171,12 @@ Show unmerged heads of branch, or report when branch is merged.
 Merge unmerged heads of branch.
 @comment TROFF INPUT: .TP
 
-@item @b{add} @i{<pathname> [...]}
+@item @b{add} @i{[--unknown] [<pathname>...]}
 Add files to working copy. adding a file does not copy it into the
 database, merely adds it to the work list. You must @b{commit} your
-changes in order to copy added files to the database.
+changes in order to copy added files to the database.  The missing 
+flag causes those files that @command{monotone ls unknown} would
+display to be added to the project.
 @comment TROFF INPUT: .TP
 
 @item @b{drop} @i{[--missing] [--execute] [<pathname>...]}

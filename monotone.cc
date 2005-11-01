@@ -71,6 +71,8 @@ struct poptOption coptions[] =
     {"execute", 'e', POPT_ARG_NONE, NULL, OPT_EXECUTE, gettext_noop("perform the associated file operation"), NULL},
     {"bind", 0, POPT_ARG_STRING, &argstr, OPT_BIND, gettext_noop("address:port to listen on (default :5253)"), NULL},
     {"missing", 0, POPT_ARG_NONE, NULL, OPT_MISSING, gettext_noop("perform the operations for files missing from working directory"), NULL},
+    {"unknown", 0, POPT_ARG_NONE, NULL, OPT_UNKNOWN, gettext_noop("perform the operations for unknown files from working directory"), NULL},
+    {"key-to-push", 0, POPT_ARG_STRING, &argstr, OPT_KEY_TO_PUSH, gettext_noop("push the specified key even if it hasn't signed anything"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -95,6 +97,7 @@ struct poptOption options[] =
     {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, gettext_noop("limit search for working copy to specified root"), NULL},
     {"verbose", 0, POPT_ARG_NONE, NULL, OPT_VERBOSE, gettext_noop("verbose completion output"), NULL},
     {"keydir", 0, POPT_ARG_STRING, &argstr, OPT_KEY_DIR, gettext_noop("set location of key store"), NULL},
+    {"confdir", 0, POPT_ARG_STRING, &argstr, OPT_CONF_DIR, gettext_noop("set location of configuration directory"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -122,12 +125,10 @@ struct poptOption options[] =
 // in other words, this program should *never* unexpectedly terminate
 // without dumping some diagnostics.
 
-static bool clean_shutdown;
-
 void 
 dumper() 
 {
-  if (!clean_shutdown)
+  if (!global_sanity.clean_shutdown)
     global_sanity.dump_buffer();
   
   Botan::Init::deinitialize();
@@ -234,7 +235,6 @@ coption_string(int o)
 int 
 cpp_main(int argc, char ** argv)
 {
-  clean_shutdown = false;
   int ret = 0;
 
   atexit(&dumper);
@@ -339,6 +339,10 @@ cpp_main(int argc, char ** argv)
               app.set_key_dir(system_path(argstr));
               break;
 
+            case OPT_CONF_DIR:
+              app.set_confdir(system_path(argstr));
+              break;
+
             case OPT_TICKER:
               if (string(argstr) == "dot")
                 ui.set_tick_writer(new tick_write_dot);
@@ -356,16 +360,17 @@ cpp_main(int argc, char ** argv)
 
             case OPT_BRANCH_NAME:
               app.set_branch(string(argstr));
+              app.set_is_explicit_option(OPT_BRANCH_NAME);
               break;
 
             case OPT_VERSION:
               print_version();
-              clean_shutdown = true;
+              global_sanity.clean_shutdown = true;
               return 0;
 
             case OPT_FULL_VERSION:
               print_full_version();
-              clean_shutdown = true;
+              global_sanity.clean_shutdown = true;
               return 0;
 
             case OPT_REVISION:
@@ -374,10 +379,12 @@ cpp_main(int argc, char ** argv)
 
             case OPT_MESSAGE:
               app.set_message(string(argstr));
+              app.set_is_explicit_option(OPT_MESSAGE);
               break;
 
             case OPT_MSGFILE:
               app.set_message_file(string(argstr));
+              app.set_is_explicit_option(OPT_MSGFILE);
               break;
 
             case OPT_DATE:
@@ -461,10 +468,21 @@ cpp_main(int argc, char ** argv)
                 app.bind_address = utf8(addr_part);
                 app.bind_port = utf8(port_part);
               }
+              app.set_is_explicit_option(OPT_BIND);
               break;
 
             case OPT_MISSING:
               app.missing = true;
+              break;
+
+            case OPT_UNKNOWN:
+              app.unknown = true;
+              break;
+
+            case OPT_KEY_TO_PUSH:
+              {
+                app.add_key_to_push(string(argstr));
+              }
               break;
 
             case OPT_HELP:
@@ -561,22 +579,22 @@ cpp_main(int argc, char ** argv)
       poptPrintHelp(ctx(), stdout, 0);
       cout << endl;
       commands::explain_usage(u.which, cout);
-      clean_shutdown = true;
+      global_sanity.clean_shutdown = true;
       return 2;
     }
   }
   catch (informative_failure & inf)
   {
     ui.inform(inf.what);
-    clean_shutdown = true;
+    global_sanity.clean_shutdown = true;
     return 1;
   }
   catch (std::ios_base::failure const & ex)
   {
-    clean_shutdown = true;
+    global_sanity.clean_shutdown = true;
     return 1;
   }
 
-  clean_shutdown = true;
+  global_sanity.clean_shutdown = true;
   return ret;
 }
