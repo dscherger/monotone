@@ -676,7 +676,7 @@ ls_keys(string const & name, app_state & app, vector<utf8> const & args)
             cout << hash_code << " " << keyid << "   (*)" << endl;
         }
       if (!all_in_db)
-        cout << _("(*) - only in keystore") << endl;
+        cout << F("(*) - only in %s/") % app.keys.get_key_dir() << endl;
       cout << endl;
     }
 
@@ -867,9 +867,9 @@ CMD(genkey, N_("key and cert"), N_("KEYID"), N_("generate an RSA key-pair"), OPT
   N(!exists, F("key '%s' already exists") % ident);
   
   keypair kp;
-  P(F("generating key-pair '%s'\n") % ident);
+  P(F("generating key-pair '%s'") % ident);
   generate_key_pair(app.lua, ident, kp);
-  P(F("storing key-pair '%s' in keystore\n") % ident);
+  P(F("storing key-pair '%s' in %s/") % ident % app.keys.get_key_dir());
   app.keys.put_key_pair(ident, kp);
 }
 
@@ -1124,11 +1124,13 @@ CMD(comment, N_("review"), N_("REVISION [COMMENT]"),
 }
 
 
+static void find_unknown_and_ignored (app_state & app, bool want_ignored, vector<utf8> const & args, 
+                                      path_set & unknown, path_set & ignored);
 
-CMD(add, N_("working copy"), N_("PATH..."),
-    N_("add files to working copy"), OPT_NONE)
+CMD(add, N_("working copy"), N_("[PATH]..."),
+    N_("add files to working copy"), OPT_UNKNOWN)
 {
-  if (args.size() < 1)
+  if (!app.unknown && (args.size() < 1))
     throw usage(name);
 
   app.require_working_copy();
@@ -1142,6 +1144,16 @@ CMD(add, N_("working copy"), N_("PATH..."),
   vector<file_path> paths;
   for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
     paths.push_back(file_path_external(*i));
+
+  if (app.unknown)
+    {
+      path_set unknown, ignored;
+      find_unknown_and_ignored(app, false, args, unknown, ignored);
+      paths.insert(paths.end(), unknown.begin(), unknown.end());
+    }
+
+  if (paths.size() == 0)
+    return;
 
   build_additions(paths, m_old, app, work);
 
@@ -1423,7 +1435,7 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
       N(!app.branch_name().empty(), F("need --branch argument for branch-based checkout"));
       set<revision_id> heads;
       get_branch_heads(app.branch_name(), app, heads);
-      N(heads.size() > 0, F("branch %s is empty") % app.branch_name);
+      N(heads.size() > 0, F("branch '%s' is empty\n") % app.branch_name);
       N(heads.size() == 1, F("branch %s has multiple heads") % app.branch_name);
       ident = *(heads.begin());
     }
@@ -1629,24 +1641,33 @@ ls_known (app_state & app, vector<utf8> const & args)
 }
 
 static void
-ls_unknown (app_state & app, bool want_ignored, vector<utf8> const & args)
+find_unknown_and_ignored (app_state & app, bool want_ignored, vector<utf8> const & args, 
+                          path_set & unknown, path_set & ignored)
 {
-  app.require_working_copy();
-
   revision_set rev;
   manifest_map m_old, m_new;
-  path_set known, unknown, ignored;
+  //path_set known, unknown, ignored;
+  path_set known;
 
   calculate_restricted_revision(app, args, rev, m_old, m_new);
 
   extract_path_set(m_new, known);
   file_itemizer u(app, known, unknown, ignored);
   walk_tree(file_path(), u);
+}
+
+static void
+ls_unknown_or_ignored (app_state & app, bool want_ignored, vector<utf8> const & args)
+{
+  app.require_working_copy();
+
+  path_set unknown, ignored;
+  find_unknown_and_ignored(app, want_ignored, args, unknown, ignored);
 
   if (want_ignored)
     for (path_set::const_iterator i = ignored.begin(); i != ignored.end(); ++i)
       cout << *i << endl;
-  else 
+  else
     for (path_set::const_iterator i = unknown.begin(); i != unknown.end(); ++i)
       cout << *i << endl;
 }
@@ -1733,9 +1754,9 @@ CMD(list, N_("informative"),
   else if (idx(args, 0)() == "known")
     ls_known(app, removed);
   else if (idx(args, 0)() == "unknown")
-    ls_unknown(app, false, removed);
+    ls_unknown_or_ignored(app, false, removed);
   else if (idx(args, 0)() == "ignored")
-    ls_unknown(app, true, removed);
+    ls_unknown_or_ignored(app, true, removed);
   else if (idx(args, 0)() == "missing")
     ls_missing(app, removed);
   else
@@ -2039,7 +2060,7 @@ process_netsync_args(std::string const & name,
 
 CMD(push, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
     N_("push branches matching PATTERN to netsync server at ADDRESS"),
-    OPT_SET_DEFAULT % OPT_EXCLUDE)
+    OPT_SET_DEFAULT % OPT_EXCLUDE % OPT_KEY_TO_PUSH)
 {
   utf8 addr, include_pattern, exclude_pattern;
   process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, false, app);
@@ -2068,7 +2089,7 @@ CMD(pull, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
 
 CMD(sync, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
     N_("sync branches matching PATTERN with netsync server at ADDRESS"),
-    OPT_SET_DEFAULT % OPT_EXCLUDE)
+    OPT_SET_DEFAULT % OPT_EXCLUDE % OPT_KEY_TO_PUSH)
 {
   utf8 addr, include_pattern, exclude_pattern;
   process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, false, app);
@@ -2097,6 +2118,8 @@ CMD(serve, N_("network"), N_("PATTERN ..."),
   N(app.lua.hook_persist_phrase_ok(),
     F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
   require_password(key, app);
+
+  app.db.ensure_open();
 
   utf8 dummy_addr, include_pattern, exclude_pattern;
   process_netsync_args(name, args, dummy_addr, include_pattern, exclude_pattern, false, true, app);
@@ -2324,7 +2347,10 @@ CMD(commit, N_("working copy"), N_("[PATH]..."),
   get_branch_heads(app.branch_name(), app, heads);
   unsigned int old_head_size = heads.size();
 
-  guess_branch(edge_old_revision(rs.edges.begin()), app, branchname);
+  if (app.branch_name() != "") 
+    branchname = app.branch_name();
+  else 
+    guess_branch(edge_old_revision(rs.edges.begin()), app, branchname);
 
   P(F("beginning commit on branch '%s'\n") % branchname);
   L(F("new manifest '%s'\n"
@@ -2913,6 +2939,10 @@ CMD(update, N_("working copy"), "",
   if (r_old_id == r_chosen_id)
     {
       P(F("already up to date at %s\n") % r_old_id);
+      // do still switch the working copy branch, in case they have used
+      // update to switch branches.
+      if (!app.branch_name().empty())
+        app.make_branch_sticky();
       return;
     }
   

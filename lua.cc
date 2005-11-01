@@ -35,6 +35,7 @@ extern "C" {
 #include "platform.hh"
 #include "transforms.hh"
 #include "paths.hh"
+#include "globish.hh"
 
 // defined in {std,test}_hooks.lua, converted
 #include "test_hooks.h"
@@ -42,6 +43,14 @@ extern "C" {
 
 using namespace std;
 using boost::lexical_cast;
+
+// this lets the lua callbacks (monotone_*_for_lua) have access to the
+// app_state the're associated with.
+// it was added so that the confdir (normally ~/.monotone) can be specified on
+// the command line (and so known only to the app_state), and still be
+// available to lua
+// please *don't* use it for complex things that can throw errors
+static std::map<lua_State*, app_state*> map_of_lua_to_app;
 
 static int panic_thrower(lua_State * st)
 {
@@ -619,10 +628,54 @@ extern "C"
   }
 
   static int
+  monotone_globish_match_for_lua(lua_State *L)
+  {
+    const char *re = lua_tostring(L, -2);
+    const char *str = lua_tostring(L, -1);
+
+    bool result = false;
+    try {
+      string r(re);
+      string n;
+      string s(str);
+      result = globish_matcher(r, n)(s);
+    } catch (informative_failure & e) {
+      lua_pushstring(L, e.what.c_str());
+      lua_error(L);
+      return 0;
+    } catch (boost::bad_pattern & e) {
+      lua_pushstring(L, e.what());
+      lua_error(L);
+      return 0;
+    } catch (...) {
+      lua_pushstring(L, "Unknown error.");
+      lua_error(L);
+      return 0;
+    }
+    lua_pushboolean(L, result);
+    return 1;
+  }
+
+  static int
   monotone_gettext_for_lua(lua_State *L)
   {
     const char *msgid = lua_tostring(L, -1);
     lua_pushstring(L, gettext(msgid));
+    return 1;
+  }
+
+  static int
+  monotone_get_confdir_for_lua(lua_State *L)
+  {
+    map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(L);
+    if (i != map_of_lua_to_app.end())
+      {
+        system_path dir = i->second->get_confdir();
+        string confdir = dir.as_external();
+        lua_pushstring(L, confdir.c_str());
+      }
+    else
+      lua_pushnil(L);
     return 1;
   }
 }
@@ -655,6 +708,7 @@ lua_hooks::lua_hooks()
   lua_register(st, "include", monotone_include_for_lua);
   lua_register(st, "includedir", monotone_includedir_for_lua);
   lua_register(st, "gettext", monotone_gettext_for_lua);
+  lua_register(st, "get_confdir", monotone_get_confdir_for_lua);
 
   // add regex functions:
   lua_newtable(st);
@@ -666,13 +720,32 @@ lua_hooks::lua_hooks()
   lua_pushcfunction(st, monotone_regex_search_for_lua);
   lua_settable(st, -3);
 
+  // add globish functions:
+  lua_newtable(st);
+  lua_pushstring(st, "globish");
+  lua_pushvalue(st, -2);
+  lua_settable(st, LUA_GLOBALSINDEX);
+
+  lua_pushstring(st, "match");
+  lua_pushcfunction(st, monotone_globish_match_for_lua);
+  lua_settable(st, -3);
+
   lua_pop(st, 1);
 }
 
 lua_hooks::~lua_hooks()
 {
+  map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(st);
   if (st)
     lua_close (st);
+  if (i != map_of_lua_to_app.end())
+    map_of_lua_to_app.erase(i);
+}
+
+void
+lua_hooks::set_app(app_state *_app)
+{
+  map_of_lua_to_app.insert(make_pair(st, _app));
 }
 
 static bool 
@@ -717,7 +790,9 @@ lua_hooks::add_std_hooks()
 void 
 lua_hooks::default_rcfilename(system_path & file)
 {
-  file = system_path(get_homedir()) / ".monotone/monotonerc";
+  map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(st);
+  I(i != map_of_lua_to_app.end());
+  file = i->second->get_confdir() / "monotonerc";
 }
 
 void 

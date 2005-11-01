@@ -1,3 +1,214 @@
+2005-10-30  Nathaniel Smith  <njs@pobox.com>
+
+	* std_hooks.lua (edit_comment): Insert a blank line if there is no
+	user log message, so the user doesn't have to.
+
+2005-10-25  Emile Snyder  <emile@alumni.reed.edu>
+
+	Fix bug reported on mailing list by Wim Oudshoorn and Tom Koelman
+	where 'disapprove REV' inappropriately uses your working copy
+	branch for the disapproved revision.
+	* app_state.{cc,hh} (set_is_explicit_option, is_explicit_option):
+	New methods to determine if a given option value was set via
+	command line flag or not.
+	* cert.cc (guess_branch): Only accept explicit --branch values in
+	preference to the branch the given revision lives on.
+	* commands.cc (CMD(commit)): Explicitly use app.branch_name() if
+	it exists before calling guess_branch, so pick up MT/options
+	setting.
+	* monotone.cc (cpp_main): Set the explicit_option_map entries for
+	select command line flag processing.
+	
+2005-10-26  Matt Johnston  <matt@ucc.asn.au>
+
+	* INSTALL: mention that zlib is required
+	* debian/control: monotone doesn't work over plain network protocols
+
+2005-10-25  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* lua.cc: make the globish matcher available to lua
+	* std_hooks.lua: new (better) format for read-permissions
+	* monotone.texi: update documentation
+
+2005-10-24  Benoît Dejean  <benoit@placenet.org>
+
+	* commands.cc: Merged 2 i18n strings.
+
+2005-10-23  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* std_hooks.lua: new default get_netsync_*_permitted hooks, which
+	read permissions setting from $confdir/{read,write}-permissions
+	* monotone.texi: document the new default hooks
+
+2005-10-23  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: new option "-p <pidfile>", catch SIGTERM and SIGINT
+	and exit cleanly
+
+2005-10-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* constants.cc: increase log_line_sz so that the new unified
+	"SERVER IDENTIFICATION HAS CHANGED" message doesn't get truncated.
+	It used to be multiple print statements but was merged into one,
+	apparently to help with translation.
+
+2005-10-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: Support friendly shutdown (no new connections, but
+	don't kill existing ones) of local servers and the usher as a whole.
+	Simple admin interface to start/stop or get the status of individual
+	servers or the whole usher (listens for connections on a separate
+	port, only enabled if specified on the command line).
+
+2005-10-22  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_database_sig_cleanup.at: Two more sleeps that I forgot.
+
+2005-10-20  Nathaniel Smith  <njs@pobox.com>
+
+	* cert.hh (find_common_ancestor): Remove dead declaration.
+	* database.cc (check_schema): Improve schema mismatch error
+	message.
+
+2005-10-20  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_database_sig_cleanup.at: Sleep for a couple of seconds,
+	so monotone has a chance to clean up and die properly, even on a
+	slower machine.
+
+2005-10-19  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_update_switch_branch.at, testsuite.at: New test.
+
+2005-10-19  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (update): Make branch sticky even if update target
+	== current rid.
+
+2005-10-19  Matt Johnston  <matt@ucc.asn.au>
+
+	* main.cc, database.{cc,hh}: SIGINT and SIGTERM handlers
+	exit gracefully, and try to ROLLBACK+close any databases to clean up
+	.db-journal files. Added new database::close() method to be used
+	rather than sqlite_close() directly
+	* monotone.{cc,hh}, sanity.{cc.hh}: move clean_shutdown flag to
+	global_sanity
+	* tests/t_database_sig_cleanup.at: test it
+	* keys.cc: don't L() private key
+
+2005-10-19  Matthew A. Nicholson  <matt@matt-land.com>
+
+	* std_hooks.lua: Minor correction to vim warning during 3-way merge.
+
+2005-10-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: Update comment about client versions
+
+2005-10-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netsync.cc netcmd.{cc,hh}: usher_reply_cmd now has both who we
+	connected to *and* what pattern we asked for
+	* contrib/usher.cc: new file format, allow to key servers on either
+	hostname or pattern, hostname checked first
+	reload config file on SIGHUP
+
+2005-10-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netsync.cc (session::process_usher_cmd): reply with who we connected
+	to (hostname or hostname:port), not what pattern we asked for.
+	* contrib/usher.cc: Update comment.
+
+2005-10-18  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* contrib/usher.cc: support dynamic local servers
+	These are started when a client attempts to connect, and killed at
+	a set time interval after the last client has disconnected.
+
+2005-10-15  Nathaniel Smith  <njs@pobox.com>
+
+	* manifest.cc (build_restricted_manifest_map): Mention the new
+	--missing option in the missing files error message hint.
+
+2005-10-17  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc (serve): check that the db is valid before beginning
+	service (would previously not know until someone connected)
+	* netsync.cc (serve_connections): don't say "beginning service" until
+	after opening the socket.
+
+2005-10-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* app_state.{cc,hh}, key_store.cc: change how the keystore directory
+	is initialized; was using app.confdir before it was ready
+
+2005-10-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Make the configuration directory configurable and available to lua
+	* lua.cc: export new function to lua, "get_confdir"
+	* app_state.{cc,hh} monotone.cc options.hh: new option --confdir,
+	make the configuration directory something other than ~/.monotone
+	* lua.{cc,hh}: make the app_state availabe to lua callbacks
+	* key_store.cc: use get_confdir instead of hardcoded
+	* lua.cc: use get_confdir instead of hardcoded
+	* tests/t_config_confdir.at: test --confdir and lua get_confdir
+	* testsuite.at: add it
+
+2005-10-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Teach client to optionally push unused keys; new pubkeys can now be
+	given to a server without restarting it.
+	* app_state.{cc,hh}, monotone.cc, options.hh:
+	new command-specific-option --key-to-push=<key> , used to sync/push
+	a key that hasn't signed anything
+	* netsync.cc: make it work
+	* commands.cc: push and sync take it
+	* tests/t_netsync_pubkey.at: test it
+
+2005-10-16  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Don't add boost_unit_test_framework to global
+	LIBS, we will link against it directly when needed.
+	* Makefile.am: Only allow unit_tests to be built if
+	boost_unit_test_framework was available at configure time.
+
+2005-10-15  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Use boost_filesystem as the library to test for
+	when trying to guess a suitable BOOST_SUFFIX.  Make a missing
+	boost_unit_test_framework library a non-fatal error.
+
+2005-10-14  Emile Snyder  <emile@alumni.reed.edu>
+
+	* commands.cc: Fix breakage I introduced with the --unknown flag.
+	Rename find_unknown to find_unknown_and_ignored, since that's what
+	it's actually doing.  Likewise ls_unknown ->
+	ls_unknown_or_ignored, and use find_unknown_and_ignored correctly.
+	Fixes t_mt_ignore.at failures.
+	
+2005-10-14  Nathaniel Smith  <njs@pobox.com>
+
+	* key_store.{cc,hh} (get_key_dir): New method.
+	* schema_migration.cc (migrate_client_to_external_privkeys): Tell
+	user that we're moving their keys.
+	* commands.cc (genkey): Refer to keystore by the directory, not as
+	"keystore".
+	(ls_keys): Likewise.
+
+2005-10-14  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Add .mt-ignore, ignore most generated files, except for the *m4 files.
+
+2005-10-14  Emile Snyder <emile@alumni.reed.edu>
+
+	* app_state.{cc,hh}: new 'unknown' class member for --unknown flag.
+	* commands.cc (CMD(add), ls_unknown, find_unknown): use new
+	--unknown flag to add any files in the working copy that monotone
+	doesn't know about (and isn't ignoring).
+	* monotone.cc (coptions, cpp_main): add the --unknown flag handling.
+	* options.hh: add OPT_UNKNOWN.
+	* monotone.texi: document it.
+	* tests/t_add.at: test it.
+	
 2005-10-14  Emile Snyder <emile@alumni.reed.edu>
 
 	* database.cc (complete): enhance h: and b: to mean "current
@@ -5,6 +216,14 @@
 	* monotone.texi: document it.
 	
 2005-10-14  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* database.cc: Exclusively lock the database when performing a 'db
+	dump'.
+	* schema_migration.cc: Run an analyze at the end of a database
+	migration to help out the SQLite query optimizer.  Also change
+	schema id calculation to match 'sqlite_stat%' rather than the
+	specific table 'sqlite_stat1'--the SQLite docs suggest that more
+	tables will be created in the future.
 
 	* database.cc, schema.sql, schema_migration.cc: Use SQLite 3's
 	exclusive locking whereever we start a new transaction; allows

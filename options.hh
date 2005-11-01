@@ -46,5 +46,8 @@
 #define OPT_KEY_DIR 37
 #define OPT_BIND 38
 #define OPT_MISSING 39
-#define OPT_SINCE 40
-#define OPT_FULL 41
+#define OPT_UNKNOWN 40
+#define OPT_KEY_TO_PUSH 41
+#define OPT_CONF_DIR 42
+#define OPT_SINCE 43
+#define OPT_FULL 44

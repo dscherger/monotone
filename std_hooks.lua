@@ -194,7 +194,11 @@ function edit_comment(basetext, user_log_message)
    local tmp, tname = temp_file()
    if (tmp == nil) then return nil end
    basetext = "MT: " .. string.gsub(basetext, "\n", "\nMT: ") .. "\n"
-   tmp:write(user_log_message)
+   if user_log_message == "" then
+      tmp:write("\n")
+   else
+      tmp:write(user_log_message)
+   end
    tmp:write(basetext)
    io.close(tmp)
 
@@ -600,7 +604,7 @@ function get_preferred_merge3_command (tbl)
          cmd = merge3_emacs_cmd ("emacs", lfile, afile, rfile, outfile) 
       end
    elseif string.find(editor, "vim") ~= nil then
-      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 2-way merge.\n"..
+      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 3-way merge.\n"..
           "You should merge all changes to *LEFT* file due to limitation of program\n"..
           "arguments.  The order of the files is ancestor, left, right.\n\n")) 
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then 
@@ -781,3 +785,64 @@ function external_diff(file_path, data_old, data_new, is_binary, diff_args, rev_
    os.remove (new_file);
 end
 
+function globish_match(glob, str)
+      local pcallstatus, result = pcall(function() if (globish.match(glob, str)) then return true else return false end end)
+      if pcallstatus == true then
+          -- no error
+          return result
+      else
+          -- globish.match had a problem
+          return nil
+      end
+end
+
+-- can't handle args with quotes in them, or lines with multiple args
+function read_basicio_line(file)
+   local _, a, b
+   while _ == nil do
+      local line = file:read()
+      if line == nil then return nil end
+      _, _, a, b = string.find(line, "%s*([^%s]*)%s*\"([^\"]*)\"")
+   end
+   return a, b
+end
+
+function get_netsync_read_permitted(branch, ident)
+   local permfile = io.open(get_confdir() .. "/read-permissions", "r")
+   if (permfile == nil) then return false end
+   local matches = false
+   local cont = false
+   while true do
+      local name, param = read_basicio_line(permfile)
+      if name == nil then return false end
+      if name == "pattern" then
+         if matches and not cont then return false end
+         matches = globish_match(param, branch)
+      end
+      if matches then
+         if name == "continue" then
+           if param ~= "false" then cont = true end
+         end
+         if name == "allow" and param == "*" then return true end
+         if name == "allow" and globish_match(param, ident) then return true end
+         if name == "deny" and globish_match(param, ident) then return false end
+      end
+   end
+   return false
+end
+
+function get_netsync_write_permitted(ident)
+   local permfile = io.open(get_confdir() .. "/write-permissions", "r")
+   if (permfile == nil) then
+      return false
+   end
+   local line = permfile:read()
+   while (line ~= nil) do
+      local _, _, ln = string.find(line, "%s*([^%s]*)%s*")
+      if ln == "*" then return true end
+      if globish_match(ln, ident) then return true end
+      line = permfile:read()
+   end
+   io.close(permfile)
+   return false
+end
