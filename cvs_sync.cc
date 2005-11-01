@@ -925,7 +925,9 @@ cvs_repository::cvs_repository(app_state &_app, const std::string &repository,
   file_id_ticker.reset(new ticker("file ids", "F", 10));
   remove_state=remove_set.insert(file_state(0,"-",true)).first;
   if (!app.sync_since().empty())
-    sync_since=posix2time_t(app.sync_since());
+  { sync_since=posix2time_t(app.sync_since());
+    N(sync_since<=time(0), F("Since lies in the future. Remember to specify time in UTC\n"));
+  }
 }
 
 static void test_key_availability(app_state &app)
