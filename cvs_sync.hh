@@ -21,7 +21,7 @@ struct cvs_revision_nr
   void operator++();
   std::string get_string() const;
   bool is_branch() const;
-  bool is_parent_of(const cvs_revision_nr &child) const;
+  bool is_parent_of(const cvs_revision_nr &child,bool direct=true) const;
   bool operator==(const cvs_revision_nr &b) const;
   bool operator<(const cvs_revision_nr &b) const;
 };

@@ -1,6 +1,5 @@
-// copyright (C) 2005 Christof Petig <christof@petig-baender.de>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
+// copyright (C) 2005 Christof Petig <christof@petig-baender.de> all rights
+// reserved. licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
 #include "cvs_sync.hh"
@@ -103,7 +102,7 @@ std::string cvs_revision_nr::get_string() const
   return result;
 }
 
-bool cvs_revision_nr::is_parent_of(const cvs_revision_nr &child) const
+bool cvs_revision_nr::is_parent_of(const cvs_revision_nr &child,bool direct) const
 { unsigned cps=child.parts.size();
   unsigned ps=parts.size();
   if (cps<ps) 
@@ -115,7 +114,8 @@ bool cvs_revision_nr::is_parent_of(const cvs_revision_nr &child) const
   unsigned diff=0;
   for (;diff<ps;++diff) if (child.parts[diff]!=parts[diff]) break;
   if (cps==ps)
-  { if (diff+1!=cps) return false;
+  { if (!direct && cps-diff>0) return true; // not direct but parent
+    if (diff+1!=cps) return false;
     if (parts[diff]+1 != child.parts[diff]) return false;
   }
   else // ps < cps
@@ -476,6 +476,10 @@ void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &
         % time_t2human(e->time2) % time_t2human(s2->since_when));
     cvs_edge new_edge=*e;
     MM(boost::lexical_cast<std::string>(e->time));
+    if (s2->since_when-1<e->time && app.cvspull_besteffort) 
+    { W(F("ignoring this edge as requested"));
+      return;
+    }
     I(s2->since_when-1>=e->time);
     e->time2=s2->since_when-1;
     new_edge.time=s2->since_when;
@@ -568,9 +572,13 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   MM(s->cvs_version);
   MM(s2->cvs_version);
   if (!srev.is_parent_of(s2->cvs_version)) 
-    std::cerr << "Inconsistency "<< file << ": " << s->cvs_version 
+    std::cerr << (srev.is_parent_of(s2->cvs_version,false)?"minor":"major")
+              << " revision inconsistency "<< file << ": " << s->cvs_version 
               << "->" << s2->cvs_version << "\n" << debug() << '\n';
-  I(srev.is_parent_of(s2->cvs_version));
+  if (s->cvs_version == s2->cvs_version)
+  { return;
+  }
+  I(srev.is_parent_of(s2->cvs_version) || srev.is_parent_of(s2->cvs_version,false));
   if (s->dead)
   { 
     // this might fail (?) because we issued an Entry somewhere above

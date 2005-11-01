@@ -143,3 +143,6 @@ tests: time jump import
   takeover modified, cvs commit changed (conflict), pull (MD5 sum failure)
   pull, repull, merge, commit, push
   takeover modified, repull, merge+push (two contents for one revision)
+
+pull since future (two hours), push/commit, pull again (gives dismonotoneous
+time)
