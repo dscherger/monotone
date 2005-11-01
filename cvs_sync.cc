@@ -567,6 +567,9 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   MM(file);
   MM(s->cvs_version);
   MM(s2->cvs_version);
+  if (!srev.is_parent_of(s2->cvs_version)) 
+    std::cerr << "Inconsistency "<< file << ": " << s->cvs_version 
+              << "->" << s2->cvs_version << "\n" << debug() << '\n';
   I(srev.is_parent_of(s2->cvs_version));
   if (s->dead)
   { 
