@@ -51,4 +51,3 @@
 #define OPT_CONF_DIR 42
 #define OPT_SINCE 43
 #define OPT_FULL 44
-#define OPT_BESTEFFORT 45

@@ -60,7 +60,6 @@ struct poptOption coptions[] =
     {"pid-file", 0, POPT_ARG_STRING, &argstr, OPT_PIDFILE, gettext_noop("record process id of server"), NULL},
     {"since", 0, POPT_ARG_STRING, &argstr, OPT_SINCE, "set history start for CVS pull", NULL},
     {"full", 0, POPT_ARG_NONE, &argstr, OPT_FULL, "ignore already pulled CVS revisions", NULL},
-    {"besteffort", 0, POPT_ARG_NONE, &argstr, OPT_BESTEFFORT, "ignore some time discrepancies", NULL},
     {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, gettext_noop("print a brief version of the normal output"), NULL},
     {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, gettext_noop("print diffs along with logs"), NULL},
     {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, gettext_noop("skip merges when printing logs"), NULL},
@@ -416,10 +415,6 @@ cpp_main(int argc, char ** argv)
 
             case OPT_FULL:
               app.cvspull_full=true;
-              break;
-
-            case OPT_BESTEFFORT:
-              app.cvspull_besteffort=true;
               break;
 
             case OPT_BRIEF:
