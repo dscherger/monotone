@@ -2302,6 +2302,20 @@
 	* netsync.cc (process_error_cmd, run_netsync_protocol): Remove
 	some newlines to avoid translation noise.
 
+2005-08-13  Christof Petig <christof@petig-baender.de>
+
+	use portable PipeStream implementation to reimplement changes on the
+	ssh branch
+
+2004-06-18  Christof Petig <christof@petig-baender.de>
+
+	* netsync.cc:
+	(struct session): use PipeStream, pair of sockets
+	(find_wordend,parse_ssh_url): helper functions to parse an URL
+	(call_server): recognize ssh: and file: URLs
+	(serve_stdio): variant of serve_connections for stdio
+	(run_netsync_protocol): call serve_stdio if address is -
+
 2005-08-22  Nathaniel Smith  <njs@pobox.com>
 
 	* po/LINGUAS, po/ja.po: Remove ja translation again, it seems to
