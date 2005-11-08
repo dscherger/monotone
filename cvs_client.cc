@@ -1067,6 +1067,9 @@ std::string cvs_client::rcs_file2path(std::string file) const
         i!=server_dir.rend();++i)
   { if (begins_with(file,i->second))
     { file.replace(0,i->second.size(),i->first);
+      // remove additional slashes (e.g. sourceforge gc-linux)
+      while (file.size()>i->first.size() && file[i->first.size()]=='/')
+        file.erase(i->first.size(),1);
       break;
     }
   }

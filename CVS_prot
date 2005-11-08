@@ -146,3 +146,5 @@ tests: time jump import
 
 pull since future (two hours), push/commit, pull again (gives dismonotoneous
 time)
+
+binary files, execution permission
