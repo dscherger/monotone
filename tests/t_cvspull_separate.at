@@ -23,25 +23,25 @@ TSHA4=`SHA1(d_readd)`
 
 # build the cvs repository
 
-CVSROOT=`pwd`/cvs-repository
-AT_CHECK(cvs -q -d $CVSROOT init)
-AT_CHECK(test -e $CVSROOT)
-AT_CHECK(test -e $CVSROOT/CVSROOT)
-AT_CHECK(test -e $CVSROOT/CVSROOT/history)
+CVSROOT="`pwd`/cvs-repository"
+AT_CHECK(cvs -q -d "$CVSROOT" init)
+AT_CHECK(test -e "$CVSROOT")
+AT_CHECK(test -e "$CVSROOT/CVSROOT")
+AT_CHECK(test -e "$CVSROOT/CVSROOT/history")
 
 # import a test project
 
 AT_CHECK(mkdir cvstemp)
 AT_CHECK(cp d_import cvstemp/A)
-AT_CHECK([cd cvstemp ; cvs -q -d $CVSROOT import -m 'initial import' test vendor_tag initial_import], [], [ignore], [ignore])
+AT_CHECK([cd cvstemp ; cvs -q -d "$CVSROOT" import -m 'initial import' test vendor_tag initial_import], [], [ignore], [ignore])
 
 # pull into monotone
 
-AT_CHECK(MONOTONE --branch=testbranch cvs_pull $CVSROOT test, [0], [ignore], [ignore])
+AT_CHECK(MONOTONE --branch=testbranch cvs_pull "$CVSROOT" test, [0], [ignore], [ignore])
 
 # change the repository in various ways
 
-AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
+AT_CHECK([cvs -q -d "$CVSROOT" co test], [], [ignore], [ignore])
 AT_CHECK(cp d_add test/B)
 AT_CHECK([cd test;cvs -Q add B])
 AT_CHECK([sleep 1;cd test;cvs -Q ci -m 'B added'])
