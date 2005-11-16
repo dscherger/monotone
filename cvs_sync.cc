@@ -170,8 +170,10 @@ void cvs_repository::get_all_files()
 std::string debug_manifest(const cvs_manifest &mf)
 { std::string result;
   for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
-  { result+= i->first + " " + i->second->cvs_version + " "
-      + (i->second->dead?"dead ":"") + i->second->sha1sum() + "\n";
+  { result+= i->first + " " + i->second->cvs_version;
+    if (!i->second->keyword_substitution.empty()) 
+      result+="/"+i->second->keyword_substitution;
+    result+=" " + std::string(i->second->dead?"dead ":"") + i->second->sha1sum() + "\n";
   }
   return result;
 }
