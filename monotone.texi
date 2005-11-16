@@ -90,7 +90,7 @@ Complete table of contents
 @chapter Concepts
 
 This chapter should familiarize you with the concepts, terminology,
-and behavior described in the remainder of the user manual. Please
+and behavior described in the remainder of the user manual.  Please
 take a moment to read it, as later sections will assume familiarity
 with these terms.
 
@@ -418,17 +418,20 @@ function and thus assigned a @dfn{revision ID}.
 @image{figures/revision}
 @end ifnotinfo
 
-The content of a revision makes reference to file IDs, in describing
-a changeset, and manifest IDs, in describing tree states ``before and
-after'' the changeset. Crucially, revisions also make reference to
-@i{other revision IDs}. This fact -- that revisions include the IDs of
-other revisions -- causes the set of revisions to join together into a
-historical @i{chain of events}, somewhat like a ``linked list''.  Each
-revision in the chain has a unique ID, which includes @i{by reference}
-all the revisions preceeding it. Even if you undo a changeset, and
-return to a previously-visited manifest ID during the course of your
-edits, each revision will incorporate the ID of its predecessor, thus
-forming a new unique ID for each point in history.
+The content of a revision includes one or more changesets.  These
+changesets make reference to file IDs, to describe how the tree changed.
+The revision also contains manifest IDs, as another way of describing
+the tree ``before and after'' the changeset --- storing this information
+in two forms allows monotone to detect any bugs or corrupted data before
+they can enter your history.  Finally and crucially, revisions also make
+reference to @i{other revision IDs}. This fact -- that revisions include
+the IDs of other revisions -- causes the set of revisions to join
+together into a historical @i{chain of events}, somewhat like a ``linked
+list''.  Each revision in the chain has a unique ID, which includes
+@i{by reference} all the revisions preceeding it. Even if you undo a
+changeset, and return to a previously-visited manifest ID during the
+course of your edits, each revision will incorporate the ID of its
+predecessor, thus forming a new unique ID for each point in history.
 
 @ifinfo
 @smallexample
@@ -1629,9 +1632,9 @@ pair of small files in his @file{~/.monotone} directory:
 @smallexample
 @group
 $ cat >>~/.monotone/read-permissions
-[*]
-abe@@juicebot.co.jp
-beth@@juicebot.co.jp
+pattern "*"
+allow "abe@@juicebot.co.jp"
+allow "beth@@juicebot.co.jp"
 ^D
 
 $ cat >>~/.monotone/write-permissions
@@ -5036,7 +5039,8 @@ Print all revisions that match the given selector.
 
 Zero or more lines, each giving the ID of one revision that matches the
 given selector.  Each line consists of a revision ID, in hexadecimal,
-followed by a newline.
+followed by a newline.  Revision ids are printed in alphabetically
+sorted order.
 
 @item Error conditions:
 
@@ -5905,19 +5909,20 @@ pattern "net.example.project.@{private,security@}*"
 allow "joe@@example.net"
 allow "jim@@example.net"
 
+comment "everyone can read these branches"
 pattern "net.example.@{public,project@}*"
 allow "*"
 @end group
 @end smallexample
 This example allows everyone access to branches @code{net.example.project} and
 @code{net.example.public} and their sub-branches, except for the branches in
-@code{net.example.security} and @code{net.example.private}, which are only
-readable by Joe and Jim.
+@code{net.example.project.security} and @code{net.example.project.private},
+which are only readable by Joe and Jim.
 
 The file is divided into stanzas of one @code{pattern} line followed by any
 number of @code{allow} and @code{deny} lines, and possibly a @code{continue}
-line. Lines which do not consist of one of these words followed by an argument
-in quotes will be ignored. A stanza is processed if the argument to
+line. Anything from the unquoted word @code{comment} until the next unquoted
+word is ignored. A stanza is processed if the argument to
 @code{pattern} is a glob that matches @var{branch}. Any keys which match an
 @code{allow} line are given access, and any keys which match a @code{deny} line
 are denied access. If there is a @code{continue "true"} line, then if the key
@@ -6372,6 +6377,37 @@ Wait until the process with given pid (process handle on Win32) exits.
 Returns two values: a result value and the exit code of the waited-for
 process.
 The exit code is meaningful only if the result value is 0.
+
+@item parse_basic_io(@var{data})
+
+Parse the string @var{data}, which should be in basic_io format. It returns nil
+if it can't parse the string; otherwise it returns a table. This will be a list
+of all statements, with each entry being a table having a "name" element that is
+the symbol beginning the statement and a "values" element that is a list of all
+the arguments.
+
+For example, given this as input:
+
+@smallexample
+@group
+thingy "foo" "bar"
+thingy "baz"
+spork
+frob "oops"
+@end group
+@end smallexample
+
+The output table will be:
+@smallexample
+@group
+@{
+   1 = @{ name = "thingy", args = @{ 1 = "foo", 2 = "bar" @} @},
+   2 = @{ name = "thingy", args = @{ 1 = "baz" @} @},
+   3 = @{ name = "spork", args = @{ @} @},
+   4 = @{ name = "frob", args = @{ 1 = "oops" @} @}
+@}
+@end group
+@end smallexample
 
 @end ftable
 
