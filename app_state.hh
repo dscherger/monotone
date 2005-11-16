@@ -69,6 +69,7 @@ public:
   std::vector<rsa_keypair_id> keys_to_push;
   system_path confdir;
   bool have_set_key_dir;
+  bool new_db;
 
   std::map<int, bool> explicit_option_map;  // set if the value of the flag was explicitly given on the command line
   void set_is_explicit_option (int option_id);

@@ -2074,10 +2074,13 @@ CMD(push, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
 
 CMD(pull, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
     N_("pull branches matching PATTERN from netsync server at ADDRESS"),
-    OPT_SET_DEFAULT % OPT_EXCLUDE)
+    OPT_SET_DEFAULT % OPT_EXCLUDE % OPT_NEW_DB)
 {
   utf8 addr, include_pattern, exclude_pattern;
   process_netsync_args(name, args, addr, include_pattern, exclude_pattern, true, false, app);
+
+  if (app.new_db)
+    app.db.initialize();
 
   if (app.signing_key() == "")
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication\n"));
@@ -3777,13 +3780,15 @@ CMD(log, N_("informative"), N_("[FILE]"),
     }
 }
 
-CMD(setup, N_("tree"), N_("DIRECTORY"), N_("setup a new working copy directory"),
-    OPT_BRANCH_NAME)
+CMD(new_project, N_("tree"), N_("DIRECTORY"), N_("setup a new working copy directory"),
+    OPT_BRANCH_NAME % OPT_NEW_DB)
 {
   if (args.size() != 1)
     throw usage(name);
 
-  N(!app.branch_name().empty(), F("need --branch argument for setup"));
+  N(!app.branch_name().empty(), F("please use --branch to name your project"));
+  if (app.new_db)
+    app.db.initialize();
   app.db.ensure_open();
 
   string dir = idx(args,0)();
@@ -3791,6 +3796,8 @@ CMD(setup, N_("tree"), N_("DIRECTORY"), N_("setup a new working copy directory")
   revision_id null;
   put_revision_id(null);
 }
+
+ALIAS(setup, new_project)
 
 CMD(automate, N_("automation"),
     N_("interface_version\n"

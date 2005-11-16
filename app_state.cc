@@ -40,7 +40,8 @@ app_state::app_state()
     depth(-1), last(-1), diff_format(unified_diff), diff_args_provided(false),
     use_lca(false), execute(false), bind_address(""), bind_port(""), 
     missing(false), unknown(false),
-    confdir(system_path(get_homedir()) / ".monotone"), have_set_key_dir(false)
+    confdir(system_path(get_homedir()) / ".monotone"), have_set_key_dir(false),
+    new_db(false)
 {
   db.set_app(this);
   lua.set_app(this);

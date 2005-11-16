@@ -1094,49 +1094,6 @@ example team; other tasks involve only one member.
 
 
 @page
-@node    Creating a Database
-@section Creating a Database
-
-The first step Jim, Abe and Beth each need to perform is to create a
-new database. This is done with the @code{monotone db init} command,
-providing a @option{--db} option to specify the location of the new
-database. Each programmer creates their own database, which will
-reside in their home directory and store all the revisions, files and
-manifests they work on. Monotone requires this step as an explicit
-command, to prevent spurious creation of databases when an invalid
-@option{--db} option is given.
-
-In real life, most people prefer to keep one database for each project
-they work on.  If we followed that convention here in the tutorial,
-though, then all the databases would be called @code{juicebot.db}, and
-that would make things more confusing to read.  So instead, we'll have
-them each name their database after themselves.
-
-Thus Jim issues the command:
-
-@smallexample
-@group
-$ monotone db init --db=~/jim.db
-@end group
-@end smallexample
-
-Abe issues the command:
-
-@smallexample
-@group
-$ monotone db init --db=~/abe.db
-@end group
-@end smallexample
-
-And Beth issues the command:
-
-@smallexample
-@group
-$ monotone db init --db=~/beth.db
-@end group
-@end smallexample
-
-@page
 @node    Generating Keys
 @section Generating Keys
 
@@ -1243,12 +1200,13 @@ Abe and Beth do the same, with their secret passphrases.
 @section Starting a New Project
 
 Before he can begin work on the project, Jim needs to create a
-@i{working copy} --- a directory whose contents monotone will keep track
-of.  Often, one works on projects that someone else has started, and
-creates working copies with the @code{checkout} command, which you'll
-learn about later.  Jim is starting a new project, though, so he does
-something a little bit different.  He uses the @code{monotone setup}
-command to create a new working copy.
+@i{working directory} --- a directory whose contents monotone will keep
+track of.  Often, one works on projects that someone else has started,
+and creates working directories with the @code{checkout} command, which
+you'll learn about later.  Jim is starting a new project, though, that
+monotone has never seen before, so he does something a little bit
+different.  He uses the @code{monotone new_project} command to create
+new working directory.
 
 This command creates the named directory (if it doesn't already exist),
 and creates the @file{MT} directory within it.  The @file{MT} directory

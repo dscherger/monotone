@@ -1,3 +1,8 @@
+2005-11-15  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (setup): Rename to 'new_project'.  Add alias for
+	'setup', so it still works.
+
 2005-11-14  Nathaniel Smith  <njs@pobox.com>
 
 	* monotone.texi (Historical records): Clarify wording, based on

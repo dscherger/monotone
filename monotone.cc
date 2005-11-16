@@ -73,6 +73,7 @@ struct poptOption coptions[] =
     {"missing", 0, POPT_ARG_NONE, NULL, OPT_MISSING, gettext_noop("perform the operations for files missing from working directory"), NULL},
     {"unknown", 0, POPT_ARG_NONE, NULL, OPT_UNKNOWN, gettext_noop("perform the operations for unknown files from working directory"), NULL},
     {"key-to-push", 0, POPT_ARG_STRING, &argstr, OPT_KEY_TO_PUSH, gettext_noop("push the specified key even if it hasn't signed anything"), NULL},
+    {"new-db", 0, POPT_ARG_NONE, NULL, OPT_NEW_DB, gettext_noop("create a new local database"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -483,6 +484,10 @@ cpp_main(int argc, char ** argv)
               {
                 app.add_key_to_push(string(argstr));
               }
+              break;
+
+            case OPT_NEW_DB:
+              app.new_db = true;
               break;
 
             case OPT_HELP:
