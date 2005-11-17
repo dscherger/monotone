@@ -13,6 +13,8 @@
 
 #include <vector>
 #include <string>
+using std::string;
+using std::vector;
 
 
 struct inventory_item
@@ -57,7 +59,8 @@ public:
   monotone();
   ~monotone();
   void set_longwait_callback(longwait_callback lc);
-  void set_dir(std::string const & s){dir = s; stop();}
+  longwait_callback get_longwait_callback(){return lwcb;}
+  void set_dir(std::string const & s){dir = (s.empty()?".":s); stop();}
   void set_db(std::string const & s){db = s; stop();}
   std::string get_dir(){return dir;}
   std::string get_db(){return db;}
@@ -90,6 +93,7 @@ public:
   void rename(std::string const & oldname, std::string const & newname);
   bool update(std::vector<std::string> & opts);
   void update(std::string const & rev);
+  void sync(string & res);
 };
 
 #endif

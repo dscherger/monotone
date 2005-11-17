@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <string>
+using std::string;
+using std::vector;
 
 std::string readfile(std::string const & f);
 
@@ -21,6 +23,20 @@ class chooser: public Gtk::Dialog
 public:
   chooser(std::vector<std::string> const & options);
   std::string result();
+};
+
+struct monotone;
+
+struct SyncDialog : public Gtk::Dialog
+{
+  monotone *mtn;
+  Gtk::Button *okbtn, *cancelbtn;
+  Gtk::TextView tv;
+  void(*prev_lwcb)();
+  string output;
+  SyncDialog(monotone & m);
+  ~SyncDialog();
+  bool timer();
 };
 
 #endif

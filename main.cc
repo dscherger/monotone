@@ -76,6 +76,8 @@ public:
 
   void sync()
   {
+    SyncDialog sd(mtn);
+    sd.run();
   }
 
   void setdb()
@@ -159,11 +161,11 @@ public:
       sigc::mem_fun(*this, &mainwin::quit));
     ag->add(Gtk::Action::create("File_menu", "_File"));
     ag->add(Gtk::Action::create("Work_menu", "_Working dir"));
-//    ag->add(Gtk::Action::create("Database_menu", "_Database"));
+    ag->add(Gtk::Action::create("Database_menu", "_Database"));
     ag->add(Gtk::Action::create("Update", Gtk::Stock::GO_UP, "Update"),
       sigc::mem_fun(*this, &mainwin::update));
-//    ag->add(Gtk::Action::create("Sync", Gtk::Stock::NETWORK, "Sync"),
-//      sigc::mem_fun(*this, &mainwin::sync));
+    ag->add(Gtk::Action::create("Sync", Gtk::Stock::NETWORK, "Sync"),
+      sigc::mem_fun(*this, &mainwin::sync));
     ui = Gtk::UIManager::create();
     ui->insert_action_group(ag);
     Glib::ustring cmdxml =
@@ -180,9 +182,9 @@ public:
         "      <menuitem action='Commit'/>"
         "      <menuitem action='Update'/>"
         "    </menu>"
-//        "    <menu action='Database_menu'>"
-//        "      <menuitem action='Sync'/>"
-//        "    </menu>"
+        "    <menu action='Database_menu'>"
+        "      <menuitem action='Sync'/>"
+        "    </menu>"
         "  </menubar>"
         "  <toolbar name='Toolbar'>"
         "    <toolitem action='Refresh'/>"

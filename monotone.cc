@@ -22,7 +22,7 @@
 
 inline int max(int a, int b) {return (a>b)?a:b;}
 
-monotone::monotone(): pid(-1), lwcb(0)
+monotone::monotone(): pid(-1), dir("."), lwcb(0)
 {
 }
 
@@ -204,9 +204,15 @@ monotone::command(std::string const & cmd,
         i != args.end(); ++i)
     s << i->size() << ":" << *i;
   std::string c = "l" + s.str() + "e";
+  try {
   write(to, c.c_str(), c.size());
   while(!stopped() && read_packet(res))
     ;
+  } catch (std::exception &) {
+    // something bad happened, assume the monotone process is ****ed up
+    stop();
+    return std::string();
+  }
   return res;
 }
 
@@ -261,6 +267,7 @@ void
 monotone::inventory(std::vector<inventory_item> & out)
 {
   out.clear();
+  try {
   std::vector<std::string> args;
   std::string res = command("inventory", args);
   std::map<int, int> renames;
@@ -348,6 +355,7 @@ monotone::inventory(std::vector<inventory_item> & out)
       begin = end + 1;
       end = res.find('\n', begin);
     }
+  } catch (std::exception &) {/*maybe find a way to indicate an error?*/}
 }
 std::vector<cert>
 monotone::certs(std::string const & rev)
@@ -552,4 +560,13 @@ monotone::update(std::string const & rev)
   std::vector<std::string> args;
   args.push_back("--revision="+rev);
   runcmd("update", args, ign, err);
+}
+
+void
+monotone::sync(string & res)
+{
+  string ign;
+  vector<string> args;
+  args.push_back("--ticker=count");
+  runcmd("sync", args, ign, res);
 }
