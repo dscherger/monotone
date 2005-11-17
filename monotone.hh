@@ -91,8 +91,8 @@ public:
   void drop(std::string const & file);
   void revert(std::string const & file);
   void rename(std::string const & oldname, std::string const & newname);
-  bool update(std::vector<std::string> & opts);
-  void update(std::string const & rev);
+  bool update(std::vector<std::string> & opts, string & out);
+  void update(std::string const & rev, string & out);
   void sync(string & res);
 };
 

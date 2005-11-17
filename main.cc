@@ -60,18 +60,8 @@ public:
 
   void update()
   {
-    std::vector<std::string> rr;
-    if (!mtn.update(rr))
-      {
-        chooser c(rr);
-        int result = c.run();
-        if (result == Gtk::RESPONSE_OK)
-          {
-            std::string rev = c.result();
-            if (!rev.empty())
-              mtn.update(rev);
-          }
-      }
+    UpdateDialog ud(mtn);
+    ud.run();
   }
 
   void sync()

@@ -47,15 +47,15 @@ chooser::result()
 }
 
 namespace {
-  SyncDialog *sd;
-  void sd_lwcb()
+  ProgressDialog *pd;
+  void pd_lwcb()
   {
-    int r = sd->output.rfind("\r");
-    int n = sd->output.rfind("\n", r);
+    int r = pd->output.rfind("\r");
+    int n = pd->output.rfind("\n", r);
     if (r != string::npos && n != string::npos)
-      sd->output = sd->output.substr(0, n+1) + sd->output.substr(r+1);
-    Glib::RefPtr<Gtk::TextBuffer> b = sd->tv.get_buffer();
-    b->set_text(sd->output);
+      pd->output = pd->output.substr(0, n+1) + pd->output.substr(r+1);
+    Glib::RefPtr<Gtk::TextBuffer> b = pd->tv.get_buffer();
+    b->set_text(pd->output);
     Glib::RefPtr<Gtk::TextTag> t = b->create_tag();
     t->property_family() = "monospace";
     b->apply_tag(t, b->begin(), b->end());
@@ -64,10 +64,10 @@ namespace {
   }
 };
 
-// mtn->sync() is called from a timeout so that we'll return first,
+// mtn->whatever() is called from a timeout so that we'll return first,
 // and it will be called from the event loop, *after* our window exists,
 // and can continue to run the event loop itself.
-SyncDialog::SyncDialog(monotone & m)
+ProgressDialog::ProgressDialog(monotone & m)
  : mtn(&m), prev_lwcb(m.get_longwait_callback())
 {
   get_vbox()->add(tv);
@@ -76,20 +76,37 @@ SyncDialog::SyncDialog(monotone & m)
   cancelbtn = add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
   okbtn = add_button("Done", Gtk::RESPONSE_OK);
   okbtn->set_sensitive(false);
-  sd = this;
-  mtn->set_longwait_callback(sd_lwcb);
-  Glib::signal_timeout().connect(sigc::mem_fun(this, &SyncDialog::timer), 0);
+  pd = this;
+  mtn->set_longwait_callback(pd_lwcb);
+  Glib::signal_timeout().connect(sigc::mem_fun(this, &ProgressDialog::timer), 0);
 }
 
-SyncDialog::~SyncDialog()
+ProgressDialog::~ProgressDialog()
 {
   mtn->set_longwait_callback(prev_lwcb);
 }
 
-bool SyncDialog::timer()
+bool ProgressDialog::timer()
 {
-  mtn->sync(output);
+  callmtn();
+  pd_lwcb();
   okbtn->set_sensitive(true);
   cancelbtn->set_sensitive(false);
   return false;
+}
+
+void UpdateDialog::callmtn()
+{
+  std::vector<std::string> rr;
+  if (!mtn->update(rr, output))
+    {
+      chooser c(rr);
+      int result = c.run();
+      if (result == Gtk::RESPONSE_OK)
+        {
+          std::string rev = c.result();
+          if (!rev.empty())
+            mtn->update(rev, output);
+        }
+    }
 }

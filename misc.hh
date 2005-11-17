@@ -8,6 +8,8 @@
 using std::string;
 using std::vector;
 
+#include "monotone.hh"
+
 std::string readfile(std::string const & f);
 
 class chooser: public Gtk::Dialog
@@ -25,18 +27,29 @@ public:
   std::string result();
 };
 
-struct monotone;
-
-struct SyncDialog : public Gtk::Dialog
+struct ProgressDialog : public Gtk::Dialog
 {
   monotone *mtn;
   Gtk::Button *okbtn, *cancelbtn;
   Gtk::TextView tv;
   void(*prev_lwcb)();
   string output;
-  SyncDialog(monotone & m);
-  ~SyncDialog();
+  ProgressDialog(monotone & m);
+  ~ProgressDialog();
   bool timer();
+  virtual void callmtn() {}
+};
+
+struct SyncDialog : public ProgressDialog
+{
+  SyncDialog(monotone & m) : ProgressDialog(m) {}
+  virtual void callmtn() {mtn->sync(output);}
+};
+
+struct UpdateDialog : public ProgressDialog
+{
+  UpdateDialog(monotone & m) : ProgressDialog(m) {}
+  virtual void callmtn();
 };
 
 #endif

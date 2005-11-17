@@ -532,34 +532,34 @@ monotone::rename(std::string const & oldname, std::string const & newname)
 }
 
 bool
-monotone::update(std::vector<std::string> & opts)
+monotone::update(std::vector<std::string> & opts, string & out)
 {
   opts.clear();
-  std::string ign, err;
+  std::string ign;
   std::vector<std::string> args;
-  runcmd("update", args, ign, err);
-  int p = err.find("multiple update candidates");
+  runcmd("update", args, ign, out);
+  int p = out.find("multiple update candidates");
   if (p == std::string::npos)
     return true;
 
-  p = err.find("monotone:   ", p + 1);
+  p = out.find("monotone:   ", p + 1);
   while (p != std::string::npos)
     {
-      p = err.find(":", p);
-      p = err.find_first_not_of(" ", p + 1);
-      opts.push_back(err.substr(p, 40));
-      p = err.find("monotone:   ", p + 1);
+      p = out.find(":", p);
+      p = out.find_first_not_of(" ", p + 1);
+      opts.push_back(out.substr(p, 40));
+      p = out.find("monotone:   ", p + 1);
     }
   return false;
 }
 
 void
-monotone::update(std::string const & rev)
+monotone::update(std::string const & rev, string & out)
 {
-  std::string ign, err;
+  std::string ign;
   std::vector<std::string> args;
   args.push_back("--revision="+rev);
-  runcmd("update", args, ign, err);
+  runcmd("update", args, ign, out);
 }
 
 void
