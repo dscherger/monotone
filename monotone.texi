@@ -1081,7 +1081,6 @@ version control tasks. Some tasks must be done by each member of our
 example team; other tasks involve only one member.
 
 @menu
-* Creating a Database::
 * Generating Keys::
 * Starting a New Project::
 * Adding Files::
