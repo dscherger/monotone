@@ -51,15 +51,15 @@ std::string get_log_entry(std::string const & dir)
   return log;
 }
 
-class commit_edit_window : public Gtk::Window
+class commit_edit_window : public Gtk::Dialog
 {
   std::string & log;
   Glib::RefPtr<Gtk::ActionGroup> ag;
   Glib::RefPtr<Gtk::UIManager> ui;
-  Gtk::VBox vb;
   Gtk::TextView tv;
   Gtk::TextView cv;
   Gtk::HSeparator sep;
+  Gtk::Button *okbtn, *cancelbtn;
 public:
   commit_edit_window(std::string & l,
                      std::vector<Glib::ustring> const & sel,
@@ -69,23 +69,8 @@ public:
    : log(l)
   {
     set_default_size(300, 200);
-    ag = Gtk::ActionGroup::create();
-    ag->add(Gtk::Action::create("Ok", Gtk::Stock::OK, "Commit"),
-      sigc::mem_fun(*this, &commit_edit_window::ok));
-    ag->add(Gtk::Action::create("Cancel", Gtk::Stock::CANCEL),
-      sigc::mem_fun(*this, &commit_edit_window::cancel));
-    ui = Gtk::UIManager::create();
-    ui->insert_action_group(ag);
-    Glib::ustring cmdxml =
-        "<ui>"
-        "  <toolbar name='Toolbar'>"
-        "    <toolitem action='Ok'/>"
-        "    <toolitem action='Cancel'/>"
-        "  </toolbar>"
-        "</ui>";
-    ui->add_ui_from_string(cmdxml);
-    add_accel_group(ui->get_accel_group());
-    vb.pack_start(*ui->get_widget("/Toolbar"), Gtk::PACK_SHRINK);
+    okbtn = add_button("Commit", Gtk::RESPONSE_OK);
+    cancelbtn = add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     Glib::ustring commentstr("Will add comments to the following files:\n");
     for (std::vector<Glib::ustring>::const_iterator i = commented.begin();
          i != commented.end(); ++i)
@@ -93,10 +78,9 @@ public:
     cv.set_editable(false);
     cv.get_buffer()->set_text(commentstr);
     cv.set_sensitive(false);
-    vb.pack_end(cv, Gtk::PACK_SHRINK);
-    vb.pack_end(sep, Gtk::PACK_SHRINK);
-    vb.pack_end(tv);
-    add(vb);
+    get_vbox()->pack_end(cv, Gtk::PACK_SHRINK);
+    get_vbox()->pack_end(sep, Gtk::PACK_SHRINK);
+    get_vbox()->pack_end(tv);
     if (wc)
       tv.get_buffer()->set_text(l);
     else
@@ -106,15 +90,16 @@ public:
     show_all_children();
     Gtk::Main::run(*this);
   }
-  void ok()
+  virtual void on_response(int resp)
   {
-    log = tv.get_buffer()->get_text();
-    hide();
-  }
-  void cancel()
-  {
-    log = "";
-    hide();
+    okbtn->set_sensitive(false);
+    cancelbtn->set_sensitive(false);
+    if (resp == Gtk::RESPONSE_OK)
+      log = tv.get_buffer()->get_text();
+    else
+      log = "";
+    Gtk::Dialog::on_response(resp);
+    Gtk::Main::quit();
   }
 };
 
