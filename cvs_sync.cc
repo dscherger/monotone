@@ -412,7 +412,7 @@ void cvs_repository::store_delta(const std::string &new_contents,
 }
 
 static bool 
-build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &newm,
+build_change_set(const cvs_client &c, manifest_map const& oldm, cvs_manifest &newm,
                  change_set & cs, cvs_file_state remove_state, unsigned cm_delta_depth)
 {
   cs = change_set();
@@ -420,17 +420,17 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
 
   L(F("build_change_set(%d,%d,)\n") % oldm.size() % newm.size());
   
-  for (cvs_manifest::const_iterator f = oldm.begin(); f != oldm.end(); ++f)
+  for (manifest_map::const_iterator f = oldm.begin(); f != oldm.end(); ++f)
     {
-      cvs_manifest::const_iterator fn = newm.find(f->first);
+      cvs_manifest::const_iterator fn = newm.find(f->first.as_internal());
       if (fn==newm.end())
       {  
-        L(F("deleting file '%s'\n") % f->first);              
-        cs.delete_file(file_path_internal(f->first));
-        cvs_delta[f->first]=remove_state;
+        L(F("deleting file '%s'\n") % f->first);
+        cs.delete_file(f->first);
+        cvs_delta[f->first.as_internal()]=remove_state;
       }
       else 
-        { if (f->second->sha1sum == fn->second->sha1sum)
+        { if (f->second == fn->second->sha1sum)
             {
 //              L(F("skipping preserved entry state '%s' on '%s'\n")
 //                % fn->second->sha1sum % fn->first);         
@@ -438,16 +438,16 @@ build_change_set(const cvs_client &c, const cvs_manifest &oldm, cvs_manifest &ne
           else
             {
               L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % fn->first % f->second->sha1sum % fn->second->sha1sum);
+                % fn->first % f->second % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              cs.apply_delta(file_path_internal(fn->first), f->second->sha1sum, fn->second->sha1sum);
-              cvs_delta[f->first]=fn->second;
+              cs.apply_delta(file_path_internal(fn->first), f->second, fn->second->sha1sum);
+              cvs_delta[f->first.as_internal()]=fn->second;
             }
         }  
     }
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
     {
-      cvs_manifest::const_iterator fo = oldm.find(f->first);
+      manifest_map::const_iterator fo = oldm.find(file_path_internal(f->first));
       if (fo==oldm.end())
       {  
         L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
@@ -719,7 +719,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 
 // commit CVS revisions to monotone (pull)
 void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
-{ cvs_manifest parent_manifest;
+{ // cvs_manifest parent_manifest;
   revision_id parent_rid;
   manifest_id parent_mid;
   manifest_map parent_map;
@@ -740,7 +740,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     app.db.get_revision_manifest(parent_rid,parent_mid);
     app.db.get_manifest(parent_mid,parent_map);
     child_map=parent_map;
-    parent_manifest=get_files(*before);
+//    parent_manifest=get_files(*before);
     cm_delta_depth=before->cm_delta_depth;
   }
   for (; e!=edges.end(); ++e)
@@ -748,7 +748,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
     L(F("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
-    if (build_change_set(*this,parent_manifest,e->xfiles,*cs,remove_state,cm_delta_depth))
+    if (build_change_set(*this,parent_map,e->xfiles,*cs,remove_state,cm_delta_depth))
     { e->delta_base=parent_rid;
       e->cm_delta_depth=cm_delta_depth+1;
     }
@@ -814,7 +814,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     apply_change_set(*cs, parent_map);
     parent_mid = child_mid;
     parent_rid = child_rid;
-    parent_manifest=child_manifest;
+//    parent_manifest=child_manifest;
     cm_delta_depth=e->cm_delta_depth;
   }
 }
