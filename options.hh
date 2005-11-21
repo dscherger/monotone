@@ -49,3 +49,5 @@
 #define OPT_UNKNOWN 40
 #define OPT_KEY_TO_PUSH 41
 #define OPT_CONF_DIR 42
+#define OPT_SINCE 43
+#define OPT_FULL 44
