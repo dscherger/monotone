@@ -288,79 +288,19 @@ cvs_commit::cvs_commit(rcs_file const & r,
 // piece table stuff
 #include "piece_table.hh"
 
-static void 
-process_one_hunk(piece::piece_table const & source,
-                 piece::piece_table & dest,
-                 piece::piece_table::const_iterator & i,
-                 int & cursor)
-{
-  string directive = **i;
-  assert(directive.size() > 1);
-  ++i;
-
-  try 
-    {
-      char code;
-      int pos, len;
-      if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
-              throw oops("illformed directive '" + directive + "'");
-
-      if (code == 'a')
-        {
-          // 'ax y' means "copy from source to dest until cursor == x, then
-          // copy y lines from delta, leaving cursor where it is"
-          while (cursor < pos)
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos);
-          while (len--)
-            dest.push_back(*i++);
-        }
-      else if (code == 'd')
-        {      
-          // 'dx y' means "copy from source to dest until cursor == x-1,
-          // then increment cursor by y, ignoring those y lines"
-          while (cursor < (pos - 1))
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos - 1);
-          cursor += len;
-        }
-      else 
-        throw oops("unknown directive '" + directive + "'");
-    } 
-  catch (std::out_of_range & oor)
-    {
-      throw oops("std::out_of_range while processing " + directive 
-                 + " with source.size() == " 
-                 + boost::lexical_cast<string>(source.size())
-                 + " and cursor == "
-                 + boost::lexical_cast<string>(cursor));
-    }  
-}
-
 static void
 construct_version(piece::piece_table const & source_lines,
                   string const & dest_version, 
                   piece::piece_table & dest_lines,
                   rcs_file const & r)
 {
-  dest_lines.clear();
-  dest_lines.reserve(source_lines.size());
-
   I(r.deltas.find(dest_version) != r.deltas.end());
-  shared_ptr<rcs_delta> delta = r.deltas.find(dest_version)->second;
+//  shared_ptr<rcs_delta> delta = r.deltas.find(dest_version)->second;
   
   I(r.deltatexts.find(dest_version) != r.deltatexts.end());
   shared_ptr<rcs_deltatext> deltatext = r.deltatexts.find(dest_version)->second;
   
-  piece::piece_table deltalines;
-  piece::index_deltatext(deltatext->text, deltalines);
-  
-  int cursor = 0;
-  for (piece::piece_table::const_iterator i = deltalines.begin(); 
-       i != deltalines.end(); )
-    process_one_hunk(source_lines, dest_lines, i, cursor);
-  while (cursor < static_cast<int>(source_lines.size()))
-    dest_lines.push_back(source_lines[cursor++]);
+  piece::apply_diff(source_lines, dest_lines, deltatext->text);
 }
 
 // FIXME: should these be someplace else? using 'friend' to reach into the
