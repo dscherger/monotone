@@ -537,7 +537,7 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
 
   vector<cert> certs;
   
-  transaction_guard guard(app.db);
+  transaction_guard guard(app.db, false);
   
   revision_id ident;
   complete(app, idx(args, 0)(), ident);
@@ -640,7 +640,7 @@ ls_keys(string const & name, app_state & app, vector<utf8> const & args)
 
   if (app.db.database_specified())
     {
-      transaction_guard guard(app.db);
+      transaction_guard guard(app.db, false);
       app.db.get_key_ids(pattern, pubs);
       guard.commit();
     }
@@ -1377,7 +1377,7 @@ CMD(cat, N_("informative"),
   if (app.revision_selectors.size() == 0)
     app.require_working_copy();
 
-  transaction_guard guard(app.db);
+  transaction_guard guard(app.db, false);
 
   file_id ident;
   revision_id rid;
