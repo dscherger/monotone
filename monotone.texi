@@ -15,6 +15,7 @@ This edition documents version @value{VERSION}.
 Copyright 2003, 2004 Graydon Hoare
 Copyright 2004, 2005 Nathaniel Smith
 Copyright 2005 Derek Scherger
+Copyright 2005 Christof Petig
 All rights reserved
 Licensed to the public under the terms of the GNU FDL (>= 1.1).
 See the file COPYING for details
@@ -2268,6 +2269,7 @@ familiarize yourself with its operation.
 * Merging::                Merging with external tools, handling binary files.
 * Migrating and Dumping::  Changing the underlying storage system.
 * Importing from CVS::     Building a monotone database from a CVS repository.
+* Monotone as CVS client:: Using monotone to access a CVS server.
 @end menu
 
 
@@ -3071,6 +3073,138 @@ $ monotone --db=test.db --branch=net.example.wobbler checkout wobber-checkout
 @end group
 @end smallexample
 
+@page
+@node    Monotone as CVS client
+@section Monotone as a CVS client
+
+Importing your project into monotone is the way to go if you want to migrate
+from CVS to monotone but does not help much if you can not stop using CVS on
+the server. Either because you don't have full control over the server (e.g.
+sourceforge) or because some developers continue to use CVS.
+
+Why should you prefer monotone as a cvs client over the original?
+@itemize
+@item
+You want to work offline (without contacting the server). E.g. to revert
+changes, diff between versions, commit new changes or browse commit logs.
+@item
+You want to use monotone-viz (graph visualization) against the repository.
+Unfortunately a CVS graph is rather boring since it's linear.
+@item
+You like to use kdiff3 for easy three way merging.
+@item
+You prefer monotone's features for repeated merging and propagation between
+branches over CVS hand-operated tagging and merging.
+@item
+You can experiment with bigger reworkings without putting them on the server.
+@end itemize
+
+@subsection How to use it:
+@anchor{cvssync}
+
+Change your working directory to the topmost directory of a CVS project and
+enter
+
+@smallexample
+@group
+$ monotone --branch=org.gnome.cvs.glade-- cvs_takeover glade--
+@end group
+@end smallexample
+
+This imports your working directory into monotone under the branch name
+@code{org.gnome.cvs.glade--}. You can delete the CVS directories and
+continue to work on this project with monotone.
+
+If the CVS module name @code{glade--} is identical to the name of the
+toplevel directory (common use) you can omit it, sometimes it is a path
+(e.g. @code{glade--/src/SourceWriter}) and you have to specify it.
+
+Side note: If you have changed files since your last checkin monotone creates
+two nodes: The unknown contents but known revision number of your last update
+and the known contents of your future checkin yet unknown to the server and 
+without a revision number.
+
+
+Alternatively you can import (a part of) the history of the project from the
+server:
+
+@smallexample
+@group
+$ monotone --branch=org.gnome.cvs.glade-- --since=2005-01-01T00:00:00 cvs_pull :pserver:anonymous@@anoncvs.gnome.org:/cvs/gnome glade--
+@end group
+@end smallexample
+
+This command retrieves the full history since Jan 1st 2005 of the
+@code{glade--} project from @code{anoncvs.gnome.org} via the @code{pserver}
+protocol. If you omit @code{--since} you get full history. 
+
+Beware! The CVS server is not designed to efficiently access really old
+revisions, so generating the full history is really stressing the server.
+
+If you want to pull new revisions on the server into your monotone database
+(like @code{cvs update}) simply enter @code{monotone cvs_pull}.
+
+So how to get your changes back into the server:
+
+@smallexample
+@group
+$ monotone --branch=org.gnome.cvs.glade-- cvs_push
+@end group
+@end smallexample
+
+This pushes all commits back to the CVS server. Monotone will pass your
+changelog along with commit time and author certificate to the CVS server.
+If you merged two branches, monotone will gather all changelogs unknown to
+the server and attach it to the merge.
+
+If you change into your working directory you can omit specifying the branch
+as usual.
+
+@page
+@subsection Design Goals
+
+@itemize
+@item
+Cvssync (as this feature is called) should be nearly as bandwith efficient
+as this functionality can get (at least it should never be more expansive
+than using CVS itself).
+@item
+Synchronizing between multiple CVS servers for the same project should be
+possible (though this might get confusing and inconvenient).
+@end itemize
+
+@subsection Shortcomings
+
+@itemize
+@item
+creating new subdirectories on the CVS server is yet unimplemented
+@item
+a patch (MD5) failure is not handled gracefully
+@item
+full history import stresses the server (CVS' fault)
+@item
+not designed with memory efficiency in mind (like the cvs import feature)
+@item
+relies on checkin time to reconstruct the graph instead of RCS revisions
+@item
+no project creation on a CVS server (initial import)
+@end itemize
+
+@subsection Advanced Use:
+
+@itemize
+@item
+If a fork occurs during @code{cvs_push} you are instructed to select a 
+direction using the @code{--revision} option. Simply choose the branch you
+want to see in details in CVS and specify its revision.
+@item
+Working with CVS branches and tags. To be written once I gathered 
+my own experience with this feature.
+@end itemize
+
+@subsection Future directions:
+
+Perhaps multiple repository pull (mass update) in one command.
 
 @page
 @node    CVS Phrasebook
@@ -3765,6 +3899,11 @@ After running this command, you are guaranteed that your working copy is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
+@item monotone [--branch @var{destination}] cvs_takeover [@var{module}]
+Imports a CVS checkout into a monotone database for future editing. If files
+were locally changed this creates two revisions. 
+See also @xref{cvssync,,cvssync introduction}.
+
 @end ftable
 
 @page
@@ -3850,6 +3989,11 @@ any character, to match exactly that character --- this might be useful
 in case someone, for some odd reason, decides to put a ``*'' into their
 branch name.
 
+@item monotone cvs_pull [--since @var{time}] [@var{repository} @var{module} [@var{cvsbranch}]]
+@itemx monotone cvs_push [@var{repository} @var{module} [@var{cvsbranch}]]
+These commands communicate with a CVS server. @code{cvs_pull} works like
+@code{cvs update} and @code{cvs_push} is like @code{cvs commit}.
+See also @xref{cvssync,,cvssync introduction}.
 @end ftable
 
 
@@ -7325,6 +7469,15 @@ Import all file versions in RCS files. Does not reconstruct revisions
 across the entire tree.  You do not want this command, it is for
 debugging; use cvs_import.
 @comment TROFF INPUT: .TP
+
+@item @b{cvs_pull} @i{[--since=time]} @i{[repository module [cvsbranch]]}
+Import revisions from a CVS server (check out or update)
+
+@item @b{cvs_push} @i{[repository module [cvsbranch]]}
+Commit revisions to a CVS server
+
+@item @b{cvs_takeover} @i{[module]}
+Put a CVS working directory under monotone's control.
 
 @item @b{checkout} @i{[--revision=revision-id]} @i{[<directory>]}
 @itemx @b{co} @i{[--revision=revision-id]} @i{[<directory>]}
