@@ -1,3 +1,113 @@
+2005-12-02  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* Makefile.am: Make Win32 build link against shfolder.lib to get
+	SHGetFolderPathA on older Windows platforms (we had previously
+	been relying on it to be available in shell32.lib) .
+	* packet.cc (feed_packet_consumer::feed_packet_consumer,
+	extract_packets): Move duplicated sets of regexs for key IDs,
+	certs, etc. into constants.cc.
+	* constants.{cc,hh}: Add regex strings extracted from packet.cc.  Also
+	fix the key ID regex to accept a few characters we allowed in
+	legal_key_name_bytes already.
+	* tests/t_genkey.at: Test good and bad keys with all characters we
+	allow in the user portion of a key id.
+
+2005-12-01  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* database.cc: Revert last change; db version and db migrate need
+	to be able to open databases with old schema versions.  Calling
+	sql() directly broke this.  Moved a db existence check scattered
+	through the code into db_check_exists(), and added calls to this
+	into ::version and ::migrate.
+	* database.cc (database::version, database::migrate): Improve
+	error handling where user has supplied the path to a non-existant
+	database file.  Submitted by Neil Conway.
+	* win32/fs.cc (rename_clobberingly_impl): Improve error handling
+	around LoadLibrary call.
+	* lua/{lvm.c,lgc.c,lapi.c}: Lua post-5.0.2 bugfixes from
+	http://www.lua.org/bugs.html.  Submitted by Alex Queiroz.
+
+2005-11-29  Matt Johnston  <matt@ucc.asn.au>
+
+	* Makefile.am: add PCH_FLAGS only when compiling monotone and
+	unit_tests objects, not for libs.
+	* pch.hh: define __STDC_CONSTANT_MACROS as required for UINT32_C.
+
+2005-11-28  Nathaniel Smith  <njs@pobox.com>
+
+	* txt2c.cc (main): Work correctly even on empty files.
+
+2005-11-28  Nathaniel Smith  <njs@pobox.com>
+
+	* schema_migration.cc: Provide more feedback while 'db migrate' is
+	running.
+
+2005-11-28  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* HACKING: Make a note of the fact that we kill 'monotone serve'
+	processes with a SIGSEGV.
+	* tests/README: Minor cleanup, mention SIGSEGV thing here too.
+
+2005-11-27  Nathaniel Smith  <njs@pobox.com>
+
+	* std_hooks.lua: Make regexp matching error slightly more
+	user-friendly.
+
+2005-11-27  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (diff): Remove OPT_BRANCH from diff's options.
+
+2005-11-27  Julio M. Merino Vidal  <jmmv@NetBSD.org>
+
+	* configure.ac: Do not use test's == operator because it is not
+	compatible with many implementations; use = instead.
+
+2005-11-27  Julio M. Merino Vidal  <jmmv@NetBSD.org>
+
+	* configure.ac, ui.cc: Windows does have sync_with_iostream; the
+	problem is that it does not behave correctly on some MinGW versions.
+	Properly detect this condition.  Thanks to Matthew Gregan for the
+	explanation.
+
+2005-11-27  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* netxx/address.cxx (parse_uri): Reset URI parser state after
+	checking for IPv6 address.
+
+2005-11-27  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_netsync_largish_file.at: Move LARGISH_FILE_CREATE
+	definition from here...
+	* testsuite.at: ...to here.
+	* tests/t_dump_load.at: Use LARGISH_FILE_CREATE to create a 1MB
+	file so that the db dump output is larger than a few kB.  This is
+	needed to catch the iostreams-returning-EOF-early bogosity under
+	MinGW when sync_with_stdio(false) has been called on the iostream.
+
+2005-11-27  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.cc: Include "i18n.h" instead of "libintl.h" directly,
+	to theoretically play better with autoconf stuff.
+
+2005-11-27  Julio M. Merino Vidal  <jmmv@NetBSD.org>
+
+	* tests/t_automate_stdio.at: Don't expect perl to be in /usr/bin;
+	this assumption doesn't hold breaks on several systems (such as
+	NetBSD).
+
+2005-11-27  Julio M. Merino Vidal  <jmmv@NetBSD.org>
+
+	* tests/t_checkout_options.at: Use the [] operator instead of {} in
+	a shell pattern so that it works with interpreters other than bash
+	(e.g., NetBSD's sh).
+
+2005-11-27  Julio M. Merino Vidal  <jmmv@NetBSD.org>
+
+	* testsuite.at, tests/t_empty_env.at, tests/t_i18n_file.at,
+	tests/t_netsync_sigpipe.at, tests/t_update_1.at, tests/t_update_2.at:
+	Do not use test's == operator because it is not portable; use =
+	instead.
+
 2005-11-27  Matt Johnston  <matt@ucc.asn.au>
 
 	* Makefile.am, configure.ac, pch.hh: add --enable-pch configure
@@ -52,6 +162,10 @@
 	(transaction_guard::transaction_guard): new argument exclusive indicating 
 	whether an immediate exclusive lock is requested, defaults to true
 	* database.hh: update prototype for transaction_guard
+
+2005-11-26  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Fill in date for 0.24 release.
 
 2005-11-26  Nathaniel Smith  <njs@pobox.com>
 
