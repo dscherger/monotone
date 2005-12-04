@@ -321,7 +321,10 @@ void rev_file_list::set_rev(std::string const & r)
   if (r.empty())
     certs.clear();
   else
-    certs = rd->mtn->certs(r);
+    {
+      rd->mtn->certs(r, certs);
+      rd->mtn->waitfor();
+    }
 }
 
 void rev_file_list::pchange(int n)
@@ -411,10 +414,13 @@ rev_file_list::dosel(Gtk::TreeModel::Path const & p)
   if (row[col.status] != states::added && row[col.status] != states::ignored
       && row[col.status] != states::unknown)
     {
+      string diff;
       if (wc)
-        rd->rfi.set_diff(rd->mtn->diff(filename));
+        rd->mtn->diff(filename, diff);
       else
-        rd->rfi.set_diff(rd->mtn->diff(filename, parent, rev));
+        rd->mtn->diff(filename, parent, rev, diff);
+      rd->mtn->waitfor();
+      rd->rfi.set_diff(diff);
     }
   else
     rd->rfi.set_diff("No diff available.");
@@ -422,7 +428,12 @@ rev_file_list::dosel(Gtk::TreeModel::Path const & p)
     if (wc)
       rd->rfi.set_contents(readfile(fullname));
     else if (row[col.status] != states::dropped)
-      rd->rfi.set_contents(rd->mtn->cat(filename, rev));
+      {
+        string foo;
+        rd->mtn->cat(filename, rev, foo);
+        rd->mtn->waitfor();
+        rd->rfi.set_contents(foo);
+      }
     else
       rd->rfi.set_contents("File dropped -- contents not available");
 

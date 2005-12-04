@@ -150,7 +150,8 @@ void revdat::commit()
   if (rfl.get_wc())
     {
       args.push_back("--message=" + msg);
-      rev = mtn->commit(args);
+      mtn->commit(args, rev);
+      mtn->waitfor();
     }
   for (std::map<std::string, Glib::ustring>::iterator i = comments.begin();
        i != comments.end(); ++i)
@@ -172,6 +173,7 @@ void revdat::loadwork()
   rfl.set_wc(true);
   std::vector<inventory_item> res;
   mtn->inventory(res);
+  mtn->waitfor();
   rfl.set_files(res);
 }
 
@@ -190,7 +192,9 @@ void revdat::loadrev(std::string const & rev)
   rfl.set_wc(false);
   std::vector<Glib::ustring> pvec;
   std::vector<std::vector<inventory_item> > pchanges;
-  std::string res = mtn->get_revision(rev);
+  string res;
+  mtn->get_revision(rev, res);
+  mtn->waitfor();
   std::string rename_from, man;
   std::set<std::string> changed;
   std::map<std::string, int> pmap;
@@ -256,7 +260,8 @@ void revdat::loadrev(std::string const & rev)
           pchanges.back()[pos].state = inventory_item::patched;
         }
     }
-  res = mtn->get_manifest(man);
+  mtn->get_manifest(man, res);
+  mtn->waitfor();
   for (int begin = 0, end = res.find('\n'); begin != res.size();
        begin = end + 1, end = res.find('\n', begin))
     {

@@ -42,12 +42,6 @@ public:
   }
 };
 
-void on_delay()
-{
-  while (Gtk::Main::events_pending())
-    Gtk::Main::iteration();
-}
-
 class mainwin : public Gtk::Window
 {
   monotone mtn;
@@ -73,7 +67,7 @@ public:
   void setdb()
   {
     Gtk::FileChooserDialog dialog("Please choose a database",
-                                  Gtk::FILE_CHOOSER_ACTION_OPEN, "");
+                                  Gtk::FILE_CHOOSER_ACTION_OPEN);
     dialog.set_transient_for(*this);
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     dialog.add_button("Select", Gtk::RESPONSE_OK);
@@ -95,7 +89,7 @@ public:
   void setdir()
   {
     Gtk::FileChooserDialog dialog("Please choose a working copy",
-                                  Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER, "");
+                                  Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER);
     dialog.set_transient_for(*this);
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     dialog.add_button("Select", Gtk::RESPONSE_OK);
@@ -124,7 +118,9 @@ public:
   }
   void to_rev()
   {
-    std::vector<std::string> revs = mtn.select(ti.entry.get_text());
+    vector<string> revs;
+    mtn.select(ti.entry.get_text(), revs);
+    mtn.waitfor();
     if (revs.size() == 1)
       rd.loadrev(revs[0]);
   }
@@ -134,7 +130,6 @@ public:
   }
   mainwin(): rd(&mtn, this)
   {
-    mtn.set_longwait_callback(&on_delay);
     set_default_size(675, 400);
     ag = Gtk::ActionGroup::create();
     ag->add(Gtk::Action::create("Setdir", Gtk::Stock::OPEN, "Set working dir"),

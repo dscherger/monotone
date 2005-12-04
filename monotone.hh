@@ -11,6 +11,7 @@
 #ifndef __MONOTONE_HH_
 #define __MONOTONE_HH_
 
+#include <gtkmm.h>
 #include <vector>
 #include <string>
 using std::string;
@@ -30,70 +31,81 @@ struct inventory_item
 
 struct cert
 {
-  std::string key;
+  string key;
   bool sig;
-  std::string name;
-  std::string value;
+  string name;
+  string value;
   bool trusted;
 };
 
-typedef void(*longwait_callback)();
-
 class monotone
 {
-  pid_t pid;
-  std::string dir;// chdir here before exec
-  std::string db;// if not empty, add --db= to argument list for exec
+  enum Mode {STDIO, EXEC};
+  Mode mode;
+  Glib::Pid pid;
+  string dir;// chdir here before exec
+  string db;// if not empty, add --db= to argument list for exec
   int from;
   int errfrom;
   int to;
+  bool busy;
 
-  bool execute(std::vector<std::string> args);
+  bool execute(vector<string> args);
   bool start();
   bool stop();
   bool stopped();
-  bool read_header(int & cmdnum, int & err, bool & more, int & size);
-  bool read_packet(std::string & out);
-  longwait_callback lwcb;
+
+  void child_exited(Glib::Pid p, int c);
+  void setup_callbacks();
+  bool got_data(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan);
+  bool got_err(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan);
+
+  string tempstr;
+
+  sigc::signal<void> signal_done;
+
 public:
+  string output_std, output_err;
+
   monotone();
   ~monotone();
-  void set_longwait_callback(longwait_callback lc);
-  longwait_callback get_longwait_callback(){return lwcb;}
-  void set_dir(std::string const & s){dir = (s.empty()?".":s); stop();}
-  void set_db(std::string const & s){db = s; stop();}
-  std::string get_dir(){return dir;}
-  std::string get_db(){return db;}
+  void set_dir(string const & s){dir = (s.empty()?".":s); stop();}
+  void set_db(string const & s){db = s; stop();}
+  string get_dir(){return dir;}
+  string get_db(){return db;}
+
+  // run the Gtk event loop while waiting for the current command to finish
+  void waitfor();
+  // call this when the current command finished
+  void when_done(sigc::slot<void> cb);
+  bool is_busy() {return busy;}
 
   // run a command with 'automate stdio'
-  std::string command(std::string const & cmd,
-                      std::vector<std::string> const & args);
+  void command(string const & cmd, vector<string> const & args);
   // run a command from the command line
-  void runcmd(std::string const & cmd,
-              std::vector<std::string> const & args,
-              std::string & out, std::string & err);
+  void runcmd(string const & cmd, vector<string> const & args);
+
 
   void inventory(std::vector<inventory_item> & out);
-  std::vector<cert> certs(std::string const & rev);
-  std::vector<std::string> select(std::string const & sel);
+  void certs(std::string const & rev, vector<cert> & out);
+  void select(std::string const & sel, vector<string> & out);
   void make_cert(std::string const & rev,
                  std::string const & name,
                  std::string const & value);
-  std::string commit(std::vector<std::string> args);
-  std::string diff(std::string const & filename);
-  std::string diff(std::string const & filename,
-                   std::string const & rev1,
-                   std::string const & rev2);
-  std::string cat(std::string const & filename, std::string const & rev);
-  std::string get_revision(std::string const & rev);
-  std::string get_manifest(std::string const & rev);
-  void add(std::string const & file);
-  void drop(std::string const & file);
-  void revert(std::string const & file);
-  void rename(std::string const & oldname, std::string const & newname);
-  bool update(std::vector<std::string> & opts, string & out);
-  void update(std::string const & rev, string & out);
-  void sync(string & res);
+  void commit(vector<string> args, string & out);
+  void diff(string const & filename, string & out);
+  void diff(string const & filename, string const & rev1,
+            string const & rev2, string & out);
+  void cat(string const & filename, string const & rev, string & out);
+  void get_revision(string const & rev, string & out);
+  void get_manifest(string const & rev, string & out);
+  void add(string const & file);
+  void drop(string const & file);
+  void revert(string const & file);
+  void rename(string const & oldname, string const & newname);
+  void update(vector<string> & opts, string & out);
+  void update(string const & rev, string & out);
+  void sync();
 };
 
 #endif

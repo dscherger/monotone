@@ -46,29 +46,11 @@ chooser::result()
   return Glib::ustring(r[col.name]);
 }
 
-namespace {
-  ProgressDialog *pd;
-  void pd_lwcb()
-  {
-    int r = pd->output.rfind("\r");
-    int n = pd->output.rfind("\n", r);
-    if (r != string::npos && n != string::npos)
-      pd->output = pd->output.substr(0, n+1) + pd->output.substr(r+1);
-    Glib::RefPtr<Gtk::TextBuffer> b = pd->tv.get_buffer();
-    b->set_text(pd->output);
-    Glib::RefPtr<Gtk::TextTag> t = b->create_tag();
-    t->property_family() = "monospace";
-    b->apply_tag(t, b->begin(), b->end());
-    while (Gtk::Main::events_pending())
-      Gtk::Main::iteration();
-  }
-};
-
 // mtn->whatever() is called from a timeout so that we'll return first,
 // and it will be called from the event loop, *after* our window exists,
 // and can continue to run the event loop itself.
 ProgressDialog::ProgressDialog(monotone & m)
- : mtn(&m), prev_lwcb(m.get_longwait_callback())
+ : mtn(&m)
 {
   get_vbox()->add(tv);
   tv.set_editable(false);
@@ -76,37 +58,63 @@ ProgressDialog::ProgressDialog(monotone & m)
   cancelbtn = add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
   okbtn = add_button("Done", Gtk::RESPONSE_OK);
   okbtn->set_sensitive(false);
-  pd = this;
-  mtn->set_longwait_callback(pd_lwcb);
   Glib::signal_timeout().connect(sigc::mem_fun(this, &ProgressDialog::timer), 0);
 }
 
 ProgressDialog::~ProgressDialog()
 {
-  mtn->set_longwait_callback(prev_lwcb);
 }
 
 bool ProgressDialog::timer()
 {
   callmtn();
-  pd_lwcb();
   okbtn->set_sensitive(true);
   cancelbtn->set_sensitive(false);
   return false;
 }
 
+// Run the event loop while waiting for monotone to finish.
+void ProgressDialog::do_wait()
+{
+  while (mtn->is_busy())
+    {
+      Gtk::Main::iteration();
+      string & str(mtn->output_err);
+      int r = str.rfind("\r");
+      int n = str.rfind("\n", r);
+      if (r != string::npos && n != string::npos)
+        str = str.substr(0, n+1) + str.substr(r+1);
+      Glib::RefPtr<Gtk::TextBuffer> b = tv.get_buffer();
+      b->set_text(str);
+      Glib::RefPtr<Gtk::TextTag> t = b->create_tag();
+      t->property_family() = "monospace";
+      b->apply_tag(t, b->begin(), b->end());
+    }
+}
+
+void SyncDialog::callmtn()
+{
+  mtn->sync();
+  do_wait();
+}
+
 void UpdateDialog::callmtn()
 {
   std::vector<std::string> rr;
-  if (!mtn->update(rr, output))
+  mtn->update(rr, output);
+  do_wait();
+  if (!rr.empty())
     {
       chooser c(rr);
       int result = c.run();
       if (result == Gtk::RESPONSE_OK)
         {
-          std::string rev = c.result();
+          string rev = c.result();
           if (!rev.empty())
-            mtn->update(rev, output);
+            {
+              mtn->update(rev, output);
+              do_wait();
+            }
         }
     }
 }
