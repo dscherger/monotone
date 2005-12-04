@@ -23,10 +23,6 @@
 #include <sstream>
 #include <iostream>
 
-// For future reference: CreateProcess and WaitForMultipleObjects on win32
-// to replace fork/exec and select?
-// Put in a 'class Platform {};'?
-
 inline int max(int a, int b) {return (a>b)?a:b;}
 
 monotone::monotone(): pid(0), dir(".")
@@ -79,11 +75,7 @@ bool monotone::got_data(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
       bool last = process_packet(tempstr, output_std);
       if (last)
         {
-          busy = false;
-          signal_done.emit();
-          signal_done.clear();
-          output_std.clear();
-          output_err.clear();
+          child_exited(0, 0);
         }
       return true;
     }
@@ -151,9 +143,9 @@ void
 monotone::child_exited(Glib::Pid p, int c)
 {
   pid = 0;
-  busy = false;
-  std::cerr<<output_err;
+  std::cerr<<"exited.\n";
   signal_done.emit();
+  busy = false;
   signal_done.clear();
   output_std.clear();
   output_err.clear();
@@ -175,6 +167,8 @@ monotone::stop()
   if (!pid)
     {
       std::cerr<<"Already stopped.\n";
+      if (busy) std::cerr<<"\tBut somehow still busy!\n";
+      busy = false;
       return false;
     }
   std::cerr<<"kill()\n";
@@ -213,10 +207,12 @@ monotone::stopped()
 void
 monotone::waitfor()
 {
-  while(busy)
+  while(busy && (Gtk::Main::events_pending() || !stopped()))
     {
       Gtk::Main::iteration();
     }
+  if (busy)
+    child_exited(0, 0);
   std::cerr<<"Done waiting.\n";
 }
 
@@ -224,9 +220,9 @@ void
 monotone::command(string const & cmd,
                   vector<string> const & args)
 {
-  mode = STDIO;
-  if (!pid)
+  if (!pid || mode != STDIO)
     start();
+  mode = STDIO;
   busy = true;
   std::ostringstream s;
   s << cmd.size() <<":"<<cmd;
@@ -353,7 +349,7 @@ namespace {
               begin = -1;
             end = res.find_first_of("\r\n", begin);
           }
-      } catch (std::exception &) {std::cerr<<"Exception!\n";/*maybe find a way to indicate an error?*/}
+      } catch (std::exception &) {std::cerr<<"Exception!\n"<<res;/*maybe find a way to indicate an error?*/}
     std::cerr<<" done.\n";
   }
 };
@@ -362,6 +358,7 @@ void
 monotone::inventory(std::vector<inventory_item> & out)
 {
   out.clear();
+  waitfor();
   std::vector<std::string> args;
   command("inventory", args);
   signal_done.connect(sigc::bind(sigc::ptr_fun(&process_inventory), &output_std, &out));
