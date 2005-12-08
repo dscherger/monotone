@@ -1,3 +1,37 @@
+2005-12-06  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* packet.cc (packet stream reading): Fix handling of privkey packets.
+	It would convert pubkey+privkey to keypair, but not change the private
+	key to the new encryption type. Now uses migrate_private_key to
+	convert privkey->keypair. Reading privkey packets from stdin only works
+	if the get_passphrase hook is defined for that key.
+	Fix packet_roundabout_test; the send+receive part was using an empty
+	stream, rather than the packet sequence generated in the first part.
+	* packet.hh, commands.cc, key_store.cc: read_packets now takes an
+	app_state argument.
+	* tests/t_dropkey_2.at: use genkey instead of reading packets
+	* tests/t_read_privkey.at: check that reading a privkey packet works
+	* testsuite.at: add read_privkey test
+
+2005-12-06  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* ui.cc (write_ticks): Move CR out of tickline2; output it where
+	required instead.  Fixes brokeness of 'count' ticker on Win32 (and
+	perhaps elsewhere) that was causing each line redraw to be written
+	on a new line.
+	* contrib/usher.cc (fork_server): Avoid getting stuck in an
+	infinte loop attempting to read() from a stream that has
+	reached EOF before we've read anything from it.  This can occur if
+	the fork()+exec() of an usher managed monotone server fails.
+	* ui.cc (write_ticks): Don't call display_width() repeatedly for
+	the same string--get the result once and reuse it where necessary.
+	* netxx/sockopt.cxx, netxx/sockopt.h (set_ipv6_listen_for_v6_only):
+	New member function to set the IPV6_V6ONLY flag on a socket.
+	* netxx/serverbase.cxx (bind_to): Call set_ipv6_listen_for_v6_only
+	on IPv6 sockets.
+	* app_state.cc (allow_working_copy): Use keydir path from
+	MT/options if set.
+
 2005-12-05  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* tests/t_database_sig_cleanup.at: Mark this as NOT_ON_WIN32; as
