@@ -78,8 +78,8 @@ void ProgressDialog::do_wait(string & fin)
 {
   while (mtn->is_busy())
     {
-      for (int i = 0; i < 100 && mtn->is_busy()
-                      && Gtk::Main::events_pending(); ++i)
+      for (int i = 0; i < 10 && mtn->is_busy() &&
+                      Gtk::Main::events_pending(); ++i)
         Gtk::Main::iteration();
       string & str(mtn->output_err);
       if (str.size() == 0)
@@ -101,11 +101,8 @@ void ProgressDialog::do_wait(string & fin)
 
 void SyncDialog::callmtn()
 {
-  std::cerr<<"frob\n";
   mtn->sync();
-  std::cerr<<"friz\n";
   do_wait(output);
-  std::cerr<<"franz\n";
 }
 
 void UpdateDialog::callmtn()

@@ -190,7 +190,10 @@ public:
     stuff.pack_end(rd);
     add(stuff);
     show_all_children();
-    to_wc();
+    // Initial WC scan. Call from a timeout, so we'll have our window up.
+    Glib::signal_timeout().connect(
+            sigc::bind_return(sigc::mem_fun(this, &mainwin::to_wc),
+                              false), 0);
   }
 };
 

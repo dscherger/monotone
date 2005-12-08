@@ -55,6 +55,18 @@ bool process_packet(string & from, string & out)
   from = from.substr(size + c4 + 1);
   return done;
 }
+bool process_packets(string & from, string & out)
+{
+  int s;
+  bool r;
+  do
+    {
+      s = from.size();
+      r = process_packet(from, out);
+    }
+  while (!r && s != from.size());
+  return r;
+}
 }
 
 bool monotone::got_data(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
@@ -62,19 +74,15 @@ bool monotone::got_data(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
   if (c == Glib::IO_HUP)
     {
       if (++done == 2)
-        (std::cerr<<"&"), child_exited(0, 0);
-      else
-        std::cerr<<"%"<<done;
+        child_exited(0, 0);
       return false;
     }
   Glib::ustring data;
-  chan->read(data, 1040);
-//  gunichar data;
-//  chan->read(data);
+  chan->read(data, 1024);
   if (mode == STDIO)
     {
       tempstr += data;
-      bool last = process_packet(tempstr, output_std);
+      bool last = process_packets(tempstr, output_std);
       if (last)
         {
           child_exited(0, 0);
@@ -92,17 +100,12 @@ bool monotone::got_err(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
 {
   if (c == Glib::IO_HUP)
     {
-      std::cerr<<output_err<<"\n";
       if (++done == 2)
-        (std::cerr<<"*"), child_exited(0, 0);
-      else
-        std::cerr<<"^"<<done;
+        child_exited(0, 0);
       return false;
     }
   Glib::ustring data;
-  chan->read(data, 1040);
-//  gunichar data;
-//  chan->read(data);
+  chan->read(data, 1024);
   output_err += data;
   return true;
 }
@@ -113,6 +116,8 @@ void monotone::setup_callbacks()
   {
     Glib::RefPtr<Glib::IOChannel> ioc = Glib::IOChannel::create_from_fd(from);
     ioc->set_flags(Glib::IO_FLAG_NONBLOCK);
+    ioc->set_encoding("");
+    ioc->set_buffered(false);
     Glib::RefPtr<Glib::IOSource> ios = Glib::IOSource::create(ioc, Glib::IO_IN | Glib::IO_HUP);
     ios->connect(sigc::bind(sigc::mem_fun(*this, &monotone::got_data), ioc));
     ios->attach(Glib::MainContext::get_default());
@@ -120,6 +125,8 @@ void monotone::setup_callbacks()
   {
     Glib::RefPtr<Glib::IOChannel> ioc = Glib::IOChannel::create_from_fd(errfrom);
     ioc->set_flags(Glib::IO_FLAG_NONBLOCK);
+    ioc->set_encoding("");
+    ioc->set_buffered(false);
     Glib::RefPtr<Glib::IOSource> ios = Glib::IOSource::create(ioc, Glib::IO_IN | Glib::IO_HUP);
     ios->connect(sigc::bind(sigc::mem_fun(*this, &monotone::got_err), ioc));
     ios->attach(Glib::MainContext::get_default());
@@ -147,6 +154,7 @@ monotone::execute(vector<string> args)
     }
   catch (Glib::SpawnError & e)
     {
+      std::cerr<<"Spawn error.\n";
       return false;
     }
   setup_callbacks();
@@ -156,10 +164,9 @@ monotone::execute(vector<string> args)
 void
 monotone::child_exited(Glib::Pid p, int c)
 {
-  std::cerr<<"cleanup...\n";
   stopped();
   signal_done.emit();
-  busy = false;std::cerr<<"no longer busy\n";
+  busy = false;
   signal_done.clear();
   output_std.clear();
   output_err.clear();
@@ -228,13 +235,12 @@ monotone::is_busy()
 void
 monotone::waitfor()
 {
-  while(busy && (Gtk::Main::events_pending() || !stopped()))
+  while(busy && (!stopped() || Gtk::Main::events_pending()))
     {
       Gtk::Main::iteration();
     }
   if (busy)
     child_exited(0, 0);
-  std::cerr<<"Done waiting.\n";
 }
 
 void
@@ -274,21 +280,18 @@ namespace {
   {
     string & res(*resp);
     vector<inventory_item> & out(*outp);
-  std::cerr<<"inventory... ";
     try
       {
         std::map<int, int> renames;
         int begin = 0;
         int end = res.find_first_of("\r\n", begin);
-        std::cerr<<"(end = "<<end<<") ";
         while (begin < res.size() && begin >= 0)
-          {std::cerr<<".";
+          {
             int sp1 = begin + 4;
             int sp2 = res.find(' ', sp1 + 1);
             int sp3 = res.find(' ', sp2 + 1);
             if (sp1 >= res.size() || sp2 == string::npos || sp3 == string::npos)
               {
-                std::cerr<<"!!!";
                 begin = -1;
                 continue;
               }
@@ -371,8 +374,9 @@ namespace {
               begin = -1;
             end = res.find_first_of("\r\n", begin);
           }
-      } catch (std::exception &) {std::cerr<<"Exception!\n"<<res;/*maybe find a way to indicate an error?*/}
-    std::cerr<<" done.\n";
+      } catch (std::exception &) {
+        std::cerr<<"Exception while reading inventory.\n"<<res;
+      }
   }
 };
 
