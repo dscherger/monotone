@@ -25,7 +25,7 @@
 
 inline int max(int a, int b) {return (a>b)?a:b;}
 
-monotone::monotone(): pid(0), dir(".")
+monotone::monotone(): pid(0), dir("."), done(2)
 {
 }
 
@@ -59,16 +59,18 @@ bool process_packet(string & from, string & out)
 
 bool monotone::got_data(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
 {
-  if (c != Glib::IO_IN)
+  if (c == Glib::IO_HUP)
     {
-      std::cerr<<"&";
-      busy = false;
+      if (++done == 2)
+        (std::cerr<<"&"), child_exited(0, 0);
+      else
+        std::cerr<<"%"<<done;
       return false;
     }
-//  Glib::ustring data;
-//  chan->read(data, 1040);
-  gunichar data;
-  chan->read(data);
+  Glib::ustring data;
+  chan->read(data, 1040);
+//  gunichar data;
+//  chan->read(data);
   if (mode == STDIO)
     {
       tempstr += data;
@@ -88,31 +90,37 @@ bool monotone::got_data(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
 
 bool monotone::got_err(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
 {
-  if (c != Glib::IO_IN)
+  if (c == Glib::IO_HUP)
     {
-      std::cerr<<"*";
-      busy = false;
+      std::cerr<<output_err<<"\n";
+      if (++done == 2)
+        (std::cerr<<"*"), child_exited(0, 0);
+      else
+        std::cerr<<"^"<<done;
       return false;
     }
-//  Glib::ustring data;
-//  chan->read(data, 1040);
-  gunichar data;
-  chan->read(data);
+  Glib::ustring data;
+  chan->read(data, 1040);
+//  gunichar data;
+//  chan->read(data);
   output_err += data;
   return true;
 }
 
 void monotone::setup_callbacks()
 {
+  done = 0;
   {
     Glib::RefPtr<Glib::IOChannel> ioc = Glib::IOChannel::create_from_fd(from);
-    Glib::RefPtr<Glib::IOSource> ios = Glib::IOSource::create(ioc, Glib::IO_IN);
+    ioc->set_flags(Glib::IO_FLAG_NONBLOCK);
+    Glib::RefPtr<Glib::IOSource> ios = Glib::IOSource::create(ioc, Glib::IO_IN | Glib::IO_HUP);
     ios->connect(sigc::bind(sigc::mem_fun(*this, &monotone::got_data), ioc));
     ios->attach(Glib::MainContext::get_default());
   }
   {
     Glib::RefPtr<Glib::IOChannel> ioc = Glib::IOChannel::create_from_fd(errfrom);
-    Glib::RefPtr<Glib::IOSource> ios = Glib::IOSource::create(ioc, Glib::IO_IN);
+    ioc->set_flags(Glib::IO_FLAG_NONBLOCK);
+    Glib::RefPtr<Glib::IOSource> ios = Glib::IOSource::create(ioc, Glib::IO_IN | Glib::IO_HUP);
     ios->connect(sigc::bind(sigc::mem_fun(*this, &monotone::got_err), ioc));
     ios->attach(Glib::MainContext::get_default());
   }
@@ -120,7 +128,13 @@ void monotone::setup_callbacks()
 
 bool
 monotone::execute(vector<string> args)
-{std::cerr<<"spawn()\n";
+{
+  if (done < 2)
+    {
+      std::cerr<<"Not spawning, pipes still open!\n";
+      return false;
+    }
+  std::cerr<<"spawn()\n";
   args.insert(args.begin(), Glib::find_program_in_path("monotone"));
   if (!db.empty())
     args.push_back("--db=" + db);
@@ -142,10 +156,10 @@ monotone::execute(vector<string> args)
 void
 monotone::child_exited(Glib::Pid p, int c)
 {
-  pid = 0;
-  std::cerr<<"exited.\n";
+  std::cerr<<"cleanup...\n";
+  stopped();
   signal_done.emit();
-  busy = false;
+  busy = false;std::cerr<<"no longer busy\n";
   signal_done.clear();
   output_std.clear();
   output_err.clear();
@@ -155,6 +169,7 @@ bool
 monotone::start()
 {
   stop();
+  while (done < 2) Gtk::Main::iteration();
   mode = STDIO;
   std::vector<std::string> args;
   args.push_back("automate");
@@ -167,8 +182,7 @@ monotone::stop()
   if (!pid)
     {
       std::cerr<<"Already stopped.\n";
-      if (busy) std::cerr<<"\tBut somehow still busy!\n";
-      busy = false;
+      if (busy) std::cerr<<"\tBut still busy!\n";
       return false;
     }
   std::cerr<<"kill()\n";
@@ -181,7 +195,6 @@ monotone::stop()
 #endif
   Glib::spawn_close_pid(pid);
   pid = 0;
-  busy = false;
   return true;
 }
 
@@ -202,6 +215,14 @@ monotone::stopped()
   Glib::spawn_close_pid(pid);
   pid = 0;
   return true;
+}
+
+bool
+monotone::is_busy()
+{
+//  if (busy && stopped())
+//    child_exited(0, 0);
+  return busy;
 }
 
 void
@@ -240,11 +261,12 @@ monotone::runcmd(string const & cmd,
                  vector<string> const & args)
 {
   stop();// stop stdio
-  busy = true;
+  while (done < 2) Gtk::Main::iteration();
   mode = EXEC;
   std::vector<std::string> argg = args;
   argg.insert(argg.begin(), cmd);
   execute(argg);
+  busy = true;
 }
 
 namespace {

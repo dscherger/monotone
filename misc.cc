@@ -74,16 +74,23 @@ bool ProgressDialog::timer()
 }
 
 // Run the event loop while waiting for monotone to finish.
-void ProgressDialog::do_wait()
+void ProgressDialog::do_wait(string & fin)
 {
   while (mtn->is_busy())
     {
-      Gtk::Main::iteration();
+      for (int i = 0; i < 100 && mtn->is_busy()
+                      && Gtk::Main::events_pending(); ++i)
+        Gtk::Main::iteration();
       string & str(mtn->output_err);
+      if (str.size() == 0)
+        continue;
+
+      // This gets rid of lines hidden by \r .
       int r = str.rfind("\r");
       int n = str.rfind("\n", r);
       if (r != string::npos && n != string::npos)
         str = str.substr(0, n+1) + str.substr(r+1);
+
       Glib::RefPtr<Gtk::TextBuffer> b = tv.get_buffer();
       b->set_text(str);
       Glib::RefPtr<Gtk::TextTag> t = b->create_tag();
@@ -94,15 +101,18 @@ void ProgressDialog::do_wait()
 
 void SyncDialog::callmtn()
 {
+  std::cerr<<"frob\n";
   mtn->sync();
-  do_wait();
+  std::cerr<<"friz\n";
+  do_wait(output);
+  std::cerr<<"franz\n";
 }
 
 void UpdateDialog::callmtn()
 {
   std::vector<std::string> rr;
   mtn->update(rr, output);
-  do_wait();
+  do_wait(output);
   if (!rr.empty())
     {
       chooser c(rr);
@@ -113,7 +123,7 @@ void UpdateDialog::callmtn()
           if (!rev.empty())
             {
               mtn->update(rev, output);
-              do_wait();
+              do_wait(output);
             }
         }
     }

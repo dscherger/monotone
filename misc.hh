@@ -38,7 +38,7 @@ struct ProgressDialog : public Gtk::Dialog
   ~ProgressDialog();
   bool timer();
   virtual void callmtn() {}
-  void do_wait();
+  void do_wait(string & fin);
 };
 
 struct SyncDialog : public ProgressDialog

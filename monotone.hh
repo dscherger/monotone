@@ -63,6 +63,7 @@ class monotone
   string tempstr;
 
   sigc::signal<void> signal_done;
+  int done;
 
 public:
   string output_std, output_err;
@@ -78,7 +79,7 @@ public:
   void waitfor();
   // call this when the current command finished
   void when_done(sigc::slot<void> cb);
-  bool is_busy() {return busy;}
+  bool is_busy();
 
   // run a command with 'automate stdio'
   void command(string const & cmd, vector<string> const & args);
