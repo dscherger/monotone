@@ -1,3 +1,36 @@
+2005-12-14  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* win32/fs.cc: Handle the fact that the MoveFileEx symbol might
+	exist in kernel32.dll even though it doesn't actually work.  It
+	turns out that Win9x implements a bunch of NT-only symbols as
+	stubs that return ERROR_CALL_NOT_IMPLEMENTED, so it's not
+	sufficient to detect feature availability by doing symbol lookups
+	at runtime.  Also add a missing parameter to the final error
+	message.  Fixes #15063.
+
+2005-12-13  Derek Scherger  <derek@echologic.com>
+
+	* commands.cc (update): remove \n from F() string
+	(revert): display "reverting..." messages similar to update
+	* tests/t_revert.at: allow output from revert
+
+2005-12-13  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at: Use SIGTERM rather than SIGSEGV to close down
+	monotone servers.
+	* HACKING, tests/README: Remove references to use of SEGV for
+	terminating monotone servers.
+
+2005-12-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* po/pt_BR.po: Add missing newline.
+	* AUTHORS: Add Alex Queiroz to list of translators.
+
+2005-12-08  Alex Queiroz  <asandroq@gmail.com>
+
+	* po/pt_BR.po: Beginnings of the Brazilian Portuguese translation.
+	* po/LINGUAS: Add it.
+
 2005-12-06  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* packet.cc (packet stream reading): Fix handling of privkey packets.
