@@ -1957,7 +1957,7 @@ CMD(read, N_("packet i/o"), "[FILE1 [FILE2 [...]]]",
   size_t count = 0;
   if (args.empty())
     {
-      count += read_packets(cin, dbw);
+      count += read_packets(cin, dbw, app);
       N(count != 0, F("no packets found on stdin"));
     }
   else
@@ -1967,7 +1967,7 @@ CMD(read, N_("packet i/o"), "[FILE1 [FILE2 [...]]]",
           data dat;
           read_data(system_path(*i), dat);
           istringstream ss(dat());
-          count += read_packets(ss, dbw);
+          count += read_packets(ss, dbw, app);
         }
       N(count != 0, FP("no packets found in given file",
                        "no packets found in given files",
@@ -2870,7 +2870,7 @@ write_file_targets(change_set const & cs,
             continue;
         }
       
-      P(F("updating %s to %s\n") % pth % ident);
+      P(F("updating %s to %s") % pth % ident);
       
       I(app.db.file_version_exists(ident)
         || merger.temporary_store.find(ident) != merger.temporary_store.end());
@@ -3485,8 +3485,8 @@ CMD(revert, N_("working copy"), N_("[PATH]..."),
           if (manifest_entry_id(i) == ident) continue;
       }
       
-      L(F("reverting %s from %s to %s\n") %
-        manifest_entry_path(i) % ident % manifest_entry_id(i));
+      P(F("reverting %s to %s") %
+        manifest_entry_path(i) % manifest_entry_id(i));
 
       N(app.db.file_version_exists(manifest_entry_id(i)),
         F("no file version %s found in database for %s")

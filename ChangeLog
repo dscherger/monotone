@@ -1,3 +1,100 @@
+2005-12-14  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* win32/fs.cc: Handle the fact that the MoveFileEx symbol might
+	exist in kernel32.dll even though it doesn't actually work.  It
+	turns out that Win9x implements a bunch of NT-only symbols as
+	stubs that return ERROR_CALL_NOT_IMPLEMENTED, so it's not
+	sufficient to detect feature availability by doing symbol lookups
+	at runtime.  Also add a missing parameter to the final error
+	message.  Fixes #15063.
+
+2005-12-13  Derek Scherger  <derek@echologic.com>
+
+	* commands.cc (update): remove \n from F() string
+	(revert): display "reverting..." messages similar to update
+	* tests/t_revert.at: allow output from revert
+
+2005-12-13  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at: Use SIGTERM rather than SIGSEGV to close down
+	monotone servers.
+	* HACKING, tests/README: Remove references to use of SEGV for
+	terminating monotone servers.
+
+2005-12-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* po/pt_BR.po: Add missing newline.
+	* AUTHORS: Add Alex Queiroz to list of translators.
+
+2005-12-08  Alex Queiroz  <asandroq@gmail.com>
+
+	* po/pt_BR.po: Beginnings of the Brazilian Portuguese translation.
+	* po/LINGUAS: Add it.
+
+2005-12-06  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* packet.cc (packet stream reading): Fix handling of privkey packets.
+	It would convert pubkey+privkey to keypair, but not change the private
+	key to the new encryption type. Now uses migrate_private_key to
+	convert privkey->keypair. Reading privkey packets from stdin only works
+	if the get_passphrase hook is defined for that key.
+	Fix packet_roundabout_test; the send+receive part was using an empty
+	stream, rather than the packet sequence generated in the first part.
+	* packet.hh, commands.cc, key_store.cc: read_packets now takes an
+	app_state argument.
+	* tests/t_dropkey_2.at: use genkey instead of reading packets
+	* tests/t_read_privkey.at: check that reading a privkey packet works
+	* testsuite.at: add read_privkey test
+
+2005-12-06  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* ui.cc (write_ticks): Move CR out of tickline2; output it where
+	required instead.  Fixes brokeness of 'count' ticker on Win32 (and
+	perhaps elsewhere) that was causing each line redraw to be written
+	on a new line.
+	* contrib/usher.cc (fork_server): Avoid getting stuck in an
+	infinte loop attempting to read() from a stream that has
+	reached EOF before we've read anything from it.  This can occur if
+	the fork()+exec() of an usher managed monotone server fails.
+	* ui.cc (write_ticks): Don't call display_width() repeatedly for
+	the same string--get the result once and reuse it where necessary.
+	* netxx/sockopt.cxx, netxx/sockopt.h (set_ipv6_listen_for_v6_only):
+	New member function to set the IPV6_V6ONLY flag on a socket.
+	* netxx/serverbase.cxx (bind_to): Call set_ipv6_listen_for_v6_only
+	on IPv6 sockets.
+	* app_state.cc (allow_working_copy): Use keydir path from
+	MT/options if set.
+
+2005-12-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_database_sig_cleanup.at: Mark this as NOT_ON_WIN32; as
+	per the MSDN link I've added to the test, we can't handle
+	SIGINT/SIGTERM gracefully on Windows.
+
+2005-12-04  Nathaniel Smith  <njs@pobox.com>
+
+	* paths.cc (file_path): MM() the path we're validating.
+
+2005-12-04  Nathaniel Smith  <njs@pobox.com>
+
+	* schema_migration.cc: Modernize error checking a bit.  (Use E()
+	and I() instead of throwing runtime_errors.)
+
+2005-12-03  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.cc (dump_buffer): If we dumped debug info, write out a
+	note asking that it be included in bug reports.
+
+2005-12-03  Nathaniel Smith  <njs@pobox.com>
+
+	* schema_migration.cc (logged_sqlite3_exec): New function.
+	Use everywhere in this file.  Enables logging of migration
+	commands for debugging purposes.
+
+2005-12-03  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_mixed_case_pwd.at, testsuite.at: New test.
+
 2005-12-02  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* Makefile.am: Make Win32 build link against shfolder.lib to get
