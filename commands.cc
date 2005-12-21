@@ -460,28 +460,42 @@ complete(app_state & app,
       return;
     }
 
+  bool get_heads = false;
   vector<pair<selectors::selector_type, string> >
-    sels(selectors::parse_selector(str, app));
+    sels(selectors::parse_selector(str, get_heads, app));
 
   P(F("expanding selection '%s'\n") % str);
 
   // we jam through an "empty" selection on sel_ident type
-  set<string> completions;
+  set<revision_id> completions;
   selectors::selector_type ty = selectors::sel_ident;
-  selectors::complete_selector("", sels, ty, completions, app);
+  {
+    bool dummy_get_heads = false;
+    std::set<std::string> completion_strings;
+    selectors::complete_selector("", sels, ty, dummy_get_heads,
+                                 completion_strings, app, true);
+    for (std::set<std::string>::const_iterator i = completion_strings.begin();
+         i != completion_strings.end(); ++i)
+      completions.insert(revision_id(*i));
+  }
 
   N(completions.size() != 0,
     F("no match for selection '%s'") % str);
+
+  if (get_heads && completions.size() > 1)
+    {
+      erase_ancestors(completions, app);
+    }
   if (completions.size() > 1)
     {
       string err = (F("selection '%s' has multiple ambiguous expansions: \n") % str).str();
-      for (set<string>::const_iterator i = completions.begin();
+      for (set<revision_id>::const_iterator i = completions.begin();
            i != completions.end(); ++i)
-        err += (describe_revision(app, revision_id(*i)) + "\n");
+        err += (describe_revision(app, *i) + "\n");
       N(completions.size() == 1, boost::format(err));
     }
-  completion = revision_id(*(completions.begin()));  
-  P(F("expanded to '%s'\n") %  completion);  
+  completion = *(completions.begin());
+  P(F("expanded to '%s'\n") %  completion);
 }
 
 
