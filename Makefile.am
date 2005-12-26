@@ -24,6 +24,7 @@ MOST_SOURCES =								\
          schema_migration.cc schema_migration.hh			\
          constants.cc constants.hh					\
          netsync.cc netsync.hh						\
+         netxx_pipe.cc netxx_pipe.hh					\
          netcmd.cc netcmd.hh						\
          merkle_tree.cc merkle_tree.hh					\
          basic_io.cc basic_io.hh					\

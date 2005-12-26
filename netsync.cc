@@ -3041,40 +3041,157 @@ bool session::process()
     }
 }
 
-static std::string::size_type find_wordend(const std::string &address, 
-        std::string::size_type begin, std::string::size_type end, 
-        const std::string &breaks)
-{  for (;begin<end;++begin)
-   {  for (std::string::const_iterator i=breaks.begin();i!=breaks.end();++i)
-         if (address[begin]==*i) return begin;
-   }
-   return begin;
+
+static bool 
+parse_ssh_url(const std::string & address,
+              std::string & host,
+              std::string & user,
+              std::string & port,
+              std::string & dbpath)
+{
+  std::string::size_type 
+    wordbegin = 0,
+    wordend = std::string::npos;
+
+  if (address.size() >= 2 && 
+      address.substr(wordbegin, 2) == "//") 
+    wordbegin += 2;
+  
+  wordend = address.find_first_of("@:/", wordbegin);
+  
+  if (wordend == string::npos) 
+    return false;
+  
+  if (address.at(wordend) == '@') 
+    {  
+      user = address.substr(wordbegin, wordend - wordbegin);
+      wordbegin = wordend + 1;
+      wordend = address.find_first_of(":/", wordbegin);
+      if (wordend == string::npos) 
+        return false;
+    }
+
+  if (address.at(wordend) == ':')
+    {  
+      host = address.substr(wordbegin, wordend-wordbegin);
+      wordbegin = wordend + 1;
+      wordend = address.find_first_of("/", wordbegin);
+      if (wordend == string::npos)
+        return false;
+    }
+
+  if (address.at(wordend) != '/')
+    return false;
+
+  if (wordbegin == wordend)
+    return false; // empty port/host
+
+  if (host.empty()) 
+    host = address.substr(wordbegin, wordend-wordbegin);
+  else 
+    port = address.substr(wordbegin, wordend-wordbegin);
+
+  dbpath = address.substr(wordend); // with leading '/' !
+  return true;
 }
 
-static bool parse_ssh_url(const std::string &address,std::string &host,
-                    std::string &user,std::string &port,std::string &dbpath)
-{  std::string::size_type wordbegin=0,end=address.size(),wordend=std::string::npos;
-   if (wordbegin+2<=end && address.substr(wordbegin,2)=="//") wordbegin+=2;
-   wordend=find_wordend(address,wordbegin,end,"@:/");
-   if (wordend==end) return false;
-   if (address[wordend]=='@') 
-   {  user=address.substr(wordbegin,wordend-wordbegin);
-      wordbegin=wordend+1;
-      wordend=find_wordend(address,wordbegin,end,":/");
-      if (wordend==end) return false;
-   }
-   if (address[wordend]==':') 
-   {  host=address.substr(wordbegin,wordend-wordbegin);
-      wordbegin=wordend+1;
-      wordend=find_wordend(address,wordbegin,end,"/");
-      if (wordend==end) return false;
-   }
-   if (address[wordend]!='/') return false;
-   if (wordbegin==wordend) return false; // empty port/host
-   if (host.empty()) host=address.substr(wordbegin,wordend-wordbegin);
-   else port=address.substr(wordbegin,wordend-wordbegin);
-   dbpath=address.substr(wordend); // with leading '/' !
-   return true;
+static shared_ptr<Netxx::StreamBase> 
+build_stream_to_server(utf8 const & include_pattern,
+                       utf8 const & exclude_pattern,
+                       utf8 const & address,
+                       Netxx::port_type default_port,
+                       Netxx::Timeout timeout)
+{
+  shared_ptr<Netxx::StreamBase> server;
+
+  if (address().substr(0,5)=="file:")
+    {  
+      std::vector<std::string> args;
+      std::string db_path = address().substr(5);
+      if (global_sanity.debug) 
+        args.push_back("--debug");
+
+      args.push_back("--db");
+      args.push_back(db_path);
+
+      if (exclude_pattern().size())
+        { 
+          args.push_back("--exclude");
+          args.push_back(exclude_pattern());
+        }
+
+      args.push_back("--");
+      args.push_back("serve");
+      args.push_back("-");
+      args.push_back(include_pattern());
+
+      // if (global_sanity.debug) 
+      //   dup2(open("monotone-server.log",O_WRONLY|O_CREAT
+      //             |O_NOCTTY|O_APPEND,0666),2);
+    
+      return shared_ptr<Netxx::StreamBase>
+        (new Netxx::PipeStream("monotone", args));
+    }
+
+  else if (address().substr(0,4)=="ssh:")
+    {  
+      std::vector<std::string> args;
+      std::string user, host, port, db_path;
+
+      if (!parse_ssh_url(address().substr(4),
+                         host, user, port, db_path))
+        {  
+          N(false, 
+            F("url %s is not of form "
+              "ssh:[//]user@host:port/dbpath\n") % address());
+        }
+
+      if (!port.empty()) 
+        {  
+          args.push_back("-p");
+          args.push_back(port);
+        }
+
+      if (!user.empty()) 
+        {  
+          args.push_back("-l");
+          args.push_back(user);
+        }
+
+      args.push_back(host);
+      args.push_back("monotone");
+      args.push_back("--db");
+      args.push_back(db_path);
+
+      if (exclude_pattern().size())
+        { 
+          args.push_back("--exclude");
+          args.push_back(exclude_pattern());
+        }
+
+      args.push_back("--");
+      args.push_back("serve");
+      args.push_back("-");
+      args.push_back(include_pattern());
+
+      // if (global_sanity.debug) 
+      //   dup2(open("monotone-server.log",O_WRONLY|O_CREAT
+      //             |O_NOCTTY|O_APPEND,0666),2);
+      return shared_ptr<Netxx::StreamBase>
+        (new Netxx::PipeStream("ssh", args));
+    }
+  else 
+    { 
+#ifdef USE_IPV6
+      bool use_ipv6=true;
+#else
+      bool use_ipv6=false;
+#endif
+      Netxx::Address addr(address().c_str(), 
+                          default_port, use_ipv6);
+      return shared_ptr<Netxx::StreamBase>
+        (new Netxx::Stream(addr, timeout));
+    }  
 }
 
 static void 
@@ -3088,70 +3205,20 @@ call_server(protocol_role role,
 {
   Netxx::PipeCompatibleProbe probe;
   Netxx::Timeout timeout(static_cast<long>(timeout_seconds)), instant(0,1);
-#ifdef USE_IPV6
-  bool use_ipv6=true;
-#else
-  bool use_ipv6=false;
-#endif
 
   // FIXME: split into labels and convert to ace here.
 
   P(F("connecting to %s\n") % address());
-  shared_ptr<Netxx::StreamBase> server;
-  if (address().substr(0,5)=="file:")
-  {  std::vector<std::string> args;
-     std::string db_path=address().substr(5);
-     if (global_sanity.debug) args.push_back("--debug");
-     args.push_back("--db");
-     args.push_back(db_path);
-     if (exclude_pattern().size())
-     { args.push_back("--exclude");
-       args.push_back(exclude_pattern());
-     }
-     args.push_back("--");
-     args.push_back("serve");
-     args.push_back("-");
-     args.push_back(include_pattern());
-//        if (global_sanity.debug) 
-//           dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-     server=shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream("monotone",args));
-  }
-  else if (address().substr(0,4)=="ssh:")
-  {  std::vector<std::string> args;
-     std::string user,host,port,db_path;
-     if (!parse_ssh_url(address().substr(4),host,user,port,db_path))
-     {  L(F("url %s is not of form ssh:[//]user@host:port/dbpath\n") % address());
-        return;
-     }
-     if (!port.empty()) 
-     {  args.push_back("-p");
-        args.push_back(port);
-     }
-     if (!user.empty()) 
-     {  args.push_back("-l");
-        args.push_back(user);
-     }
-     args.push_back(host);
-     args.push_back("monotone");
-     args.push_back("--db");
-     args.push_back(db_path);
-     if (exclude_pattern().size())
-     { args.push_back("--exclude");
-       args.push_back(exclude_pattern());
-     }
-     args.push_back("--");
-     args.push_back("serve");
-     args.push_back("-");
-     args.push_back(include_pattern());
-//     if (global_sanity.debug) 
-//        dup2(open("monotone-server.log",O_WRONLY|O_CREAT|O_NOCTTY|O_APPEND,0666),2);
-     server=shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream("ssh",args));
-  }
-  else 
-  { Netxx::Address addr(address().c_str(), default_port, use_ipv6);
-    server=shared_ptr<Netxx::StreamBase>(new Netxx::Stream(addr, timeout));
-  }
-  session sess(role, client_voice, include_pattern, exclude_pattern,
+
+  shared_ptr<Netxx::StreamBase> server 
+    = build_stream_to_server(include_pattern,
+                             exclude_pattern,
+                             address, default_port, 
+                             timeout);
+
+  session sess(role, client_voice, 
+               include_pattern, 
+               exclude_pattern,
                app, address(), server);
   
   while (true)
@@ -3298,7 +3365,11 @@ handle_new_connection(Netxx::Address & addr,
     {
       P(F("accepted new client connection from %s : %s\n")
         % client.get_address() % lexical_cast<string>(client.get_port()));
-                                                          timeout));
+
+      shared_ptr<Netxx::Stream> str = 
+        shared_ptr<Netxx::Stream>
+        (new Netxx::Stream(client.get_socketfd(), timeout));
+
       shared_ptr<session> sess(new session(role, server_voice,
                                            include_pattern, exclude_pattern,
                                            app,
