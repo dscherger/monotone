@@ -663,6 +663,8 @@
 	specific table 'sqlite_stat1'--the SQLite docs suggest that more
 	tables will be created in the future.
 
+2005-10-14  Matthew Gregan  <kinetik@orcon.net.nz>
+
 	* database.cc, schema.sql, schema_migration.cc: Use SQLite 3's
 	exclusive locking whereever we start a new transaction; allows
 	monotone to report database locking errors earlier if a second
@@ -2640,7 +2642,7 @@
 	* i18n.h: N_() stands for gettext_noop(), not plural.
 	* keys.cc (get_passphrase): Fixed string surgery.
 	* netsync.cc: i18nized tickers' labels. Added xgettext comment
-	as tickers do not play well with multibytes characters (like Ã©).
+	as tickers do not play well with multibytes characters (like é).
 	(session::analyze_attachment): Fixed string surgery.
 	(session::process_hello_cmd): Merged many strings.
 	(session::process_data_cmd): Removed some leading/trailing
@@ -2669,7 +2671,7 @@
 	* i18n.h: N_() stands for gettext_noop(), not plural.
 	* keys.cc (get_passphrase): Fixed string surgery.
 	* netsync.cc: i18nized tickers' labels. Added xgettext comment
-	as tickers do not play well with multibytes characters (like Ã©).
+	as tickers do not play well with multibytes characters (like é).
 	(session::analyze_attachment): Fixed string surgery.
 	(session::process_hello_cmd): Merged many strings.
 	(session::process_data_cmd): Removed some leading/trailing
@@ -9434,7 +9436,7 @@
 	* AUTHORS: Mention Wojciech and Neil.
 	* revision.cc (calculate_ancestors_from_graph): Make non-recursive.
 
-2005-01-17  Wojciech MiÅkowski  <wmilkowski@interia.pl>
+2005-01-17  Wojciech Miłkowski  <wmilkowski@interia.pl>
 
 	* std_hooks.lua: Teach about meld.
 
