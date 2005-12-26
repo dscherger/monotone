@@ -72,6 +72,7 @@ struct poptOption coptions[] =
     {"missing", 0, POPT_ARG_NONE, NULL, OPT_MISSING, gettext_noop("perform the operations for files missing from working directory"), NULL},
     {"unknown", 0, POPT_ARG_NONE, NULL, OPT_UNKNOWN, gettext_noop("perform the operations for unknown files from working directory"), NULL},
     {"key-to-push", 0, POPT_ARG_STRING, &argstr, OPT_KEY_TO_PUSH, gettext_noop("push the specified key even if it hasn't signed anything"), NULL},
+    {"stdio", 0, POPT_ARG_NONE, NULL, OPT_STDIO, gettext_noop("serve netsync on stdio"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -458,6 +459,10 @@ cpp_main(int argc, char ** argv)
               app.execute = true;
               break;
 
+            case OPT_STDIO:
+              app.bind_stdio = true;
+              break;
+
             case OPT_BIND:
               {
                 std::string arg(argstr);
@@ -489,6 +494,7 @@ cpp_main(int argc, char ** argv)
                         port_part = "";
                       }
                   }
+                app.bind_stdio = false;
                 app.bind_address = utf8(addr_part);
                 app.bind_port = utf8(port_part);
               }

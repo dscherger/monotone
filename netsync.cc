@@ -3110,6 +3110,8 @@ build_stream_to_server(utf8 const & include_pattern,
       std::string db_path = address().substr(5);
       if (global_sanity.debug) 
         args.push_back("--debug");
+      else
+        args.push_back("--quiet");
 
       args.push_back("--db");
       args.push_back(db_path);
@@ -3120,9 +3122,8 @@ build_stream_to_server(utf8 const & include_pattern,
           args.push_back(exclude_pattern());
         }
 
-      args.push_back("--");
       args.push_back("serve");
-      args.push_back("-");
+      args.push_back("--stdio");
       args.push_back(include_pattern());
 
       // if (global_sanity.debug) 
@@ -3160,6 +3161,12 @@ build_stream_to_server(utf8 const & include_pattern,
 
       args.push_back(host);
       args.push_back("monotone");
+
+      if (global_sanity.debug) 
+        args.push_back("--debug");
+      else
+        args.push_back("--quiet");
+
       args.push_back("--db");
       args.push_back(db_path);
 
@@ -3169,9 +3176,8 @@ build_stream_to_server(utf8 const & include_pattern,
           args.push_back(exclude_pattern());
         }
 
-      args.push_back("--");
+      args.push_back("--stdio");
       args.push_back("serve");
-      args.push_back("-");
       args.push_back(include_pattern());
 
       // if (global_sanity.debug) 
@@ -3513,8 +3519,7 @@ serve_connections(protocol_role role,
       addr.add_address(app.bind_address().c_str(), default_port);
   else
       addr.add_all_addresses (default_port);
-
-
+                                                
   Netxx::StreamServer server(addr, timeout);
   const char *name = addr.get_name();
   P(F("beginning service on %s : %s\n") 
@@ -3871,18 +3876,19 @@ run_netsync_protocol(protocol_voice voice,
     {
       if (voice == server_voice)
         {
-          if (addr==utf8("-"))
-          { shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
-            shared_ptr<session> sess(new session(role, server_voice, 
-                                                 include_pattern, exclude_pattern,
-                                                 app, "stdio", str));
-            serve_single_connection(sess,constants::netsync_timeout_seconds);
-          }
+          if (app.bind_stdio)
+            { 
+              shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
+              shared_ptr<session> sess(new session(role, server_voice, 
+                                                   include_pattern, exclude_pattern,
+                                                   app, "stdio", str));
+              serve_single_connection(sess,constants::netsync_timeout_seconds);
+            }
           else
             serve_connections(role, include_pattern, exclude_pattern, app,
-                            addr, static_cast<Netxx::port_type>(constants::netsync_default_port), 
-                            static_cast<unsigned long>(constants::netsync_timeout_seconds), 
-                            static_cast<unsigned long>(constants::netsync_connection_limit));
+                              addr, static_cast<Netxx::port_type>(constants::netsync_default_port), 
+                              static_cast<unsigned long>(constants::netsync_timeout_seconds), 
+                              static_cast<unsigned long>(constants::netsync_connection_limit));
         }
       else    
         {
