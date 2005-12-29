@@ -3431,13 +3431,16 @@ CMD(complete, N_("informative"), N_("(revision|manifest|file|key) PARTIAL-ID"),
 
 
 CMD(revert, N_("working copy"), N_("[PATH]..."), 
-    N_("revert file(s), dir(s) or entire working copy"), OPT_DEPTH % OPT_EXCLUDE % OPT_MISSING)
+    N_("revert file(s), dir(s) or entire working copy (\".\")"), OPT_DEPTH % OPT_EXCLUDE % OPT_MISSING)
 {
   manifest_map m_old;
   revision_id old_revision_id;
   manifest_id old_manifest_id;
   change_set::path_rearrangement work, included, excluded;
   path_set old_paths;
+
+  if (args.size() < 1 && !app.missing)
+      throw usage(name);
  
   app.require_working_copy();
 
