@@ -50,3 +50,5 @@
 #define OPT_KEY_TO_PUSH 41
 #define OPT_CONF_DIR 42
 #define OPT_DROP_ATTR 43
+#define OPT_SINCE 44
+#define OPT_FULL 45
