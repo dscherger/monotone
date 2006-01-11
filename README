@@ -3,6 +3,13 @@ make symlinks
 make usher
 	Modified usher that uses the project database for a server list,
 	and uses the same config file as the web interface.
+createdb <dbname>
+psql -f schema.sql <dbname>
+	setup database, if not done as the webserver user, that user will need
+	permission to read/insert/update.
+	If you want the reset script to work, you need permission to delete.
+cp hostconfig.dist hostconfig
+	and then update to match your local setup
 
 skel/		Some useful files
 

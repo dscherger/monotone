@@ -5,4 +5,3 @@ psql -c 'delete from projects;' testdb
 psql -c 'delete from permissions;' testdb
 rm -rf projects/*
 rm -rf www/projects/*
-echo -e 'userpass <username> <password>\n' >usherlist

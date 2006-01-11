@@ -1,7 +1,7 @@
 <?
 ini_set("display_errors", false);
 
-$conffile = "/home/timothy/experiment/hostconfig";
+$conffile = dirname(__FILE__) . "/../hostconfig";
 
 # read conffile
 $firstkey = '^[^\s"[]\S*';

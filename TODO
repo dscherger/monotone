@@ -1,0 +1,24 @@
+script to keep viewmtn database in sync with server database
+	projects/*/database		server database
+	projects/*/database.viewmtn	viewmtn database
+	projects/*/database.transfer	extra database
+	
+	pull -d database.transfer
+	ln database.viewmtn database.temp
+	mv database.transfer database.viewmtn
+	mv database.temp database.transfer
+	
+	from note_netsync_revision_received, with at(1) and a flag so multiple
+	times don't get queued at once?
+	
+	...or just be very sure that attempted concurrent access from viewmtn
+	and the server won't crash the server.
+
+script to remove the oldest files from graphs/ whenever it gets too big
+
+www/admin-web*
+	maybe have webspace?
+
+www/admin-resources*
+	have links to various things (ml, irc logs, newsgroups, etc)
+	have these links go in the sidebar?
