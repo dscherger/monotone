@@ -108,6 +108,7 @@ string dbstring;
 // defaults, overridden by command line
 int listenport = 4691;
 string listenaddr = "0.0.0.0";
+string monotone = "monotone";
 
 // keep local servers around for this many seconds after the last
 // client disconnects from them (only accurate to ~10 seconds)
@@ -697,7 +698,7 @@ struct server
         if (i > 0 || port == 0)
           find_addr(addr, port);
         vector<string> args;
-        args.push_back("monotone");
+        args.push_back(monotone);
         args.push_back("serve");
         args.push_back("--bind=" + addr + ":" + lexical_cast<string>(port));
         unsigned int n = 0, m = 0;
@@ -1358,6 +1359,8 @@ void reload_conffile(string const & file)
       admin.initialize(readtok(cf).s);
     } else if(tok.s == "listen") {
       h = start(readtok(cf).s);
+    } else if(tok.s == "monotone") {
+      monotone = readtok(cf).s;
     }
   }
 
