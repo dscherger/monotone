@@ -1,0 +1,4 @@
+  branch "net.angrygoats.viewmtn"
+database "/home/timothy/src/managed/mt.db"
+     key ""
+  keydir ""

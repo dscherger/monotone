@@ -1,0 +1,54 @@
+<%
+
+psp.set_error_page("error.psp")
+info = { 'title' : "Branches" }
+req.write(template.header(info))
+
+branches = mt.branches()
+
+%>
+
+<%
+if len(branches) == 0:
+    # no branches
+%>
+
+<p>
+There are no branches in the provided monotone database. There is
+therefore nothing for ViewMTN to display!
+</p>
+
+<%
+else:
+    # okay, so display the branches
+%>
+<p>
+There are <%=len(branches)%> branches in this 
+<a href="http://www.venge.net/monotone/">Monotone</a> database. Each branch 
+might represent an individual project. If you are new to Monotone, the 
+<a href="http://www.venge.net/monotone/docs/Tutorial.html">Monotone tutorial</a> 
+may help you understand these pages better.
+</p>
+
+<p>
+Select a branch from the list below to view recent changes that have occured 
+within it. The list of <a href="tags.psp">tagged revisions</a> could be
+helpful if you are looking for a particular revision.
+</p>
+
+<table class="pretty">
+<tr><th>Branch</th></tr>
+<%
+    branches.sort()
+    for branch in branches:
+	req.write('<tr><td>%s</td></tr>' % (link("branch", branch, branch)))
+
+%>
+</table>
+
+<%
+
+req.write(template.footer(info))
+
+%>
+

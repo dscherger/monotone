@@ -1,0 +1,23 @@
+hostkey = "foo@bar.com"
+hostkeypass = "foo@bar.com"
+
+function get_passphrase(keyid)
+	if keyid == hostkey then
+		return hostkeypass
+	end
+	return nil
+end
+
+function persist_phrase_ok()
+	return true
+end
+
+old_get_wperm = get_netsync_write_permitted
+function get_netsync_write_permitted(ident)
+	if ident == hostkey then return true end
+	return old_get_wperm(ident)
+end
+
+function get_netsync_read_permitted(foo, bar)
+	return true
+end

@@ -1,0 +1,614 @@
+   file "builtpython.sh"
+execute "true"
+
+        file "mimetypes/gnome-fs-directory.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-library.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-magicpoint.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-msword.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-ogg.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-par.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-pdf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-pgp-encrypted.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-pgp-keys.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-pgp.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-postscript.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-qif.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-rhythmbox-effect.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-rhythmbox-playlist.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-rtf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-smil.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.lotus-1-2-3.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.ms-excel.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.ms-powerpoint.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.ms-word.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.stardivision.calc.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.stardivision.impress.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.stardivision.writer.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.sun.xml.calc.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.sun.xml.draw.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.sun.xml.impress.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.sun.xml.writer.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-vnd.sun.xml.writer.template.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-wordperfect.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-abiword.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-applix-spreadsheet.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-applix-word.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-archive.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-arj.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-bittorrent.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-bla.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-blender.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-blf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-blv.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-bzip-compressed-tar.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-bzip.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-cd-image.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-class-file.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-compress.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-compressed-tar.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-core.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-cpio-compressed.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-cpio.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-dc-rom.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-deb.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-desktop.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-dia-diagram.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-dv.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-dvi.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-e-theme.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-executable.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-extension-nfo.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-extension-par2.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-font-afm.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-font-bdf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-font-linux-psf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-font-pcf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-font-sunos-news.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-font-ttf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-gameboy-rom.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-genesis-rom.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-glade.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-gnucash.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-gnumeric.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-gtktalog.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-gzip.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-ipod-firmware.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-jar.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-killustrator.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-kpresenter.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-kspread.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-kword.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-lha.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-lhz.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-mrproject.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-msx-rom.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-n64-rom.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-nes-rom.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-object.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-perl.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-php.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-python-bytecode.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-python.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-qw.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-rar.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-reject.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-rpm.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-ruby.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-sharedlib.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-shellscript.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-shockwave-flash.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-sms-rom.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-sql.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-stuffit.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-tar.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-tex.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-trash.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-x-x509-ca-cert.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application-zip.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-application.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-ac3.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-basic.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-midi.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-aiff.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-it.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-midi.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-mod.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-mp3.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-s3m.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-stm.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-ulaw.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-voc.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-wav.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-xi.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio-x-xm.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-audio.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-bmp.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-gif.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-jpeg.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-png.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-svg+xml.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-svg.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-tiff.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-wmf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-x-3ds.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-x-applix-graphic.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-x-cmu-raster.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-x-lwo.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-x-lws.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image-x-xcf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-image.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-css.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-html.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-authors.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-c++src.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-c-header.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-c.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-chdr.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-copying.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-credits.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-csh.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-csharp.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-csrc.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-haskell.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-install.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-java.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-literate-haskell.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-lyx.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-makefile.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-objcsrc.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-patch.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-readme.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-scheme.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-sql.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-tex.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-troff-man.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-txt.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-vcalendar.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-vcard.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-x-zsh.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text-xml.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-text.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-video-mpeg.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-video-quicktime.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-video-x-ms-asf.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-video-x-ms-wmv.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-video-x-msvideo.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-video.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-x-directory-nfs-server.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-x-directory-smb-server.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-x-directory-smb-share.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-x-directory-smb-workgroup.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-mime-x-font-afm.png"
+manual_merge "true"
+
+        file "mimetypes/gnome-package.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-database.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-drawing-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-drawing.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-formula.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-master-document.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-database.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-drawing-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-drawing.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-formula.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-master-document.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-presentation-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-presentation.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-spreadsheet-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-spreadsheet.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-text-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-text.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-oasis-web-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-presentation-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-presentation.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-spreadsheet-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-spreadsheet.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-text-template.png"
+manual_merge "true"
+
+        file "mimetypes/openofficeorg-19-text.png"
+manual_merge "true"
+
+        file "rss_feed.gif"
+manual_merge "true"
+
+   file "tests/automate.py"
+execute "true"

@@ -1,0 +1,9 @@
+userpass "username" "password"
+hostname "hostname"
+serverdir "/home/timothy/experiment"
+dbstring "dbname=testdb"
+admin "127.0.0.5:12345"
+
+hostkey "foo@bar.com"
+monotone "/home/timothy/bin/monotone"
+comment "parsing is somewhat broken, keep this line at the end"

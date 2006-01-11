@@ -1,0 +1,65 @@
+<%
+
+import mimetypes
+import datetime
+import monotone
+import common
+import config
+import urllib
+import pipes
+import time
+import os
+from enscriptlangs import enscript_langs
+from html import get_icon, TableWriter
+from utility import run_command
+from common import colourise_code
+
+# file.psp ; provide information about a file
+# if possible, display it (with syntax highlighting, etc.)
+# provide a download link
+
+psp.set_error_page("error.psp")
+
+if not form.has_key('id1') and not form.has_key('id2'):
+    raise Exception("Revision IDs not specified.")
+
+id1, id2 = form['id1'], form['id2']
+if not monotone.is_valid_id(id1) or not monotone.is_valid_id(id2):
+    raise Exception("Specified revision IDs are not valid.")
+
+# should support diffing more than one file eventually
+fname = form.get('fname', None)
+if fname != None:
+    title = 'of file %s ' % hq(fname)
+    files = [fname]
+else:
+    title = ''
+    files = []
+
+title = 'Diff %sbetween revisions [%s..] and [%s..]' % (title, hq(id1[:8]), hq(id2[:8]))
+
+info = { 'title' : title }
+req.write(template.header(info))
+
+if fname != None:
+    file_str = 'of file ' + link("file", [id2, fname], fname) + ' '
+else:
+    file_str = ''
+req.write('<p>The unified diff %sbetween revisions %s and %s is displayed below.</p>' % (file_str, 
+											 link("revision", id1), 
+											 link("revision", id2)))
+
+if fname != None:
+    req.write('<p>You might wish to view the %s between these revisions, without the restriction to this particular file.</p>' % link('diff', [id1, id2], 'diff'))
+
+req.write('<p>You can also %s this diff verbatim.</p>' % link("download_diff", [id1, id2, fname], "download"))
+
+### FIXME FIXME
+### this means having _the entire file_ in memory
+### which is pointless and dumb.
+contents = mt.diff(id1, id2, files)
+colourise_code(req, hq, 'a.diff', contents, filter='diffu')
+
+req.write(template.footer(info))
+
+%>

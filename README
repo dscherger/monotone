@@ -1,0 +1,30 @@
+make symlinks
+	Set up a couple of symlinks
+make usher
+	Modified usher that uses the project database for a server list,
+	and uses the same config file as the web interface.
+
+skel/		Some useful files
+
+www/		Make this accessible to your webserver
+www/viewmtn/	viewmtn install, modified slightly
+
+projects/*/	Project-specific (internal)
+www/projects/*/	Project-specific (web-available)
+graphs/		viewmtn graph cache
+		These three need to be +rw for the webserver.
+		Also, the webserver needs to be able to symlink from
+		www/projects/ to www/{project.php,admin.php,viewmtn/}.
+		This probably means that those have to be owned by the
+		webserver, since apache likes to only follow symlinks
+		that are owned by the same user as the target file.
+
+hostconfig	config file
+common.php	$conffile must point to the hostconfig file
+
+Make sure all dns addresses *.<hostname> map to an address that the
+usher is listening on.
+
+usher hostconfig
+	There's a modified usher that uses the same config file and
+	takes the server list from a database

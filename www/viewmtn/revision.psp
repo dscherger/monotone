@@ -1,0 +1,172 @@
+<%
+
+import config
+import monotone
+import datetime
+import common
+import urllib
+from common import parse_timecert, ago_string, get_branch_links
+
+# 
+# revision.psp
+# display all information we can about a particular revision
+#
+
+def prettify(s):
+    return '&nbsp;'.join(map(lambda x: hq(x[0].upper() + x[1:]), s.replace("_", " ").split(" ")))
+
+psp.set_error_page("error.psp")
+
+if not form.has_key('id'):
+    raise Exception("No revision ID specified.")
+id = form['id']
+if not monotone.is_valid_id(id):
+    raise Exception("Specified revision ID is not valid.")
+
+# read certificates
+certs = mt.certs(id)
+branches, cert_table = [], ""
+for cert in certs:
+    name, value = None, None
+    for k, v in cert:
+        if k == "name": name = v
+        elif k == "value": value = v
+    if name == None or value == None: continue
+    if name == "date":
+	event = parse_timecert(value)
+	now = datetime.datetime.utcnow()
+	ago = ago_string(event, now)
+	value += '\n' + ago + ' ago'
+    if name == "branch":
+        branches.append(value)
+        value = link("branch", value)
+    else:
+        value = '<br />'.join(map(hq, value.split('\n')))
+    cert_table += '<tr><th valign="top">%s</th><td valign="top">%s</td></tr>' % (prettify(name), value)
+
+certs = mt.certs(id)
+branches = common.extract_cert_from_certs(certs, "branch", as_list=True)
+branch_links = get_branch_links(mt, branches)
+
+info = {
+    'title' : "Revision '%s' for %s" % (link("revision", id),
+					branch_links),
+    'branch_rss' : branches
+    }
+req.write(template.header(info))
+
+# generate the revision graph
+ancestry_limit = 10
+ancestry_maximum = 100
+try:
+    if form.has_key('ancestry_limit'):
+        ancestry_limit = int(form['ancestry_limit'])
+except: pass
+if ancestry_limit == 0 or ancestry_limit > ancestry_maximum:
+    ancestry_limit = ancestry_maximum
+
+ancestry_graph = mt.ancestry_graph(config.graphopts, id, ancestry_limit)
+if os.access(ancestry_graph['imagemap_file'], os.R_OK):
+    req.write(open(ancestry_graph['imagemap_file']).read())
+else:
+    req.write('<div style="color:red;"><strong>Unable to access ancestry graph; perhaps graphviz could not be found?</div>')
+
+revision = mt.revision(id)
+
+%>
+
+<div style="float: left; margin-right: 2em; margin-bottom: 2em;">
+
+<%
+if not revision.has_key('new_manifest'):
+%>
+<p>Note: no manifest is associated with this revision and hence it contains no files.</p>
+<%
+else:
+    req.write('''<p>You might wish to %s.</p>''' % (link("manifest", id, "browse this revision's contents")))
+
+%>
+
+<h2>Certificates</h2>
+
+<table class="pretty">
+<%= cert_table %>
+</table>
+
+<h2>Revision details</h2>
+
+<table class="pretty">
+<%
+old_revisions = []
+for type in revision.keys():
+    value = ""
+    for stanza in revision[type]:
+        if type == "patch":
+            fname, from_id, to_id = stanza[1], stanza[3], stanza[5]
+	    # if from_id == None, then this is a new file; we're showing 
+	    # that information under "Add file" anyway.
+	    if from_id:
+		diff_links = ','.join([link("diff", [t, id, fname]) for t in old_revisions])
+		value += 'Patch file %s (%s) <br />' % \
+		    (link("file", [id, fname], fname),
+		     diff_links)
+        elif type == "old_revision":
+            old_revision, old_manifest = stanza[1], stanza[3]
+	    old_revisions.append(old_revision)
+            value += 'Old revision is: %s (%s)<br />' % \
+		(link("revision", old_revision), 
+		 link("diff", [old_revision, id]))
+        elif type == "new_manifest":
+            # swallow this, it's not useful
+            pass 
+	    # new_manifest = stanza[1]
+            # value += 'New manifest is: %s<br />' % (link("manifest", id))
+        elif type == "add_file":
+            fname = stanza[1]
+            value += "Add file: %s <br />" % (link("file", [id, fname], fname))
+        elif type == "delete_file":
+            fname = stanza[1]
+            value += "Delete file: %s <br />" % (link("file", [id, fname], fname))
+        elif type == "delete_dir":
+            fname = stanza[1]
+            value += "Delete directory: %s <br />" % (link("file", [id, fname], fname))
+        elif type == "rename_file":
+            old_name, new_name = stanza[1], stanza[3]
+            value += "Rename file %s as %s<br />" % (hq(old_name), link("file", [id, new_name], new_name))
+        elif type == "rename_dir":
+            old_name, new_name = stanza[1], stanza[3]
+            value += "Rename directory %s as %s<br />" % (hq(old_name), hq(new_name))
+    if value:
+	req.write('<tr><th valign="top">%s</th><td valign="top">%s</td></tr>' % (prettify(type), value))
+
+%>
+</table>
+</div>
+
+<div align="center" style="float: left; margin: 0; margin-bottom: 1em; border-width: 1px; border-color: black; border-style: solid;">
+
+<img style="border: none;" usemap="#ancestry" src="<%= ancestry_graph['image_uri'] %>" alt="Ancestry of <%= hq(id) %>" /><br />
+<%
+increment = 5
+zoom_out = ancestry_limit + increment
+zoom_in = ancestry_limit - increment
+if zoom_in <= 0: zoom_in = 1
+%>
+
+<small>
+<strong>ancestry:</strong> last <%=ancestry_limit%> log entries (
+<a href="<%="revision.psp?id=%s&amp;ancestry_limit=%d" % (urllib.quote(id), zoom_in)%>">fewer</a>, 
+<a href="<%="revision.psp?id=%s&amp;ancestry_limit=%d" % (urllib.quote(id), zoom_out)%>">more</a>, or 
+<a href="<%="revision.psp?id=%s&amp;ancestry_limit=0" % (urllib.quote(id))%>">all</a>)
+</small>
+
+</div>
+
+</div>
+
+<%
+
+req.write(template.footer(info))
+
+%>
+

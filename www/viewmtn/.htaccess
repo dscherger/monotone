@@ -1,0 +1,7 @@
+AddHandler mod_python .psp
+Options FollowSymLinks
+PythonHandler wrapper
+PythonInterpPerDirectory on
+AddHandler mod_python .py
+DirectoryIndex index.psp
+PythonAutoReload On

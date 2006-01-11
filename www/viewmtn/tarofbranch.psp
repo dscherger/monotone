@@ -1,0 +1,47 @@
+<%
+
+import urllib
+
+psp.set_error_page("error.psp")
+
+if not form.has_key('branch'):
+    raise Exception("No branch specified.")
+branch = form['branch']
+
+# tarofbranch.psp
+#
+# allow a tar file to be retrieved of the latest 
+# HEAD of a branch. If there are multiple heads, 
+# present a choice.
+
+heads = mt.heads(branch)
+if len(heads) == 0:
+    raise Exception("No head ID can be determined for this branch.")
+elif len(heads) == 1:
+    revision = mt.revision(heads[0])
+    manifest_id = revision['new_manifest'][0][1]
+    psp.redirect("gettar.py?id=%s" % (urllib.quote(manifest_id)))
+else:
+    info = {'title' : "Latest tar file of branch %s" % (hq(branch))}
+    req.write(template.header(info))
+%>
+<p>
+The branch you have selected has multiple head revisions The head
+revisions are listed below, along with links to download a tar file of
+each revision.
+</p>
+
+<table class="pretty">
+<tr><th>Head revision</th><th>Tar file</th></tr>
+<%
+    for id in heads:
+        revision = mt.revision(id)
+        manifest_id = revision['new_manifest'][0][1]
+        req.write('<tr><td>%s</td><td>%s</td></tr>' % (link("revision", id), link("tar", manifest_id, "download tar archive")))
+
+%>
+</table>
+
+<%
+req.write(template.footer(info))
+%>

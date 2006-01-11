@@ -1,0 +1,66 @@
+<%
+
+from authors import authors
+
+psp.set_error_page("error.psp")
+info = { 'title' : "About" }
+req.write(template.header(info))
+
+%>
+
+<h2>Authors and Contributers</h2>
+
+<pre>
+<%= hq (authors.strip()) %>
+</pre>
+
+<h2>Licensing</h2>
+
+<pre>
+<%
+req.write('''\
+Copyright (C) 2005  Grahame Bowland
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA''')
+%>
+</pre>
+
+<h2>Dependencies</h2>
+
+<p>
+ViewMTN is written in <a href="http://www.python.org/">Python</a> and 
+runs under <a href="http://www.modpython.org/">mod_python</a>.
+</p>
+
+<p>
+Code highlighting via 
+<a href="http://www.gnu.org/software/enscript/enscript.html">GNU Enscript</a>.
+</p>
+
+<p>
+Graphing via <a href="http://www.research.att.com/sw/tools/graphviz/">GraphViz</a>.
+</p>
+
+<p>
+Graph colour generation algorithm from monotone-viz with modifications from Matt Johnston.
+</p>
+
+<p>
+AJAX funtionality uses the <a href="http://www.mochikit.com/">MochiKit</a> Javascript library.
+</p>
+
+<%
+req.write(template.footer(info))
+%>

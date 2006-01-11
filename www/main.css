@@ -1,0 +1,55 @@
+
+body {
+	background-color: #fff;
+}
+#header {
+	background-color: #ddd;
+	height: 140px;
+	position: absolute; top: 5px; left: 5px; right: 5px;
+}
+#leftbar {
+	width: 225px;
+	position: absolute; left: 5px; top: 150px;
+	border-width: 1px; border-style: solid; border-color: gold;
+	padding: 2px; background-color: #eee;
+}
+#main {
+	position: absolute; left: 250px; top: 150px;
+	padding: 2px;
+}
+hr {width: 90%;}
+#login {}
+#status {background-color: #ccf;}
+.record {background-color: #ccc;
+  border-width: 1px; border-color: #ff6; border-style: solid;
+  margin: 5px; padding: 5px;}
+.jslink {cursor: pointer; color: blue; text-decoration: underline;}
+
+#page {
+	background-color: #ccc;
+	padding: .5em;
+}
+
+#maintainerlist tbody tr:hover {
+	background-color: #ddf;
+}
+
+#pages {
+	background-color: #fff;
+	margin: 0px;
+}
+#pages li {
+	display: inline;
+	list-style: none;
+	padding: 0px 1em;
+	margin: 0px;
+	background-color: #999;
+}
+#pages li:hover {
+	background-color: #bbb;
+}
+#pages li a {
+}
+#pages li.selpage {
+	background-color: #ccc;
+}
