@@ -147,7 +147,7 @@ struct cvs_repository::get_all_files_log_cb : rlog_callbacks
 { cvs_repository &repo;
   get_all_files_log_cb(cvs_repository &r) : repo(r) {}
   virtual void file(const std::string &file,const std::string &head_rev) const
-  { L(F("get_all_files_log_cb %s") % file);
+  { L(FL("get_all_files_log_cb %s") % file);
     repo.files[file]; 
   }
   virtual void tag(const std::string &file,const std::string &tag, 
@@ -326,7 +326,7 @@ void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string
 void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
         const std::string &revision,const std::string &_author,
         const std::string &dead,const std::string &_message) const
-{ L(F("prime_log_cb %s:%s %s %s %d %s\n") % file % revision % time_t2human(checkin_time)
+{ L(FL("prime_log_cb %s:%s %s %s %d %s\n") % file % revision % time_t2human(checkin_time)
         % _author % _message.size() % dead);
   std::string author=_author;
   std::string message=_message;
@@ -418,26 +418,26 @@ build_change_set(const cvs_client &c, manifest_map const& oldm, cvs_manifest &ne
   cs = change_set();
   cvs_manifest cvs_delta;
 
-  L(F("build_change_set(%d,%d,)\n") % oldm.size() % newm.size());
+  L(FL("build_change_set(%d,%d,)\n") % oldm.size() % newm.size());
   
   for (manifest_map::const_iterator f = oldm.begin(); f != oldm.end(); ++f)
     {
       cvs_manifest::const_iterator fn = newm.find(f->first.as_internal());
       if (fn==newm.end())
       {  
-        L(F("deleting file '%s'\n") % f->first);
+        L(FL("deleting file '%s'\n") % f->first);
         cs.delete_file(f->first);
         cvs_delta[f->first.as_internal()]=remove_state;
       }
       else 
         { if (f->second == fn->second->sha1sum)
             {
-//              L(F("skipping preserved entry state '%s' on '%s'\n")
+//              L(FL("skipping preserved entry state '%s' on '%s'\n")
 //                % fn->second->sha1sum % fn->first);         
             }
           else
             {
-              L(F("applying state delta on '%s' : '%s' -> '%s'\n") 
+              L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % fn->first % f->second % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
               cs.apply_delta(file_path_internal(fn->first), f->second, fn->second->sha1sum);
@@ -450,7 +450,7 @@ build_change_set(const cvs_client &c, manifest_map const& oldm, cvs_manifest &ne
       manifest_map::const_iterator fo = oldm.find(file_path_internal(f->first));
       if (fo==oldm.end())
       {  
-        L(F("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
+        L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum().empty());
         cs.add_file(file_path_internal(f->first), f->second->sha1sum);
         cvs_delta[f->first]=f->second;
@@ -503,7 +503,7 @@ void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
     I(i->author==j->author);
     I(i->changelog==j->changelog);
     I(i->time2<j->time); // should be non overlapping ...
-    L(F("joining %s-%s+%s\n") % time_t2human(i->time) % time_t2human(i->time2) % time_t2human(j->time));
+    L(FL("joining %s-%s+%s\n") % time_t2human(i->time) % time_t2human(i->time2) % time_t2human(j->time));
     i->time2=j->time;
     edges.erase(j);
   }
@@ -590,7 +590,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
   }
   else if (s2->dead) // short circuit if we already know it's dead
-  { L(F("file %s: revision %s already known to be dead\n") % file % s2->cvs_version);
+  { L(FL("file %s: revision %s already known to be dead\n") % file % s2->cvs_version);
   }
   else
   { cvs_client::update u=Update(file,s->cvs_version,s2->cvs_version,s->keyword_substitution);
@@ -670,7 +670,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
       if (f->second.known_states.empty()) continue; 
       if (!(*(f->second.known_states.begin()) <= (*e)))
       // the file does not exist yet (first is not below/equal current edge)
-      { L(F("%s before beginning %s/%s+%d\n") % f->first 
+      { L(FL("%s before beginning %s/%s+%d\n") % f->first 
             % time_t2human(f->second.known_states.begin()->since_when)
             % time_t2human(e->time) % (e->time2-e->time));
         continue; 
@@ -685,7 +685,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
              && (*s2)<=(*e)
              && ( next_edge==edges.end() || ((*s2)<(*next_edge)) );
              ++s2)
-        { L(F("%s matches %s/%s+%d\n") % f->first 
+        { L(FL("%s matches %s/%s+%d\n") % f->first 
             % time_t2human(s2->since_when)
             % time_t2human(e->time) % (e->time2-e->time));
           s=s2;
@@ -728,13 +728,13 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   unsigned cm_delta_depth=0;
   
   cvs_edges_ticker.reset(0);
-  L(F("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision());
+  L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision());
   revision_ticker.reset(new ticker("revisions", "R", 3));
 //  const cvs_manifest *oldmanifestp=&empty;
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
     --before;
-    L(F("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
+    L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
     I(!before->revision().empty());
     parent_rid=before->revision;
     app.db.get_revision_manifest(parent_rid,parent_mid);
@@ -747,7 +747,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   { boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
-    L(F("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
+    L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
     if (build_change_set(*this,parent_map,e->xfiles,*cs,remove_state,cm_delta_depth))
     { e->delta_base=parent_rid;
       e->cm_delta_depth=cm_delta_depth+1;
@@ -777,11 +777,11 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     rev.edges.insert(std::make_pair(parent_rid, make_pair(parent_mid, cs)));
     revision_id child_rid;
     calculate_ident(rev, child_rid);
-    L(F("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % child_mid);
+    L(FL("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % child_mid);
 
     if (app.db.manifest_version_exists(child_mid))
     {
-        L(F("existing path to %s found, skipping\n") % child_mid);
+        L(FL("existing path to %s found, skipping\n") % child_mid);
     }
     else if (parent_mid.inner()().empty())
     {
@@ -977,7 +977,7 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
   { cert_value value;
     decode_base64(c->inner().value, value);   
     if (c->inner().name()==date_cert_name)
-    { L(F("date cert %s\n")%value());
+    { L(FL("date cert %s\n")%value());
       time=time2=cvs_repository::posix2time_t(value());
     }
     else if (c->inner().name()==author_cert_name)
@@ -993,7 +993,7 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
 std::set<cvs_edge>::iterator cvs_repository::commit(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
 { // check that it's the last one
-  L(F("commit %s -> %s\n") % parent->revision % rid);
+  L(FL("commit %s -> %s\n") % parent->revision % rid);
   { std::set<cvs_edge>::iterator test=parent;
     ++test;
     I(test==edges.end());
@@ -1010,7 +1010,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
        j != rs.edges.end();
        ++j)
   { if (!(edge_old_revision(j) == parent->revision)) 
-    { L(F("%s != %s\n") % edge_old_revision(j) % parent->revision);
+    { L(FL("%s != %s\n") % edge_old_revision(j) % parent->revision);
       continue;
     }
     const change_set &cs=edge_changes(j);
@@ -1030,7 +1030,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
       commits.push_back(a);
-      L(F("delete %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
+      L(FL("delete %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
     }
 
     for (std::map<file_path,file_path>::const_iterator i
@@ -1044,7 +1044,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
       commits.push_back(a);
-      L(F("rename from %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
+      L(FL("rename from %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
       
       a=commit_arg(); // add
       a.file=i->second.as_internal();
@@ -1053,7 +1053,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       app.db.get_file_version(old->second->sha1sum,dat);
       a.new_content=dat.inner()();
       commits.push_back(a);
-      L(F("rename to %s %d\n") % a.file % a.new_content.size());
+      L(FL("rename to %s %d\n") % a.file % a.new_content.size());
     }
     
     // added files also have a delta, so we can ignore this list
@@ -1072,7 +1072,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       app.db.get_file_version(i->second.second,dat);
       a.new_content=dat.inner()();
       commits.push_back(a);
-      L(F("delta %s %s %s %d\n") % a.file % a.old_revision % a.keyword_substitution
+      L(FL("delta %s %s %s %d\n") % a.file % a.old_revision % a.keyword_substitution
           % a.new_content.size());
     }
 
@@ -1125,7 +1125,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       e.cm_delta_depth=++cm_delta_depth;
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
-    if (global_sanity.debug) L(F("%s") % debug());
+    if (global_sanity.debug) L(FL("%s") % debug());
     fail=false;
     return --(edges.end());
   }
@@ -1185,7 +1185,7 @@ void cvs_repository::commit()
   { const cvs_edge &now=*now_iter;
     I(!now.revision().empty());
     
-    L(F("looking for children of revision %s\n") % now.revision);
+    L(FL("looking for children of revision %s\n") % now.revision);
     std::set<revision_id> children;
     app.db.get_revision_children(now.revision, children);
     
@@ -1262,9 +1262,9 @@ static void guess_repository(std::string &repository, std::string &module,
       { try
         { cvs_repository::parse_cvs_cert_header(*ci,repository,module,branch);
           if (branch.empty())
-            L(F("using module '%s' in repository '%s'\n") % module % repository);
+            L(FL("using module '%s' in repository '%s'\n") % module % repository);
           else
-            L(F("using branch '%s' of module '%s' in repository '%s'\n") 
+            L(FL("using branch '%s' of module '%s' in repository '%s'\n") 
                 % branch % module % repository);
           goto break_outer;
         }
@@ -1430,7 +1430,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       piece::reset();
       revision_lookup[e.revision]=edges.insert(e).first;
     }
-    else L(F("cvs cert %s ignored (!=%s)") % cvs_revisions % needed_cert);
+    else L(FL("cvs cert %s ignored (!=%s)") % cvs_revisions % needed_cert);
   }
   // because some manifests might have been absolute (not delta encoded)
   // we possibly did not notice removes. check for them
@@ -1451,7 +1451,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
             fs.log_msg=i->changelog;
             fs.author=i->author;
             fs.dead=true;
-            L(F("file %s gets removed at %s\n") % j->first % i->revision());
+            L(FL("file %s gets removed at %s\n") % j->first % i->revision());
             remember(files[j->first].known_states,fs,j->first);
           }
         }
@@ -1464,7 +1464,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       }
     last=i;
   }
-  if (global_sanity.debug) L(F("%s") % debug());
+  if (global_sanity.debug) L(FL("%s") % debug());
 }
 
 struct cvs_repository::update_cb : cvs_client::update_callbacks
@@ -1573,7 +1573,7 @@ void cvs_repository::update()
   {
     join_edge_parts(dummy_iter);
     fill_manifests(dummy_iter);
-    if (global_sanity.debug) L(F("%s") % debug());
+    if (global_sanity.debug) L(FL("%s") % debug());
     commit_revisions(dummy_iter);
   }
   
@@ -1581,7 +1581,7 @@ void cvs_repository::update()
 }
 
 static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
-{ L(F("apply_manifest_delta: base %d delta %d\n") % base.size() % delta.size());
+{ L(FL("apply_manifest_delta: base %d delta %d\n") % base.size() % delta.size());
   for (cvs_manifest::const_iterator i=delta.begin(); i!=delta.end(); ++i)
   { if (i->second->dead)
     { cvs_manifest::iterator to_remove=base.find(i->first);
@@ -1591,18 +1591,18 @@ static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
     else
       base[i->first]=i->second;
   }
-  L(F("apply_manifest_delta: result %d\n") % base.size());
+  L(FL("apply_manifest_delta: result %d\n") % base.size());
 }
 
 const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
-{ L(F("get_files(%s %s) %s %d\n") % time_t2human(e.time) % e.revision % e.delta_base % e.xfiles.size());
+{ L(FL("get_files(%s %s) %s %d\n") % time_t2human(e.time) % e.revision % e.delta_base % e.xfiles.size());
   if (!e.delta_base.inner()().empty())
   { cvs_manifest calculated_manifest;
     // this is non-recursive by reason ...
     const cvs_edge *current=&e;
     std::vector<const cvs_edge *> deltas;
     while (!current->delta_base.inner()().empty())
-    { L(F("get_files: looking for base rev %s\n") % current->delta_base);
+    { L(FL("get_files: looking for base rev %s\n") % current->delta_base);
       ++e.cm_delta_depth;
       deltas.push_back(current);
       std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
@@ -1698,7 +1698,7 @@ void cvs_repository::takeover_dir(const std::string &path)
   std::ifstream cvs_Entries((path+"CVS/Entries").c_str());
   N(cvs_Entries.good(),
       F("can't open %s\n") % (path+"CVS/Entries"));
-  L(F("takeover_dir %s\n") % path);
+  L(FL("takeover_dir %s\n") % path);
   static hexenc<id> empty_file;
   while (true)
   { std::string line;
@@ -1740,7 +1740,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         { struct stat sbuf;
           I(!stat(filename.c_str(), &sbuf));
           if (sbuf.st_mtime!=modtime)
-          { L(F("modified %s %u %u\n") % filename % modtime % sbuf.st_mtime);
+          { L(FL("modified %s %u %u\n") % filename % modtime % sbuf.st_mtime);
             fs.log_msg="partially overwritten content from last update";
             store_contents(std::string(), fs.sha1sum);
             f->second.known_states.insert(fs);

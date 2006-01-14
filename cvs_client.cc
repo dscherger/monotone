@@ -16,7 +16,7 @@
 #include "stringtok.hh"
 
 void cvs_client::writestr(const std::string &s, bool flush)
-{ if (s.size()) L(F("writestr(%s") % s); // s mostly contains the \n char
+{ if (s.size()) L(FL("writestr(%s") % s); // s mostly contains the \n char
   if (!gzip_level)
   { if (s.size() && byte_out_ticker.get())
       (*byte_out_ticker)+=stream->write(s.c_str(),s.size());
@@ -55,7 +55,7 @@ std::string cvs_client::readline()
     else
     { result+=inputbuffer.substr(0,eol);
       inputbuffer.erase(0,eol+1);
-      L(F("readline result '%s'\n") % result);
+      L(FL("readline result '%s'\n") % result);
       return result;
     }
   }
@@ -207,7 +207,7 @@ std::string cvs_client::localhost_name()
     F("getdomainname %s\n") % strerror(errno));
   domainname[sizeof(domainname)-1]=0;
 #endif
-  L(F("localhost's name %s\n") % domainname);
+  L(FL("localhost's name %s\n") % domainname);
   return domainname;
 }
 
@@ -262,10 +262,10 @@ void cvs_client::connect()
       args.push_back("cvs server");
     }
     if (host.empty()) host=local_name;
-    L(F("spawning pipe to '%s' ") % cmd);
+    L(FL("spawning pipe to '%s' ") % cmd);
     for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
-      L(F("'%s' ") % *i);
-    L(F("\n"));
+      L(FL("'%s' ") % *i);
+    L(FL("\n"));
     stream=boost::shared_ptr<Netxx::StreamBase>(new Netxx::PipeStream(cmd,args));
   }
   
@@ -503,7 +503,7 @@ static time_t timezone2time_t(const struct tm &tm, int offset_min)
   tzset();
 #endif
 #endif
-//  L(F("result %ld\n") % result);
+//  L(FL("result %ld\n") % result);
   return result;
 }
 
@@ -543,7 +543,7 @@ static time_t rls_l2time_t(const std::string &t)
   tm.tm_min=boost::lexical_cast<int>(t.substr(14,2).c_str());
   tm.tm_sec=boost::lexical_cast<int>(t.substr(17,2).c_str());
   int dst_offs=boost::lexical_cast<int>(t.substr(20,5).c_str());
-//  L(F("%d-%d-%d %d:%02d:%02d %04d") % tm.tm_year % tm.tm_mon % tm.tm_mday 
+//  L(FL("%d-%d-%d %d:%02d:%02d %04d") % tm.tm_year % tm.tm_mon % tm.tm_mday 
 //    % tm.tm_hour % tm.tm_min % tm.tm_sec % dst_offs );
   tm.tm_isdst=0;
   return timezone2time_t(tm,dst_offs);
@@ -666,7 +666,7 @@ void cvs_client::RList(const rlist_callbacks &cb,bool dummy,...)
   enum { st_dir, st_file } state=st_dir;
   std::string directory;
   while (fetch_result(lresult))
-  { L(F("result %s\n") % combine_result(lresult));
+  { L(FL("result %s\n") % combine_result(lresult));
     switch(state)
     { case st_dir:
       { std::string result=combine_result(lresult);
@@ -807,7 +807,7 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
   time_t checkin_time=0;
   while (fetch_result(lresult))
   {reswitch:
-    L(F("state %d\n") % int(state));
+    L(FL("state %d\n") % int(state));
     I(!lresult.empty());
     MM(lresult[0].first);
     MM(lresult[0].second);
@@ -848,7 +848,7 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
       { std::string result=combine_result(lresult);
         I(!result.empty());
         if (result[0]!='\t') 
-        { L(F("result[0] %d %d\n") % result.size() % int(result[0])); state=st_head; goto reswitch; }
+        { L(FL("result[0] %d %d\n") % result.size() % int(result[0])); state=st_head; goto reswitch; }
         I(result.find_first_not_of("\t ")==1);
         std::string::size_type colon=result.find(':');
         I(colon!=std::string::npos);
@@ -959,7 +959,7 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
         usemodule.erase(usemodule.size()-1,1);
       usemodule=basename(usemodule);
       file.erase(0,i->first.size());
-      L(F("usemodule %s @%s %s /%s\n") % _file % i->first % usemodule % file);
+      L(FL("usemodule %s @%s %s /%s\n") % _file % i->first % usemodule % file);
     }
   }
   SendCommand("co",/*"-N","-P",*/"-r",revision.c_str(),"--",(usemodule+"/"+file).c_str(),(void*)0);
@@ -1005,7 +1005,7 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
             parse_entry(lresult[3].second,new_revision,result.keyword_substitution);
             result.mode=lresult[4].second;
             result.contents=lresult[6].second;
-            L(F("file %s revision %s: %d bytes\n") % file 
+            L(FL("file %s revision %s: %d bytes\n") % file 
                 % revision % lresult[6].second.size());
           }
           else if (lresult[0].second=="Template")
@@ -1014,7 +1014,7 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
             long len = boost::lexical_cast<long>(lresult[3].second.c_str());
             I(len >= 0);
             I(lresult[4].second.size() == (size_t) len);
-            L(F("found commit template %s:\n%s") % lresult[2].second % lresult[4].second);
+            L(FL("found commit template %s:\n%s") % lresult[2].second % lresult[4].second);
             // FIX actually do something with the template?
             result.committemplate = lresult[4].second;
           }
@@ -1392,7 +1392,7 @@ std::map<std::string,std::pair<std::string,std::string> >
     }
     else if (lresult[0].second[0]=='/')
     // /cvsroot/test/F,v  <--  F
-    { L(F("%s\n") % lresult[0].second);
+    { L(FL("%s\n") % lresult[0].second);
     }
     else if (begins_with(lresult[0].second,"new revision:",len)
         || begins_with(lresult[0].second,"initial revision:",len)
@@ -1400,7 +1400,7 @@ std::map<std::string,std::pair<std::string,std::string> >
         || begins_with(lresult[0].second,"done",len)
         || begins_with(lresult[0].second,"Removing ",len)
         || begins_with(lresult[0].second,"Checking in ",len))
-    { L(F("%s\n") % lresult[0].second);
+    { L(FL("%s\n") % lresult[0].second);
     }
     else 
     { W(F("Commit: unrecognized response %s\n") % lresult[0].second);
@@ -1451,7 +1451,7 @@ std::map<std::string,std::string> cvs_client::RequestServerDir()
         || lresult[0].second=="Set-static-directory"
         || lresult[0].second=="Template") continue;
     if (lresult[0].second!="Clear-static-directory")
-      L(F("cvs_client::RequestServerDir lresult[0].second is '%s', not 'Clear-static-directory'") % lresult[0].second);
+      L(FL("cvs_client::RequestServerDir lresult[0].second is '%s', not 'Clear-static-directory'") % lresult[0].second);
     I(lresult[0].second=="Clear-static-directory");
     I(lresult.size()==3);
     if (!last_rcs.empty() && begins_with(lresult[2].second,last_rcs)
@@ -1481,5 +1481,5 @@ void cvs_client::primeModules()
   server_dir=RequestServerDir();
   for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();
       i!=server_dir.end();++i)
-    L(F("server dir %s -> %s") % i->first % i->second);
+    L(FL("server dir %s -> %s") % i->first % i->second);
 }
