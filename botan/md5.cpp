@@ -4,8 +4,53 @@
 *************************************************/
 
 #include <botan/md5.h>
+#include <botan/bit_ops.h>
 
 namespace Botan {
+
+namespace {
+
+/*************************************************
+* MD5 FF Function                                *
+*************************************************/
+inline void FF(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
+               byte S, u32bit magic)
+   {
+   A += (D ^ (B & (C ^ D))) + msg + magic;
+   A  = rotate_left(A, S) + B;
+   }
+
+/*************************************************
+* MD5 GG Function                                *
+*************************************************/
+inline void GG(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
+               byte S, u32bit magic)
+   {
+   A += (C ^ (D & (B ^ C))) + msg + magic;
+   A  = rotate_left(A, S) + B;
+   }
+
+/*************************************************
+* MD5 HH Function                                *
+*************************************************/
+inline void HH(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
+               byte S, u32bit magic)
+   {
+   A += (B ^ C ^ D) + msg + magic;
+   A  = rotate_left(A, S) + B;
+   }
+
+/*************************************************
+* MD5 II Function                                *
+*************************************************/
+inline void II(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
+               byte S, u32bit magic)
+   {
+   A += (C ^ (B | ~D)) + msg + magic;
+   A  = rotate_left(A, S) + B;
+   }
+
+}
 
 /*************************************************
 * MD5 Compression Function                       *
@@ -63,46 +108,6 @@ void MD5::copy_out(byte output[])
    {
    for(u32bit j = 0; j != OUTPUT_LENGTH; j++)
       output[j] = get_byte(3 - (j % 4), digest[j/4]);
-   }
-
-/*************************************************
-* MD5 FF Function                                *
-*************************************************/
-void MD5::FF(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
-             byte S, u32bit magic)
-   {
-   A += (D ^ (B & (C ^ D))) + msg + magic;
-   A  = rotate_left(A, S) + B;
-   }
-
-/*************************************************
-* MD5 GG Function                                *
-*************************************************/
-void MD5::GG(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
-             byte S, u32bit magic)
-   {
-   A += (C ^ (D & (B ^ C))) + msg + magic;
-   A  = rotate_left(A, S) + B;
-   }
-
-/*************************************************
-* MD5 HH Function                                *
-*************************************************/
-void MD5::HH(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
-             byte S, u32bit magic)
-   {
-   A += (B ^ C ^ D) + msg + magic;
-   A  = rotate_left(A, S) + B;
-   }
-
-/*************************************************
-* MD5 II Function                                *
-*************************************************/
-void MD5::II(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
-             byte S, u32bit magic)
-   {
-   A += (C ^ (B | ~D)) + msg + magic;
-   A  = rotate_left(A, S) + B;
    }
 
 /*************************************************
