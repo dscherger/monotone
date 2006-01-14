@@ -1,3 +1,46 @@
+2006-01-14  Richard Levitte  <richard@levitte.org>
+
+	* configure.ac: Make sure there's an empty xgettext.opts
+	when xgettext accepts --flag.  This avoids getting an error
+	message later on when cat can't find it to append to
+	po/Makefile.in.
+
+	* po/LINGUAS, po/sv_SE.po: New Swedish translation.  Needs
+	reviewing at this stage.
+
+2006-01-13  Richard Levitte  <richard@levitte.org>
+
+	* monotone-notify.pl: Make it possible for the user to say what
+	the monotone binary is called or where it is.  Adapt to revision
+	output changes and to changes in the monotone UI.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* po/Makevars (XGETTEXT_OPTIONS): This time for sure!
+
+2006-01-13  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (check_rosterified): Clarify message emitted when db
+	has not been rosterified.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* po/Makevars (XGETTEXT_OPTIONS): More fiddling to make
+	intltool-update happy.
+
+2006-01-13  Bruce Stephans  <monotone@cenderis.demon.co.uk>
+
+	* lua.cc (shared_trust_function_body): Index lua arrays
+	from 1, not 0.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.cc (dump_buffer): Add forgotten newline.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (make_roster_for_merge): Add more MM()'s.
+
 2006-01-12  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* contrib/{color-logs.{conf,sh},monotone.el}: Changes to handle
