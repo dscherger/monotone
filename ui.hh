@@ -33,6 +33,7 @@ struct ticker
   void set_total(size_t tot) { use_total = true; total = tot; }
   void operator++();
   void operator+=(size_t t);
+  void operator--();
   ~ticker();
 };
 
