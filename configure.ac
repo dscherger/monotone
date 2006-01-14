@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT(monotone, 0.24, monotone-devel@nongnu.org)
+AC_INIT(monotone, 0.26pre1, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE(1.7.1)
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_TESTDIR([tests])
@@ -60,16 +60,13 @@ echo 'int main(void) { return 0; }' >> conftest.c
 if ${XGETTEXT} --flag printf:1:c-format -o conftest.po conftest.c \
     >/dev/null 2>&1
 then
-    XGETTEXT_OPTIONS="--keyword=F --keyword=FP:1,2 --keyword=_ --keyword=N_ \
-                      --flag=F:1:c-format --flag=FP:1:c-format \
-                      --flag=FP:2:c-format"
     xgettext_has_flag=yes
+    touch xgettext.opts
 else
-    XGETTEXT_OPTIONS="--keyword=F --keyword=FP:1,2 --keyword=_ --keyword=N_"
+    echo 'XGETTEXT_OPTIONS = $(XGETTEXT_OPTIONS_NO_FLAG)' >xgettext.opts
     xgettext_has_flag=no
 fi
 rm -f conftest.c conftest.po
-echo "XGETTEXT_OPTIONS = ${XGETTEXT_OPTIONS}" >xgettext.opts
 AC_MSG_RESULT(${xgettext_has_flag})
 
 # Checks for idna stuff

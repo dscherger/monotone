@@ -15,7 +15,8 @@
 // Usage: usher [-l address[:port]] [-a address:port] [-p pidfile] <server-file>
 //
 // options:
-// -l   address and port to listen on, defaults to 0.0.0.0:5253
+// -m   the monotone command, defaults to "monotone"
+// -l   address and port to listen on, defaults to 0.0.0.0:4691
 // -a   address and port to listen for admin commands
 // -p   a file (deleted on program exit) to record the pid of the usher in
 // <server-file>   a file that looks like
@@ -24,7 +25,7 @@
 //   server monotone
 //   host localhost
 //   pattern net.venge.monotone
-//   remote 66.96.28.3:5253
+//   remote 66.96.28.3:4691
 //   
 //   server local
 //   host 127.0.0.1
@@ -157,8 +158,9 @@ using std::pair;
 using std::make_pair;
 
 // defaults, overridden by command line
-int listenport = 5253;
+int listenport = 4691;
 string listenaddr = "0.0.0.0";
+string monotone = "monotone";
 
 // keep local servers around for this many seconds after the last
 // client disconnects from them (only accurate to ~10 seconds)
@@ -172,7 +174,7 @@ int const maxaddr[] = {127, 254, 254, 254};
 int currport = 0;
 int curraddr[] = {0, 0, 0, 0};
 
-char const netsync_version = 5;
+char const netsync_version = 6;
 
 string const greeting = " Hello! This is the monotone usher at localhost. What would you like?";
 
@@ -735,7 +737,7 @@ struct server
         if (i > 0 || port == 0)
           find_addr(addr, port);
         vector<string> args;
-        args.push_back("monotone");
+        args.push_back(monotone);
         args.push_back("serve");
         args.push_back("--bind=" + addr + ":" + lexical_cast<string>(port));
         unsigned int n = 0, m = 0;
@@ -882,7 +884,7 @@ string read_server_record(std::istream & in)
       srv->port = lexical_cast<int>(desc.substr(c+1));
     } else {
       srv->addr = desc;
-      srv->port = 5253;
+      srv->port = 4691;
     }
   }
   return name;
@@ -1209,7 +1211,7 @@ struct administrator
         if (cs.auth == true)
           return false;
         cs.auth = true;
-        process(cs);
+        return process(cs);
       }
     } else if (cmd == "STATUS") {
       string srv;
@@ -1286,6 +1288,8 @@ struct administrator
     } else if (cmd == "STARTUP") {
       connections_allowed = true;
       cs.buf = "ok\n";
+    } else {
+      return true;
     }
     cs.rdone = true;
     return true;
@@ -1311,10 +1315,10 @@ struct administrator
     for (list<pair<cstate, sock> >::iterator i = conns.begin();
          i != conns.end(); ++i) {
       int c = i->second;
-      if (i->first.rdone)
-        FD_SET(c, &wr);
-      else
+      if (!i->first.rdone)
         FD_SET(c, &rd);
+      else
+        FD_SET(c, &wr);
       maxfd = max(maxfd, int(c));
     }
   }
@@ -1334,34 +1338,45 @@ struct administrator
         cerr<<"During new admin connection: "<<s.name<<"\n";
       }
     }
+    list<list<pair<cstate, sock> >::iterator> del;
     for (list<pair<cstate, sock> >::iterator i = conns.begin();
          i != conns.end(); ++i) {
       int c = i->second;
-      if (c <= 0)
-        conns.erase(i);
-      else if (FD_ISSET(c, &rd)) {
+      if (c <= 0) {
+//        cerr<<"Bad socket.\n";
+        del.push_back(i);
+      } else if (FD_ISSET(c, &rd)) {
         char buf[120];
         int n;
         n = read(c, buf, 120);
-        if (n < 1)
-          conns.erase(i);
+        if (n < 1) {
+ //         cerr<<"Read failed.\n";
+          del.push_back(i);
+        }
         i->first.buf.append(buf, n);
         if (!process(i->first)) {
-          cerr<<"Closing connection...\n";
+//          cerr<<"Closing connection...\n";
 //          i->second.close();
-          conns.erase(i);
+          del.push_back(i);
         }
       }
       else if (FD_ISSET(c, &wr)) {
         int n = write(c, i->first.buf.c_str(), i->first.buf.size());
-        if (n < 1)
-          conns.erase(i);
-        else {
+        if (n < 1) {
+//          cerr<<"Write failed.\n";
+          del.push_back(i);
+        } else {
           i->first.buf.erase(0, n);
-          if (i->first.buf.empty())
-            conns.erase(i);
+          if (i->first.buf.empty() && i->first.rdone) {
+//            cerr<<"Done.\n";
+            del.push_back(i);
+          }
         }
       }
+    }
+    for (list<list<pair<cstate, sock> >::iterator>::iterator i = del.begin();
+         i != del.end(); ++i) {
+      conns.erase(*i);
     }
   }
 };
@@ -1401,7 +1416,9 @@ int main (int argc, char **argv)
         listenaddr = lp.substr(0, c);
         if (c != lp.npos)
           listenport = lexical_cast<int>(lp.substr(c+1));
-      } else if (string(argv[i]) == "-a")
+      } else if (string(argv[i]) == "-m")
+        monotone = argv[i++];
+      else if (string(argv[i]) == "-a")
         admin.initialize(argv[++i]);
       else if (string(argv[i]) == "-p")
         pf.initialize(argv[++i]);

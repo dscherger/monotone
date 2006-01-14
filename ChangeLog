@@ -1,3 +1,281 @@
+2006-01-14  Richard Levitte  <richard@levitte.org>
+
+	* configure.ac: Make sure there's an empty xgettext.opts
+	when xgettext accepts --flag.  This avoids getting an error
+	message later on when cat can't find it to append to
+	po/Makefile.in.
+
+	* po/LINGUAS, po/sv_SE.po: New Swedish translation.  Needs
+	reviewing at this stage.
+
+2006-01-13  Richard Levitte  <richard@levitte.org>
+
+	* monotone-notify.pl: Make it possible for the user to say what
+	the monotone binary is called or where it is.  Adapt to revision
+	output changes and to changes in the monotone UI.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* po/Makevars (XGETTEXT_OPTIONS): This time for sure!
+
+2006-01-13  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (check_rosterified): Clarify message emitted when db
+	has not been rosterified.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* po/Makevars (XGETTEXT_OPTIONS): More fiddling to make
+	intltool-update happy.
+
+2006-01-13  Bruce Stephans  <monotone@cenderis.demon.co.uk>
+
+	* lua.cc (shared_trust_function_body): Index lua arrays
+	from 1, not 0.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.cc (dump_buffer): Add forgotten newline.
+
+2006-01-12  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (make_roster_for_merge): Add more MM()'s.
+
+2006-01-12  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* contrib/{color-logs.{conf,sh},monotone.el}: Changes to handle
+	renaming of --no-merges.
+	* app_state.{cc,hh}, commands.cc, monotone.cc, options.hh: Make
+	'log' default to not displaying merges.  Rename '--no-merges'
+	option to '--merges'.
+
+2006-01-11  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (diff): gettext'ify the "no changes" tag.
+
+2006-01-11  Richard Levitte  <richard@levitte.org>
+
+	* Makefile.am: Add contrib/usher as an extra program.  This works
+	as a reminder that this program exists, and provides supported
+	ways to build it.
+
+	* contrib/usher.cc: Add a -m switch, to be able to specify the
+	name or complete path of/to the monotone binary, in case there
+	are several floating around on the system.
+
+2006-01-11  Matt Johnston  <matt@ucc.asn.au>
+
+	* Makefile.am: pch.hh should be included
+
+2006-01-11  Nathaniel Smith  <njs@pobox.com>
+
+	* sanity.hh (struct i18n_format): Make internationalized format
+	strings and non-internationalized format strings type-distinct.
+	(This hopefully sets up for fixing some of the charset mess later
+	down the road.)
+	(FL): New macro; like F but without the i18n glue.
+	Use FL with L, and F/FP with everything else.
+	* *.hh, *.cc: Adjust existing F/L/etc. usage accordingly.
+
+2006-01-11  Nathaniel Smith  <njs@pobox.com>
+
+	* HACKING: Add section listing all the single-character macros.
+
+2006-01-11  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (fetch): Don't log all SQL unless requested by
+	user.
+
+2006-01-11  Nathaniel Smith  <njs@pobox.com>
+
+	* po/Makevars (XGETTEXT_OPTIONS):
+	* configure.ac: Tweak xgettext configuration to make intltool
+	happier.
+
+2006-01-11  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (process_confirm_cmd): Remove.
+
+2006-01-11  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* platform.hh, win32/wcwidth.c: Remove local wcswidth
+	implementation--it's no longer needed.
+
+2006-01-10  Derek Scherger  <derek@echologic.com>
+
+	* tests/t_revert_unchanged.at: new test to check that reverting
+	nothing but unchanged files doesn't end up with an empty
+	restriction and revert everything
+	* testsuite.at: call it
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* packet.cc (packet_roundabout_test): Test rdata packets too.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc (session): 
+	* commands.cc (read): Adjust to match previous change.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* packet.{hh,cc} (struct packet_db_writer): Remove old guard
+	against accidentally ingesting public keys -- this has not been
+	useful for some years.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* diff_patch.hh (struct content_merger): Oops, forgot to remove
+	the merge2 prototype.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* std_hooks.lua: 
+	* lua.cc (hook_merge2): 
+	* diff_patch.cc (try_to_merge_files): Remove merge2 code, since we
+	no longer do merge2's.  (We can always revive it if we add suture
+	support.)
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* packet.cc (consume_file_delta): Remove unused 4-argument form.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* lua.{cc,hh} (hook_resolve_file_conflict)
+	(hook_resolve_dir_conflict): Remove dead code.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_selectors_b_h.at, testsuite.at: New test.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (manifest_cert_exists, put_manifest_cert): 
+	(get_manifest_cert, get_manifest_certs): Remove unused methods.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (put_reverse_version, put_file_reverse_version):
+	Whoops, missed some dead code.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (build_roster_style_revs_from_manifest_style_revs):
+	Remove unused variable; silence gcc warning.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* packet.cc (consume_file_reverse_delta) 
+	(struct feed_packet_consumer): Remove support for nonexistent
+	"frdelta" packet type.
+	* database.{hh,cc} (put_reverse_version)
+	(put_file_reverse_version): Remove unused methods.
+	* key_store.cc (struct keyreader): Remove obsolete methods.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (set_filename): Simplify slightly.
+	(delta_exists): Remove unused 3-argument version.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (reindex): Remove.
+	* database.cc (database::rehash): Likewise.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* change_set.{cc,hh}: Remove.
+
+2006-01-10  Nathaniel Smith  <njs@pobox.com>
+
+	* contrib/ciabot_monotone.py (Monotone.get_revision): Update to
+	use 'automate get_revision' instead of 'cat revision'.
+
+2006-01-10  Richard Levitte  <richard@levitte.org>
+
+	* lua.cc (monotone_parse_basic_io_for_lua): Don't trust the
+	returned value from lua_tostring() to stick around.  Instead, copy
+	it into a regular std::string.
+	* std_hooks.lua (get_netsync_read_permissions,
+	get_netsync_write_permissions): Make sure to properly close the
+	permission files.
+
+2006-01-09  Richard Levitte  <richard@levitte.org>
+
+	* contrib/usher.cc, monotone.1, monotone.cc, po/fr.po, po/ja.po,
+	po/pt_BR.po, testsuite.at: Change the default port from 5253 to
+	4691 (assigned to us by IANA).
+
+2006-01-07  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* schema_migration.cc: add safe-guard against passing a null pointer
+	into string handling. (necessary with sun studio)
+
+2006-01-05  Derek Scherger  <derek@echologic.com>
+
+	* app_state.{cc,hh} (set_restriction): remove "respect_ignore"
+	flag and don't complain about ignored files
+	* commands.cc (status, list, diff): allow --exclude option for
+	restrictions
+	* restrictions.hh: add a comment about restricted command
+	consistency
+	* tests/t_restricted_commands_consistent.at: new test to give that
+	bark some bite
+	* testsuite.at: call it
+	
+2005-12-29  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Write up for 0.25.
+
+2005-12-29  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* sqlite/{pager.c,sqlite3.h}: Upgrade to SQLite 3.2.8.
+
+2005-12-29  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Notes on what to write up for 0.25.
+	* win32/monotone.iss, monotone.spec, debian/changelog:
+	* configure.ac, UPGRADE: Bump.
+
+2005-12-26  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc (CMD(revert)): revert with no args prints usage,
+	mention "." for entire working copy.
+
+2005-12-21  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc (dump_difs, CMD(log)): only print --diffs for the file
+	of interest.
+
+2005-12-21  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* botan/es_capi.{cpp,h}: Windows compile fixes for Botan 1.4.10.
+
+2005-12-21  Matt Johnston  <matt@ucc.asn.au>
+
+	* upgrade to Botan 1.4.10
+
+2005-12-20  Daniel Carosone  <dan@geek.com.au>
+
+	* monotone.texi: Rearrange the description of monotone serve into
+	two sections; the first one describing basic steps necessary to
+	get Jim and the reader through to the next sections, and a later
+	more advanced section that discusses some of the subleties and
+	choices and moves them on to running a dedicated server.  Other
+	small tweaks in nearby sections while here.
+
+2005-12-18  graydon hoare  <graydon@pobox.com>
+
+	* AUTHORS: Add Roland.
+
+2005-12-17  Roland McGrath  <roland@redhat.com>
+
+	* work.hh (struct file_itemizer): Remove extraneous qualifier on
+	visit_file declaration.
+	* app_state.hh (class app_state): Remove extraneous qualifier on
+	set_restriction declaration.
+
 2005-12-14  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* win32/fs.cc: Handle the fact that the MoveFileEx symbol might
@@ -20,6 +298,27 @@
 	monotone servers.
 	* HACKING, tests/README: Remove references to use of SEGV for
 	terminating monotone servers.
+
+2005-12-13  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* constants.cc: New netsync is incompatible, bump protocol version.
+	* constants.hh: Change default port to the one IANA assigned us.
+
+2005-12-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* roster.cc (make_roster_for_merge): unshadow the node_id_source
+	argument. Resolve usages to the argument or the local by educated guess.
+
+2005-12-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* paths.{cc,hh}: operator<() for split_path's
+
+2005-12-10  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* sanity.{cc,hh}: Fix musing dumps so that the header line always gets
+	printed, even if printing the body throws an exception.
+	* database.cc, packet,cc, revision.cc: sprinkle MMs
+	* cset.cc: sanity check print_cset to match parse_cset
 
 2005-12-08  Matthew Gregan  <kinetik@orcon.net.nz>
 
@@ -316,6 +615,12 @@
 	Buffer was added to free_list in allocate() (it's not safe to
 	assume that the address of a newly allocated Buffer will always be
 	greated than existing Buffers).
+
+2005-11-25  graydon hoare  <graydon@pobox.com>
+
+	* database.cc (get_version): Another important fix: make sure to
+	cancel overlapping paths, to avoid exponential memory requirement
+	in deep, heavily-forked-and-merged storage paths.
 
 2005-11-25  graydon hoare  <graydon@pobox.com>
 
@@ -703,6 +1008,34 @@
 	* selectors.{cc,hh}: add sel_head with selector character 'h'.
 	* monotone.texi: document it.
 	
+2005-10-12  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.hh: Oops, missed a bit.
+
+2005-10-12  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (add_node_for_old_revision): Rename to...
+	(add_node_for_oldstyle_revision): ...this.
+	(build_changesets_from_existing_revs): Rename to...
+	(build_roster_style_revs_from_manifest_style_revs): ...this.
+	* commands.cc (db): Rename "rebuild" to "rosterify".
+
+2005-10-08  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (analyze_manifest_changes): Remove.
+
+2005-10-08  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (calculate_change_sets_recursive):
+	(find_subgraph_for_composite_search) 
+	(calculate_composite_change_set, calculate_arbitrary_change_set):
+	Remove.
+	(construct_revision_from_ancestry): Likewise.
+
+2005-10-08  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (check_sane_history): Remove.
+
 2005-10-13  Matt Johnston  <matt@ucc.asn.au>
 
 	* botan/mem_pool.cpp: fix bug preventing remove_empty_buffers()
