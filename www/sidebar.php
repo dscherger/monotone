@@ -37,37 +37,21 @@ if ($validuser && $level == 'main') {
 	<a href="index.php">Project info</a><br/>
 	<a href="admin.php">Maintainer section</a><br/>
 	<a href="viewmtn/">Browse source</a><br/>
-	<a href=""></a><br/>
-	<a href=""></a><br/>
-	<a href=""></a><br/>
 	<?
+	$query = "SELECT name, url FROM resources WHERE project = '%s'";
+	$result = pg_exec($db, sprintf($query, $safeproj));
+	$out = array();
+	if ($result) {
+		print "<br/>Project resources:\n<ul>";
+		$rows = pg_numrows($result);
+		for($i = 0; $i < $rows; ++$i) {
+			$row = pg_fetch_row ($result,$i);
+			$r['name']	= $row[0];
+			$r['url']	= $row[1];
+			print "<a href=\"" . $row[1] . "\">" . $row[0] . "</a>";
+		}
+		print "</ul>\n";
+	}
 }
 ?>
-<!--
-<div id="status">
-</div>
-<div id="login">
-Username:<br/>
-<input type="text" name="username" id="username"/>
-Password:<br/>
-<input type="password" name="password" id="password"/>
-<br/>
-<br/>
-<input type="submit" value="New user" onclick="do_newuser();"/>
-<br/>
-<br/>
-New password:<br/>
-<input type="password" name="newpassword" id="newpassword"/>
-<br/>
-<br/>
-<input type="submit" value="Change password" onclick="do_chpass();"/>
-</div>
-<hr />
-Project:<br/>
-<? printf("<input type=\"text\" name=\"project\" id=\"project\" value=\"%s\"/>", $project); ?>
-<br/>
-<br/>
-<input type="submit" value="New project" onclick="do_newproj();"/>
-<hr/>
--->
 </div>

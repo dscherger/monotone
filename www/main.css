@@ -30,7 +30,7 @@ hr {width: 90%;}
 	padding: .5em;
 }
 
-#maintainerlist tbody tr:hover {
+.hilighttable tbody tr:hover {
 	background-color: #ddf;
 }
 

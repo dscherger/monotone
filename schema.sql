@@ -11,3 +11,8 @@ CREATE TABLE permissions ( username varchar(80),
 			access smallint,
 			server smallint,
 			description smallint );
+
+CREATE TABLE resources ( project varchar(80),
+			name varchar(80),
+			url varchar(80)
+			);

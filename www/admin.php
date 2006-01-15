@@ -34,9 +34,9 @@ project="<?=$project?>";
 	$pages = array('permissions' => "Permissions",
 			'source_control' => "Source&nbsp;Control",
 			'files' => "Files",
-			'description' => "Description"/*,
-			'web' => "Web",
-			'resources' => "Resources"*/);
+			'description' => "Description",
+			/*'web' => "Web",*/
+			'resources' => "Resources");
 	foreach ($pages as $k => $i) {
 		if ($k == $page)
 			print "<li id=\"page$k\" class=\"selpage\"><a>$i</a></li> ";

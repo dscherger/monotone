@@ -39,7 +39,7 @@ maint_addrow = function() {
 }
 set_maint_display = function(data) {
     var labels = [];
-    replaceChildNodes("maintainerlist", TABLE({"id":"maintainertable"},
+    replaceChildNodes("maintainerlist", TABLE({"id":"maintainertable","class":"hilighttable"},
       THEAD(null, row_display(["Username", "Edit maintainers", "Control server", "Upload files", "Edit description"/*, "Edit homepage", "Change resources"*/])),
       TFOOT(null, row_display(["","","","",""/*,"",""*/])),
       TBODY({"id":"maintainertablebody"}, map(maint_row, data)))
