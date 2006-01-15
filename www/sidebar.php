@@ -48,7 +48,8 @@ if ($validuser && $level == 'main') {
 			$row = pg_fetch_row ($result,$i);
 			$r['name']	= $row[0];
 			$r['url']	= $row[1];
-			print "<a href=\"" . $row[1] . "\">" . $row[0] . "</a>";
+			print "<li><a href=\"" . $row[1] . "\">" .
+				$row[0] . "</a></li>\n";
 		}
 		print "</ul>\n";
 	}
