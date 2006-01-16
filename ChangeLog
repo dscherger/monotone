@@ -1,3 +1,58 @@
+2006-01-15  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Almost all translations done.  I've left a few for
+	lack of inspiration.  Someone, PLEASE REVIEW!
+
+2006-01-15  Nathaniel Smith  <njs@pobox.com>
+
+	* AUTHORS: Add Richard as a translator.
+
+2006-01-15  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (union_corpses): New function.
+	(unify_roster_oneway, unify_rosters): Remove unused new_ids
+	argument.  Add call to union_corpses.  Add big comment explaining
+	what's going on.
+	(test_unify_rosters_end_to_end_ids) 
+	(test_unify_rosters_end_to_end_attr_corpses): Split and improve
+	tests.
+
+2006-01-15  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: More translations done.
+
+2006-01-15  Richard Levitte  <richard@levitte.org>
+
+	* LINGUAS: Change sv_SE to just sv.
+	* po/sv_SE.po: Rename ...
+	* po/sv.po: ... to this, as there aren't so many dialects.  Update
+	with more strings to translate.
+
+	* std_hooks.lua: xgettext whines about a missing quote, so add
+	one.
+
+2006-01-15  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (test_unify_rosters_end_to_end): Add failing test for
+	unify_roster's handling of attr corpses.
+	
+2006-01-15  Nathaniel Smith  <njs@pobox.com>
+
+	* cert.cc (load_key_pair): 
+	* keys.cc (require_password): Use accessor method, so as to
+	actually compile...
+
+2006-01-15  Matt Johnston  <matt@ucc.asn.au>
+
+	* ui.cc: make tickers saner (203 K vs 0.2 M). 
+	Print full byte counts below 1 K.
+
+2006-01-14  Nathaniel Smith  <njs@pobox.com>
+
+	* lua.cc (hook_get_key_pair): Remove.
+	* keys.cc (require_password): Adjust accordingly.
+	* cert.cc (priv_key_exists, load_key_pair): Likewise.
+
 2006-01-14  Richard Levitte  <richard@levitte.org>
 
 	* configure.ac: Make sure there's an empty xgettext.opts
