@@ -1,5 +1,29 @@
-hostkey = "foo@bar.com"
-hostkeypass = "foo@bar.com"
+function read_config()
+   local permfile = io.open(get_confdir() .. "/../../hostconfig", "r")
+   if (permfile == nil) then return false end
+   local dat = permfile:read("*a")
+   io.close(permfile)
+   local res = parse_basic_io(dat)
+   if res == nil then
+      io.stderr:write("config file cannot be parsed\n")
+      return false
+   end
+   for i, item in pairs(res)
+   do
+      if item.name == "hostkey" then
+         for j, val in pairs(item.values) do
+            hostkey = val
+         end
+      end elseif item.name == "hostkeypass" then
+         for j, val in pairs(item.values) do
+            hostkeypass = val
+         end
+      end
+   end
+   return false
+end
+
+read_config
 
 function get_passphrase(keyid)
 	if keyid == hostkey then
