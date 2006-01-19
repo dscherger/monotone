@@ -262,7 +262,7 @@ void
 packet_writer::consume_file_data(file_id const & ident, 
                                  file_data const & dat)
 {
-  base64<gzip<data> > packed;
+  base64<zlib<data> > packed;
   pack(dat.inner(), packed);
   ost << "[fdata " << ident.inner()() << "]" << endl 
       << trim_ws(packed()) << endl
@@ -274,7 +274,7 @@ packet_writer::consume_file_delta(file_id const & old_id,
                                   file_id const & new_id,
                                   file_delta const & del)
 {
-  base64<gzip<delta> > packed;
+  base64<zlib<delta> > packed;
   pack(del.inner(), packed);
   ost << "[fdelta " << old_id.inner()() << endl 
       << "        " << new_id.inner()() << "]" << endl 
@@ -286,7 +286,7 @@ void
 packet_writer::consume_revision_data(revision_id const & ident, 
                                      revision_data const & dat)
 {
-  base64<gzip<data> > packed;
+  base64<zlib<data> > packed;
   pack(dat.inner(), packed);
   ost << "[rdata " << ident.inner()() << "]" << endl 
       << trim_ws(packed()) << endl
@@ -365,7 +365,7 @@ feed_packet_consumer
         L(FL("read data packet"));
         require(regex_match(args, regex(ident)));
         require(regex_match(body, regex(base)));
-        base64<gzip<data> > body_packed(trim_ws(body));
+        base64<zlib<data> > body_packed(trim_ws(body));
         data contents;
         unpack(body_packed, contents);
         if (type == "rdata")
@@ -385,7 +385,7 @@ feed_packet_consumer
         string src_id(matches[1].first, matches[1].second);
         string dst_id(matches[2].first, matches[2].second);
         require(regex_match(body, regex(base)));
-        base64<gzip<delta> > body_packed(trim_ws(body));
+        base64<zlib<delta> > body_packed(trim_ws(body));
         delta contents;
         unpack(body_packed, contents);
         cons.consume_file_delta(file_id(hexenc<id>(src_id)), 

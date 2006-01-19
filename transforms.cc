@@ -18,6 +18,7 @@
 
 #include "botan/botan.h"
 #include "botan/gzip.h"
+#include "botan/zlib.h"
 #include "botan/sha160.h"
 
 #include "idna/idna.h"
@@ -64,9 +65,16 @@ using namespace std;
 template<typename XFM> string xform(string const & in)
 {
   string out;
-  Botan::Pipe pipe(new XFM());
-  pipe.process_msg(in);
-  out = pipe.read_all_as_string();
+  try
+    {
+      Botan::Pipe pipe(new XFM());
+      pipe.process_msg(in);
+      out = pipe.read_all_as_string();
+    }
+  catch (Botan::Exception & e)
+    {
+      throw informative_failure((FL("Failure transforming: %s") % e.what()).str());;
+    }
   return out;
 }
 
@@ -75,7 +83,8 @@ template string xform<Botan::Base64_Encoder>(string const &);
 template string xform<Botan::Base64_Decoder>(string const &);
 template string xform<Botan::Hex_Encoder>(string const &);
 template string xform<Botan::Hex_Decoder>(string const &);
-template string xform<Botan::Gzip_Compression>(string const &);
+template string xform<Botan::Zlib_Compression>(string const &);
+template string xform<Botan::Zlib_Decompression>(string const &);
 template string xform<Botan::Gzip_Decompression>(string const &);
 
 // for use in hexenc encoding
@@ -154,24 +163,24 @@ uppercase(string const & in)
 }
 
 template <typename T>
-void pack(T const & in, base64< gzip<T> > & out)
+void pack(T const & in, base64< zlib<T> > & out)
 {
   string tmp;
   tmp.reserve(in().size()); // FIXME: do some benchmarking and make this a constant::
 
-  Botan::Pipe pipe(new Botan::Gzip_Compression(), new Botan::Base64_Encoder);
+  Botan::Pipe pipe(new Botan::Zlib_Compression(), new Botan::Base64_Encoder);
   pipe.process_msg(in());
   tmp = pipe.read_all_as_string();
   out = tmp;
 }
 
 template <typename T>
-void unpack(base64< gzip<T> > const & in, T & out)
+void unpack(base64< zlib<T> > const & in, T & out)
 {
   string tmp;
   tmp.reserve(in().size()); // FIXME: do some benchmarking and make this a constant::
 
-  Botan::Pipe pipe(new Botan::Base64_Decoder(), new Botan::Gzip_Decompression());
+  Botan::Pipe pipe(new Botan::Base64_Decoder(), new Botan::Zlib_Decompression());
   pipe.process_msg(in());
   tmp = pipe.read_all_as_string();
 
@@ -179,10 +188,10 @@ void unpack(base64< gzip<T> > const & in, T & out)
 }
 
 // specialise them
-template void pack<data>(data const &, base64< gzip<data> > &);
-template void pack<delta>(delta const &, base64< gzip<delta> > &);
-template void unpack<data>(base64< gzip<data> > const &, data &);
-template void unpack<delta>(base64< gzip<delta> > const &, delta &);
+template void pack<data>(data const &, base64< zlib<data> > &);
+template void pack<delta>(delta const &, base64< zlib<delta> > &);
+template void unpack<data>(base64< zlib<data> > const &, data &);
+template void unpack<delta>(base64< zlib<delta> > const &, delta &);
 
 // diffing and patching
 
@@ -220,13 +229,13 @@ calculate_ident(data const & dat,
 }
 
 void 
-calculate_ident(base64< gzip<data> > const & dat,
+calculate_ident(base64< zlib<data> > const & dat,
                 hexenc<id> & ident)
 {
-  gzip<data> data_decoded;
+  zlib<data> data_decoded;
   data data_decompressed;  
   decode_base64(dat, data_decoded);
-  decode_gzip(data_decoded, data_decompressed);  
+  decode_zlib(data_decoded, data_decompressed);  
   calculate_ident(data_decompressed, ident);
 }
 
@@ -798,13 +807,13 @@ static void
 enc_test()
 {
   data d2, d1("the rain in spain");
-  gzip<data> gzd1, gzd2;
-  base64< gzip<data> > bgzd;
-  encode_gzip(d1, gzd1);
+  zlib<data> gzd1, gzd2;
+  base64< zlib<data> > bgzd;
+  encode_zlib(d1, gzd1);
   encode_base64(gzd1, bgzd);
   decode_base64(bgzd, gzd2);
   BOOST_CHECK(gzd2 == gzd1);
-  decode_gzip(gzd2, d2);
+  decode_zlib(gzd2, d2);
   BOOST_CHECK(d2 == d1);
 }
 

@@ -661,7 +661,7 @@ database::fetch(results & res,
 
       // we can use SQLITE_STATIC since the array is destructed after
       // fetching the parameters (and sqlite3_reset)
-      if (args[param-1].binary)
+      if (args[param-1].blob)
         sqlite3_bind_blob(stmt.stmt(), param, args[param-1].data(), args[param-1].size(), SQLITE_STATIC);
       else
         sqlite3_bind_text(stmt.stmt(), param, args[param-1].c_str(), -1, SQLITE_STATIC);
@@ -823,9 +823,9 @@ database::get(hexenc<id> const & ident,
   fetch(res, one_col, one_row, query.c_str(), ident().c_str());
 
   // consistency check
-  gzip<data> rdata(res[0][0]);
+  zlib<data> rdata(res[0][0]);
   data rdata_unpacked;
-  decode_gzip(rdata,rdata_unpacked);
+  decode_zlib(rdata, rdata_unpacked);
 
   hexenc<id> tid;
   calculate_ident(rdata_unpacked, tid);
@@ -847,8 +847,8 @@ database::get_delta(hexenc<id> const & ident,
   fetch(res, one_col, one_row, query.c_str(), 
         ident().c_str(), base().c_str());
 
-  gzip<delta> del_packed(res[0][0]);
-  decode_gzip(del_packed, del);
+  zlib<delta> del_packed(res[0][0]);
+  decode_zlib(del_packed, del);
 }
 
 void 
@@ -864,8 +864,8 @@ database::put(hexenc<id> const & ident,
   MM(tid);
   I(tid == ident);
 
-  gzip<data> dat_packed;
-  encode_gzip(dat, dat_packed);
+  zlib<data> dat_packed;
+  encode_zlib(dat, dat_packed);
   
   string insert = "INSERT INTO " + table + " VALUES(?, ?)";
   std::vector<queryarg> args;
@@ -883,8 +883,8 @@ database::put_delta(hexenc<id> const & ident,
   I(ident() != "");
   I(base() != "");
 
-  gzip<delta> del_packed;
-  encode_gzip(del, del_packed);
+  zlib<delta> del_packed;
+  encode_zlib(del, del_packed);
 
   std::vector<queryarg> args;
   args.push_back(ident());
@@ -1450,9 +1450,9 @@ database::get_revision(revision_id const & id,
         "SELECT data FROM revisions WHERE id = ?",
         id.inner()().c_str());
 
-  gzip<data> gzdata(res[0][0]);
+  zlib<data> gzdata(res[0][0]);
   data rdat;
-  decode_gzip(gzdata,rdat);
+  decode_zlib(gzdata,rdat);
 
   // verify that we got a revision with the right id
   {
@@ -1544,8 +1544,8 @@ database::put_revision(revision_id const & new_id,
 
   std::vector<queryarg> args;
   args.push_back(new_id.inner()());
-  gzip<data> d_packed;
-  encode_gzip(d.inner(), d_packed);
+  zlib<data> d_packed;
+  encode_zlib(d.inner(), d_packed);
   args.push_back(queryarg(d_packed(), true));
   execute(std::string("INSERT INTO revisions VALUES(?, ?)"), args);
 

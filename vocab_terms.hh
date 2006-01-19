@@ -47,7 +47,8 @@ DECORATE(file);               // thing associated with a file
 DECORATE(key);               // thing associated with a key
 DECORATE(epoch);              // thing associated with an epoch
 
-ENCODING(gzip);               // thing which is gzipped
+ENCODING(zlib);               // thing which is zlibbed
+ENCODING(gzip);               // thing which is gzipped (for migration)
 ENCODING(hexenc);             // thing which is hex-encoded
 ENCODING(base64);             // thing which is base64-encoded
 ENCODING(arc4);               // thing which is arc4-encrypted
@@ -69,15 +70,18 @@ EXTERN template class     hexenc<inodeprint>;
 EXTERN template class           hexenc<data>;
 EXTERN template class    epoch< hexenc<data> >;
 
+EXTERN template class                   zlib<data>;
+EXTERN template class           base64< zlib<data> >;
+
+// for migration
 EXTERN template class                   gzip<data>;
-EXTERN template class           base64< gzip<data> >;
 
 EXTERN template class revision< data >;
 EXTERN template class manifest< data >;
 EXTERN template class     file< data >;
 
-EXTERN template class                   gzip<delta>;
-EXTERN template class           base64< gzip<delta> >;
+EXTERN template class                   zlib<delta>;
+EXTERN template class           base64< zlib<delta> >;
 
 EXTERN template class manifest< delta >;
 EXTERN template class     file< delta >;
@@ -111,16 +115,16 @@ EXTERN template std::ostream & operator<< <>(std::ostream &,     hexenc<inodepri
 EXTERN template std::ostream & operator<< <>(std::ostream &,           hexenc<data> const &);
 EXTERN template std::ostream & operator<< <>(std::ostream &,    epoch< hexenc<data> > const &);
 
-EXTERN template std::ostream & operator<< <>(std::ostream &,                   gzip<data>     const &);
-EXTERN template std::ostream & operator<< <>(std::ostream &,           base64< gzip<data> >   const &);
-EXTERN template std::ostream & operator<< <>(std::ostream &, revision< base64< gzip<data> > > const &);
-EXTERN template std::ostream & operator<< <>(std::ostream &, manifest< base64< gzip<data> > > const &);
-EXTERN template std::ostream & operator<< <>(std::ostream &,     file< base64< gzip<data> > > const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &,                   zlib<data>     const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &,           base64< zlib<data> >   const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &, revision< base64< zlib<data> > > const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &, manifest< base64< zlib<data> > > const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &,     file< base64< zlib<data> > > const &);
 
-EXTERN template std::ostream & operator<< <>(std::ostream &,                   gzip<delta>     const &);
-EXTERN template std::ostream & operator<< <>(std::ostream &,           base64< gzip<delta> >   const &);
-EXTERN template std::ostream & operator<< <>(std::ostream &, manifest< base64< gzip<delta> > > const &);
-EXTERN template std::ostream & operator<< <>(std::ostream &,     file< base64< gzip<delta> > > const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &,                   zlib<delta>     const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &,           base64< zlib<delta> >   const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &, manifest< base64< zlib<delta> > > const &);
+EXTERN template std::ostream & operator<< <>(std::ostream &,     file< base64< zlib<delta> > > const &);
 
 EXTERN template std::ostream & operator<< <>(std::ostream &,         arc4<rsa_priv_key>     const &);
 EXTERN template std::ostream & operator<< <>(std::ostream &, base64< arc4<rsa_priv_key> >   const &);

@@ -125,8 +125,8 @@ namespace constants
   // maximum size of any netcmd on the wire, including payload
   static size_t const netcmd_maxsz = netcmd_minsz + netcmd_payload_limit;
 
-  // netsync fragments larger than this are gzipped
-  extern size_t const netcmd_minimum_bytes_to_bother_with_gzip;
+  // netsync fragments larger than this are zlibbed
+  extern size_t const netcmd_minimum_bytes_to_bother_with_zlib;
 
   // TCP port to listen on / connect to when doing netsync
   static size_t const netsync_default_port = 4691;

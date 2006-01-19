@@ -414,9 +414,9 @@ netcmd::read_data_cmd(netcmd_item_type & type,
                                   "data netcmd, data payload");
   if (compressed_p == 1)
   {
-    gzip<data> zdat(dat);
+    zlib<data> zdat(dat);
     data tdat;
-    decode_gzip(zdat, tdat);
+    decode_zlib(zdat, tdat);
     dat = tdat();
   }
   assert_end_of_buffer(payload, pos, "data netcmd payload");
@@ -431,10 +431,10 @@ netcmd::write_data_cmd(netcmd_item_type type,
   I(item().size() == constants::merkle_hash_length_in_bytes);
   payload += static_cast<char>(type);
   payload += item();
-  if (dat.size() > constants::netcmd_minimum_bytes_to_bother_with_gzip)
+  if (dat.size() > constants::netcmd_minimum_bytes_to_bother_with_zlib)
     {
-      gzip<data> zdat;
-      encode_gzip(dat, zdat);
+      zlib<data> zdat;
+      encode_zlib(dat, zdat);
       payload += static_cast<char>(1); // compressed flag
       insert_variable_length_string(zdat(), payload);
     }
@@ -467,8 +467,8 @@ netcmd::read_delta_cmd(netcmd_item_type & type,
                                  "delta netcmd, delta payload");
   if (compressed_p == 1)
     {
-      gzip<delta> zdel(tmp);
-      decode_gzip(zdel, del);
+      zlib<delta> zdel(tmp);
+      decode_zlib(zdel, del);
     }
   else
     {
@@ -491,11 +491,11 @@ netcmd::write_delta_cmd(netcmd_item_type & type,
 
   string tmp;
 
-  if (tmp.size() > constants::netcmd_minimum_bytes_to_bother_with_gzip)
+  if (tmp.size() > constants::netcmd_minimum_bytes_to_bother_with_zlib)
     {
       payload += static_cast<char>(1); // compressed flag
-      gzip<delta> zdel;
-      encode_gzip(del, zdel);
+      zlib<delta> zdel;
+      encode_zlib(del, zdel);
       tmp = zdel();
     }
   else

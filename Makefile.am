@@ -123,6 +123,7 @@ BOTAN_SOURCES =                                                                 
         botan/x509self.cpp botan/x509stor.cpp 				\
         botan/def_alg.cpp botan/def_mode.cpp botan/sha256.cpp 		\
         botan/x931_rng.cpp botan/out_buf.cpp botan/bit_ops.cpp \
+        botan/zlib.cpp \
         \
         botan/aes.h botan/botan.h botan/def_eng.h botan/es_win32.h	\
         botan/lookup.h botan/randpool.h botan/version.h	\
@@ -157,7 +158,7 @@ BOTAN_SOURCES =                                                                 
         botan/util.h botan/charset.h botan/hash_id.h 			\
         botan/des.h botan/pkcs5.h					\
         botan/x931_rng.h botan/sha256.h \
-        botan/parsing.h botan/out_buf.h botan/bit_ops.h
+        botan/parsing.h botan/out_buf.h botan/bit_ops.h botan/zlib.h
 
 
 

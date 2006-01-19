@@ -23,7 +23,8 @@ namespace Botan {
   class Base64_Decoder;
   class Hex_Encoder;
   class Hex_Decoder;
-  class Gzip_Compression;
+  class Zlib_Compression;
+  class Zlib_Decompression;
   class Gzip_Decompression;
 }
 
@@ -38,7 +39,8 @@ EXTERN template std::string xform<Botan::Base64_Encoder>(std::string const &);
 EXTERN template std::string xform<Botan::Base64_Decoder>(std::string const &);
 EXTERN template std::string xform<Botan::Hex_Encoder>(std::string const &);
 EXTERN template std::string xform<Botan::Hex_Decoder>(std::string const &);
-EXTERN template std::string xform<Botan::Gzip_Compression>(std::string const &);
+EXTERN template std::string xform<Botan::Zlib_Compression>(std::string const &);
+EXTERN template std::string xform<Botan::Zlib_Decompression>(std::string const &);
 EXTERN template std::string xform<Botan::Gzip_Decompression>(std::string const &);
 
 // base64 encoding
@@ -69,11 +71,17 @@ void encode_hexenc(T const & in, hexenc<T> & out)
 { out = encode_hexenc(in()); }
 
 
-// gzip
+// zlib
 
 template <typename T>
-void encode_gzip(T const & in, gzip<T> & out)
-{ out = xform<Botan::Gzip_Compression>(in()); }
+void encode_zlib(T const & in, zlib<T> & out)
+{ out = xform<Botan::Zlib_Compression>(in()); }
+
+template <typename T>
+void decode_zlib(zlib<T> const & in, T & out)
+{ out = xform<Botan::Zlib_Decompression>(in()); }
+
+// gzip, for migration
 
 template <typename T>
 void decode_gzip(gzip<T> const & in, T & out)
@@ -81,20 +89,20 @@ void decode_gzip(gzip<T> const & in, T & out)
 
 // string variant for netsync
 template <typename T>
-void encode_gzip(std::string const & in, gzip<T> & out)
-{ out = xform<Botan::Gzip_Compression>(in); }
+void encode_zlib(std::string const & in, zlib<T> & out)
+{ out = xform<Botan::Zlib_Compression>(in); }
 
 // both at once (this is relatively common)
 
 template <typename T>
-void pack(T const & in, base64< gzip<T> > & out);
-EXTERN template void pack<data>(data const &, base64< gzip<data> > &);
-EXTERN template void pack<delta>(delta const &, base64< gzip<delta> > &);
+void pack(T const & in, base64< zlib<T> > & out);
+EXTERN template void pack<data>(data const &, base64< zlib<data> > &);
+EXTERN template void pack<delta>(delta const &, base64< zlib<delta> > &);
 
 template <typename T>
-void unpack(base64< gzip<T> > const & in, T & out);
-EXTERN template void unpack<data>(base64< gzip<data> > const &, data &);
-EXTERN template void unpack<delta>(base64< gzip<delta> > const &, delta &);
+void unpack(base64< zlib<T> > const & in, T & out);
+EXTERN template void unpack<data>(base64< zlib<data> > const &, data &);
+EXTERN template void unpack<delta>(base64< zlib<delta> > const &, delta &);
 
 
 // diffing and patching
@@ -113,7 +121,7 @@ void patch(data const & olddata,
 void calculate_ident(data const & dat,
                      hexenc<id> & ident);
 
-void calculate_ident(base64< gzip<data> > const & dat,
+void calculate_ident(base64< zlib<data> > const & dat,
                      hexenc<id> & ident);
 
 void calculate_ident(file_data const & dat,

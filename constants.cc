@@ -141,9 +141,9 @@ namespace constants
   BOOST_STATIC_ASSERT(merkle_bitmap_length_in_bits > 0);
   BOOST_STATIC_ASSERT((merkle_bitmap_length_in_bits % 8) == 0);
 
-  u8 const netcmd_current_protocol_version = 6;
+  u8 const netcmd_current_protocol_version = 7;
   
-  size_t const netcmd_minimum_bytes_to_bother_with_gzip = 0xfff;
+  size_t const netcmd_minimum_bytes_to_bother_with_zlib = 0xfff;
 
   size_t const netsync_session_key_length_in_bytes = 20;     // 160 bits
   size_t const netsync_hmac_value_length_in_bytes = 20;      // 160 bits

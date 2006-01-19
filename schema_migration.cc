@@ -59,6 +59,7 @@ extern "C" {
   const char *sqlite3_value_text_s(sqlite3_value *v);
 }
 
+/*
 static string 
 lowercase(string const & in)
 {
@@ -70,6 +71,7 @@ lowercase(string const & in)
   use_facet< ctype<char> >(loc).tolower(buf, buf+sz);
   return string(buf,sz);
 }
+*/
 
 static void 
 massage_sql_tokens(string const & in,
@@ -919,7 +921,26 @@ sqlite3_unbase64_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
     }
   data decoded;
   decode_base64(base64<data>(string(sqlite3_value_text_s(args[0]))), decoded);
-  sqlite3_result_blob(f, decoded().c_str(), decoded().size(), SQLITE_TRANSIENT);
+  sqlite3_result_blob(f, decoded().data(), decoded().size(), SQLITE_TRANSIENT);
+}
+
+// this function expects a blob, since gzip and zlib data are both binary
+static void 
+sqlite3_gzip_to_zlib_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+{
+  if (nargs != 1)
+    {
+      sqlite3_result_error(f, "need exactly 1 arg to gzip_to_zlib()", -1);
+      return;
+    }
+  data decoded;
+  MM(decoded);
+  const char* blob = (const char*)sqlite3_value_blob(args[0]);
+  int bytes = sqlite3_value_bytes(args[0]);
+  decode_gzip(gzip<data>(string(blob, bytes)), decoded);
+  zlib<data> zlibbed;
+  encode_zlib(decoded, zlibbed);
+  sqlite3_result_blob(f, zlibbed().data(), zlibbed().size(), SQLITE_TRANSIENT);
 }
 
 // I wish I had a form of ALTER TABLE COMMENT on sqlite3
@@ -932,6 +953,10 @@ migrate_files_BLOB(sqlite3 * sql,
   I(sqlite3_create_function(sql, "unbase64", -1, 
                            SQLITE_UTF8, NULL,
                            &sqlite3_unbase64_fn, 
+                           NULL, NULL) == 0);
+  I(sqlite3_create_function(sql, "gzip_to_zlib", -1, 
+                           SQLITE_UTF8, NULL,
+                           &sqlite3_gzip_to_zlib_fn, 
                            NULL, NULL) == 0);
   // change the encoding of file(_delta)s
   if (!move_table(sql, errmsg, 
@@ -952,7 +977,7 @@ migrate_files_BLOB(sqlite3 * sql,
     return false;
 
   res = logged_sqlite3_exec(sql, "INSERT INTO files "
-                            "SELECT id, unbase64(data) "
+                            "SELECT id, gzip_to_zlib(unbase64(data)) "
                             "FROM tmp", NULL, NULL, errmsg);
   if (res != SQLITE_OK)
     return false;
@@ -982,7 +1007,7 @@ migrate_files_BLOB(sqlite3 * sql,
     return false;
 
   res = logged_sqlite3_exec(sql, "INSERT INTO file_deltas "
-                            "SELECT id, base, unbase64(delta) "
+                            "SELECT id, base, gzip_to_zlib(unbase64(delta)) "
                             "FROM tmp", NULL, NULL, errmsg);
   if (res != SQLITE_OK)
     return false;
@@ -992,20 +1017,20 @@ migrate_files_BLOB(sqlite3 * sql,
     return false;
 
   // migrate other contents which are accessed by get|put_version
-  res = logged_sqlite3_exec(sql, "UPDATE manifests SET data=unbase64(data)", 
+  res = logged_sqlite3_exec(sql, "UPDATE manifests SET data=gzip_to_zlib(unbase64(data))", 
                             NULL, NULL, errmsg);
   if (res != SQLITE_OK)
     return false;
   res = logged_sqlite3_exec(sql, "UPDATE manifest_deltas "
-                            "SET delta=unbase64(delta)", NULL, NULL, errmsg);
+                            "SET delta=gzip_to_zlib(unbase64(delta))", NULL, NULL, errmsg);
   if (res != SQLITE_OK)
     return false;
-  res = logged_sqlite3_exec(sql, "UPDATE rosters SET data=unbase64(data) ",
+  res = logged_sqlite3_exec(sql, "UPDATE rosters SET data=gzip_to_zlib(unbase64(data)) ",
                             NULL, NULL, errmsg);
   if (res != SQLITE_OK)
     return false;
   res = logged_sqlite3_exec(sql, "UPDATE roster_deltas "
-                            "SET delta=unbase64(delta)", NULL, NULL, errmsg);
+                            "SET delta=gzip_to_zlib(unbase64(delta))", NULL, NULL, errmsg);
   if (res != SQLITE_OK)
     return false;
 
@@ -1028,7 +1053,7 @@ migrate_files_BLOB(sqlite3 * sql,
   if (res != SQLITE_OK)
     return false;
   res = logged_sqlite3_exec(sql, "UPDATE revisions "
-      "SET data=unbase64(data)", NULL, NULL, errmsg);
+      "SET data=gzip_to_zlib(unbase64(data))", NULL, NULL, errmsg);
   if (res != SQLITE_OK)
     return false;
   res = logged_sqlite3_exec(sql, "UPDATE branch_epochs "

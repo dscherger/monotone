@@ -1,3 +1,8 @@
+2006-01-19  Matt Johnston  <matt@ucc.asn.au>
+	
+	* switch from using gzip to zlib everywhere, add to the 
+	sqlite binary migration code.
+
 2006-01-18  Nathaniel Smith  <njs@pobox.com>
 
 	* configure.ac: s/TRY_RUN/TRY_COMPILE/ a few places, for general
