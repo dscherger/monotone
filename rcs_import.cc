@@ -282,153 +282,22 @@ cvs_commit::cvs_commit(rcs_file const & r,
 
 }
 
-
 // piece table stuff
-
-struct piece;
-
-struct 
-piece_store
-{
-  vector< boost::shared_ptr<rcs_deltatext> > texts;
-  void index_deltatext(boost::shared_ptr<rcs_deltatext> const & dt,
-                       vector<piece> & pieces);
-  void build_string(vector<piece> const & pieces,
-                    string & out);
-  void reset() { texts.clear(); }
-};
-
-// FIXME: kludge, I was lazy and did not make this
-// a properly scoped variable. 
-
-static piece_store global_pieces;
-
-
-struct 
-piece
-{
-  piece(string::size_type p, string::size_type l, unsigned long id) :
-    pos(p), len(l), string_id(id) {}
-  string::size_type pos;
-  string::size_type len;
-  unsigned long string_id;
-  string operator*() const
-  {
-    return string(global_pieces.texts.at(string_id)->text.data() + pos, len);
-  }
-};
-
-
-void 
-piece_store::build_string(vector<piece> const & pieces,
-                          string & out)
-{
-  out.clear();
-  out.reserve(pieces.size() * 60);
-  for(vector<piece>::const_iterator i = pieces.begin();
-      i != pieces.end(); ++i)
-    out.append(texts.at(i->string_id)->text, i->pos, i->len);
-}
-
-void 
-piece_store::index_deltatext(boost::shared_ptr<rcs_deltatext> const & dt,
-                             vector<piece> & pieces)
-{
-  pieces.clear();
-  pieces.reserve(dt->text.size() / 30);  
-  texts.push_back(dt);
-  unsigned long id = texts.size() - 1;
-  string::size_type begin = 0;
-  string::size_type end = dt->text.find('\n');
-  while(end != string::npos)
-    {
-      // nb: the piece includes the '\n'
-      pieces.push_back(piece(begin, (end - begin) + 1, id));
-      begin = end + 1;
-      end = dt->text.find('\n', begin);
-    }
-  if (begin != dt->text.size())
-    {
-      // the text didn't end with '\n', so neither does the piece
-      end = dt->text.size();
-      pieces.push_back(piece(begin, end - begin, id));
-    }
-}
-
-
-static void 
-process_one_hunk(vector< piece > const & source,
-                 vector< piece > & dest,
-                 vector< piece >::const_iterator & i,
-                 int & cursor)
-{
-  string directive = **i;
-  assert(directive.size() > 1);
-  ++i;
-
-  try 
-    {
-      char code;
-      int pos, len;
-      if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
-              throw oops("illformed directive '" + directive + "'");
-
-      if (code == 'a')
-        {
-          // 'ax y' means "copy from source to dest until cursor == x, then
-          // copy y lines from delta, leaving cursor where it is"
-          while (cursor < pos)
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos);
-          while (len--)
-            dest.push_back(*i++);
-        }
-      else if (code == 'd')
-        {      
-          // 'dx y' means "copy from source to dest until cursor == x-1,
-          // then increment cursor by y, ignoring those y lines"
-          while (cursor < (pos - 1))
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos - 1);
-          cursor += len;
-        }
-      else 
-        throw oops("unknown directive '" + directive + "'");
-    } 
-  catch (std::out_of_range & oor)
-    {
-      throw oops("std::out_of_range while processing " + directive 
-                 + " with source.size() == " 
-                 + boost::lexical_cast<string>(source.size())
-                 + " and cursor == "
-                 + boost::lexical_cast<string>(cursor));
-    }  
-}
+#include "piece_table.hh"
 
 static void
-construct_version(vector< piece > const & source_lines,
+construct_version(piece::piece_table const & source_lines,
                   string const & dest_version, 
-                  vector< piece > & dest_lines,
+                  piece::piece_table & dest_lines,
                   rcs_file const & r)
 {
-  dest_lines.clear();
-  dest_lines.reserve(source_lines.size());
-
   I(r.deltas.find(dest_version) != r.deltas.end());
-  shared_ptr<rcs_delta> delta = r.deltas.find(dest_version)->second;
+//  shared_ptr<rcs_delta> delta = r.deltas.find(dest_version)->second;
   
   I(r.deltatexts.find(dest_version) != r.deltatexts.end());
   shared_ptr<rcs_deltatext> deltatext = r.deltatexts.find(dest_version)->second;
   
-  vector<piece> deltalines;
-  global_pieces.index_deltatext(deltatext, deltalines);
-  
-  int cursor = 0;
-  for (vector<piece>::const_iterator i = deltalines.begin(); 
-       i != deltalines.end(); )
-    process_one_hunk(source_lines, dest_lines, i, cursor);
-  while (cursor < static_cast<int>(source_lines.size()))
-    dest_lines.push_back(source_lines[cursor++]);
+  piece::apply_diff(source_lines, dest_lines, deltatext->text);
 }
 
 // FIXME: should these be someplace else? using 'friend' to reach into the
@@ -464,7 +333,7 @@ rcs_put_raw_file_edge(hexenc<id> const & old_id,
 static void
 insert_into_db(data const & curr_data,
                hexenc<id> const & curr_id,
-               vector< piece > const & next_lines,
+               piece::piece_table const & next_lines,
                data & next_data,
                hexenc<id> & next_id,
                database & db)
@@ -475,7 +344,7 @@ insert_into_db(data const & curr_data,
   //       all storage edges go from new -> old.
   {
     string tmp;
-    global_pieces.build_string(next_lines, tmp);
+    piece::build_string(next_lines, tmp);
     next_data = tmp;
   }
   delta del;
@@ -545,7 +414,7 @@ lineage.
 
 static void 
 process_branch(string const & begin_version, 
-               vector< piece > const & begin_lines,
+               piece::piece_table const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
                rcs_file const & r, 
@@ -553,8 +422,8 @@ process_branch(string const & begin_version,
                cvs_history & cvs)
 {
   string curr_version = begin_version;
-  scoped_ptr< vector< piece > > next_lines(new vector<piece>);
-  scoped_ptr< vector< piece > > curr_lines(new vector<piece> 
+  scoped_ptr< piece::piece_table > next_lines(new piece::piece_table);
+  scoped_ptr< piece::piece_table > curr_lines(new piece::piece_table 
                                            (begin_lines.begin(),
                                             begin_lines.end()));  
   data curr_data(begin_data), next_data;
@@ -612,7 +481,7 @@ process_branch(string const & begin_version,
           string branch;
           data branch_data;
           hexenc<id> branch_id;
-          vector< piece > branch_lines;
+          piece::piece_table branch_lines;
           bool priv = false;
           map<string, string>::const_iterator be = cvs.branch_first_entries.find(*i);
           
@@ -657,7 +526,7 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
   L(FL("parsed RCS file %s OK\n") % filename);
 
   {
-    vector< piece > head_lines;  
+    piece::piece_table head_lines;  
     I(r.deltatexts.find(r.admin.head) != r.deltatexts.end());
     I(r.deltas.find(r.admin.head) != r.deltas.end());
 
@@ -682,10 +551,10 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
       //       cvs.find_key_and_state (r, r.admin.head, k, s);
     }
     
-    global_pieces.reset();
-    global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second, head_lines);
+    piece::reset();
+    piece::index_deltatext(r.deltatexts.find(r.admin.head)->second->text, head_lines);
     process_branch(r.admin.head, head_lines, dat, id, r, db, cvs);
-    global_pieces.reset();
+    piece::reset();
   }
 
   ui.set_tick_trailer("");
