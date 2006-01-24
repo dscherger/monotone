@@ -1,3 +1,66 @@
+2006-01-23  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_database_check_normalized.at: update included database to
+	use rosters
+
+2006-01-23  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	New ChangeLog utilities in contrib/ .
+	* contrib/ChangeLog.sh: Script that takes the date, author, and
+	changelog certs from the last n revisions and prints them in standard
+	ChangeLog format.
+	* contrib/edit_comment_from_changelog.lua: an edit_comment hook that
+	takes the initial commit message from the most recent ChangeLog entry
+
+2006-01-23  Henry Nestler  <henry@bigfoot.de>
+
+	* monotone.texi, monotone.1: Mode none for --ticker.
+
+2006-01-23  Nathaniel Smith  <njs@pobox.com>
+
+	* commands.cc (update): Hopefully improve wording of help a bit.
+
+2006-01-21  Nathaniel Smith  <njs@pobox.com>
+
+	* netcmd.cc (read): Expand the error message we issue on protocol
+	version mismatch to be a bit more informative.
+
+2006-01-21  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Fix up Windows and IPv6 tests after the change
+	from AC_TRY_RUN to AC_TRY_COMPILE.  Also a couple of other minor
+	cleanups.
+	* Makefile.am: Remove win32/wcwidth.c from WIN32_PLATFORM_SOURCES.
+
+2006-01-21  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_db_execute.at: Play with the files table instead of the
+	revisions table, so we don't trigger the has-revisions-but-no-rosters
+	check.
+
+2006-01-21  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Sort the translation guidelines a little more.
+
+2006-01-21  Joel Rosdahl  <joel@rosdahl.net>
+
+	* po/sv.po: Corrections in translation guidelines.
+
+2006-01-21  Joel Rosdahl  <joel@rosdahl.net>
+
+	* AUTHORS: Added myself as a translation contributor.
+	* po/sv.po: Second round of review of Swedish translation.
+
+2006-01-20  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Added a \n at the end of a msgstr that was missing
+	it.
+
+2006-01-20  Joel Rosdahl  <joel@rosdahl.net>
+
+	* po/sv.po: Review and suggested corrections of Swedish
+	translation.
+
 2006-01-20  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* netsync.cc: Make our sockets non-blocking.
