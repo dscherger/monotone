@@ -73,23 +73,15 @@ perform_rename(std::set<file_path> const & src_paths,
 // the "work" file contains the current cset representing uncommitted
 // add/drop/rename operations (not deltas)
 
-void get_work_cset(cset & w);
-void remove_work_cset();
-void put_work_cset(cset & w);
+void get_work_revision_set(revision_set & w);
+void put_work_revision_set(revision_set & w);
 
 // the "revision" file contains the base revision id that the current working
 // copy was checked out from
 
-void get_revision_id(revision_id & c);
-void put_revision_id(revision_id const & rev);
-void get_base_revision(app_state & app, 
-                       revision_id & rid,
-                       roster_t & ros,
-                       marking_map & mm);
-void get_base_revision(app_state & app,
-                       revision_id & rid,
-                       roster_t & ros);
-void get_base_roster(app_state & app, roster_t & ros);
+void get_workspace_parentage_and_revision(app_state & app,
+                                          parentage & parents,
+                                          revision_set & rs);
 
 // This returns the current roster, except it does not bother updating the
 // hashes in that roster -- the "shape" is correct, all files and dirs exist

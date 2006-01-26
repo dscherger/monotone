@@ -16,6 +16,8 @@
 #include "paths.hh"
 #include "sanity.hh"
 #include "vocab.hh"
+//#include "revision.hh"
+struct revision_set;
 
 struct node_id_source
 {
@@ -287,6 +289,13 @@ void
 make_cset(roster_t const & from, 
           roster_t const & to, 
           cset & cs);
+
+typedef std::map<revision_id, roster_t> parentage;
+
+void
+make_revision_set(parentage const & parents,
+                  roster_t const & to,
+                  revision_set & rs);
 
 bool
 equal_up_to_renumbering(roster_t const & a, marking_map const & a_markings,

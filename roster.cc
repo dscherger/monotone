@@ -1860,6 +1860,21 @@ make_cset(roster_t const & from, roster_t const & to, cset & cs)
     }
 }
 
+void
+make_revision_set(parentage const & parents,
+                  roster_t const & to,
+                  revision_set & rs)
+{
+  rs.edges.clear();
+  for (parentage::const_iterator i = parents.begin();
+       i != parents.end(); ++i)
+    {
+      boost::shared_ptr<cset> cs(new cset);
+      make_cset(i->second, to, *cs);
+      rs.edges.insert(make_pair(i->first, cs));
+    }
+  calculate_ident(to, rs.new_manifest);
+}
 
 // we assume our input is sane
 bool

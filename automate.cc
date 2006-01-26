@@ -227,7 +227,8 @@ automate_attributes(std::vector<utf8> args,
 
   roster_t base, current;
   temp_node_id_source nis;
-  get_base_and_current_roster_shape(base, current, nis, app);
+  E(false, F("FIXME_WORKMERGE"));
+//get_base_and_current_roster_shape(base, current, nis, app);
 
   if (args.size() == 1)
     {
@@ -684,8 +685,8 @@ automate_inventory(std::vector<utf8> args,
   inventory_map inventory;
   cset cs;
   path_set unchanged, changed, missing, known, unknown, ignored;
-
-  get_base_and_current_roster_shape(base, curr, nis, app);
+  E(false, F("FIXME_WORKMERGE"));
+//  get_base_and_current_roster_shape(base, curr, nis, app);
   make_cset(base, curr, cs);
 
   I(cs.deltas_applied.empty());

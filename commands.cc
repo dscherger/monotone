@@ -1376,7 +1376,13 @@ CMD(cat, N_("informative"),
 
   revision_id rid;
   if (app.revision_selectors.size() == 0)
-    get_revision_id(rid);
+    {
+      revision_set rs;
+      get_work_revision_set(rs);
+      N(rs.edges.size() == 1,
+        F("This workspace has multiple base revisions, you must specify one explicitly."));
+      rid = rs.edges.begin()->first;
+    }
   else 
     complete(app, idx(app.revision_selectors, 0)(), rid);
   N(app.db.revision_exists(rid), F("no such revision '%s'") % rid);
@@ -1477,13 +1483,12 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
     }
 
   app.create_working_copy(dir);
-    
+
   file_data data;
   roster_t ros;
   marking_map mm;
-  
-  put_revision_id(ident);
-  
+
+
   L(FL("checking out revision %s to directory %s\n") % ident % dir);
   app.db.get_roster(ident, ros, mm);
   
@@ -1516,7 +1521,11 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
           write_localized_data(path, dat.inner(), app.lua);
         }
     }
-  remove_work_cset();
+  {
+    revision_set rs;
+    rs.edges.insert(make_pair(ident, new cset));
+    put_work_revision_set(rs);
+  }
   update_any_attrs(app);
   maybe_update_inodeprints(app);
 }
@@ -2154,6 +2163,19 @@ CMD(db, N_("database"),
     }
   else
     throw usage(name);
+}
+
+CMD(base_revision, N_("working copy"), "",
+    N_("get the workspace base revision(s)"),
+    OPT_NONE)
+{
+  if (args.size())
+    throw usage(name);
+
+  revision_set rs;
+  get_work_revision_set(rs);
+  for (edge_map::const_iterator i = rs.edges.begin(); i != rs.edges.end(); ++i)
+    P(F("%s") % i->first);
 }
 
 CMD(attr, N_("working copy"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [ATTR]"), 
@@ -2996,6 +3018,39 @@ CMD(update, N_("working copy"), "",
   maybe_update_inodeprints(app);
 }
 
+
+CMD(workspace_merge, N_("tree"), N_("REV REV"), N_("merge two revisions in a workspace"),
+    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR)
+{
+  if (args.size() != 2)
+    throw usage(name);
+  revision_id l_id, r_id;
+  complete(app, idx(args,0)(), l_id);
+  complete(app, idx(args,1)(), r_id);
+  N(!is_ancestor(l_id, r_id, app),
+    F("%s in an ancestor of %s; no merge is needed.") % l_id % r_id);
+  N(!is_ancestor(r_id, l_id, app),
+    F("%s in an ancestor of %s; no merge is needed.") % r_id % l_id);
+  roster_t l_roster, r_roster;
+  marking_map l_marking, r_marking;
+  app.db.get_roster(l_id, l_roster, l_marking);
+  app.db.get_roster(r_id, r_roster, r_marking);
+  std::set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
+  app.db.get_uncommon_ancestors(l_id, r_id,
+                                l_uncommon_ancestors, 
+                                r_uncommon_ancestors);
+  roster_merge_result result;
+  roster_merge(l_roster, l_marking, l_uncommon_ancestors,
+               r_roster, r_marking, r_uncommon_ancestors,
+               result);
+
+  P(F("There are %s node_name_conflicts.") % result.node_name_conflicts.size());
+  P(F("There are %s file_content_conflicts.") % result.file_content_conflicts.size());
+  P(F("There are %s node_attr_conflicts.") % result.node_attr_conflicts.size());
+  P(F("There are %s orphaned_node_conflicts.") % result.orphaned_node_conflicts.size());
+  P(F("There are %s rename_target_conflicts.") % result.rename_target_conflicts.size());
+  P(F("There are %s directory_loop_conflicts.") % result.directory_loop_conflicts.size());
+}
 
 // should merge support --message, --message-file?  It seems somewhat weird,
 // since a single 'merge' command may perform arbitrarily many actual merges.

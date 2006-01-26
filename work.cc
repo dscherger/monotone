@@ -357,7 +357,7 @@ static void get_work_path(bookkeeping_path & w_path)
   L(FL("work path is %s\n") % w_path);
 }
 
-void get_work_cset(cset & w)
+void get_work_revision_set(revision_set & w)
 {
   bookkeeping_path w_path;
   get_work_path(w_path);
@@ -366,7 +366,7 @@ void get_work_cset(cset & w)
       L(FL("checking for un-committed work file %s\n") % w_path);
       data w_data;
       read_data(w_path, w_data);
-      read_cset(w_data, w);
+      read_revision_set(w_data, w);
       L(FL("read cset from %s\n") % w_path);
     }
   else
@@ -375,30 +375,14 @@ void get_work_cset(cset & w)
     }
 }
 
-void remove_work_cset()
+void put_work_revision_set(revision_set & w)
 {
   bookkeeping_path w_path;
   get_work_path(w_path);
-  if (file_exists(w_path))
-    delete_file(w_path);
-}
 
-void put_work_cset(cset & w)
-{
-  bookkeeping_path w_path;
-  get_work_path(w_path);
-  
-  if (w.empty())
-    {
-      if (file_exists(w_path))
-        delete_file(w_path);
-    }
-  else
-    {
-      data w_data;
-      write_cset(w, w_data);
-      write_data(w_path, w_data);
-    }
+  data w_data;
+  write_revision_set(w, w_data);
+  write_data(w_path, w_data);
 }
 
 // revision file name 
@@ -410,7 +394,7 @@ static void get_revision_path(bookkeeping_path & m_path)
   m_path = bookkeeping_root / revision_file_name;
   L(FL("revision path is %s\n") % m_path);
 }
-
+/*
 void get_revision_id(revision_id & c)
 {
   c = revision_id();
@@ -442,37 +426,25 @@ void put_revision_id(revision_id const & rev)
   data c_data(rev.inner()() + "\n");
   write_data(c_path, c_data);
 }
+*/
+
 
 void
-get_base_revision(app_state & app, 
-                  revision_id & rid,
-                  roster_t & ros,
-                  marking_map & mm)
+get_workspace_parentage_and_revision(app_state & app, 
+                                     parentage & parents,
+                                     revision_set & rs)
 {
-  get_revision_id(rid);
-
-  if (!null_id(rid))
+  get_work_revision_set(rs);
+  parents.clear();
+  for (edge_map::const_iterator i = rs.edges.begin(); i != rs.edges.end(); ++i)
     {
-
-      N(app.db.revision_exists(rid),
-        F("base revision %s does not exist in database\n") % rid);
-      
-      app.db.get_roster(rid, ros, mm);
+      roster_t rost;
+      app.db.get_roster(i->first, rost);
+      parents.insert(make_pair(i->first, rost));
     }
-
-  L(FL("base roster has %d entries\n") % ros.all_nodes().size());
 }
 
-void
-get_base_revision(app_state & app, 
-                  revision_id & rid,
-                  roster_t & ros)
-{
-  marking_map mm;
-  get_base_revision(app, rid, ros, mm);
-}
-
-void
+static void
 get_base_roster(app_state & app, 
                 roster_t & ros)
 {
@@ -484,11 +456,16 @@ get_base_roster(app_state & app,
 void
 get_current_roster_shape(roster_t & ros, node_id_source & nis, app_state & app)
 {
-  get_base_roster(app, ros);
-  cset cs;
-  get_work_cset(cs);
+  parentage parents;
+  revision_set rs;
+  get_workspace_parentage_and_revision(app, parents, rs);
+  ros = parents.begin()->second;
   editable_roster_base er(ros, nis);
-  cs.apply_to(er);
+  for (edge_map::const_iterator i = rs.edges.begin(); i != rs.edges.end(); ++i)
+    {
+      if (edge_old_revision(i) == parents.begin()->first)
+        edge_changes(i).apply_to(er);
+    }
 }
 
 void
