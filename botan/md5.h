@@ -24,10 +24,6 @@ class MD5 : public MDx_HashFunction
       void hash(const byte[]);
       void copy_out(byte[]);
 
-      static void FF(u32bit&, u32bit, u32bit, u32bit, u32bit, byte, u32bit);
-      static void GG(u32bit&, u32bit, u32bit, u32bit, u32bit, byte, u32bit);
-      static void HH(u32bit&, u32bit, u32bit, u32bit, u32bit, byte, u32bit);
-      static void II(u32bit&, u32bit, u32bit, u32bit, u32bit, byte, u32bit);
       SecureBuffer<u32bit, 16> M;
       SecureBuffer<u32bit, 4> digest;
    };
