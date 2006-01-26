@@ -412,25 +412,33 @@ void cvs_repository::store_delta(const std::string &new_contents,
 }
 
 static bool 
-build_change_set(const cvs_client &c, manifest_map const& oldm, cvs_manifest &newm,
-                 change_set & cs, cvs_file_state remove_state, unsigned cm_delta_depth)
+build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
+                 editable_roster_base& cs, cvs_file_state const& remove_state, 
+                 unsigned cm_delta_depth, revision_set &newrev)
 {
-  cs = change_set();
   cvs_manifest cvs_delta;
-
-  L(FL("build_change_set(%d,%d,)\n") % oldm.size() % newm.size());
   
-  for (manifest_map::const_iterator f = oldm.begin(); f != oldm.end(); ++f)
-    {
-      cvs_manifest::const_iterator fn = newm.find(f->first.as_internal());
+  node_map const & nodes = oldr.all_nodes();
+  L(FL("build_change_set(%d,%d,)\n") % nodes.size() % newm.size());
+  
+  for (node_map::const_iterator f = nodes.begin(); f != nodes.end(); ++f)
+    { node_t node = f->second;
+      split_path sp;
+      oldr.get_name(f->first, sp);
+      file_path path(sp);
+      
+      if (is_dir_t(node)) continue;
+      
+      cvs_manifest::const_iterator fn = newm.find(path.as_internal());
       if (fn==newm.end())
       {  
-        L(FL("deleting file '%s'\n") % f->first);
-        cs.delete_file(f->first);
-        cvs_delta[f->first.as_internal()]=remove_state;
+        L(FL("deleting file '%s'\n") % path);
+        cs.detach_node(sp);
+        cvs_delta[path.as_internal()]=remove_state;
       }
       else 
-        { if (f->second == fn->second->sha1sum)
+        { file_t file = downcast_to_file_t(node);
+          if (file->content == fn->second->sha1sum)
             {
 //              L(FL("skipping preserved entry state '%s' on '%s'\n")
 //                % fn->second->sha1sum % fn->first);         
@@ -438,25 +446,29 @@ build_change_set(const cvs_client &c, manifest_map const& oldm, cvs_manifest &ne
           else
             {
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % fn->first % f->second % fn->second->sha1sum);
+                % path % file->content % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              cs.apply_delta(file_path_internal(fn->first), f->second, fn->second->sha1sum);
-              cvs_delta[f->first.as_internal()]=fn->second;
+              cs.apply_delta(sp, file->content, fn->second->sha1sum);
+              cvs_delta[path.as_internal()]=fn->second;
             }
         }  
     }
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
     {
-      manifest_map::const_iterator fo = oldm.find(file_path_internal(f->first));
-      if (fo==oldm.end())
+      split_path sp;
+      file_path_internal(f->first).split(sp);
+      if (!oldr.has_node(sp))
       {  
         L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum().empty());
-        cs.add_file(file_path_internal(f->first), f->second->sha1sum);
+        node_id nid=cs.create_file_node(f->second->sha1sum);
+        split_path sp;
+        file_path_internal(f->first).split(sp);
+        cs.attach_node(nid, sp);
         cvs_delta[f->first]=f->second;
       }
     }
-  if (!oldm.empty() && cvs_delta.size()<newm.size() 
+  if (!nodes.empty() && cvs_delta.size()<newm.size() 
       && cm_delta_depth+1<cvs_edge::cm_max_delta_depth)
   { newm=cvs_delta;
     return true;
@@ -721,9 +733,10 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
 { // cvs_manifest parent_manifest;
   revision_id parent_rid;
-  manifest_id parent_mid;
-  manifest_map parent_map;
-  manifest_map child_map=parent_map;
+//  manifest_id parent_mid;
+  roster_t old_roster, new_roster;
+//  manifest_map parent_map;
+//  manifest_map child_map=parent_map;
   packet_db_writer dbw(app);
   unsigned cm_delta_depth=0;
   
@@ -737,22 +750,31 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
     I(!before->revision().empty());
     parent_rid=before->revision;
-    app.db.get_revision_manifest(parent_rid,parent_mid);
-    app.db.get_manifest(parent_mid,parent_map);
-    child_map=parent_map;
+    marking_map mm;
+    app.db.get_roster(parent_rid, old_roster, mm);
+//    app.db.get_revision_manifest(parent_rid,parent_mid);
+//    app.db.get_manifest(parent_mid,parent_map);
+//    child_map=parent_map;
 //    parent_manifest=get_files(*before);
     cm_delta_depth=before->cm_delta_depth;
   }
+  else
+  { // create root node?
+  }
   for (; e!=edges.end(); ++e)
-  { boost::shared_ptr<change_set> cs(new change_set());
+  { temp_node_id_source nis;
+    editable_roster_base cs(old_roster,nis);
+//  boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
     L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
-    if (build_change_set(*this,parent_map,e->xfiles,*cs,remove_state,cm_delta_depth))
+#warning cm_delta_depth kann ganz weg, wenn auf Dateien umgestellt
+    revision_set rs;
+    if (build_change_set(*this,old_roster,e->xfiles,cs,remove_state,cm_delta_depth,rs))
     { e->delta_base=parent_rid;
       e->cm_delta_depth=cm_delta_depth+1;
     }
-    if (cs->empty())
+    if (!rs.is_nontrivial()) 
     { W(F("null edge (empty cs) @%s skipped\n") % time_t2human(e->time));
       continue;
     }
@@ -760,8 +782,9 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     { W(F("empty edge (no files) @%s skipped\n") % time_t2human(e->time));
       continue;
     }
-    apply_change_set(*cs, child_map);
-    if (child_map.empty()) 
+// @@   apply_change_set(*cs, child_map);
+#if 0
+    if (child_map.empty())
     { W(F("empty edge (no files in manifest) @%s skipped\n") % time_t2human(e->time));
       // perhaps begin a new tree:
       // parent_rid=revision_id();
@@ -769,9 +792,12 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
 //      parent_manifest=cvs_manifest();
       continue;
     }
+#endif
+#warning here // @@
     manifest_id child_mid;
-    calculate_ident(child_map, child_mid);
+//    calculate_ident(child_map, child_mid);
 
+#if 0
     revision_set rev;
     rev.new_manifest = child_mid;
     rev.edges.insert(std::make_pair(parent_rid, make_pair(parent_mid, cs)));
@@ -815,6 +841,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     parent_mid = child_mid;
     parent_rid = child_rid;
 //    parent_manifest=child_manifest;
+#endif
     cm_delta_depth=e->cm_delta_depth;
   }
 }
@@ -1013,6 +1040,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     { L(FL("%s != %s\n") % edge_old_revision(j) % parent->revision);
       continue;
     }
+#if 0
     const change_set &cs=edge_changes(j);
     N(cs.rearrangement.renamed_dirs.empty(),
         F("I can't commit directory renames yet\n"));
@@ -1125,6 +1153,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       e.cm_delta_depth=++cm_delta_depth;
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
+#endif    
     if (global_sanity.debug) L(FL("%s") % debug());
     fail=false;
     return --(edges.end());
@@ -1379,8 +1408,10 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       I(!pieces.empty());
       manifest_id mid;
       app.db.get_revision_manifest(i->inner().ident,mid);
+#if 0      
       manifest_map manifest;
       app.db.get_manifest(mid,manifest);
+#endif      
       //      manifest;
       piece::piece_table::const_iterator p=pieces.begin()+1;
       if ((**p)[0]=='+') // this is a delta encoded manifest
@@ -1418,13 +1449,16 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           e.xfiles.insert(std::make_pair(path,cfs)); // remove_state));
         }
         else
-        { manifest_map::const_iterator iter_file_id=manifest.find(file_path_internal(monotone_path));
+        { 
+#if 0        
+          manifest_map::const_iterator iter_file_id=manifest.find(file_path_internal(monotone_path));
           I(iter_file_id!=manifest.end());
           fs.sha1sum=iter_file_id->second.inner();
           fs.log_msg=e.changelog;
           fs.author=e.author;
           cvs_file_state cfs=remember(files[path].known_states,fs,path);
           e.xfiles.insert(std::make_pair(path,cfs));
+#endif
         }
       }
       piece::reset();
@@ -1457,9 +1491,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         }
       }
       catch (informative_failure &e)
-      { W(F("failed to reconstruct CVS revision structure:\n"
-            "%s\n"
-            "I can't figure out which files got removed on %s->%s\n")
+      { L(FL("failed to reconstruct CVS revisions: %s: %s->%s\n")
             % e.what % last->revision() % i->revision());
       }
     last=i;
