@@ -150,10 +150,11 @@ perform_additions(path_set const & paths, app_state & app)
 {
   if (paths.empty())
     return;
-  
+
   temp_node_id_source nis;
-  roster_t base_roster, new_roster;
-  get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
+  parentage parents;
+  roster_t new_roster;
+  get_parentage_and_current_roster_shape(parents, new_roster, nis, app);
 
   editable_roster_base er(new_roster, nis);
 
@@ -171,9 +172,9 @@ perform_additions(path_set const & paths, app_state & app)
     // NB.: walk_tree will handle error checking for non-existent paths
     walk_tree(file_path(*i), build);
 
-  cset new_work;
-  make_cset(base_roster, new_roster, new_work);
-  put_work_cset(new_work);
+  revision_set new_work;
+  make_revision_set(parents, new_roster, new_work);
+  put_work_revision_set(new_work);
   update_any_attrs(app);
 }
 
@@ -184,8 +185,9 @@ perform_deletions(path_set const & paths, app_state & app)
     return;
   
   temp_node_id_source nis;
-  roster_t base_roster, new_roster;
-  get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
+  parentage parents;
+  roster_t new_roster;
+  get_parentage_and_current_roster_shape(parents, new_roster, nis, app);
 
   // we traverse the the paths backwards, so that we always hit deep paths
   // before shallow paths (because path_set is lexicographically sorted).
@@ -216,9 +218,9 @@ perform_deletions(path_set const & paths, app_state & app)
         }
     }
 
-  cset new_work;
-  make_cset(base_roster, new_roster, new_work);
-  put_work_cset(new_work);
+  revision_set new_work;
+  make_revision_set(parents, new_roster, new_work);
+  put_work_revision_set(new_work);
   update_any_attrs(app);
 }
 
@@ -243,14 +245,15 @@ perform_rename(set<file_path> const & src_paths,
                app_state & app)
 {
   temp_node_id_source nis;
-  roster_t base_roster, new_roster;
   split_path dst;
   set<split_path> srcs;
   set< pair<split_path, split_path> > renames;
 
   I(!src_paths.empty());
 
-  get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
+  parentage parents;
+  roster_t new_roster;
+  get_parentage_and_current_roster_shape(parents, new_roster, nis, app);
 
   dst_path.split(dst);
 
@@ -310,9 +313,9 @@ perform_rename(set<file_path> const & src_paths,
         % file_path(i->second));
     }
 
-  cset new_work;
-  make_cset(base_roster, new_roster, new_work);
-  put_work_cset(new_work);
+  revision_set new_work;
+  make_revision_set(parents, new_roster, new_work);
+  put_work_revision_set(new_work);
 
   if (app.execute)
     {
@@ -386,7 +389,7 @@ void put_work_revision_set(revision_set & w)
 }
 
 // revision file name 
-
+/*
 std::string revision_file_name("revision");
 
 static void get_revision_path(bookkeeping_path & m_path)
@@ -394,7 +397,7 @@ static void get_revision_path(bookkeeping_path & m_path)
   m_path = bookkeeping_root / revision_file_name;
   L(FL("revision path is %s\n") % m_path);
 }
-/*
+
 void get_revision_id(revision_id & c)
 {
   c = revision_id();
@@ -444,15 +447,6 @@ get_workspace_parentage_and_revision(app_state & app,
     }
 }
 
-static void
-get_base_roster(app_state & app, 
-                roster_t & ros)
-{
-  revision_id rid;
-  marking_map mm;
-  get_base_revision(app, rid, ros, mm);
-}
-
 void
 get_current_roster_shape(roster_t & ros, node_id_source & nis, app_state & app)
 {
@@ -476,26 +470,29 @@ get_current_restricted_roster(roster_t & ros, node_id_source & nis, app_state & 
 }
 
 void
-get_base_and_current_roster_shape(roster_t & base_roster,
-                                  roster_t & current_roster,
-                                  node_id_source & nis,
-                                  app_state & app)
-{
-  get_base_roster(app, base_roster);
-  current_roster = base_roster;
-  cset cs;
-  get_work_cset(cs);
-  editable_roster_base er(current_roster, nis);
-  cs.apply_to(er);
-}
-
-void
-get_base_and_current_restricted_roster(roster_t & base_roster,
+get_parentage_and_current_roster_shape(parentage & parents,
                                        roster_t & current_roster,
                                        node_id_source & nis,
                                        app_state & app)
 {
-  get_base_and_current_roster_shape(base_roster, current_roster, nis, app);
+  revision_set rs;
+  get_workspace_parentage_and_revision(app, parents, rs);
+  current_roster = parents.begin()->second;
+  editable_roster_base er(current_roster, nis);
+  for (edge_map::const_iterator i = rs.edges.begin(); i != rs.edges.end(); ++i)
+    {
+      if (edge_old_revision(i) == parents.begin()->first)
+        edge_changes(i).apply_to(er);
+    }
+}
+
+void
+get_parentage_and_current_restricted_roster(parentage & parents,
+                                            roster_t & current_roster,
+                                            node_id_source & nis,
+                                            app_state & app)
+{
+  get_parentage_and_current_roster_shape(parents, current_roster, nis, app);
   update_restricted_roster_from_filesystem(current_roster, app);
 }
 
