@@ -411,10 +411,20 @@ void cvs_repository::store_delta(const std::string &new_contents,
   }
 }
 
+static
+void add_missing_parents(roster_t const& oldr, split_path const & sp, cset & cs)
+{ split_path tmp;
+  if (!oldr.has_node(tmp)) safe_insert(cs.dirs_added, tmp);
+  for (split_path::const_iterator i=sp.begin();i!=sp.end() && i!=--sp.end();++i)
+  { tmp.push_back(*i);
+    if (!oldr.has_node(tmp)) safe_insert(cs.dirs_added, tmp);
+  }
+}
+
 static bool 
 build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
-                 editable_roster_base& cs, cvs_file_state const& remove_state, 
-                 unsigned cm_delta_depth, revision_set &newrev)
+                 boost::shared_ptr<cset> cs, cvs_file_state const& remove_state, 
+                 unsigned cm_delta_depth) // , revision_set &newrev)
 {
   cvs_manifest cvs_delta;
   
@@ -433,7 +443,8 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
       if (fn==newm.end())
       {  
         L(FL("deleting file '%s'\n") % path);
-        cs.detach_node(sp);
+        save_insert(cs.nodes_deleted, sp);
+//        cs.detach_node(sp);
         cvs_delta[path.as_internal()]=remove_state;
       }
       else 
@@ -448,7 +459,8 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % path % file->content % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              cs.apply_delta(sp, file->content, fn->second->sha1sum);
+              safe_insert(cs.deltas_applied, make_pair(sp, make_pair(file->content,fn->second->sha1sum)));
+//              cs.apply_delta(sp, file->content, fn->second->sha1sum);
               cvs_delta[path.as_internal()]=fn->second;
             }
         }  
@@ -461,10 +473,12 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
       {  
         L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum().empty());
-        node_id nid=cs.create_file_node(f->second->sha1sum);
         split_path sp;
         file_path_internal(f->first).split(sp);
-        cs.attach_node(nid, sp);
+        add_missing_parents(oldr, sp, cs);
+        safe_insert(cs.files_added, make_pair(sp, f->second->sha1sum));
+//        node_id nid=cs.create_file_node(f->second->sha1sum);
+//        cs.attach_node(nid, sp);
         cvs_delta[f->first]=f->second;
       }
     }
@@ -734,7 +748,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
 { // cvs_manifest parent_manifest;
   revision_id parent_rid;
 //  manifest_id parent_mid;
-  roster_t old_roster, new_roster;
+  roster_t old_roster;
 //  manifest_map parent_map;
 //  manifest_map child_map=parent_map;
   packet_db_writer dbw(app);
@@ -763,18 +777,25 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   }
   for (; e!=edges.end(); ++e)
   { temp_node_id_source nis;
-    editable_roster_base cs(old_roster,nis);
+    editable_roster_base eros(old_roster,nis);
 //  boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
     L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
 #warning cm_delta_depth kann ganz weg, wenn auf Dateien umgestellt
-    revision_set rs;
-    if (build_change_set(*this,old_roster,e->xfiles,cs,remove_state,cm_delta_depth,rs))
+    revision_set rev;
+    boost::shared_ptr<cset> cs(new cset());
+    if (build_change_set(*this,old_roster,e->xfiles,cs,remove_state,cm_delta_depth))
     { e->delta_base=parent_rid;
       e->cm_delta_depth=cm_delta_depth+1;
     }
-    if (!rs.is_nontrivial()) 
+    cs->apply_to(eros);
+    calculate_ident(cs, rev.new_manifest);
+    safe_insert(rev.edges, std::make_pair(old_revision, cs));
+    revision_id child_rid;
+    calculate_ident(rev, child_rid);
+    
+    if (!rev.is_nontrivial()) 
     { W(F("null edge (empty cs) @%s skipped\n") % time_t2human(e->time));
       continue;
     }
@@ -782,7 +803,6 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     { W(F("empty edge (no files) @%s skipped\n") % time_t2human(e->time));
       continue;
     }
-// @@   apply_change_set(*cs, child_map);
 #if 0
     if (child_map.empty())
     { W(F("empty edge (no files in manifest) @%s skipped\n") % time_t2human(e->time));
@@ -793,39 +813,13 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
       continue;
     }
 #endif
-#warning here // @@
-    manifest_id child_mid;
-//    calculate_ident(child_map, child_mid);
-
-#if 0
-    revision_set rev;
-    rev.new_manifest = child_mid;
-    rev.edges.insert(std::make_pair(parent_rid, make_pair(parent_mid, cs)));
-    revision_id child_rid;
-    calculate_ident(rev, child_rid);
     L(FL("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % child_mid);
-
-    if (app.db.manifest_version_exists(child_mid))
-    {
-        L(FL("existing path to %s found, skipping\n") % child_mid);
-    }
-    else if (parent_mid.inner()().empty())
-    {
-      manifest_data mdat;
-      I(!child_map.empty());
-      write_manifest_map(child_map, mdat);
-      app.db.put_manifest(child_mid, mdat);
-    }
-    else
-    { 
-      delta del;
-      I(!child_map.empty());
-      diff(parent_map, child_map, del);
-      app.db.put_manifest_version(parent_mid, child_mid, del);
-    }
     e->revision=child_rid.inner();
-    if (! app.db.revision_exists(child_rid))
-    { app.db.put_revision(child_rid, rev);
+    if (!app.db.revision_exists(child_rid))
+    { // data tmp;
+      // write_revision_set(rev, tmp);
+      app.db.put_revision(child_rid, rev);
+      // @@ store aux certs?
       if (revision_ticker.get()) ++(*revision_ticker);
     }
     cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
@@ -836,6 +830,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     cert_revision_date_time(child_rid, e->time, app, dbw);
     cert_cvs(*e, dbw);
 
+#if 0
     // now apply same change set to parent_map, making parent_map == child_map
     apply_change_set(*cs, parent_map);
     parent_mid = child_mid;
