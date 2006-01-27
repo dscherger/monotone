@@ -415,7 +415,7 @@ void cvs_repository::store_delta(const std::string &new_contents,
 static
 void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::shared_ptr<cset> cs)
 { split_path tmp;
-  if (!oldr.has_node(tmp)) safe_insert(cs->dirs_added, tmp);
+//  if (!oldr.has_node(tmp)) safe_insert(cs->dirs_added, tmp);
   for (split_path::const_iterator i=sp.begin();i!=sp.end() && i!=--sp.end();++i)
   { tmp.push_back(*i);
     if (!oldr.has_node(tmp)) safe_insert(cs->dirs_added, tmp);
@@ -911,7 +911,7 @@ void cvs_repository::prime()
   fill_manifests(edges.begin());
   
   // commit them all
-  commit_cvs2mtn(edges.begin());
+  if (!edges.empty()) commit_cvs2mtn(edges.begin());
   
   store_modules();
 }
