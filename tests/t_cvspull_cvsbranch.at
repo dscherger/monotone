@@ -69,7 +69,8 @@ AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A readded'])
 
 # pull into monotone
 
-AT_CHECK(MONOTONE --branch=testbranch cvs_pull $CVSROOT test branch, [], [ignore], [ignore])
+AT_CHECK(echo MONOTONE --branch=testbranch cvs_pull $CVSROOT test branch, [], [ignore], [ignore])
+exit 1
 
 # check presence of files
 

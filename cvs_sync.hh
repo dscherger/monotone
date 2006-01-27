@@ -18,21 +18,27 @@ struct cvs_revision_nr
 { std::vector<int> parts;
 
   cvs_revision_nr(const std::string &x);
+  cvs_revision_nr() {}
   void operator++();
   std::string get_string() const;
   bool is_branch() const;
   bool is_parent_of(const cvs_revision_nr &child) const;
+  // get the root of the side branch (1.1.1.1.0.6 => 1.1.1.1)
+  cvs_revision_nr get_branch_root() const;
   bool operator==(const cvs_revision_nr &b) const;
   bool operator<(const cvs_revision_nr &b) const;
 };
 
+// FIXME: future conversion to file_path
+typedef std::string cvs_file_path;
+
 struct file_state
-{ time_t since_when;
+{ time_t since_when; // boost::ptime
   std::string cvs_version; // cvs_revision_nr ?
   unsigned size;
   unsigned patchsize;
   bool dead;
-  std::string md5sum;
+  std::string md5sum; // hexenc<something?>
   hexenc<id> sha1sum; // make this a file_id
   std::string log_msg;
   std::string author;
@@ -53,14 +59,14 @@ struct file_history
 typedef std::set<file_state>::const_iterator cvs_file_state;
 
 // state of the files at a specific point in history, dead files do not occur here
-typedef std::map<std::string,cvs_file_state> cvs_manifest;
+typedef std::map<cvs_file_path,cvs_file_state> cvs_manifest;
 
 struct cvs_edge // careful this name is also used in cvs_import
 {
   std::string changelog;
   bool changelog_valid;
   std::string author;
-  time_t time;
+  time_t time; // boost::ptime
   mutable time_t time2;
   mutable revision_id delta_base;
   // delta encoded if !delta_base().empty()
@@ -107,9 +113,11 @@ public:
 private:
   std::set<cvs_edge> edges;
   std::map<revision_id,std::set<cvs_edge>::iterator> revision_lookup;
-  std::map<std::string,file_history> files;
+  std::map<cvs_file_path,file_history> files;
   // tag,file,rev
-  std::map<std::string,std::map<std::string,std::string> > tags;
+  std::map<std::string,std::map<cvs_file_path,cvs_revision_nr> > tags;
+  // the root of this branch (only applicable to side branches)
+  std::map<cvs_file_path,cvs_revision_nr> branch_point;
 
   app_state &app;
   std::auto_ptr<ticker> file_id_ticker;
@@ -134,7 +142,7 @@ private:
           const std::set<cvs_edge>::iterator &e);
   void get_all_files();
   void update(std::set<file_state>::const_iterator s,
-              std::set<file_state>::iterator s2,const std::string &file,
+              std::set<file_state>::iterator s2,cvs_file_path const& file,
               std::string &contents);
   void store_checkout(std::set<file_state>::iterator s2,
         const cvs_client::checkout &file, std::string &file_contents);
@@ -148,18 +156,17 @@ private:
 
 // std::string is equivalent to data
   void store_contents(const data &contents, hexenc<id> &sha1sum);
-//  void apply_delta(std::string &contents, const std::string &patch);
   void store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
   void cert_cvs(const cvs_edge &e, packet_consumer & pc);
-  cvs_file_state remember(std::set<file_state> &s,const file_state &fs, std::string const& filename);
+  cvs_file_state remember(std::set<file_state> &s,const file_state &fs, cvs_file_path const& filename);
   void join_edge_parts(std::set<cvs_edge>::iterator i);
   std::set<cvs_edge>::iterator last_known_revision();
   std::set<cvs_edge>::iterator commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail);
   const cvs_manifest &get_files(const cvs_edge &e);
   // try harder (reconnect if something goes wrong)
-  struct checkout CheckOut2(const std::string &file, const std::string &revision);
+  struct checkout CheckOut2(const cvs_file_path &file, const std::string &revision);
   void takeover_dir(const std::string &path);
   
   void store_modules();

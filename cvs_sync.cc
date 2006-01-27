@@ -133,6 +133,16 @@ bool cvs_revision_nr::is_branch() const
 { return parts.size()&1;
 }
 
+cvs_revision_nr cvs_revision_nr::get_branch_root() const
+{ I(parts.size()>=4); 
+  I(!(parts.size()&1)); // even number of digits
+  I(!parts[parts.size()-2]); // but last digit is zero
+  I(!(parts[parts.size()-1]&1)); // last digit is even
+  cvs_revision_nr result;
+  result.parts=std::vector<int>(parts.begin(),parts.end()-2);
+  return result;
+}
+
 // cvs_repository ----------------------
 
 // very short form to output in logs etc.
@@ -292,7 +302,7 @@ std::string cvs_repository::debug() const
     result+= ")\n";
   }
   result+= "Tags :\n";
-  for (std::map<std::string,std::map<std::string,std::string> >::const_iterator i=tags.begin();
+  for (std::map<std::string,std::map<std::string,cvs_revision_nr> >::const_iterator i=tags.begin();
       i!=tags.end();++i)
   { result+= i->first + "(" + boost::lexical_cast<string>(i->second.size()) + " files)\n";
   }
@@ -320,8 +330,9 @@ void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string
 { MM(file);
   MM(tag);
   I(i->first==file);
-  std::map<std::string,std::string> &tagslot=repo.tags[tag];
+  std::map<cvs_file_path,cvs_revision_nr> &tagslot=repo.tags[tag];
   tagslot[file]=revision;
+  if (tag==repo.branch) repo.branch_point[file]=cvs_revision_nr(revision).get_branch_root();
 }
 
 void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
@@ -857,7 +868,9 @@ void cvs_repository::prime()
     MM(i->first);
     
     if (!branch.empty())
-      args.push_back("-r"+branch);
+    { args.push_back("-r"+branch);
+      N(sync_since==-1, F("--since does not work on a side branch"));
+    }
     else 
       args.push_back("-b");
       

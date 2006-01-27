@@ -1482,4 +1482,7 @@ void cvs_client::primeModules()
   for (std::map<std::string,std::string>::const_iterator i=server_dir.begin();
       i!=server_dir.end();++i)
     L(FL("server dir %s -> %s") % i->first % i->second);
+  // it is nearly certain that the server will be in a strange state now
+  // so reconnect
+  reconnect();
 }
