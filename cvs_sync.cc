@@ -415,10 +415,18 @@ void cvs_repository::store_delta(const std::string &new_contents,
 static
 void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::shared_ptr<cset> cs)
 { split_path tmp;
-//  if (!oldr.has_node(tmp)) safe_insert(cs->dirs_added, tmp);
+  std::string log;
+  dump(sp,log);
+  L(FL("add_missing_parents(,%s,)\n") % log);
   for (split_path::const_iterator i=sp.begin();i!=sp.end() && i!=--sp.end();++i)
-  { tmp.push_back(*i);
-    if (!oldr.has_node(tmp)) safe_insert(cs->dirs_added, tmp);
+  { L(FL("path comp '%s'/%d\n") % *i % sp.size());
+    tmp.push_back(*i);
+    // already added?
+    if (cs->dirs_added.find(tmp)!=cs->dirs_added.end()) continue;
+    if (!oldr.has_node(tmp)) 
+    { L(FL("adding directory %s\n") % file_path(tmp));
+      safe_insert(cs->dirs_added, tmp);
+    }
   }
 }
 
@@ -767,8 +775,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
     I(!before->revision().empty());
     parent_rid=before->revision;
-    marking_map mm;
-    app.db.get_roster(parent_rid, old_roster, mm);
+    app.db.get_roster(parent_rid, old_roster);
 //    app.db.get_revision_manifest(parent_rid,parent_mid);
 //    app.db.get_manifest(parent_mid,parent_map);
 //    child_map=parent_map;
@@ -778,9 +785,9 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
   else
   { // create root node?
   }
+  temp_node_id_source nis;
   for (; e!=edges.end(); ++e)
-  { temp_node_id_source nis;
-    roster_t new_roster=old_roster;
+  { roster_t new_roster=old_roster;
     editable_roster_base eros(new_roster,nis);
 //  boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
@@ -1463,8 +1470,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         else
         { // get sha1sum of file
           roster_t roster;
-          marking_map mm; // ???
-          app.db.get_roster(i->inner().ident, roster, mm);
+          app.db.get_roster(i->inner().ident, roster);
           split_path sp;
           file_path_internal(monotone_path).split(sp);
           node_t node=roster.get_node(sp);
