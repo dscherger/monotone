@@ -1850,7 +1850,7 @@ void cvs_repository::takeover()
   // commit them all
   commit_cvs2mtn(edges.begin());
   // create a MT directory 
-  app.create_working_copy(system_path("."));
+  app.create_workspace(system_path("."));
   
 // like in commit ?
 //  update_any_attrs(app);
