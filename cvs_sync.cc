@@ -441,10 +441,11 @@ void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::sha
   }
 }
 
+// compare the new manifest with the old roster and fill the cset accordingly
 static bool 
 build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
                  boost::shared_ptr<cset> cs, cvs_file_state const& remove_state, 
-                 unsigned cm_delta_depth) // , revision_set &newrev)
+                 unsigned cm_delta_depth)
 {
   cvs_manifest cvs_delta;
   
@@ -464,7 +465,6 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
       {  
         L(FL("deleting file '%s'\n") % path);
         safe_insert(cs->nodes_deleted, sp);
-//        cs.detach_node(sp);
         cvs_delta[path.as_internal()]=remove_state;
       }
       else 
@@ -480,7 +480,6 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
                 % path % file->content % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
               safe_insert(cs->deltas_applied, make_pair(sp, make_pair(file->content,fn->second->sha1sum)));
-//              cs.apply_delta(sp, file->content, fn->second->sha1sum);
               cvs_delta[path.as_internal()]=fn->second;
             }
 #warning 2do mode_change
@@ -499,8 +498,6 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
         file_path_internal(f->first).split(sp);
         add_missing_parents(oldr, sp, cs);
         safe_insert(cs->files_added, make_pair(sp, f->second->sha1sum));
-//        node_id nid=cs.create_file_node(f->second->sha1sum);
-//        cs.attach_node(nid, sp);
         cvs_delta[f->first]=f->second;
       }
     }
@@ -767,19 +764,14 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 
 // commit CVS revisions to monotone (pull)
 void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
-{ // cvs_manifest parent_manifest;
-  revision_id parent_rid;
-//  manifest_id parent_mid;
+{ revision_id parent_rid;
   roster_t old_roster;
-//  manifest_map parent_map;
-//  manifest_map child_map=parent_map;
   packet_db_writer dbw(app);
   unsigned cm_delta_depth=0;
   
   cvs_edges_ticker.reset(0);
   L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision());
   revision_ticker.reset(new ticker("revisions", "R", 3));
-//  const cvs_manifest *oldmanifestp=&empty;
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
     --before;
@@ -787,20 +779,12 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     I(!before->revision().empty());
     parent_rid=before->revision;
     app.db.get_roster(parent_rid, old_roster);
-//    app.db.get_revision_manifest(parent_rid,parent_mid);
-//    app.db.get_manifest(parent_mid,parent_map);
-//    child_map=parent_map;
-//    parent_manifest=get_files(*before);
     cm_delta_depth=before->cm_delta_depth;
-  }
-  else
-  { // create root node?
   }
   temp_node_id_source nis;
   for (; e!=edges.end(); ++e)
   { roster_t new_roster=old_roster;
     editable_roster_base eros(new_roster,nis);
-//  boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
     L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
@@ -830,7 +814,6 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     { W(F("empty edge (no files in manifest) @%s skipped\n") % time_t2human(e->time));
       // perhaps begin a new tree:
       // parent_rid=revision_id();
-      // parent_mid=manifest_id();
 //      parent_manifest=cvs_manifest();
       continue;
     }
@@ -838,10 +821,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % rev.new_manifest);
     e->revision=child_rid.inner();
     if (!app.db.revision_exists(child_rid))
-    { // data tmp;
-      // write_revision_set(rev, tmp);
-      app.db.put_revision(child_rid, rev);
-      // @@ store aux certs?
+    { app.db.put_revision(child_rid, rev);
       if (revision_ticker.get()) ++(*revision_ticker);
     }
     cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
@@ -1442,9 +1422,6 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       // in Zeilen aufteilen
       piece::index_deltatext(cvs_revisions(),pieces);
       I(!pieces.empty());
-//      manifest_id mid;
-//      app.db.get_revision_manifest(i->inner().ident,mid);
-      //      manifest;
       piece::piece_table::const_iterator p=pieces.begin()+1;
       if ((**p)[0]=='+') // this is a delta encoded manifest
       { hexenc<id> h=(**p).substr(1,40); // remember to omit the trailing \n
