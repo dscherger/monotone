@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include "stringtok.hh"
 #include "piece_table.hh"
+#include "safe_map.hh"
 
 #ifdef WIN32
 #define sleep(x) _sleep(x)
@@ -412,12 +413,12 @@ void cvs_repository::store_delta(const std::string &new_contents,
 }
 
 static
-void add_missing_parents(roster_t const& oldr, split_path const & sp, cset & cs)
+void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::shared_ptr<cset> cs)
 { split_path tmp;
-  if (!oldr.has_node(tmp)) safe_insert(cs.dirs_added, tmp);
+  if (!oldr.has_node(tmp)) safe_insert(cs->dirs_added, tmp);
   for (split_path::const_iterator i=sp.begin();i!=sp.end() && i!=--sp.end();++i)
   { tmp.push_back(*i);
-    if (!oldr.has_node(tmp)) safe_insert(cs.dirs_added, tmp);
+    if (!oldr.has_node(tmp)) safe_insert(cs->dirs_added, tmp);
   }
 }
 
@@ -443,7 +444,7 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
       if (fn==newm.end())
       {  
         L(FL("deleting file '%s'\n") % path);
-        save_insert(cs.nodes_deleted, sp);
+        safe_insert(cs->nodes_deleted, sp);
 //        cs.detach_node(sp);
         cvs_delta[path.as_internal()]=remove_state;
       }
@@ -459,7 +460,7 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % path % file->content % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              safe_insert(cs.deltas_applied, make_pair(sp, make_pair(file->content,fn->second->sha1sum)));
+              safe_insert(cs->deltas_applied, make_pair(sp, make_pair(file->content,fn->second->sha1sum)));
 //              cs.apply_delta(sp, file->content, fn->second->sha1sum);
               cvs_delta[path.as_internal()]=fn->second;
             }
@@ -476,7 +477,7 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
         split_path sp;
         file_path_internal(f->first).split(sp);
         add_missing_parents(oldr, sp, cs);
-        safe_insert(cs.files_added, make_pair(sp, f->second->sha1sum));
+        safe_insert(cs->files_added, make_pair(sp, f->second->sha1sum));
 //        node_id nid=cs.create_file_node(f->second->sha1sum);
 //        cs.attach_node(nid, sp);
         cvs_delta[f->first]=f->second;
@@ -777,7 +778,8 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
   }
   for (; e!=edges.end(); ++e)
   { temp_node_id_source nis;
-    editable_roster_base eros(old_roster,nis);
+    roster_t new_roster=old_roster;
+    editable_roster_base eros(new_roster,nis);
 //  boost::shared_ptr<change_set> cs(new change_set());
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
@@ -790,8 +792,8 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
       e->cm_delta_depth=cm_delta_depth+1;
     }
     cs->apply_to(eros);
-    calculate_ident(cs, rev.new_manifest);
-    safe_insert(rev.edges, std::make_pair(old_revision, cs));
+    calculate_ident(new_roster, rev.new_manifest);
+    safe_insert(rev.edges, std::make_pair(parent_rid, cs));
     revision_id child_rid;
     calculate_ident(rev, child_rid);
     
@@ -813,7 +815,7 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
       continue;
     }
 #endif
-    L(FL("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % child_mid);
+    L(FL("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % rev.new_manifest);
     e->revision=child_rid.inner();
     if (!app.db.revision_exists(child_rid))
     { // data tmp;
@@ -830,13 +832,8 @@ void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
     cert_revision_date_time(child_rid, e->time, app, dbw);
     cert_cvs(*e, dbw);
 
-#if 0
-    // now apply same change set to parent_map, making parent_map == child_map
-    apply_change_set(*cs, parent_map);
-    parent_mid = child_mid;
     parent_rid = child_rid;
-//    parent_manifest=child_manifest;
-#endif
+    old_roster=new_roster;
     cm_delta_depth=e->cm_delta_depth;
   }
 }
