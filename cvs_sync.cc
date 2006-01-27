@@ -887,6 +887,20 @@ void cvs_repository::prime()
   // join adjacent check ins (same author, same changelog)
   join_edge_parts(edges.begin());
   
+  if (!branch_point.empty())
+  { time_t root_time(0);
+    // FIXME: look for this edge already in the database
+    if (edges.begin()!=edges.end()) root_time=edges.begin()->time-1;
+    std::set<cvs_edge>::iterator root_edge
+     =edges.insert(cvs_edge(branch+" branching point",root_time,repo.app.signing_key())).second;
+    for (std::map<cvs_file_path,cvs_revision_nr>::const_iterator i=branch_point.begin();i!=branch_point.end();++i)
+    { file_state fs(root_edge->time,i->second.get_string());
+      fs.log_msg=root_edge->changelog;
+      fs.autorh=root_edge->author;
+      files[i->first].known_states.insert(fs);
+    }
+  }
+  
   // get the contents
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
   { std::string file_contents;

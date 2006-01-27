@@ -1,4 +1,4 @@
-// copyright (C) 2005 Christof Petig <christof@petig-baender.de>
+// copyright (C) 2005-2006 Christof Petig <christof@petig-baender.de>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
