@@ -1,4 +1,4 @@
-// copyright (C) 2005 Christof Petig <christof@petig-baender.de>
+// copyright (C) 2005-2006 Christof Petig <christof@petig-baender.de>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
@@ -464,6 +464,8 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
 //              cs.apply_delta(sp, file->content, fn->second->sha1sum);
               cvs_delta[path.as_internal()]=fn->second;
             }
+#warning 2do mode_change
+          // cs->attrs_cleared cs->attrs_set
         }  
     }
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
@@ -745,7 +747,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 }
 
 // commit CVS revisions to monotone (pull)
-void cvs_repository::commit_revisions(std::set<cvs_edge>::iterator e)
+void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 { // cvs_manifest parent_manifest;
   revision_id parent_rid;
 //  manifest_id parent_mid;
@@ -909,7 +911,7 @@ void cvs_repository::prime()
   fill_manifests(edges.begin());
   
   // commit them all
-  commit_revisions(edges.begin());
+  commit_cvs2mtn(edges.begin());
   
   store_modules();
 }
@@ -1009,7 +1011,7 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
   }
 }
 
-std::set<cvs_edge>::iterator cvs_repository::commit(
+std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
 { // check that it's the last one
   L(FL("commit %s -> %s\n") % parent->revision % rid);
@@ -1032,18 +1034,13 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     { L(FL("%s != %s\n") % edge_old_revision(j) % parent->revision);
       continue;
     }
-#if 0
-    const change_set &cs=edge_changes(j);
-    N(cs.rearrangement.renamed_dirs.empty(),
-        F("I can't commit directory renames yet\n"));
-    N(cs.rearrangement.deleted_dirs.empty(),
-        F("I can't commit directory deletions yet\n"));
+    boost::shared_ptr<cset> cs=j->second;
     cvs_manifest parent_manifest=get_files(*parent);
 
-    for (std::set<file_path>::const_iterator i=cs.rearrangement.deleted_files.begin();
-            i!=cs.rearrangement.deleted_files.end(); ++i)
+    for (path_set::const_iterator i=cs->nodes_deleted.begin();
+            i!=cs->nodes_deleted.end(); ++i)
     { commit_arg a;
-      a.file=i->as_internal();
+      a.file=file_path(*i).as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.removed=true;
@@ -1053,11 +1050,11 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       L(FL("delete %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
     }
 
-    for (std::map<file_path,file_path>::const_iterator i
-                            =cs.rearrangement.renamed_files.begin();
-            i!=cs.rearrangement.renamed_files.end(); ++i)
+    for (std::map<split_path,split_path>::const_iterator i
+                            =cs->nodes_renamed.begin();
+            i!=cs->nodes_renamed.end(); ++i)
     { commit_arg a; // remove
-      a.file=i->first.as_internal();
+      a.file=file_path(i->first).as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.removed=true;
@@ -1067,7 +1064,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       L(FL("rename from %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
       
       a=commit_arg(); // add
-      a.file=i->second.as_internal();
+      a.file=file_path(i->second).as_internal();
       I(!old->second->sha1sum().empty());
       file_data dat;
       app.db.get_file_version(old->second->sha1sum,dat);
@@ -1076,18 +1073,36 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       L(FL("rename to %s %d\n") % a.file % a.new_content.size());
     }
     
-    // added files also have a delta, so we can ignore this list
+    for (path_set::const_iterator i=cs->dirs_added.begin();
+            i!=cs->dirs_added.end(); ++i)
+    { std::string name=file_path(*i).as_internal();
+      L(FL("dir add %s\n") % name);
+#warning create directory
+    }
 
-    for (change_set::delta_map::const_iterator i=cs.deltas.begin();
-            i!=cs.deltas.end(); ++i)
+    for (std::map<split_path, file_id>::const_iterator 
+            i=cs->files_added.begin();
+            i!=cs->files_added.end(); ++i)
     { 
       commit_arg a;
-      a.file=i->first.as_internal();
+      a.file=file_path(i->first).as_internal();
+      file_data dat;
+      app.db.get_file_version(i->second,dat);
+      a.new_content=dat.inner()();
+      commits.push_back(a);
+      L(FL("add %s %d\n") % a.file % a.new_content.size());
+    }
+
+    for (std::map<split_path, std::pair<file_id, file_id> >::const_iterator 
+            i=cs->deltas_applied.begin();
+            i!=cs->deltas_applied.end(); ++i)
+    { 
+      commit_arg a;
+      a.file=file_path(i->first).as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
-      if (old!=parent_manifest.end())
-      { a.old_revision=old->second->cvs_version;
-        a.keyword_substitution=old->second->keyword_substitution;
-      }
+      I(old!=parent_manifest.end());
+      a.old_revision=old->second->cvs_version;
+      a.keyword_substitution=old->second->keyword_substitution;
       file_data dat;
       app.db.get_file_version(i->second.second,dat);
       a.new_content=dat.inner()();
@@ -1117,6 +1132,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
     
     e.delta_base=parent->revision;
     
+    // the result of the commit: create history entry (file state)
+    //    FIXME: is this really necessary?
     for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
             i=result.begin(); i!=result.end(); ++i)
     { if (i->second.first.empty())
@@ -1127,9 +1144,17 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
         fs.log_msg=e.changelog;
         fs.author=e.author;
         fs.keyword_substitution=i->second.second;
-        change_set::delta_map::const_iterator mydelta=cs.deltas.find(file_path_internal(i->first));
-        I(mydelta!=cs.deltas.end());
-        fs.sha1sum=mydelta->second.second.inner();
+        split_path sp;
+        file_path_internal(i->first).split(sp);
+        std::map<split_path, std::pair<file_id, file_id> >::const_iterator mydelta=cs->deltas_applied.find(sp);
+        if (mydelta!=cs->deltas_applied.end())
+        { fs.sha1sum=mydelta->second.second.inner();
+        }
+        else // newly added?
+        { std::map<split_path, file_id>::const_iterator myadd=cs->files_added.find(sp);
+          I(myadd!=cs->files_added.end());
+          fs.sha1sum=myadd->second.inner();
+        }
         std::pair<std::set<file_state>::iterator,bool> newelem=
             files[i->first].known_states.insert(fs);
         I(newelem.second);
@@ -1145,7 +1170,6 @@ std::set<cvs_edge>::iterator cvs_repository::commit(
       e.cm_delta_depth=++cm_delta_depth;
     cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
-#endif    
     if (global_sanity.debug) L(FL("%s") % debug());
     fail=false;
     return --(edges.end());
@@ -1249,7 +1273,7 @@ void cvs_repository::commit()
     }
     else next=*children.begin();
     bool fail=bool();
-    now_iter=commit(now_iter,next,fail);
+    now_iter=commit_mtn2cvs(now_iter,next,fail);
     
     if (!fail)
       P(F("checked %s into cvs repository") % now.revision);
@@ -1598,7 +1622,7 @@ void cvs_repository::update()
     join_edge_parts(dummy_iter);
     fill_manifests(dummy_iter);
     if (global_sanity.debug) L(FL("%s") % debug());
-    commit_revisions(dummy_iter);
+    commit_cvs2mtn(dummy_iter);
   }
   
   store_modules();
@@ -1818,7 +1842,7 @@ void cvs_repository::takeover()
   { edges.insert(e2);
   }
   // commit them all
-  commit_revisions(edges.begin());
+  commit_cvs2mtn(edges.begin());
   // create a MT directory 
   app.create_working_copy(system_path("."));
   

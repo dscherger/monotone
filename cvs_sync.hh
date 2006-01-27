@@ -144,7 +144,7 @@ private:
         std::set<file_state>::iterator s2,const cvs_client::update &u,
         std::string &file_contents);
   void fill_manifests(std::set<cvs_edge>::iterator e);
-  void commit_revisions(std::set<cvs_edge>::iterator e);
+  void commit_cvs2mtn(std::set<cvs_edge>::iterator e);
 
 // std::string is equivalent to data
   void store_contents(const data &contents, hexenc<id> &sha1sum);
@@ -155,7 +155,7 @@ private:
   cvs_file_state remember(std::set<file_state> &s,const file_state &fs, std::string const& filename);
   void join_edge_parts(std::set<cvs_edge>::iterator i);
   std::set<cvs_edge>::iterator last_known_revision();
-  std::set<cvs_edge>::iterator commit(
+  std::set<cvs_edge>::iterator commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail);
   const cvs_manifest &get_files(const cvs_edge &e);
   // try harder (reconnect if something goes wrong)
