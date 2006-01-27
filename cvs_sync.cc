@@ -1422,12 +1422,8 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       // in Zeilen aufteilen
       piece::index_deltatext(cvs_revisions(),pieces);
       I(!pieces.empty());
-      manifest_id mid;
-      app.db.get_revision_manifest(i->inner().ident,mid);
-#if 0      
-      manifest_map manifest;
-      app.db.get_manifest(mid,manifest);
-#endif      
+//      manifest_id mid;
+//      app.db.get_revision_manifest(i->inner().ident,mid);
       //      manifest;
       piece::piece_table::const_iterator p=pieces.begin()+1;
       if ((**p)[0]=='+') // this is a delta encoded manifest
@@ -1465,16 +1461,20 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
           e.xfiles.insert(std::make_pair(path,cfs)); // remove_state));
         }
         else
-        { 
-#if 0        
-          manifest_map::const_iterator iter_file_id=manifest.find(file_path_internal(monotone_path));
-          I(iter_file_id!=manifest.end());
-          fs.sha1sum=iter_file_id->second.inner();
+        { // get sha1sum of file
+          roster_t roster;
+          marking_map mm; // ???
+          app.db.get_roster(i->inner().ident, roster, mm);
+          split_path sp;
+          file_path_internal(monotone_path).split(sp);
+          node_t node=roster.get_node(sp);
+          file_t file = downcast_to_file_t(node);
+          fs.sha1sum=file->content.inner();
+
           fs.log_msg=e.changelog;
           fs.author=e.author;
           cvs_file_state cfs=remember(files[path].known_states,fs,path);
           e.xfiles.insert(std::make_pair(path,cfs));
-#endif
         }
       }
       piece::reset();
