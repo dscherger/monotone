@@ -34,7 +34,7 @@ app_state::app_state()
     merges(false), set_default(false), verbose(false), date_set(false),
     cvspull_full(), 
     search_root("/"),
-    depth(-1), last(-1), diff_format(unified_diff), diff_args_provided(false),
+    depth(-1), last(-1), next(-1), diff_format(unified_diff), diff_args_provided(false),
     use_lca(false), execute(false), bind_address(""), bind_port(""), 
     missing(false), unknown(false),
     confdir(get_default_confdir()), have_set_key_dir(false)
@@ -426,6 +426,14 @@ app_state::set_last(long l)
   N(l > 0,
     F("negative or zero last not allowed\n"));
   last = l;
+}
+
+void
+app_state::set_next(long l)
+{
+  N(l > 0,
+    F("negative or zero next not allowed\n"));
+  next = l;
 }
 
 void

@@ -60,6 +60,7 @@ public:
   bool found_working_copy;
   long depth;
   long last;
+  long next;
   system_path pidfile;
   diff_type diff_format;
   bool diff_args_provided;
@@ -118,6 +119,7 @@ public:
   void set_depth(long depth);
   void set_since(utf8 const & since);
   void set_last(long last);
+  void set_next(long next);
   void set_pidfile(system_path const & pidfile);
   void add_revision(utf8 const & selector);
   void add_exclude(utf8 const & exclude_pattern);

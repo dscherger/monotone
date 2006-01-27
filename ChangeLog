@@ -1,3 +1,38 @@
+2006-01-27  Richard Levitte  <richard@levitte.org>
+
+	* monotone.texi (Generating Keys): Correct small type, the keys
+	are not stored in /home/jim/.monotone/monotonerc.
+
+2006-01-26  Derek Scherger  <derek@echologic.com>
+
+	* app_state.{cc,hh}: 
+	* commands.cc (log): 
+	* monotone.cc: 
+	* options.hh: allow --next to view upcoming changes
+	* tests/t_log_depth.at: rename to ...
+	* tests/t_log_last_next.at: ... this since log now uses
+	--last/--next and not --depth
+	* testsuite.at: rename t_log_depth.at to t_log_last_next.at
+	
+2006-01-27  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.texi: Clean up 'serve' syntax in a couple of places.
+
+2006-01-26  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Generating Keys, Network Service Revisited):
+	Clean up some key-related stuff -- genkey doesn't need a db, so
+	don't confuse the reader by giving it one, and update the sample
+	output too.
+
+2006-01-27  Stéphane Gimenez <dev@gim.name>
+
+	* sanity.hh: fix scoping issue revealed by gcc-4.1.
+
+2006-01-26  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: One more translation.
+
 2006-01-25  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* netsync.cc (session::rebuild_merkle_trees): Ticker header
@@ -8,6 +43,11 @@
 	* HACKING: add some notes about compiling - precompiled headers,
 	-O0, and ccache.
 	* INSTALL: mention --enable-pch
+
+2006-01-25  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Fix all fuzzy translations (some needed no fix).
+	Translate the last untranslated ones.
 
 2005-01-24  Timothy Brownawell  <tbrownaw@gmail.com>
 
