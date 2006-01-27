@@ -892,11 +892,11 @@ void cvs_repository::prime()
     // FIXME: look for this edge already in the database
     if (edges.begin()!=edges.end()) root_time=edges.begin()->time-1;
     std::set<cvs_edge>::iterator root_edge
-     =edges.insert(cvs_edge(branch+" branching point",root_time,repo.app.signing_key())).second;
+     =edges.insert(cvs_edge(branch+" branching point",root_time,app.signing_key())).first;
     for (std::map<cvs_file_path,cvs_revision_nr>::const_iterator i=branch_point.begin();i!=branch_point.end();++i)
     { file_state fs(root_edge->time,i->second.get_string());
       fs.log_msg=root_edge->changelog;
-      fs.autorh=root_edge->author;
+      fs.author=root_edge->author;
       files[i->first].known_states.insert(fs);
     }
   }
