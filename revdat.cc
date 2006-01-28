@@ -195,7 +195,7 @@ void revdat::loadrev(std::string const & rev)
   string res;
   mtn->get_revision(rev, res);
   mtn->waitfor();
-  std::string rename_from, man;
+  std::string rename_from;
   std::set<std::string> changed;
   std::map<std::string, int> pmap;
   for (int begin = 0, end = res.find('\n'); begin != res.size();
@@ -205,11 +205,7 @@ void revdat::loadrev(std::string const & rev)
       int lpos = line.find_first_of("[\"");
       int rpos = line.find_first_of("]\"", lpos + 1);
       std::string contents = line.substr(lpos + 1, rpos - lpos - 1);
-      if (line.find("new_manifest") < lpos)
-        {
-          man = contents;
-        }
-      else if (line.find("old_revision") < lpos)
+      if (line.find("old_revision") < lpos)
         {
           pvec.push_back(contents);
           pchanges.push_back(std::vector<inventory_item>());
@@ -260,15 +256,17 @@ void revdat::loadrev(std::string const & rev)
           pchanges.back()[pos].state = inventory_item::patched;
         }
     }
-  mtn->get_manifest(man, res);
+  mtn->get_manifest_of(rev, res);
   mtn->waitfor();
   for (int begin = 0, end = res.find('\n'); begin != res.size();
        begin = end + 1, end = res.find('\n', begin))
     {
       std::string line = res.substr(begin, end-begin);
-      int lpos = line.find_first_of(" \t");
-      int rpos = line.find_first_not_of(" \t", lpos);
-      std::string contents = line.substr(rpos);
+      if (line.find("file \"") == line.npos)
+        continue;
+      int lpos = line.find_first_of("\"")+1;
+      int rpos = line.find_last_of("\"");
+      std::string contents = line.substr(lpos, rpos-lpos);
       if (changed.find(contents) == changed.end())
         {
           inventory_item ii;

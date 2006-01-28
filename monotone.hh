@@ -99,7 +99,7 @@ public:
             string const & rev2, string & out);
   void cat(string const & filename, string const & rev, string & out);
   void get_revision(string const & rev, string & out);
-  void get_manifest(string const & rev, string & out);
+  void get_manifest_of(string const & rev, string & out);
   void add(string const & file);
   void drop(string const & file);
   void revert(string const & file);

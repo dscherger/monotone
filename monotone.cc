@@ -138,10 +138,10 @@ monotone::execute(vector<string> args)
 {
   if (done < 2)
     {
-      std::cerr<<"Not spawning, pipes still open!\n";
+      //std::cerr<<"Not spawning, pipes still open!\n";
       return false;
     }
-  std::cerr<<"spawn()\n";
+  //std::cerr<<"spawn()\n";
   args.insert(args.begin(), Glib::find_program_in_path("monotone"));
   if (!db.empty())
     args.push_back("--db=" + db);
@@ -188,11 +188,11 @@ monotone::stop()
 {
   if (!pid)
     {
-      std::cerr<<"Already stopped.\n";
-      if (busy) std::cerr<<"\tBut still busy!\n";
+      //std::cerr<<"Already stopped.\n";
+      //if (busy) std::cerr<<"\tBut still busy!\n";
       return false;
     }
-  std::cerr<<"kill()\n";
+  //std::cerr<<"kill()\n";
 #ifdef WIN32
   TerminateProcess(pid, 0);
 #else
@@ -557,11 +557,11 @@ monotone::get_revision(string const & rev, string & out)
 }
 
 void
-monotone::get_manifest(string const & rev, string & out)
+monotone::get_manifest_of(string const & rev, string & out)
 {
   std::vector<std::string> args;
   args.push_back(rev);
-  command("get_manifest", args);
+  command("get_manifest_of", args);
   signal_done.connect(sigc::bind(sigc::ptr_fun(&process_noop), &output_std, &out));
 }
 
