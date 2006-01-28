@@ -1164,6 +1164,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
   std::string dir,dir2,rcsfile;
   enum { st_normal, st_merge } state=st_normal;
 
+  bool confused=false;
   while (fetch_result(lresult))
   { I(!lresult.empty());
     unsigned len=0;
@@ -1237,6 +1238,9 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       { I(state==st_merge);
         break;
       }
+      else if (lresult[0].second=="Checked-in")
+      { confused=true;
+      }
       else
       { W(F("Update: unrecognized CMD %s\n") % lresult[0].second);
       }
@@ -1278,6 +1282,10 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     else 
     { W(F("Update: unrecognized response %s\n") % lresult[0].second);
     }
+  }
+  if (confused) // cvs is an awfully stated machine ...
+  { reconnect();
+    Update(file_revisions,cb);
   }
 }
 
