@@ -900,6 +900,8 @@ void cvs_repository::prime()
       files[i->first].known_states.insert(fs);
     }
   }
+  // since log already used Entry+Unchanged, reconnect to forget this states
+  reconnect();
   
   // get the contents
   for (std::map<std::string,file_history>::iterator i=files.begin();i!=files.end();++i)
