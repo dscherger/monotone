@@ -198,6 +198,10 @@ class database
                   roster_t & roster,
                   marking_map & marks);
 
+  void calculate_node_revision_ancestry(revision_id const & rev,
+                                        marking_map const & mm,
+                                        std::map<node_id, std::multimap<revision_id, revision_id> > & anc);
+
   void check_filename();
   void check_db_exists();
   void open();
@@ -276,6 +280,18 @@ public:
   void put_revision(revision_id const & new_id,
                     revision_data const & dat);
   
+
+  void get_node_revision_ancestry(node_id node, std::multimap<revision_id, revision_id> & graph);
+
+  void get_node_revision_parents(node_id node, revision_id const & rev, std::set<revision_id> & parents);
+  
+  void get_node_revision_children(node_id node, revision_id const & rev, std::set<revision_id> & children);
+
+  void put_node_revision_ancestry(node_id node, revision_id const & parent, revision_id const & child);
+
+  void put_node_revision_ancestry_edges(std::map<node_id, std::multimap <revision_id, revision_id> > const & edges);
+
+
   void delete_existing_revs_and_certs();
 
   void delete_existing_manifests();

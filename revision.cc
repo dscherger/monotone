@@ -16,6 +16,7 @@
 #include <iterator>
 #include <functional>
 #include <list>
+#include <memory>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/dynamic_bitset.hpp>
@@ -1394,7 +1395,7 @@ build_roster_style_revs_from_manifest_style_revs(app_state & app)
        i != existing_graph.end(); ++i)
     {
       // FIXME: insert for the null id as well, and do the same for the
-      // changesetify code, and then reach rebuild_ancestry how to deal with
+      // changesetify code, and then teach rebuild_ancestry how to deal with
       // such things.  (I guess u64(0) should represent the null parent?)
       if (!null_id(i->first))
         {
@@ -1453,6 +1454,105 @@ build_changesets_from_manifest_ancestry(app_state & app)
   
   graph.rebuild_ancestry();
 }
+
+
+void
+build_per_file_dags(app_state & app)
+{
+  P(F("building per-file-DAGs structures for file content modifications\n"));
+
+  std::set<revision_id> processed;
+  std::vector<revision_id> frontier;
+  std::auto_ptr<ticker> revs_ticker;
+  revs_ticker.reset(new ticker(_("revs done"), "r", 1));
+  {
+    std::set<revision_id> all_revs;
+    app.db.get_revision_ids(all_revs);
+    revs_ticker->set_total(all_revs.size());
+  }
+  
+  // get all revisions with no descendents and put them in the frontier
+  // stolen from automate_leaves
+  {
+    std::set<revision_id> leaves;
+    app.db.get_revision_ids(leaves);
+    std::multimap<revision_id, revision_id> graph;
+    app.db.get_revision_ancestry(graph);
+    for (std::multimap<revision_id, revision_id>::const_iterator i = graph.begin();
+         i != graph.end(); ++i)
+      leaves.erase(i->first);
+    frontier.insert(frontier.end(), leaves.begin(), leaves.end());
+  }
+
+  transaction_guard guard(app.db);
+  while (!frontier.empty()) 
+    {
+      revision_id rev = frontier.back();
+      frontier.pop_back();
+      MM(rev);
+
+      if (processed.find(rev) != processed.end())
+        continue;
+
+      roster_t roster;
+      marking_map mm;
+      // FIX?  we do get_roster() multiple times per roster (once for each child, once when it is a child)
+      // do some caching to speed up?
+      app.db.get_roster(rev, roster, mm);
+
+      std::set<revision_id> parents;
+      app.db.get_revision_parents(rev, parents);
+      revision_id nullid; // default?
+      std::set<revision_id>::iterator null_parent = parents.find(nullid);
+      if (null_parent != parents.end())
+        parents.erase(null_parent);
+      std::vector<marking_map> parent_mm;
+      for (std::set<revision_id>::const_iterator i = parents.begin(), end = parents.end(); i != end; i++)
+        {
+          roster_t pr;
+          marking_map pmm;
+          app.db.get_roster(*i, pr, pmm);
+          parent_mm.push_back(pmm);
+        }
+
+      for (marking_map::const_iterator ni = mm.begin(), end = mm.end(); ni != end; ni++)
+        {
+          node_id node = ni->first;
+          marking_t const & node_marks(ni->second);
+          if (node_marks.file_content.find(rev) == node_marks.file_content.end()) 
+            continue;
+
+          if (node_marks.birth_revision == rev)
+            continue;
+
+          // if this node *is* in the file_content marks (it should be the only rev there)
+          // then we find the set of all the last revs it was marked as the union
+          // of the marks for that node in all our parents
+          I(node_marks.file_content.size() == 1);
+          std::set<revision_id> marked_parent_revs;
+          for (std::vector<marking_map>::const_iterator pmmi = parent_mm.begin(), end = parent_mm.end(); pmmi != end; pmmi++)
+            {
+              marking_map::const_iterator parent_node_marks = pmmi->find(node);
+              //I(parent_node_marks != pmmi->end());
+              // uh, I think this means that you had a file added and later changed on one side of
+              // a fork, and then the sides merge.
+              if (parent_node_marks != pmmi->end())
+                marked_parent_revs.insert((parent_node_marks->second).file_content.begin(), 
+                                          (parent_node_marks->second).file_content.end());
+            }
+
+          // insert the node_revision_ancestry entries
+          for (std::set<revision_id>::const_iterator mpr = marked_parent_revs.begin(), end = marked_parent_revs.end(); mpr != end; mpr++)
+            app.db.put_node_revision_ancestry(node, *mpr, rev);
+        }
+
+      frontier.insert(frontier.begin(), parents.begin(), parents.end());
+      processed.insert(rev);
+      ++(*revs_ticker);
+    }
+  guard.commit();
+}
+
 
 // i/o stuff
 

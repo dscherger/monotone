@@ -617,21 +617,14 @@ do_annotate_node (const annotate_node_work &work_unit,
 
   std::set<revision_id> parents;
 
-  // If we have content-marks which are *not* equal to the current rev,
-  // we can jump back to them directly. If we have only a content-mark
-  // equal to the current rev, it means we made a decision here, and 
-  // we must move to the immediate parent revs.
-  //
-  // Unfortunately, while this algorithm *could* use the marking
-  // information as suggested above, it seems to work much better
-  // (especially wrt. merges) when it goes rev-by-rev, so we leave it that
-  // way for now.
-  
-  //   if (marks.file_content.size() == 1 
-  //       && *(marks.file_content.begin()) == work_unit.revision)
-  app.db.get_revision_parents(work_unit.revision, parents);
-  //   else
-  //     parents = marks.file_content;
+  app.db.get_node_revision_parents(work_unit.fid, work_unit.revision, parents);
+  static bool donespecial = false;
+  if (!donespecial)
+    {
+      donespecial = true;
+      if (parents.size() == 0) 
+        parents.insert(marks.file_content.begin(), marks.file_content.end());
+    }
 
   size_t added_in_parent_count = 0;
 
@@ -739,18 +732,53 @@ do_annotate_node (const annotate_node_work &work_unit,
 
 
 void 
-find_ancestors(app_state &app, revision_id rid, std::map<revision_id, size_t> &paths_to_nodes)
+find_ancestors(app_state &app, revision_id rid, std::map<revision_id, size_t> &paths_to_nodes, node_id node)
 {
   std::vector<revision_id> frontier;
-  frontier.push_back(rid);
+  std::set<revision_id> parents;
 
+  // if the revision is question is not one which modified the file
+  // we're interested in, it won't have an edge in the node_revision_ancestry
+  // table.  here we figure out by hand what the set of node_revision_ancestry
+  // parents appropriate for this file in this revision are and put them in the
+  // frontier.
+  app.db.get_node_revision_parents(node, rid, parents);
+  if (parents.size() == 0)
+    {
+      roster_t roster;
+      marking_map mm;
+      app.db.get_roster(rid, roster, mm);
+      marking_map::const_iterator i = mm.find(node);
+      I(i != mm.end());
+      marking_t const & nodemarks = i->second;
+      if (nodemarks.birth_revision == rid)
+        return;
+      I(nodemarks.file_content.size() > 0);
+      I(nodemarks.file_content.find(rid) == nodemarks.file_content.end());
+      for (std::set<revision_id>::const_iterator i = nodemarks.file_content.begin();
+           i != nodemarks.file_content.end(); i++)
+        {
+          std::map<revision_id, size_t>::iterator found = paths_to_nodes.find(*i);
+          if (found == paths_to_nodes.end())
+            {
+              frontier.push_back(*i);
+              paths_to_nodes.insert(std::make_pair(*i, 1));
+            }
+          else
+            (found->second)++;
+        }
+    }
+  else
+    frontier.push_back(rid);
+
+  // now we can proceed normally by just following the parents back
   while (!frontier.empty())
     {
       revision_id rid = frontier.back();
       frontier.pop_back();
       if(!null_id(rid)) {
         std::set<revision_id> parents;
-        app.db.get_revision_parents(rid, parents);
+        app.db.get_node_revision_parents(node, rid, parents);
         for (std::set<revision_id>::const_iterator i = parents.begin();
              i != parents.end(); ++i)
           {
@@ -780,7 +808,7 @@ do_annotate (app_state &app, file_t file_node, revision_id rid)
   std::set<revision_id> nodes_complete;
   std::map<revision_id, size_t> paths_to_nodes;
   std::map<revision_id, lineage_merge_node> pending_merge_nodes;
-  find_ancestors(app, rid, paths_to_nodes);
+  find_ancestors(app, rid, paths_to_nodes, file_node->self);
 
   // build node work unit
   std::deque<annotate_node_work> nodes_to_process;

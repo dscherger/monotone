@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -908,6 +909,28 @@ migrate_client_to_add_rosters(sqlite3 * sql,
   return true;
 }
 
+static bool
+migrate_client_to_per_file_dag(sqlite3 * sql,
+                               char ** errmsg,
+                               app_state *app)
+{
+  int res;
+
+  res = logged_sqlite3_exec(sql,
+                            "CREATE TABLE node_revision_ancestry\n"
+                            "(\n"
+                            "node not null,       -- internal node\n"
+                            "parent not null,     -- joins with revisions.id\n"
+                            "child not null,      -- joins with revisions.id\n"
+                            "unique(node, parent, child)\n"
+                            ");",
+                            NULL, NULL, errmsg);
+  if (res != SQLITE_OK)
+    return false;
+
+    return true;
+}
+
 void 
 migrate_monotone_schema(sqlite3 *sql, app_state *app)
 {
@@ -939,9 +962,12 @@ migrate_monotone_schema(sqlite3 *sql, app_state *app)
   m.add("bd86f9a90b5d552f0be1fa9aee847ea0f317778b",
         &migrate_client_to_add_rosters);
 
+  m.add("1db80c7cee8fa966913db1a463ed50bf1b0e5b0e",
+        &migrate_client_to_per_file_dag);
+
   // IMPORTANT: whenever you modify this to add a new schema version, you must
   // also add a new migration test for the new schema version.  See
   // tests/t_migrate_schema.at for details.
 
-  m.migrate(sql, "1db80c7cee8fa966913db1a463ed50bf1b0e5b0e");
+  m.migrate(sql, "0a5615e37448e0671655afe4c536cc45680fbcc4");
 }
