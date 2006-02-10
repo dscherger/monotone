@@ -1,4 +1,5 @@
 // -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 // copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
@@ -1750,19 +1751,78 @@ ls_missing (app_state & app, vector<utf8> const & args)
 }
 
 
-CMD(list, N_("informative"), 
+struct lt_file_path
+{
+  bool operator()(const file_path &fp1, const file_path &fp2) const
+  {
+    return fp1 < fp2;
+  }
+};
+static void
+ls_changed (app_state & app, vector<utf8> const & args)
+{
+  revision_set rs;
+  revision_id rid;
+  roster_t old_roster, new_roster;
+  data tmp;
+  std::set<file_path, lt_file_path> files;
+
+  app.require_workspace();
+  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster);
+
+  I(rs.edges.size() == 1);
+  cset const & cs = edge_changes(rs.edges.begin());
+
+  for (path_set::const_iterator i = cs.nodes_deleted.begin();
+       i != cs.nodes_deleted.end(); ++i)
+    {
+      if (app.restriction_includes(*i))
+        files.insert(file_path(*i));
+    }
+  for (std::map<split_path, split_path>::const_iterator i = cs.nodes_renamed.begin();
+       i != cs.nodes_renamed.end(); ++i)
+    {
+      if (app.restriction_includes(i->first))
+        files.insert(file_path(i->first));
+    }
+  for (path_set::const_iterator i = cs.dirs_added.begin();
+       i != cs.dirs_added.end(); ++i)
+    {
+      if (app.restriction_includes(*i))
+        files.insert(file_path(*i));
+    }
+  for (std::map<split_path, file_id>::const_iterator i = cs.files_added.begin();
+       i != cs.files_added.end(); ++i)
+    {
+      if (app.restriction_includes(i->first))
+        files.insert(file_path(i->first));
+    }
+  for (std::map<split_path, std::pair<file_id, file_id> >::const_iterator
+         i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
+    {
+      if (app.restriction_includes(i->first))
+        files.insert(file_path(i->first));
+    }
+
+  copy(files.begin(), files.end(),
+       ostream_iterator<const file_path>(cout, "\n"));
+}
+
+
+CMD(list, N_("informative"),
     N_("certs ID\n"
-      "keys [PATTERN]\n"
-      "branches\n"
-      "epochs [BRANCH [...]]\n"
-      "tags\n"
-      "vars [DOMAIN]\n"
-      "known\n"
-      "unknown\n"
-      "ignored\n"
-      "missing"),
-    N_("show database objects, or the current workspace manifest,\n"
-      "or unknown, intentionally ignored, or missing state files"),
+       "keys [PATTERN]\n"
+       "branches\n"
+       "epochs [BRANCH [...]]\n"
+       "tags\n"
+       "vars [DOMAIN]\n"
+       "known\n"
+       "unknown\n"
+       "ignored\n"
+       "missing\n"
+       "changed"),
+    N_("show database objects, or the current workspace manifest, or known,\n"
+       "unknown, intentionally ignored, missing, or changed state files"),
     OPT_DEPTH % OPT_EXCLUDE)
 {
   if (args.size() == 0)
@@ -1791,6 +1851,8 @@ CMD(list, N_("informative"),
     ls_unknown_or_ignored(app, true, removed);
   else if (idx(args, 0)() == "missing")
     ls_missing(app, removed);
+  else if (idx(args, 0)() == "changed")
+    ls_changed(app, removed);
   else
     throw usage(name);
 }
@@ -2272,12 +2334,12 @@ process_commit_message_args(bool & given, string & log_message, app_state & app)
   N(app.message().length() == 0 || app.message_file().length() == 0,
     F("--message and --message-file are mutually exclusive"));
   
-  if (app.message().length() > 0)
+  if (app.is_explicit_option(OPT_MESSAGE))
     {
       log_message = app.message();
       given = true;
     }
-  else if (app.message_file().length() > 0)
+  else if (app.is_explicit_option(OPT_MSGFILE))
     {
       data dat;
       read_data_for_command_line(app.message_file(), dat);
@@ -2287,7 +2349,6 @@ process_commit_message_args(bool & given, string & log_message, app_state & app)
   else
     given = false;
 }
-
 
 CMD(commit, N_("workspace"), N_("[PATH]..."), 
     N_("commit workspace to database"),
@@ -2353,6 +2414,16 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
       // is annoying.
       write_user_log(data(log_message));
     }
+
+  // If the hook doesn't exist, allow the message to be used.
+  bool message_validated;
+  string reason, new_manifest_text;
+
+  dump(rs, new_manifest_text);
+
+  app.lua.hook_validate_commit_message(log_message, new_manifest_text,
+                                       message_validated, reason);
+  N(message_validated, F("log message rejected: %s\n") % reason);
 
   {
     transaction_guard guard(app.db);

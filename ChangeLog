@@ -1,3 +1,95 @@
+2006-02-09  Graydon Hoare  <graydon@pobox.com>
+
+	* lua.cc (hook_validate_commit_message): make validated the
+	default.
+
+2006-02-09  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_cvsimport.at, tests/t_cvsimport3.at,
+	tests/t_cvsimport_deleted_invar.at,
+	tests/t_cvsimport_manifest_cycle.at, tests/t_cvsimport_samelog.at,
+	tests/t_singlecvs.at: Changed to cope with the strictness of
+	CVSNT.  It doesn't create a CSVROOT/history file automagically,
+	but CVSROOT/modules is created automatically both by the older CVS
+	and by CVSNT.  You can't check out a group of files using revision
+	numbers with CVSNT.  You MUST stand in the work directory for some
+	command with CVSNT.  Finally, with CVSNT, 'cvs init' generates the
+	following message if you're a normal user, at least on Debian:
+
+	cvs init: Unable to register repository.
+	cvs init: Your login may not have sufficient permissions to modify the
+	cvs init: global server settings.
+	cvs init: Repository /home/levitte/cvsfoo initialised
+
+2006-02-09  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at: Remove duplicate line.
+
+2006-02-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* sqlite/*: Import SQLite 3.3.3.
+	* Makefile.am: Adjust for new and removed files in import.
+	* NEWS: Make a note of the SQLite database format change.
+	* database.cc (database::load): Rewrite so that we don't need any
+	local changes to SQLite.
+
+2006-02-08  Richard Levitte  <richard@levitte.org>
+
+	* testsuite.at, tests/t_ls_changed.at: News test, for "list
+	changed".
+
+	* monotone.texi, monotone.1: Document "list changed".
+
+	* po/sv.po: Correct translations of changed messages, translate
+	new messages.
+
+	* commands.cc (ls_changed, CMD(list)): Add a new command, "list
+	changed", to list changed files, always sorted in lexical order.
+
+2006-02-06  Blake Kaplan  <mrbkap@gmail.com>
+
+	* commands.cc CMD(commit): Call a new lua hook to validate the commit
+	message. Don't ignore -m "" when it's passed on the command line.
+	* lua.cc, lua.hh: Add a new hook that validates a given commit message
+	and passes in the added files, deleted files, and modified files.
+	* std_hooks.lua: Give a default hook to validate commit messages. This
+	currently disallows empty messages, as monotone currently does.
+
+2006-02-05  Benoît Dejean  <benoit@placenet.org>
+
+	* ui.cc (tick_write_count::write_ticks): Reverted lexical_cast,
+	back to F().
+
+2006-02-05  Benoît Dejean  <benoit@placenet.org>
+
+	* ui.cc (tick_write_count::write_ticks): Fixed utf8 handling.
+	boost::format + locale sucks, it ouputs "1\u+ffff24" for
+	"%d" % 1024.
+
+2006-02-02  Emile Snyder  <emile@alumni.reed.edu>
+
+	* merge.cc (resolve_merge_conflicts): If the merge has non-content
+	conflicts warn the user and abort before making them do content
+	merges.  Move logging/warning of conflicts to methods in the
+	roster_merge_result struct.
+
+	* roster_merge.{cc,hh} (log_conflicts,
+	warn_non_content_conflicts): New methods to do the busy work of
+	logging or warning.
+
+2006-02-02  Emile Snyder  <emile@alumni.reed.edu>
+
+	* netsync.cc (run_netsync_protocol): Print a warning if either the
+	include or the exclude branch pattern have a ' or a " character
+	anywhere in them.  Hopefully will help users running in a Windows
+	shell when they do: monotone sync myserver 'mybranch*' and nothing
+	happens because the ' characters are passed in to monotone.
+	
+2005-01-30  Emile Snyder  <emile@alumni.reed.edu>
+
+	* annotate.cc: (do_annotate) Add ticker for revisions processed to
+	annotate command.
+	
 2006-01-29  Richard Levitte  <richard@levitte.org>
 
 	* po/sv.po: Update a few translations, leave a number of fuzzy
