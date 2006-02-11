@@ -54,15 +54,20 @@ remap_paths(path_set const & old_paths,
             cset const & work,
             path_set & new_paths);
 
+struct restricted_edge
+{
+  revision_id old_id;
+  roster_t old_roster;
+  path_set old_paths;
+  cset included;
+  cset excluded;
+};
+
 void 
 get_base_roster_and_working_cset(app_state & app, 
                                  std::vector<utf8> const & args,
-                                 revision_id & old_revision_id,
-                                 roster_t & old_roster,
-                                 path_set & old_paths, 
-                                 path_set & new_paths,
-                                 cset & included,
-                                 cset & excluded);
+                                 std::vector<restricted_edge> & edges, 
+                                 path_set & new_paths);
 
 void 
 get_working_revision_and_rosters(app_state & app, 

@@ -140,12 +140,11 @@ restrict_cset(cset const & cs,
 // paths (if they survived work)
 
 void
-remap_paths(path_set const & old_paths,
+remap_paths_noclear(path_set const & old_paths,
             roster_t const & r_old,
             cset const & work,
             path_set & new_paths)
 {
-  new_paths.clear();
   temp_node_id_source nis;
   roster_t r_tmp = r_old;
   editable_roster_base er(r_tmp, nis);
@@ -164,41 +163,64 @@ remap_paths(path_set const & old_paths,
 }
 
 void
+remap_paths(path_set const & old_paths,
+            roster_t const & r_old,
+            cset const & work,
+            path_set & new_paths)
+{
+  new_paths.clear();
+  remap_paths_noclear(old_paths, r_old, work, new_paths);
+}
+
+void
 get_base_roster_and_working_cset(app_state & app, 
                                  std::vector<utf8> const & args,
-                                 revision_id & old_revision_id,
-                                 roster_t & old_roster,
-                                 path_set & old_paths, 
-                                 path_set & new_paths,
-                                 cset & included,
-                                 cset & excluded)
+                                 std::vector<restricted_edge> & edges, 
+                                 path_set & new_paths)
 {
-  cset work;
+  parentage parents;
+  revision_set rs;
+  get_workspace_parentage_and_revision(app, parents, rs);
+  edges.clear();
+  new_paths.clear();
 
-  get_base_revision(app, old_revision_id, old_roster);
-  get_work_cset(work);
+  for (parentage::iterator i = parents.begin(); i != parents.end(); ++i)
+    {
+      edges.push_back(restricted_edge());
+      roster_t & old_roster(edges.back().old_roster);
+      path_set & old_paths(edges.back().old_paths);
+      cset & included(edges.back().included);
+      cset & excluded(edges.back().excluded);
+      old_roster = i->second;
+      edges.back().old_id = i->first;
 
-  old_roster.extract_path_set(old_paths);
+      edge_map::iterator cs = rs.edges.find(i->first);
+      I(cs != rs.edges.end());
+      cset & work(*(cs->second));
 
-  path_set valid_paths(old_paths);
-  extract_rearranged_paths(work, valid_paths);
-  add_intermediate_paths(valid_paths);
-  app.set_restriction(valid_paths, args); 
 
-  restrict_cset(work, included, excluded, app);  
-  remap_paths(old_paths, old_roster, work, new_paths);
+      old_roster.extract_path_set(old_paths);
 
-  for (path_set::const_iterator i = included.dirs_added.begin();
-       i != included.dirs_added.end(); ++i)
-    new_paths.insert(*i);
+      path_set valid_paths(old_paths);
+      extract_rearranged_paths(work, valid_paths);
+      add_intermediate_paths(valid_paths);
+      app.set_restriction(valid_paths, args); 
+
+      restrict_cset(work, included, excluded, app);  
+      remap_paths_noclear(old_paths, old_roster, work, new_paths);
+
+      for (path_set::const_iterator i = included.dirs_added.begin();
+           i != included.dirs_added.end(); ++i)
+        new_paths.insert(*i);
   
-  for (std::map<split_path, file_id>::const_iterator i = included.files_added.begin();
-       i != included.files_added.end(); ++i)
-    new_paths.insert(i->first);
+      for (std::map<split_path, file_id>::const_iterator i = included.files_added.begin();
+           i != included.files_added.end(); ++i)
+        new_paths.insert(i->first);
   
-  for (std::map<split_path, split_path>::const_iterator i = included.nodes_renamed.begin(); 
-       i != included.nodes_renamed.end(); ++i) 
-    new_paths.insert(i->second);
+      for (std::map<split_path, split_path>::const_iterator i = included.nodes_renamed.begin(); 
+           i != included.nodes_renamed.end(); ++i) 
+        new_paths.insert(i->second);
+    }
 }
 
 void
