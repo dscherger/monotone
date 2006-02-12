@@ -3785,6 +3785,8 @@ CMD(setup, N_("tree"), N_("[DIRECTORY]"), N_("setup a new working copy directory
 
   app.create_working_copy(dir);
   revision_set null;
+  boost::shared_ptr<cset> cs(new cset);
+  null.edges.insert(std::make_pair(revision_id(), cs));
   put_work_revision_set(null);
 }
 
