@@ -225,10 +225,10 @@ automate_attributes(std::vector<utf8> args,
   if (args.size() > 1)
     throw usage(help_name);
 
-  roster_t base, current;
+  roster_t current;
+  parentage parents;
   temp_node_id_source nis;
-  E(false, F("FIXME_WORKMERGE"));
-//get_base_and_current_roster_shape(base, current, nis, app);
+  get_parentage_and_current_roster_shape(parents, current, nis, app);
 
   if (args.size() == 1)
     {
@@ -941,11 +941,12 @@ automate_get_revision(std::vector<utf8> args,
   if (args.size() == 0)
     {
       revision_set rev;
-      roster_t old_roster, new_roster;
+      roster_t new_roster;
+      std::vector<roster_t> old_rosters;
 
       app.require_working_copy(); 
       get_unrestricted_working_revision_and_rosters(app, rev, 
-                                                    old_roster, 
+                                                    old_rosters, 
                                                     new_roster);
       calculate_ident(rev, ident);
       write_revision_set(rev, dat);
@@ -983,13 +984,14 @@ automate_get_manifest_of(std::vector<utf8> args,
 
   data dat;
   manifest_id mid;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
 
   if (args.size() == 0)
     {
+      std::vector<roster_t> old_rosters;
       revision_set rs;
       app.require_working_copy();
-      get_unrestricted_working_revision_and_rosters(app, rs, old_roster, new_roster);
+      get_unrestricted_working_revision_and_rosters(app, rs, old_rosters, new_roster);
     }
   else
     {
