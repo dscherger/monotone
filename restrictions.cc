@@ -223,87 +223,107 @@ get_base_roster_and_working_cset(app_state & app,
     }
 }
 
-void
+/*void
 get_working_revision_and_rosters(app_state & app, 
                                  std::vector<utf8> const & args,
                                  revision_set & rev,
                                  roster_t & old_roster,
                                  roster_t & new_roster,
-                                 cset & excluded)
+                                 cset & excluded)*/
+void
+get_working_revision_and_rosters(app_state & app, 
+                                 std::vector<utf8> const & args,
+                                 revision_set & rev,
+                                 std::vector<std::pair<roster_t, cset> > & old_rosters_and_excluded,
+                                 roster_t & new_roster)
 {
-  revision_id old_revision_id;
-  boost::shared_ptr<cset> cs(new cset());
-  path_set old_paths, new_paths;
+  path_set new_paths;
+  manifest_id new_manifest_id;
 
   rev.edges.clear();
-  get_base_roster_and_working_cset(app, args, 
-                                   old_revision_id,
-                                   old_roster,
-                                   old_paths,
-                                   new_paths, 
-                                   *cs, excluded);
+  old_rosters_and_excluded.clear();
+  std::vector<restricted_edge> edges;
 
-  temp_node_id_source nis;
-  new_roster = old_roster;
-  editable_roster_base er(new_roster, nis);
-  cs->apply_to(er);
+  get_base_roster_and_working_cset(app, args, edges, new_paths);
 
-  // Now update any idents in the new roster
-  update_restricted_roster_from_filesystem(new_roster, app);
+  for (std::vector<restricted_edge>::iterator i = edges.begin();
+       i != edges.end(); ++i)
+    {
+      revision_id & old_revision_id(i->old_id);
+      roster_t & old_roster(i->old_roster);
+      boost::shared_ptr<cset> cs(new cset(i->included));
+      temp_node_id_source nis;
+      new_roster = old_roster;
+      editable_roster_base er(new_roster, nis);
+      cs->apply_to(er);
 
-  calculate_ident(new_roster, rev.new_manifest);
-  L(FL("new manifest_id is %s\n") % rev.new_manifest);
+      // Now update any idents in the new roster
+      update_restricted_roster_from_filesystem(new_roster, app);
+
+      calculate_ident(new_roster, rev.new_manifest);
+      if (new_manifest_id.inner()().empty())
+        {
+          L(FL("new manifest_id is %s\n") % rev.new_manifest);
+          new_manifest_id = rev.new_manifest;
+        }
+      else
+        I(new_manifest_id == rev.new_manifest);
   
-  {
-    // We did the following:
-    //
-    //  - restrict the working cset (MT/work)
-    //  - apply the working cset to the new roster,
-    //    giving us a rearranged roster (with incorrect content hashes)
-    //  - re-scan file contents, updating content hashes
-    // 
-    // Alas, this is not enough: we must now re-calculate the cset
-    // such that it contains the content deltas we found, and 
-    // re-restrict that cset.
-    //
-    // FIXME: arguably, this *could* be made faster by doing a
-    // "make_restricted_cset" (or "augment_restricted_cset_deltas_only" 
-    // call, for maximum speed) but it's worth profiling before 
-    // spending time on it.
+      {
+        // We did the following:
+        //
+        //  - restrict the working cset (MT/work)
+        //  - apply the working cset to the new roster,
+        //    giving us a rearranged roster (with incorrect content hashes)
+        //  - re-scan file contents, updating content hashes
+        // 
+        // Alas, this is not enough: we must now re-calculate the cset
+        // such that it contains the content deltas we found, and 
+        // re-restrict that cset.
+        //
+        // FIXME: arguably, this *could* be made faster by doing a
+        // "make_restricted_cset" (or "augment_restricted_cset_deltas_only" 
+        // call, for maximum speed) but it's worth profiling before 
+        // spending time on it.
 
-    cset tmp_full, tmp_excluded;
-    // We ignore excluded stuff, our 'excluded' argument is only really
-    // supposed to have tree rearrangement stuff in it, and it already has
-    // that
-    make_cset(old_roster, new_roster, tmp_full);
-    restrict_cset(tmp_full, *cs, tmp_excluded, app);
-  }
+        cset tmp_full, tmp_excluded;
+        // We ignore excluded stuff, our 'excluded' argument is only really
+        // supposed to have tree rearrangement stuff in it, and it already has
+        // that
+        make_cset(old_roster, new_roster, tmp_full);
+        restrict_cset(tmp_full, *cs, tmp_excluded, app);
+      }
 
-  safe_insert(rev.edges, std::make_pair(old_revision_id, cs));
+      safe_insert(rev.edges, std::make_pair(old_revision_id, cs));
+    }
 }
 
 void
 get_working_revision_and_rosters(app_state & app, 
                                  std::vector<utf8> const & args,
                                  revision_set & rev,
-                                 roster_t & old_roster,
+                                 std::vector<roster_t> & old_rosters,
                                  roster_t & new_roster)
 {
-  cset excluded;
+  old_rosters.clear();
+  std::vector<std::pair<roster_t, cset> > old_and_excluded;
   get_working_revision_and_rosters(app, args, rev, 
-                                   old_roster, new_roster, excluded);
+                                   old_and_excluded, new_roster);
+  for (std::vector<std::pair<roster_t, cset> >::iterator i
+         = old_and_excluded.begin(); i != old_and_excluded.end(); ++i)
+    old_rosters.push_back(i->first);
 }
 
 void
 get_unrestricted_working_revision_and_rosters(app_state & app, 
                                               revision_set & rev,
-                                              roster_t & old_roster,
+                                              std::vector<roster_t> & old_rosters,
                                               roster_t & new_roster)
 {
   std::vector<utf8> empty_args;
   std::set<utf8> saved_exclude_patterns(app.exclude_patterns);
   app.exclude_patterns.clear();
-  get_working_revision_and_rosters(app, empty_args, rev, old_roster, new_roster);
+  get_working_revision_and_rosters(app, empty_args, rev, old_rosters, new_roster);
   app.exclude_patterns = saved_exclude_patterns;
 }
 

@@ -73,22 +73,21 @@ void
 get_working_revision_and_rosters(app_state & app, 
                                  std::vector<utf8> const & args,
                                  revision_set & rev,
-                                 roster_t & old_roster,
-                                 roster_t & new_roster,
-                                 cset & excluded);
+                                 std::vector<std::pair<roster_t, cset> > & old_rosters_and_excluded,
+                                 roster_t & new_roster);
 
 // Same as above, only without the "excluded" out-parameter.
 void
 get_working_revision_and_rosters(app_state & app, 
                                  std::vector<utf8> const & args,
                                  revision_set & rev,
-                                 roster_t & old_roster,
+                                 std::vector<roster_t> & old_rosters,
                                  roster_t & new_roster);
 
 void
 get_unrestricted_working_revision_and_rosters(app_state & app, 
                                               revision_set & rev,
-                                              roster_t & old_roster,
+                                              std::vector<roster_t> & old_rosters,
                                               roster_t & new_roster);
 
 void
