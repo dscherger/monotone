@@ -685,8 +685,10 @@ automate_inventory(std::vector<utf8> args,
   inventory_map inventory;
   cset cs;
   path_set unchanged, changed, missing, known, unknown, ignored;
-  E(false, F("FIXME_WORKMERGE"));
-//  get_base_and_current_roster_shape(base, curr, nis, app);
+  parentage parents;
+  get_parentage_and_current_roster_shape(parents, curr, nis, app);
+  N(parents.size() == 1, F("automate inventory does not work on a workspace with multiple parents"));
+  base = parents.begin()->second;
   make_cset(base, curr, cs);
 
   I(cs.deltas_applied.empty());
@@ -942,11 +944,11 @@ automate_get_revision(std::vector<utf8> args,
     {
       revision_set rev;
       roster_t new_roster;
-      std::vector<roster_t> old_rosters;
+      parentage parents;
 
       app.require_working_copy(); 
       get_unrestricted_working_revision_and_rosters(app, rev, 
-                                                    old_rosters, 
+                                                    parents,
                                                     new_roster);
       calculate_ident(rev, ident);
       write_revision_set(rev, dat);
@@ -988,10 +990,10 @@ automate_get_manifest_of(std::vector<utf8> args,
 
   if (args.size() == 0)
     {
-      std::vector<roster_t> old_rosters;
+      parentage parents;
       revision_set rs;
       app.require_working_copy();
-      get_unrestricted_working_revision_and_rosters(app, rs, old_rosters, new_roster);
+      get_unrestricted_working_revision_and_rosters(app, rs, parents, new_roster);
     }
   else
     {

@@ -234,14 +234,14 @@ void
 get_working_revision_and_rosters(app_state & app, 
                                  std::vector<utf8> const & args,
                                  revision_set & rev,
-                                 std::vector<std::pair<roster_t, cset> > & old_rosters_and_excluded,
+                                 parentage_with_changes & parents_with_excluded,
                                  roster_t & new_roster)
 {
   path_set new_paths;
   manifest_id new_manifest_id;
 
   rev.edges.clear();
-  old_rosters_and_excluded.clear();
+  parents_with_excluded.clear();
   std::vector<restricted_edge> edges;
 
   get_base_roster_and_working_cset(app, args, edges, new_paths);
@@ -295,6 +295,7 @@ get_working_revision_and_rosters(app_state & app,
       }
 
       safe_insert(rev.edges, std::make_pair(old_revision_id, cs));
+      safe_insert(parents_with_excluded, std::make_pair(old_revision_id, std::make_pair(new_roster, *cs)));
     }
 }
 
@@ -302,28 +303,28 @@ void
 get_working_revision_and_rosters(app_state & app, 
                                  std::vector<utf8> const & args,
                                  revision_set & rev,
-                                 std::vector<roster_t> & old_rosters,
+                                 parentage & parents,
                                  roster_t & new_roster)
 {
-  old_rosters.clear();
-  std::vector<std::pair<roster_t, cset> > old_and_excluded;
+  parents.clear();
+  parentage_with_changes old_and_excluded;
   get_working_revision_and_rosters(app, args, rev, 
                                    old_and_excluded, new_roster);
-  for (std::vector<std::pair<roster_t, cset> >::iterator i
+  for (parentage_with_changes::iterator i
          = old_and_excluded.begin(); i != old_and_excluded.end(); ++i)
-    old_rosters.push_back(i->first);
+    safe_insert(parents, std::make_pair(i->first, i->second.first));
 }
 
 void
 get_unrestricted_working_revision_and_rosters(app_state & app, 
                                               revision_set & rev,
-                                              std::vector<roster_t> & old_rosters,
+                                              parentage & parents,
                                               roster_t & new_roster)
 {
   std::vector<utf8> empty_args;
   std::set<utf8> saved_exclude_patterns(app.exclude_patterns);
   app.exclude_patterns.clear();
-  get_working_revision_and_rosters(app, empty_args, rev, old_rosters, new_roster);
+  get_working_revision_and_rosters(app, empty_args, rev, parents, new_roster);
   app.exclude_patterns = saved_exclude_patterns;
 }
 

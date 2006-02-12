@@ -291,6 +291,7 @@ make_cset(roster_t const & from,
           cset & cs);
 
 typedef std::map<revision_id, roster_t> parentage;
+typedef std::map<revision_id, std::pair<roster_t, cset> > parentage_with_changes;
 
 void
 make_revision_set(parentage const & parents,

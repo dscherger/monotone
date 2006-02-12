@@ -1,3 +1,10 @@
+2006-02-12  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Allow a workspace to have multiple base revisions.
+	'automate inventory', restricted commit, update, and revert
+	only work on a workspace with a single base revision
+	compiles, but completely untested
+
 2005-01-25  Matt Johnston  <matt@ucc.asn.au>
 
 	* HACKING: add some notes about compiling - precompiled headers,

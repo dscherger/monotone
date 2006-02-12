@@ -340,34 +340,40 @@ maybe_update_inodeprints(app_state & app)
     return;
   inodeprint_map ipm_new;
   revision_set rev;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
+  parentage parents;
   get_unrestricted_working_revision_and_rosters(app, rev, 
-                                                old_roster, 
+                                                parents, 
                                                 new_roster);
-  
+
   node_map const & new_nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = new_nodes.begin(); i != new_nodes.end(); ++i)
     {
       node_id nid = i->first;
-      if (old_roster.has_node(nid))
+      for (parentage::iterator j = parents.begin(); j != parents.end(); ++j)
         {
-          node_t old_node = old_roster.get_node(nid);
-          if (is_file_t(old_node))
+          roster_t & old_roster(j->second);
+          if (old_roster.has_node(nid))
             {
-              node_t new_node = i->second;
-              I(is_file_t(new_node));
-
-              file_t old_file = downcast_to_file_t(old_node);
-              file_t new_file = downcast_to_file_t(new_node);
-
-              if (new_file->content == old_file->content)
+              node_t old_node = old_roster.get_node(nid);
+              if (is_file_t(old_node))
                 {
-                  split_path sp;
-                  new_roster.get_name(nid, sp);
-                  file_path fp(sp);                  
-                  hexenc<inodeprint> ip;
-                  if (inodeprint_file(fp, ip))
-                    ipm_new.insert(inodeprint_entry(fp, ip));
+                  node_t new_node = i->second;
+                  I(is_file_t(new_node));
+
+                  file_t old_file = downcast_to_file_t(old_node);
+                  file_t new_file = downcast_to_file_t(new_node);
+
+                  if (new_file->content == old_file->content)
+                    {
+                      split_path sp;
+                      new_roster.get_name(nid, sp);
+                      file_path fp(sp);                  
+                      hexenc<inodeprint> ip;
+                      if (inodeprint_file(fp, ip))
+                        ipm_new.insert(inodeprint_entry(fp, ip));
+                      break;
+                    }
                 }
             }
         }
@@ -1295,11 +1301,12 @@ CMD(status, N_("informative"), N_("[PATH]..."), N_("show status of working copy"
     OPT_DEPTH % OPT_EXCLUDE % OPT_BRIEF)
 {
   revision_set rs;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
+  parentage parents;
   data tmp;
 
   app.require_working_copy();
-  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster);
+  get_working_revision_and_rosters(app, args, rs, parents, new_roster);
 
   if (global_sanity.brief)
     {
@@ -1655,13 +1662,14 @@ static void
 ls_known (app_state & app, vector<utf8> const & args)
 {
   revision_set rs;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
+  parentage parents;
   data tmp;
 
   app.require_working_copy();
 
   path_set paths;
-  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster);
+  get_working_revision_and_rosters(app, args, rs, parents, new_roster);
   new_roster.extract_path_set(paths);
   
   for (path_set::const_iterator p = paths.begin(); p != paths.end(); ++p)
@@ -1677,10 +1685,11 @@ find_unknown_and_ignored (app_state & app, bool want_ignored, vector<utf8> const
                           path_set & unknown, path_set & ignored)
 {
   revision_set rev;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
   path_set known;
+  parentage parents;
 
-  get_working_revision_and_rosters(app, args, rev, old_roster, new_roster);
+  get_working_revision_and_rosters(app, args, rev, parents, new_roster);
   new_roster.extract_path_set(known);
 
   file_itemizer u(app, known, unknown, ignored);
@@ -1708,15 +1717,11 @@ ls_unknown_or_ignored (app_state & app, bool want_ignored, vector<utf8> const & 
 static void
 find_missing (app_state & app, vector<utf8> const & args, path_set & missing)
 {
-  revision_id base_rid;
-  roster_t base_roster;
-  cset included_work, excluded_work;
-  path_set old_paths, new_paths;
+  path_set new_paths;
+  std::vector<restricted_edge> edges;
 
   app.require_working_copy();
-  get_base_roster_and_working_cset(app, args, base_rid, base_roster,
-                                   old_paths, new_paths,
-                                   included_work, excluded_work);
+  get_base_roster_and_working_cset(app, args, edges, new_paths);
 
   for (path_set::const_iterator i = new_paths.begin(); i != new_paths.end(); ++i)
     {
@@ -2186,10 +2191,11 @@ CMD(attr, N_("working copy"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PAT
     throw usage(name);
 
   revision_set rs;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
+  parentage parents;
 
   app.require_working_copy();
-  get_unrestricted_working_revision_and_rosters(app, rs, old_roster, new_roster);
+  get_unrestricted_working_revision_and_rosters(app, rs, parents, new_roster);
   
   file_path path = file_path_external(idx(args,1));
   split_path sp;
@@ -2232,9 +2238,9 @@ CMD(attr, N_("working copy"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PAT
             throw usage(name);
         }
 
-      cset new_work;
-      make_cset(old_roster, new_roster, new_work);
-      put_work_cset(new_work);
+      revision_set new_work;
+      make_revision_set(parents, new_roster, new_work);
+      put_work_revision_set(new_work);
       update_any_attrs(app);
     }
   else if (subcmd == "get")
@@ -2306,20 +2312,36 @@ CMD(commit, N_("working copy"), N_("[PATH]..."),
   bool log_message_given;
   revision_set rs;
   revision_id rid;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
+  parentage_with_changes parents_and_excluded;
   
   app.make_branch_sticky();
   app.require_working_copy();
 
   // preserve excluded work for future commmits
-  cset excluded_work;
-  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster, excluded_work);
+  get_working_revision_and_rosters(app, args, rs,
+                                   parents_and_excluded,
+                                   new_roster);
   calculate_ident(rs, rid);
+
+  revision_set excluded;
+  {
+    boost::shared_ptr<cset> cs(new cset());
+    bool restriction_empty = true;
+    for (parentage_with_changes::iterator i
+           = parents_and_excluded.begin();
+         i != parents_and_excluded.end(); ++i)
+      if (!i->second.second.empty())
+        restriction_empty = false;
+    N(restriction_empty || parents_and_excluded.size() == 1,
+      F("Cannot use a restricted commit when the workspace has multiple base revisions."));
+    *cs = parents_and_excluded.begin()->second.second;
+    excluded.edges.insert(make_pair(rid, cs));
+  }
 
   N(rs.is_nontrivial(), F("no changes to commit\n"));
     
   cert_value branchname;
-  I(rs.edges.size() == 1);
 
   set<revision_id> heads;
   get_branch_heads(app.branch_name(), app, heads);
@@ -2375,76 +2397,78 @@ CMD(commit, N_("working copy"), N_("[PATH]..."),
         // new revision
         L(FL("inserting new revision %s\n") % rid);
 
-        I(rs.edges.size() == 1);
-        edge_map::const_iterator edge = rs.edges.begin();
-        I(edge != rs.edges.end());
-
-        // process file deltas or new files
-        cset const & cs = edge_changes(edge);
-
-        for (std::map<split_path, std::pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
-             i != cs.deltas_applied.end(); ++i)
+        I(rs.edges.size() >= 1);
+        for (edge_map::const_iterator edge = rs.edges.begin();
+             edge != rs.edges.end(); ++edge)
           {
-            file_path path(i->first);
-            file_id old_content = i->second.first;
-            file_id new_content = i->second.second;
 
-            if (app.db.file_version_exists(new_content))
-              {
-                L(FL("skipping file delta %s, already in database\n")
-                  % delta_entry_dst(i));
-              }
-            else if (app.db.file_version_exists(old_content))
-              {
-                L(FL("inserting delta %s -> %s\n")
-                  % old_content % new_content);
-                file_data old_data;
-                data new_data;
-                app.db.get_file_version(old_content, old_data);
-                read_localized_data(path, new_data, app.lua);
-                // sanity check
-                hexenc<id> tid;
-                calculate_ident(new_data, tid);
-                N(tid == new_content.inner(),
-                  F("file '%s' modified during commit, aborting")
-                  % path);
-                delta del;
-                diff(old_data.inner(), new_data, del);
-                dbw.consume_file_delta(old_content, 
-                                       new_content, 
-                                       file_delta(del));
-              }
-            else
-              {
-                L(FL("inserting full version %s\n") % new_content);
-                data new_data;
-                read_localized_data(path, new_data, app.lua);
-                // sanity check
-                hexenc<id> tid;
-                calculate_ident(new_data, tid);
-                N(tid == new_content.inner(),
-                  F("file '%s' modified during commit, aborting")
-                  % path);
-                dbw.consume_file_data(new_content, file_data(new_data));
-              }
-          }
+          // process file deltas or new files
+          cset const & cs = edge_changes(edge);
 
-        for (std::map<split_path, file_id>::const_iterator i = cs.files_added.begin();
-             i != cs.files_added.end(); ++i)
-          {
-            file_path path(i->first);
-            file_id new_content = i->second;
+          for (std::map<split_path, std::pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
+               i != cs.deltas_applied.end(); ++i)
+            {
+              file_path path(i->first);
+              file_id old_content = i->second.first;
+              file_id new_content = i->second.second;
 
-            L(FL("inserting full version %s\n") % new_content);
-            data new_data;
-            read_localized_data(path, new_data, app.lua);
-            // sanity check
-            hexenc<id> tid;
-            calculate_ident(new_data, tid);
-            N(tid == new_content.inner(),
-              F("file '%s' modified during commit, aborting")
-              % path);
-            dbw.consume_file_data(new_content, file_data(new_data));
+              if (app.db.file_version_exists(new_content))
+                {
+                  L(FL("skipping file delta %s, already in database\n")
+                    % delta_entry_dst(i));
+                }
+              else if (app.db.file_version_exists(old_content))
+                {
+                  L(FL("inserting delta %s -> %s\n")
+                    % old_content % new_content);
+                  file_data old_data;
+                  data new_data;
+                  app.db.get_file_version(old_content, old_data);
+                  read_localized_data(path, new_data, app.lua);
+                  // sanity check
+                  hexenc<id> tid;
+                  calculate_ident(new_data, tid);
+                  N(tid == new_content.inner(),
+                    F("file '%s' modified during commit, aborting")
+                    % path);
+                  delta del;
+                  diff(old_data.inner(), new_data, del);
+                  dbw.consume_file_delta(old_content, 
+                                         new_content, 
+                                         file_delta(del));
+                }
+              else
+                {
+                  L(FL("inserting full version %s\n") % new_content);
+                  data new_data;
+                  read_localized_data(path, new_data, app.lua);
+                  // sanity check
+                  hexenc<id> tid;
+                  calculate_ident(new_data, tid);
+                  N(tid == new_content.inner(),
+                    F("file '%s' modified during commit, aborting")
+                    % path);
+                  dbw.consume_file_data(new_content, file_data(new_data));
+                }
+            }
+
+          for (std::map<split_path, file_id>::const_iterator i = cs.files_added.begin();
+               i != cs.files_added.end(); ++i)
+            {
+              file_path path(i->first);
+              file_id new_content = i->second;
+
+              L(FL("inserting full version %s\n") % new_content);
+              data new_data;
+              read_localized_data(path, new_data, app.lua);
+              // sanity check
+              hexenc<id> tid;
+              calculate_ident(new_data, tid);
+              N(tid == new_content.inner(),
+                F("file '%s' modified during commit, aborting")
+                % path);
+              dbw.consume_file_data(new_content, file_data(new_data));
+            }
           }
       }
 
@@ -2466,8 +2490,7 @@ CMD(commit, N_("working copy"), N_("[PATH]..."),
   }
   
   // small race condition here...
-  put_work_cset(excluded_work);
-  put_revision_id(rid);
+  put_work_revision_set(excluded);
   P(F("committed revision %s\n") % rid);
   
   blank_user_log();
@@ -2688,7 +2711,6 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
         "try adding --external or removing --diff-args?"));
 
   cset composite;
-  cset excluded;
 
   // initialize before transaction so we have a database to work with
 
@@ -2699,17 +2721,17 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
 
   if (app.revision_selectors.size() == 0)
     {
+      parentage parents;
       get_working_revision_and_rosters(app, args, r_new,
-                                       old_roster, 
-                                       new_roster,
-                                       excluded);
+                                       parents, 
+                                       new_roster);
 
-      I(r_new.edges.size() == 1 || r_new.edges.size() == 0);
+      N(r_new.edges.size() == 1 || r_new.edges.size() == 0,
+        F("Your workspace has multiple base revisions, so you must specify which one to diff against."));
       if (r_new.edges.size() == 1)
         composite = edge_changes(r_new.edges.begin());
       new_is_archived = false;
-      revision_id old_rid;
-      get_revision_id(old_rid);
+      revision_id old_rid = edge_old_revision(r_new.edges.begin());
       header << "# old_revision [" << old_rid << "]" << endl;
     }
   else if (app.revision_selectors.size() == 1)
@@ -2718,14 +2740,13 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       complete(app, idx(app.revision_selectors, 0)(), r_old_id);
       N(app.db.revision_exists(r_old_id),
         F("no such revision '%s'") % r_old_id);
+      parentage parents;
       get_working_revision_and_rosters(app, args, r_new,
-                                       old_roster, 
-                                       new_roster,
-                                       excluded);
+                                       parents, 
+                                       new_roster);
       // Clobber old_roster with the one specified
       app.db.get_revision(r_old_id, r_old);
       app.db.get_roster(r_old_id, old_roster);
-      I(r_new.edges.size() == 1 || r_new.edges.size() == 0);
       N(r_new.edges.size() == 1, F("current revision has no ancestor"));
       new_is_archived = false;
       header << "# old_revision [" << r_old_id << "]" << endl;
@@ -2846,10 +2867,14 @@ CMD(update, N_("working copy"), "",
   // load the base roster twice. The API could use some factoring or
   // such. But it should work for now; revisit if performance is
   // intolerable.
-
-  get_unrestricted_working_revision_and_rosters(app, r_working,
-                                                *old_roster, 
-                                                working_roster);
+  {
+    parentage parents;
+    get_unrestricted_working_revision_and_rosters(app, r_working,
+                                                  parents, 
+                                                  working_roster);
+    N(parents.size() == 1, F("Update does not work on workspaces with multiple base revisions."));
+    *old_roster = parents.begin()->second;
+  }
   calculate_ident(r_working, r_working_id);
   I(r_working.edges.size() == 1);
   r_old_id = edge_old_revision(r_working.edges.begin());
@@ -3006,14 +3031,17 @@ CMD(update, N_("working copy"), "",
   // small race condition here...
   // nb: we write out r_chosen, not r_new, because the revision-on-disk
   // is the basis of the working copy, not the working copy itself.
-  put_revision_id(r_chosen_id);
+  {
+    revision_set rs;
+    boost::shared_ptr<cset> cs(new cset(remaining));
+    rs.edges.insert(make_pair(r_chosen_id, cs));
+  }
   if (!app.branch_name().empty())
     {
       app.make_branch_sticky();
     }
   P(F("updated to base revision %s\n") % r_chosen_id);
 
-  put_work_cset(remaining);
   update_any_attrs(app);
   maybe_update_inodeprints(app);
 }
@@ -3300,15 +3328,20 @@ CMD(revert, N_("working copy"), N_("[PATH]..."),
   revision_id old_revision_id;
   cset work, included_work, excluded_work;
   path_set old_paths;
+  revision_set rs;
+  parentage parents;
 
   if (args.size() < 1 && !app.missing)
       throw usage(name);
  
   app.require_working_copy();
 
-  get_base_revision(app, old_revision_id, old_roster);
+  get_workspace_parentage_and_revision(app, parents, rs);
+  N(parents.size() == 1, F("Cannot revert a workspace with multiple base revisions."));
+  old_revision_id = parents.begin()->first;
+  old_roster = parents.begin()->second;
+  work = edge_changes(rs.edges.begin());
 
-  get_work_cset(work);
   old_roster.extract_path_set(old_paths);
 
   path_set valid_paths(old_paths);
@@ -3390,7 +3423,8 @@ CMD(revert, N_("working copy"), N_("[PATH]..."),
     }
 
   // race
-  put_work_cset(excluded_work);
+  *rs.edges.begin()->second = excluded_work;
+  put_work_revision_set(rs);
   update_any_attrs(app);
   maybe_update_inodeprints(app);
 }
@@ -3492,7 +3526,12 @@ CMD(annotate, N_("informative"), N_("PATH"),
   file.split(sp);
 
   if (app.revision_selectors.size() == 0)
-    get_revision_id(rid);
+    {
+      revision_set rs;
+      get_work_revision_set(rs);
+      N(rs.edges.size() == 1, F("Your working copy has multiple base revisions, you must specify one with --revision"));
+      rid = edge_old_revision(rs.edges.begin());
+    }
   else 
     complete(app, idx(app.revision_selectors, 0)(), rid);
 
@@ -3526,11 +3565,14 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
 
   set<revision_id> frontier;
 
-  revision_id first_rid;
+  revision_id first_rid; // only used if the user gave --revision
   if (app.revision_selectors.size() == 0)
     {
-      get_revision_id(first_rid);
-      frontier.insert(first_rid);
+      revision_set rs;
+      get_work_revision_set(rs);
+      for (edge_map::const_iterator i = rs.edges.begin();
+           i != rs.edges.end(); ++i)
+        frontier.insert(edge_old_revision(i));
     }
   else
     {
@@ -3548,11 +3590,12 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
   if (args.size() > 0)
     {
       // User wants to trace only specific files
-      roster_t old_roster, new_roster;
+      roster_t new_roster;
+      parentage parents;
       revision_set rev;
 
       if (app.revision_selectors.size() == 0)
-        get_unrestricted_working_revision_and_rosters(app, rev, old_roster, new_roster);
+        get_unrestricted_working_revision_and_rosters(app, rev, parents, new_roster);
       else
         app.db.get_roster(first_rid, new_roster);          
 
@@ -3741,8 +3784,8 @@ CMD(setup, N_("tree"), N_("[DIRECTORY]"), N_("setup a new working copy directory
     dir = ".";
 
   app.create_working_copy(dir);
-  revision_id null;
-  put_revision_id(null);
+  revision_set null;
+  put_work_revision_set(null);
 }
 
 CMD(automate, N_("automation"),
