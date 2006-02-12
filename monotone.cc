@@ -194,7 +194,7 @@ monotone::stop()
     }
   //std::cerr<<"kill()\n";
 #ifdef WIN32
-  TerminateProcess(pid, 0);
+  TerminateProcess(HANDLE(pid), 0);
 #else
   kill(pid, SIGKILL);
   int r;
@@ -211,7 +211,7 @@ monotone::stopped()
   if (!pid)
     return true;
 #ifdef WIN32
-  DWORD r = WaitForSingleObject(pid, 0);
+  DWORD r = WaitForSingleObject(HANDLE(pid), 0);
   if (r == WAIT_TIMEOUT)
     return false;
 #else
