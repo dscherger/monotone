@@ -1659,6 +1659,12 @@
 	* netsync.cc: Remove length() calls, test for string emptiness
 	instead.
 
+2005-10-14  Richard Levitte  <richard@levitte.org>
+
+	* selectors.cc (selectors): Rename h: to H: because another
+	development has emerged for h:.
+	* tests/t_heads_of_certs.at: Adapt.
+
 2005-10-13  Emile Snyder <emile@alumni.reed.edu>
 
 	* commands.cc (CMD(revert)): use --missing for revert a'la drop.
@@ -4511,6 +4517,26 @@
 
 	* database.cc: Move the inclusion of stdarg.h...
 	* database.hh: ... here.
+
+2005-07-18  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_heads_of_certs.at: A better title (differing from the
+	title in t_select_cert.at), and explain the presence of the last
+	check.
+
+2005-07-18  Richard Levitte  <richard@levitte.org>
+
+	* selectors.cc (decode_selectors): If we're at the beginning of
+	the composite selector string, parse h: if it's there.  Takes a
+	couple of new arguments, to return a flag saying only the heads
+	of the selection should be used, and an input flag saying if the
+	current selector is the first or not.
+	(complete_selectors, parse_selector): Adjust.
+	* commands.cc (complete): Use the new "heads only" selector.
+	* automate.cc (automate_select): Dito.
+
+	* tests/t_heads_of_certs.at: New test.
+	* testsuite.at: Use it.
 
 2005-07-18  Matt Johnston  <matt@ucc.asn.au>
 
