@@ -143,6 +143,9 @@ downcast_to_file_t(node_t const n)
   return f;
 }
 
+bool
+shallow_equal(node_t a, node_t b, bool shallow_compare_dir_children);
+
 template <> void dump(node_t const & n, std::string & out);
 
 struct marking_t
@@ -277,6 +280,7 @@ public:
   virtual void set_attr(split_path const & pth,
                         attr_key const & name,
                         attr_value const & val);
+  virtual void commit();
 protected:
   roster_t & r;
   node_id_source & nis;
@@ -342,6 +346,18 @@ write_roster_and_marking(roster_t const & ros,
 void
 write_manifest_of_roster(roster_t const & ros,
                          data & dat);
+
+#ifdef BUILD_UNIT_TESTS
+
+struct testing_node_id_source 
+  : public node_id_source
+{
+  testing_node_id_source();
+  virtual node_id next();
+  node_id curr;
+};
+
+#endif // BUILD_UNIT_TESTS
 
 #endif
 
