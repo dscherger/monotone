@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 #ifndef __ROSTER_MERGE_HH__
 #define __ROSTER_MERGE_HH__
 
@@ -107,15 +108,18 @@ struct roster_merge_result
   // this roster is sane if is_clean() returns true
   roster_t roster;
   bool is_clean();
+  bool is_clean_except_for_content();
+  void log_conflicts();
+  void warn_non_content_conflicts();
   void clear();
 };
 
 void
 roster_merge(roster_t const & left_parent,
-             marking_map const & left_marking,
+             marking_map const & left_markings,
              std::set<revision_id> const & left_uncommon_ancestors,
              roster_t const & right_parent,
-             marking_map const & right_marking,
+             marking_map const & right_markings,
              std::set<revision_id> const & right_uncommon_ancestors,
              roster_merge_result & result);
 

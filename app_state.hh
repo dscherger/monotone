@@ -55,9 +55,10 @@ public:
   std::vector<utf8> extra_rcfiles;
   path_set restrictions;
   path_set excludes;
-  bool found_working_copy;
+  bool found_workspace;
   long depth;
   long last;
+  long next;
   system_path pidfile;
   diff_type diff_format;
   bool diff_args_provided;
@@ -72,6 +73,7 @@ public:
   system_path confdir;
   bool have_set_key_dir;
   std::set<std::string> attrs_to_drop;
+  bool no_files;
 
   std::map<int, bool> explicit_option_map;  // set if the value of the flag was explicitly given on the command line
   void set_is_explicit_option (int option_id);
@@ -87,9 +89,9 @@ public:
     std::pair<boost::shared_ptr<Botan::PK_Verifier>,
         boost::shared_ptr<Botan::RSA_PublicKey> > > verifiers;
 
-  void allow_working_copy();
-  void require_working_copy(std::string const & explanation = "");
-  void create_working_copy(system_path const & dir);
+  void allow_workspace();
+  void require_workspace(std::string const & explanation = "");
+  void create_workspace(system_path const & dir);
 
   void set_restriction(path_set const & valid_paths, 
                        std::vector<utf8> const & paths);
@@ -97,11 +99,11 @@ public:
   bool restriction_includes(split_path const & path);
 
   // Set the branch name.  If you only invoke set_branch, the branch
-  // name is not sticky (and won't be written to the working copy and
+  // name is not sticky (and won't be written to the workspace and
   // reused by subsequent monotone invocations).  Commands which
   // switch the working to a different branch should invoke
-  // make_branch_sticky (before require_working_copy because this
-  // function updates the working copy).
+  // make_branch_sticky (before require_workspace because this
+  // function updates the workspace).
   void set_branch(utf8 const & name);
   void make_branch_sticky();
 
@@ -115,6 +117,7 @@ public:
   void set_author(utf8 const & author);
   void set_depth(long depth);
   void set_last(long last);
+  void set_next(long next);
   void set_pidfile(system_path const & pidfile);
   void add_revision(utf8 const & selector);
   void add_exclude(utf8 const & exclude_pattern);
