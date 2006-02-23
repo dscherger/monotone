@@ -56,7 +56,14 @@ using std::vector;
 
 // TODO: move these into the class below?!?
 enum path_state { explicit_include, explicit_exclude, implicit_include };
-  
+
+struct path_entry 
+{
+  path_state state;
+  bool recursive;
+  path_entry(path_state const s, bool const r = false) : state(s), recursive(r) {}
+};
+
 class restriction
 {
  public:
@@ -84,8 +91,8 @@ class restriction
   // we maintain maps by node_id and also by split_path, which is not
   // particularly nice, but paths are required for checking unknown and ignored
   // files
-  map<node_id, path_state> node_map;
-  map<split_path, path_state> path_map;
+  map<node_id, path_entry> node_map;
+  map<split_path, path_entry> path_map;
 
 };
 

@@ -1,3 +1,8 @@
+2006-02-22  Derek Scherger  <derek@echologic.com>
+
+	* restrictions.{cc,hh}: allow for foo/... style recursive wildcard
+	paths in restrictions rather than --depth option
+
 2006-02-20  Derek Scherger  <derek@echologic.com>
 
 	* restrictions.{cc,hh}: attempt to simplify and remove duplication
