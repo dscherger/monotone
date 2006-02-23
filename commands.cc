@@ -2129,7 +2129,7 @@ CMD(sync, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
 
 CMD(serve, N_("network"), N_("PATTERN ..."),
     N_("serve the branches specified by PATTERNs to connecting clients"),
-    OPT_BIND % OPT_PIDFILE % OPT_EXCLUDE)
+    OPT_BIND % OPT_STDIO % OPT_PIDFILE % OPT_EXCLUDE)
 {
   if (args.size() < 1)
     throw usage(name);
