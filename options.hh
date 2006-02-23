@@ -53,3 +53,5 @@
 #define OPT_DROP_ATTR 44
 #define OPT_NO_FILES 45
 #define OPT_LOG 46
+#define OPT_SINCE 47
+#define OPT_FULL 48
