@@ -1,3 +1,72 @@
+2006-02-24  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (ls_changed): I was a bit overly paranoid about the
+	possibilities with C++ and defined an explicit functor for the set
+	instead of relying on the automatic generation of less<file_path>.
+	Derek Scherger made me realise I was a bit overzealous, and this
+	change removes the explicit functor.
+
+2006-02-23  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* enumerator.hh: Another GCC 4.1 compile fix.
+
+	* tests/t_log_selectors.at: UnXFAIL.
+
+	* commands.cc (complete): Refactor selector completion to enable
+	return of single or sets of completed revisions.
+	(CMD(log)): Do something sensible with selectors that return
+	multiple revisions.
+
+	* tests/t_log_selectors.at: XFAILed test for bug #15877.
+
+	* testsuite.at: Add it.
+
+	* app_state.cc, app_state.hh, commands.cc, monotone.cc,
+	options.hh: Revert failed UI experiment: reenable logging merges
+	by default and rename --merges back to --no-merges.
+
+	* contrib/color-logs.{conf,sh}, contrib/monotone-notify.pl,
+	contrib/monotone.el, tests/t_log_nofiles_nomerges.at,
+	testsuite.at: Handle --no-merges.
+
+	* monotone.texi: Document --no-merges.
+
+2006-02-23  Matt Johnston  <matt@ucc.asn.au>
+
+	* enumerator.{cc,hh}: avoid transferring deltas on both sides of merge
+	revisions, and prefer deltas to data when both are available.
+	See
+	https://savannah.nongnu.org/bugs/?func=detailitem&item_id=15846
+
+2006-02-21  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (detach_node): This time for sure!
+
+2006-02-21  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (detach_node): Oops, x != y != !(x == y).
+
+2006-02-21  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (detach_node): Check if we are passed the root dir, and
+	error out if so.
+
+2006-02-21  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc (pid_file): newline-terminate the pid
+
+2006-02-21  Richard Levitte  <richard@levitte.org>
+
+	* contrib/usher.cc (server::set_hosts): Erasing the list node that
+	we're iterating on, then trying to go to the next node doesn't
+	work.  Save the iterator, then increment it before erasing the
+	node using the saved value.  No more segfaults.
+
+2006-02-21  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* sanity.hh: Work around roster_merge.cc compilation failure with
+	GCC 3.4.
+
 2006-02-20  Richard Levitte  <richard@levitte.org>
 
 	* monotone.cc (cpp_main), options.hh, ui.cc (redirect_log_to),
