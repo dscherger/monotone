@@ -37,6 +37,7 @@
 #include "vocab.hh"
 #include "xdelta.hh"
 #include "epoch.hh"
+#include "roster.hh"
 
 // defined in schema.sql, converted to header:
 #include "schema.h"
@@ -120,7 +121,11 @@ database::database(system_path const & fn) :
   // non-alphabetic ordering of tables in sql source files. we could create
   // a temporary db, write our intended schema into it, and read it back,
   // but this seems like it would be too rude. possibly revisit this issue.
-  schema("1db80c7cee8fa966913db1a463ed50bf1b0e5b0e"),
+  // 
+  // (the id you need was printed in the error message you got when you 
+  // ran monotone without updating this.)
+  //
+  schema("0a5615e37448e0671655afe4c536cc45680fbcc4"),
   __sql(NULL),
   transaction_level(0)
 {}
@@ -1422,6 +1427,44 @@ database::get_revision_ancestry(std::multimap<revision_id, revision_id> & graph)
 }
 
 void 
+database::get_node_revision_ancestry(node_id node, std::multimap<revision_id, revision_id> & graph)
+{
+  results res;
+  graph.clear();
+  fetch(res, 2, any_rows, 
+        "SELECT parent,child FROM node_revision_ancestry WHERE node = ?", lexical_cast<string>(node).c_str());
+  for (size_t i = 0; i < res.size(); ++i)
+      graph.insert(std::make_pair(revision_id(res[i][0]),
+                                  revision_id(res[i][1])));
+}
+
+void
+database::get_node_revision_parents(node_id node, revision_id const & rev, std::set<revision_id> & parents)
+{
+  I(!null_id(rev));
+  results res;
+  parents.clear();
+  fetch(res, one_col, any_rows,
+        "SELECT parent from node_revision_ancestry WHERE node = ? AND child = ?",
+        lexical_cast<string>(node).c_str(), rev.inner()().c_str());
+  for (size_t i = 0; i < res.size(); i++)
+    parents.insert(revision_id(res[i][0]));
+}
+
+void 
+database::get_node_revision_children(node_id node, revision_id const & rev, std::set<revision_id> & children)
+{
+  I(!null_id(rev));
+  results res;
+  children.clear();
+  fetch(res, one_col, any_rows,
+        "SELECT child from node_revision_ancestry WHERE node = ? AND parent = ?",
+        lexical_cast<string>(node).c_str(), rev.inner()().c_str());
+  for (size_t i = 0; i < res.size(); i++)
+    children.insert(revision_id(res[i][0]));
+}
+
+void 
 database::get_revision_parents(revision_id const & id,
                                set<revision_id> & parents)
 {
@@ -2666,6 +2709,27 @@ database::get_roster(revision_id const & rev_id,
 
 
 void
+database::put_node_revision_ancestry(node_id node, revision_id const & parent, revision_id const & child)
+{
+  execute("INSERT into node_revision_ancestry VALUES (?, ?, ?)",
+          lexical_cast<string>(node).c_str(),
+          parent.inner()().c_str(), child.inner()().c_str());
+}
+
+
+void
+database::put_node_revision_ancestry_edges(std::map<node_id, std::multimap <revision_id, revision_id> > const & edges)
+{
+  for (std::map<node_id, std::multimap <revision_id, revision_id> >::const_iterator i = edges.begin();
+       i != edges.end(); i++)
+    {
+      for (std::multimap<revision_id, revision_id>::const_iterator j = i->second.begin(); j != i->second.end(); j++) 
+        put_node_revision_ancestry(i->first, j->first, j->second);
+    }
+}
+
+
+void
 database::put_roster(revision_id const & rev_id,
                      roster_t & roster,
                      marking_map & marks)
@@ -2677,6 +2741,9 @@ database::put_roster(revision_id const & rev_id,
 
   write_roster_and_marking(roster, marks, new_data);
   calculate_ident(new_data, new_id);
+
+  std::map<node_id, std::multimap <revision_id, revision_id> > node_ancestry_edges;
+  calculate_node_revision_ancestry(rev_id, marks, node_ancestry_edges);
 
   // First: find the "old" revision; if there are multiple old
   // revisions, we just pick the first. It probably doesn't matter for
@@ -2690,6 +2757,8 @@ database::put_roster(revision_id const & rev_id,
   execute(query("INSERT into revision_roster VALUES (?, ?)")
           % text(rev_id.inner()())
           % text(new_id()));
+
+  put_node_revision_ancestry_edges(node_ancestry_edges);
 
   if (exists(new_id, data_table) 
       || delta_exists(new_id, delta_table))
@@ -2724,6 +2793,69 @@ database::put_roster(revision_id const & rev_id,
         }
     }
   guard.commit();
+}
+
+
+void
+get_parent_marks_set(database & db,
+                     node_id const & node, 
+                     revision_id const & rev, 
+                     revision_id const & birthrev, 
+                     std::set<revision_id> & parent_marks)
+{
+  if (rev == birthrev)
+    return;
+
+  // for each parent of rev, add in the set of revisions in that rosters markmap file_contents set
+  std::set<revision_id> parents;
+  db.get_revision_parents(rev, parents);
+  for (std::set<revision_id>::const_iterator i = parents.begin(); i != parents.end(); i++)
+    {
+      roster_t roster;
+      marking_map marks;
+      db.get_roster(*i, roster, marks);
+      marking_map::const_iterator node_marks = marks.find(node);
+      I(node_marks != marks.end());
+      std::set<revision_id> const & content_marks = node_marks->second.file_content;
+      parent_marks.insert(content_marks.begin(), content_marks.end());
+
+      split_path file_split_path;
+      roster.get_name(node, file_split_path);
+      //L(FL("get_parent_marks_set for file %s in revision %s vs parent %s found %d marks:") 
+      //  % file_path(file_split_path).as_external() % rev % (*i) % content_marks.size());
+      //for (std::set<revision_id>::const_iterator j = content_marks.begin(); j != content_marks.end(); j++)
+      //  L(FL("mark %s") % (*j));
+    }
+
+  return;
+}
+
+
+void
+database::calculate_node_revision_ancestry(revision_id const & rev, 
+                                           marking_map const & mm,
+                                           std::map<node_id, std::multimap<revision_id, revision_id> > & anc)
+{
+  for (std::map<node_id, marking_t>::const_iterator i = mm.begin(); i != mm.end(); i++)
+    {
+      std::set<revision_id> const & node_marks = i->second.file_content;
+
+      // if the marking map file_content marks is not this revision,
+      // we don't have to do anything since we didn't just change the
+      // file
+      if (node_marks.find(rev) == node_marks.end())
+        continue;
+
+      // otherwise, we have to get the parents of this revision to find
+      // the old set of marks, and form an edge from each of 
+      // union(parent revisions content marks) -> this revision
+      std::set<revision_id> parent_marks;
+      get_parent_marks_set(*this, i->first, rev, i->second.birth_revision, parent_marks);
+      for (std::set<revision_id>::const_iterator j = parent_marks.begin(); j != parent_marks.end(); j++)
+        {
+          anc[i->first].insert(std::make_pair(*j, rev));
+        }
+    }
 }
 
 

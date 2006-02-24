@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2005 nathaniel smith <njs@pobox.com>
 // copyright (C) 2005 graydon hoare <graydon@pobox.com>
 // all rights reserved.

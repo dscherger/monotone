@@ -2181,6 +2181,7 @@ CMD(db, N_("database"),
       "check\n"
       "changesetify\n"
       "rosterify\n"
+      "filedagify\n"
       "set_epoch BRANCH EPOCH\n"), 
     N_("manipulate database state"),
     OPT_DROP_ATTR)
@@ -2205,6 +2206,8 @@ CMD(db, N_("database"),
         build_changesets_from_manifest_ancestry(app);
       else if (idx(args, 0)() == "rosterify")
         build_roster_style_revs_from_manifest_style_revs(app);
+      else if (idx(args, 0)() == "filedagify")
+        build_per_file_dags(app);
       else
         throw usage(name);
     }

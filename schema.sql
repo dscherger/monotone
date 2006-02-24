@@ -60,6 +60,14 @@ CREATE TABLE revision_ancestry
 	unique(parent, child)
 	);
 
+CREATE TABLE node_revision_ancestry
+        (
+        node not null,       -- internal node
+        parent not null,     -- joins with revisions.id
+        child not null,      -- joins with revisions.id
+        unique(node, parent, child)
+        );
+
 CREATE TABLE rosters
 	(
 	id primary key,         -- strong hash of the roster
