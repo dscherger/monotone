@@ -510,10 +510,10 @@ complete(app_state & app,
       erase_ancestors(completions, app);
     }
 
-  for (set<string>::const_iterator i = completions.begin();
+  for (set<revision_id>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
     {
-      pair<set<revision_id>::const_iterator, bool> p = completion.insert(revision_id(*i));
+      pair<set<revision_id>::const_iterator, bool> p = completion.insert(*i);
       P(F("expanded to '%s'\n") % *(p.first));
     }
 }
