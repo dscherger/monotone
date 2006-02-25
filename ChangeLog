@@ -1,3 +1,9 @@
+2006-02-25  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_heads_of_certs.at (selecting headmost arbitrary certs):
+	Adapt the test, since we don't get the ambiguous expantion message
+	as easily any more.
+
 2006-02-24  Richard Levitte  <richard@levitte.org>
 
 	* commands.cc (complete): Correct a small merge error.
