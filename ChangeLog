@@ -1,5 +1,16 @@
 2006-02-25  Nathaniel Smith  <njs@pobox.com>
 
+	* work.cc (attach_node): Apparently the tests depend on update
+	clobbering existing non-versioned files... and we don't have a
+	good solution _anyway_, so just go back to clobbering them.
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* cset.cc (root_dir_test, invalid_csets_test): Don't test that
+	root dir stuff fails.  Test that it works.
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
 	* roster.cc (detach_node): Add missing invariant.
 
 2006-02-25  Nathaniel Smith  <njs@pobox.com>
@@ -26,10 +37,10 @@
 	Adapt the test, since we don't get the ambiguous expantion message
 	as easily any more.
 
-2006-02-24  Richard Levitte  <richard@levitte.org>
+2006-02-25  Richard Levitte  <richard@levitte.org>
 
-	* commands.cc (complete): Correct a small merge error.
-
+	* tests/t_heads_of_certs.at (selecting headmost arbitrary certs):
+	Adapt the test, since we don't get the ambiguous expantion message
 2006-02-24  Richard Levitte  <richard@levitte.org>
 
 	* commands.cc (ls_changed): I was a bit overly paranoid about the
