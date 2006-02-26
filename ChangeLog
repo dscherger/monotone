@@ -1,3 +1,25 @@
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (detach_node): Add missing invariant.
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* roster_merge.cc (roster_merge): Fix strange merge-created
+	problem...
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (attach_node): This code should use path_exists, not
+	file_exists.
+
+2006-02-24  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netcmd.cc: Ignore protocol version field on usher_cmd packets. It
+	should now be possible to use an usher to redirect connections based
+	on netsync version.
+	* netcmd.hh: Remove unused netcmd::get_version() and
+	unused/unimplemented netcmd::netcmd(u8 version).
+
 2006-02-25  Richard Levitte  <richard@levitte.org>
 
 	* tests/t_heads_of_certs.at (selecting headmost arbitrary certs):
@@ -55,6 +77,10 @@
 2006-02-21  Nathaniel Smith  <njs@pobox.com>
 
 	* work.cc (detach_node): Oops, x != y != !(x == y).
+
+2006-02-21  Nathaniel Smith  <njs@pobox.com>
+
+	* roster_merge.cc: Fixup after merge.
 
 2006-02-21  Nathaniel Smith  <njs@pobox.com>
 
