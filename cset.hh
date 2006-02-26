@@ -23,7 +23,7 @@ typedef std::map<attr_key, attr_value> attr_map_t;
 // destructively; this may be the filesystem or an in-memory
 // representation (a roster / mfest).
 
-typedef u32 node_id;
+typedef u64 node_id;
 
 struct editable_tree
 {

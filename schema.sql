@@ -80,10 +80,23 @@ CREATE TABLE revision_roster
 	roster_id not null      -- joins with either rosters.id or roster_deltas.id
 	);
 
-CREATE TABLE next_roster_node_number
+CREATE TABLE sequence_numbers
 	(
-	node primary key        -- only one entry in this table, ever
+	name primary key,       -- name of a particular sequence number (node, vlog, etc.)
+	val not null            -- the current sequence number value
 	);
+
+create TABLE vlog_extents
+        (
+        vlog_id,                -- identity of this extent's vlog
+        off,                    -- offset of extent in vlog
+        len,                    -- length of extent in vlog
+        base,                   -- offset of nearest fulltext at earlier or equal offset
+        content,                -- content ID of this extent
+        full_p,                 -- true if base == off, otherwise false
+        unique(vlog_id, off),
+	unique(content, full_p)
+        );
 
 CREATE INDEX revision_ancestry__child ON revision_ancestry (child);
 
