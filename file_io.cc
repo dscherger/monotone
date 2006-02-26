@@ -18,6 +18,7 @@
 #include "sanity.hh"
 #include "transforms.hh"
 #include "platform.hh"
+#include "constants.hh"
 
 // this file deals with talking to the filesystem, loading and
 // saving files.
@@ -255,6 +256,68 @@ delete_dir_recursive(any_path const & p)
                             F("directory to delete, '%s', is a file") % p);
   fs::remove_all(mkdir(p));
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+////////////// FIXME: junky prototype section only for vlogs;  //////////////////
+////////////// must make safe and portable etc.                //////////////////
+/////////////////////////////////////////////////////////////////////////////////
+
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+void 
+truncate_file(any_path const & path, off_t len)
+{
+  // FIXME: this is probably neither safe nor portable. Just a prototype.
+  E(truncate(path.as_external().c_str(), len) == 0,
+    F("truncate(%s, %d) failed") % path % len);
+}
+
+
+void 
+append_data_to_file(any_path const & path, data const & dat)
+{
+  // FIXME: this is probably neither safe nor portable. Just a prototype.
+
+  int fd = open(path.as_external().c_str(), O_CREAT|O_WRONLY|O_APPEND|O_LARGEFILE, 0600);
+  E(fd != -1, F("open(%s) failed") % path);
+  E(write(fd, dat().c_str(), dat().size()) == static_cast<int>(dat().size()),
+    F("write(%s, ..., %d) failed") % path % dat().size());
+  E(close(fd) != -1, F("close(%s) failed") % path);
+}
+
+
+void 
+get_extent_from_file(any_path const & path, 
+                     off_t off, size_t len, 
+                     data & dat)
+{
+  // FIXME: this is probably neither safe nor portable. Just a prototype.
+  int fd = open(path.as_external().c_str(), O_RDONLY|O_LARGEFILE);  
+  E(fd != -1, F("open(%s) failed") % path);
+  E(lseek(fd, off, SEEK_SET) == off, F("lseek() failed"));
+  std::string tmp;
+  char buf[constants::bufsz];
+  while (len > 0)
+    {
+      size_t count = read(fd, buf, std::min(len, constants::bufsz));                          
+      E(count != -1, F("read() failed"));
+      I(count <= len);
+      len -= count;
+      tmp.append(buf, count);
+    }
+  dat = data(tmp);
+  E(close(fd) != -1, F("close(%s) failed") % path);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////
+////////////// end of junky prototype section only for vlogs   //////////////////
+/////////////////////////////////////////////////////////////////////////////////
+
 
 void 
 move_file(any_path const & old_path,

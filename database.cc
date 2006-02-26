@@ -62,8 +62,9 @@ namespace
 {
   struct query_param
   {
-    enum arg_type { text, blob };
+    enum arg_type { text, integer, blob };
     arg_type type;
+    u64 integer_data;
     std::string data;
   };
 
@@ -72,7 +73,19 @@ namespace
   {
     query_param q = {
       query_param::text,
+      static_cast<u64>(0),
       txt,
+    };
+    return q;
+  }
+
+  query_param
+  integer(sqlite_int64 v)
+  {
+    query_param q = {
+      query_param::integer, 
+      v,
+      std::string(),
     };
     return q;
   }
@@ -82,6 +95,7 @@ namespace
   {
     query_param q = { 
       query_param::blob,
+      static_cast<u64>(0),
       blb,
     };
     return q;
@@ -120,7 +134,7 @@ database::database(system_path const & fn) :
   // non-alphabetic ordering of tables in sql source files. we could create
   // a temporary db, write our intended schema into it, and read it back,
   // but this seems like it would be too rude. possibly revisit this issue.
-  schema("1db80c7cee8fa966913db1a463ed50bf1b0e5b0e"),
+  schema("3912de3b90626ac6c86726e21b733dc3760f132f"),
   __sql(NULL),
   transaction_level(0)
 {}
@@ -160,6 +174,9 @@ database::check_format()
 
   if (res_revisions.size() > 0)
     {
+      /*
+        obsolete check by vlogs 
+
       // they have revisions, so they can't be _ancient_, but they still might
       // not have rosters
       results res_rosters;
@@ -173,6 +190,8 @@ database::check_format()
           "  pull into a fresh database.\n"
           "sorry about the inconvenience.")
         % filename);
+
+      */
     }
   else
     {
@@ -673,7 +692,19 @@ database::fetch(results & res,
       // profiling finds this logging to be quite expensive
       if (global_sanity.debug)
         {
-          string log = query.args[param-1].data;
+          string log;
+          switch (idx(query.args, param - 1).type)
+            {
+            case query_param::text:
+              log = query.args[param-1].data;
+              break;
+            case query_param::integer:
+              log = lexical_cast<string>(query.args[param-1].integer_data);
+              break;
+            case query_param::blob:
+              log = "<blob>";
+              break;
+            }
           
           if (log.size() > constants::log_line_sz)
             log = log.substr(0, constants::log_line_sz);
@@ -687,6 +718,10 @@ database::fetch(results & res,
           sqlite3_bind_text(i->second.stmt(), param,
                             idx(query.args, param - 1).data.c_str(), -1,
                             SQLITE_STATIC);
+          break;
+        case query_param::integer:
+          sqlite3_bind_int64(i->second.stmt(), param,
+                             idx(query.args, param - 1).integer_data);
           break;
         case query_param::blob:
           {
@@ -782,13 +817,18 @@ database::rollback_transaction()
 
 bool 
 database::exists(hexenc<id> const & ident,
-                      string const & table)
+                 string const & table)
 {
+  // Shunt to vlogs.
+  return exists(ident);
+
+  /*
   results res;
   query q("SELECT id FROM " + table + " WHERE id = ?");
   fetch(res, one_col, any_rows, q % text(ident()));
   I((res.size() == 1) || (res.size() == 0));
   return res.size() == 1;
+  */
 }
 
 
@@ -796,10 +836,14 @@ bool
 database::delta_exists(hexenc<id> const & ident,
                        string const & table)
 {
+  // Shunt to vlogs.
+  return exists(ident);
+  /*
   results res;
   query q("SELECT id FROM " + table + " WHERE id = ?");
   fetch(res, one_col, any_rows, q % text(ident()));
   return res.size() > 0;
+  */
 }
 
 unsigned long
@@ -840,6 +884,11 @@ database::get(hexenc<id> const & ident,
               data & dat,
               string const & table)
 {
+  // Shunt to vlogs.
+  return get_data(ident, dat);
+  
+  /*
+
   results res;
   query q("SELECT data FROM " + table + " WHERE id = ?");
   fetch(res, one_col, one_row, q % text(ident()));
@@ -854,6 +903,7 @@ database::get(hexenc<id> const & ident,
   I(tid == ident);
 
   dat = rdata_unpacked;
+  */
 }
 
 void 
@@ -877,6 +927,10 @@ database::put(hexenc<id> const & ident,
               data const & dat,
               string const & table)
 {
+  // Shunt to vlogs.
+  put_data(ident, dat);
+
+  /*
   // consistency check
   I(ident() != "");
   hexenc<id> tid;
@@ -892,6 +946,8 @@ database::put(hexenc<id> const & ident,
   execute(query(insert) 
           % text(ident()) 
           % text(dat_packed()));
+
+  */
 }
 void 
 database::put_delta(hexenc<id> const & ident,
@@ -912,6 +968,9 @@ database::put_delta(hexenc<id> const & ident,
           % text(base())
           % text(del_packed()));
 }
+
+/*
+// Killed by vlogs.
 
 // static ticker cache_hits("vcache hits", "h", 1);
 
@@ -996,6 +1055,7 @@ extend_path_if_not_cycle(string table_name,
       seen_nodes.insert(ext);
     }
 }
+*/
 
 void 
 database::get_version(hexenc<id> const & ident,
@@ -1003,6 +1063,10 @@ database::get_version(hexenc<id> const & ident,
                       string const & data_table,
                       string const & delta_table)
 {
+  // Shunt to vlogs.
+  get_data(ident, dat);
+
+  /*
   I(ident() != "");
 
   if (vcache.get(ident, dat))
@@ -1160,6 +1224,7 @@ database::get_version(hexenc<id> const & ident,
       I(final == ident);
     }
   vcache.put(ident, dat);
+  */
 }
 
 
@@ -1178,7 +1243,13 @@ database::put_version(hexenc<id> const & old_id,
                       string const & data_table,
                       string const & delta_table)
 {
+  // Shunt to vlogs.
+  gzip<delta> gzdel;
+  encode_gzip(del, gzdel);
+  put_delta(old_id, new_id, gzdel);
 
+
+  /*
   data old_data, new_data;
   delta reverse_delta;
   
@@ -1196,6 +1267,7 @@ database::put_version(hexenc<id> const & old_id,
   put(new_id, new_data, data_table);
   put_delta(old_id, new_id, reverse_delta, delta_table);
   guard.commit();
+  */
 }
 
 void 
@@ -1306,9 +1378,13 @@ database::roster_version_exists(hexenc<id> const & id)
 }
 
 bool 
-database::revision_exists(revision_id const & id)
+database::revision_exists(revision_id const & ident)
 {
-  return exists(id.inner(), "revisions");
+  results res;
+  query q("SELECT id FROM revisions WHERE id = ?");
+  fetch(res, one_col, any_rows, q % text(ident.inner()()));
+  I((res.size() == 1) || (res.size() == 0));
+  return res.size() == 1;
 }
 
 bool
@@ -1494,6 +1570,11 @@ database::get_revision(revision_id const & id,
 void
 database::deltify_revision(revision_id const & rid)
 {
+
+  // No-op with vlogs.
+  return;
+
+  /*
   transaction_guard guard(*this);
   revision_set rev;
   MM(rev);
@@ -1527,6 +1608,7 @@ database::deltify_revision(revision_id const & rid)
       }
   }
   guard.commit();
+  */
 }
 
 
@@ -2796,37 +2878,6 @@ database::get_uncommon_ancestors(revision_id const & a,
                  inserter(b_uncommon_ancs, b_uncommon_ancs.begin()));
 }
 
-node_id 
-database::next_node_id()
-{
-  transaction_guard guard(*this);
-  results res;
-
-  // We implement this as a fixed db var.
-
-  fetch(res, one_col, any_rows, 
-        query("SELECT node FROM next_roster_node_number"));
-  
-  node_id n;
-  if (res.empty())
-    {
-      n = 1;
-      execute (query("INSERT INTO next_roster_node_number VALUES(?)")
-               % text(lexical_cast<string>(n)));
-    }
-  else
-    {
-      I(res.size() == 1);
-      n = lexical_cast<node_id>(res[0][0]);
-      ++n;
-      execute (query("UPDATE next_roster_node_number SET node = ?")
-               % text(lexical_cast<string>(n)));
-      
-    }
-  guard.commit();
-  return n;
-}
-
 
 void
 database::check_filename()
@@ -2948,4 +2999,499 @@ close_all_databases()
       L(FL("exec_err = %d, close_err = %d") % exec_err % close_err);
     }
   sql_contexts.clear();
+}
+
+
+//////////////////////////// vlog stuff ////////////////////////////////
+
+/*
+
+Each vlog is constructed as a sequence of extents. These extents are
+stored contiguously in external append-only files, in a .vlogs
+directory.
+
+Every extent represents a new content id in the vlog.
+
+An extent is either a gzipped fulltext or a gzipped delta. When an
+extent is a fulltext, it represents a new content id by containing
+that content. When an extent is a delta, it represents a new content
+id by extending the content id of the extent before it in the vlog.
+
+The structure of the vlog file is a sequence of deltas with the 
+occasional fulltext:
+
+   [FULL A)[a->b)[b->c)[c->d)[FULL D)[d->e)[e->f)[f->g)
+           \_______  ______/         \_______  ______/
+                   \/                        \/
+            <= len(FULL A)            <= len(FULL D)
+
+There is an index of the extents stored in the database. The index
+stores 6-tuples representing extents:
+
+  'create table vlog_extents (vlog_id, off, len, base, content, full_p)'
+
+  - vlog_id is the logical id of a vlog holding the extent. This is
+    simply to permit storing multiple vlog indices in the same db
+    table.
+  - off is the vlog-file offset of the extent.
+  - len is the number of bytes in the extent.
+  - base is the file offset of the nearest recent fulltext.
+  - content is the content id of the extent.
+  - full_p is a redundant flag, but serves as a sanity check.
+
+(vlog_id,off) and (content,full_p) should be uniqueness-indexed. 
+
+Each 6-tuple represents an extent [off, end), occurring after base.
+
+When e.base == e.off, e is a fulltext and e.full_p == true.
+
+When e.base != e.off, e is a delta and e.full_p == false.
+
+In all cases, loading the data from [e.base, e.off + e.len) from the 
+vlog file loads all the data necessary to reconstruct e.content. 
+Loading all the index entries i with i.off >= e.base and 
+i.off <= e.off is sufficient to know the internal structure of 
+the loaded data block.
+
+full_p is there just to permit the uniqueness constraint on the table 
+involving content, because there are zero to two index entries for 
+a given delta: possibly the incoming delta, and possibly a plaintext.
+Both may be present: we want to be able to feed incoming deltas a->b
+when a client asks for it without reconstructing a and b.
+
+One final note: it is necessary to truncate the file to e.off when
+writing a new extent e. This is because there might be some trailing
+data from a previous extent-write which did not get committed to the
+index.
+
+*/
+
+struct 
+vlog_extent
+{
+  bool is_fulltext() 
+  { 
+    return base == off; 
+  }
+  off_t off;
+  size_t len;
+  off_t base;
+  hexenc<id> content;
+};
+
+
+bool 
+database::exists(hexenc<id> const & ident)
+{
+  results res;
+  query q("SELECT vlog_id FROM vlog_extents WHERE content = ?");
+  fetch(res, one_col, any_rows, q % text(ident()));
+  I((res.size() == 2) || (res.size() == 1) || (res.size() == 0));
+  return res.size() != 0;
+}
+
+
+void
+database::get_vlog_extent(vlog_id vid, 
+			  hexenc<id> const & ident, 
+			  vlog_extent & ve)
+{
+  ve.content = ident;
+
+  results res;                  
+  fetch(res, 3, any_rows, 
+	query("SELECT base, off, len "
+	      "FROM vlog_extents "
+	      "WHERE vlog_id = ? "
+	      "AND content = ?")
+	% integer(vid)
+	% text(ident()));
+
+  I(res.size() == 1 || res.size() == 2);
+  ve.base = lexical_cast<off_t>(res.back()[0]);
+  ve.off = lexical_cast<off_t>(res.back()[1]);
+  ve.len = lexical_cast<size_t>(res.back()[2]);
+}
+
+void
+database::get_final_vlog_cluster(vlog_id vid, 
+                                 std::vector<vlog_extent> & vi)
+{
+  vi.clear();
+  results res;
+  fetch(res, 4, any_rows, 
+	query("SELECT off, len, base, content "
+	      "FROM vlog_extents "
+	      "WHERE vlog_id = ? "
+	      "AND off >= (SELECT MAX(off) FROM vlog_extents WHERE vlog_id = ? AND off == base)")
+	% integer(vid)
+	% integer(vid));
+
+  I(res.size() > 0);
+  for (size_t i = 0; i < res.size(); ++i)
+    {
+      vlog_extent v;
+      v.off = lexical_cast<off_t>(res[i][0]);
+      v.len = lexical_cast<size_t>(res[i][1]);
+      v.base = lexical_cast<off_t>(res[i][2]);
+      v.content = hexenc<id>(res[i][3]);
+      vi.push_back(v);
+    }
+}
+
+
+void
+database::get_vlog_extents(vlog_id vid, 
+			   hexenc<id> const & content, 
+			   std::vector<vlog_extent> & vi)
+{
+  // This loads the extents required to reconstruct content.
+  vlog_extent ve;
+  get_vlog_extent(vid, content, ve);
+  
+  vi.clear();
+  results res;
+  fetch(res, 4, any_rows, 
+	query("SELECT off, len, base, content "
+	      "FROM vlog_extents "
+	      "WHERE vlog_id = ? "
+	      "AND off >= ? "
+	      "AND off <= ? ")
+	% integer(vid)
+	% integer(ve.base)
+	% integer(ve.off));
+
+  I(res.size() > 0);
+  for (size_t i = 0; i < res.size(); ++i)
+    {
+      vlog_extent v;
+      v.off = lexical_cast<off_t>(res[i][0]);
+      v.len = lexical_cast<size_t>(res[i][1]);
+      v.base = lexical_cast<off_t>(res[i][2]);
+      v.content = hexenc<id>(res[i][3]);
+      vi.push_back(v);
+    }
+}
+
+
+vlog_id
+database::get_existing_vlog_id_for_ident(hexenc<id> const & ident)
+{
+  results res;                  
+  fetch(res, one_col, any_rows, 
+	query("SELECT vlog_id "
+	      "FROM vlog_extents "
+	      "WHERE content = ?")
+	% text(ident()));
+  
+  E(!res.empty(),
+    F("missing version log for %s") % ident);
+
+  I(res.size() == 1 || res.size() == 2);
+  return lexical_cast<vlog_id>(res[0][0]);
+}
+
+
+void
+database::get_vlog_dir(system_path & pth)
+{
+  pth = system_path(filename.as_internal() + ".vlogs");
+}
+
+
+void
+database::get_vlog_path_for_vlog_id(vlog_id vid, system_path & pth)
+{
+  system_path tmp;
+  get_vlog_dir(tmp);
+  pth = tmp / lexical_cast<string>(vid);
+}
+
+
+void
+database::put_delta(hexenc<id> const & old_id0,
+		    hexenc<id> const & new_id,
+		    gzip<delta> const & del0)
+{
+  hexenc<id> old_id = old_id0;
+  gzip<delta> del = del0;
+
+  // In this control path, we are receiving a delta. We can only put
+  // the delta someplace where there's already a preimage. So it is an
+  // error if there's no vlog registered in the database for the
+  // preimage, or the vlog doesn't exist on disk.
+
+  L(FL("trying to put %d-byte delta %s -> %s into vlog") 
+    % del().size() % old_id % new_id);
+
+  I(exists(old_id));
+
+  if (exists(new_id))
+    {
+      L(FL("already have vlog entry for ident %s") % new_id);
+      return;
+    }
+
+  vlog_id vid = get_existing_vlog_id_for_ident(old_id);
+  L(FL("found vlog id %d for ident %s") % vid % old_id);
+
+  system_path vlog_pth;
+  get_vlog_path_for_vlog_id(vid, vlog_pth);
+  L(FL("vlog %d goes in system path '%s'") % vid % vlog_pth);
+
+  require_path_is_file(vlog_pth,
+		       F("version log file %s does not exist") % vlog_pth,
+		       F("version log file %s is a directory") % vlog_pth);
+  
+  // What remains: load the extent cluster at the end of this vid's
+  // vlog index, find the last pos with a fulltext, possibly append a
+  // 'checkpoint' fulltext, and append the delta.
+  
+  std::vector<vlog_extent> vi;
+  get_final_vlog_cluster(vid, vi);
+
+  // There must be at least one extent in the final cluster, and the
+  // first extent in the cluster must be a fulltext.
+  I(!vi.empty());
+  I(vi.front().is_fulltext());
+
+  // It is possible we're being called with a delta which doesn't
+  // off from vi.back()'s content. We don't have much choice here:
+  // the vlog is an append-only storage medium. We simply rebuild the
+  // delta so that is *is* from vi.back()'s content.
+  //
+  // FIXME: We have reason to believe this can be made much more
+  // efficient by something similar to delta-combining.
+
+  if (!(vi.back().content == old_id))
+    {
+      L(FL("rebuilding delta against vlog tail %s") % vi.back().content);
+      data provided_old;
+      data provided_new;
+      data vlog_old;
+      get_data(old_id, provided_old);
+      get_data(vi.back().content, vlog_old);
+      delta del_tmp;
+
+      decode_gzip(del, del_tmp);
+      patch(provided_old, del_tmp, provided_new);
+      diff(vlog_old, provided_new, del_tmp);
+      encode_gzip(del_tmp, del);
+      old_id = vi.back().content;      
+    }
+  
+  size_t base_off = vi.front().off;
+  size_t base_len = vi.front().len;
+  size_t total_len = vi.back().off + vi.back().len;
+  I(total_len >= (base_off + base_len));
+  size_t existing_delta_len = (total_len - (base_len + base_off));
+
+  L(FL("considering write: base_off=%d, base_len=%d, total_len=%d, existing_delta_len=%d")
+    % base_off % base_len % total_len % existing_delta_len);
+
+  {
+    transaction_guard guard(*this);
+
+    // It's possible that we can't append this delta without exceeding
+    // the size limit of deltas trailing the existing base. So we're
+    // going to write a new fulltext and bump the base_* and total_len
+    // numbers to refer to it. This *looks* like a sort of no-op, but
+    // it's actually delta-reconstructing the old_ident and then
+    // saving its full image.
+
+    if (existing_delta_len != 0 &&
+        existing_delta_len + del().size() > base_len)
+      {
+        L(FL("writing fulltext checkpoint for %s in vlog %d, at pos %s")
+          % new_id % vid % total_len);
+	data dat;
+        gzip<data> gzdat;
+	get_data(old_id, dat);
+        encode_gzip(dat, gzdat);
+	put_data_at_offset(vid, total_len, old_id, gzdat);
+	base_len = gzdat().size();
+	base_off = total_len;
+	total_len += base_len;
+      }
+    
+    truncate_file(vlog_pth, total_len);
+    append_data_to_file(vlog_pth, del());
+    execute(query("INSERT INTO vlog_extents VALUES (?,?,?,?,?,?)")
+	    % integer(vid)
+	    % integer(total_len)
+	    % integer(del().size())
+	    % integer(base_off)
+	    % text(new_id())
+	    % text("false"));
+    guard.commit();
+  }
+}
+
+
+void
+database::put_data_at_offset(vlog_id vid, 
+			     off_t off,
+			     hexenc<id> const & new_id, 
+			     gzip<data> const & dat)
+{
+  transaction_guard guard(*this);
+  system_path vlog_pth;
+  get_vlog_path_for_vlog_id(vid, vlog_pth);
+  L(FL("vlog %d goes in system path '%s'") % vid % vlog_pth);
+
+  if (off != 0)
+    {
+      require_path_is_file(vlog_pth,
+                           F("writing version log file, '%s' does not exist") % vlog_pth,
+                           F("writing version log file, '%s' is a directory") % vlog_pth);
+      truncate_file(vlog_pth, off);
+    }
+  else
+    if (!file_exists(vlog_pth))
+      {
+	E(!path_exists(vlog_pth),
+	  F("writint version log file, '%s' exists but is not a file") % vlog_pth);
+	system_path pth;
+	get_vlog_dir(pth);
+	if (!directory_exists(pth))
+	  mkdir_p(pth);
+      }
+  
+  append_data_to_file(vlog_pth, dat());
+  execute(query("INSERT INTO vlog_extents VALUES (?,?,?,?,?,?)")
+	  % integer(vid)
+	  % integer(off)
+	  % integer(dat().size())
+	  % integer(off)
+	  % text(new_id())
+	  % text("true"));
+  guard.commit();
+}
+
+
+void
+database::get_data(hexenc<id> const & ident,
+		   data & dat)
+{
+  vlog_id vid = get_existing_vlog_id_for_ident(ident);
+
+  system_path vlog_pth;
+  get_vlog_path_for_vlog_id(vid, vlog_pth);
+  L(FL("vlog %d comes from system path '%s'") % vid % vlog_pth);
+ 
+  require_path_is_file(vlog_pth,
+		       F("reading version log file, '%s' does not exist") % vlog_pth,
+		       F("reading version log file, %s is a directory") % vlog_pth);
+
+  std::vector<vlog_extent> vi;
+  get_vlog_extents(vid, ident, vi); 
+
+  I(!vi.empty());
+  I(vi.front().is_fulltext());
+
+  data buf;
+  I(vi.back().off + vi.back().len >= vi.front().off);
+  size_t sz = ((vi.back().off + vi.back().len) - vi.front().off);
+  L(FL("loading %d-extent cluster at physical extent "
+       "[pos:%d, len:%d] in vlog file '%s'")
+    % vi.size() % vi.front().off % sz % vlog_pth);
+  get_extent_from_file(vlog_pth, vi.front().off, sz, buf);
+  
+  L(FL("beginning reconstruction with base segment [pos:0, len:%d]\n") % vi.front().len);
+  boost::shared_ptr<delta_applicator> app = new_piecewise_applicator();
+  gzip<data> gzbase(buf().substr(0, vi.front().len));
+  data base;
+  decode_gzip(gzbase, base);
+  app->begin(base());
+
+  size_t off = vi.front().len;
+  for (size_t i = 1; i < vi.size(); ++i)
+    {
+      vlog_extent & ve = vi.at(i);
+      L(FL("applying delta from segment [pos:%d, len:%d]\n") % off % ve.len);
+      gzip<delta> gzdel(buf().substr(off, ve.len));
+      delta del;
+      decode_gzip(gzdel, del);
+      apply_delta(app, del());
+      off += ve.len;
+      app->next();
+    }
+
+  string tmp;
+  app->finish(tmp);
+  dat = data(tmp);
+
+  hexenc<id> final;
+  calculate_ident(dat, final);
+  I(final == ident);
+}
+
+
+void
+database::put_data(hexenc<id> const & new_id, 
+		   data const & dat)
+{
+  gzip<data> gzdat;
+  encode_gzip(dat, gzdat);
+  put_data(new_id, gzdat);
+}
+
+
+void
+database::put_data(hexenc<id> const & new_id, 
+		   gzip<data> const & dat)
+{
+  // If you give us data and no vid to affilitate with, we start a new
+  // vlog and stick the data at position zero.
+  vlog_id vid = database::next_vlog_id();
+  put_data_at_offset(vid, 0, new_id, dat);
+}
+
+
+u64
+database::next_sequence_number(std::string const & name)
+{
+  transaction_guard guard(*this);
+  results res;
+
+  fetch(res, one_col, any_rows, 
+        query("SELECT val FROM sequence_numbers "
+	      "WHERE name = ?")
+	% text(name));
+  
+  u32 n;
+  if (res.empty())
+    {
+      n = 1;
+      execute (query("INSERT INTO sequence_numbers VALUES(?,?)")
+	       % text(name)
+               % integer(n));
+    }
+  else
+    {
+      I(res.size() == 1);
+      n = lexical_cast<u64>(res[0][0]);
+      ++n;
+      execute (query("UPDATE sequence_numbers "
+		     "SET val = ?"
+		     "WHERE name = ? ")	       
+               % integer(n)
+	       % text(name));
+    }
+  guard.commit();
+  return n;
+}
+
+
+node_id 
+database::next_node_id()
+{
+  return static_cast<node_id>(next_sequence_number("node"));
+}
+
+
+vlog_id 
+database::next_vlog_id()
+{
+  return static_cast<node_id>(next_sequence_number("vlog"));
 }

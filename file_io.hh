@@ -57,6 +57,13 @@ void delete_dir_shallow(any_path const & path);
 void delete_file_or_dir_shallow(any_path const & path);
 void delete_dir_recursive(any_path const & path);
 
+
+void truncate_file(any_path const & path, off_t len);
+void append_data_to_file(any_path const & path, data const & dat);
+void get_extent_from_file(any_path const & path, 
+			  off_t off, size_t len, 
+			  data & dat);
+
 void move_file(any_path const & old_path,
                any_path const & new_path);
 

@@ -73,6 +73,9 @@ struct app_state;
 struct revision_set;
 struct query;
 
+typedef u64 vlog_id;
+struct vlog_extent;
+
 class database
 {
   system_path filename;
@@ -378,7 +381,7 @@ public:
   // branches
   void get_branches(std::vector<std::string> & names);
 
-  // roster and node_id stuff
+  // roster stuff
   void get_roster_id_for_revision(revision_id const & rev_id,
                                   hexenc<id> & roster_id);
 
@@ -396,8 +399,6 @@ public:
                               revision_id const & b,
                               std::set<revision_id> & a_uncommon_ancs,
                               std::set<revision_id> & b_uncommon_ancs);
-                              
-  node_id next_node_id();
   
   // completion stuff
 
@@ -415,6 +416,45 @@ public:
                 std::vector<std::pair<selectors::selector_type, 
                                       std::string> > const & limit,
                 std::set<std::string> & completions);
+
+  // vlog stuff
+
+  bool exists(hexenc<id> const & ident);
+  void get_vlog_extent(vlog_id vid, 
+                       hexenc<id> const & ident, 
+                       vlog_extent & ve);
+
+  void get_vlog_extents(vlog_id vid, 
+                        hexenc<id> const & content, 
+                        std::vector<vlog_extent> & vi);
+
+  void get_final_vlog_cluster(vlog_id vid, 
+                              std::vector<vlog_extent> & vi);
+
+  vlog_id get_existing_vlog_id_for_ident(hexenc<id> const & ident);
+
+  void get_vlog_dir(system_path & pth);
+
+  void get_vlog_path_for_vlog_id(vlog_id, system_path & pth);
+
+  void put_delta(hexenc<id> const & old_id,
+                 hexenc<id> const & new_id,
+                 gzip<delta> const & del);
+
+  void put_data_at_offset(vlog_id vid, 
+                          off_t off,
+                          hexenc<id> const & new_id, 
+                          gzip<data> const & dat);
+
+  void get_data(hexenc<id> const & ident, data & dat);
+  void put_data(hexenc<id> const & new_id, data const & dat);
+  void put_data(hexenc<id> const & new_id, gzip<data> const & dat);
+
+  // node and vlog id stuff.
+
+  u64 next_sequence_number(std::string const & name);
+  vlog_id next_vlog_id();
+  node_id next_node_id();
   
   ~database();
 
