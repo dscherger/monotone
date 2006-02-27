@@ -2766,7 +2766,7 @@ database::put_roster(revision_id const & rev_id,
 
   // Try to find a parent to hang this off, otherwise add in full.
 
-  hexenc<id> base;
+  hexenc<id> base_ros;
   std::set<revision_id> parents;
   get_revision_parents(rev_id, parents);
 
@@ -2775,24 +2775,30 @@ database::put_roster(revision_id const & rev_id,
     {
       if (null_id(*i))
         continue;      
-      revision_id old_rev = *i;
+      hexenc<id> old_ros;
+      get_roster_id_for_revision(*i, old_ros);
       std::vector<vlog_extent> vi;
-      vlog_id vid = get_existing_vlog_id_for_ident(old_rev.inner());
+      vlog_id vid = get_existing_vlog_id_for_ident(old_ros);
       get_final_vlog_cluster(vid, vi);
-      if (null_id(base) || vi.back().content == base)
-        base = vi.back().content;
+      if (null_id(base_ros) || vi.back().content == base_ros)
+        base_ros = vi.back().content;
     }
 
-  if (null_id(base))
-    put_data(new_id, new_data);
+  if (null_id(base_ros))
+    {
+      put_data(new_id, new_data);
+      L(FL("put roster full data '%s'") % new_id);
+    }
   else
     {
       delta del;
       gzip<delta> gzdel;
-      get_roster(base, old_data);
+      get_roster(base_ros, old_data);
       diff(old_data, new_data, del);
       encode_gzip(del, gzdel);
-      put_delta(base, new_id, gzdel);      
+      put_delta(base_ros, new_id, gzdel);
+      L(FL("put roster delta '%s' -> '%s'") 
+        % base_ros % new_id);
     }
   guard.commit();
 }
@@ -3402,7 +3408,7 @@ database::get_exact_delta(hexenc<id> const & src,
                "[pos:%d, len:%d] in vlog file '%s'")
             % vi.back().off % vi.back().len % vlog_pth);
           data buf;
-          get_extent_from_file(vlog_pth, vi.front().off, vi.back().len, buf);
+          get_extent_from_file(vlog_pth, vi.back().off, vi.back().len, buf);
           del = buf();
           return true;
         }

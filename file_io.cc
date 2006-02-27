@@ -298,9 +298,11 @@ get_extent_from_file(any_path const & path,
   // FIXME: this is probably neither safe nor portable. Just a prototype.
   int fd = open(path.as_external().c_str(), O_RDONLY|O_LARGEFILE);  
   E(fd != -1, F("open(%s) failed") % path);
-  E(lseek(fd, off, SEEK_SET) == off, F("lseek() failed"));
+  if (off != 0)
+    E(lseek(fd, off, SEEK_SET) == off, F("lseek() failed"));
   std::string tmp;
   char buf[constants::bufsz];
+  size_t len0 = len;
   while (len > 0)
     {
       size_t count = read(fd, buf, std::min(len, constants::bufsz));                          
@@ -311,6 +313,7 @@ get_extent_from_file(any_path const & path,
     }
   dat = data(tmp);
   E(close(fd) != -1, F("close(%s) failed") % path);
+  I(dat().size() == len0);
 }
 
 
