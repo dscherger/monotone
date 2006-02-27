@@ -58,6 +58,8 @@ struct poptOption coptions[] =
     {"last", 0, POPT_ARG_LONG, &arglong, OPT_LAST, gettext_noop("limit log output to the last number of entries"), NULL},
     {"next", 0, POPT_ARG_LONG, &arglong, OPT_NEXT, gettext_noop("limit log output to the next number of entries"), NULL},
     {"pid-file", 0, POPT_ARG_STRING, &argstr, OPT_PIDFILE, gettext_noop("record process id of server"), NULL},
+    {"since", 0, POPT_ARG_STRING, &argstr, OPT_SINCE, "set history start for CVS pull", NULL},
+    {"full", 0, POPT_ARG_NONE, &argstr, OPT_FULL, "ignore already pulled CVS revisions", NULL},
     {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, gettext_noop("print a brief version of the normal output"), NULL},
     {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, gettext_noop("print diffs along with logs"), NULL},
     {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, gettext_noop("exclude merges when printing logs"), NULL},
@@ -420,6 +422,14 @@ cpp_main(int argc, char ** argv)
 
             case OPT_DEPTH:
               app.set_depth(arglong);
+              break;
+
+            case OPT_SINCE:
+              app.set_since(string(argstr));
+              break;
+
+            case OPT_FULL:
+              app.cvspull_full=true;
               break;
 
             case OPT_BRIEF:
