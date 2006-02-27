@@ -596,9 +596,7 @@ session::note_file_delta(file_id const & src, file_id const & dst)
   id fid1, fid2;
   decode_hexenc(src.inner(), fid1);
   decode_hexenc(dst.inner(), fid2);  
-  app.db.get_file_version(src, fd1);
-  app.db.get_file_version(dst, fd2);
-  diff(fd1.inner(), fd2.inner(), del);
+  app.db.get_delta(src.inner(), dst.inner(), del);
   queue_delta_cmd(file_item, fid1, fid2, del);
   file_items_sent.insert(dst);
 }

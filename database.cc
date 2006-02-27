@@ -58,6 +58,19 @@ int const one_col = 1;
 int const any_rows = -1;
 int const any_cols = -1;
 
+struct 
+vlog_extent
+{
+  bool is_fulltext() 
+  { 
+    return base == off; 
+  }
+  off_t off;
+  size_t len;
+  off_t base;
+  hexenc<id> content;
+};
+
 namespace 
 {
   struct query_param
@@ -2739,46 +2752,47 @@ database::put_roster(revision_id const & rev_id,
   // revisions, we just pick the first. It probably doesn't matter for
   // the sake of delta-encoding.
 
-  string data_table = "rosters";
-  string delta_table = "roster_deltas";
-
   transaction_guard guard(*this);
 
   execute(query("INSERT into revision_roster VALUES (?, ?)")
           % text(rev_id.inner()())
           % text(new_id()));
 
-  if (exists(new_id, data_table) 
-      || delta_exists(new_id, delta_table))
+  if (exists(new_id))
     {
       guard.commit();
       return;
     }
 
-  // Else we have a new roster the database hasn't seen yet; our task is to
-  // add it, and deltify all the incoming edges (if they aren't already).
+  // Try to find a parent to hang this off, otherwise add in full.
 
-  put(new_id, new_data, data_table);
-
+  hexenc<id> base;
   std::set<revision_id> parents;
   get_revision_parents(rev_id, parents);
 
-  // Now do what deltify would do if we bothered (we have the
-  // roster written now, so might as well do it here).
   for (std::set<revision_id>::const_iterator i = parents.begin();
        i != parents.end(); ++i)
     {
       if (null_id(*i))
         continue;      
       revision_id old_rev = *i;
-      get_roster_id_for_revision(old_rev, old_id);
-      if (exists(new_id, data_table))
-        {
-          get_version(old_id, old_data, data_table, delta_table);
-          diff(new_data, old_data, reverse_delta);
-          drop(old_id, data_table);
-          put_delta(old_id, new_id, reverse_delta, delta_table);
-        }
+      std::vector<vlog_extent> vi;
+      vlog_id vid = get_existing_vlog_id_for_ident(old_rev.inner());
+      get_final_vlog_cluster(vid, vi);
+      if (null_id(base) || vi.back().content == base)
+        base = vi.back().content;
+    }
+
+  if (null_id(base))
+    put_data(new_id, new_data);
+  else
+    {
+      delta del;
+      gzip<delta> gzdel;
+      get_roster(base, old_data);
+      diff(old_data, new_data, del);
+      encode_gzip(del, gzdel);
+      put_delta(base, new_id, gzdel);      
     }
   guard.commit();
 }
@@ -3041,18 +3055,6 @@ index.
 
 */
 
-struct 
-vlog_extent
-{
-  bool is_fulltext() 
-  { 
-    return base == off; 
-  }
-  off_t off;
-  size_t len;
-  off_t base;
-  hexenc<id> content;
-};
 
 
 bool 
@@ -3341,6 +3343,87 @@ database::put_data_at_offset(vlog_id vid,
 	  % text(new_id())
 	  % text("true"));
   guard.commit();
+}
+
+void 
+database::get_data(hexenc<id> const & ident, gzip<data> & dat)
+{
+  data tmp;
+  get_data(ident, tmp);
+  encode_gzip(tmp, dat);
+}
+
+void 
+database::get_delta(hexenc<id> const & src, 
+                    hexenc<id> const & dst, 
+                    delta & del)
+{ 
+  gzip<delta> gzdel;
+  if (get_exact_delta(src, dst, gzdel))
+    decode_gzip(gzdel, del);
+  else
+    {
+      data sdat, ddat;
+      get_data(src, sdat);
+      get_data(dst, ddat);
+      diff(sdat, ddat, del);
+    }
+}
+
+bool
+database::get_exact_delta(hexenc<id> const & src, 
+                          hexenc<id> const & dst, 
+                          gzip<delta> & del)
+{
+  vlog_id src_vid = get_existing_vlog_id_for_ident(src);
+  vlog_id dst_vid = get_existing_vlog_id_for_ident(dst);
+
+  if (src_vid == dst_vid)
+    {
+      // FIXME: you probably want to teach the applicator to do 
+      // delta-combining xdelta synthesis here, for the general case.
+
+      system_path vlog_pth;
+      get_vlog_path_for_vlog_id(dst_vid, vlog_pth);
+      L(FL("vlog %d comes from system path '%s'") % dst_vid % vlog_pth);
+ 
+      require_path_is_file(vlog_pth,
+                           F("reading version log file, '%s' does not exist") % vlog_pth,
+                           F("reading version log file, %s is a directory") % vlog_pth);
+
+      std::vector<vlog_extent> vi;
+      get_vlog_extents(dst_vid, dst, vi);
+
+      // Fast path if they're requesting one we have an exact delta for:
+      I(vi.back().content == dst);
+      if (vi.size() > 1 && vi.at(vi.size() - 2).content == src)
+        { 
+          L(FL("loading precise delta extent at physical extent "
+               "[pos:%d, len:%d] in vlog file '%s'")
+            % vi.back().off % vi.back().len % vlog_pth);
+          data buf;
+          get_extent_from_file(vlog_pth, vi.front().off, vi.back().len, buf);
+          del = buf();
+          return true;
+        }
+    }
+  return false;
+}
+
+void 
+database::get_delta(hexenc<id> const & src, 
+                    hexenc<id> const & dst, 
+                    gzip<delta> & del)
+{ 
+  if (get_exact_delta(src, dst, del))
+    return;
+
+  data sdat, ddat;
+  delta deltmp;
+  get_data(src, sdat);
+  get_data(dst, ddat);
+  diff(sdat, ddat, deltmp);
+  encode_gzip(deltmp, del);
 }
 
 

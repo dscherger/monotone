@@ -446,9 +446,14 @@ public:
                           hexenc<id> const & new_id, 
                           gzip<data> const & dat);
 
-  void get_data(hexenc<id> const & ident, data & dat);
   void put_data(hexenc<id> const & new_id, data const & dat);
   void put_data(hexenc<id> const & new_id, gzip<data> const & dat);
+
+  void get_data(hexenc<id> const & ident, data & dat);
+  void get_data(hexenc<id> const & ident, gzip<data> & dat);
+  void get_delta(hexenc<id> const & src, hexenc<id> const & dst, delta & del);
+  void get_delta(hexenc<id> const & src, hexenc<id> const & dst, gzip<delta> & del);
+  bool get_exact_delta(hexenc<id> const & src, hexenc<id> const & dst, gzip<delta> & del);
 
   // node and vlog id stuff.
 
