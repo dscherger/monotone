@@ -185,9 +185,11 @@ revision_enumerator::step()
               pair<ci,ci> range = graph.equal_range(r);
               for (ci i = range.first; i != range.second; ++i)
                 {
+		  // NB: It is very important to push_front here, not push_back;
+		  // vlog locality should win significantly.
                   if (i->first == r)
                     if (enumerated_nodes.find(i->first) == enumerated_nodes.end())
-                      revs.push_back(i->second);
+                      revs.push_front(i->second);
                 }
             }
 
