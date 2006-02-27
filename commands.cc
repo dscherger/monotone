@@ -419,9 +419,9 @@ notify_if_multiple_heads(app_state & app) {
     std::string prefixedline;
     prefix_lines_with(_("note: "),
                       _("branch '%s' has multiple heads\n"
-                        "perhaps consider 'monotone merge'"),
+                        "perhaps consider '%s merge'"),
                       prefixedline);
-    P(i18n_format(prefixedline) % app.branch_name);
+    P(i18n_format(prefixedline) % app.branch_name % app.prog_name);
   }
 }
 
@@ -1263,6 +1263,23 @@ CMD(rename, N_("workspace"),
 
 ALIAS(mv, rename)
 
+
+CMD(pivot_root, N_("workspace"), N_("NEW_ROOT PUT_OLD"),
+    N_("rename the root directory\n"
+       "after this command, the directory that currently has the name NEW_ROOT\n"
+       "will be the root directory, and the directory that is currently the root\n"
+       "directory will have name PUT_OLD.\n"
+       "Using --execute is strongly recommended."),
+    OPT_EXECUTE)
+{
+  if (args.size() != 2)
+    throw usage(name);
+
+  app.require_workspace();
+  file_path new_root = file_path_external(idx(args, 0));
+  file_path put_old = file_path_external(idx(args, 1));
+  perform_pivot_root(new_root, put_old, app);
+}
 
 // fload and fmerge are simple commands for debugging the line
 // merger.
@@ -2544,7 +2561,8 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
   get_branch_heads(app.branch_name(), app, heads);
   if (heads.size() > old_head_size && old_head_size > 0) {
     P(F("note: this revision creates divergence\n"
-        "note: you may (or may not) wish to run 'monotone merge'"));
+        "note: you may (or may not) wish to run '%s merge'") 
+      % app.prog_name);
   }
     
   update_any_attrs(app);
@@ -2944,7 +2962,7 @@ CMD(update, N_("workspace"), "",
           for (set<revision_id>::const_iterator i = candidates.begin();
                i != candidates.end(); ++i)
             P(i18n_format("  %s\n") % describe_revision(app, *i));
-          P(F("choose one with 'monotone update -r<id>'\n"));
+          P(F("choose one with '%s update -r<id>'\n") % app.prog_name);
           N(false, F("multiple candidates remain after selection"));
         }
       r_chosen_id = *(candidates.begin());
@@ -3143,6 +3161,17 @@ CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"),
     N_("merge from one branch to another asymmetrically"),
     OPT_DATE % OPT_AUTHOR % OPT_LCA % OPT_MESSAGE % OPT_MSGFILE)
 {
+  if (args.size() != 2)
+    throw usage(name);
+  vector<utf8> a = args;
+  a.push_back(utf8());
+  process(app, "merge_into_dir", a);
+}
+
+CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"), 
+    N_("merge one branch into a subdirectory in another branch"),
+    OPT_DATE % OPT_AUTHOR % OPT_LCA % OPT_MESSAGE % OPT_MSGFILE)
+{
   //   this is a special merge operator, but very useful for people maintaining
   //   "slightly disparate but related" trees. it does a one-way merge; less
   //   powerful than putting things in the same branch and also more flexible.
@@ -3164,10 +3193,14 @@ CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"),
   //   there are also special cases we have to check for where no merge is
   //   actually necessary, because there hasn't been any divergence since the
   //   last time propagate was run.
+  //
+  //   if dir is not the empty string, rename the root of N1 to have the name
+  //   'dir' in the merged tree. (ie, it has name "basename(dir)", and its
+  //   parent node is "N2.get_node(dirname(dir))")
   
   set<revision_id> src_heads, dst_heads;
 
-  if (args.size() != 2)
+  if (args.size() != 3)
     throw usage(name);
 
   get_branch_heads(idx(args, 0)(), app, src_heads);
@@ -3206,7 +3239,64 @@ CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"),
     {
       revision_id merged;
       transaction_guard guard(app.db);
-      interactive_merge_and_store(*src_i, *dst_i, merged, app);
+
+      {
+        revision_id const & left_rid(*src_i), & right_rid(*dst_i);
+        roster_t left_roster, right_roster;
+        MM(left_roster);
+        MM(right_roster);
+        marking_map left_marking_map, right_marking_map;
+        std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+
+        app.db.get_roster(left_rid, left_roster, left_marking_map);
+        app.db.get_roster(right_rid, right_roster, right_marking_map);
+        app.db.get_uncommon_ancestors(left_rid, right_rid,
+                                      left_uncommon_ancestors,
+                                      right_uncommon_ancestors);
+
+        {
+          dir_t moved_root = left_roster.root();
+          split_path sp, dirname;
+          path_component basename;
+          MM(dirname);
+          if (!idx(args,2)().empty())
+            {
+              file_path_external(idx(args,2)).split(sp);
+              dirname_basename(sp, dirname, basename);
+              N(right_roster.has_node(dirname),
+                F("Path %s not found in destination tree.") % sp);
+              node_t parent = right_roster.get_node(dirname);
+              moved_root->parent = parent->self;
+              moved_root->name = basename;
+              marking_map::iterator i=left_marking_map.find(moved_root->self);
+              I(i != left_marking_map.end());
+              i->second.parent_name.clear();
+              i->second.parent_name.insert(left_rid);
+            }
+        }
+
+        roster_merge_result result;
+        roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
+                     right_roster, right_marking_map, right_uncommon_ancestors,
+                     result);
+
+        content_merge_database_adaptor dba(app, left_rid, right_rid, left_marking_map);
+        resolve_merge_conflicts (left_rid, right_rid,
+                                 left_roster, right_roster,
+                                 left_marking_map, right_marking_map,
+                                 result, dba, app);
+
+        {
+          dir_t moved_root = left_roster.root();
+          moved_root->parent = 0;
+          moved_root->name = the_null_component;
+        }
+
+        // write new files into the db
+        store_roster_merge_result(left_roster, right_roster, result,
+                                  left_rid, right_rid, merged,
+                                  app);
+      }
 
       packet_db_writer dbw(app);
 
@@ -3422,7 +3512,11 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
         }
       else
         {
-          mkdir_p(fp);
+          if (!directory_exists(fp))
+            {
+              P(F("recreating %s/") % fp);
+              mkdir_p(fp);
+            }
         }
     }
 
@@ -3890,6 +3984,39 @@ CMD(get_roster, N_("debug"), N_("REVID"),
   data dat;
   write_roster_and_marking(roster, mm, dat);
   cout << dat;
+}
+
+CMD(show_conflicts, N_("informative"), N_("REV REV"), N_("Show what conflicts would need to be resolved to merge the given revisions."),
+    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR)
+{
+  if (args.size() != 2)
+    throw usage(name);
+  revision_id l_id, r_id;
+  complete(app, idx(args,0)(), l_id);
+  complete(app, idx(args,1)(), r_id);
+  N(!is_ancestor(l_id, r_id, app),
+    F("%s in an ancestor of %s; no merge is needed.") % l_id % r_id);
+  N(!is_ancestor(r_id, l_id, app),
+    F("%s in an ancestor of %s; no merge is needed.") % r_id % l_id);
+  roster_t l_roster, r_roster;
+  marking_map l_marking, r_marking;
+  app.db.get_roster(l_id, l_roster, l_marking);
+  app.db.get_roster(r_id, r_roster, r_marking);
+  std::set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
+  app.db.get_uncommon_ancestors(l_id, r_id,
+                                l_uncommon_ancestors, 
+                                r_uncommon_ancestors);
+  roster_merge_result result;
+  roster_merge(l_roster, l_marking, l_uncommon_ancestors,
+               r_roster, r_marking, r_uncommon_ancestors,
+               result);
+
+  P(F("There are %s node_name_conflicts.") % result.node_name_conflicts.size());
+  P(F("There are %s file_content_conflicts.") % result.file_content_conflicts.size());
+  P(F("There are %s node_attr_conflicts.") % result.node_attr_conflicts.size());
+  P(F("There are %s orphaned_node_conflicts.") % result.orphaned_node_conflicts.size());
+  P(F("There are %s rename_target_conflicts.") % result.rename_target_conflicts.size());
+  P(F("There are %s directory_loop_conflicts.") % result.directory_loop_conflicts.size());
 }
 
 }; // namespace commands
