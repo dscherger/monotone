@@ -14,7 +14,7 @@ function read_config()
          for j, val in pairs(item.values) do
             hostkey = val
          end
-      end elseif item.name == "hostkeypass" then
+      elseif item.name == "hostkeypass" then
          for j, val in pairs(item.values) do
             hostkeypass = val
          end
@@ -23,7 +23,7 @@ function read_config()
    return false
 end
 
-read_config
+read_config();
 
 function get_passphrase(keyid)
 	if keyid == hostkey then

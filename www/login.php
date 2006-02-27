@@ -2,6 +2,17 @@
 include("common.php");
 $location = $_REQUEST['location'];
 
+function docookie($username, $shapass) {
+	global $json;
+	$t = time() + 60*60*24*7;
+	$auth = array(
+		'username' => $username,
+		'password' => $shapass,
+		'expiration' => $t,
+		'token' => mktok($username, $shapass, $t));
+	setcookie('AUTH', $json->encode($auth), 0, '/');
+}
+
 function page_head() {
 	global $validuser, $username, $location;
 	$level = 'main';
@@ -28,7 +39,7 @@ if ($_REQUEST['logout']) {
 	Logged out.<br/>
 	<?
 } else if ($_REQUEST['newuser']) {
-	if ($username == "" || $password == "") {
+	if ($username == "" || $shapass == "") {
 		$res = "Your username and password cannot be blank.<br/>\n";
 	} else {
 		pg_exec($db, "BEGIN");
@@ -39,7 +50,7 @@ if ($_REQUEST['logout']) {
 			$res = "Internal server error.<br/>\n";
 		} else if (pg_numrows($result) == 0) {
 			$query = "INSERT INTO users (username, password) VALUES ('%s', '%s')";
-			pg_exec($db, sprintf($query, $safeuser, $safepass));
+			pg_exec($db, sprintf($query, $safeuser, $shapass));
 			$res = "Added user $username.<br/>\n";
 			$validuser = true;
 		} else {
@@ -47,10 +58,7 @@ if ($_REQUEST['logout']) {
 		}
 		pg_exec($db, "END");
 	}
-	$auth = array(
-		'username' => $username,
-		'password' => $password);
-	setcookie('AUTH', $json->encode($auth), 0, '/');
+	docookie($username, $shapass);
 	page_head();
 	print $res;
 } else if ($_REQUEST['newpass']) {
@@ -58,12 +66,11 @@ if ($_REQUEST['logout']) {
 		$res = "Username or password incorrect.";
 	} else {
 		$newpass = $_REQUEST['newpass'];
-		$safenew = pg_escape_string($newpass);
 		if ($newpass == "") {
 			$res = "Your new password cannot be blank.";
 		} else {
 			$query = "UPDATE users SET password = '%s' WHERE username = '%s'";
-			$result = pg_exec($db, sprintf($query, $safenew, $safeuser));
+			$result = pg_exec($db, sprintf($query, sha1($newpass), $safeuser));
 			if(!result) {
 				$res = "Internal server error.";
 			} else {
@@ -75,10 +82,7 @@ if ($_REQUEST['logout']) {
 	print $res;
 } else {
 	if ($validuser) {
-		$auth = array(
-			'username' => $username,
-			'password' => $password);
-		setcookie('AUTH', $json->encode($auth), 0, '/');
+		docookie($username, $shapass);
 		page_head();
 		?>
 		Logged in.<br/>

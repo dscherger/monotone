@@ -47,20 +47,47 @@ reset($splitconf);
 include("JSON.php");
 $json = new Services_JSON();
 
+function mktok($username, $shapass, $t) {
+	$secfile = dirname(__FILE__) . "/../secfile";
+	if (!is_file($secfile)) {
+		$dat = "";
+		foreach (array("/dev/random", "/dev/urandom") as $fn) {
+			$fd = fopen($fn, "rb");
+			if ($fd) {
+				$dat = $dat . fread($fd, 20);
+				fclose($fd);
+			}
+		}
+		file_put_contents($secfile, $dat);
+		chmod($secfile, 0400);
+	}
+	return sha1($username . $shapass . $t . file_get_contents($secfile));
+}
+
 if ($_REQUEST['username'] && $_REQUEST['password']) {
 	$username = $_REQUEST['username'];
-	$password = $_REQUEST['password'];
+	if ($_REQUEST['password'] != "") {
+		$shapass = sha1($_REQUEST['password']);
+	}
 } else if ($_COOKIE['AUTH']) {
 	$auth = $json->decode(stripslashes($_COOKIE['AUTH']));
-	$username = $auth->username;
-	$password = $auth->password;
+	do {
+		if ($auth->token != mktok($auth->username, $auth->password,
+				$auth->expiration)) {
+			break;
+		}
+		if ($auth->expiration < time()) {
+			break;
+		}
+		$username = $auth->username;
+		$shapass = $auth->password;
+	} while (false);
 } else {
 	$username = '';
-	$password = '';
+	$shapass = '';
 }
 
 $safeuser = pg_escape_string($username);
-$safepass = pg_escape_string($password);
 
 $validuser = false;
 $db = pg_connect($dbstring);
@@ -70,7 +97,7 @@ if ($result) {
 	$rows = pg_numrows($result);
 	if ($rows == 1) {
 		$row = pg_fetch_row ($result, 0);
-		if ($row[0] === $password) {
+		if ($row[0] == $shapass) {
 			$validuser = true;
 		}
 	}

@@ -16,7 +16,7 @@ if ($validuser) {
 	Username:<br/>
 	<input type="text" name="username" id="username" value="<?=$username?>"/><br/>
 	Password:<br/>
-	<input type="password" name="password" id="password" value="<?=$password?>"/><br/>
+	<input type="password" name="password" id="password"/><br/>
 	<input type="hidden" name="location" value="<?=$location?$location:$_SERVER['PHP_SELF']?>"/>
 	<input type="submit" value="Login" name="login"/> <input type="submit" value="New user" name="newuser"/>
 	</form>
@@ -36,13 +36,13 @@ if ($validuser && $level == 'main') {
 <? if ($level == 'project') {?>
 	<a href="index.php">Project info</a><br/>
 	<a href="admin.php">Maintainer section</a><br/>
-	<a href="viewmtn/">Browse source</a><br/>
 	<?
 	$query = "SELECT name, url FROM resources WHERE project = '%s'";
 	$result = pg_exec($db, sprintf($query, $safeproj));
 	$out = array();
+	print "<br/>Project resources:\n<ul>";
+	print "<li><a href=\"viewmtn/\">Source browser</a><br/></li>";
 	if ($result) {
-		print "<br/>Project resources:\n<ul>";
 		$rows = pg_numrows($result);
 		for($i = 0; $i < $rows; ++$i) {
 			$row = pg_fetch_row ($result,$i);
@@ -51,8 +51,8 @@ if ($validuser && $level == 'main') {
 			print "<li><a href=\"" . $row[1] . "\">" .
 				$row[0] . "</a></li>\n";
 		}
-		print "</ul>\n";
 	}
+	print "</ul>\n";
 }
 ?>
 </div>
