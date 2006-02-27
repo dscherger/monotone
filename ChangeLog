@@ -1,3 +1,128 @@
+2006-02-27  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netsync.cc: more logging
+
+2006-02-27  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Updated translation.
+
+2006-02-26  Nathaniel Smith  <njs@pobox.com>
+
+	* revision.cc (parse_revision): Prepare for the future by giving a
+	more user-friendly error message on unknown format_version
+	strings.
+
+2006-02-27  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Updated translations.
+
+2006-02-26  Nathaniel Smith  <njs@pobox.com>
+
+	* schema_migration.cc (migrate): Provide a little more feedback
+	during migration, so it doesn't look like it's taking minutes and
+	minutes just to "calculate necessary migration steps".
+
+2006-02-26  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Add a new command, merge_into_dir, to allow a project to include an
+	unrelated project as a subdir. Also add a show_conflicts command that
+	performs a dry-run merge and prints conflict counts.
+	* commands.cc: new commands, merge_into_dir and show_conflicts
+	* commands.cc (propagate): remove duplicated code; this now calls
+	merge_into_dir with a dir of '' (the empty string).
+	* monotone.texi: Document the new commands.
+	* tests/t_{merge_into_dir,show_conflicts}.at: Test the new commands.
+	* testsuite.at: Use the new tests.
+	* merge.{cc,hh}: Factor a store_roster_merge_result function out
+	of interactive_merge_and_store.
+
+2006-02-26  Derek Scherger  <derek@echologic.com>
+
+	* tests/t_log_dir.at: new XFAIL test of log restricted to a single
+	directory
+	* testsuite.at: call it
+
+2006-02-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* monotone.cc, app_state.{cc,hh}, ...: print argv[0] when giving
+	usage of commands to run, rather than just "monotone"
+
+2006-02-27  Matt Johnston  <matt@ucc.asn.au>
+
+	* std_hooks.lua (ignore_file, dir_matches): add dir_matches helper
+	to avoid including ignored dirs such as '.svn', since dirs now
+	actually exist.
+
+2006-02-26  Nathaniel Smith  <njs@pobox.com>
+
+	* roster_merge.cc: Update notes on tests.
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (attach_node): Apparently the tests depend on update
+	clobbering existing non-versioned files... and we don't have a
+	good solution _anyway_, so just go back to clobbering them.
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* cset.cc (root_dir_test, invalid_csets_test): Don't test that
+	root dir stuff fails.  Test that it works.
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (detach_node): Add missing invariant.
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* roster_merge.cc (roster_merge): Fix strange merge-created
+	problem...
+
+2006-02-25  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (attach_node): This code should use path_exists, not
+	file_exists.
+
+2006-02-24  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netcmd.cc: Ignore protocol version field on usher_cmd packets. It
+	should now be possible to use an usher to redirect connections based
+	on netsync version.
+	* netcmd.hh: Remove unused netcmd::get_version() and
+	unused/unimplemented netcmd::netcmd(u8 version).
+
+2006-02-24  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (ls_changed): I was a bit overly paranoid about the
+	possibilities with C++ and defined an explicit functor for the set
+	instead of relying on the automatic generation of less<file_path>.
+	Derek Scherger made me realise I was a bit overzealous, and this
+	change removes the explicit functor.
+
+2006-02-23  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* enumerator.hh: Another GCC 4.1 compile fix.
+
+	* tests/t_log_selectors.at: UnXFAIL.
+
+	* commands.cc (complete): Refactor selector completion to enable
+	return of single or sets of completed revisions.
+	(CMD(log)): Do something sensible with selectors that return
+	multiple revisions.
+
+	* tests/t_log_selectors.at: XFAILed test for bug #15877.
+
+	* testsuite.at: Add it.
+
+	* app_state.cc, app_state.hh, commands.cc, monotone.cc,
+	options.hh: Revert failed UI experiment: reenable logging merges
+	by default and rename --merges back to --no-merges.
+
+	* contrib/color-logs.{conf,sh}, contrib/monotone-notify.pl,
+	contrib/monotone.el, tests/t_log_nofiles_nomerges.at,
+	testsuite.at: Handle --no-merges.
+
+	* monotone.texi: Document --no-merges.
+
 2006-02-23  Matt Johnston  <matt@ucc.asn.au>
 
 	* enumerator.{cc,hh}: avoid transferring deltas on both sides of merge
@@ -12,6 +137,10 @@
 2006-02-21  Nathaniel Smith  <njs@pobox.com>
 
 	* work.cc (detach_node): Oops, x != y != !(x == y).
+
+2006-02-21  Nathaniel Smith  <njs@pobox.com>
+
+	* roster_merge.cc: Fixup after merge.
 
 2006-02-21  Nathaniel Smith  <njs@pobox.com>
 
@@ -737,6 +866,17 @@
 	* lua.cc (hook_get_key_pair): Remove.
 	* keys.cc (require_password): Adjust accordingly.
 	* cert.cc (priv_key_exists, load_key_pair): Likewise.
+
+2006-01-14  Christof Petig <christof@petig-baender.de>
+
+	* database.cc, database.h: binary transparent infrastructure,
+	store and retrieve former base64 encoded columns as BLOBs
+
+	* schema_migration.cc: unbase64 changed columns, change comment
+	on files.data which indicates a different database format
+
+	* schema.sql: change comment on file which indicates, that
+	files.data is no longer base64 encoded
 
 2006-01-14  Richard Levitte  <richard@levitte.org>
 
