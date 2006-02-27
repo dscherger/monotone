@@ -119,7 +119,7 @@ database::database(system_path const & fn) :
   // (the id you need was printed in the error message you got when you 
   // ran monotone without updating this.)
   //
-  schema("0a5615e37448e0671655afe4c536cc45680fbcc4"),
+  schema("ddde37049c50445ee2b7f10a711034978daf5cc5"),
   __sql(NULL),
   transaction_level(0)
 {}
@@ -521,6 +521,7 @@ database::info(ostream & out)
       "  file deltas     : %u\n"
       "  revisions       : %u\n"
       "  ancestry edges  : %u\n"
+      "  file ancestry   : %u\n"
       "  certs           : %u\n"
       "bytes:\n"
       "  full rosters    : %u\n"
@@ -529,6 +530,7 @@ database::info(ostream & out)
       "  file deltas     : %u\n"
       "  revisions       : %u\n"
       "  cached ancestry : %u\n"
+      "  file ancestry   : %u\n"
       "  certs           : %u\n"
       "  total           : %u\n"
       )
@@ -540,6 +542,7 @@ database::info(ostream & out)
     % count("file_deltas")
     % count("revisions")
     % count("revision_ancestry")
+    % count("node_revision_ancestry")
     % count("revision_certs")
     // bytes
     % SPACE_USAGE("rosters", "length(id) + length(data)")
@@ -548,6 +551,7 @@ database::info(ostream & out)
     % SPACE_USAGE("file_deltas", "length(id) + length(base) + length(delta)")
     % SPACE_USAGE("revisions", "length(id) + length(data)")
     % SPACE_USAGE("revision_ancestry", "length(parent) + length(child)")
+    % SPACE_USAGE("node_revision_ancestry", "length(node) + length(parent) + length(child)")
     % SPACE_USAGE("revision_certs", "length(hash) + length(id) + length(name)"
                   " + length(value) + length(keypair) + length(signature)")
     % total;
@@ -1424,7 +1428,7 @@ database::get_node_revision_ancestry(node_id node, std::multimap<revision_id, re
   results res;
   graph.clear();
   fetch(res, 2, any_rows, 
-        "SELECT parent,child FROM node_revision_ancestry WHERE node = ?", lexical_cast<string>(node).c_str());
+        query("SELECT parent,child FROM node_revision_ancestry WHERE node = ?") % text(lexical_cast<string>(node)));
   for (size_t i = 0; i < res.size(); ++i)
       graph.insert(std::make_pair(revision_id(res[i][0]),
                                   revision_id(res[i][1])));
@@ -1437,8 +1441,7 @@ database::get_node_revision_parents(node_id node, revision_id const & rev, std::
   results res;
   parents.clear();
   fetch(res, one_col, any_rows,
-        "SELECT parent from node_revision_ancestry WHERE node = ? AND child = ?",
-        lexical_cast<string>(node).c_str(), rev.inner()().c_str());
+        query("SELECT parent from node_revision_ancestry WHERE node = ? AND child = ?") % text(lexical_cast<string>(node)) % text(rev.inner()().c_str()));
   for (size_t i = 0; i < res.size(); i++)
     parents.insert(revision_id(res[i][0]));
 }
@@ -1450,8 +1453,7 @@ database::get_node_revision_children(node_id node, revision_id const & rev, std:
   results res;
   children.clear();
   fetch(res, one_col, any_rows,
-        "SELECT child from node_revision_ancestry WHERE node = ? AND parent = ?",
-        lexical_cast<string>(node).c_str(), rev.inner()().c_str());
+        query("SELECT child from node_revision_ancestry WHERE node = ? AND parent = ?") % text(lexical_cast<string>(node)) % text(rev.inner()().c_str()));
   for (size_t i = 0; i < res.size(); i++)
     children.insert(revision_id(res[i][0]));
 }
@@ -2686,9 +2688,8 @@ database::get_roster(revision_id const & rev_id,
 void
 database::put_node_revision_ancestry(node_id node, revision_id const & parent, revision_id const & child)
 {
-  execute("INSERT into node_revision_ancestry VALUES (?, ?, ?)",
-          lexical_cast<string>(node).c_str(),
-          parent.inner()().c_str(), child.inner()().c_str());
+  execute(query("INSERT into node_revision_ancestry VALUES (?, ?, ?)") %
+          text(lexical_cast<string>(node)) % text(parent.inner()()) % text(child.inner()()));
 }
 
 
