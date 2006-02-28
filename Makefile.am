@@ -220,13 +220,12 @@ WIN32_PLATFORM_SOURCES = \
 
 # primaries
 
-bin_PROGRAMS = monotone
+bin_PROGRAMS = monotone monotone-usher
 check_PROGRAMS = unit_tests
 noinst_PROGRAMS = txt2c 
-EXTRA_PROGRAMS = usher 
 
 monotone_SOURCES = $(MOST_SOURCES) monotone.cc main.cc
-usher_SOURCES = contrib/usher.cc
+monotone_usher_SOURCES = usher.cc
 unit_tests_SOURCES = $(MOST_SOURCES) unit_tests.cc crypto_tests.cc
 
 txt2c_SOURCES = txt2c.cc
