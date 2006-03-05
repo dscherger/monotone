@@ -4,6 +4,10 @@
 
 2006-03-04  Nathaniel Smith  <njs@pobox.com>
 
+	* NEWS: Go ahead and put a date on.
+
+2006-03-04  Nathaniel Smith  <njs@pobox.com>
+
 	* win32/monotone.iss, monotone.spec, configure.ac:
 	* debian/changelog: Bump version numbers.
 	
