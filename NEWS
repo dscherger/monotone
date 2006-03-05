@@ -1,3 +1,25 @@
+????????????????????????????
+
+        0.25.1 release.  Important security fix for Windows and OS X
+        users.
+
+        With versions of monotone prior to this release, a person with
+        commit access could commit a malicious file with a name like
+        "mt/monotonerc".  When anybody else then checked out this
+        revision on a system with a case-folding filesystem --
+        usually, this means, "on Windows or OS X" -- then their
+        monotone would run arbitrary Lua code stored in this file.
+
+        The _only_ change in this release as compared to 0.25 is that
+        the existing checks against files in MT are now extended to
+        check for mt, Mt, and mT.
+
+        All users on Windows and OS X, or otherwise checking out
+        versioned source on a case-insensitive filesystem, are
+        recommended to upgrade immediately.  Binaries used only for
+        serving, or only on case-insensitive filesystems (i.e., most
+        Unix users), are not affected.
+
 Thu Dec 29 23:10:03 PST 2005
 
         0.25 release.
