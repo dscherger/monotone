@@ -1,5 +1,11 @@
 2006-03-04  Nathaniel Smith  <njs@pobox.com>
 
+	* NEWS: Oops, apparently 0.25.1 is taken.  Call this 0.25.2, and
+	add a note about why it isn't 0.25.1.
+	* UPGRADE: Similarly correct version number.
+	
+2006-03-04  Nathaniel Smith  <njs@pobox.com>
+
 	* NEWS: Draft NEWS for 0.25.1 security release.
 
 2006-03-04  Nathaniel Smith  <njs@pobox.com>
