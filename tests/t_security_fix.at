@@ -12,12 +12,14 @@ AT_CHECK(MONOTONE add mT, [1], [ignore], [ignore])
 AT_CHECK(MONOTONE add Mt, [1], [ignore], [ignore])
 AT_CHECK(MONOTONE add MT, [1], [ignore], [ignore])
 AT_CHECK(MONOTONE ls known, [], [], [])
-AT_CHECK(rm -f mt Mt mT)
+AT_CHECK(rm -rf mt Mt mT MT)
+
+# run setup again, because we've removed our bookkeeping dir.
+AT_CHECK(MONOTONE --branch=testbranch setup .)
 
 # files in bookkeeping dirs are also ignored by add
-AT_CHECK(mkdir mt)
-AT_CHECK(mkdir mT)
-AT_CHECK(mkdir Mt)
+# (mkdir -p used because the directories already exist on case-folding FSes)
+AT_CHECK(mkdir -p mt mT Mt)
 AT_CHECK(touch mt/foo mT/foo mT/foo MT/foo)
 AT_CHECK(MONOTONE add mt, [1], [ignore], [ignore])
 AT_CHECK(MONOTONE add mT, [1], [ignore], [ignore])

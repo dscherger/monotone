@@ -1,3 +1,7 @@
+2006-03-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* t_security_fix.at: Tweak test to run on case-folding FSes.
+
 2006-03-04  Nathaniel Smith  <njs@pobox.com>
 
 	* win32/monotone.iss, monotone.spec, configure.ac:
