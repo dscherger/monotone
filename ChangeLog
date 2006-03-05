@@ -1,3 +1,7 @@
+2006-03-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* t_security_fix.at: Tweak test to run on case-folding FSes.
+
 2006-03-04  Nathaniel Smith  <njs@pobox.com>
 
 	* NEWS: Oops, apparently 0.25.1 is taken.  Call this 0.25.2, and
