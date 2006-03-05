@@ -156,10 +156,25 @@ fully_normalized_path(std::string const & path)
   return true;
 }
 
+// This function considers MT, mt, Mt, mT to all be bookkeeping paths, because
+// on case insensitive filesystems, files put in any of them may end up in MT
+// instead.  This allows arbitrary code execution.  A better solution would be
+// to fix this in the working directory writing code -- this prevents all-unix
+// projects from naming things "mt", which is a bit rude -- but this is a bug
+// fix release.
 static inline bool
 in_bookkeeping_dir(std::string const & path)
 {
-  return path == "MT" || (path.size() >= 3 && (path.substr(0, 3) == "MT/"));
+  if (path.size() == 0 || (path[0] != 'M' && path[0] != 'm'))
+    return false;
+  if (path.size() == 1 || (path[1] != 'T' && path[1] != 't'))
+    return false;
+  // if we've gotten here, the first two letters are M and T, in either upper
+  // or lower case.  So if that is the whole path, or else if it continues but
+  // the next character is /, then this is a bookkeeping path.
+  if (path.size() == 2 || (path[2] == '/'))
+    return true;
+  return false;
 }
 
 static inline bool

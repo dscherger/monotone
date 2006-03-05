@@ -1,3 +1,9 @@
+2006-03-04  Nathaniel Smith  <njs@pobox.com>
+
+	* paths.cc (in_bookkeeping_dir): Count mt, Mt, mT as marking
+	bookkeeping paths.
+	* testsuite.at, tests/t_security_fix.at: Add test for it.
+
 2005-12-29  Nathaniel Smith  <njs@pobox.com>
 
 	* NEWS: Write up for 0.25.

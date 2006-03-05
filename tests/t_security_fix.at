@@ -1,0 +1,126 @@
+AT_SETUP([MT case-folding security patch])
+MONOTONE_SETUP
+NEED_UNGZB64
+
+# The patch for this security fix makes all case-folded MT names to
+# count as bookkeeping files.
+
+# bookkeeping files are an error for add
+AT_CHECK(touch mt mT Mt MT)
+AT_CHECK(MONOTONE add mt, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE add mT, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE add Mt, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE add MT, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE ls known, [], [], [])
+AT_CHECK(rm -f mt Mt mT)
+
+# files in bookkeeping dirs are also ignored by add
+AT_CHECK(mkdir mt)
+AT_CHECK(mkdir mT)
+AT_CHECK(mkdir Mt)
+AT_CHECK(touch mt/foo mT/foo mT/foo MT/foo)
+AT_CHECK(MONOTONE add mt, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE add mT, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE add Mt, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE add MT, [1], [ignore], [ignore])
+AT_CHECK(MONOTONE ls known, [], [], [])
+AT_CHECK(rm -rf mt Mt mT MT/foo)
+
+# assert trips if we have a db that already has a file with this sort
+# of name in it.
+AT_DATA(files.db.dump.gz.b64, [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
+AA==
+])
+AT_DATA(dirs.db.dump.gz.b64, [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
+zp/EvwCsu5zIbhQAAA==
+])
+
+UNGZB64(files.db.dump.gz.b64, files.db.dump)
+AT_CHECK(MONOTONE db load -d files.db < files.db.dump, [], [ignore], [ignore])
+AT_CHECK(MONOTONE -d files.db co -b testbranch files-co-dir, [3], [ignore], [ignore])
+
+UNGZB64(dirs.db.dump.gz.b64, dirs.db.dump)
+AT_CHECK(MONOTONE db load -d dirs.db < dirs.db.dump, [], [ignore], [ignore])
+AT_CHECK(MONOTONE -d dirs.db co -b testbranch dirs-co-dir, [3], [ignore], [ignore])
+
+AT_CLEANUP
