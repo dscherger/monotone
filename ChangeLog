@@ -1,5 +1,10 @@
 2006-03-04  Nathaniel Smith  <njs@pobox.com>
 
+	* win32/monotone.iss, monotone.spec, configure.ac:
+	* debian/changelog: Bump version numbers.
+	
+2006-03-04  Nathaniel Smith  <njs@pobox.com>
+
 	* NEWS: Oops, apparently 0.25.1 is taken.  Call this 0.25.2, and
 	add a note about why it isn't 0.25.1.
 	* UPGRADE: Similarly correct version number.
