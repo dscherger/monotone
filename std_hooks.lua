@@ -138,16 +138,17 @@ function ignore_file(name)
    -- Cons/SCons detritus:
    if dir_matches(name, ".consign") then return true end
    if dir_matches(name, ".sconsign") then return true end
-   -- other VCSes:
+   -- other VCSes (where metadata is stored in named dirs):
    if dir_matches(name, "CVS") then return true end
    if dir_matches(name, ".svn") then return true end
    if dir_matches(name, "SCCS") then return true end
    if dir_matches(name, "_darcs") then return true end
    if dir_matches(name, ".cdv") then return true end
    if dir_matches(name, ".git") then return true end
-   if dir_matches(name, ".scc") then return true end
    if dir_matches(name, ".bzr") then return true end
    if dir_matches(name, ".hg") then return true end
+   -- other VCSes (where metadata is stored in named files):
+   if (string.find(name, "%.scc$")) then return true end
    -- desktop/directory configuration metadata
    if (string.find(name, "^.DS_Store$")) then return true end
    if (string.find(name, "/.DS_Store$")) then return true end
@@ -350,7 +351,8 @@ function merge3_xxdiff_cmd(left_path, anc_path, right_path, merged_path,
                      "--title3", merged_path,
                      lfile, afile, rfile, 
                      "--merge", 
-                     "--merged-filename", outfile)
+                     "--merged-filename", outfile,
+                     "--exit-with-merge-status")
    end
 end
    
@@ -579,7 +581,7 @@ function expand_date(str)
       return os.date("%FT%T", t)
    end
    
-   -- today don't uses the time		# for xgettext's sake, an extra quote
+   -- today don't uses the time         # for xgettext's sake, an extra quote
    if str == "today"
    then
       local t = os.time(os.date('!*t'))

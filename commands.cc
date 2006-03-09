@@ -1066,7 +1066,7 @@ CMD(trusted, N_("key and cert"), N_("REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]
 }
 
 CMD(tag, N_("review"), N_("REVISION TAGNAME"),
-    N_("put a symbolic tag cert on a revision version"), OPT_NONE)
+    N_("put a symbolic tag cert on a revision"), OPT_NONE)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -1208,14 +1208,15 @@ CMD(add, N_("workspace"), N_("[PATH]..."),
         paths.insert(sp);
       }
 
-  perform_additions(paths, app);
+  bool add_recursive = !app.unknown; 
+  perform_additions(paths, app, add_recursive);
 }
 
 static void find_missing (app_state & app,
                           vector<utf8> const & args, path_set & missing);
 
 CMD(drop, N_("workspace"), N_("[PATH]..."),
-    N_("drop files from workspace"), OPT_EXECUTE % OPT_MISSING)
+    N_("drop files from workspace"), OPT_EXECUTE % OPT_MISSING % OPT_RECURSIVE)
 {
   if (!app.missing && (args.size() < 1))
     throw usage(name);
@@ -1486,8 +1487,15 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
       N(!app.branch_name().empty(), F("need --branch argument for branch-based checkout"));
       set<revision_id> heads;
       get_branch_heads(app.branch_name(), app, heads);
-      N(heads.size() > 0, F("branch '%s' is empty\n") % app.branch_name);
-      N(heads.size() == 1, F("branch %s has multiple heads") % app.branch_name);
+      N(heads.size() > 0, F("branch '%s' is empty") % app.branch_name);
+      if (heads.size() > 1)
+        {
+          P(F("branch %s has multiple heads:") % app.branch_name);
+          for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
+            P(i18n_format("  %s\n") % describe_revision(app, *i));
+          P(F("choose one with '%s checkout -r<id>'") % app.prog_name);
+          E(false, F("branch %s has multiple heads") % app.branch_name);
+        }
       ident = *(heads.begin());
     }
   else if (app.revision_selectors.size() == 1)
@@ -1879,86 +1887,6 @@ CMD(list, N_("informative"),
 
 ALIAS(ls, list)
 
-CMD(fdelta, N_("packet i/o"), N_("OLDID NEWID"),
-    N_("write file delta packet to stdout"),
-    OPT_NONE)
-{
-  if (args.size() != 2)
-    throw usage(name);
-
-  packet_writer pw(cout);
-
-  file_id f_old_id, f_new_id;
-  file_data f_old_data, f_new_data;
-
-  complete(app, idx(args, 0)(), f_old_id);
-  complete(app, idx(args, 1)(), f_new_id);
-
-  N(app.db.file_version_exists(f_old_id), F("no such file '%s'") % f_old_id);
-  app.db.get_file_version(f_old_id, f_old_data);
-  N(app.db.file_version_exists(f_new_id), F("no such file '%s'") % f_new_id);
-  app.db.get_file_version(f_new_id, f_new_data);
-  delta del;
-  diff(f_old_data.inner(), f_new_data.inner(), del);
-  pw.consume_file_delta(f_old_id, f_new_id, file_delta(del));  
-}
-
-CMD(rdata, N_("packet i/o"), N_("ID"), N_("write revision data packet to stdout"),
-    OPT_NONE)
-{
-  if (args.size() != 1)
-    throw usage(name);
-
-  packet_writer pw(cout);
-
-  revision_id r_id;
-  revision_data r_data;
-
-  complete(app, idx(args, 0)(), r_id);
-
-  N(app.db.revision_exists(r_id), F("no such revision '%s'") % r_id);
-  app.db.get_revision(r_id, r_data);
-  pw.consume_revision_data(r_id, r_data);  
-}
-
-
-CMD(fdata, N_("packet i/o"), N_("ID"), N_("write file data packet to stdout"),
-    OPT_NONE)
-{
-  if (args.size() != 1)
-    throw usage(name);
-
-  packet_writer pw(cout);
-
-  file_id f_id;
-  file_data f_data;
-
-  complete(app, idx(args, 0)(), f_id);
-
-  N(app.db.file_version_exists(f_id), F("no such file '%s'") % f_id);
-  app.db.get_file_version(f_id, f_data);
-  pw.consume_file_data(f_id, f_data);  
-}
-
-
-CMD(certs, N_("packet i/o"), N_("ID"), N_("write cert packets to stdout"),
-    OPT_NONE)
-{
-  if (args.size() != 1)
-    throw usage(name);
-
-  packet_writer pw(cout);
-
-  revision_id r_id;
-  vector< revision<cert> > certs;
-
-  complete(app, idx(args, 0)(), r_id);
-
-  app.db.get_revision_certs(r_id, certs);
-  for (size_t i = 0; i < certs.size(); ++i)
-    pw.consume_revision_cert(idx(certs, i));
-}
-
 CMD(pubkey, N_("packet i/o"), N_("ID"), N_("write public key packet to stdout"),
     OPT_NONE)
 {
@@ -2243,8 +2171,12 @@ CMD(db, N_("database"),
   else if (args.size() == 3)
     {
       if (idx(args, 0)() == "set_epoch")
-        app.db.set_epoch(cert_value(idx(args, 1)()),
-                         epoch_data(idx(args,2)()));
+        {
+          epoch_data ed(idx(args,2)());
+          N(ed.inner()().size() == constants::epochlen,
+            F("The epoch must be %s characters") % constants::epochlen);
+          app.db.set_epoch(cert_value(idx(args, 1)()), ed);
+        }
       else
         throw usage(name);
     }
@@ -2955,12 +2887,12 @@ CMD(update, N_("workspace"), "",
           "maybe you want --revision=<rev on other branch>"));
       if (candidates.size() != 1)
         {
-          P(F("multiple update candidates:\n"));
+          P(F("multiple update candidates:"));
           for (set<revision_id>::const_iterator i = candidates.begin();
                i != candidates.end(); ++i)
-            P(i18n_format("  %s\n") % describe_revision(app, *i));
-          P(F("choose one with '%s update -r<id>'\n") % app.prog_name);
-          N(false, F("multiple candidates remain after selection"));
+            P(i18n_format("  %s") % describe_revision(app, *i));
+          P(F("choose one with '%s update -r<id>'") % app.prog_name);
+          E(false, F("multiple update candidates remain after selection"));
         }
       r_chosen_id = *(candidates.begin());
     }
@@ -3119,7 +3051,11 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
   get_branch_heads(app.branch_name(), app, heads);
 
   N(heads.size() != 0, F("branch '%s' is empty\n") % app.branch_name);
-  N(heads.size() != 1, F("branch '%s' is merged\n") % app.branch_name);
+  if (heads.size() == 1)
+    {
+      P(F("branch '%s' is already merged\n") % app.branch_name);
+      return;
+    }
 
   set<revision_id>::const_iterator i = heads.begin();
   revision_id left = *i;
@@ -3917,6 +3853,10 @@ CMD(automate, N_("automation"),
       "get_file FILEID\n"
       "get_manifest_of [REVID]\n"
       "get_revision [REVID]\n"
+      "packet_for_rdata REVID\n"
+      "packets_for_certs REVID\n"
+      "packet_for_fdata FILEID\n"
+      "packet_for_fdelta OLD_FILE NEW_FILE\n"
       "keys\n"),
     N_("automation interface"), 
     OPT_NONE)
