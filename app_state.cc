@@ -29,8 +29,8 @@ static string const key_option("key");
 static string const keydir_option("keydir");
 
 app_state::app_state() 
-  : branch_name(""), db(system_path()), keys(this), stdhooks(true),
-    rcfiles(true), diffs(false),
+  : branch_name(""), db(system_path()), keys(this), recursive(false),
+    stdhooks(true), rcfiles(true), diffs(false),
     no_merges(false), set_default(false), verbose(false), date_set(false),
     search_root("/"),
     depth(-1), last(-1), next(-1), diff_format(unified_diff), diff_args_provided(false),
@@ -192,28 +192,6 @@ app_state::set_restriction(path_set const & valid_paths,
       fp.split(sp);
       restrictions.insert(sp);
     }
-}
-
-bool
-app_state::restriction_requires_parent(split_path const & sp)
-{
-  file_path path(sp);
-  if (restrictions.empty())
-    return false;
-
-  for (path_set::const_iterator i = restrictions.begin();
-       i != restrictions.end(); ++i)
-    {
-      // If sp is a parent of any member rs of the restriction,
-      // we want to return true.
-      split_path rs = *i;
-      if (rs.size() < sp.size())
-        continue;
-      rs.resize(sp.size());
-      if (rs == sp)
-        return true;
-    }
-  return false;
 }
 
 bool
@@ -477,6 +455,12 @@ void
 app_state::set_verbose(bool b)
 {
   verbose = b;
+}
+
+void
+app_state::set_recursive(bool r)
+{
+  recursive = r;
 }
 
 void

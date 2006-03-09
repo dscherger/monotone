@@ -76,6 +76,7 @@ struct poptOption coptions[] =
     {"stdio", 0, POPT_ARG_NONE, NULL, OPT_STDIO, gettext_noop("serve netsync on stdio"), NULL},
     {"drop-attr", 0, POPT_ARG_STRING, &argstr, OPT_DROP_ATTR, gettext_noop("when rosterifying, drop attrs entries with the given key"), NULL},
     {"no-files", 0, POPT_ARG_NONE, NULL, OPT_NO_FILES, gettext_noop("exclude files when printing logs"), NULL},
+    {"recursive", 'R', POPT_ARG_NONE, NULL, OPT_RECURSIVE, gettext_noop("also operate on the contents of any listed directories"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -537,6 +538,10 @@ cpp_main(int argc, char ** argv)
 
             case OPT_NO_FILES:
               app.no_files = true;
+              break;
+
+            case OPT_RECURSIVE:
+              app.set_recursive();
               break;
 
             case OPT_HELP:

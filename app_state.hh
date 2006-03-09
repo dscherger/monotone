@@ -37,6 +37,7 @@ public:
   database db;
   lua_hooks lua;
   key_store keys;
+  bool recursive;
   bool stdhooks;
   bool rcfiles;
   bool diffs;
@@ -97,7 +98,6 @@ public:
 
   void set_restriction(path_set const & valid_paths, 
                        std::vector<utf8> const & paths);
-  bool restriction_requires_parent(split_path const & path);
   bool restriction_includes(split_path const & path);
 
   // Set the branch name.  If you only invoke set_branch, the branch
@@ -126,6 +126,7 @@ public:
   void set_diff_format(diff_type dtype);
   void set_diff_args(utf8 const & args);
   void add_key_to_push(utf8 const & key);
+  void set_recursive(bool r = true);
 
   void set_stdhooks(bool b);
   void set_rcfiles(bool b);
