@@ -858,7 +858,7 @@ automate_certs(std::vector<utf8> args,
   // particular.
   std::sort(certs.begin(), certs.end());
 
-  basic_io::printer pr(output);
+  basic_io::printer pr;
 
   for (size_t i = 0; i < certs.size(); ++i)
     {
@@ -899,6 +899,7 @@ automate_certs(std::vector<utf8> args,
 
       pr.print_stanza(st);
     }
+  output.write(pr.buf.data(), pr.buf.size());
 
   guard.commit();
 }
@@ -1480,7 +1481,7 @@ automate_keys(std::vector<utf8> args, std::string const & help_name,
       items[(*i)()].get<2>().push_back("keystore");
       items[(*i)()].get<3>().push_back("keystore");
     }
-  basic_io::printer prt(output);
+  basic_io::printer prt;
   for (std::map<std::string, boost::tuple<hexenc<id>, hexenc<id>,
                                      std::vector<std::string>,
                                      std::vector<std::string> > >::iterator
@@ -1496,6 +1497,7 @@ automate_keys(std::vector<utf8> args, std::string const & help_name,
         stz.push_str_multi("private_location", i->second.get<3>());
       prt.print_stanza(stz);
     }
+  output.write(prt.buf.data(), prt.buf.size());
 }
 
 

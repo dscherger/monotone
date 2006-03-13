@@ -1,6 +1,265 @@
+2006-03-12  Richard Levitte  <richard@levitte.org>
+
+	Some of the monotone commands don't really need to use the data
+	in MT/options.  As a matter of fact, it's even a really bad idea
+	for some command, for example 'monotone serve'.  We must still
+	check for the MT directory and read whatever is there, just
+	don't immediately use the data from MT/options.  I've done it by
+	moving the code that processes the data from MT/options in
+	app_state::allow_workspace to another method, which is then used
+	separately.
+
+	* app_state.cc, app_state.hh (app_state::allow_workspace): The
+	code that processes data from MT/options and uses the information
+	is now moved...
+	(app_state::process_options): ... here.
+
+	* commands.cc (struct command, commands::process, CMD, CMT_NO_MT):
+	Add a per-command flag that says if the particular command needs
+	to bother with the workspace options or not.  CMD_NO_MT is a new
+	macro to help define commands that don't.
+	(CMD(serve)): Change into...
+	(CMD_NO_MT(serve)): ... this.
+
+	* monotone.cc (cpp_main): Changed the comment so it matches
+	reality.
+
+2006-03-12  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_dump_load.at: Don't canonicalise database dump output;
+	there should be no need to do so.
+
+2006-03-12  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Selectors): Remove line noise.
+	Also, add an example for c:.
+	
+	* roster.cc (update_restricted_roster_from_filesystem): Put back
+	hint about drop --missing, revert --missing that was lost in
+	transition to rosters.
+
+2006-03-12  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Add a second sync_for_stdio test to work around a
+	bug in OS X.
+
+	* testsuite.at: Changes to Perl and Python UNB64_COMMAND
+	invocations to work around some quoting issues broken/revealed in
+	my last change.
+
+	* paths.cc, annotate.cc, xdelta.cc: Fix the signed vs unsigned
+	warnings which have obvious solutions.
+
+	* testsuite.at: Remove eval in UNB64_COMMAND and UNGZ_COMMAND; it
+	breaks testsuite tracing.
+
+	* tests/t_database_check.at, tests/t_rosterify_attrs.at,
+	tests/t_rosterify_rename.at: Use POSIX syntax for tail.
+
+2006-03-12  Richard Levitte  <richard@levitte.org>
+
+	* ChangeLog: Fixup after merge lossage.
+
+2006-03-11  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* m4/prog_cxx_warnings.m4: Turn on extra warnings (-W) when using
+	GCC.  Also disable 'unused variable' warnings (enabled by -W) for
+	now.  This change only causes 8 new warnings (all of one
+	type--signed vs unsigned) to occur.
+
+	* netxx/peer.cxx, netxx/sockaddr.cxx, netxx/sockaddr.h: Correct
+	the only six cases of type punning that occur (that GCC 4.1 can
+	detect, at least) in C++ code we compile.  It is probably safe to
+	remove -fno-strict-aliasing from CXXFLAGS now.
+
+2006-03-11  Benoît Dejean  <benoit@placenet.org>
+
+	* po/fr.po: Fixed encoding.
+
+2006-03-10  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: Small details to change.
+
+2006-03-10  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* ROADMAP: Remove items that have been done and correct a typo.
+
+	* COPYING: Update FSF address.
+
+	* po/fr.po: Fix up broken msgstrs that were causing msgmerge to
+	choke.
+
+2006-03-09  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: Finished almost all untranslated things.  I'm a
+	bit tired...
+
+2006-03-09  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: More translations done.
+
+2006-03-09  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: More translations done.  Started using freedict
+	services.
+
+2006-03-09  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: More translations done.  Some new standard
+	translations added.
+
+2006-03-09  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: More translations done.  Note that I changed the
+	translation "cert" -> "cert" to "cert" -> "certif" because I
+	found a previous translation of the latter kind and liked it
+	better.
+
+2006-03-08  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: Translating more untranslated strings.
+
+2006-03-08  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Traduce 2 new strings.
+
+2006-03-08  Matt Johnston  <matt@ucc.asn.au>
+
+	* monotone.texi: mention merge_into_dir in the pivot_root description.
+
+2006-03-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_sink_has_extra_epochs.at: Er, and also check for branch
+	names rather than revisions in the output of 'ls branches'.
+
+	* tests/t_sink_has_extra_epochs.at: Fix up subtle syntax error.
+
+	* lru_cache.h: Rename some enums to avoid namespace collisions on
+	Win32.
+
+2006-03-08  Joel Rosdahl  <joel@rosdahl.net>
+
+	* po/sv.po: Minor updates.
+
+2006-03-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.texi: Spelling fixes.
+
+2006-03-08  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_disapprove_branch.at: I'm an idiot.
+
+2006-03-08  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_disapprove_branch.at: Actually add.
+
+2006-03-08  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/t_disapprove_branch.at, testsuite.at: Add a placeholder
+	test for disapprove's broken branch handling; from code
+	inspection, it is obviously broken.  I don't have time to write a
+	real test right now, though, never mind fix it... but at least we
+	have an XFAIL and a comment...
+
+2006-03-07  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* std_hooks.lua (ignore_file): Fixup after introduction of
+	dir_matches() helper.  Visual SourceSafe stores metadata in named
+	files, not named directories.
+
+2006-03-07  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: Started on the untranslated strings.
+
+2006-03-07  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: Done all the fuzzy translations I could.
+
+2006-03-06  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_push_with_upstream_epochs.at: Test that we don't hang on a
+	one-way transfer where the sink has extra epochs.
+	* testsuite.at: call it
+	* tests/t_epoch.at: When we're setting epochs by hand, also try one
+	with an invalid length. It should N(), not I().
+
+2006-03-06  Graydon Hoare  <graydon@pobox.com>
+
+	* lru_cache.hh (LRUCache::insert): Fix memory leak.
+
+2006-03-06  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_delete_dir.at: Check that drop on a non-empty dir
+	without --recursive doesn't work.
+
+2006-03-06  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* app_state.{cc,hh}, options.hh, monotone.cc: Add a --recursive option.
+	* commands.cc (drop): accept --recursive
+	* work.cc (perform_deletions): obey --recursive
+	* tests/t_delete_dir{,_patch}.at, tests/t_subdir_drop.at:
+	use --recursive, remove XFAIL
+	* tests/t_add_intermediate_MT_path.at: reenable recursive drop section
+
+2006-03-06  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: More translations.
+
+2006-03-05  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* commands.cc (db set_epoch): N() on the epoch size, so we don't I()
+	on it in database.cc .
+	* netsync.cc (maybe_note_epochs_finished): If we're in source_role,
+	epochs can be finished even if the refiner says we still have some
+	to receive.
+	* refiner.cc (begin_refinement): Add logging.
+
+2006-03-05  Richard Levitte  <richard@levitte.org>
+
+	* po/fr.po: Add a translation guide, partly borrowed from
+	subversion, work on a translation update, partly done.
+	(this is done with Benoît's blessing)
+
+2006-03-05  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (CMD(tag)): "revision version" seems a bit
+	redundant.
+	* po/sv.po: change the translation accordingly.
+
+2006-03-05  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi (Hooks): Update merge2 and merge3 hook
+	documentation to reflect current reality.
+
+2006-03-05  Graydon Hoare  <graydon@pobox.com>
+
+	* basic_io.{cc,hh}: Change printer to use static string buf.
+	* {automate,cset,revision,roster,work}.cc: Update to match.
+	* xdelta.cc: Minor optimizations.
+
+2006-03-05  Graydon Hoare  <graydon@pobox.com>
+
+	* lru_cache.h: New file.
+	* AUTHORS: Mention Patrick.
+	* Makefile.am: Include file.
+	* basic_io.cc: Change uses of isxdigit, isalnum.
+	* botan/gzip.h: Reduce gzip to level 1.
+	* constants.cc (db_roster_cache_sz): Set to 7.
+	* database.cc: Use lru cache for vcache; add roster cache.
+	* hmac.cc: Instantiate "SHA-160" not "SHA-1" 
+	(corrects lookup miss in botan's algorithm table).
+	* transforms.cc ({encode,decode}_hexenc): Specialize for idlen.	
+
+2006-03-05  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* work.cc: Remove single quotes from the new adding, dropping, and
+	renaming messages to make them consistent with the existing update
+	message.
+
 2006-03-04  Derek Scherger  <derek@echologic.com>
 
-	* tests/t_revert_move_to_renamed_dir.at: new test for bug reported by Thomas Keller
+	* tests/t_revert_move_to_renamed_dir.at: new test for bug reported
+	by Thomas Keller
 	* testsuite.at: call it
 
 2006-03-05  Richard Levitte  <richard@levitte.org>

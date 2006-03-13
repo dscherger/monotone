@@ -75,6 +75,7 @@ struct poptOption coptions[] =
     {"key-to-push", 0, POPT_ARG_STRING, &argstr, OPT_KEY_TO_PUSH, gettext_noop("push the specified key even if it hasn't signed anything"), NULL},
     {"drop-attr", 0, POPT_ARG_STRING, &argstr, OPT_DROP_ATTR, gettext_noop("when rosterifying, drop attrs entries with the given key"), NULL},
     {"no-files", 0, POPT_ARG_NONE, NULL, OPT_NO_FILES, gettext_noop("exclude files when printing logs"), NULL},
+    {"recursive", 'R', POPT_ARG_NONE, NULL, OPT_RECURSIVE, gettext_noop("also operate on the contents of any listed directories"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -533,6 +534,10 @@ cpp_main(int argc, char ** argv)
               app.no_files = true;
               break;
 
+            case OPT_RECURSIVE:
+              app.set_recursive();
+              break;
+
             case OPT_HELP:
             default:
               requested_help = true;
@@ -562,8 +567,11 @@ cpp_main(int argc, char ** argv)
         }
 
       // at this point we allow a workspace (meaning search for it
-      // and if found read MT/options) but don't require it. certain
-      // commands may subsequently require a workspace or fail
+      // and if found read MT/options, but don't use the data quite
+      // yet, and read all the monotonercs).  Processing the data
+      // from MT/options happens later.
+      // Certain commands may subsequently require a workspace or fail
+      // if we didn't find one at this point.
 
       app.allow_workspace();
 

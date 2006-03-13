@@ -37,6 +37,7 @@ public:
   database db;
   lua_hooks lua;
   key_store keys;
+  bool recursive;
   bool stdhooks;
   bool rcfiles;
   bool diffs;
@@ -91,6 +92,7 @@ public:
         boost::shared_ptr<Botan::RSA_PublicKey> > > verifiers;
 
   void allow_workspace();
+  void process_options();
   void require_workspace(std::string const & explanation = "");
   void create_workspace(system_path const & dir);
 
@@ -124,6 +126,7 @@ public:
   void set_diff_format(diff_type dtype);
   void set_diff_args(utf8 const & args);
   void add_key_to_push(utf8 const & key);
+  void set_recursive(bool r = true);
 
   void set_stdhooks(bool b);
   void set_rcfiles(bool b);

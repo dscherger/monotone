@@ -110,13 +110,16 @@ namespace commands
     string cmdgroup;
     string params;
     string desc;
+    bool use_workspace_options;
     command_opts options;
     command(string const & n,
             string const & g,
             string const & p,
             string const & d,
+            bool u,
             command_opts const & o)
-      : name(n), cmdgroup(g), params(p), desc(d), options(o)
+      : name(n), cmdgroup(g), params(p), desc(d), use_workspace_options(u),
+        options(o)
     { cmds[n] = this; }
     virtual ~command() {}
     virtual void exec(app_state & app, vector<utf8> const & args) = 0;
@@ -246,6 +249,12 @@ namespace commands
     if (cmds.find(cmd) != cmds.end())
       {
         L(FL("executing command '%s'\n") % cmd);
+
+        // at this point we process the data from MT/options if
+        // the command needs it.
+        if (cmds[cmd]->use_workspace_options)
+          app.process_options();
+
         cmds[cmd]->exec(app, args);
         return 0;
       }
@@ -273,7 +282,20 @@ static const no_opts OPT_NONE = no_opts();
 #define CMD(C, group, params, desc, opts)                            \
 struct cmd_ ## C : public command                                    \
 {                                                                    \
-  cmd_ ## C() : command(#C, group, params, desc,                     \
+  cmd_ ## C() : command(#C, group, params, desc, true,               \
+                        command_opts() % opts)                       \
+  {}                                                                 \
+  virtual void exec(app_state & app,                                 \
+                    vector<utf8> const & args);                      \
+};                                                                   \
+static cmd_ ## C C ## _cmd;                                          \
+void cmd_ ## C::exec(app_state & app,                                \
+                     vector<utf8> const & args)                      \
+
+#define CMD_NO_MT(C, group, params, desc, opts)                      \
+struct cmd_ ## C : public command                                    \
+{                                                                    \
+  cmd_ ## C() : command(#C, group, params, desc, false,              \
                         command_opts() % opts)                       \
   {}                                                                 \
   virtual void exec(app_state & app,                                 \
@@ -1080,7 +1102,7 @@ CMD(trusted, N_("key and cert"), N_("REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]
 }
 
 CMD(tag, N_("review"), N_("REVISION TAGNAME"),
-    N_("put a symbolic tag cert on a revision version"), OPT_NONE)
+    N_("put a symbolic tag cert on a revision"), OPT_NONE)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -1230,7 +1252,7 @@ static void find_missing (app_state & app,
                           vector<utf8> const & args, path_set & missing);
 
 CMD(drop, N_("workspace"), N_("[PATH]..."),
-    N_("drop files from workspace"), OPT_EXECUTE % OPT_MISSING)
+    N_("drop files from workspace"), OPT_EXECUTE % OPT_MISSING % OPT_RECURSIVE)
 {
   if (!app.missing && (args.size() < 1))
     throw usage(name);
@@ -2100,9 +2122,9 @@ CMD(sync, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
                        include_pattern, exclude_pattern, app);  
 }
 
-CMD(serve, N_("network"), N_("PATTERN ..."),
-    N_("serve the branches specified by PATTERNs to connecting clients"),
-    OPT_BIND % OPT_PIDFILE % OPT_EXCLUDE)
+CMD_NO_MT(serve, N_("network"), N_("PATTERN ..."),
+          N_("serve the branches specified by PATTERNs to connecting clients"),
+          OPT_BIND % OPT_PIDFILE % OPT_EXCLUDE)
 {
   if (args.size() < 1)
     throw usage(name);
@@ -2185,8 +2207,12 @@ CMD(db, N_("database"),
   else if (args.size() == 3)
     {
       if (idx(args, 0)() == "set_epoch")
-        app.db.set_epoch(cert_value(idx(args, 1)()),
-                         epoch_data(idx(args,2)()));
+        {
+          epoch_data ed(idx(args,2)());
+          N(ed.inner()().size() == constants::epochlen,
+            F("The epoch must be %s characters") % constants::epochlen);
+          app.db.set_epoch(cert_value(idx(args, 1)()), ed);
+        }
       else
         throw usage(name);
     }

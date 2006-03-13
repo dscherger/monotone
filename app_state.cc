@@ -29,8 +29,8 @@ static string const key_option("key");
 static string const keydir_option("keydir");
 
 app_state::app_state() 
-  : branch_name(""), db(system_path()), keys(this), stdhooks(true),
-    rcfiles(true), diffs(false),
+  : branch_name(""), db(system_path()), keys(this), recursive(false),
+    stdhooks(true), rcfiles(true), diffs(false),
     no_merges(false), set_default(false), verbose(false), date_set(false),
     search_root("/"),
     depth(-1), last(-1), next(-1), diff_format(unified_diff), diff_args_provided(false),
@@ -70,24 +70,9 @@ app_state::allow_workspace()
 
   if (found_workspace) 
     {
+      // We read the options, but we don't process them here.  That's
+      // done with process_options().
       read_options();
-
-      if (!options[database_option]().empty())
-        {
-          system_path dbname = system_path(options[database_option]);
-          db.set_filename(dbname);
-        }
-
-      if (!options[keydir_option]().empty())
-        {
-          system_path keydir = system_path(options[keydir_option]);
-          set_key_dir(keydir);
-        }
-
-      if (branch_name().empty())
-        branch_name = options[branch_option];
-      L(FL("branch name is '%s'\n") % branch_name());
-      internalize_rsa_keypair_id(options[key_option], signing_key);
 
       if (global_sanity.filename.empty())
         {
@@ -101,6 +86,29 @@ app_state::allow_workspace()
         }
     }
   load_rcfiles();
+}
+
+void 
+app_state::process_options()
+{
+  if (found_workspace) {
+    if (!options[database_option]().empty())
+      {
+	system_path dbname = system_path(options[database_option]);
+	db.set_filename(dbname);
+      }
+
+    if (!options[keydir_option]().empty())
+      {
+	system_path keydir = system_path(options[keydir_option]);
+	set_key_dir(keydir);
+      }
+
+    if (branch_name().empty())
+      branch_name = options[branch_option];
+    L(FL("branch name is '%s'\n") % branch_name());
+    internalize_rsa_keypair_id(options[key_option], signing_key);
+  }
 }
 
 void 
@@ -455,6 +463,12 @@ void
 app_state::set_verbose(bool b)
 {
   verbose = b;
+}
+
+void
+app_state::set_recursive(bool r)
+{
+  recursive = r;
 }
 
 void
