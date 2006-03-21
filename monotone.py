@@ -69,22 +69,22 @@ class Monotone:
         return self.run_monotone(["pubkey", keyid])
         
     def get_revision_packet(self, rid):
-        return self.run_monotone(["rdata", rid])
+        return self.automate("packet_for_rdata", rid)
 
     def get_file_packet(self, fid):
-        return self.run_monotone(["fdata", fid])
+        return self.automate("packet_for_fdata", fid)
 
     def get_file_delta_packet(self, old_fid, new_fid):
-        return self.run_monotone(["fdelta", old_fid, new_fid])
+        return self.automate("packet_for_fdelta", old_fid, new_fid)
 
     def get_manifest_packet(self, mid):
-        return self.run_monotone(["mdata", mid])
+        return self.automate("packet_for_mdata", mid)
 
     def get_manifest_delta_packet(self, old_mid, new_mid):
-        return self.run_monotone(["mdelta", old_mid, new_mid])
+        return self.automate("packet_for_mdelta", old_mid, new_mid)
 
     def get_cert_packets(self, rid):
-        output = self.run_monotone(["certs", rid])
+        output = self.automate("packets_for_certs", rid)
         packets = []
         curr_packet = ""
         for line in output.strip().split("\n"):
@@ -97,13 +97,12 @@ class Monotone:
 
     def key_names(self):
         output = self.automate("keys")
-        print output
         keys_parsed = self.basic_io_parser(output)
         ids = {}
         for stanza in keys_parsed:
             assert stanza[0][0] == "name"
             key_name = stanza[0][1]
-            ids[key_name] = None
+            ids[key_name[0]] = None
 
         return ids.keys()
 
@@ -174,6 +173,7 @@ class Monotone:
             basic_io_string_re = re.compile(r'^ *(\S+) (\".*)$')
             def unescape_string_value(str):
                     rv = ""
+		    valuestr = []
                     is_terminated = False
                     in_escape = False
                     if str[0] != '"':
@@ -187,13 +187,21 @@ class Monotone:
                             else:
                                     if c == '\\':
                                         in_escape = True
+                                    elif c == ' ' and is_terminated:
+                                        	pass	
                                     elif c == '"':
-                                            if is_terminated:
-                                                    raise Exception("basic_io parse error; string ends twice!")
-                                            is_terminated = True
+                                    	if is_terminated:
+						if len(rv)>0:
+							raise Exception("basic_io parse error; string ends twice! '"+ str+"'")
+						else:
+							is_terminated=False
+					else:
+                                        	is_terminated = True
+					    	valuestr.append(rv)
+					    	rv = ""
                                     else:
                                         rv += c
-                    return is_terminated, rv
+                    return is_terminated, valuestr
             rv = []
             stanza = []
             ongoing_string = None

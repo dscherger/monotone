@@ -5,6 +5,7 @@ import os.path
 from cStringIO import StringIO
 from merkle_dir import MerkleDir, LockError
 from fs import readable_fs_for_url, writeable_fs_for_url
+from monotone import Monotone
 import zlib
 
 def do_rollback(url):
@@ -32,6 +33,7 @@ def do_export(monotone, url):
                 data = zlib.compress(kp)
                 md.add(id, data)
         for rid in monotone.toposort(monotone.revisions_list()):
+	    print "processing revision ", rid
             certs = monotone.get_cert_packets(rid)
             for cert in certs:
                 id = sha.new(cert).hexdigest()
@@ -51,10 +53,12 @@ def do_export(monotone, url):
                         new_manifest = stanza[0][1]
                     elif stanza_type == "old_revision":
                         if not old_manifest:
-                            old_manifest = stanza[1][1]
+                            old_manifest = stanza[0][1]
+                    elif stanza_type == "add_file":
+                        new_files[stanza[1][1]] = None
                     elif stanza_type == "patch":
-                        old_fid = stanza[1][1]
-                        new_fid = stanza[2][1]
+                        old_fid = stanza[1][1][0]
+                        new_fid = stanza[2][1][0]
                         if not new_files.has_key(new_fid):
                             new_files[new_fid] = None
                         if old_fid:
@@ -130,7 +134,8 @@ def do_sync(monotone, local_url, other_url):
     print "Pushed %s packets to %s" % (push_c.added, other_url)
 
 def main(name, args):
-    pass
+   monotone = Monotone("etherape.db")
+   do_export(monotone, "guzi")
 
 if __name__ == "__main__":
     import sys
