@@ -1,3 +1,49 @@
+2006-03-22  Matt Johnston  <matt@ucc.asn.au>
+
+	* commands.cc (CMD(update)): update the workspace branch
+	to match a revision given with -r.
+
+2006-03-22  Matt Johnston  <matt@ucc.asn.au>
+
+	* schema_migration.cc, database.cc: print a more helpful
+	error message when we fail in calculate_schema_id() (usually
+	because of locking). Don't bother telling the user what the
+	sqlite error number is (but still log it).
+
+2006-03-20  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* configure.ac: Fix Windows identification test so that it doesn't
+	pass unexpected under Cygwin.  Reported by Lapo Luchini.
+
+2006-03-20  Matt Johnston  <matt@ucc.asn.au>
+
+	* configure.ac: use test -f rather than test -e, since Solaris's
+	/bin/sh doesn't have the latter.
+
+2006-03-19  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* Makefile.am: Tidier versions of html and monotone.html targets,
+	thanks to Thomas Moschny for the patch.
+
+2006-03-18  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* automate.cc (automate_inventory): Add an MM().
+
+	* Makefile.am: Copy figures/ into two places for html target, and
+	don't attempt to copy std_hooks.lua over itself if we're building
+	in the src dir.
+
+2006-03-18  Richard Levitte  <richard@levitte.org>
+
+	* Makefile.am (html): For the html target, figures/ and
+	std_hooks.lua should always be copied.  Making it conditional
+	should only be done for the monotone.html target.
+
+2006-03-18  Richard Levitte  <richard@levitte.org>
+
+	* Makefile.am (monotone.html, html): Only copy figures/ and
+	std_hooks.lua if the builder is in a separate build directory.
+
 2006-03-18  Richard Levitte  <richard@levitte.org>
 
 	* tests/t_netsync_notes.at: Enhance the test by checking that a

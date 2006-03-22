@@ -529,22 +529,27 @@ package_full_revision.c: package_full_revision.txt txt2c Makefile
 
 # automake doesn't build html docs
 
+CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" -a -f ./monotone.texi ]
+
 monotone.html: monotone.texi version.texi std_hooks.lua texinfo.css
-	cp -r $(srcdir)/figures .
-	cp $(srcdir)/std_hooks.lua .
-	makeinfo --no-split --no-headers --output $@ --html $<
+	if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
+		cp -r $(srcdir)/figures .; \
+		cp $(srcdir)/texinfo.css .; \
+	fi
+	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<
 	perl -i.perlbak -pe 's@<head>@<head>\n<link type="text/css" rel="stylesheet" href="texinfo.css" />@' $@
 	rm -f $@.perlbak
-	cp $(srcdir)/texinfo.css .
 
 # The .perlbak thing is needed, otherwise the perl executions fails on MinGW
 
 html: monotone.texi version.texi std_hooks.lua texinfo.css
-	cp $(srcdir)/std_hooks.lua .
+	if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
+		cp -r $(srcdir)/figures .; \
+	fi
 	mkdir -p $@
 	cp -r $(srcdir)/figures $@
-	makeinfo --number-sections --html --output $@ $<
+	cp $(srcdir)/texinfo.css $@
+	makeinfo -I $(srcdir) --number-sections --html --output $@ $<
 	perl -i.perlbak -pe 's@<head>@<head>\n<link type="text/css" rel="stylesheet" href="texinfo.css" />@' $@/*.html
 	rm -f $@/*.perlbak
-	cp $(srcdir)/texinfo.css $@
 
