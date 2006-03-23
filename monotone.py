@@ -78,9 +78,11 @@ class Monotone:
         return self.automate("packet_for_fdelta", old_fid, new_fid)
 
     def get_manifest_packet(self, mid):
+        return ""
         return self.automate("packet_for_mdata", mid)
 
     def get_manifest_delta_packet(self, old_mid, new_mid):
+        return ""
         return self.automate("packet_for_mdelta", old_mid, new_mid)
 
     def get_cert_packets(self, rid):
@@ -173,7 +175,7 @@ class Monotone:
             basic_io_string_re = re.compile(r'^ *(\S+) (\".*)$')
             def unescape_string_value(str):
                     rv = ""
-		    valuestr = []
+                    valuestr = []
                     is_terminated = False
                     in_escape = False
                     if str[0] != '"':
@@ -188,17 +190,19 @@ class Monotone:
                                     if c == '\\':
                                         in_escape = True
                                     elif c == ' ' and is_terminated:
-                                        	pass	
+                                        pass
                                     elif c == '"':
-                                    	if is_terminated:
-						if len(rv)>0:
-							raise Exception("basic_io parse error; string ends twice! '"+ str+"'")
-						else:
-							is_terminated=False
-					else:
-                                        	is_terminated = True
-					    	valuestr.append(rv)
-					    	rv = ""
+                                        # this can be a start of new string (when is_terminated true) or the
+                                        # end of the current one (is_terminated false)
+                                        if is_terminated:
+                                            if len(rv)>0:
+                                                raise Exception("basic_io parse error; string ends twice! '"+ str+"'")
+                                            else:
+                                                is_terminated=False
+                                        else:
+                                            is_terminated = True
+                                            valuestr.append(rv)
+                                            rv = ""
                                     else:
                                         rv += c
                     return is_terminated, valuestr

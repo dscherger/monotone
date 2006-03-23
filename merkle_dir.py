@@ -6,7 +6,8 @@ import zlib
 # What's on disk:
 #   We write all interesting data out to a file DATA
 #     It consists of a bunch of "chunks", appended one after another
-#     each chunk is a raw block of bytes, as passed to add()
+#     each chunk is a raw block of bytes, as passed to add(),
+#     wich compresses the chunk (unlike _add_verbatim())
 #   each chunk has a unique id.  it is assumed that the id<->data mapping is
 #     immutable; in particular, when transferring, we assumed that if we have
 #     an id already, then we already have the corresponding data
@@ -295,7 +296,7 @@ class MerkleDir:
 
     #### Adding new items
     # can only be called from inside a transaction.
-    def add(self, id, data):
+    def _add_verbatim(self, id, data):
         self._need_lock()
         assert None not in (self._data_handle,
                             self._curr_data_length)
@@ -304,6 +305,13 @@ class MerkleDir:
         location = (self._curr_data_length, length)
         self._curr_data_length += length
         self._ids_to_flush.append((id, location))
+
+    #### Compressing and adding new items 
+    # can only be called from inside a transaction.
+    def add(self, id, data):
+#        print ">>>>>>>>>>\n",data,"<<<<<<<<<<<<<<<\n"
+        cp_data = zlib.compress(data)
+        self._add_verbatim(id, cp_data)
 
     #### Getting data back out to outside world
     # returns an iterator over id, (offset, length) tuples
@@ -367,7 +375,7 @@ class MerkleDir:
             # call, to give the chunk optimized and pipelining maximum
             # opportunity to work
             for id, data in self.get_chunks(new_chunks):
-                target.add(id, data)
+                target._add_verbatim(id, data)
                 if new_chunk_callback is not None:
                     new_chunk_callback(id, data)
             target.commit()
