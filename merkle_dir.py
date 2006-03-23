@@ -87,6 +87,11 @@ import zlib
 #        and have a very small race condition, while each file is being
 #        swapped around.  If readers try to open a file but find it does not
 #        exist, they should try again after a short pause, before giving up.
+#
+# READING ORDER:
+# Monotone 0.26 doesn't reorder packets so the fs should make sure to return
+# chunks in the exact order of writes, to ensure a proper sequence of
+# fdata, rdata, rcerts packets
 
 class _HashFile:
     prefix = ""
@@ -309,7 +314,7 @@ class MerkleDir:
     #### Compressing and adding new items 
     # can only be called from inside a transaction.
     def add(self, id, data):
-#        print ">>>>>>>>>>\n",data,"<<<<<<<<<<<<<<<\n"
+        # print ">>>>>>>>>>\n",data,"<<<<<<<<<<<<<<<\n"
         cp_data = zlib.compress(data)
         self._add_verbatim(id, cp_data)
 

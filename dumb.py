@@ -13,10 +13,15 @@ def do_rollback(url):
     md.rollback()
 
 def do_full_import(monotone, url):
+    print " ---------------- starting import ------------- "
     monotone.ensure_db()
     md = MerkleDir(readable_fs_for_url(url))
     feeder = monotone.feeder()
     for id, data in md.all_chunks():
+#	uncdata = zlib.decompress(data)
+#	for pkt in uncdata.split("[end]"):
+#	    if len(pkt)>1:
+#                feeder.write(pkt+"[end]")
         feeder.write(zlib.decompress(data))
     feeder.close()
 
@@ -33,11 +38,6 @@ def do_export(monotone, url):
                 md.add(id, kp)
         for rid in monotone.toposort(monotone.revisions_list()):
             print "processing revision ", rid
-            certs = monotone.get_cert_packets(rid)
-            for cert in certs:
-                id = sha.new(cert).hexdigest()
-                if id not in curr_ids:
-                    md.add(id, cert)
             if rid not in curr_ids:
                 rdata = StringIO()
                 revision_text = monotone.get_revision(rid)
@@ -66,7 +66,6 @@ def do_export(monotone, url):
                             new_files[new_fid] = old_fid
 #                        print stanza_type, ":", stanza[1][1],":", stanza[2][1]
 
-                rdata.write(monotone.get_revision_packet(rid))
                 if old_manifest:
                     mdp = monotone.get_manifest_delta_packet(old_manifest,
                                                                    new_manifest)
@@ -86,7 +85,13 @@ def do_export(monotone, url):
                         fpp = monotone.get_file_packet(new_fid)
 #                        print "file_packet:",fpp
                         rdata.write(fpp)
+                rdata.write(monotone.get_revision_packet(rid))
                 md.add(rid, rdata.getvalue())
+            certs = monotone.get_cert_packets(rid)
+            for cert in certs:
+                id = sha.new(cert).hexdigest()
+                if id not in curr_ids:
+                    md.add(id, cert)
         md.commit()
     except LockError:
         raise
@@ -144,10 +149,10 @@ def do_sync(monotone, local_url, other_url):
     print "Pushed %s packets to %s" % (push_c.added, other_url)
 
 def main(name, args):
-   #monotone = Monotone("etherape.db")
-   #do_export(monotone, "guzi")
-   #monotone = Monotone("e.db")
-   #do_full_import(monotone,"guzi")
+#   monotone = Monotone("etherape.db")
+#   do_export(monotone, "guzi")
+#   monotone = Monotone("e.db")
+#   do_full_import(monotone,"guzi")
    pass
 
 if __name__ == "__main__":

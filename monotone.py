@@ -25,6 +25,12 @@ class Feeder:
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE)
         self.process.stdin.write(data)
+# uncomment to force processing at every invocation 
+#        stdout, stderr = self.process.communicate()
+#        print "writing: >>>",data,"<<<\n",stdout,stderr
+#        if self.process.returncode:
+#            raise MonotoneError, stderr
+#        self.process = None
 
     def close(self):
         if self.process is None:
@@ -79,11 +85,11 @@ class Monotone:
 
     def get_manifest_packet(self, mid):
         return ""
-        return self.automate("packet_for_mdata", mid)
+#        return self.automate("packet_for_mdata", mid)
 
     def get_manifest_delta_packet(self, old_mid, new_mid):
         return ""
-        return self.automate("packet_for_mdelta", old_mid, new_mid)
+#        return self.automate("packet_for_mdelta", old_mid, new_mid)
 
     def get_cert_packets(self, rid):
         output = self.automate("packets_for_certs", rid)
