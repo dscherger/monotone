@@ -880,7 +880,7 @@ class Channel (object):
             if self.pipe is not None:
                 self.pipe.set()
             self.in_buffer += s
-	    self.in_buffer_cv.notifyAll()
+            self.in_buffer_cv.notifyAll()
         finally:
             self.lock.release()
 
