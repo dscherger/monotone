@@ -1,5 +1,7 @@
 2006-03-28  Richard Levitte  <richard@levitte.org>
 
+	* tests/t_heads_of_certs.at: Change all MONOTONE to MTN.
+
 	* po/fr.po: Translation update.
 
 	* po/sv.po: Translation update.

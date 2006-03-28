@@ -1,5 +1,5 @@
 AT_SETUP([selecting headmost arbitrary certs])
-MONOTONE_SETUP
+MTN_SETUP
 
 ADD_FILE(testfile, [this is just a file
 ])
@@ -16,16 +16,16 @@ AT_DATA(testfile, [And we change it a third time
 COMMIT(testbranch)
 THIRD=`BASE_REVISION`
 
-AT_CHECK(MONOTONE cert $FIRST testcert 'value=with=equal=signs')
-AT_CHECK(MONOTONE cert $SECOND testcert 'value')
+AT_CHECK(MTN cert $FIRST testcert 'value=with=equal=signs')
+AT_CHECK(MTN cert $SECOND testcert 'value')
 
 # Check that a log without H: gives both the first and second commit...
-AT_CHECK(MONOTONE log --revision 'c:testcert' --last=1, [0], [stdout], [ignore])
+AT_CHECK(MTN log --revision 'c:testcert' --last=1, [0], [stdout], [ignore])
 AT_CHECK(grep "Revision: $FIRST" stdout, [0], [ignore])
 AT_CHECK(grep "Revision: $SECOND" stdout, [0], [ignore])
 
 # Check that a log with H: gives only the second commit...
-AT_CHECK(MONOTONE log --revision='H:c:testcert' --last=1, [0], [stdout], [stderr])
+AT_CHECK(MTN log --revision='H:c:testcert' --last=1, [0], [stdout], [stderr])
 AT_CHECK(grep "Revision: $FIRST" stdout, [1], [ignore])
 AT_CHECK(grep "Revision: $SECOND" stdout, [0], [ignore])
 # Note that if the third revision is in the log, something else is wrong...
