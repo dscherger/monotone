@@ -1,3 +1,9 @@
+2006-03-31  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* tests/t_cvsimport_branch2.at: New test to check for cvsimport
+	to correctly links branches.
+	* testsuite.at: Add the above test.
+
 2006-03-30  Henry Nestler  <Henry@BigFoot.de>
 
 	* mnt.1: '--bind' for serve on host, syntax from monotone.texi

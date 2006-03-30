@@ -1,0 +1,248 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([importing complex CVS branches w/ ancestory])
+
+#
+# Branch layout overview:
+#
+#  Root
+#    |
+#    A
+#    |\
+#    | C -- D
+#    |
+#    B
+#
+# Root contains file1, file2 and changelog, branch C adds a file3, but does not
+# touch any other file. D then updates all files. No commits on branch B, it
+# remains empty.
+#
+#
+
+MTN_SETUP
+
+AT_XFAIL_IF(true)
+
+AT_DATA(file1.0, [version 0 of test file1
+])
+
+AT_DATA(file1.1, [version 1 of test file1
+])
+
+AT_DATA(file1.2, [version 2 of test file1
+])
+
+AT_DATA(file1.3, [version 3 of test file1
+])
+
+AT_DATA(file2.0, [version 0 of test file2
+])
+
+AT_DATA(file2.1, [version 1 of test file2
+])
+
+AT_DATA(file2.2, [version 2 of test file2
+])
+
+AT_DATA(file3.0, [version 0 of test file3
+])
+
+AT_DATA(file3.1, [version 1 of test file3
+])
+
+AT_DATA(changelog.0, [first changelog entry
+])
+
+AT_DATA(changelog.1, [second changelog
+
+first changelog entry
+])
+
+AT_DATA(changelog.2, [third changelog -not on branch-
+
+second changelog
+
+first changelog entry
+])
+
+AT_DATA(changelog.3, [third changelog -on branch A-
+
+second changelog
+
+first changelog entry
+])
+
+AT_DATA(changelog.4, [fourth changelog -on branch C-
+
+third changelog -on branch A-
+
+second changelog
+
+first changelog entry
+])
+
+AT_DATA(changelog.5, [fifth changelog -on branch D-
+
+fourth changelog -on branch C-
+
+third changelog -on branch A-
+
+second changelog
+
+first changelog entry
+])
+
+AT_DATA(branchlist, [test
+test.A
+test.B
+test.C
+test.D
+])
+
+# build the cvs repository
+
+CVSROOT=`pwd`/cvs-repository
+AT_CHECK(cvs -q -d $CVSROOT init, [0], [ignore], [ignore])
+AT_CHECK(test -e $CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT/modules)
+
+# checkout the empty repository and commit some files
+
+AT_CHECK(cvs -d $CVSROOT co ., [], [ignore], [ignore])
+AT_CHECK(mkdir testdir)
+AT_CHECK(cp file1.0 testdir/file1)
+AT_CHECK(cp file2.0 testdir/file2)
+AT_CHECK(cp changelog.0 testdir/changelog)
+AT_CHECK(cvs -d $CVSROOT add testdir, [], [ignore], [ignore])
+AT_CHECK(cvs -d $CVSROOT add testdir/file1, [], [ignore], [ignore])
+AT_CHECK(cvs -d $CVSROOT add testdir/file2, [], [ignore], [ignore])
+AT_CHECK(cvs -d $CVSROOT add testdir/changelog, [], [ignore], [ignore])
+AT_CHECK(cvs -d $CVSROOT commit -m 'initial import' testdir/file1 testdir/file2 testdir/changelog, [], [ignore], [ignore])
+
+# commit first changes
+AT_CHECK(cp file1.1 testdir/file1)
+AT_CHECK(cp changelog.1 testdir/changelog)
+AT_CHECK(cvs -d $CVSROOT commit -m 'first commit' testdir/file1 testdir/changelog, [], [ignore], [ignore])
+
+# now we create a branch A
+AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b A, [], [ignore], [ignore])
+AT_CHECK(cd testdir; cvs -d $CVSROOT up -r A, [], [ignore], [ignore])
+
+# alter the files on branch A
+AT_CHECK(cp file2.1 testdir/file2)
+AT_CHECK(cp changelog.3 testdir/changelog)
+AT_CHECK(cvs -d $CVSROOT commit -m 'commit on branch A' testdir/file2 testdir/changelog, [], [ignore], [ignore])
+
+# branch again into B
+AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b B, [], [ignore], [ignore])
+AT_CHECK(cd testdir; cvs -d $CVSROOT up -r B, [], [ignore], [ignore])
+# branch B is left untouched
+
+# go back to A and branch into C
+AT_CHECK(cvs -d $CVSROOT up -r A -A, [], [ignore], [ignore])
+AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b C, [], [ignore], [ignore])
+AT_CHECK(cd testdir; cvs -d $CVSROOT up -r C, [], [ignore], [ignore])
+
+# add a file3
+AT_CHECK(cp file3.0 testdir/file3)
+AT_CHECK(cp changelog.4 testdir/changelog)
+AT_CHECK(cd testdir; cvs -d $CVSROOT add file3, [], [ignore], [ignore])
+AT_CHECK(cd testdir; cvs -d $CVSROOT commit -m 'commit on branch C' file3 changelog, [], [ignore], [ignore])
+
+# branch into D
+AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b D, [], [ignore], [ignore])
+AT_CHECK(cd testdir; cvs -d $CVSROOT up -r D, [], [ignore], [ignore])
+AT_CHECK(cp file1.3 testdir/file1)
+AT_CHECK(cp file2.2 testdir/file2)
+AT_CHECK(cp file3.1 testdir/file3)
+AT_CHECK(cp changelog.5 testdir/changelog)
+AT_CHECK(cd testdir; cvs -d $CVSROOT commit -m 'commit on branch D' file1 file2 file3 changelog, [], [ignore], [ignore])
+
+# and create some mainline changes after the branch
+AT_CHECK(cvs -d $CVSROOT up -A, [], [ignore], [ignore])
+AT_CHECK(cp file1.2 testdir/file1)
+AT_CHECK(cp changelog.2 testdir/changelog)
+AT_CHECK(cvs -d $CVSROOT commit -m 'commit on mainline after branch' testdir/file1 testdir/changelog, [], [ignore], [ignore])
+
+# import into monotone and check presence of files
+AT_CHECK(MTN --branch=test cvs_import $CVSROOT/testdir, [], [ignore], [ignore])
+
+# check if all branches were imported
+AT_CHECK(MTN list branches, [], [stdout], [ignore])
+AT_CHECK(cmp stdout branchlist)
+
+# checkout the imported repository into maindir and branchdir
+AT_CHECK(MTN checkout --branch=test maindir, [], [ignore], [ignore])
+AT_CHECK(MTN checkout --branch=test.A branchA, [], [ignore], [ignore])
+AT_CHECK(MTN checkout --branch=test.B branchB, [], [ignore], [ignore])
+AT_CHECK(MTN checkout --branch=test.C branchC, [], [ignore], [ignore])
+AT_CHECK(MTN checkout --branch=test.D branchD, [], [ignore], [ignore])
+
+# check for correctness of the files in the main tree
+AT_CHECK(cmp file1.2 maindir/file1)
+AT_CHECK(cmp file2.0 maindir/file2)
+AT_CHECK(cmp changelog.2 maindir/changelog)
+
+# check for correctness of the files in branch A
+AT_CHECK(cmp file1.1 branchA/file1)
+AT_CHECK(cmp file2.1 branchA/file2)
+AT_CHECK(cmp changelog.3 branchA/changelog)
+
+# check for correctness of the files in branch B
+AT_CHECK(cmp file1.1 branchB/file1)
+AT_CHECK(cmp file2.1 branchB/file2)
+AT_CHECK(cmp changelog.3 branchB/changelog)
+
+# check for correctness of the files in branch C
+AT_CHECK(cmp file1.1 branchC/file1)
+AT_CHECK(cmp file2.1 branchC/file2)
+AT_CHECK(cmp file3.0 branchC/file3)
+AT_CHECK(cmp changelog.4 branchC/changelog)
+
+# check for correctness of the files in branch D
+AT_CHECK(cmp file1.3 branchD/file1)
+AT_CHECK(cmp file2.2 branchD/file2)
+AT_CHECK(cmp file3.1 branchD/file3)
+AT_CHECK(cmp changelog.5 branchD/changelog)
+
+# check the log of branch A for correctness
+AT_CHECK(cd branchA; MTN log, [], [stdout], [ignore])
+AT_CHECK(grep "beginning of branch" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "initial import" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "first commit" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch A" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch B" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "commit on branch C" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "commit on branch D" stdout, [1], [ignore], [ignore])
+
+# check the log of branch B for correctness
+AT_CHECK(cd branchB; MTN log, [], [stdout], [ignore])
+AT_CHECK(grep "initial import" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "first commit" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch A" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "beginning of branch test.B" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch C" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "commit on branch D" stdout, [1], [ignore], [ignore])
+
+# check the log of branch C for correctness
+AT_CHECK(cd branchC; MTN log, [], [stdout], [ignore])
+AT_CHECK(grep "beginning of branch" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "initial import" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "first commit" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch A" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch B" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "commit on branch C" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch D" stdout, [1], [ignore], [ignore])
+
+# check the log of branch D for correctness
+AT_CHECK(cd branchD; MTN log, [], [stdout], [ignore])
+AT_CHECK(grep "beginning of branch" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "initial import" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "first commit" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch A" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch B" stdout, [1], [ignore], [ignore])
+AT_CHECK(grep "commit on branch C" stdout, [], [ignore], [ignore])
+AT_CHECK(grep "commit on branch D" stdout, [], [ignore], [ignore])
+
+AT_CLEANUP
