@@ -1139,6 +1139,9 @@ import_branch(cvs_history & cvs,
       
       // step 3: find the last still-live cluster to have touched this
       // file
+      // (ms) the current event needs to be inserted into a a cluster
+      // following (i.e. newer than) this cluster. Regardless if it's a
+      // commit or branch event.
       time_t time_of_last_cluster_touching_this_file = 0;
 
       unsigned clu = 0;
@@ -1168,7 +1171,7 @@ import_branch(cvs_history & cvs,
 
       if (i->type == ET_COMMIT)
         {
-          // step 4: find a cluster which starts on or after the
+          // step 4: find a commit cluster which starts on or after the
           // last_modify_time, which doesn't modify the file in question,
           // and which contains the same author and changelog as our
           // commit
@@ -1176,12 +1179,12 @@ import_branch(cvs_history & cvs,
                j != clusters.end(); ++j)
             {
               if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
-                  && ((*j)->type == i->type)
+                  && ((*j)->type == ET_COMMIT)
                   && ((*j)->author == i->author)
                   && ((*j)->changelog == i->changelog)
                   && ((*j)->entries.find(i->path) == (*j)->entries.end()))
                 {              
-                  L(FL("picked existing cluster [t:%d] [a:%d] [c:%d]\n")
+                  L(FL("picked existing cluster (commit) [t:%d] [a:%d] [c:%d]\n")
                     % (*j)->first_time 
                     % (*j)->author
                     % (*j)->changelog);
@@ -1192,7 +1195,23 @@ import_branch(cvs_history & cvs,
         }
       else if (i->type == ET_BRANCH)
         {
-            //TODO...
+          // step 4: find a branchpoint cluster which starts on or after
+          // the last_modify_time, which doesn't modify the file in
+          // question, and which contains the same author and changelog
+          // as our commit
+          for (cluster_set::const_iterator j = clusters.begin();
+               j != clusters.end(); ++j)
+            {
+              if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
+                  && ((*j)->type == ET_BRANCH)
+                  && ((*j)->entries.find(i->path) == (*j)->entries.end()))
+                {              
+                  L(FL("picked existing cluster (branchpoint) [t:%d]\n")
+                    % (*j)->first_time);
+
+                  target = (*j);
+                }
+            }
         }
       
       // if we're still not finding an active cluster,

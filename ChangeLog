@@ -1,5 +1,10 @@
 2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
 
+	* rcs_import.cc: added step 4: find the last cvs_cluster
+	for ET_BRANCH events.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
 	* rcs_import.cc: added type info to cvs_cluster so a
 	cvs_cluster can now be a commit or a branchpoint.
 
