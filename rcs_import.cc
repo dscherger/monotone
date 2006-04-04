@@ -55,13 +55,28 @@ typedef unsigned long cvs_tag;
 
 struct cvs_history;
 
-struct
-cvs_commit
+
+typedef enum event_type
 {
-  cvs_commit(rcs_file const & r, 
+  ET_COMMIT,
+  ET_BRANCH
+} event_type;
+
+
+struct
+cvs_event
+{
+  cvs_event(event_type ty,
+             time_t ti,
+             cvs_path p,
+             cvs_history & cvs);
+
+  cvs_event(rcs_file const & r, 
              string const & rcs_version,
              file_id const & ident,
              cvs_history & cvs);
+
+  event_type type;
 
   bool is_synthetic_branch_root;
   time_t time;
@@ -72,7 +87,7 @@ cvs_commit
   cvs_path path;
   vector<cvs_tag> tags;
   
-  bool operator<(cvs_commit const & other) const 
+  bool operator<(cvs_event const & other) const 
   {
     return time < other.time;
   }
@@ -87,7 +102,7 @@ cvs_branch
   time_t first_commit;
 
   map<cvs_path, cvs_version> live_at_beginning;
-  vector<cvs_commit> lineage;  
+  vector<cvs_event> lineage;
 
   cvs_branch()
     : has_a_branchpoint(false),
@@ -133,10 +148,10 @@ cvs_branch
       }
   }
   
-  void append_commit(cvs_commit const & c) 
+  void append_event(cvs_event const & c) 
   {
     I(c.time != 0);
-    note_commit(c.time);
+    if (c.type == ET_COMMIT) note_commit(c.time);
     lineage.push_back(c);
   }
 };
@@ -222,11 +237,13 @@ is_sbr(shared_ptr<rcs_delta> dl,
 }
 
 
-cvs_commit::cvs_commit(rcs_file const & r, 
+cvs_event::cvs_event(rcs_file const & r, 
                        string const & rcs_version,
                        file_id const & ident,
                        cvs_history & cvs)
 {
+  type = ET_COMMIT;
+
   map<string, shared_ptr<rcs_delta> >::const_iterator delta = 
     r.deltas.find(rcs_version);
   I(delta != r.deltas.end());
@@ -280,6 +297,16 @@ cvs_commit::cvs_commit(rcs_file const & r,
         }
     }
 
+}
+
+
+cvs_event::cvs_event(event_type ty, time_t ti, cvs_path p, cvs_history & cvs)
+  : type(ty),
+    time(ti),
+    path(p)
+{
+  author = cvs.author_interner.intern("branchpoint");
+  changelog = cvs.changelog_interner.intern("synthetic branchpoint changelog");
 }
 
 
@@ -564,10 +591,10 @@ process_branch(string const & begin_version,
     {
       L(FL("version %s has %d lines\n") % curr_version % curr_lines->size());
 
-      cvs_commit curr_commit(r, curr_version, curr_id, cvs);
+      cvs_event curr_commit(r, curr_version, curr_id, cvs);
       if (!curr_commit.is_synthetic_branch_root)
         {
-          cvs.stk.top()->append_commit(curr_commit);
+          cvs.stk.top()->append_event(curr_commit);
           ++cvs.n_versions;
         }
       
@@ -1067,16 +1094,24 @@ import_branch(cvs_history & cvs,
   // step 1: sort the lineage
   stable_sort(branch->lineage.begin(), branch->lineage.end());
 
-  for (vector<cvs_commit>::const_iterator i = branch->lineage.begin();
+  for (vector<cvs_event>::const_iterator i = branch->lineage.begin();
        i != branch->lineage.end(); ++i)
     {      
       commits_remaining--;
 
-      L(FL("examining next commit [t:%d] [p:%s] [a:%s] [c:%s]\n")
-        % i->time 
-        % cvs.path_interner.lookup(i->path)
-        % cvs.author_interner.lookup(i->author)
-        % cvs.changelog_interner.lookup(i->changelog));
+      if (i->type == ET_COMMIT)
+        {
+          L(FL("examining next event: commit [t:%d] [p:%s] [a:%s] [c:%s]\n")
+            % i->time 
+            % cvs.path_interner.lookup(i->path)
+            % cvs.author_interner.lookup(i->author)
+            % cvs.changelog_interner.lookup(i->changelog));
+        }
+      else
+        {
+          L(FL("examining next event: branch [t:%d]\n")
+            % i->time);
+        }
       
       // step 2: expire all clusters from the beginning of the set which
       // have passed the window size
