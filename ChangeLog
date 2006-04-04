@@ -1,5 +1,12 @@
 2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
 
+	* rcs_import.cc: bracking the branch assocciated
+	with cvs_event and cvs_cluster.
+	In the cluster_consumer, we then connect the branch
+	to the previous revision id.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
 	* rcs_import.cc: removed cvs_cluster.first_time in
 	favour of start_time and end_time. This later allows
 	checking for overlapping commits.

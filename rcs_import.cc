@@ -62,6 +62,7 @@ typedef enum event_type
   ET_BRANCH
 } event_type;
 
+struct cvs_branch;
 
 struct
 cvs_event
@@ -86,6 +87,7 @@ cvs_event
   cvs_version version;
   cvs_path path;
   vector<cvs_tag> tags;
+  shared_ptr<struct cvs_branch> branch;
   
   bool operator<(cvs_event const & other) const 
   {
@@ -638,6 +640,7 @@ process_branch(string const & begin_version,
           // before branching, we rely on the sort logic to put the branch
           // event after the commit
           cvs_event be(ET_BRANCH, curr_commit.time, curr_commit.path, cvs);
+          be.branch = b;
           cvs.stk.top()->append_event(be);
         }
                 
@@ -1007,6 +1010,7 @@ cvs_cluster
   cvs_author author;
   cvs_changelog changelog;
   set<cvs_tag> tags;
+  shared_ptr<cvs_branch> branch;
 
   cvs_cluster(event_type ty,
               time_t t, 
@@ -1210,6 +1214,7 @@ import_branch(cvs_history & cvs,
             {
               if (((*j)->start_time >= time_of_last_cluster_touching_this_file)
                   && ((*j)->type == ET_BRANCH)
+                  && ((*j)->branch == i->branch)
                   && ((*j)->entries.find(i->path) == (*j)->entries.end()))
                 {              
                   L(FL("picked existing cluster (branchpoint) [t:%d-%d] [t:%d]\n")
@@ -1247,6 +1252,7 @@ import_branch(cvs_history & cvs,
                                                    i->time,
                                                    i->author,
                                                    i->changelog));
+              target->branch = i->branch;
             }
 
           clusters.insert(target);
@@ -1648,9 +1654,7 @@ cluster_consumer::consume_cluster(cvs_cluster const & c)
   else if (c.type == ET_BRANCH)
     {
       /* set the parent revision id of the branch */
-#if 0
-      b->parent_rid = parent_rid;
-      b->has_parent_rid = true;
-#endif
+      c.branch->parent_rid = parent_rid;
+      c.branch->has_parent_rid = true;
     }
 }
