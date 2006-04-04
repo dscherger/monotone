@@ -1,5 +1,10 @@
 2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
 
+	* rcs_import.cc: added type info to cvs_cluster so a
+	cvs_cluster can now be a commit or a branchpoint.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
 	* rcs_import.cc: Renamed cvs_commit to cvs_event
 
 2006-04-02  Matthew Nicholson  <matt@matt-land.com>

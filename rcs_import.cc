@@ -628,6 +628,12 @@ process_branch(string const & begin_version,
               b->note_branchpoint(curr_commit.time);
               cvs.pop_branch();
             }
+
+          // write a branch event with the same time as the last commit
+          // before branching, we rely on the sort logic to put the branch
+          // event after the commit
+          cvs_event be(ET_BRANCH, curr_commit.time, curr_commit.path, cvs);
+          cvs.stk.top()->append_event(be);
         }
                 
 
@@ -990,15 +996,18 @@ public:
 struct
 cvs_cluster
 {
+  event_type type;
   time_t first_time;
   cvs_author author;
   cvs_changelog changelog;
   set<cvs_tag> tags;
 
-  cvs_cluster(time_t t, 
+  cvs_cluster(event_type ty,
+              time_t t, 
               cvs_author a,
-              cvs_changelog c) 
-    : first_time(t),
+              cvs_changelog c)
+    : type(ty),
+      first_time(t),
       author(a),
       changelog(c)
   {}
@@ -1155,26 +1164,35 @@ import_branch(cvs_history & cvs,
       L(FL("last modification time is %d\n") 
         % time_of_last_cluster_touching_this_file);
       
-      // step 4: find a cluster which starts on or after the
-      // last_modify_time, which doesn't modify the file in question,
-      // and which contains the same author and changelog as our
-      // commit
       cluster_ptr target;
-      for (cluster_set::const_iterator j = clusters.begin();
-           j != clusters.end(); ++j)
-        {
-          if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
-              && ((*j)->author == i->author)
-              && ((*j)->changelog == i->changelog)
-              && ((*j)->entries.find(i->path) == (*j)->entries.end()))
-            {              
-              L(FL("picked existing cluster [t:%d] [a:%d] [c:%d]\n")
-                % (*j)->first_time 
-                % (*j)->author
-                % (*j)->changelog);
 
-              target = (*j);
+      if (i->type == ET_COMMIT)
+        {
+          // step 4: find a cluster which starts on or after the
+          // last_modify_time, which doesn't modify the file in question,
+          // and which contains the same author and changelog as our
+          // commit
+          for (cluster_set::const_iterator j = clusters.begin();
+               j != clusters.end(); ++j)
+            {
+              if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
+                  && ((*j)->type == i->type)
+                  && ((*j)->author == i->author)
+                  && ((*j)->changelog == i->changelog)
+                  && ((*j)->entries.find(i->path) == (*j)->entries.end()))
+                {              
+                  L(FL("picked existing cluster [t:%d] [a:%d] [c:%d]\n")
+                    % (*j)->first_time 
+                    % (*j)->author
+                    % (*j)->changelog);
+
+                  target = (*j);
+                }
             }
+        }
+      else if (i->type == ET_BRANCH)
+        {
+            //TODO...
         }
       
       // if we're still not finding an active cluster,
@@ -1182,17 +1200,32 @@ import_branch(cvs_history & cvs,
       // a new one.
       if (!target)
         {
-          L(FL("building new cluster [t:%d] [a:%d] [c:%d]\n")
-            % i->time 
-            % i->author
-            % i->changelog);
+          if (i->type == ET_COMMIT)
+            {
+              L(FL("building new cluster: commit [t:%d] [a:%d] [c:%d]\n")
+                % i->time 
+                % i->author
+                % i->changelog);
 
-          target = cluster_ptr(new cvs_cluster(i->time, 
-                                               i->author, 
-                                               i->changelog));
+              target = cluster_ptr(new cvs_cluster(ET_COMMIT,
+                                                   i->time, 
+                                                   i->author, 
+                                                   i->changelog));
+            }
+          else
+            {
+              L(FL("building new cluster: branch [t:%d]\n")
+                % i->time);
+
+              target = cluster_ptr(new cvs_cluster(ET_BRANCH,
+                                                   i->time,
+                                                   i->author,
+                                                   i->changelog));
+            }
+
           clusters.insert(target);
         }
-      
+
       I(target);
       target->entries.insert(make_pair(i->path, 
                                        cvs_cluster::entry(i->alive, 
@@ -1323,7 +1356,8 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
                                       + branchname);
       
       time_t synthetic_time = branch.beginning();
-      cvs_cluster initial_cluster(synthetic_time, 
+      cvs_cluster initial_cluster(ET_COMMIT,
+                                  synthetic_time, 
                                   synthetic_author, 
                                   synthetic_cl);
       
@@ -1475,25 +1509,28 @@ cluster_consumer::build_cset(cvs_cluster const & c,
 void
 cluster_consumer::consume_cluster(cvs_cluster const & c)
 {
-  // we should never have an empty cluster; it's *possible* to have
-  // an empty changeset (say on a vendor import) but every cluster
-  // should have been created by at least one file commit, even
-  // if the commit made no changes. it's a logical inconsistency if
-  // you have an empty cluster.
-  I(!c.entries.empty());
+  if (c.type == ET_COMMIT)
+    {
+      // we should never have an empty cluster; it's *possible* to have
+      // an empty changeset (say on a vendor import) but every cluster
+      // should have been created by at least one file commit, even
+      // if the commit made no changes. it's a logical inconsistency if
+      // you have an empty cluster.
+      I(!c.entries.empty());
 
-  shared_ptr<revision_set> rev(new revision_set());
-  boost::shared_ptr<cset> cs(new cset());
-  build_cset(c, *cs);
+      shared_ptr<revision_set> rev(new revision_set());
+      boost::shared_ptr<cset> cs(new cset());
+      build_cset(c, *cs);
 
-  cs->apply_to(editable_ros);
-  manifest_id child_mid;
-  calculate_ident(ros, child_mid);
-  rev->new_manifest = child_mid;
-  rev->edges.insert(make_pair(parent_rid, cs));
-  calculate_ident(*rev, child_rid);
+      cs->apply_to(editable_ros);
+      manifest_id child_mid;
+      calculate_ident(ros, child_mid);
+      rev->new_manifest = child_mid;
+      rev->edges.insert(make_pair(parent_rid, cs));
+      calculate_ident(*rev, child_rid);
 
-  preps.push_back(prepared_revision(child_rid, rev, c));
+      preps.push_back(prepared_revision(child_rid, rev, c));
 
-  parent_rid = child_rid;
+      parent_rid = child_rid;
+    }
 }
