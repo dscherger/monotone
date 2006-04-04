@@ -1,5 +1,13 @@
 2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
 
+	* rcs_import.cc: add has_parent_rid and parent_rid
+	variables to cvs_branch. Import branches with an
+	associated parent revision first.
+	And added the branch connecting code from my
+	previous try to connect branches.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
 	* rcs_import.cc: modified import order: importing the
 	trunk first, then all branches. This in preparation
 	for branch reconstruction

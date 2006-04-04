@@ -98,8 +98,10 @@ cvs_branch
 {
   bool has_a_branchpoint;
   bool has_a_commit;
+  bool has_parent_rid;
   time_t last_branchpoint;
   time_t first_commit;
+  revision_id parent_rid;
 
   map<cvs_path, cvs_version> live_at_beginning;
   vector<cvs_event> lineage;
@@ -107,6 +109,7 @@ cvs_branch
   cvs_branch()
     : has_a_branchpoint(false),
       has_a_commit(false),
+      has_parent_rid(false),
       last_branchpoint(0),
       first_commit(0)
   {
@@ -619,10 +622,12 @@ process_branch(string const & begin_version,
       if (range.first != cvs.branchpoints.end() 
           && range.first->first == curr_version)
         {
+          shared_ptr<cvs_branch> b;
+
           for (ity i = range.first; i != range.second; ++i)
             {
               cvs.push_branch(i->second, false);   
-              shared_ptr<cvs_branch> b = cvs.stk.top();
+              b = cvs.stk.top();
               if (curr_commit.alive)
                 b->live_at_beginning[cvs.curr_file_interned] = curr_commit.version;
               b->note_branchpoint(curr_commit.time);
@@ -1336,8 +1341,19 @@ import_cvs_repo(system_path const & cvsroot,
       map<string, shared_ptr<cvs_branch> >::const_iterator i;
       shared_ptr<cvs_branch> branch;
 
-      i = cvs.branches.begin();
-      branch = i->second;
+      // import branches in the correct order
+      for (i = cvs.branches.begin(); i != cvs.branches.end(); ++i)
+        {
+          branch = i->second;
+          if (branch->has_parent_rid) break;
+        }
+
+      if (i == cvs.branches.end())
+        {
+          L(FL("no more connected branches... unconnected import\n"));
+          i = cvs.branches.begin();
+          branch = i->second;
+        }
 
       string branchname = i->first;
       
@@ -1381,7 +1397,59 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
     n_revisions(n_revs),
     editable_ros(ros, nis)
 {
-  if (!branch.live_at_beginning.empty())
+  if (branch.has_parent_rid)
+    {
+      parent_rid = branch.parent_rid;
+      app.db.get_roster(parent_rid, ros);
+
+      L(FL("starting cluster for branch %s from revision %s which contains:\n")
+           % branchname
+           % branch.parent_rid);
+
+      // populate the cluster_consumer's live_files and created_dirs according
+      // to the roster.
+      node_map nodes = ros.all_nodes();
+      for (node_map::iterator i = nodes.begin(); i != nodes.end(); ++i)
+        {
+          shared_ptr<node> node = i->second;
+
+          if (is_dir_t(node))
+            {
+              split_path dir;
+
+              ros.get_name(node->self, dir);
+              L(FL("   dir:  %s\n") % dir);
+              safe_insert(created_dirs, dir);
+            }
+          else if (is_file_t(node))
+            {
+              std::string rev;
+              std::string name;
+              cvs_path path;
+              split_path sp;
+
+              ros.get_name(node->self, sp);
+              file_path fp(sp);
+              path = cvs.path_interner.intern(fp.as_internal());
+
+              dump(downcast_to_file_t(node)->content, rev);
+
+              L(FL("   file: %s at revision %s\n") % fp.as_internal() % rev);
+              live_files[path] = cvs.file_version_interner.intern(rev);
+            }
+        }
+    }
+
+  if ((!branch.live_at_beginning.empty()) && (
+      /*
+       * We insert a special 'beginning of branch' commit if we eigther
+       * have not found a parent revision or...
+       */
+      (!branch.has_parent_rid) ||
+      /*
+       * ..if we found one, but the branch remained empty.
+       */
+      (branch.has_parent_rid && (!branch.has_a_commit))))
     {
       cvs_author synthetic_author = 
         cvs.author_interner.intern("cvs_import");
@@ -1567,5 +1635,13 @@ cluster_consumer::consume_cluster(cvs_cluster const & c)
       preps.push_back(prepared_revision(child_rid, rev, c));
 
       parent_rid = child_rid;
+    }
+  else if (c.type == ET_BRANCH)
+    {
+      /* set the parent revision id of the branch */
+#if 0
+      b->parent_rid = parent_rid;
+      b->has_parent_rid = true;
+#endif
     }
 }
