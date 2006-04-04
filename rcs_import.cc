@@ -1002,7 +1002,8 @@ struct
 cvs_cluster
 {
   event_type type;
-  time_t first_time;
+  time_t start_time;
+  time_t end_time;
   cvs_author author;
   cvs_changelog changelog;
   set<cvs_tag> tags;
@@ -1012,7 +1013,8 @@ cvs_cluster
               cvs_author a,
               cvs_changelog c)
     : type(ty),
-      first_time(t),
+      start_time(t),
+      end_time(t),
       author(a),
       changelog(c)
   {}
@@ -1087,7 +1089,7 @@ cluster_ptr_lt
   bool operator()(cluster_ptr const & a,
                   cluster_ptr const & b) const
   {
-    return a->first_time < b->first_time;
+    return a->end_time < b->start_time;
   }
 };
 
@@ -1129,7 +1131,7 @@ import_branch(cvs_history & cvs,
       while (!clusters.empty())
         {
           cluster_set::const_iterator j = clusters.begin();
-          if ((*j)->first_time + constants::cvs_window < i->time)
+          if ((*j)->end_time + constants::cvs_window < i->time)
             {
               L(FL("expiring cluster\n"));
               cons.consume_cluster(**j);
@@ -1158,12 +1160,13 @@ import_branch(cvs_history & cvs,
           if ((k != (*j)->entries.end())
               && (k->second.time > time_of_last_cluster_touching_this_file))
             {
-              L(FL("found cluster touching %d: [t:%d] [a:%d] [c:%d]\n")
+              L(FL("found cluster touching %d: [t:%d-%d] [a:%d] [c:%d]\n")
                 % i->path
-                % (*j)->first_time 
+                % (*j)->start_time
+                % (*j)->end_time
                 % (*j)->author
                 % (*j)->changelog);
-              time_of_last_cluster_touching_this_file = (*j)->first_time;
+              time_of_last_cluster_touching_this_file = (*j)->end_time;
             }
         }
       L(FL("last modification time is %d\n") 
@@ -1180,14 +1183,15 @@ import_branch(cvs_history & cvs,
           for (cluster_set::const_iterator j = clusters.begin();
                j != clusters.end(); ++j)
             {
-              if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
+              if (((*j)->start_time >= time_of_last_cluster_touching_this_file)
                   && ((*j)->type == ET_COMMIT)
                   && ((*j)->author == i->author)
                   && ((*j)->changelog == i->changelog)
                   && ((*j)->entries.find(i->path) == (*j)->entries.end()))
                 {              
-                  L(FL("picked existing cluster (commit) [t:%d] [a:%d] [c:%d]\n")
-                    % (*j)->first_time 
+                  L(FL("picked existing cluster (commit) [t:%d-%d] [a:%d] [c:%d]\n")
+                    % (*j)->start_time
+                    % (*j)->end_time
                     % (*j)->author
                     % (*j)->changelog);
 
@@ -1204,12 +1208,13 @@ import_branch(cvs_history & cvs,
           for (cluster_set::const_iterator j = clusters.begin();
                j != clusters.end(); ++j)
             {
-              if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
+              if (((*j)->start_time >= time_of_last_cluster_touching_this_file)
                   && ((*j)->type == ET_BRANCH)
                   && ((*j)->entries.find(i->path) == (*j)->entries.end()))
                 {              
-                  L(FL("picked existing cluster (branchpoint) [t:%d]\n")
-                    % (*j)->first_time);
+                  L(FL("picked existing cluster (branchpoint) [t:%d-%d] [t:%d]\n")
+                    % (*j)->start_time
+                    % (*j)->end_time);
 
                   target = (*j);
                 }
@@ -1252,6 +1257,10 @@ import_branch(cvs_history & cvs,
                                        cvs_cluster::entry(i->alive, 
                                                           i->version,
                                                           i->time)));
+      /* update the target's end time */
+      if (target->end_time < i->time)
+        target->end_time = i->time;
+
       for (vector<cvs_tag>::const_iterator j = i->tags.begin();
            j != i->tags.end(); ++j)
         {
@@ -1485,7 +1494,7 @@ cluster_consumer::prepared_revision::prepared_revision(revision_id i,
                                                        cvs_cluster const & c)
   : rid(i), 
     rev(r), 
-    time(c.first_time), 
+    time(c.start_time), 
     author(c.author), 
     changelog(c.changelog)
 {

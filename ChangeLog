@@ -1,5 +1,11 @@
 2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
 
+	* rcs_import.cc: removed cvs_cluster.first_time in
+	favour of start_time and end_time. This later allows
+	checking for overlapping commits.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
 	* rcs_import.cc: add has_parent_rid and parent_rid
 	variables to cvs_branch. Import branches with an
 	associated parent revision first.
