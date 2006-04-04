@@ -1,5 +1,11 @@
 2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
 
+	* rcs_import.cc: modified import order: importing the
+	trunk first, then all branches. This in preparation
+	for branch reconstruction
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
 	* rcs_import.cc: added step 4: find the last cvs_cluster
 	for ET_BRANCH events.
 

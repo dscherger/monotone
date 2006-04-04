@@ -1100,9 +1100,6 @@ import_branch(cvs_history & cvs,
   cluster_consumer cons(cvs, app, branchname, *branch, n_revs);
   unsigned long commits_remaining = branch->lineage.size();
 
-  // step 1: sort the lineage
-  stable_sort(branch->lineage.begin(), branch->lineage.end());
-
   for (vector<cvs_event>::const_iterator i = branch->lineage.begin();
        i != branch->lineage.end(); ++i)
     {      
@@ -1312,12 +1309,38 @@ import_cvs_repo(system_path const & cvsroot,
 
   ticker n_revs(_("revisions"), "r", 1);
 
+  // first, sort the lineages of the trunk and all branches
+  L(FL("sorting lineage of trunk\n"));
+  stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
+  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
+          i != cvs.branches.end(); ++i)
+    {
+      string branchname = i->first;
+      shared_ptr<cvs_branch> branch = i->second;
+
+      L(FL("sorting lineage of branch %s\n") % branchname);
+      stable_sort(branch->lineage.begin(), branch->lineage.end());
+    }
+
+  // import trunk first
+  {
+    transaction_guard guard(app.db);
+    L(FL("trunk has %d entries\n") % cvs.trunk->lineage.size());
+    import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
+    guard.commit();
+  }
+
   while (cvs.branches.size() > 0)
     {
       transaction_guard guard(app.db);
-      map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
+      map<string, shared_ptr<cvs_branch> >::const_iterator i;
+      shared_ptr<cvs_branch> branch;
+
+      i = cvs.branches.begin();
+      branch = i->second;
+
       string branchname = i->first;
-      shared_ptr<cvs_branch> branch = i->second;
+      
       L(FL("branch %s has %d entries\n") % branchname % branch->lineage.size());
       import_branch(cvs, app, branchname, branch, n_revs);
 
@@ -1325,13 +1348,6 @@ import_cvs_repo(system_path const & cvsroot,
       cvs.branches.erase(branchname); 
       guard.commit();
     }
-
-  {
-    transaction_guard guard(app.db);
-    L(FL("trunk has %d entries\n") % cvs.trunk->lineage.size());
-    import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
-    guard.commit();
-  }
 
   // now we have a "last" rev for each tag
   {
