@@ -44,6 +44,43 @@
 	* tests/t_rosterify_empty_manifest.at: a test for rosterifying a db
 	that has empty manifests
 
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: bracking the branch assocciated
+	with cvs_event and cvs_cluster.
+	In the cluster_consumer, we then connect the branch
+	to the previous revision id.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: removed cvs_cluster.first_time in
+	favour of start_time and end_time. This later allows
+	checking for overlapping commits.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: add has_parent_rid and parent_rid
+	variables to cvs_branch. Import branches with an
+	associated parent revision first.
+	And added the branch connecting code from my
+	previous try to connect branches.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: modified import order: importing the
+	trunk first, then all branches. This in preparation
+	for branch reconstruction
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: added step 4: find the last cvs_cluster
+	for ET_BRANCH events.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: added type info to cvs_cluster so a
+	cvs_cluster can now be a commit or a branchpoint.
+
 2006-04-04  Matt Johnston  <matt@ucc.asn.au>
 
 	* revision.cc (construct_revisions_from_ancestry): all rosters must be
@@ -63,6 +100,10 @@
 2006-04-04  Richard Levitte  <richard@levitte.org>
 
 	* po/sv.po: Updated and additional translations.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Renamed cvs_commit to cvs_event
 
 2006-04-02  Matthew Nicholson  <matt@matt-land.com>
 
