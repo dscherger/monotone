@@ -127,7 +127,7 @@ class Dumbtone:
         print "Pushing changes from %s to %s" % (local_url, target_url)
         local_md = MerkleDir(readable_fs_for_url(local_url))
         target_md = MerkleDir(writeable_fs_for_url(target_url))
-        c = CounterCallback()
+        c = Dumbtone.CounterCallback()
         local_md.push(target_md, c)
         print "Pushed %s packets to %s" % (c.added, target_url)
     
@@ -150,7 +150,7 @@ class Dumbtone:
         other_md = MerkleDir(writeable_fs_for_url(other_url))
         feeder = self.monotone.feeder(self.verbosity)
         pull_fc = FeederCallback(feeder)
-        push_c = CounterCallback()
+        push_c = Dumbtone.CounterCallback()
         local_md.sync(other_md, pull_fc, push_c)
         feeder.close()
         print "Pulled and imported %s packets from %s" % (pull_fc.added, other_url)
