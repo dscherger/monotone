@@ -13,6 +13,16 @@
 	In user_interface::output_prefix, still check if prog_name is
 	empty, and output something harmless if it is.
 
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Added the real branch time detection logic
+	and fixed some bugs in the previous commit.
+
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Improved branch time detection and some debug
+	messages.
+
 2006-04-05  Nathaniel Smith  <njs@pobox.com>
 
 	* NEWS: Start writing 0.26 release notes.
