@@ -89,10 +89,7 @@ cvs_event
   vector<cvs_tag> tags;
   shared_ptr<struct cvs_branch> branch;
   
-  bool operator<(cvs_event const & other) const 
-  {
-    return time < other.time;
-  }
+  bool operator<(cvs_event const & other) const;
 };
 
 struct
@@ -328,6 +325,24 @@ cvs_event::cvs_event(event_type ty, time_t ti, cvs_path p, cvs_history & cvs)
 {
   author = cvs.author_interner.intern("branchpoint");
   changelog = cvs.changelog_interner.intern("synthetic branchpoint changelog");
+}
+
+
+bool cvs_event::operator<(cvs_event const & other) const 
+{
+  time_t this_time, other_time;
+
+  if (type == ET_BRANCH)
+    this_time = branch->branch_time;
+  else
+    this_time = time;
+
+  if (other.type == ET_BRANCH)
+    other_time = other.branch->branch_time;
+  else
+    other_time = other.time;
+
+  return this_time < other_time;
 }
 
 
@@ -645,35 +660,45 @@ process_branch(string const & begin_version,
               cvs.push_branch(i->second, false);   
               shared_ptr<cvs_branch> b = cvs.stk.top();
               if (curr_commit.alive)
-                b->live_at_beginning[cvs.curr_file_interned] = curr_commit.version;
-              b->note_branchpoint(curr_commit.time);
+                {
+                  b->live_at_beginning[cvs.curr_file_interned] = curr_commit.version;
+                  b->note_branchpoint(curr_commit.time);
+                }
               cvs.pop_branch();
 
-              // write a branch event
-              cvs_event be(ET_BRANCH, 0, curr_commit.path, cvs);
-              be.branch = b;
-              cvs.stk.top()->append_event(be);
-              L(FL("added branch event for file %s in branch %s")
-                   % cvs.path_interner.lookup(curr_commit.path)
-                   % i->second);
+              // (ms) should this better be a '!is_synthetic_branchroot'?
+              if (curr_commit.alive)
+                {
+                  // write a branch event
+                  cvs_event be(ET_BRANCH, 0, curr_commit.path, cvs);
+                  be.branch = b;
+                  cvs.stk.top()->append_event(be);
+                  L(FL("added branch event for file %s in branch %s")
+                       % cvs.path_interner.lookup(curr_commit.path)
+                       % i->second);
+                }
             }
         }
 
-      // mark the ending-of-branch time of this file if we're just past a
-      // branchpoint
-      range = cvs.branchpoints.equal_range(next_version);
-      if (range.first != cvs.branchpoints.end()
-          && range.first->first == next_version)
+      if (!curr_commit.is_synthetic_branch_root)
         {
-          for (ity i = range.first; i != range.second; i++)
+          // mark the ending-of-branch time of this file if we're just past a
+          // branchpoint
+          range = cvs.branchpoints.equal_range(next_version);
+          if (range.first != cvs.branchpoints.end()
+              && range.first->first == next_version)
             {
-              cvs.push_branch(i->second, false);
-              shared_ptr<cvs_branch> b = cvs.stk.top();
-              b->note_commit_following_branchpoint(curr_commit.time);
-              cvs.pop_branch();
-              L(FL("noted following commit for file %s in branch %s")
-                   % cvs.path_interner.lookup(curr_commit.path)
-                   % i->second);
+              for (ity i = range.first; i != range.second; i++)
+                {
+                  cvs.push_branch(i->second, false);
+                  shared_ptr<cvs_branch> b = cvs.stk.top();
+                  b->note_commit_following_branchpoint(curr_commit.time);
+                  cvs.pop_branch();
+                  L(FL("noted following commit for file %s in branch %s [t:%d]")
+                       % cvs.path_interner.lookup(curr_commit.path)
+                       % i->second
+                       % curr_commit.time);
+                }
             }
         }
 
@@ -1144,7 +1169,7 @@ import_branch(cvs_history & cvs,
   cluster_consumer cons(cvs, app, branchname, *branch, n_revs);
   unsigned long commits_remaining = branch->lineage.size();
 
-  for (vector<cvs_event>::const_iterator i = branch->lineage.begin();
+  for (vector<cvs_event>::iterator i = branch->lineage.begin();
        i != branch->lineage.end(); ++i)
     {      
       commits_remaining--;
@@ -1159,6 +1184,8 @@ import_branch(cvs_history & cvs,
         }
       else
         {
+          // correct the cvs_event time of the branch event
+          i->time = i->branch->branch_time;
           L(FL("examining next event: branch [t:%d] [p:%s]\n")
             % i->time
             % cvs.path_interner.lookup(i->path));
@@ -1357,7 +1384,7 @@ import_cvs_repo(system_path const & cvsroot,
 
   I(cvs.stk.size() == 1);
 
-  //check branch times
+  // check branch times
   for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
           i != cvs.branches.end(); ++i)
     {
@@ -1397,7 +1424,10 @@ import_cvs_repo(system_path const & cvsroot,
 
   ticker n_revs(_("revisions"), "r", 1);
 
-  // first, sort the lineages of the trunk and all branches
+  // First, sort the lineages of the trunk and all branches. Thanks to the
+  // logic in the 'operator<' this correctly handles branch events, which
+  // have their time stored in branch->branch_time.
+  // This is updated in import_branch later on.
   L(FL("sorting lineage of trunk\n"));
   stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
   for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
@@ -1722,6 +1752,7 @@ cluster_consumer::consume_cluster(cvs_cluster const & c)
   else if (c.type == ET_BRANCH)
     {
       /* set the parent revision id of the branch */
+      L(FL("setting the parent revision id of branch at %d") % c.branch->branch_time);
       c.branch->parent_rid = parent_rid;
       c.branch->has_parent_rid = true;
     }

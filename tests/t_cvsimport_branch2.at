@@ -120,35 +120,49 @@ AT_CHECK(cvs -d $CVSROOT add testdir/file2, [], [ignore], [ignore])
 AT_CHECK(cvs -d $CVSROOT add testdir/changelog, [], [ignore], [ignore])
 AT_CHECK(cvs -d $CVSROOT commit -m 'initial import' testdir/file1 testdir/file2 testdir/changelog, [], [ignore], [ignore])
 
+AT_CHECK(sleep 2)
+
 # commit first changes
 AT_CHECK(cp file1.1 testdir/file1)
 AT_CHECK(cp changelog.1 testdir/changelog)
 AT_CHECK(cvs -d $CVSROOT commit -m 'first commit' testdir/file1 testdir/changelog, [], [ignore], [ignore])
 
+AT_CHECK(sleep 2)
+
 # now we create a branch A
 AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b A, [], [ignore], [ignore])
 AT_CHECK(cd testdir; cvs -d $CVSROOT up -r A, [], [ignore], [ignore])
+
+AT_CHECK(sleep 2)
 
 # alter the files on branch A
 AT_CHECK(cp file2.1 testdir/file2)
 AT_CHECK(cp changelog.3 testdir/changelog)
 AT_CHECK(cvs -d $CVSROOT commit -m 'commit on branch A' testdir/file2 testdir/changelog, [], [ignore], [ignore])
 
+AT_CHECK(sleep 2)
+
 # branch again into B
 AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b B, [], [ignore], [ignore])
 AT_CHECK(cd testdir; cvs -d $CVSROOT up -r B, [], [ignore], [ignore])
 # branch B is left untouched
+
+AT_CHECK(sleep 2)
 
 # go back to A and branch into C
 AT_CHECK(cvs -d $CVSROOT up -r A -A, [], [ignore], [ignore])
 AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b C, [], [ignore], [ignore])
 AT_CHECK(cd testdir; cvs -d $CVSROOT up -r C, [], [ignore], [ignore])
 
+AT_CHECK(sleep 2)
+
 # add a file3
 AT_CHECK(cp file3.0 testdir/file3)
 AT_CHECK(cp changelog.4 testdir/changelog)
 AT_CHECK(cd testdir; cvs -d $CVSROOT add file3, [], [ignore], [ignore])
 AT_CHECK(cd testdir; cvs -d $CVSROOT commit -m 'commit on branch C' file3 changelog, [], [ignore], [ignore])
+
+AT_CHECK(sleep 2)
 
 # branch into D
 AT_CHECK(cd testdir; cvs -d $CVSROOT tag -b D, [], [ignore], [ignore])
@@ -159,11 +173,15 @@ AT_CHECK(cp file3.1 testdir/file3)
 AT_CHECK(cp changelog.5 testdir/changelog)
 AT_CHECK(cd testdir; cvs -d $CVSROOT commit -m 'commit on branch D' file1 file2 file3 changelog, [], [ignore], [ignore])
 
+AT_CHECK(sleep 2)
+
 # and create some mainline changes after the branch
 AT_CHECK(cvs -d $CVSROOT up -A, [], [ignore], [ignore])
 AT_CHECK(cp file1.2 testdir/file1)
 AT_CHECK(cp changelog.2 testdir/changelog)
 AT_CHECK(cvs -d $CVSROOT commit -m 'commit on mainline after branch' testdir/file1 testdir/changelog, [], [ignore], [ignore])
+
+AT_CHECK(sleep 2)
 
 # import into monotone and check presence of files
 AT_CHECK(MTN --branch=test cvs_import $CVSROOT/testdir, [], [ignore], [ignore])

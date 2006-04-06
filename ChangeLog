@@ -1,3 +1,15 @@
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Moved cvs_event::operator< out of the
+	struct definition.
+	Now calling 'note_branchpoint' and adding a branch event
+	only if curr_commit is alive. Likewise with
+	note_commit_following_branchpoint
+
+	* tests/t_cvsimport_branch.at, tests/t_cvsimport_branch2.at:
+	added sleeps to allow cvs_import to distinguish branches
+	and commits by their timestamp.
+
 2006-04-07  Satoru SATOH <ss@gnome.gr.jp>
 
 	* po/ja.po: Updated Japanese translation.
