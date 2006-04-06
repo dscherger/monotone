@@ -103,6 +103,8 @@ cvs_branch
   bool has_parent_rid;
   time_t last_branchpoint;
   time_t first_commit;
+  time_t first_commit_after_branching;
+  time_t branch_time;
   revision_id parent_rid;
 
   map<cvs_path, cvs_version> live_at_beginning;
@@ -113,7 +115,9 @@ cvs_branch
       has_a_commit(false),
       has_parent_rid(false),
       last_branchpoint(0),
-      first_commit(0)
+      first_commit(0),
+      first_commit_after_branching(0),
+      branch_time(0)
   {
   }      
 
@@ -129,6 +133,15 @@ cvs_branch
           first_commit = now;
       }
     has_a_commit = true;
+  }
+
+  void note_commit_following_branchpoint(time_t now)
+  {
+    if ((first_commit_after_branching == 0)
+        || (now < first_commit_after_branching))
+      {
+        first_commit_after_branching = now;
+      }
   }
 
   void note_branchpoint(time_t now)
@@ -155,8 +168,11 @@ cvs_branch
   
   void append_event(cvs_event const & c) 
   {
-    I(c.time != 0);
-    if (c.type == ET_COMMIT) note_commit(c.time);
+    if (c.type == ET_COMMIT)
+      {
+        I(c.time != 0);
+        note_commit(c.time);
+      }
     lineage.push_back(c);
   }
 };
@@ -585,6 +601,7 @@ process_branch(string const & begin_version,
                cvs_history & cvs)
 {
   string curr_version = begin_version;
+  string prev_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece> 
                                            (begin_lines.begin(),
@@ -624,26 +641,43 @@ process_branch(string const & begin_version,
       if (range.first != cvs.branchpoints.end() 
           && range.first->first == curr_version)
         {
-          shared_ptr<cvs_branch> b;
-
           for (ity i = range.first; i != range.second; ++i)
             {
               cvs.push_branch(i->second, false);   
-              b = cvs.stk.top();
+              shared_ptr<cvs_branch> b = cvs.stk.top();
               if (curr_commit.alive)
                 b->live_at_beginning[cvs.curr_file_interned] = curr_commit.version;
               b->note_branchpoint(curr_commit.time);
               cvs.pop_branch();
-            }
 
-          // write a branch event with the same time as the last commit
-          // before branching, we rely on the sort logic to put the branch
-          // event after the commit
-          cvs_event be(ET_BRANCH, curr_commit.time, curr_commit.path, cvs);
-          be.branch = b;
-          cvs.stk.top()->append_event(be);
+              // write a branch event
+              cvs_event be(ET_BRANCH, 0, curr_commit.path, cvs);
+              be.branch = b;
+              cvs.stk.top()->append_event(be);
+              L(FL("added branch event for file %s in branch %s")
+                   % cvs.path_interner.lookup(curr_commit.path)
+                   % i->second);
+            }
         }
-                
+
+      // mark the ending-of-branch time of this file if we're just past a
+      // branchpoint
+      range = cvs.branchpoints.equal_range(prev_version);
+      if (range.first != cvs.branchpoints.end()
+          && range.first->first == prev_version)
+        {
+          for (ity i = range.first; i != range.second; i++)
+            {
+              cvs.push_branch(i->second, false);
+              shared_ptr<cvs_branch> b = cvs.stk.top();
+              b->note_commit_following_branchpoint(curr_commit.time);
+              cvs.pop_branch();
+              L(FL("noted following commit for file %s in branch %s")
+                   % cvs.path_interner.lookup(curr_commit.path)
+                   % i->second);
+            }
+        }
+
 
       // recursively follow any branch commits coming from the branchpoint
       boost::shared_ptr<rcs_delta> curr_delta = r.deltas.find(curr_version)->second;
@@ -680,6 +714,7 @@ process_branch(string const & begin_version,
           // advance
           curr_data = next_data;
           curr_id = next_id;
+          prev_version = curr_version;
           curr_version = next_version;
           swap(next_lines, curr_lines);
           next_lines->clear();
@@ -1126,8 +1161,9 @@ import_branch(cvs_history & cvs,
         }
       else
         {
-          L(FL("examining next event: branch [t:%d]\n")
-            % i->time);
+          L(FL("examining next event: branch [t:%d] [p:%s]\n")
+            % i->time
+            % cvs.path_interner.lookup(i->path));
         }
       
       // step 2: expire all clusters from the beginning of the set which
@@ -1156,16 +1192,16 @@ import_branch(cvs_history & cvs,
       for (cluster_set::const_iterator j = clusters.begin();
            j != clusters.end(); ++j)
         {          
-          L(FL("examining cluster %d to see if it touched %d\n")
+          L(FL("examining cluster %d to see if it touched %s\n")
             % clu++
-            % i->path);
+            % cvs.path_interner.lookup(i->path));
             
           cvs_cluster::entry_map::const_iterator k = (*j)->entries.find(i->path);
           if ((k != (*j)->entries.end())
               && (k->second.time > time_of_last_cluster_touching_this_file))
             {
-              L(FL("found cluster touching %d: [t:%d-%d] [a:%d] [c:%d]\n")
-                % i->path
+              L(FL("found cluster touching %s: [t:%d-%d] [a:%d] [c:%d]\n")
+                % cvs.path_interner.lookup(i->path)
                 % (*j)->start_time
                 % (*j)->end_time
                 % (*j)->author
@@ -1205,19 +1241,15 @@ import_branch(cvs_history & cvs,
         }
       else if (i->type == ET_BRANCH)
         {
-          // step 4: find a branchpoint cluster which starts on or after
-          // the last_modify_time, which doesn't modify the file in
-          // question, and which contains the same author and changelog
-          // as our commit
+          // step 4: find the branchpoint cluster for the branch in question
           for (cluster_set::const_iterator j = clusters.begin();
                j != clusters.end(); ++j)
             {
-              if (((*j)->start_time >= time_of_last_cluster_touching_this_file)
-                  && ((*j)->type == ET_BRANCH)
-                  && ((*j)->branch == i->branch)
+              if (((*j)->type == ET_BRANCH)
+                  // && ((*j)->branch == i->branch)
                   && ((*j)->entries.find(i->path) == (*j)->entries.end()))
                 {              
-                  L(FL("picked existing cluster (branchpoint) [t:%d-%d] [t:%d]\n")
+                  L(FL("picked existing cluster (branchpoint) [t:%d-%d]\n")
                     % (*j)->start_time
                     % (*j)->end_time);
 
@@ -1326,6 +1358,8 @@ import_cvs_repo(system_path const & cvsroot,
   }
 
   I(cvs.stk.size() == 1);
+
+  //TODO here: check branch times
 
   ticker n_revs(_("revisions"), "r", 1);
 
