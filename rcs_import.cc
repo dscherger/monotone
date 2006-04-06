@@ -601,7 +601,6 @@ process_branch(string const & begin_version,
                cvs_history & cvs)
 {
   string curr_version = begin_version;
-  string prev_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece> 
                                            (begin_lines.begin(),
@@ -662,9 +661,9 @@ process_branch(string const & begin_version,
 
       // mark the ending-of-branch time of this file if we're just past a
       // branchpoint
-      range = cvs.branchpoints.equal_range(prev_version);
+      range = cvs.branchpoints.equal_range(next_version);
       if (range.first != cvs.branchpoints.end()
-          && range.first->first == prev_version)
+          && range.first->first == next_version)
         {
           for (ity i = range.first; i != range.second; i++)
             {
@@ -714,7 +713,6 @@ process_branch(string const & begin_version,
           // advance
           curr_data = next_data;
           curr_id = next_id;
-          prev_version = curr_version;
           curr_version = next_version;
           swap(next_lines, curr_lines);
           next_lines->clear();
@@ -1359,7 +1357,43 @@ import_cvs_repo(system_path const & cvsroot,
 
   I(cvs.stk.size() == 1);
 
-  //TODO here: check branch times
+  //check branch times
+  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
+          i != cvs.branches.end(); ++i)
+    {
+      string branchname = i->first;
+      shared_ptr<cvs_branch> branch = i->second;
+
+      L(FL("checking branch time of branch %s\n") % branchname);
+
+      time_t branched_before = 0;
+      if (branch->has_a_commit)
+        branched_before = branch->first_commit;
+
+      if (branch->first_commit_after_branching > 0)
+        if ((branch->first_commit_after_branching < branched_before)
+            || (branched_before == 0))
+          {
+            branched_before = branch->first_commit_after_branching;
+          }
+
+      if (branch->last_branchpoint < branched_before)
+        {
+          branch->branch_time = branch->last_branchpoint +
+            ((branched_before - branch->last_branchpoint) / 2);
+          L(FL("guessing branchpoint time for branch %s: %d")
+               % branchname
+               % branch->branch_time);
+        }
+      else
+        {
+          L(FL("unable to find a branchpoint time for branch %s") % branchname);
+          L(FL("last branchpoint:             %d)") % branch->last_branchpoint);
+          L(FL("first commit in branch:       %d)") % branch->first_commit);
+          L(FL("first commit after branching: %d)") % branch->first_commit_after_branching);
+        }
+    }
+
 
   ticker n_revs(_("revisions"), "r", 1);
 
