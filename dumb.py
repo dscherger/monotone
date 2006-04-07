@@ -119,8 +119,16 @@ class Dumbtone:
             self.feeder = feeder
         def __call__(self, id, data):
             self.added += 1
-            self.feeder.write(zlib.decompress(data))
-    
+            if self.feeder.verbosity > 1:
+                # verbose op, splits the chunk in the individual packets,
+                # and reads them one by one
+                uncdata = zlib.decompress(data)
+                for pkt in uncdata.split("[end]"):
+                    if len(pkt)>1:
+                       self.feeder.write(pkt+"[end]")
+            else:
+                self.feeder.write(zlib.decompress(data))
+ 
     def do_push(self, local_url, target_url):
         print "Exporting changes from monotone db to %s" % (local_url,)
         self.do_export(local_url)
@@ -137,7 +145,7 @@ class Dumbtone:
         source_md = MerkleDir(readable_fs_for_url(source_url))
         self.monotone.ensure_db()
         feeder = self.monotone.feeder(self.verbosity)
-        fc = FeederCallback(feeder)
+        fc = Dumbtone.FeederCallback(feeder)
         local_md.pull(source_md, fc)
         feeder.close()
         print "Pulled and imported %s packets from %s" % (fc.added, source_url)
@@ -149,7 +157,7 @@ class Dumbtone:
         local_md = MerkleDir(writeable_fs_for_url(local_url))
         other_md = MerkleDir(writeable_fs_for_url(other_url))
         feeder = self.monotone.feeder(self.verbosity)
-        pull_fc = FeederCallback(feeder)
+        pull_fc = Dumbtone.FeederCallback(feeder)
         push_c = Dumbtone.CounterCallback()
         local_md.sync(other_md, pull_fc, push_c)
         feeder.close()
