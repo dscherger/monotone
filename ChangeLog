@@ -142,6 +142,18 @@
 
 	* NEWS: Complete (?) draft of 0.26 release notes.
 
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Moved cvs_event::operator< out of the
+	struct definition.
+	Now calling 'note_branchpoint' and adding a branch event
+	only if curr_commit is alive. Likewise with
+	note_commit_following_branchpoint
+
+	* tests/t_cvsimport_branch.at, tests/t_cvsimport_branch2.at:
+	added sleeps to allow cvs_import to distinguish branches
+	and commits by their timestamp.
+
 2006-04-07  Satoru SATOH <ss@gnome.gr.jp>
 
 	* po/ja.po: Updated Japanese translation.
@@ -156,6 +168,16 @@
 	generates a log, which...
 	In user_interface::output_prefix, still check if prog_name is
 	empty, and output something harmless if it is.
+
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Added the real branch time detection logic
+	and fixed some bugs in the previous commit.
+
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Improved branch time detection and some debug
+	messages.
 
 2006-04-05  Nathaniel Smith  <njs@pobox.com>
 
@@ -469,21 +491,6 @@
 	* revision.cc (build_changesets_from_manifest_ancestry) 
 	(build_roster_style_revs_from_manifest_style_revs): Call it.
 	* tests/t_rosterify_on_rosterified_db.at, testsuite.at: New test.
-
-2006-03-27  Matthew Gregan  <kinetik@orcon.net.nz>
-
-	* idna/nfkc.c, popt/popt.c, popt/popt.h, popt/popthelp.c: Warning
-	cleanups.
-
-2006-03-25  Matthew Gregan  <kinetik@orcon.net.nz>
-
-	* diff_patch.cc, hash_map.hh, lua/lua.h, mkstemp.cc, monotone.cc,
-	platform.hh, rcs_file.cc, sanity.hh, ui.cc, vocab.hh: config.h
-	cleanups--ensure it is included before any other includes, and
-	that we use "", rather than <>.
-
-	* idna/version.c: Use STRINGPREP_VERSION rather than VERSION,
-	which just happens to be defined to the monotone version number.
 
 2006-03-24  Richard Levitte  <richard@levitte.org>
 
