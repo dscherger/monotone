@@ -1,3 +1,116 @@
+2006-04-07  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (distcleancheck_listfiles): Another try at this...
+
+2006-04-07  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (distcleancheck_listfiles): Attempt to teach
+	distcheck that it's okay that distclean does not remove
+	package_revision.txt and package_full_revision_dist.txt files.
+	Untested, because the test is taking ages and I want to go to
+	sleep, so good luck :-).
+
+2006-04-07  Nathaniel Smith  <njs@pobox.com>
+
+	* figures/README: Add note on PNGs.
+	* figures/{manifest,file-id-manifest-id,revision-chaining,revision}.png:
+	Regenerate PNGs.
+	
+2006-04-07  Nathaniel Smith  <njs@pobox.com>
+
+	* figures/oo-figures.sxd: Sigh, accidentally discarded the changes
+	I had to make since the fonts changed and the arrows/boxes became
+	incorrect.  This redoes them, to approximately match the version
+	used to generate the current pdf files.
+
+2006-04-07  Nathaniel Smith  <njs@pobox.com>
+
+	* figures/README: More notes.
+	* figures/oo-figures.sxd: No idea what changed about this file,
+	don't care.
+	* figures/{manifest,file-id-manifest-id,revision-chaining,revision}:
+	Finally managed to get proper pdfs out of OpenOffice.  Committing
+	now before I have a chance to screw things up.
+	
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* figures/README: New file.
+	* figures/oo-figures.sxd: Write into the file the filename that
+	each figure should be exported to.  I'll actually do the exports
+	later...
+	
+2006-04-07  Benoît Dejean  <benoit@placenet.org>
+
+	* ui.{cc,hh}: Use untranslated ticker name as key in ui.tickers
+	to prevent buggy translations from crashing monotone.
+
+2006-04-07  Benoît Dejean  <benoit@placenet.org>
+
+	* po/fr.po: Fixed.
+
+2006-04-07  Benoît Dejean  <benoit@placenet.org>
+
+	* po/fr.po: Replaced nice unicode arrows with long strings.
+
+2006-04-07  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.cc: Remove libgen.h and basename(), replace with
+	equivalent from boost::filesystem.
+
+	* sqlite/*: Import SQLite 3.3.5.
+
+	* tests/t_mtn_ignore.at: Shuffle the output grepping tests a bit
+	to make failure cases more obvious.
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (mostlyclean-local): Delete
+	package_full_revision.txt, not package_full_revision_dist.txt.
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+	
+	* monotone.texi: Fix up the ascii diagrams in the early sections
+	to match current data formats.  Fix up sample output similarly.
+	Fix even more places where we say "monotone" to refer to the
+	command.
+	* figures/oo-figures.sxd: Update graphical figures to match
+	current data formats.
+	
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi: Fix a bunch more places where we say "monotone"
+	to refer to the command name.
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi: .mt-attrs?  Never heard of it...
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* po/LINGUAS: Add de.
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Go ahead and add a note about sqlite 3.3, since
+	incompatibility with the 3.2 command line client has apparently
+	bitten at least two of us.
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (package_full_revision_*.txt): Try this again,
+	hopefully now 'distcheck' will work in a clean dir on systems that
+	have no mtn binary.
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* UPGRADE: Expand and hopefully clarify 0.26 upgrading notes.
+	Also add a paragraph at the top to explain how the file is
+	organized (maybe this should have been there a long time ago...)
+
+2006-04-06  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Complete (?) draft of 0.26 release notes.
+
 2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
 
 	* rcs_import.cc: Moved cvs_event::operator< out of the
