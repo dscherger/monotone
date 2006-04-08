@@ -190,4 +190,12 @@ void
 parse_edge(basic_io::parser & parser,
            edge_map & es);
 
+// exposed to make implementation of clobber easier
+void 
+analyze_manifest_changes(app_state & app,
+                         manifest_id const & parent, 
+                         manifest_id const & child, 
+                         std::set<file_path> const & need_history_splitting,
+                         change_set & cs)
+
 #endif // __REVISION_HH__

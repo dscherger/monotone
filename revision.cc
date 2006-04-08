@@ -1068,7 +1068,7 @@ calculate_arbitrary_change_set(revision_id const & start,
 // real enough error case that we need support code for it.
 
 
-static void 
+void 
 analyze_manifest_changes(app_state & app,
                          manifest_id const & parent, 
                          manifest_id const & child, 

@@ -3159,6 +3159,105 @@ try_one_merge(revision_id const & left_id,
 }                         
 
 
+// This is a quick and dirty hack to implement a 'explicit_clobber' command,
+// for the use of the OpenEmbedded team.
+static void 
+do_clobber_merge(revision_id const & winner_id,
+                 revision_id const & loser_id,
+                 revision_id & merged_id,
+                 app_state & app)
+{
+  revision_id anc_id;
+  revision_set winner_rev, loser_rev, anc_rev, merged_rev;
+
+  app.db.get_revision(winner_id, winner_rev);
+  app.db.get_revision(loser_id, loser_rev);
+  
+  packet_db_writer dbw(app);    
+    
+  manifest_map anc_man, winner_man, loser_man;
+  
+  boost::shared_ptr<change_set>
+    anc_to_winner(new change_set()), 
+    anc_to_loser(new change_set()), 
+    winner_to_merged(new change_set()), 
+    loser_to_merged(new change_set());
+  
+  app.db.get_manifest(loser_rev.new_manifest, loser_man);
+  app.db.get_manifest(winner_rev.new_manifest, winner_man);
+  
+  // Make sure that we can't create malformed graphs where the left parent is
+  // a descendent or ancestor of the right, or where both parents are equal,
+  // etc.
+  {
+    set<revision_id> ids;
+    ids.insert(winner_id);
+    ids.insert(loser_id);
+    erase_ancestors(ids, app);
+    I(ids.size() == 2);
+  }
+
+  N(find_least_common_ancestor(winner_id, loser_id, anc_id, app),
+    F("no common ancestor found"));
+  app.db.get_revision(anc_id, anc_rev);
+  app.db.get_manifest(anc_rev.new_manifest, anc_man);
+      
+  calculate_composite_change_set(anc_id, winner_id, app, *anc_to_winner);
+  calculate_composite_change_set(anc_id, loser_id, app, *anc_to_loser);
+  
+  std::set<revision_id> kill_from_winner, kill_from_loser;
+  std::set_difference(anc_to_winner->rearrangement.deleted_files.begin(),
+                      anc_to_winner->rearrangement.deleted_files.end(),
+                      anc_to_loser->rearrangement.deleted_files.begin(),
+                      anc_to_loser->rearrangement.deleted_files.end(),
+                      std::inserter(kill_from_loser, kill_from_loser.begin()));
+  std::set_difference(anc_to_loser->rearrangement.deleted_files.begin(),
+                      anc_to_loser->rearrangement.deleted_files.end(),
+                      anc_to_winner->rearrangement.deleted_files.begin(),
+                      anc_to_winner->rearrangement.deleted_files.end(),
+                      std::inserter(kill_from_winner, kill_from_winner.begin()));
+
+  merge_provider merger(app, anc_man, winner_man, loser_man);
+  
+  merge_change_sets(*anc_to_left, *anc_to_right, 
+                    *winner_to_merged, *loser_to_merged,
+                    merger, app);
+  
+  {
+    manifest_map tmp;
+    apply_change_set(anc_man, *anc_to_winner, tmp);
+    apply_change_set(tmp, *winner_to_merged, merged_man);
+    calculate_ident(merged_man, merged_rev.new_manifest);
+    delta winner_mdelta, loser_mdelta;
+    diff(winner_man, merged_man, winner_mdelta);
+    diff(loser_man, merged_man, loser_mdelta);
+    dbw.consume_manifest_delta(winner_rev.new_manifest, 
+                               merged_rev.new_manifest, winner_mdelta);
+    dbw.consume_manifest_delta(loser_rev.new_manifest, 
+                               merged_rev.new_manifest, loser_mdelta);
+  }
+
+  merged_rev.edges.insert(std::make_pair(winner_id,
+                                         std::make_pair(winner_rev.new_manifest,
+                                                        winner_to_merged)));
+  merged_rev.edges.insert(std::make_pair(loser_id,
+                                         std::make_pair(loser_rev.new_manifest,
+                                                        loser_to_merged)));
+  revision_data merged_data;
+  write_revision_set(merged_rev, merged_data);
+  calculate_ident(merged_data, merged_id);
+  dbw.consume_revision_data(merged_id, merged_data);
+  if (app.date().length() > 0)
+    cert_revision_date_time(merged_id, string_to_datetime(app.date()), app, dbw);
+  else
+    cert_revision_date_now(merged_id, app, dbw);
+  if (app.author().length() > 0)
+    cert_revision_author(merged_id, app.author(), app, dbw);
+  else
+    cert_revision_author_default(merged_id, app, dbw);
+}                         
+
+
 CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
     OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR % OPT_LCA)
 {
