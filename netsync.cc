@@ -1060,7 +1060,7 @@ session::get_heads_and_consume_certs( set<revision_id> & heads )
                   && (k->ident == hexenc<id>("6e205d2fe108f337e62ed13f8db67e9a2e70c954")
                       || k->ident == hexenc<id>("78a4544b0da0db7bef0ee08f054a51321fc0d271")))
                 // this cert is evil!  we shall discard it, with comment!
-                P(F("received a cert we don't want, from %s") % remote_peer_key_name);
+                P(F("received a cert we don't want, from %s; discarding") % remote_peer_key_name);
               else
                 this->dbw.consume_revision_cert(revision<cert>(*k));
             }
