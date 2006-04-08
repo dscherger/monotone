@@ -2,6 +2,7 @@ import subprocess
 import threading
 import os.path
 import re
+import zlib
 
 class MonotoneError (Exception):
     pass
@@ -20,7 +21,7 @@ class Feeder:
     # this is technically broken; we might deadlock.
     # subprocess.Popen.communicate uses threads to do this; that'd be
     # better.
-    def write(self, data):
+    def _write(self, data):
         if self.process is None:
             self.process = subprocess.Popen(self.args,
                                             stdin=subprocess.PIPE,
@@ -29,11 +30,26 @@ class Feeder:
         self.process.stdin.write(data)
         if self.verbosity>1:
             # processing every single call with a new process
+            # to give immediate error reporting
             stdout, stderr = self.process.communicate()
             print "writing: >>>",data,"<<<\n",stdout,stderr
             if self.process.returncode:
                 raise MonotoneError, stderr
             self.process = None
+
+    # uncompresses and writes the data 
+    def write(self, data):
+        # first, uncompress data
+        uncdata = zlib.decompress(data)
+
+        if self.verbosity > 1:
+            # verbose op, splits the chunk in the individual packets,
+            # and reads them one by one
+            for pkt in uncdata.split("[end]"):
+                if len(pkt)>1:
+                   self._write(pkt+"[end]")
+        else:
+            self._write(uncdata)
 
     def close(self):
         if self.process is None:

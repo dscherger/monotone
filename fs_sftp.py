@@ -8,10 +8,10 @@ import base64
 
 # All of this heavily cribbed from demo{,_simple}.py in the paramiko
 # distribution, which is LGPL.
-def load_host_keys():
+def load_host_keys(hostkeyfile):
     # this file won't exist on windows, but windows doesn't have a standard
     # location for this file anyway.
-    filename = os.path.expanduser('~/.ssh/known_hosts')
+    filename = os.path.expanduser(hostkeyfile)
     keys = {}
     try:
         f = open(filename, 'r')
@@ -56,20 +56,37 @@ def get_user_password_host_port(hostspec):
         password = getpass.getpass("Password for %s@%s: " % (username, hostname))
     return username, password, hostname, port
 
-def get_host_key(hostname):
-    hkeys = load_host_keys()
+def get_host_key(hostname, hostkeyfile):
+    hkeys = load_host_keys(hostkeyfile)
     if hkeys.has_key(hostname):
         return hkeys[hostname].values()[0]
     else:
         return None
 
 class SFTPReadableFS(fs.ReadableFS):
-    def __init__(self, hostspec, path):
+    def __init__(self, hostspec, path, **kwargs):
         self.dir = path
         username, password, hostname, port = get_user_password_host_port(hostspec)
-        hostkey = get_host_key(hostname)
+
+        hostkeyfile = kwargs.get('hostfile','~/.ssh/known_hosts')
+        hostkey = get_host_key(hostname, hostkeyfile)
+
+        key = None
+        if kwargs.has_key("dsskey"):
+            keypath=os.path.expanduser(kwargs["dsskey"])
+            key = paramiko.DSSKey.from_private_key_file(keypath, 
+                                password=password)
+        elif kwargs.has_key("rsakey"):
+            keypath=os.path.expanduser(kwargs["rsakey"])
+            key = paramiko.RSAKey.from_private_key_file(keypath, 
+                                password=password)
+
         self.transport = paramiko.Transport((hostname, port))
-        self.transport.connect(username=username, password=password,
+        if key:
+            self.transport.connect(username=username, pkey=key,
+                               hostkey=hostkey)
+        else:
+            self.transport.connect(username=username, password=password,
                                hostkey=hostkey)
         self.client = self.transport.open_sftp_client()
         

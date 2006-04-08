@@ -6,7 +6,6 @@ from cStringIO import StringIO
 from merkle_dir import MerkleDir, LockError
 from fs import readable_fs_for_url, writeable_fs_for_url
 from monotone import Monotone
-import zlib
 
 class Dumbtone:
 
@@ -29,17 +28,8 @@ class Dumbtone:
         self.monotone.ensure_db()
         md = MerkleDir(readable_fs_for_url(url))
         feeder = self.monotone.feeder(self.verbosity)
-        if self.verbosity > 1:
-            # verbose op, splits the chunk in the individual packets,
-            # and reads them one by one
-            for id, data in md.all_chunks():
-                uncdata = zlib.decompress(data)
-                for pkt in uncdata.split("[end]"):
-                    if len(pkt)>1:
-                       feeder.write(pkt+"[end]")
-        else:
-            for id, data in md.all_chunks():
-                feeder.write(zlib.decompress(data))
+        for id, data in md.all_chunks():
+            feeder.write(data)
         feeder.close()
     
     def do_export(self, url):
@@ -119,30 +109,22 @@ class Dumbtone:
             self.feeder = feeder
         def __call__(self, id, data):
             self.added += 1
-            if self.feeder.verbosity > 1:
-                # verbose op, splits the chunk in the individual packets,
-                # and reads them one by one
-                uncdata = zlib.decompress(data)
-                for pkt in uncdata.split("[end]"):
-                    if len(pkt)>1:
-                       self.feeder.write(pkt+"[end]")
-            else:
-                self.feeder.write(zlib.decompress(data))
+            self.feeder.write(data)
  
-    def do_push(self, local_url, target_url):
+    def do_push(self, local_url, target_url, **kwargs):
         print "Exporting changes from monotone db to %s" % (local_url,)
         self.do_export(local_url)
         print "Pushing changes from %s to %s" % (local_url, target_url)
-        local_md = MerkleDir(readable_fs_for_url(local_url))
-        target_md = MerkleDir(writeable_fs_for_url(target_url))
+        local_md = MerkleDir(readable_fs_for_url(local_url, **kwargs))
+        target_md = MerkleDir(writeable_fs_for_url(target_url, **kwargs))
         c = Dumbtone.CounterCallback()
         local_md.push(target_md, c)
         print "Pushed %s packets to %s" % (c.added, target_url)
     
-    def do_pull(self, local_url, source_url):
+    def do_pull(self, local_url, source_url, **kwargs):
         print "Pulling changes from %s to %s" % (source_url, local_url)
-        local_md = MerkleDir(writeable_fs_for_url(local_url))
-        source_md = MerkleDir(readable_fs_for_url(source_url))
+        local_md = MerkleDir(writeable_fs_for_url(local_url, **kwargs))
+        source_md = MerkleDir(readable_fs_for_url(source_url, **kwargs))
         self.monotone.ensure_db()
         feeder = self.monotone.feeder(self.verbosity)
         fc = Dumbtone.FeederCallback(feeder)
@@ -150,12 +132,12 @@ class Dumbtone:
         feeder.close()
         print "Pulled and imported %s packets from %s" % (fc.added, source_url)
     
-    def do_sync(self, local_url, other_url):
+    def do_sync(self, local_url, other_url, **kwargs):
         print "Exporting changes from monotone db to %s" % (local_url,)
         self.do_export(local_url)
         print "Synchronizing %s and %s" % (local_url, other_url)
-        local_md = MerkleDir(writeable_fs_for_url(local_url))
-        other_md = MerkleDir(writeable_fs_for_url(other_url))
+        local_md = MerkleDir(writeable_fs_for_url(local_url, **kwargs))
+        other_md = MerkleDir(writeable_fs_for_url(other_url, **kwargs))
         feeder = self.monotone.feeder(self.verbosity)
         pull_fc = Dumbtone.FeederCallback(feeder)
         push_c = Dumbtone.CounterCallback()

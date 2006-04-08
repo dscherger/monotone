@@ -10,7 +10,7 @@ class BadURL(Exception):
 # This is necessary to properly parse sftp:// urls
 urlparse.uses_netloc.append("sftp")
 
-def readable_fs_for_url(url):
+def readable_fs_for_url(url, **kwargs):
     (scheme, host, path, query, frag) = urlparse.urlsplit(url, "file")
     if scheme == "file":
         assert not host
@@ -20,18 +20,18 @@ def readable_fs_for_url(url):
         return fs_read_httpftp.HTTPFTPReadableFS(url)
     elif scheme == "sftp":
         import fs_sftp
-        return fs_sftp.SFTPReadableFS(host, path)
+        return fs_sftp.SFTPReadableFS(host, path, **kwargs)
     else:
         raise BadURL, url
 
-def writeable_fs_for_url(url):
+def writeable_fs_for_url(url, **kwargs):
     (scheme, host, path, query, frag) = urlparse.urlsplit(url, "file")
     if scheme == "file":
         assert not host
         return LocalWriteableFs(path)
     elif scheme == "sftp":
         import fs_sftp
-        return fs_sftp.SFTPWriteableFS(host, path)
+        return fs_sftp.SFTPWriteableFS(host, path, **kwargs)
     else:
         raise BadURL, url
 
