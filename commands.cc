@@ -3177,11 +3177,7 @@ do_clobber_merge(revision_id const & winner_id,
     
   manifest_map anc_man, winner_man, loser_man;
   
-  boost::shared_ptr<change_set>
-    anc_to_winner(new change_set()), 
-    anc_to_loser(new change_set()), 
-    winner_to_merged(new change_set()), 
-    loser_to_merged(new change_set());
+  change_set anc_to_winner, anc_to_loser, winner_to_merged, loser_to_merged;
   
   app.db.get_manifest(loser_rev.new_manifest, loser_man);
   app.db.get_manifest(winner_rev.new_manifest, winner_man);
@@ -3202,20 +3198,39 @@ do_clobber_merge(revision_id const & winner_id,
   app.db.get_revision(anc_id, anc_rev);
   app.db.get_manifest(anc_rev.new_manifest, anc_man);
       
-  calculate_composite_change_set(anc_id, winner_id, app, *anc_to_winner);
-  calculate_composite_change_set(anc_id, loser_id, app, *anc_to_loser);
+  calculate_composite_change_set(anc_id, winner_id, app, anc_to_winner);
+  calculate_composite_change_set(anc_id, loser_id, app, anc_to_loser);
   
   std::set<revision_id> kill_from_winner, kill_from_loser;
-  std::set_difference(anc_to_winner->rearrangement.deleted_files.begin(),
-                      anc_to_winner->rearrangement.deleted_files.end(),
-                      anc_to_loser->rearrangement.deleted_files.begin(),
-                      anc_to_loser->rearrangement.deleted_files.end(),
+  std::set_difference(anc_to_winner.rearrangement.deleted_files.begin(),
+                      anc_to_winner.rearrangement.deleted_files.end(),
+                      anc_to_loser.rearrangement.deleted_files.begin(),
+                      anc_to_loser.rearrangement.deleted_files.end(),
                       std::inserter(kill_from_loser, kill_from_loser.begin()));
-  std::set_difference(anc_to_loser->rearrangement.deleted_files.begin(),
-                      anc_to_loser->rearrangement.deleted_files.end(),
-                      anc_to_winner->rearrangement.deleted_files.begin(),
-                      anc_to_winner->rearrangement.deleted_files.end(),
+  std::set_difference(anc_to_loser.rearrangement.deleted_files.begin(),
+                      anc_to_loser.rearrangement.deleted_files.end(),
+                      anc_to_winner.rearrangement.deleted_files.begin(),
+                      anc_to_winner.rearrangement.deleted_files.end(),
                       std::inserter(kill_from_winner, kill_from_winner.begin()));
+
+  if (!kill_from_winner.empty())
+    {
+      P(F("from winner, breaking history for files:"));
+      for (std::set<revision_id>::const_iterator i = kill_from_winner.begin();
+           i != kill_from_winner.end(); ++i)
+        P(F("    %s") % *i);
+    }
+  analyze_manifest_changes(app, winner_rev.new_manifest, winner_rev.new_manifest,
+                           kill_from_winner, winner_to_merged);
+  if (!kill_from_loser.empty())
+    {
+      P(F("from loser, breaking history for files:"));
+      for (std::set<revision_id>::const_iterator i = kill_from_loser.begin();
+           i != kill_from_loser.end(); ++i)
+        P(F("    %s") % *i);
+    }
+  analyze_manifest_changes(app, loser_rev.new_manifest, winner_rev.new_manifest,
+                           kill_from_loser, loser_to_merged);
 
   merge_provider merger(app, anc_man, winner_man, loser_man);
   
@@ -3227,15 +3242,12 @@ do_clobber_merge(revision_id const & winner_id,
     manifest_map tmp;
     apply_change_set(anc_man, *anc_to_winner, tmp);
     apply_change_set(tmp, *winner_to_merged, merged_man);
-    calculate_ident(merged_man, merged_rev.new_manifest);
-    delta winner_mdelta, loser_mdelta;
-    diff(winner_man, merged_man, winner_mdelta);
-    diff(loser_man, merged_man, loser_mdelta);
-    dbw.consume_manifest_delta(winner_rev.new_manifest, 
-                               merged_rev.new_manifest, winner_mdelta);
-    dbw.consume_manifest_delta(loser_rev.new_manifest, 
-                               merged_rev.new_manifest, loser_mdelta);
+    MM(tmp);
+    MM(winner_man);
+    I(tmp == winner_man);
   }
+  
+  merged_rev.new_manifest = winner_rev.new_manifest;
 
   merged_rev.edges.insert(std::make_pair(winner_id,
                                          std::make_pair(winner_rev.new_manifest,
@@ -3397,6 +3409,51 @@ CMD(refresh_inodeprints, N_("tree"), "", N_("refresh the inodeprint cache"),
 {
   enable_inodeprints();
   maybe_update_inodeprints(app);
+}
+
+CMD(explicit_clobber, N_("tree"),
+    N_("WINNER-REVISION LOSER-REVISION DEST-BRANCH"),
+    N_("'merge' two explicitly given revisions, in such a way that the result\n"
+       "is identical to the WINNER-REVISION"),
+    OPT_DATE % OPT_AUTHOR)
+{
+  revision_id winner, loser;
+  string branch;
+  if (args.size() != 3)
+    throw usage(name);
+
+  complete(app, idx(args, 0)(), left);
+  complete(app, idx(args, 1)(), loser);
+  branch = idx(args, 2)();
+
+  N(!(winner == loser),
+    F("%s and %s are the same revision, aborting") % winner % loser);
+  N(!is_ancestor(winner, loser, app),
+    F("%s is already an ancestor of %s") % winner % loser);
+  N(!is_ancestor(loser, winner, app),
+    F("%s is already an ancestor of %s") % loser % winner);
+
+  // Somewhat redundant, but consistent with output of plain "merge" command.
+  P(F("[winner] %s\n") % winner);
+  P(F("[loser] %s\n") % loser);
+
+  revision_id merged;
+  transaction_guard guard(app.db);
+  do_clobber_merge(winner, loser, merged, app);
+  
+  packet_db_writer dbw(app);
+  
+  cert_revision_in_branch(merged, branch, app, dbw);
+  
+  string log = (boost::format("explicit_clobber of '%s'\n"
+                              "                 by '%s'\n"
+                              "          to branch '%s'\n")
+                % loser % winner % branch).str();
+  
+  cert_revision_changelog(merged, log, app, dbw);
+  
+  guard.commit();      
+  P(F("[merged] %s\n") % merged);
 }
 
 CMD(explicit_merge, N_("tree"),
