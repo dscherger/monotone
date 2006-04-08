@@ -1056,7 +1056,13 @@ session::get_heads_and_consume_certs( set<revision_id> & heads )
           for (vector<cert>::iterator k = j->second.begin();
               k != j->second.end(); ++k)
             {
-              this->dbw.consume_revision_cert(revision<cert>(*k));
+              if (k->name == cert_name("branch")
+                  && (k->ident == hexenc<id>("6e205d2fe108f337e62ed13f8db67e9a2e70c954")
+                      || k->ident == hexenc<id>("78a4544b0da0db7bef0ee08f054a51321fc0d271")))
+                // this cert is evil!  we shall discard it, with comment!
+                P(F("received a cert we don't want, from %s") % remote_peer_key_name);
+              else
+                this->dbw.consume_revision_cert(revision<cert>(*k));
             }
         }
     }
@@ -1516,14 +1522,14 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       if (expected_key_hash() != their_key_hash())
         {
           P(F("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-	      "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
-	      "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-	      "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY\n"
-	      "it is also possible that the server key has just been changed\n"
-	      "remote host sent key %s\n"
-	      "I expected %s\n"
-	      "'monotone unset %s %s' overrides this check\n")
-	    % their_key_hash % expected_key_hash
+              "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
+              "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
+              "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY\n"
+              "it is also possible that the server key has just been changed\n"
+              "remote host sent key %s\n"
+              "I expected %s\n"
+              "'monotone unset %s %s' overrides this check\n")
+            % their_key_hash % expected_key_hash
             % their_key_key.first % their_key_key.second);
           E(false, F("server key changed"));
         }
@@ -1531,8 +1537,8 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
   else
     {
       P(F("first time connecting to server %s\n"
-	  "I'll assume it's really them, but you might want to double-check\n"
-	  "their key's fingerprint: %s\n") % peer_id % their_key_hash);
+          "I'll assume it's really them, but you might want to double-check\n"
+          "their key's fingerprint: %s\n") % peer_id % their_key_hash);
       app.db.set_var(their_key_key, var_value(their_key_hash()));
     }
   if (!app.db.public_key_exists(their_key_hash))
@@ -2597,7 +2603,7 @@ session::process_data_cmd(netcmd_item_type type,
           L(F("revision '%s' already exists in our database\n") % hitem);
         else
           {
-	    L(F("received revision '%s'\n") % hitem);
+            L(F("received revision '%s'\n") % hitem);
             boost::shared_ptr< pair<revision_data, revision_set > > 
               rp(new pair<revision_data, revision_set>());
             
