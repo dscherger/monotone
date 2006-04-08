@@ -1,3 +1,51 @@
+2006-04-08  Nathaniel Smith  <njs@pobox.com>
+
+	* netxx/resolve_gethostbyname.cxx (resolve_hostname): #ifdef out
+	Win32-incompatible error reporting call.
+
+2006-04-08  Nathaniel Smith  <njs@pobox.com>
+
+	* netsync.cc, annotate.cc: Turn all ticker labels from _() to
+	N_(), to match Benoît's changes to the ticker class.
+
+2006-04-08  Nathaniel Smith  <njs@pobox.com>
+
+	* AUTHORS: Add Thomas Keller.
+
+2006-04-08  Nathaniel Smith  <njs@pobox.com>
+
+	* Makefile.am (distcleancheck_listfiles): Third time's
+	the... charm?
+
+2006-04-08  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.cc: Oops, needed to include
+	boost/filesystem/convenience.hpp too.
+
+	* monotone.cc (cpp_main): Exclude .exe extension by using
+	fs::basename rather than path.leaf().
+
+2006-04-08  Richard Levitte  <richard@levitte.org>
+
+	* netxx/resolve_gethostbyname.cxx (resolve_hostname),
+	* netxx/resolve_getaddrinfo.cxx (resolve_hostname): Include the
+	error string associated with the error returned by getaddrinfo()
+	and gethostbyname() in the exception text.
+
+	* netsync.cc (serve_connections): When socket() fails in Netxx,
+	it throws a Netxx::Exception rather than a
+	Netxx::NetworkException, so we need to catch that as well.  This
+	should solve the problems some have experienced when they don't
+	have a IPv6 stack and try to run a IPv6-enabled monotone.
+
+2006-04-08  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: A phrase was changed in command.cc...
+
+2006-04-07  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: A few untranslated ones appeared.
+
 2006-04-07  Markus Schiltknecht  <markus@bluegap.ch>
 
 	* ChangeLog: Reinserted lost entries which got lost
@@ -257,7 +305,6 @@
 2006-04-05  Lapo Luchini  <lapo@lapo.it>
 
 	* po/it.po: Changed "in/out" translations as graphical arrows.
-
 
 2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
 
