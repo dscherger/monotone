@@ -3175,9 +3175,10 @@ do_clobber_merge(revision_id const & winner_id,
   
   packet_db_writer dbw(app);    
     
-  manifest_map anc_man, winner_man, loser_man;
+  manifest_map anc_man, winner_man, loser_man, merged_man;
   
-  change_set anc_to_winner, anc_to_loser, winner_to_merged, loser_to_merged;
+  change_set anc_to_winner, anc_to_loser;
+  boost::shared_ptr<change_set> winner_to_merged(new change_set()), loser_to_merged(new change_set());
   
   app.db.get_manifest(loser_rev.new_manifest, loser_man);
   app.db.get_manifest(winner_rev.new_manifest, winner_man);
@@ -3201,7 +3202,7 @@ do_clobber_merge(revision_id const & winner_id,
   calculate_composite_change_set(anc_id, winner_id, app, anc_to_winner);
   calculate_composite_change_set(anc_id, loser_id, app, anc_to_loser);
   
-  std::set<revision_id> kill_from_winner, kill_from_loser;
+  std::set<file_path> kill_from_winner, kill_from_loser;
   std::set_difference(anc_to_winner.rearrangement.deleted_files.begin(),
                       anc_to_winner.rearrangement.deleted_files.end(),
                       anc_to_loser.rearrangement.deleted_files.begin(),
@@ -3216,31 +3217,25 @@ do_clobber_merge(revision_id const & winner_id,
   if (!kill_from_winner.empty())
     {
       P(F("from winner, breaking history for files:"));
-      for (std::set<revision_id>::const_iterator i = kill_from_winner.begin();
+      for (std::set<file_path>::const_iterator i = kill_from_winner.begin();
            i != kill_from_winner.end(); ++i)
         P(F("    %s") % *i);
     }
   analyze_manifest_changes(app, winner_rev.new_manifest, winner_rev.new_manifest,
-                           kill_from_winner, winner_to_merged);
+                           kill_from_winner, *winner_to_merged);
   if (!kill_from_loser.empty())
     {
       P(F("from loser, breaking history for files:"));
-      for (std::set<revision_id>::const_iterator i = kill_from_loser.begin();
+      for (std::set<file_path>::const_iterator i = kill_from_loser.begin();
            i != kill_from_loser.end(); ++i)
         P(F("    %s") % *i);
     }
   analyze_manifest_changes(app, loser_rev.new_manifest, winner_rev.new_manifest,
-                           kill_from_loser, loser_to_merged);
+                           kill_from_loser, *loser_to_merged);
 
-  merge_provider merger(app, anc_man, winner_man, loser_man);
-  
-  merge_change_sets(*anc_to_left, *anc_to_right, 
-                    *winner_to_merged, *loser_to_merged,
-                    merger, app);
-  
   {
     manifest_map tmp;
-    apply_change_set(anc_man, *anc_to_winner, tmp);
+    apply_change_set(anc_man, anc_to_winner, tmp);
     apply_change_set(tmp, *winner_to_merged, merged_man);
     MM(tmp);
     MM(winner_man);
@@ -3422,7 +3417,7 @@ CMD(explicit_clobber, N_("tree"),
   if (args.size() != 3)
     throw usage(name);
 
-  complete(app, idx(args, 0)(), left);
+  complete(app, idx(args, 0)(), winner);
   complete(app, idx(args, 1)(), loser);
   branch = idx(args, 2)();
 
