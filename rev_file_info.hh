@@ -16,6 +16,9 @@
 #ifndef __REV_FILE_INFO_HH__
 #define __REV_FILE_INFO_HH__
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4250)
+#endif
 #include <gtkmm.h>
 
 #include <vector>

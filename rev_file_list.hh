@@ -12,6 +12,9 @@
 #ifndef __REV_FILE_LIST_HH_
 #define __REV_FILE_LIST_HH_
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4250)
+#endif
 #include <gtkmm.h>
 
 #include "monotone.hh"

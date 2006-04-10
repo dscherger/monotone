@@ -2,7 +2,6 @@
 // Licensed to the public under the GNU GPL v2, see COPYING
 
 #include "monotone.hh"
-#include <gtkmm.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -23,7 +22,9 @@
 #include <sstream>
 #include <iostream>
 
-inline int max(int a, int b) {return (a>b)?a:b;}
+#ifndef max
+int max(int a, int b) {return (a>b)?a:b;}
+#endif
 
 monotone::monotone(): pid(0), dir("."), done(2)
 {
@@ -79,6 +80,12 @@ bool monotone::got_data(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
     }
   Glib::ustring data;
   chan->read(data, 1024);
+  if (data.empty())
+    {
+      if (++done == 2)
+        child_exited(0, 0);
+      return false;
+    }
   if (mode == STDIO)
     {
       tempstr += data;
@@ -106,6 +113,12 @@ bool monotone::got_err(Glib::IOCondition c, Glib::RefPtr<Glib::IOChannel> chan)
     }
   Glib::ustring data;
   chan->read(data, 1024);
+  if (data.empty())
+    {
+      if (++done == 2)
+        child_exited(0, 0);
+      return false;
+    }
   output_err += data;
   return true;
 }
@@ -142,7 +155,10 @@ monotone::execute(vector<string> args)
       return false;
     }
   //std::cerr<<"spawn()\n";
-  args.insert(args.begin(), Glib::find_program_in_path("monotone"));
+  std::string progname = Glib::find_program_in_path("mtn");
+  if (progname.empty())
+    return false;
+  args.insert(args.begin(), progname);
   if (!db.empty())
     args.push_back("--db=" + db);
   try

@@ -11,6 +11,9 @@
 #ifndef __REVDAT_HH__
 #define __REVDAT_HH__
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4250)
+#endif
 #include <gtkmm.h>
 
 #include "rev_file_list.hh"

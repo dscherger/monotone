@@ -6,11 +6,20 @@
 #include "misc.hh"
 
 // getcwd
+#ifdef WIN32
+#include <windows.h>
+int getcwd(char *buf, int size) {
+  return GetCurrentDirectoryA(size, buf);
+}
+#else
 #include <unistd.h>
+#endif
 // rand, srand
 #include <cstdlib>
 // rename
 #include <cstdio>
+// time
+#include <ctime>
 
 template<typename V, typename A, typename T>
 std::vector<V, A> & operator%(std::vector<V, A> & v, T t)

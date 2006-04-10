@@ -4,13 +4,26 @@
 // This provides a window to put the revdat widget in, and a toolbar
 // to tell it what to do.
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4250)
+#endif
 #include <gtkmm.h>
 
 #include <string>
 #include <vector>
 
 // chdir
+#ifdef WIN32
+#include <windows.h>
+int chdir(char const *x) {
+  if (SetCurrentDirectoryA(x))
+    return 0;
+  else
+    return -1;
+}
+#else
 #include <unistd.h>
+#endif
 
 #include "monotone.hh"
 #include "revdat.hh"
