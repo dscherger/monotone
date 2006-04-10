@@ -145,10 +145,3 @@ class Dumbtone:
         feeder.close()
         print "Pulled and imported %s packets from %s" % (pull_fc.added, other_url)
         print "Pushed %s packets to %s" % (push_c.added, other_url)
-
-def main(name, args):
-    pass
-
-if __name__ == "__main__":
-    import sys
-    main(sys.argv[0], sys.argv[1:])

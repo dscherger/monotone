@@ -13,7 +13,6 @@ class Feeder:
         # unless some packets are actually written (this is more efficient,
         # and also avoids spurious errors from monotone when 'read' doesn't
         # actually succeed in reading anything).
-        print "verbosity:",verbosity
         self.verbosity=verbosity
         self.args = args
         self.process = None

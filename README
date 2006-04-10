@@ -1,0 +1,27 @@
+README for Monotone plain
+=========================
+
+The monotone plain (or "dumb") protocol allows two-way synchronization via sftp or plain files, and one-way (pull) via http(s) and ftp.
+
+Prerequisites:
+ python 2.4 
+ the urlgrabber module (http://linux.duke.edu/projects/urlgrabber)
+
+Syntax:
+
+
+
+
+
+
+NOTES:
+
+The monotone plain protocol always involves three entities:
+ a (local) monotone database
+ a local transit merkle-directory
+ a (possibly remote) merkle-directory to sync with
+The sync directories are called merkle-directories because essentially contain a two-level merkle trie plus a datafile with the revision data.
+
+All synchronization is done between the two merkle-directories: the monotone database interacts only with the transit merkle-directory.
+
+

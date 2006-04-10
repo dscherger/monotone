@@ -10,18 +10,20 @@ class HTTPFTPReadableFS(fs.ReadableFS):
         assert self.url
         if self.url[-1] != "/":
             self.url += "/"
+        self.urlgrabber = urlgrabber.grabber.URLGrabber(keepalive=0,
+                                proxies=None)
 
     def _url(self, filename):
         return urlparse.urljoin(self.url, filename)
 
     def open_read(self, filename):
-        return urlgrabber.urlopen(self._url(filename))
+        return self.urlgrabber.urlopen(self._url(filename))
 
     def fetch(self, filenames):
         files = {}
         for fn in filenames:
             try:
-                files[fn] = urlgrabber.urlread(self._url(fn))
+                files[fn] = self.urlgrabber.urlread(self._url(fn))
             except urlgrabber.grabber.URLGrabError:
                 files[fn] = None
         return files
@@ -31,5 +33,5 @@ class HTTPFTPReadableFS(fs.ReadableFS):
         for offset, length in bytes:
             # for HTTP, this is actually somewhat inefficient
             yield ((offset, length),
-                   urlgrabber.urlread(url, range=(offset, offset+length)))
+                   self.urlgrabber.urlread(url, range=(offset, offset+length)))
 
