@@ -52,6 +52,7 @@
 #include "roster_merge.hh"
 #include "roster.hh"
 
+
 //
 // this file defines the task-oriented "top level" commands which can be
 // issued as part of a monotone command line. the command line can only
@@ -111,13 +112,16 @@ namespace commands
     string cmdgroup;
     string params;
     string desc;
+    bool use_workspace_options;
     command_opts options;
     command(string const & n,
             string const & g,
             string const & p,
             string const & d,
+            bool u,
             command_opts const & o)
-      : name(n), cmdgroup(g), params(p), desc(d), options(o)
+      : name(n), cmdgroup(g), params(p), desc(d), use_workspace_options(u),
+        options(o)
     { cmds[n] = this; }
     virtual ~command() {}
     virtual void exec(app_state & app, vector<utf8> const & args) = 0;
@@ -247,6 +251,12 @@ namespace commands
     if (cmds.find(cmd) != cmds.end())
       {
         L(FL("executing command '%s'\n") % cmd);
+
+        // at this point we process the data from _MTN/options if
+        // the command needs it.
+        if (cmds[cmd]->use_workspace_options)
+          app.process_options();
+
         cmds[cmd]->exec(app, args);
         return 0;
       }
@@ -274,7 +284,22 @@ static const no_opts OPT_NONE = no_opts();
 #define CMD(C, group, params, desc, opts)                            \
 struct cmd_ ## C : public command                                    \
 {                                                                    \
-  cmd_ ## C() : command(#C, group, params, desc,                     \
+  cmd_ ## C() : command(#C, group, params, desc, true,               \
+                        command_opts() % opts)                       \
+  {}                                                                 \
+  virtual void exec(app_state & app,                                 \
+                    vector<utf8> const & args);                      \
+};                                                                   \
+static cmd_ ## C C ## _cmd;                                          \
+void cmd_ ## C::exec(app_state & app,                                \
+                     vector<utf8> const & args)                      \
+
+// use this for commands that should specifically _not_ look for an _MTN dir
+// and load options from it
+#define CMD_NO_WORKSPACE(C, group, params, desc, opts)               \
+struct cmd_ ## C : public command                                    \
+{                                                                    \
+  cmd_ ## C() : command(#C, group, params, desc, false,              \
                         command_opts() % opts)                       \
   {}                                                                 \
   virtual void exec(app_state & app,                                 \
@@ -301,6 +326,7 @@ struct pid_file
       return;
     require_path_is_nonexistent(path, F("pid file '%s' already exists") % path);
     file.open(path.as_external().c_str());
+    E(file.is_open(), F("failed to create pid file '%s'") % path);
     file << get_process_id() << endl;
     file.flush();
   }
@@ -343,9 +369,9 @@ maybe_update_inodeprints(app_state & app)
   inodeprint_map ipm_new;
   revision_set rev;
   roster_t old_roster, new_roster;
-  get_unrestricted_working_revision_and_rosters(app, rev, 
-                                                old_roster, 
-                                                new_roster);
+  temp_node_id_source nis;
+  get_unrestricted_working_revision_and_rosters(app, rev,
+                                                old_roster, new_roster, nis);
   
   node_map const & new_nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = new_nodes.begin(); i != new_nodes.end(); ++i)
@@ -403,7 +429,7 @@ get_log_message_interactively(revision_set const & cs,
   read_user_log(user_log_message);
   commentary += "----------------------------------------------------------------------\n";
   commentary += _("Enter a description of this change.\n"
-                  "Lines beginning with `MT:' are removed automatically.\n");
+                  "Lines beginning with `MTN:' are removed automatically.\n");
   commentary += "\n";
   commentary += summary();
   commentary += "----------------------------------------------------------------------\n";
@@ -1338,9 +1364,10 @@ CMD(status, N_("informative"), N_("[PATH]..."), N_("show status of workspace"),
   revision_set rs;
   roster_t old_roster, new_roster;
   data tmp;
+  temp_node_id_source nis;
 
   app.require_workspace();
-  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster);
+  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster, nis);
 
   if (global_sanity.brief)
     {
@@ -1602,12 +1629,20 @@ CMD(heads, N_("tree"), "", N_("show unmerged head revisions of branch"),
 static void 
 ls_branches(string name, app_state & app, vector<utf8> const & args)
 {
+  utf8 inc("*");
+  utf8 exc;
+  if (args.size() == 1)
+    inc = idx(args,0);
+  else if (args.size() > 1)
+    throw usage(name);
+  combine_and_check_globish(app.exclude_patterns, exc);
+  globish_matcher match(inc, exc);
   vector<string> names;
   app.db.get_branches(names);
 
   sort(names.begin(), names.end());
   for (size_t i = 0; i < names.size(); ++i)
-    if (!app.lua.hook_ignore_branch(idx(names, i)))
+    if (match(idx(names, i)) && !app.lua.hook_ignore_branch(idx(names, i)))
       cout << idx(names, i) << endl;
 }
 
@@ -1699,11 +1734,12 @@ ls_known (app_state & app, vector<utf8> const & args)
   revision_set rs;
   roster_t old_roster, new_roster;
   data tmp;
+  temp_node_id_source nis;
 
   app.require_workspace();
 
   path_set paths;
-  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster);
+  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster, nis);
   new_roster.extract_path_set(paths);
   
   for (path_set::const_iterator p = paths.begin(); p != paths.end(); ++p)
@@ -1721,8 +1757,9 @@ find_unknown_and_ignored (app_state & app, bool want_ignored, vector<utf8> const
   revision_set rev;
   roster_t old_roster, new_roster;
   path_set known;
+  temp_node_id_source nis;
 
-  get_working_revision_and_rosters(app, args, rev, old_roster, new_roster);
+  get_working_revision_and_rosters(app, args, rev, old_roster, new_roster, nis);
   new_roster.extract_path_set(known);
 
   file_itemizer u(app, known, unknown, ignored);
@@ -1795,9 +1832,10 @@ ls_changed (app_state & app, vector<utf8> const & args)
   roster_t old_roster, new_roster;
   data tmp;
   std::set<file_path> files;
+  temp_node_id_source nis;
 
   app.require_workspace();
-  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster);
+  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster, nis);
 
   I(rs.edges.size() == 1);
   cset const & cs = edge_changes(rs.edges.begin());
@@ -1841,7 +1879,7 @@ ls_changed (app_state & app, vector<utf8> const & args)
 CMD(list, N_("informative"),
     N_("certs ID\n"
        "keys [PATTERN]\n"
-       "branches\n"
+       "branches [PATTERN]\n"
        "epochs [BRANCH [...]]\n"
        "tags\n"
        "vars [DOMAIN]\n"
@@ -2006,6 +2044,7 @@ process_netsync_args(std::string const & name,
   // handle include/exclude args
   if (serve_mode || (args.size() >= 2 || !app.exclude_patterns.empty()))
     {
+      E(serve_mode || args.size() >= 2, F("no branch pattern given"));
       int pattern_offset = (serve_mode ? 0 : 1);
       std::set<utf8> patterns(args.begin() + pattern_offset, args.end());
       combine_and_check_globish(patterns, include_pattern);
@@ -2087,9 +2126,9 @@ CMD(sync, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
                        include_pattern, exclude_pattern, app);  
 }
 
-CMD(serve, N_("network"), N_("PATTERN ..."),
-    N_("serve the branches specified by PATTERNs to connecting clients"),
-    OPT_BIND % OPT_PIDFILE % OPT_EXCLUDE)
+CMD_NO_WORKSPACE(serve, N_("network"), N_("PATTERN ..."),
+                 N_("serve the branches specified by PATTERNs to connecting clients"),
+                 OPT_BIND % OPT_PIDFILE % OPT_EXCLUDE)
 {
   if (args.size() < 1)
     throw usage(name);
@@ -2196,7 +2235,8 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
   roster_t old_roster, new_roster;
 
   app.require_workspace();
-  get_unrestricted_working_revision_and_rosters(app, rs, old_roster, new_roster);
+  temp_node_id_source nis;
+  get_unrestricted_working_revision_and_rosters(app, rs, old_roster, new_roster, nis);
   
   file_path path = file_path_external(idx(args,1));
   split_path sp;
@@ -2257,7 +2297,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
                 has_any_live_attrs = true;
               }
           if (!has_any_live_attrs)
-            cout << "No attributes for " << path << endl;
+            cout << F("No attributes for '%s'") % path << endl;
         }
       else if (args.size() == 3)
         {
@@ -2266,7 +2306,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
           if (i != node->attrs.end() && i->second.first)
             cout << path << " : " << i->first << "=" << i->second.second << endl;
           else
-            cout << "No attribute " << a_key << " on path " << path << endl;
+            cout << F("No attribute '%s' on path '%s'") % a_key % path << endl;
         }
       else
         throw usage(name);
@@ -2313,13 +2353,14 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
   revision_set rs;
   revision_id rid;
   roster_t old_roster, new_roster;
+  temp_node_id_source nis;
   
   app.make_branch_sticky();
   app.require_workspace();
 
   // preserve excluded work for future commmits
   cset excluded_work;
-  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster, excluded_work);
+  get_working_revision_and_rosters(app, args, rs, old_roster, new_roster, excluded_work, nis);
   calculate_ident(rs, rid);
 
   N(rs.is_nontrivial(), F("no changes to commit\n"));
@@ -2345,26 +2386,26 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
   process_commit_message_args(log_message_given, log_message, app);
   
   N(!(log_message_given && has_contents_user_log()),
-    F("MT/log is non-empty and log message was specified on command line\n"
-      "perhaps move or delete MT/log,\n"
+    F("_MTN/log is non-empty and log message was specified on command line\n"
+      "perhaps move or delete _MTN/log,\n"
       "or remove --message/--message-file from the command line?"));
   
   if (!log_message_given)
     {
-      // this call handles MT/log
+      // this call handles _MTN/log
       get_log_message_interactively(rs, app, log_message);
       // we only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly
       // type --message="", then there wasn't any reason to stop them.
       N(log_message.find_first_not_of(" \r\t\n") != string::npos,
         F("empty log message; commit canceled"));
-      // we save interactively entered log messages to MT/log, so if something
-      // goes wrong, the next commit will pop up their old log message by
-      // default.  we only do this for interactively entered messages, because
-      // otherwise 'monotone commit -mfoo' giving an error, means that after
-      // you correct that error and hit up-arrow to try again, you get an
-      // "MT/log non-empty and message given on command line" error... which
-      // is annoying.
+      // we save interactively entered log messages to _MTN/log, so if
+      // something goes wrong, the next commit will pop up their old log
+      // message by default.  we only do this for interactively entered
+      // messages, because otherwise 'monotone commit -mfoo' giving an error,
+      // means that after you correct that error and hit up-arrow to try
+      // again, you get an "_MTN/log non-empty and message given on command
+      // line" error... which is annoying.
       write_user_log(data(log_message));
     }
 
@@ -2698,6 +2739,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
   bool new_is_archived;
   diff_type type = app.diff_format;
   ostringstream header;
+  temp_node_id_source nis;
 
   if (app.diff_args_provided)
     N(app.diff_format == external_diff,
@@ -2719,7 +2761,8 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       get_working_revision_and_rosters(app, args, r_new,
                                        old_roster, 
                                        new_roster,
-                                       excluded);
+                                       excluded,
+                                       nis);
 
       I(r_new.edges.size() == 1 || r_new.edges.size() == 0);
       if (r_new.edges.size() == 1)
@@ -2738,7 +2781,8 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       get_working_revision_and_rosters(app, args, r_new,
                                        old_roster, 
                                        new_roster,
-                                       excluded);
+                                       excluded,
+                                       nis);
       // Clobber old_roster with the one specified
       app.db.get_revision(r_old_id, r_old);
       app.db.get_roster(r_old_id, old_roster);
@@ -2850,6 +2894,7 @@ CMD(update, N_("workspace"), "",
   boost::shared_ptr<roster_t> old_roster = boost::shared_ptr<roster_t>(new roster_t());
   marking_map working_mm, chosen_mm, merged_mm, target_mm;
   revision_id r_old_id, r_working_id, r_chosen_id, r_target_id;
+  temp_node_id_source nis;
 
   if (args.size() > 0)
     throw usage(name);
@@ -2866,20 +2911,21 @@ CMD(update, N_("workspace"), "",
 
   get_unrestricted_working_revision_and_rosters(app, r_working,
                                                 *old_roster, 
-                                                working_roster);
+                                                working_roster, nis);
   calculate_ident(r_working, r_working_id);
   I(r_working.edges.size() == 1);
   r_old_id = edge_old_revision(r_working.edges.begin());
   make_roster_for_base_plus_cset(r_old_id, 
                                  edge_changes(r_working.edges.begin()),
                                  r_working_id,
-                                 working_roster, working_mm, app);
+                                 working_roster, working_mm, nis, app);
 
   N(!null_id(r_old_id),
     F("this workspace is a new project; cannot update"));
 
   if (app.revision_selectors.size() == 0)
     {
+      P(F("updating along branch '%s'") % app.branch_name);
       set<revision_id> candidates;
       pick_update_candidates(r_old_id, app, candidates);
       N(!candidates.empty(),
@@ -2918,20 +2964,51 @@ CMD(update, N_("workspace"), "",
   
   P(F("selected update target %s\n") % r_chosen_id);
 
-  if (!app.branch_name().empty())
-    {
-      cert_value branch_name(app.branch_name());
-      base64<cert_value> branch_encoded;
-      encode_base64(branch_name, branch_encoded);
-  
-      vector< revision<cert> > certs;
-      app.db.get_revision_certs(r_chosen_id, branch_cert_name, branch_encoded, certs);
+  {
+    // figure out which branches the target is in
+    vector< revision<cert> > certs;
+    app.db.get_revision_certs(r_chosen_id, branch_cert_name, certs);
+    erase_bogus_certs(certs, app);
 
-      N(certs.size() != 0,
-        F("revision %s is not a member of branch %s\n"
-          "try again with explicit --branch\n")
-        % r_chosen_id % app.branch_name);
-    }
+    set< utf8 > branches;
+    for (vector< revision<cert> >::const_iterator i = certs.begin(); 
+         i != certs.end(); i++)
+      {
+        cert_value b;
+        decode_base64(i->inner().value, b);
+        branches.insert(utf8(b()));
+      }
+
+    if (branches.find(app.branch_name) != branches.end())
+      {
+        L(FL("using existing branch %s") % app.branch_name());
+      }
+    else
+      {
+        if (branches.size() > 1)
+          {
+            // multiple non-matching branchnames
+            string branch_list;
+            for (set<utf8>::const_iterator i = branches.begin(); 
+                 i != branches.end(); i++)
+              branch_list += "\n" + (*i)();
+            N(false, F("revision %s is a member of multiple branches:\n%s\n\ntry again with explicit --branch") % r_chosen_id % branch_list);
+          }
+        else if (branches.size() == 1)
+          {
+            // one non-matching, inform and update
+            app.branch_name = (*(branches.begin()))();
+            P(F("revision %s is a member of\n%s, updating workspace branch") 
+              % r_chosen_id % app.branch_name());
+          }
+        else
+          {
+            I(branches.size() == 0);
+            W(F("revision %s is a member of no branches,\nusing branch %s for workspace")
+              % r_chosen_id % app.branch_name());
+          }
+      }
+  }
 
   app.db.get_roster(r_chosen_id, chosen_roster, chosen_mm);
 
@@ -2958,7 +3035,7 @@ CMD(update, N_("workspace"), "",
       make_roster_for_base_plus_cset(r_old_id, 
                                      transplant,
                                      r_target_id,
-                                     target_roster, target_mm, app);
+                                     target_roster, target_mm, nis, app);
       chosen_uncommon_ancestors.insert(r_target_id);
     }
 
@@ -2994,13 +3071,13 @@ CMD(update, N_("workspace"), "",
   //   V         V
   //  chosen --> merged
   //
-  // - old is the revision specified in MT/revision
+  // - old is the revision specified in _MTN/revision
   // - working is based on old and includes the workspace's changes
-  // - chosen is the revision we're updating to and will end up in MT/revision
+  // - chosen is the revision we're updating to and will end up in _MTN/revision
   // - merged is the merge of working and chosen
   // 
   // we apply the working to merged cset to the workspace 
-  // and write the cset from chosen to merged changeset in MT/work
+  // and write the cset from chosen to merged changeset in _MTN/work
   
   cset update, remaining;
   make_cset (working_roster, merged_roster, update);
@@ -3588,8 +3665,10 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
   if (app.revision_selectors.size() == 0)
     app.require_workspace("try passing a --revision to start at");
 
-  set<node_id> nodes;
+  temp_node_id_source nis;
 
+  set<node_id> nodes;
+  
   set<revision_id> frontier;
 
   revision_id first_rid;
@@ -3618,7 +3697,7 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
       revision_set rev;
 
       if (app.revision_selectors.size() == 0)
-        get_unrestricted_working_revision_and_rosters(app, rev, old_roster, new_roster);
+        get_unrestricted_working_revision_and_rosters(app, rev, old_roster, new_roster, nis);
       else
         app.db.get_roster(first_rid, new_roster);          
 
@@ -3704,17 +3783,6 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
                 print_this = true;
             }
 
-          changes_summary csum;
-          
-          set<revision_id> ancestors;
-
-          for (edge_map::const_iterator e = rev.edges.begin();
-               e != rev.edges.end(); ++e)
-            {
-              ancestors.insert(edge_old_revision(e));
-              csum.add_change_set(edge_changes(e));
-            }
-
           if (next > 0)
             {
               set<revision_id> children;
@@ -3748,6 +3816,17 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
                 cout << "-----------------------------------------------------------------"
                      << endl;
                 cout << "Revision: " << rid << endl;
+
+                changes_summary csum;
+
+                set<revision_id> ancestors;
+
+                for (edge_map::const_iterator e = rev.edges.begin();
+                     e != rev.edges.end(); ++e)
+                  {
+                    ancestors.insert(edge_old_revision(e));
+                    csum.add_change_set(edge_changes(e));
+                  }
 
                 for (set<revision_id>::const_iterator anc = ancestors.begin();
                      anc != ancestors.end(); ++anc)
@@ -3926,6 +4005,8 @@ CMD(automate, N_("automation"),
   ++i;
   vector<utf8> cmd_args(i, args.end());
 
+  make_io_binary();
+
   automate_command(cmd, cmd_args, name, app, cout);
 }
 
@@ -3989,9 +4070,9 @@ CMD(show_conflicts, N_("informative"), N_("REV REV"), N_("Show what conflicts wo
   complete(app, idx(args,0)(), l_id);
   complete(app, idx(args,1)(), r_id);
   N(!is_ancestor(l_id, r_id, app),
-    F("%s in an ancestor of %s; no merge is needed.") % l_id % r_id);
+    F("%s is an ancestor of %s; no merge is needed.") % l_id % r_id);
   N(!is_ancestor(r_id, l_id, app),
-    F("%s in an ancestor of %s; no merge is needed.") % r_id % l_id);
+    F("%s is an ancestor of %s; no merge is needed.") % r_id % l_id);
   roster_t l_roster, r_roster;
   marking_map l_marking, r_marking;
   app.db.get_roster(l_id, l_roster, l_marking);
