@@ -35,6 +35,8 @@ def parseOpt():
         help="optional, sftp only. RSA private key file. Can't be specified with --dsskey", metavar="FILE")
     par.add_option("--hostkey", default="~/.ssh/known_hosts",
         help="sftp only. File containing host keys. On unices defaults to %default. Must be specified on Win32.", metavar="FILE")
+    par.add_option("--proxy", 
+        help="http(s),ftp only. Proxy to use for connecting.", metavar="http://[proxyuser[:proxypwd]@]proxyhost[:proxyport]")
     par.add_option("-v", "--verbose", type="int", default=0,
         help="verbosity level from 0 (normal) to 2 (debug)", metavar="NUM")
     
@@ -62,7 +64,8 @@ if __name__ == "__main__":
     optdict = {"dsskey":options.dsskey,
                    "rsakey":options.rsakey,
                    "hostkey":options.hostkey,
-                   "verbose":options.verbose}
+                   "verbose":options.verbose,
+                   "proxy":options.proxy}
 
     mtn = Dumbtone(options.db, options.verbose)
     if args[0]=="pull":

@@ -5,13 +5,16 @@ import urlgrabber
 import urlgrabber.grabber
 
 class HTTPFTPReadableFS(fs.ReadableFS):
-    def __init__(self, url):
+    def __init__(self, url, proxy):
         self.url = url
         assert self.url
         if self.url[-1] != "/":
             self.url += "/"
-        self.urlgrabber = urlgrabber.grabber.URLGrabber(keepalive=0,
-                                proxies=None)
+        if proxy:
+            self.proxies={ "http" : proxy, "https" : proxy, "ftp":proxy}
+        else:
+            self.proxies = None
+        self.urlgrabber = urlgrabber.grabber.URLGrabber(proxies = self.proxies)
 
     def _url(self, filename):
         return urlparse.urljoin(self.url, filename)

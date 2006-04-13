@@ -17,7 +17,7 @@ def readable_fs_for_url(url, **kwargs):
         return LocalReadableFS(path)
     elif scheme in ("http", "https", "ftp"):
         import fs_read_httpftp
-        return fs_read_httpftp.HTTPFTPReadableFS(url)
+        return fs_read_httpftp.HTTPFTPReadableFS(url, kwargs.get("proxy"))
     elif scheme == "sftp":
         import fs_sftp
         return fs_sftp.SFTPReadableFS(host, path, **kwargs)
