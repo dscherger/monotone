@@ -58,7 +58,7 @@ class Feeder:
             raise MonotoneError, stderr
 
 class Monotone:
-    def __init__(self, db, executable="monotone"):
+    def __init__(self, db, executable="mtn"):
         self.db = db
         self.executable = executable
         self.process = None
