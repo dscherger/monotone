@@ -2,7 +2,7 @@
 
 AT_SETUP([take over a modified CVS checkout and push changes into CVS])
 
-MONOTONE_SETUP
+MTN_SETUP
 
 AT_DATA(d_import, [initial import
 ])
@@ -41,13 +41,13 @@ AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A removed'])
 
 AT_CHECK(cp d_change test/B)
 
-AT_CHECK([cd test;MONOTONE --root . --branch testbranch cvs_takeover test], [0], [ignore], [ignore])
+AT_CHECK([cd test;MTN --root . --branch testbranch cvs_takeover test], [0], [ignore], [ignore])
 
-AT_CHECK(MONOTONE --branch testbranch cvs_push, [0], [ignore], [ignore])
+AT_CHECK(MTN --branch testbranch cvs_push, [0], [ignore], [ignore])
 ########
 # check presence of files
 
-AT_CHECK(MONOTONE automate get_file $TSHA2, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA2, [], [ignore])
 
 # also check that CVS sees this newly changed file
 

@@ -2,7 +2,7 @@
 
 AT_SETUP([CVS push with fork and merge])
 
-MONOTONE_SETUP
+MTN_SETUP
 
 AT_DATA(d_a, [A
 ])
@@ -29,23 +29,23 @@ AT_CHECK([cd cvstemp ; cvs -q -d $CVSROOT import -m 'initial import' test vendor
 # change the repository in various ways
 
 AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
-AT_CHECK([cd test;MONOTONE --root . --branch testbranch cvs_takeover test], [0], [ignore], [ignore])
+AT_CHECK([cd test;MTN --root . --branch testbranch cvs_takeover test], [0], [ignore], [ignore])
 AT_CHECK([cp -r test test2])
 
-AT_CHECK([cd test;MONOTONE drop A;MONOTONE ci -m "a dropped"], [0], [ignore], [ignore])
-LEFT=`MONOTONE automate heads`
+AT_CHECK([cd test;MTN drop A;MTN ci -m "a dropped"], [0], [ignore], [ignore])
+LEFT=`MTN automate heads`
 
 AT_CHECK([cp d_c test2/C])
-AT_CHECK([cd test2;MONOTONE add C;MONOTONE ci -m "c added"], [0], [ignore], [ignore])
+AT_CHECK([cd test2;MTN add C;MTN ci -m "c added"], [0], [ignore], [ignore])
 
-AT_CHECK(MONOTONE merge, [0], [ignore], [ignore])
-AT_CHECK(MONOTONE --branch testbranch cvs_push, [0], [ignore], [ignore])
+AT_CHECK(MTN merge, [0], [ignore], [ignore])
+AT_CHECK(MTN --branch testbranch cvs_push, [0], [ignore], [ignore])
 
 # no change yet
 AT_CHECK([test -e $CVSROOT/test/A,v])
 AT_CHECK([test ! -e $CVSROOT/test/C,v])
 
-AT_CHECK(MONOTONE --revision $LEFT --branch testbranch cvs_push, [0], [ignore], [ignore])
+AT_CHECK(MTN --revision $LEFT --branch testbranch cvs_push, [0], [ignore], [ignore])
 AT_CHECK([test -e $CVSROOT/test/Attic/A,v])
 AT_CHECK([test -e $CVSROOT/test/C,v])
 

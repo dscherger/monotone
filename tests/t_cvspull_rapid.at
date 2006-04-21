@@ -2,7 +2,7 @@
 
 AT_SETUP([pull of CVS module with rapidly changed history])
 
-MONOTONE_SETUP
+MTN_SETUP
 
 # build the cvs repository
 
@@ -38,10 +38,10 @@ AT_CHECK([cd test;cvs -Q ci -m "fast A change" A])
 
 # pull into monotone
 
-AT_CHECK(MONOTONE --branch=testbranch cvs_pull $CVSROOT test, [], [ignore], [ignore])
+AT_CHECK(MTN --branch=testbranch cvs_pull $CVSROOT test, [], [ignore], [ignore])
 
 # also check that history is okay -- has a unique head
 
-AT_CHECK(MONOTONE checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+AT_CHECK(MTN checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
 
 AT_CLEANUP
