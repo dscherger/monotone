@@ -1378,6 +1378,11 @@
 	UTF-8.
 	* paths.cc (file_path::file_path): Check that path is valid UTF-8.
 
+2006-03-01  Richard Levitte  <richard@levitte.org>
+
+	* Makefile.am, contrib/usher.cc: Move usher.cc to the main
+	directory and have it built into monotone-usher.
+
 2006-02-28  Matthew Gregan  <kinetik@orcon.net.nz>
 
 	* tests/t_mt_ignore.at: Fix test on MinGW/Win32.
