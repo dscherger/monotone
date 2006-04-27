@@ -2433,7 +2433,7 @@ call_server(protocol_role role,
 
   // 'false' here means not to revert changes when the SockOpt
   // goes out of scope.
-  Netxx::SockOpt socket_options(server.get_socketfd(), false);
+  Netxx::SockOpt socket_options(server->get_socketfd(), false);
   socket_options.set_non_blocking();
 
   session sess(role, client_voice, 
@@ -2869,91 +2869,6 @@ serve_connections(protocol_role role,
                 }
               process_armed_sessions(sessions, armed_sessions, *guard);
               reap_dead_sessions(sessions, timeout_seconds);
-static void 
-serve_single_connection(//protocol_role role,
-                  shared_ptr<session> sess,
-                  unsigned long timeout_seconds)
-{
-  Netxx::PipeCompatibleProbe probe;  
-
-  Netxx::Timeout 
-    forever, 
-    timeout(static_cast<long>(timeout_seconds)), 
-    instant(0,1);
-
-  P(F("beginning service on %s\n") % sess->peer_id);
-
-//  Netxx::StreamServer server(addr, timeout);
-  sess->begin_service();
-  
-  map<Netxx::socket_type, shared_ptr<session> > sessions;
-  set<Netxx::socket_type> armed_sessions;
-  
-  if (sess->str->get_socketfd()!=-1) 
-    sessions[sess->str->get_socketfd()]=sess;
-  // pipes have two filedescriptors
-  Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess->str);
-  if (pipe) 
-  { sessions[pipe->get_writefd()]=sess;
-    sessions[pipe->get_readfd()]=sess;
-  }
-  
-  // no addr, no server
-  
-//  bool live_p = true;
-  while (!sessions.empty())
-    {      
-      probe.clear();
-      armed_sessions.clear();
-
-      arm_sessions_and_calculate_probe(probe, sessions, armed_sessions);
-
-      L(F("i/o probe with %d armed\n") % armed_sessions.size());      
-      Netxx::Probe::result_type res = probe.ready(/*sessions.empty() ? forever 
-                                           : */ (armed_sessions.empty() ? timeout 
-                                              : instant));
-      Netxx::Probe::ready_type event = res.second;
-      Netxx::socket_type fd = res.first;
-      
-      if (fd == -1)
-        {
-          if (armed_sessions.empty()) 
-            L(F("timed out waiting for I/O (listening on %s)\n") 
-              % sess->peer_id);
-        }
-      
-      // an existing session woke up
-      else
-        {
-          map<Netxx::socket_type, shared_ptr<session> >::iterator i;
-          i = sessions.find(fd);
-          if (i == sessions.end())
-            {
-              L(F("got woken up for action on unknown fd %d\n") % fd);
-            }
-          else
-            {
-              shared_ptr<session> sess = i->second;
-              bool live_p = true;
-
-              if (event & Netxx::Probe::ready_read)
-                handle_read_available(fd, sess, sessions, armed_sessions, live_p);
-                
-              if (live_p && (event & Netxx::Probe::ready_write))
-                handle_write_available(fd, sess, sessions, live_p);
-                
-              if (live_p && (event & Netxx::Probe::ready_oobd))
-                {
-                  P(F("got some OOB data on fd %d (peer %s), disconnecting\n") 
-                    % fd % sess->peer_id);
-                  sessions.erase(i);
-                }
-            }
-        }
-      process_armed_sessions(sessions, armed_sessions);
-      reap_dead_sessions(sessions, timeout_seconds);
-    }
-}
 
               if (sessions.empty())
                 {
@@ -2993,6 +2908,93 @@ serve_single_connection(//protocol_role role,
   while(try_again);
 }
 
+static void 
+serve_single_connection(//protocol_role role,
+                  shared_ptr<session> sess,
+                  unsigned long timeout_seconds)
+{
+  Netxx::PipeCompatibleProbe probe;  
+
+  Netxx::Timeout 
+    forever, 
+    timeout(static_cast<long>(timeout_seconds)), 
+    instant(0,1);
+
+  P(F("beginning service on %s\n") % sess->peer_id);
+
+//  Netxx::StreamServer server(addr, timeout);
+  sess->begin_service();
+  
+  map<Netxx::socket_type, shared_ptr<session> > sessions;
+  set<Netxx::socket_type> armed_sessions;
+  
+  if (sess->str->get_socketfd()!=-1) 
+    sessions[sess->str->get_socketfd()]=sess;
+  // pipes have two filedescriptors
+  Netxx::PipeStream *pipe=dynamic_cast<Netxx::PipeStream*>(&*sess->str);
+  if (pipe) 
+  { sessions[pipe->get_writefd()]=sess;
+    sessions[pipe->get_readfd()]=sess;
+  }
+  
+  // no addr, no server
+  
+  transaction_guard guard(sess->app.db);
+
+//  bool live_p = true;
+  while (!sessions.empty())
+    {      
+      probe.clear();
+      armed_sessions.clear();
+
+      arm_sessions_and_calculate_probe(probe, sessions, armed_sessions);
+
+      L(FL("i/o probe with %d armed\n") % armed_sessions.size());      
+      Netxx::Probe::result_type res = probe.ready(/*sessions.empty() ? forever 
+                                           : */ (armed_sessions.empty() ? timeout 
+                                              : instant));
+      Netxx::Probe::ready_type event = res.second;
+      Netxx::socket_type fd = res.first;
+      
+      if (fd == -1)
+        {
+          if (armed_sessions.empty()) 
+            L(FL("timed out waiting for I/O (listening on %s)\n") 
+              % sess->peer_id);
+        }
+      
+      // an existing session woke up
+      else
+        {
+          map<Netxx::socket_type, shared_ptr<session> >::iterator i;
+          i = sessions.find(fd);
+          if (i == sessions.end())
+            {
+              L(FL("got woken up for action on unknown fd %d\n") % fd);
+            }
+          else
+            {
+              shared_ptr<session> sess = i->second;
+              bool live_p = true;
+
+              if (event & Netxx::Probe::ready_read)
+                handle_read_available(fd, sess, sessions, armed_sessions, live_p);
+                
+              if (live_p && (event & Netxx::Probe::ready_write))
+                handle_write_available(fd, sess, sessions, live_p);
+                
+              if (live_p && (event & Netxx::Probe::ready_oobd))
+                {
+                  P(F("got some OOB data on fd %d (peer %s), disconnecting\n") 
+                    % fd % sess->peer_id);
+                  sessions.erase(i);
+                }
+            }
+        }
+      process_armed_sessions(sessions, armed_sessions, guard);
+      reap_dead_sessions(sessions, timeout_seconds);
+    }
+}
 
 void
 insert_with_parents(revision_id rev, 
