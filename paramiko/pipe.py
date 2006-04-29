@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -28,14 +28,17 @@ import socket
 
 def make_pipe ():
     if sys.platform[:3] != 'win':
-        return PosixPipe()
-    return WindowsPipe()
+        p = PosixPipe()
+    else:
+        p = WindowsPipe()
+    return p
 
 
 class PosixPipe (object):
     def __init__ (self):
         self._rfd, self._wfd = os.pipe()
         self._set = False
+        self._forever = False
     
     def close (self):
         os.close(self._rfd)
@@ -45,7 +48,7 @@ class PosixPipe (object):
         return self._rfd
 
     def clear (self):
-        if not self._set:
+        if not self._set or self._forever:
             return
         os.read(self._rfd, 1)
         self._set = False
@@ -55,6 +58,10 @@ class PosixPipe (object):
             return
         self._set = True
         os.write(self._wfd, '*')
+    
+    def set_forever (self):
+        self._forever = True
+        self.set()
 
 
 class WindowsPipe (object):
@@ -67,13 +74,14 @@ class WindowsPipe (object):
         serv.bind(('127.0.0.1', 0))
         serv.listen(1)
     
-        # need to save sockets in pipe_rsock/pipe_wsock so they don't get closed
+        # need to save sockets in _rsock/_wsock so they don't get closed
         self._rsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._rsock.connect(('127.0.0.1', serv.getsockname()[1]))
     
         self._wsock, addr = serv.accept()
         serv.close()
         self._set = False
+        self._forever = False
     
     def close (self):
         self._rsock.close()
@@ -83,7 +91,7 @@ class WindowsPipe (object):
         return self._rsock.fileno()
 
     def clear (self):
-        if not self._set:
+        if not self._set or self._forever:
             return
         self._rsock.recv(1)
         self._set = False
@@ -93,3 +101,7 @@ class WindowsPipe (object):
             return
         self._set = True
         self._wsock.send('*')
+
+    def set_forever (self):
+        self._forever = True
+        self.set()

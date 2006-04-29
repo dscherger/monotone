@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -20,15 +20,16 @@
 Common API for all public keys.
 """
 
-import os, base64
+import base64
+import os
 
 from Crypto.Hash import MD5
 from Crypto.Cipher import DES3
 
-from common import *
-from message import Message
-from ssh_exception import SSHException, PasswordRequiredException
-import util
+from paramiko.common import *
+from paramiko import util
+from paramiko.message import Message
+from paramiko.ssh_exception import SSHException, PasswordRequiredException
 
 
 class PKey (object):
@@ -138,8 +139,6 @@ class PKey (object):
 
         @return: a base64 string containing the public part of the key.
         @rtype: str
-
-        @since: fearow
         """
         return base64.encodestring(str(self)).replace('\n', '')
 
@@ -172,7 +171,7 @@ class PKey (object):
         """
         return False
    
-    def from_private_key_file(cl, filename, password=None):
+    def from_private_key_file(cls, filename, password=None):
         """
         Create a key object by reading a private key file.  If the private
         key is encrypted and C{password} is not C{None}, the given password
@@ -193,10 +192,8 @@ class PKey (object):
         @raise PasswordRequiredException: if the private key file is
             encrypted, and C{password} is C{None}.
         @raise SSHException: if the key file is invalid.
-
-        @since: fearow
         """
-        key = cl(filename=filename, password=password)
+        key = cls(filename=filename, password=password)
         return key
     from_private_key_file = classmethod(from_private_key_file)
 
@@ -212,10 +209,8 @@ class PKey (object):
 
         @raise IOError: if there was an error writing the file.
         @raise SSHException: if the key is invalid.
-
-        @since: fearow
         """
-        raise exception('Not implemented in PKey')
+        raise Exception('Not implemented in PKey')
 
     def _read_private_key_file(self, tag, filename, password=None):
         """
@@ -264,7 +259,7 @@ class PKey (object):
         # if we trudged to the end of the file, just try to cope.
         try:
             data = base64.decodestring(''.join(lines[start:end]))
-        except binascii.Error, e:
+        except base64.binascii.Error, e:
             raise SSHException('base64 decoding error: ' + str(e))
         if not headers.has_key('proc-type'):
             # unencryped: done

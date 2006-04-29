@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -24,6 +22,7 @@ BufferedFile.
 
 from cStringIO import StringIO
 
+
 _FLAG_READ = 0x1
 _FLAG_WRITE = 0x2
 _FLAG_APPEND = 0x4
@@ -31,6 +30,7 @@ _FLAG_BINARY = 0x10
 _FLAG_BUFFERED = 0x20
 _FLAG_LINE_BUFFERED = 0x40
 _FLAG_UNIVERSAL_NEWLINE = 0x80
+
 
 class BufferedFile (object):
     """
@@ -45,6 +45,7 @@ class BufferedFile (object):
     SEEK_END = 2
 
     def __init__(self):
+        self.newlines = None
         self._flags = 0
         self._bufsize = self._DEFAULT_BUFSIZE
         self._wbuffer = StringIO()
@@ -55,6 +56,8 @@ class BufferedFile (object):
         # realpos - position according the OS
         # (these may be different because we buffer for line reading)
         self._pos = self._realpos = 0
+        # size only matters for seekable files
+        self._size = 0
 
     def __del__(self):
         self.close()
@@ -144,8 +147,11 @@ class BufferedFile (object):
             self._pos += len(result)
             return result
         while len(self._rbuffer) < size:
+            read_size = size - len(self._rbuffer)
+            if self._flags & _FLAG_BUFFERED:
+                read_size = max(self._bufsize, read_size)
             try:
-                new_data = self._read(max(self._bufsize, size - len(self._rbuffer)))
+                new_data = self._read(read_size)
             except EOFError:
                 new_data = None
             if (new_data is None) or (len(new_data) == 0):
@@ -202,7 +208,7 @@ class BufferedFile (object):
                     return line
                 n = size - len(line)
             else:
-                n = self._DEFAULT_BUFSIZE
+                n = self._bufsize
             if ('\n' in line) or ((self._flags & _FLAG_UNIVERSAL_NEWLINE) and ('\r' in line)):
                 break
             try:
@@ -321,7 +327,7 @@ class BufferedFile (object):
             return
         # even if we're line buffering, if the buffer has grown past the
         # buffer size, force a flush.
-        if len(self._wbuffer.getvalue()) >= self._bufsize:
+        if self._wbuffer.tell() >= self._bufsize:
             self.flush()
         return
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -21,7 +21,9 @@ Utility functions for dealing with primes.
 """
 
 from Crypto.Util import number
-import util
+
+from paramiko import util
+from paramiko.ssh_exception import SSHException
 
 
 def _generate_prime(bits, randpool):
@@ -38,7 +40,8 @@ def _generate_prime(bits, randpool):
         while not number.isPrime(n):
             n += 2
         if util.bit_length(n) == bits:
-            return n
+            break
+    return n
 
 def _roll_random(rpool, n):
     "returns a random # from 0 to N-1"
@@ -58,7 +61,8 @@ def _roll_random(rpool, n):
             x = chr(ord(x[0]) & hbyte_mask) + x[1:]
         num = util.inflate_long(x, 1)
         if num < n:
-            return num
+            break
+    return num
 
 
 class ModulusPack (object):
@@ -74,8 +78,8 @@ class ModulusPack (object):
         self.randpool = rpool
 
     def _parse_modulus(self, line):
-        timestamp, type, tests, tries, size, generator, modulus = line.split()
-        type = int(type)
+        timestamp, mod_type, tests, tries, size, generator, modulus = line.split()
+        mod_type = int(mod_type)
         tests = int(tests)
         tries = int(tries)
         size = int(size)
@@ -86,7 +90,7 @@ class ModulusPack (object):
         # type 2 (meets basic structural requirements)
         # test 4 (more than just a small-prime sieve)
         # tries < 100 if test & 4 (at least 100 tries of miller-rabin)
-        if (type < 2) or (tests < 4) or ((tests & 4) and (tests < 8) and (tries < 100)):
+        if (mod_type < 2) or (tests < 4) or ((tests & 4) and (tests < 8) and (tries < 100)):
             self.discarded.append((modulus, 'does not meet basic requirements'))
             return
         if generator == 0:
@@ -145,4 +149,3 @@ class ModulusPack (object):
         # now pick a random modulus of this bitsize
         n = _roll_random(self.randpool, len(self.pack[good]))
         return self.pack[good][n]
-

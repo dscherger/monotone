@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -28,11 +26,13 @@ MSG_KEXINIT, MSG_NEWKEYS = range(20, 22)
 MSG_USERAUTH_REQUEST, MSG_USERAUTH_FAILURE, MSG_USERAUTH_SUCCESS, \
         MSG_USERAUTH_BANNER = range(50, 54)
 MSG_USERAUTH_PK_OK = 60
+MSG_USERAUTH_INFO_REQUEST, MSG_USERAUTH_INFO_RESPONSE = range(60, 62)
 MSG_GLOBAL_REQUEST, MSG_REQUEST_SUCCESS, MSG_REQUEST_FAILURE = range(80, 83)
 MSG_CHANNEL_OPEN, MSG_CHANNEL_OPEN_SUCCESS, MSG_CHANNEL_OPEN_FAILURE, \
 	MSG_CHANNEL_WINDOW_ADJUST, MSG_CHANNEL_DATA, MSG_CHANNEL_EXTENDED_DATA, \
 	MSG_CHANNEL_EOF, MSG_CHANNEL_CLOSE, MSG_CHANNEL_REQUEST, \
 	MSG_CHANNEL_SUCCESS, MSG_CHANNEL_FAILURE = range(90, 101)
+
 
 # for debugging:
 MSG_NAMES = {
@@ -53,7 +53,8 @@ MSG_NAMES = {
     MSG_USERAUTH_FAILURE: 'userauth-failure',
     MSG_USERAUTH_SUCCESS: 'userauth-success',
     MSG_USERAUTH_BANNER: 'userauth--banner',
-    MSG_USERAUTH_PK_OK: 'userauth-pk-ok',
+    MSG_USERAUTH_PK_OK: 'userauth-60(pk-ok/info-request)',
+    MSG_USERAUTH_INFO_RESPONSE: 'userauth-info-response',
     MSG_GLOBAL_REQUEST: 'global-request',
     MSG_REQUEST_SUCCESS: 'request-success',
     MSG_REQUEST_FAILURE: 'request-failure',
@@ -70,18 +71,18 @@ MSG_NAMES = {
     MSG_CHANNEL_FAILURE: 'channel-failure'
     }
 
-# authentication request return codes:
 
+# authentication request return codes:
 AUTH_SUCCESSFUL, AUTH_PARTIALLY_SUCCESSFUL, AUTH_FAILED = range(3)
 
 
 # channel request failed reasons:
-
 (OPEN_SUCCEEDED,
  OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED,
  OPEN_FAILED_CONNECT_FAILED,
  OPEN_FAILED_UNKNOWN_CHANNEL_TYPE,
  OPEN_FAILED_RESOURCE_SHORTAGE) = range(0, 5)
+
 
 CONNECTION_FAILED_CODE = {
     1: 'Administratively prohibited',
@@ -95,18 +96,21 @@ DISCONNECT_SERVICE_NOT_AVAILABLE, DISCONNECT_AUTH_CANCELLED_BY_USER, \
     DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE = 7, 13, 14
 
 
-
 from Crypto.Util.randpool import PersistentRandomPool, RandomPool
 
 # keep a crypto-strong PRNG nearby
+import os
 try:
     randpool = PersistentRandomPool(os.path.join(os.path.expanduser('~'), '/.randpool'))
 except:
     # the above will likely fail on Windows - fall back to non-persistent random pool
     randpool = RandomPool()
 
-randpool.randomize()
-
+try:
+    randpool.randomize()
+except:
+    # earlier versions of pyCrypto (pre-2.0) don't have randomize()
+    pass
 
 import sys
 if sys.version_info < (2, 3):
@@ -125,6 +129,7 @@ if sys.version_info < (2, 3):
 else:
     import logging
     PY22 = False
+
 
 DEBUG = logging.DEBUG
 INFO = logging.INFO

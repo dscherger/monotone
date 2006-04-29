@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -20,18 +20,29 @@
 Client-mode SFTP support.
 """
 
+import errno
 import os
-from sftp import *
-from sftp_attr import SFTPAttributes
-from sftp_file import SFTPFile
+import threading
+import time
+import weakref
+from paramiko.sftp import *
+from paramiko.sftp_attr import SFTPAttributes
+from paramiko.sftp_file import SFTPFile
 
 
 def _to_unicode(s):
-    "if a str is not ascii, decode its utf8 into unicode"
+    """
+    decode a string as ascii or utf8 if possible (as required by the sftp
+    protocol).  if neither works, just return a byte string because the server
+    probably doesn't know the filename's encoding.
+    """
     try:
         return s.encode('ascii')
-    except:
-        return s.decode('utf-8')
+    except UnicodeError:
+        try:
+            return s.decode('utf-8')
+        except UnicodeError:
+            return s
 
 
 class SFTPClient (BaseSFTP):
@@ -48,33 +59,35 @@ class SFTPClient (BaseSFTP):
         An alternate way to create an SFTP client context is by using
         L{from_transport}.
 
-        @param sock: an open L{Channel} using the C{"sftp"} subsystem.
+        @param sock: an open L{Channel} using the C{"sftp"} subsystem
         @type sock: L{Channel}
         """
         BaseSFTP.__init__(self)
         self.sock = sock
         self.ultra_debug = False
         self.request_number = 1
+        # lock for request_number
+        self._lock = threading.Lock()
         self._cwd = None
+        # request # -> SFTPFile
+        self._expecting = weakref.WeakValueDictionary()
         if type(sock) is Channel:
             # override default logger
             transport = self.sock.get_transport()
             self.logger = util.get_logger(transport.get_log_channel() + '.' +
                                           self.sock.get_name() + '.sftp')
             self.ultra_debug = transport.get_hexdump()
-        self._send_version()
-    
-    def __del__(self):
-        self.close()
+        server_version = self._send_version()
+        self._log(INFO, 'Opened sftp connection (server version %d)' % server_version)
 
-    def from_transport(selfclass, t):
+    def from_transport(cls, t):
         """
         Create an SFTP client channel from an open L{Transport}.
 
-        @param t: an open L{Transport} which is already authenticated.
+        @param t: an open L{Transport} which is already authenticated
         @type t: L{Transport}
         @return: a new L{SFTPClient} object, referring to an sftp session
-            (channel) across the transport.
+            (channel) across the transport
         @rtype: L{SFTPClient}
         """
         chan = t.open_session()
@@ -82,7 +95,7 @@ class SFTPClient (BaseSFTP):
             return None
         if not chan.invoke_subsystem('sftp'):
             raise SFTPError('Failed to invoke sftp subsystem')
-        return selfclass(chan)
+        return cls(chan)
     from_transport = classmethod(from_transport)
 
     def close(self):
@@ -91,6 +104,7 @@ class SFTPClient (BaseSFTP):
         
         @since: 1.4
         """
+        self._log(INFO, 'sftp session closed.')
         self.sock.close()
 
     def listdir(self, path='.'):
@@ -123,6 +137,7 @@ class SFTPClient (BaseSFTP):
         @since: 1.2
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'listdir(%r)' % path)
         t, msg = self._request(CMD_OPENDIR, path)
         if t != CMD_HANDLE:
             raise SFTPError('Expected handle')
@@ -146,10 +161,10 @@ class SFTPClient (BaseSFTP):
         self._request(CMD_CLOSE, handle)
         return filelist
 
-    def open(self, filename, mode='r', bufsize=-1):
+    def file(self, filename, mode='r', bufsize=-1):
         """
         Open a file on the remote server.  The arguments are the same as for
-        python's built-in C{open} (aka C{file}).  A file-like object is
+        python's built-in C{file} (aka C{open}).  A file-like object is
         returned, which closely mimics the behavior of a normal python file
         object.
 
@@ -159,55 +174,65 @@ class SFTPClient (BaseSFTP):
         existing file), C{'a+'} for reading/appending.  The python C{'b'} flag
         is ignored, since SSH treats all files as binary.  The C{'U'} flag is
         supported in a compatible way.
+        
+        Since 1.5.2, an C{'x'} flag indicates that the operation should only
+        succeed if the file was created and did not previously exist.  This has
+        no direct mapping to python's file flags, but is commonly known as the
+        C{O_EXCL} flag in posix.
 
         The file will be buffered in standard python style by default, but
         can be altered with the C{bufsize} parameter.  C{0} turns off
         buffering, C{1} uses line buffering, and any number greater than 1
         (C{>1}) uses that specific buffer size.
 
-        @param filename: name of the file to open.
-        @type filename: string
-        @param mode: mode (python-style) to open in.
-        @type mode: string
+        @param filename: name of the file to open
+        @type filename: str
+        @param mode: mode (python-style) to open in
+        @type mode: str
         @param bufsize: desired buffering (-1 = default buffer size)
         @type bufsize: int
-        @return: a file object representing the open file.
+        @return: a file object representing the open file
         @rtype: SFTPFile
 
         @raise IOError: if the file could not be opened.
         """
         filename = self._adjust_cwd(filename)
+        self._log(DEBUG, 'open(%r, %r)' % (filename, mode))
         imode = 0
         if ('r' in mode) or ('+' in mode):
             imode |= SFTP_FLAG_READ
-        if ('w' in mode) or ('+' in mode):
+        if ('w' in mode) or ('+' in mode) or ('a' in mode):
             imode |= SFTP_FLAG_WRITE
         if ('w' in mode):
             imode |= SFTP_FLAG_CREATE | SFTP_FLAG_TRUNC
         if ('a' in mode):
-            imode |= SFTP_FLAG_APPEND | SFTP_FLAG_CREATE | SFTP_FLAG_WRITE
+            imode |= SFTP_FLAG_CREATE | SFTP_FLAG_APPEND
+        if ('x' in mode):
+            imode |= SFTP_FLAG_CREATE | SFTP_FLAG_EXCL
         attrblock = SFTPAttributes()
         t, msg = self._request(CMD_OPEN, filename, imode, attrblock)
         if t != CMD_HANDLE:
             raise SFTPError('Expected handle')
         handle = msg.get_string()
+        self._log(DEBUG, 'open(%r, %r) -> %s' % (filename, mode, util.hexify(handle)))
         return SFTPFile(self, handle, mode, bufsize)
 
     # python has migrated toward file() instead of open().
     # and really, that's more easily identifiable.
-    file = open
+    open = file
 
     def remove(self, path):
         """
-        Remove the file at the given path.
+        Remove the file at the given path.  This only works on files; for
+        removing folders (directories), use L{rmdir}.
 
-        @param path: path (absolute or relative) of the file to remove.
-        @type path: string
+        @param path: path (absolute or relative) of the file to remove
+        @type path: str
 
-        @raise IOError: if the path refers to a folder (directory).  Use
-            L{rmdir} to remove a folder.
+        @raise IOError: if the path refers to a folder (directory)
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'remove(%r)' % path)
         self._request(CMD_REMOVE, path)
 
     unlink = remove
@@ -216,16 +241,17 @@ class SFTPClient (BaseSFTP):
         """
         Rename a file or folder from C{oldpath} to C{newpath}.
 
-        @param oldpath: existing name of the file or folder.
-        @type oldpath: string
-        @param newpath: new name for the file or folder.
-        @type newpath: string
+        @param oldpath: existing name of the file or folder
+        @type oldpath: str
+        @param newpath: new name for the file or folder
+        @type newpath: str
         
         @raise IOError: if C{newpath} is a folder, or something else goes
-            wrong.
+            wrong
         """
         oldpath = self._adjust_cwd(oldpath)
         newpath = self._adjust_cwd(newpath)
+        self._log(DEBUG, 'rename(%r, %r)' % (oldpath, newpath))
         self._request(CMD_RENAME, oldpath, newpath)
 
     def mkdir(self, path, mode=0777):
@@ -234,12 +260,13 @@ class SFTPClient (BaseSFTP):
         The default mode is 0777 (octal).  On some systems, mode is ignored.
         Where it is used, the current umask value is first masked out.
 
-        @param path: name of the folder to create.
-        @type path: string
-        @param mode: permissions (posix-style) for the newly-created folder.
+        @param path: name of the folder to create
+        @type path: str
+        @param mode: permissions (posix-style) for the newly-created folder
         @type mode: int
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'mkdir(%r)' % path)
         attr = SFTPAttributes()
         attr.st_mode = mode
         self._request(CMD_MKDIR, path, attr)
@@ -248,10 +275,11 @@ class SFTPClient (BaseSFTP):
         """
         Remove the folder named C{path}.
 
-        @param path: name of the folder to remove.
-        @type path: string
+        @param path: name of the folder to remove
+        @type path: str
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'rmdir(%r)' % path)
         self._request(CMD_RMDIR, path)
 
     def stat(self, path):
@@ -268,12 +296,13 @@ class SFTPClient (BaseSFTP):
         The fields supported are: C{st_mode}, C{st_size}, C{st_uid}, C{st_gid},
         C{st_atime}, and C{st_mtime}.
 
-        @param path: the filename to stat.
-        @type path: string
-        @return: an object containing attributes about the given file.
+        @param path: the filename to stat
+        @type path: str
+        @return: an object containing attributes about the given file
         @rtype: SFTPAttributes
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'stat(%r)' % path)
         t, msg = self._request(CMD_STAT, path)
         if t != CMD_ATTRS:
             raise SFTPError('Expected attributes')
@@ -285,12 +314,13 @@ class SFTPClient (BaseSFTP):
         following symbolic links (shortcuts).  This otherwise behaves exactly
         the same as L{stat}.
 
-        @param path: the filename to stat.
-        @type path: string
-        @return: an object containing attributes about the given file.
+        @param path: the filename to stat
+        @type path: str
+        @return: an object containing attributes about the given file
         @rtype: SFTPAttributes
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'lstat(%r)' % path)
         t, msg = self._request(CMD_LSTAT, path)
         if t != CMD_ATTRS:
             raise SFTPError('Expected attributes')
@@ -301,12 +331,13 @@ class SFTPClient (BaseSFTP):
         Create a symbolic link (shortcut) of the C{source} path at
         C{destination}.
 
-        @param source: path of the original file.
-        @type source: string
-        @param dest: path of the newly created symlink.
-        @type dest: string
+        @param source: path of the original file
+        @type source: str
+        @param dest: path of the newly created symlink
+        @type dest: str
         """
         dest = self._adjust_cwd(dest)
+        self._log(DEBUG, 'symlink(%r, %r)' % (source, dest))
         if type(source) is unicode:
             source = source.encode('utf-8')
         self._request(CMD_SYMLINK, source, dest)
@@ -317,12 +348,13 @@ class SFTPClient (BaseSFTP):
         unix-style and identical to those used by python's C{os.chmod}
         function.
 
-        @param path: path of the file to change the permissions of.
-        @type path: string
-        @param mode: new permissions.
+        @param path: path of the file to change the permissions of
+        @type path: str
+        @param mode: new permissions
         @type mode: int
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'chmod(%r, %r)' % (path, mode))
         attr = SFTPAttributes()
         attr.st_mode = mode
         self._request(CMD_SETSTAT, path, attr)
@@ -334,14 +366,15 @@ class SFTPClient (BaseSFTP):
         only want to change one, use L{stat} first to retrieve the current
         owner and group.
 
-        @param path: path of the file to change the owner and group of.
-        @type path: string
+        @param path: path of the file to change the owner and group of
+        @type path: str
         @param uid: new owner's uid
         @type uid: int
         @param gid: new group id
         @type gid: int
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'chown(%r, %r, %r)' % (path, uid, gid))
         attr = SFTPAttributes()
         attr.st_uid, attr.st_gid = uid, gid
         self._request(CMD_SETSTAT, path, attr)
@@ -355,17 +388,35 @@ class SFTPClient (BaseSFTP):
         modified times, respectively.  This bizarre API is mimicked from python
         for the sake of consistency -- I apologize.
 
-        @param path: path of the file to modify.
-        @type path: string
+        @param path: path of the file to modify
+        @type path: str
         @param times: C{None} or a tuple of (access time, modified time) in
-            standard internet epoch time (seconds since 01 January 1970 GMT).
-        @type times: tuple of int
+            standard internet epoch time (seconds since 01 January 1970 GMT)
+        @type times: tuple(int)
         """
         path = self._adjust_cwd(path)
         if times is None:
             times = (time.time(), time.time())
+        self._log(DEBUG, 'utime(%r, %r)' % (path, times))
         attr = SFTPAttributes()
         attr.st_atime, attr.st_mtime = times
+        self._request(CMD_SETSTAT, path, attr)
+
+    def truncate(self, path, size):
+        """
+        Change the size of the file specified by C{path}.  This usually extends
+        or shrinks the size of the file, just like the C{truncate()} method on
+        python file objects.
+        
+        @param path: path of the file to modify
+        @type path: str
+        @param size: the new size of the file
+        @type size: int or long
+        """
+        path = self._adjust_cwd(path)
+        self._log(DEBUG, 'truncate(%r, %r)' % (path, size))
+        attr = SFTPAttributes()
+        attr.st_size = size
         self._request(CMD_SETSTAT, path, attr)
 
     def readlink(self, path):
@@ -374,12 +425,13 @@ class SFTPClient (BaseSFTP):
         L{symlink} to create these.  The result may be either an absolute or
         relative pathname.
 
-        @param path: path of the symbolic link file.
+        @param path: path of the symbolic link file
         @type path: str
-        @return: target path.
+        @return: target path
         @rtype: str
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'readlink(%r)' % path)
         t, msg = self._request(CMD_READLINK, path)
         if t != CMD_NAME:
             raise SFTPError('Expected name response')
@@ -397,14 +449,15 @@ class SFTPClient (BaseSFTP):
         server is considering to be the "current folder" (by passing C{'.'}
         as C{path}).
 
-        @param path: path to be normalized.
+        @param path: path to be normalized
         @type path: str
-        @return: normalized form of the given path.
+        @return: normalized form of the given path
         @rtype: str
         
         @raise IOError: if the path can't be resolved on the server
         """
         path = self._adjust_cwd(path)
+        self._log(DEBUG, 'normalize(%r)' % path)
         t, msg = self._request(CMD_REALPATH, path)
         if t != CMD_NAME:
             raise SFTPError('Expected name response')
@@ -449,6 +502,8 @@ class SFTPClient (BaseSFTP):
         Any exception raised by operations will be passed through.  This
         method is primarily provided as a convenience.
         
+        The SFTP operations use pipelining for speed.
+        
         @param localpath: the local file to copy
         @type localpath: str
         @param remotepath: the destination path on the SFTP server
@@ -458,9 +513,10 @@ class SFTPClient (BaseSFTP):
         """
         fl = file(localpath, 'rb')
         fr = self.file(remotepath, 'wb')
+        fr.set_pipelined(True)
         size = 0
         while True:
-            data = fl.read(16384)
+            data = fl.read(32768)
             if len(data) == 0:
                 break
             fr.write(data)
@@ -485,10 +541,11 @@ class SFTPClient (BaseSFTP):
         @since: 1.4
         """
         fr = self.file(remotepath, 'rb')
+        fr.prefetch()
         fl = file(localpath, 'wb')
         size = 0
         while True:
-            data = fr.read(16384)
+            data = fr.read(32768)
             if len(data) == 0:
                 break
             fl.write(data)
@@ -504,29 +561,64 @@ class SFTPClient (BaseSFTP):
 
 
     def _request(self, t, *arg):
-        msg = Message()
-        msg.add_int(self.request_number)
-        for item in arg:
-            if type(item) is int:
-                msg.add_int(item)
-            elif type(item) is long:
-                msg.add_int64(item)
-            elif type(item) is str:
-                msg.add_string(item)
-            elif type(item) is SFTPAttributes:
-                item._pack(msg)
-            else:
-                raise Exception('unknown type for ' + repr(item) + ' type ' + repr(type(item)))
-        self._send_packet(t, str(msg))
-        t, data = self._read_packet()
-        msg = Message(data)
-        num = msg.get_int()
-        if num != self.request_number:
-            raise SFTPError('Expected response #%d, got response #%d' % (self.request_number, num))
-        self.request_number += 1
-        if t == CMD_STATUS:
-            self._convert_status(msg)
-        return t, msg
+        num = self._async_request(type(None), t, *arg)
+        return self._read_response(num)
+    
+    def _async_request(self, fileobj, t, *arg):
+        # this method may be called from other threads (prefetch)
+        self._lock.acquire()
+        try:
+            msg = Message()
+            msg.add_int(self.request_number)
+            for item in arg:
+                if type(item) is int:
+                    msg.add_int(item)
+                elif type(item) is long:
+                    msg.add_int64(item)
+                elif type(item) is str:
+                    msg.add_string(item)
+                elif type(item) is SFTPAttributes:
+                    item._pack(msg)
+                else:
+                    raise Exception('unknown type for %r type %r' % (item, type(item)))
+            num = self.request_number
+            self._expecting[num] = fileobj
+            self._send_packet(t, str(msg))
+            self.request_number += 1
+        finally:
+            self._lock.release()
+        return num
+
+    def _read_response(self, waitfor=None):
+        while True:
+            t, data = self._read_packet()
+            msg = Message(data)
+            num = msg.get_int()
+            if num not in self._expecting:
+                # might be response for a file that was closed before responses came back
+                self._log(DEBUG, 'Unexpected response #%d' % (num,))
+                if waitfor is None:
+                    # just doing a single check
+                    break
+                continue
+            fileobj = self._expecting[num]
+            del self._expecting[num]
+            if num == waitfor:
+                # synchronous
+                if t == CMD_STATUS:
+                    self._convert_status(msg)
+                return t, msg
+            if fileobj is not type(None):
+                fileobj._async_response(t, msg)
+            if waitfor is None:
+                # just doing a single check
+                break
+        return (None, None)
+
+    def _finish_responses(self, fileobj):
+        while fileobj in self._expecting.values():
+            self._read_response()
+            fileobj._check_exception()
 
     def _convert_status(self, msg):
         """
@@ -538,6 +630,11 @@ class SFTPClient (BaseSFTP):
             return
         elif code == SFTP_EOF:
             raise EOFError(text)
+        elif code == SFTP_NO_SUCH_FILE:
+            # clever idea from john a. meinel: map the error codes to errno
+            raise IOError(errno.ENOENT, text)
+        elif code == SFTP_PERMISSION_DENIED:
+            raise IOError(errno.EACCES, text)
         else:
             raise IOError(text)
     

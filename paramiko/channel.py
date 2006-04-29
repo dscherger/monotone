@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -20,14 +20,18 @@
 Abstraction for an SSH2 channel.
 """
 
-import sys, time, threading, socket, os
+import sys
+import time
+import threading
+import socket
+import os
 
-from common import *
-import util
-from message import Message
-from ssh_exception import SSHException
-from file import BufferedFile
-import pipe
+from paramiko.common import *
+from paramiko import util
+from paramiko.message import Message
+from paramiko.ssh_exception import SSHException
+from paramiko.file import BufferedFile
+from paramiko import pipe
 
 
 class Channel (object):
@@ -144,12 +148,7 @@ class Channel (object):
         m.add_string('')
         self.event.clear()
         self.transport._send_user_message(m)
-        while True:
-            self.event.wait(0.1)
-            if self.closed:
-                return False
-            if self.event.isSet():
-                return True
+        return self._wait_for_event()
 
     def invoke_shell(self):
         """
@@ -176,12 +175,7 @@ class Channel (object):
         m.add_boolean(1)
         self.event.clear()
         self.transport._send_user_message(m)
-        while True:
-            self.event.wait(0.1)
-            if self.closed:
-                return False
-            if self.event.isSet():
-                return True
+        return self._wait_for_event()
 
     def exec_command(self, command):
         """
@@ -208,12 +202,7 @@ class Channel (object):
         m.add_string(command)
         self.event.clear()
         self.transport._send_user_message(m)
-        while True:
-            self.event.wait(0.1)
-            if self.closed:
-                return False
-            if self.event.isSet():
-                return True
+        return self._wait_for_event()
 
     def invoke_subsystem(self, subsystem):
         """
@@ -239,12 +228,7 @@ class Channel (object):
         m.add_string(subsystem)
         self.event.clear()
         self.transport._send_user_message(m)
-        while True:
-            self.event.wait(0.1)
-            if self.closed:
-                return False
-            if self.event.isSet():
-                return True
+        return self._wait_for_event()
 
     def resize_pty(self, width=80, height=24):
         """
@@ -270,12 +254,7 @@ class Channel (object):
         m.add_int(0).add_int(0)
         self.event.clear()
         self.transport._send_user_message(m)
-        while True:
-            self.event.wait(0.1)
-            if self.closed:
-                return False
-            if self.event.isSet():
-                return True
+        self._wait_for_event()
 
     def recv_exit_status(self):
         """
@@ -292,8 +271,9 @@ class Channel (object):
         """
         while True:
             if self.closed or self.status_event.isSet():
-                return self.exit_status
+                break
             self.status_event.wait(0.1)
+        return self.exit_status
 
     def send_exit_status(self, status):
         """
@@ -356,8 +336,6 @@ class Channel (object):
 
         @return: the ID of this channel.
         @rtype: int
-
-        @since: ivysaur
         """
         return self.chanid
     
@@ -453,6 +431,18 @@ class Channel (object):
         else:
             self.settimeout(0.0)
 
+    def getpeername(self):
+        """
+        Return the address of the remote side of this Channel, if possible.
+        This is just a wrapper around C{'getpeername'} on the Transport, used
+        to provide enough of a socket-like interface to allow asyncore to work.
+        (asyncore likes to call C{'getpeername'}.)
+
+        @return: the address if the remote host, if known
+        @rtype: tuple(str, int)
+        """
+        return self.transport.getpeername()
+
     def close(self):
         """
         Close the channel.  All future read/write operations on the channel
@@ -464,7 +454,7 @@ class Channel (object):
         try:
             if not self.active or self.closed:
                 return
-            self._close_internal()
+            msgs = self._close_internal()
 
             # only close the pipe when the user explicitly closes the channel.
             # otherwise they will get unpleasant surprises.
@@ -473,6 +463,9 @@ class Channel (object):
                 self.pipe = None
         finally:
             self.lock.release()
+        for m in msgs:
+            if m is not None:
+                self.transport._send_user_message(m)
 
     def recv_ready(self):
         """
@@ -529,15 +522,24 @@ class Channel (object):
             if len(self.in_buffer) <= nbytes:
                 out = self.in_buffer
                 self.in_buffer = ''
-                if self.pipe is not None:
+                if (self.pipe is not None) and not (self.closed or self.eof_received):
                     # clear the pipe, since no more data is buffered
                     self.pipe.clear()
             else:
                 out = self.in_buffer[:nbytes]
                 self.in_buffer = self.in_buffer[nbytes:]
-            self._check_add_window(len(out))
+            ack = self._check_add_window(len(out))
         finally:
             self.lock.release()
+
+        # no need to hold the channel lock when sending this
+        if ack > 0:
+            m = Message()
+            m.add_byte(chr(MSG_CHANNEL_WINDOW_ADJUST))
+            m.add_int(self.remote_chanid)
+            m.add_int(ack)
+            self.transport._send_user_message(m)
+
         return out
 
     def recv_stderr_ready(self):
@@ -576,7 +578,7 @@ class Channel (object):
         @rtype: str
         
         @raise socket.timeout: if no data is ready before the timeout set by
-        L{settimeout}.
+            L{settimeout}.
         
         @since: 1.1
         """
@@ -624,7 +626,7 @@ class Channel (object):
         @rtype: int
 
         @raise socket.timeout: if no data could be sent before the timeout set
-        by L{settimeout}.
+            by L{settimeout}.
         """
         size = len(s)
         self.lock.acquire()
@@ -657,7 +659,7 @@ class Channel (object):
         @rtype: int
         
         @raise socket.timeout: if no data could be sent before the timeout set
-        by L{settimeout}.
+            by L{settimeout}.
         
         @since: 1.1
         """
@@ -804,9 +806,11 @@ class Channel (object):
         if (how == 1) or (how == 2):
             self.lock.acquire()
             try:
-                self._send_eof()
+                m = self._send_eof()
             finally:
                 self.lock.release()
+            if m is not None:
+                self.transport._send_user_message(m)
     
     def shutdown_read(self):
         """
@@ -863,9 +867,12 @@ class Channel (object):
     def _request_failed(self, m):
         self.lock.acquire()
         try:
-            self._close_internal()
+            msgs = self._close_internal()
         finally:
             self.lock.release()
+        for m in msgs:
+            if m is not None:
+                self.transport._send_user_message(m)
 
     def _feed(self, m):
         if type(m) is str:
@@ -880,7 +887,7 @@ class Channel (object):
             if self.pipe is not None:
                 self.pipe.set()
             self.in_buffer += s
-            self.in_buffer_cv.notifyAll()
+	    self.in_buffer_cv.notifyAll()
         finally:
             self.lock.release()
 
@@ -983,7 +990,7 @@ class Channel (object):
                 self.in_buffer_cv.notifyAll()
                 self.in_stderr_buffer_cv.notifyAll()
                 if self.pipe is not None:
-                    self.pipe.set()
+                    self.pipe.set_forever()
         finally:
             self.lock.release()
         self._log(DEBUG, 'EOF received')
@@ -991,10 +998,13 @@ class Channel (object):
     def _handle_close(self, m):
         self.lock.acquire()
         try:
-            self._close_internal()
+            msgs = self._close_internal()
             self.transport._unlink_channel(self.chanid)
         finally:
             self.lock.release()
+        for m in msgs:
+            if m is not None:
+                self.transport._send_user_message(m)
 
 
     ###  internals...
@@ -1003,40 +1013,47 @@ class Channel (object):
     def _log(self, level, msg):
         self.logger.log(level, msg)
 
+    def _wait_for_event(self):
+        while True:
+            self.event.wait(0.1)
+            if self.event.isSet():
+                break
+            if self.closed:
+                return False
+        return True
+
     def _set_closed(self):
         # you are holding the lock.
         self.closed = True
         self.in_buffer_cv.notifyAll()
         self.in_stderr_buffer_cv.notifyAll()
         self.out_buffer_cv.notifyAll()
+        if self.pipe is not None:
+            self.pipe.set_forever()
 
     def _send_eof(self):
         # you are holding the lock.
         if self.eof_sent:
-            return
+            return None
         m = Message()
         m.add_byte(chr(MSG_CHANNEL_EOF))
         m.add_int(self.remote_chanid)
-        self.transport._send_user_message(m)
         self.eof_sent = True
         self._log(DEBUG, 'EOF sent')
-        return
+        return m
 
     def _close_internal(self):
         # you are holding the lock.
         if not self.active or self.closed:
-            return
-        try:
-            self._send_eof()
-            m = Message()
-            m.add_byte(chr(MSG_CHANNEL_CLOSE))
-            m.add_int(self.remote_chanid)
-            self.transport._send_user_message(m)
-        except EOFError:
-            pass
+            return None, None
+        m1 = self._send_eof()
+        m2 = Message()
+        m2.add_byte(chr(MSG_CHANNEL_CLOSE))
+        m2.add_int(self.remote_chanid)
         self._set_closed()
         # can't unlink from the Transport yet -- the remote side may still
         # try to send meta-data (exit-status, etc)
+        return m1, m2
 
     def _unlink(self):
         # server connection could die before we become active: still signal the close!
@@ -1052,19 +1069,17 @@ class Channel (object):
     def _check_add_window(self, n):
         # already holding the lock!
         if self.closed or self.eof_received or not self.active:
-            return
+            return 0
         if self.ultra_debug:
             self._log(DEBUG, 'addwindow %d' % n)
         self.in_window_sofar += n
-        if self.in_window_sofar > self.in_window_threshold:
-            if self.ultra_debug:
-                self._log(DEBUG, 'addwindow send %d' % self.in_window_sofar)
-            m = Message()
-            m.add_byte(chr(MSG_CHANNEL_WINDOW_ADJUST))
-            m.add_int(self.remote_chanid)
-            m.add_int(self.in_window_sofar)
-            self.transport._send_user_message(m)
-            self.in_window_sofar = 0
+        if self.in_window_sofar <= self.in_window_threshold:
+            return 0
+        if self.ultra_debug:
+            self._log(DEBUG, 'addwindow send %d' % self.in_window_sofar)
+        out = self.in_window_sofar
+        self.in_window_sofar = 0
+        return out
 
     def _wait_for_send_window(self, size):
         """
@@ -1105,8 +1120,6 @@ class Channel (object):
         return size
         
 
-        
-
 class ChannelFile (BufferedFile):
     """
     A file-like wrapper around L{Channel}.  A ChannelFile is created by calling
@@ -1137,8 +1150,6 @@ class ChannelFile (BufferedFile):
     def _write(self, data):
         self.channel.sendall(data)
         return len(data)
-    
-    seek = BufferedFile.seek
 
 
 class ChannelStderrFile (ChannelFile):

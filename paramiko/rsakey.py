@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -24,12 +24,13 @@ from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA, MD5
 from Crypto.Cipher import DES3
 
-from common import *
-from message import Message
-from ber import BER, BERException
-import util
-from pkey import PKey
-from ssh_exception import SSHException
+from paramiko.common import *
+from paramiko import util
+from paramiko.message import Message
+from paramiko.ber import BER, BERException
+from paramiko.pkey import PKey
+from paramiko.ssh_exception import SSHException
+
 
 class RSAKey (PKey):
     """
@@ -37,6 +38,12 @@ class RSAKey (PKey):
     data.
     """
 
+    n = None
+    e = None
+    d = None
+    p = None
+    q = None
+    
     def __init__(self, msg=None, data=None, filename=None, password=None, vals=None):
         if filename is not None:
             self._from_private_key_file(filename, password)
@@ -74,7 +81,7 @@ class RSAKey (PKey):
         return self.size
 
     def can_sign(self):
-        return hasattr(self, 'd')
+        return self.d is not None
 
     def sign_ssh_data(self, rpool, data):
         digest = SHA.new(data).digest()
@@ -89,14 +96,16 @@ class RSAKey (PKey):
         if msg.get_string() != 'ssh-rsa':
             return False
         sig = util.inflate_long(msg.get_string(), True)
-        # verify the signature by SHA'ing the data and encrypting it using theå
+        # verify the signature by SHA'ing the data and encrypting it using the
         # public key.  some wackiness ensues where we "pkcs1imify" the 20-byte
         # hash into a string as long as the RSA key.
-        hash = util.inflate_long(self._pkcs1imify(SHA.new(data).digest()), True)
+        hash_obj = util.inflate_long(self._pkcs1imify(SHA.new(data).digest()), True)
         rsa = RSA.construct((long(self.n), long(self.e)))
-        return rsa.verify(hash, (sig,))
+        return rsa.verify(hash_obj, (sig,))
 
     def write_private_key_file(self, filename, password=None):
+        if (self.p is None) or (self.q is None):
+            raise SSHException('Not enough key info to write private key file')
         keylist = [ 0, self.n, self.e, self.d, self.p, self.q,
                     self.d % (self.p - 1), self.d % (self.q - 1),
                     util.mod_inverse(self.q, self.p) ]
@@ -119,9 +128,8 @@ class RSAKey (PKey):
         @type progress_func: function
         @return: new private key
         @rtype: L{RSAKey}
-
-        @since: fearow
         """
+        randpool.stir()
         rsa = RSA.generate(bits, randpool.get_bytes, progress_func)
         key = RSAKey(vals=(rsa.e, rsa.n))
         key.d = rsa.d
@@ -161,4 +169,3 @@ class RSAKey (PKey):
         self.p = keylist[4]
         self.q = keylist[5]
         self.size = util.bit_length(self.n)
-

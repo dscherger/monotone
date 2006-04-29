@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -18,11 +16,13 @@
 # along with Paramiko; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
-import struct, util
+
+import util
 
 
 class BERException (Exception):
     pass
+
 
 class BER(object):
     """
@@ -91,8 +91,9 @@ class BER(object):
         while True:
             x = b.decode_next()
             if x is None:
-                return out
+                break
             out.append(x)
+        return out
     decode_sequence = staticmethod(decode_sequence)
 
     def encode_tlv(self, ident, val):

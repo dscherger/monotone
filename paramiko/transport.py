@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -17,24 +17,33 @@
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
 """
-L{BaseTransport} handles the core SSH2 protocol.
+L{Transport} handles the core SSH2 protocol.
 """
 
-import sys, os, string, threading, socket, struct, time
+import os
+import socket
+import string
+import struct
+import sys
+import threading
+import time
 import weakref
 
-from common import *
-from ssh_exception import SSHException
-from message import Message
-from channel import Channel
-from sftp_client import SFTPClient
-import util
-from packet import Packetizer
-from rsakey import RSAKey
-from dsskey import DSSKey
-from kex_group1 import KexGroup1
-from kex_gex import KexGex
-from primes import ModulusPack
+from paramiko import util
+from paramiko.auth_handler import AuthHandler
+from paramiko.channel import Channel
+from paramiko.common import *
+from paramiko.compress import ZlibCompressor, ZlibDecompressor
+from paramiko.dsskey import DSSKey
+from paramiko.kex_gex import KexGex
+from paramiko.kex_group1 import KexGroup1
+from paramiko.message import Message
+from paramiko.packet import Packetizer, NeedRekeyException
+from paramiko.primes import ModulusPack
+from paramiko.rsakey import RSAKey
+from paramiko.server import ServerInterface
+from paramiko.sftp_client import SFTPClient
+from paramiko.ssh_exception import SSHException, BadAuthenticationType
 
 # these come from PyCrypt
 #     http://www.amk.ca/python/writing/pycrypt/
@@ -42,7 +51,7 @@ from primes import ModulusPack
 # PyCrypt compiled for Win32 can be downloaded from the HashTar homepage:
 #     http://nitace.bsd.uchicago.edu:8080/hashtar
 from Crypto.Cipher import Blowfish, AES, DES3
-from Crypto.Hash import SHA, MD5, HMAC
+from Crypto.Hash import SHA, MD5
 
 
 # for thread cleanup
@@ -65,10 +74,8 @@ class SecurityOptions (object):
     If you try to add an algorithm that paramiko doesn't recognize,
     C{ValueError} will be raised.  If you try to assign something besides a
     tuple to one of the fields, C{TypeError} will be raised.
-
-    @since: ivysaur
     """
-    __slots__ = [ 'ciphers', 'digests', 'key_types', 'kex', '_transport' ]
+    __slots__ = [ 'ciphers', 'digests', 'key_types', 'kex', 'compression', '_transport' ]
 
     def __init__(self, transport):
         self._transport = transport
@@ -92,6 +99,9 @@ class SecurityOptions (object):
 
     def _get_kex(self):
         return self._transport._preferred_kex
+        
+    def _get_compression(self):
+        return self._transport._preferred_compression
 
     def _set(self, name, orig, x):
         if type(x) is list:
@@ -99,7 +109,8 @@ class SecurityOptions (object):
         if type(x) is not tuple:
             raise TypeError('expected tuple or list')
         possible = getattr(self._transport, orig).keys()
-        if len(filter(lambda n: n not in possible, x)) > 0:
+        forbidden = filter(lambda n: n not in possible, x)
+        if len(forbidden) > 0:
             raise ValueError('unknown cipher')
         setattr(self._transport, name, x)
 
@@ -114,6 +125,9 @@ class SecurityOptions (object):
 
     def _set_kex(self, x):
         self._set('_preferred_kex', '_kex_info', x)
+    
+    def _set_compression(self, x):
+        self._set('_preferred_compression', '_compression_info', x)
 
     ciphers = property(_get_ciphers, _set_ciphers, None,
                        "Symmetric encryption ciphers")
@@ -122,22 +136,27 @@ class SecurityOptions (object):
     key_types = property(_get_key_types, _set_key_types, None,
                          "Public-key algorithms")
     kex = property(_get_kex, _set_kex, None, "Key exchange algorithms")
+    compression = property(_get_compression, _set_compression, None,
+                           "Compression algorithms")
 
 
-class BaseTransport (threading.Thread):
+class Transport (threading.Thread):
     """
-    Handles protocol negotiation, key exchange, encryption, and the creation
-    of channels across an SSH session.  Basically everything but authentication
-    is done here.
+    An SSH Transport attaches to a stream (usually a socket), negotiates an
+    encrypted session, authenticates, and then creates stream tunnels, called
+    L{Channel}s, across the session.  Multiple channels can be multiplexed
+    across a single session (and often are, in the case of port forwardings).
     """
+
     _PROTO_ID = '2.0'
-    _CLIENT_ID = 'paramiko_1.4'
+    _CLIENT_ID = 'paramiko_1.5.4'
 
     _preferred_ciphers = ( 'aes128-cbc', 'blowfish-cbc', 'aes256-cbc', '3des-cbc' )
     _preferred_macs = ( 'hmac-sha1', 'hmac-md5', 'hmac-sha1-96', 'hmac-md5-96' )
     _preferred_keys = ( 'ssh-rsa', 'ssh-dss' )
     _preferred_kex = ( 'diffie-hellman-group1-sha1', 'diffie-hellman-group-exchange-sha1' )
-
+    _preferred_compression = ( 'none', )
+    
     _cipher_info = {
         'blowfish-cbc': { 'class': Blowfish, 'mode': Blowfish.MODE_CBC, 'block-size': 8, 'key-size': 16 },
         'aes128-cbc': { 'class': AES, 'mode': AES.MODE_CBC, 'block-size': 16, 'key-size': 16 },
@@ -161,6 +180,15 @@ class BaseTransport (threading.Thread):
         'diffie-hellman-group1-sha1': KexGroup1,
         'diffie-hellman-group-exchange-sha1': KexGex,
         }
+    
+    _compression_info = {
+        # zlib@openssh.com is just zlib, but only turned on after a successful
+        # authentication.  openssh servers may only offer this type because
+        # they've had troubles with security holes in zlib in the past.
+        'zlib@openssh.com': ( ZlibCompressor, ZlibDecompressor ),
+        'zlib': ( ZlibCompressor, ZlibDecompressor ),
+        'none': ( None, None ),
+    }
 
 
     _modulus_pack = None
@@ -217,31 +245,49 @@ class BaseTransport (threading.Thread):
             self.sock.settimeout(0.1)
         except AttributeError:
             pass
+
         # negotiated crypto parameters
         self.packetizer = Packetizer(sock)
         self.local_version = 'SSH-' + self._PROTO_ID + '-' + self._CLIENT_ID
         self.remote_version = ''
         self.local_cipher = self.remote_cipher = ''
         self.local_kex_init = self.remote_kex_init = None
+        self.local_mac = self.remote_mac = None
+        self.local_compression = self.remote_compression = None
         self.session_id = None
-        # /negotiated crypto parameters
-        self.expected_packet = 0
+        self.host_key_type = None
+        self.host_key = None
+        
+        # state used during negotiation
+        self.kex_engine = None
+        self.H = None
+        self.K = None
+
         self.active = False
         self.initial_kex_done = False
         self.in_kex = False
+        self.authenticated = False
+        self.expected_packet = 0
         self.lock = threading.Lock()    # synchronization (always higher level than write_lock)
+
+        # tracking open channels
         self.channels = weakref.WeakValueDictionary()   # (id -> Channel)
         self.channel_events = { }       # (id -> Event)
+        self.channels_seen = { }        # (id -> True)
         self.channel_counter = 1
         self.window_size = 65536
-        self.max_packet_size = 32768
+        self.max_packet_size = 34816
+
         self.saved_exception = None
         self.clear_to_send = threading.Event()
+        self.clear_to_send_lock = threading.Lock()
         self.log_name = 'paramiko.transport'
         self.logger = util.get_logger(self.log_name)
         self.packetizer.set_log(self.logger)
-        # user-defined event callbacks:
-        self.completion_event = None
+        self.auth_handler = None
+        self.global_response = None     # response Message from an arbitrary global request
+        self.completion_event = None    # user-defined event callbacks
+        
         # server mode:
         self.server_mode = False
         self.server_object = None
@@ -250,28 +296,43 @@ class BaseTransport (threading.Thread):
         self.server_accept_cv = threading.Condition(self.lock)
         self.subsystem_table = { }
 
-    def __del__(self):
-        self.close()
-
     def __repr__(self):
         """
         Returns a string representation of this object, for debugging.
 
         @rtype: str
         """
-        out = '<paramiko.BaseTransport at %s' % hex(long(id(self)) & 0xffffffffL)
+        out = '<paramiko.Transport at %s' % hex(long(id(self)) & 0xffffffffL)
         if not self.active:
             out += ' (unconnected)'
         else:
             if self.local_cipher != '':
                 out += ' (cipher %s, %d bits)' % (self.local_cipher,
                                                   self._cipher_info[self.local_cipher]['key-size'] * 8)
-            if len(self.channels) == 1:
-                out += ' (active; 1 open channel)'
+            if self.is_authenticated():
+                if len(self.channels) == 1:
+                    out += ' (active; 1 open channel)'
+                else:
+                    out += ' (active; %d open channels)' % len(self.channels)
+            elif self.initial_kex_done:
+                out += ' (connected; awaiting auth)'
             else:
-                out += ' (active; %d open channels)' % len(self.channels)
+                out += ' (connecting)'
         out += '>'
         return out
+    
+    def atfork(self):
+        """
+        Terminate this Transport without closing the session.  On posix
+        systems, if a Transport is open during process forking, both parent
+        and child will share the underlying socket, but only one process can
+        use the connection (without corrupting the session).  Use this method
+        to clean up a Transport object without disrupting the other process.
+        
+        @since: 1.5.3
+        """
+        self.sock.close()
+        self.close()
 
     def get_security_options(self):
         """
@@ -282,8 +343,6 @@ class BaseTransport (threading.Thread):
         @return: an object that can be used to change the preferred algorithms
             for encryption, digest (hash), public key, and key exchange.
         @rtype: L{SecurityOptions}
-
-        @since: ivysaur
         """
         return SecurityOptions(self)
 
@@ -459,24 +518,22 @@ class BaseTransport (threading.Thread):
         @return: True if a moduli file was successfully loaded; False
             otherwise.
         @rtype: bool
-
-        @since: doduo
         
         @note: This has no effect when used in client mode.
         """
-        BaseTransport._modulus_pack = ModulusPack(randpool)
+        Transport._modulus_pack = ModulusPack(randpool)
         # places to look for the openssh "moduli" file
         file_list = [ '/etc/ssh/moduli', '/usr/local/etc/moduli' ]
         if filename is not None:
             file_list.insert(0, filename)
         for fn in file_list:
             try:
-                BaseTransport._modulus_pack.read_file(fn)
+                Transport._modulus_pack.read_file(fn)
                 return True
             except IOError:
                 pass
         # none succeeded
-        BaseTransport._modulus_pack = None
+        Transport._modulus_pack = None
         return False
     load_server_moduli = staticmethod(load_server_moduli)
 
@@ -573,11 +630,12 @@ class BaseTransport (threading.Thread):
                 m.add_int(src_addr[1])
             self.channels[chanid] = chan = Channel(chanid)
             self.channel_events[chanid] = event = threading.Event()
+            self.channels_seen[chanid] = True
             chan._set_transport(self)
             chan._set_window(self.window_size, self.max_packet_size)
-            self._send_user_message(m)
         finally:
             self.lock.release()
+        self._send_user_message(m)
         while 1:
             event.wait(0.1);
             if not self.active:
@@ -614,11 +672,10 @@ class BaseTransport (threading.Thread):
         @param bytes: the number of random bytes to send in the payload of the
             ignored packet -- defaults to a random number from 10 to 41.
         @type bytes: int
-
-        @since: fearow
         """
         m = Message()
         m.add_byte(chr(MSG_IGNORE))
+        randpool.stir()
         if bytes is None:
             bytes = (ord(randpool.get_bytes(1)) % 32) + 10
         m.add_bytes(randpool.get_bytes(bytes))
@@ -658,11 +715,9 @@ class BaseTransport (threading.Thread):
         @param interval: seconds to wait before sending a keepalive packet (or
             0 to disable keepalives).
         @type interval: int
-
-        @since: fearow
         """
         self.packetizer.set_keepalive(interval,
-            lambda x=self: x.global_request('keepalive@lag.net', wait=False))
+            lambda x=weakref.proxy(self): x.global_request('keepalive@lag.net', wait=False))
 
     def global_request(self, kind, data=None, wait=True):
         """
@@ -681,8 +736,6 @@ class BaseTransport (threading.Thread):
             request was successful (or an empty L{Message} if C{wait} was
             C{False}); C{None} if the request was denied.
         @rtype: L{Message}
-
-        @since: fearow
         """
         if wait:
             self.completion_event = threading.Event()
@@ -764,8 +817,6 @@ class BaseTransport (threading.Thread):
         
         @raise SSHException: if the SSH2 negotiation fails, the host key
             supplied by the server is incorrect, or authentication fails.
-
-        @since: doduo
         """
         if hostkey is not None:
             self._preferred_keys = [ hostkey.get_name() ]
@@ -833,6 +884,240 @@ class BaseTransport (threading.Thread):
             self.subsystem_table[name] = (handler, larg, kwarg)
         finally:
             self.lock.release()
+    
+    def is_authenticated(self):
+        """
+        Return true if this session is active and authenticated.
+
+        @return: True if the session is still open and has been authenticated
+            successfully; False if authentication failed and/or the session is
+            closed.
+        @rtype: bool
+        """
+        return self.active and (self.auth_handler is not None) and self.auth_handler.is_authenticated()
+    
+    def get_username(self):
+        """
+        Return the username this connection is authenticated for.  If the
+        session is not authenticated (or authentication failed), this method
+        returns C{None}.
+
+        @return: username that was authenticated, or C{None}.
+        @rtype: string
+        """
+        if not self.active or (self.auth_handler is None):
+            return None
+        return self.auth_handler.get_username()
+
+    def auth_none(self, username):
+        """
+        Try to authenticate to the server using no authentication at all.
+        This will almost always fail.  It may be useful for determining the
+        list of authentication types supported by the server, by catching the
+        L{BadAuthenticationType} exception raised.
+        
+        @param username: the username to authenticate as
+        @type username: string
+        @return: list of auth types permissible for the next stage of
+            authentication (normally empty)
+        @rtype: list
+
+        @raise BadAuthenticationType: if "none" authentication isn't allowed
+            by the server for this user
+        @raise SSHException: if the authentication failed due to a network
+            error
+            
+        @since: 1.5
+        """
+        if (not self.active) or (not self.initial_kex_done):
+            raise SSHException('No existing session')
+        my_event = threading.Event()
+        self.auth_handler = AuthHandler(self)
+        self.auth_handler.auth_none(username, my_event)
+        return self.auth_handler.wait_for_response(my_event)
+
+    def auth_password(self, username, password, event=None, fallback=True):
+        """
+        Authenticate to the server using a password.  The username and password
+        are sent over an encrypted link.
+        
+        If an C{event} is passed in, this method will return immediately, and
+        the event will be triggered once authentication succeeds or fails.  On
+        success, L{is_authenticated} will return C{True}.  On failure, you may
+        use L{get_exception} to get more detailed error information.
+
+        Since 1.1, if no event is passed, this method will block until the
+        authentication succeeds or fails.  On failure, an exception is raised.
+        Otherwise, the method simply returns.
+        
+        Since 1.5, if no event is passed and C{fallback} is C{True} (the
+        default), if the server doesn't support plain password authentication
+        but does support so-called "keyboard-interactive" mode, an attempt
+        will be made to authenticate using this interactive mode.  If it fails,
+        the normal exception will be thrown as if the attempt had never been
+        made.  This is useful for some recent Gentoo and Debian distributions,
+        which turn off plain password authentication in a misguided belief
+        that interactive authentication is "more secure".  (It's not.)
+        
+        If the server requires multi-step authentication (which is very rare),
+        this method will return a list of auth types permissible for the next
+        step.  Otherwise, in the normal case, an empty list is returned.
+        
+        @param username: the username to authenticate as
+        @type username: string
+        @param password: the password to authenticate with
+        @type password: string
+        @param event: an event to trigger when the authentication attempt is
+            complete (whether it was successful or not)
+        @type event: threading.Event
+        @param fallback: C{True} if an attempt at an automated "interactive"
+            password auth should be made if the server doesn't support normal
+            password auth
+        @type fallback: bool
+        @return: list of auth types permissible for the next stage of
+            authentication (normally empty)
+        @rtype: list
+        
+        @raise BadAuthenticationType: if password authentication isn't
+            allowed by the server for this user (and no event was passed in)
+        @raise SSHException: if the authentication failed (and no event was
+            passed in)
+        """
+        if (not self.active) or (not self.initial_kex_done):
+            # we should never try to send the password unless we're on a secure link
+            raise SSHException('No existing session')
+        if event is None:
+            my_event = threading.Event()
+        else:
+            my_event = event
+        self.auth_handler = AuthHandler(self)
+        self.auth_handler.auth_password(username, password, my_event)
+        if event is not None:
+            # caller wants to wait for event themselves
+            return []
+        try:
+            return self.auth_handler.wait_for_response(my_event)
+        except BadAuthenticationType, x:
+            # if password auth isn't allowed, but keyboard-interactive *is*, try to fudge it
+            if not fallback or ('keyboard-interactive' not in x.allowed_types):
+                raise
+            try:
+                def handler(title, instructions, fields):
+                    if len(fields) > 1:
+                        raise SSHException('Fallback authentication failed.')
+                    if len(fields) == 0:
+                        # for some reason, at least on os x, a 2nd request will
+                        # be made with zero fields requested.  maybe it's just
+                        # to try to fake out automated scripting of the exact
+                        # type we're doing here.  *shrug* :)
+                        return []
+                    return [ password ]
+                return self.auth_interactive(username, handler)
+            except SSHException, ignored:
+                # attempt failed; just raise the original exception
+                raise x
+                return None
+
+    def auth_publickey(self, username, key, event=None):
+        """
+        Authenticate to the server using a private key.  The key is used to
+        sign data from the server, so it must include the private part.
+        
+        If an C{event} is passed in, this method will return immediately, and
+        the event will be triggered once authentication succeeds or fails.  On
+        success, L{is_authenticated} will return C{True}.  On failure, you may
+        use L{get_exception} to get more detailed error information.
+        
+        Since 1.1, if no event is passed, this method will block until the
+        authentication succeeds or fails.  On failure, an exception is raised.
+        Otherwise, the method simply returns.
+
+        If the server requires multi-step authentication (which is very rare),
+        this method will return a list of auth types permissible for the next
+        step.  Otherwise, in the normal case, an empty list is returned.
+
+        @param username: the username to authenticate as
+        @type username: string
+        @param key: the private key to authenticate with
+        @type key: L{PKey <pkey.PKey>}
+        @param event: an event to trigger when the authentication attempt is
+            complete (whether it was successful or not)
+        @type event: threading.Event
+        @return: list of auth types permissible for the next stage of
+            authentication (normally empty).
+        @rtype: list
+        
+        @raise BadAuthenticationType: if public-key authentication isn't
+            allowed by the server for this user (and no event was passed in).
+        @raise SSHException: if the authentication failed (and no event was
+            passed in).
+        """
+        if (not self.active) or (not self.initial_kex_done):
+            # we should never try to authenticate unless we're on a secure link
+            raise SSHException('No existing session')
+        if event is None:
+            my_event = threading.Event()
+        else:
+            my_event = event
+        self.auth_handler = AuthHandler(self)
+        self.auth_handler.auth_publickey(username, key, my_event)
+        if event is not None:
+            # caller wants to wait for event themselves
+            return []
+        return self.auth_handler.wait_for_response(my_event)
+    
+    def auth_interactive(self, username, handler, submethods=''):
+        """
+        Authenticate to the server interactively.  A handler is used to answer
+        arbitrary questions from the server.  On many servers, this is just a
+        dumb wrapper around PAM.
+        
+        This method will block until the authentication succeeds or fails,
+        peroidically calling the handler asynchronously to get answers to
+        authentication questions.  The handler may be called more than once
+        if the server continues to ask questions.
+        
+        The handler is expected to be a callable that will handle calls of the
+        form: C{handler(title, instructions, prompt_list)}.  The C{title} is
+        meant to be a dialog-window title, and the C{instructions} are user
+        instructions (both are strings).  C{prompt_list} will be a list of
+        prompts, each prompt being a tuple of C{(str, bool)}.  The string is
+        the prompt and the boolean indicates whether the user text should be
+        echoed.
+        
+        A sample call would thus be:
+        C{handler('title', 'instructions', [('Password:', False)])}.
+        
+        The handler should return a list or tuple of answers to the server's
+        questions.
+        
+        If the server requires multi-step authentication (which is very rare),
+        this method will return a list of auth types permissible for the next
+        step.  Otherwise, in the normal case, an empty list is returned.
+
+        @param username: the username to authenticate as
+        @type username: string
+        @param handler: a handler for responding to server questions
+        @type handler: callable
+        @param submethods: a string list of desired submethods (optional)
+        @type submethods: str
+        @return: list of auth types permissible for the next stage of
+            authentication (normally empty).
+        @rtype: list
+        
+        @raise BadAuthenticationType: if public-key authentication isn't
+            allowed by the server for this user
+        @raise SSHException: if the authentication failed
+        
+        @since: 1.5
+        """
+        if (not self.active) or (not self.initial_kex_done):
+            # we should never try to authenticate unless we're on a secure link
+            raise SSHException('No existing session')
+        my_event = threading.Event()
+        self.auth_handler = AuthHandler(self)
+        self.auth_handler.auth_interactive(username, handler, my_event, submethods)
+        return self.auth_handler.wait_for_response(my_event)
 
     def set_log_channel(self, name):
         """
@@ -848,6 +1133,7 @@ class BaseTransport (threading.Thread):
         """
         self.log_name = name
         self.logger = util.get_logger(name)
+        self.packetizer.set_log(self.logger)
 
     def get_log_channel(self):
         """
@@ -883,6 +1169,39 @@ class BaseTransport (threading.Thread):
         @since: 1.4
         """
         return self.packetizer.get_hexdump()
+    
+    def use_compression(self, compress=True):
+        """
+        Turn on/off compression.  This will only have an affect before starting
+        the transport (ie before calling L{connect}, etc).  By default,
+        compression is off since it negatively affects interactive sessions
+        and is not fully tested.
+        
+        @param compress: C{True} to ask the remote client/server to compress
+            traffic; C{False} to refuse compression
+        @type compress: bool
+        
+        @since: 1.5.2
+        """
+        if compress:
+            self._preferred_compression = ( 'zlib@openssh.com', 'zlib', 'none' )
+        else:
+            self._preferred_compression = ( 'none', )
+    
+    def getpeername(self):
+        """
+        Return the address of the remote side of this Transport, if possible.
+        This is effectively a wrapper around C{'getpeername'} on the underlying
+        socket.  If the socket-like object has no C{'getpeername'} method,
+        then C{("unknown", 0)} is returned.
+        
+        @return: the address if the remote host, if known
+        @rtype: tuple(str, int)
+        """
+        gp = getattr(self.sock, 'getpeername', None)
+        if gp is None:
+            return ('unknown', 0)
+        return gp()
 
     def stop_thread(self):
         self.active = False
@@ -914,8 +1233,6 @@ class BaseTransport (threading.Thread):
 
     def _send_message(self, data):
         self.packetizer.send_message(data)
-        if self.packetizer.need_rekey() and not self.in_kex:
-            self._send_kex_init()
 
     def _send_user_message(self, data):
         """
@@ -927,9 +1244,14 @@ class BaseTransport (threading.Thread):
             if not self.active:
                 self._log(DEBUG, 'Dropping user packet because connection is dead.')
                 return
+            self.clear_to_send_lock.acquire()
             if self.clear_to_send.isSet():
                 break
-        self._send_message(data)
+            self.clear_to_send_lock.release()
+        try:
+            self._send_message(data)
+        finally:
+            self.clear_to_send_lock.release()
 
     def _set_K_H(self, k, h):
         "used by a kex object to set the K (root key) and H (exchange hash)"
@@ -963,9 +1285,9 @@ class BaseTransport (threading.Thread):
             m.add_mpint(self.K)
             m.add_bytes(self.H)
             m.add_bytes(sofar)
-            hash = SHA.new(str(m)).digest()
-            out += hash
-            sofar += hash
+            digest = SHA.new(str(m)).digest()
+            out += digest
+            sofar += digest
         return out[:nbytes]
 
     def _get_cipher(self, name, key, iv):
@@ -994,7 +1316,10 @@ class BaseTransport (threading.Thread):
             while self.active:
                 if self.packetizer.need_rekey() and not self.in_kex:
                     self._send_kex_init()
-                ptype, m = self.packetizer.read_message()
+                try:
+                    ptype, m = self.packetizer.read_message()
+                except NeedRekeyException:
+                    continue
                 if ptype == MSG_IGNORE:
                     continue
                 elif ptype == MSG_DISCONNECT:
@@ -1019,10 +1344,14 @@ class BaseTransport (threading.Thread):
                     chanid = m.get_int()
                     if self.channels.has_key(chanid):
                         self._channel_handler_table[ptype](self.channels[chanid], m)
+                    elif self.channels_seen.has_key(chanid):
+                        self._log(DEBUG, 'Ignoring message for dead channel %d' % chanid)
                     else:
                         self._log(ERROR, 'Channel request for unknown channel %d' % chanid)
                         self.active = False
                         self.packetizer.close()
+                elif (self.auth_handler is not None) and self.auth_handler._handler_table.has_key(ptype):
+                    self.auth_handler._handler_table[ptype](self.auth_handler, m)
                 else:
                     self._log(WARNING, 'Oops, unhandled type %d' % ptype)
                     msg = Message()
@@ -1056,8 +1385,8 @@ class BaseTransport (threading.Thread):
             self.packetizer.close()
             if self.completion_event != None:
                 self.completion_event.set()
-            if self.auth_event != None:
-                self.auth_event.set()
+            if self.auth_handler is not None:
+                self.auth_handler.abort()
             for event in self.channel_events.values():
                 event.set()
         self.sock.close()
@@ -1068,7 +1397,11 @@ class BaseTransport (threading.Thread):
 
     def _negotiate_keys(self, m):
         # throws SSHException on anything unusual
-        self.clear_to_send.clear()
+        self.clear_to_send_lock.acquire()
+        try:
+            self.clear_to_send.clear()
+        finally:
+            self.clear_to_send_lock.release()
         if self.local_kex_init == None:
             # remote side wants to renegotiate
             self._send_kex_init()
@@ -1084,24 +1417,24 @@ class BaseTransport (threading.Thread):
             else:
                 timeout = 2
             try:
-                buffer = self.packetizer.readline(timeout)
+                buf = self.packetizer.readline(timeout)
             except Exception, x:
                 raise SSHException('Error reading SSH protocol banner' + str(x))
-            if buffer[:4] == 'SSH-':
+            if buf[:4] == 'SSH-':
                 break
-            self._log(DEBUG, 'Banner: ' + buffer)
-        if buffer[:4] != 'SSH-':
-            raise SSHException('Indecipherable protocol version "' + buffer + '"')
+            self._log(DEBUG, 'Banner: ' + buf)
+        if buf[:4] != 'SSH-':
+            raise SSHException('Indecipherable protocol version "' + buf + '"')
         # save this server version string for later
-        self.remote_version = buffer
+        self.remote_version = buf
         # pull off any attached comment
         comment = ''
-        i = string.find(buffer, ' ')
+        i = string.find(buf, ' ')
         if i >= 0:
-            comment = buffer[i+1:]
-            buffer = buffer[:i]
+            comment = buf[i+1:]
+            buf = buf[:i]
         # parse out version string and make sure it matches
-        segs = buffer.split('-', 2)
+        segs = buf.split('-', 2)
         if len(segs) < 3:
             raise SSHException('Invalid SSH banner')
         version = segs[1]
@@ -1115,7 +1448,11 @@ class BaseTransport (threading.Thread):
         announce to the other side that we'd like to negotiate keys, and what
         kind of key negotiation we support.
         """
-        self.clear_to_send.clear()
+        self.clear_to_send_lock.acquire()
+        try:
+            self.clear_to_send.clear()
+        finally:
+            self.clear_to_send_lock.release()
         self.in_kex = True
         if self.server_mode:
             if (self._modulus_pack is None) and ('diffie-hellman-group-exchange-sha1' in self._preferred_kex):
@@ -1128,6 +1465,7 @@ class BaseTransport (threading.Thread):
         else:
             available_server_keys = self._preferred_keys
 
+        randpool.stir()
         m = Message()
         m.add_byte(chr(MSG_KEXINIT))
         m.add_bytes(randpool.get_bytes(16))
@@ -1137,8 +1475,8 @@ class BaseTransport (threading.Thread):
         m.add_list(self._preferred_ciphers)
         m.add_list(self._preferred_macs)
         m.add_list(self._preferred_macs)
-        m.add_string('none')
-        m.add_string('none')
+        m.add_list(self._preferred_compression)
+        m.add_list(self._preferred_compression)
         m.add_string('')
         m.add_string('')
         m.add_boolean(False)
@@ -1162,10 +1500,16 @@ class BaseTransport (threading.Thread):
         kex_follows = m.get_boolean()
         unused = m.get_int()
 
-        # no compression support (yet?)
-        if (not('none' in client_compress_algo_list) or
-            not('none' in server_compress_algo_list)):
-            raise SSHException('Incompatible ssh peer.')
+        self._log(DEBUG, 'kex algos:' + str(kex_algo_list) + ' server key:' + str(server_key_algo_list) + \
+                  ' client encrypt:' + str(client_encrypt_algo_list) + \
+                  ' server encrypt:' + str(server_encrypt_algo_list) + \
+                  ' client mac:' + str(client_mac_algo_list) + \
+                  ' server mac:' + str(server_mac_algo_list) + \
+                  ' client compress:' + str(client_compress_algo_list) + \
+                  ' server compress:' + str(server_compress_algo_list) + \
+                  ' client lang:' + str(client_lang_list) + \
+                  ' server lang:' + str(server_lang_list) + \
+                  ' kex follows?' + str(kex_follows))
 
         # as a server, we pick the first item in the client's list that we support.
         # as a client, we pick the first item in our list that the server supports.
@@ -1216,19 +1560,20 @@ class BaseTransport (threading.Thread):
         self.local_mac = agreed_local_macs[0]
         self.remote_mac = agreed_remote_macs[0]
 
-        self._log(DEBUG, 'kex algos:' + str(kex_algo_list) + ' server key:' + str(server_key_algo_list) + \
-                  ' client encrypt:' + str(client_encrypt_algo_list) + \
-                  ' server encrypt:' + str(server_encrypt_algo_list) + \
-                  ' client mac:' + str(client_mac_algo_list) + \
-                  ' server mac:' + str(server_mac_algo_list) + \
-                  ' client compress:' + str(client_compress_algo_list) + \
-                  ' server compress:' + str(server_compress_algo_list) + \
-                  ' client lang:' + str(client_lang_list) + \
-                  ' server lang:' + str(server_lang_list) + \
-                  ' kex follows?' + str(kex_follows))
-        self._log(DEBUG, 'using kex %s; server key type %s; cipher: local %s, remote %s; mac: local %s, remote %s' %
+        if self.server_mode:
+            agreed_remote_compression = filter(self._preferred_compression.__contains__, client_compress_algo_list)
+            agreed_local_compression = filter(self._preferred_compression.__contains__, server_compress_algo_list)
+        else:
+            agreed_local_compression = filter(client_compress_algo_list.__contains__, self._preferred_compression)
+            agreed_remote_compression = filter(server_compress_algo_list.__contains__, self._preferred_compression)
+        if (len(agreed_local_compression) == 0) or (len(agreed_remote_compression) == 0):
+            raise SSHException('Incompatible ssh server (no acceptable compression) %r %r %r' % (agreed_local_compression, agreed_remote_compression, self._preferred_compression))
+        self.local_compression = agreed_local_compression[0]
+        self.remote_compression = agreed_remote_compression[0]
+
+        self._log(DEBUG, 'using kex %s; server key type %s; cipher: local %s, remote %s; mac: local %s, remote %s; compression: local %s, remote %s' %
                   (agreed_kex[0], self.host_key_type, self.local_cipher, self.remote_cipher, self.local_mac,
-                   self.remote_mac))
+                   self.remote_mac, self.local_compression, self.remote_compression))
 
         # save for computing hash later...
         # now wait!  openssh has a bug (and others might too) where there are
@@ -1256,6 +1601,10 @@ class BaseTransport (threading.Thread):
         else:
             mac_key = self._compute_key('F', mac_engine.digest_size)
         self.packetizer.set_inbound_cipher(engine, block_size, mac_engine, mac_size, mac_key)
+        compress_in = self._compression_info[self.remote_compression][1]
+        if (compress_in is not None) and ((self.remote_compression != 'zlib@openssh.com') or self.authenticated):
+            self._log(DEBUG, 'Switching on inbound compression ...')
+            self.packetizer.set_inbound_compressor(compress_in())
 
     def _activate_outbound(self):
         "switch on newly negotiated encryption parameters for outbound traffic"
@@ -1279,10 +1628,26 @@ class BaseTransport (threading.Thread):
         else:
             mac_key = self._compute_key('E', mac_engine.digest_size)
         self.packetizer.set_outbound_cipher(engine, block_size, mac_engine, mac_size, mac_key)
+        compress_out = self._compression_info[self.local_compression][0]
+        if (compress_out is not None) and ((self.local_compression != 'zlib@openssh.com') or self.authenticated):
+            self._log(DEBUG, 'Switching on outbound compression ...')
+            self.packetizer.set_outbound_compressor(compress_out())
         if not self.packetizer.need_rekey():
             self.in_kex = False
         # we always expect to receive NEWKEYS now
         self.expected_packet = MSG_NEWKEYS
+
+    def _auth_trigger(self):
+        self.authenticated = True
+        # delayed initiation of compression
+        if self.local_compression == 'zlib@openssh.com':
+            compress_out = self._compression_info[self.local_compression][0]
+            self._log(DEBUG, 'Switching on outbound compression ...')
+            self.packetizer.set_outbound_compressor(compress_out())
+        if self.remote_compression == 'zlib@openssh.com':
+            compress_in = self._compression_info[self.remote_compression][1]
+            self._log(DEBUG, 'Switching on inbound compression ...')
+            self.packetizer.set_inbound_compressor(compress_in())
 
     def _parse_newkeys(self, m):
         self._log(DEBUG, 'Switch to new keys ...')
@@ -1291,6 +1656,9 @@ class BaseTransport (threading.Thread):
         self.local_kex_init = self.remote_kex_init = None
         self.K = None
         self.kex_engine = None
+        if self.server_mode and (self.auth_handler is None):
+            # create auth handler for server mode
+            self.auth_handler = AuthHandler(self)
         if not self.initial_kex_done:
             # this was the first key exchange
             self.initial_kex_done = True
@@ -1300,7 +1668,11 @@ class BaseTransport (threading.Thread):
         # it's now okay to send data again (if this was a re-key)
         if not self.packetizer.need_rekey():
             self.in_kex = False
-        self.clear_to_send.set()
+        self.clear_to_send_lock.acquire()
+        try:
+            self.clear_to_send.set()
+        finally:
+            self.clear_to_send_lock.release()
         return
 
     def _parse_disconnect(self, m):
@@ -1416,6 +1788,7 @@ class BaseTransport (threading.Thread):
         try:
             self.lock.acquire()
             self.channels[my_chanid] = chan
+            self.channels_seen[my_chanid] = True
             chan._set_transport(self)
             chan._set_window(self.window_size, self.max_packet_size)
             chan._set_remote_channel(chanid, initial_window_size, max_packet_size)
@@ -1472,5 +1845,3 @@ class BaseTransport (threading.Thread):
         MSG_CHANNEL_EOF: Channel._handle_eof,
         MSG_CHANNEL_CLOSE: Channel._handle_close,
         }
-
-from server import ServerInterface

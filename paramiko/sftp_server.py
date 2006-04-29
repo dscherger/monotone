@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -22,13 +20,15 @@
 Server-mode SFTP support.
 """
 
-import os, errno
+import os
+import errno
+
 from Crypto.Hash import MD5, SHA
-from common import *
-from server import SubsystemHandler
-from sftp import *
-from sftp_si import *
-from sftp_attr import *
+from paramiko.common import *
+from paramiko.server import SubsystemHandler
+from paramiko.sftp import *
+from paramiko.sftp_si import *
+from paramiko.sftp_attr import *
 
 
 # known hash algorithms for the "check-file" extension
@@ -106,7 +106,7 @@ class SFTPServer (BaseSFTP, SubsystemHandler):
 
     def convert_errno(e):
         """
-        Convert an errno value (as from an C{OSError} or C{IOError} into a
+        Convert an errno value (as from an C{OSError} or C{IOError}) into a
         standard SFTP result code.  This is a convenience function for trapping
         exceptions in server code and returning an appropriate result.
 
@@ -118,7 +118,7 @@ class SFTPServer (BaseSFTP, SubsystemHandler):
         if e == errno.EACCES:
             # permission denied
             return SFTP_PERMISSION_DENIED
-        elif e == errno.ENOENT:
+        elif (e == errno.ENOENT) or (e == errno.ENOTDIR):
             # no such file
             return SFTP_NO_SUCH_FILE
         else:
@@ -147,6 +147,8 @@ class SFTPServer (BaseSFTP, SubsystemHandler):
             os.chown(filename, attr.st_uid, attr.st_gid)
         if attr._flags & attr.FLAG_AMTIME:
             os.utime(filename, (attr.st_atime, attr.st_mtime))
+        if attr._flags & attr.FLAG_SIZE:
+            open(filename, 'w+').truncate(attr.st_size)
     set_file_attr = staticmethod(set_file_attr)
 
 
@@ -184,7 +186,10 @@ class SFTPServer (BaseSFTP, SubsystemHandler):
 
     def _send_status(self, request_number, code, desc=None):
         if desc is None:
-            desc = SFTP_DESC[code]
+            try:
+                desc = SFTP_DESC[code]
+            except IndexError:
+                desc = 'Unknown'
         self._response(request_number, CMD_STATUS, code, desc)
 
     def _open_folder(self, request_number, path):
@@ -246,29 +251,29 @@ class SFTPServer (BaseSFTP, SubsystemHandler):
             self._send_status(request_number, SFTP_FAILURE, 'Block size too small')
             return
 
-        sum = ''
+        sum_out = ''
         offset = start
         while offset < start + length:
             blocklen = min(block_size, start + length - offset)
             # don't try to read more than about 64KB at a time
             chunklen = min(blocklen, 65536)
             count = 0
-            hash = alg.new()
+            hash_obj = alg.new()
             while count < blocklen:
                 data = f.read(offset, chunklen)
                 if not type(data) is str:
                     self._send_status(request_number, data, 'Unable to hash file')
                     return
-                hash.update(data)
+                hash_obj.update(data)
                 count += len(data)
                 offset += count
-            sum += hash.digest()
+            sum_out += hash_obj.digest()
 
         msg = Message()
         msg.add_int(request_number)
         msg.add_string('check-file')
         msg.add_string(algname)
-        msg.add_bytes(sum)
+        msg.add_bytes(sum_out)
         self._send_packet(CMD_EXTENDED_REPLY, str(msg))
     
     def _convert_pflags(self, pflags):
@@ -412,9 +417,9 @@ class SFTPServer (BaseSFTP, SubsystemHandler):
             if tag == 'check-file':
                 self._check_file(request_number, msg)
             else:
-                send._send_status(request_number, SFTP_OP_UNSUPPORTED)
+                self._send_status(request_number, SFTP_OP_UNSUPPORTED)
         else:
             self._send_status(request_number, SFTP_OP_UNSUPPORTED)
 
 
-from sftp_handle import SFTPHandle
+from paramiko.sftp_handle import SFTPHandle

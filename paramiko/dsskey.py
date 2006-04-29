@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -25,18 +23,25 @@ L{DSSKey}
 from Crypto.PublicKey import DSA
 from Crypto.Hash import SHA
 
-from common import *
-import util
-from ssh_exception import SSHException
-from message import Message
-from ber import BER, BERException
-from pkey import PKey
+from paramiko.common import *
+from paramiko import util
+from paramiko.ssh_exception import SSHException
+from paramiko.message import Message
+from paramiko.ber import BER, BERException
+from paramiko.pkey import PKey
+
 
 class DSSKey (PKey):
     """
     Representation of a DSS key which can be used to sign an verify SSH2
     data.
     """
+    
+    p = None
+    q = None
+    g = None
+    y = None
+    x = None
 
     def __init__(self, msg=None, data=None, filename=None, password=None, vals=None):
         if filename is not None:
@@ -82,21 +87,28 @@ class DSSKey (PKey):
         return self.size
         
     def can_sign(self):
-        return hasattr(self, 'x')
+        return self.x is not None
 
     def sign_ssh_data(self, rpool, data):
         digest = SHA.new(data).digest()
         dss = DSA.construct((long(self.y), long(self.g), long(self.p), long(self.q), long(self.x)))
         # generate a suitable k
         qsize = len(util.deflate_long(self.q, 0))
-        while 1:
+        while True:
             k = util.inflate_long(rpool.get_bytes(qsize), 1)
             if (k > 2) and (k < self.q):
                 break
         r, s = dss.sign(util.inflate_long(digest, 1), k)
         m = Message()
         m.add_string('ssh-dss')
-        m.add_string(util.deflate_long(r, 0) + util.deflate_long(s, 0))
+        # apparently, in rare cases, r or s may be shorter than 20 bytes!
+        rstr = util.deflate_long(r, 0)
+        sstr = util.deflate_long(s, 0)
+        if len(rstr) < 20:
+            rstr = '\x00' * (20 - len(rstr)) + rstr
+        if len(sstr) < 20:
+            sstr = '\x00' * (20 - len(sstr)) + sstr
+        m.add_string(rstr + sstr)
         return m
 
     def verify_ssh_sig(self, data, msg):
@@ -118,6 +130,8 @@ class DSSKey (PKey):
         return dss.verify(sigM, (sigR, sigS))
 
     def write_private_key_file(self, filename, password=None):
+        if self.x is None:
+            raise SSHException('Not enough key information')
         keylist = [ 0, self.p, self.q, self.g, self.y, self.x ]
         try:
             b = BER()
@@ -134,13 +148,12 @@ class DSSKey (PKey):
         @param bits: number of bits the generated key should be.
         @type bits: int
         @param progress_func: an optional function to call at key points in
-        key generation (used by C{pyCrypto.PublicKey}).
+            key generation (used by C{pyCrypto.PublicKey}).
         @type progress_func: function
         @return: new private key
         @rtype: L{DSSKey}
-
-        @since: fearow
         """
+        randpool.stir()
         dsa = DSA.generate(bits, randpool.get_bytes, progress_func)
         key = DSSKey(vals=(dsa.p, dsa.q, dsa.g, dsa.y))
         key.x = dsa.x
@@ -167,4 +180,3 @@ class DSSKey (PKey):
         self.y = keylist[4]
         self.x = keylist[5]
         self.size = util.bit_length(self.p)
-

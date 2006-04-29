@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -27,10 +25,10 @@ client side, and a B{lot} more on the server side.
 from Crypto.Hash import SHA
 from Crypto.Util import number
 
-from common import *
-from message import Message
-import util
-from ssh_exception import SSHException
+from paramiko.common import *
+from paramiko import util
+from paramiko.message import Message
+from paramiko.ssh_exception import SSHException
 
 
 _MSG_KEXDH_GEX_GROUP, _MSG_KEXDH_GEX_INIT, _MSG_KEXDH_GEX_REPLY, _MSG_KEXDH_GEX_REQUEST = range(31, 35)
@@ -45,6 +43,12 @@ class KexGex (object):
 
     def __init__(self, transport):
         self.transport = transport
+        self.p = None
+        self.q = None
+        self.g = None
+        self.x = None
+        self.e = None
+        self.f = None
 
     def start_kex(self):
         if self.transport.server_mode:
@@ -119,6 +123,7 @@ class KexGex (object):
         pack = self.transport._get_modulus_pack()
         if pack is None:
             raise SSHException('Can\'t do server-side gex with no modulus pack')
+        self.transport._log(DEBUG, 'Picking p (%d <= %d <= %d bits)' % (minbits, preferredbits, maxbits))
         self.g, self.p = pack.get_modulus(minbits, preferredbits, maxbits)
         m = Message()
         m.add_byte(chr(_MSG_KEXDH_GEX_GROUP))
@@ -201,6 +206,3 @@ class KexGex (object):
         self.transport._set_K_H(K, SHA.new(str(hm)).digest())
         self.transport._verify_key(host_key, sig)
         self.transport._activate_outbound()
-
-
-    

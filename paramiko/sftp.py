@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -16,11 +16,14 @@
 # along with Paramiko; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
-import struct, socket
-from common import *
-import util
-from channel import Channel
-from message import Message
+import socket
+import struct
+
+from paramiko.common import *
+from paramiko import util
+from paramiko.channel import Channel
+from paramiko.message import Message
+
 
 CMD_INIT, CMD_VERSION, CMD_OPEN, CMD_CLOSE, CMD_READ, CMD_WRITE, CMD_LSTAT, CMD_FSTAT, \
            CMD_SETSTAT, CMD_FSETSTAT, CMD_OPENDIR, CMD_READDIR, CMD_REMOVE, CMD_MKDIR, \
@@ -110,16 +113,18 @@ class BaseSFTP (object):
         return version
 
     def _send_server_version(self):
+        # winscp will freak out if the server sends version info before the
+        # client finishes sending INIT.
+        t, data = self._read_packet()
+        if t != CMD_INIT:
+            raise SFTPError('Incompatible sftp protocol')
+        version = struct.unpack('>I', data[:4])[0]
         # advertise that we support "check-file"
         extension_pairs = [ 'check-file', 'md5,sha1' ]
         msg = Message()
         msg.add_int(_VERSION)
         msg.add(*extension_pairs)
         self._send_packet(CMD_VERSION, str(msg))
-        t, data = self._read_packet()
-        if t != CMD_INIT:
-            raise SFTPError('Incompatible sftp protocol')
-        version = struct.unpack('>I', data[:4])[0]
         return version
         
     def _log(self, level, msg):

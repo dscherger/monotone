@@ -17,50 +17,23 @@
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
 """
-Stub out logging on python < 2.3.
+Compression implementations for a Transport.
 """
 
-
-DEBUG = 10
-INFO = 20
-WARNING = 30
-ERROR = 40
-CRITICAL = 50
+import zlib
 
 
-def getLogger(name):
-    return _logger
-
-
-class logger (object):
+class ZlibCompressor (object):
     def __init__(self):
-        self.handlers = [ ]
-        self.level = ERROR
+        self.z = zlib.compressobj(9)
 
-    def setLevel(self, level):
-        self.level = level
+    def __call__(self, data):
+        return self.z.compress(data) + self.z.flush(zlib.Z_FULL_FLUSH)
 
-    def addHandler(self, h):
-        self.handlers.append(h)
 
-    def addFilter(self, filter):
-        pass
-        
-    def log(self, level, text):
-        if level >= self.level:
-            for h in self.handlers:
-                h.f.write(text + '\n')
-                h.f.flush()
+class ZlibDecompressor (object):
+    def __init__(self):
+        self.z = zlib.decompressobj()
 
-class StreamHandler (object):
-    def __init__(self, f):
-        self.f = f
-
-    def setFormatter(self, f):
-        pass
-
-class Formatter (object):
-    def __init__(self, x, y):
-        pass
-
-_logger = logger()
+    def __call__(self, data):
+        return self.z.decompress(data)

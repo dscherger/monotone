@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 Robey Pointer <robey@lag.net>
+# Copyright (C) 2003-2006 Robey Pointer <robey@lag.net>
 #
 # This file is part of paramiko.
 #
@@ -20,10 +20,12 @@
 L{SFTPFile}
 """
 
-from common import *
-from sftp import *
-from file import BufferedFile
-from sftp_attr import SFTPAttributes
+import socket
+import threading
+from paramiko.common import *
+from paramiko.sftp import *
+from paramiko.file import BufferedFile
+from paramiko.sftp_attr import SFTPAttributes
 
 
 class SFTPFile (BufferedFile):
@@ -40,11 +42,20 @@ class SFTPFile (BufferedFile):
         self.sftp = sftp
         self.handle = handle
         BufferedFile._set_mode(self, mode, bufsize)
+        self.pipelined = False
+        self._prefetching = False
+        self._prefetch_done = False
+        self._prefetch_so_far = 0
+        self._prefetch_data = {}
+        self._saved_exception = None
 
     def __del__(self):
-        self.close()
-        
+        self._close(async=True)
+    
     def close(self):
+        self._close(async=False)
+        
+    def _close(self, async=False):
         # We allow double-close without signaling an error, because real
         # Python file objects do.  However, we must protect against actually
         # sending multiple CMD_CLOSE packets, because after we close our
@@ -54,18 +65,65 @@ class SFTPFile (BufferedFile):
         # __del__.)
         if self._closed:
             return
+        self.sftp._log(DEBUG, 'close(%s)' % util.hexify(self.handle))
+        if self.pipelined:
+            self.sftp._finish_responses(self)
         BufferedFile.close(self)
         try:
-            self.sftp._request(CMD_CLOSE, self.handle)
+            if async:
+                # GC'd file handle could be called from an arbitrary thread -- don't wait for a response
+                self.sftp._async_request(type(None), CMD_CLOSE, self.handle)
+            else:
+                self.sftp._request(CMD_CLOSE, self.handle)
         except EOFError:
             # may have outlived the Transport connection
             pass
-        except IOError:
+        except (IOError, socket.error):
             # may have outlived the Transport connection
             pass
 
+    def _read_prefetch(self, size):
+        """
+        read data out of the prefetch buffer, if possible.  if the data isn't
+        in the buffer, return None.  otherwise, behaves like a normal read.
+        """
+        # while not closed, and haven't fetched past the current position, and haven't reached EOF...
+        while (self._prefetch_so_far <= self._realpos) and not self._closed:
+            if self._prefetch_done:
+                return None
+            self.sftp._read_response()
+        self._check_exception()
+        k = self._prefetch_data.keys()
+        if len(k) == 0:
+            self._prefetching = False
+            return ''
+
+        # find largest offset < realpos
+        pos_list = [i for i in k if i <= self._realpos]
+        if len(pos_list) == 0:
+            return None
+        index = max(pos_list)
+        prefetch = self._prefetch_data[index]
+        del self._prefetch_data[index]
+        
+        buf_offset = self._realpos - index
+        if buf_offset > 0:
+            self._prefetch_data[index] = prefetch[:buf_offset]
+            prefetch = prefetch[buf_offset:]
+        if buf_offset >= len(prefetch):
+            # it's not here.
+            return None
+        if size < len(prefetch):
+            self._prefetch_data[self._realpos + size] = prefetch[size:]
+            prefetch = prefetch[:size]
+        return prefetch
+        
     def _read(self, size):
         size = min(size, self.MAX_REQUEST_SIZE)
+        if self._prefetching:
+            data = self._read_prefetch(size)
+            if data is not None:
+                return data
         t, msg = self.sftp._request(CMD_READ, self.handle, long(self._realpos), int(size))
         if t != CMD_DATA:
             raise SFTPError('Expected data')
@@ -74,11 +132,13 @@ class SFTPFile (BufferedFile):
     def _write(self, data):
         # may write less than requested if it would exceed max packet size
         chunk = min(len(data), self.MAX_REQUEST_SIZE)
-        t, msg = self.sftp._request(CMD_WRITE, self.handle, long(self._realpos),
-                                    str(data[:chunk]))
-        if t != CMD_STATUS:
-            raise SFTPError('Expected status')
-        self.sftp._convert_status(msg)
+        req = self.sftp._async_request(type(None), CMD_WRITE, self.handle, long(self._realpos),
+            str(data[:chunk]))
+        if not self.pipelined or self.sftp.sock.recv_ready():
+            t, msg = self.sftp._read_response(req)
+            if t != CMD_STATUS:
+                raise SFTPError('Expected status')
+            # convert_status already called
         return chunk
 
     def settimeout(self, timeout):
@@ -120,8 +180,8 @@ class SFTPFile (BufferedFile):
         if whence == self.SEEK_SET:
             self._realpos = self._pos = offset
         elif whence == self.SEEK_CUR:
-            self._realpos += offset
             self._pos += offset
+            self._realpos = self._pos
         else:
             self._realpos = self._pos = self._get_size() + offset
         self._rbuffer = ''
@@ -139,6 +199,71 @@ class SFTPFile (BufferedFile):
         if t != CMD_ATTRS:
             raise SFTPError('Expected attributes')
         return SFTPAttributes._from_msg(msg)
+
+    def chmod(self, mode):
+        """
+        Change the mode (permissions) of this file.  The permissions are
+        unix-style and identical to those used by python's C{os.chmod}
+        function.
+
+        @param mode: new permissions
+        @type mode: int
+        """
+        self.sftp._log(DEBUG, 'chmod(%s, %r)' % (util.hexify(self.handle), mode))
+        attr = SFTPAttributes()
+        attr.st_mode = mode
+        self.sftp._request(CMD_FSETSTAT, self.handle, attr)
+        
+    def chown(self, uid, gid):
+        """
+        Change the owner (C{uid}) and group (C{gid}) of this file.  As with
+        python's C{os.chown} function, you must pass both arguments, so if you
+        only want to change one, use L{stat} first to retrieve the current
+        owner and group.
+
+        @param uid: new owner's uid
+        @type uid: int
+        @param gid: new group id
+        @type gid: int
+        """
+        self.sftp._log(DEBUG, 'chown(%s, %r, %r)' % (util.hexify(self.handle), uid, gid))
+        attr = SFTPAttributes()
+        attr.st_uid, attr.st_gid = uid, gid
+        self.sftp._request(CMD_FSETSTAT, self.handle, attr)
+
+    def utime(self, times):
+        """
+        Set the access and modified times of this file.  If
+        C{times} is C{None}, then the file's access and modified times are set
+        to the current time.  Otherwise, C{times} must be a 2-tuple of numbers,
+        of the form C{(atime, mtime)}, which is used to set the access and
+        modified times, respectively.  This bizarre API is mimicked from python
+        for the sake of consistency -- I apologize.
+
+        @param times: C{None} or a tuple of (access time, modified time) in
+            standard internet epoch time (seconds since 01 January 1970 GMT)
+        @type times: tuple(int)
+        """
+        if times is None:
+            times = (time.time(), time.time())
+        self.sftp._log(DEBUG, 'utime(%s, %r)' % (util.hexify(self.handle), times))
+        attr = SFTPAttributes()
+        attr.st_atime, attr.st_mtime = times
+        self.sftp._request(CMD_FSETSTAT, self.handle, attr)
+
+    def truncate(self, size):
+        """
+        Change the size of this file.  This usually extends
+        or shrinks the size of the file, just like the C{truncate()} method on
+        python file objects.
+        
+        @param size: the new size of the file
+        @type size: int or long
+        """
+        self.sftp._log(DEBUG, 'truncate(%s, %r)' % (util.hexify(self.handle), size))
+        attr = SFTPAttributes()
+        attr.st_size = size
+        self.sftp._request(CMD_FSETSTAT, self.handle, attr)
     
     def check(self, hash_algorithm, offset=0, length=0, block_size=0):
         """
@@ -193,7 +318,78 @@ class SFTPFile (BufferedFile):
         alg = msg.get_string()
         data = msg.get_remainder()
         return data
+    
+    def set_pipelined(self, pipelined=True):
+        """
+        Turn on/off the pipelining of write operations to this file.  When
+        pipelining is on, paramiko won't wait for the server response after
+        each write operation.  Instead, they're collected as they come in.
+        At the first non-write operation (including L{close}), all remaining
+        server responses are collected.  This means that if there was an error
+        with one of your later writes, an exception might be thrown from
+        within L{close} instead of L{write}.
+        
+        By default, files are I{not} pipelined.
+        
+        @param pipelined: C{True} if pipelining should be turned on for this
+            file; C{False} otherwise
+        @type pipelined: bool
+        
+        @since: 1.5
+        """
+        self.pipelined = pipelined
+    
+    def prefetch(self):
+        """
+        Pre-fetch the remaining contents of this file in anticipation of
+        future L{read} calls.  If reading the entire file, pre-fetching can
+        dramatically improve the download speed by avoiding roundtrip latency.
+        The file's contents are incrementally buffered in a background thread.
+        
+        The prefetched data is stored in a buffer until read via the L{read}
+        method.  Once data has been read, it's removed from the buffer.  The
+        data may be read in a random order (using L{seek}); chunks of the
+        buffer that haven't been read will continue to be buffered.
 
+        @since: 1.5.1
+        """
+        size = self.stat().st_size
+        # queue up async reads for the rest of the file
+        chunks = []
+        n = self._realpos
+        while n < size:
+            chunk = min(self.MAX_REQUEST_SIZE, size - n)
+            chunks.append((n, chunk))
+            n += chunk
+        self._start_prefetch(chunks)
+    
+    def readv(self, chunks):
+        """
+        Read a set of blocks from the file by (offset, length).  This is more
+        efficient than doing a series of L{seek} and L{read} calls, since the
+        prefetch machinery is used to retrieve all the requested blocks at
+        once.
+        
+        @param chunks: a list of (offset, length) tuples indicating which
+            sections of the file to read
+        @ptype chunks: list(tuple(long, int))
+        @return: a list of blocks read, in the same order as in C{chunks}
+        @rtype: list(str)
+        
+        @since: 1.5.4
+        """
+        # put the offsets in order, since we depend on that for determining
+        # when the reads have finished.
+        ordered_chunks = chunks[:]
+        ordered_chunks.sort(lambda x, y: cmp(x[0], y[0]))
+        self._start_prefetch(ordered_chunks)
+        # now we can just devolve to a bunch of read()s :)
+        out = []
+        for x in chunks:
+            self.seek(x[0])
+            out.append(self.read(x[1]))
+        return out
+    
 
     ###  internals...
 
@@ -203,3 +399,45 @@ class SFTPFile (BufferedFile):
             return self.stat().st_size
         except:
             return 0
+
+    def _start_prefetch(self, chunks):
+        self._prefetching = True
+        self._prefetch_done = False
+        self._prefetch_so_far = chunks[0][0]
+        self._prefetch_data = {}
+        self._prefetch_reads = chunks[:]
+
+        t = threading.Thread(target=self._prefetch_thread, args=(chunks,))
+        t.setDaemon(True)
+        t.start()
+        
+    def _prefetch_thread(self, chunks):
+        # do these read requests in a temporary thread because there may be
+        # a lot of them, so it may block.
+        for offset, length in chunks:
+            self.sftp._async_request(self, CMD_READ, self.handle, long(offset), int(length))
+
+    def _async_response(self, t, msg):
+        if t == CMD_STATUS:
+            # save exception and re-raise it on next file operation
+            try:
+                self.sftp._convert_status(msg)
+            except Exception, x:
+                self._saved_exception = x
+            return
+        if t != CMD_DATA:
+            raise SFTPError('Expected data')
+        data = msg.get_string()
+        offset, length = self._prefetch_reads.pop(0)
+        assert length == len(data)
+        self._prefetch_data[offset] = data
+        self._prefetch_so_far = offset + length
+        if len(self._prefetch_reads) == 0:
+            self._prefetch_done = True
+    
+    def _check_exception(self):
+        "if there's a saved exception, raise & clear it"
+        if self._saved_exception is not None:
+            x = self._saved_exception
+            self._saved_exception = None
+            raise x

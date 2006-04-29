@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2005 John Rochester <john@jrochester.org>
+# Copyright (C) 2003-2006 John Rochester <john@jrochester.org>
 #
 # This file is part of paramiko.
 #
@@ -20,14 +20,19 @@
 SSH Agent interface for Unix clients.
 """
 
-import os, socket, struct
+import os
+import socket
+import struct
+import sys
 
-from ssh_exception import SSHException
-from message import Message
-from pkey import PKey
+from paramiko.ssh_exception import SSHException
+from paramiko.message import Message
+from paramiko.pkey import PKey
+
 
 SSH2_AGENTC_REQUEST_IDENTITIES, SSH2_AGENT_IDENTITIES_ANSWER, \
     SSH2_AGENTC_SIGN_REQUEST, SSH2_AGENT_SIGN_RESPONSE = range(11, 15)
+
 
 class Agent:
     """
@@ -50,12 +55,12 @@ class Agent:
         @raise SSHException: if an SSH agent is found, but speaks an
             incompatible protocol
         """
-        if 'SSH_AUTH_SOCK' in os.environ:
+        if ('SSH_AUTH_SOCK' in os.environ) and (sys.platform != 'win32'):
             conn = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             conn.connect(os.environ['SSH_AUTH_SOCK'])
             self.conn = conn
-            type, result = self._send_message(chr(SSH2_AGENTC_REQUEST_IDENTITIES))
-            if type != SSH2_AGENT_IDENTITIES_ANSWER:
+            ptype, result = self._send_message(chr(SSH2_AGENTC_REQUEST_IDENTITIES))
+            if ptype != SSH2_AGENT_IDENTITIES_ANSWER:
                 raise SSHException('could not get keys from ssh-agent')
             keys = []
             for i in range(result.get_int()):
@@ -127,7 +132,7 @@ class AgentKey(PKey):
         msg.add_string(self.blob)
         msg.add_string(data)
         msg.add_int(0)
-        type, result = self.agent._send_message(msg)
-        if type != SSH2_AGENT_SIGN_RESPONSE:
+        ptype, result = self.agent._send_message(msg)
+        if ptype != SSH2_AGENT_SIGN_RESPONSE:
             raise SSHException('key cannot be used for signing')
         return result.get_string()
