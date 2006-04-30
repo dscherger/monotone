@@ -72,11 +72,12 @@ class SFTPReadableFS(fs.ReadableFS):
         hostkey = get_host_key(hostname, hostkeyfile)
 
         key = None
-        if kwargs.has_key("dsskey"):
+	print kwargs
+        if kwargs.has_key("dsskey") and kwargs["dsskey"] is not None:
             keypath=os.path.expanduser(kwargs["dsskey"])
             key = paramiko.DSSKey.from_private_key_file(keypath, 
                                 password=password)
-        elif kwargs.has_key("rsakey"):
+        elif kwargs.has_key("rsakey") and kwargs["rsakey"] is not None:
             keypath=os.path.expanduser(kwargs["rsakey"])
             key = paramiko.RSAKey.from_private_key_file(keypath, 
                                 password=password)
