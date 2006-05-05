@@ -247,6 +247,10 @@ public:
                         file_id const & new_id,
                         file_delta const & del);
 
+  void get_arbitrary_file_delta(file_id const & src_id,
+                                file_id const & dst_id,
+                                file_delta & del);
+
   // get plain version if it exists, or reconstruct version
   // from deltas (if they exist). 
   void get_manifest_version(manifest_id const & id,
@@ -266,10 +270,10 @@ public:
   void deltify_revision(revision_id const & rid);
 
   void get_revision(revision_id const & id,
-                   revision_set & cs);
+                    revision_set & cs);
 
   void get_revision(revision_id const & id,
-                   revision_data & dat);
+                    revision_data & dat);
 
   void put_revision(revision_id const & new_id,
                     revision_set const & rev);
