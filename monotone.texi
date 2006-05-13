@@ -3374,6 +3374,7 @@ $ mtn --db=test.mtn --branch=net.example.wobbler checkout wobber-checkout
 @page
 @node    Using packets
 @section Using packets
+
 Suppose you made changes to your database, and want to send those
 changes to someone else but for some reason you cannot use netsync.  Or
 maybe you want to extract and inject individual revisions automatically
@@ -3399,8 +3400,6 @@ $ mtn -d B db init
 @end smallexample
 
 Now set up a branch in A:
-Change your working directory to the topmost directory of a CVS project and
-enter
 
 @smallexample
 @group
@@ -3596,7 +3595,7 @@ enter
 
 @smallexample
 @group
-$ monotone --branch=org.gnome.cvs.glade-- cvs_takeover glade--
+$ mtn --branch=org.gnome.cvs.glade-- cvs_takeover glade--
 @end group
 @end smallexample
 
@@ -3619,7 +3618,7 @@ server:
 
 @smallexample
 @group
-$ monotone --branch=org.gnome.cvs.glade-- --since=2005-01-01T00:00:00 cvs_pull :pserver:anonymous@@anoncvs.gnome.org:/cvs/gnome glade--
+$ mtn --branch=org.gnome.cvs.glade-- --since=2005-01-01T00:00:00 cvs_pull :pserver:anonymous@@anoncvs.gnome.org:/cvs/gnome glade--
 @end group
 @end smallexample
 
@@ -3637,7 +3636,7 @@ So how to get your changes back into the server:
 
 @smallexample
 @group
-$ monotone --branch=org.gnome.cvs.glade-- cvs_push
+$ mtn --branch=org.gnome.cvs.glade-- cvs_push
 @end group
 @end smallexample
 
@@ -4528,8 +4527,8 @@ any character, to match exactly that character --- this might be useful
 in case someone, for some odd reason, decides to put a ``*'' into their
 branch name.
 
-@item monotone cvs_pull [--since @var{time}] [@var{repository} @var{module} [@var{cvsbranch}]]
-@itemx monotone cvs_push [@var{repository} @var{module} [@var{cvsbranch}]]
+@item mtn cvs_pull [--since @var{time}] [@var{repository} @var{module} [@var{cvsbranch}]]
+@itemx mtn cvs_push [@var{repository} @var{module} [@var{cvsbranch}]]
 These commands communicate with a CVS server. @code{cvs_pull} works like
 @code{cvs update} and @code{cvs_push} is like @code{cvs commit}.
 See also @xref{cvssync,,cvssync introduction}.

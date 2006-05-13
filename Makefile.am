@@ -56,12 +56,12 @@ MOST_SOURCES =								\
          legacy.cc legacy.hh                                            \
                                                                         \
          lru_cache.h                                                    \
+                                                                        \
          piece_table.cc netxx_pipe.cc					\
 	 cleanup.hh unit_tests.hh interner.hh				\
          cycle_detector.hh randomfile.hh adler32.hh quick_alloc.hh	\
 	 netio.hh smap.hh gettext.h					\
          package_revision.c package_revision.h				\
-         cvs_client.cc cvs_sync.cc					\
          package_full_revision.c package_full_revision.h options.hh	\
          i18n.h hash_map.hh parallel_iter.hh safe_map.hh pch.hh
 
