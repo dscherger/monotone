@@ -349,7 +349,7 @@ endif
 
 # i18n support
 
-SUBDIRS = po
+SUBDIRS = po . libmtn mtn_cvs
 datadir = @datadir@
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
