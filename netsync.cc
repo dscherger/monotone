@@ -1298,6 +1298,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       queue_anonymous_cmd(this->role, our_include_pattern,
                           our_exclude_pattern, mk_nonce(), their_key_encoded);
     }
+    
   return true;
 }
 
