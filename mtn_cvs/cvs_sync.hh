@@ -9,9 +9,9 @@
 #include <stdexcept>
 #include "sanity.hh"
 #include "cvs_client.hh"
-#include "constants.hh"
-#include "app_state.hh"
-#include "packet.hh"
+//#include "constants.hh"
+//#include "app_state.hh"
+//#include "packet.hh"
 
 namespace cvs_sync {
 struct cvs_revision_nr
