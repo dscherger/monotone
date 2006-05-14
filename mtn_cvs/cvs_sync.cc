@@ -1031,7 +1031,6 @@ cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
     }
   }
 }
-#endif
 
 std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
@@ -1200,6 +1199,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   fail=true;
   return edges.end();
 }
+#endif
 
 std::string cvs_repository::gather_merge_information(revision_id const& id)
 { std::set<revision_id> parents;
