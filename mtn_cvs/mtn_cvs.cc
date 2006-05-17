@@ -8,6 +8,12 @@
 
 #include "popt/popt.h"
 
+char * argstr = NULL;
+long arglong = 0;
+
+enum 
+{ OPT_BRANCH_NAME, OPT_REVISION, OPT_DEBUG, OPT_HELP, OPT_VERSION };
+
 // Options are split between two tables.  The first one is command-specific
 // options (hence the `c' in `coptions').  The second is the global one
 // with options that aren't tied to specific commands.
@@ -19,32 +25,6 @@ struct poptOption coptions[] =
   {
     {"branch", 'b', POPT_ARG_STRING, &argstr, OPT_BRANCH_NAME, gettext_noop("select branch cert for operation"), NULL},
     {"revision", 'r', POPT_ARG_STRING, &argstr, OPT_REVISION, gettext_noop("select revision id for operation"), NULL},
-    {"message", 'm', POPT_ARG_STRING, &argstr, OPT_MESSAGE, gettext_noop("set commit changelog message"), NULL},
-    {"message-file", 0, POPT_ARG_STRING, &argstr, OPT_MSGFILE, gettext_noop("set filename containing commit changelog message"), NULL},
-    {"date", 0, POPT_ARG_STRING, &argstr, OPT_DATE, gettext_noop("override date/time for commit"), NULL},
-    {"author", 0, POPT_ARG_STRING, &argstr, OPT_AUTHOR, gettext_noop("override author for commit"), NULL},
-    {"depth", 0, POPT_ARG_LONG, &arglong, OPT_DEPTH, gettext_noop("limit the number of levels of directories to descend"), NULL},
-    {"last", 0, POPT_ARG_LONG, &arglong, OPT_LAST, gettext_noop("limit log output to the last number of entries"), NULL},
-    {"next", 0, POPT_ARG_LONG, &arglong, OPT_NEXT, gettext_noop("limit log output to the next number of entries"), NULL},
-    {"pid-file", 0, POPT_ARG_STRING, &argstr, OPT_PIDFILE, gettext_noop("record process id of server"), NULL},
-    {"brief", 0, POPT_ARG_NONE, NULL, OPT_BRIEF, gettext_noop("print a brief version of the normal output"), NULL},
-    {"diffs", 0, POPT_ARG_NONE, NULL, OPT_DIFFS, gettext_noop("print diffs along with logs"), NULL},
-    {"no-merges", 0, POPT_ARG_NONE, NULL, OPT_NO_MERGES, gettext_noop("exclude merges when printing logs"), NULL},
-    {"set-default", 0, POPT_ARG_NONE, NULL, OPT_SET_DEFAULT, gettext_noop("use the current arguments as the future default"), NULL},
-    {"exclude", 0, POPT_ARG_STRING, &argstr, OPT_EXCLUDE, gettext_noop("leave out anything described by its argument"), NULL},
-    {"unified", 0, POPT_ARG_NONE, NULL, OPT_UNIFIED_DIFF, gettext_noop("use unified diff format"), NULL},
-    {"context", 0, POPT_ARG_NONE, NULL, OPT_CONTEXT_DIFF, gettext_noop("use context diff format"), NULL},
-    {"external", 0, POPT_ARG_NONE, NULL, OPT_EXTERNAL_DIFF, gettext_noop("use external diff hook for generating diffs"), NULL},
-    {"diff-args", 0, POPT_ARG_STRING, &argstr, OPT_EXTERNAL_DIFF_ARGS, gettext_noop("argument to pass external diff hook"), NULL},
-    {"lca", 0, POPT_ARG_NONE, NULL, OPT_LCA, gettext_noop("use least common ancestor as ancestor for merge"), NULL},
-    {"execute", 'e', POPT_ARG_NONE, NULL, OPT_EXECUTE, gettext_noop("perform the associated file operation"), NULL},
-    {"bind", 0, POPT_ARG_STRING, &argstr, OPT_BIND, gettext_noop("address:port to listen on (default :4691)"), NULL},
-    {"missing", 0, POPT_ARG_NONE, NULL, OPT_MISSING, gettext_noop("perform the operations for files missing from workspace"), NULL},
-    {"unknown", 0, POPT_ARG_NONE, NULL, OPT_UNKNOWN, gettext_noop("perform the operations for unknown files from workspace"), NULL},
-    {"key-to-push", 0, POPT_ARG_STRING, &argstr, OPT_KEY_TO_PUSH, gettext_noop("push the specified key even if it hasn't signed anything"), NULL},
-    {"drop-attr", 0, POPT_ARG_STRING, &argstr, OPT_DROP_ATTR, gettext_noop("when rosterifying, drop attrs entries with the given key"), NULL},
-    {"no-files", 0, POPT_ARG_NONE, NULL, OPT_NO_FILES, gettext_noop("exclude files when printing logs"), NULL},
-    {"recursive", 'R', POPT_ARG_NONE, NULL, OPT_RECURSIVE, gettext_noop("also operate on the contents of any listed directories"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -54,23 +34,8 @@ struct poptOption options[] =
     { NULL, 0, POPT_ARG_INCLUDE_TABLE, coptions, 0, NULL, NULL },
 
     {"debug", 0, POPT_ARG_NONE, NULL, OPT_DEBUG, gettext_noop("print debug log to stderr while running"), NULL},
-    {"dump", 0, POPT_ARG_STRING, &argstr, OPT_DUMP, gettext_noop("file to dump debugging log to, on failure"), NULL},
-    {"log", 0, POPT_ARG_STRING, &argstr, OPT_LOG, gettext_noop("file to write the log to"), NULL},
-    {"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, gettext_noop("suppress log and progress messages"), NULL},
     {"help", 'h', POPT_ARG_NONE, NULL, OPT_HELP, gettext_noop("display help message"), NULL},
     {"version", 0, POPT_ARG_NONE, NULL, OPT_VERSION, gettext_noop("print version number, then exit"), NULL},
-    {"full-version", 0, POPT_ARG_NONE, NULL, OPT_FULL_VERSION, gettext_noop("print detailed version number, then exit"), NULL},
-    {"xargs", '@', POPT_ARG_STRING, &argstr, OPT_ARGFILE, gettext_noop("insert command line arguments taken from the given file"), NULL},
-    {"ticker", 0, POPT_ARG_STRING, &argstr, OPT_TICKER, gettext_noop("set ticker style (count|dot|none)"), NULL},
-    {"nostd", 0, POPT_ARG_NONE, NULL, OPT_NOSTD, gettext_noop("do not load standard lua hooks"), NULL},
-    {"norc", 0, POPT_ARG_NONE, NULL, OPT_NORC, gettext_noop("do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"), NULL},
-    {"rcfile", 0, POPT_ARG_STRING, &argstr, OPT_RCFILE, gettext_noop("load extra rc file"), NULL},
-    {"key", 'k', POPT_ARG_STRING, &argstr, OPT_KEY_NAME, gettext_noop("set key for signatures"), NULL},
-    {"db", 'd', POPT_ARG_STRING, &argstr, OPT_DB_NAME, gettext_noop("set name of database"), NULL},
-    {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, gettext_noop("limit search for workspace to specified root"), NULL},
-    {"verbose", 0, POPT_ARG_NONE, NULL, OPT_VERBOSE, gettext_noop("verbose completion output"), NULL},
-    {"keydir", 0, POPT_ARG_STRING, &argstr, OPT_KEY_DIR, gettext_noop("set location of key store"), NULL},
-    {"confdir", 0, POPT_ARG_STRING, &argstr, OPT_CONF_DIR, gettext_noop("set location of configuration directory"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -296,230 +261,6 @@ cpp_main(int argc, char ** argv)
             {
             case OPT_DEBUG:
               global_sanity.set_debug();
-              break;
-
-            case OPT_QUIET:
-              global_sanity.set_quiet();
-              ui.set_tick_writer(new tick_write_nothing);
-              break;
-
-            case OPT_NOSTD:
-              app.set_stdhooks(false);
-              break;
-
-            case OPT_NORC:
-              app.set_rcfiles(false);
-              break;
-
-            case OPT_VERBOSE:
-              app.set_verbose(true);
-              break;
-
-            case OPT_RCFILE:
-              app.add_rcfile(string(argstr));
-              break;
-
-            case OPT_DUMP:
-              global_sanity.filename = system_path(argstr);
-              break;
-
-            case OPT_LOG:
-              ui.redirect_log_to(system_path(argstr));
-              break;
-
-            case OPT_DB_NAME:
-              app.set_database(system_path(argstr));
-              break;
-
-            case OPT_KEY_DIR:
-              app.set_key_dir(system_path(argstr));
-              break;
-
-            case OPT_CONF_DIR:
-              app.set_confdir(system_path(argstr));
-              break;
-
-            case OPT_TICKER:
-              if (string(argstr) == "none" || global_sanity.quiet)
-                ui.set_tick_writer(new tick_write_nothing);
-              else if (string(argstr) == "dot")
-                ui.set_tick_writer(new tick_write_dot);
-              else if (string(argstr) == "count")
-                ui.set_tick_writer(new tick_write_count);
-              else
-                requested_help = true;
-              break;
-
-            case OPT_KEY_NAME:
-              app.set_signing_key(string(argstr));
-              break;
-
-            case OPT_BRANCH_NAME:
-              app.set_branch(string(argstr));
-              app.set_is_explicit_option(OPT_BRANCH_NAME);
-              break;
-
-            case OPT_VERSION:
-              print_version();
-              global_sanity.clean_shutdown = true;
-              return 0;
-
-            case OPT_FULL_VERSION:
-              print_full_version();
-              global_sanity.clean_shutdown = true;
-              return 0;
-
-            case OPT_REVISION:
-              app.add_revision(string(argstr));
-              break;
-
-            case OPT_MESSAGE:
-              app.set_message(string(argstr));
-              app.set_is_explicit_option(OPT_MESSAGE);
-              break;
-
-            case OPT_MSGFILE:
-              app.set_message_file(string(argstr));
-              app.set_is_explicit_option(OPT_MSGFILE);
-              break;
-
-            case OPT_DATE:
-              app.set_date(string(argstr));
-              break;
-
-            case OPT_AUTHOR:
-              app.set_author(string(argstr));
-              break;
-
-            case OPT_ROOT:
-              app.set_root(system_path(argstr));
-              break;
-
-            case OPT_LAST:
-              app.set_last(arglong);
-              break;
-
-            case OPT_NEXT:
-              app.set_next(arglong);
-              break;
-
-            case OPT_DEPTH:
-              app.set_depth(arglong);
-              break;
-
-            case OPT_BRIEF:
-              global_sanity.set_brief();
-              break;
-
-            case OPT_DIFFS:
-              app.diffs = true;
-              break;
-
-            case OPT_NO_MERGES:
-              app.no_merges = true;
-              break;
-
-            case OPT_SET_DEFAULT:
-              app.set_default = true;
-              break;
-
-            case OPT_EXCLUDE:
-              app.add_exclude(utf8(string(argstr)));
-              break;
-
-            case OPT_PIDFILE:
-              app.set_pidfile(system_path(argstr));
-              break;
-
-            case OPT_ARGFILE:
-              my_poptStuffArgFile(ctx(), utf8(string(argstr)));
-              break;
-
-            case OPT_UNIFIED_DIFF:
-              app.set_diff_format(unified_diff);
-              break;
-
-            case OPT_CONTEXT_DIFF:
-              app.set_diff_format(context_diff);
-              break;
-
-            case OPT_EXTERNAL_DIFF:
-              app.set_diff_format(external_diff);
-              break;
-              
-            case OPT_EXTERNAL_DIFF_ARGS:
-              app.set_diff_args(utf8(string(argstr)));
-              break;
-
-            case OPT_LCA:
-              app.use_lca = true;
-              break;
-
-            case OPT_EXECUTE:
-              app.execute = true;
-              break;
-
-            case OPT_BIND:
-              {
-                std::string arg(argstr);
-                std::string addr_part, port_part;
-                size_t l_colon = arg.find(':');
-                size_t r_colon = arg.rfind(':');
-                
-                // not an ipv6 address, as that would have at least two colons
-                if (l_colon == r_colon)
-                  {
-                    addr_part = (r_colon == std::string::npos ? arg : arg.substr(0, r_colon));
-                    port_part = (r_colon == std::string::npos ? "" :  arg.substr(r_colon+1, arg.size() - r_colon));
-                  }
-                else
-                  { 
-                    // IPv6 addresses have a port specified in the style: [2001:388:0:13::]:80
-                    size_t squareb = arg.rfind(']');
-                    if ((arg.find('[') == 0) && (squareb != std::string::npos))
-                      {
-                        if (squareb < r_colon)
-                          port_part = (r_colon == std::string::npos ? "" :  arg.substr(r_colon+1, arg.size() - r_colon));
-                        else
-                          port_part = "";
-                        addr_part = (squareb == std::string::npos ? arg.substr(1, arg.size()) : arg.substr(1, squareb-1));
-                      }
-                    else 
-                      {
-                        addr_part = arg;
-                        port_part = "";
-                      }
-                  }
-                app.bind_address = utf8(addr_part);
-                app.bind_port = utf8(port_part);
-              }
-              app.set_is_explicit_option(OPT_BIND);
-              break;
-
-            case OPT_MISSING:
-              app.missing = true;
-              break;
-
-            case OPT_UNKNOWN:
-              app.unknown = true;
-              break;
-
-            case OPT_KEY_TO_PUSH:
-              {
-                app.add_key_to_push(string(argstr));
-              }
-              break;
-
-            case OPT_DROP_ATTR:
-              app.attrs_to_drop.insert(string(argstr));
-              break;
-
-            case OPT_NO_FILES:
-              app.no_files = true;
-              break;
-
-            case OPT_RECURSIVE:
-              app.set_recursive();
               break;
 
             case OPT_HELP:
