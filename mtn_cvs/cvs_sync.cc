@@ -762,6 +762,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   }
 }
 
+#if 0
 // commit CVS revisions to monotone (pull)
 void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 { revision_id parent_rid;
@@ -837,6 +838,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     cm_delta_depth=e->cm_delta_depth;
   }
 }
+#endif
 
 void cvs_repository::prime()
 { retrieve_modules();
@@ -932,6 +934,7 @@ void cvs_repository::prime()
   store_modules();
 }
 
+#if 0
 void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
 { 
   std::string content=create_cvs_cert_header();
@@ -982,6 +985,7 @@ static void test_key_availability(app_state &app)
     F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
   require_password(key, app);
 }
+#endif
 
 std::set<cvs_edge>::iterator cvs_repository::last_known_revision()
 { I(!edges.empty());
@@ -1002,6 +1006,7 @@ time_t cvs_repository::posix2time_t(std::string posix_format)
   return dur.total_seconds();
 }
 
+#if 0
 cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
  : changelog_valid(), time(), time2(), cm_delta_depth()
 { revision=hexenc<id>(rid.inner());
@@ -1194,6 +1199,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   fail=true;
   return edges.end();
 }
+#endif
 
 std::string cvs_repository::gather_merge_information(revision_id const& id)
 { std::set<revision_id> parents;
@@ -1299,6 +1305,7 @@ void cvs_repository::commit()
   store_modules();
 }
 
+#if 0
 // look for _any_ cvs cert in the given monotone branch and assign
 // its value to repository, module, branch
 
@@ -1393,6 +1400,7 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
   
   guard.commit();      
 }
+#endif
 
 cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state &fs, std::string const& filename)
 { for (std::set<file_state>::iterator i=s.begin();i!=s.end();++i)
@@ -1683,6 +1691,7 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
   return e.xfiles;
 }
 
+#if 0
 void cvs_sync::debug(const std::string &command, const std::string &arg, 
             app_state &app)
 { 
@@ -1715,6 +1724,7 @@ void cvs_sync::debug(const std::string &command, const std::string &arg,
     else std::cout << repo.debug_file(arg);
   }
 }
+#endif
 
 const cvs_manifest &cvs_repository::get_files(const revision_id &rid)
 { std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
@@ -1866,6 +1876,7 @@ void cvs_repository::takeover()
   store_modules();
 }
 
+#if 0
 // read in directory put into db
 void cvs_sync::takeover(app_state &app, const std::string &_module)
 { std::string root,module=_module,branch;
@@ -1913,6 +1924,7 @@ void cvs_repository::store_modules()
   } catch (...) {}
   if (oldval()!=value) app.db.set_var(key, value);
 }
+#endif
 
 void cvs_repository::retrieve_modules()
 { if (!GetServerDir().empty()) return;
