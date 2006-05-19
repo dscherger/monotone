@@ -27,7 +27,7 @@
 #include "keys.hh"
 #include "packet.hh"
 
-static std::string const interface_version = "2.0";
+static std::string const interface_version = "2.1";
 
 // Name: interface_version
 // Arguments: none
@@ -848,7 +848,7 @@ automate_certs(std::vector<utf8> args,
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
             !app.db.public_key_exists(idx(certs, i).key))
-          P(F("warning: no public key '%s' found in database\n")
+          W(F("no public key '%s' found in database\n")
             % idx(certs, i).key);
         checked.insert(idx(certs, i).key);
       }
@@ -1621,7 +1621,16 @@ automate_keys(std::vector<utf8> args, std::string const & help_name,
   output.write(prt.buf.data(), prt.buf.size());
 }
 
-/* FIXME: add test & documentation, then uncomment
+// Name: common_ancestors
+// Arguments:
+//   1 or more revision ids
+// Added in: 2.1
+// Purpose: Prints all revisions which are ancestors of all of the revisions
+//   given as arguments.
+// Output format: A list of revision ids, in hexadecimal, each followed by a
+//   newline.  Revisions are printed in alphabetically sorted order.
+// Error conditions: If any of the revisions do not exist, prints nothing to
+//   stdout, prints an error message to stderr, and exits with status 1.
 static void
 automate_common_ancestors(std::vector<utf8> args, std::string const & help_name,
                          app_state & app, std::ostream & output)
@@ -1636,6 +1645,7 @@ automate_common_ancestors(std::vector<utf8> args, std::string const & help_name,
       revision_id rid((*i)());
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
       ancestors.clear();
+      ancestors.insert(rid);
       frontier.push_back(rid);
       while (!frontier.empty())
         {
@@ -1673,7 +1683,7 @@ automate_common_ancestors(std::vector<utf8> args, std::string const & help_name,
     if (!null_id(*i))
       output << (*i).inner()() << std::endl;
 }
-*/
+
 
 void
 automate_command(utf8 cmd, std::vector<utf8> args,
@@ -1733,8 +1743,8 @@ automate_command(utf8 cmd, std::vector<utf8> args,
     automate_packet_for_fdata(args, root_cmd_name, app, output);
   else if (cmd() == "packet_for_fdelta")
     automate_packet_for_fdelta(args, root_cmd_name, app, output);
-//  else if (cmd() == "common_ancestors")
-//    automate_common_ancestors(args, root_cmd_name, app, output);
+  else if (cmd() == "common_ancestors")
+    automate_common_ancestors(args, root_cmd_name, app, output);
   else
     throw usage(root_cmd_name);
 }

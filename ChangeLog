@@ -1,3 +1,76 @@
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_quiet.at: Test that --quiet doesn't suppress warnings.
+	* tests/t_reallyquiet.at: New file.  Test that --reallyquiet
+	suppresses progress meters and warnings.
+	* testsuite.at: Add t_reallyquiet.at.
+
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* automate.cc (automate_certs): Change a warning disguised as a
+	progress meter into a real warning.
+
+	* po/sv.po: Retranslate two fuzzies.
+
+2006-05-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_quiet.at: --quiet now allows warnings to still be printed
+
+2006-05-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* sanity.cc: second sanity::set_quiet should be sanity::set_reallyquiet
+
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* monotone.cc, options.hh, sanity.cc, sanity.hh: Do not suppress
+	warnings when --quiet is given.  Add --reallyquiet which does
+	suppress warnings as well as everything that --quiet suppresses.
+
+2006-05-18  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Forgot to unfuzzy a string.
+
+2006-05-19  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.cc (cpp_main): Smarter stripping of ".exe" extension.
+
+2006-05-18  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at, t_merge_lca.at: Rename to t_merge_7.at, tweak
+	comments to reflect that this used to test --lca, but now is
+	simply another merge test.
+
+2006-05-18  Nathaniel Smith  <njs@pobox.com>
+
+	* options.hh, app_state.cc, monotone.cc:
+	* cmd_merging.cc (merge, propagate, merge_into_dir): Remove
+	OPT_LCA option.
+
+2006-05-17  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Another fuzzy to re-translate.
+
+2006-05-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* automate.cc: Uncomment automate_common_ancestors.
+	* tests/t_automate_common_ancestors.at, testsuite.at: Test it.
+	* monotone.texi: Document it.
+	* cmd_automate.cc: Add it to the command description for automate.
+
+2006-05-17  Matt Johnston  <matt@ucc.asn.au>
+
+	* paths.cc (internal_string_to_split_path): move from cset.hh to
+	here, make it share the path splitting with fully_normalized_path().
+	(has_bad_chars): use lookup table to check bad chars.
+	(bad_component): don't compare string vs char* every time.
+	* roster.cc, cset.hh: internal_string_to_split_path changes
+	* vocab.cc (verify(hexenc<id>): .empty() rather than == ""
+
+2006-05-16  Matt Johnston  <matt@ucc.asn.au>
+
+	* roster.cc (parse_from): don't use lexical_cast, avoid copying a
+	marking_t.
+
 2006-05-15  Matt Johnston  <matt@ucc.asn.au>
 
 	* cmd_diff_log (log, dump_diffs): limit diffs to restricted files,
