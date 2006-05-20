@@ -30,6 +30,7 @@
 #include "database.hh"
 #include "hash_map.hh"
 #include "keys.hh"
+#include "safe_map.hh"
 #include "sanity.hh"
 #include "schema_migration.hh"
 #include "transforms.hh"
@@ -534,6 +535,19 @@ database::info(ostream & out)
 
   unsigned long total = 0UL;
 
+  u64 num_nodes;
+  {
+    results res;
+    fetch(res, one_col, any_rows, query("SELECT node FROM next_roster_node_number"));
+    if (res.empty())
+      num_nodes = 0;
+    else
+      {
+        I(res.size() == 1);
+        num_nodes = lexical_cast<u64>(res[0][0]) - 1;
+      }
+  }
+
 #define SPACE_USAGE(TABLE, COLS) add(space_usage(TABLE, COLS), total)
 
   out << \
@@ -546,6 +560,7 @@ database::info(ostream & out)
       "  revisions       : %u\n"
       "  ancestry edges  : %u\n"
       "  certs           : %u\n"
+      "  logical files   : %u\n"
       "bytes:\n"
       "  full rosters    : %u\n"
       "  roster deltas   : %u\n"
@@ -568,6 +583,7 @@ database::info(ostream & out)
     % count("revisions")
     % count("revision_ancestry")
     % count("revision_certs")
+    % num_nodes
     // bytes
     % SPACE_USAGE("rosters", "length(id) + length(data)")
     % SPACE_USAGE("roster_deltas", "length(id) + length(base) + length(delta)")
@@ -774,6 +790,7 @@ database::begin_transaction(bool exclusive)
 {
   if (transaction_level == 0)
     {
+      I(pending_writes.empty());
       if (exclusive)
         execute(query("BEGIN EXCLUSIVE"));
       else
@@ -789,11 +806,47 @@ database::begin_transaction(bool exclusive)
   transaction_level++;
 }
 
+
+bool 
+database::have_pending_write(string const & tab, hexenc<id> const & id)
+{
+  return pending_writes.find(make_pair(tab, id)) != pending_writes.end();
+}
+
+void 
+database::load_pending_write(string const & tab, hexenc<id> const & id, data & dat)
+{
+  dat = safe_get(pending_writes, make_pair(tab, id));
+}
+
+void 
+database::cancel_pending_write(string const & tab, hexenc<id> const & id)
+{
+  safe_erase(pending_writes, make_pair(tab, id));
+}
+
+void 
+database::schedule_write(string const & tab, 
+                         hexenc<id> const & id,
+                         data const & dat)
+{
+  if (!have_pending_write(tab, id))
+    safe_insert(pending_writes, make_pair(make_pair(tab, id), dat));
+}
+
 void 
 database::commit_transaction()
 {
   if (transaction_level == 1)
-    execute(query("COMMIT"));
+    {
+      for (map<pair<string, hexenc<id> >, data>::const_iterator i = pending_writes.begin();
+           i != pending_writes.end(); ++i)
+        {
+          put(i->first.second, i->second, i->first.first);
+        }
+      pending_writes.clear();
+      execute(query("COMMIT"));
+    }
   transaction_level--;
 }
 
@@ -801,7 +854,10 @@ void
 database::rollback_transaction()
 {
   if (transaction_level == 1)
-    execute(query("ROLLBACK"));
+    {
+      pending_writes.clear();
+      execute(query("ROLLBACK"));
+    }
   transaction_level--;
 }
 
@@ -810,6 +866,9 @@ bool
 database::exists(hexenc<id> const & ident,
                       string const & table)
 {
+  if (have_pending_write(table, ident))
+    return true;
+
   results res;
   query q("SELECT id FROM " + table + " WHERE id = ?");
   fetch(res, one_col, any_rows, q % text(ident()));
@@ -887,6 +946,12 @@ database::get(hexenc<id> const & ident,
               data & dat,
               string const & table)
 {
+  if (have_pending_write(table, ident))
+    {
+      load_pending_write(table, ident, dat);
+      return;
+    }
+
   results res;
   query q("SELECT data FROM " + table + " WHERE id = ?");
   fetch(res, one_col, one_row, q % text(ident()));
@@ -1196,9 +1261,12 @@ database::put_version(hexenc<id> const & old_id,
     {
       // descendent of a head version replaces the head, therefore old head
       // must be disposed of
-      drop(old_id, data_table);
+      if (have_pending_write(data_table, old_id))
+        cancel_pending_write(data_table, old_id);
+      else
+        drop(old_id, data_table);
     }
-  put(new_id, new_data, data_table);
+  schedule_write(data_table, new_id, new_data);
   put_delta(old_id, new_id, reverse_delta, delta_table);
   guard.commit();
 }
@@ -1402,7 +1470,7 @@ void
 database::put_file(file_id const & id,
                    file_data const & dat)
 {
-  put(id.inner(), dat.inner(), "files");
+  schedule_write("files", id.inner(), dat.inner());
 }
 
 void 
@@ -2571,6 +2639,17 @@ database::clear_epoch(cert_value const & branch)
           % blob(branch()));
 }
 
+bool
+database::check_integrity()
+{
+  results res;
+  fetch(res, one_col, any_rows, query("PRAGMA integrity_check"));
+  I(res.size() == 1);
+  I(res[0].size() == 1);
+
+  return res[0][0] == "ok";
+}
+
 // vars
 
 void
@@ -2757,7 +2836,7 @@ database::put_roster(revision_id const & rev_id,
   // Else we have a new roster the database hasn't seen yet; our task is to
   // add it, and deltify all the incoming edges (if they aren't already).
 
-  put(new_id, new_data, data_table);
+  schedule_write(data_table, new_id, new_data);
 
   std::set<revision_id> parents;
   get_revision_parents(rev_id, parents);
@@ -2775,7 +2854,10 @@ database::put_roster(revision_id const & rev_id,
         {
           get_version(old_id, old_data, data_table, delta_table);
           diff(new_data, old_data, reverse_delta);
-          drop(old_id, data_table);
+          if (have_pending_write(data_table, old_id))
+            cancel_pending_write(data_table, old_id);
+          else
+            drop(old_id, data_table);
           put_delta(old_id, new_id, reverse_delta, delta_table);
         }
     }

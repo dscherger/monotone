@@ -140,27 +140,29 @@ CMD(update, N_("workspace"), "",
       }
     else
       {
+        P(F("target revision is not in current branch"));
         if (branches.size() > 1)
           {
             // multiple non-matching branchnames
             string branch_list;
             for (set<utf8>::const_iterator i = branches.begin(); 
                  i != branches.end(); i++)
-              branch_list += "\n" + (*i)();
-            N(false, F("revision %s is a member of multiple branches:\n%s\n\ntry again with explicit --branch") % r_chosen_id % branch_list);
+              branch_list += "\n  " + (*i)();
+            N(false, F("target revision is in multiple branches:%s\n\n"
+                       "try again with explicit --branch") % branch_list);
           }
         else if (branches.size() == 1)
           {
             // one non-matching, inform and update
             app.branch_name = (*(branches.begin()))();
-            P(F("revision %s is a member of\n%s, updating workspace branch") 
-              % r_chosen_id % app.branch_name());
+            P(F("switching branches; next commit will use branch %s") % app.branch_name());
           }
         else
           {
             I(branches.size() == 0);
-            W(F("revision %s is a member of no branches,\nusing branch %s for workspace")
-              % r_chosen_id % app.branch_name());
+            W(F("target revision not in any branch\n"
+                "next commit will use branch %s")
+              % app.branch_name());
           }
       }
   }
@@ -271,7 +273,7 @@ CMD(update, N_("workspace"), "",
 // should merge support --message, --message-file?  It seems somewhat weird,
 // since a single 'merge' command may perform arbitrarily many actual merges.
 CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
-    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR % OPT_LCA)
+    OPT_BRANCH_NAME % OPT_DATE % OPT_AUTHOR)
 {
   set<revision_id> heads;
 
@@ -325,7 +327,7 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
 
 CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"), 
     N_("merge from one branch to another asymmetrically"),
-    OPT_DATE % OPT_AUTHOR % OPT_LCA % OPT_MESSAGE % OPT_MSGFILE)
+    OPT_DATE % OPT_AUTHOR % OPT_MESSAGE % OPT_MSGFILE)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -336,7 +338,7 @@ CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"),
 
 CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"), 
     N_("merge one branch into a subdirectory in another branch"),
-    OPT_DATE % OPT_AUTHOR % OPT_LCA % OPT_MESSAGE % OPT_MSGFILE)
+    OPT_DATE % OPT_AUTHOR % OPT_MESSAGE % OPT_MSGFILE)
 {
   //   this is a special merge operator, but very useful for people maintaining
   //   "slightly disparate but related" trees. it does a one-way merge; less

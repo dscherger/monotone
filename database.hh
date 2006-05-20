@@ -87,7 +87,13 @@ class database
   };
 
   std::map<std::string, statement> statement_cache;
+  std::map<std::pair<std::string, hexenc<id> >, data> pending_writes;
 
+  bool have_pending_write(std::string const & tab, hexenc<id> const & id);
+  void load_pending_write(std::string const & tab, hexenc<id> const & id, data & dat);
+  void cancel_pending_write(std::string const & tab, hexenc<id> const & id);
+  void schedule_write(std::string const & tab, hexenc<id> const & id, data const & dat);
+  
   struct app_state * __app;
   struct sqlite3 * __sql;
   struct sqlite3 * sql(bool init = false, bool migrating_format = false);
@@ -230,6 +236,9 @@ public:
   void get_file_ids(std::set<file_id> & ids);
   void get_revision_ids(std::set<revision_id> & ids);
   void get_roster_ids(std::set< hexenc<id> > & ids) ;
+
+
+  bool check_integrity();
 
   void set_app(app_state * app);
   

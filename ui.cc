@@ -31,6 +31,7 @@ ticker::ticker(string const & tickname, std::string const & s, size_t mod,
   ticks(0),
   mod(mod),
   total(0),
+  previous_total(0),
   kilocount(kilocount),
   use_total(false),
   keyname(tickname),
@@ -153,7 +154,9 @@ void tick_write_count::write_ticks()
     {
       ticker * tick = i->second;
 
-      if (tick->count_size == 0 && (tick->kilocount || tick->use_total))
+      if ((tick->count_size == 0 && tick->kilocount)
+          ||
+          (tick->use_total && tick->previous_total != tick->total))
         {
           if (!tick->kilocount && tick->use_total)
             {
@@ -164,6 +167,7 @@ void tick_write_count::write_ticks()
               // the goal.
               tick->set_count_size(display_width(utf8(compose_count(tick,
                                                                     tick->total))));
+              tick->previous_total = tick->total;
             }
           else
             {
@@ -398,7 +402,11 @@ void
 user_interface::warn(string const & warning)
 {
   if (issued_warnings.find(warning) == issued_warnings.end())
-    inform("warning: " + warning);
+    {
+      std::string message;
+      prefix_lines_with(_("warning: "), warning, message);
+      inform(message);
+    }
   issued_warnings.insert(warning);
 }
 

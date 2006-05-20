@@ -2436,6 +2436,19 @@ roster_t::print_to(basic_io::printer & pr,
     }
 }
 
+inline size_t
+read_num(string const & s)
+{
+  size_t n = 0;
+
+  for (string::const_iterator i = s.begin(); i != s.end(); i++)
+    {
+      I(*i >= '0' && *i <= '9');
+      n *= 10;
+      n += static_cast<size_t>(*i - '0');
+    }
+  return n;
+}
 
 void 
 roster_t::parse_from(basic_io::parser & pa,
@@ -2478,7 +2491,7 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.hex(content);
           pa.esym(syms::ident);
           pa.str(ident);
-          n = file_t(new file_node(lexical_cast<node_id>(ident),
+          n = file_t(new file_node(read_num(ident),
                                    file_id(content)));
         }
       else if (pa.symp(syms::dir))
@@ -2487,7 +2500,7 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.str(pth);
           pa.esym(syms::ident);
           pa.str(ident);
-          n = dir_t(new dir_node(lexical_cast<node_id>(ident)));
+          n = dir_t(new dir_node(read_num(ident)));
         }
       else 
         break;
@@ -2503,7 +2516,9 @@ roster_t::parse_from(basic_io::parser & pa,
       else
         {
           I(!pth.empty());
-          attach_node(n->self, internal_string_to_split_path(pth));
+          split_path sp;
+          internal_string_to_split_path(pth, sp);
+          attach_node(n->self, sp);
         }
 
       // Non-dormant attrs
@@ -2528,9 +2543,8 @@ roster_t::parse_from(basic_io::parser & pa,
         }
 
       {
-        marking_t marking;
-        parse_marking(pa, n, marking);
-        safe_insert(mm, make_pair(n->self, marking));
+        marking_t & m(safe_insert(mm, make_pair(n->self, marking_t()))->second);
+        parse_marking(pa, n, m);
       }
     }
 }
@@ -2594,6 +2608,7 @@ write_manifest_of_roster(roster_t const & ros,
 #include "constants.hh"
 
 #include <string>
+#include <cstdlib>
 #include <boost/lexical_cast.hpp>
 
 using std::string;
@@ -2784,7 +2799,7 @@ random_element(M const & m)
 
 bool flip(unsigned n = 2)
 {
-  return (rand() % n) == 0;
+  return (std::rand() % n) == 0;
 }
 
 string new_word()
@@ -2794,7 +2809,7 @@ string new_word()
   string tmp;
   do
     {
-      tmp += wordchars[rand() % wordchars.size()];
+      tmp += wordchars[std::rand() % wordchars.size()];
     }
   while (tmp.size() < 10 && !flip(10));
   return tmp + lexical_cast<string>(tick++);
@@ -2806,7 +2821,7 @@ file_id new_ident()
   string tmp;
   tmp.reserve(constants::idlen);
   for (unsigned i = 0; i < constants::idlen; ++i)
-    tmp += tab[rand() % tab.size()];
+    tmp += tab[std::rand() % tab.size()];
   return file_id(tmp);
 }
 
@@ -2836,7 +2851,7 @@ bool parent_of(split_path const & p,
   if (p.size() <= c.size())
     {
       split_path::const_iterator c_anchor = 
-        search(c.begin(), c.end(),
+        std::search(c.begin(), c.end(),
                p.begin(), p.end());
         
       is_parent = (c_anchor == c.begin());
@@ -2856,7 +2871,7 @@ change_automaton
 
   change_automaton()
   {
-    srand(0x12345678);
+    std::srand(0x12345678);
   }
 
   void perform_random_action(roster_t & r, node_id_source & nis)
@@ -2878,7 +2893,7 @@ change_automaton
             r.get_name(n->self, pth);
             // L(FL("considering acting on '%s'\n") % file_path(pth));
 
-            switch (rand() % 7)
+            switch (std::rand() % 7)
               {
               default:
               case 0:
@@ -4619,7 +4634,7 @@ create_some_new_temp_nodes(temp_node_id_source & nis,
                            roster_t & right_ros,
                            set<node_id> & right_new_nodes)
 {
-  size_t n_nodes = 10 + (rand() % 30);
+  size_t n_nodes = 10 + (std::rand() % 30);
   editable_roster_base left_er(left_ros, nis);
   editable_roster_base right_er(right_ros, nis);
 

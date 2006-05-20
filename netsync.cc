@@ -69,8 +69,6 @@
 //      its merkle trie.
 //   -- add some sort of vhost field to the client's first packet, saying who
 //      they expect to talk to
-//   -- apparently we have a IANA approved port: 4691.  I guess we should
-//      switch to using that.
 
 //
 // This is the "new" network synchronization (netsync) system in
@@ -1300,6 +1298,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       queue_anonymous_cmd(this->role, our_include_pattern,
                           our_exclude_pattern, mk_nonce(), their_key_encoded);
     }
+    
   return true;
 }
 

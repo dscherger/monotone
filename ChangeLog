@@ -1,3 +1,317 @@
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* ui.cc (tick_write_count::write_ticks): Simplify the condition
+	to check if the count width needs to be changed.
+
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* ui.hh (struct ticker), ui.cc (tick_write_count::ticker,
+	ticker::write_ticks): Keep track of the last total we were given
+	and recalculate the counter width each time we detect a change in
+	total.  The reason is that the counter is sometimes display even
+	though the real total isn't figured out yet, which gives the old
+	stepwise increase of counter size instead of doing it in one go
+	when we have the real total.
+
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_quiet.at: Test that --quiet doesn't suppress warnings.
+	* tests/t_reallyquiet.at: New file.  Test that --reallyquiet
+	suppresses progress meters and warnings.
+	* testsuite.at: Add t_reallyquiet.at.
+
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* automate.cc (automate_certs): Change a warning disguised as a
+	progress meter into a real warning.
+
+	* po/sv.po: Retranslate two fuzzies.
+
+2006-05-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/t_quiet.at: --quiet now allows warnings to still be printed
+
+2006-05-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* sanity.cc: second sanity::set_quiet should be sanity::set_reallyquiet
+
+2006-05-19  Richard Levitte  <richard@levitte.org>
+
+	* monotone.cc, options.hh, sanity.cc, sanity.hh: Do not suppress
+	warnings when --quiet is given.  Add --reallyquiet which does
+	suppress warnings as well as everything that --quiet suppresses.
+
+2006-05-18  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Forgot to unfuzzy a string.
+
+2006-05-19  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* monotone.cc (cpp_main): Smarter stripping of ".exe" extension.
+
+2006-05-18  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* testsuite.at, t_merge_lca.at: Rename to t_merge_7.at, tweak
+	comments to reflect that this used to test --lca, but now is
+	simply another merge test.
+
+2006-05-18  Nathaniel Smith  <njs@pobox.com>
+
+	* options.hh, app_state.cc, monotone.cc:
+	* cmd_merging.cc (merge, propagate, merge_into_dir): Remove
+	OPT_LCA option.
+
+2006-05-17  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Another fuzzy to re-translate.
+
+2006-05-16  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* automate.cc: Uncomment automate_common_ancestors.
+	* tests/t_automate_common_ancestors.at, testsuite.at: Test it.
+	* monotone.texi: Document it.
+	* cmd_automate.cc: Add it to the command description for automate.
+
+2006-05-17  Matt Johnston  <matt@ucc.asn.au>
+
+	* paths.cc (internal_string_to_split_path): move from cset.hh to
+	here, make it share the path splitting with fully_normalized_path().
+	(has_bad_chars): use lookup table to check bad chars.
+	(bad_component): don't compare string vs char* every time.
+	* roster.cc, cset.hh: internal_string_to_split_path changes
+	* vocab.cc (verify(hexenc<id>): .empty() rather than == ""
+
+2006-05-16  Matt Johnston  <matt@ucc.asn.au>
+
+	* roster.cc (parse_from): don't use lexical_cast, avoid copying a
+	marking_t.
+
+2006-05-15  Matt Johnston  <matt@ucc.asn.au>
+
+	* cmd_diff_log (log, dump_diffs): limit diffs to restricted files,
+	updated for new restrictions code.
+	* tests/t_log_diffs.at: A test for log --diffs
+
+2006-05-14  Derek Scherger  <derek@echologic.com>
+
+	* database.cc (info): allow any number of rows to be returned from
+	query of next_roster_node_number
+	* tests/t_db_init_info.at: new test of info on a new database
+	* testsuite.at: call it
+
+2006-05-14  Lapo Luchini  <lapo@lapo.it>
+
+	* po/it.po: Translated a few more strings to Italian (115 to go).
+
+2006-05-14  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: A fuzzy to correct.
+
+2006-05-13  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/t_automate_get_current_revision_id.at: Canonicalise output
+	before comparison--fixes test on Win32.
+
+2006-05-13  Matt Johnston  <matt@ucc.asn.au>
+
+	* cmd_diff_log (log): don't get the roster unless we have restrictions.
+
+2006-05-13  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* netsync.cc: (process_hello_cmd) Build our merkle tries after
+	replying to the server.
+	(call_server, serve_connections) Use instant timeout for our streams.
+	Looking at the netxx code, it appears that reads will select() using
+	the stream's timeout. Regardless of whether the stream has been set
+	non-blocking.
+	(call_server) Move maybe_step and maybe_say_goodbye to before we arm
+	the session.
+	(write_netcmd_and_try_flush) Uncomment the {read,write}_some calls.
+
+2006-05-12  Nathaniel Smith  <njs@pobox.com>
+
+	* monotone.texi: Re-sync the two copyright blocks.
+
+2006-05-12  Derek Scherger  <derek@echologic.com>
+
+	* testsuite.at (test_hooks.lua): ignore testsuite.log files
+
+2006-05-12  Derek Scherger  <derek@echologic.com>
+
+	* database.cc (begin_transaction): ensure there are no pending
+	writes when a transaction begins
+	(rollback_transaction): clear any pending writes before rolling
+	back a transaction
+
+2006-05-12  Derek Scherger  <derek@echologic.com>
+
+	* automate.cc (automate_get_base_revision_id,
+	automate_get_current_revision_id): new functions
+	(automate_command): call them 
+	* cmd_automate.cc (automate): fix indentation and add entries for
+	new commands
+	* monotone.texi: document new commands
+	* tests/t_automate_get_base_revision_id.at:
+	* tests/t_automate_get_current_revision_id.at: new tests
+	* testsuite.at: call them
+
+2006-05-12  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* lua.hh: Remove unused, unimplemented template lua_hooks::call_hook.
+
+2006-05-12  Matt Johnston  <matt@ucc.asn.au>
+
+	* netsync.cc (process_hello_cmd): ask for passphrase before
+	doing merkle tree things.
+
+2006-05-12  Matt Johnston  <matt@ucc.asn.au>
+
+	* merkle_tree.cc (bitset_to_prefix): use strings directly 
+	rather than ostringstream for getting bitset blocks, ~10%
+	cpu time improvement for empty pull.
+
+2006-05-12  Graydon Hoare  <graydon@pobox.com>
+
+	* xdelta.cc (apply_delta): Tolerate 0-length instructions.
+
+2006-05-11  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* roster.cc: include proper header for srand, rand and prefix
+	srand, rand, search with std:: for sunpro
+
+2006-05-11  Graydon Hoare  <graydon@pobox.com>
+
+	* xdelta.cc (read_num): New function.
+	(apply_delta): Rewrite to avoid string streams.
+
+2006-05-09  Graydon Hoare  <graydon@pobox.com>
+
+	* xdelta.cc (copied_extent::operator<): Fix ordering bug which 
+	caused an unfortunate degradation in inverse delta quality,
+	particularly on ChangeLogs.
+
+2006-05-09  Derek Scherger  <derek@echologic.com>
+
+	* packet.cc (consume_file_delta): remove redundant file delta
+	verification
+
+2006-05-09  Derek Scherger  <derek@echologic.com>
+
+	* automate.cc (automate_inventory): remove invalid assertion
+	* cmd_diff_log.cc (log): check for null revision id rather than
+	missing revision id
+	* commands.cc: remove unnecessary #include 
+	(help): fix indentation
+	* netsync.cc: remove stale comment
+
+2006-05-08  Roberta Lazzeri  <ripley@lapo.it>
+
+	* po/it.po: Changed translation of 'directory' to 'directory'.
+
+2006-05-07  Roberta Lazzeri  <ripley@lapo.it>
+
+	* po/it.po: Translated a few more strings to Italian (148 to go).
+
+2006-05-07  Graydon Hoare  <graydon@pobox.com>
+
+	* database.{cc,hh} (pending_writes): New fulltext write buffer,
+	gives about 20% performance gain on initial pull.
+	(database::have_pending_write): Helper function.
+	(database::load_pending_write): Likewise.
+	(database::cancel_pending_write): Likewise.
+	(database::schedule_write): Likewise.
+	(database::exists): Modify to use buffer.
+	(database::put_version): Likewise.
+	(database::put_file): Likewise.
+	(database::put_roster): Likewise.
+
+2006-05-06  Lapo Luchini  <lapo@lapo.it>
+
+	* po/it.po: Translated a few more strings to Italian (162 to go).
+
+2006-05-06  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: New string to translate.
+
+2006-05-06  Richard Levitte  <richard@levitte.org>
+
+	* INSTALL: Warn people not to run "make check" as root, since it
+	will cause failure of the tests.  I jave no idea if there's any
+	such possiblity on Windows, someone else will have to fill that
+	in.
+
+2006-05-06  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* database_check.cc (check_db_integrity_check): Replace F with FL.
+
+2006-05-06  Nathaniel Smith  <njs@pobox.com>
+
+	Patch contributed by 'zecke'.
+	* database.cc (check_integrity): 
+	* database_check.cc (check_db_integrity_check): Add a call to
+	PRAGMA integrity_check to 'db check'.
+
+2006-05-05  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Retranslate a few changed strings.
+
+2006-05-05  Nathaniel Smith  <njs@pobox.com>
+
+	* database.cc (info): Include count of total nodes allocated in
+	this db in 'db info' output.
+
+2006-05-04  Nathaniel Smith  <njs@pobox.com>
+
+	* ChangeLog: fix whitespace.
+
+2006-05-04  Nathaniel Smith  <njs@pobox.com>
+
+	* cmd_files.cc (annotate): Check whether file exists.
+	* tests/t_annotate.at: Test this check.
+
+2006-05-04  Matt Johnston  <matt@ucc.asn.au>
+
+	* work.cc (editable_working_tree::apply_delta): filename argument
+	was missing for E() format string.
+
+2006-05-02  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: A few new strings to translate.
+
+2006-05-02  Matthew Nicholson  <matt@matt-land.com>
+
+	* monotone.texi (Composite selectors): Added note about escaping in
+	selectors.
+
+2006-05-02  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc (commands::complete_command): Make sure to catch the
+	case of a unknown command, and treat it as a naughty.
+
+2006-05-01  Nathaniel Smith  <njs@pobox.com>
+
+	* cmd_merging.cc (update): Hopefully clarify messages in the
+	different cases where target branch differs from current branch.
+	* tests/t_update_off_branch.at: Test all paths.
+	* ui.cc (warn): Use prefix_lines_with and mark "warning:" for
+	translation.
+
+2006-05-01  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* win32/terminal.cc (have_smart_terminal): Simplify smart terminal
+	detection, since it doesn't really work anyway.  We'll now default
+	to smart almost everywhere (except inside environments with
+	TERM=dumb or TERM=emacs).  Users can override this with
+	--ticker=(dot|none) if need be.
+
+	* win32/fs.cc (get_current_working_dir): Strip trailing backslash
+	from path, if present.  Fixes bug #16442.
+
+2006-05-01  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* automate.cc: "automate common_ancestors" was committed accidentally.
+	Comment it out until tests/documentation are ready.
+
 2006-04-30  Graydon Hoare  <graydon@pobox.com>
 
 	* xdelta.{cc,hh} (invert_xdelta): New function.
@@ -14,6 +328,11 @@
 
 	* vocab.hh: removing superfluous string("") constructor shrinks mtn
 	binary by >100kB (from Benoît Dejean)
+
+2006-04-28  Matthew Nicholson  <matt@matt-land.com>
+	
+	* tests/t_escaped_selectors.at: Added.  Tests escaped selectors.
+	* testsuite.at: Added t_escaped_selectors.at.
 
 2006-04-28  Alex Queiroz  <alex@ventonegro.org>
 
@@ -37,6 +356,11 @@
 2006-04-28  Alex Queiroz  <alex@ventonegro.org>
 
 	* po/pt_BR.po: Translated even more strings.
+
+2006-04-27  Matthew Nicholson  <matt@matt-land.com>
+
+	* selectors.cc (parse_selector): Change boost::char_separator to
+	boost::escaped_list_separator to support branch names containing '/'.
 
 2006-04-27  Timothy Brownawell  <tbrownaw@gmail.com>
 

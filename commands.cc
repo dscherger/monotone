@@ -8,7 +8,6 @@
 #include <map>
 #include <algorithm>
 
-#include "restrictions.hh"
 #include "transforms.hh"
 #include "inodeprint.hh"
 
@@ -95,21 +94,24 @@ namespace commands
           }
       }
 
+    // no matched commands
+    N(matched.size() != 0,
+      F("unknown command '%s'\n") % cmd);
+
+    // one matched command
     if (matched.size() == 1) 
       {
       string completed = *matched.begin();
       L(FL("expanded command to '%s'") %  completed);  
       return completed;
       }
-    else if (matched.size() > 1) 
-      {
-      string err = (F("command '%s' has multiple ambiguous expansions:\n") % cmd).str();
-      for (vector<string>::iterator i = matched.begin();
-           i != matched.end(); ++i)
-        err += (*i + "\n");
-      W(i18n_format(err));
-    }
 
+    // more than one matched command
+    string err = (F("command '%s' has multiple ambiguous expansions:\n") % cmd).str();
+    for (vector<string>::iterator i = matched.begin();
+         i != matched.end(); ++i)
+      err += (*i + "\n");
+    W(i18n_format(err));
     return cmd;
   }
 
@@ -226,14 +228,14 @@ namespace commands
 
 CMD(help, N_("informative"), N_("command [ARGS...]"), N_("display command help"), OPT_NONE)
 {
-        if (args.size() < 1)
-                throw usage("");
-
-        string full_cmd = complete_command(idx(args, 0)());
-        if ((*cmds).find(full_cmd) == (*cmds).end())
-                throw usage("");
-
-        throw usage(full_cmd);
+  if (args.size() < 1)
+    throw usage("");
+  
+  string full_cmd = complete_command(idx(args, 0)());
+  if ((*cmds).find(full_cmd) == (*cmds).end())
+    throw usage("");
+  
+  throw usage(full_cmd);
 }
 
 using std::set;
