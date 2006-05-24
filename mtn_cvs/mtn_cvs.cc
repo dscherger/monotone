@@ -4,9 +4,17 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
-#include "config.h"
-
-#include "popt/popt.h"
+#include <config.h>
+#include <i18n.h>
+#include <popt/popt.h>
+#include <sanity.hh>
+#include <charset.hh>
+#include <sstream>
+#include <cleanup.hh>
+#include <boost/filesystem/path.hpp>
+#include <commands.hh>
+#include <iostream>
+#include <ui.hh>
 
 char * argstr = NULL;
 long arglong = 0;
@@ -69,7 +77,7 @@ dumper()
   if (!global_sanity.clean_shutdown)
     global_sanity.dump_buffer();
   
-  Botan::Init::deinitialize();
+//  Botan::Init::deinitialize();
 }
 
 
@@ -119,6 +127,7 @@ my_poptFreeContext(poptContext con)
   poptFreeContext(con);
 }
 
+#if 0
 // Read arguments from a file.  The special file '-' means stdin.
 // Returned value must be free()'d, after arg parsing has completed.
 static void
@@ -154,6 +163,9 @@ my_poptStuffArgFile(poptContext con, utf8 const & filename)
 
   free(argv);
 }
+#endif
+
+using namespace std;
 
 static string
 coption_string(int o)
@@ -180,7 +192,7 @@ cpp_main(int argc, char ** argv)
   // go-go gadget i18n
 
   setlocale(LC_ALL, "");
-  bindtextdomain(PACKAGE, LOCALEDIR);
+//  bindtextdomain(PACKAGE, LOCALEDIR);
   textdomain(PACKAGE);
 
 
@@ -210,12 +222,12 @@ cpp_main(int argc, char ** argv)
   L(FL("set locale: LC_ALL=%s\n") % locale_string);
 
   std::string full_version_string;
-  get_full_version(full_version_string);
-  MM(full_version_string);
+//  get_full_version(full_version_string);
+//  MM(full_version_string);
 
   // Set up secure memory allocation etc
-  Botan::Init::initialize();
-  Botan::set_default_allocator("malloc");
+//  Botan::Init::initialize();
+//  Botan::set_default_allocator("malloc");
   
   // decode all argv values into a UTF-8 array
 
@@ -240,7 +252,7 @@ cpp_main(int argc, char ** argv)
 
   // process main program options
 
-  int opt;
+  int opt=-1;
   bool requested_help = false;
   set<int> used_local_options;
 
@@ -248,6 +260,7 @@ cpp_main(int argc, char ** argv)
 
   try
     {
+#if 0
       app_state app;
 
       app.set_prog_name(prog_name);
@@ -269,6 +282,7 @@ cpp_main(int argc, char ** argv)
               break;
             }
         }
+#endif
 
       // verify that there are no errors in the command line
 
@@ -298,7 +312,7 @@ cpp_main(int argc, char ** argv)
       // Certain commands may subsequently require a workspace or fail
       // if we didn't find one at this point.
 
-      app.allow_workspace();
+//      app.allow_workspace();
 
       // main options processed, now invoke the 
       // sub-command w/ remaining args
@@ -323,7 +337,7 @@ cpp_main(int argc, char ** argv)
             {
               args.push_back(utf8(string(poptGetArg(ctx()))));
             }
-          ret = commands::process(app, cmd, args);
+//          ret = commands::process(app, cmd, args);
         }
     }
   catch (usage & u)

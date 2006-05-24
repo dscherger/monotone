@@ -229,6 +229,7 @@ std::string debug_files(const std::map<std::string,file_history> &files)
 }
 #endif
 
+#if 0
 // returns the length of the first line (header) and fills in fields
 std::string::size_type cvs_repository::parse_cvs_cert_header(cert_value const& value, 
       std::string &repository, std::string& module, std::string& branch)
@@ -258,6 +259,7 @@ void cvs_repository::parse_cvs_cert_header(revision<cert> const& c,
   decode_base64(c.inner().value, value);
   parse_cvs_cert_header(value, repository, module, branch);
 }
+#endif
 
 std::string cvs_repository::create_cvs_cert_header() const
 { 
@@ -335,6 +337,8 @@ void cvs_repository::prime_log_cb::tag(const std::string &file,const std::string
   if (tag==repo.branch) repo.branch_point[file]=cvs_revision_nr(revision).get_branch_root();
 }
 
+static std::string app_signing_key="test@testdomain";
+
 void cvs_repository::prime_log_cb::revision(const std::string &file,time_t checkin_time,
         const std::string &revision,const std::string &_author,
         const std::string &dead,const std::string &_message) const
@@ -346,7 +350,7 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
   if (override_time!=-1)
   { checkin_time=override_time;
     message="initial state for cvs_pull --since";
-    author=repo.app.signing_key();
+    author=app_signing_key;
   }
   std::pair<std::set<file_state>::iterator,bool> iter=
     i->second.known_states.insert
@@ -385,6 +389,7 @@ bool cvs_edge::operator<(cvs_edge const & other) const
      && changelog < other.changelog);
 }
 
+#if 0
 void cvs_repository::store_contents(const data &dat, hexenc<id> &sha1sum)
 {
   calculate_ident(dat,sha1sum);
@@ -393,6 +398,7 @@ void cvs_repository::store_contents(const data &dat, hexenc<id> &sha1sum)
     if (file_id_ticker.get()) ++(*file_id_ticker);
   }
 }
+#endif
 
 static void apply_delta(piece::piece_table &contents, const std::string &patch)
 { piece::piece_table after;
@@ -400,6 +406,7 @@ static void apply_delta(piece::piece_table &contents, const std::string &patch)
   std::swap(contents,after);
 }
 
+#if 0
 void cvs_repository::store_delta(const std::string &new_contents, 
           const std::string &old_contents, 
           // this argument is unused since we can no longer use the rcs patch
@@ -508,6 +515,7 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
   }
   return false;
 }
+#endif
 
 void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e)
@@ -894,7 +902,7 @@ void cvs_repository::prime()
     // FIXME: look for this edge already in the database
     if (edges.begin()!=edges.end()) root_time=edges.begin()->time-1;
     std::set<cvs_edge>::iterator root_edge
-     =edges.insert(cvs_edge(branch+" branching point",root_time,app.signing_key())).first;
+     =edges.insert(cvs_edge(branch+" branching point",root_time,app_signing_key)).first;
     for (std::map<cvs_file_path,cvs_revision_nr>::const_iterator i=branch_point.begin();i!=branch_point.end();++i)
     { file_state fs(root_edge->time,i->second.get_string());
       fs.log_msg=root_edge->changelog;
@@ -1199,7 +1207,6 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   fail=true;
   return edges.end();
 }
-#endif
 
 std::string cvs_repository::gather_merge_information(revision_id const& id)
 { std::set<revision_id> parents;
@@ -1305,7 +1312,6 @@ void cvs_repository::commit()
   store_modules();
 }
 
-#if 0
 // look for _any_ cvs cert in the given monotone branch and assign
 // its value to repository, module, branch
 
@@ -1426,6 +1432,7 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
   return iter.first;
 }
 
+#if 0
 void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
 { 
   std::auto_ptr<ticker> cert_ticker;
@@ -1534,6 +1541,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
   }
   if (global_sanity.debug) L(FL("%s") % debug());
 }
+#endif
 
 struct cvs_repository::update_cb : cvs_client::update_callbacks
 { cvs_repository &repo;
@@ -1547,6 +1555,7 @@ struct cvs_repository::update_cb : cvs_client::update_callbacks
   }
 };
 
+#if 0
 void cvs_repository::update()
 { retrieve_modules();
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
@@ -1647,6 +1656,7 @@ void cvs_repository::update()
   
   store_modules();
 }
+#endif
 
 static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
 { L(FL("apply_manifest_delta: base %d delta %d\n") % base.size() % delta.size());
@@ -1754,6 +1764,7 @@ void cvs_client::validate_path(const std::string &local, const std::string &serv
   server_dir[local]=server;
 }
 
+#if 0
 void cvs_repository::takeover_dir(const std::string &path)
 { // remember the server path for this subdirectory
   MM(path);
@@ -1876,7 +1887,6 @@ void cvs_repository::takeover()
   store_modules();
 }
 
-#if 0
 // read in directory put into db
 void cvs_sync::takeover(app_state &app, const std::string &_module)
 { std::string root,module=_module,branch;
@@ -1924,7 +1934,6 @@ void cvs_repository::store_modules()
   } catch (...) {}
   if (oldval()!=value) app.db.set_var(key, value);
 }
-#endif
 
 void cvs_repository::retrieve_modules()
 { if (!GetServerDir().empty()) return;
@@ -1951,3 +1960,4 @@ void cvs_repository::retrieve_modules()
   piece::reset();
   SetServerDir(sd);
 }
+#endif
