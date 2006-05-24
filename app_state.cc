@@ -13,7 +13,7 @@
 #include "database.hh"
 #include "file_io.hh"
 #include "sanity.hh"
-#include "transforms.hh"
+#include "charset.hh"
 #include "work.hh"
 #include "platform.hh"
 
@@ -35,7 +35,7 @@ app_state::app_state()
     no_merges(false), set_default(false), verbose(false), date_set(false),
     search_root("/"),
     depth(-1), last(-1), next(-1), diff_format(unified_diff), diff_args_provided(false),
-    use_lca(false), execute(false), bind_address(""), bind_port(""), 
+    execute(false), bind_address(""), bind_port(""), 
     missing(false), unknown(false),
     confdir(get_default_confdir()), have_set_key_dir(false), no_files(false)
 {
