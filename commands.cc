@@ -9,8 +9,11 @@
 #include <algorithm>
 
 #include "transforms.hh"
+#include "simplestring_xform.hh"
 #include "cvs_sync.hh"
+#include "charset.hh"
 #include "inodeprint.hh"
+#include "cert.hh"
 
 #include "cmd.hh"
 //
