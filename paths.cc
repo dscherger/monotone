@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -15,7 +16,8 @@
 #include "platform.hh"
 #include "sanity.hh"
 #include "interner.hh"
-#include "transforms.hh"
+#include "charset.hh"
+#include "simplestring_xform.hh"
 
 // some structure to ensure we aren't doing anything broken when resolving
 // filenames.  the idea is to make sure

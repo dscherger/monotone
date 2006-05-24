@@ -1,3 +1,106 @@
+2006-05-23  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tester.cc tester.lua: New files, which will eventually become a
+	new testsuite system.
+	* Makefile.am: Break sanity.* and dependencies out as
+	SANITY_CORE_SOURCES. Break lua.* and non-sanity dependencies out
+	as LUAEXT_SOURCES. Right now these are just included into MOST_SOURCES,
+	maybe compile them into .a files later? New target tester also
+	uses these.
+
+2006-05-23  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: A fuzzy to change.
+
+2006-05-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* file_io.{cc,hh} localized_file_io.{cc,hh}: Split off the functions
+	that use lua_hooks (to get localization settings) into a separate file.
+	* Makefile.am: Adjust for having new files.
+	* roster.cc work.cc diff_patch.cc cmd_diff_log.cc:
+	* cmd_files.cc cmd_ws_commit.cc: Adjust includes.
+
+2006-05-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* transforms.{cc,hh} charset.{cc,hh} simplestring_xform.{cc,hh}:
+	Split up transforms.cc . Hex, base64, gzip, and ident stay in
+	transforms. Simple string stuff (no botan or idna) goes in
+	simplestring_xform. Charset stuff goes in charset.
+	* Makefile.am unit_tests.{cc,hh}: Adjust for having new files.
+	* 20 others: Adjust includes.
+
+2006-05-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* work.{cc,hh} constants.{cc,hh}: Move attribute strings to constants.
+	* transforms.cc: Include constants.hh instead of work.hh .
+	* annotate.cc diff_patch.cc crypto_tests.cc: Fix includes.
+
+2006-05-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* transforms.{cc,hh} revision.{cc,hh} roster.{cc,hh} file_io.{cc,hh}:
+	Move calculate_ident for revision_set and roster to those files. Move
+	calulate_ident for files to file_io.
+	* 10 others: Fix includes.
+
+2006-05-22  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Do not include cert.hh from vocab.hh .
+	* vocab_macros.hh vocab.{cc,hh} cert.{cc,hh}: Move the type definition
+	macros to vocab_macros.hh, and move revision<cert> and manifest<cert>
+	to cert.{cc,hh} .
+	* Makefile.am: Adjust for having a new file.
+	* 12 others: Fix includes that relied on cert.hh being included
+	by vocab.hh .
+
+2006-05-21  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Split lua.cc into two files: lua_hooks.cc gets the lua_hooks class
+	and the one callback that needs an app_state, lua.cc gets everything
+	else.
+	* lua.{cc,hh}: Rename to lua_hooks.{cc,hh}. Move almost everything
+	except the lua_hooks class to...
+	* lua.{cc,hh}: New files.
+	* Makefile.am: Adjust accordingly.
+	* app_state.hh file_io.cc keys.cc transforms.hh: Adjust includes to
+	account for rename.
+
+2006-05-21  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Correct a translation that was clearly cut and pasted
+	but never changed.  What was I thinking?
+
+2006-05-21  Richard Levitte  <richard@levitte.org>
+
+	* debian/changelog: Updated from the latest Debian release.
+
+2006-05-20  Graydon Hoare    <graydon@pobox.com>
+
+	* figures/monotone-logo.svg: Add.
+
+2006-05-20  Derek Scherger  <derek@echologic.com>
+
+	* automate.cc: add basic_io symbols
+	(hook_get_revision_cert_trust, automate_certs): push symbols
+	(automate_keys): push symbols and hexenc's 
+	* basic_io.{cc,hh}
+	(is_xdigit, is_alpha, is_alnum, is_space): move to vocab.hh
+	(push_hex_pair, push_hex_triple, push_str_pair, push_file_pair,
+	push_str_multi, push_str_triple, print_stanza): use symbol and
+	hexenc<id> in place of strings to avoid repeated/redundant
+	validations which account for 4% of the client profile of a fresh
+	pull of the monotone db
+	* cset.cc (print_cset): push symbols and hexenc's 
+	* legacy.cc (read_dot_mt_attrs, extract_renames,
+	get_manifest_and_renames_for_rev): parse symbols
+	* revision.cc (print_edge, print_stanza): push symbols and hexenc's
+	* roster.cc (push_marking, print_to): push symbols and hexenc's
+	* vocab.cc (is_xdigit): move to vocab.hh
+	(verify): new verification for symbol type
+	* vocab.hh (is_xdigit, is_alpha, is_alnum, is_space): add functions
+	from basic_io.hh 
+	* vocab_terms.hh (symbol): new ATOMIC type for basic_io symbols
+	which allow only [a-zA-Z0-9_]
+
 2006-05-21  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	Split lua.cc into two files: lua_hooks.cc gets the lua_hooks class
