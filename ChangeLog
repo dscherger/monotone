@@ -1,3 +1,9 @@
+2006-05-24  Richard Levitte  <richard@levitte.org>
+
+	* commands.cc: After all the restructuring, erase_ancestors was
+	suddenly not declared any more.  #include revision.hh fixes the
+	problem.
+
 2006-05-23  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* tester.cc tester.lua: New files, which will eventually become a

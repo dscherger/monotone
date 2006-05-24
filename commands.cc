@@ -15,6 +15,7 @@
 #include "cert.hh"
 
 #include "cmd.hh"
+#include "revision.hh"
 //
 // this file defines the task-oriented "top level" commands which can be
 // issued as part of a monotone command line. the command line can only
