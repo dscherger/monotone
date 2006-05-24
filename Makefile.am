@@ -39,6 +39,7 @@ MOST_SOURCES =								\
          refiner.cc refiner.hh						\
          enumerator.cc enumerator.hh					\
          netsync.cc netsync.hh						\
+         netxx_pipe.cc netxx_pipe.hh					\
          netcmd.cc netcmd.hh						\
          merkle_tree.cc merkle_tree.hh					\
          lcs.cc lcs.hh							\
