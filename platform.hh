@@ -31,6 +31,11 @@ int process_sleep(unsigned int seconds);
 // stop "\n"->"\r\n" from breaking automate on Windows
 void make_io_binary();
 
+// for pipe creation on Win32
+#ifdef WIN32
+std::string munge_argv_into_cmdline(const char* const argv[]);
+#endif
+
 // for term selection
 bool have_smart_terminal();
 // this function cannot call W/P/L, because it is called by the tick printing
