@@ -378,10 +378,10 @@ complete(app_state & app,
   selectors::selector_type ty = selectors::sel_ident;
   {
     bool dummy_get_heads = false;
-    std::set<std::string> completion_strings;
+    set<string> completion_strings;
     selectors::complete_selector("", sels, ty, dummy_get_heads,
                                  completion_strings, app, true);
-    for (std::set<std::string>::const_iterator i = completion_strings.begin();
+    for (set<string>::const_iterator i = completion_strings.begin();
          i != completion_strings.end(); ++i)
       completions.insert(revision_id(*i));
   }
