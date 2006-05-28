@@ -39,6 +39,7 @@ MOST_SOURCES =								\
          refiner.cc refiner.hh						\
          enumerator.cc enumerator.hh					\
          netsync.cc netsync.hh						\
+         netxx_pipe.cc netxx_pipe.hh					\
          netcmd.cc netcmd.hh						\
          merkle_tree.cc merkle_tree.hh					\
          lcs.cc lcs.hh							\
@@ -59,6 +60,7 @@ MOST_SOURCES =								\
          roster_merge.cc roster_merge.hh                                \
          merge.cc merge.hh                                              \
          legacy.cc legacy.hh                                            \
+	 uri.cc uri.hh                                                  \
                                                                         \
          lru_cache.h                                                    \
                                                                         \
@@ -224,11 +226,11 @@ POPT_SOURCES = \
 
 UNIX_PLATFORM_SOURCES = \
 	unix/read_password.cc unix/get_system_flavour.cc unix/process.cc unix/terminal.cc \
-	unix/inodeprint.cc unix/fs.cc unix/make_io_binary.cc
+	unix/inodeprint.cc unix/fs.cc unix/make_io_binary.cc unix/os_strerror.cc
 
 WIN32_PLATFORM_SOURCES = \
 	win32/read_password.cc win32/get_system_flavour.cc win32/process.cc win32/terminal.cc \
-	win32/inodeprint.cc win32/fs.cc win32/make_io_binary.cc
+	win32/inodeprint.cc win32/fs.cc win32/make_io_binary.cc win32/os_strerror.cc
 
 # primaries
 
