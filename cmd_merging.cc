@@ -11,21 +11,24 @@
 #include "update.hh"
 
 #include <iostream>
+
 using std::cout;
+using std::map;
+using std::set;
 
 struct update_source 
   : public file_content_source
 {
-  std::map<file_id, file_data> & temporary_store;
+  map<file_id, file_data> & temporary_store;
   app_state & app;
-  update_source (std::map<file_id, file_data> & tmp,
+  update_source (map<file_id, file_data> & tmp,
                  app_state & app)
     : temporary_store(tmp), app(app)
   {}
   void get_file_content(file_id const & fid,
                         file_data & dat) const
   {
-    std::map<file_id, file_data>::const_iterator i = temporary_store.find(fid);
+    map<file_id, file_data>::const_iterator i = temporary_store.find(fid);
     if (i != temporary_store.end())
       dat = i->second;
     else
@@ -119,6 +122,7 @@ CMD(update, N_("workspace"), "",
   
   P(F("selected update target %s\n") % r_chosen_id);
 
+  bool switched_branch = false;
   {
     // figure out which branches the target is in
     vector< revision<cert> > certs;
@@ -155,7 +159,8 @@ CMD(update, N_("workspace"), "",
           {
             // one non-matching, inform and update
             app.branch_name = (*(branches.begin()))();
-            P(F("switching branches; next commit will use branch %s") % app.branch_name());
+	    switched_branch = true;
+	    P(F("switching to branch %s") % app.branch_name());
           }
         else
           {
@@ -169,7 +174,7 @@ CMD(update, N_("workspace"), "",
 
   app.db.get_roster(r_chosen_id, chosen_roster, chosen_mm);
 
-  std::set<revision_id> 
+  set<revision_id> 
     working_uncommon_ancestors, 
     chosen_uncommon_ancestors;
 
@@ -262,6 +267,8 @@ CMD(update, N_("workspace"), "",
     {
       app.make_branch_sticky();
     }
+  if (switched_branch)
+    P(F("switched branch; next commit will use branch %s") % app.branch_name());
   P(F("updated to base revision %s\n") % r_chosen_id);
 
   put_work_cset(remaining);
@@ -414,7 +421,7 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
         MM(left_roster);
         MM(right_roster);
         marking_map left_marking_map, right_marking_map;
-        std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+        set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
 
         app.db.get_roster(left_rid, left_roster, left_marking_map);
         app.db.get_roster(right_rid, right_roster, right_marking_map);
@@ -456,7 +463,7 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
 
         {
           dir_t moved_root = left_roster.root();
-          moved_root->parent = 0;
+          moved_root->parent = the_null_node;
           moved_root->name = the_null_component;
         }
 
@@ -547,7 +554,7 @@ CMD(show_conflicts, N_("informative"), N_("REV REV"), N_("Show what conflicts wo
   marking_map l_marking, r_marking;
   app.db.get_roster(l_id, l_roster, l_marking);
   app.db.get_roster(r_id, r_roster, r_marking);
-  std::set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
+  set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
   app.db.get_uncommon_ancestors(l_id, r_id,
                                 l_uncommon_ancestors, 
                                 r_uncommon_ancestors);
@@ -602,7 +609,7 @@ CMD(get_roster, N_("debug"), N_("REVID"),
   marking_map mm;
   app.db.get_roster(rid, roster, mm);
   
-  data dat;
+  roster_data dat;
   write_roster_and_marking(roster, mm, dat);
   cout << dat;
 }

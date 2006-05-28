@@ -74,6 +74,7 @@ inline bool is_space(char x)
 // about the stuff in vocab_terms.hh
 
 typedef revision< hexenc<id> >  revision_id;
+typedef   roster< hexenc<id> >    roster_id;
 typedef manifest< hexenc<id> >  manifest_id;
 typedef     file< hexenc<id> >      file_id;
 typedef      key< hexenc<id> >       key_id;
@@ -81,6 +82,7 @@ typedef    epoch< hexenc<id> >     epoch_id;
 typedef    epoch< hexenc<data> > epoch_data;
 
 typedef revision< data >   revision_data;
+typedef   roster< data >     roster_data;
 typedef manifest< data >   manifest_data;
 typedef     file< data >       file_data;
 

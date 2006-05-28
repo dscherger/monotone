@@ -235,8 +235,18 @@ calculate_ident(file_data const & dat,
   ident = tmp;
 }
 
-void calculate_ident(revision_data const & dat,
-                     revision_id & ident)
+void
+calculate_ident(revision_data const & dat,
+                revision_id & ident)
+{
+  hexenc<id> tmp;
+  calculate_ident(dat.inner(), tmp);
+  ident = tmp;
+}
+
+void
+calculate_ident(roster_data const & dat,
+                roster_id & ident)
 {
   hexenc<id> tmp;
   calculate_ident(dat.inner(), tmp);
