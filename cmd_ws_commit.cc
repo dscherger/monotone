@@ -15,6 +15,11 @@ using std::cout;
 using std::make_pair;
 using std::pair;
 using std::map;
+using std::set;
+using std::string;
+using std::vector;
+
+using boost::shared_ptr;
 
 static void 
 get_log_message_interactively(revision_set const & cs, 
@@ -156,7 +161,7 @@ CMD(disapprove, N_("review"), N_("REVISION"),
 
   revision_id r;
   revision_set rev, rev_inverse;
-  boost::shared_ptr<cset> cs_inverse(new cset());
+  shared_ptr<cset> cs_inverse(new cset());
   complete(app, idx(args, 0)(), r);
   app.db.get_revision(r, rev);
 
@@ -192,7 +197,7 @@ CMD(disapprove, N_("review"), N_("REVISION"),
     cert_revision_in_branch(inv_id, branchname, app, dbw); 
     cert_revision_date_now(inv_id, app, dbw);
     cert_revision_author_default(inv_id, app, dbw);
-    cert_revision_changelog(inv_id, (boost::format("disapproval of revision '%s'") % r).str(), app, dbw);
+    cert_revision_changelog(inv_id, (FL("disapproval of revision '%s'") % r).str(), app, dbw);
     guard.commit();
   }
 }

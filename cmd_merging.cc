@@ -15,6 +15,10 @@
 using std::cout;
 using std::map;
 using std::set;
+using std::string;
+using std::vector;
+
+using boost::shared_ptr;
 
 struct update_source 
   : public file_content_source
@@ -46,7 +50,7 @@ CMD(update, N_("workspace"), "",
 {
   revision_set r_working;
   roster_t working_roster, chosen_roster, target_roster;
-  boost::shared_ptr<roster_t> old_roster = boost::shared_ptr<roster_t>(new roster_t());
+  shared_ptr<roster_t> old_roster = shared_ptr<roster_t>(new roster_t());
   marking_map working_mm, chosen_mm, merged_mm, target_mm;
   revision_id r_old_id, r_working_id, r_chosen_id, r_target_id;
   temp_node_id_source nis;
@@ -321,8 +325,8 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
       packet_db_writer dbw(app);
       cert_revision_in_branch(merged, app.branch_name(), app, dbw);
 
-      string log = (boost::format("merge of %s\n"
-                                  "     and %s\n") % left % right).str();
+      string log = (FL("merge of %s\n"
+		       "     and %s\n") % left % right).str();
       cert_revision_changelog(merged, log, app, dbw);
           
       guard.commit();
@@ -481,8 +485,8 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
       string log_message;
       process_commit_message_args(log_message_given, log_message, app);
       if (!log_message_given)
-        log_message = (boost::format("propagate from branch '%s' (head %s)\n"
-                                     "            to branch '%s' (head %s)\n")
+        log_message = (FL("propagate from branch '%s' (head %s)\n"
+			  "            to branch '%s' (head %s)\n")
                        % idx(args, 0) % (*src_i)
                        % idx(args, 1) % (*dst_i)).str();
 
@@ -527,9 +531,9 @@ CMD(explicit_merge, N_("tree"),
   
   cert_revision_in_branch(merged, branch, app, dbw);
   
-  string log = (boost::format("explicit_merge of '%s'\n"
-                              "              and '%s'\n"
-                              "        to branch '%s'\n")
+  string log = (FL("explicit_merge of '%s'\n"
+		   "              and '%s'\n"
+		   "        to branch '%s'\n")
                 % left % right % branch).str();
   
   cert_revision_changelog(merged, log, app, dbw);
