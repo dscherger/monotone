@@ -126,7 +126,7 @@ cvs_branch
       has_a_commit(false),
       has_parent_rid(false),
       last_branchpoint(0),
-      first_commit(0)
+      first_commit(0),
       first_commit_after_branching(0),
       branch_time(0)
   {
@@ -1396,6 +1396,8 @@ import_cvs_repo(system_path const & cvsroot,
 
   I(cvs.stk.size() == 1);
 
+  ticker n_revs(_("revisions"), "r", 1);
+
   // check branch times
   for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
           i != cvs.branches.end(); ++i)
@@ -1434,8 +1436,6 @@ import_cvs_repo(system_path const & cvsroot,
           L(FL("first commit after branching: %d)") % branch->first_commit_after_branching);
         }
     }
-
-  ticker n_revs(_("revisions"), "r", 1);
 
   // First, sort the lineages of the trunk and all branches. Thanks to the
   // logic in the 'operator<' this correctly handles branch events, which
