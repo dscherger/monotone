@@ -1,10 +1,14 @@
 #ifndef __LUA_HOOKS_HH__
 #define __LUA_HOOKS_HH__
 
-// copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 // this file defines a typed C++ interface to the various hooks
 // we expose to the user as lua functions or variables
@@ -137,5 +141,13 @@ public:
 				       std::string nonce);
   bool hook_note_netsync_end(std::string nonce);
 };
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif // __LUA_HOOKS_HH__

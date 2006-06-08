@@ -1,3 +1,79 @@
+2006-06-08  Matt Johnston  <matt@ucc.asn.au>
+
+	* boost/format/feed_args.hpp: 0 needs to be unsigned.
+	* vocab.cc: #undef EXTERN before #defining it again
+
+2006-06-07  Patrick Mauritz  <oxygene@studentenbude.ath.cx>
+
+	* cert.cc:
+	* charset.cc:
+	* commands.cc:
+	* keys.cc:
+	* lua.cc:
+	* netsync.cc:
+	* netxx_pipe.cc:
+	* rcs_import.cc:
+	* schema_migration.cc:
+	* simplestring_xform.cc:
+	* txt2c.cc:
+	* xdelta.cc: add some more using std::* directives.
+	* boost/format/feed_args.hpp: std::streamsize might be signed
+
+2006-06-07  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* Makefile.am: Add new SQLite sources.
+	* sqlite/*: Import SQLite 3.3.6.
+	* Makefile.am, configure.ac: Test for fdatasync and usleep.
+
+2006-06-07  Nathaniel Smith  <njs@pobox.com>
+
+	* netxx_pipe.cc (simple_pipe_test): Another test failure,
+	another klugey #ifdef...
+
+2006-06-07  Graydon Hoare  <graydon@pobox.com>
+
+	* netxx_pipe.cc (simple_pipe_test): Attempt to fix broken unit
+	test.
+
+2006-06-05  Graydon Hoare  <graydon@pobox.com>
+
+	* sanity.{cc,hh}: Specialize formatters to number types.
+	* NEWS: Mention some optimizations.
+
+2006-06-05  Matt Johnston  <matt@ucc.asn.au>
+
+	* NEWS: fix ssh:// syntax to match what works
+
+2006-06-04  Derek Scherger  <derek@echologic.com>
+
+	* NEWS: fix version typo
+
+2006-06-04  Nathaniel Smith  <njs@pobox.com>
+
+	* NEWS: Draft release notes for 0.27.
+
+2006-06-04  Nathaniel Smith  <njs@pobox.com>
+
+	* HACKING (Tip): Add some tips on tracking down unit test
+	failures.
+
+2006-06-04  Richard Levitte  <richard@levitte.org>
+
+	* m4/ac_compile_check_sizeof.m4, m4/acx_pthread.m4: Updates
+	contributed by Peter Simons <simons@cryp.to>.
+
+2006-06-03  Graydon Hoare  <graydon@pobox.com>
+
+	* *.{cc,hh}: Update editor mode lines.
+
+2006-06-03  Graydon Hoare  <graydon@pobox.com>
+
+	* *.{cc,hh}: Update copyright notices.
+
+2006-06-04  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: Lots of fuzzies to fix.
+
 2006-06-03  Graydon Hoare  <graydon@pobox.com>
 
 	* std_hooks.lua (merge3_xxdiff_cmd): Fix typo.

@@ -1,11 +1,15 @@
-// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// copyright (C) 2004 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include <map>
 #include <string>
+#include <cstdlib>
 #include <memory>
 #include <list>
 #include <deque>
@@ -2677,7 +2681,7 @@ serve_connections(protocol_role role,
     instant(0,1);
 
   if (!app.bind_port().empty())
-    default_port = ::atoi(app.bind_port().c_str());
+    default_port = std::atoi(app.bind_port().c_str());
 #ifdef USE_IPV6
   bool use_ipv6=true;
 #else
@@ -3173,3 +3177,11 @@ run_netsync_protocol(protocol_voice voice,
       throw oops((F("network error: %s") % e.what()).str());;
     }
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

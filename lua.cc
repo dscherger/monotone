@@ -39,6 +39,9 @@ using std::set;
 using std::sort;
 using std::string;
 using std::vector;
+using std::strerror;
+using std::malloc;
+using std::free;
 
 // adapted from "programming in lua", section 24.2.3
 // http://www.lua.org/pil/24.2.3.html
@@ -803,3 +806,11 @@ add_functions(lua_State * st)
 
   lua_pop(st, 1);
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

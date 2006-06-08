@@ -1,7 +1,11 @@
-// copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -416,17 +420,30 @@ format_base::format_base(string const & pattern, locale const & loc)
 {}
 
 ostream &
-format_base::get_stream()
+format_base::get_stream() const
 {
   return pimpl->oss;
 }
 
 void
-format_base::flush()
+format_base::flush_stream() const
 {
   pimpl->fmt % pimpl->oss.str();
   pimpl->oss.str(string());
 }
+
+void format_base::put_and_flush_signed(int64_t const & s) const { pimpl->fmt % s; }
+void format_base::put_and_flush_signed(int32_t const & s) const { pimpl->fmt % s; }
+void format_base::put_and_flush_signed(int16_t const & s) const { pimpl->fmt % s; }
+void format_base::put_and_flush_signed(int8_t const & s) const { pimpl->fmt % s; }
+
+void format_base::put_and_flush_unsigned(uint64_t const & u) const { pimpl->fmt % u; }
+void format_base::put_and_flush_unsigned(uint32_t const & u) const { pimpl->fmt % u; }
+void format_base::put_and_flush_unsigned(uint16_t const & u) const { pimpl->fmt % u; }
+void format_base::put_and_flush_unsigned(uint8_t const & u) const { pimpl->fmt % u; }
+
+void format_base::put_and_flush_float(float const & f) const { pimpl->fmt % f; }
+void format_base::put_and_flush_double(double const & d) const { pimpl->fmt % d; }
 
 std::string
 format_base::str() const
@@ -465,3 +482,11 @@ plain_format FL(const char * str)
 {
   return plain_format(str);
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

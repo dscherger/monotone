@@ -1,10 +1,14 @@
-#ifndef __PATHS_H__
-#define __PATHS_H__
+#ifndef __PATHS_HH__
+#define __PATHS_HH__
 
-// copyright (C) 2005 nathaniel smith <njs@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 // safe, portable, fast, simple path handling -- in that order.
 // but they all count.
@@ -261,5 +265,13 @@ typedef std::set<split_path> path_set;
 // equivalent to file_path_internal(path).split(sp) but more efficient.
 void
 internal_string_to_split_path(std::string const & path, split_path & sp);
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif
