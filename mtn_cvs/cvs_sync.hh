@@ -9,9 +9,10 @@
 #include <stdexcept>
 #include "sanity.hh"
 #include "cvs_client.hh"
-#include "constants.hh"
-#include "app_state.hh"
-#include "packet.hh"
+//#include "constants.hh"
+//#include "app_state.hh"
+//#include "packet.hh"
+class app_state;
 
 namespace cvs_sync {
 struct cvs_revision_nr
@@ -132,10 +133,10 @@ private:
 
 public:
   std::string create_cvs_cert_header() const;
-  static void parse_cvs_cert_header(revision<cert> const& c, 
-      std::string &repository, std::string& module, std::string& branch);
-  static std::string::size_type parse_cvs_cert_header(cert_value const& value, 
-      std::string &repository, std::string& module, std::string& branch);
+//  static void parse_cvs_cert_header(revision<cert> const& c, 
+//      std::string &repository, std::string& module, std::string& branch);
+//  static std::string::size_type parse_cvs_cert_header(cert_value const& value, 
+//      std::string &repository, std::string& module, std::string& branch);
       
 private:
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
@@ -158,7 +159,7 @@ private:
   void store_contents(const data &contents, hexenc<id> &sha1sum);
   void store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
   
-  void cert_cvs(const cvs_edge &e, packet_consumer & pc);
+//  void cert_cvs(const cvs_edge &e, packet_consumer & pc);
   cvs_file_state remember(std::set<file_state> &s,const file_state &fs, cvs_file_path const& filename);
   void join_edge_parts(std::set<cvs_edge>::iterator i);
   std::set<cvs_edge>::iterator last_known_revision();
@@ -177,7 +178,7 @@ public: // semi public interface for push/pull
   void prime();
   void update();
   void commit();
-  void process_certs(const std::vector< revision<cert> > &certs);
+//  void process_certs(const std::vector< revision<cert> > &certs);
   bool empty() const { return edges.empty() && files.empty(); }
 
   const cvs_manifest &get_files(const revision_id &e);
