@@ -1,21 +1,33 @@
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #include <vector>
 
 #include <boost/tokenizer.hpp>
 
-#include "charset.hh"
-#include "sanity.hh"
-#include "simplestring_xform.hh"
-#include "numeric_vocab.hh"
-
 #include "idna/idna.h"
 #include "idna/stringprep.h"
 
+#include "charset.hh"
+#include "numeric_vocab.hh"
+#include "sanity.hh"
+#include "simplestring_xform.hh"
+
 using std::string;
 using std::vector;
+using std::free;
 
-// general character code conversion routines
+using boost::char_separator;
 
-static string 
+// General character code conversion routines.
+
+static string
 system_charset()
 {
   char const * locale_charset_name = stringprep_locale_charset ();
@@ -24,17 +36,17 @@ system_charset()
   return sys_charset;
 }
 
-void 
+void
 charset_convert(string const & src_charset,
                 string const & dst_charset,
-                string const & src, 
+                string const & src,
                 string & dst)
 {
   if (src_charset == dst_charset)
     dst = src;
   else
     {
-      L(FL("converting %d bytes from %s to %s\n") % src.size() 
+      L(FL("converting %d bytes from %s to %s") % src.size()
         % src_charset % dst_charset);
       char * converted = stringprep_convert(src.c_str(),
                                             dst_charset.c_str(),
@@ -47,7 +59,7 @@ charset_convert(string const & src_charset,
     }
 }
 
-void 
+void
 system_to_utf8(external const & ext, utf8 & utf)
 {
   string out;
@@ -59,9 +71,9 @@ system_to_utf8(external const & ext, utf8 & utf)
 size_t
 display_width(utf8 const & utf)
 {
-  std::string const & u = utf();
+  string const & u = utf();
   size_t sz = 0;
-  std::string::const_iterator i = u.begin();
+  string::const_iterator i = u.begin();
   while (i != u.end())
     {
       if (UNLIKELY(static_cast<u8>(*i) & static_cast<u8>(0x80)))
@@ -69,7 +81,7 @@ display_width(utf8 const & utf)
           // A UTF-8 escape: consume the full escape.
           ++i;
           ++sz;
-          while (i != u.end() 
+          while (i != u.end()
                  && (static_cast<u8>(*i) & static_cast<u8>(0x80))
                  && (!(static_cast<u8>(*i) & static_cast<u8>(0x40))))
             ++i;
@@ -91,7 +103,7 @@ display_width(utf8 const & utf)
 static inline bool
 system_charset_is_utf8_impl()
 {
-  std::string lc_encoding = lowercase(system_charset());
+  string lc_encoding = lowercase(system_charset());
   return (lc_encoding == "utf-8"
           || lc_encoding == "utf_8"
           || lc_encoding == "utf8");
@@ -109,17 +121,17 @@ system_charset_is_ascii_extension_impl()
 {
   if (system_charset_is_utf8())
     return true;
-  std::string lc_encoding = lowercase(system_charset());
+  string lc_encoding = lowercase(system_charset());
   // if your character set is identical to ascii in the lower 7 bits, then add
   // it here for a speed boost.
-  return (lc_encoding.find("ascii") != std::string::npos
-          || lc_encoding.find("8859") != std::string::npos
-          || lc_encoding.find("ansi_x3.4") != std::string::npos
+  return (lc_encoding.find("ascii") != string::npos
+          || lc_encoding.find("8859") != string::npos
+          || lc_encoding.find("ansi_x3.4") != string::npos
           // http://www.cs.mcgill.ca/~aelias4/encodings.html -- "EUC (Extended
           // Unix Code) is a simple and clean encoding, standard on Unix
           // systems.... It is backwards-compatible with ASCII (i.e. valid
           // ASCII implies valid EUC)."
-          || lc_encoding.find("euc") != std::string::npos);
+          || lc_encoding.find("euc") != string::npos);
 }
 
 static inline bool
@@ -134,15 +146,15 @@ is_all_ascii(string const & utf)
 {
   // could speed this up by vectorization -- mask against 0x80808080,
   // process a whole word at at time...
-  for (std::string::const_iterator i = utf.begin(); i != utf.end(); ++i)
+  for (string::const_iterator i = utf.begin(); i != utf.end(); ++i)
     if (0x80 & *i)
       return false;
   return true;
 }
 
 // this function must be fast.  do not make it slow.
-void 
-utf8_to_system(utf8 const & utf, std::string & ext)
+void
+utf8_to_system(utf8 const & utf, string & ext)
 {
   if (system_charset_is_utf8())
     ext = utf();
@@ -153,7 +165,7 @@ utf8_to_system(utf8 const & utf, std::string & ext)
     charset_convert("UTF-8", system_charset(), utf(), ext);
 }
 
-void 
+void
 utf8_to_system(utf8 const & utf, external & ext)
 {
   string out;
@@ -187,10 +199,10 @@ utf8_consume_continuation_char(u8 c, u32 & val)
 bool
 utf8_validate(utf8 const & utf)
 {
-  std::string::size_type left = utf().size();
+  string::size_type left = utf().size();
   u32 min, val;
 
-  for (std::string::const_iterator i = utf().begin();
+  for (string::const_iterator i = utf().begin();
        i != utf().end(); ++i, --left)
   {
     u8 c = *i;
@@ -244,7 +256,7 @@ two_remaining:
   return true;
 }
 
-static string 
+static string
 decode_idna_error(int err)
 {
   switch (static_cast<Idna_rc>(err))
@@ -264,11 +276,11 @@ decode_idna_error(int err)
   return "unknown error";
 }
 
-void 
+void
 ace_to_utf8(ace const & a, utf8 & utf)
 {
   char *out = NULL;
-  L(FL("converting %d bytes from IDNA ACE to UTF-8\n") % a().size());
+  L(FL("converting %d bytes from IDNA ACE to UTF-8") % a().size());
   int res = idna_to_unicode_8z8z(a().c_str(), &out, IDNA_USE_STD3_ASCII_RULES);
   N(res == IDNA_SUCCESS || res == IDNA_NO_ACE_PREFIX,
     F("error converting %d UTF-8 bytes to IDNA ACE: %s")
@@ -278,11 +290,11 @@ ace_to_utf8(ace const & a, utf8 & utf)
   free(out);
 }
 
-void 
+void
 utf8_to_ace(utf8 const & utf, ace & a)
 {
   char *out = NULL;
-  L(FL("converting %d bytes from UTF-8 to IDNA ACE\n") % utf().size());
+  L(FL("converting %d bytes from UTF-8 to IDNA ACE") % utf().size());
   int res = idna_to_ascii_8z(utf().c_str(), &out, IDNA_USE_STD3_ASCII_RULES);
   N(res == IDNA_SUCCESS,
     F("error converting %d UTF-8 bytes to IDNA ACE: %s")
@@ -292,7 +304,7 @@ utf8_to_ace(utf8 const & utf, ace & a)
   free(out);
 }
 
-void 
+void
 internalize_cert_name(utf8 const & utf, cert_name & c)
 {
   ace a;
@@ -300,7 +312,7 @@ internalize_cert_name(utf8 const & utf, cert_name & c)
   c = a();
 }
 
-void 
+void
 internalize_cert_name(external const & ext, cert_name & c)
 {
   utf8 utf;
@@ -308,27 +320,27 @@ internalize_cert_name(external const & ext, cert_name & c)
   internalize_cert_name(utf, c);
 }
 
-void 
+void
 externalize_cert_name(cert_name const & c, utf8 & utf)
 {
   ace_to_utf8(ace(c()), utf);
 }
 
-void 
+void
 externalize_cert_name(cert_name const & c, external & ext)
 {
   utf8 utf;
   externalize_cert_name(c, utf);
-  utf8_to_system(utf, ext);  
+  utf8_to_system(utf, ext);
 }
 
-void 
+void
 internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
 {
   string tmp;
-  typedef boost::tokenizer<boost::char_separator<char> > 
+  typedef boost::tokenizer<char_separator<char> >
     tokenizer;
-  boost::char_separator<char> sep("", ".@", boost::keep_empty_tokens);
+  char_separator<char> sep("", ".@", boost::keep_empty_tokens);
   tokenizer tokens(utf(), sep);
   bool in_domain = false;
   for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); ++i)
@@ -347,7 +359,7 @@ internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
   key = tmp;
 }
 
-void 
+void
 internalize_rsa_keypair_id(external const & ext, rsa_keypair_id & key)
 {
   utf8 utf;
@@ -355,13 +367,13 @@ internalize_rsa_keypair_id(external const & ext, rsa_keypair_id & key)
   internalize_rsa_keypair_id(utf, key);
 }
 
-void 
+void
 externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
 {
   string tmp;
-  typedef boost::tokenizer<boost::char_separator<char> > 
+  typedef boost::tokenizer<char_separator<char> >
     tokenizer;
-  boost::char_separator<char> sep("", ".@", boost::keep_empty_tokens);
+  char_separator<char> sep("", ".@", boost::keep_empty_tokens);
   tokenizer tokens(key(), sep);
   bool in_domain = false;
   for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); ++i)
@@ -381,7 +393,7 @@ externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
   utf = tmp;
 }
 
-void 
+void
 externalize_rsa_keypair_id(rsa_keypair_id const & key, external & ext)
 {
   utf8 utf;
@@ -389,7 +401,7 @@ externalize_rsa_keypair_id(rsa_keypair_id const & key, external & ext)
   utf8_to_system(utf, ext);
 }
 
-void 
+void
 internalize_var_domain(utf8 const & utf, var_domain & d)
 {
   ace a;
@@ -397,7 +409,7 @@ internalize_var_domain(utf8 const & utf, var_domain & d)
   d = a();
 }
 
-void 
+void
 internalize_var_domain(external const & ext, var_domain & d)
 {
   utf8 utf;
@@ -405,18 +417,18 @@ internalize_var_domain(external const & ext, var_domain & d)
   internalize_var_domain(utf, d);
 }
 
-void 
+void
 externalize_var_domain(var_domain const & d, utf8 & utf)
 {
   ace_to_utf8(ace(d()), utf);
 }
 
-void 
+void
 externalize_var_domain(var_domain const & d, external & ext)
 {
   utf8 utf;
   externalize_var_domain(d, utf);
-  utf8_to_system(utf, ext);  
+  utf8_to_system(utf, ext);
 }
 
 
@@ -427,7 +439,7 @@ externalize_var_domain(var_domain const & d, external & ext)
 #define IDNA_ACE_PREFIX "xn--"
 #define IDNA_SUCCESS 0
 
-struct 
+struct
 idna
 {
   char *name;
@@ -586,7 +598,7 @@ idna
       IDNA_SUCCESS, IDNA_SUCCESS},
   };
 
-static void 
+static void
 check_idna_encoding()
 {
   putenv("CHARSET=UTF-8");
@@ -596,8 +608,8 @@ check_idna_encoding()
       BOOST_CHECKPOINT("IDNA language: " + string(idna_vec[i].name));
 
       size_t p, q;
-      char *uc = stringprep_ucs4_to_utf8(idna_vec[i].in, 
-                                         idna_vec[i].inlen, 
+      char *uc = stringprep_ucs4_to_utf8(idna_vec[i].in,
+                                         idna_vec[i].inlen,
                                          &p, &q);
       utf8 utf = string(uc);
       utf8 tutf;
@@ -606,7 +618,7 @@ check_idna_encoding()
       ace a = string(idna_vec[i].out);
       ace tace;
       utf8_to_ace(utf, tace);
-      L(boost::format("ACE-encoded %s: '%s'\n") % idna_vec[i].name % tace());
+      L(FL("ACE-encoded %s: '%s'") % idna_vec[i].name % tace());
       BOOST_CHECK(lowercase(a()) == lowercase(tace()));
       ace_to_utf8(a, tutf);
       BOOST_CHECK(lowercase(utf()) == lowercase(tutf()));
@@ -842,7 +854,7 @@ static void utf8_validation_test()
 }
 
 
-void 
+void
 add_charset_tests(test_suite * suite)
 {
   I(suite);
@@ -851,3 +863,11 @@ add_charset_tests(test_suite * suite)
 }
 
 #endif // BUILD_UNIT_TESTS
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <windows.h>
 #include <shlobj.h>
+#include <direct.h>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -16,22 +17,6 @@
 #include "vocab.hh"
 #include "sanity.hh"
 #include "platform.hh"
-
-std::string
-win32_strerror(DWORD errnum)
-{
-  LPTSTR tstr;
-
-  if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
-                    0, errnum, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                    reinterpret_cast<LPTSTR>(&tstr), 0,
-                    static_cast<va_list*>(0)) == 0)
-    return (F("unknown error code %d") % errnum).str();
-
-  std::string str = tstr;
-  LocalFree(tstr);
-  return str;
-}
 
 std::string
 get_current_working_dir()
@@ -156,15 +141,15 @@ rename_clobberingly_impl(const char* from, const char* to)
 {
   // MoveFileEx is only available on NT-based systems.  We will revert to a
   // more compatible DeleteFile/MoveFile pair as a compatibility fall-back.
-  typedef BOOL (*MoveFileExFun)(LPCTSTR, LPCTSTR, DWORD);
-  static MoveFileExFun MoveFileEx = 0;
+  typedef BOOL (WINAPI *MoveFileExFun)(LPCTSTR, LPCTSTR, DWORD);
+  static MoveFileExFun fnMoveFileEx = 0;
   static bool MoveFileExAvailable = false;
-  if (MoveFileEx == 0) {
+  if (fnMoveFileEx == 0) {
     HMODULE hModule = LoadLibrary("kernel32");
     if (hModule)
-      MoveFileEx = reinterpret_cast<MoveFileExFun>
+      fnMoveFileEx = reinterpret_cast<MoveFileExFun>
         (GetProcAddress(hModule, "MoveFileExA"));
-    if (MoveFileEx) {
+    if (fnMoveFileEx) {
       L(FL("using MoveFileEx for renames"));
       MoveFileExAvailable = true;
     } else
@@ -172,7 +157,7 @@ rename_clobberingly_impl(const char* from, const char* to)
   }
 
   if (MoveFileExAvailable) {
-    if (MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING))
+    if (fnMoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING))
       return true;
     else if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED) {
       MoveFileExAvailable = false;
@@ -190,8 +175,6 @@ rename_clobberingly_impl(const char* from, const char* to)
 void
 rename_clobberingly(any_path const & from, any_path const & to)
 {
-  const char* szFrom = from.as_external().c_str();
-  const char* szTo = to.as_external().c_str();
   static const int renameAttempts = 16;
   DWORD sleepTime = 1;
   DWORD lastError = 0;
@@ -201,16 +184,16 @@ rename_clobberingly(any_path const & from, any_path const & to)
   // around the common problem where another process (e.g. a virus checker)
   // will exclusive open a file you've just touched.
   for (int i = 0; i < renameAttempts; ++i) {
-    if (rename_clobberingly_impl(szFrom, szTo))
+    if (rename_clobberingly_impl(from.as_external().c_str(), to.as_external().c_str()))
       return;
     lastError = GetLastError();
-    L(FL("attempted rename of '%s' to '%s' failed: %d")
-      % szFrom % szTo % lastError);
+    L(FL("attempted rename of '%s' to '%s' failed: (%s) %d")
+      % from % to % os_strerror(lastError) % lastError);
     Sleep(sleepTime);
     if (sleepTime < 250)
       sleepTime *= 2;
   }
   E(false, F("renaming '%s' to '%s' failed: %s (%d)") % from % to
-           % win32_strerror(lastError) % lastError);
+           % os_strerror(lastError) % lastError);
 }
 

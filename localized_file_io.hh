@@ -7,18 +7,26 @@
 #include "paths.hh"
 #include "vocab.hh"
 
-struct lua_hooks;
+class lua_hooks;
 
-void read_localized_data(file_path const & path, 
-                         data & dat, 
+void read_localized_data(file_path const & path,
+                         data & dat,
                          lua_hooks & lua);
 bool ident_existing_file(file_path const & p, file_id & ident, lua_hooks & lua);
 void calculate_ident(file_path const & file,
-                     hexenc<id> & ident, 
+                     hexenc<id> & ident,
                      lua_hooks & lua);
 
-void write_localized_data(file_path const & path, 
-                          data const & dat, 
+void write_localized_data(file_path const & path,
+                          data const & dat,
                           lua_hooks & lua);
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif

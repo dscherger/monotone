@@ -39,6 +39,7 @@ MOST_SOURCES =								\
          refiner.cc refiner.hh						\
          enumerator.cc enumerator.hh					\
          netsync.cc netsync.hh						\
+         netxx_pipe.cc netxx_pipe.hh					\
          netcmd.cc netcmd.hh						\
          merkle_tree.cc merkle_tree.hh					\
          lcs.cc lcs.hh							\
@@ -59,6 +60,7 @@ MOST_SOURCES =								\
          roster_merge.cc roster_merge.hh                                \
          merge.cc merge.hh                                              \
          legacy.cc legacy.hh                                            \
+	 uri.cc uri.hh                                                  \
                                                                         \
          lru_cache.h                                                    \
                                                                         \
@@ -184,7 +186,7 @@ SQLITE_SOURCES = \
         sqlite/build.c sqlite/date.c sqlite/delete.c sqlite/expr.c sqlite/func.c \
         sqlite/hash.c sqlite/insert.c \
         sqlite/legacy.c sqlite/main.c sqlite/opcodes.c \
-        sqlite/os.c sqlite/os_unix.c sqlite/os_win.c \
+        sqlite/os.c sqlite/os_unix.c sqlite/os_win.c sqlite/os_os2.c \
         sqlite/pager.c sqlite/parse.c sqlite/pragma.c sqlite/printf.c \
         sqlite/random.c sqlite/select.c sqlite/table.c sqlite/tokenize.c \
         sqlite/trigger.c sqlite/update.c sqlite/utf.c \
@@ -196,7 +198,7 @@ SQLITE_SOURCES = \
 	sqlite/complete.c \
 	\
         sqlite/btree.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h \
-        sqlite/os_common.h \
+        sqlite/os_common.h sqlite/os_os2.h \
         sqlite/parse.h sqlite/sqlite3.h sqlite/sqliteInt.h sqlite/vdbe.h sqlite/vdbeInt.h \
 	sqlite/pager.h
 
@@ -224,11 +226,11 @@ POPT_SOURCES = \
 
 UNIX_PLATFORM_SOURCES = \
 	unix/read_password.cc unix/get_system_flavour.cc unix/process.cc unix/terminal.cc \
-	unix/inodeprint.cc unix/fs.cc unix/make_io_binary.cc
+	unix/inodeprint.cc unix/fs.cc unix/make_io_binary.cc unix/os_strerror.cc
 
 WIN32_PLATFORM_SOURCES = \
 	win32/read_password.cc win32/get_system_flavour.cc win32/process.cc win32/terminal.cc \
-	win32/inodeprint.cc win32/fs.cc win32/make_io_binary.cc
+	win32/inodeprint.cc win32/fs.cc win32/make_io_binary.cc win32/os_strerror.cc
 
 # primaries
 
@@ -287,7 +289,7 @@ endif
 SUFFIXES = .gch
 
 AM_CPPFLAGS =
-AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DBOOST_DISABLE_THREADS -DBOOST_SP_DISABLE_THREADS -DSQLITE_OMIT_CURSOR $(SQLITE_CPPFLAGS)
+AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DBOOST_DISABLE_THREADS -DBOOST_SP_DISABLE_THREADS -DSQLITE_OMIT_CURSOR -DTHREADSAFE=0 -DSQLITE_THREAD_OVERRIDE_LOCK=-1 $(SQLITE_CPPFLAGS)
 AM_CXXFLAGS = $(AM_CPPFLAGS) -DNDEBUG -DBOOST_DISABLE_THREADS -DBOOST_SP_DISABLE_THREADS
 AM_LDFLAGS = 
 

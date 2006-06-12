@@ -1,8 +1,11 @@
-// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
-// copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include <algorithm>
 #include <cctype>
@@ -28,7 +31,9 @@
 #include "vocab.hh"
 #include "xdelta.hh"
 
-using namespace std;
+using std::string;
+
+using boost::scoped_array;
 
 // this file contans various sorts of string transformations. each
 // transformation should be self-explanatory from its type signature. see
@@ -54,8 +59,6 @@ using namespace std;
 // the matter, but bring strong evidence along with you that the stream
 // paradigm "must" be used. this program is intended for source code
 // control and I make no bones about it.
-
-using namespace std;
 
 // the generic function
 template<typename XFM> string xform(string const & in)
@@ -89,7 +92,7 @@ encode_hexenc_inner(string::const_iterator i,
       *out++ = tab[*i & 0xf];
     }
 }
-                                  
+
 
 string encode_hexenc(string const & in)
 {
@@ -101,20 +104,22 @@ string encode_hexenc(string const & in)
     }
   else
     {
-      boost::scoped_array<char> buf(new char[in.size() * 2]);
+      scoped_array<char> buf(new char[in.size() * 2]);
       encode_hexenc_inner(in.begin(), in.end(), buf.get());
       return string(buf.get(), in.size() *2);
     }
 }
 
-static inline char 
+static inline char
 decode_hex_char(char c)
 {
   if (c >= '0' && c <= '9')
     return c - '0';
-  if (c >= 'a' && c <= 'f')
-    return c - 'a' + 10;
-  I(false);
+  else
+  {
+	  I(c >= 'a' && c <= 'f');
+	  return c - 'a' + 10;
+  }
 }
 
 static inline void
@@ -133,7 +138,7 @@ decode_hexenc_inner(string::const_iterator i,
 
 string decode_hexenc(string const & in)
 {
-  
+
   I(in.size() % 2 == 0);
   if (LIKELY(in.size() == constants::idlen))
     {
@@ -141,9 +146,9 @@ string decode_hexenc(string const & in)
       decode_hexenc_inner(in.begin(), in.end(), buf);
       return string(buf, constants::idlen / 2);
     }
-  else 
+  else
     {
-      boost::scoped_array<char> buf(new char[in.size() / 2]);
+      scoped_array<char> buf(new char[in.size() / 2]);
       decode_hexenc_inner(in.begin(), in.end(), buf.get());
       return string(buf.get(), in.size() / 2);
     }
@@ -182,7 +187,7 @@ template void unpack<delta>(base64< gzip<delta> > const &, delta &);
 
 // diffing and patching
 
-void 
+void
 diff(data const & olddata,
      data const & newdata,
      delta & del)
@@ -192,7 +197,7 @@ diff(data const & olddata,
   del = delta(unpacked);
 }
 
-void 
+void
 patch(data const & olddata,
       delta const & del,
       data & newdata)
@@ -204,7 +209,7 @@ patch(data const & olddata,
 
 // identifier (a.k.a. sha1 signature) calculation
 
-void 
+void
 calculate_ident(data const & dat,
                 hexenc<id> & ident)
 {
@@ -212,21 +217,21 @@ calculate_ident(data const & dat,
   p.process_msg(dat());
 
   id ident_decoded(p.read_all_as_string());
-  encode_hexenc(ident_decoded, ident);  
+  encode_hexenc(ident_decoded, ident);
 }
 
-void 
+void
 calculate_ident(base64< gzip<data> > const & dat,
                 hexenc<id> & ident)
 {
   gzip<data> data_decoded;
-  data data_decompressed;  
+  data data_decompressed;
   decode_base64(dat, data_decoded);
-  decode_gzip(data_decoded, data_decompressed);  
+  decode_gzip(data_decoded, data_decompressed);
   calculate_ident(data_decompressed, ident);
 }
 
-void 
+void
 calculate_ident(file_data const & dat,
                 file_id & ident)
 {
@@ -235,15 +240,25 @@ calculate_ident(file_data const & dat,
   ident = tmp;
 }
 
-void calculate_ident(revision_data const & dat,
-                     revision_id & ident)
+void
+calculate_ident(revision_data const & dat,
+                revision_id & ident)
 {
   hexenc<id> tmp;
   calculate_ident(dat.inner(), tmp);
   ident = tmp;
 }
 
-string 
+void
+calculate_ident(roster_data const & dat,
+                roster_id & ident)
+{
+  hexenc<id> tmp;
+  calculate_ident(dat.inner(), tmp);
+  ident = tmp;
+}
+
+string
 canonical_base64(string const & s)
 {
   return xform<Botan::Base64_Encoder>
@@ -255,7 +270,7 @@ canonical_base64(string const & s)
 #include "unit_tests.hh"
 #include <stdlib.h>
 
-static void 
+static void
 enc_test()
 {
   data d2, d1("the rain in spain");
@@ -269,20 +284,20 @@ enc_test()
   BOOST_CHECK(d2 == d1);
 }
 
-static void 
+static void
 rdiff_test()
 {
   data dat1(string("the first day of spring\nmakes me want to sing\n"));
   data dat2(string("the first day of summer\nis a major bummer\n"));
   delta del;
   diff(dat1, dat2, del);
-  
+
   data dat3;
   patch(dat1, del, dat3);
   BOOST_CHECK(dat3 == dat2);
 }
 
-static void 
+static void
 calculate_ident_test()
 {
   data input(string("the only blender which can be turned into the most powerful vaccum cleaner"));
@@ -292,7 +307,7 @@ calculate_ident_test()
   BOOST_CHECK(output() == ident);
 }
 
-void 
+void
 add_transform_tests(test_suite * suite)
 {
   I(suite);
@@ -302,3 +317,11 @@ add_transform_tests(test_suite * suite)
 }
 
 #endif // BUILD_UNIT_TESTS
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

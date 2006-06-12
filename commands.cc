@@ -1,9 +1,11 @@
-// -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-// copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include <map>
 #include <algorithm>
@@ -15,6 +17,14 @@
 #include "cert.hh"
 
 #include "cmd.hh"
+
+using std::cin;
+using std::pair;
+using std::set;
+using std::string;
+using std::strlen;
+using std::vector;
+
 //
 // this file defines the task-oriented "top level" commands which can be
 // issued as part of a monotone command line. the command line can only
@@ -25,7 +35,7 @@
 // we might expose this blunt command interface to scripting someday. but
 // not today.
 
-namespace commands 
+namespace commands
 {
   using std::map;
   // This must be a pointer.
@@ -66,24 +76,26 @@ namespace std
   };
 };
 
-namespace commands 
+namespace commands
 {
-  using namespace std;
+  using std::endl;
+  using std::greater;
+  using std::ostream;
 
   bool operator<(command const & self, command const & other)
   {
     // *twitch*
-    return ((std::string(_(self.cmdgroup.c_str())) < std::string(_(other.cmdgroup.c_str())))
+    return ((string(_(self.cmdgroup.c_str())) < string(_(other.cmdgroup.c_str())))
             || ((self.cmdgroup == other.cmdgroup)
-                && (std::string(_(self.name.c_str())) < (std::string(_(other.name.c_str()))))));
+                && (string(_(self.name.c_str())) < (string(_(other.name.c_str()))))));
   }
 
 
-  string complete_command(string const & cmd) 
+  string complete_command(string const & cmd)
   {
     if (cmd.length() == 0 || (*cmds).find(cmd) != (*cmds).end()) return cmd;
 
-    L(FL("expanding command '%s'\n") % cmd);
+    L(FL("expanding command '%s'") % cmd);
 
     vector<string> matched;
 
@@ -102,10 +114,10 @@ namespace commands
       F("unknown command '%s'\n") % cmd);
 
     // one matched command
-    if (matched.size() == 1) 
+    if (matched.size() == 1)
       {
       string completed = *matched.begin();
-      L(FL("expanded command to '%s'") %  completed);  
+      L(FL("expanded command to '%s'") %  completed);
       return completed;
       }
 
@@ -156,8 +168,8 @@ namespace commands
       {
         sorted.push_back(i->second);
       }
-  
-    sort(sorted.begin(), sorted.end(), std::greater<command *>());
+
+    sort(sorted.begin(), sorted.end(), greater<command *>());
 
     string curr_group;
     size_t col = 0;
@@ -196,7 +208,7 @@ namespace commands
   {
     if ((*cmds).find(cmd) != (*cmds).end())
       {
-        L(FL("executing command '%s'\n") % cmd);
+        L(FL("executing command '%s'") % cmd);
 
         // at this point we process the data from _MTN/options if
         // the command needs it.
@@ -208,7 +220,7 @@ namespace commands
       }
     else
       {
-        P(F("unknown command '%s'\n") % cmd);
+        P(F("unknown command '%s'") % cmd);
         return 1;
       }
   }
@@ -233,17 +245,13 @@ CMD(help, N_("informative"), N_("command [ARGS...]"), N_("display command help")
 {
   if (args.size() < 1)
     throw usage("");
-  
+
   string full_cmd = complete_command(idx(args, 0)());
   if ((*cmds).find(full_cmd) == (*cmds).end())
     throw usage("");
-  
+
   throw usage(full_cmd);
 }
-
-using std::set;
-using std::pair;
-using std::cin;
 
 void
 maybe_update_inodeprints(app_state & app)
@@ -276,7 +284,7 @@ maybe_update_inodeprints(app_state & app)
                 {
                   split_path sp;
                   new_roster.get_name(nid, sp);
-                  file_path fp(sp);                  
+                  file_path fp(sp);
                   hexenc<inodeprint> ip;
                   if (inodeprint_file(fp, ip))
                     ipm_new.insert(inodeprint_entry(fp, ip));
@@ -289,7 +297,7 @@ maybe_update_inodeprints(app_state & app)
   write_inodeprints(dat);
 }
 
-string 
+string
 get_stdin()
 {
   char buf[constants::bufsz];
@@ -340,10 +348,10 @@ describe_revision(app_state & app,
 }
 
 
-void 
-complete(app_state & app, 
+void
+complete(app_state & app,
          string const & str,
-         std::set<revision_id> & completion,
+         set<revision_id> & completion,
          bool must_exist)
 {
   // This copies the start of selectors::parse_selector().to avoid
@@ -364,7 +372,7 @@ complete(app_state & app,
   vector<pair<selectors::selector_type, string> >
     sels(selectors::parse_selector(str, app));
 
-  P(F("expanding selection '%s'\n") % str);
+  P(F("expanding selection '%s'") % str);
 
   // we jam through an "empty" selection on sel_ident type
   set<string> completions;
@@ -378,13 +386,13 @@ complete(app_state & app,
        i != completions.end(); ++i)
     {
       pair<set<revision_id>::const_iterator, bool> p = completion.insert(revision_id(*i));
-      P(F("expanded to '%s'\n") % *(p.first));
+      P(F("expanded to '%s'") % *(p.first));
     }
 }
 
 
 void
-complete(app_state & app, 
+complete(app_state & app,
          string const & str,
          revision_id & completion,
          bool must_exist)
@@ -411,7 +419,7 @@ notify_if_multiple_heads(app_state & app)
   set<revision_id> heads;
   get_branch_heads(app.branch_name(), app, heads);
   if (heads.size() > 1) {
-    std::string prefixedline;
+    string prefixedline;
     prefix_lines_with(_("note: "),
                       _("branch '%s' has multiple heads\n"
                         "perhaps consider '%s merge'"),
@@ -432,7 +440,7 @@ process_commit_message_args(bool & given,
   // can't have both a --message and a --message-file ...
   N(app.message().length() == 0 || app.message_file().length() == 0,
     F("--message and --message-file are mutually exclusive"));
-  
+
   if (app.is_explicit_option(OPT_MESSAGE))
     {
       log_message = app.message();
@@ -448,3 +456,11 @@ process_commit_message_args(bool & given,
   else
     given = false;
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

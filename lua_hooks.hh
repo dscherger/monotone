@@ -1,10 +1,14 @@
 #ifndef __LUA_HOOKS_HH__
 #define __LUA_HOOKS_HH__
 
-// copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 // this file defines a typed C++ interface to the various hooks
 // we expose to the user as lua functions or variables
@@ -16,8 +20,8 @@
 #include "vocab.hh"
 #include "paths.hh"
 
-struct patch_set;
-struct app_state;
+struct uri;
+class app_state;
 struct lua_State;
 
 class lua_hooks
@@ -45,7 +49,7 @@ public:
   bool hook_get_author(cert_value const & branchname, std::string & author);
   bool hook_edit_comment(std::string const & commentary,
                          std::string const & user_log_message,
-                         std::string & result);  
+                         std::string & result);
   bool hook_persist_phrase_ok();
   bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,
                                    hexenc<id> const & id,
@@ -59,7 +63,14 @@ public:
                                      std::map<rsa_keypair_id, bool> const & new_results);
 
   // network hooks
-  bool hook_get_netsync_read_permitted(std::string const & branch, 
+  bool hook_get_netsync_connect_command(uri const & u,
+					std::string const & include_pattern,
+					std::string const & exclude_pattern,
+					bool debug,
+					std::vector<std::string> & argv);
+  bool hook_use_transport_auth(uri const & u);
+			
+  bool hook_get_netsync_read_permitted(std::string const & branch,
                                        rsa_keypair_id const & identity);
   // anonymous no-key version
   bool hook_get_netsync_read_permitted(std::string const & branch);
@@ -72,9 +83,9 @@ public:
                    file_path const & left_path,
                    file_path const & right_path,
                    file_path const & merged_path,
-                   data const & ancestor, 
-                   data const & left, 
-                   data const & right, 
+                   data const & ancestor,
+                   data const & left,
+                   data const & right,
                    data & result);
 
   bool hook_external_diff(file_path const & path,
@@ -92,15 +103,15 @@ public:
   // attribute hooks
   bool hook_init_attributes(file_path const & filename,
                             std::map<std::string, std::string> & attrs);
-  bool hook_apply_attribute(std::string const & attr, 
-                            file_path const & filename, 
+  bool hook_apply_attribute(std::string const & attr,
+                            file_path const & filename,
                             std::string const & value);
 
   // conversion hooks
   bool hook_get_system_linesep(std::string & linesep);
-  bool hook_get_charset_conv(file_path const & p, 
+  bool hook_get_charset_conv(file_path const & p,
                              std::string & db, std::string & ext);
-  bool hook_get_linesep_conv(file_path const & p, 
+  bool hook_get_linesep_conv(file_path const & p,
                              std::string & db, std::string & ext);
 
   // validation hooks
@@ -130,5 +141,13 @@ public:
 				       std::string nonce);
   bool hook_note_netsync_end(std::string nonce);
 };
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif // __LUA_HOOKS_HH__

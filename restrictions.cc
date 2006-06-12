@@ -1,7 +1,11 @@
-// copyright (C) 2005 derek scherger <derek@echologic.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2005 Derek Scherger <derek@echologic.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include <map>
 #include <string>
@@ -13,7 +17,9 @@
 #include "transforms.hh"
 
 using std::make_pair;
+using std::map;
 using std::set;
+using std::vector;
 
 // TODO: add check for relevant rosters to be used by log
 //
@@ -34,15 +40,15 @@ make_path_set(vector<utf8> const & args, path_set & paths)
 }
 
 static void
-add_paths(map<split_path, path_state> & path_map, 
-          path_set const & paths, 
+add_paths(map<split_path, path_state> & path_map,
+          path_set const & paths,
           path_state const state)
 {
   for (path_set::const_iterator i = paths.begin(); i != paths.end(); ++i)
     {
       map<split_path, path_state>::iterator p = path_map.find(*i);
       if (p != path_map.end())
-        N(p->second == state, 
+        N(p->second == state,
           F("conflicting include/exclude on path '%s'") % *i);
       else
         path_map.insert(make_pair(*i, state));
@@ -50,22 +56,22 @@ add_paths(map<split_path, path_state> & path_map,
 }
 
 static void
-add_nodes(map<node_id, path_state> & node_map, 
+add_nodes(map<node_id, path_state> & node_map,
           roster_t const & roster,
-          path_set const & paths, 
-          path_set & known, 
+          path_set const & paths,
+          path_set & known,
           path_state const state)
 {
   for (path_set::const_iterator i = paths.begin(); i != paths.end(); ++i)
     {
-      if (roster.has_node(*i)) 
+      if (roster.has_node(*i))
         {
           known.insert(*i);
           node_id nid = roster.get_node(*i)->self;
-          
+
           map<node_id, path_state>::iterator n = node_map.find(nid);
           if (n != node_map.end())
-            N(n->second == state, 
+            N(n->second == state,
               F("conflicting include/exclude on path '%s'") % *i);
           else
             node_map.insert(make_pair(nid, state));
@@ -100,7 +106,7 @@ restriction::validate()
 {
   int bad = 0;
 
-  for (path_set::const_iterator i = included_paths.begin(); 
+  for (path_set::const_iterator i = included_paths.begin();
        i != included_paths.end(); ++i)
     {
       // ignored paths are allowed into the restriction but are not considered
@@ -116,7 +122,7 @@ restriction::validate()
         }
     }
 
-  for (path_set::const_iterator i = excluded_paths.begin(); 
+  for (path_set::const_iterator i = excluded_paths.begin();
        i != excluded_paths.end(); ++i)
     {
       if (known_paths.find(*i) == known_paths.end())
@@ -125,7 +131,7 @@ restriction::validate()
           W(F("unknown path excluded %s") % *i);
         }
     }
-  
+
   N(bad == 0, F("%d unknown paths") % bad);
 }
 
@@ -141,9 +147,9 @@ restriction::includes(roster_t const & roster, node_id nid) const
 
   split_path sp;
   roster.get_name(nid, sp);
-  
+
   // empty restriction includes everything
-  if (empty()) 
+  if (empty())
     {
       L(FL("empty include of nid %d path '%s'") % nid % file_path(sp));
       return true;
@@ -157,13 +163,13 @@ restriction::includes(roster_t const & roster, node_id nid) const
   // somewhat more reasonable here to use depth=0 to mean "exactly this
   // directory" and depth=1 to mean "this directory and its immediate children"
 
-  while (!null_node(current) && (app.depth == -1 || depth <= app.depth + 1)) 
+  while (!null_node(current) && (app.depth == -1 || depth <= app.depth + 1))
     {
       map<node_id, path_state>::const_iterator r = node_map.find(current);
 
-      if (r != node_map.end()) 
+      if (r != node_map.end())
         {
-          switch (r->second) 
+          switch (r->second)
             {
             case included:
               L(FL("explicit include of nid %d path '%s'") % current % file_path(sp));
@@ -182,12 +188,12 @@ restriction::includes(roster_t const & roster, node_id nid) const
 
   if (included_paths.empty())
     {
-      L(FL("default include of nid %d path '%s'\n") % nid % file_path(sp));
+      L(FL("default include of nid %d path '%s'") % nid % file_path(sp));
       return true;
     }
   else
     {
-      L(FL("default exclude of nid %d path '%s'\n") % nid % file_path(sp));
+      L(FL("default exclude of nid %d path '%s'") % nid % file_path(sp));
       return false;
     }
 }
@@ -196,7 +202,7 @@ bool
 restriction::includes(split_path const & sp) const
 {
   // empty restriction includes everything
-  if (empty()) 
+  if (empty())
     {
       L(FL("empty include of path '%s'") % file_path(sp));
       return true;
@@ -216,7 +222,7 @@ restriction::includes(split_path const & sp) const
 
       if (r != path_map.end())
         {
-          switch (r->second) 
+          switch (r->second)
             {
             case included:
               L(FL("explicit include of path '%s'") % file_path(sp));
@@ -234,12 +240,12 @@ restriction::includes(split_path const & sp) const
 
   if (included_paths.empty())
     {
-      L(FL("default include of path '%s'\n") % file_path(sp));
+      L(FL("default include of path '%s'") % file_path(sp));
       return true;
     }
   else
     {
-      L(FL("default exclude of path '%s'\n") % file_path(sp));
+      L(FL("default exclude of path '%s'") % file_path(sp));
       return false;
     }
 }
@@ -325,7 +331,7 @@ file_id fid_yxg(string("c000000000000000000000000000000000000000"));
 file_id fid_yyf(string("d000000000000000000000000000000000000000"));
 file_id fid_yyg(string("e000000000000000000000000000000000000000"));
 
-static void setup(roster_t & roster) 
+static void setup(roster_t & roster)
 {
   temp_node_id_source nis;
 
@@ -402,7 +408,7 @@ static void setup(roster_t & roster)
   roster.attach_node(nid_yyg, sp_yyg);
 }
 
-static void 
+static void
 test_empty_restriction()
 {
   roster_t roster;
@@ -410,7 +416,7 @@ test_empty_restriction()
 
   app_state app;
   restriction mask(app);
-  
+
   BOOST_CHECK(mask.empty());
 
   // check restricted nodes
@@ -464,7 +470,7 @@ test_empty_restriction()
   BOOST_CHECK(mask.includes(sp_yyg));
 }
 
-static void 
+static void
 test_simple_include()
 {
   roster_t roster;
@@ -530,7 +536,7 @@ test_simple_include()
   BOOST_CHECK( mask.includes(sp_yyg));
 }
 
-static void 
+static void
 test_simple_exclude()
 {
   roster_t roster;
@@ -596,7 +602,7 @@ test_simple_exclude()
   BOOST_CHECK(!mask.includes(sp_yyg));
 }
 
-static void 
+static void
 test_include_exclude()
 {
   roster_t roster;
@@ -664,7 +670,7 @@ test_include_exclude()
   BOOST_CHECK(!mask.includes(sp_yyg));
 }
 
-static void 
+static void
 test_exclude_include()
 {
   roster_t roster;
@@ -735,7 +741,7 @@ test_exclude_include()
   BOOST_CHECK( mask.includes(sp_yyg));
 }
 
-static void 
+static void
 test_invalid_paths()
 {
   roster_t roster;
@@ -761,7 +767,7 @@ test_include_depth_0()
 
   app_state app;
   // FIXME: depth == 0 currently means directory + immediate children
-  // this should be changed to mean just the named directory but for 
+  // this should be changed to mean just the named directory but for
   // compatibility with old restrictions this behaviour has been preserved
   app.set_depth(0);
   restriction mask(includes, excludes, roster, app);
@@ -831,7 +837,7 @@ test_include_depth_1()
 
   app_state app;
   // FIXME: depth == 1 currently means directory + children + grand children
-  // this should be changed to mean directory + immediate children but for 
+  // this should be changed to mean directory + immediate children but for
   // compatibility with old restrictions this behaviour has been preserved
   app.set_depth(1);
   restriction mask(includes, excludes, roster, app);
@@ -904,3 +910,11 @@ add_restrictions_tests(test_suite * suite)
 
 }
 #endif // BUILD_UNIT_TESTS
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
