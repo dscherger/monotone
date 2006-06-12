@@ -109,8 +109,6 @@ public:
   void require_workspace(std::string const & explanation = "");
   void create_workspace(system_path const & dir);
 
-  void set_restriction(path_set const & valid_paths, 
-                       path_set const & paths);
   // Set the branch name. If you only invoke set_branch, the branch
   // name is not sticky (and won't be written to the workspace and
   // reused by subsequent monotone invocations).  Commands which
