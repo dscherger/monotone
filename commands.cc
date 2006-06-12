@@ -12,6 +12,7 @@
 
 #include "transforms.hh"
 #include "simplestring_xform.hh"
+#include "cvs_sync.hh"
 #include "charset.hh"
 #include "inodeprint.hh"
 #include "cert.hh"
@@ -455,6 +456,60 @@ process_commit_message_args(bool & given,
     }
   else
     given = false;
+}
+
+// missing: compression level (-z), cvs-branch (-r), since (-D)
+CMD(cvs_pull, "network", "[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]",
+    "(re-)import a module from a remote cvs repository", 
+    OPT_BRANCH_NAME % OPT_SINCE % OPT_FULL)
+{
+  if (args.size() == 1 || args.size() > 3) throw usage(name);
+
+  string repository,module,branch;
+  if (args.size() >= 2)
+  { repository = idx(args, 0)();
+    module = idx(args, 1)();
+    if (args.size()==3) 
+      branch=idx(args, 2)();
+  }
+  N(!app.branch_name().empty(), F("no destination branch specified\n"));
+      
+  cvs_sync::pull(repository,module,branch,app);
+}
+
+
+CMD(cvs_push, "network", "[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]",
+    "commit changes in local database to a remote cvs repository", 
+    OPT_BRANCH_NAME % OPT_REVISION)
+{
+  if (args.size() == 1 || args.size() > 3) throw usage(name);
+
+  string repository,module,branch;
+  if (args.size() >= 2)
+  { repository = idx(args, 0)();
+    module = idx(args, 1)();
+    if (args.size()==3) 
+      branch=idx(args, 2)();
+  }
+  cvs_sync::push(repository,module,branch,app);
+}
+
+
+CMD(cvs_takeover, "working copy", "[CVS-MODULE]",
+    "put a CVS working directory under monotone's control", OPT_BRANCH_NAME)
+{
+  if (args.size() > 1) throw usage(name);
+  string module;
+  if (args.size() == 1) module = idx(args, 0)();
+  N(!app.branch_name().empty(), F("no destination branch specified\n"));
+  cvs_sync::takeover(app, module);
+}
+
+CMD(cvs_debug, "network", "COMMAND ARG",
+    "e.g. manifest REVISION give you a list of cvs revisions per file", OPT_BRANCH_NAME)
+{
+  if (args.size() != 2) throw usage(name);
+  cvs_sync::debug(idx(args, 0)(), idx(args, 1)(), app);
 }
 
 // Local Variables:
