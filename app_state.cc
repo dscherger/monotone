@@ -172,7 +172,22 @@ app_state::create_workspace(system_path const & new_dir)
   load_rcfiles();
 }
 
+
 void
+app_state::set_restriction(path_set const & valid_paths,
+                           vector<utf8> const & paths)
+{
+  path_set ps;
+  for (vector<utf8>::const_iterator i = paths.begin(); i != paths.end(); ++i)
+    {
+      file_path p = file_path_external(*i);
+      split_path sp;
+      p.split(sp);
+      ps.insert(sp);
+    }
+  set_restriction(valid_paths, ps);
+}
+
 app_state::set_database(system_path const & filename)
 {
   if (!filename.empty()) db.set_filename(filename);
