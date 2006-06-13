@@ -46,6 +46,7 @@ app_state::app_state()
     stdhooks(true), rcfiles(true), diffs(false),
     no_merges(false), set_default(false),
     verbose(false), date_set(false),
+    cvspull_full(), 
     search_root(current_root_path()),
     depth(-1), last(-1), next(-1),
     diff_format(unified_diff), diff_args_provided(false),
@@ -285,6 +286,12 @@ app_state::set_depth(long d)
   N(d >= 0,
     F("negative depth not allowed\n"));
   depth = d;
+}
+
+void
+app_state::set_since(utf8 const & s)
+{
+  sync_since = s;
 }
 
 void
