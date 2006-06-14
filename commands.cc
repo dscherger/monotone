@@ -456,7 +456,6 @@ process_commit_message_args(bool & given,
   else
     given = false;
 }
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
