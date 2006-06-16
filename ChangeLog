@@ -1504,6 +1504,11 @@
 
 	* po/sv.po: A few untranslated ones appeared.
 
+2006-04-07  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* ChangeLog: Reinserted lost entries which got lost
+	during propagation.
+
 2006-04-07  Richard Levitte  <richard@levitte.org>
 
 	* po/sv.po: Fixed a fuzzy.
@@ -1654,6 +1659,18 @@
 
 	* po/ja.po: Updated Japanese translation.
 
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Moved cvs_event::operator< out of the
+	struct definition.
+	Now calling 'note_branchpoint' and adding a branch event
+	only if curr_commit is alive. Likewise with
+	note_commit_following_branchpoint
+
+	* tests/t_cvsimport_branch.at, tests/t_cvsimport_branch2.at:
+	added sleeps to allow cvs_import to distinguish branches
+	and commits by their timestamp.
+
 2006-04-06  Richard Levitte  <richard@levitte.org>
 
 	* ui.cc (user_interface::output_prefix): Move the invariant
@@ -1664,6 +1681,16 @@
 	generates a log, which...
 	In user_interface::output_prefix, still check if prog_name is
 	empty, and output something harmless if it is.
+
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Added the real branch time detection logic
+	and fixed some bugs in the previous commit.
+
+2006-04-06  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Improved branch time detection and some debug
+	messages.
 
 2006-04-05  Nathaniel Smith  <njs@pobox.com>
 
@@ -1737,6 +1764,43 @@
 
 	* po/it.po: Changed "in/out" translations as graphical arrows.
 
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: bracking the branch assocciated
+	with cvs_event and cvs_cluster.
+	In the cluster_consumer, we then connect the branch
+	to the previous revision id.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: removed cvs_cluster.first_time in
+	favour of start_time and end_time. This later allows
+	checking for overlapping commits.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: add has_parent_rid and parent_rid
+	variables to cvs_branch. Import branches with an
+	associated parent revision first.
+	And added the branch connecting code from my
+	previous try to connect branches.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: modified import order: importing the
+	trunk first, then all branches. This in preparation
+	for branch reconstruction
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: added step 4: find the last cvs_cluster
+	for ET_BRANCH events.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: added type info to cvs_cluster so a
+	cvs_cluster can now be a commit or a branchpoint.
+
 2006-04-04  Matt Johnston  <matt@ucc.asn.au>
 
 	* tests/t_rosterify_empty_manifest.at: a test for rosterifying a db
@@ -1761,6 +1825,10 @@
 2006-04-04  Richard Levitte  <richard@levitte.org>
 
 	* po/sv.po: Updated and additional translations.
+
+2006-04-04  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* rcs_import.cc: Renamed cvs_commit to cvs_event
 
 2006-04-02  Matthew Nicholson  <matt@matt-land.com>
 
@@ -1800,6 +1868,13 @@
 2006-04-01  Petr Ovtchenkov  <ptr at island.corbina.net>
 
 	* xdelta.cc: avoid dereference of iterators at end()
+
+2006-03-31  Markus Schiltknecht  <markus@bluegap.ch>
+
+	* tests/t_cvsimport_branch2.at: New test to check for cvsimport
+	to correctly links branches.
+
+	* testsuite.at: Add the above test.
 
 2006-03-31  Nathaniel Smith  <njs@pobox.com>
 
