@@ -16,6 +16,7 @@
 #include "stringtok.hh"
 #include "piece_table.hh"
 #include "safe_map.hh"
+#include <boost/format.hpp>
 
 #ifdef WIN32
 #define sleep(x) _sleep(x)

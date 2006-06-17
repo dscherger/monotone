@@ -64,7 +64,7 @@ MOST_SOURCES =								\
                                                                         \
          lru_cache.h                                                    \
                                                                         \
-         piece_table.cc netxx_pipe.cc					\
+         piece_table.cc							\
 	 cleanup.hh unit_tests.hh 					\
          cycle_detector.hh randomfile.hh adler32.hh 			\
 	 netio.hh smap.hh gettext.h					\

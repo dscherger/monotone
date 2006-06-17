@@ -14,6 +14,7 @@
 #include <boost/lexical_cast.hpp>
 #include <netxx/stream.h>
 #include "stringtok.hh"
+#include <boost/format.hpp>
 
 void cvs_client::writestr(const std::string &s, bool flush)
 { if (s.size()) L(FL("writestr(%s") % s); // s mostly contains the \n char
