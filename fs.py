@@ -1,4 +1,12 @@
-# interface to FS-like things
+#
+# This file is part of 'mtnplain'
+#
+# Copyright (C) Nathaniel Smith <njs@pobox.com> and others
+# licensed to the public under the terms of the GNU GPL (>= 2)
+# see the file COPYING for details
+# I.e., do what you like, but keep copyright and there's NO WARRANTY. 
+#
+\# interface to FS-like things
 
 import urlparse
 import os

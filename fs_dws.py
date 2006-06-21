@@ -1,3 +1,12 @@
+#
+# This file is part of 'mtnplain'
+#
+# Copyright (C) Zbigniew Zagorski <zzbigg@o2.pl>
+# licensed to the public under the terms of the GNU GPL (>= 2)
+# see the file COPYING for details
+# I.e., do what you like, but keep copyright and there's NO WARRANTY.
+#
+
 # we need paramiko for sftp protocol support
 import fs
 import os.path

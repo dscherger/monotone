@@ -9,7 +9,6 @@
      - SFTP's put and rollback code
      - local transport's non-existent rollback code
 * write command-line frontend
-* document license (GPL)
 * add README
 * should readers do the pause/retry dance?  (makes them very slow when
    files simply don't exist, which is common, to only protect against
