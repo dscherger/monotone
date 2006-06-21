@@ -163,8 +163,8 @@ class Monotone:
                         field += sep
                         sep = pipe.read(1)
                     yield field
-            
-            data = "" 
+
+            data = ""
             while 1:
                 cmd, status, cont, size = get_fields()
                 data += pipe.read(int(size))
@@ -251,3 +251,5 @@ class Monotone:
             return rv
 
 
+def basic_io_parser(data):
+        return Monotone(None,None).basic_io_parser(data)

@@ -1,8 +1,11 @@
+# !/usr/bin/env python
 """
 Simpler sync for monotone
 """
 from optparse import OptionParser
 from dumb import Dumbtone
+import os.path
+import monotone
 import sys
 
 ACTIONS = [ "pull", "push", "sync"]
@@ -13,6 +16,56 @@ def readConfig(cfgfile):
     sfp.set("default","verbose","0")
     sfp.set("default","hostKeys","~/.ssh/known_hosts")
     cfp.read(cfgfile)
+
+def getTempDir(database):
+    try:
+        tmpDir = os.environ['TEMP']
+    except KeyError:
+        try:
+            tmpDir = os.environ['TMP']
+        except KeyError:
+            tmpDir = "/tmp"
+    if database[0].isalpha() and database[1] == ':':
+        database = "_" + database[0] + "_" + database[2:]
+    database = os.path.normpath(database)
+    return os.path.join(tmpDir, database + "-mtndumbtemp")
+
+def getDefaultDatabase():
+    dir = "."
+    while True:
+        optionsFN = os.path.join(dir,"_MTN","options")
+        if os.path.exists(optionsFN):
+            fh = file(optionsFN,"r")
+            try:
+                for stanza in monotone.basic_io_parser(fh.read()):
+                    for k,v in stanza:
+                        if k == "database":
+                            return v[0]
+            finally:
+                fh.close()
+        dir = os.path.join("..",dir)
+        if not os.path.exists(dir): break
+    return None
+
+def getDefaultUrl():
+    try:
+        fh = file(".mtndumboptions","r")
+        try:
+            for stanza in monotone.basic_io_parser(fh.read()):
+                for k,v in stanza:
+                    if k == "repository":
+                        return v[0]
+        finally:
+            fh.close()
+    except IOError:
+        pass
+    return None
+
+def setDefaultUrl(url):
+    f = file(".mtndumboptions","w+")
+    print >> f, 'repository "%s"' % url
+    f.close()
+    return
 
 def parseOpt():
     par = OptionParser(usage=
@@ -48,14 +101,23 @@ def parseOpt():
         elif args[0] not in ACTIONS:
             sys.exit("\nERROR: Invalid operation specified\n")
         elif len(args)==1:
-            sys.exit("\nERROR: Missing remote-URL\n")
+            defaultUrl = getDefaultUrl()
+            if defaultUrl is None:
+                sys.exit("\nERROR: Missing remote-URL\n")
+            args = [ args[0], defaultUrl ]
         else:
             sys.exit("\nERROR: Only one remote-URL allowed\n")
 
     if options.db is None:
-        sys.exit("\nERROR: monotone db not specified\n")
-    elif options.local is None:
-        sys.exit("\nERROR: local transit directory not specified\n")
+        options.db = getDefaultDatabase()
+        if options.db is None:
+                sys.exit("\nERROR: monotone db not specified and not in workspace\n")
+    if options.local is None:
+        import urlparse
+        defaultTmpDir = getTempDir(options.db)
+        if defaultTmpDir is None:
+            sys.exit("\nERROR: local transit directory not specified\n")
+        options.local = "file://" + defaultTmpDir
     return (options, args)
 
 if __name__ == "__main__":
@@ -74,3 +136,5 @@ if __name__ == "__main__":
         mtn.do_push(options.local, args[1], **optdict)
     elif args[0]=="sync":
         mtn.do_sync(options.local, args[1], **optdict)
+
+    setDefaultUrl(args[1])
