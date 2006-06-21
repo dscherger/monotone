@@ -95,17 +95,20 @@ def parseOpt():
     
     (options, args) = par.parse_args()
     if len(args)!=2 or args[0] not in ACTIONS:
-        par.print_help()
         if not len(args):
+            par.print_help()
             sys.exit(1)
         elif args[0] not in ACTIONS:
+            par.print_help()
             sys.exit("\nERROR: Invalid operation specified\n")
         elif len(args)==1:
             defaultUrl = getDefaultUrl()
             if defaultUrl is None:
+                par.print_help()
                 sys.exit("\nERROR: Missing remote-URL\n")
             args = [ args[0], defaultUrl ]
         else:
+            par.print_help()
             sys.exit("\nERROR: Only one remote-URL allowed\n")
 
     if options.db is None:
