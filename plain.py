@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#! /usr/bin/env python
 """
 Simpler sync for monotone
 """
@@ -120,7 +120,7 @@ def parseOpt():
         options.local = "file://" + defaultTmpDir
     return (options, args)
 
-if __name__ == "__main__":
+def main():
     (options, args) = parseOpt()
 
     optdict = {"dsskey":options.dsskey,
@@ -136,5 +136,8 @@ if __name__ == "__main__":
         mtn.do_push(options.local, args[1], **optdict)
     elif args[0]=="sync":
         mtn.do_sync(options.local, args[1], **optdict)
-
     setDefaultUrl(args[1])
+
+if __name__ == "__main__":
+    main()
+
