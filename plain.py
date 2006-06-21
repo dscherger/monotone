@@ -49,7 +49,7 @@ def getDefaultDatabase():
 
 def getDefaultUrl():
     try:
-        fh = file(".mtndumboptions","r")
+        fh = file(".mtnplain","r")
         try:
             for stanza in monotone.basic_io_parser(fh.read()):
                 for k,v in stanza:
@@ -62,7 +62,7 @@ def getDefaultUrl():
     return None
 
 def setDefaultUrl(url):
-    f = file(".mtndumboptions","w+")
+    f = file(".mtnplain","w+")
     print >> f, 'repository "%s"' % url
     f.close()
     return
