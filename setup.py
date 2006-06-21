@@ -32,9 +32,6 @@ package_dir = {
     'monotone_plain.dws' : 'dws',
     'monotone_plain.paramiko' : 'paramiko'
 }
-package_data = {
-    'mtn' : ['__init__.py']
-}
 
 scripts = ['mtnplain']
 options = { 'clean' : { 'all' : 1 } }
