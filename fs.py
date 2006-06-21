@@ -13,7 +13,12 @@ urlparse.uses_netloc.append("sftp")
 def readable_fs_for_url(url, **kwargs):
     (scheme, host, path, query, frag) = urlparse.urlsplit(url, "file")
     if scheme == "file":
-        assert not host
+        # win32 c:/ garbage hack
+        if host:
+            if len(host)>1 and host[0].isalpha() and host[1] == ':':
+                path = host + path
+            else:
+                assert not "host in local file"
         return LocalReadableFS(path)
     elif scheme in ("http", "https", "ftp"):
         import fs_read_httpftp
@@ -21,17 +26,28 @@ def readable_fs_for_url(url, **kwargs):
     elif scheme == "sftp":
         import fs_sftp
         return fs_sftp.SFTPReadableFS(host, path, **kwargs)
+    elif scheme == "dws":
+        import fs_dws
+        return fs_dws.DWSReadableFS(url.replace("dws://","http://"))
     else:
         raise BadURL, url
 
 def writeable_fs_for_url(url, **kwargs):
     (scheme, host, path, query, frag) = urlparse.urlsplit(url, "file")
     if scheme == "file":
-        assert not host
+        # win32 c:/ garbage hack
+        if host:
+            if len(host)>1 and host[0].isalpha() and host[1] == ':':
+                path = host + path
+            else:
+                assert not "host in local file"
         return LocalWriteableFs(path)
     elif scheme == "sftp":
         import fs_sftp
         return fs_sftp.SFTPWriteableFS(host, path, **kwargs)
+    elif scheme == "dws":
+        import fs_dws
+        return fs_dws.DWSWriteableFS(url.replace("dws://","http://"))
     else:
         raise BadURL, url
 
@@ -173,7 +189,10 @@ class LocalWriteableFs(LocalReadableFS, WriteableFS):
             tmph = open(tmpname, "wb")
             tmph.write(data)
             tmph.close()
-            os.rename(tmpname, self._fname(fn))
+            realFn = self._fname(fn)
+            if os.access(realFn, os.R_OK):
+                os.remove(realFn)
+            os.rename(tmpname, realFn)
 
     def rollback_interrupted_puts(self, filenames):
         # we have atomic put
