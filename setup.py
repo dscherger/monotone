@@ -1,16 +1,15 @@
 #
 # This file is part of 'mtnplain'
 #
-# Copyright (C) Zbigniew Zagorski <zzbigg@o2.pl> and others, 
+# Copyright (C) Zbigniew Zagorski <zzbigg@o2.pl> and others,
 # licensed to the public under the terms of the GNU GPL (>= 2)
 # see the file COPYING for details
 # I.e., do what you like, but keep copyright and there's NO WARRANTY.
 #
 
-# urlgrabber distutils setup
 import re as _re
 
-name = "plain"
+name = "mtnplain"
 description = """The monotone plain database synchronizer"""
 
 long_description = """The monotone plain (or "dumb") protocol allows
