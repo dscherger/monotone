@@ -17,7 +17,7 @@ two-way synchronization via sftp or plain files,
 and one-way (pull) via http(s) and ftp."""
 
 license = "LGPL"
-version = "0.0.3"
+version = "0.0.4"
 _authors = [ 'Nathaniel Smith',
              'Zbynek Winkler',
              'Riccardo "rghetta"',

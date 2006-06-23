@@ -24,4 +24,35 @@ The sync directories are called merkle-directories because essentially contain a
 
 All synchronization is done between the two merkle-directories: the monotone database interacts only with the transit merkle-directory.
 
+CONFIGURATION
+-------------------------
+
+Configuration is stored in ini-like file. Configuration file can be changed using '--config' option, default is
+$HOME/.mtnplain (USERPROFILE is used instead of HOME if it's not existent - win32).
+
+If "-s|--storeconfig" option is specified then command line settings (repository, local dir etc.) are stored
+in config file for future use. WARNING this option rewrites current config file.
+
+All options that are configurable by command line can be configured in file. Configuration is
+readed from sections [default] and [DATABASEPATH] in this order. As a result effective precedence of
+options is:
+ - command line options
+ - [DATABASEPATH] section of config file
+ - [default] section of config file
+ - hardcoded defaults
+
+Example configuration:
+------- .mtnplain
+[default]
+verbose = 1
+rsakey = /home/zbigg/id_rsa 
+
+[d:/repo/monotone-dumb.mtn]
+verbose = 0
+repository = "dws://zzagorski.strony.wi.ps.pl/mtdumb/index.php:monotone-plain/"
+local = file:C:\DOCUME~1\zbigg\USTAWI~1\Temp\_d_\repo\monotone-dumb.mtn-mtndumbtemp
+
+[d:/repo/xxx.mtn]
+rsakey = /home/zbigg/id_rsa_other
+-------
 
