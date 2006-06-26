@@ -1,9 +1,70 @@
+2006-06-24  Richard Levitte  <richard@levitte.org>
+
+	* Changelog: Convert all CRLF to LF.
+	* po/sv.po: A few more fuzzies to correct.
+
+2006-06-24  Lapo Luchini  <lapo@lapo.it>
+
+	* po/it.po: Updated and translated a few more strings (63 to go).
+	Removed quotes around revision values.
+	* app_state.cc, revision.cc, work.cc: removed a newline.
+
+2006-06-24  Thomas Moschny <thomas.moschny@gmx.de>
+
+	* contrib/monotone.zsh_completion: Recommend installation into
+	/usr/share/zsh/site-functions, as suggested by Steven E. Harris
+	<seh@panix.com>. Add a note about per-user installation.
+
+2006-06-24  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* visualc/config.h: Bump version number to 0.27.
+	* monotone.cc (cpp_main): Fix another 'monotone' vs 'mtn' in
+	command output.
+	* roster.cc (update_current_roster_from_filesystem): Use prog_name
+	here too.
+
+2006-06-24  Marcel van der Boom  <marcel@hsdev.com>
+
+	* roster.cc (update_current_roster_from_filesystem): Change
+	'monotone' to 'mtn' in an error message.  
+
+2006-06-24  Thomas Moschny <thomas.moschny@gmx.de>
+
+	* contrib/monotone.zsh_completion: Replace references to
+	'monotone' with 'mtn'. Allow more than one standard option on the
+	command line.
+
+2006-06-22  Richard Levitte  <richard@levitte.org>
+
+	* testsuite.lua: Make sure to set all NLS environment variables
+	to "C", so tests don't fail when the default locale is non-
+	english.
+
+2006-06-21  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* tests/empty_environment/__driver__.lua: Fix test on Cygwin--copy
+	essential DLLs into current directory before emptying $PATH.
+	* win32/monotone.iss: Remove hardcoded paths that were
+	accidentally left in after debugging.
+
 2006-06-20  Matthew Gregan  <kinetik@orcon.net.nz>
 
+	* hash_map.hh: Add a specialization for unsigned long; fixes build
+	on Cygwin/GCC 3.4.  Thanks to Lapo Luchini for the original patch.
 	* win32/monotone.iss: Add monotone logo to wizard (generated from
 	figures/monotone-logo.svg).  Sanity check key ID, branch name, and
 	workspace path.
 	* Makefile.am: Include win32/modpath.iss in EXTRA_DIST.
+
+2006-06-20  Alex Queiroz  <alex@ventonegro.org>
+
+	* po/pt_BR.po: Fixed remaining fuzzies.
+
+2006-06-20  Nathaniel Smith  <njs@pobox.com>
+
+	* tester.lua (open_or_err): New function.
+	(pre_cmd): Use it.  It should probably be used much more widely,
+	but I'm not sure what I'm doing yet...
 
 2006-06-20  Nathaniel Smith  <njs@pobox.com>
 
