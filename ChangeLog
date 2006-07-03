@@ -1,3 +1,30 @@
+2006-07-01  Thomas Moschny  <thomas.moschny@gmx.de>
+
+	* automate.cc (AUTOMATE(branches)): New function, almost similar
+	to ls branches.
+	* cmd_automate.cc (interface_version): Incremented.
+	* monotone.texi (Automation): Description of the new command added.
+	* tests/automate_branches/: Testing the new command.
+	* testsuite.lua: Activated new test.
+
+2006-06-30  Thomas Moschny  <thomas.moschny@gmx.de>
+
+	* contrib/monotone.zsh_completion: New function
+	 _mtn_files_changed, used by _mtn_commit and _mtn_revert. Renamed
+	 and updated mtn_files_unmaintained. Minor fixes.
+
+2006-06-29  Thomas Moschny  <thomas.moschny@gmx.de>
+
+	* contrib/monotone.zsh_completion: Bugfix: completion for 'mtn ci'
+	used _mtn_checkout(). Directory completion for --keydir and
+	--confdir. Revised _mtn_commit(). Redirecting stderr to /dev/null
+	while completing branches or known files.
+
+2006-06-28  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* hash_map.hh: %s/_T/T/g; _T is reserved for the implementation,
+	and attempting to use it results in compile failures on OS X 10.3.
+
 2006-06-24  Richard Levitte  <richard@levitte.org>
 
 	* Changelog: Convert all CRLF to LF.
