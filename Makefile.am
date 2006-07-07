@@ -64,6 +64,7 @@ MOST_SOURCES =								\
                                                                         \
          lru_cache.h                                                    \
                                                                         \
+         piece_table.cc							\
 	 cleanup.hh unit_tests.hh 					\
          cycle_detector.hh randomfile.hh adler32.hh 			\
          randomizer.cc randomizer.hh                                    \
@@ -116,6 +117,7 @@ BOTAN_SOURCES =                                                                 
         botan/if_algo.cpp botan/inifile.cpp botan/init.cpp		\
         botan/kdf.cpp botan/keypair.cpp botan/look_pk.cpp		\
         botan/lookup.cpp botan/make_prm.cpp botan/mdx_hash.cpp		\
+        botan/md5.cpp							\
         botan/mem_pool.cpp botan/mgf1.cpp botan/mlock.cpp		\
         botan/mod_exp.cpp botan/mode_pad.cpp botan/modebase.cpp		\
         botan/mp_comba.cpp botan/mp_core.cpp botan/mp_fkmul.cpp		\
@@ -363,7 +365,7 @@ endif
 
 # i18n support
 
-SUBDIRS = po
+SUBDIRS = po . libmtn mtn_cvs
 datadir = @datadir@
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
