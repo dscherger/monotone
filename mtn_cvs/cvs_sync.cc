@@ -595,7 +595,7 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     unsigned hashidx=hash.OUTPUT_LENGTH;
     for (;hashidx && hashval[hashidx-1]==Botan::byte(md5sum[hashidx-1]);--hashidx) ;
     if (!hashidx)
-    { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+    { //store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
     }
     else
     { E(false, F("MD5 sum %s<>%s") % u.checksum 
@@ -605,9 +605,11 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
   else
   { if (!s->sha1sum().empty()) 
     // we default to patch if it's at all possible
-      store_delta(u.contents, contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+//      store_delta(u.contents, contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+      ;
     else
-      store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+//      store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      ;
     const_cast<unsigned&>(s2->size)=u.contents.size();
     contents=u.contents;
     const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
@@ -638,7 +640,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+//    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -658,7 +660,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
-      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+//      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
       const_cast<unsigned&>(s2->size)=c.contents.size();
       contents=c.contents;
       const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -670,7 +672,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
-      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+//      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
       const_cast<unsigned&>(s2->size)=c.contents.size();
       contents=c.contents;
       const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -686,7 +688,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+//    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -701,7 +703,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+//    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -938,7 +940,7 @@ void cvs_repository::prime()
   fill_manifests(edges.begin());
   
   // commit them all
-  if (!edges.empty()) commit_cvs2mtn(edges.begin());
+//  if (!edges.empty()) commit_cvs2mtn(edges.begin());
   
   store_modules();
 }
@@ -1422,7 +1424,7 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
             && i->author==("unknown@"+host))
       { W(F("replacing fake contents for %s V%s\n")
             % filename % i->cvs_version);
-        const_cast<hexenc<id>&>(i->sha1sum)=fs.sha1sum;
+//        const_cast<hexenc<id>&>(i->sha1sum)=fs.sha1sum;
         const_cast<std::string&>(i->log_msg)=fs.log_msg;
       }
       return i;
@@ -1632,7 +1634,7 @@ void cvs_repository::update()
           cvs_client::update c=Update(i->file,s2->cvs_version);
           const_cast<std::string&>(s2->md5sum)="";
           const_cast<unsigned&>(s2->patchsize)=0;
-          store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+//          store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=c.contents.size();
           const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
         }
@@ -1824,7 +1826,7 @@ void cvs_repository::takeover_dir(const std::string &path)
           if (sbuf.st_mtime!=modtime)
           { L(FL("modified %s %u %u\n") % filename % modtime % sbuf.st_mtime);
             fs.log_msg="partially overwritten content from last update";
-            store_contents(std::string(), fs.sha1sum);
+//            store_contents(std::string(), fs.sha1sum);
             f->second.known_states.insert(fs);
             
             fs.since_when=time(NULL);
@@ -1835,7 +1837,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         fs.log_msg="initial cvs content";
         data new_data;
         read_localized_data(file_path_internal(filename), new_data, app.lua);
-        store_contents(new_data, fs.sha1sum);
+//        store_contents(new_data, fs.sha1sum);
         f->second.known_states.insert(fs);
       }
     }
@@ -1919,6 +1921,7 @@ void cvs_sync::takeover(app_state &app, const std::string &_module)
   // FIXME? check that directory layout matches the module structure
   repo.takeover();
 }
+#endif
 
 void cvs_repository::store_modules()
 { const std::map<std::string,std::string> &sd=GetServerDir();
@@ -1928,25 +1931,28 @@ void cvs_repository::store_modules()
         i!=sd.end();++i)
   { value+=i->first+"\t"+i->second+"\n";
   }
+#if 0  
   std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
   var_value oldval;
   try 
   { app.db.get_var(key,oldval);
   } catch (...) {}
   if (oldval()!=value) app.db.set_var(key, value);
+#endif
 }
-
 void cvs_repository::retrieve_modules()
 { if (!GetServerDir().empty()) return;
   std::string name=create_cvs_cert_header();
+#if 0  
   std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
   var_value value;
   try {
     app.db.get_var(key,value);
   } catch (...) { return; }
+#endif
   std::map<std::string,std::string> sd;
   piece::piece_table pieces;
-  std::string value_s=value();
+  std::string value_s; //=value();
   piece::index_deltatext(value_s,pieces);
   for (piece::piece_table::const_iterator p=pieces.begin();p!=pieces.end();++p)
   { std::string line=**p;
@@ -1961,4 +1967,3 @@ void cvs_repository::retrieve_modules()
   piece::reset();
   SetServerDir(sd);
 }
-#endif

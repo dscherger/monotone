@@ -394,3 +394,19 @@ cpp_main(int argc, char ** argv)
   global_sanity.clean_shutdown = true;
   return ret;
 }
+
+int
+main(int argc, char **argv)
+{
+  try
+    {
+      return cpp_main(argc,argv);
+//      return main_with_many_flavours_of_exception(argc, argv);
+    }
+  catch (std::exception const & e)
+    {
+      ui.fatal(string(e.what()) + "\n");
+      return 3;
+    }
+}
+

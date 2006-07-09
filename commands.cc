@@ -206,6 +206,7 @@ namespace commands
     out << endl << endl;
   }
 
+#ifndef LIBMTN_COMPILE
   int process(app_state & app, string const & cmd, vector<utf8> const & args)
   {
     if ((*cmds).find(cmd) != (*cmds).end())
@@ -226,6 +227,7 @@ namespace commands
         return 1;
       }
   }
+#endif
 
   set<int> command_options(string const & cmd)
   {
@@ -255,6 +257,7 @@ CMD(help, N_("informative"), N_("command [ARGS...]"), N_("display command help")
   throw usage(full_cmd);
 }
 
+#ifndef LIBMTN_COMPILE
 void
 maybe_update_inodeprints(app_state & app)
 {
@@ -298,6 +301,7 @@ maybe_update_inodeprints(app_state & app)
   write_inodeprint_map(ipm_new, dat);
   write_inodeprints(dat);
 }
+#endif
 
 string
 get_stdin()
@@ -312,6 +316,7 @@ get_stdin()
   return tmp;
 }
 
+#ifndef LIBMTN_COMPILE
 string
 describe_revision(app_state & app,
                   revision_id const & id)
@@ -458,6 +463,7 @@ process_commit_message_args(bool & given,
   else
     given = false;
 }
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76
