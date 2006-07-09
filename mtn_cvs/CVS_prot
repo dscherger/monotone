@@ -148,3 +148,64 @@ pull since future (two hours), push/commit, pull again (gives dismonotoneous
 time)
 
 binary files, execution permission
+
+-------------------------- refactor ---------------------------------
+[fdelta 597049a62d0a2e6af7df0b19f4945ec7d6458727
+	229c7f621b65f7e4970ae5aaec993812b9daa1d4]
+H4sIAAAAAAAA/0WOy0oEMRBF9/mKS2/c9LQg4t5lw+BGf6BIKtNhkpSkKop/b9II7m49OOfu
+eHp5dnvEj/SHL0aQ75qFAgcQGmcm5RXKjP3t/eP1ekWUhlTVKGeyJNXNoXU/s27AP8sf7O8D
+ZEdSSLd1JMaNKzeysY8ps4Iao4oNjM99eFdQDbMOSldDV8ZC3aSxlxpxufzJF5jANx6oyS2b
+c0uhO+OwkpezZhCvK0bf8TVrMLZUo5zi0/I4j4UqPunGA+B+AfHvKEIPAQAA
+[end]
+[fdelta <oldID> <newID>]\n<xdiff.gzip.b64enc>\n[end]
+[fdata <ID>]\n<gzip.b64enc>\n[end]
+[rdata <ID>]\n<gzip.b64enc>\n[end]
+[rcert <ID>\n <name>\n <key>\n <value>]\n<sig.b64enc>\n[end]
+
+AFAIK cvssync needs the following features:
+- register a file's data (optionally as a delta) [preparing for a future
+commit]
+put_file [base_ID.hint] contents
+put_file_delta base_ID xdiff.gz
+
+- check in a new revision by specifying a parent and a changeset
+[preferrably without a workspace]
+put_revision ID contents
+
+- issue a certificate [already there]
+cert ID CERTNAME CERTVAL
+
+read <data>
+
+db_set DOMAIN NAME VALUE
+db_get DOMAIN NAME
+
+- find the last synchronized revision [for cvssync this means: find the
+latest (either time or (preferred) ancestry) revision which either
+changes the synchronization information file ".mt-cvs_revisions" or has
+a (after commit attached) delta certificate ("cvs_revisions") *]
+find_newest_sync DOMAIN
+- request file contents [already there?]
+- request change sets [already there?]
+- request manifests (a list of files and contents)
+
+perhaps?
+- automatically and transparently handle the file/certificate mechanism
+to attach synchronization (cvs manifest=map<file,rcs revision>)
+information to monotone revisions
+[sync_attach ID DOMAIN VALUE]
+- find a root for a side branch (find the revision which matches a
+specified cvs manifest, git id, svn revision number)
+[find_sync DOMAIN VALUE]
+
+The first two functionalities would also enable advanced scripting
+functionalities within monotone (already requested IIRC).
+
+PS: this all dawned to me while I noticed that only a small subset of
+cvssync had to be changed to support rosters (done).
+   Christof
+
+*) cvssync can not change files in an already commited monotone revision
+when it pushes it into the cvs repository, so it has to certify a change
+in the synchronization information (basically a file/revision map)
+
