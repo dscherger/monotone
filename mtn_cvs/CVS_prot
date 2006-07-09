@@ -167,15 +167,20 @@ AFAIK cvssync needs the following features:
 commit]
 put_file [base_ID.hint] contents
 put_file_delta base_ID xdiff.gz
+	consume_file_delta()
+	consume_file_data()
 
 - check in a new revision by specifying a parent and a changeset
 [preferrably without a workspace]
 put_revision ID contents
+	consume_revision_data()
 
 - issue a certificate [already there]
 cert ID CERTNAME CERTVAL
 
 read <data>
+	(packet::extract_packets)
+	packet::read_packets()
 
 db_set DOMAIN NAME VALUE
 db_get DOMAIN NAME
