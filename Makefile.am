@@ -64,7 +64,6 @@ MOST_SOURCES =								\
                                                                         \
          lru_cache.h                                                    \
                                                                         \
-         piece_table.cc							\
 	 cleanup.hh unit_tests.hh 					\
          cycle_detector.hh randomfile.hh adler32.hh 			\
          randomizer.cc randomizer.hh                                    \
