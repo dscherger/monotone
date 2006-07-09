@@ -117,7 +117,6 @@ BOTAN_SOURCES =                                                                 
         botan/if_algo.cpp botan/inifile.cpp botan/init.cpp		\
         botan/kdf.cpp botan/keypair.cpp botan/look_pk.cpp		\
         botan/lookup.cpp botan/make_prm.cpp botan/mdx_hash.cpp		\
-        botan/md5.cpp							\
         botan/mem_pool.cpp botan/mgf1.cpp botan/mlock.cpp		\
         botan/mod_exp.cpp botan/mode_pad.cpp botan/modebase.cpp		\
         botan/mp_comba.cpp botan/mp_core.cpp botan/mp_fkmul.cpp		\
