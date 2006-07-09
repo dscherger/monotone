@@ -487,6 +487,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\randomizer.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\rcs_file.cc"
 				>
 			</File>
@@ -784,6 +788,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\randomizer.hh"
+				>
+			</File>
+			<File
 				RelativePath="..\rcs_file.hh"
 				>
 			</File>
@@ -1010,7 +1018,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Generating $(ProjectDir)\..\views.h from $(ProjectDir)\..\views.sql"
-					CommandLine="$(TargetDir)\txt2c.exe --strip-trailing $(ProjectDir)\..\views.sql views &gt;$(ProjectDir)\..\views.h"
+					CommandLine="$(TargetDir)\txt2c.exe --strip-trailing $(ProjectDir)\..\views.sql views &gt;$(ProjectDir)\..\views.h&#x0D;&#x0A;"
 					AdditionalDependencies="$(TargetDir)\txt2c.exe"
 					Outputs="views.h"
 				/>

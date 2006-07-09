@@ -48,7 +48,7 @@ MOST_SOURCES =								\
 	 cset.cc cset.hh						\
 	 roster.cc roster.hh						\
          mt_version.cc mt_version.hh					\
-         automate.cc automate.hh					\
+         automate.cc							\
          database_check.cc database_check.hh				\
          epoch.cc epoch.hh						\
          inodeprint.cc inodeprint.hh					\
@@ -64,10 +64,10 @@ MOST_SOURCES =								\
                                                                         \
          lru_cache.h                                                    \
                                                                         \
-         piece_table.cc							\
 	 cleanup.hh unit_tests.hh 					\
          cycle_detector.hh randomfile.hh adler32.hh 			\
-	 netio.hh smap.hh gettext.h					\
+         randomizer.cc randomizer.hh                                    \
+         netio.hh smap.hh gettext.h					\
          package_revision.c package_revision.h				\
          package_full_revision.c package_full_revision.h options.hh	\
          i18n.h parallel_iter.hh safe_map.hh pch.hh
@@ -116,7 +116,6 @@ BOTAN_SOURCES =                                                                 
         botan/if_algo.cpp botan/inifile.cpp botan/init.cpp		\
         botan/kdf.cpp botan/keypair.cpp botan/look_pk.cpp		\
         botan/lookup.cpp botan/make_prm.cpp botan/mdx_hash.cpp		\
-        botan/md5.cpp							\
         botan/mem_pool.cpp botan/mgf1.cpp botan/mlock.cpp		\
         botan/mod_exp.cpp botan/mode_pad.cpp botan/modebase.cpp		\
         botan/mp_comba.cpp botan/mp_core.cpp botan/mp_fkmul.cpp		\
@@ -237,9 +236,9 @@ WIN32_PLATFORM_SOURCES = \
 # primaries
 
 bin_PROGRAMS = mtn
-check_PROGRAMS = unit_tests
-noinst_PROGRAMS = txt2c 
-EXTRA_PROGRAMS = usher tester
+check_PROGRAMS = unit_tests tester
+noinst_PROGRAMS = txt2c
+EXTRA_PROGRAMS = usher
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc main.cc
 usher_SOURCES = contrib/usher.cc
@@ -321,7 +320,7 @@ if STATIC_BOOST
   mtn_LDADD = lib3rdparty.a $(BOOSTLIBS)
   unit_tests_LDADD = lib3rdparty.a $(BOOSTLIBS) \
                      @BOOST_LIBDIR@/libboost_unit_test_framework$(BOOST_SUFFIX).a
-  tester_LDADD = lib3rdparty.a
+  tester_LDADD = lib3rdparty.a $(BOOSTLIBS)
 else
   mtn_LDADD = lib3rdparty.a
   unit_tests_LDADD = lib3rdparty.a -lboost_unit_test_framework$(BOOST_SUFFIX)
@@ -396,13 +395,10 @@ EXTRA_DIST = $(man1_MANS) \
              monotone.spec \
              monotone.html \
              texinfo.css \
-	     schema.sql views.sql \
+	     schema.sql \
 	     std_hooks.lua test_hooks.lua tester.lua \
-	     testsuite.at \
-	     $(wildcard $(srcdir)/tests/t_*.at) \
-	     testsuite \
-             tests/atconfig.in \
-             tests/atlocal.in  \
+	     testsuite.lua $(srcdir)/tests \
+	     tester-testsuite.lua $(srcdir)/tester-tests/ \
 	     package.m4 \
 	     package_revision.txt package_full_revision_dist.txt \
              $(wildcard $(srcdir)/m4/*.m4) \
@@ -426,7 +422,8 @@ EXTRA_DIST = $(man1_MANS) \
              contrib/ciabot_monotone_hookversion.py \
              contrib/monotone-cvs-ignore.lua \
              contrib/usher.cc \
-             win32/monotone.iss \
+             $(wildcard $(srcdir)/examples/*) \
+             win32/monotone.iss win32/modpath.iss \
              $(wildcard $(srcdir)/debian/*)
 
 MAKEINFOFLAGS=-I $(top_builddir)
@@ -455,17 +452,17 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 # testsuite stuff (could this possibly be more ugly?)
 
 if BUILD_UNIT_TESTS
-TESTS = unit_tests $(srcdir)/testsuite
+TESTS = unit_tests run_lua_tests
 else
-TESTS = $(srcdir)/testsuite
+TESTS = run_lua_tests
 endif
 
 TESTS_ENVIRONMENT=AUTOTEST_PATH="."
 
 mostlyclean-local:
-	rm -rf testsuite.dir testsuite.log package_full_revision.txt
+	rm -rf tester_dir package_full_revision.txt
 
-DISTCLEANFILES = tests/atconfig mt-stdint.h xgettext.opts pch-build.hh.gch.dep
+DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep
 
 # distcheck stuff
 
@@ -488,15 +485,16 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	  echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
 	} >$(srcdir)/package.m4
 
-$(srcdir)/testsuite: $(srcdir)/testsuite.at $(wildcard $(srcdir)/tests/t_*.at) \
-                     $(srcdir)/package.m4 
-	autom4te --language=Autotest -I $(srcdir) $< -o $@.tmp
-	mv -f $@.tmp $@
+run_lua_tests: Makefile
+	echo '#!/bin/sh' > $@ ; \
+	echo 'PATH=$(top_builddir):$$PATH' >> $@ ; \
+	echo $(top_builddir)/tester $(srcdir)/testsuite.lua >> $@ ; \
+	chmod 755 $@
 
 # we generate some headers to copy data into the executable
 
 BUILT_SOURCES_CLEAN = std_hooks.h test_hooks.h tester.h \
-                      schema.h views.h \
+                      schema.h \
                       package_revision.c \
                       package_full_revision.txt package_full_revision_raw.txt package_full_revision.c \
                       $(PCH_FILE) $(PCH_BUILD)

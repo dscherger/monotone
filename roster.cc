@@ -1916,7 +1916,7 @@ equal_up_to_renumbering(roster_t const & a, marking_map const & a_markings,
 
 void make_restricted_csets(roster_t const & from, roster_t const & to,
                            cset & included, cset & excluded,
-                           restriction const & mask)
+                           node_restriction const & mask)
 {
   included.clear();
   excluded.clear();
@@ -2173,7 +2173,7 @@ classify_roster_paths(roster_t const & ros,
 
 void
 update_current_roster_from_filesystem(roster_t & ros,
-                                      restriction const & mask,
+                                      node_restriction const & mask,
                                       app_state & app)
 {
   temp_node_id_source nis;
@@ -2230,16 +2230,17 @@ update_current_roster_from_filesystem(roster_t & ros,
       "to restore consistency, on each missing file run either\n"
       "'%s drop FILE' to remove it permanently, or\n"
       "'%s revert FILE' to restore it\n"
-      "or to handle all at once, simply 'monotone drop --missing'\n"
-      "or 'monotone revert --missing'")
-    % missing_files % app.prog_name % app.prog_name % app.prog_name);
+      "or to handle all at once, simply '%s drop --missing'\n"
+      "or '%s revert --missing'")
+    % missing_files % app.prog_name % app.prog_name % app.prog_name
+    % app.prog_name % app.prog_name);
 }
 
 void
 update_current_roster_from_filesystem(roster_t & ros,
                                       app_state & app)
 {
-  restriction tmp(app);
+  node_restriction tmp(app);
   update_current_roster_from_filesystem(ros, tmp, app);
 }
 
@@ -2254,9 +2255,7 @@ roster_t::extract_path_set(path_set & paths) const
           node_t curr = *i;
           split_path pth;
           get_name(curr->self, pth);
-          if (pth.size() == 1)
-            I(null_name(idx(pth,0)));
-          else
+          if (!workspace_root(pth))
             paths.insert(pth);
         }
     }
@@ -2625,17 +2624,19 @@ void calculate_ident(roster_t const & ros,
 #include "unit_tests.hh"
 #include "sanity.hh"
 #include "constants.hh"
+#include "randomizer.hh"
 
 #include <string>
 #include <cstdlib>
 #include <boost/lexical_cast.hpp>
 
 using std::logic_error;
-using std::rand;
 using std::search;
-using std::srand;
 
 using boost::shared_ptr;
+
+using randomizer::uniform;
+using randomizer::flip;
 
 static void
 make_fake_marking_for(roster_t const & r, marking_map & mm)
@@ -2809,7 +2810,7 @@ template<typename M>
 typename M::const_iterator
 random_element(M const & m)
 {
-  size_t i = rand() % m.size();
+  size_t i = randomizer::uniform(m.size());
   typename M::const_iterator j = m.begin();
   while (i > 0)
     {
@@ -2820,11 +2821,6 @@ random_element(M const & m)
   return j;
 }
 
-bool flip(unsigned n = 2)
-{
-  return (rand() % n) == 0;
-}
-
 string new_word()
 {
   static string wordchars = "abcdefghijlkmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -2832,7 +2828,7 @@ string new_word()
   string tmp;
   do
     {
-      tmp += wordchars[rand() % wordchars.size()];
+      tmp += wordchars[uniform(wordchars.size())];
     }
   while (tmp.size() < 10 && !flip(10));
   return tmp + lexical_cast<string>(tick++);
@@ -2844,7 +2840,7 @@ file_id new_ident()
   string tmp;
   tmp.reserve(constants::idlen);
   for (unsigned i = 0; i < constants::idlen; ++i)
-    tmp += tab[rand() % tab.size()];
+    tmp += tab[uniform(tab.size())];
   return file_id(tmp);
 }
 
@@ -2892,11 +2888,6 @@ struct
 change_automaton
 {
 
-  change_automaton()
-  {
-    srand(0x12345678);
-  }
-
   void perform_random_action(roster_t & r, node_id_source & nis)
   {
     cset c;
@@ -2916,7 +2907,7 @@ change_automaton
             r.get_name(n->self, pth);
             // L(FL("considering acting on '%s'") % file_path(pth));
 
-            switch (rand() % 7)
+            switch (uniform(7))
               {
               default:
               case 0:
@@ -4659,7 +4650,7 @@ create_some_new_temp_nodes(temp_node_id_source & nis,
                            roster_t & right_ros,
                            set<node_id> & right_new_nodes)
 {
-  size_t n_nodes = 10 + (rand() % 30);
+  size_t n_nodes = 10 + (uniform(30));
   editable_roster_base left_er(left_ros, nis);
   editable_roster_base right_er(right_ros, nis);
 

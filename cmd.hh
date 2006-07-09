@@ -18,6 +18,7 @@
 
 namespace commands
 {
+  const char * safe_gettext(const char * msgid);
   struct no_opts {};
   struct command_opts
   {
@@ -39,8 +40,8 @@ namespace commands
     // command objects have all been constructed.
     std::string name;
     std::string cmdgroup;
-    std::string params;
-    std::string desc;
+    std::string params_;
+    std::string desc_;
     bool use_workspace_options;
     command_opts options;
     command(std::string const & n,
@@ -50,6 +51,8 @@ namespace commands
             bool u,
             command_opts const & o);
     virtual ~command();
+    virtual std::string params();
+    virtual std::string desc();
     virtual void exec(app_state & app, 
 		      std::vector<utf8> const & args) = 0;
   };
@@ -130,7 +133,26 @@ namespace commands {                                                 \
   static cmd_ ## C C ## _cmd;                                        \
 }                                                                    \
 void commands::cmd_ ## C::exec(app_state & app,                      \
-                               std::vector<utf8> const & args)       \
+                               std::vector<utf8> const & args)
+
+// Use this for commands that want to define a params() function
+// instead of having a static description. (Good for "automate"
+// and possibly "list".)
+#define CMD_PARAMS_FN(C, group, desc, opts)                        \
+namespace commands {                                                 \
+  struct cmd_ ## C : public command                                  \
+  {                                                                  \
+    cmd_ ## C() : command(#C, group, "", desc, true,               \
+                          command_opts() % opts)                     \
+    {}                                                               \
+    virtual void exec(app_state & app,                               \
+                      std::vector<utf8> const & args);               \
+    std::string params();                                            \
+  };                                                                 \
+  static cmd_ ## C C ## _cmd;                                        \
+}                                                                    \
+void commands::cmd_ ## C::exec(app_state & app,                      \
+                               std::vector<utf8> const & args)
 
 // Use this for commands that should specifically _not_ look for an
 // _MTN dir and load options from it.
@@ -151,12 +173,45 @@ void commands::cmd_ ## C::exec(app_state & app,                      \
                                std::vector<utf8> const & args)       \
 
 #define ALIAS(C, realcommand)                                        \
-CMD(C, realcommand##_cmd.cmdgroup, realcommand##_cmd.params,         \
-    realcommand##_cmd.desc + "\nAlias for " #realcommand,            \
+CMD(C, realcommand##_cmd.cmdgroup, realcommand##_cmd.params_,         \
+    realcommand##_cmd.desc_ + "\nAlias for " #realcommand,            \
     realcommand##_cmd.options)                                       \
 {                                                                    \
   process(app, std::string(#realcommand), args);                     \
 }
+
+namespace automation {
+  struct automate
+  {
+    std::string name;
+    std::string params;
+    automate(std::string const & n, std::string const & p);
+    virtual void run(std::vector<utf8> args,
+                     std::string const & help_name,
+                     app_state & app,
+                     std::ostream & output) const = 0;
+    virtual ~automate();
+  };
+}
+
+#define AUTOMATE(NAME, PARAMS)                                      \
+namespace automation {                                              \
+  struct auto_ ## NAME : public automate                            \
+  {                                                                 \
+    auto_ ## NAME () : automate(#NAME, PARAMS) {}                   \
+    void run(std::vector<utf8> args, std::string const & help_name, \
+                     app_state & app, std::ostream & output) const; \
+    virtual ~auto_ ## NAME() {}                                     \
+  };                                                                \
+  static auto_ ## NAME NAME ## _auto;                               \
+}                                                                   \
+void automation::auto_ ## NAME :: run(std::vector<utf8> args,       \
+                                      std::string const & help_name,\
+                                      app_state & app,              \
+                                      std::ostream & output) const
+
+
+
 
 // Local Variables:
 // mode: C++
