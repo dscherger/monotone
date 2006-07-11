@@ -1,5 +1,11 @@
 2006-07-11  Richard Levitte  <richard@levitte.org>
 
+	* tests/heads_of_certs/__driver__.lua (third): New test that
+	replaces...
+	* tests/t_heads_of_certs.at: this
+
+2006-07-11  Richard Levitte  <richard@levitte.org>
+
 	* po/sv.po: Two new strings to translate.
 
 2006-07-10  Derek Scherger  <derek@echologic.com>
