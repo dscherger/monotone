@@ -3,6 +3,7 @@
 	* tests/heads_of_certs/__driver__.lua (third): New test that
 	replaces...
 	* tests/t_heads_of_certs.at: this
+	* testsuite.lua: Add it to the suite.
 
 2006-07-11  Richard Levitte  <richard@levitte.org>
 
