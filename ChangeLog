@@ -1,3 +1,45 @@
+2006-07-13  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: One new string and a few fuzzies to fix.
+
+2006-07-12  Nathaniel Smith  <njs@pobox.com>
+
+	* std_hooks.lua (get_encloser_pattern): Add regexes for texinfo
+	and latex, and disable enclosers for pure text.
+	* monotone.texi (Hooks): Mention that there are default,
+	language-specific regexen.
+
+2006-07-12  Nathaniel Smith  <njs@pobox.com>
+
+	* std_hooks.lua: Remove tabs.
+
+2006-07-12  Nathaniel Smith  <njs@pobox.com>
+
+	* cmd_merging.cc (merge): Small tweaks.
+	* tests/merge_multiple_heads_1/__driver__.lua: Correctly document
+	old algorithm.
+
+2006-07-12  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	* tests/diff_output_formats/__driver__.lua: Needs canonicalization.
+
+2006-07-11  Zack Weinberg  <zackw@panix.com>
+
+	* diff_patch.cc (struct hunk_consumer): Change type of
+	encloser_last_match and encloser_last_search from ssize_t to
+	vector<string>::const_reverse_iterator.
+	(hunk_consumer constructor): Initialize them with a.rend().
+	(hunk_consumer::find_encloser): Restructure to do less pointer
+	arithmetic.  Add some invariant checks.
+
+2006-07-11  Zack Weinberg  <zackw@panix.com>
+
+	* cmd_merging.cc (merge_two): New function.
+	(CMD(merge)): Rewrite again - only merge one pair of heads on each
+	pass.  Also, skip all the work of finding a good choice if there
+	are only two heads. Use merge_two.
+	(CMD(explicit_merge)): Use merge_two.
+
 2006-07-11  Richard Levitte  <richard@levitte.org>
 
 	* tests/heads_of_certs/__driver__.lua (third): New test that
