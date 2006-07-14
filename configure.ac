@@ -377,7 +377,6 @@ AH_TEMPLATE([HAVE_FDATASYNC], [For SQLite; use fdatasync if available])
 AC_SEARCH_LIBS([usleep], [rt], AC_DEFINE(HAVE_USLEEP))
 AH_TEMPLATE([HAVE_USLEEP], [For SQLite; use usleep if available])
 AC_CHECK_LIB([z], [deflate], , AC_MSG_FAILURE([zlib is required]))
-
 # Now let the user specify whether he wants large file support or not in
 # sqlite.
 AC_ARG_ENABLE([large-file],
