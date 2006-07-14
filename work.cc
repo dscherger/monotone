@@ -608,12 +608,11 @@ void put_revision_id(revision_id const & rev)
   write_data(c_path, c_data);
 }
 
-void
-get_base_revision(app_state & app,
-                  revision_id & rid,
-                  roster_t & ros,
-                  marking_map & mm)
+static void
+get_base_roster(app_state & app, roster_t & ros)
 {
+  revision_id rid;
+  marking_map mm;
   get_revision_id(rid);
 
   if (!null_id(rid))
@@ -626,24 +625,6 @@ get_base_revision(app_state & app,
     }
 
   L(FL("base roster has %d entries") % ros.all_nodes().size());
-}
-
-void
-get_base_revision(app_state & app,
-                  revision_id & rid,
-                  roster_t & ros)
-{
-  marking_map mm;
-  get_base_revision(app, rid, ros, mm);
-}
-
-void
-get_base_roster(app_state & app,
-                roster_t & ros)
-{
-  revision_id rid;
-  marking_map mm;
-  get_base_revision(app, rid, ros, mm);
 }
 
 void
