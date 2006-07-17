@@ -37,6 +37,8 @@ struct poptOption coptions[] =
   {
     {"branch", 'b', POPT_ARG_STRING, &argstr, MTNCVSOPT_BRANCH_NAME, gettext_noop("select branch cert for operation"), NULL},
     {"revision", 'r', POPT_ARG_STRING, &argstr, MTNCVSOPT_REVISION, gettext_noop("select revision id for operation"), NULL},
+    {"since", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_SINCE, N_("set history start for CVS pull"), NULL},
+    {"full", 0, POPT_ARG_NONE, &argstr, MTNCVSOPT_FULL, N_("ignore already pulled CVS revisions"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -236,6 +238,15 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
 //  cvs_sync::takeover(app, module);
 }
 
+struct mtncvs_state
+{ bool full;
+  utf8 since;
+  utf8 db_name;
+  std::vector<utf8> revisions;
+  
+  mtncvs_state() : full() {}
+};
+
 int 
 cpp_main(int argc, char ** argv)
 {
@@ -314,10 +325,9 @@ cpp_main(int argc, char ** argv)
 
   try
     {
-#if 0
-      app_state app;
+      mtncvs_state app;
 
-      app.set_prog_name(prog_name);
+//      app.set_prog_name(prog_name);
 
       while ((opt = poptGetNextOpt(ctx())) > 0)
         {
@@ -329,6 +339,13 @@ cpp_main(int argc, char ** argv)
             case MTNCVSOPT_DEBUG:
               global_sanity.set_debug();
               break;
+            
+            case MTNCVSOPT_FULL:
+              app.full=true;
+              break;
+            
+            case MTNCVSOPT_SINCE:
+              app.since=string(argstr);
 
             case MTNCVSOPT_HELP:
             default:
@@ -336,7 +353,6 @@ cpp_main(int argc, char ** argv)
               break;
             }
         }
-#endif
 
       // verify that there are no errors in the command line
 
