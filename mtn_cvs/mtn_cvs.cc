@@ -17,6 +17,7 @@
 #include <ui.hh>
 #include <botan/init.h>
 #include <botan/allocate.h>
+//#include <cmd.hh>
 
 char * argstr = NULL;
 long arglong = 0;
@@ -187,6 +188,52 @@ coption_string(int o)
           : string("-") + string(buf);
       }
   return string();
+}
+
+// missing: compression level (-z), cvs-branch (-r), since (-D)
+CMD(cvs_pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
+    _N("(re-)import a module from a remote cvs repository"), 
+    OPT_BRANCH_NAME % OPT_SINCE % OPT_FULL)
+{
+  if (args.size() == 1 || args.size() > 3) throw usage(name);
+
+  string repository,module,branch;
+  if (args.size() >= 2)
+  { repository = idx(args, 0)();
+    module = idx(args, 1)();
+    if (args.size()==3) 
+      branch=idx(args, 2)();
+  }
+//  N(!app.branch_name().empty(), F("no destination branch specified\n"));
+      
+//  cvs_sync::pull(repository,module,branch,app);
+}
+
+CMD(cvs_push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
+    N_("commit changes in local database to a remote cvs repository"), 
+    OPT_BRANCH_NAME % OPT_REVISION)
+{
+  if (args.size() == 1 || args.size() > 3) throw usage(name);
+
+  string repository,module,branch;
+  if (args.size() >= 2)
+  { repository = idx(args, 0)();
+    module = idx(args, 1)();
+    if (args.size()==3) 
+      branch=idx(args, 2)();
+  }
+//  cvs_sync::push(repository,module,branch,app);
+}
+
+CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
+      N_("put a CVS working directory under monotone's control"), 
+      OPT_BRANCH_NAME)
+{
+  if (args.size() > 1) throw usage(name);
+  string module;
+  if (args.size() == 1) module = idx(args, 0)();
+  N(!app.branch_name().empty(), F("no destination branch specified\n"));
+//  cvs_sync::takeover(app, module);
 }
 
 int 
