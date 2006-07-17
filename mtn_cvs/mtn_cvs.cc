@@ -15,12 +15,15 @@
 #include <commands.hh>
 #include <iostream>
 #include <ui.hh>
+#include <botan/init.h>
+#include <botan/allocate.h>
 
 char * argstr = NULL;
 long arglong = 0;
 
 enum 
-{ OPT_BRANCH_NAME, OPT_REVISION, OPT_DEBUG, OPT_HELP, OPT_VERSION };
+{ OPT_BRANCH_NAME, OPT_REVISION, OPT_DEBUG, OPT_HELP, OPT_VERSION,
+  OPT_DB_NAME, OPT_MTN_OPTION };
 
 // Options are split between two tables.  The first one is command-specific
 // options (hence the `c' in `coptions').  The second is the global one
@@ -44,6 +47,10 @@ struct poptOption options[] =
     {"debug", 0, POPT_ARG_NONE, NULL, OPT_DEBUG, gettext_noop("print debug log to stderr while running"), NULL},
     {"help", 'h', POPT_ARG_NONE, NULL, OPT_HELP, gettext_noop("display help message"), NULL},
     {"version", 0, POPT_ARG_NONE, NULL, OPT_VERSION, gettext_noop("print version number, then exit"), NULL},
+//    {"key", 'k', POPT_ARG_STRING, &argstr, OPT_KEY_NAME, gettext_noop("set key for signatures"), NULL},
+    {"db", 'd', POPT_ARG_STRING, &argstr, OPT_DB_NAME, gettext_noop("set name of database"), NULL},
+    {"mtn-option", 0, POPT_ARG_STRING, &argstr, OPT_MTN_OPTION, gettext_noop("pass option to monotone"), NULL},
+//    {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, gettext_noop("limit search for workspace to specified root"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -226,8 +233,8 @@ cpp_main(int argc, char ** argv)
 //  MM(full_version_string);
 
   // Set up secure memory allocation etc
-//  Botan::Init::initialize();
-//  Botan::set_default_allocator("malloc");
+  Botan::Init::initialize();
+  Botan::set_default_allocator("malloc");
   
   // decode all argv values into a UTF-8 array
 
