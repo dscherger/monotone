@@ -17,14 +17,14 @@
 #include <ui.hh>
 #include <botan/init.h>
 #include <botan/allocate.h>
-//#include <cmd.hh>
+#include <cmd.hh>
 
 char * argstr = NULL;
 long arglong = 0;
 
 enum 
-{ OPT_BRANCH_NAME, OPT_REVISION, OPT_DEBUG, OPT_HELP, OPT_VERSION,
-  OPT_DB_NAME, OPT_MTN_OPTION };
+{ MTNCVSOPT_BRANCH_NAME, MTNCVSOPT_REVISION, MTNCVSOPT_DEBUG, MTNCVSOPT_HELP, MTNCVSOPT_VERSION,
+  MTNCVSOPT_DB_NAME, MTNCVSOPT_MTN_OPTION, MTNCVSOPT_FULL, MTNCVSOPT_SINCE };
 
 // Options are split between two tables.  The first one is command-specific
 // options (hence the `c' in `coptions').  The second is the global one
@@ -35,8 +35,8 @@ enum
 
 struct poptOption coptions[] =
   {
-    {"branch", 'b', POPT_ARG_STRING, &argstr, OPT_BRANCH_NAME, gettext_noop("select branch cert for operation"), NULL},
-    {"revision", 'r', POPT_ARG_STRING, &argstr, OPT_REVISION, gettext_noop("select revision id for operation"), NULL},
+    {"branch", 'b', POPT_ARG_STRING, &argstr, MTNCVSOPT_BRANCH_NAME, gettext_noop("select branch cert for operation"), NULL},
+    {"revision", 'r', POPT_ARG_STRING, &argstr, MTNCVSOPT_REVISION, gettext_noop("select revision id for operation"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -45,13 +45,13 @@ struct poptOption options[] =
     // Use the coptions table as well.
     { NULL, 0, POPT_ARG_INCLUDE_TABLE, coptions, 0, NULL, NULL },
 
-    {"debug", 0, POPT_ARG_NONE, NULL, OPT_DEBUG, gettext_noop("print debug log to stderr while running"), NULL},
-    {"help", 'h', POPT_ARG_NONE, NULL, OPT_HELP, gettext_noop("display help message"), NULL},
-    {"version", 0, POPT_ARG_NONE, NULL, OPT_VERSION, gettext_noop("print version number, then exit"), NULL},
-//    {"key", 'k', POPT_ARG_STRING, &argstr, OPT_KEY_NAME, gettext_noop("set key for signatures"), NULL},
-    {"db", 'd', POPT_ARG_STRING, &argstr, OPT_DB_NAME, gettext_noop("set name of database"), NULL},
-    {"mtn-option", 0, POPT_ARG_STRING, &argstr, OPT_MTN_OPTION, gettext_noop("pass option to monotone"), NULL},
-//    {"root", 0, POPT_ARG_STRING, &argstr, OPT_ROOT, gettext_noop("limit search for workspace to specified root"), NULL},
+    {"debug", 0, POPT_ARG_NONE, NULL, MTNCVSOPT_DEBUG, gettext_noop("print debug log to stderr while running"), NULL},
+    {"help", 'h', POPT_ARG_NONE, NULL, MTNCVSOPT_HELP, gettext_noop("display help message"), NULL},
+    {"version", 0, POPT_ARG_NONE, NULL, MTNCVSOPT_VERSION, gettext_noop("print version number, then exit"), NULL},
+//    {"key", 'k', POPT_ARG_STRING, &argstr, MTNCVSOPT_KEY_NAME, gettext_noop("set key for signatures"), NULL},
+    {"db", 'd', POPT_ARG_STRING, &argstr, MTNCVSOPT_DB_NAME, gettext_noop("set name of database"), NULL},
+    {"mtn-option", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_MTN_OPTION, gettext_noop("pass option to monotone"), NULL},
+//    {"root", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_ROOT, gettext_noop("limit search for workspace to specified root"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -191,9 +191,9 @@ coption_string(int o)
 }
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
-CMD(cvs_pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
-    _N("(re-)import a module from a remote cvs repository"), 
-    OPT_BRANCH_NAME % OPT_SINCE % OPT_FULL)
+CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
+    N_("(re-)import a module from a remote cvs repository"), 
+    MTNCVSOPT_BRANCH_NAME % MTNCVSOPT_SINCE % MTNCVSOPT_FULL)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 
@@ -209,9 +209,9 @@ CMD(cvs_pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
 //  cvs_sync::pull(repository,module,branch,app);
 }
 
-CMD(cvs_push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
+CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("commit changes in local database to a remote cvs repository"), 
-    OPT_BRANCH_NAME % OPT_REVISION)
+    MTNCVSOPT_BRANCH_NAME % MTNCVSOPT_REVISION)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 
@@ -227,7 +227,7 @@ CMD(cvs_push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
 
 CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
       N_("put a CVS working directory under monotone's control"), 
-      OPT_BRANCH_NAME)
+      MTNCVSOPT_BRANCH_NAME)
 {
   if (args.size() > 1) throw usage(name);
   string module;
@@ -326,11 +326,11 @@ cpp_main(int argc, char ** argv)
 
           switch(opt)
             {
-            case OPT_DEBUG:
+            case MTNCVSOPT_DEBUG:
               global_sanity.set_debug();
               break;
 
-            case OPT_HELP:
+            case MTNCVSOPT_HELP:
             default:
               requested_help = true;
               break;
