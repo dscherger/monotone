@@ -192,6 +192,25 @@ coption_string(int o)
   return string();
 }
 
+// fake app_state ctor/dtor, we do not use this class at all
+app_state::app_state() : db(system_path()), keys(this) {}
+void app_state::process_options() {}
+app_state::~app_state() {}
+lua_hooks::lua_hooks() {}
+lua_hooks::~lua_hooks() {}
+key_store::key_store(app_state*) {}
+database::database(system_path const&) {}
+database::~database() {}
+
+struct mtncvs_state : app_state
+{ bool full;
+  utf8 since;
+  utf8 db_name;
+  std::vector<utf8> revisions;
+  
+  mtncvs_state() : full() {}
+};
+
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("(re-)import a module from a remote cvs repository"), 
@@ -206,7 +225,8 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     if (args.size()==3) 
       branch=idx(args, 2)();
   }
-//  N(!app.branch_name().empty(), F("no destination branch specified\n"));
+  mtncvs_state &myapp=static_cast<mtncvs_state&>(app);
+  N(!myapp.branch_name().empty(), F("no destination branch specified\n"));
       
 //  cvs_sync::pull(repository,module,branch,app);
 }
@@ -237,25 +257,6 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
   N(!app.branch_name().empty(), F("no destination branch specified\n"));
 //  cvs_sync::takeover(app, module);
 }
-
-// fake app_state ctor/dtor, we do not use this class at all
-app_state::app_state() : db(system_path()), keys(this) {}
-void app_state::process_options() {}
-app_state::~app_state() {}
-lua_hooks::lua_hooks() {}
-lua_hooks::~lua_hooks() {}
-key_store::key_store(app_state*) {}
-database::database(system_path const&) {}
-database::~database() {}
-
-struct mtncvs_state : app_state
-{ bool full;
-  utf8 since;
-  utf8 db_name;
-  std::vector<utf8> revisions;
-  
-  mtncvs_state() : full() {}
-};
 
 int 
 cpp_main(int argc, char ** argv)
