@@ -18,6 +18,7 @@
 #include <botan/init.h>
 #include <botan/allocate.h>
 #include <cmd.hh>
+#include "mtncvs_state.hh"
 
 char * argstr = NULL;
 long arglong = 0;
@@ -201,15 +202,6 @@ lua_hooks::~lua_hooks() {}
 key_store::key_store(app_state*) {}
 database::database(system_path const&) {}
 database::~database() {}
-
-struct mtncvs_state : app_state
-{ bool full;
-  utf8 since;
-  utf8 db_name;
-  std::vector<utf8> revisions;
-  
-  mtncvs_state() : full() {}
-};
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
