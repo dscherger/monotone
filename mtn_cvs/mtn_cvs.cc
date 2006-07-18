@@ -238,7 +238,17 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
 //  cvs_sync::takeover(app, module);
 }
 
-struct mtncvs_state
+// fake app_state ctor/dtor, we do not use this class at all
+app_state::app_state() : db(system_path()), keys(this) {}
+void app_state::process_options() {}
+app_state::~app_state() {}
+lua_hooks::lua_hooks() {}
+lua_hooks::~lua_hooks() {}
+key_store::key_store(app_state*) {}
+database::database(system_path const&) {}
+database::~database() {}
+
+struct mtncvs_state : app_state
 { bool full;
   utf8 since;
   utf8 db_name;
@@ -407,7 +417,7 @@ cpp_main(int argc, char ** argv)
             {
               args.push_back(utf8(string(poptGetArg(ctx()))));
             }
-//          ret = commands::process(app, cmd, args);
+          ret = commands::process(app, cmd, args);
         }
     }
   catch (usage & u)
@@ -470,7 +480,7 @@ main(int argc, char **argv)
 {
   try
     {
-      ui.set_prog_name(utf8("mtn_cvs"));
+      ui.set_prog_name("mtn_cvs");
       return cpp_main(argc,argv);
 //      return main_with_many_flavours_of_exception(argc, argv);
     }

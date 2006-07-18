@@ -206,7 +206,6 @@ namespace commands
     out << endl << endl;
   }
 
-#ifndef LIBMTN_COMPILE
   int process(app_state & app, string const & cmd, vector<utf8> const & args)
   {
     if ((*cmds).find(cmd) != (*cmds).end())
@@ -227,7 +226,6 @@ namespace commands
         return 1;
       }
   }
-#endif
 
   set<int> command_options(string const & cmd)
   {
