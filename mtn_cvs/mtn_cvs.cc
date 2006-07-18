@@ -470,6 +470,7 @@ main(int argc, char **argv)
 {
   try
     {
+      ui.set_prog_name(utf8("mtn_cvs"));
       return cpp_main(argc,argv);
 //      return main_with_many_flavours_of_exception(argc, argv);
     }
