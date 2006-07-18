@@ -1302,6 +1302,98 @@ AUTOMATE(tags, N_("[BRANCH_PATTERN]"))
   output.write(prt.buf.data(), prt.buf.size());
 }
 
+// Name: put_file
+// Arguments:
+//   base ID (optional).
+//   file contents (binary, intended for automate stdio use)
+// Added in: 2.3
+// Purpose:
+//   Store a file in the database.
+//   Optionally encode it as a file_delta
+// Output format:
+//   The ID of the new file (40 digit hex string)
+// Error conditions:
+//   ?
+AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
+{
+}
+
+// Name: put_revision
+// Arguments:
+//   revision changes
+// Added in: 2.3
+// Purpose:
+//   Store a revision in the database.
+// Output format:
+//   The ID of the new revision
+// Error conditions:
+//   ?
+AUTOMATE(put_revision, N_("REVISION-DATA"))
+{
+}
+
+// Name: cert
+// Arguments:
+//   revision ID
+//   certificate name
+//   certificate value
+// Added in: 2.3
+// Purpose:
+//   Add a revision certificate (like mtn cert).
+// Output format:
+//   nothing
+// Error conditions:
+//   ?
+AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
+{
+}
+
+// Name: db_set
+// Arguments:
+//   variable domain
+//   variable name
+//   veriable value
+// Added in: 2.3
+// Purpose:
+//   Set a database variable (like mtn database set)
+// Output format:
+//   nothing
+// Error conditions:
+//   ?
+AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
+{
+}
+
+// Name: db_get
+// Arguments:
+//   variable domain
+//   variable name
+// Added in: 2.3
+// Purpose:
+//   Get a database variable (like mtn database ls vars | grep NAME)
+// Output format:
+//   variable value
+// Error conditions:
+//   ?
+AUTOMATE(db_get, N_("DOMAIN NAME"))
+{
+}
+
+// Name: find_newest_sync
+// Arguments:
+//   sync domain
+// Added in: 2.3
+// Purpose:
+//   Get the newest revision which has sync certificates 
+//   (or a changed sync files)
+// Output format:
+//   revision ID
+// Error conditions:
+//   ?
+AUTOMATE(find_newest_sync, N_("DOMAIN"))
+{
+}
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
