@@ -1362,6 +1362,13 @@ AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
 //   ?
 AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
 {
+  if (args.size() != 3)
+    throw usage(name);
+  var_domain domain = var_domain(idx(args, 0)());
+  utf8 name = idx(args, 1);
+  string value = idx(args, 2)();
+  var_key key(domain, var_name(name()));
+  app.db.set_var(key, var_value(value));
 }
 
 // Name: db_get
@@ -1377,6 +1384,14 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
 //   ?
 AUTOMATE(db_get, N_("DOMAIN NAME"))
 {
+  if (args.size() != 2)
+    throw usage(name);
+  var_domain domain = var_domain(idx(args, 0)());
+  utf8 name = idx(args, 1);
+  var_key key(domain, var_name(name()));
+  var_value value;
+  app.db.get_var(key, value);
+  output << value();
 }
 
 // Name: find_newest_sync
