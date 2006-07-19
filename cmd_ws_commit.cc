@@ -93,15 +93,18 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
       excludes = app.exclude_patterns;
     }
 
-  get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+  revision_t workrev;
+  get_work_rev(workrev);
+  get_base_and_new_rosters_for_rev(old_roster, new_roster, nis, app, workrev);
+
   node_restriction mask(includes, excludes, old_roster, new_roster, app);
 
   make_restricted_csets(old_roster, new_roster, 
 			included, excluded, mask);
 
-  // The included cset will be thrown away (reverted) leaving the
-  // excluded cset pending in MTN/work which must be valid against the
-  // old roster.
+  // The included cset will be thrown away (reverted), leaving the excluded
+  // cset pending in MTN/workrev, which must be valid against the old
+  // roster.
 
   check_restricted_cset(old_roster, excluded);
 
@@ -161,9 +164,16 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
   // drops and renames it contains. Drops and rename sources will have
   // been rewritten above but this may leave rename targets laying
   // around.
+  revision_t resultrev;
+  {
+    roster_t resultros = old_roster;
+    editable_roster_base er(resultros, nis);
+    excluded.apply_to(er);
 
-  // Race.
-  put_work_cset(excluded);
+    make_revision(edge_old_revision(workrev.edges.begin()),
+                  old_roster, resultros, resultrev);
+  }
+  put_work_rev(resultrev);
   update_any_attrs(app);
   maybe_update_inodeprints(app);
 }
@@ -331,7 +341,8 @@ CMD(status, N_("informative"), N_("[PATH]..."),
   temp_node_id_source nis;
 
   app.require_workspace();
-  get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+  get_work_rev(rev);
+  get_base_and_new_rosters_for_rev(old_roster, new_roster, nis, app, rev);
 
   node_restriction mask(args, app.exclude_patterns, 
                         old_roster, new_roster, app);
@@ -345,8 +356,8 @@ CMD(status, N_("informative"), N_("[PATH]..."),
   editable_roster_base er(restricted_roster, nis);
   included.apply_to(er);
 
-  get_revision_id(old_rev_id);
-  make_revision(old_rev_id, old_roster, restricted_roster, rev);
+  make_revision(edge_old_revision(rev.edges.begin()),
+                old_roster, restricted_roster, rev);
 
   if (global_sanity.brief)
     {
@@ -471,8 +482,6 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
   roster_t ros;
   marking_map mm;
 
-  put_revision_id(ident);
-
   L(FL("checking out revision %s to directory %s") % ident % dir);
   app.db.get_roster(ident, ros, mm);
 
@@ -504,7 +513,13 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
           write_localized_data(path, dat.inner(), app.lua);
         }
     }
-  remove_work_cset();
+
+  // Make a revision based on IDENT with no changes since ROS and
+  // write to _MTN/workrev.
+  revision_t rev;
+  make_revision(ident, ros, ros, rev);
+  put_work_rev(rev);
+
   update_any_attrs(app);
   maybe_update_inodeprints(app);
   guard.commit();
@@ -520,11 +535,12 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
     throw usage(name);
 
   roster_t old_roster, new_roster;
+  revision_t workrev;
   temp_node_id_source nis;
 
   app.require_workspace();
-  get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
-
+  get_work_rev(workrev);
+  get_base_and_new_rosters_for_rev(old_roster, new_roster, nis, app, workrev);
 
   file_path path = file_path_external(idx(args,1));
   split_path sp;
@@ -567,9 +583,10 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
             throw usage(name);
         }
 
-      cset new_work;
-      make_cset(old_roster, new_roster, new_work);
-      put_work_cset(new_work);
+      revision_t new_rev;
+      make_revision(edge_old_revision(workrev.edges.begin()),
+                    old_roster, new_roster, new_rev);
+      put_work_rev(new_rev);
       update_any_attrs(app);
     }
   else if (subcmd == "get")
@@ -617,15 +634,16 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
 {
   string log_message("");
   bool log_message_given;
-  revision_t restricted_rev;
-  revision_id old_rev_id, restricted_rev_id;
+  revision_t work_rev, restricted_rev;
+  revision_id restricted_rev_id;
   roster_t old_roster, new_roster, restricted_roster;
   temp_node_id_source nis;
   cset included, excluded;
 
   app.make_branch_sticky();
   app.require_workspace();
-  get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+  get_work_rev(work_rev);
+  get_base_and_new_rosters_for_rev(old_roster, new_roster, nis, app, work_rev);
 
   node_restriction mask(args, app.exclude_patterns, 
                         old_roster, new_roster, app);
@@ -635,13 +653,14 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
 			included, excluded, mask);
   check_restricted_cset(old_roster, included);
 
-  restricted_roster = old_roster;
-  editable_roster_base er(restricted_roster, nis);
-  included.apply_to(er);
+  {
+    restricted_roster = old_roster;
+    editable_roster_base er(restricted_roster, nis);
+    included.apply_to(er);
+  }
 
-  get_revision_id(old_rev_id);
-  make_revision(old_rev_id, old_roster, 
-		    restricted_roster, restricted_rev);
+  make_revision(edge_old_revision(work_rev.edges.begin()),
+                old_roster, restricted_roster, restricted_rev);
 
   calculate_ident(restricted_rev, restricted_rev_id);
 
@@ -806,9 +825,16 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
     guard.commit();
   }
 
-  // small race condition here...
-  put_work_cset(excluded);
-  put_revision_id(restricted_rev_id);
+  // The new workspace revision is based on the revision we just
+  // committed (restricted_rev) and sees the changes in 'excluded'.
+  // We recycle 'work_rev' for this.
+  {
+    roster_t work_roster = restricted_roster;
+    editable_roster_base er(work_roster, nis);
+    excluded.apply_to(er);
+    make_revision(restricted_rev_id, restricted_roster, work_roster, work_rev);
+  }
+  put_work_rev(work_rev);
   P(F("committed revision %s") % restricted_rev_id);
 
   blank_user_log();
@@ -865,8 +891,12 @@ CMD_NO_WORKSPACE(setup, N_("tree"), N_("[DIRECTORY]"),
     dir = ".";
 
   app.create_workspace(dir);
-  revision_id null;
-  put_revision_id(null);
+
+  // _MTN/workrev starts with the null revision.
+  revision_t rev;
+  roster_t empty_roster;
+  make_revision(revision_id(), empty_roster, empty_roster, rev);
+  put_work_rev(rev);
 }
 
 CMD(refresh_inodeprints, N_("tree"), "", 

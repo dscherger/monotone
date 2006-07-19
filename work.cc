@@ -36,6 +36,14 @@ using std::string;
 using std::vector;
 
 using boost::lexical_cast;
+using boost::shared_ptr;
+
+// for sanity.hh
+template <typename T> void
+dump(shared_ptr<T> const t, string & out)
+{
+  dump(*t, out);
+}
 
 // workspace / book-keeping file code
 
@@ -43,9 +51,10 @@ static string const attr_file_name(".mt-attrs");
 static string const inodeprints_file_name("inodeprints");
 static string const local_dump_file_name("debug");
 static string const options_file_name("options");
-static string const work_file_name("work");
+static string const workrev_file_name("workrev");
 static string const user_log_file_name("log");
-
+static string const old_work_file_name("work");
+static string const old_revision_file_name("revision");
 
 // attribute map file
 
@@ -223,7 +232,9 @@ perform_additions(path_set const & paths, app_state & app, bool recursive)
 
   temp_node_id_source nis;
   roster_t base_roster, new_roster;
-  get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
+  revision_t rev;
+  get_work_rev(rev);
+  get_base_and_new_rosters_for_rev(base_roster, new_roster, nis, app, rev);
 
   editable_roster_base er(new_roster, nis);
 
@@ -246,15 +257,16 @@ perform_additions(path_set const & paths, app_state & app, bool recursive)
         }
       else
         {
-          // in the case where we're just handled a set of paths, we use the builder
-          // in this strange way.
+          // in the case where we're just handled a set of paths, we use the
+          // builder in this strange way.
           build.visit_file(file_path(*i));
         }
     }
 
-  cset new_work;
-  make_cset(base_roster, new_roster, new_work);
-  put_work_cset(new_work);
+  revision_t new_rev;
+  make_revision(edge_old_revision(rev.edges.begin()),
+                base_roster, new_roster, new_rev);
+  put_work_rev(new_rev);
   update_any_attrs(app);
 }
 
@@ -266,7 +278,9 @@ perform_deletions(path_set const & paths, app_state & app)
 
   temp_node_id_source nis;
   roster_t base_roster, new_roster;
-  get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
+  revision_t rev;
+  get_work_rev(rev);
+  get_base_and_new_rosters_for_rev(base_roster, new_roster, nis, app, rev);
 
   // we traverse the the paths backwards, so that we always hit deep paths
   // before shallow paths (because path_set is lexicographically sorted).
@@ -320,9 +334,10 @@ perform_deletions(path_set const & paths, app_state & app)
         }
     }
 
-  cset new_work;
-  make_cset(base_roster, new_roster, new_work);
-  put_work_cset(new_work);
+  revision_t new_rev;
+  make_revision(edge_old_revision(rev.edges.begin()),
+                base_roster, new_roster, new_rev);
+  put_work_rev(new_rev);
   update_any_attrs(app);
 }
 
@@ -354,7 +369,9 @@ perform_rename(set<file_path> const & src_paths,
 
   I(!src_paths.empty());
 
-  get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
+  revision_t rev;
+  get_work_rev(rev);
+  get_base_and_new_rosters_for_rev(base_roster, new_roster, nis, app, rev);
 
   dst_path.split(dst);
 
@@ -414,9 +431,10 @@ perform_rename(set<file_path> const & src_paths,
         % file_path(i->second));
     }
 
-  cset new_work;
-  make_cset(base_roster, new_roster, new_work);
-  put_work_cset(new_work);
+  revision_t new_rev;
+  make_revision(edge_old_revision(rev.edges.begin()),
+                base_roster, new_roster, new_rev);
+  put_work_rev(new_rev);
 
   if (app.execute)
     {
@@ -461,7 +479,9 @@ perform_pivot_root(file_path const & new_root, file_path const & put_old,
 
   temp_node_id_source nis;
   roster_t base_roster, new_roster;
-  get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
+  revision_t rev;
+  get_work_rev(rev);
+  get_base_and_new_rosters_for_rev(base_roster, new_roster, nis, app, rev);
 
   I(new_roster.has_root());
   N(new_roster.has_node(new_root_sp),
@@ -500,9 +520,10 @@ perform_pivot_root(file_path const & new_root, file_path const & put_old,
     cs.apply_to(e);
   }
   {
-    cset new_work;
-    make_cset(base_roster, new_roster, new_work);
-    put_work_cset(new_work);
+    revision_t new_rev;
+    make_revision(edge_old_revision(rev.edges.begin()),
+                  base_roster, new_roster, new_rev);
+    put_work_rev(new_rev);
   }
   if (app.execute)
     {
@@ -513,127 +534,200 @@ perform_pivot_root(file_path const & new_root, file_path const & put_old,
   update_any_attrs(app);
 }
 
+// base revision handling
 
-// work file containing rearrangement from uncommitted adds/drops/renames
-
-static void get_work_path(bookkeeping_path & w_path)
+void get_work_rev(revision_t & rev)
 {
-  w_path = bookkeeping_root / work_file_name;
-  L(FL("work path is %s") % w_path);
-}
+  bookkeeping_path workrev_path = bookkeeping_root / workrev_file_name;
+  bookkeeping_path oldrev_path = bookkeeping_root / old_revision_file_name;
+  bookkeeping_path oldcset_path = bookkeeping_root / old_work_file_name;
 
-void get_work_cset(cset & w)
-{
-  bookkeeping_path w_path;
-  get_work_path(w_path);
-  if (path_exists(w_path))
+  MM(rev);
+  if (file_exists(workrev_path))
     {
-      L(FL("checking for un-committed work file %s") % w_path);
-      data w_data;
-      read_data(w_path, w_data);
-      read_cset(w_data, w);
-      L(FL("read cset from %s") % w_path);
+      // New-style workspace with just a 'workrev' file; contents are a
+      // serialized revision_t.  Make sure we don't have old-style data too.
+      L(FL("found working revision file %s") % workrev_path);
+
+      require_path_is_nonexistent(oldrev_path,
+                                  F("workspace is corrupt: "
+                                    "both %s and %s exist")
+                                  % workrev_path % oldrev_path);
+      require_path_is_nonexistent(oldcset_path,
+                                  F("workspace is corrupt: "
+                                    "both %s and %s exist")
+                                  % workrev_path % oldcset_path);
+
+      data workrev_data;
+      MM(workrev_data);
+      try
+        {
+          read_data(workrev_path, workrev_data);
+        }
+      catch(exception & e)
+        {
+          E(false, F("workspace is corrupt: reading %s: %s")
+            % workrev_path % e.what());
+        }
+
+      read_revision(workrev_data, rev);
+
+      // Currently the revision must have only one ancestor.
+      I(rev.edges.size() == 1);
     }
   else
     {
-      L(FL("no un-committed work file %s") % w_path);
+      // Old-style workspace maybe, with 'revision' and possibly 'work' files.
+      require_path_is_nonexistent(workrev_path,
+                                  F("workspace is corrupt: "
+                                    "%s exists but is not a regular file")
+                                  % workrev_path);
+
+      require_path_is_file(oldrev_path,
+                   F("workspace is corrupt: %s does not exist") % oldrev_path,
+                   F("workspace is corrupt: %s is a directory") % oldrev_path);
+
+      bool cset_exists = file_exists(oldcset_path);
+
+      if (!cset_exists)
+        require_path_is_nonexistent(oldcset_path,
+                                    F("workspace is corrupt: "
+                                      "%s exists but is not a regular file")
+                                    % oldcset_path);
+      
+      data oldrev_data;
+      MM(oldrev_data);
+      try
+        {
+          read_data(oldrev_path, oldrev_data);
+        }
+      catch(exception & e)
+        {
+          E(false, F("workspace is corrupt: reading %s: %s")
+            % oldrev_path % e.what());
+        }
+      revision_id id = revision_id(remove_ws(oldrev_data()));
+
+      data oldcset_data;
+      shared_ptr<cset> cs(new cset());
+      MM(oldcset_data);
+      MM(cs);
+      if (cset_exists)
+        {
+          try
+            {
+              read_data(oldcset_path, oldcset_data);
+            }
+          catch(exception & e)
+            {
+              E(false, F("workspace is corrupt: reading %s: %s")
+                % oldcset_path % e.what());
+            }
+
+          read_cset(oldcset_data, *cs);
+        }
+
+      // We have to fake a manifest ID.
+      rev.edges.clear();
+      rev.new_manifest = manifest_id(fake_id());
+      safe_insert(rev.edges, make_pair(id, cs));
     }
 }
 
-void remove_work_cset()
+void put_work_rev(revision_t const & rev)
 {
-  bookkeeping_path w_path;
-  get_work_path(w_path);
-  if (file_exists(w_path))
-    delete_file(w_path);
+  bookkeeping_path workrev_path = bookkeeping_root / workrev_file_name;
+  bookkeeping_path oldrev_path = bookkeeping_root / old_revision_file_name;
+  bookkeeping_path oldcset_path = bookkeeping_root / old_work_file_name;
+  bool delete_oldrev = path_exists(oldrev_path);
+  bool delete_oldcset = path_exists(oldcset_path);
+
+  if (delete_oldrev || delete_oldcset)
+    P(F("converting bookkeeping directory to workrev format"));
+
+  // Currently the revision must have only one ancestor.
+  MM(rev);
+  I(rev.edges.size() == 1);
+  rev.check_sane();
+
+  data rev_data;
+  write_revision(rev, rev_data);
+
+  // When a workspace is converted, there is a window where the workspace is
+  // formally corrupt, because we cannot write out the new workrev file and
+  // delete the old revision and/or work files in a single atomic operation.
+  // We choose to write the new file first so that, if the process gets
+  // killed within the window, it is possible to repair the workspace (by
+  // hand) without loss of data.  If we did it in the other order, killing
+  // the process in the window would leave the workspace with no indication
+  // of base revision or uncommitted rearranges.
+
+  write_data(workrev_path, rev_data);
+  if (delete_oldrev)
+    delete_file(oldrev_path);
+  if (delete_oldcset)
+    delete_file(oldcset_path);
 }
 
-void put_work_cset(cset & w)
-{
-  bookkeeping_path w_path;
-  get_work_path(w_path);
-
-  if (w.empty())
-    {
-      if (file_exists(w_path))
-        delete_file(w_path);
-    }
-  else
-    {
-      data w_data;
-      write_cset(w, w_data);
-      write_data(w_path, w_data);
-    }
-}
-
-// revision file name
-
-string revision_file_name("revision");
-
-static void get_revision_path(bookkeeping_path & m_path)
-{
-  m_path = bookkeeping_root / revision_file_name;
-  L(FL("revision path is %s") % m_path);
-}
-
+// Convenience: get the base revision ID.
 void get_revision_id(revision_id & c)
 {
-  c = revision_id();
-  bookkeeping_path c_path;
-  get_revision_path(c_path);
+  revision_t w_rev;
 
-  require_path_is_file(c_path,
-                       F("workspace is corrupt: %s does not exist") % c_path,
-                       F("workspace is corrupt: %s is a directory") % c_path);
-
-  data c_data;
-  L(FL("loading revision id from %s") % c_path);
-  try
-    {
-      read_data(c_path, c_data);
-    }
-  catch(exception &)
-    {
-      N(false, F("Problem with workspace: %s is unreadable") % c_path);
-    }
-  c = revision_id(remove_ws(c_data()));
+  get_work_rev(w_rev);
+  c = edge_old_revision(w_rev.edges.begin());
 }
 
-void put_revision_id(revision_id const & rev)
+// Base and current rosters.
+static void
+get_roster_for_rid(app_state & app, revision_id const & rid, roster_t & ros)
 {
-  bookkeeping_path c_path;
-  get_revision_path(c_path);
-  L(FL("writing revision id to %s") % c_path);
-  data c_data(rev.inner()() + "\n");
-  write_data(c_path, c_data);
+  if (!null_id(rid))
+    {
+      N(app.db.revision_exists(rid),
+        F("revision %s does not exist in database") % rid);
+
+      marking_map dummy_mm;
+      app.db.get_roster(rid, ros, dummy_mm);
+    }
+
+  L(FL("roster for %s has %d entries") % rid % ros.all_nodes().size());
 }
 
 static void
 get_base_roster(app_state & app, roster_t & ros)
 {
   revision_id rid;
-  marking_map mm;
   get_revision_id(rid);
-
-  if (!null_id(rid))
-    {
-
-      N(app.db.revision_exists(rid),
-        F("base revision %s does not exist in database") % rid);
-
-      app.db.get_roster(rid, ros, mm);
-    }
-
-  L(FL("base roster has %d entries") % ros.all_nodes().size());
+  get_roster_for_rid(app, rid, ros);
 }
 
 void
 get_current_roster_shape(roster_t & ros, node_id_source & nis, app_state & app)
 {
-  get_base_roster(app, ros);
-  cset cs;
-  get_work_cset(cs);
+  revision_t w_rev;
+  get_work_rev(w_rev);
+  revision_id rid = edge_old_revision(w_rev.edges.begin());
+  cset cs = edge_changes(w_rev.edges.begin());
+  
+  get_roster_for_rid(app, rid, ros);
   editable_roster_base er(ros, nis);
+  cs.apply_to(er);
+}
+
+void
+get_base_and_new_rosters_for_rev(roster_t & base_roster,
+                                 roster_t & new_roster,
+                                 node_id_source & nis,
+                                 app_state & app,
+                                 revision_t const & rev)
+{
+  revision_id rid = edge_old_revision(rev.edges.begin());
+  cset cs = edge_changes(rev.edges.begin());
+  
+  get_roster_for_rid(app, rid, base_roster);
+  new_roster = base_roster;
+  editable_roster_base er(new_roster, nis);
   cs.apply_to(er);
 }
 
@@ -643,12 +737,10 @@ get_base_and_current_roster_shape(roster_t & base_roster,
                                   node_id_source & nis,
                                   app_state & app)
 {
-  get_base_roster(app, base_roster);
-  current_roster = base_roster;
-  cset cs;
-  get_work_cset(cs);
-  editable_roster_base er(current_roster, nis);
-  cs.apply_to(er);
+  revision_t base_rev;
+  get_work_rev(base_rev);
+  get_base_and_new_rosters_for_rev(base_roster, current_roster,
+                                   nis, app, base_rev);
 }
 
 // user log file

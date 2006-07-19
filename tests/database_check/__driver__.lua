@@ -60,9 +60,10 @@ check(mtn("fload"), 0, false, false, true)
 check(mtn("add", "fileY"), 0, false, false)
 commit("test", "to be removed")
 revs[4] = base_revision()
+copy("_MTN/workrev", "saved_workrev")
 dbex("delete from revisions where id='%s'", revs[4])
 -- revert to the old workspace state
-writefile("_MTN/revision", revs[3])
+copy("saved_workrev", "_MTN/workrev")
 -- remove another file too
 dbex("delete from files where id='%s'", files[3])
 
