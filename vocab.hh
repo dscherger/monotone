@@ -148,6 +148,13 @@ null_id(revision_id const & i)
   return i.inner()().empty();
 }
 
+// does this belong here?
+
+// Several places need to construct fake IDs; we do this by hashing the file
+// and line of the source that requested it, to ensure that no two places
+// use the same fake ID.
+extern hexenc<id> fake_id(const char *, int);
+#define fake_id() fake_id(__FILE__,__LINE__)
 
 // Local Variables:
 // mode: C++

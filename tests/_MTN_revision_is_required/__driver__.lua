@@ -12,5 +12,5 @@ commit()
 remove("bar")
 check(mtn("ls", "missing"), 0, false, false)
 
-remove("_MTN/revision")
+remove("_MTN/workrev")
 check(mtn("ls", "missing"), 1, false, false)

@@ -265,6 +265,17 @@ canonical_base64(string const & s)
     (xform<Botan::Base64_Decoder>(s));
 }
 
+// Take SHA160 of a file,line pair and return it.  The parentheses are
+// necessary to prevent cpp from trying to expand fake_id() as a
+// zero-argument macro.
+hexenc<id>
+(fake_id)(const char *file, int line)
+{
+  data fileline((FL("%s:%d") % file % line).str());
+  hexenc<id> fakeid;
+  calculate_ident(fileline, fakeid);
+  return fakeid;
+}
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"

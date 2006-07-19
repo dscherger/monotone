@@ -105,7 +105,10 @@ check(mtn("automate", "get_revision", revs.unknown), 1, true, true)
 get("closed")
 
 clean()
-writefile("_MTN/revision", "")
+writefile("_MTN/workrev", 
+	  "format_version \"1\"\n\n"..
+	  "new_manifest []\n\n"..
+	  "old_revision []\n")
 
 addfile("testfile", "testfile", mtn2)
 commit("testbranch", "testfile")

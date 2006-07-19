@@ -1,3 +1,37 @@
+2006-07-18  Zack Weinberg  <zackw@panix.com>
+
+	Revision in _MTN/workrev, not cset in _MTN/work.
+
+	* work.cc: Consolidate all file-scope string constants at top of
+	file; make them all static const.
+	(get_work_rev, put_work_rev, get_roster_for_rid)
+	(get_base_and_new_rosters_for_rev): New functions.
+	(get_work_path, get_work_cset, put_work_cset, remove_work_cset)
+	(get_revision_path, put_revision_id): Delete.
+	(get_revision_id, get_base_roster, get_current_roster_shape)
+	(get_base_and_current_roster_shape): Rewrite in terms of new functions.
+	(perform_additions, perform_deletions, perform_rename)
+	(perform_pivot_root): Update to new interfaces.
+	(dump<shared_ptr<T>>): New partial specialization.
+	* work.hh: Update prototypes and commentary.
+
+	* revision.cc (make_revision): Add some MMs; call check_sane at
+	end. Reorder operations so that all input data is read before
+	the output argument is modified.
+	(print_insane_revision): New function.
+	(print_revision, write_insane_revision): Use it.
+	* transforms.cc (fake_id): New function.
+	* vocab.hh: Prototype fake_id and define wrapper macro.
+
+	* cmd_merging.cc (CMD(update), CMD(pluck))
+	* cmd_ws_commit.cc (CMD(revert), CMD(checkout), CMD(attr))
+	(CMD(commit), CMD(setup)
+	Update to new work.cc interfaces.
+	* tests: Update all tests that look at _MTN/work or _MTN/revision.
+	* testsuite.lua (base_revision): Likewise.
+	* NEWS: Mention non-backward-compatible change to workspaces.
+	* monotone.texi: Update all references to _MTN/work or _MTN/revision.
+
 2006-07-16  Timothy Brownawell  <tbrownaw@gmail.com>
 
 	* tests/dump_on_crash: New test; check that debug dumps work.
@@ -129,7 +163,7 @@
 
 2006-07-13  Nathaniel Smith  <njs@pobox.com>
 
-	* tests/restrictions_with_renames_and_adds/__driver__.lua: 
+	* tests/restrictions_with_renames_and_adds/__driver__.lua:
 	* tests/diff_shows_renames/__driver__.lua: Add notes on possible
 	fixes for these bugs.
 

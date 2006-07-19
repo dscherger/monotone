@@ -30,26 +30,39 @@
 // directories). there is no hierarchy of _MTN directories; only one exists,
 // and it is always at the root. it contains the following files:
 //
-// _MTN/revision     -- contains the id of the checked out revision
-// _MTN/work         -- (optional) a set of added, deleted or moved pathnames
-//                      this file is, syntactically, a cset
+// _MTN/workrev      -- syntactically a revision (as serialized), this file
+//                      records the id of the revision that was checked out,
+//                      plus a cset describing added, deleted, or moved path-
+//                      names relative to that revision.  files changed solely
+//                      in content are not called out in this file.
 // _MTN/options      -- the database, branch and key options currently in use
 // _MTN/log          -- user edited log file
 // _MTN/inodeprints  -- file fingerprint cache, presence turns on "reckless"
 //                      mode
 //
-// as work proceeds, the files in the workspace either change their
-// sha1 fingerprints from those listed in the revision's manifest, or else are
-// added or deleted or renamed (and the paths of those changes recorded in
-// '_MTN/work').
+// as work proceeds, the files in the workspace either change their sha1
+// fingerprints from those listed in the base revision's manifest, or else
+// are added or deleted or renamed (and the paths of those changes recorded
+// in '_MTN/workrev').
 //
-// when it comes time to commit, the cset in _MTN/work (which can have no
+// when it comes time to commit, the cset in _MTN/workrev (which can have no
 // deltas) is applied to the base roster, then a new roster is built by
 // analyzing the content of every file in the roster, as it appears in the
 // workspace. a final cset is calculated which contains the requisite
 // deltas, and placed in a rev, which is written to the db.
 //
 // _MTN/inodeprints, if present, can be used to speed up this last step.
+//
+// Formerly, the data in _MTN/workrev was stored in two other files:
+//
+// _MTN/revision     -- contains the id of the checked out revision
+// _MTN/work         -- (optional) a set of added, deleted or moved pathnames
+//                      this file is, syntactically, a cset
+//
+// monotone will convert a book-keeping directory containing these files to
+// one containing only _MTN/workrev, the first time it would need to _write_
+// to either file.  read operations do not convert.  (specifically, the
+// only function that will convert a book-keeping directory is put_work_rev.)
 
 class path_restriction;
 
@@ -90,39 +103,37 @@ void
 perform_pivot_root(file_path const & new_root, file_path const & put_old,
                    app_state & app);
 
-// the "work" file contains the current cset representing uncommitted
-// add/drop/rename operations (not deltas)
+// the "work revision" is a notional revision from the revision that was
+// checked out to create the workspace, to the present contents of the
+// workspace.  At present, I(rev.edges.size() == 1).
 
-void get_work_cset(cset & w);
-void remove_work_cset();
-void put_work_cset(cset & w);
+void get_work_rev(revision_t & rev);
+void put_work_rev(revision_t const & rev);
 
-// the "revision" file contains the base revision id that the current working
-// copy was checked out from
+// the base revision id is the one that the current working copy was checked
+// out from.
 
 void get_revision_id(revision_id & c);
-void put_revision_id(revision_id const & rev);
-void get_base_revision(app_state & app,
-                       revision_id & rid,
-                       roster_t & ros,
-                       marking_map & mm);
-void get_base_revision(app_state & app,
-                       revision_id & rid,
-                       roster_t & ros);
-void get_base_roster(app_state & app, roster_t & ros);
 
 // This returns the current roster, except it does not bother updating the
 // hashes in that roster -- the "shape" is correct, all files and dirs exist
 // and under the correct names -- but do not trust file content hashes.
-void get_current_roster_shape(roster_t & ros, node_id_source & nis, app_state & app);
+void get_current_roster_shape(roster_t & ros, node_id_source & nis,
+                              app_state & app);
 
-// These returns the current roster, except they do not bother updating the
-// hashes in that roster -- the "shape" is correct, all files and dirs exist
-// and under the correct names -- but do not trust file content hashes.
+// This returns both the current roster (with the same caveats as for
+// get_current_roster_shape) and the roster it was based on.
 void get_base_and_current_roster_shape(roster_t & base_roster,
                                        roster_t & current_roster,
                                        node_id_source & nis,
                                        app_state & app);
+
+// Same as get_base_and_current_roster_shape, but for a specified rev.
+void get_base_and_new_rosters_for_rev(roster_t & base_roster,
+                                      roster_t & new_roster,
+                                      node_id_source & nis,
+                                      app_state & app,
+                                      revision_t const & rev);
 
 // the "user log" is a file the user can edit as they program to record
 // changes they make to their source code. Upon commit the file is read

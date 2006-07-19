@@ -560,14 +560,19 @@ make_revision(revision_id const & old_rev_id,
               revision_t & rev)
 {
   shared_ptr<cset> cs(new cset());
+  edge_entry edge(old_rev_id, cs);
+  MM(old_roster);
+  MM(new_roster);
 
-  rev.edges.clear();
   make_cset(old_roster, new_roster, *cs);
 
   calculate_ident(new_roster, rev.new_manifest);
-  L(FL("new manifest_id is %s") % rev.new_manifest);
+  L(FL("make_revision: old_rev_id is '%s'") % old_rev_id);
+  L(FL("make_revision: new manifest_id is '%s'") % rev.new_manifest);
 
-  safe_insert(rev.edges, make_pair(old_rev_id, cs));
+  rev.edges.clear();
+  safe_insert(rev.edges, edge);
+  rev.check_sane();
 }
 
 
@@ -1527,12 +1532,10 @@ print_edge(basic_io::printer & printer,
   print_cset(printer, edge_changes(e));
 }
 
-
-void
-print_revision(basic_io::printer & printer,
-               revision_t const & rev)
+static void
+print_insane_revision(basic_io::printer & printer,
+                      revision_t const & rev)
 {
-  rev.check_sane();
 
   basic_io::stanza format_stanza;
   format_stanza.push_str_pair(syms::format_version, "1");
@@ -1545,6 +1548,14 @@ print_revision(basic_io::printer & printer,
   for (edge_map::const_iterator edge = rev.edges.begin();
        edge != rev.edges.end(); ++edge)
     print_edge(printer, *edge);
+}
+
+void
+print_revision(basic_io::printer & printer,
+               revision_t const & rev)
+{
+  rev.check_sane();
+  print_insane_revision(printer, rev);
 }
 
 
@@ -1615,7 +1626,7 @@ static void write_insane_revision(revision_t const & rev,
                                   data & dat)
 {
   basic_io::printer pr;
-  print_revision(pr, rev);
+  print_insane_revision(pr, rev);
   dat = data(pr.buf);
 }
 

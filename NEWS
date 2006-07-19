@@ -1,3 +1,44 @@
+<fill in date>
+
+        0.28 release.
+
+        In this release, there is a minor change to the format of the
+        data stored in the bookkeeping directory "_MTN".  Monotone can
+        still read the old format, and will seamlessly upgrade a
+        workspace the first time it needs to write the data affected
+        by the change.  However, after a workspace has been upgraded,
+        older versions of monotone will not be able to use it.
+
+	In the old format, the bookkeeping directory contained a file
+        named "_MTN/revision" which recorded the "base revision ID" --
+        the revision ID that was originally checked out to create this
+        workspace.  There could also be a file named "_MTN/work" which
+        contained a "partial change set" describing all "non-content
+        changes" (changes to anything other than the content of a
+        file, e.g. file renames and attribute changes). If there had
+        been no such changes, "_MTN/work" did not exist.
+
+	The new format collapses these two files into one, named
+	"_MTN/workrev".  This file is formatted as a "revision", not a
+	"change set".  The revision format naturally encapsulates both
+	pieces of data, and allows for a workspace with multiple
+	parents.  It has a version number, so hopefully we will not
+	have to do this again.  Also, manipulating one file instead of
+	two eliminates a number of time windows where killing a
+	monotone process would leave the workspace corrupted.
+
+	If you need to undo an upgrade, here's how: Open
+	"_MTN/workrev" in a text editor.  Look for lines that begin
+	"old_revision".  If there is more than one such line, STOP.
+	Your workspace cannot be described by the old bookkeeping
+	format.  Otherwise, copy the revision id between the square
+	brackets on the "old_revision" line into a new file
+	"_MTN/revision".  Don't copy the square brackets or anything
+	else - just the bare ID.  Now, if there are any non-blank
+	lines _after_ the "old_revision" line, copy them all into a
+	new file "_MTN/work".  Do not create this file if it would be
+	empty.  Finally, delete "_MTN/workrev".
+
 Sat Jun 17 14:43:12 PDT 2006
 
         0.27 release.  Minor bug fixes and enhancements, plus ssh
