@@ -1346,6 +1346,15 @@ AUTOMATE(put_revision, N_("REVISION-DATA"))
 //   ?
 AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
 {
+  if (args.size() != 3)
+    throw usage(name);
+  cert c;
+  revision_id rid(idx(args,0)());
+  make_simple_cert(rid.inner(),cert_name(idx(args,1)()),
+                    cert_value(idx(args,2)()), app, c);
+  revision<cert> rc(c);
+  packet_db_writer dbw(app);
+  dbw.consume_revision_cert(rc);
 }
 
 // Name: db_set
