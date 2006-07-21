@@ -1315,7 +1315,38 @@ AUTOMATE(tags, N_("[BRANCH_PATTERN]"))
 // Error conditions:
 //   ?
 AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
-{
+{ hexenc<id> sha1sum;
+  if (args.size()==1)
+  {
+    data dat(idx(argv,0)());
+    calculate_ident(dat,sha1sum);
+    if (!app.db.file_version_exists(sha1sum))
+      app.db.put_file(sha1sum, dat);
+  }
+  else if (args.size()==2)
+  {
+    data dat(idx(argv,1)());
+    calculate_ident(dat,sha1sum);
+    if (!app.db.file_version_exists(sha1sum))
+    { 
+      file_id base_id(idx(args,0)());
+      N(app.db.file_version_exists(ident),
+        F("no file version %s found in database") % ident);
+
+      file_data olddat;
+      app.db.get_file_version(ident, olddat);
+      delta del;
+      diff(olddat, dat, del);
+      if (dat().size()<=del().size())
+      // the data is smaller or of equal size to the patch
+        app.db.put_file(sha1sum, dat);
+      else 
+        app.db.put_file_version(base_id,sha1sum,del);
+    }
+  }
+  else throw usage(name);
+  
+  output << sha1sum;
 }
 
 // Name: put_revision
