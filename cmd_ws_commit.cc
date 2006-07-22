@@ -67,7 +67,8 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
   get_work_rev(workrev);
   get_base_and_new_rosters_for_rev(old_roster, new_roster, nis, app, workrev);
 
-  node_restriction mask(includes, excludes, old_roster, new_roster, app);
+  node_restriction mask(args_to_paths(args), args_to_paths(app.exclude_patterns),
+                        old_roster, new_roster, app);
 
   if (app.missing)
     {
