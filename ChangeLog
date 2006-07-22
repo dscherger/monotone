@@ -18,8 +18,6 @@
 	* revision.cc (make_revision): Add some MMs; call check_sane at
 	end. Reorder operations so that all input data is read before
 	the output argument is modified.
-	(print_insane_revision): New function.
-	(print_revision, write_insane_revision): Use it.
 	* transforms.cc (fake_id): New function.
 	* vocab.hh: Prototype fake_id and define wrapper macro.
 
@@ -31,6 +29,11 @@
 	* testsuite.lua (base_revision): Likewise.
 	* NEWS: Mention non-backward-compatible change to workspaces.
 	* monotone.texi: Update all references to _MTN/work or _MTN/revision.
+
+2006-07-18  Zack Weinberg  <zackw@panix.com>
+
+	* revision.cc (print_insane_revision): New function.
+	(print_revision, write_insane_revision): Use it.
 
 2006-07-16  Timothy Brownawell  <tbrownaw@gmail.com>
 
@@ -78,7 +81,7 @@
 
 2006-07-14  Nathaniel Smith  <njs@pobox.com>
 
-	* cmd_files.cc (diff): 
+	* cmd_files.cc (diff):
 	* cmd_diff_log.cc (fdiff): Oops, rename OPT_SHOW_ENCLOSER here
 	too.
 
