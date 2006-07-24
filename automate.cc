@@ -1367,7 +1367,21 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 // Error conditions:
 //   ?
 AUTOMATE(put_revision, N_("REVISION-DATA"))
-{
+{ if (args.size() != 1)
+    throw usage(name);
+  revision_t rev;
+  basic_io::input_source source(idx(args,0)(),"automate put_revision's 1st argument");
+  basic_io::tokenizer tokenizer(source);
+  basic_io::parser parser(tokenizer);
+  parse_revision(parser, rev);
+  revision_id id;
+  calculate_ident(rev, id);
+  
+  transaction_guard tr(app.db);
+  app.db.put_revision(id, rev);
+  tr.commit();
+
+  output << id;
 }
 
 // Name: cert
