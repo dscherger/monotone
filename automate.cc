@@ -1461,13 +1461,19 @@ AUTOMATE(db_get, N_("DOMAIN NAME"))
 // Added in: 2.3
 // Purpose:
 //   Get the newest revision which has sync certificates 
-//   (or a changed sync files)
+//   (or a changed sync file)
 // Output format:
 //   revision ID
 // Error conditions:
 //   ?
 AUTOMATE(find_newest_sync, N_("DOMAIN"))
-{
+{ /* if workspace exists use it to determine branch (and current revision?)
+     traverse tree upwards to find a synced revision, 
+     then traverse tree downwards to find newest revision 
+     
+     this assumes a linear and connected synch graph (which is true for CVS,
+       but might not appropriate for different RCSs)
+   */
 }
 
 // Local Variables:
