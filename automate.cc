@@ -1316,12 +1316,16 @@ AUTOMATE(tags, N_("[BRANCH_PATTERN]"))
 //   ?
 AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 { hexenc<id> sha1sum;
+  transaction_guard tr(app.db);
   if (args.size()==1)
   {
     data dat(idx(args,0)());
     calculate_ident(dat,sha1sum);
     if (!app.db.file_version_exists(sha1sum))
+    { 
       app.db.put_file(sha1sum, dat);
+    }
+    else L(FL("revision %s already known") % sha1sum);
   }
   else if (args.size()==2)
   {
@@ -1337,15 +1341,18 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
       app.db.get_file_version(base_id, olddat);
       delta del;
       diff(olddat.inner(), dat, del);
+      L(FL("data size %d, delta size %d") % dat().size() % del().size());
       if (dat().size()<=del().size())
       // the data is smaller or of equal size to the patch
         app.db.put_file(sha1sum, dat);
       else 
         app.db.put_file_version(base_id,sha1sum,del);
     }
+    else L(FL("revision %s already known") % sha1sum);
   }
   else throw usage(name);
   
+  tr.commit();
   output << sha1sum;
 }
 
