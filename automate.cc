@@ -1313,7 +1313,7 @@ AUTOMATE(tags, N_("[BRANCH_PATTERN]"))
 // Output format:
 //   The ID of the new file (40 digit hex string)
 // Error conditions:
-//   ?
+//   if base revision is not found throws runtime exception
 AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 { hexenc<id> sha1sum;
   transaction_guard tr(app.db);
@@ -1365,7 +1365,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 // Output format:
 //   The ID of the new revision
 // Error conditions:
-//   ?
+//   none
 AUTOMATE(put_revision, N_("REVISION-DATA"))
 { if (args.size() != 1)
     throw usage(name);
@@ -1395,7 +1395,7 @@ AUTOMATE(put_revision, N_("REVISION-DATA"))
 // Output format:
 //   nothing
 // Error conditions:
-//   ?
+//   none
 AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
 {
   if (args.size() != 3)
@@ -1420,7 +1420,7 @@ AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
 // Output format:
 //   nothing
 // Error conditions:
-//   ?
+//   none
 AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
 {
   if (args.size() != 3)
@@ -1442,7 +1442,7 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
 // Output format:
 //   variable value
 // Error conditions:
-//   ?
+//   if variable is not found throws runtime error
 AUTOMATE(db_get, N_("DOMAIN NAME"))
 {
   if (args.size() != 2)
@@ -1455,9 +1455,32 @@ AUTOMATE(db_get, N_("DOMAIN NAME"))
   output << value();
 }
 
+// needed by find_newest_sync: check whether a revision has up to date synch information
+bool is_synchronized(app_state &app, revision_id const& rid, 
+                      revision_t const& rev, std::string const& domain)
+{ bool all_changed=true;
+  split_path path(1,path_component(".mtn-sync_"+domain));
+  // strictly speaking merge nodes should never have an up to date sync file
+  for (edge_map::const_iterator e = rev.edges.begin();
+                     e != rev.edges.end(); ++e)
+  { cset cs=edge_changes(e);
+    if (cs.files_added.find(path)!=cs.files_added.end())
+      continue;
+    if (cs.deltas_applied.find(path)!=cs.deltas_applied.end())
+      continue;
+    all_changed=false;
+  }
+  if (all_changed) return true;
+  
+  // look into certificates
+  std::vector< revision<cert> > certs;
+  app.db.get_revision_certs(rid,cert_name("mtn-sync_"+domain),certs);
+  return !certs.empty();
+}
+
 // Name: find_newest_sync
 // Arguments:
-//   sync domain
+//   sync-domain
 // Added in: 2.3
 // Purpose:
 //   Get the newest revision which has sync certificates 
@@ -1465,15 +1488,57 @@ AUTOMATE(db_get, N_("DOMAIN NAME"))
 // Output format:
 //   revision ID
 // Error conditions:
-//   ?
+//   if no synchronized revisions are found in this domain throws runtime error
 AUTOMATE(find_newest_sync, N_("DOMAIN"))
-{ /* if workspace exists use it to determine branch (and current revision?)
+{ /* if workspace exists use it to determine branch (and starting revision?)
      traverse tree upwards to find a synced revision, 
      then traverse tree downwards to find newest revision 
      
      this assumes a linear and connected synch graph (which is true for CVS,
        but might not appropriate for different RCSs)
    */
+   
+  if (args.size() != 1) 
+    throw usage(name);
+  set<revision_id> heads;
+  get_branch_heads(app.branch_name(), app, heads);
+  revision_t rev;
+  revision_id rid;
+  std::string domain = idx(args,0)();
+  
+  while (!heads.empty())
+  {
+    // ? app.db.get_revision_parents(rid, parents);
+    rid = *heads.begin();
+    app.db.get_revision(rid, rev);
+    heads.erase(heads.begin());
+    // is there a more efficient way than to create a revision_t object?
+    if (is_synchronized(app,rid,rev,domain))
+      break;
+    for (edge_map::const_iterator e = rev.edges.begin();
+                     e != rev.edges.end(); ++e)
+    { if (!null_id(edge_old_revision(e)))
+        heads.insert(edge_old_revision(e));
+    }
+  }
+  N(!null_id(rid), F("no synchronized revision found in branch %s for domain %s")
+        % app.branch_name() % domain);
+
+  while (true)
+  { 
+    set<revision_id> children;
+    app.db.get_revision_children(rid, children);
+    for (set<revision_id>::const_iterator i=children.begin(); 
+          i!=children.end(); ++i)
+    {
+      app.db.get_revision(*i, rev);
+      if (is_synchronized(app,*i,rev,domain))
+      { rid=*i;
+        continue;
+      }
+    }
+  }
+  output << rid;
 }
 
 // Local Variables:
