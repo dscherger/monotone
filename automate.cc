@@ -1456,7 +1456,7 @@ AUTOMATE(db_get, N_("DOMAIN NAME"))
 }
 
 // needed by find_newest_sync: check whether a revision has up to date synch information
-static const char *const sync_prefix="mtn-sync_";
+static const char *const sync_prefix="mtn-sync-";
 
 static bool is_synchronized(app_state &app, revision_id const& rid, 
                       revision_t const& rev, std::string const& domain)
@@ -1507,8 +1507,8 @@ AUTOMATE(find_newest_sync, N_("DOMAIN"))
   
   while (!heads.empty())
   {
-    // ? app.db.get_revision_parents(rid, parents);
     rid = *heads.begin();
+    L(FL("find_newest_sync: testing node %s") % rid);
     app.db.get_revision(rid, rev);
     heads.erase(heads.begin());
     // is there a more efficient way than to create a revision_t object?
@@ -1523,18 +1523,17 @@ AUTOMATE(find_newest_sync, N_("DOMAIN"))
   N(!null_id(rid), F("no synchronized revision found in branch %s for domain %s")
         % app.branch_name() % domain);
 
-  while (true)
-  { 
-    set<revision_id> children;
-    app.db.get_revision_children(rid, children);
-    for (set<revision_id>::const_iterator i=children.begin(); 
+  set<revision_id> children;
+continue_outer:
+  L(FL("find_newest_sync: testing children of %s") % rid);
+  app.db.get_revision_children(rid, children);
+  for (set<revision_id>::const_iterator i=children.begin(); 
           i!=children.end(); ++i)
-    {
-      app.db.get_revision(*i, rev);
-      if (is_synchronized(app,*i,rev,domain))
-      { rid=*i;
-        continue;
-      }
+  {
+    app.db.get_revision(*i, rev);
+    if (is_synchronized(app,*i,rev,domain))
+    { rid=*i;
+      goto continue_outer;
     }
   }
   output << rid;
@@ -1542,7 +1541,7 @@ AUTOMATE(find_newest_sync, N_("DOMAIN"))
 
 static std::string get_sync_info(app_state &app, revision_id const& rid, string const& domain)
 { // FIXME: is gzip encoding the certs feasible?
-  /* sync information is initially coded in a file called .mtn-sync_DOMAIN
+  /* sync information is initially coded in a file called .mtn-sync-DOMAIN
      if this file is old then information gets 
      (base_revision_id+xdiff) encoded in certificates
      
@@ -1552,7 +1551,9 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
   app.db.get_revision(rid, rev);
   split_path path(1,path_component(string(".")+sync_prefix+domain));
   if (rev.edges.size()==1)
-  { cset cs=edge_changes(rev.edges.begin());
+  { 
+    L(FL("get_sync_info: checking revision files %s") % rid);
+    cset cs=edge_changes(rev.edges.begin());
     std::map<split_path, file_id>::const_iterator fadd_it=cs.files_added.find(path);
     if (fadd_it!=cs.files_added.end())
     { file_data dat;
@@ -1567,6 +1568,7 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
       return dat.inner()();
     }
   }
+  L(FL("get_sync_info: checking revision certificates %s") % rid);
   std::vector< revision<cert> > certs;
   app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
   N(!certs.empty(), F("no sync cerficate found in revision %s for domain %s")
@@ -1634,8 +1636,11 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
       I(edge_old_revision(e).inner()().size()==constants::idlen);
       make_simple_cert(rid.inner(),cert_name(sync_prefix+domain),
                  cert_value(edge_old_revision(e).inner()()+del()), app, c);
-      revision<cert> rc(c); packet_db_writer dbw(app);
-      dbw.consume_revision_cert(rc); return;
+      revision<cert> rc(c); 
+      packet_db_writer dbw(app);
+      dbw.consume_revision_cert(rc); 
+      L(FL("sync info encoded as delta from %s") % edge_old_revision(e));
+      return;
     }
     catch (std::runtime_error &er) {}
   }
@@ -1644,6 +1649,7 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
   revision<cert> rc(c);
   packet_db_writer dbw(app);
   dbw.consume_revision_cert(rc);
+  L(FL("sync info attached to ") % rid);
 }
 
 // Local Variables:
