@@ -1499,7 +1499,7 @@ AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
 
   string branch=app.branch_name();  
   if (args.size() == 2)
-    branch=idx(args,1);
+    branch=idx(args,1)();
   else if (args.size() != 1)
     throw usage(name);
   set<revision_id> heads;
