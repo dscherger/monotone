@@ -4,6 +4,7 @@
 // see the file COPYING for details
 
 #include "cvs_sync.hh"
+#include "mtncvs_state.hh"
 #include "keys.hh"
 #include "transforms.hh"
 #include <vector>
@@ -969,7 +970,7 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
   pc.consume_revision_cert(cc);
 }
 
-cvs_repository::cvs_repository(app_state &_app, const std::string &repository, 
+cvs_repository::cvs_repository(mtncvs_state &_app, const std::string &repository, 
             const std::string &module, const std::string &branch, bool connect)
       : cvs_client(repository,module,branch,connect), app(_app), 
         file_id_ticker(), revision_ticker(), cvs_edges_ticker(), 
@@ -983,7 +984,7 @@ cvs_repository::cvs_repository(app_state &_app, const std::string &repository,
   }
 }
 
-static void test_key_availability(app_state &app)
+static void test_key_availability(mtncvs_state &app)
 {
   // early short-circuit to avoid failure after lots of work
   rsa_keypair_id key;
@@ -1018,7 +1019,7 @@ time_t cvs_repository::posix2time_t(std::string posix_format)
 }
 
 #if 0
-cvs_edge::cvs_edge(const revision_id &rid, app_state &app)
+cvs_edge::cvs_edge(const revision_id &rid, mtncvs_state &app)
  : changelog_valid(), time(), time2(), cm_delta_depth()
 { revision=hexenc<id>(rid.inner());
   // get author + date 
@@ -1321,7 +1322,7 @@ void cvs_repository::commit()
 // this is somewhat clumsy ... but works well enough
 static void guess_repository(std::string &repository, std::string &module,
         std::string & branch,
-        std::vector< revision<cert> > &certs, app_state &app)
+        std::vector< revision<cert> > &certs, mtncvs_state &app)
 { I(!app.branch_name().empty());
   app.db.get_revision_certs(cvs_cert_name, certs); 
   // erase_bogus_certs ?
@@ -1358,7 +1359,7 @@ static void guess_repository(std::string &repository, std::string &module,
 }
 
 void cvs_sync::push(const std::string &_repository, const std::string &_module,
-            std::string const& _branch, app_state &app)
+            std::string const& _branch, mtncvs_state &app)
 { test_key_availability(app);
   // make the variables changeable
   std::string repository=_repository, module=_module, branch=_branch;
@@ -1384,7 +1385,7 @@ void cvs_sync::push(const std::string &_repository, const std::string &_module,
 }
 
 void cvs_sync::pull(const std::string &_repository, const std::string &_module,
-            std::string const& _branch, app_state &app)
+            std::string const& _branch, mtncvs_state &app)
 { test_key_availability(app);
   // make the variables changeable
   std::string repository=_repository, module=_module, branch=_branch;
@@ -1706,7 +1707,7 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
 
 #if 0
 void cvs_sync::debug(const std::string &command, const std::string &arg, 
-            app_state &app)
+            mtncvs_state &app)
 { 
   // we default to the first repository found (which might not be what you wanted)
   if (command=="manifest" && arg.size()==constants::idlen)
@@ -1891,10 +1892,10 @@ void cvs_repository::takeover()
 }
 
 // read in directory put into db
-void cvs_sync::takeover(app_state &app, const std::string &_module)
+void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
 { std::string root,module=_module,branch;
 
-  N(access("MT",F_OK),F("Found a MT file or directory, already under monotone's control?"));
+  N(access("_MTN",F_OK),F("Found a _MTN file or directory, already under monotone's control?"));
   { fstream cvs_root("CVS/Root");
     N(cvs_root.good(),
       F("can't open ./CVS/Root, please change into the working directory\n"));

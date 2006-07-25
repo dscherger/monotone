@@ -1,5 +1,5 @@
 #include <app_state.hh>
-#include <netxx_pipe.hh>
+#include <mtn_pipe.hh>
 
 struct mtncvs_state : app_state
 { bool full;
@@ -7,9 +7,9 @@ struct mtncvs_state : app_state
   utf8 db_name;
   std::vector<utf8> revisions;
   std::vector<utf8> mtn_options;
-  Netxx::PipeStream *mtn_pipe;
+  class mtn_pipe mtn_pipe;
   
-  mtncvs_state() : full(), mtn_pipe() {}
+  mtncvs_state() : full() {}
   ~mtncvs_state();
   
   void open_pipe();

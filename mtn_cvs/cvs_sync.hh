@@ -12,7 +12,7 @@
 //#include "constants.hh"
 //#include "app_state.hh"
 //#include "packet.hh"
-class app_state;
+class mtncvs_state;
 
 namespace cvs_sync {
 struct cvs_revision_nr
@@ -86,7 +86,7 @@ struct cvs_edge // careful this name is also used in cvs_import
     : changelog(log), changelog_valid(true), author(auth), time(when), time2(when),
       cm_delta_depth()
   {} 
-  cvs_edge(const revision_id &rid,app_state &app);
+  cvs_edge(const revision_id &rid,mtncvs_state &app);
   
   bool similar_enough(cvs_edge const & other) const;
   inline bool operator==(cvs_edge const & other) const
@@ -120,7 +120,7 @@ private:
   // the root of this branch (only applicable to side branches)
   std::map<cvs_file_path,cvs_revision_nr> branch_point;
 
-  app_state &app;
+  mtncvs_state &app;
   std::auto_ptr<ticker> file_id_ticker;
   std::auto_ptr<ticker> revision_ticker;
   std::auto_ptr<ticker> cvs_edges_ticker;
@@ -189,7 +189,7 @@ public: // semi public interface for push/pull
   std::string debug_file(std::string const& name);
   
 public:  
-  cvs_repository(app_state &app, const std::string &repository, 
+  cvs_repository(mtncvs_state &app, const std::string &repository, 
       const std::string &module, const std::string &branch=std::string(),
       bool connect=true);
 
@@ -204,9 +204,9 @@ public:
 };
 
 void pull(const std::string &repository, const std::string &module,
-            std::string const& branch, app_state &app);
+            std::string const& branch, mtncvs_state &app);
 void push(const std::string &repository, const std::string &module,
-            std::string const& branch, app_state &app);
-void debug(const std::string &command, const std::string &arg, app_state &app);
-void takeover(app_state &app, const std::string &module);
+            std::string const& branch, mtncvs_state &app);
+void debug(const std::string &command, const std::string &arg, mtncvs_state &app);
+void takeover(mtncvs_state &app, const std::string &module);
 } // end namespace cvs_sync
