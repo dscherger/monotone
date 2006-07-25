@@ -1456,25 +1456,24 @@ AUTOMATE(db_get, N_("DOMAIN NAME"))
 }
 
 // needed by find_newest_sync: check whether a revision has up to date synch information
-bool is_synchronized(app_state &app, revision_id const& rid, 
+static const char *const sync_prefix="mtn-sync_";
+
+static bool is_synchronized(app_state &app, revision_id const& rid, 
                       revision_t const& rev, std::string const& domain)
-{ bool all_changed=true;
-  split_path path(1,path_component(".mtn-sync_"+domain));
-  // strictly speaking merge nodes should never have an up to date sync file
-  for (edge_map::const_iterator e = rev.edges.begin();
-                     e != rev.edges.end(); ++e)
-  { cset cs=edge_changes(e);
-    if (cs.files_added.find(path)!=cs.files_added.end())
-      continue;
-    if (cs.deltas_applied.find(path)!=cs.deltas_applied.end())
-      continue;
-    all_changed=false;
+{
+  // merge nodes should never have an up to date sync file
+  if (rev.edges.size()==1)
+  { 
+    split_path path(1,path_component(string(".")+sync_prefix+domain));
+    cset cs=edge_changes(rev.edges.begin());
+    if (cs.files_added.find(path)!=cs.files_added.end() ||
+        cs.deltas_applied.find(path)!=cs.deltas_applied.end())
+    return true;
   }
-  if (all_changed) return true;
   
   // look into certificates
   std::vector< revision<cert> > certs;
-  app.db.get_revision_certs(rid,cert_name("mtn-sync_"+domain),certs);
+  app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
   return !certs.empty();
 }
 
@@ -1539,6 +1538,112 @@ AUTOMATE(find_newest_sync, N_("DOMAIN"))
     }
   }
   output << rid;
+}
+
+static std::string get_sync_info(app_state &app, revision_id const& rid, string const& domain)
+{ // FIXME: is gzip encoding the certs feasible?
+  /* sync information is initially coded in a file called .mtn-sync_DOMAIN
+     if this file is old then information gets 
+     (base_revision_id+xdiff) encoded in certificates
+     
+     SPECIAL CASE of no parent: certificate is (40*' '+plain_data) encoded
+   */
+  revision_t rev;
+  app.db.get_revision(rid, rev);
+  split_path path(1,path_component(string(".")+sync_prefix+domain));
+  if (rev.edges.size()==1)
+  { cset cs=edge_changes(rev.edges.begin());
+    std::map<split_path, file_id>::const_iterator fadd_it=cs.files_added.find(path);
+    if (fadd_it!=cs.files_added.end())
+    { file_data dat;
+      app.db.get_file_version(fadd_it->second, dat);
+      return dat.inner()();
+    }
+    std::map<split_path, std::pair<file_id, file_id> >::const_iterator delta_it
+        =cs.deltas_applied.find(path);
+    if (delta_it!=cs.deltas_applied.end())
+    { file_data dat;
+      app.db.get_file_version(delta_it->second.second, dat);
+      return dat.inner()();
+    }
+  }
+  std::vector< revision<cert> > certs;
+  app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
+  N(!certs.empty(), F("no sync cerficate found in revision %s for domain %s")
+        % rid % domain);
+  I(certs.size()==1); // FIXME: what to do with multiple certs ...
+  cert_value tv;
+  decode_base64(idx(certs,1).inner().value, tv);
+  revision_id old_rid=revision_id(tv().substr(0,constants::idlen));
+  if (tv()[0]==' ') return tv().substr(constants::idlen);
+  std::string old_data=get_sync_info(app,old_rid,domain);
+  delta del=tv().substr(constants::idlen);
+  data newdata;
+  patch(old_data,del,newdata);
+  return newdata();
+}
+
+// Name: get_sync_info
+// Arguments:
+//   sync-domain
+// Added in: 2.3
+// Purpose:
+//   Get the sync information for a given revision
+// Output format:
+//   sync-data
+// Error conditions:
+//   ?
+AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
+{ 
+  if (args.size() != 2)
+    throw usage(name);
+  revision_id rid(idx(args,0)());
+  string domain=idx(args,1)();
+  output << get_sync_info(app,rid,domain);
+}
+
+// Name: put_sync_info
+// Arguments:
+//   sync-domain
+// Added in: 2.3
+// Purpose:
+//   Get the sync information for a given revision
+// Output format:
+//   sync-data
+// Error conditions:
+//   ?
+AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
+{ 
+  if (args.size() != 3)
+    throw usage(name);
+  revision_id rid(idx(args,0)());
+  string domain=idx(args,1)();
+  revision_t rev;
+  app.db.get_revision(rid, rev);
+
+  std::string new_data=idx(args,2)();
+  cert c;
+  for (edge_map::const_iterator e = rev.edges.begin();
+                     e != rev.edges.end(); ++e)
+  { if (null_id(edge_old_revision(e))) continue;
+    try
+    { std::string oldinfo=get_sync_info(app,edge_old_revision(e),domain);
+      delta del;
+      diff(oldinfo,new_data,del);
+      if (del().size()>=new_data.size()) continue;
+      I(edge_old_revision(e).inner()().size()==constants::idlen);
+      make_simple_cert(rid.inner(),cert_name(sync_prefix+domain),
+                 cert_value(edge_old_revision(e).inner()()+del()), app, c);
+      revision<cert> rc(c); packet_db_writer dbw(app);
+      dbw.consume_revision_cert(rc); return;
+    }
+    catch (std::runtime_error &er) {}
+  }
+  make_simple_cert(rid.inner(),cert_name(sync_prefix+domain),
+                 cert_value(string(constants::idlen,' ')+new_data), app, c);
+  revision<cert> rc(c);
+  packet_db_writer dbw(app);
+  dbw.consume_revision_cert(rc);
 }
 
 // Local Variables:
