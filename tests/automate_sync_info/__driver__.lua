@@ -2,7 +2,7 @@
 mtn_setup()
 
 addfile("foo", "blah")
-addfile(".mtn-sync-test1", "one")
+addfile(".mtn-sync-test", "one")
 check(mtn("commit", "--date=2005-05-21T12:30:51", "--branch=testbranch",
           "--message=blah-blah"), 0, false, false)
 base = base_revision()
@@ -19,6 +19,9 @@ rev2 = base_revision()
 
 check(mtn("automate", "find_newest_sync", "test"), 0, true, false)
 check(readfile("stdout") == base)
+
+check(mtn("automate", "find_newest_sync", "notest"), 0, true, false)
+check(readfile("stdout") == "")
 
 check(mtn("automate", "get_sync_info", base, "test"), 0, true, false)
 check(readfile("stdout") == "one")

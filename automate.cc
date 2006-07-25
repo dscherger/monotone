@@ -1488,7 +1488,7 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
 //   revision ID
 // Error conditions:
 //   if no synchronized revisions are found in this domain throws runtime error
-AUTOMATE(find_newest_sync, N_("DOMAIN"))
+AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
 { /* if workspace exists use it to determine branch (and starting revision?)
      traverse tree upwards to find a synced revision, 
      then traverse tree downwards to find newest revision 
@@ -1496,11 +1496,14 @@ AUTOMATE(find_newest_sync, N_("DOMAIN"))
      this assumes a linear and connected synch graph (which is true for CVS,
        but might not appropriate for different RCSs)
    */
-   
-  if (args.size() != 1) 
+
+  string branch=app.branch_name();  
+  if (args.size() == 2)
+    branch=idx(args,1);
+  else if (args.size() != 1)
     throw usage(name);
   set<revision_id> heads;
-  get_branch_heads(app.branch_name(), app, heads);
+  get_branch_heads(branch, app, heads);
   revision_t rev;
   revision_id rid;
   std::string domain = idx(args,0)();
@@ -1519,9 +1522,9 @@ AUTOMATE(find_newest_sync, N_("DOMAIN"))
     { if (!null_id(edge_old_revision(e)))
         heads.insert(edge_old_revision(e));
     }
-  }
-  N(!null_id(rid), F("no synchronized revision found in branch %s for domain %s")
+    N(heads.empty(), F("no synchronized revision found in branch %s for domain %s")
         % app.branch_name() % domain);
+  }
 
   set<revision_id> children;
 continue_outer:
