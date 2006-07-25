@@ -74,24 +74,28 @@ CMD(update, N_("workspace"), "",
 
   app.require_workspace();
 
-  // FIXME: some encapsulation of the following roster- and revision-
-  // manipulation (from here to the I()) would be good, but where to put it?
-  // work.cc is no longer appropriate.
+  // FIXME: the next few lines are a little bit expensive insofar as they
+  // load the base roster twice. The API could use some factoring or
+  // such. But it should work for now; revisit if performance is
+  // intolerable.
+
   get_work_rev(r_base);
   r_old_id = edge_old_revision(r_base.edges.begin());
-
-  N(!null_id(r_old_id),
-    F("this workspace is a new project; cannot update"));
-
-  app.db.get_roster(r_old_id, *old_roster, working_mm);
-  working_roster = *old_roster;
-  editable_roster_base er(working_roster, nis);
-  edge_changes(r_base.edges.begin()).apply_to(er);
+  get_base_and_new_rosters_for_rev(*old_roster, working_roster, nis, app, r_base);
   update_current_roster_from_filesystem(working_roster, app);
 
   make_revision(r_old_id, *old_roster, working_roster, r_working);
+
   calculate_ident(r_working, r_working_id);
   I(r_working.edges.size() == 1);
+  r_old_id = edge_old_revision(r_working.edges.begin());
+  make_roster_for_base_plus_cset(r_old_id,
+                                 edge_changes(r_working.edges.begin()),
+                                 r_working_id,
+                                 working_roster, working_mm, nis, app);
+
+  N(!null_id(r_old_id),
+    F("this workspace is a new project; cannot update"));
 
   if (app.revision_selectors.size() == 0)
     {
