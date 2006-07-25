@@ -1463,12 +1463,14 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
 {
   // merge nodes should never have an up to date sync file
   if (rev.edges.size()==1)
-  { 
-    split_path path(1,path_component(string(".")+sync_prefix+domain));
+  {
+    L(FL("is_synch: rev %s testing changeset\n") % rid);
+    split_path path;
+    file_path_internal(string(".")+sync_prefix+domain).split(path);
     cset cs=edge_changes(rev.edges.begin());
     if (cs.files_added.find(path)!=cs.files_added.end() ||
         cs.deltas_applied.find(path)!=cs.deltas_applied.end())
-    return true;
+      return true;
   }
   
   // look into certificates
@@ -1522,8 +1524,8 @@ AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
     { if (!null_id(edge_old_revision(e)))
         heads.insert(edge_old_revision(e));
     }
-    N(heads.empty(), F("no synchronized revision found in branch %s for domain %s")
-        % app.branch_name() % domain);
+    N(!heads.empty(), F("no synchronized revision found in branch %s for domain %s")
+        % branch % domain);
   }
 
   set<revision_id> children;
@@ -1552,7 +1554,8 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
    */
   revision_t rev;
   app.db.get_revision(rid, rev);
-  split_path path(1,path_component(string(".")+sync_prefix+domain));
+  split_path path;
+  file_path_internal(string(".")+sync_prefix+domain).split(path);
   if (rev.edges.size()==1)
   { 
     L(FL("get_sync_info: checking revision files %s") % rid);
