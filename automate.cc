@@ -1313,9 +1313,10 @@ AUTOMATE(tags, N_("[BRANCH_PATTERN]"))
 // Output format:
 //   The ID of the new file (40 digit hex string)
 // Error conditions:
-//   if base revision is not found throws runtime exception
+//   a runtime exception is thrown if base revision is not available
 AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
-{ hexenc<id> sha1sum;
+{ 
+  hexenc<id> sha1sum;
   transaction_guard tr(app.db);
   if (args.size()==1)
   {
@@ -1367,7 +1368,8 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 // Error conditions:
 //   none
 AUTOMATE(put_revision, N_("REVISION-DATA"))
-{ if (args.size() != 1)
+{ 
+  if (args.size() != 1)
     throw usage(name);
   revision_t rev;
   basic_io::input_source source(idx(args,0)(),"automate put_revision's 1st argument");
@@ -1442,7 +1444,7 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
 // Output format:
 //   variable value
 // Error conditions:
-//   if variable is not found throws runtime error
+//   a runtime exception is thrown if the variable is not set
 AUTOMATE(db_get, N_("DOMAIN NAME"))
 {
   if (args.size() != 2)
@@ -1482,6 +1484,7 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
 // Name: find_newest_sync
 // Arguments:
 //   sync-domain
+//   branch (optional)
 // Added in: 2.3
 // Purpose:
 //   Get the newest revision which has sync certificates 
@@ -1489,7 +1492,8 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
 // Output format:
 //   revision ID
 // Error conditions:
-//   if no synchronized revisions are found in this domain throws runtime error
+//   a runtime exception is thrown if no synchronized revisions are found 
+//   in this domain
 AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
 { /* if workspace exists use it to determine branch (and starting revision?)
      traverse tree upwards to find a synced revision, 
@@ -1521,7 +1525,8 @@ AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
       break;
     for (edge_map::const_iterator e = rev.edges.begin();
                      e != rev.edges.end(); ++e)
-    { if (!null_id(edge_old_revision(e)))
+    { 
+      if (!null_id(edge_old_revision(e)))
         heads.insert(edge_old_revision(e));
     }
     N(!heads.empty(), F("no synchronized revision found in branch %s for domain %s")
@@ -1537,7 +1542,8 @@ continue_outer:
   {
     app.db.get_revision(*i, rev);
     if (is_synchronized(app,*i,rev,domain))
-    { rid=*i;
+    { 
+      rid=*i;
       goto continue_outer;
     }
   }
@@ -1545,7 +1551,8 @@ continue_outer:
 }
 
 static std::string get_sync_info(app_state &app, revision_id const& rid, string const& domain)
-{ // FIXME: is gzip encoding the certs feasible?
+{
+  // FIXME: is gzip encoding the certs feasible?
   /* sync information is initially coded in a file called .mtn-sync-DOMAIN
      if this file is old then information gets 
      (base_revision_id+xdiff) encoded in certificates
@@ -1562,14 +1569,16 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
     cset cs=edge_changes(rev.edges.begin());
     std::map<split_path, file_id>::const_iterator fadd_it=cs.files_added.find(path);
     if (fadd_it!=cs.files_added.end())
-    { file_data dat;
+    { 
+      file_data dat;
       app.db.get_file_version(fadd_it->second, dat);
       return dat.inner()();
     }
     std::map<split_path, std::pair<file_id, file_id> >::const_iterator delta_it
         =cs.deltas_applied.find(path);
     if (delta_it!=cs.deltas_applied.end())
-    { file_data dat;
+    { 
+      file_data dat;
       app.db.get_file_version(delta_it->second.second, dat);
       return dat.inner()();
     }
@@ -1593,6 +1602,7 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
 
 // Name: get_sync_info
 // Arguments:
+//   revision
 //   sync-domain
 // Added in: 2.3
 // Purpose:
@@ -1600,7 +1610,7 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
 // Output format:
 //   sync-data
 // Error conditions:
-//   ?
+//   a runtime exception is thrown if the data is unavailable
 AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
 { 
   if (args.size() != 2)
@@ -1612,14 +1622,16 @@ AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
 
 // Name: put_sync_info
 // Arguments:
+//   revision
 //   sync-domain
+//   data
 // Added in: 2.3
 // Purpose:
 //   Get the sync information for a given revision
 // Output format:
 //   sync-data
 // Error conditions:
-//   ?
+//   a runtime exception is thrown if anything goes wrong
 AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
 { 
   if (args.size() != 3)
@@ -1633,9 +1645,11 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
   cert c;
   for (edge_map::const_iterator e = rev.edges.begin();
                      e != rev.edges.end(); ++e)
-  { if (null_id(edge_old_revision(e))) continue;
+  { 
+    if (null_id(edge_old_revision(e))) continue;
     try
-    { std::string oldinfo=get_sync_info(app,edge_old_revision(e),domain);
+    { 
+      std::string oldinfo=get_sync_info(app,edge_old_revision(e),domain);
       delta del;
       diff(oldinfo,new_data,del);
       if (del().size()>=new_data.size()) continue;
