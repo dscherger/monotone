@@ -1581,9 +1581,9 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
         % rid % domain);
   I(certs.size()==1); // FIXME: what to do with multiple certs ...
   cert_value tv;
-  decode_base64(idx(certs,1).inner().value, tv);
-  revision_id old_rid=revision_id(tv().substr(0,constants::idlen));
+  decode_base64(idx(certs,0).inner().value, tv);
   if (tv()[0]==' ') return tv().substr(constants::idlen);
+  revision_id old_rid=revision_id(tv().substr(0,constants::idlen));
   std::string old_data=get_sync_info(app,old_rid,domain);
   delta del=tv().substr(constants::idlen);
   data newdata;
@@ -1655,7 +1655,7 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
   revision<cert> rc(c);
   packet_db_writer dbw(app);
   dbw.consume_revision_cert(rc);
-  L(FL("sync info attached to ") % rid);
+  L(FL("sync info attached to %s") % rid);
 }
 
 // Local Variables:

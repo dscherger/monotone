@@ -20,7 +20,7 @@ rev2 = base_revision()
 check(mtn("automate", "find_newest_sync", "test"), 0, true, false)
 check(readfile("stdout") == base)
 
-check(mtn("automate", "find_newest_sync", "notest"), 0, true, false)
+check(mtn("automate", "find_newest_sync", "notest"), 1, true, false)
 check(readfile("stdout") == "")
 
 check(mtn("automate", "get_sync_info", base, "test"), 0, true, false)
