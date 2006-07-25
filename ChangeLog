@@ -1,3 +1,9 @@
+2006-07-25  Zack Weinberg  <zackw@panix.com>
+
+	* cmd_merging.cc (CMD(update)): Put the initial calculation of
+	working roster and marking_map back the way it was, except for
+	using get_work_rev.
+
 2006-07-18  Zack Weinberg  <zackw@panix.com>
 
 	Revision in _MTN/workrev, not cset in _MTN/work.
@@ -78,7 +84,7 @@
 
 2006-07-14  Nathaniel Smith  <njs@pobox.com>
 
-	* cmd_files.cc (diff): 
+	* cmd_files.cc (diff):
 	* cmd_diff_log.cc (fdiff): Oops, rename OPT_SHOW_ENCLOSER here
 	too.
 
