@@ -10,7 +10,6 @@ struct mtncvs_state : app_state
   class mtn_pipe mtn_pipe;
   
   mtncvs_state() : full() {}
-  ~mtncvs_state();
   
   void open_pipe();
 };

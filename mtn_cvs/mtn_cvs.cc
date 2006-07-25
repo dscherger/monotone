@@ -484,9 +484,9 @@ main(int argc, char **argv)
     }
 }
 
-mtncvs_state::~mtncvs_state()
-{ if (mtn_pipe)
-  { delete mtn_pipe;
-    mtn_pipe=0;
+void mtn_pipe::close()
+{ if (pipe)
+  { delete pipe;
+    pipe=0;
   }
 }
