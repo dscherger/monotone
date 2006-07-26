@@ -12,5 +12,8 @@ bin_PROGRAMS = mtn_cvs
 
 mtn_cvs_SOURCES = cvs_sync.cc cvs_client.cc mtn_cvs.cc mtn_pipe.cc
 AM_LDFLAGS = -L. -L..
-mtn_cvs_LDADD = -lmtn -lplatform -l3rdparty
- 
+mtn_cvs_LDADD = -lmtn -lplatform -lmtn -l3rdparty
+
+pipetest: mtn_pipe.cc
+	$(CXX) $(CXXFLAGS) $(AM_CXXFLAGS) $(AM_LDFLAGS) $(LIBS) \
+			 -o $@ -DTEST_MAIN $^ $(mtn_cvs_LDADD)
