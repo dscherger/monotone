@@ -1,5 +1,6 @@
 // -*- mode: C++; c-file-style: "gnu"; indent-tabs-mode: nil -*-
 // copyright (C) 2002, 2003 graydon hoare <graydon@pobox.com>
+// copyright (C) 2006 Christof Petig <christof@petig-baender.de>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
@@ -484,9 +485,3 @@ main(int argc, char **argv)
     }
 }
 
-void mtn_pipe::close()
-{ if (pipe)
-  { delete pipe;
-    pipe=0;
-  }
-}
