@@ -10,6 +10,10 @@
 #include "stringtok.hh"
 #include <stdexcept>
 
+#ifndef TEST_MAIN
+#include <sanity.hh>
+#endif
+
 void mtn_pipe::open(std::string const& database, std::vector<std::string> const& options)
 { std::vector<std::string> args;
   args.push_back("--db="+database);
@@ -127,6 +131,6 @@ int main(int argc, char **argv)
     return 1;
   }
   p.open(argv[1]);
-  std::cout << p.automate("interface_version") << '\n';
+  std::cout << p.automate("interface_version"); // << '\n';
 }
 #endif
