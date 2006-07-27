@@ -188,8 +188,8 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     if (args.size()==3) 
       branch=idx(args, 2)();
   }
-  mtncvs_state &myapp=static_cast<mtncvs_state&>(app);
-  N(!myapp.branch_name().empty(), F("no destination branch specified\n"));
+  mtncvs_state &myapp=mtncvs_state::upcast(app);
+  N(!myapp.branch().empty(), F("no destination branch specified\n"));
       
 //  cvs_sync::pull(repository,module,branch,app);
 }
@@ -320,6 +320,11 @@ cpp_main(int argc, char ** argv)
             
             case MTNCVSOPT_SINCE:
               app.since=string(argstr);
+              break;
+
+            case MTNCVSOPT_BRANCH_NAME:
+              app.branch=string(argstr);
+              break;
 
             case MTNCVSOPT_HELP:
             default:
@@ -401,7 +406,7 @@ cpp_main(int argc, char ** argv)
             {
               args.push_back(utf8(string(poptGetArg(ctx()))));
             }
-          ret = commands::process(app, cmd, args);
+          ret = commands::process(app.downcast(), cmd, args);
         }
     }
   catch (usage & u)
