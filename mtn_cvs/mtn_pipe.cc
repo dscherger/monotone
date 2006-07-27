@@ -14,13 +14,13 @@
 #include <sanity.hh>
 #endif
 
-void mtn_pipe::open(std::string const& database, std::vector<std::string> const& options)
+void mtn_pipe::open(std::string const& command, std::vector<std::string> const& options)
 { std::vector<std::string> args;
-  args.push_back("--db="+database);
+//  args.push_back("--db="+database);
   std::copy(options.begin(),options.end(),std::back_inserter(args));
   args.push_back("automate");
   args.push_back("stdio");
-  pipe=new Netxx::PipeStream("mtn",args);
+  pipe=new Netxx::PipeStream(command,args);
 }
 
 void mtn_pipe::close()
@@ -126,11 +126,15 @@ again:
 
 int main(int argc, char **argv)
 { mtn_pipe p;
-  if (argc!=2) 
-  { std::cerr << "USAGE: " << argv[0] << " <database>\n";
-    return 1;
+  if (argc==1 && std::string(argv[0])=="--help") 
+  { std::cerr << "USAGE: " << argv[0] << " [binary [options]]\n";
+    return 0;
   }
-  p.open(argv[1]);
+  std::vector<std::string> args;
+  std::string cmd="mtn";
+  if (argc>1) cmd=argv[1];
+  for (unsigned i=2;i<argc;++i) args.push_back(argv[i]);
+  p.open(cmd,args);
   std::cout << p.automate("interface_version"); // << '\n';
 }
 #endif
