@@ -25,7 +25,8 @@ char * argstr = NULL;
 long arglong = 0;
 
 enum 
-{ MTNCVSOPT_BRANCH_NAME, MTNCVSOPT_REVISION, MTNCVSOPT_DEBUG, MTNCVSOPT_HELP, 
+{ MTNCVSOPT_DUMMY, 
+  MTNCVSOPT_BRANCH_NAME, MTNCVSOPT_REVISION, MTNCVSOPT_DEBUG, MTNCVSOPT_HELP, 
   MTNCVSOPT_VERSION, MTNCVSOPT_MTN_OPTION, MTNCVSOPT_FULL, MTNCVSOPT_SINCE,
   MTNCVSOPT_BINARY, 
   
@@ -189,6 +190,7 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
       branch=idx(args, 2)();
   }
   mtncvs_state &myapp=mtncvs_state::upcast(app);
+myapp.dump();
   N(!myapp.branch().empty(), F("no destination branch specified\n"));
       
 //  cvs_sync::pull(repository,module,branch,app);
@@ -323,6 +325,7 @@ cpp_main(int argc, char ** argv)
               break;
 
             case MTNCVSOPT_BRANCH_NAME:
+              L(FL("branch %s") % argstr);
               app.branch=string(argstr);
               break;
 

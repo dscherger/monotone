@@ -18,4 +18,5 @@ struct mtncvs_state : private app_state
   { return static_cast<mtncvs_state&>(app); }
   
   void open_pipe();
+  void dump();
 };
