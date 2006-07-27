@@ -133,8 +133,8 @@ private:
 
 public:
   std::string create_cvs_cert_header() const;
-//  static void parse_cvs_cert_header(revision<cert> const& c, 
-//      std::string &repository, std::string& module, std::string& branch);
+  static void parse_cvs_cert_header(std::string const& c, 
+      std::string &repository, std::string& module, std::string& branch);
 //  static std::string::size_type parse_cvs_cert_header(cert_value const& value, 
 //      std::string &repository, std::string& module, std::string& branch);
       

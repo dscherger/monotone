@@ -20,6 +20,7 @@
 #include <botan/allocate.h>
 #include <cmd.hh>
 #include "mtncvs_state.hh"
+#include <cvs_sync.hh>
 
 char * argstr = NULL;
 long arglong = 0;
@@ -190,10 +191,10 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
       branch=idx(args, 2)();
   }
   mtncvs_state &myapp=mtncvs_state::upcast(app);
-myapp.dump();
+//myapp.dump();
   N(!myapp.branch().empty(), F("no destination branch specified\n"));
       
-//  cvs_sync::pull(repository,module,branch,app);
+  cvs_sync::pull(repository,module,branch,myapp);
 }
 
 CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
@@ -209,7 +210,7 @@ CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     if (args.size()==3) 
       branch=idx(args, 2)();
   }
-//  cvs_sync::push(repository,module,branch,app);
+//  cvs_sync::push(repository,module,branch,myapp);
 }
 
 CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
@@ -220,7 +221,7 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
   string module;
   if (args.size() == 1) module = idx(args, 0)();
   N(!app.branch_name().empty(), F("no destination branch specified\n"));
-//  cvs_sync::takeover(app, module);
+//  cvs_sync::takeover(myapp, module);
 }
 
 int 

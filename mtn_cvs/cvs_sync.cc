@@ -1315,6 +1315,7 @@ void cvs_repository::commit()
   }
   store_modules();
 }
+#endif
 
 // look for _any_ cvs cert in the given monotone branch and assign
 // its value to repository, module, branch
@@ -1322,42 +1323,25 @@ void cvs_repository::commit()
 // this is somewhat clumsy ... but works well enough
 static void guess_repository(std::string &repository, std::string &module,
         std::string & branch,
-        std::vector< revision<cert> > &certs, mtncvs_state &app)
-{ I(!app.branch_name().empty());
-  app.db.get_revision_certs(cvs_cert_name, certs); 
-  // erase_bogus_certs ?
-  std::vector< revision<cert> > branch_certs;
-  base64<cert_value> branch_value;
-  encode_base64(cert_value(app.branch_name()), branch_value);
-  app.db.get_revision_certs(branch_cert_name, branch_value, branch_certs);
-  // use a set to gain speed? scan the smaller vector to gain speed?
-  for (std::vector< revision<cert> >::const_iterator ci=certs.begin();
-        ci!=certs.end();++ci)
-    for (std::vector< revision<cert> >::const_iterator bi=branch_certs.begin();
-          bi!=branch_certs.end();++bi)
-    { // actually this finds an arbitrary element of the set intersection
-      if (ci->inner().ident==bi->inner().ident)
-      { try
-        { cvs_repository::parse_cvs_cert_header(*ci,repository,module,branch);
-          if (branch.empty())
-            L(FL("using module '%s' in repository '%s'\n") % module % repository);
-          else
-            L(FL("using branch '%s' of module '%s' in repository '%s'\n") 
+        std::string &last_state, mtncvs_state &app)
+{ I(!app.branch().empty());
+  try
+  { revision_id last=app.find_newest_sync(app.domain(),app.branch());
+    last_state=app.get_sync_info(last,app.domain());
+    cvs_repository::parse_cvs_cert_header(last_state,repository,module,branch);
+    if (branch.empty())
+      L(FL("using module '%s' in repository '%s'\n") % module % repository);
+    else
+      L(FL("using branch '%s' of module '%s' in repository '%s'\n") 
                 % branch % module % repository);
-          goto break_outer;
-        }
-        catch (std::exception &e)
-        { W(F("exception %s on revision %s\n") % e.what() % ci->inner().ident);
-        }
-        catch (informative_failure &e)
-        { W(F("exception %s on revision %s\n") % e.what % ci->inner().ident);
-        }
-      }
-    }
-  break_outer: ;
-  N(!module.empty(), F("No cvs cert in this branch, please specify repository and module"));
+  }
+  catch (std::runtime_error)
+  { N(false, F("can not guess repository (in domain %s), "
+        "please specify on first pull") % app.domain);
+  }
 }
 
+#if 0
 void cvs_sync::push(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
 { test_key_availability(app);
@@ -1383,34 +1367,38 @@ void cvs_sync::push(const std::string &_repository, const std::string &_module,
   
   guard.commit();      
 }
+#endif
 
 void cvs_sync::pull(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
-{ test_key_availability(app);
+{ // test_key_availability(app);
   // make the variables changeable
+  app.open();
   std::string repository=_repository, module=_module, branch=_branch;
   
-  std::vector< revision<cert> > certs;
+  std::string last_sync_info;
 
   if (repository.empty() || module.empty())
-    guess_repository(repository, module, branch, certs, app);
+    guess_repository(repository, module, branch, last_sync_info, app);
   cvs_sync::cvs_repository repo(app,repository,module,branch);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo.GzipStream(3);
-  transaction_guard guard(app.db);
+//  transaction_guard guard(app.db);
 
-  if (certs.empty()) app.db.get_revision_certs(cvs_cert_name, certs); 
+#if 0
+  if (certs.empty()) 
+    app.db.get_revision_certs(cvs_cert_name, certs); 
   if (!app.cvspull_full) repo.process_certs(certs);
+#endif
   
   // initial checkout
   if (repo.empty()) 
     repo.prime();
   else repo.update();
   
-  guard.commit();      
+//  guard.commit();      
 }
-#endif
 
 cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state &fs, std::string const& filename)
 { for (std::set<file_state>::iterator i=s.begin();i!=s.end();++i)

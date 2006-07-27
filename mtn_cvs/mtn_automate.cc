@@ -4,7 +4,7 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
-#include "mtn_pipe.hh"
+#include "mtn_automate.hh"
 #include <sanity.hh>
 
 void mtn_automate::check_interface_revision(std::string const& minimum)
