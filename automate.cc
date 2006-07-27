@@ -1552,12 +1552,11 @@ continue_outer:
 
 static std::string get_sync_info(app_state &app, revision_id const& rid, string const& domain)
 {
-  // FIXME: is gzip encoding the certs feasible?
   /* sync information is initially coded in a file called .mtn-sync-DOMAIN
      if this file is old then information gets 
-     (base_revision_id+xdiff) encoded in certificates
+     (base_revision_id+xdiff).gz encoded in certificates
      
-     SPECIAL CASE of no parent: certificate is (40*' '+plain_data) encoded
+     SPECIAL CASE of no parent: certificate is (40*' '+plain_data).gz encoded
    */
   revision_t rev;
   app.db.get_revision(rid, rev);
@@ -1591,10 +1590,11 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
   I(certs.size()==1); // FIXME: what to do with multiple certs ...
   cert_value tv;
   decode_base64(idx(certs,0).inner().value, tv);
-  if (tv()[0]==' ') return tv().substr(constants::idlen);
-  revision_id old_rid=revision_id(tv().substr(0,constants::idlen));
+  std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(tv());
+  if (decomp_cert_val[0]==' ') return decomp_cert_val.substr(constants::idlen);
+  revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen));
   std::string old_data=get_sync_info(app,old_rid,domain);
-  delta del=tv().substr(constants::idlen);
+  delta del=decomp_cert_val.substr(constants::idlen);
   data newdata;
   patch(old_data,del,newdata);
   return newdata();
@@ -1654,8 +1654,8 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
       diff(oldinfo,new_data,del);
       if (del().size()>=new_data.size()) continue;
       I(edge_old_revision(e).inner()().size()==constants::idlen);
-      make_simple_cert(rid.inner(),cert_name(sync_prefix+domain),
-                 cert_value(edge_old_revision(e).inner()()+del()), app, c);
+      cert_value cv=xform<Botan::Gzip_Compression>(edge_old_revision(e).inner()()+del());
+      make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
       revision<cert> rc(c); 
       packet_db_writer dbw(app);
       dbw.consume_revision_cert(rc); 
@@ -1664,8 +1664,8 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
     }
     catch (std::runtime_error &er) {}
   }
-  make_simple_cert(rid.inner(),cert_name(sync_prefix+domain),
-                 cert_value(string(constants::idlen,' ')+new_data), app, c);
+  cert_value cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+new_data);
+  make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
   revision<cert> rc(c);
   packet_db_writer dbw(app);
   dbw.consume_revision_cert(rc);
