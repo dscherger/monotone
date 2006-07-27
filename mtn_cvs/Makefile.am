@@ -10,7 +10,8 @@ libmtn_a_SOURCES=../netxx_pipe.cc ../sanity.cc ../ui.cc \
 
 bin_PROGRAMS = mtn_cvs
 
-mtn_cvs_SOURCES = cvs_sync.cc cvs_client.cc mtn_cvs.cc mtn_pipe.cc
+mtn_cvs_SOURCES = cvs_sync.cc cvs_client.cc mtn_cvs.cc \
+		mtn_pipe.cc mtn_automate.cc 
 AM_LDFLAGS = -L. -L..
 mtn_cvs_LDADD = -lmtn -lplatform -l3rdparty
 

@@ -25,8 +25,12 @@ char * argstr = NULL;
 long arglong = 0;
 
 enum 
-{ MTNCVSOPT_BRANCH_NAME, MTNCVSOPT_REVISION, MTNCVSOPT_DEBUG, MTNCVSOPT_HELP, MTNCVSOPT_VERSION,
-  MTNCVSOPT_DB_NAME, MTNCVSOPT_MTN_OPTION, MTNCVSOPT_FULL, MTNCVSOPT_SINCE };
+{ MTNCVSOPT_BRANCH_NAME, MTNCVSOPT_REVISION, MTNCVSOPT_DEBUG, MTNCVSOPT_HELP, 
+  MTNCVSOPT_VERSION, MTNCVSOPT_MTN_OPTION, MTNCVSOPT_FULL, MTNCVSOPT_SINCE,
+  MTNCVSOPT_BINARY, 
+  
+  MTNCVSOPT_DB, MTNCVSOPT_RCFILE, MTNCVSOPT_NOSTD, MTNCVSOPT_KEYDIR,
+  MTNCVSOPT_KEY };
 
 // Options are split between two tables.  The first one is command-specific
 // options (hence the `c' in `coptions').  The second is the global one
@@ -52,10 +56,14 @@ struct poptOption options[] =
     {"debug", 0, POPT_ARG_NONE, NULL, MTNCVSOPT_DEBUG, gettext_noop("print debug log to stderr while running"), NULL},
     {"help", 'h', POPT_ARG_NONE, NULL, MTNCVSOPT_HELP, gettext_noop("display help message"), NULL},
     {"version", 0, POPT_ARG_NONE, NULL, MTNCVSOPT_VERSION, gettext_noop("print version number, then exit"), NULL},
-//    {"key", 'k', POPT_ARG_STRING, &argstr, MTNCVSOPT_KEY_NAME, gettext_noop("set key for signatures"), NULL},
-    {"db", 'd', POPT_ARG_STRING, &argstr, MTNCVSOPT_DB_NAME, gettext_noop("set name of database"), NULL},
+    {"mtn", 'd', POPT_ARG_STRING, &argstr, MTNCVSOPT_BINARY, gettext_noop("monotone binary name"), NULL},
     {"mtn-option", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_MTN_OPTION, gettext_noop("pass option to monotone"), NULL},
-//    {"root", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_ROOT, gettext_noop("limit search for workspace to specified root"), NULL},
+// these options are passed transparently
+    {"db", 'd', POPT_ARG_STRING, &argstr, MTNCVSOPT_DB, gettext_noop("passed: database location"), NULL},
+    {"rcfile", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_RCFILE, gettext_noop("passed: config file"), NULL},
+    {"nostd", 0, POPT_ARG_NONE, NULL, MTNCVSOPT_NOSTD, gettext_noop("passed: do not read standard hooks"), NULL},
+    {"keydir", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_KEYDIR, gettext_noop("passed: key directory"), NULL},
+    {"key", 0, POPT_ARG_STRING, &argstr, MTNCVSOPT_KEY, gettext_noop("passed: key"), NULL},
     { NULL, 0, 0, NULL, 0, NULL, NULL }
   };
 
@@ -138,44 +146,6 @@ my_poptFreeContext(poptContext con)
 {
   poptFreeContext(con);
 }
-
-#if 0
-// Read arguments from a file.  The special file '-' means stdin.
-// Returned value must be free()'d, after arg parsing has completed.
-static void
-my_poptStuffArgFile(poptContext con, utf8 const & filename)
-{
-  utf8 argstr;
-  {
-    data dat;
-    read_data_for_command_line(filename, dat);
-    external ext(dat());
-    system_to_utf8(ext, argstr);
-  }
-
-  const char **argv = 0;
-  int argc = 0;
-  int rc;
-
-  // Parse the string.  It's OK if there are no arguments.
-  rc = poptParseArgvString(argstr().c_str(), &argc, &argv);
-  N(rc >= 0 || rc == POPT_ERROR_NOARG,
-    F("problem parsing arguments from file %s: %s")
-    % filename % poptStrerror(rc));
-
-  if (rc != POPT_ERROR_NOARG)
-    {
-      // poptStuffArgs does not take an argc argument, but rather requires that
-      // the argv array be null-terminated.
-      I(argv[argc] == NULL);
-      N((rc = poptStuffArgs(con, argv)) >= 0,
-        F("weird error when stuffing arguments read from %s: %s\n")
-        % filename % poptStrerror(rc));
-    }
-
-  free(argv);
-}
-#endif
 
 using namespace std;
 
@@ -354,6 +324,26 @@ cpp_main(int argc, char ** argv)
             case MTNCVSOPT_HELP:
             default:
               requested_help = true;
+              break;
+            
+            case MTNCVSOPT_BINARY:
+              app.mtn_binary = utf8(argstr);
+              break;
+            
+            case MTNCVSOPT_DB:
+              app.mtn_options.push_back(string("--db=")+argstr);
+              break;
+            case MTNCVSOPT_RCFILE:
+              app.mtn_options.push_back(string("--rcfile=")+argstr);
+              break;
+            case MTNCVSOPT_NOSTD:
+              app.mtn_options.push_back(utf8("--nostd"));
+              break;
+            case MTNCVSOPT_KEYDIR:
+              app.mtn_options.push_back(string("--keydir=")+argstr);
+              break;
+            case MTNCVSOPT_KEY:
+              app.mtn_options.push_back(string("--key=")+argstr);
               break;
             }
         }

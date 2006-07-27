@@ -554,7 +554,8 @@ mktime_from_utc (struct tm *t)
 
 static time_t timezone2time_t(const struct tm &tm, int offset_min)
 { I(!offset_min);
-  return mktime_from_utc(tm);
+  struct tm copy=tm;
+  return mktime_from_utc(&copy);
 }
 
 static time_t cvs111date2time_t(const std::string &t)
