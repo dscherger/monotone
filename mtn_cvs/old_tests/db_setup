@@ -1,0 +1,27 @@
+#!/bin/sh
+../monotone --db test.db db init
+../monotone --db test.db read <<EOF
+[privkey test@localhost]
+NCw0bMURU+YD6Uok23PySO80ttpwTTC71eetjFL8uikxNzA2FmpicfHpvfo1uVtUqRts52fd
+XIqMVqIwRTQn8mvvz7WFIpf3OyiuV40A5GC28DavPFlmro60vD3jNq40BLbU8a1NtM8tKQtX
+u+gIZQTz+EiW/ZVWGeWWeo4rX0taGU9niEf9qiTrEYOTBtUwEZGzI3syFTuMlLcjq16/q/KQ
+yC0iXfZYyyUXcEci0NOUA+X1F5VJ4HLMw/CiYxggcIJWS5LM/Orvk01nCk5LA5Ex/hwMRjzS
+vladWDZLTWQrYXzvgI178S+5d01VMKfQ0my7nBfwcZAI7IuSyMIs8DXyYjyPuj+Ag71LikH/
+s05ai2tDmZdkEMZqEdMOj1Teje0scJN//Nuf8ZFaARSXNQwvIMPqchyNcYDM9zpxA1KPpwkv
+RBHsQPnRaGpg2Ilx2oO1k8XPES8bUpXGVKECYkegrC+ucREFFjRBos+vTffXmA8x3GXnYBZA
+6syfQHbSxlGs6tsmivzF7XLJJJ0cApw7VC5WEL6LTJVrQlCsnbkYhJ7JAeO0mUwagqn8ipKP
+FBjfu/sNgYTcudunWxno1sJ6H61O1YqzbuqCtcMfUzU+3HrfsbbD1RoSb3KQjoIrW2QNTU6F
+tIzZ4CtLzFlzUXykPK+Wpqx1M6VqqPkaz6oghQWWat+3LiY8npKt62rfI5l8x2oPp3SpQ/md
+YEOnBoej+PovNdnZqTz3NvPtWOemlM2wEuzxuig2cSbplrgb3a7BSJ7l3/BDg1tSMB1CsRhM
+koy6ohzmPeoPBZQVJJB4bWLXYrMYhCnNvKAWTBtIwaQo7EWUwd4=
+[end]
+[pubkey test@localhost]
+MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQDTLGWsQSEQJ+39tmT/n1n3ZYPvJtP5xwRW
+DLdihtP1V1VAXvWOxg1H90msWQb2TgaEoPr7+yikyEpGot4duAuqY7qmzpbCpf7Nkvld2nW4
+j0DLQyoefKzMYO5S79Zrgh234nCV1rCVCOj1bLahoiflp1U1vxpmAg4KKFXsmzKZxQIBEQ==
+[end]
+EOF
+../monotone --branch test --key test@localhost --db test.db cvs_pull \
+	$PWD/test.cvsroot test << EOF
+x
+EOF
