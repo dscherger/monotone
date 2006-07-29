@@ -9,6 +9,7 @@
 
 #include <iostream>
 
+#include "basic_io.hh"
 #include "cmd.hh"
 #include "diff_patch.hh"
 #include "merge.hh"
@@ -642,7 +643,7 @@ CMD(show_conflicts, N_("informative"), N_("REV REV"),
     throw usage(name);
   revision_id l_id, r_id;
   complete(app, idx(args,0)(), l_id);
-  complete(app, idx(args,1)(), r_id);                                                                    
+  complete(app, idx(args,1)(), r_id);
   N(!is_ancestor(l_id, r_id, app),
     F("%s is an ancestor of %s; no merge is needed.") % l_id % r_id);
   N(!is_ancestor(r_id, l_id, app),
@@ -672,7 +673,64 @@ CMD(show_conflicts, N_("informative"), N_("REV REV"),
     % result.rename_target_conflicts.size());
   P(F("There are %s directory_loop_conflicts.") 
     % result.directory_loop_conflicts.size());
-}                                                                
+}
+
+AUTOMATE(conflicts, N_("REV REV"))
+{
+  if (args.size() != 2)
+    throw usage(help_name);
+  revision_id l_id(idx(args,0)());
+  revision_id r_id(idx(args,1)());
+  N(!is_ancestor(l_id, r_id, app),
+    F("%s is an ancestor of %s; no merge is needed.") % l_id % r_id);
+  N(!is_ancestor(r_id, l_id, app),
+    F("%s is an ancestor of %s; no merge is needed.") % r_id % l_id);
+  roster_t l_roster, r_roster;
+  marking_map l_marking, r_marking;
+  app.db.get_roster(l_id, l_roster, l_marking);
+  app.db.get_roster(r_id, r_roster, r_marking);
+  set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
+  app.db.get_uncommon_ancestors(l_id, r_id,
+                                l_uncommon_ancestors,
+                                r_uncommon_ancestors);
+  roster_merge_result result;
+  roster_merge(l_roster, l_marking, l_uncommon_ancestors,
+               r_roster, r_marking, r_uncommon_ancestors,
+               result);
+
+  revision_id a_id;
+  find_common_ancestor_for_merge(l_id, r_id, a_id, app);
+  roster_t a_roster;
+  app.db.get_roster(a_id, a_roster);
+
+  basic_io::printer pr;
+  for (vector<file_content_conflict>::const_iterator
+         i = result.file_content_conflicts.begin();
+       i != result.file_content_conflicts.end(); ++i)
+    {
+      basic_io::stanza st;
+      split_path sp;
+      result.roster.get_name(i->nid, sp);
+      file_path fp(sp);
+      st.push_file_pair(string("content_conflict"), fp);
+      
+      l_roster.get_name(i->nid, sp);
+      fp = sp;
+      st.push_hex_triple(string("left"), fp.as_internal(), i->left.inner());
+      
+      r_roster.get_name(i->nid, sp);
+      fp = sp;
+      st.push_hex_triple(string("right"), fp.as_internal(), i->right.inner());
+      
+      a_roster.get_name(i->nid, sp);
+      fp = sp;
+      file_id anc = downcast_to_file_t(a_roster.get_node(i->nid))->content;
+      st.push_hex_triple(string("suggested_ancestor"), fp.as_internal(), anc.inner());
+      
+      pr.print_stanza(st);
+    }
+  output << pr.buf;
+}
 
 CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
     N_("Apply changes made at arbitrary places in history to current workspace.\n"
