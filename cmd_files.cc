@@ -123,6 +123,9 @@ CMD(annotate, N_("informative"), N_("PATH"),
   if ((args.size() != 1) || (app.revision_selectors.size() > 1))
     throw usage(name);
 
+  extern bool global_slow_assertions_version_check; 
+  global_slow_assertions_version_check = false;
+
   file_path file = file_path_external(idx(args, 0));
   split_path sp;
   file.split(sp);

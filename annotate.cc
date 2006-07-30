@@ -699,6 +699,65 @@ annotate_lineage_mapping::set_copied_all_mapped
     }
 }
 
+// privatish function to do a quick parse and extraction from the roster.
+bool
+roster_get_revision_fid_info(const roster_data &dat,
+                             node_id const &file_id,
+                             file_t &file,
+                             marking_t &marks);
+static bool
+get_revision_fid_info(database &db,
+                      revision_id const & rev_id, 
+                      node_id const &file_id,
+                      file_id &file_content,
+                      marking_t &marks)
+{
+  if (rev_id.inner()().empty()) {
+    return false;
+  }
+
+  file_t direct_file;
+  marking_t direct_marks;
+  bool direct_found;
+  {
+    roster_data dat;
+    roster_id ident;
+    
+    db.get_roster_id_for_revision(rev_id, ident);
+    db.get_roster_version(ident, dat);
+    direct_found = roster_get_revision_fid_info(dat, file_id, direct_file, direct_marks);
+  }
+  
+  static const bool regression_test = false;
+  if (!regression_test) {
+    if (!direct_found) {
+      return false;
+    }
+    file_content = direct_file->content;
+    marks = direct_marks;
+    return true;
+  } else {
+    marking_map markmap;
+    roster_t roster;
+    db.get_roster(rev_id, roster, markmap);
+
+    if (!roster.has_node(file_id)) {
+      I(!direct_found);
+      return false;
+    }
+    I(direct_found);
+    map<node_id, marking_t>::const_iterator mmi =
+      markmap.find(file_id);
+    I(mmi != markmap.end());
+    file_t file = downcast_to_file_t(roster.get_node(file_id));
+    file_content = file->content;
+    marks = mmi->second;
+    I(direct_file->content == file->content);
+    I(direct_marks == marks);
+    return true;
+  }
+}
+
 
 static void
 do_annotate_node
@@ -713,15 +772,12 @@ do_annotate_node
   I(nodes_complete.find(work_unit.revision) == nodes_complete.end());
   // nodes_seen.insert(make_pair(work_unit.revision, work_unit.lineage));
 
-  roster_t roster;
-  marking_map markmap;
-  app.db.get_roster(work_unit.revision, roster, markmap);
+  file_id file_in_child_content;
   marking_t marks;
-
-  map<node_id, marking_t>::const_iterator mmi =
-    markmap.find(work_unit.fid);
-  I(mmi != markmap.end());
-  marks = mmi->second;
+  bool found = get_revision_fid_info(app.db,
+                                     work_unit.revision, work_unit.fid,
+                                     file_in_child_content, marks);
+  I(found);
 
   if (marks.file_content.size() == 0)
     {
@@ -760,15 +816,18 @@ do_annotate_node
     {
       revision_id parent_revision = *i;
 
-      roster_t parent_roster;
-      marking_map parent_marks;
       L(FL("do_annotate_node processing edge from parent %s to child %s")
         % parent_revision % work_unit.revision);
 
       I(!(work_unit.revision == parent_revision));
-      app.db.get_roster(parent_revision, parent_roster, parent_marks);
 
-      if (!parent_roster.has_node(work_unit.fid))
+      file_id file_in_parent_content;
+      marking_t marks_in_parent;
+      bool in_parent = get_revision_fid_info(app.db,
+                                             parent_revision, work_unit.fid,
+                                             file_in_parent_content, marks_in_parent);
+
+      if (!in_parent) 
         {
           L(FL("file added in %s, continuing") % work_unit.revision);
           added_in_parent_count++;
@@ -776,15 +835,10 @@ do_annotate_node
         }
 
       // The node was live in the parent, so this represents a delta.
-      file_t file_in_child =
-	downcast_to_file_t(roster.get_node(work_unit.fid));
-
-      file_t file_in_parent =
-	downcast_to_file_t(parent_roster.get_node(work_unit.fid));
 
       shared_ptr<annotate_lineage_mapping> parent_lineage;
 
-      if (file_in_parent->content == file_in_child->content)
+      if (file_in_parent_content == file_in_child_content)
         {
           L(FL("parent file identical, "
 	       "set copied all mapped and copy lineage\n"));
@@ -794,9 +848,9 @@ do_annotate_node
       else
         {
           file_data data;
-          app.db.get_file_version(file_in_parent->content, data);
+          app.db.get_file_version(file_in_parent_content, data);
           L(FL("building parent lineage for parent file %s")
-	    % file_in_parent->content);
+	    % file_in_parent_content);
           parent_lineage
 	    = work_unit.lineage->build_parent_lineage(work_unit.annotations,
 						      parent_revision,

@@ -1226,9 +1226,12 @@ database::get_version(hexenc<id> const & ident,
       app->finish(tmp);
       dat = data(tmp);
 
-      hexenc<id> final;
-      calculate_ident(dat, final);
-      I(final == ident);
+      extern bool global_slow_assertions_version_check;
+      if (global_slow_assertions_version_check) {
+        hexenc<id> final;
+        calculate_ident(dat, final);
+        I(final == ident);
+      }
     }
   vcache.insert(ident, dat);
 }

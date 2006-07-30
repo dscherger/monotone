@@ -2576,6 +2576,173 @@ read_num(string const & s)
   return n;
 }
 
+static void
+skip_to_next_record(basic_io::input_source &src)
+{
+  src.col = 1;
+  // records start at two newlines in a row
+  while(LIKELY(src.curr != src.in.end())) {
+    if (*src.curr == '\n') {
+      ++src.line;
+      if ((src.curr+1) != src.in.end() && *(src.curr+1) == '\n') {
+        ++src.curr;
+        ++src.curr;
+        ++src.line;
+        break;
+      }
+    }
+    ++src.curr;
+  }
+}
+
+static void
+skip_to_record_key(basic_io::input_source &src)
+{
+  while(LIKELY(src.curr != src.in.end())) {
+    if (*src.curr == ' ') {
+      // skip
+    } else if (isalpha(*src.curr)) {
+      break;
+    } else {
+      I(false);
+    }
+    ++src.curr;
+  }
+}
+
+static bool
+next_str_is(basic_io::input_source &src, const string &str)
+{
+  std::string::const_iterator i = src.curr;
+  std::string::const_iterator j = str.begin();
+  while(j != str.end()) {
+    if (i == src.in.end() || *i != *j) {
+      return false;
+    } 
+    ++i;
+    ++j;
+  }
+  src.curr = i;
+  return true;
+}
+
+static void
+skip_to_next_line(basic_io::input_source &src)
+{
+  while(LIKELY(src.curr != src.in.end())) {
+    if (*src.curr == '\n') {
+      ++src.curr;
+      break;
+    }
+    ++src.curr;
+  }
+  ++src.line;
+}
+
+
+bool
+roster_get_revision_fid_info(const roster_data &dat,
+                             node_id const &file_id_int,
+                             file_t &file,
+                             marking_t &marks)
+{
+  // there has to be a better way
+  char buf[30];
+  sprintf(buf,"\"%u\"",file_id_int);
+  string file_id_token(buf);
+
+  basic_io::input_source src(dat.inner()(), "roster");
+  basic_io::tokenizer tok(src);
+  basic_io::parser pars(tok);
+  {
+    pars.esym(syms::format_version);
+    string vers;
+    pars.str(vers);
+    I(vers == "1");
+  }
+
+  // Make sure we're at the beginning we expect to be at...
+  I(pars.token == "dir");
+  I(src.lookahead == ' ');
+  src.advance();
+  I(src.lookahead == '"');
+  src.advance();
+  I(src.lookahead == '"');
+  src.advance();
+  I(src.lookahead == '\n');
+  skip_to_next_record(src);
+
+  while(src.curr != src.in.end()) {
+    std::string::const_iterator save_record_start = src.curr;
+    skip_to_record_key(src);
+    I(src.curr != src.in.end());
+    if (next_str_is(src,"dir ")) {
+      // skip
+    } else if (next_str_is(src,"file ")) {
+      skip_to_next_line(src);
+      skip_to_record_key(src);
+      bool ok = next_str_is(src,"content ");
+      I(ok);
+      skip_to_next_line(src);
+      skip_to_record_key(src);
+      ok = next_str_is(src,"ident ");
+      I(ok);
+      if (next_str_is(src,file_id_token)) {
+        src.curr = save_record_start;
+        src.line -= 2; // backup by file, content
+        pars.advance();
+
+        file_t n;
+        if (pars.symp(syms::file))
+          {
+            string content, pth, ident;
+            pars.sym();
+            pars.str(pth);
+            pars.esym(syms::content);
+            pars.hex(content);
+            pars.esym(syms::ident);
+            pars.str(ident);
+            n = file_t(new file_node(read_num(ident),
+                                     file_id(content)));
+          } 
+        else 
+          {
+            I(false);
+          }
+        I(static_cast<bool>(n));
+        while(pars.symp(syms::attr))
+          {
+            pars.sym();
+            string k, v;
+            pars.str(k);
+            pars.str(v);
+            safe_insert(n->attrs, make_pair(attr_key(k),
+                                            make_pair(true, attr_value(v))));
+          }
+
+        // Dormant attrs
+        while(pars.symp(syms::dormant_attr))
+          {
+            pars.sym();
+            string k;
+            pars.str(k);
+            safe_insert(n->attrs, make_pair(attr_key(k),
+                                            make_pair(false, attr_value())));
+          }
+        parse_marking(pars, n, marks);
+        file = n;
+        return true;
+      }
+    } else {
+      I(false);
+    }
+    skip_to_next_record(src);
+  }
+  I(src.curr == src.in.end());
+  return false;
+}
+
+
 void
 roster_t::parse_from(basic_io::parser & pa,
                      marking_map & mm)
