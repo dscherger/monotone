@@ -27,6 +27,7 @@ using std::map;
 using std::set;
 using std::string;
 using std::vector;
+using std::pair;
 
 using boost::shared_ptr;
 
@@ -675,6 +676,50 @@ CMD(show_conflicts, N_("informative"), N_("REV REV"),
     % result.directory_loop_conflicts.size());
 }
 
+// conflict "content" "attr" "split" "collision" "orphan" "illegal" "cycle"
+//  if not (split or orphan or cycle)
+//    merged_name ""
+//  if split or orphan or cycle or collision or illegal
+//    left_name ""
+//    right_name ""
+//  if content
+//    left_content []
+//    right_content []
+//    anc_content []
+//  if attr
+//    left_attr "attr_name" ""
+//    right_attr "attr_name" ""
+struct item_conflicts
+{
+  static const int content = 0x01;
+  static const int attr = 0x02;
+  static const int split = 0x04;
+  static const int collision = 0x08;
+  static const int orphan = 0x10;
+  static const int illegal = 0x20;
+  static const int cycle = 0x40;
+  int type;
+  file_path merged_name;
+  file_path left_name;
+  file_path right_name;
+  file_id left_content;
+  file_id right_content;
+  file_id anc_content;
+  struct attr_item
+  {
+    attr_key key;
+    pair<bool, attr_value> left;
+    pair<bool, attr_value> right;
+    attr_item(node_attr_conflict const &c)
+     : key(c.key), left(c.left), right(c.right)
+    {}
+  };
+  vector<attr_item> attrs;
+  item_conflicts()
+   : type(0)
+  {}
+};
+
 AUTOMATE(conflicts, N_("REV REV"))
 {
   if (args.size() != 2)
@@ -702,30 +747,184 @@ AUTOMATE(conflicts, N_("REV REV"))
   find_common_ancestor_for_merge(l_id, r_id, a_id, app);
   roster_t a_roster;
   app.db.get_roster(a_id, a_roster);
-
-  basic_io::printer pr;
+  
+  map<node_id, item_conflicts> conflicts;
+  
+  for (vector<orphaned_node_conflict>::const_iterator
+         i = result.orphaned_node_conflicts.begin();
+       i != result.orphaned_node_conflicts.end(); ++i)
+    { // orphan
+      item_conflicts & c(conflicts[i->nid]);
+      c.type |= item_conflicts::orphan;
+      split_path sp;
+      l_roster.get_name(i->nid, sp);
+      c.left_name = sp;
+      r_roster.get_name(i->nid, sp);
+      c.right_name = sp;
+    }
+  for (vector<node_name_conflict>::const_iterator
+         i = result.node_name_conflicts.begin();
+       i != result.node_name_conflicts.end(); ++i)
+    { // split
+      item_conflicts & c(conflicts[i->nid]);
+      c.type |= item_conflicts::split;
+      split_path sp;
+      l_roster.get_name(i->nid, sp);
+      c.left_name = sp;
+      r_roster.get_name(i->nid, sp);
+      c.right_name = sp;
+    }
+  for (vector<directory_loop_conflict>::const_iterator
+         i = result.directory_loop_conflicts.begin();
+       i != result.directory_loop_conflicts.end(); ++i)
+    { // cycle
+      item_conflicts & c(conflicts[i->nid]);
+      c.type |= item_conflicts::cycle;
+      split_path sp;
+      l_roster.get_name(i->nid, sp);
+      c.left_name = sp;
+      r_roster.get_name(i->nid, sp);
+      c.right_name = sp;
+    }
+  for (vector<rename_target_conflict>::const_iterator
+         i = result.rename_target_conflicts.begin();
+       i != result.rename_target_conflicts.end(); ++i)
+    { // collision
+      vector<node_id> v;
+      v.push_back(i->nid1);
+      v.push_back(i->nid2);
+      for (vector<node_id>::const_iterator j = v.begin(); j != v.end(); ++j)
+        {
+          item_conflicts & c(conflicts[*j]);
+          c.type |= item_conflicts::collision;
+          split_path sp;
+          l_roster.get_name(*j, sp);
+          c.left_name = sp;
+          r_roster.get_name(*j, sp);
+          c.right_name = sp;
+          if (!(c.type & (item_conflicts::split
+                        | item_conflicts::orphan
+                        | item_conflicts::cycle)))
+            {
+              result.roster.get_name(*j, sp);
+              c.merged_name = sp;
+            }
+        }
+    }
+  for (vector<illegal_name_conflict>::const_iterator
+         i = result.illegal_name_conflicts.begin();
+       i != result.illegal_name_conflicts.end(); ++i)
+    { // illegal
+      item_conflicts & c(conflicts[i->nid]);
+      c.type |= item_conflicts::illegal;
+      split_path sp;
+      l_roster.get_name(i->nid, sp);
+      c.left_name = sp;
+      r_roster.get_name(i->nid, sp);
+      c.right_name = sp;
+      if (!(c.type & (item_conflicts::split
+                    | item_conflicts::orphan
+                    | item_conflicts::cycle)))
+        {
+          result.roster.get_name(i->nid, sp);
+          c.merged_name = sp;
+        }
+    }
   for (vector<file_content_conflict>::const_iterator
          i = result.file_content_conflicts.begin();
        i != result.file_content_conflicts.end(); ++i)
+    { // content
+      item_conflicts & c(conflicts[i->nid]);
+      c.type |= item_conflicts::content;
+      c.anc_content = downcast_to_file_t(a_roster.get_node(i->nid))->content;
+      c.left_content = i->left;
+      c.right_content = i->right;
+      if (!(c.type & (item_conflicts::split
+                    | item_conflicts::orphan
+                    | item_conflicts::cycle)))
+        {
+          split_path sp;
+          result.roster.get_name(i->nid, sp);
+          c.merged_name = sp;
+        }
+    }
+  for (vector<node_attr_conflict>::const_iterator
+         i = result.node_attr_conflicts.begin();
+       i != result.node_attr_conflicts.end(); ++i)
+    { // attr
+      item_conflicts & c(conflicts[i->nid]);
+      c.type |= item_conflicts::attr;
+      c.attrs.push_back(*i);
+      if (!(c.type & (item_conflicts::split
+                    | item_conflicts::orphan
+                    | item_conflicts::cycle)))
+        {
+          split_path sp;
+          result.roster.get_name(i->nid, sp);
+          c.merged_name = sp;
+        }
+    }
+    
+  basic_io::printer pr;
+  for (map<node_id, item_conflicts>::const_iterator i = conflicts.begin();
+       i != conflicts.end(); ++i)
     {
+      item_conflicts const & c(i->second);
       basic_io::stanza st;
-      split_path sp;
-      result.roster.get_name(i->nid, sp);
-      file_path fp(sp);
-      st.push_file_pair(string("content_conflict"), fp);
       
-      l_roster.get_name(i->nid, sp);
-      fp = sp;
-      st.push_hex_triple(string("left"), fp.as_internal(), i->left.inner());
+      vector<string> types;
+      if (c.type & item_conflicts::attr)
+        types.push_back("attr");
+      if (c.type & item_conflicts::collision)
+        types.push_back("collision");
+      if (c.type & item_conflicts::content)
+        types.push_back("content");
+      if (c.type & item_conflicts::cycle)
+        types.push_back("cycle");
+      if (c.type & item_conflicts::illegal)
+        types.push_back("illegal");
+      if (c.type & item_conflicts::orphan)
+        types.push_back("orphan");
+      if (c.type & item_conflicts::split)
+        types.push_back("split");
+      st.push_str_multi(string("conflict"), types);
       
-      r_roster.get_name(i->nid, sp);
-      fp = sp;
-      st.push_hex_triple(string("right"), fp.as_internal(), i->right.inner());
+      if (!(c.type & (item_conflicts::split
+                    | item_conflicts::orphan
+                    | item_conflicts::cycle)))
+        st.push_file_pair(string("merged_name"), c.merged_name);
       
-      a_roster.get_name(i->nid, sp);
-      fp = sp;
-      file_id anc = downcast_to_file_t(a_roster.get_node(i->nid))->content;
-      st.push_hex_triple(string("suggested_ancestor"), fp.as_internal(), anc.inner());
+      if (c.type & (item_conflicts::split
+                  | item_conflicts::orphan
+                  | item_conflicts::cycle
+                  | item_conflicts::collision
+                  | item_conflicts::illegal))
+        {
+          st.push_file_pair(string("left_name"), c.left_name);
+          st.push_file_pair(string("right_name"), c.right_name);
+        }
+      
+      if (c.type & item_conflicts::content)
+        {
+          st.push_hex_pair(string("anc_content"), c.anc_content.inner());
+          st.push_hex_pair(string("left_content"), c.left_content.inner());
+          st.push_hex_pair(string("right_content"), c.right_content.inner());
+        }
+      
+      for (vector<item_conflicts::attr_item>::const_iterator
+           i = c.attrs.begin();  i != c.attrs.end(); ++i)
+        {
+          if (i->left.first)
+            st.push_str_triple(string("left_attr"), i->key(),
+                               i->left.second());
+          else
+            st.push_str_pair(string("left_attr"), i->key());
+          if (i->right.first)
+            st.push_str_triple(string("right_attr"), i->key(),
+                               i->right.second());
+          else
+            st.push_str_pair(string("right_attr"), i->key());
+        }
       
       pr.print_stanza(st);
     }
