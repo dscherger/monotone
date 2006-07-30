@@ -90,6 +90,7 @@ class database
 
   std::map<std::string, statement> statement_cache;
   std::map<std::pair<std::string, hexenc<id> >, data> pending_writes;
+  unsigned long pending_writes_size;
 
   bool have_pending_write(std::string const & tab, hexenc<id> const & id);
   void load_pending_write(std::string const & tab, hexenc<id> const & id, data & dat);

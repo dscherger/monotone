@@ -44,6 +44,9 @@ namespace constants
 
   size_t const db_roster_cache_sz = 7;
 
+  // Want to keep this larger than database.hh:checkpoint_batch_bytes
+  unsigned long const db_max_pending_writes_bytes = 16 * 1024 * 1024;
+ 
   // size of a line of text in the log buffer, beyond which log lines will be
   // truncated.
   size_t const log_line_sz = 0x300;

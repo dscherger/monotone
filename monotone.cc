@@ -254,8 +254,6 @@ coption_string(int o)
   return string();
 }
 
-bool global_slow_assertions_version_check = true; 
-
 int
 cpp_main(int argc, char ** argv)
 {
