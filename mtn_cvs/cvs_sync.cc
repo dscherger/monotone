@@ -231,15 +231,14 @@ std::string debug_files(const std::map<std::string,file_history> &files)
 }
 #endif
 
-#if 0
 // returns the length of the first line (header) and fills in fields
-std::string::size_type cvs_repository::parse_cvs_cert_header(cert_value const& value, 
+std::string::size_type cvs_repository::parse_cvs_cert_header(std::string const& value,
       std::string &repository, std::string& module, std::string& branch)
 { 
-  MM(value());
-  std::string::size_type nlpos=value().find('\n');
-  E(nlpos!=std::string::npos, F("malformed cvs-revision cert %s") % value());
-  std::string repo=value().substr(0,nlpos);
+  MM(value);
+  std::string::size_type nlpos=value.find('\n');
+  E(nlpos!=std::string::npos, F("malformed cvs-revision cert %s") % value);
+  std::string repo=value.substr(0,nlpos);
   std::string::size_type modulebegin=repo.find('\t'); 
   E(modulebegin!=std::string::npos, F("malformed cvs-revision header %s") % repo);
   std::string::size_type branchbegin=repo.find(modulebegin,'\t');
@@ -254,6 +253,7 @@ std::string::size_type cvs_repository::parse_cvs_cert_header(cert_value const& v
   return nlpos;
 }
 
+#if 0
 void cvs_repository::parse_cvs_cert_header(revision<cert> const& c, 
       std::string &repository, std::string& module, std::string& branch)
 {
@@ -969,6 +969,7 @@ void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
   revision<cert> cc(t);
   pc.consume_revision_cert(cc);
 }
+#endif
 
 cvs_repository::cvs_repository(mtncvs_state &_app, const std::string &repository, 
             const std::string &module, const std::string &branch, bool connect)
@@ -978,12 +979,13 @@ cvs_repository::cvs_repository(mtncvs_state &_app, const std::string &repository
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
   remove_state=remove_set.insert(file_state(0,"-",true)).first;
-  if (!app.sync_since().empty())
-  { sync_since=posix2time_t(app.sync_since());
+  if (!app.since().empty())
+  { sync_since=posix2time_t(app.since());
     N(sync_since<=time(0), F("Since lies in the future. Remember to specify time in UTC\n"));
   }
 }
 
+#if 0
 static void test_key_availability(mtncvs_state &app)
 {
   // early short-circuit to avoid failure after lots of work
@@ -1547,9 +1549,10 @@ struct cvs_repository::update_cb : cvs_client::update_callbacks
   }
 };
 
-#if 0
 void cvs_repository::update()
-{ retrieve_modules();
+{
+#if 0
+  retrieve_modules();
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
   const cvs_edge &now=*now_iter;
   I(!now.revision().empty());
@@ -1647,8 +1650,8 @@ void cvs_repository::update()
   }
   
   store_modules();
-}
 #endif
+}
 
 static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
 { L(FL("apply_manifest_delta: base %d delta %d\n") % base.size() % delta.size());

@@ -21,3 +21,13 @@ void mtncvs_state::dump()
 { std::cerr D(full) D(since) D(mtn_binary) D(branch) << '\n';
   std::cerr D(mtn_options) << '\n';
 }
+
+void mtncvs_state::open()
+{ std::vector<std::string> args;
+  for (std::vector<utf8>::const_iterator i=mtn_options.begin();i!=mtn_options.end();++i)
+    args.push_back((*i)());
+  std::string binary=mtn_binary();
+  if (binary.empty()) binary="mtn";
+  I(!is_open());
+  mtn_automate::open(binary,args);
+}

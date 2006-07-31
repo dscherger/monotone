@@ -13,3 +13,18 @@ void mtn_automate::check_interface_revision(std::string const& minimum)
       F("your monotone automate interface revision %s does not match the "
           "requirements %s") % present % minimum);
 }
+
+revision_id mtn_automate::find_newest_sync(std::string const& domain, std::string const& branch)
+{ std::vector<std::string> args;
+  args.push_back(domain);
+  if (!branch.empty()) args.push_back(branch);
+  std::string result=automate("find_newest_sync",args);
+  return revision_id(result);
+}
+
+std::string mtn_automate::get_sync_info(revision_id const& rid, std::string const& domain)
+{ std::vector<std::string> args;
+  args.push_back(rid.inner()());
+  args.push_back(domain);
+  return automate("get_sync_info",args);
+}
