@@ -659,6 +659,6 @@ AC_SUBST(MONOTONE_CXXFLAGS)
 AC_SUBST(LIB3RDPARTY_CFLAGS)
 AC_SUBST(LIB3RDPARTY_CXXFLAGS)
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile mtn_cvs/Makefile])
 AC_CONFIG_FILES([po/Makefile.in], [cat xgettext.opts >>po/Makefile.in])
 AC_OUTPUT
