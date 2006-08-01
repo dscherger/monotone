@@ -425,13 +425,13 @@ void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::sha
 }
 
 // compare the new manifest with the old roster and fill the cset accordingly
-static bool 
-build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
-                 boost::shared_ptr<cset> cs, cvs_file_state const& remove_state, 
-                 unsigned cm_delta_depth)
+static void 
+build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_manifest &newm,
+                 mtn_automate::revision &cs, cvs_file_state const& remove_state)
 {
   cvs_manifest cvs_delta;
-  
+
+#if 0  
   node_map const & nodes = oldr.all_nodes();
   L(FL("build_change_set(%d,%d,)\n") % nodes.size() % newm.size());
   
@@ -489,7 +489,7 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
   { newm=cvs_delta;
     return true;
   }
-  return false;
+#endif  
 }
 
 void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &end, 
@@ -745,13 +745,15 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   }
 }
 
-#if 0
+static file_id get_sync_id(mtncvs_state &app, revision_id id)
+{ mtn_automate::manifest m=app.get_manifest_of(id);
+  return m[file_path_internal(".mtn-sync-"+app.domain())];
+}
+
 // commit CVS revisions to monotone (pull)
 void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 { revision_id parent_rid;
-  roster_t old_roster;
-  packet_db_writer dbw(app);
-  unsigned cm_delta_depth=0;
+  file_id parent_sync;
   
   cvs_edges_ticker.reset(0);
   L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision());
@@ -762,28 +764,22 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
     I(!before->revision().empty());
     parent_rid=before->revision;
-    app.db.get_roster(parent_rid, old_roster);
-    cm_delta_depth=before->cm_delta_depth;
+    parent_sync=get_sync_id(app,parent_rid);
   }
-  temp_node_id_source nis;
+//  temp_node_id_source nis;
   for (; e!=edges.end(); ++e)
-  { roster_t new_roster=old_roster;
-    editable_roster_base eros(new_roster,nis);
+  { // roster_t new_roster=old_roster;
+    // editable_roster_base eros(new_roster,nis);
+    mtn_automate::revision rev;
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
     L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
-#warning cm_delta_depth kann ganz weg, wenn auf Dateien umgestellt
-    revision_set rev;
-    boost::shared_ptr<cset> cs(new cset());
-    if (build_change_set(*this,old_roster,e->xfiles,cs,remove_state,cm_delta_depth))
-    { e->delta_base=parent_rid;
-      e->cm_delta_depth=cm_delta_depth+1;
-    }
-    cs->apply_to(eros);
-    calculate_ident(new_roster, rev.new_manifest);
-    safe_insert(rev.edges, std::make_pair(parent_rid, cs));
-    revision_id child_rid;
-    calculate_ident(rev, child_rid);
+    // revision_set rev;
+    // boost::shared_ptr<cset> cs(new cset());
+    build_change_set(*this,app.get_manifest_of(parent_rid),e->xfiles,rev,remove_state);
+    //cs->apply_to(eros);
+    //calculate_ident(new_roster, rev.new_manifest);
+    //safe_insert(rev.edges, std::make_pair(parent_rid, cs));
     
     if (!rev.is_nontrivial()) 
     { W(F("null edge (empty cs) @%s skipped\n") % time_t2human(e->time));
@@ -802,12 +798,11 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
       continue;
     }
 #endif
-    L(FL("CVS Sync: Inserting revision %s (%s) into repository\n") % child_rid % rev.new_manifest);
+    revision_id child_rid=app.put_revision(rev);
+    if (revision_ticker.get()) ++(*revision_ticker);
+    L(FL("CVS Sync: Inserted revision %s (%s) into repository\n") % child_rid);
     e->revision=child_rid.inner();
-    if (!app.db.revision_exists(child_rid))
-    { app.db.put_revision(child_rid, rev);
-      if (revision_ticker.get()) ++(*revision_ticker);
-    }
+#if 0    
     cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
     std::string author=e->author;
     if (author.find('@')==std::string::npos) author+="@"+host;
@@ -815,13 +810,12 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     cert_revision_changelog(child_rid, e->changelog, app, dbw);
     cert_revision_date_time(child_rid, e->time, app, dbw);
     cert_cvs(*e, dbw);
+#endif
 
     parent_rid = child_rid;
-    old_roster=new_roster;
-    cm_delta_depth=e->cm_delta_depth;
+//    parent_sync=?
   }
 }
-#endif
 
 void cvs_repository::prime()
 { retrieve_modules();
@@ -912,9 +906,9 @@ void cvs_repository::prime()
   fill_manifests(edges.begin());
   
   // commit them all
-//  if (!edges.empty()) commit_cvs2mtn(edges.begin());
+  if (!edges.empty()) commit_cvs2mtn(edges.begin());
   
-  store_modules();
+//  store_modules();
 }
 
 #if 0
@@ -1286,7 +1280,7 @@ void cvs_repository::commit()
     // we'd better seperate the commits so that ordering them is possible
     if (now_iter!=edges.end()) sleep(2);
   }
-  store_modules();
+//  store_modules();
 }
 #endif
 
@@ -1522,8 +1516,8 @@ struct cvs_repository::update_cb : cvs_client::update_callbacks
 
 void cvs_repository::update()
 {
-#if 0
   retrieve_modules();
+#if 0
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
   const cvs_edge &now=*now_iter;
   I(!now.revision().empty());
@@ -1620,7 +1614,7 @@ void cvs_repository::update()
     commit_cvs2mtn(dummy_iter);
   }
   
-  store_modules();
+//  store_modules();
 #endif
 }
 
@@ -1850,7 +1844,7 @@ void cvs_repository::takeover()
   put_revision_id((--edges.end())->revision);
 //  maybe_update_inodeprints(app);
 
-  store_modules();
+//  store_modules();
 }
 
 // read in directory put into db
@@ -1886,6 +1880,7 @@ void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
 }
 #endif
 
+#if 0
 void cvs_repository::store_modules()
 { const std::map<std::string,std::string> &sd=GetServerDir();
   std::string value;
@@ -1903,16 +1898,17 @@ void cvs_repository::store_modules()
   if (oldval()!=value) app.db.set_var(key, value);
 #endif
 }
+#endif
+
 void cvs_repository::retrieve_modules()
 { if (!GetServerDir().empty()) return;
-  std::string name=create_cvs_cert_header();
 #if 0  
+  std::string name=create_cvs_cert_header();
   std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
   var_value value;
   try {
     app.db.get_var(key,value);
   } catch (...) { return; }
-#endif
   std::map<std::string,std::string> sd;
   piece::piece_table pieces;
   std::string value_s; //=value();
@@ -1929,4 +1925,5 @@ void cvs_repository::retrieve_modules()
   }
   piece::reset();
   SetServerDir(sd);
+#endif
 }
