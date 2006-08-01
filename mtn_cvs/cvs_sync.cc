@@ -391,16 +391,11 @@ bool cvs_edge::operator<(cvs_edge const & other) const
      && changelog < other.changelog);
 }
 
-#if 0
 void cvs_repository::store_contents(const data &dat, hexenc<id> &sha1sum)
 {
-  calculate_ident(dat,sha1sum);
-  if (!app.db.file_version_exists(sha1sum))
-  { app.db.put_file(sha1sum, dat);
-    if (file_id_ticker.get()) ++(*file_id_ticker);
-  }
+  if (file_id_ticker.get()) ++(*file_id_ticker);
+  sha1sum=app.put_file(dat).inner();
 }
-#endif
 
 static void apply_delta(piece::piece_table &contents, const std::string &patch)
 { piece::piece_table after;
@@ -408,7 +403,6 @@ static void apply_delta(piece::piece_table &contents, const std::string &patch)
   std::swap(contents,after);
 }
 
-#if 0
 void cvs_repository::store_delta(const std::string &new_contents, 
           const std::string &old_contents, 
           // this argument is unused since we can no longer use the rcs patch
@@ -418,18 +412,8 @@ void cvs_repository::store_delta(const std::string &new_contents,
   { store_contents(new_contents, to);
     return;
   }
-  data dat(new_contents);
-  calculate_ident(dat,to);
-  if (!app.db.file_version_exists(to))
-  { delta del;
-    diff(data(old_contents), data(new_contents), del);
-    if (dat().size()<=del().size())
-    // the data is smaller or of equal size to the patch
-      app.db.put_file(to, dat);
-    else 
-      app.db.put_file_version(from,to,del);
-    if (file_id_ticker.get()) ++(*file_id_ticker);
-  }
+  if (file_id_ticker.get()) ++(*file_id_ticker);
+  to=app.put_file(new_contents,from).inner();
 }
 
 static
@@ -517,7 +501,6 @@ build_change_set(const cvs_client &c, roster_t const& oldr, cvs_manifest &newm,
   }
   return false;
 }
-#endif
 
 void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e)
@@ -641,7 +624,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-//    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;

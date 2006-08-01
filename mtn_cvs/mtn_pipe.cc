@@ -77,9 +77,16 @@ static int blocking_read(Netxx::PipeStream &s, Netxx::PipeCompatibleProbe &p,
   return read;
 }
 
+std::ostream &operator<<(std::ostream &os, std::vector<std::string> const& v)
+{ for (std::vector<std::string>::const_iterator i=v.begin();i!=v.end();++i)
+    os << *i << ',';
+  return os;
+}
+
 std::string mtn_pipe::automate(std::string const& command, 
         std::vector<std::string> const& args) throw (std::runtime_error)
-{ std::string s_cmdnum=boost::lexical_cast<std::string>(cmdnum);
+{ L(FL("mtn automate: %s %s") % command % args);
+  std::string s_cmdnum=boost::lexical_cast<std::string>(cmdnum);
   (*pipe) << 'l' << command.size() << ':' << command;
   for (std::vector<std::string>::const_iterator i=args.begin();i!=args.end();++i)
     (*pipe) << i->size() << ':' << *i;
@@ -117,7 +124,11 @@ again:
   if (results[2]=="m") goto again;
   I(results[2]=="l");
   ++cmdnum;
-  if (cmdresult) throw std::runtime_error(result);
+  if (cmdresult) 
+  { L(FL("mtn returned %d %s") % cmdresult % result);
+    throw std::runtime_error(result);
+  }
+  L(FL("automate result %s") % result);
   return result;
 }
 

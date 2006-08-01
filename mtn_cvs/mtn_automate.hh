@@ -18,6 +18,7 @@ struct mtn_automate : mtn_pipe
 { void check_interface_revision(std::string const&minimum);
   revision_id find_newest_sync(std::string const& domain, std::string const& branch="");
   std::string get_sync_info(revision_id const& rid, std::string const& domain);
+  file_id put_file(data const& d, file_id const& base=file_id());
 };
 
 #endif

@@ -29,5 +29,7 @@ void mtncvs_state::open()
   std::string binary=mtn_binary();
   if (binary.empty()) binary="mtn";
   I(!is_open());
+  L(FL("mtncvs_state: opening mtn binary %s") % binary);
   mtn_automate::open(binary,args);
+  check_interface_revision("2.3");
 }

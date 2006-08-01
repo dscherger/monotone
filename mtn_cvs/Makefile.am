@@ -5,7 +5,7 @@ noinst_LIBRARIES=libmtn.a
 libmtn_a_SOURCES=../netxx_pipe.cc ../sanity.cc ../ui.cc \
 	../transforms.cc ../vocab.cc ../paths.cc ../charset.cc \
 	../simplestring_xform.cc ../constants.cc ../xdelta.cc \
-	../commands.cc ../basic_io.cc md5.cpp piece_table.cc \
+	../commands.cc ../basic_io.cc botan/md5.cpp piece_table.cc \
 	../mtn-sanity.cc
 
 bin_PROGRAMS = mtn_cvs

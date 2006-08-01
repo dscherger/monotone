@@ -951,7 +951,8 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
           dead=result.substr(statebegin,linespos-statebegin);
         }
         else // MT ... (cvs 1.12.9)
-        { I(lresult.size()==11 || lresult.size()==7);
+        { // actually I encountered 7,10,11,14,15
+          I(lresult.size()>=7);
           I(lresult[0].first=="text");
           I(lresult[0].second=="date: ");
           I(lresult[1].first=="date");
@@ -1513,6 +1514,12 @@ std::map<std::string,std::string> cvs_client::RequestServerDir()
       L(FL("cvs_client::RequestServerDir lresult[0].second is '%s', not 'Clear-static-directory'") % lresult[0].second);
     I(lresult[0].second=="Clear-static-directory");
     I(lresult.size()==3);
+#if 1 // I'm not quite sure this is correct    
+    if (!lresult[2].second.empty() && lresult[2].second[0]!='/')
+      // relative path, prepend repository (?)
+    { lresult[2].second=root+"/"+lresult[2].second;
+    }
+#endif
     if (!last_rcs.empty() && begins_with(lresult[2].second,last_rcs)
           && lresult[1].second.substr(0,last_local.size())==last_local)
     { I(lresult[2].second.substr(last_rcs.size())

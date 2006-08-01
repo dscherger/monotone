@@ -28,3 +28,10 @@ std::string mtn_automate::get_sync_info(revision_id const& rid, std::string cons
   args.push_back(domain);
   return automate("get_sync_info",args);
 }
+
+file_id mtn_automate::put_file(data const& d, file_id const& base)
+{ std::vector<std::string> args;
+  if (!null_id(base.inner())) args.push_back(base.inner()());
+  args.push_back(d());
+  return file_id(automate("put_file",args));
+}
