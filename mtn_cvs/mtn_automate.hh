@@ -22,10 +22,14 @@ struct mtn_automate : mtn_pipe
   struct cset // make this more like a mtn cset? (split_paths)
   { std::set<file_path> deleted;
     std::map<file_path,file_id> added;
+    std::set<file_path> dirs_added;
     std::map<file_path,std::pair<file_id,file_id> > changed;
+    // renames, attrs_cleared, set
 
     bool is_nontrivial() const 
-    { return !deleted.empty() || !added.empty() || !changed.empty(); }
+    { return !deleted.empty() || !added.empty() || !changed.empty()
+          || !dirs_added.empty(); 
+    }
   };
 
   void check_interface_revision(std::string const&minimum);
