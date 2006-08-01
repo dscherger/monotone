@@ -24,8 +24,8 @@ class MDx_HashFunction : public HashFunction
       u64bit count;
       u32bit position;
    private:
-      void add_data(const byte[], u32bit);
-      void final_result(byte output[]);
+      virtual void add_data(const byte[], u32bit);
+      virtual void final_result(byte output[]);
 
       virtual void hash(const byte[]) = 0;
       virtual void copy_out(byte[]) = 0;

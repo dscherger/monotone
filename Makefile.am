@@ -331,6 +331,10 @@ mtn_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
 unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
 tester_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
 
+if WITH_CRYPTO
+  AM_CPPFLAGS += -DWITH_CRYPTO
+endif
+
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
