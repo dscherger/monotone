@@ -214,3 +214,31 @@ cvssync had to be changed to support rosters (done).
 when it pushes it into the cvs repository, so it has to certify a change
 in the synchronization information (basically a file/revision map)
 
+==============================
+old revision cert:
+cvs.manuproc.berlios.de:/cvsroot/manuproc	c++
++80a800ce1719688467120ad2e366852c99b103ad
+1.38/-ko Artikel/Artikelpreis.cc
+1.13 Artikel/Prozess_sql.pgcc
+
+repository \t module [\t branch]
+[+base_id]
+revision [/ keyexpansion] ' ' relative_path
+
+old module var:
+cvs-server-path: cvs.gnome.org:/cvs/gnome       glade--
+        /cvs/gnome/glade--/
+intl/   /cvs/gnome/gnome-common/intl/
+macros/ /cvs/gnome/gnome-common/macros/
+
+DOMAIN="cvs-server-path", NAME={repository \t module [\t branch]\n}
+VALUE={[localpath \t serverpath \n] ...}
+
+========== neues Format ==============
+repository \t module [\t branch]
+#modules
+/serverpath \t localpath
+#files
+revision [ / keyexpansion ] ' ' localpath
+
+revision kann später "(1.2)" sein (= lokal geändert)

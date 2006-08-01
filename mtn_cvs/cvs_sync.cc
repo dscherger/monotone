@@ -253,16 +253,6 @@ std::string::size_type cvs_repository::parse_cvs_cert_header(std::string const& 
   return nlpos;
 }
 
-#if 0
-void cvs_repository::parse_cvs_cert_header(revision<cert> const& c, 
-      std::string &repository, std::string& module, std::string& branch)
-{
-  cert_value value;
-  decode_base64(c.inner().value, value);
-  parse_cvs_cert_header(value, repository, module, branch);
-}
-#endif
-
 std::string cvs_repository::create_cvs_cert_header() const
 { 
   // I assume that at least TAB is uncommon in path names - even on Windows
