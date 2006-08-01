@@ -427,7 +427,7 @@ void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::sha
 // compare the new manifest with the old roster and fill the cset accordingly
 static void 
 build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_manifest &newm,
-                 mtn_automate::revision &cs, cvs_file_state const& remove_state)
+                 mtn_automate::cset &cs, cvs_file_state const& remove_state)
 {
   cvs_manifest cvs_delta;
 
@@ -750,6 +750,10 @@ static file_id get_sync_id(mtncvs_state &app, revision_id id)
   return m[file_path_internal(".mtn-sync-"+app.domain())];
 }
 
+void attach_sync_state(mtncvs_state &app,cvs_edge const& e,mtn_automate::cset &cs)
+{
+}
+
 // commit CVS revisions to monotone (pull)
 void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 { revision_id parent_rid;
@@ -770,18 +774,19 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
   for (; e!=edges.end(); ++e)
   { // roster_t new_roster=old_roster;
     // editable_roster_base eros(new_roster,nis);
-    mtn_automate::revision rev;
+    mtn_automate::cset cs;
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
     L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
     // revision_set rev;
     // boost::shared_ptr<cset> cs(new cset());
-    build_change_set(*this,app.get_manifest_of(parent_rid),e->xfiles,rev,remove_state);
+    build_change_set(*this,app.get_manifest_of(parent_rid),e->xfiles,cs,remove_state);
+    attach_sync_state(app,*e,cs);
     //cs->apply_to(eros);
     //calculate_ident(new_roster, rev.new_manifest);
     //safe_insert(rev.edges, std::make_pair(parent_rid, cs));
     
-    if (!rev.is_nontrivial()) 
+    if (!cs.is_nontrivial()) 
     { W(F("null edge (empty cs) @%s skipped\n") % time_t2human(e->time));
       continue;
     }
@@ -798,7 +803,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
       continue;
     }
 #endif
-    revision_id child_rid=app.put_revision(rev);
+    revision_id child_rid=app.put_revision(parent_rid,cs);
     if (revision_ticker.get()) ++(*revision_ticker);
     L(FL("CVS Sync: Inserted revision %s (%s) into repository\n") % child_rid);
     e->revision=child_rid.inner();

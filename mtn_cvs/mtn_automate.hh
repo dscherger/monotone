@@ -18,14 +18,12 @@
 
 // frontend
 struct mtn_automate : mtn_pipe
-{ typedef std::map<file_path,file_id> manifest; // (directories missing)
-  struct revision
-  { hexenc<id> new_manifest;
-    revision_id old_revision;
-    std::set<file_path> deleted;
+{ typedef std::map<file_path,file_id> manifest; // (directories have a null file_id)
+  struct cset // make this more like a mtn cset? (split_paths)
+  { std::set<file_path> deleted;
     std::map<file_path,file_id> added;
     std::map<file_path,std::pair<file_id,file_id> > changed;
-    
+
     bool is_nontrivial() const 
     { return !deleted.empty() || !added.empty() || !changed.empty(); }
   };
@@ -35,7 +33,7 @@ struct mtn_automate : mtn_pipe
   std::string get_sync_info(revision_id const& rid, std::string const& domain);
   file_id put_file(data const& d, file_id const& base=file_id());
   manifest get_manifest_of(revision_id const& rid);
-  revision_id put_revision(revision const& r); // new manifest is not needed
+  revision_id put_revision(revision_id const& parent, cset const& changes);
 };
 
 #endif

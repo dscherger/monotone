@@ -32,6 +32,7 @@
 #include "transforms.hh"
 #include "vocab.hh"
 #include "globish.hh"
+#include "safe_map.hh"
 
 using std::allocator;
 using std::basic_ios;
@@ -1359,23 +1360,47 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 
 // Name: put_revision
 // Arguments:
-//   revision changes
+//   single edge specification (part of a full revision)
 // Added in: 2.3
 // Purpose:
-//   Store a revision in the database.
+//   Store a revision into the database.
 // Output format:
 //   The ID of the new revision
 // Error conditions:
 //   none
-AUTOMATE(put_revision, N_("REVISION-DATA"))
+AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"))
 { 
   if (args.size() != 1)
     throw usage(name);
   revision_t rev;
+
   basic_io::input_source source(idx(args,0)(),"automate put_revision's 1st argument");
   basic_io::tokenizer tokenizer(source);
   basic_io::parser parser(tokenizer);
-  parse_revision(parser, rev);
+
+  temp_node_id_source nis;
+  // I chose a single edge variant since this was much more simple to code
+  // and sufficient to my needs.
+  // make this a loop if you need to create merge revisions  
+  { boost::shared_ptr<cset> cs(new cset());
+    MM(*cs);
+    // like revision::parse_edge
+    parser.esym(symbol("old_revision"));
+    string tmp;
+    parser.hex(tmp);
+    revision_id old_rev=revision_id(tmp);
+    parse_cset(parser, *cs);
+    
+    // calculate new manifest
+    roster_t old_roster;
+    if (!null_id(old_rev)) app.db.get_roster(old_rev, old_roster);
+    roster_t new_roster=old_roster;
+    editable_roster_base eros(new_roster,nis);
+    cs->apply_to(eros);
+    calculate_ident(new_roster, rev.new_manifest);
+    safe_insert(rev.edges, std::make_pair(old_rev, cs));
+  }
+  
   revision_id id;
   calculate_ident(rev, id);
   

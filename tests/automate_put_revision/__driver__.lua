@@ -1,7 +1,7 @@
 
 mtn_setup()
 
-roster = "format_version \"1\"\n\nnew_manifest [76fc8c020746de7f00f5e3a350be5e22599ed429]\n\nold_revision []\n\nadd_dir \"\"\n\nadd_file \"foo\"\n content [5bf1fd927dfb8679496a2e6cf00cbe50c1c87145]\n"
+edge = "old_revision []\n\nadd_dir \"\"\n\nadd_file \"foo\"\n content [5bf1fd927dfb8679496a2e6cf00cbe50c1c87145]\n"
 
 check(mtn("automate", "put_file", "blah"), 0, true, false)
 canonicalize("stdout")
@@ -9,7 +9,7 @@ file = "5bf1fd927dfb8679496a2e6cf00cbe50c1c87145"
 result = readfile("stdout")
 check(result == file)
 
-check(mtn("automate", "put_revision", roster), 0, true, false)
+check(mtn("automate", "put_revision", edge), 0, true, false)
 canonicalize("stdout")
 rev = "4c2c1d846fa561601254200918fba1fd71e6795d"
 result = readfile("stdout")
