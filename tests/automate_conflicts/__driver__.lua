@@ -1,0 +1,37 @@
+
+mtn_setup()
+
+addfile("foo", "data")
+mkdir("dir1")
+mkdir("fuzzy")
+mkdir("dir2")
+addfile("dir2/f", "ile")
+addfile("dir1/bar", "wooly")
+addfile("fuzzy/wuzzy", "was a bear")
+check(mtn("attr", "set", "dir1", "2", "3"))
+check(mtn("attr", "set", "fuzzy/wuzzy", "has_hair", "yes"))
+commit()
+base = base_revision()
+
+writefile("foo", "other data")
+writefile("dir1/bar", "shorn")
+addfile("quux", "dat")
+check(mtn("attr", "set", "fuzzy/wuzzy", "has_hair", "no"))
+check(mtn("attr", "drop", "dir1", "2"))
+check(mtn("mv", "-e", "dir1", "fuzzy/"), 0, false, false)
+check(mtn("drop", "dir2", "-e", "-R"), 0, false, false)
+commit()
+left = base_revision()
+
+revert_to(base)
+addfile("quux", "dat")
+writefile("dir1/bar", "yarn")
+addfile("dir2/other", "file")
+check(mtn("attr", "drop", "fuzzy/wuzzy", "has_hair"))
+check(mtn("mv", "-e", "fuzzy", "dir1/"), 0, false, false)
+commit()
+right = base_revision()
+
+check(mtn("automate", "conflicts", left, right), 0, true)
+
+check(false)
