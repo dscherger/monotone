@@ -3044,9 +3044,8 @@ transaction_guard::transaction_guard(database & d, bool exclusive,
     checkpointed_bytes(0)
 {
   db.begin_transaction(exclusive);
-  if (checkpoint_batch_size > constants::db_max_pending_writes_bytes) {
-    fprintf(stderr,"Warning: checkpoint_batch_size (%d) > constants::db_max_pending_writes_bytes (%lu), so will not be effective.\n",
-            checkpoint_batch_size, constants::db_max_pending_writes_bytes);
+  if (checkpoint_batch_bytes > constants::db_max_pending_writes_bytes) {
+    W(F("checkpoint_batch_bytes (%d) > constants::db_max_pending_writes_bytes (%lu), so will not be effective.\n") % checkpoint_batch_bytes % constants::db_max_pending_writes_bytes);
   }
 }
 
