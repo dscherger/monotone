@@ -1,3 +1,40 @@
+2006-08-02  Zack Weinberg  <zackw@panix.com>
+
+	* acinclude.m4: Rename to m4/inaddrnone.m4; update macro to
+	autoconf 2.5x conventions.
+
+	* m4/ac_compile_check_sizeof.m4: Delete, unused.
+	* m4/acx_pthread.m4, m4/ax_create_stdint_h.m4, m4/externtemplate.m4
+	* m4/fexception.m4, m4/gnucxxhashmap.m4, m4/stlporthashmap.m4
+	* m4/typeof.m4: Update to autoconf 2.5x conventions.
+
+	* m4/externtemplate.m4, m4/gnucxxhashmap.m4, m4/stlporthashmap.m4
+	* m4/typeof.m4: Use AC_LANG_SOURCE where appropriate.
+
+	* m4/prog_cxx_warnings.m4: Set CXXFLAGS outside the AC_CACHE_CHECK.
+	* m4/boost.m4: New file.  All boost-related logic goes here now.
+	Cache results of library searches; simplify handling of
+	--enable-static-boost.
+	* m4/tr1unorderedmap.m4: New file with tests for tr1::unordered_*.
+	* configure.ac: Use the macros from the above new files.
+	* Makefile.am: Conditional on STATIC_BOOST is no longer	necessary.
+	Wrap some lines.
+
+	* m4/localeworks.m4, m4/netxx.m4, m4/pch.m4, m4/popt.m4, m4/sqlite.m4
+	* m4/syncwithstdio.m4, m4/tempstatconst.m4, m4/xgettextflag.m4:
+	New files.
+	* configure.ac: Use the macros defined in the above files instead
+	of in-line code.
+
+	* configure.ac: Reorganize tests for ease of reading and to ensure
+	that all tests are performed only once.
+	* m4/acx_pthread.m4, m4/externtemplate.m4, m4/fexception.m4
+	* m4/gnucxxhashmap.m4, m4/stlporthashmap.m4, mtl/tempstatconst.m4
+	* m4/tr1unorderedmap.m4, m4/typeof.m4: Use AC_LANG_ASSERT instead
+	of AC_LANG_PUSH/POP, per autoconf manual's recommendation.
+	* m4/popt.m4: Avoid double tests for headers.
+	* m4/prog_cxx_warnings.m4: Fix typo in last change.
+
 2006-07-31  Richard Levitte  <richard@levitte.org>
 
 	* po/sv.po: Reformat some messages so they fit 80 columns better.
