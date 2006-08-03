@@ -33,6 +33,7 @@ extern "C" {
 #include "transforms.hh"
 #include "paths.hh"
 #include "uri.hh"
+#include "constants.hh"
 
 // defined in {std,test}_hooks.lua, converted
 #include "test_hooks.h"
@@ -927,6 +928,23 @@ lua_hooks::hook_note_netsync_end(string nonce)
     .push_str(nonce)
     .call(1, 0)
     .ok();
+}
+
+int
+lua_hooks::hook_get_vcache_size()
+{
+  bool exec_ok;
+  int vcache_size = constants::db_version_cache_sz;
+
+  exec_ok = Lua(st)
+    .func("get_vcache_size")
+    .call(0, 1)
+    .extract_int(vcache_size)
+    .ok();
+  if (!exec_ok) {
+    return constants::db_version_cache_sz;
+  }
+  return vcache_size;
 }
 
 

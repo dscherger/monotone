@@ -143,6 +143,9 @@ public:
                                        cert_value const & value,
 				       std::string nonce);
   bool hook_note_netsync_end(std::string nonce);
+
+  // misc hooks
+  int hook_get_vcache_size();
 };
 
 // Local Variables:

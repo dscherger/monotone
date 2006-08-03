@@ -97,6 +97,10 @@ template<class Key,class Data,class Sizefn=Countfn<Data> > class LRUCache {
 		 */
 		inline const unsigned long max_size( void ) const { return _max_size; }
 
+                /** @brief Sets the maximum size of the cache, does not reduce the actual cache size until next insert
+                */
+                inline void set_max_size(const unsigned long Size) { _max_size = Size; }
+
 		/// Clears all storage and indices.
 		void clear( void ) {
 			SCOPED_MUTEX;
