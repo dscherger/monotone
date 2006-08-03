@@ -179,10 +179,22 @@ find_match(match_table const & matches,
 static inline void
 insert_insn(vector<insn> & delta, char c)
 {
-  if (delta.empty() || delta.back().code == insn::copy)
+  if (delta.empty() || delta.back().code == insn::copy) {
     delta.push_back(insn(c));
-  else
+  } else {
+    // design in gcc 3.3 and 4.0 STL expands the string one character
+    // at a time when appending single characters ?!
+    // see libstdc++5-3.3-dev 3.3.5-13: basic_string.h:471, calling with
+    // size_type(1), then basic_string.tcc:717 reserving one more byte
+    // if needed.
+    // see libstdc++6-4.0-dev 4.0.3-3: basic_string.h:770 calling push_back
+    // then basic_string.h: 849 again adding 1 to the length.
+    if (delta.back().payload.capacity() == delta.back().payload.size()) {
+      // standard amortized constant rule
+      delta.back().payload.reserve(delta.back().payload.size() * 2);
+    }
     delta.back().payload += c;
+  }
 }
 
 
@@ -496,6 +508,13 @@ piece_table
   void build(version_spec const & in, string & out)
   {
     out.clear();
+    unsigned out_len = 0;
+    for (version_spec::const_iterator i = in.begin();
+         i != in.end(); ++i)
+      {
+        out_len += i->len;
+      }
+    out.reserve(out_len);
     for (version_spec::const_iterator i = in.begin();
          i != in.end(); ++i)
       {

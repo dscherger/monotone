@@ -5,7 +5,42 @@
 
 #include <botan/sha160.h>
 #include <botan/bit_ops.h>
+#if WITH_CRYPTO
+#include <stdio.h>
 
+namespace Botan {
+void SHA_160::clear() throw() 
+{
+    SHA1_Init(&ctx);
+}
+
+void SHA_160::add_data(const byte data[], u32bit size)
+{
+    SHA1_Update(&ctx, data, size);
+}
+
+void SHA_160::final_result(byte output[])
+{
+    SHA1_Final(output,&ctx);
+    clear();
+}
+
+void SHA_160::hash(const byte input[]) 
+{
+    abort();
+}
+
+void SHA_160::copy_out(byte output[]) 
+{
+    abort();
+}
+
+void SHA_160::write_count(byte foo[])
+{
+    abort();
+}
+}
+#else
 namespace Botan {
 
 namespace {
@@ -118,5 +153,8 @@ void SHA_160::clear() throw()
    digest[3] = 0x10325476;
    digest[4] = 0xC3D2E1F0;
    }
-
 }
+
+#endif
+
+

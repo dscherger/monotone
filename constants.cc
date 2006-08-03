@@ -40,7 +40,7 @@ namespace constants
   // the value of 7 MB was determined as the optimal point after timing
   // various values with a pull of the monotone repository - it could
   // be tweaked further.
-  size_t const db_version_cache_sz = 7 * (1 << 20);
+  size_t db_version_cache_sz = 7 * (1 << 20);
 
   size_t const db_roster_cache_sz = 7;
 

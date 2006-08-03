@@ -1069,6 +1069,16 @@ struct datasz
 static LRUCache<hexenc<id>, data, datasz>
 vcache(constants::db_version_cache_sz);
 
+void
+database::set_vcache_max_size()
+{
+  int vcache_size = this->__app->lua.hook_get_vcache_size();
+  if (vcache_size < 1000000) {
+    throw oops("Disallowing vcache size < 1000000; doesn't make sense");
+  }
+  vcache.set_max_size(vcache_size);
+}
+
 typedef vector< hexenc<id> > version_path;
 
 static void

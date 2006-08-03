@@ -419,6 +419,7 @@ app_state::load_rcfiles()
     {
       lua.load_rcfile(*i);
     }
+  db.set_vcache_max_size();
 }
 
 void

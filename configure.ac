@@ -608,6 +608,31 @@ if test $ac_cv_sync_with_stdio = yes && test $ac_cv_sync_with_stdio_2 = yes; the
               [Define to 1 if sync_with_stdio works fine on C++ streams])
 fi
 
+AC_ARG_WITH(crypto,
+  [  --with-crypto           enable OpenSSL cryptographic library support],
+  [with_crypto=$withval],
+  [with_crypto='no'])
+
+CRYPTO_LIBS=''
+if test "$with_crypto" = yes; then
+   have_crypto_hdr=no
+   have_crypto_lib=no
+   AC_CHECK_HEADER(openssl/sha.h,have_crypto_hdr=yes,)
+   AC_CHECK_LIB(crypto,SHA1,have_crypto_lib=yes;CRYPTO_LIBS=-lcrypto; LIBS="-lcrypto $LIBS")
+
+   if test $have_crypto_hdr = yes -a $have_crypto_lib = yes; then
+      with_crypto=yes
+   else
+      with_crypto=no
+      CRYPTO_LIBS='' 
+   fi
+else
+   with_crypto=no
+fi
+
+AC_SUBST(CRYPTO_LIBS)
+AM_CONDITIONAL(WITH_CRYPTO, test $with_crypto = yes)
+
 # allow compiling with different flags/optimisation
 # for monotone versus libs, useful for testing.
 # only makes sense if CFLAGS="" or CXXFLAGS=""

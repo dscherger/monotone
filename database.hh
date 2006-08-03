@@ -436,6 +436,7 @@ public:
 
   ~database();
 
+  void set_vcache_max_size();
 };
 
 // Transaction guards nest. Acquire one in any scope you'd like
