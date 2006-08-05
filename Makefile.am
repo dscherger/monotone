@@ -72,6 +72,10 @@ MOST_SOURCES =								\
          package_full_revision.c package_full_revision.h options.hh	\
          i18n.h parallel_iter.hh safe_map.hh pch.hh
 
+if ENABLE_FAKEPTHREAD
+  MOST_SOURCES += fake_pthread.c
+endif
+
 NETXX_SOURCES =									\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx			\
 	netxx/common.h netxx/compat.h netxx/datagram.cxx			\

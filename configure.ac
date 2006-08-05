@@ -633,6 +633,13 @@ fi
 AC_SUBST(CRYPTO_LIBS)
 AM_CONDITIONAL(WITH_CRYPTO, test $with_crypto = yes)
 
+AC_ARG_ENABLE(fakepthread,
+  AS_HELP_STRING([--enable-fakepthread],[enable fake pthread library (default=no)]),
+  ,
+  enable_fakepthread=no
+)
+AM_CONDITIONAL(ENABLE_FAKEPTHREAD, test x"${enable_fakepthread}" = xyes)
+
 # allow compiling with different flags/optimisation
 # for monotone versus libs, useful for testing.
 # only makes sense if CFLAGS="" or CXXFLAGS=""
