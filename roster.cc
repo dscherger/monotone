@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <stdexcept>
+#include <iostream>
 
 #include "app_state.hh"
 #include "basic_io.hh"
@@ -27,6 +29,8 @@
 #include "parallel_iter.hh"
 #include "restrictions.hh"
 #include "safe_map.hh"
+#include "string_queue.hh"
+#include "netio.hh"
 
 #include <boost/lexical_cast.hpp>
 
@@ -41,9 +45,42 @@ using std::set_union;
 using std::stack;
 using std::string;
 using std::vector;
+using std::logic_error;
+using std::cout;
 
 using boost::lexical_cast;
 
+
+// GCC really doesn't seem to be able to figure out how to make constant
+// strings and not keep re-creating them.  Bug still seems to be present
+// even in g++-4.1.  Grrr.
+static const string node_id_str("node id");
+static const string record_size_str("record size");
+static const string ident_str("ident");
+static const string path_str("path");
+static const string content_str("content");
+static const string nondormant_attr_key_str("non-dormant attr key");
+static const string nondormant_attr_value_str("non-dormant attr value");
+
+// This specialization saves about 600m instructions on annotating xdelta.cc
+template <>
+inline u32
+extract_datum_lsb(std::string const & in,
+                  size_t & pos,
+                  std::string const & name)
+{
+  I(sizeof(u32) == 4);
+  u32 out = 0;
+
+  require_bytes(in, pos, 4, name);
+
+  out = (widen<u32,u8>(in[pos]) << 0) |
+    (widen<u32,u8>(in[pos+1]) << 8) |
+    (widen<u32,u8>(in[pos+2]) << 16) |
+    (widen<u32,u8>(in[pos+3]) << 24);
+  pos += 4;
+  return out;
+}
 
 ///////////////////////////////////////////////////////////////////
 
@@ -2444,6 +2481,47 @@ push_marking(basic_io::stanza & st,
     }
 }
 
+static void
+push_marking_binary(string_queue &out, 
+                    node_t curr,
+                    marking_t const & mark)
+{
+
+  I(!null_id(mark.birth_revision));
+  out += 'm';
+  insert_variable_length_string(mark.birth_revision.inner()(),out);
+
+  for (set<revision_id>::const_iterator i = mark.parent_name.begin();
+       i != mark.parent_name.end(); ++i) {
+    out += 'p';
+    insert_variable_length_string(i->inner()(),out);
+  }
+
+  if (is_file_t(curr))
+    {
+      for (set<revision_id>::const_iterator i = mark.file_content.begin();
+           i != mark.file_content.end(); ++i) {
+        out += 'c';
+        insert_variable_length_string(i->inner()(),out);
+      }
+    }
+  else
+    I(mark.file_content.empty());
+
+  for (full_attr_map_t::const_iterator i = curr->attrs.begin();
+       i != curr->attrs.end(); ++i)
+    {
+      map<attr_key, set<revision_id> >::const_iterator am = mark.attrs.find(i->first);
+      I(am != mark.attrs.end());
+      for (set<revision_id>::const_iterator j = am->second.begin();
+           j != am->second.end(); ++j) {
+        out += 'a';
+        insert_variable_length_string(i->first(), out);
+        insert_variable_length_string(j->inner()(), out);
+      }
+    }
+}
+
 
 void
 parse_marking(basic_io::parser & pa,
@@ -2483,6 +2561,56 @@ parse_marking(basic_io::parser & pa,
         }
       else break;
     }
+}
+
+void
+parse_marking_binary(const string &from, unsigned &from_pos,
+                     node_t n,
+                     marking_t & marking)
+{
+  I(from_pos < from.size());
+  if ('m' != from[from_pos]) {
+    cout << "Error parsing:\n" << from << "\nError parsing\n";
+  }
+      
+  I('m' == from[from_pos]);
+  ++from_pos;
+  string rev;
+  extract_variable_length_string(from, rev, from_pos, "birth marking");
+  marking.birth_revision = revision_id(rev);
+  
+  while (1) {
+    I(from_pos < from.size());
+    if ('p' != from[from_pos]) {
+      break;
+    }
+    ++from_pos;
+    extract_variable_length_string(from, rev, from_pos, "parent_name path_mark");
+    safe_insert(marking.parent_name, revision_id(rev));
+  }
+  while (1) {
+    I(from_pos < from.size());
+    if ('c' != from[from_pos]) {
+      break;
+    }
+    ++from_pos;
+    extract_variable_length_string(from, rev, from_pos, "file_content revision");
+    safe_insert(marking.file_content, revision_id(rev));
+  }
+
+  string k;
+  while (1) {
+    I(from_pos < from.size());
+    if ('a' != from[from_pos]) {
+      break;
+    }
+    ++from_pos;
+    extract_variable_length_string(from, k, from_pos, "attribute key");
+    extract_variable_length_string(from, rev, from_pos, "attribute revision");
+    attr_key key = attr_key(k);
+    I(n->attrs.find(key) != n->attrs.end());
+    safe_insert(marking.attrs[key], revision_id(rev));
+  }
 }
 
 // SPEEDUP?: hand-writing a parser for manifests was a measurable speed win,
@@ -2560,6 +2688,82 @@ roster_t::print_to(basic_io::printer & pr,
 
       pr.print_stanza(st);
     }
+}
+
+void
+roster_t::print_binary(string_queue &out, 
+                       marking_map const & mm) const
+{
+  I(has_root());
+  out += 'V';
+  out += (char)1;
+
+  unsigned node_count = 0;
+  for (dfs_iter i(root_dir); !i.finished(); ++i) {
+    ++node_count;
+  }
+
+  for (dfs_iter i(root_dir); !i.finished(); ++i)
+    {
+      node_t curr = *i;
+      split_path pth;
+      get_name(curr->self, pth);
+
+      file_path fp = file_path(pth);
+
+      I(curr->self != the_null_node);
+      I(sizeof(node_id) == 4);
+      
+      out += is_dir_t(curr) ? 'D' : 'F';
+      insert_datum_lsb((u32)curr->self, out);
+      u32 record_size_pos = out.size();
+      insert_datum_lsb((u32)0, out);
+      insert_variable_length_string(fp.as_internal(),out);
+      if (!is_dir_t(curr))
+        {
+          file_t ftmp = downcast_to_file_t(curr);
+          insert_variable_length_string(ftmp->content.inner()(),out);
+        }
+
+      // Push the non-dormant part of the attr map
+      for (full_attr_map_t::const_iterator j = curr->attrs.begin();
+           j != curr->attrs.end(); ++j)
+        {
+          if (j->second.first)
+            {
+              // L(FL("printing attr %s : %s = %s") % fp % j->first % j->second);
+              // st.push_str_triple(syms::attr, j->first(), j->second.second());
+              out += 'n';
+              insert_variable_length_string(j->first(),out);
+              insert_variable_length_string(j->second.second(),out);
+            }
+        }
+
+      // Push the dormant part of the attr map
+      for (full_attr_map_t::const_iterator j = curr->attrs.begin();
+           j != curr->attrs.end(); ++j)
+        {
+          if (!j->second.first)
+            {
+              I(j->second.second().empty());
+              out += 'd';
+              insert_variable_length_string(j->first(),out);
+            }
+        }
+      
+      marking_map::const_iterator m = mm.find(curr->self);
+      I(m != mm.end());
+      push_marking_binary(out, curr, m->second);
+      string tmp;
+      insert_datum_lsb((u32)(out.size()-(record_size_pos+4)), tmp);
+      I(tmp.size() == 4);
+      for(unsigned i=0; i<4; ++i) 
+        {
+          out[record_size_pos+i] = tmp[i];
+        }
+    }
+  u32 index_start_offset = out.size();
+  out += 'X';
 }
 
 inline size_t
@@ -2640,11 +2844,11 @@ skip_to_next_line(basic_io::input_source &src)
 }
 
 
-bool
-roster_get_revision_fid_info(const roster_data &dat,
-                             node_id const &file_id_int,
-                             file_t &file,
-                             marking_t &marks)
+static bool
+roster_get_revision_fid_info_ascii(const roster_data &dat,
+                                   node_id const &file_id_int,
+                                   file_t &file,
+                                   marking_t &marks)
 {
   // there has to be a better way
   char buf[30];
@@ -2740,6 +2944,110 @@ roster_get_revision_fid_info(const roster_data &dat,
   }
   I(src.curr == src.in.end());
   return false;
+}
+
+static void
+parse_binary_attrs(node_t &n, const std::string &from, size_t &from_pos)
+{
+  // Non-dormant attrs
+  while(1) 
+    {
+      I(from_pos < from.size());
+      if ('n' != from[from_pos]) 
+        {
+          break;
+        }
+      ++from_pos;
+      string k,v;
+      extract_variable_length_string(from, k, from_pos, nondormant_attr_key_str);
+      extract_variable_length_string(from, v, from_pos, nondormant_attr_value_str);
+      safe_insert(n->attrs, make_pair(attr_key(k),
+                                      make_pair(true, attr_value(v))));
+    }
+
+  // Dormant attrs
+  while(1) 
+    {
+      I(from_pos < from.size());
+      if ('d' != from[from_pos]) 
+        {
+          break;
+        }
+      ++from_pos;
+      string k;
+      extract_variable_length_string(from, k, from_pos, "dormant attr key");
+      safe_insert(n->attrs, make_pair(attr_key(k),
+                                      make_pair(false, attr_value())));
+    }
+}
+
+bool
+roster_get_revision_fid_info_binary(const roster_data &dat,
+                                    node_id const file_id_int,
+                                    file_t &file,
+                                    marking_t &marks)
+{
+  const string from(dat.inner()());
+
+  I(from.size() >= 10);
+  I(from[0] == 'V');
+  I(from[1] == (char)1);
+  size_t from_pos = 2;
+  while(1) 
+    {
+      I(from_pos < from.size());
+      if ('X' == from[from_pos]) 
+        {
+          return false; 
+        }
+      I('D' == from[from_pos] || 'F' == from[from_pos]);
+      ++from_pos;
+      u32 node_id = extract_datum_lsb<u32>(from, from_pos, node_id_str);
+      if (node_id != file_id_int) 
+        {
+          u32 record_size = extract_datum_lsb<u32>(from, from_pos, record_size_str);
+          from_pos += record_size;
+          continue;
+        }
+      from_pos -= 5;
+      break;
+    }
+  I(from_pos >= 2 && from_pos < from.size());
+  I('F' == from[from_pos]);
+  ++from_pos;
+  u32 ident = extract_datum_lsb<u32>(from, from_pos, ident_str);
+  I(ident == file_id_int);
+  u32 record_size = extract_datum_lsb<u32>(from, from_pos, record_size_str);
+  string content, path;
+  extract_variable_length_string(from, path, from_pos, path_str);
+  extract_variable_length_string(from, content, from_pos, content_str);
+  node_t n = file_t(new file_node(ident,file_id(content)));
+  parse_binary_attrs(n,from,from_pos);
+  parse_marking_binary(from, from_pos, n, marks);
+  I(from_pos < from.size());
+  I('F' == from[from_pos] || 'D' == from[from_pos] || 'X' == from[from_pos]);
+  file = downcast_to_file_t(n);
+  return true;
+}
+
+bool
+roster_get_revision_fid_info(const roster_data &dat,
+                             node_id const &file_id_int,
+                             file_t &file,
+                             marking_t &marks)
+{
+  if ('V' == dat.inner()()[0]) 
+    {
+      return roster_get_revision_fid_info_binary(dat, file_id_int, file, marks);
+    } 
+  else if ('f' == dat.inner()()[0]) 
+    {
+      return roster_get_revision_fid_info_ascii(dat, file_id_int, file, marks);
+    }
+  else 
+    {
+      throw logic_error((F("Expected roster to start with either 'V' or 'f', not '%c'") % dat.inner()()[0]).str());
+    }
 }
 
 
@@ -2842,17 +3150,106 @@ roster_t::parse_from(basic_io::parser & pa,
     }
 }
 
+void
+roster_t::parse_binary(const std::string &from,
+                       marking_map & mm)
+{
+  // Instantiate some lookaside caches to ensure this roster reuses
+  // string storage across ATOMIC elements.
+  id::symtab id_syms;
+  path_component::symtab path_syms;
+  attr_key::symtab attr_key_syms;
+  attr_value::symtab attr_value_syms;
+
+  // We *always* parse the local part of a roster, because we do not
+  // actually send the non-local part over the network; the only times
+  // we serialize a manifest (non-local roster) is when we're printing
+  // it out for a user, or when we're hashing it for a manifest ID.
+  nodes.clear();
+  root_dir.reset();
+  mm.clear();
+
+  I(from.size() >= 2);
+  I(from[0] == 'V');
+  I(from[1] == (char)1);
+  size_t from_pos = 2;
+
+  while(1) 
+    {
+    I(from_pos < from.size());
+    string pth, rev;
+    node_t n;
+
+    if ('X' == from[from_pos]) 
+      { // index, done
+        break;
+      }
+    char type = from[from_pos];
+    ++from_pos;
+    if ('F' != type && 'D' != type) 
+      {
+        throw logic_error((F("Unexpected character '%c' at position %d while parsing roster, expected X,F,D") % from[from_pos] % from_pos).str());
+      }
+    u32 ident = extract_datum_lsb<u32>(from, from_pos, ident_str);
+    u32 record_size = extract_datum_lsb<u32>(from, from_pos, record_size_str);
+    u32 start_record = from_pos;
+    extract_variable_length_string(from, pth, from_pos, path_str);
+    
+    if ('F' == type) 
+      {
+        string content;
+        extract_variable_length_string(from, content, from_pos, content_str);
+        n = file_t(new file_node(ident,file_id(content)));
+      } 
+    else if ('D' == type)
+      {
+        n = dir_t(new dir_node(ident));
+      }
+
+    safe_insert(nodes, make_pair(n->self, n));
+    if (is_dir_t(n) && pth.empty())
+      {
+        I(! has_root());
+        root_dir = downcast_to_dir_t(n);
+      }
+    else
+      {
+        I(!pth.empty());
+        split_path sp;
+        internal_string_to_split_path(pth, sp);
+        attach_node(n->self, sp);
+      }
+
+    parse_binary_attrs(n,from,from_pos);
+    {
+      marking_t & m(safe_insert(mm, make_pair(n->self, marking_t()))->second);
+      parse_marking_binary(from, from_pos, n, m);
+    }
+    I(record_size == from_pos - start_record);
+  }
+}
 
 void
 read_roster_and_marking(roster_data const & dat,
                         roster_t & ros,
                         marking_map & mm)
 {
-  basic_io::input_source src(dat.inner()(), "roster");
-  basic_io::tokenizer tok(src);
-  basic_io::parser pars(tok);
-  ros.parse_from(pars, mm);
-  I(src.lookahead == EOF);
+  if ('V' == dat.inner()()[0]) 
+    {
+      ros.parse_binary(dat.inner()(), mm);
+    } 
+  else if ('f' == dat.inner()()[0]) 
+    {
+      basic_io::input_source src(dat.inner()(), "roster");
+      basic_io::tokenizer tok(src);
+      basic_io::parser pars(tok);
+      ros.parse_from(pars, mm);
+      I(src.lookahead == EOF);
+    } 
+  else 
+    {
+      throw logic_error((F("Expected roster to start with either 'V' or 'f', not '%c'") % dat.inner()()[0]).str());
+    }
   ros.check_sane_against(mm);
 }
 
@@ -2861,15 +3258,29 @@ static void
 write_roster_and_marking(roster_t const & ros,
                          marking_map const & mm,
                          roster_data & dat,
-                         bool print_local_parts)
+                         bool print_local_parts,
+                         bool binary_ok)
 {
   if (print_local_parts)
     ros.check_sane_against(mm);
   else
     ros.check_sane(true);
-  basic_io::printer pr;
-  ros.print_to(pr, mm, print_local_parts);
-  dat = roster_data(pr.buf);
+  if (binary_ok && print_local_parts) { 
+    // the complete roster is internal, it looks like the manifest varient
+    // is used in a bunch of hashes, so we really can't safely move to a
+    // binary format.  Interestingly, because the ident is only printed if
+    // print_local_parts is set, EricAnderson doesn't think that parse_from
+    // will parse it because it expects to see an ident after a file chunk
+    // of data.
+
+    string_queue out;
+    ros.print_binary(out, mm);
+    dat = roster_data(out.substr(0,out.size()));
+  } else {
+    basic_io::printer pr;
+    ros.print_to(pr, mm, print_local_parts);
+    dat = roster_data(pr.buf);
+  }
 }
 
 
@@ -2878,7 +3289,15 @@ write_roster_and_marking(roster_t const & ros,
                          marking_map const & mm,
                          roster_data & dat)
 {
-  write_roster_and_marking(ros, mm, dat, true);
+  write_roster_and_marking(ros, mm, dat, true, true);
+}
+
+void
+write_roster_and_marking_ascii(roster_t const & ros,
+                               marking_map const & mm,
+                               roster_data & dat)
+{
+  write_roster_and_marking(ros, mm, dat, true, false);
 }
 
 
@@ -2887,7 +3306,7 @@ write_manifest_of_roster(roster_t const & ros,
                          roster_data & dat)
 {
   marking_map mm;
-  write_roster_and_marking(ros, mm, dat, false);
+  write_roster_and_marking(ros, mm, dat, false, false);
 }
 
 void calculate_ident(roster_t const & ros,
@@ -4697,7 +5116,7 @@ write_roster_test()
   {
     // full roster with local parts
     roster_data rdat; MM(rdat);
-    write_roster_and_marking(r, mm, rdat);
+    write_roster_and_marking_ascii(r, mm, rdat);
 
     // node_id order is a hassle.
     // root 1, foo 2, xx 3, fo 4, foo_bar 5, foo_ang 6, foo_zoo 7

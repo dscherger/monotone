@@ -19,6 +19,7 @@ You add to the decor.
 
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 int  
 pthread_mutex_init(pthread_mutex_t  *mutex,  const  pthread_mutexattr_t *mutexattr)
@@ -133,7 +134,7 @@ int pthread_setspecific(pthread_key_t key, const void *pointer)
   if (key < 0 || key >= tsd_keys_allocated) {
     return -1;
   }
-  tsd_keys[key].value = pointer;
+  tsd_keys[key].value = (void *)pointer;
 }
 
 void * pthread_getspecific(pthread_key_t key)

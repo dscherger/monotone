@@ -909,7 +909,7 @@ CMD(get_roster, N_("debug"), N_("REVID"),
   app.db.get_roster(rid, roster, mm);
 
   roster_data dat;
-  write_roster_and_marking(roster, mm, dat);
+  write_roster_and_marking_ascii(roster, mm, dat);
   cout << dat;
 }
 

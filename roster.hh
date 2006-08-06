@@ -20,6 +20,8 @@
 #include "sanity.hh"
 #include "vocab.hh"
 
+class string_queue;
+
 struct node_id_source
 {
   virtual node_id next() = 0;
@@ -228,8 +230,14 @@ public:
                 marking_map const & mm,
                 bool print_local_parts) const;
 
+  void print_binary(string_queue &out, 
+                    marking_map const & mm) const;
+
   void parse_from(basic_io::parser & pa,
                   marking_map & mm);
+
+  void parse_binary(const std::string &from,
+                    marking_map & mm);
 
   dir_t const & root() { return root_dir; }
 
@@ -413,6 +421,11 @@ void
 write_roster_and_marking(roster_t const & ros,
                          marking_map const & mm,
                          roster_data & dat);
+
+void
+write_roster_and_marking_ascii(roster_t const & ros,
+                               marking_map const & mm,
+                               roster_data & dat);
 
 void
 write_manifest_of_roster(roster_t const & ros,
