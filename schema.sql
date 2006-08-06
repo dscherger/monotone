@@ -21,18 +21,13 @@ BEGIN EXCLUSIVE;
 -- primary data structures concerned with storing and 
 -- versionning state-of-tree configurations
 
-CREATE TABLE files
-	(
-	id primary key,   -- strong hash of file contents
-	data not null     -- compressed contents of a file
-	);
-
+-- experimental weird delta table thing
 CREATE TABLE file_deltas
 	(
 	id not null,      -- strong hash of file contents
-	base not null,    -- joins with files.id or file_deltas.id
-	delta not null,   -- compressed rdiff to construct current from base
-	unique(id, base)
+	base,             -- joins with file_deltas.id, or null if this is a fulltext
+	delta not null,   -- compressed xdelta to construct current from base
+	unique(id, base),
 	);
 
 CREATE TABLE manifests
