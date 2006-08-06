@@ -250,45 +250,72 @@ namespace
     return script;
   }
 
-  //                      A       B       C       D     E
-  // We have:         |---------|-----|--------|-----|---------|
-  // And want this part:           |--------------|
-  //
-  // For a given underlying extent, if start <= offset
-
   void
-  do_script_copy(script_t base, size_t offset, size_t length, std::vector<extent_t> extents)
+  do_script_copy(script_t base, size_t offset, size_t length, std::vector<extent_t> & extents)
   {
+    // we want to end up reconstructing the span [virtual_start, virtual_end)
+    // of the file represented by 'base'
+    size_t const virtual_start = offset;
+    size_t const virtual_end = offset + length;
+
     size_t pos = 0;
     for (std::vector<extent_t>::const_iterator i = script.extents.begin();
          i != script.extents.end(); ++i)
       {
-        // pos is the beginning of this extent
+        // the current extent represents [current_start, current_end)
+        size_t const current_start = pos;
+        size_t const current_end = pos + i->length;
+        
+        // We draw pictures to illustrate cases by putting the current extent
+        // on top; it sweeps from left to right.  Underneath it we draw the
+        // virtual span; it is stationary.
 
-        if (pos > (offset + length))
-          // we overran the span we wanted to copy; all done
-          return;
-        if (pos + i->length < offset)
-          // we haven't reached the 'extent' we want to copy; keep looking
+        //  [------)
+        //          [------)
+        if (current_end <= virtual_start)
+          // We haven't reached the virtual span yet; keep looking
+          // FIXME: consider using binary search instead of linear search here
+          // (by replacing the extent_t's length field with a field giving the
+          // offset of the end of the extent in the underlying file)
           continue;
+        //          [------)
+        //  [------)
+        if (current_start >= virtual_end)
+          // We've passed the end of virtual span; all done
+          return;
 
-        size_t relative_offset;
-        if (pos < offset)
-          {
-            // this is an extent like B above
-            I((pos + i->length) < offset);
-            relative_offset = offset - pos;
-          }
+        // There's some point of overlap.  On each side of that point, the
+        // left sides might be in different orders...
+
+        size_t relative_start;
+        //  [------
+        //     [---
+        if (current_start < virtual_start)
+          relative_start = virtual_start - current_start;
+        //     [---
+        //  [------
         else
-          relative_offset = 0;
+          relative_start = 0;
 
+        // ...and the right sides might be in different orders.
         size_t relative_length;
-        if (pos + i->length > offset + length)
-          // this is an extent like D above
-          relative_length = (offset + length) - pos;
+        //  ------)
+        //  ---)
+        if (virtual_end < current_end)
+          relative_length = virtual_end - current_start;
+        //  ---)
+        //  ------)
         else
-          relative_length = i->length;
-            
+          relative_length = current_end - current_start;
+
+        // all done
+        extent_t extent;
+        extent.text = i->text;
+        extent.offset = i->offset + relative_start;
+        extent.length = relative_length;
+        extents.push_back(extent);
+        
+        // and around we go again
         pos += i->length;
       }
   }
