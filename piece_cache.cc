@@ -254,7 +254,8 @@ namespace
   do_script_copy(script_t base, size_t offset, size_t length, std::vector<extent_t> & extents)
   {
     // we want to end up reconstructing the span [virtual_start, virtual_end)
-    // of the file represented by 'base'
+    // of the string represented by 'base' (this string never actually exists
+    // in memory, which is why we call these coordinates 'virtual').
     size_t const virtual_start = offset;
     size_t const virtual_end = offset + length;
 
@@ -262,57 +263,48 @@ namespace
     for (std::vector<extent_t>::const_iterator i = script.extents.begin();
          i != script.extents.end(); ++i)
       {
-        // the current extent represents [current_start, current_end)
+        // the current extent represents [current_start, current_end) in the
+        // coordinates of the string represented by 'base'.
         size_t const current_start = pos;
         size_t const current_end = pos + i->length;
         
-        // We draw pictures to illustrate cases by putting the current extent
-        // on top; it sweeps from left to right.  Underneath it we draw the
-        // virtual span; it is stationary.
-
-        //  [------)
-        //          [------)
+        // FIXME: this is doing a linear scan to find first extent that we
+        // need to consider.  This means that delta application as a whole is
+        // roughly O(n^2), where n is the number of hunks.  Better would be to
+        // do a binary search here to find the first interesting extent; that
+        // would make the overall cost O(n log n).  This would require storing
+        // slightly different information in the extents -- best would
+        // probably be to replace the 'length' field with a field that held
+        // the location we reached in the underlying ('virtual') string after
+        // appending that extent; this is enough to support binary search, and
+        // also enough to let us reconstruct the length of any particular
+        // extent in constant time (by simply subtracting this field from the
+        // corresponding field in the previous extent).
         if (current_end <= virtual_start)
-          // We haven't reached the virtual span yet; keep looking
-          // FIXME: consider using binary search instead of linear search here
-          // (by replacing the extent_t's length field with a field giving the
-          // offset of the end of the extent in the underlying file)
+          // We haven't reached the virtual span yet; keep looking.
           continue;
-        //          [------)
-        //  [------)
+
         if (current_start >= virtual_end)
-          // We've passed the end of virtual span; all done
+          // We've passed the end of virtual span; all done.
           return;
 
-        // There's some point of overlap.  On each side of that point, the
-        // left sides might be in different orders...
+        // There's some point of overlap in the center.  On the left side of
+        // that point, the overlap starts at whichever [-bracket is closer to
+        // the center:
+        size_t wanted_start = std::max(current_start, virtual_start);
 
-        size_t relative_start;
-        //  [------
-        //     [---
-        if (current_start < virtual_start)
-          relative_start = virtual_start - current_start;
-        //     [---
-        //  [------
-        else
-          relative_start = 0;
+        // And on the right side of that point, the overlap ends at whichever
+        // )-bracket is closer to the center:
+        size_t wanted_end = std::min(current_end, virtual_end);
 
-        // ...and the right sides might be in different orders.
-        size_t relative_length;
-        //  ------)
-        //  ---)
-        if (virtual_end < current_end)
-          relative_length = virtual_end - current_start;
-        //  ---)
-        //  ------)
-        else
-          relative_length = current_end - current_start;
+        I(current_start <= wanted_start && wanted_start < current_end);
+        I(current_start < wanted_end && wanted_end <= current_end);
+        I(wanted_start < wanted_end);
 
-        // all done
         extent_t extent;
         extent.text = i->text;
-        extent.offset = i->offset + relative_start;
-        extent.length = relative_length;
+        extent.offset = i->offset + (wanted_start - current_start);
+        extent.length = wanted_end - wanted_start;
         extents.push_back(extent);
         
         // and around we go again
