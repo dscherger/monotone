@@ -49,13 +49,14 @@ app_state::app_state()
     search_root(current_root_path()),
     depth(-1), last(-1), next(-1),
     diff_format(unified_diff), diff_args_provided(false),
-    diff_show_encloser(false),
+    diff_show_encloser(true),
     execute(false), bind_address(""), bind_port(""),
     bind_stdio(false), use_transport_auth(true),
     missing(false), unknown(false),
     confdir(get_default_confdir()),
     have_set_key_dir(false), no_files(false),
-    requested_help(false)
+    requested_help(false),
+    automate_stdio_size(1024)
 {
   db.set_app(this);
   lua.set_app(this);
@@ -101,7 +102,7 @@ app_state::allow_workspace()
           // The 'true' means that, e.g., if we're running checkout,
           // then it's okay for dumps to go into our starting working
           // dir's _MTN rather than the new workspace dir's _MTN.
-          global_sanity.filename = system_path(dump_path, false);
+          global_sanity.filename = system_path(dump_path, false).as_external();
         }
     }
   load_rcfiles();
@@ -128,9 +129,9 @@ app_state::process_options()
 
     L(FL("branch name is '%s'") % branch_name());
 
-	  if (!options[key_option]().empty())
-		  internalize_rsa_keypair_id(options[key_option],
-					     signing_key);
+          if (!options[key_option]().empty())
+                  internalize_rsa_keypair_id(options[key_option],
+                                             signing_key);
   }
 }
 
@@ -271,7 +272,7 @@ app_state::set_date(utf8 const & d)
   catch (exception &e)
     {
       N(false, F("failed to parse date string '%s': %s")
-	% d % e.what());
+        % d % e.what());
     }
 }
 
@@ -379,6 +380,14 @@ app_state::set_confdir(system_path const & cd)
   confdir = cd;
   if (!have_set_key_dir)
     keys.set_key_dir(cd / "keys");
+}
+
+void
+app_state::set_automate_stdio_size(long size)
+{
+  N(size > 0,
+    F("illegal argument to --automate-stdio-size: cannot be zero or negative\n"));
+  automate_stdio_size = (size_t)size;
 }
 
 system_path

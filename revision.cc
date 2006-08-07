@@ -35,7 +35,7 @@
 #include "keys.hh"
 #include "numeric_vocab.hh"
 #include "revision.hh"
-#include "sanity.hh"
+#include "mtn-sanity.hh"
 #include "transforms.hh"
 #include "simplestring_xform.hh"
 #include "ui.hh"
@@ -1417,7 +1417,7 @@ build_roster_style_revs_from_manifest_style_revs(app_state & app)
   app.db.ensure_open_for_format_changes();
   app.db.check_is_not_rosterified();
 
-  global_sanity.set_relaxed(true);
+  real_sanity.set_relaxed(true);
   anc_graph graph(true, app);
 
   P(F("converting existing revision graph to new roster-style revisions"));
@@ -1462,7 +1462,7 @@ build_roster_style_revs_from_manifest_style_revs(app_state & app)
       graph.add_node_for_oldstyle_revision(*i);
     }
 
-  global_sanity.set_relaxed(false);
+  real_sanity.set_relaxed(false);
   graph.rebuild_ancestry();
 }
 
@@ -1527,12 +1527,10 @@ print_edge(basic_io::printer & printer,
   print_cset(printer, edge_changes(e));
 }
 
-
-void
-print_revision(basic_io::printer & printer,
-               revision_t const & rev)
+static void
+print_insane_revision(basic_io::printer & printer,
+                      revision_t const & rev)
 {
-  rev.check_sane();
 
   basic_io::stanza format_stanza;
   format_stanza.push_str_pair(syms::format_version, "1");
@@ -1545,6 +1543,14 @@ print_revision(basic_io::printer & printer,
   for (edge_map::const_iterator edge = rev.edges.begin();
        edge != rev.edges.end(); ++edge)
     print_edge(printer, *edge);
+}
+
+void
+print_revision(basic_io::printer & printer,
+               revision_t const & rev)
+{
+  rev.check_sane();
+  print_insane_revision(printer, rev);
 }
 
 
@@ -1615,7 +1621,7 @@ static void write_insane_revision(revision_t const & rev,
                                   data & dat)
 {
   basic_io::printer pr;
-  print_revision(pr, rev);
+  print_insane_revision(pr, rev);
   dat = data(pr.buf);
 }
 

@@ -67,7 +67,8 @@ end
        
 
 function safe_mtn(...)
-  return {monotone_path, "--norc", "--root=" .. test.root, unpack(arg)}
+  return {monotone_path, "--norc", "--root=" .. test.root,
+          "--confdir="..test.root, unpack(arg)}
 end
 
 -- function preexecute(x)
@@ -119,9 +120,9 @@ function probe_node(filename, rsha, fsha)
 end
 
 function mtn_setup()
-  getstd("test_keys")
-  getstd("test_hooks.lua")
-  getstd("min_hooks.lua")
+  check(getstd("test_keys"))
+  check(getstd("test_hooks.lua"))
+  check(getstd("min_hooks.lua"))
   
   check(mtn("db", "init"), 0, false, false)
   check(mtn("read", "test_keys"), 0, false, false)
@@ -135,7 +136,7 @@ end
 
 function base_manifest()
   check(safe_mtn("automate", "get_manifest_of", base_revision()), 0, false)
-  copy("ts-stdout", "base_manifest_temp")
+  check(copy("ts-stdout", "base_manifest_temp"))
   return sha1("base_manifest_temp")
 end
 
@@ -652,4 +653,9 @@ table.insert(tests, "pluck_restricted")
 table.insert(tests, "revert_--missing_in_subdir")
 table.insert(tests, "restrictions_with_renames_and_adds")
 table.insert(tests, "diff_shows_renames")
+table.insert(tests, "dump_on_crash")
+table.insert(tests, "automate_tags")
+table.insert(tests, "restrictions_with_deletes")
+table.insert(tests, "log_with_restriction")
+table.insert(tests, "log_quits_on_SIGPIPE")
 table.insert(tests, "heads_of_certs")

@@ -336,7 +336,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
        "is used by default."),
     OPT_REVISION % OPT_DEPTH % OPT_EXCLUDE %
     OPT_UNIFIED_DIFF % OPT_CONTEXT_DIFF % OPT_EXTERNAL_DIFF %
-    OPT_EXTERNAL_DIFF_ARGS % OPT_SHOW_ENCLOSER)
+    OPT_EXTERNAL_DIFF_ARGS % OPT_NO_SHOW_ENCLOSER)
 {
   bool new_is_archived;
   ostringstream header;
@@ -365,7 +365,8 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
                                         nis, app);
       get_revision_id(old_rid);
 
-      node_restriction mask(args, app.exclude_patterns, 
+      node_restriction mask(args_to_paths(args),
+                            args_to_paths(app.exclude_patterns),
                             old_roster, new_roster, app);
 
       update_current_roster_from_filesystem(new_roster, mask, app);
@@ -394,7 +395,8 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       // FIXME: handle no ancestor case
       // N(r_new.edges.size() == 1, F("current revision has no ancestor"));
 
-      node_restriction mask(args, app.exclude_patterns, 
+      node_restriction mask(args_to_paths(args),
+                            args_to_paths(app.exclude_patterns), 
                             old_roster, new_roster, app);
 
       update_current_roster_from_filesystem(new_roster, mask, app);
@@ -421,7 +423,8 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       app.db.get_roster(r_old_id, old_roster);
       app.db.get_roster(r_new_id, new_roster);
 
-      node_restriction mask(args, app.exclude_patterns, 
+      node_restriction mask(args_to_paths(args),
+                            args_to_paths(app.exclude_patterns),
                             old_roster, new_roster, app);
 
       // FIXME: this is *possibly* a UI bug, insofar as we
@@ -584,7 +587,8 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
 
       // FIXME_RESTRICTIONS: should this add paths from the rosters of
       // all selected revs?
-      mask = node_restriction(args, app.exclude_patterns, 
+      mask = node_restriction(args_to_paths(args),
+                              args_to_paths(app.exclude_patterns), 
                               old_roster, new_roster, app);
     }
 
@@ -641,12 +645,10 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
               for (set<node_id>::const_iterator n = nodes_modified.begin();
                    n != nodes_modified.end(); ++n)
                 {
-                  if (!roster.has_node(*n))
-                    {
-                      // include all deleted nodes
-                      print_this = true;
-                    }
-                  else if (mask.includes(roster, *n))
+                  // a deleted node will be "modified" but won't
+                  // exist in the result. 
+                  // we don't want to print them.
+                  if (roster.has_node(*n) && mask.includes(roster, *n))
                     {
                       print_this = true;
                       if (app.diffs)
@@ -743,6 +745,7 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
                 last--;
               }
 
+            cout.flush();
           }
         }
       frontier = next_frontier;

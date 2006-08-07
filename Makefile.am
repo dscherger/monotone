@@ -7,19 +7,24 @@ CMD_SOURCES =								\
 	cmd_othervcs.cc cmd_automate.cc cmd_files.cc
 
 SANITY_CORE_SOURCES =							\
-	sanity.cc sanity.hh ui.cc ui.hh quick_alloc.hh			\
-	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh		\
-	charset.cc charset.hh						\
+	sanity.cc sanity.hh quick_alloc.hh				\
 	simplestring_xform.cc simplestring_xform.hh			\
-	constants.cc constants.hh numeric_vocab.hh paths.cc paths.hh	\
-	interner.hh hash_map.hh platform.hh
+	constants.cc constants.hh numeric_vocab.hh			\
+	platform.hh
+
 
 LUAEXT_SOURCES =							\
+	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh		\
+	charset.cc charset.hh paths.cc paths.hh				\
+	interner.hh hash_map.hh						\
+	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
+	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
 	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
 	globish.cc globish.hh basic_io.cc basic_io.hh
 
 MOST_SOURCES =								\
-	 $(SANITY_CORE_SOURCES)	$(LUAEXT_SOURCES)			\
+	 $(SANITY_CORE_SOURCES)	$(LUAEXT_SOURCES) platform-wrapped.hh	\
+	 mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh			\
 	 app_state.cc app_state.hh					\
          commands.cc commands.hh $(CMD_SOURCES)				\
          diff_patch.cc diff_patch.hh					\
@@ -240,7 +245,7 @@ check_PROGRAMS = unit_tests tester
 noinst_PROGRAMS = txt2c
 EXTRA_PROGRAMS = usher
 
-mtn_SOURCES = $(MOST_SOURCES) monotone.cc main.cc
+mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 usher_SOURCES = contrib/usher.cc
 unit_tests_SOURCES = $(MOST_SOURCES) unit_tests.cc crypto_tests.cc
 tester_SOURCES = $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) tester.cc
@@ -302,43 +307,30 @@ mtn_LDFLAGS =
 mtn_CPPFLAGS = -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite
 mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
 mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
+mtn_LDADD = lib3rdparty.a $(BOOSTLIBS) libplatform.a $(LIBICONV) $(LIBINTL)
 
 unit_tests_LDFLAGS = 
-unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua -I$(top_srcdir)/sqlite
+unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua \
+		      -I$(top_srcdir)/sqlite
 unit_tests_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
+unit_tests_LDADD = lib3rdparty.a $(BOOSTLIBS) $(BOOST_UNITTEST) \
+		   libplatform.a $(LIBICONV) $(LIBINTL)
 
 tester_LDFLAGS = 
 tester_CPPFLAGS = -I$(top_srcdir)/lua
 tester_CXXFLAGS = $(AM_CXXFLAGS)
-
-# conditionals from configury
-
-if STATIC_BOOST
-  BOOSTLIBS = @BOOST_LIBDIR@/libboost_filesystem$(BOOST_SUFFIX).a \
-              @BOOST_LIBDIR@/libboost_date_time$(BOOST_SUFFIX).a \
-              @BOOST_LIBDIR@/libboost_regex$(BOOST_SUFFIX).a
-  mtn_LDADD = lib3rdparty.a $(BOOSTLIBS)
-  unit_tests_LDADD = lib3rdparty.a $(BOOSTLIBS) \
-                     @BOOST_LIBDIR@/libboost_unit_test_framework$(BOOST_SUFFIX).a
-  tester_LDADD = lib3rdparty.a $(BOOSTLIBS)
-else
-  mtn_LDADD = lib3rdparty.a
-  unit_tests_LDADD = lib3rdparty.a -lboost_unit_test_framework$(BOOST_SUFFIX)
-  tester_LDADD = lib3rdparty.a
-endif
-
-mtn_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
-unit_tests_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
-tester_LDADD += libplatform.a $(LIBICONV) $(LIBINTL)
+tester_LDADD = lib3rdparty.a $(BOOSTLIBS) libplatform.a $(LIBICONV) $(LIBINTL)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
+  mtn_SOURCES += win32/main.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tests_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   lib3rdparty_a_CPPFLAGS += -DWIN32 -DBOTAN_EXT_ENTROPY_SRC_CAPI -DBOTAN_EXT_ENTROPY_SRC_WIN32
   lib3rdparty_a_SOURCES += botan/es_capi.cpp botan/es_win32.cpp
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
+  mtn_SOURCES += unix/main.cc
 endif
 
 if MISSING_INET_PTON
@@ -452,9 +444,9 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 # testsuite stuff (could this possibly be more ugly?)
 
 if BUILD_UNIT_TESTS
-TESTS = unit_tests run_lua_tests
+TESTS = unit_tests run_tester_tests run_lua_tests
 else
-TESTS = run_lua_tests
+TESTS = run_tester_tests run_lua_tests
 endif
 
 TESTS_ENVIRONMENT=AUTOTEST_PATH="."
@@ -462,7 +454,7 @@ TESTS_ENVIRONMENT=AUTOTEST_PATH="."
 mostlyclean-local:
 	rm -rf tester_dir package_full_revision.txt
 
-DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep run_lua_tests
+DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep run_tester_tests run_lua_tests
 
 # distcheck stuff
 
@@ -488,7 +480,13 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 run_lua_tests: Makefile
 	echo '#!/bin/sh' > $@ ; \
 	echo 'PATH=$(top_builddir):$$PATH' >> $@ ; \
-	echo $(top_builddir)/tester $(srcdir)/testsuite.lua >> $@ ; \
+	echo 'exec $(top_builddir)/tester $(srcdir)/testsuite.lua "$$@"' >> $@ ; \
+	chmod 755 $@
+
+run_tester_tests: Makefile
+	echo '#!/bin/sh' > $@ ; \
+	echo 'PATH=$(top_builddir):$$PATH' >> $@ ; \
+	echo 'exec $(top_builddir)/tester $(srcdir)/testsuite.lua "$$@"' >> $@ ; \
 	chmod 755 $@
 
 # we generate some headers to copy data into the executable

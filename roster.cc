@@ -18,6 +18,7 @@
 #include "basic_io.hh"
 #include "cset.hh"
 #include "inodeprint.hh"
+#include "platform-wrapped.hh"
 #include "roster.hh"
 #include "revision.hh"
 #include "vocab.hh"
@@ -43,7 +44,6 @@ using std::string;
 using std::vector;
 
 using boost::lexical_cast;
-
 
 ///////////////////////////////////////////////////////////////////
 
@@ -321,7 +321,6 @@ dfs_iter
   dir_t root;
   bool return_root;
   stack< pair<dir_t, dir_map::const_iterator> > stk;
-  split_path dirname;
 
 
   dfs_iter(dir_t r)
@@ -366,7 +365,6 @@ dfs_iter
     node_t ntmp = stk.top().second->second;
     if (is_dir_t(ntmp))
       {
-        dirname.push_back(stk.top().second->first);
         dir_t dtmp = downcast_to_dir_t(ntmp);
         stk.push(make_pair(dtmp, dtmp->children.begin()));
       }
@@ -377,8 +375,6 @@ dfs_iter
            && stk.top().second == stk.top().first->children.end())
       {
         stk.pop();
-        if (!dirname.empty())
-          dirname.pop_back();
         if (!stk.empty())
           ++stk.top().second;
       }
@@ -1697,21 +1693,6 @@ namespace
   }
 }
 
-// WARNING: this function is not tested directly (no unit tests).  Do not
-// put real logic in it.
-void
-make_roster_for_base_plus_cset(revision_id const & base, cset const & cs,
-                               revision_id const & new_rid,
-                               roster_t & new_roster, marking_map & new_markings,
-                               node_id_source & nis,
-                               app_state & app)
-{
-  MM(base);
-  MM(cs);
-  app.db.get_roster(base, new_roster, new_markings);
-  make_roster_for_nonmerge(cs, new_rid, new_roster, new_markings, nis);
-}
-
 void
 mark_roster_with_no_parents(revision_id const & rid,
                             roster_t const & roster,
@@ -1749,7 +1730,7 @@ mark_roster_with_one_parent(roster_t const & parent,
                            child_rid, i->second, new_marking);
       else
         mark_new_node(child_rid, i->second, new_marking);
-      safe_insert(child_markings, std::make_pair(i->first, new_marking));
+      safe_insert(child_markings, make_pair(i->first, new_marking));
     }
 
   child.check_sane_against(child_markings, true);
@@ -2024,48 +2005,124 @@ void make_restricted_csets(roster_t const & from, roster_t const & to,
 
 }
 
+class editable_roster_for_check
+  : public editable_roster_base
+{
+ public:
+  editable_roster_for_check(roster_t & r);
+  virtual node_id detach_node(split_path const & src);
+  virtual void drop_detached_node(node_id nid);
+  virtual void attach_node(node_id nid, split_path const & dst);
+  int problems;
+
+ private:
+  temp_node_id_source nis;
+  map<node_id, pair<split_path, vector<path_component> > > detached_dirs;
+};
+
+editable_roster_for_check::editable_roster_for_check(roster_t & r)
+  : editable_roster_base(r, nis), problems(0)
+{
+  node_map nodes = r.all_nodes();
+  node_map::const_iterator i = nodes.begin();
+  node_id max = i->first;
+
+  for (; i != nodes.end(); ++i)
+    {
+      if (i->first > max)
+        max = i->first;
+    }
+
+  // ensure our node source starts beyond the max temp node in this roster
+  while (nis.next() <= max)
+    ;
+}
+
+node_id
+editable_roster_for_check::detach_node(split_path const & src)
+{
+  node_t n = r.get_node(src);
+  if (is_dir_t(n))
+    {
+      dir_t dir = downcast_to_dir_t(n);
+      vector<path_component> children;
+      for (dir_map::const_iterator 
+             i = dir->children.begin(); i != dir->children.end(); ++i)
+        {
+          children.push_back(i->first);
+        }
+      detached_dirs.insert(make_pair(dir->self, 
+                                     make_pair(src, children)));
+    }
+
+  return this->editable_roster_base::detach_node(src);
+}
+
+void
+editable_roster_for_check::drop_detached_node(node_id nid)
+{
+  node_t n = r.get_node(nid);
+  if (is_dir_t(n) && !downcast_to_dir_t(n)->children.empty())
+    {
+      map<node_id, pair<split_path, vector<path_component> > >::const_iterator 
+        i = detached_dirs.find(nid);
+      I(i != detached_dirs.end());
+
+      split_path dir = i->second.first;
+      for (vector<path_component>::const_iterator 
+             p = i->second.second.begin(); p != i->second.second.end(); ++p)
+        {
+          split_path child(dir);
+          child.push_back(*p);
+          W(F("restriction includes deletion of '%s' but excludes deletion of '%s'")
+            % dir % child);
+          problems++;
+        }
+    }
+  else
+    {
+      this->editable_roster_base::drop_detached_node(nid);
+    }
+}
+
+void
+editable_roster_for_check::attach_node(node_id nid, split_path const & dst)
+{
+  split_path dirname;
+  path_component basename;
+  dirname_basename(dst, dirname, basename);
+
+  if (!dirname.empty() && !r.has_node(dirname))
+    {
+      W(F("restriction excludes addition of '%s' but includes addition of '%s'")
+        % dirname % dst);
+      problems++;
+    }
+  else
+    {
+      this->editable_roster_base::attach_node(nid, dst);
+    }
+}
+
 void
 check_restricted_cset(roster_t const & roster, cset const & cs)
 {
+  // This command checks that a cset generated by make_restricted_cset still
+  // is sensical when applied to the given roster -- e.g., it does not
+  // include a deletion of a directory that would be empty, except that some
+  // of the deletions/renames that emptied it were not included in the
+  // restriction, it does not include the addition of a file when the
+  // addition of its parent directory was not included, etc.
+
   MM(roster);
   MM(cs);
-  path_set added;
-  int missing = 0;
 
-  for (path_set::const_iterator i = cs.dirs_added.begin();
-       i != cs.dirs_added.end(); ++i)
-    {
-      split_path dir(*i);
-      added.insert(dir);
+  // make a copy of the roster to apply the cset to destructively
+  roster_t tmp(roster);
+  editable_roster_for_check e(tmp);
+  cs.apply_to(e);
 
-      if (dir.size() > 1)
-        {
-          dir.pop_back();
-
-          if (!roster.has_node(dir) && added.find(dir) == added.end())
-            {
-              missing++;
-              W(F("restriction excludes directory '%s'") % dir);
-            }
-        }
-    }
-
-  for (map<split_path, file_id>::const_iterator i = cs.files_added.begin();
-       i != cs.files_added.end(); ++i)
-    {
-      split_path dir(i->first);
-      I(dir.size() > 1);
-      dir.pop_back();
-
-      if (!roster.has_node(dir) && added.find(dir) == added.end())
-        {
-          missing++;
-          W(F("restriction excludes directory '%s'") % dir);
-        }
-    }
-
-  N(missing == 0, F("invalid restriction excludes required directories"));
-
+  N(e.problems == 0, F("invalid restriction"));
 }
 
 
@@ -2315,30 +2372,6 @@ roster_t::extract_path_set(path_set & paths) const
 //   I/O routines
 ////////////////////////////////////////////////////////////////////
 
-
-namespace
-{
-  namespace syms
-  {
-    // roster symbols
-    symbol const format_version("format_version");
-    symbol const dir("dir");
-    symbol const file("file");
-    symbol const content("content");
-    symbol const attr("attr");
-
-    // 'local' roster and marking symbols
-    symbol const ident("ident");
-    symbol const birth("birth");
-    symbol const dormant_attr("dormant_attr");
-
-    symbol const path_mark("path_mark");
-    symbol const content_mark("content_mark");
-    symbol const attr_mark("attr_mark");
-  }
-}
-
-
 static void
 push_marking(basic_io::stanza & st,
              node_t curr,
@@ -2346,17 +2379,17 @@ push_marking(basic_io::stanza & st,
 {
 
   I(!null_id(mark.birth_revision));
-  st.push_hex_pair(syms::birth, mark.birth_revision.inner());
+  st.push_hex_pair(basic_io::syms::birth, mark.birth_revision.inner());
 
   for (set<revision_id>::const_iterator i = mark.parent_name.begin();
        i != mark.parent_name.end(); ++i)
-    st.push_hex_pair(syms::path_mark, i->inner());
+    st.push_hex_pair(basic_io::syms::path_mark, i->inner());
 
   if (is_file_t(curr))
     {
       for (set<revision_id>::const_iterator i = mark.file_content.begin();
            i != mark.file_content.end(); ++i)
-        st.push_hex_pair(syms::content_mark, i->inner());
+        st.push_hex_pair(basic_io::syms::content_mark, i->inner());
     }
   else
     I(mark.file_content.empty());
@@ -2368,7 +2401,7 @@ push_marking(basic_io::stanza & st,
       I(am != mark.attrs.end());
       for (set<revision_id>::const_iterator j = am->second.begin();
            j != am->second.end(); ++j)
-        st.push_hex_triple(syms::attr_mark, i->first(), j->inner());
+        st.push_hex_triple(basic_io::syms::attr_mark, i->first(), j->inner());
     }
 }
 
@@ -2381,25 +2414,25 @@ parse_marking(basic_io::parser & pa,
   while (pa.symp())
     {
       string rev;
-      if (pa.symp(syms::birth))
+      if (pa.symp(basic_io::syms::birth))
         {
           pa.sym();
           pa.hex(rev);
           marking.birth_revision = revision_id(rev);
         }
-      else if (pa.symp(syms::path_mark))
+      else if (pa.symp(basic_io::syms::path_mark))
         {
           pa.sym();
           pa.hex(rev);
           safe_insert(marking.parent_name, revision_id(rev));
         }
-      else if (pa.symp(syms::content_mark))
+      else if (pa.symp(basic_io::syms::content_mark))
         {
           pa.sym();
           pa.hex(rev);
           safe_insert(marking.file_content, revision_id(rev));
         }
-      else if (pa.symp(syms::attr_mark))
+      else if (pa.symp(basic_io::syms::attr_mark))
         {
           string k;
           pa.sym();
@@ -2426,7 +2459,7 @@ roster_t::print_to(basic_io::printer & pr,
   I(has_root());
   {
     basic_io::stanza st;
-    st.push_str_pair(syms::format_version, "1");
+    st.push_str_pair(basic_io::syms::format_version, "1");
     pr.print_stanza(st);
   }
   for (dfs_iter i(root_dir); !i.finished(); ++i)
@@ -2441,20 +2474,20 @@ roster_t::print_to(basic_io::printer & pr,
       if (is_dir_t(curr))
         {
           // L(FL("printing dir %s") % fp);
-          st.push_file_pair(syms::dir, fp);
+          st.push_file_pair(basic_io::syms::dir, fp);
         }
       else
         {
           file_t ftmp = downcast_to_file_t(curr);
-          st.push_file_pair(syms::file, fp);
-          st.push_hex_pair(syms::content, ftmp->content.inner());
+          st.push_file_pair(basic_io::syms::file, fp);
+          st.push_hex_pair(basic_io::syms::content, ftmp->content.inner());
           // L(FL("printing file %s") % fp);
         }
 
       if (print_local_parts)
         {
           I(curr->self != the_null_node);
-          st.push_str_pair(syms::ident, lexical_cast<string>(curr->self));
+          st.push_str_pair(basic_io::syms::ident, lexical_cast<string>(curr->self));
         }
 
       // Push the non-dormant part of the attr map
@@ -2463,9 +2496,8 @@ roster_t::print_to(basic_io::printer & pr,
         {
           if (j->second.first)
             {
-              I(!j->second.second().empty());
               // L(FL("printing attr %s : %s = %s") % fp % j->first % j->second);
-              st.push_str_triple(syms::attr, j->first(), j->second.second());
+              st.push_str_triple(basic_io::syms::attr, j->first(), j->second.second());
             }
         }
 
@@ -2478,7 +2510,7 @@ roster_t::print_to(basic_io::printer & pr,
               if (!j->second.first)
                 {
                   I(j->second.second().empty());
-                  st.push_str_pair(syms::dormant_attr, j->first());
+                  st.push_str_pair(basic_io::syms::dormant_attr, j->first());
                 }
             }
 
@@ -2526,7 +2558,7 @@ roster_t::parse_from(basic_io::parser & pa,
   mm.clear();
 
   {
-    pa.esym(syms::format_version);
+    pa.esym(basic_io::syms::format_version);
     string vers;
     pa.str(vers);
     I(vers == "1");
@@ -2537,23 +2569,23 @@ roster_t::parse_from(basic_io::parser & pa,
       string pth, ident, rev;
       node_t n;
 
-      if (pa.symp(syms::file))
+      if (pa.symp(basic_io::syms::file))
         {
           string content;
           pa.sym();
           pa.str(pth);
-          pa.esym(syms::content);
+          pa.esym(basic_io::syms::content);
           pa.hex(content);
-          pa.esym(syms::ident);
+          pa.esym(basic_io::syms::ident);
           pa.str(ident);
           n = file_t(new file_node(read_num(ident),
                                    file_id(content)));
         }
-      else if (pa.symp(syms::dir))
+      else if (pa.symp(basic_io::syms::dir))
         {
           pa.sym();
           pa.str(pth);
-          pa.esym(syms::ident);
+          pa.esym(basic_io::syms::ident);
           pa.str(ident);
           n = dir_t(new dir_node(read_num(ident)));
         }
@@ -2577,7 +2609,7 @@ roster_t::parse_from(basic_io::parser & pa,
         }
 
       // Non-dormant attrs
-      while(pa.symp(syms::attr))
+      while(pa.symp(basic_io::syms::attr))
         {
           pa.sym();
           string k, v;
@@ -2588,7 +2620,7 @@ roster_t::parse_from(basic_io::parser & pa,
         }
 
       // Dormant attrs
-      while(pa.symp(syms::dormant_attr))
+      while(pa.symp(basic_io::syms::dormant_attr))
         {
           pa.sym();
           string k;
