@@ -297,6 +297,7 @@ cpp_main(int argc, char ** argv)
   get_full_version(full_version_string);
   MM(full_version_string);
 
+  Botan::paranoid_memory_clearing = false;
   // Set up secure memory allocation etc
   Botan::Init::initialize();
   Botan::set_default_allocator("malloc");

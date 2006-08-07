@@ -12,6 +12,10 @@
 
 namespace Botan {
 
+// Should Botan be paranoid about memset(0) on allocated and freed memory?
+// Default, yes.
+extern bool paranoid_memory_clearing;
+
 namespace Init {
 
 /*************************************************
