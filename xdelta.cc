@@ -83,7 +83,7 @@ ostream & operator<<(ostream & ost, insn const & i)
 
 static inline void
 init_match_table(string const & a,
-                 string::size_type blocksz,
+                 const string::size_type blocksz,
                  match_table & tab)
 {
   string::size_type sz = a.size();
@@ -210,7 +210,7 @@ compute_delta_insns(string const & a,
                     string const & b,
                     vector<insn> & delta)
 {
-  string::size_type blocksz = 64;
+  static const string::size_type blocksz = 64;
   match_table matches;
   init_match_table(a, blocksz, matches);
 
@@ -225,17 +225,52 @@ compute_delta_insns(string const & a,
 
   for (string::size_type
        sz = b.size(),
-       lo = 0,
-       hi = blocksz;
+       lo = 0; 
        lo < sz; )
     {
       string::size_type apos = 0, alen = 1, badvance = 1;
 
       bool found_match = find_match(matches, delta, rolling, a, b, lo, apos, alen, badvance);
 
+      // There are basically three cases:
+      // 1) advance by 1 (common, no match found)
+      // 2) advance by >blocksz (semi-common, usual case when a match is found)
+      // 3) advance by <blocksz (rare, unusual case when a match is found)
+      // in case (2), all of the rolling checksum data will be entirely replaced, so
+      // we can do a fast skip forward.
       if (found_match)
         {
           copy_insn(delta, apos, alen);
+          u32 save_lo = lo;
+          if (badvance <= blocksz) 
+            {
+              string::size_type next = lo;
+              I(next < b.size() && (lo + badvance - 1) < b.size());
+              for (; next < lo + badvance; ++next)
+                {
+                  rolling.out(static_cast<u8>(b[next]));
+                  if (next + blocksz < b.size())
+                    rolling.in(static_cast<u8>(b[next + blocksz]));
+                }
+              lo = next;
+            }
+
+          if (badvance > blocksz)
+            {
+              u32 new_lo = save_lo + badvance;
+              u32 new_hi = new_lo + blocksz;
+              if (new_hi > b.size()) 
+                {
+                  new_hi = b.size();
+                }
+              I(new_lo <= new_hi);
+              I(lo + blocksz < new_lo);
+              // selfcheck by making short-distance test true || badvance <= blocksz
+              //              u32 save_sum = rolling.sum();
+              rolling.replace_with(reinterpret_cast<u8 const *>(b.data() + new_lo), new_hi-new_lo);
+              //              I(rolling.sum() == save_sum);
+              lo = new_lo;
+            }
         }
       else
         {
@@ -244,18 +279,12 @@ compute_delta_insns(string const & a,
           I(alen < blocksz);
           I(lo < b.size());
           insert_insn(delta, b[lo]);
+          rolling.out(static_cast<u8>(b[lo]));
+          if (lo + blocksz < b.size()) {
+            rolling.in(static_cast<u8>(b[lo+blocksz]));
+          }
+          ++lo;
         }
-
-      string::size_type next = lo;
-      for (; next < lo + badvance; ++next)
-        {
-          I(next < b.size());
-          rolling.out(static_cast<u8>(b[next]));
-          if (next + blocksz < b.size())
-            rolling.in(static_cast<u8>(b[next + blocksz]));
-        }
-      lo = next;
-      hi = lo + blocksz;
     }
 }
 
@@ -279,6 +308,17 @@ compute_delta(string const & a,
               string & delta)
 {
   vector<insn> delta_insns;
+
+  static bool widen_checked = false;
+  if (!widen_checked) {
+    for(u32 i = 0; i < 256; ++i) {
+      u8 v = (u8)(i & 0xFF);
+      u32 v_w = widen<u32,u8>(v);
+      I(v_w == i);
+      I(((u32)(v)) == i);
+    }
+    widen_checked = true;
+  }
 
   // FIXME: in theory you can do empty files and empty deltas; write some
   // tests to be sure you're doing it right, and in any case implement the
