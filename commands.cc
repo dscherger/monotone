@@ -318,6 +318,7 @@ CMD(crash, hidden_group, "{ N | E | I | exception | signal }", "trigger the spec
 #undef maybe_throw_bare
 }
 
+#ifndef LIBMTN_COMPILE
 void
 maybe_update_inodeprints(app_state & app)
 {
@@ -361,6 +362,7 @@ maybe_update_inodeprints(app_state & app)
   write_inodeprint_map(ipm_new, dat);
   write_inodeprints(dat);
 }
+#endif
 
 string
 get_stdin()
@@ -375,6 +377,7 @@ get_stdin()
   return tmp;
 }
 
+#ifndef LIBMTN_COMPILE
 string
 describe_revision(app_state & app,
                   revision_id const & id)
@@ -521,7 +524,7 @@ process_commit_message_args(bool & given,
   else
     given = false;
 }
-
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76
