@@ -31,7 +31,7 @@ adler32
 
   inline void in(u8 c)
   {
-    s1 += (u32)(c);
+    s1 += static_cast<u32>(c);
     s1 &= mask;
     s2 += s1;
     s2 &= mask;
@@ -40,9 +40,9 @@ adler32
 
   inline void out(u8 c)
   {
-    s1 -= (u32)(c);
+    s1 -= static_cast<u32>(c);
     s1 &= mask;
-    s2 -= (len * (u32)(c)) + 1;
+    s2 -= (len * static_cast<u32>(c)) + 1;
     s2 &= mask;
     --len;
   }
@@ -50,7 +50,7 @@ adler32
   // monotone only uses the adler32 in order to do a rolling window over
   // the data for the purpose of finding matches in xdelta.cc
   // Optimize for this case avoiding a lot of unneeded masking.
-  inline void replace_with(u8 const *ch, std::string::size_type count) 
+  inline void replace_with(u8 const * ch, std::string::size_type count) 
   {
     I(count < 255);
     s1 = 1;
@@ -58,11 +58,12 @@ adler32
     len = count;
     // Can't overflow in this case as (for s1) 255*255 < 0xffff, 
     // and (for s2) (maxs1 = 255*255)*255 < 0xffff_ffff
-    while(count--) {
-      u32 c = (u32)(*(ch++));
-      s1 += c;
-      s2 += s1;
-    }
+    while (count--) 
+      {
+        u32 c = static_cast<u32>(*(ch++));
+        s1 += c;
+        s2 += s1;
+      }
     s1 &= mask;
     s2 &= mask;
   }

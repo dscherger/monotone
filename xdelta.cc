@@ -134,9 +134,9 @@ find_match(match_table const & matches,
   string::const_iterator bi = b.begin() + bpos + tlen;
   string::const_iterator be = b.end();
 
-  while((ai != ae)
-        && (bi != be)
-        && (*ai == *bi))
+  while ((ai != ae)
+         && (bi != be)
+         && (*ai == *bi))
     {
       ++tlen;
       ++ai;
@@ -149,10 +149,10 @@ find_match(match_table const & matches,
   // see if we can extend backwards into a previous insert hunk
   if (! delta.empty() && delta.back().code == insn::insert)
     {
-      while(apos > 0
-            && bpos > 0
-            && a[apos - 1] == b[bpos - 1]
-            && !delta.back().payload.empty())
+      while (apos > 0
+             && bpos > 0
+             && a[apos - 1] == b[bpos - 1]
+             && !delta.back().payload.empty())
         {
           I(a[apos - 1] == *(delta.back().payload.rbegin()));
           I(delta.back().payload.size() > 0);
@@ -179,22 +179,26 @@ find_match(match_table const & matches,
 static inline void
 insert_insn(vector<insn> & delta, char c)
 {
-  if (delta.empty() || delta.back().code == insn::copy) {
-    delta.push_back(insn(c));
-  } else {
-    // design in gcc 3.3 and 4.0 STL expands the string one character
-    // at a time when appending single characters ?!
-    // see libstdc++5-3.3-dev 3.3.5-13: basic_string.h:471, calling with
-    // size_type(1), then basic_string.tcc:717 reserving one more byte
-    // if needed.
-    // see libstdc++6-4.0-dev 4.0.3-3: basic_string.h:770 calling push_back
-    // then basic_string.h: 849 again adding 1 to the length.
-    if (delta.back().payload.capacity() == delta.back().payload.size()) {
-      // standard amortized constant rule
-      delta.back().payload.reserve(delta.back().payload.size() * 2);
+  if (delta.empty() || delta.back().code == insn::copy) 
+    {
+      delta.push_back(insn(c));
+    } 
+  else 
+    {
+      // design in gcc 3.3 and 4.0 STL expands the string one character
+      // at a time when appending single characters ?!
+      // see libstdc++5-3.3-dev 3.3.5-13: basic_string.h:471, calling with
+      // size_type(1), then basic_string.tcc:717 reserving one more byte
+      // if needed.
+      // see libstdc++6-4.0-dev 4.0.3-3: basic_string.h:770 calling push_back
+      // then basic_string.h: 849 again adding 1 to the length.
+      if (delta.back().payload.capacity() == delta.back().payload.size()) 
+        {
+          // standard amortized constant rule
+          delta.back().payload.reserve(delta.back().payload.size() * 2);
+        }
+      delta.back().payload += c;
     }
-    delta.back().payload += c;
-  }
 }
 
 
@@ -255,7 +259,10 @@ compute_delta_insns(string const & a,
               lo = next;
             }
 
-          if (badvance > blocksz)
+          // EricAnderson: I think that >= would also be correct, because it
+          // should replace all blocksz characters in the rolling checksum,
+          // but it seemed safer to use > which is easily seen as correct.
+          if (badvance > blocksz) 
             {
               u32 new_lo = save_lo + badvance;
               u32 new_hi = new_lo + blocksz;
@@ -265,7 +272,13 @@ compute_delta_insns(string const & a,
                 }
               I(new_lo <= new_hi);
               I(lo + blocksz < new_lo);
-              // selfcheck by making short-distance test true || badvance <= blocksz
+              // if you want to verify that the skip forward advance is 
+              // working properly, then you can modify the if test above
+              // to read true || badvance <= blocksz so that we always 
+              // move the checksum forward by rolling, and uncomment the
+              // line below that saves the checksum and the one after
+              // that verifies that the skip-forward checksum matches
+              // the roll-forward checksum.
               //              u32 save_sum = rolling.sum();
               rolling.replace_with(reinterpret_cast<u8 const *>(b.data() + new_lo), new_hi-new_lo);
               //              I(rolling.sum() == save_sum);
@@ -280,9 +293,10 @@ compute_delta_insns(string const & a,
           I(lo < b.size());
           insert_insn(delta, b[lo]);
           rolling.out(static_cast<u8>(b[lo]));
-          if (lo + blocksz < b.size()) {
-            rolling.in(static_cast<u8>(b[lo+blocksz]));
-          }
+          if (lo + blocksz < b.size()) 
+            {
+              rolling.in(static_cast<u8>(b[lo+blocksz]));
+            }
           ++lo;
         }
     }
@@ -310,15 +324,20 @@ compute_delta(string const & a,
   vector<insn> delta_insns;
 
   static bool widen_checked = false;
-  if (!widen_checked) {
-    for(u32 i = 0; i < 256; ++i) {
-      u8 v = (u8)(i & 0xFF);
-      u32 v_w = widen<u32,u8>(v);
-      I(v_w == i);
-      I(((u32)(v)) == i);
+  if (!widen_checked) 
+    {
+      // This code just verifies that there isn't something going on where the
+      // widen is required for some weird compiler that incorrectly sign
+      // extends unsigned constants when casting to a wider type
+      for (u32 i = 0; i < 256; ++i) 
+        {
+          u8 v = (u8)(i & 0xFF);
+          u32 v_w = widen<u32,u8>(v);
+          I(v_w == i);
+          I((static_cast<u32>(v)) == i);
+        }
+      widen_checked = true;
     }
-    widen_checked = true;
-  }
 
   // FIXME: in theory you can do empty files and empty deltas; write some
   // tests to be sure you're doing it right, and in any case implement the
@@ -868,7 +887,7 @@ xdelta_random_string(string & str)
   size_t sz = xdelta_sizegen(PRNG);
   str.clear();
   str.reserve(sz);
-  while(sz-- > 0)
+  while (sz-- > 0)
     {
       str += xdelta_chargen(PRNG);
     }
