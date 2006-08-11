@@ -1,0 +1,78 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([pull of CVS module that has a commit template])
+
+MTN_SETUP
+
+AT_DATA(importme.0, [version 0 of test file
+])
+
+AT_DATA(importme.1, [version 1 of test file
+])
+
+AT_DATA(importme.2, [version 2 of test file
+])
+
+AT_DATA(importme.3, [version 3 of test file
+])
+
+AT_DATA(committemplate, [This is my commit template
+])
+AT_CHECK(echo `pwd`/committemplate >newrcsinfo)
+#AT_DATA(newrcsinfo, [ALL `pwd`/committemplate
+#])
+
+TSHA0=`SHA1(importme.0)`
+TSHA1=`SHA1(importme.1)`
+TSHA2=`SHA1(importme.2)`
+TSHA3=`SHA1(importme.3)`
+
+# build the cvs repository
+
+CVSROOT=`pwd`/cvs-repository
+AT_CHECK(cvs -q -d $CVSROOT init)
+AT_CHECK(test -e $CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT/history)
+
+# check out the CVSROOT admin module and edit the rcsinfo file to give ourself a commit template
+
+AT_CHECK(cvs -d $CVSROOT co CVSROOT, [], [ignore], [ignore])
+AT_CHECK(cp newrcsinfo CVSROOT/rcsinfo)
+AT_CHECK(cvs -d $CVSROOT commit -m 'adding commit template entry to rcsinfo' CVSROOT/rcsinfo, [], [ignore], [ignore])
+
+
+# check out the working copy and make some commits
+
+AT_CHECK(cvs -d $CVSROOT co ., [], [ignore], [ignore])
+AT_CHECK(mkdir testdir)
+AT_CHECK(cp importme.0 testdir/importme)
+AT_CHECK(cvs -d $CVSROOT add testdir, [], [ignore], [ignore])
+AT_CHECK(cvs -d $CVSROOT add testdir/importme, [], [ignore], [ignore])
+AT_CHECK(cvs -d $CVSROOT commit -m 'commit 0' testdir/importme, [], [ignore], [ignore])
+AT_CHECK(cp importme.1 testdir/importme)
+AT_CHECK(cvs -d $CVSROOT commit -m 'commit 1' testdir/importme, [], [ignore], [ignore])
+AT_CHECK(cp importme.2 testdir/importme)
+AT_CHECK(cvs -d $CVSROOT commit -m 'commit 2' testdir/importme, [], [ignore], [ignore])
+AT_CHECK(cp importme.3 testdir/importme)
+AT_CHECK(cvs -d $CVSROOT commit -m 'commit 3' testdir/importme, [], [ignore], [ignore])
+
+# pull into monotone
+
+AT_CHECK(MTN --branch=testbranch cvs_pull $CVSROOT testdir, [], [ignore], [ignore])
+
+
+# check presence of files
+
+AT_CHECK(MTN automate get_file $TSHA0, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA1, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA2, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA3, [], [ignore])
+
+# also check that history is okay -- has a unique head, and it's the
+# right one.
+
+AT_CHECK(MTN checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+AT_CHECK(cmp importme.3 mtcodir/importme)
+
+AT_CLEANUP
