@@ -31,5 +31,5 @@ void mtncvs_state::open()
   I(!is_open());
   L(FL("mtncvs_state: opening mtn binary %s") % binary);
   mtn_automate::open(binary,args);
-  check_interface_revision("2.3");
+  check_interface_revision("3.1");
 }

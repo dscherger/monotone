@@ -625,7 +625,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     try 
     { store_update(s,s2,u,contents);
     } catch (informative_failure &e)
-    { W(F("Update: patching failed with %s\n") % e.what);
+    { W(F("Update: patching failed with %s\n") % e.what());
       cvs_client::update c=Update(file,s2->cvs_version);
       if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
       { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
@@ -1306,6 +1306,7 @@ static void guess_repository(std::string &repository, std::string &module,
     else
       L(FL("using branch '%s' of module '%s' in repository '%s'\n") 
                 % branch % module % repository);
+    parse_module_paths(last_state);
   }
   catch (std::runtime_error)
   { N(false, F("can not guess repository (in domain %s), "
@@ -1905,18 +1906,12 @@ void cvs_repository::store_modules()
 }
 #endif
 
-void cvs_repository::retrieve_modules()
-{ if (!GetServerDir().empty()) return;
-#if 0  
-  std::string name=create_cvs_cert_header();
-  std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
-  var_value value;
-  try {
-    app.db.get_var(key,value);
-  } catch (...) { return; }
+void cvs_repository::parse_module_paths(std::string const& value_s)
+{ 
+  // TODO Zeile 1 weg
+  // Zeile 2: #modules
   std::map<std::string,std::string> sd;
   piece::piece_table pieces;
-  std::string value_s; //=value();
   piece::index_deltatext(value_s,pieces);
   for (piece::piece_table::const_iterator p=pieces.begin();p!=pieces.end();++p)
   { std::string line=**p;
@@ -1930,5 +1925,16 @@ void cvs_repository::retrieve_modules()
   }
   piece::reset();
   SetServerDir(sd);
+}
+
+void cvs_repository::retrieve_modules()
+{ if (!GetServerDir().empty()) return;
+#if 0  
+  std::string name=create_cvs_cert_header();
+  std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
+  var_value value;
+  try {
+    app.db.get_var(key,value);
+  } catch (...) { return; }
 #endif
 }
