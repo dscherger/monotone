@@ -1,3 +1,7 @@
+2006-08-14  Richard Levitte  <richard@levitte.org>
+
+	* tests/t_heads_of_certs.at: Removed.
+
 2006-08-07  Lapo Luchini  <lapo@lapo.it>
 
 	* po/it.po: Updated and translated a few more strings (45 to go).
