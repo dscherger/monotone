@@ -47,7 +47,7 @@ namespace constants
   extern size_t const db_log_line_sz;
 
   // size in bytes of the database xdelta version reconstruction cache
-  extern size_t const db_version_cache_sz;
+  extern size_t db_version_cache_sz;
 
   // number of rosters in the database roster cache
   extern size_t const db_roster_cache_sz;

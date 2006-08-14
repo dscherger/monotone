@@ -7281,6 +7281,13 @@ Returns @code{true} if @var{branchname} should be ignored while listing
 branches. Otherwise returns @code{false}. This hook has no default
 definition, therefore the default behavior is to list all branches.
 
+@item get_vcache_size ()
+
+Returns the size in bytes that should be used for the version cache
+while synchronizing with a remote server. Increasing the size of the
+version cache reduces CPU usage at the cost of increased memory.
+Defaults to 7MiB, i.e 7*1024*1024 bytes.
+
 @end ftable
 
 @subsection Netsync Permission Hooks
