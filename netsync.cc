@@ -2341,6 +2341,26 @@ call_server(protocol_role role,
       sess.maybe_step();
       sess.maybe_say_goodbye(guard);
 
+      if (armed)
+        {
+          if (!sess.process(guard))
+            {
+              // Commit whatever work we managed to accomplish anyways.
+              guard.commit();
+
+              // We failed during processing. This should only happen in
+              // client voice when we have a decode exception, or received an
+              // error from our server (which is translated to a decode
+              // exception). We call these cases E() errors.
+              E(false, F("processing failure while talking to "
+                         "peer %s, disconnecting\n")
+                % sess.peer_id);
+              return;
+            }
+          // Don't bother to waste time checking to see if there's more stuff 
+          // if we were going to ignore it anyway
+          continue; 
+        }
       probe.clear();
       probe.add(*(sess.str), sess.which_events());
       Netxx::Probe::result_type res = probe.ready(armed ? instant : timeout);
@@ -2361,22 +2381,6 @@ call_server(protocol_role role,
 
       if (event & Netxx::Probe::ready_write)
         all_io_clean = all_io_clean && sess.write_some();
-
-      if (armed)
-        if (!sess.process(guard))
-          {
-            // Commit whatever work we managed to accomplish anyways.
-            guard.commit();
-
-            // We failed during processing. This should only happen in
-            // client voice when we have a decode exception, or received an
-            // error from our server (which is translated to a decode
-            // exception). We call these cases E() errors.
-            E(false, F("processing failure while talking to "
-                       "peer %s, disconnecting\n")
-              % sess.peer_id);
-            return;
-          }
 
       if (!all_io_clean)
         {
