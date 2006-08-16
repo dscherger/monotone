@@ -14,7 +14,9 @@ function temp_file(namehint)
    else
       filename = string.format("%s/mtn.%s.XXXXXX", tdir, namehint)
    end
-   return mkstemp(filename)
+   local name = mkstemp(filename)
+   local file = io.open(name, "r+")
+   return file, name
 end
 
 function execute(path, ...)   
@@ -231,6 +233,11 @@ function edit_comment(basetext, user_log_message)
    local exe = nil
    if (program_exists_in_path("vi")) then exe = "vi" end
    if (program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
+   local debian_editor = io.open("/usr/bin/editor")
+   if (debian_editor ~= nil) then
+      debian_editor:close()
+      exe = "/usr/bin/editor"
+   end
    local visual = os.getenv("VISUAL")
    if (visual ~= nil) then exe = visual end
    local editor = os.getenv("EDITOR")
