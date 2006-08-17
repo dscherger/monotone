@@ -140,4 +140,11 @@ CREATE TABLE db_vars
         unique(domain, name)
         );
 
+CREATE TABLE cvsimport_file_revisions
+	(
+	file_id not null,			-- file id from files or file_deltas
+	revision not null,			-- the RCS revision number (5.1.1.1)
+	unique(file_id, revision)
+	);
+
 COMMIT;
