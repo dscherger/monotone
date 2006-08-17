@@ -24,20 +24,6 @@ AC_PROG_RANLIB
 test "z$GCC" = "zyes" && CFLAGS="$CFLAGS -fno-strict-aliasing"
 test "z$GXX" = "zyes" && CXXFLAGS="$CXXFLAGS -fno-strict-aliasing"
 
-AC_LANG([C++])
-LIBS="-lboost_program_options${BOOST_SUFFIX} $LIBS"
-AC_MSG_CHECKING(for the libboost_program_options${BOOST_SUFFIX} library)
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-  #include <boost/program_options.hpp>
-  using namespace boost::program_options;
-]],
-[[options_description od("foo"); od.add_options()("test", "a test option");]])],
- [AC_MSG_RESULT([yes])],
- [AC_MSG_FAILURE([libboost_program_options failure])])
-
-
-AC_LANG([C])
-
 AC_C_CONST
 AC_C_INLINE
 AC_CC_FEXCEPTIONS
@@ -102,12 +88,10 @@ AC_CHECK_MEMBERS([struct stat.st_ctim.tv_nsec,
 # Checks for library functions.
 AC_FUNC_STAT
 AC_FUNC_LOCALE_WORKS
-AC_CHECK_FUNCS([atexit memset mkstemp setenv])
+AC_CHECK_FUNCS([atexit memset mkstemp setenv strptime lrint])
 
 # simple library checks
 AC_SEARCH_LIBS([deflate], [z], , AC_MSG_FAILURE([zlib is required]))
-AC_SEARCH_LIBS([dlsym], [dl], AC_DEFINE(USE_DLOPEN))
-AH_TEMPLATE([USE_DLOPEN], [For LUA: use dlopen for loadlib])
 
 # check for all things boost-related
 BOOST_VERSION_CHECK
@@ -117,11 +101,11 @@ MTN_BOOST_LIB_FILESYSTEM
 MTN_BOOST_LIB_DATE_TIME
 MTN_BOOST_LIB_REGEX
 MTN_BOOST_LIB_UNIT_TEST_FRAMEWORK
+MTN_BOOST_LIB_PROGRAM_OPTIONS
 
 # more complex library checks
 MTN_NETXX_DEPENDENCIES
 MTN_SQLITE_DEPENDENCIES
-MTN_POPT_DEPENDENCIES
 
 # allow compiling with different flags/optimisation
 # for monotone versus libs, useful for testing.
