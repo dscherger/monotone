@@ -8,6 +8,7 @@
 /* this file contains modified parts of monotone.cc, */
 
 #include <config.h>
+#include "options.hh"
 #include <i18n.h>
 #include <popt/popt.h>
 #include <sanity.hh>
@@ -172,11 +173,11 @@ database::~database() {}
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("(re-)import a module from a remote cvs repository"), 
-    MTNCVSOPT_BRANCH_NAME % MTNCVSOPT_SINCE % MTNCVSOPT_FULL)
+    option::branch_name % option::since % option::full)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 
-  string repository,module,branch;
+  std::string repository,module,branch;
   if (args.size() >= 2)
   { repository = idx(args, 0)();
     module = idx(args, 1)();
@@ -192,11 +193,11 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
 
 CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("commit changes in local database to a remote cvs repository"), 
-    MTNCVSOPT_BRANCH_NAME % MTNCVSOPT_REVISION)
+    option::branch_name % option::revision)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 
-  string repository,module,branch;
+  std::string repository,module,branch;
   if (args.size() >= 2)
   { repository = idx(args, 0)();
     module = idx(args, 1)();
@@ -208,13 +209,99 @@ CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
 
 CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
       N_("put a CVS working directory under monotone's control"), 
-      MTNCVSOPT_BRANCH_NAME)
+      option::branch_name)
 {
   if (args.size() > 1) throw usage(name);
-  string module;
+  std::string module;
   if (args.size() == 1) module = idx(args, 0)();
   N(!app.branch_name().empty(), F("no destination branch specified\n"));
 //  cvs_sync::takeover(myapp, module);
+}
+
+void
+get_full_version(std::string & out)
+{ out="mtn_cvs version 0.1";
+}
+
+namespace po = boost::program_options;
+using std::cout;
+using std::endl;
+using std::string;
+using std::ios_base;
+using std::ostringstream;
+using std::set;
+using std::string;
+using std::vector;
+using std::ios_base;
+using boost::shared_ptr;
+
+static void
+tokenize_for_command_line(string const & from, vector<string> & to)
+{
+  // Unfortunately, the tokenizer in basic_io is too format-specific
+  to.clear();
+  enum quote_type {none, one, two};
+  string cur;
+  quote_type type = none;
+  bool have_tok(false);
+  
+  for (string::const_iterator i = from.begin(); i != from.end(); ++i)
+    {
+      if (*i == '\'')
+        {
+          if (type == none)
+            type = one;
+          else if (type == one)
+            type = none;
+          else
+            {
+              cur += *i;
+              have_tok = true;
+            }
+        }
+      else if (*i == '"')
+        {
+          if (type == none)
+            type = two;
+          else if (type == two)
+            type = none;
+          else
+            {
+              cur += *i;
+              have_tok = true;
+            }
+        }
+      else if (*i == '\\')
+        {
+          if (type != one)
+            ++i;
+          N(i != from.end(), F("Invalid escape in --xargs file"));
+          cur += *i;
+          have_tok = true;
+        }
+      else if (string(" \n\t").find(*i) != string::npos)
+        {
+          if (type == none)
+            {
+              if (have_tok)
+                to.push_back(cur);
+              cur.clear();
+              have_tok = false;
+            }
+          else
+            {
+              cur += *i;
+              have_tok = true;
+            }
+        }
+      else
+        {
+          cur += *i;
+          have_tok = true;
+        }
+    }
+  if (have_tok)
+    to.push_back(cur);
 }
 
 int 
@@ -222,7 +309,7 @@ cpp_main(int argc, char ** argv)
 {
   int ret = 0;
 
-  atexit(&dumper);
+//  atexit(&dumper);
 
   // go-go gadget i18n
 
@@ -238,6 +325,7 @@ cpp_main(int argc, char ** argv)
   // conversion etc
   try
   {
+  bool requested_help=false;
 
   // Set up the global sanity object.  No destructor is needed and
   // therefore no wrapper object is needed either.
@@ -267,8 +355,8 @@ cpp_main(int argc, char ** argv)
   L(FL("set locale: LC_ALL=%s\n") % locale_string);
 
   std::string full_version_string;
-//  get_full_version(full_version_string);
-//  MM(full_version_string);
+  get_full_version(full_version_string);
+  MM(full_version_string);
 
   // Set up secure memory allocation etc
   Botan::Init::initialize();
@@ -276,7 +364,7 @@ cpp_main(int argc, char ** argv)
   
   // decode all argv values into a UTF-8 array
   save_initial_path();
-  vector<string> args;
+  std::vector<std::string> args;
   utf8 progname;
   for (int i = 0; i < argc; ++i)
     {
@@ -290,15 +378,16 @@ cpp_main(int argc, char ** argv)
     }
 
   // find base name of executable
-  string prog_path = fs::path(uv.argv[0]).leaf();
-  prog_path = prog_path.substr(0, prog_path.find(".exe", 0));
+  std::string prog_path = fs::path(progname()).leaf();
+  if (prog_path.rfind(".exe") == prog_path.size() - 4)
+    prog_path = prog_path.substr(0, prog_path.size() - 4);
   utf8 prog_name(prog_path);
 
-  app_state app;
+  mtncvs_state app;
   try
     {
 
-      app.set_prog_name(prog_name);
+//      app.set_prog_name(prog_name);
 
       // set up for parsing.  we add a hidden argument that collections all
       // positional arguments, which we process ourselves in a moment.
@@ -320,6 +409,7 @@ cpp_main(int argc, char ** argv)
         po::variables_map vm;
         po::store(parsed, vm);
         po::notify(vm);
+#if 0
         if (option::argfile.given(vm))
           {
             vector<string> files = option::argfile.get(vm);
@@ -337,6 +427,7 @@ cpp_main(int argc, char ** argv)
                   }
               }
           }
+#endif
       }
 
       po::parsed_options parsed = po::command_line_parser(args)
@@ -350,7 +441,7 @@ cpp_main(int argc, char ** argv)
       po::notify(vm);
 
       // consume the command, and perform completion if necessary
-      string cmd;
+      std::string cmd;
       vector<string> positional_args;
       if (vm.count("all_positional_args"))
         {
@@ -380,313 +471,36 @@ cpp_main(int argc, char ** argv)
           global_sanity.set_debug();
         }
 
-      if (option::quiet.given(vm))
-        {
-          global_sanity.set_quiet();
-          ui.set_tick_writer(new tick_write_nothing);
-        }
-
-      if (option::reallyquiet.given(vm))
-        {
-          global_sanity.set_reallyquiet();
-          ui.set_tick_writer(new tick_write_nothing);
-        }
-
-      if (option::nostd.given(vm))
-        {
-          app.set_stdhooks(false);
-        }
-
-      if (option::norc.given(vm))
-        {
-          app.set_rcfiles(false);
-        }
-
-      if (option::verbose.given(vm))
-        {
-          app.set_verbose(true);
-        }
-
-      if (option::rcfile.given(vm))
-        {
-          vector<string> files = option::rcfile.get(vm);
-          for (vector<string>::const_iterator i = files.begin();
-               i != files.end(); ++i)
-            app.add_rcfile(*i);
-        }
-
-      if (option::dump.given(vm))
-        {
-          global_sanity.filename = system_path(option::dump.get(vm)).as_external();
-        }
-
-      if (option::log.given(vm))
-        {
-          ui.redirect_log_to(system_path(option::log.get(vm)));
-        }
-
-      if (option::db_name.given(vm))
-        {
-          app.set_database(system_path(option::db_name.get(vm)));
-        }
-
-      if (option::key_dir.given(vm))
-        {
-          app.set_key_dir(system_path(option::key_dir.get(vm)));
-        }
-
-      if (option::conf_dir.given(vm))
-        {
-          app.set_confdir(system_path(option::conf_dir.get(vm)));
-        }
-
-      if (option::ticker.given(vm))
-        {
-          string ticker = option::ticker.get(vm);
-          if (ticker == "none" || global_sanity.quiet)
-            ui.set_tick_writer(new tick_write_nothing);
-          else if (ticker == "dot")
-            ui.set_tick_writer(new tick_write_dot);
-          else if (ticker == "count")
-            ui.set_tick_writer(new tick_write_count);
-          else
-            app.requested_help = true;
-        }
-
-      if (option::key_name.given(vm))
-        {
-          app.set_signing_key(option::key_name.get(vm));
-        }
+      if (option::full.given(vm)) app.full=true;
+            
+      if (option::since.given(vm)) app.since=string(option::since.get(vm));
 
       if (option::branch_name.given(vm))
-        {
-          app.set_branch(option::branch_name.get(vm));
-          app.set_is_explicit_option(option::branch_name());
-        }
+      { L(FL("branch %s") % argstr);
+        app.branch=option::branch_name.get(vm);
+      }
 
-      if (option::version.given(vm))
-        {
-          print_version();
-          return 0;
-        }
+      if (option::help.given(vm)) requested_help = true;
+            
+      if (option::mtn.given(vm)) app.mtn_binary = option::mtn.get(vm);
+            
+      if (option::db.given(vm)) 
+        app.mtn_options.push_back(string("--db=")+option::db.get(vm));
 
-      if (option::full_version.given(vm))
-        {
-          print_full_version();
-          return 0;
-        }
+      if (option::rcfile.given(vm)) 
+        app.mtn_options.push_back(string("--rcfile=")+option::rcfile.get(vm));
 
-      if (option::revision.given(vm))
-        {
-          vector<string> revs = option::revision.get(vm);
-          for (vector<string>::const_iterator i = revs.begin();
-               i != revs.end(); ++i)
-            app.add_revision(*i);
-        }
+      if (option::nostd.given(vm)) 
+        app.mtn_options.push_back(string("--nostd"));
 
-      if (option::message.given(vm))
-        {
-          app.set_message(option::message.get(vm));
-          app.set_is_explicit_option(option::message());
-        }
+      if (option::keydir.given(vm)) 
+        app.mtn_options.push_back(string("--keydir=")+option::keydir.get(vm));
 
-      if (option::msgfile.given(vm))
-        {
-          app.set_message_file(option::msgfile.get(vm));
-          app.set_is_explicit_option(option::msgfile());
-        }
-
-      if (option::date.given(vm))
-        {
-          app.set_date(option::date.get(vm));
-        }
-
-      if (option::author.given(vm))
-        {
-          app.set_author(option::author.get(vm));
-        }
-
-      if (option::root.given(vm))
-        {
-          app.set_root(system_path(option::root.get(vm)));
-        }
-
-      if (option::last.given(vm))
-        {
-          app.set_last(option::last.get(vm));
-        }
-
-      if (option::next.given(vm))
-        {
-          app.set_next(option::next.get(vm));
-        }
-
-      if (option::depth.given(vm))
-        {
-          app.set_depth(option::depth.get(vm));
-        }
-
-      if (option::brief.given(vm))
-        {
-          global_sanity.set_brief();
-        }
-
-      if (option::diffs.given(vm))
-        {
-          app.diffs = true;
-        }
-
-      if (option::no_merges.given(vm))
-        {
-          app.no_merges = true;
-        }
-
-      if (option::set_default.given(vm))
-        {
-          app.set_default = true;
-        }
-
-      if (option::stdio.given(vm))
-        {
-          app.bind_stdio = true;
-        }
-
-      if (option::no_transport_auth.given(vm))
-        {
-          app.use_transport_auth = false;
-        }
-
-      if (option::exclude.given(vm))
-        {
-          vector<string> excls = option::exclude.get(vm);
-          for (vector<string>::const_iterator i = excls.begin();
-               i != excls.end(); ++i)
-            app.add_exclude(utf8(*i));
-        }
-
-      if (option::pidfile.given(vm))
-        {
-          app.set_pidfile(system_path(option::pidfile.get(vm)));
-        }
-
-      if (option::unified_diff.given(vm))
-        {
-          app.set_diff_format(unified_diff);
-        }
-
-      if (option::context_diff.given(vm))
-        {
-          app.set_diff_format(context_diff);
-        }
-
-      if (option::external_diff.given(vm))
-        {
-          app.set_diff_format(external_diff);
-        }
-
-      if (option::external_diff_args.given(vm))
-        {
-          app.set_diff_args(utf8(option::external_diff_args.get(vm)));
-        }
-
-      if (option::no_show_encloser.given(vm))
-        {
-          app.diff_show_encloser = false;
-        }
-
-      if (option::execute.given(vm))
-        {
-
-          app.execute = true;
-        }
-
-      if (option::bind.given(vm))
-        {
-          {
-            string arg = option::bind.get(vm);
-            string addr_part, port_part;
-            size_t l_colon = arg.find(':');
-            size_t r_colon = arg.rfind(':');
-
-            // not an ipv6 address, as that would have at least two colons
-            if (l_colon == r_colon)
-              {
-                addr_part = (r_colon == string::npos ? arg : arg.substr(0, r_colon));
-                port_part = (r_colon == string::npos ? "" :  arg.substr(r_colon+1, arg.size() - r_colon));
-              }
-            else
-              {
-                // IPv6 addresses have a port specified in the style: [2001:388:0:13::]:80
-                size_t squareb = arg.rfind(']');
-                if ((arg.find('[') == 0) && (squareb != string::npos))
-                  {
-                    if (squareb < r_colon)
-                      port_part = (r_colon == string::npos ? "" :  arg.substr(r_colon+1, arg.size() - r_colon));
-                    else
-                      port_part = "";
-                    addr_part = (squareb == string::npos ? arg.substr(1, arg.size()) : arg.substr(1, squareb-1));
-                  }
-                else
-                  {
-                    addr_part = arg;
-                    port_part = "";
-                  }
-              }
-            app.bind_stdio = false;
-            app.bind_address = utf8(addr_part);
-            app.bind_port = utf8(port_part);
-          }
-          app.set_is_explicit_option(option::bind());
-        }
-
-      if (option::missing.given(vm))
-        {
-          app.missing = true;
-        }
-
-      if (option::unknown.given(vm))
-        {
-          app.unknown = true;
-        }
-
-      if (option::key_to_push.given(vm))
-        {
-          vector<string> kp = option::key_to_push.get(vm);
-          for (vector<string>::const_iterator i = kp.begin();
-               i != kp.end(); ++i)
-            app.add_key_to_push(*i);
-        }
-
-      if (option::drop_attr.given(vm))
-        {
-          vector<string> da = option::drop_attr.get(vm);
-          for (vector<string>::const_iterator i = da.begin();
-               i != da.end(); ++i)
-            app.attrs_to_drop.insert(*i);
-        }
-
-      if (option::no_files.given(vm))
-        {
-          app.no_files = true;
-        }
-
-      if (option::recursive.given(vm))
-        {
-          app.set_recursive();
-        }
-
-      if (option::help.given(vm))
-        {
-          app.requested_help = true;
-        }
-
-      if (option::automate_stdio_size.given(vm))
-        {
-          app.set_automate_stdio_size(option::automate_stdio_size.get(vm));
-        }
+      if (option::key.given(vm)) 
+        app.mtn_options.push_back(string("--key=")+option::key.get(vm));
 
       // stop here if they asked for help
-      if (app.requested_help)
+      if (requested_help)
         {
           throw usage(cmd);     // cmd may be empty, and that's fine.
         }
@@ -697,10 +511,10 @@ cpp_main(int argc, char ** argv)
       // from _MTN/options happens later.
       // Certain commands may subsequently require a workspace or fail
       // if we didn't find one at this point.
-      app.allow_workspace();
+//      app.allow_workspace();
 
-      if (!app.found_workspace && global_sanity.filename.empty())
-        global_sanity.filename = (app.get_confdir() / "dump").as_external();
+//      if (!app.found_workspace && global_sanity.filename.empty())
+//        global_sanity.filename = (app.get_confdir() / "dump").as_external();
 
       // main options processed, now invoke the
       // sub-command w/ remaining args
@@ -711,12 +525,12 @@ cpp_main(int argc, char ** argv)
       else
         {
           vector<utf8> args(positional_args.begin(), positional_args.end());
-          return commands::process(app, cmd, args);
+          return commands::process(app.downcast(), cmd, args);
         }
     }
   catch (po::ambiguous_option const & e)
     {
-      string msg = (F("%s:\n") % e.what()).str();
+      std::string msg = (F("%s:\n") % e.what()).str();
       vector<string>::const_iterator it = e.alternatives.begin();
       for (; it != e.alternatives.end(); ++it)
         msg += *it + "\n";
@@ -744,7 +558,7 @@ cpp_main(int argc, char ** argv)
         }
 
       commands::explain_usage(u.which, cout);
-      if (app.requested_help)
+      if (requested_help)
         return 0;
       else
         return 2;
@@ -776,193 +590,6 @@ cpp_main(int argc, char ** argv)
   ui.fatal("impossible: reached end of cpp_main");
   return 3;
 }
-#if 0
-  // prepare for arg parsing
-
-  cleanup_ptr<poptContext, void> 
-    ctx(poptGetContext(NULL, argc, (char const **) uv.argv, options, 0),
-        &my_poptFreeContext);
-
-  set<int> local_options;
-  for (poptOption *opt = coptions; opt->val; opt++)
-    local_options.insert(opt->val);
-
-  // process main program options
-
-  int opt=-1;
-  bool requested_help = false;
-  set<int> used_local_options;
-
-  poptSetOtherOptionHelp(ctx(), _("[OPTION...] command [ARGS...]\n"));
-
-  try
-    {
-      mtncvs_state app;
-
-//      app.set_prog_name(prog_name);
-
-      while ((opt = poptGetNextOpt(ctx())) > 0)
-        {
-          if (local_options.find(opt) != local_options.end())
-            used_local_options.insert(opt);
-
-          switch(opt)
-            {
-            case MTNCVSOPT_DEBUG:
-              global_sanity.set_debug();
-              break;
-            
-            case MTNCVSOPT_FULL:
-              app.full=true;
-              break;
-            
-            case MTNCVSOPT_SINCE:
-              app.since=string(argstr);
-              break;
-
-            case MTNCVSOPT_BRANCH_NAME:
-              L(FL("branch %s") % argstr);
-              app.branch=string(argstr);
-              break;
-
-            case MTNCVSOPT_HELP:
-            default:
-              requested_help = true;
-              break;
-            
-            case MTNCVSOPT_BINARY:
-              app.mtn_binary = utf8(argstr);
-              break;
-            
-            case MTNCVSOPT_DB:
-              app.mtn_options.push_back(string("--db=")+argstr);
-              break;
-            case MTNCVSOPT_RCFILE:
-              app.mtn_options.push_back(string("--rcfile=")+argstr);
-              break;
-            case MTNCVSOPT_NOSTD:
-              app.mtn_options.push_back(utf8("--nostd"));
-              break;
-            case MTNCVSOPT_KEYDIR:
-              app.mtn_options.push_back(string("--keydir=")+argstr);
-              break;
-            case MTNCVSOPT_KEY:
-              app.mtn_options.push_back(string("--key=")+argstr);
-              break;
-            }
-        }
-
-      // verify that there are no errors in the command line
-
-      N(opt == -1,
-        F("syntax error near the \"%s\" option: %s") %
-          poptBadOption(ctx(), POPT_BADOPTION_NOALIAS) % poptStrerror(opt));
-
-      // complete the command if necessary
-
-      string cmd;
-      if (poptPeekArg(ctx()))
-        {
-          cmd = commands::complete_command(poptGetArg(ctx()));
-        }
-
-      // stop here if they asked for help
-
-      if (requested_help)
-        {
-          throw usage(cmd);     // cmd may be empty, and that's fine.
-        }
-
-      // at this point we allow a workspace (meaning search for it
-      // and if found read _MTN/options, but don't use the data quite
-      // yet, and read all the monotonercs).  Processing the data
-      // from _MTN/options happens later.
-      // Certain commands may subsequently require a workspace or fail
-      // if we didn't find one at this point.
-
-//      app.allow_workspace();
-
-      // main options processed, now invoke the 
-      // sub-command w/ remaining args
-
-      if (cmd.empty())
-        {
-          throw usage("");
-        }
-      else
-        {
-          // Make sure the local options used are really used by the
-          // given command.
-          set<int> command_options = commands::command_options(cmd);
-          for (set<int>::const_iterator i = used_local_options.begin();
-               i != used_local_options.end(); ++i)
-            N(command_options.find(*i) != command_options.end(),
-              F("monotone %s doesn't use the option %s")
-              % cmd % coption_string(*i));
-
-          vector<utf8> args;
-          while(poptPeekArg(ctx()))
-            {
-              args.push_back(utf8(string(poptGetArg(ctx()))));
-            }
-          ret = commands::process(app.downcast(), cmd, args);
-        }
-    }
-  catch (usage & u)
-    {
-      // Make sure to hide documentation that's not part of
-      // the current command.
-      set<int> command_options = commands::command_options(u.which);
-      int count = 0;
-      for (poptOption *o = coptions; o->val != 0; o++)
-        {
-          if (command_options.find(o->val) != command_options.end())
-            {
-              o->argInfo &= ~POPT_ARGFLAG_DOC_HIDDEN;
-              L(FL("Removed 'hidden' from option # %d\n") % o->argInfo);
-              count++;
-            }
-          else
-            {
-              o->argInfo |= POPT_ARGFLAG_DOC_HIDDEN;
-              L(FL("Added 'hidden' to option # %d\n") % o->argInfo);
-            }
-        }
-      free((void *)options[0].descrip); options[0].descrip = NULL;
-      if (count != 0)
-        {
-          ostringstream sstr;
-          sstr << F("Options specific to '%s %s':") 
-            % prog_name % u.which;
-          options[0].descrip = strdup(sstr.str().c_str());
-
-          options[0].argInfo |= POPT_ARGFLAG_DOC_HIDDEN;
-          L(FL("Added 'hidden' to option # %d\n") % options[0].argInfo);
-        }
-
-      poptPrintHelp(ctx(), stdout, 0);
-      cout << endl;
-      commands::explain_usage(u.which, cout);
-      global_sanity.clean_shutdown = true;
-      return 2;
-    }
-  }
-  catch (informative_failure & inf)
-  {
-    ui.inform(inf.what);
-    global_sanity.clean_shutdown = true;
-    return 1;
-  }
-  catch (std::ios_base::failure const & ex)
-  {
-    global_sanity.clean_shutdown = true;
-    return 1;
-  }
-
-  global_sanity.clean_shutdown = true;
-  return ret;
-}
-#endif
 
 int
 main(int argc, char **argv)

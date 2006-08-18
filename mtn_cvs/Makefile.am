@@ -6,11 +6,14 @@ libmtn_a_SOURCES=../netxx_pipe.cc ../sanity.cc ../ui.cc \
 	../transforms.cc ../vocab.cc ../paths.cc ../charset.cc \
 	../simplestring_xform.cc ../constants.cc ../xdelta.cc \
 	../commands.cc ../basic_io.cc botan/md5.cpp piece_table.cc \
-	../mtn-sanity.cc ../options.cc
+	../mtn-sanity.cc 
+
+options.cc:
+	ln -sf ../options.cc ../options.hh .
 
 bin_PROGRAMS = mtn_cvs
 
-mtn_cvs_SOURCES = cvs_sync.cc cvs_client.cc mtn_cvs.cc \
+mtn_cvs_SOURCES = options.cc cvs_sync.cc cvs_client.cc mtn_cvs.cc \
 		mtn_pipe.cc mtn_automate.cc mtncvs_state.cc
 AM_LDFLAGS = -L. -L..
 mtn_cvs_LDADD = -lmtn -lplatform -l3rdparty $(BOOSTLIBS)
