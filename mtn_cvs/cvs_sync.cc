@@ -1294,8 +1294,7 @@ void cvs_repository::commit()
 
 // this is somewhat clumsy ... but works well enough
 static void guess_repository(std::string &repository, std::string &module,
-        std::string & branch,
-        std::string &last_state, mtncvs_state &app)
+        std::string & branch,std::string &last_state, mtncvs_state &app)
 { I(!app.branch().empty());
   try
   { revision_id last=app.find_newest_sync(app.domain(),app.branch());
@@ -1306,7 +1305,6 @@ static void guess_repository(std::string &repository, std::string &module,
     else
       L(FL("using branch '%s' of module '%s' in repository '%s'\n") 
                 % branch % module % repository);
-    parse_module_paths(last_state);
   }
   catch (std::runtime_error)
   { N(false, F("can not guess repository (in domain %s), "
@@ -1354,6 +1352,8 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
   if (repository.empty() || module.empty())
     guess_repository(repository, module, branch, last_sync_info, app);
   cvs_sync::cvs_repository repo(app,repository,module,branch);
+  if (!last_sync_info.empty())
+    repo.parse_module_paths(last_sync_info);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo.GzipStream(3);

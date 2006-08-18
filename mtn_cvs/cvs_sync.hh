@@ -173,13 +173,13 @@ private:
   void store_modules();
   void retrieve_modules();
   std::string gather_merge_information(revision_id const& id);
-  void parse_module_paths(const std::string&);
 public: // semi public interface for push/pull
   void prime();
   void update();
   void commit();
 //  void process_certs(const std::vector< revision<cert> > &certs);
   bool empty() const { return edges.empty() && files.empty(); }
+  void parse_module_paths(const std::string&);
 
   const cvs_manifest &get_files(const revision_id &e);
   
