@@ -72,8 +72,8 @@ struct cvs_edge // careful this name is also used in cvs_import
   mutable revision_id delta_base;
   // delta encoded if !delta_base().empty()
   mutable cvs_manifest xfiles; // manifest (or use cvs_manifest)
-  mutable unsigned cm_delta_depth; // we store a full manifest every N revisions
-  static const unsigned cm_max_delta_depth=50;
+//  mutable unsigned cm_delta_depth; // we store a full manifest every N revisions
+//  static const unsigned cm_max_delta_depth=50;
   mutable hexenc<id> revision; // monotone revision
       // make this a revision_id
 
@@ -173,6 +173,8 @@ private:
   void store_modules();
   void retrieve_modules();
   std::string gather_merge_information(revision_id const& id);
+  void attach_sync_state(mtncvs_state &app,cvs_edge const& e,mtn_automate::cset &cs);
+  std::string create_sync_state(cvs_edge const& e);
 public: // semi public interface for push/pull
   void prime();
   void update();

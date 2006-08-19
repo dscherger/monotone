@@ -407,7 +407,8 @@ void cvs_repository::store_delta(const std::string &new_contents,
 }
 
 static
-void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::shared_ptr<cset> cs)
+void add_missing_parents(mtn_automate::manifest const& oldr, 
+              split_path const & sp, mtn_automate::cset & cs)
 { split_path tmp;
   std::string log;
   dump(sp,log);
@@ -417,9 +418,10 @@ void add_missing_parents(roster_t const& oldr, split_path const & sp, boost::sha
     tmp.push_back(*i);
     // already added?
     if (cs->dirs_added.find(tmp)!=cs->dirs_added.end()) continue;
-    if (!oldr.has_node(tmp)) 
+    mtn_automate::manifest::const_iterator mi=oldr.find(file_path(tmp));
+    if (mi==oldr.end())
     { L(FL("adding directory %s\n") % file_path(tmp));
-      safe_insert(cs->dirs_added, tmp);
+      safe_insert(cs->dirs_added, file_path(tmp));
     }
   }
 }
@@ -429,30 +431,23 @@ static void
 build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_manifest &newm,
                  mtn_automate::cset &cs, cvs_file_state const& remove_state)
 {
-  cvs_manifest cvs_delta;
+//  cvs_manifest cvs_delta;
 
-#if 0  
-  node_map const & nodes = oldr.all_nodes();
-  L(FL("build_change_set(%d,%d,)\n") % nodes.size() % newm.size());
+//  node_map const & nodes = oldr.all_nodes();
+  L(FL("build_change_set(%d,%d,)\n") % oldr.size() % newm.size());
   
-  for (node_map::const_iterator f = nodes.begin(); f != nodes.end(); ++f)
-    { node_t node = f->second;
-      split_path sp;
-      oldr.get_name(f->first, sp);
-      file_path path(sp);
+  for (mtn_automate::manifest::const_iterator f = oldr.begin(); f != oldr.end(); ++f)
+    { if (null_id(f.second)) continue; // directory
       
-      if (is_dir_t(node)) continue;
-      
-      cvs_manifest::const_iterator fn = newm.find(path.as_internal());
+      cvs_manifest::const_iterator fn = newm.find(f.first);
       if (fn==newm.end())
       {  
-        L(FL("deleting file '%s'\n") % path);
-        safe_insert(cs->nodes_deleted, sp);
-        cvs_delta[path.as_internal()]=remove_state;
+        L(FL("deleting file '%s'\n") % f.first);
+        safe_insert(cs->deleted, f.first);
+//        cvs_delta[path.as_internal()]=remove_state;
       }
       else 
-        { file_t file = downcast_to_file_t(node);
-          if (file->content == fn->second->sha1sum)
+        { if (f.second == fn->second->sha1sum)
             {
 //              L(FL("skipping preserved entry state '%s' on '%s'\n")
 //                % fn->second->sha1sum % fn->first);         
@@ -460,31 +455,30 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
           else
             {
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % path % file->content % fn->second->sha1sum);
+                % f.first % f.second % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              safe_insert(cs->deltas_applied, make_pair(sp, make_pair(file->content,fn->second->sha1sum)));
-              cvs_delta[path.as_internal()]=fn->second;
+              safe_insert(cs->changed, make_pair(sp, make_pair(f.second,fn->second->sha1sum)));
+//              cvs_delta[path.as_internal()]=fn->second;
             }
 #warning 2do mode_change
           // cs->attrs_cleared cs->attrs_set
         }  
     }
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
-    {
-      split_path sp;
-      file_path_internal(f->first).split(sp);
-      if (!oldr.has_node(sp))
+    { mtn_automate::manifest::const_iterator mi=oldr.find(f->first);
+      if (mi==oldr.end())
       {  
         L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum().empty());
         split_path sp;
-        file_path_internal(f->first).split(sp);
+        f->first.split(sp);
         add_missing_parents(oldr, sp, cs);
-        safe_insert(cs->files_added, make_pair(sp, f->second->sha1sum));
-        cvs_delta[f->first]=f->second;
+        safe_insert(cs->added, make_pair(f->first, f->second->sha1sum));
+//        cvs_delta[f->first]=f->second;
       }
     }
-  if (!nodes.empty() && cvs_delta.size()<newm.size() 
+#if 0
+  if (!oldr.empty() && cvs_delta.size()<newm.size() 
       && cm_delta_depth+1<cvs_edge::cm_max_delta_depth)
   { newm=cvs_delta;
     return true;
@@ -750,8 +744,49 @@ static file_id get_sync_id(mtncvs_state &app, revision_id id)
   return m[file_path_internal(".mtn-sync-"+app.domain())];
 }
 
-void attach_sync_state(mtncvs_state &app,cvs_edge const& e,mtn_automate::cset &cs)
-{
+void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest)
+{ std::string state=create_sync_state(e);
+  std::string syncname=".mtn-sync-"+app.domain();
+  mtn_automate::manifest::const_iterator it=oldmanifest.find(syncname);
+  file_id fid;
+  if (it!=oldmanifest.end())
+    fid=app.put_file(state,it->second);
+  else
+    fid=app.put_file(state);
+  static time_t serial;
+  file_state fs(++serial,"");
+  fs.size=state.size();
+  fs.sha1sum=fid.inner();
+  std::pair<cvs_file_state,bool> ires=files[syncname].insert(fs);
+  I(ires.second);
+  e.xfiles[syncname]=ires.first;
+}
+
+std::string create_sync_state(cvs_edge const& e)
+{ std::string state=create_cvs_cert_header();
+  state+="#modules\n";
+  const std::map<std::string,std::string> &sd=GetServerDir();
+  for (std::map<std::string,std::string>::const_iterator i=sd.begin();
+        i!=sd.end();++i)
+  { value+=i->first+"\t"+i->second+"\n";
+  }
+  state+="#files\n";
+  
+  for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
+  { I(!i->second->cvs_version.empty());
+#if 0  
+    { W(F("blocking attempt to certify an empty CVS revision\n"
+        "(this is normal for a cvs_takeover of a locally modified tree)\n"));
+      return;
+    }
+#endif
+    content+=i->second->cvs_version;
+    if (!i->second->keyword_substitution.empty())
+      content+="/"+i->second->keyword_substitution;
+// FIXME: How to flag locally modified files? add the synched sha1sum?
+    content+=" "+i->first+"\t"+i->second->sha1sum()+"\n";
+  }
+  return state;
 }
 
 // commit CVS revisions to monotone (pull)
@@ -780,8 +815,11 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
     // revision_set rev;
     // boost::shared_ptr<cset> cs(new cset());
-    build_change_set(*this,app.get_manifest_of(parent_rid),e->xfiles,cs,remove_state);
-    attach_sync_state(app,*e,cs);
+    mtn_automate::manifest oldmanifest;
+    if (!null_id(parent_rid))
+      oldmanifest=app.get_manifest_of(parent_rid);
+    attach_sync_state(*e,oldmanifest);
+    build_change_set(*this,oldmanifest,e->xfiles,cs,remove_state);
     //cs->apply_to(eros);
     //calculate_ident(new_roster, rev.new_manifest);
     //safe_insert(rev.edges, std::make_pair(parent_rid, cs));
