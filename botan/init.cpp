@@ -81,6 +81,8 @@
 
 namespace Botan {
 
+bool paranoid_memory_clearing = true;
+
 /*************************************************
 * Library Initialization                         *
 *************************************************/

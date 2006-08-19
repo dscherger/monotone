@@ -593,6 +593,7 @@ utf8_argv
 struct botan_library
 {
   botan_library() { 
+    Botan::paranoid_memory_clearing = false;
     Botan::Init::initialize();
     Botan::set_default_allocator("malloc");
   }

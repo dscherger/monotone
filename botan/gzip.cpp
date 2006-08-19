@@ -15,6 +15,7 @@
 #include <botan/gzip.h>
 #include <botan/filters.h>
 #include <botan/bit_ops.h>
+#include <botan/init.h>
 #include <cstring>
 #include <map>
 #include <zlib.h>
@@ -40,6 +41,7 @@ class Zlib_Alloc_Info
 *************************************************/
 void* zlib_malloc(void* info_ptr, unsigned int n, unsigned int size)
    {
+     printf("XXXXXXXX\n");
    Zlib_Alloc_Info* info = static_cast<Zlib_Alloc_Info*>(info_ptr);
    void* ptr = info->alloc->allocate(n * size);
    info->current_allocs[ptr] = n * size;
@@ -69,16 +71,22 @@ class Zlib_Stream
 
       Zlib_Stream()
          {
-         std::memset(&stream, 0, sizeof(z_stream));
-         stream.zalloc = zlib_malloc;
-         stream.zfree = zlib_free;
-         stream.opaque = new Zlib_Alloc_Info;
+	   std::memset(&stream, 0, sizeof(z_stream));
+	   if (paranoid_memory_clearing) 
+	     {
+	       stream.zalloc = zlib_malloc;
+	       stream.zfree = zlib_free;
+	       stream.opaque = new Zlib_Alloc_Info;
+	     }
          }
       ~Zlib_Stream()
          {
-         Zlib_Alloc_Info* info = static_cast<Zlib_Alloc_Info*>(stream.opaque);
-         delete info;
-         std::memset(&stream, 0, sizeof(z_stream));
+	   if (paranoid_memory_clearing) 
+	     {
+	       Zlib_Alloc_Info* info = static_cast<Zlib_Alloc_Info*>(stream.opaque);
+	       delete info;
+	       std::memset(&stream, 0, sizeof(z_stream));
+	     }
          }
    };
 
