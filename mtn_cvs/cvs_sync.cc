@@ -843,7 +843,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 #endif
     revision_id child_rid=app.put_revision(parent_rid,cs);
     if (revision_ticker.get()) ++(*revision_ticker);
-    L(FL("CVS Sync: Inserted revision %s (%s) into repository\n") % child_rid);
+    L(FL("CVS Sync: Inserted revision %s into repository\n") % child_rid);
     e->revision=child_rid.inner();
 #if 0    
     cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
