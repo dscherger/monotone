@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include "sanity.hh"
 #include "cvs_client.hh"
+#include "mtn_automate.hh"
 //#include "constants.hh"
 //#include "app_state.hh"
 //#include "packet.hh"
@@ -80,11 +81,10 @@ struct cvs_edge // careful this name is also used in cvs_import
   // I do not want this to be 3 hours (how comes?)
   static size_t const cvs_window = 5;
 
-  cvs_edge() : changelog_valid(), time(), time2(), cm_delta_depth() {} 
-  cvs_edge(time_t when) : changelog_valid(), time(when), time2(when), cm_delta_depth() {} 
+  cvs_edge() : changelog_valid(), time(), time2() {} 
+  cvs_edge(time_t when) : changelog_valid(), time(when), time2(when) {} 
   cvs_edge(const std::string &log, time_t when, const std::string &auth) 
-    : changelog(log), changelog_valid(true), author(auth), time(when), time2(when),
-      cm_delta_depth()
+    : changelog(log), changelog_valid(true), author(auth), time(when), time2(when)
   {} 
   cvs_edge(const revision_id &rid,mtncvs_state &app);
   
@@ -173,7 +173,7 @@ private:
   void store_modules();
   void retrieve_modules();
   std::string gather_merge_information(revision_id const& id);
-  void attach_sync_state(mtncvs_state &app,cvs_edge const& e,mtn_automate::cset &cs);
+  void attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest);
   std::string create_sync_state(cvs_edge const& e);
 public: // semi public interface for push/pull
   void prime();

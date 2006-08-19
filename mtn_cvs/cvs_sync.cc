@@ -363,8 +363,8 @@ bool cvs_edge::similar_enough(cvs_edge const & other) const
     return false;
   if (author != other.author)
     return false;
-  if (labs(time - other.time) > cvs_window
-      && labs(time2 - other.time) > cvs_window)
+  if (labs(time - other.time) > long(cvs_window)
+      && labs(time2 - other.time) > long(cvs_window))
     return false;
   return true;
 }
@@ -417,11 +417,11 @@ void add_missing_parents(mtn_automate::manifest const& oldr,
   { L(FL("path comp '%s'/%d\n") % *i % sp.size());
     tmp.push_back(*i);
     // already added?
-    if (cs->dirs_added.find(tmp)!=cs->dirs_added.end()) continue;
+    if (cs.dirs_added.find(tmp)!=cs.dirs_added.end()) continue;
     mtn_automate::manifest::const_iterator mi=oldr.find(file_path(tmp));
     if (mi==oldr.end())
     { L(FL("adding directory %s\n") % file_path(tmp));
-      safe_insert(cs->dirs_added, file_path(tmp));
+      safe_insert(cs.dirs_added, file_path(tmp));
     }
   }
 }
@@ -437,17 +437,17 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
   L(FL("build_change_set(%d,%d,)\n") % oldr.size() % newm.size());
   
   for (mtn_automate::manifest::const_iterator f = oldr.begin(); f != oldr.end(); ++f)
-    { if (null_id(f.second)) continue; // directory
+    { if (null_id(f->second)) continue; // directory
       
-      cvs_manifest::const_iterator fn = newm.find(f.first);
+      cvs_manifest::const_iterator fn = newm.find(f->first.as_internal());
       if (fn==newm.end())
       {  
-        L(FL("deleting file '%s'\n") % f.first);
-        safe_insert(cs->deleted, f.first);
+        L(FL("deleting file '%s'\n") % f->first);
+        safe_insert(cs.deleted, f->first);
 //        cvs_delta[path.as_internal()]=remove_state;
       }
       else 
-        { if (f.second == fn->second->sha1sum)
+        { if (f->second == fn->second->sha1sum)
             {
 //              L(FL("skipping preserved entry state '%s' on '%s'\n")
 //                % fn->second->sha1sum % fn->first);         
@@ -455,25 +455,25 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
           else
             {
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % f.first % f.second % fn->second->sha1sum);
+                % f->first % f->second % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              safe_insert(cs->changed, make_pair(sp, make_pair(f.second,fn->second->sha1sum)));
+              safe_insert(cs.changed, make_pair(f->first, make_pair(f->second,fn->second->sha1sum)));
 //              cvs_delta[path.as_internal()]=fn->second;
             }
 #warning 2do mode_change
-          // cs->attrs_cleared cs->attrs_set
+          // cs.attrs_cleared cs.attrs_set
         }  
     }
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
-    { mtn_automate::manifest::const_iterator mi=oldr.find(f->first);
+    { mtn_automate::manifest::const_iterator mi=oldr.find(file_path_internal(f->first));
       if (mi==oldr.end())
       {  
         L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum().empty());
         split_path sp;
-        f->first.split(sp);
+        file_path_internal(f->first).split(sp);
         add_missing_parents(oldr, sp, cs);
-        safe_insert(cs->added, make_pair(f->first, f->second->sha1sum));
+        safe_insert(cs.added, make_pair(file_path_internal(f->first), f->second->sha1sum));
 //        cvs_delta[f->first]=f->second;
       }
     }
@@ -747,7 +747,7 @@ static file_id get_sync_id(mtncvs_state &app, revision_id id)
 void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest)
 { std::string state=create_sync_state(e);
   std::string syncname=".mtn-sync-"+app.domain();
-  mtn_automate::manifest::const_iterator it=oldmanifest.find(syncname);
+  mtn_automate::manifest::const_iterator it=oldmanifest.find(file_path_internal(syncname));
   file_id fid;
   if (it!=oldmanifest.end())
     fid=app.put_file(state,it->second);
@@ -757,18 +757,18 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest const
   file_state fs(++serial,"");
   fs.size=state.size();
   fs.sha1sum=fid.inner();
-  std::pair<cvs_file_state,bool> ires=files[syncname].insert(fs);
+  std::pair<cvs_file_state,bool> ires=files[syncname].known_states.insert(fs);
   I(ires.second);
   e.xfiles[syncname]=ires.first;
 }
 
-std::string create_sync_state(cvs_edge const& e)
+std::string cvs_repository::create_sync_state(cvs_edge const& e)
 { std::string state=create_cvs_cert_header();
   state+="#modules\n";
   const std::map<std::string,std::string> &sd=GetServerDir();
   for (std::map<std::string,std::string>::const_iterator i=sd.begin();
         i!=sd.end();++i)
-  { value+=i->first+"\t"+i->second+"\n";
+  { state+=i->first+"\t"+i->second+"\n";
   }
   state+="#files\n";
   
@@ -780,11 +780,11 @@ std::string create_sync_state(cvs_edge const& e)
       return;
     }
 #endif
-    content+=i->second->cvs_version;
+    state+=i->second->cvs_version;
     if (!i->second->keyword_substitution.empty())
-      content+="/"+i->second->keyword_substitution;
+      state+="/"+i->second->keyword_substitution;
 // FIXME: How to flag locally modified files? add the synched sha1sum?
-    content+=" "+i->first+"\t"+i->second->sha1sum()+"\n";
+    state+=" "+i->first+"\t"+i->second->sha1sum()+"\n";
   }
   return state;
 }
@@ -818,7 +818,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     mtn_automate::manifest oldmanifest;
     if (!null_id(parent_rid))
       oldmanifest=app.get_manifest_of(parent_rid);
-    attach_sync_state(*e,oldmanifest);
+    attach_sync_state(const_cast<cvs_sync::cvs_edge&>(*e),oldmanifest);
     build_change_set(*this,oldmanifest,e->xfiles,cs,remove_state);
     //cs->apply_to(eros);
     //calculate_ident(new_roster, rev.new_manifest);
@@ -1678,14 +1678,16 @@ static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
 
 const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
 { L(FL("get_files(%s %s) %s %d\n") % time_t2human(e.time) % e.revision % e.delta_base % e.xfiles.size());
+#if 0
   if (!e.delta_base.inner()().empty())
   { cvs_manifest calculated_manifest;
     // this is non-recursive by reason ...
     const cvs_edge *current=&e;
     std::vector<const cvs_edge *> deltas;
+#if 0 // no longer delta encoded    
     while (!current->delta_base.inner()().empty())
     { L(FL("get_files: looking for base rev %s\n") % current->delta_base);
-      ++e.cm_delta_depth;
+//      ++e.cm_delta_depth;
       deltas.push_back(current);
       std::map<revision_id,std::set<cvs_edge>::iterator>::const_iterator
         cache_item=revision_lookup.find(current->delta_base);
@@ -1694,6 +1696,7 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
       current=&*(cache_item->second);
     }
     I(current->delta_base.inner()().empty());
+#endif
     calculated_manifest=current->xfiles;
     for (std::vector<const cvs_edge *>::const_reverse_iterator i=deltas.rbegin();
           i!=static_cast<std::vector<const cvs_edge *>::const_reverse_iterator>(deltas.rend());
@@ -1702,6 +1705,7 @@ const cvs_manifest &cvs_repository::get_files(const cvs_edge &e)
     e.xfiles=calculated_manifest;
     e.delta_base=revision_id();
   }
+#endif  
   return e.xfiles;
 }
 
