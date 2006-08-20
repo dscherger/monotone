@@ -851,7 +851,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     if (author.find('@')==std::string::npos) author+="@"+host;
     app.cert_revision(child_rid, "author", author); 
     app.cert_revision(child_rid, "changelog", e->changelog);
-    app.cert_revision(child_rid, "date", time_t2rfc822(e->time));
+    app.cert_revision(child_rid, "date", time_t2human(e->time));
 //    cert_cvs(*e, dbw);
 #endif
 
