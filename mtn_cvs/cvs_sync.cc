@@ -845,14 +845,14 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     if (revision_ticker.get()) ++(*revision_ticker);
     L(FL("CVS Sync: Inserted revision %s into repository\n") % child_rid);
     e->revision=child_rid.inner();
-#if 0    
-    cert_revision_in_branch(child_rid, app.branch_name(), app, dbw); 
+#if 1
+    app.cert_revision(child_rid,"branch",app.branch());
     std::string author=e->author;
     if (author.find('@')==std::string::npos) author+="@"+host;
-    cert_revision_author(child_rid, author, app, dbw); 
-    cert_revision_changelog(child_rid, e->changelog, app, dbw);
-    cert_revision_date_time(child_rid, e->time, app, dbw);
-    cert_cvs(*e, dbw);
+    app.cert_revision(child_rid, "author", author); 
+    app.cert_revision(child_rid, "changelog", e->changelog);
+    app.cert_revision(child_rid, "date", time_t2rfc822(e->time));
+//    cert_cvs(*e, dbw);
 #endif
 
     parent_rid = child_rid;

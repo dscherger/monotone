@@ -38,6 +38,7 @@ struct mtn_automate : mtn_pipe
   file_id put_file(data const& d, file_id const& base=file_id());
   manifest get_manifest_of(revision_id const& rid);
   revision_id put_revision(revision_id const& parent, cset const& changes);
+  void cert_revision(revision_id const& rid, std::string const& name, std::string const& value);
 };
 
 #endif

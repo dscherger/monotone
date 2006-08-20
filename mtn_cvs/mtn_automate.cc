@@ -156,3 +156,11 @@ mtn_automate::manifest mtn_automate::get_manifest_of(revision_id const& rid)
     }
   return result;
 }
+
+void mtn_automate::cert_revision(revision_id const& rid, std::string const& name, std::string const& value)
+{ std::vector<std::string> args;
+  args.push_back(rid.inner()());
+  args.push_back(name);
+  args.push_back(value);
+  automate("cert",args);
+}

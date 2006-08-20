@@ -28,17 +28,6 @@
 char * argstr = NULL;
 long arglong = 0;
 
-#if 0
-enum 
-{ MTNCVSOPT_DUMMY, 
-  MTNCVSOPT_BRANCH_NAME, MTNCVSOPT_REVISION, MTNCVSOPT_DEBUG, MTNCVSOPT_HELP, 
-  MTNCVSOPT_VERSION, MTNCVSOPT_MTN_OPTION, MTNCVSOPT_FULL, MTNCVSOPT_SINCE,
-  MTNCVSOPT_BINARY, 
-  
-  MTNCVSOPT_DB, MTNCVSOPT_RCFILE, MTNCVSOPT_NOSTD, MTNCVSOPT_KEYDIR,
-  MTNCVSOPT_KEY };
-#endif
-
 // options are split into two categories.  the first covers global options,
 // which globally affect program behaviour.  the second covers options
 // specific to one or more commands.  these command-specific options are
@@ -93,72 +82,6 @@ struct ui_library
     ui.deinitialize();
   }
 };
-
-#if 0
-
-struct 
-utf8_argv
-{
-  int argc;
-  char **argv;
-
-  explicit utf8_argv(int ac, char **av)
-    : argc(ac),
-      argv(static_cast<char **>(malloc(ac * sizeof(char *))))
-  {
-    I(argv != NULL);
-    for (int i = 0; i < argc; ++i)
-      {
-        external ext(av[i]);
-        utf8 utf;
-        system_to_utf8(ext, utf);
-        argv[i] = static_cast<char *>(malloc(utf().size() + 1));
-        I(argv[i] != NULL);
-        memcpy(argv[i], utf().data(), utf().size());
-        argv[i][utf().size()] = static_cast<char>(0);
-    }
-  }
-
-  ~utf8_argv() 
-  {
-    if (argv != NULL)
-      {
-        for (int i = 0; i < argc; ++i)
-          if (argv[i] != NULL)
-            free(argv[i]);
-        free(argv);
-      }    
-  }
-};
-
-// Stupid type system tricks: to use a cleanup_ptr, we need to know the return
-// type of the cleanup function.  But popt silently changed the return type of
-// poptFreeContext at some point, I guess because they thought it would be
-// "backwards compatible".  We don't actually _use_ the return value of
-// poptFreeContext, so this little wrapper works.
-static void
-my_poptFreeContext(poptContext con)
-{
-  poptFreeContext(con);
-}
-
-using namespace std;
-
-static string
-coption_string(int o)
-{
-  char buf[2] = { 0,0 };
-  for(struct poptOption *opt = coptions; opt->val; opt++)
-    if (o == opt->val)
-      {
-        buf[0] = opt->shortName;
-        return opt->longName
-          ? string("--") + string(opt->longName)
-          : string("-") + string(buf);
-      }
-  return string();
-}
-#endif
 
 // fake app_state ctor/dtor, we do not use this class at all
 app_state::app_state() : db(system_path()), keys(this) {}
