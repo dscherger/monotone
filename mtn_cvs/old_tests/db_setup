@@ -4,4 +4,4 @@ cp $TESTDIR/test_hooks.lua .
 mkdir keys
 $MTN --db test.db db init
 $MTN --db test.db read <$TESTDIR/test_keys
-echo $MTN_CVS --mtn=$MTN --branch test --db test.db pull $PWD/test.cvsroot test
+$MTN_CVS --mtn=$MTN --branch test --db test.db pull $PWD/test.cvsroot test

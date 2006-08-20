@@ -21,3 +21,7 @@ mtn_cvs_LDADD = -lmtn -lplatform -l3rdparty $(BOOSTLIBS)
 pipetest: mtn_pipe.cc
 	$(CXX) $(CXXFLAGS) $(AM_CXXFLAGS) $(AM_LDFLAGS) $(LIBS) \
 			 -o $@ -DTEST_MAIN $^ $(mtn_cvs_LDADD)
+
+testlinks:
+	cd tests ; ln -sf ../../tests/common ../../tests/min_hooks.lua \
+		../../tests/test_hooks.lua ../../tests/test_keys .
