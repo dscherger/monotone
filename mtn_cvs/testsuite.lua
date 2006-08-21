@@ -48,6 +48,9 @@ monotone_path = getpathof("mtn",nil,initial_dir..'/..')
 if monotone_path == nil then monotone_path = "mtn" end
 set_env("mtn", monotone_path)
 
+mtncvs_path = getpathof("mtn_cvs")
+if mtncvs_path == nil then mtncvs_path = "mtn_cvs" end
+
 writefile_q("in", nil)
 prepare_redirect("in", "out", "err")
 execute(monotone_path, "--full-version")
@@ -75,6 +78,16 @@ for _,name in pairs({  "LANG",
    set_env(name,"C")
 end
        
+function mtn_cvs(...)
+  return {mtncvs_path, "--mtn="..monotone_path, "--norc",
+		"--root="..test.root, "--confdir="..test.root, 
+		"--rcfile", test.root .. "/test_hooks.lua",
+         	"--nostd", "--db=" .. test.root .. "/test.db",
+         	"--keydir", test.root .. "/keys",
+	        "--key=tester@test.net",
+		unpack(arg)
+	 }
+end
 
 function safe_mtn(...)
   return {monotone_path, "--norc", "--root=" .. test.root,

@@ -416,8 +416,17 @@ cpp_main(int argc, char ** argv)
       if (option::nostd.given(vm)) 
         app.mtn_options.push_back(string("--nostd"));
 
+      if (option::norc.given(vm)) 
+        app.mtn_options.push_back(string("--norc"));
+
       if (option::keydir.given(vm)) 
         app.mtn_options.push_back(string("--keydir=")+option::keydir.get(vm));
+
+      if (option::root.given(vm)) 
+        app.mtn_options.push_back(string("--root=")+option::root.get(vm));
+
+      if (option::confdir.given(vm)) 
+        app.mtn_options.push_back(string("--confdir=")+option::confdir.get(vm));
 
       if (option::key.given(vm)) 
         app.mtn_options.push_back(string("--key=")+option::key.get(vm));

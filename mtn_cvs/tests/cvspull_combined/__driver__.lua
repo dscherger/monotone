@@ -9,7 +9,7 @@ tsha0 = sha1("cvstemp/A")
 check(indir("cvstemp", cvs("import", "-m", "import", "test", "vtag", "rtag")), 0, false, false)
 remove("cvstemp")
 
-check(cvs("co", "test")), 0, false, false)
+check(cvs("co", "test"), 0, false, false)
 writefile("test/B", "file added\n")
 tsha1 = sha1("test/B")
 check(indir("test", cvs("add", "B")), 0, false, false)
@@ -52,7 +52,7 @@ check(mtn("automate", "get_file", tsha4), 0, false)
 -- also check that history is okay -- has a unique head, and it's the
 -- right one.
 
---AT_CHECK(MTN checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
---AT_CHECK(cmp d_readd mtcodir/A)
---AT_CHECK(cmp d_change mtcodir/B)
---AT_CHECK(cmp d_subdir mtcodir/dir/D)
+check(mtn("checkout", "--branch=testbranch", "mtcodir"), 0, false, false)
+check(sha1("mtcodir/A") == t_sha4)
+check(sha1("mtcodir/B") == t_sha2)
+check(sha1("mtcodir/dir/D") == t_sha3)

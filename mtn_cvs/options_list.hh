@@ -15,3 +15,6 @@ GOPT(rcfile, "rcfile", string, N_("passed: config file"));
 GOPT(nostd, "nostd", nil, N_("passed: do not read standard hooks"));
 GOPT(keydir, "keydir", string, N_("passed: key directory"));
 GOPT(key, "key", string, N_("passed: key"));
+GOPT(norc, "norc", nil, N_("passed: norc"));
+GOPT(root, "root", string, N_("passed: root"));
+GOPT(confdir, "confdir", string, N_("passed: confdir"));
