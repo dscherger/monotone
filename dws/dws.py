@@ -14,67 +14,88 @@ import urlparse
 import sys
 import re
 
+class Urllib2Opener:
+    def __init__(self, baseurl):
+        (scheme, host, path, query, frag) = urlparse.urlsplit(baseurl, "http")
+        self.baseUrl = scheme + "://" + host
+        
+    def request(self, uri, headers = None, postData = None):
+        theUrl = self.baseUrl + uri
+        if postData:
+            req = urllib2.Request( url=theUrl, data = postData )
+        else:
+            req = urllib2.Request( url=theUrl )
+
+        f = urllib2.urlopen(req)
+        return (f.code, f.msg, f.headers.dict, f.read())
+        
+        
+class HTTPLibOpener:
+    def __init__(self, baseurl):
+        (scheme, host, path, query, frag) = urlparse.urlsplit(baseurl, "http")
+        if scheme == "http":
+            self.conn = httplib.HTTPConnection(host)
+        else:
+            self.verbose(1,"https connection to %s" % host)
+        self.baseUrl = path
+        
+    def request(self, uri, headers = None, postData = None):
+        h = (headers or {}).copy()
+        h['Connection'] = 'keep-alive'
+        if postData:
+            self.conn.request("POST", uri, body = postData, headers = h)
+        else:
+            self.conn.request("GET", uri, headers = h)
+        req = self.conn.getresponse()
+        return (req.status, req.reason, dict(req.getheaders()), req.read())
+
 class Connection:
     def __init__(self, base, path="", verbosity=0):
+        """
+            base - address of DWS server (example: http://yourhost.org/dws.php"
+            name - base path in DWS namespace  
+        """
         self.base = base
         self.path = path
+        if len(self.path) > 0 and self.path[-1] != '/':
+            self.path += '/'
         self.verbosity = verbosity
         (scheme, host, path, query, frag) = urlparse.urlsplit(self.base, "http")
         if scheme not in ("http","https"): raise Exception("bad scheme: http,https are supported")
-        self.host = host
-        if scheme == "http":
-            self.conn = httplib.HTTPConnection(host)
-            self.verbose(1,"http connection to %s" % host)
-        else:
-            self.conn = httplib.HTTPSConnection(host)
-            self.verbose(1,"https connection to %s" % host)
-        self.baseUrl = "/" + path
+        self.opener = HTTPLibOpener(self.base)
+        self.baseUri = path
         
-    def request(self, what, method="GET", postData = "", **kwargs):
-        theUrl = self.baseUrl
+    def request(self, what, method="GET", postData = "", requestHeaders = None, responseHeaders = None, **kwargs):
+        theUri = self.baseUri
         args = {}
         args.update(kwargs)
         args['r'] = str(what)
-        if theUrl[-1].find('?') != -1:
+        if theUri[-1].find('?') != -1:
             d = "&"
         else:
             d = "?"
         for k,v in args.iteritems():
-            theUrl += d + k + "=" + str(v)
+            theUri += d + k + "=" + str(v)
             d = "&"
         if postData:
-            self.verbose( 1, "requesting %s (POST %i bytes)" % (theUrl, len(postData)) )
+            self.verbose( 1, "requesting %s (POST %i bytes)" % (theUri, len(postData)) )
         else:
-            self.verbose( 1, "requesting %s" % theUrl )
-        r = None
-        if self.conn:
-            headers = {
-                'Connection': 'keep-alive'
-            }
-            if postData:
-                self.conn.request("POST", theUrl, body = postData, headers = headers)
-            else:
-                self.conn.request("GET", theUrl, headers = headers)
-            req = self.conn.getresponse()
-            try:
-                r = str(req.read())
-            except Exception,e:
-                self.error( "request failed (%s): %s" %(theUrl, str(e)) )
-                raise
-        else:
-            if postData:
-                req = urllib2.Request( url=theUrl, data = postData )
-            else:
-                req = urllib2.Request( url=theUrl )
-
-            try:
-                f = urllib2.urlopen(req)
-                r = str(f.read())
-            except Exception,e:
-                self.error( "request failed (%s): %s" %(theUrl, str(e)) )
-                raise
-        self.verbose(2,"'%s': readed %i bytes" % (theUrl, len(r)))
-        return r
+            self.verbose( 1, "requesting %s" % theUri )
+        respStatus, respReason, respHeaders, respContent = self.opener.request(theUri, requestHeaders, postData)
+        if respStatus != httplib.OK:
+            raise IOError("DWS not responding, HTTP response %i %s (%s)" % (respStatus,respReason,theUri))
+        dwsStatus = respHeaders.get("x-dws-status","BAD")
+        if dwsStatus != "OK":
+            self.warning("DWS bad response\ndws server: " + "\ndws server: ".join( respContent.split("\n") ) ) 
+            dwsMessage = respHeaders.get("x-dws-message","unknown error")
+            raise IOError("DWS server: %s: %s (%s)" % (dwsStatus,dwsMessage,theUri))            
+        if responseHeaders is not None:
+            responseHeaders.update(respHeaders)
+            
+        self.verbose(3,"'%s': headers: '%s'" % (theUri, repr(respHeaders)))        
+        self.verbose(2,"'%s': readed %i bytes" % (theUri, len(respContent)))
+        self.verbose(3,"'%s': content: '%s'" % (theUri, repr(str(respContent))))
+        return respContent
 
     def clear(self):
         self.request("clear")
@@ -119,6 +140,55 @@ class Connection:
         realName = self.path + name
         return self.request("put", n = realName, postData=content)
 
+    # params:
+    #    files = [ (name, content), ... ]
+    # returns:
+    #    dws.Response
+    def putMany(self, files):        
+        agrContent = ""
+        names = []
+        sizes = []
+        for name, content in files:
+            agrContent += content
+            names.append(self.path + name)
+            sizes.append(str(len(content)))
+                    
+        return self.request("put_many", n=",".join(names), s=",".join(sizes), postData = agrContent)
+     
+    # 
+    # params:
+    #    names = [ filename, ... ]
+    # returns:
+    #    false -> error
+    #    [ content, ... ] -> success
+    #    content[i] == None -> error occured during rading i-th file
+    #
+    def getMany(self, names):
+        responseHeaders = {}
+        agrContent = self.request("get_many", n=",".join(self.path+name for name in names), responseHeaders = responseHeaders)
+        if not responseHeaders.has_key('x-dws-sizes'):
+            raise Exception("DWS: getMany response invalid")
+        sizesStr = responseHeaders['x-dws-sizes']
+        try:
+            sizes = map(int,sizesStr.split(","))
+        except ValueError:
+            raise Exception("DWS: getMany response invalid: invalid sizes descriptor")
+        if len(sizes) != len(names):
+            raise Exception("DWS: getMany response invalid: mismatched files count")
+        expectedSize = [s for s in sizes if s != -1] 
+        if sum(expectedSize) != len(agrContent):
+            raise Exception("DWS: getMany response invalid: mismatched response size (exp=%i, act=%i)" % (expectedSize, len(agrContent)))
+        result = []
+        offset = 0
+        for size in sizes:
+            if size != -1:
+                content = agrContent[offset:offset+size]
+                offset += size
+                result.append(content)
+            else:
+                result.append(None)
+        return result
+        
     def append(self, name, content):
         realName = self.path + name
         return self.request("append", n = realName, postData=content)

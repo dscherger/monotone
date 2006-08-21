@@ -12,12 +12,15 @@ import unittest
 
 class TestSequenceFunctions(unittest.TestCase):    
     def setUp(self):
-        self.c = Connection("http://localhost/mtdumb/dws/impl/php/mtdumb.php","path/")
-        self.c.clear()
+        self.c = Connection("http://zbigg.internet.v.pl/zbigg-dump/","dws_python_test/")        
         
     def testList(self):
         self.c.list()
             
+    def assertEquals(self, actual, expected, name = ""):
+        if actual != expected:
+            raise AssertionError("%sactual(%s) differs from expected(%s)" % (name,repr(actual), repr(expected)))
+
     def __doTestContent(self,name,content):
         self.c.put(name, content)
         self.assert_(int(self.c.stat(name)['size']) == len(content)) 
@@ -49,6 +52,17 @@ class TestSequenceFunctions(unittest.TestCase):
             ly = lx/2
             self.assert_(self.c.getParts(name, [(0,ly), (ly, lx), (ly+lx,ly)] ) == content2 )
             self.assert_(self.c.getParts(name, [(0,ly), (ly+lx,ly)] ) == content )
+    def __testMany(self, files):
+        from itertools import izip,count
+        names = [ name for name, content in files]
+        contents = [content for name, content in files ]
+        self.c.putMany(files)
+        c1 = self.c.getMany(names)
+        for i,act,exp in izip(count(),c1,contents):
+            self.assertEquals(act, exp, name="C%i: " %i)
+            xact = self.c.get(names[i])
+            self.assertEquals(xact, exp, name="C(single)%i" % i )
+    
     def testPutEmpty(self):
         self.__doTestContent("f1", "")
     def testPutZero(self):
@@ -63,7 +77,18 @@ class TestSequenceFunctions(unittest.TestCase):
             z += "          "
         self.__doTestContent("f5", z)
         
-           
+    def testMany_zeros(self):
+        files = [ ("m1%i" % i, "" ) for i in range(10) ]
+        self.__testMany(files)
+
+    def testMany_onebytes(self):
+        files = [ ("m2%i" % i, ("%c" % i)*1 ) for i in range(10) ]
+        self.__testMany(files)
+
+    def testMany_onearith(self):
+        files = [ ("m3%i" % i, ("%c" % i)*i ) for i in range(100) ]
+        self.__testMany(files)
+        
     def testGet(self):
         pass
     

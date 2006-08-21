@@ -15,6 +15,7 @@ import base64
 import dws.dws
 import sys
 import StringIO
+from itertools import izip
 
 class DWSReadableFS(fs.ReadableFS):
     def __init__(self, hostspec):
@@ -25,7 +26,7 @@ class DWSReadableFS(fs.ReadableFS):
         else:
             self.path = hostspec[pathIndex+1:]
             self.hostspec = hostspec[:pathIndex]
-        self.conn = dws.Connection(self.hostspec,self.path)
+        self.conn = dws.Connection(self.hostspec,self.path,verbosity=2)        
         self.version = 0
 
     def list(self):
@@ -44,15 +45,9 @@ class DWSReadableFS(fs.ReadableFS):
         return StringIO.StringIO(content)
 
     def fetch(self, filenames):
-        files = {}
-        list = self.list()
-        for fn in filenames:
-            try:
-                if fn not in list: raise IOError("not found: %s" % fn)
-                files[fn] = self.conn.get(fn)
-            except IOError,e:
-                files[fn] = None
-        return files
+        contents = self.conn.getMany(filenames)
+        assert len(contents) == len(filenames)
+        return dict( izip( filenames, contents) ) 
 
     def _real_fetch_bytes(self, filename, bytes):
         fc = self.conn.getParts(filename, bytes)
@@ -94,18 +89,10 @@ class DWSWriteableFS(DWSReadableFS, fs.WriteableFS):
         try:
             return int(self.conn.stat(filename)['size'])
         except Exception,e:
-            return 0
-
-    def _exists(self, full_fn):
-        try:
-            return full_fn in self.list()
-        except IOError:
-            return False
-        return True
+            return 0       
 
     def put(self, filenames):
-        for fn, data in filenames.iteritems():
-            self.conn.put(fn, data)   
+        self.conn.putMany(filenames.iteritems())
             
     def rollback_interrupted_puts(self, filenames):
         pass
