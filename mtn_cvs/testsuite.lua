@@ -273,4 +273,13 @@ end
 ------------------------------------------------------------------------
 testdir = srcdir.."/tests"
 
-table.insert(tests, "cvspull_combined")
+table.insert(tests, "pull_combined")
+table.insert(tests, "pull_separate")
+--table.insert(tests, "pull_committemplate")
+--table.insert(tests, "pull_cvsbranch")
+--table.insert(tests, "pull_md5fail")
+--table.insert(tests, "pull_rapid")
+--table.insert(tests, "pull_samedirname")
+--table.insert(tests, "pull_xmodule")
+--table.insert(tests, "push_loop")
+--table.insert(tests, "takeover_modified")
