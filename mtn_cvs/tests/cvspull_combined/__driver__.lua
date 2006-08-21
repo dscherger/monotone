@@ -39,7 +39,7 @@ check(indir("test", cvs("add", "A")), 0, false, false)
 os.execute("sleep 1")
 check(indir("test", cvs("ci", "-m", "A readded")), 0, false, false)
 
-check(mtn_cvs("--branch=testbranch", "cvs_pull", cvsroot, "test"), 0, false, false)
+check(mtn_cvs("--branch=testbranch", "pull", cvsroot, "test"), 0, false, false)
 
 -- check presence of files
 
@@ -53,6 +53,6 @@ check(mtn("automate", "get_file", tsha4), 0, false)
 -- right one.
 
 check(mtn("checkout", "--branch=testbranch", "mtcodir"), 0, false, false)
-check(sha1("mtcodir/A") == t_sha4)
-check(sha1("mtcodir/B") == t_sha2)
-check(sha1("mtcodir/dir/D") == t_sha3)
+check(sha1("mtcodir/A") == tsha4)
+check(sha1("mtcodir/B") == tsha2)
+check(sha1("mtcodir/dir/D") == tsha3)
