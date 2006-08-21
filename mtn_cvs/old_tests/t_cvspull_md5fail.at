@@ -1,0 +1,57 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([takeover modified, cvs commit, pull (causing MD5 failure)])
+AT_KEYWORDS(cvssync)
+NEED_UNGZB64
+
+MTN_SETUP
+
+AT_DATA(d_newcontents, [new contents
+revived
+])
+AT_DATA(d_newcontents2, [new contents version 2
+revived
+])
+
+TSHA0=`SHA1(d_newcontents)`
+TSHA1=`SHA1(d_newcontents2)`
+
+# build the cvs repository
+
+CVSROOT=`pwd`/cvs-repository
+AT_CHECK(cvs -q -d $CVSROOT init)
+AT_CHECK(test -e $CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT/history)
+
+AT_DATA(cvsrepo.gz.enc, [H4sIALBlUkMAA+2W0W6bMBiFucVPYWm3G7UNBm3c0Gi72FNUDjiJtYAj20Ht2880JE1aaJsV
+per6f5ECwsYYH/5zXLb2m5EbbZXT5u7KSeuugokhnizj3ZFmnBwf9wSUxCxJUsZZGhDKWZYF
+mE89kSG21gmDcVCujLJOL8b6vdT+QSkH9K+UmfQbOF//lHAO+l+CMf1/fm0ne0YncJIko/qz
+LDnSn3X6J4wEmEw2g2f45PqvpKhCGtEcibKU1ubI3tVzvfYna13+sTm2zqjS5ajUdS0bFxZf
+cJEjhPxNqBJOhowQHlES0TSiSRSnEWF5KLZupQ3er1oe+mV2Ev+63eRobkRTrqR/RCNvXdgN
+VklboqLoh13rJSruv0IsqkpWqEDO90SF1bXEdjv3bf7ae6/d/8BQ/c8mrP2Ol+qfk+P6J13+
+pzGD+r8Eff2zf6l/Nlb/5Kz6v3efUTvhEc/eZCdsZyczf7Nolo/MxK1Us8SVWiyk8S+HThxo
+9sh9KoopEt3fQq3lofFD+9BQ/V87p8oJd4Dn7f+SLv/jhML+7xIM6n9Z/6c05o/09/6fgv9f
+gt7/4yf+j0LVKKfE+kbVG23cD2+L3Q+3sqm0uXFiubv0iqCIx4IiOTMoWD6eOz4ovo8OV/nX
+PD94+Oumh8J+bR4SqL/wxoFHEi3exdM1NvI0oIxsVbvLpIfg67rVuh3MsV5ivJP4NP1+923d
+oFbp5nB73ys69Hwyyr7fe3/cAAAAAAAAAAAAAAAAAAAAn5i/4Uc6FAAoAAA=
+])
+UNGZB64(cvsrepo.gz.enc, cvsrepo.tar)
+AT_CHECK(tar xf cvsrepo.tar)
+
+AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
+AT_CHECK([cp d_newcontents test/A])
+AT_CHECK(cd test; MTN --root=. --branch=testbranch cvs_takeover test, [], [ignore], [ignore])
+
+AT_CHECK([cp d_newcontents2 test/A])
+AT_CHECK([cd test; cvs -Q ci -m "put different data into CVS"])
+AT_CHECK(MTN --branch=testbranch cvs_pull, [], [ignore], [ignore])
+
+# check for presence of file
+AT_CHECK(MTN automate get_file $TSHA0, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA1, [], [ignore])
+
+# should do nothing
+AT_CHECK(MTN --branch=testbranch cvs_pull, [], [ignore], [ignore])
+
+AT_CLEANUP
