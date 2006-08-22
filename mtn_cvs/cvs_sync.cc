@@ -241,13 +241,15 @@ std::string::size_type cvs_repository::parse_cvs_cert_header(std::string const& 
   std::string repo=value.substr(0,nlpos);
   std::string::size_type modulebegin=repo.find('\t'); 
   E(modulebegin!=std::string::npos, F("malformed cvs-revision header %s") % repo);
-  std::string::size_type branchbegin=repo.find(modulebegin,'\t');
+  std::string::size_type branchbegin=repo.find('\t', modulebegin+1);
   std::string::size_type modulelen=std::string::npos;
   
   if (branchbegin!=std::string::npos)
   { branch=repo.substr(branchbegin+1);
     modulelen=branchbegin-modulebegin-1;
   }
+  else branch.clear();
+  L(FL("parse_header %d %d %d %d %s") % nlpos % modulebegin % branchbegin % modulelen % branch);
   repository=repo.substr(0,modulebegin);
   module=repo.substr(modulebegin+1,modulelen);
   return nlpos;
@@ -1950,19 +1952,24 @@ void cvs_repository::store_modules()
 
 void cvs_repository::parse_module_paths(std::string const& value_s)
 { 
-  // TODO Zeile 1 weg
-  // Zeile 2: #modules
   std::map<std::string,std::string> sd;
   piece::piece_table pieces;
   piece::index_deltatext(value_s,pieces);
+  bool active=false;
   for (piece::piece_table::const_iterator p=pieces.begin();p!=pieces.end();++p)
   { std::string line=**p;
     MM(line);
+    if (!active)
+    { if (line=="#modules\n") active=true;
+      continue;
+    }
+    if (line=="#files\n") break;
     I(!line.empty());
     std::string::size_type tab=line.find('\t');
     I(tab!=std::string::npos);
     I(line[line.size()-1]=='\n');
     line.erase(line.size()-1,1);
+    L(FL("found modules %s:%s") % line.substr(0,tab) % line.substr(tab+1));
     sd[line.substr(0,tab)]=line.substr(tab+1);
   }
   piece::reset();
