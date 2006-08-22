@@ -201,19 +201,11 @@ namespace
     else
       {
         // FIXME TODO
+        // if there's a base text, load it; if not, load an arbitrary delta.
+        // a reasonable way to do this is to ORDER BY the base, if nothing
+        // sorts before something...
         I(false);
       }
-  }
-
-  shared_ptr<text_t>
-  write_text(file_id const & me, file_id const & base, data const & dat, database & db)
-  {
-    I(!null_id(me));
-
-    // FIXME TODO -- just stick the text in the database
-    I(false);
-
-    return text_t::create(me, base, dat);
   }
 
   shared_ptr<script_t>
@@ -336,9 +328,6 @@ namespace
         // this is a delta, which we get to parse
         shared_ptr<script_t> base_script = script_cache.fetch(text->base);
         
-        // FIXME
-        I(false);
-        
         std::string const & delta = text->dat();
         std::string::const_iterator i = delta.begin();
         while (i != delta.end())
@@ -455,17 +444,15 @@ get_unverified_delta(file_id const & from, file_id const & to, file_delta & delt
                      database & db)
 {
   // first try just use the one straight out of the db
-  shared_ptr<text_t> text = swap_in_text(to, db);
-  if (text->base == from)
-    delta = file_delta(text->dat);
+  // do a select for exactly that delta
+  if (I(false))
+    return;
   else
     {
       // have to actually work for it
       file_data from_dat, to_dat;
-      // do this one first, to take advantage of having just loaded the base
-      // text into the cache
-      get_unverified_file(to, to_dat, db);
       get_unverified_file(from, from_dat, db);
+      get_unverified_file(to, to_dat, db);
       make_diff(from_dat, to_dat, delta);
     }
 }
@@ -496,3 +483,9 @@ put_initial_file(file_id const & fid, file_data const & dat, database & db)
   file_id base;
   put_checked_text(fid, base, dat.inner(), db);
 }
+
+
+
+// re: oids:
+//   one can in fact do SELECT oid FROM table WHERE indexed_column = 'foo'; in
+//   sqlite, and it will look only at the index, not at the table proper.

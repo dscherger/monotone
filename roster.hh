@@ -414,6 +414,7 @@ write_manifest_of_roster(roster_t const & ros,
 void calculate_ident(roster_t const & ros,
                      manifest_id & ident);
 
+
 #ifdef BUILD_UNIT_TESTS
 
 struct testing_node_id_source

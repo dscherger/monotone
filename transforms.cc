@@ -117,8 +117,8 @@ decode_hex_char(char c)
     return c - '0';
   else
   {
-	  I(c >= 'a' && c <= 'f');
-	  return c - 'a' + 10;
+    I(c >= 'a' && c <= 'f');
+    return c - 'a' + 10;
   }
 }
 
