@@ -32,7 +32,7 @@
 #include "transforms.hh"
 #include "vocab.hh"
 #include "globish.hh"
-#include "charset.hh"
+#include "safe_map.hh"
 
 using std::allocator;
 using std::basic_ios;
@@ -1444,6 +1444,400 @@ AUTOMATE(genkey, N_("KEYID PASSPHRASE"))
 
   output.write(prt.buf.data(), prt.buf.size());
 
+}
+
+// Name: put_file
+// Arguments:
+//   base ID (optional).
+//   file contents (binary, intended for automate stdio use)
+// Added in: 2.3
+// Purpose:
+//   Store a file in the database.
+//   Optionally encode it as a file_delta
+// Output format:
+//   The ID of the new file (40 digit hex string)
+// Error conditions:
+//   a runtime exception is thrown if base revision is not available
+AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
+{ 
+  hexenc<id> sha1sum;
+  transaction_guard tr(app.db);
+  if (args.size()==1)
+  {
+    data dat(idx(args,0)());
+    calculate_ident(dat,sha1sum);
+    if (!app.db.file_version_exists(sha1sum))
+    { 
+      app.db.put_file(sha1sum, dat);
+    }
+    else L(FL("revision %s already known") % sha1sum);
+  }
+  else if (args.size()==2)
+  {
+    data dat(idx(args,1)());
+    calculate_ident(dat,sha1sum);
+    if (!app.db.file_version_exists(sha1sum))
+    { 
+      file_id base_id(idx(args,0)());
+      N(app.db.file_version_exists(base_id),
+        F("no file version %s found in database") % base_id);
+
+      file_data olddat;
+      app.db.get_file_version(base_id, olddat);
+      delta del;
+      diff(olddat.inner(), dat, del);
+      L(FL("data size %d, delta size %d") % dat().size() % del().size());
+      if (dat().size()<=del().size())
+      // the data is smaller or of equal size to the patch
+        app.db.put_file(sha1sum, dat);
+      else 
+        app.db.put_file_version(base_id,sha1sum,del);
+    }
+    else L(FL("revision %s already known") % sha1sum);
+  }
+  else throw usage(name);
+  
+  tr.commit();
+  output << sha1sum;
+}
+
+// Name: put_revision
+// Arguments:
+//   single edge specification (part of a full revision)
+// Added in: 2.3
+// Purpose:
+//   Store a revision into the database.
+// Output format:
+//   The ID of the new revision
+// Error conditions:
+//   none
+AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"))
+{ 
+  if (args.size() != 1)
+    throw usage(name);
+  revision_t rev;
+
+  basic_io::input_source source(idx(args,0)(),"automate put_revision's 1st argument");
+  basic_io::tokenizer tokenizer(source);
+  basic_io::parser parser(tokenizer);
+
+  temp_node_id_source nis;
+  // I chose a single edge variant since this was much more simple to code
+  // and sufficient to my needs.
+  // make this a loop if you need to create merge revisions  
+  { boost::shared_ptr<cset> cs(new cset());
+    MM(*cs);
+    // like revision::parse_edge
+    parser.esym(symbol("old_revision"));
+    string tmp;
+    parser.hex(tmp);
+    revision_id old_rev=revision_id(tmp);
+    parse_cset(parser, *cs);
+    
+    // calculate new manifest
+    roster_t old_roster;
+    if (!null_id(old_rev)) app.db.get_roster(old_rev, old_roster);
+    roster_t new_roster=old_roster;
+    editable_roster_base eros(new_roster,nis);
+    cs->apply_to(eros);
+    calculate_ident(new_roster, rev.new_manifest);
+    safe_insert(rev.edges, std::make_pair(old_rev, cs));
+  }
+  
+  revision_id id;
+  calculate_ident(rev, id);
+  
+  transaction_guard tr(app.db);
+  app.db.put_revision(id, rev);
+  tr.commit();
+
+  output << id;
+}
+
+// Name: cert
+// Arguments:
+//   revision ID
+//   certificate name
+//   certificate value
+// Added in: 2.3
+// Purpose:
+//   Add a revision certificate (like mtn cert).
+// Output format:
+//   nothing
+// Error conditions:
+//   none
+AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
+{
+  if (args.size() != 3)
+    throw usage(name);
+  cert c;
+  revision_id rid(idx(args,0)());
+  make_simple_cert(rid.inner(),cert_name(idx(args,1)()),
+                    cert_value(idx(args,2)()), app, c);
+  revision<cert> rc(c);
+  packet_db_writer dbw(app);
+  dbw.consume_revision_cert(rc);
+}
+
+// Name: db_set
+// Arguments:
+//   variable domain
+//   variable name
+//   veriable value
+// Added in: 2.3
+// Purpose:
+//   Set a database variable (like mtn database set)
+// Output format:
+//   nothing
+// Error conditions:
+//   none
+AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
+{
+  if (args.size() != 3)
+    throw usage(name);
+  var_domain domain = var_domain(idx(args, 0)());
+  utf8 name = idx(args, 1);
+  string value = idx(args, 2)();
+  var_key key(domain, var_name(name()));
+  app.db.set_var(key, var_value(value));
+}
+
+// Name: db_get
+// Arguments:
+//   variable domain
+//   variable name
+// Added in: 2.3
+// Purpose:
+//   Get a database variable (like mtn database ls vars | grep NAME)
+// Output format:
+//   variable value
+// Error conditions:
+//   a runtime exception is thrown if the variable is not set
+AUTOMATE(db_get, N_("DOMAIN NAME"))
+{
+  if (args.size() != 2)
+    throw usage(name);
+  var_domain domain = var_domain(idx(args, 0)());
+  utf8 name = idx(args, 1);
+  var_key key(domain, var_name(name()));
+  var_value value;
+  app.db.get_var(key, value);
+  output << value();
+}
+
+// needed by find_newest_sync: check whether a revision has up to date synch information
+static const char *const sync_prefix="mtn-sync-";
+
+static bool is_synchronized(app_state &app, revision_id const& rid, 
+                      revision_t const& rev, std::string const& domain)
+{
+  // merge nodes should never have an up to date sync file
+  if (rev.edges.size()==1)
+  {
+    L(FL("is_synch: rev %s testing changeset\n") % rid);
+    split_path path;
+    file_path_internal(string(".")+sync_prefix+domain).split(path);
+    cset cs=edge_changes(rev.edges.begin());
+    if (cs.files_added.find(path)!=cs.files_added.end() ||
+        cs.deltas_applied.find(path)!=cs.deltas_applied.end())
+      return true;
+  }
+  
+  // look into certificates
+  std::vector< revision<cert> > certs;
+  app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
+  return !certs.empty();
+}
+
+// Name: find_newest_sync
+// Arguments:
+//   sync-domain
+//   branch (optional)
+// Added in: 2.3
+// Purpose:
+//   Get the newest revision which has sync certificates 
+//   (or a changed sync file)
+// Output format:
+//   revision ID
+// Error conditions:
+//   a runtime exception is thrown if no synchronized revisions are found 
+//   in this domain
+AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
+{ /* if workspace exists use it to determine branch (and starting revision?)
+     traverse tree upwards to find a synced revision, 
+     then traverse tree downwards to find newest revision 
+     
+     this assumes a linear and connected synch graph (which is true for CVS,
+       but might not appropriate for different RCSs)
+   */
+
+  string branch=app.branch_name();  
+  if (args.size() == 2)
+    branch=idx(args,1)();
+  else if (args.size() != 1)
+    throw usage(name);
+  set<revision_id> heads;
+  get_branch_heads(branch, app, heads);
+  revision_t rev;
+  revision_id rid;
+  std::string domain = idx(args,0)();
+  
+  while (!heads.empty())
+  {
+    rid = *heads.begin();
+    L(FL("find_newest_sync: testing node %s") % rid);
+    app.db.get_revision(rid, rev);
+    heads.erase(heads.begin());
+    // is there a more efficient way than to create a revision_t object?
+    if (is_synchronized(app,rid,rev,domain))
+      break;
+    for (edge_map::const_iterator e = rev.edges.begin();
+                     e != rev.edges.end(); ++e)
+    { 
+      if (!null_id(edge_old_revision(e)))
+        heads.insert(edge_old_revision(e));
+    }
+    N(!heads.empty(), F("no synchronized revision found in branch %s for domain %s")
+        % branch % domain);
+  }
+
+  set<revision_id> children;
+continue_outer:
+  L(FL("find_newest_sync: testing children of %s") % rid);
+  app.db.get_revision_children(rid, children);
+  for (set<revision_id>::const_iterator i=children.begin(); 
+          i!=children.end(); ++i)
+  {
+    app.db.get_revision(*i, rev);
+    if (is_synchronized(app,*i,rev,domain))
+    { 
+      rid=*i;
+      goto continue_outer;
+    }
+  }
+  output << rid;
+}
+
+static std::string get_sync_info(app_state &app, revision_id const& rid, string const& domain)
+{
+  /* sync information is initially coded in a file called .mtn-sync-DOMAIN
+     if this file is old then information gets 
+     (base_revision_id+xdiff).gz encoded in certificates
+     
+     SPECIAL CASE of no parent: certificate is (40*' '+plain_data).gz encoded
+   */
+  revision_t rev;
+  app.db.get_revision(rid, rev);
+  split_path path;
+  file_path_internal(string(".")+sync_prefix+domain).split(path);
+  if (rev.edges.size()==1)
+  { 
+    L(FL("get_sync_info: checking revision files %s") % rid);
+    cset cs=edge_changes(rev.edges.begin());
+    std::map<split_path, file_id>::const_iterator fadd_it=cs.files_added.find(path);
+    if (fadd_it!=cs.files_added.end())
+    { 
+      file_data dat;
+      app.db.get_file_version(fadd_it->second, dat);
+      return dat.inner()();
+    }
+    std::map<split_path, std::pair<file_id, file_id> >::const_iterator delta_it
+        =cs.deltas_applied.find(path);
+    if (delta_it!=cs.deltas_applied.end())
+    { 
+      file_data dat;
+      app.db.get_file_version(delta_it->second.second, dat);
+      return dat.inner()();
+    }
+  }
+  L(FL("get_sync_info: checking revision certificates %s") % rid);
+  std::vector< revision<cert> > certs;
+  app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
+  N(!certs.empty(), F("no sync cerficate found in revision %s for domain %s")
+        % rid % domain);
+  I(certs.size()==1); // FIXME: what to do with multiple certs ...
+  cert_value tv;
+  decode_base64(idx(certs,0).inner().value, tv);
+  std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(tv());
+  if (decomp_cert_val[0]==' ') return decomp_cert_val.substr(constants::idlen);
+  revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen));
+  std::string old_data=get_sync_info(app,old_rid,domain);
+  delta del=decomp_cert_val.substr(constants::idlen);
+  data newdata;
+  patch(old_data,del,newdata);
+  return newdata();
+}
+
+// Name: get_sync_info
+// Arguments:
+//   revision
+//   sync-domain
+// Added in: 2.3
+// Purpose:
+//   Get the sync information for a given revision
+// Output format:
+//   sync-data
+// Error conditions:
+//   a runtime exception is thrown if the data is unavailable
+AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
+{ 
+  if (args.size() != 2)
+    throw usage(name);
+  revision_id rid(idx(args,0)());
+  string domain=idx(args,1)();
+  output << get_sync_info(app,rid,domain);
+}
+
+// Name: put_sync_info
+// Arguments:
+//   revision
+//   sync-domain
+//   data
+// Added in: 2.3
+// Purpose:
+//   Get the sync information for a given revision
+// Output format:
+//   sync-data
+// Error conditions:
+//   a runtime exception is thrown if anything goes wrong
+AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
+{ 
+  if (args.size() != 3)
+    throw usage(name);
+  revision_id rid(idx(args,0)());
+  string domain=idx(args,1)();
+  revision_t rev;
+  app.db.get_revision(rid, rev);
+
+  std::string new_data=idx(args,2)();
+  cert c;
+  for (edge_map::const_iterator e = rev.edges.begin();
+                     e != rev.edges.end(); ++e)
+  { 
+    if (null_id(edge_old_revision(e))) continue;
+    try
+    { 
+      std::string oldinfo=get_sync_info(app,edge_old_revision(e),domain);
+      delta del;
+      diff(oldinfo,new_data,del);
+      if (del().size()>=new_data.size()) continue;
+      I(edge_old_revision(e).inner()().size()==constants::idlen);
+      cert_value cv=xform<Botan::Gzip_Compression>(edge_old_revision(e).inner()()+del());
+      make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
+      revision<cert> rc(c); 
+      packet_db_writer dbw(app);
+      dbw.consume_revision_cert(rc); 
+      L(FL("sync info encoded as delta from %s") % edge_old_revision(e));
+      return;
+    }
+    catch (std::runtime_error &er) {}
+  }
+  cert_value cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+new_data);
+  make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
+  revision<cert> rc(c);
+  packet_db_writer dbw(app);
+  dbw.consume_revision_cert(rc);
+  L(FL("sync info attached to %s") % rid);
 }
 
 // Local Variables:
