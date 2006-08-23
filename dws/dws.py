@@ -175,9 +175,13 @@ class Connection:
             raise Exception("DWS: getMany response invalid: invalid sizes descriptor")
         if len(sizes) != len(names):
             raise Exception("DWS: getMany response invalid: mismatched files count")
-        expectedSize = [s for s in sizes if s != -1] 
-        if sum(expectedSize) != len(agrContent):
-            raise Exception("DWS: getMany response invalid: mismatched response size (exp=%i, act=%i)" % (expectedSize, len(agrContent)))
+        expectedSizes = [s for s in sizes if s != -1]
+        expectedSize = sum(expectedSizes) 
+        if expectedSize != len(agrContent):
+            adinfo = ""
+            if expectedSize < len(agrContent) and len(agrContent)-expectedSize < 100:
+                adinfo = " extra: '%s'" % repr(agrContent[expectedSize:])
+            raise Exception("DWS: getMany response invalid: mismatched response size (exp=%i, act=%i)%s" % (expectedSize, len(agrContent),adinfo))
         result = []
         offset = 0
         for size in sizes:

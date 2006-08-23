@@ -26,7 +26,7 @@ class DWSReadableFS(fs.ReadableFS):
         else:
             self.path = hostspec[pathIndex+1:]
             self.hostspec = hostspec[:pathIndex]
-        self.conn = dws.Connection(self.hostspec,self.path,verbosity=2)        
+        self.conn = dws.Connection(self.hostspec,self.path)        
         self.version = 0
 
     def list(self):
