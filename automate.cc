@@ -32,6 +32,7 @@
 #include "transforms.hh"
 #include "vocab.hh"
 #include "globish.hh"
+#include "charset.hh"
 #include "safe_map.hh"
 
 using std::allocator;

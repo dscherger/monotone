@@ -528,7 +528,7 @@ main(int argc, char **argv)
 {
   try
     {
-      ui.set_prog_name("mtn_cvs");
+//      ui.set_prog_name("mtn_cvs");
       return cpp_main(argc,argv);
 //      return main_with_many_flavours_of_exception(argc, argv);
     }
