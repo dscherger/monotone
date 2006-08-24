@@ -1,3 +1,21 @@
+2006-08-25  Matt Johnston  <matt@ucc.asn.au>
+
+	* options.hh: workaround for gcc < 3.4 parse error on
+	vv.as<T)();
+
+2006-08-24  Thomas Moschny <thomas.moschny@gmx.de>
+
+	* revision.cc (select_nodes_modified_by_rev)
+	* revision.hh (select_nodes_modified_by_rev): Remove unused first
+	argument (rid).
+	* cmd_diff_log.cc (CMD(log)): Adjust sole usage of that function.
+
+2006-08-24  Matthew Gregan  <kinetik@orcon.net.nz>
+
+	* merge.cc (resolve_merge_conflicts): Bail out of conflict
+	resolution early if content_merger::try_to_merge_files indicates
+	conflicts remain after a merge attempt.
+
 2006-08-23  Lapo Luchini  <lapo@lapo.it>
 
 	* po/it.po: Updated and translated a few more strings (40 to go).
