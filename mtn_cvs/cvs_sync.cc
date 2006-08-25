@@ -487,13 +487,6 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
 //        cvs_delta[f->first]=f->second;
       }
     }
-#if 0
-  if (!oldr.empty() && cvs_delta.size()<newm.size() 
-      && cm_delta_depth+1<cvs_edge::cm_max_delta_depth)
-  { newm=cvs_delta;
-    return true;
-  }
-#endif  
 }
 
 void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &end, 
@@ -754,7 +747,7 @@ static file_id get_sync_id(mtncvs_state &app, revision_id id)
   return m[file_path_internal(".mtn-sync-"+app.domain())];
 }
 
-void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest)
+file_id cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest)
 { std::string state=create_sync_state(e);
   std::string syncname=".mtn-sync-"+app.domain();
   mtn_automate::manifest::const_iterator it=oldmanifest.find(file_path_internal(syncname));
@@ -770,6 +763,7 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest const
   std::pair<cvs_file_state,bool> ires=files[syncname].known_states.insert(fs);
   I(ires.second);
   e.xfiles[syncname]=ires.first;
+  return fid;
 }
 
 std::string cvs_repository::create_sync_state(cvs_edge const& e)
@@ -802,7 +796,6 @@ std::string cvs_repository::create_sync_state(cvs_edge const& e)
 // commit CVS revisions to monotone (pull)
 void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 { revision_id parent_rid;
-  file_id parent_sync;
   
   cvs_edges_ticker.reset(0);
   L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision());
@@ -813,7 +806,6 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
     I(!before->revision().empty());
     parent_rid=before->revision;
-    parent_sync=get_sync_id(app,parent_rid);
   }
 //  temp_node_id_source nis;
   for (; e!=edges.end(); ++e)
@@ -855,18 +847,14 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     if (revision_ticker.get()) ++(*revision_ticker);
     L(FL("CVS Sync: Inserted revision %s into repository\n") % child_rid);
     e->revision=child_rid.inner();
-#if 1
+
     app.cert_revision(child_rid,"branch",app.branch());
     std::string author=e->author;
     if (author.find('@')==std::string::npos) author+="@"+host;
     app.cert_revision(child_rid, "author", author); 
     app.cert_revision(child_rid, "changelog", e->changelog);
     app.cert_revision(child_rid, "date", time_t2monotone(e->time));
-//    cert_cvs(*e, dbw);
-#endif
-
     parent_rid = child_rid;
-//    parent_sync=?
   }
 }
 
@@ -964,31 +952,6 @@ void cvs_repository::prime()
 //  store_modules();
 }
 
-#if 0
-void cvs_repository::cert_cvs(const cvs_edge &e, packet_consumer & pc)
-{ 
-  std::string content=create_cvs_cert_header();
-  if (!e.delta_base.inner()().empty()) 
-  { content+="+"+e.delta_base.inner()()+"\n";
-  }
-  for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
-  { if (i->second->cvs_version.empty())
-    { W(F("blocking attempt to certify an empty CVS revision\n"
-        "(this is normal for a cvs_takeover of a locally modified tree)\n"));
-      return;
-    }
-    content+=i->second->cvs_version;
-    if (!i->second->keyword_substitution.empty())
-      content+="/"+i->second->keyword_substitution;
-    content+=" "+i->first+"\n";
-  }
-  cert t;
-  make_simple_cert(e.revision, cert_name(cvs_cert_name), content, app, t);
-  revision<cert> cc(t);
-  pc.consume_revision_cert(cc);
-}
-#endif
-
 cvs_repository::cvs_repository(mtncvs_state &_app, const std::string &repository, 
             const std::string &module, const std::string &branch, bool connect)
       : cvs_client(repository,module,branch,connect), app(_app), 
@@ -1002,22 +965,6 @@ cvs_repository::cvs_repository(mtncvs_state &_app, const std::string &repository
     N(sync_since<=time(0), F("Since lies in the future. Remember to specify time in UTC\n"));
   }
 }
-
-#if 0
-static void test_key_availability(mtncvs_state &app)
-{
-  // early short-circuit to avoid failure after lots of work
-  rsa_keypair_id key;
-  get_user_key(key, app);
-  // Require the password early on, so that we don't do lots of work
-  // and then die.
-  app.signing_key = key;
-
-  N(app.lua.hook_persist_phrase_ok(),
-    F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
-  require_password(key, app);
-}
-#endif
 
 std::set<cvs_edge>::iterator cvs_repository::last_known_revision()
 { I(!edges.empty());

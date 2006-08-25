@@ -174,7 +174,7 @@ private:
   void store_modules();
   void retrieve_modules();
   std::string gather_merge_information(revision_id const& id);
-  void attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest);
+  file_id attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest);
   std::string create_sync_state(cvs_edge const& e);
 public: // semi public interface for push/pull
   void prime();
