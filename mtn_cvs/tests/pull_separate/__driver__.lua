@@ -31,7 +31,7 @@ tsha2 = sha1("test/B")
 os.execute("sleep 1")
 check(indir("test", cvs("ci", "-m", "B changed")), 0, false, false)
 
-check(mtn_cvs("--branch=testbranch", "pull", cvsroot, "test"), 0, false, false)
+check(mtn_cvs("--branch=testbranch", "pull"), 0, false, false)
 
 mkdir("test/dir")
 check(indir("test", cvs("add", "dir")), 0, false, false)

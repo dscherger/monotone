@@ -1408,7 +1408,13 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
       branch=br;
     }
     else
-    { I(last_sync_info.empty() || repository==rep);
+    { MM(repository); 
+      MM(rep); 
+      MM(module); 
+      MM(mod); 
+      MM(branch); 
+      MM(br);
+      I(last_sync_info.empty() || repository==rep);
       I(last_sync_info.empty() || module==mod);
       // I(branch==br); // ?
     }
@@ -1458,7 +1464,6 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
   return iter.first;
 }
 
-#if 1
 void cvs_repository::process_sync_info(std::string const& sync_info, revision_id const& rid)
 { mtn_automate::manifest manifest=app.get_manifest_of(rid);
   // populate data structure using this sync info
@@ -1470,7 +1475,7 @@ void cvs_repository::process_sync_info(std::string const& sync_info, revision_id
       I(!pieces.empty());
       piece::piece_table::const_iterator p=pieces.begin()+1;
       
-      while (p!=pieces.end() && (**p)!="#files\n");
+      while (p!=pieces.end() && (**p)!="#files\n") ++p;
       if (p!=pieces.end()) ++p; // skip the #files line
       for (;p!=pieces.end();++p)
       { std::string line=**p;
@@ -1544,7 +1549,6 @@ void cvs_repository::process_sync_info(std::string const& sync_info, revision_id
 #endif
   if (global_sanity.debug) L(FL("%s") % debug());
 }
-#endif
 
 struct cvs_repository::update_cb : cvs_client::update_callbacks
 { cvs_repository &repo;
