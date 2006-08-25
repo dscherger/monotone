@@ -1451,7 +1451,7 @@ AUTOMATE(genkey, N_("KEYID PASSPHRASE"))
 // Arguments:
 //   base ID (optional).
 //   file contents (binary, intended for automate stdio use)
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Store a file in the database.
 //   Optionally encode it as a file_delta
@@ -1505,7 +1505,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 // Name: put_revision
 // Arguments:
 //   single edge specification (part of a full revision)
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Store a revision into the database.
 // Output format:
@@ -1560,7 +1560,7 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"))
 //   revision ID
 //   certificate name
 //   certificate value
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Add a revision certificate (like mtn cert).
 // Output format:
@@ -1585,7 +1585,7 @@ AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
 //   variable domain
 //   variable name
 //   veriable value
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Set a database variable (like mtn database set)
 // Output format:
@@ -1607,7 +1607,7 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
 // Arguments:
 //   variable domain
 //   variable name
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Get a database variable (like mtn database ls vars | grep NAME)
 // Output format:
@@ -1654,7 +1654,7 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
 // Arguments:
 //   sync-domain
 //   branch (optional)
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Get the newest revision which has sync certificates 
 //   (or a changed sync file)
@@ -1773,7 +1773,7 @@ static std::string get_sync_info(app_state &app, revision_id const& rid, string 
 // Arguments:
 //   revision
 //   sync-domain
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Get the sync information for a given revision
 // Output format:
@@ -1794,7 +1794,7 @@ AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
 //   revision
 //   sync-domain
 //   data
-// Added in: 2.3
+// Added in: 3.2
 // Purpose:
 //   Get the sync information for a given revision
 // Output format:

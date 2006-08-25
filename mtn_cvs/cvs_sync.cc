@@ -1335,6 +1335,10 @@ static void guess_repository(std::string &repository, std::string &module,
 { I(!app.branch().empty());
   try
   { lastid=app.find_newest_sync(app.domain(),app.branch());
+    if (null_id(lastid)) 
+    { L(FL("no sync information found on branch %s\n")%app.branch());
+      return;
+    }
     last_state=app.get_sync_info(lastid,app.domain());
     cvs_repository::parse_cvs_cert_header(last_state,repository,module,branch);
     if (branch.empty())
@@ -1396,11 +1400,14 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
       branch=br;
     }
     else
-    { I(repository==rep);
-      I(module==rep);
+    { I(last_sync_info.empty() || repository==rep);
+      I(last_sync_info.empty() || module==mod);
       // I(branch==br); // ?
     }
   }
+  N(!repository.empty(), F("you must name a repository, I can't guess"));
+  N(!module.empty(), F("you must name a module, I can't guess"));
+  
   cvs_sync::cvs_repository repo(app,repository,module,branch);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
