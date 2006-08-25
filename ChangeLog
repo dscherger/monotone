@@ -1,3 +1,11 @@
+2006-08-24  Derek Scherger  <derek@echologic.com>
+
+	* cmd_merging.cc (struct update_source): move to ...
+	* merge.hh: ... here, so it's available in other places
+	* cmd_ws_commit.cc (CMD(revert)): rewrite in terms of editable
+	working tree blissfully ignoring the possibility of workspace
+	conflicts
+
 2006-08-25  Matt Johnston  <matt@ucc.asn.au>
 
 	* options.hh: workaround for gcc < 3.4 parse error on

@@ -13,6 +13,7 @@
 #include "cmd.hh"
 #include "diff_patch.hh"
 #include "localized_file_io.hh"
+#include "merge.hh"
 #include "packet.hh"
 #include "restrictions.hh"
 #include "revision.hh"
@@ -56,13 +57,17 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 {
   temp_node_id_source nis;
   roster_t old_roster, new_roster;
-  cset included, excluded;
+  cset forward_included, forward_excluded;
+  cset reverse_included, reverse_excluded;
 
+  // FIXME: this should probably be throw usage(name);
   N(app.missing || !args.empty() || !app.exclude_patterns.empty(),
     F("you must pass at least one path to 'revert' (perhaps '.')"));
 
   app.require_workspace();
 
+  // FIXME: this will probably fail for revert with missing files
+  // or file vs dir conflicts in the workspace
   get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
 
   node_restriction mask(args_to_paths(args), args_to_paths(app.exclude_patterns),
@@ -93,75 +98,42 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
       mask = node_restriction(missing_files, std::vector<file_path>(),
                               old_roster, new_roster, app);
     }
+  
+  update_current_roster_from_filesystem(new_roster, mask, app);
 
-  make_restricted_csets(old_roster, new_roster,
-                        included, excluded, mask);
+  make_restricted_csets(old_roster, new_roster, 
+                        forward_included, forward_excluded, mask);
 
-  // The included cset will be thrown away (reverted) leaving the
-  // excluded cset pending in MTN/work which must be valid against the
-  // old roster.
+  make_restricted_csets(new_roster, old_roster, 
+                        reverse_included, reverse_excluded, mask);
 
-  check_restricted_cset(old_roster, excluded);
+  // the forward excluded cset must be valid against the old 
+  // roster since it will be left pending in _MTN/work
+  // the reverse included cset must be valid against the new 
+  // roster since it will be used to actually do the revert
+  //
+  // i.e. we have this:
+  // old  --> forward_included  --> mid  --> forward_excluded  --> new
+  // old <--  reverse_excluded <--  mid <--  reverse_included <--  new
+  //
+  // and revert should update the workspace from new back to mid
 
-  node_map const & nodes = old_roster.all_nodes();
-  for (node_map::const_iterator i = nodes.begin(); 
-       i != nodes.end(); ++i)
-    {
-      node_id nid = i->first;
-      node_t node = i->second;
+  check_restricted_cset(old_roster, forward_excluded);
+  check_restricted_cset(new_roster, reverse_included);
 
-      if (old_roster.is_root(nid))
-        continue;
+  DUMP(forward_included);
+  DUMP(forward_excluded);
+  DUMP(reverse_included);
+  DUMP(reverse_excluded);
 
-      split_path sp;
-      old_roster.get_name(nid, sp);
-      file_path fp(sp);
+  // actually do the revert
+  std::map<file_id, file_data> empty;
+  update_source fsource(empty, app);
+  editable_working_tree ewt(app, fsource);
+  reverse_included.apply_to(ewt);
 
-      if (!mask.includes(old_roster, nid))
-        continue;
-
-      if (is_file_t(node))
-        {
-          file_t f = downcast_to_file_t(node);
-          if (file_exists(fp))
-            {
-              hexenc<id> ident;
-              calculate_ident(fp, ident, app.lua);
-              // don't touch unchanged files
-              if (ident == f->content.inner())
-                continue;
-            }
-
-          P(F("reverting %s") % fp);
-          L(FL("reverting %s to [%s]") % fp % f->content);
-
-          N(app.db.file_version_exists(f->content),
-            F("no file version %s found in database for %s")
-            % f->content % fp);
-
-          file_data dat;
-          L(FL("writing file %s to %s")
-            % f->content % fp);
-          app.db.get_file_version(f->content, dat);
-          write_localized_data(fp, dat.inner(), app.lua);
-        }
-      else
-        {
-          if (!directory_exists(fp))
-            {
-              P(F("recreating %s/") % fp);
-              mkdir_p(fp);
-            }
-        }
-    }
-
-  // Included_work is thrown away which effectively reverts any adds,
-  // drops and renames it contains. Drops and rename sources will have
-  // been rewritten above but this may leave rename targets laying
-  // around.
-
-  // Race.
-  put_work_cset(excluded);
+  // Race. (maintain the changes from old to mid in the workspace)
+  put_work_cset(forward_excluded);
   update_any_attrs(app);
   maybe_update_inodeprints(app);
 }

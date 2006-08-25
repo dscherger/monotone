@@ -55,6 +55,28 @@ store_roster_merge_result(roster_t const & left_roster,
                           revision_id & merged_rid,
                           app_state & app);
 
+struct update_source
+  : public file_content_source
+{
+  std::map<file_id, file_data> & temporary_store;
+  app_state & app;
+  update_source (std::map<file_id, file_data> & tmp,
+                 app_state & app)
+    : temporary_store(tmp), app(app)
+  {}
+  void get_file_content(file_id const & fid,
+                        file_data & dat) const
+  {
+    std::map<file_id, file_data>::const_iterator 
+      i = temporary_store.find(fid);
+
+    if (i != temporary_store.end())
+      dat = i->second;
+    else
+      app.db.get_file_version(fid, dat);
+  }
+};
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

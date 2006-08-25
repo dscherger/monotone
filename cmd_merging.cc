@@ -31,28 +31,6 @@ using std::strlen;
 
 using boost::shared_ptr;
 
-struct update_source
-  : public file_content_source
-{
-  map<file_id, file_data> & temporary_store;
-  app_state & app;
-  update_source (map<file_id, file_data> & tmp,
-                 app_state & app)
-    : temporary_store(tmp), app(app)
-  {}
-  void get_file_content(file_id const & fid,
-                        file_data & dat) const
-  {
-    map<file_id, file_data>::const_iterator 
-      i = temporary_store.find(fid);
-
-    if (i != temporary_store.end())
-      dat = i->second;
-    else
-      app.db.get_file_version(fid, dat);
-  }
-};
-
 static void
 three_way_merge(roster_t const & ancestor_roster,
                 roster_t const & left_roster, roster_t const & right_roster,
