@@ -1034,27 +1034,23 @@ cvs_edge::cvs_edge(const revision_id &rid, mtncvs_state &app)
  : changelog_valid(), time(), time2()
 { revision=hexenc<id>(rid.inner());
   // get author + date 
-#if 0  
-  std::vector< ::revision<cert> > edge_certs;
-  app.db.get_revision_certs(rid,edge_certs);
-  // erase_bogus_certs ?
-  for (std::vector< ::revision<cert> >::const_iterator c=edge_certs.begin();
-            c!=edge_certs.end();++c)
-  { cert_value value;
-    decode_base64(c->inner().value, value);   
-    if (c->inner().name()==date_cert_name)
-    { L(FL("date cert %s\n")%value());
-      time=time2=cvs_repository::posix2time_t(value());
+  std::vector<mtn_automate::certificate> certs=app.get_revision_certs(rid);
+  
+  for (std::vector<mtn_automate::certificate>::const_iterator c=certs.begin();
+            c!=certs.end();++c)
+  { if (!c->trusted || c->signature!=mtn_automate::certificate::ok) continue;
+    if (c->name=="date")
+    { L(FL("date cert %s\n")% c->value);
+      time=time2=cvs_repository::posix2time_t(c->value);
     }
-    else if (c->inner().name()==author_cert_name)
-    { author=value();
+    else if (c->name=="author")
+    { author=c->value;
     }
-    else if (c->inner().name()==changelog_cert_name)
-    { changelog=value();
+    else if (c->name=="changelog")
+    { changelog=c->value;
       changelog_valid=true;
     }
   }
-#endif
 }
 
 #if 0

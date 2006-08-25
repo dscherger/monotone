@@ -31,6 +31,12 @@ struct mtn_automate : mtn_pipe
           || !dirs_added.empty(); 
     }
   };
+  struct certificate
+  { std::string key, name, value;
+    enum sigvalid { ok, bad, unknown } signature;
+    bool trusted; 
+    certificate() : signature(unknown), trusted() {}
+  };
 
   void check_interface_revision(std::string const&minimum);
   revision_id find_newest_sync(std::string const& domain, std::string const& branch="");
@@ -39,6 +45,7 @@ struct mtn_automate : mtn_pipe
   manifest get_manifest_of(revision_id const& rid);
   revision_id put_revision(revision_id const& parent, cset const& changes);
   void cert_revision(revision_id const& rid, std::string const& name, std::string const& value);
+  std::vector<certificate> get_revision_certs(revision_id const& rid);
 };
 
 #endif

@@ -64,6 +64,13 @@ namespace
     symbol const file("file");
 //    symbol const content("content");
 //    symbol const attr("attr");
+
+    // cmd_list symbols
+    symbol const key("key");
+    symbol const signature("signature");
+    symbol const name("name");
+//    symbol const value("value");
+    symbol const trust("trust");
   }
 }
 
@@ -163,4 +170,49 @@ void mtn_automate::cert_revision(revision_id const& rid, std::string const& name
   args.push_back(name);
   args.push_back(value);
   automate("cert",args);
+}
+
+std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision_id const& rid)
+{ std::vector<std::string> args;
+  args.push_back(rid.inner()());
+  std::string aresult=automate("certs",args);
+  
+  basic_io::input_source source(aresult,"automate get_revision_certs result");
+  basic_io::tokenizer tokenizer(source);
+  basic_io::parser pa(tokenizer);
+  
+  std::vector<certificate> result;
+  
+  while (pa.symp())
+  { certificate cert;
+  
+    I(pa.symp(syms::key));
+    pa.sym();
+    pa.str(cert.key);
+  
+    I(pa.symp(syms::signature));
+    pa.sym();
+    std::string sign;
+    pa.str(sign);
+    if (sign=="ok") cert.signature=certificate::ok;
+    else if (sign=="bad") cert.signature=certificate::bad;
+    else cert.signature=certificate::unknown;
+
+    I(pa.symp(syms::name));
+    pa.sym();
+    pa.str(cert.name);
+
+    I(pa.symp(syms::value));
+    pa.sym();
+    pa.str(cert.value);
+
+    I(pa.symp(syms::trust));
+    pa.sym();
+    std::string trust;
+    pa.str(trust);
+    cert.trusted= trust=="trusted";
+    
+    result.push_back(cert);
+  }
+  return result;
 }
