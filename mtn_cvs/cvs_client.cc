@@ -1228,6 +1228,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         result.file=lresult[2].second;
         I(!result.file.empty());
         if (result.file[0]=='/') result.file=rcs_file2path(result.file);
+        else // relative path name - relative to what?
+          result.file=rcs_file2path(root+"/"+result.file);
         result.contents=lresult[6].second;
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         cb(result);
@@ -1241,6 +1243,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         result.file=lresult[2].second;
         I(!result.file.empty());
         if (result.file[0]=='/') result.file=rcs_file2path(result.file);
+        else // relative path name - relative to what?
+          result.file=rcs_file2path(root+"/"+result.file);
         result.patch=lresult[6].second;
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         cb(result);
@@ -1257,6 +1261,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         result.file=lresult[2].second;
         I(!result.file.empty());
         if (result.file[0]=='/') result.file=rcs_file2path(result.file);
+        else // relative path name - relative to what?
+          result.file=rcs_file2path(root+"/"+result.file);
         result.removed=true;
         cb(result);
         result=update();
@@ -1281,6 +1287,8 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         result.file=lresult[2].second;
         I(!result.file.empty());
         if (result.file[0]=='/') result.file=rcs_file2path(result.file);
+        else // relative path name - relative to what?
+          result.file=rcs_file2path(root+"/"+result.file);
         result.contents=lresult[6].second; // strictly this is unnecessary ...
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         E(false, F("Update ->%s of %s exposed CVS bug\n") 

@@ -46,6 +46,7 @@ struct mtn_automate : mtn_pipe
   revision_id put_revision(revision_id const& parent, cset const& changes);
   void cert_revision(revision_id const& rid, std::string const& name, std::string const& value);
   std::vector<certificate> get_revision_certs(revision_id const& rid);
+  std::string get_file(file_id const& fid);
 };
 
 #endif

@@ -37,6 +37,12 @@ file_id mtn_automate::put_file(data const& d, file_id const& base)
   return file_id(automate("put_file",args));
 }
 
+std::string mtn_automate::get_file(file_id const& fid)
+{ std::vector<std::string> args;
+  args.push_back(fid.inner()());
+  return automate("get_file",args);
+}
+
 namespace
 {
   namespace syms

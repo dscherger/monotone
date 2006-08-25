@@ -1565,7 +1565,6 @@ struct cvs_repository::update_cb : cvs_client::update_callbacks
 void cvs_repository::update()
 {
   retrieve_modules();
-#if 0
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
   const cvs_edge &now=*now_iter;
   I(!now.revision().empty());
@@ -1573,6 +1572,7 @@ void cvs_repository::update()
   std::vector<cvs_client::update> results;
   const cvs_manifest &m=get_files(now);
   file_revisions.reserve(m.size());
+#warning FIXME: changed files
   for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
     file_revisions.push_back(update_args(i->first,i->second->cvs_version,
                             std::string(),i->second->keyword_substitution));
@@ -1619,9 +1619,7 @@ void cvs_repository::update()
     }
     else
     { I(!last->sha1sum().empty());
-      file_data dat;
-      app.db.get_file_version(last->sha1sum,dat);
-      file_contents=dat.inner()();
+      file_contents=app.get_file(last->sha1sum);
       initial_contents=file_contents;
     }
     for (std::set<file_state>::const_iterator s=last;
@@ -1634,7 +1632,7 @@ void cvs_repository::update()
         try
         { store_update(last,s2,*i,initial_contents);
         } catch (informative_failure &e)
-        { W(F("error during update: %s\n") % e.what);
+        { W(F("error during update: %s\n") % e.what());
           // we _might_ try to use store delta ...
           cvs_client::update c=Update(i->file,s2->cvs_version);
           const_cast<std::string&>(s2->md5sum)="";
@@ -1661,9 +1659,7 @@ void cvs_repository::update()
     if (global_sanity.debug) L(FL("%s") % debug());
     commit_cvs2mtn(dummy_iter);
   }
-  
 //  store_modules();
-#endif
 }
 
 static void apply_manifest_delta(cvs_manifest &base,const cvs_manifest &delta)
