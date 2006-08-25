@@ -1030,11 +1030,11 @@ time_t cvs_repository::posix2time_t(std::string posix_format)
   return dur.total_seconds();
 }
 
-#if 0
 cvs_edge::cvs_edge(const revision_id &rid, mtncvs_state &app)
- : changelog_valid(), time(), time2(), cm_delta_depth()
+ : changelog_valid(), time(), time2()
 { revision=hexenc<id>(rid.inner());
   // get author + date 
+#if 0  
   std::vector< ::revision<cert> > edge_certs;
   app.db.get_revision_certs(rid,edge_certs);
   // erase_bogus_certs ?
@@ -1054,8 +1054,10 @@ cvs_edge::cvs_edge(const revision_id &rid, mtncvs_state &app)
       changelog_valid=true;
     }
   }
+#endif
 }
 
+#if 0
 std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
 { // check that it's the last one
@@ -1329,16 +1331,15 @@ void cvs_repository::commit()
 }
 #endif
 
-// look for _any_ cvs cert in the given monotone branch and assign
+// look for last sync cert in the given monotone branch and assign
 // its value to repository, module, branch
 
-// this is somewhat clumsy ... but works well enough
 static void guess_repository(std::string &repository, std::string &module,
-        std::string & branch,std::string &last_state, mtncvs_state &app)
+        std::string & branch,std::string &last_state, revision_id &lastid, mtncvs_state &app)
 { I(!app.branch().empty());
   try
-  { revision_id last=app.find_newest_sync(app.domain(),app.branch());
-    last_state=app.get_sync_info(last,app.domain());
+  { lastid=app.find_newest_sync(app.domain(),app.branch());
+    last_state=app.get_sync_info(lastid,app.domain());
     cvs_repository::parse_cvs_cert_header(last_state,repository,module,branch);
     if (branch.empty())
       L(FL("using module '%s' in repository '%s'\n") % module % repository);
@@ -1388,23 +1389,32 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
   std::string repository=_repository, module=_module, branch=_branch;
   
   std::string last_sync_info;
+  revision_id lastid;
 
-  if (repository.empty() || module.empty())
-    guess_repository(repository, module, branch, last_sync_info, app);
+  { std::string rep,mod,br;
+    // search for module and last revision
+    guess_repository(rep, mod, br, last_sync_info, lastid, app);
+    if (repository.empty() || module.empty())
+    { repository=rep;
+      module=mod;
+      branch=br;
+    }
+    else
+    { I(repository==rep);
+      I(module==rep);
+      // I(branch==br); // ?
+    }
+  }
   cvs_sync::cvs_repository repo(app,repository,module,branch);
-  if (!last_sync_info.empty())
-    repo.parse_module_paths(last_sync_info);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo.GzipStream(3);
-//  transaction_guard guard(app.db);
 
-#if 0
-  if (certs.empty()) 
-    app.db.get_revision_certs(cvs_cert_name, certs); 
-  if (!app.cvspull_full) repo.process_certs(certs);
-#endif
-  
+  if (!last_sync_info.empty())
+  { repo.parse_module_paths(last_sync_info);
+    repo.process_sync_info(last_sync_info, lastid);
+  }
+
   // initial checkout
   if (repo.empty()) 
     repo.prime();
@@ -1437,44 +1447,34 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
   return iter.first;
 }
 
-#if 0
-void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
-{ 
-  std::auto_ptr<ticker> cert_ticker;
-  cert_ticker.reset(new ticker("cvs certs", "C", 10));
-
-  std::string needed_cert=create_cvs_cert_header();
-  for (vector<revision<cert> >::const_iterator i=certs.begin(); i!=certs.end(); ++i)
-  { // populate data structure using these certs
-    cert_value cvs_revisions;
-    decode_base64(i->inner().value, cvs_revisions);
-    if (cvs_revisions().size()>needed_cert.size() 
-      && (cvs_revisions().substr(0,needed_cert.size())==needed_cert))
-    { // parse and add the cert
-      ++(*cert_ticker);
-      cvs_edge e(i->inner().ident,app);
+#if 1
+void cvs_repository::process_sync_info(std::string const& sync_info, revision_id const& rid)
+{ mtn_automate::manifest manifest=app.get_manifest_of(rid);
+  // populate data structure using this sync info
+      cvs_edge e(rid.inner(),app);
 
       piece::piece_table pieces;
       // in Zeilen aufteilen
-      piece::index_deltatext(cvs_revisions(),pieces);
+      piece::index_deltatext(sync_info,pieces);
       I(!pieces.empty());
       piece::piece_table::const_iterator p=pieces.begin()+1;
-      if ((**p)[0]=='+') // this is a delta encoded manifest
-      { hexenc<id> h=(**p).substr(1,40); // remember to omit the trailing \n
-        e.delta_base=revision_id(h);
-        ++p;
-      }
+      
+      while (p!=pieces.end() && (**p)!="#files\n");
+      if (p!=pieces.end()) ++p; // skip the #files line
       for (;p!=pieces.end();++p)
       { std::string line=**p;
         I(!line.empty());
         I(line[line.size()-1]=='\n');
-        line.erase(line.size()-1,1);
-        // the format is "<revsion>[/<keyword_substitution>] <path>\n"
+        line.erase(line.size()-1,1); // erase the newline char
+        // the format is "<revision>[/<keyword_substitution>] <path>\tsha1sum\n"
         // e.g. "1.1 .cvsignore",     "1.43/-kb test.png"
         std::string::size_type space=line.find(' ');
         I(space!=std::string::npos);
-        std::string monotone_path=line.substr(space+1);
+        std::string::size_type sha1=line.find('\t',space+1);
+        I(sha1!=std::string::npos);
+        std::string monotone_path=line.substr(space+1,sha1-space-1);
         std::string path=monotone_path;
+        std::string cvssha1sum=line.substr(sha1+1);
         // look for the optional initial slash separating the keyword mode
         std::string::size_type slash=line.find('/');
         if (slash==std::string::npos || slash>space)
@@ -1483,37 +1483,23 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
         file_state fs;
         fs.since_when=e.time;
         fs.cvs_version=line.substr(0,slash);
+        fs.cvssha1sum=cvssha1sum;
         if (space!=slash) 
           fs.keyword_substitution=line.substr(slash+1,space-(slash+1));
-        if (fs.cvs_version=="-") // delta encoded: remove
-        { I(!e.delta_base.inner()().empty());
-          fs.log_msg=e.changelog;
-          fs.author=e.author;
-          fs.dead=true;
-          cvs_file_state cfs=remember(files[path].known_states,fs,path);
-          e.xfiles.insert(std::make_pair(path,cfs)); // remove_state));
-        }
-        else
-        { // get sha1sum of file
-          roster_t roster;
-          app.db.get_roster(i->inner().ident, roster);
-          split_path sp;
-          file_path_internal(monotone_path).split(sp);
-          node_t node=roster.get_node(sp);
-          file_t file = downcast_to_file_t(node);
-          fs.sha1sum=file->content.inner();
-
-          fs.log_msg=e.changelog;
-          fs.author=e.author;
-          cvs_file_state cfs=remember(files[path].known_states,fs,path);
-          e.xfiles.insert(std::make_pair(path,cfs));
-        }
+        
+        // determine sha1sum of monotone file
+        mtn_automate::manifest::const_iterator fileiter
+          =manifest.find(file_path_internal(path));
+        I(fileiter!=manifest.end());
+        fs.sha1sum=fileiter->second.inner();
+        fs.log_msg=e.changelog;
+        fs.author=e.author;
+        cvs_file_state cfs=remember(files[path].known_states,fs,path);
+        e.xfiles.insert(std::make_pair(path,cfs));
       }
       piece::reset();
       revision_lookup[e.revision]=edges.insert(e).first;
-    }
-    else L(FL("cvs cert %s ignored (!=%s)") % cvs_revisions % needed_cert);
-  }
+#if 0
   // because some manifests might have been absolute (not delta encoded)
   // we possibly did not notice removes. check for them
   std::set<cvs_edge>::const_iterator last=edges.end();
@@ -1544,6 +1530,7 @@ void cvs_repository::process_certs(const std::vector< revision<cert> > &certs)
       }
     last=i;
   }
+#endif
   if (global_sanity.debug) L(FL("%s") % debug());
 }
 #endif

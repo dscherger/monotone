@@ -41,6 +41,7 @@ struct file_state
   unsigned patchsize;
   bool dead;
   std::string md5sum; // hexenc<something?>
+  hexenc<id> cvssha1sum;
   hexenc<id> sha1sum; // make this a file_id
   std::string log_msg;
   std::string author;
@@ -179,7 +180,7 @@ public: // semi public interface for push/pull
   void prime();
   void update();
   void commit();
-//  void process_certs(const std::vector< revision<cert> > &certs);
+  void process_sync_info(std::string const& sync_info, revision_id const& rid);
   bool empty() const { return edges.empty() && files.empty(); }
   void parse_module_paths(const std::string&);
 
