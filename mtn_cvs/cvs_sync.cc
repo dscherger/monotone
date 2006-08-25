@@ -156,6 +156,14 @@ std::string time_t2human(const time_t &t)
       % tm->tm_sec).str();
 }
 
+std::string time_t2monotone(const time_t &t)
+{ struct tm *tm;
+  tm=gmtime(&t);
+  return (boost::format("%04d-%02d-%02dT%02d:%02d:%02d") % tm->tm_year 
+      % (tm->tm_mon+1) % tm->tm_mday % tm->tm_hour % tm->tm_min 
+      % tm->tm_sec).str();
+}
+
 struct cvs_repository::get_all_files_log_cb : rlog_callbacks
 { cvs_repository &repo;
   get_all_files_log_cb(cvs_repository &r) : repo(r) {}
@@ -853,7 +861,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     if (author.find('@')==std::string::npos) author+="@"+host;
     app.cert_revision(child_rid, "author", author); 
     app.cert_revision(child_rid, "changelog", e->changelog);
-    app.cert_revision(child_rid, "date", time_t2human(e->time));
+    app.cert_revision(child_rid, "date", time_t2monotone(e->time));
 //    cert_cvs(*e, dbw);
 #endif
 
