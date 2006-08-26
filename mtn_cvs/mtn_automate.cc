@@ -7,6 +7,7 @@
 #include "mtn_automate.hh"
 #include <sanity.hh>
 #include <basic_io.hh>
+#include <constants.hh>
 
 void mtn_automate::check_interface_revision(std::string const& minimum)
 { std::string present=automate("interface_version");
@@ -41,6 +42,22 @@ std::string mtn_automate::get_file(file_id const& fid)
 { std::vector<std::string> args;
   args.push_back(fid.inner()());
   return automate("get_file",args);
+}
+
+#include <piece_table.hh>
+
+std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& rid)
+{ std::vector<std::string> args;
+  args.push_back(rid.inner()());
+  std::string children=automate("children",args);
+  std::vector<revision_id> result;
+  piece::piece_table lines;
+  piece::index_deltatext(children,lines);
+  result.reserve(children.size());
+  for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
+    result.push_back(revision_id((**p).substr(constants::idlen);
+  piece::reset();
+  return result;
 }
 
 namespace

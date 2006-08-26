@@ -1008,7 +1008,7 @@ cvs_edge::cvs_edge(const revision_id &rid, mtncvs_state &app)
   }
 }
 
-#if 0
+#if 1
 std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
 { // check that it's the last one
@@ -1221,6 +1221,19 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
   return result;
 }
 
+namespace {
+struct is_branch
+{ std::string comparison;
+  is_branch(std::string const& br) : comparison(br) {}
+  bool operator()(mtn_automate::certificate const& cert)
+  { return cert.trusted 
+        && cert.signature==mtn_automate::certificate::ok
+        && cert.name=="branch"
+        && cert.value==comparion;
+  }
+};
+}
+
 void cvs_repository::commit()
 { retrieve_modules();
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
@@ -1229,28 +1242,25 @@ void cvs_repository::commit()
     I(!now.revision().empty());
     
     L(FL("looking for children of revision %s\n") % now.revision);
-    std::set<revision_id> children;
-    app.db.get_revision_children(now.revision, children);
+    std::vector<revision_id> children=app.get_revision_children(now.revision);
     
-    if (!app.branch_name().empty())
-    { base64<cert_value> value;
-      encode_base64(cert_value(app.branch_name()), value);
+    if (!app.branch.empty())
+    { // app.branch
       // ignore revisions not belonging to the specified branch
-      for (std::set<revision_id>::iterator i=children.begin();
+      for (std::vector<revision_id>::iterator i=children.begin();
                     i!=children.end();)
-      { std::vector< revision<cert> > certs;
-        app.db.get_revision_certs(*i,branch_cert_name,value,certs);
-        std::set<revision_id>::iterator help=i;
-        ++help;
-        if (certs.empty()) children.erase(i);
-        i=help;
+      { std::vector<mtn_automate::certificate> certs
+          = app.get_revision_certs(*i);
+        if (std::remove_if(certs.begin(),certs.end(),is_branch(app.branch))==certs.begin())
+          i=children.erase(i);
+        else ++i;
       }
     }
     if (children.empty()) return;
     revision_id next;
     if (children.size()>1) // && !ap.revision_selectors.size())
-    { for (std::vector<utf8>::const_iterator i=app.revision_selectors.begin();
-          i!=app.revision_selectors.end();++i)
+    { for (std::vector<utf8>::const_iterator i=app.revisions.begin();
+          i!=app.revisions.end();++i)
       { for (std::set<revision_id>::const_iterator j=children.begin();
           j!=children.end();++j)
         { if (revision_id(hexenc<id>((*i)()))==*j)
@@ -1308,39 +1318,19 @@ static void guess_repository(std::string &repository, std::string &module,
   }
 }
 
-#if 0
 void cvs_sync::push(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
-{ test_key_availability(app);
-  // make the variables changeable
-  std::string repository=_repository, module=_module, branch=_branch;
-  std::vector< revision<cert> > certs;
-  if (repository.empty() || module.empty())
-    guess_repository(repository, module, branch, certs, app);
-  cvs_sync::cvs_repository repo(app,repository,module,branch);
-// turned off for DEBUGGING
-  if (!getenv("CVS_CLIENT_LOG"))
-    repo.GzipStream(3);
-  transaction_guard guard(app.db);
-
-  if (certs.empty())
-    app.db.get_revision_certs(cvs_cert_name, certs);
-  repo.process_certs(certs);
+{ cvs_repository *repo=prepare_sync(_repository,_module,_branch,app)
   
-  N(!repo.empty(),
+  N(!repo->empty(),
     F("no revision certs for this repository/module\n"));
-
-  repo.commit();
-  
-  guard.commit();      
+  repo->commit();
+  delete repo;
 }
-#endif
 
-void cvs_sync::pull(const std::string &_repository, const std::string &_module,
+cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
-{ // test_key_availability(app);
-  // make the variables changeable
-  app.open();
+{ app.open();
   std::string repository=_repository, module=_module, branch=_branch;
   
   std::string last_sync_info;
@@ -1369,22 +1359,27 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
   N(!repository.empty(), F("you must name a repository, I can't guess"));
   N(!module.empty(), F("you must name a module, I can't guess"));
   
-  cvs_sync::cvs_repository repo(app,repository,module,branch);
+  cvs_repository *repo = new cvs_repository(app,repository,module,branch);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
-    repo.GzipStream(3);
+    repo->GzipStream(3);
 
   if (!last_sync_info.empty())
-  { repo.parse_module_paths(last_sync_info);
-    repo.process_sync_info(last_sync_info, lastid);
+  { repo->parse_module_paths(last_sync_info);
+    repo->process_sync_info(last_sync_info, lastid);
   }
+  return repo;
+}
+
+void cvs_sync::pull(const std::string &_repository, const std::string &_module,
+            std::string const& _branch, mtncvs_state &app)
+{ cvs_repository *repo=prepare_sync(_repository,_modules,_branch,app);
 
   // initial checkout
-  if (repo.empty()) 
-    repo.prime();
-  else repo.update();
-  
-//  guard.commit();      
+  if (repo->empty()) 
+    repo->prime();
+  else repo->update();
+  delete repo;
 }
 
 cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state &fs, std::string const& filename)

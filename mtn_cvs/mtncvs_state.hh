@@ -17,7 +17,7 @@
 struct mtncvs_state : private app_state, public mtn_automate
 { bool full;
   utf8 since;
-  std::vector<utf8> revisions;
+  std::vector<revision_id> revisions;
   utf8 mtn_binary;
   std::vector<utf8> mtn_options;
   utf8 branch;
