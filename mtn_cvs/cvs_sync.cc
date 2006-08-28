@@ -1020,6 +1020,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   // a bit like process_certs
   cvs_edge e(rid,app);
 
+#if 0 // @@
   revision_set rs;
   app.db.get_revision(rid, rs);
   std::vector<commit_arg> commits;
@@ -1172,20 +1173,19 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     fail=false;
     return --(edges.end());
   }
+#endif
   W(F("no matching parent found\n"));
   fail=true;
   return edges.end();
 }
 
 std::string cvs_repository::gather_merge_information(revision_id const& id)
-{ std::set<revision_id> parents;
-  app.db.get_revision_parents(id,parents);
+{ std::vector<revision_id> parents=app.get_revision_parents(id);
   std::string result;
-  for (std::set<revision_id>::const_iterator i=parents.begin();i!=parents.end();++i)
-  { std::vector< revision<cert> > certs;
-    if (*i==revision_id()) continue;
-    app.db.get_revision_certs(*i,certs);
-    std::vector< revision<cert> >::const_iterator j=certs.begin();
+  for (std::vector<revision_id>::const_iterator i=parents.begin();i!=parents.end();++i)
+  { if (*i==revision_id()) continue;
+#if 0    
+    std::vector<mtn_automate::certificate>::const_iterator j=certs.begin();
     std::string to_match=create_cvs_cert_header();
     for (;j!=certs.end();++j)
     { if (j->inner().name()!=cvs_cert_name) continue;
@@ -1195,22 +1195,29 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
       if (value().substr(0,to_match.size())!=to_match) continue;
       break;
     }
+#endif
     // this revision is already in _this_ repository
-    if (j!=certs.end()) continue;
+// TODO: has sync info would be sufficient
+    try
+    { if (!app.get_sync_info(*i,app.domain()).empty()) continue;
+    } catch (std::exception &e)
+    { W(F("get sync info threw %s") % e.what());
+    }
     
+    std::vector<mtn_automate::certificate> certs=app.get_revision_certs(*i);
     std::string author,changelog;
     time_t date=0;
-    for (j=certs.begin();j!=certs.end();++j)
-    { cert_value value;
-      decode_base64(j->inner().value, value);   
-      if (j->inner().name()==date_cert_name)
-      { date=cvs_repository::posix2time_t(value());
+    for (std::vector<mtn_automate::certificate>::const_iterator j=certs.begin();j!=certs.end();++j)
+    { if (!j->trusted || j->signature!=mtn_automate::certificate::ok)
+        continue;
+      if (j->name=="date")
+      { date=cvs_repository::posix2time_t(j->value);
       }
-      else if (j->inner().name()==author_cert_name)
-      { author=value();
+      else if (j->name=="author")
+      { author=j->value;
       }
-      else if (j->inner().name()==changelog_cert_name)
-      { changelog=value();
+      else if (j->name=="changelog")
+      { changelog=j->value;
       }
     }
     result+="-------------------\n"
@@ -1229,7 +1236,7 @@ struct is_branch
   { return cert.trusted 
         && cert.signature==mtn_automate::certificate::ok
         && cert.name=="branch"
-        && cert.value==comparion;
+        && cert.value==comparison;
   }
 };
 }
@@ -1244,14 +1251,14 @@ void cvs_repository::commit()
     L(FL("looking for children of revision %s\n") % now.revision);
     std::vector<revision_id> children=app.get_revision_children(now.revision);
     
-    if (!app.branch.empty())
+    if (!app.branch().empty())
     { // app.branch
       // ignore revisions not belonging to the specified branch
       for (std::vector<revision_id>::iterator i=children.begin();
                     i!=children.end();)
       { std::vector<mtn_automate::certificate> certs
           = app.get_revision_certs(*i);
-        if (std::remove_if(certs.begin(),certs.end(),is_branch(app.branch))==certs.begin())
+        if (std::remove_if(certs.begin(),certs.end(),is_branch(app.branch()))==certs.begin())
           i=children.erase(i);
         else ++i;
       }
@@ -1259,11 +1266,11 @@ void cvs_repository::commit()
     if (children.empty()) return;
     revision_id next;
     if (children.size()>1) // && !ap.revision_selectors.size())
-    { for (std::vector<utf8>::const_iterator i=app.revisions.begin();
+    { for (std::vector<revision_id>::const_iterator i=app.revisions.begin();
           i!=app.revisions.end();++i)
-      { for (std::set<revision_id>::const_iterator j=children.begin();
+      { for (std::vector<revision_id>::const_iterator j=children.begin();
           j!=children.end();++j)
-        { if (revision_id(hexenc<id>((*i)()))==*j)
+        { if (*i==*j)
           { next=*j;
             break;
           }
@@ -1271,7 +1278,7 @@ void cvs_repository::commit()
       }
       if (next.inner()().empty())
       { W(F("several children found for %s:\n") % now.revision);
-        for (std::set<revision_id>::const_iterator i=children.begin();
+        for (std::vector<revision_id>::const_iterator i=children.begin();
                     i!=children.end();++i)
         { W(F("%s\n") % *i);
         }
@@ -1318,12 +1325,17 @@ static void guess_repository(std::string &repository, std::string &module,
   }
 }
 
+namespace cvs_sync
+{
+cvs_sync::cvs_repository *prepare_sync(const std::string &_repository, const std::string &_module,
+            std::string const& _branch, mtncvs_state &app);
+}
+
 void cvs_sync::push(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
-{ cvs_repository *repo=prepare_sync(_repository,_module,_branch,app)
+{ cvs_repository *repo=cvs_sync::prepare_sync(_repository,_module,_branch,app);
   
-  N(!repo->empty(),
-    F("no revision certs for this repository/module\n"));
+  N(!repo->empty(),F("no revision certs for this repository/module\n"));
   repo->commit();
   delete repo;
 }
@@ -1373,7 +1385,7 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
 
 void cvs_sync::pull(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
-{ cvs_repository *repo=prepare_sync(_repository,_modules,_branch,app);
+{ cvs_repository *repo=prepare_sync(_repository,_module,_branch,app);
 
   // initial checkout
   if (repo->empty()) 
