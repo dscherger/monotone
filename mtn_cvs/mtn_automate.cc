@@ -113,8 +113,8 @@ namespace
 
 static void print_cset(basic_io::printer printer, mtn_automate::cset const& cs)
 { typedef std::set<file_path> path_set;
-  for (path_set::const_iterator i = cs.deleted.begin();
-       i != cs.deleted.end(); ++i)
+  for (path_set::const_iterator i = cs.nodes_deleted.begin();
+       i != cs.nodes_deleted.end(); ++i)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::delete_node, *i);
@@ -129,8 +129,8 @@ static void print_cset(basic_io::printer printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<file_path, file_id>::const_iterator i = cs.added.begin();
-       i != cs.added.end(); ++i)
+  for (std::map<file_path, file_id>::const_iterator i = cs.files_added.begin();
+       i != cs.files_added.end(); ++i)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::add_file, i->first);
@@ -138,8 +138,8 @@ static void print_cset(basic_io::printer printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<file_path, std::pair<file_id, file_id> >::const_iterator i = cs.changed.begin();
-       i != cs.changed.end(); ++i)
+  for (std::map<file_path, std::pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
+       i != cs.deltas_applied.end(); ++i)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::patch, i->first);

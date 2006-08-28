@@ -20,16 +20,20 @@
 struct mtn_automate : mtn_pipe
 { typedef std::map<file_path,file_id> manifest; // (directories have a null file_id)
   struct cset // make this more like a mtn cset? (split_paths)
-  { std::set<file_path> deleted;
-    std::map<file_path,file_id> added;
+  { std::set<file_path> nodes_deleted;
+    std::map<file_path,file_id> files_added;
     std::set<file_path> dirs_added;
-    std::map<file_path,std::pair<file_id,file_id> > changed;
+    std::map<file_path,std::pair<file_id,file_id> > deltas_applied;
     // renames, attrs_cleared, set
 
     bool is_nontrivial() const 
-    { return !deleted.empty() || !added.empty() || !changed.empty()
+    { return !nodes_deleted.empty() || !files_added.empty() || !deltas_applied.empty()
           || !dirs_added.empty(); 
     }
+  };
+  typedef std::map<revision_id, cset> edge_map;
+  struct revision_t
+  { edge_map edges;
   };
   struct certificate
   { std::string key, name, value;

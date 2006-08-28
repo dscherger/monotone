@@ -333,7 +333,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
       if (fn==newm.end())
       {  
         L(FL("deleting file '%s'\n") % f->first);
-        safe_insert(cs.deleted, f->first);
+        safe_insert(cs.nodes_deleted, f->first);
 //        cvs_delta[path.as_internal()]=remove_state;
       }
       else 
@@ -347,7 +347,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % f->first % f->second % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              safe_insert(cs.changed, make_pair(f->first, make_pair(f->second,fn->second->sha1sum)));
+              safe_insert(cs.deltas_applied, make_pair(f->first, make_pair(f->second,fn->second->sha1sum)));
 //              cvs_delta[path.as_internal()]=fn->second;
             }
 #warning 2do mode_change
@@ -363,7 +363,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
         split_path sp;
         file_path_internal(f->first).split(sp);
         add_missing_parents(oldr, sp, cs);
-        safe_insert(cs.added, make_pair(file_path_internal(f->first), f->second->sha1sum));
+        safe_insert(cs.files_added, make_pair(file_path_internal(f->first), f->second->sha1sum));
 //        cvs_delta[f->first]=f->second;
       }
     }
@@ -833,8 +833,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   cvs_edge e(rid,app);
 
 #if 0 // @@
-  revision_set rs;
-  app.db.get_revision(rid, rs);
+  mtn_automate::revision_set rs=app.get_revision(rid);
   std::vector<commit_arg> commits;
   unsigned cm_delta_depth=parent->cm_delta_depth;
   
