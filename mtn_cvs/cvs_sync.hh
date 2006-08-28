@@ -176,6 +176,8 @@ private:
   std::string gather_merge_information(revision_id const& id);
   file_id attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest);
   std::string create_sync_state(cvs_edge const& e);
+  
+  static std::string time_t2human(const time_t &t);
 public: // semi public interface for push/pull
   void prime();
   void update();

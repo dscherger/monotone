@@ -14,7 +14,8 @@ options.cc:
 bin_PROGRAMS = mtn_cvs
 
 mtn_cvs_SOURCES = options.cc cvs_sync.cc cvs_client.cc mtn_cvs.cc \
-		mtn_pipe.cc mtn_automate.cc mtncvs_state.cc
+		mtn_pipe.cc mtn_automate.cc mtncvs_state.cc \
+		cvs_revision_nr.cc cvs_edge.cc
 AM_LDFLAGS = -L. -L..
 mtn_cvs_LDADD = -lmtn -lplatform -l3rdparty $(BOOSTLIBS)
 

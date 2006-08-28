@@ -25,8 +25,6 @@
 
 using namespace std;
 
-// since the piece methods in rcs_import depend on rcs_file I cannot reuse them
-// I rely on string handling reference counting (which is not that bad IIRC)
 //  -> investigate under which conditions a string gets copied
 static std::string const cvs_cert_name="cvs-revisions";
 
@@ -36,21 +34,6 @@ bool file_state::operator<(const file_state &b) const
 { return since_when<b.since_when
     || (since_when==b.since_when 
         && cvs_revision_nr(cvs_version)<cvs_revision_nr(b.cvs_version));
-}
-
-// whether time is below span or (within span and lesser author,changelog)
-bool cvs_sync::operator<(const file_state &s,const cvs_edge &e)
-{ return s.since_when<e.time ||
-    (s.since_when<=e.time2 && (s.author<e.author ||
-    (s.author==e.author && s.log_msg<e.changelog)));
-}
-
-// whether time is below span or (within span and lesser/equal author,changelog)
-bool 
-cvs_sync::operator<=(const file_state &s,const cvs_edge &e)
-{ return s.since_when<e.time ||
-    (s.since_when<=e.time2 && (s.author<=e.author ||
-    (s.author==e.author && s.log_msg<=e.changelog)));
 }
 
 /* supported by the woody version:
@@ -66,89 +49,10 @@ rannotate noop version
 
 //--------------------- implementation -------------------------------
 
-size_t const cvs_edge::cvs_window;
-
-bool cvs_revision_nr::operator==(const cvs_revision_nr &b) const
-{ return parts==b.parts;
-}
-
-// is this strictly correct? feels ok for now (and this is last ressort)
-bool cvs_revision_nr::operator<(const cvs_revision_nr &b) const
-{ return parts<b.parts;
-}
-
-cvs_revision_nr::cvs_revision_nr(const std::string &x)
-{ std::string::size_type begin=0;
-  do
-  { std::string::size_type end=x.find(".",begin);
-    std::string::size_type len=end-begin;
-    if (end==std::string::npos) len=std::string::npos;
-    parts.push_back(atoi(x.substr(begin,len).c_str()));
-    begin=end;
-    if (begin!=std::string::npos) ++begin;
-  } while(begin!=std::string::npos);
-};
-
-// we cannot guess whether the revision following 1.3 is 1.3.2.1 or 1.4 :-(
-// so we can only hope, that this is the expected result
-void cvs_revision_nr::operator++()
-{ if (parts.empty()) return;
-  if (parts.size()==4 && get_string()=="1.1.1.1") *this=cvs_revision_nr("1.2");
-  else parts.back()++;
-}
-
-std::string cvs_revision_nr::get_string() const
-{ std::string result;
-  for (std::vector<int>::const_iterator i=parts.begin();i!=parts.end();++i)
-  { if (!result.empty()) result+=".";
-    result+=boost::lexical_cast<string>(*i);
-  }
-  return result;
-}
-
-bool cvs_revision_nr::is_parent_of(const cvs_revision_nr &child) const
-{ unsigned cps=child.parts.size();
-  unsigned ps=parts.size();
-  if (cps<ps) 
-  { if (child==cvs_revision_nr("1.2") && *this==cvs_revision_nr("1.1.1.1"))
-      return true;
-    return false;
-  }
-  if (is_branch() || child.is_branch()) return false;
-  unsigned diff=0;
-  for (;diff<ps;++diff) if (child.parts[diff]!=parts[diff]) break;
-  if (cps==ps)
-  { if (diff+1!=cps) return false;
-    if (parts[diff]+1 != child.parts[diff]) return false;
-  }
-  else // ps < cps
-  { if (diff!=ps) return false;
-    if (ps+2!=cps) return false;
-    if (child.parts[diff]&1 || !child.parts[diff]) return false;
-    if (child.parts[diff+1]!=1) return false;
-  }
-  return true;
-}
-
-// impair number of numbers => branch tag
-bool cvs_revision_nr::is_branch() const 
-{ return parts.size()&1;
-}
-
-cvs_revision_nr cvs_revision_nr::get_branch_root() const
-{ I(parts.size()>=4); 
-  I(!(parts.size()&1)); // even number of digits
-  I(!parts[parts.size()-2]); // but last digit is zero
-  I(!(parts[parts.size()-1]&1)); // last digit is even
-  cvs_revision_nr result;
-  result.parts=std::vector<int>(parts.begin(),parts.end()-2);
-  return result;
-}
-
 // cvs_repository ----------------------
 
 // very short form to output in logs etc.
-std::string time_t2human(const time_t &t)
+std::string cvs_repository::time_t2human(const time_t &t)
 { struct tm *tm;
   tm=gmtime(&t);
   return (boost::format("%02d%02d%02dT%02d%02d%02d") % (tm->tm_year%100) 
@@ -367,30 +271,6 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
   if (iter2.second && repo.cvs_edges_ticker.get()) ++(*repo.cvs_edges_ticker);
 }
 
-bool cvs_edge::similar_enough(cvs_edge const & other) const
-{
-  if (changelog != other.changelog)
-    return false;
-  if (author != other.author)
-    return false;
-  if (labs(time - other.time) > long(cvs_window)
-      && labs(time2 - other.time) > long(cvs_window))
-    return false;
-  return true;
-}
-
-bool cvs_edge::operator<(cvs_edge const & other) const
-{
-  return time < other.time ||
-
-    (time == other.time 
-     && author < other.author) ||
-
-    (time == other.time 
-     && author == other.author 
-     && changelog < other.changelog);
-}
-
 void cvs_repository::store_contents(const data &dat, hexenc<id> &sha1sum)
 {
   if (file_id_ticker.get()) ++(*file_id_ticker);
@@ -487,51 +367,6 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
 //        cvs_delta[f->first]=f->second;
       }
     }
-}
-
-void cvs_repository::check_split(const cvs_file_state &s, const cvs_file_state &end, 
-          const std::set<cvs_edge>::iterator &e)
-{ cvs_file_state s2=s;
-  ++s2;
-  if (s2==end) return;
-  MM(boost::lexical_cast<std::string>(s->since_when));
-  MM(boost::lexical_cast<std::string>(s2->since_when));
-  I(s->since_when!=s2->since_when);
-  // checkins must not overlap (next revision must lie beyond edge)
-  if ((*s2) <= (*e))
-  { W(F("splitting edge %s-%s at %s\n") % time_t2human(e->time) 
-        % time_t2human(e->time2) % time_t2human(s2->since_when));
-    cvs_edge new_edge=*e;
-    MM(boost::lexical_cast<std::string>(e->time));
-    I(s2->since_when-1>=e->time);
-    e->time2=s2->since_when-1;
-    new_edge.time=s2->since_when;
-    edges.insert(new_edge);
-  }
-}
-
-void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
-{ for (;i!=edges.end();)
-  { std::set<cvs_edge>::iterator j=i;
-    j++; // next one
-    if (j==edges.end()) break;
-    
-    MM(boost::lexical_cast<std::string>(j->time2));
-    MM(boost::lexical_cast<std::string>(j->time));
-    MM(boost::lexical_cast<std::string>(i->time2));
-    MM(boost::lexical_cast<std::string>(i->time));
-    I(j->time2==j->time); // make sure we only do this once
-    I(i->time2<=j->time); // should be sorted ...
-    if (!i->similar_enough(*j)) 
-    { ++i; continue; }
-    I((j->time-i->time2)<=time_t(cvs_edge::cvs_window)); // just to be sure
-    I(i->author==j->author);
-    I(i->changelog==j->changelog);
-    I(i->time2<j->time); // should be non overlapping ...
-    L(FL("joining %s-%s+%s\n") % time_t2human(i->time) % time_t2human(i->time2) % time_t2human(j->time));
-    i->time2=j->time;
-    edges.erase(j);
-  }
 }
 
 void cvs_repository::store_update(std::set<file_state>::const_iterator s,
@@ -983,29 +818,6 @@ time_t cvs_repository::posix2time_t(std::string posix_format)
           -boost::posix_time::ptime(boost::gregorian::date(1970,1,1),
                           boost::posix_time::time_duration(0,0,0,0));
   return dur.total_seconds();
-}
-
-cvs_edge::cvs_edge(const revision_id &rid, mtncvs_state &app)
- : changelog_valid(), time(), time2()
-{ revision=hexenc<id>(rid.inner());
-  // get author + date 
-  std::vector<mtn_automate::certificate> certs=app.get_revision_certs(rid);
-  
-  for (std::vector<mtn_automate::certificate>::const_iterator c=certs.begin();
-            c!=certs.end();++c)
-  { if (!c->trusted || c->signature!=mtn_automate::certificate::ok) continue;
-    if (c->name=="date")
-    { L(FL("date cert %s\n")% c->value);
-      time=time2=cvs_repository::posix2time_t(c->value);
-    }
-    else if (c->name=="author")
-    { author=c->value;
-    }
-    else if (c->name=="changelog")
-    { changelog=c->value;
-      changelog_valid=true;
-    }
-  }
 }
 
 #if 1
