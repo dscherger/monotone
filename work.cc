@@ -1040,7 +1040,8 @@ void
 editable_working_tree::clear_attr(split_path const & pth,
                                   attr_key const & name)
 {
-  // FIXME_ROSTERS: call a lua hook
+  file_path pth_unsplit(pth);
+  app.lua.hook_apply_attribute(name(), pth_unsplit, string(""), true);
 }
 
 void
@@ -1048,7 +1049,8 @@ editable_working_tree::set_attr(split_path const & pth,
                                 attr_key const & name,
                                 attr_value const & val)
 {
-  // FIXME_ROSTERS: call a lua hook
+  file_path pth_unsplit(pth);
+  app.lua.hook_apply_attribute(name(), pth_unsplit, val(), true);
 }
 
 void
