@@ -108,7 +108,8 @@ public:
                             std::map<std::string, std::string> & attrs);
   bool hook_apply_attribute(std::string const & attr,
                             file_path const & filename,
-                            std::string const & value);
+                            std::string const & value,
+                            bool is_unset);
 
   // conversion hooks
   bool hook_get_system_linesep(std::string & linesep);

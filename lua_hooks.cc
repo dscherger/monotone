@@ -718,17 +718,26 @@ lua_hooks::hook_init_attributes(file_path const & filename,
 bool
 lua_hooks::hook_apply_attribute(string const & attr,
                                 file_path const & filename,
-                                string const & value)
+                                string const & value,
+                                bool is_unset)
 {
-  return Lua(st)
+  Lua ll(st);
+
+  ll
     .push_str("attr_functions")
     .get_tab()
     .push_str(attr)
     .get_fn(-2)
-    .push_str(filename.as_external())
-    .push_str(value)
-    .call(2,0)
-    .ok();
+    .push_str(filename.as_external());
+
+  if (!is_unset)
+    ll.push_str(value);
+  else
+    ll.push_nil();
+  
+  ll.call(2,0);
+
+  return ll.ok();
 }
 
 
