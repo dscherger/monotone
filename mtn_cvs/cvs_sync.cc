@@ -832,10 +832,9 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   // a bit like process_certs
   cvs_edge e(rid,app);
 
-#if 0 // @@
-  mtn_automate::revision_set rs=app.get_revision(rid);
+  mtn_automate::revision_t rs=app.get_revision(rid);
   std::vector<commit_arg> commits;
-  unsigned cm_delta_depth=parent->cm_delta_depth;
+#if 0 // @@
   
   for (edge_map::const_iterator j = rs.edges.begin(); 
        j != rs.edges.end();
