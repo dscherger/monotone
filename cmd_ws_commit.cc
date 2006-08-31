@@ -531,7 +531,7 @@ ALIAS(co, checkout)
 
 CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [ATTR]"),
     N_("set, get or drop file attributes"),
-    option::none)
+    option::execute)
 {
   if (args.size() < 2 || args.size() > 4)
     throw usage(name);
@@ -587,7 +587,8 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
       cset new_work;
       make_cset(old_roster, new_roster, new_work);
       put_work_cset(new_work);
-      update_any_attrs(args_to_paths(args), app);
+      if (app.execute)
+        update_any_attrs(args_to_paths(args), app);
     }
   else if (subcmd == "get")
     {

@@ -250,7 +250,6 @@ perform_additions(path_set const & paths, app_state & app, bool recursive)
   cset new_work;
   make_cset(base_roster, new_roster, new_work);
   put_work_cset(new_work);
-  update_any_attrs(include_paths, app);
 }
 
 void
@@ -321,7 +320,6 @@ perform_deletions(path_set const & paths, app_state & app)
   cset new_work;
   make_cset(base_roster, new_roster, new_work);
   put_work_cset(new_work);
-  update_any_attrs(include_paths, app);
 }
 
 static void
@@ -446,8 +444,8 @@ perform_rename(set<file_path> const & src_paths,
                 % s % d);
             }
         }
+      update_any_attrs(include_paths, app);
     }
-  update_any_attrs(include_paths, app);
 }
 
 void
