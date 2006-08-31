@@ -868,7 +868,8 @@ void update_any_attrs(std::vector<file_path> include_paths, app_state & app)
             {
               app.lua.hook_apply_attribute (j->first(),
                                             file_path(sp),
-                                            j->second.second());
+                                            j->second.second(),
+                                            false);
             }
         }
     }
