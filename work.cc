@@ -212,6 +212,8 @@ perform_additions(path_set const & paths, app_state & app, bool recursive)
   if (paths.empty())
     return;
 
+  std::vector<file_path> include_paths;
+
   temp_node_id_source nis;
   roster_t base_roster, new_roster;
   get_base_and_current_roster_shape(base_roster, new_roster, nis, app);
@@ -234,19 +236,21 @@ perform_additions(path_set const & paths, app_state & app, bool recursive)
         {
           // NB.: walk_tree will handle error checking for non-existent paths
           walk_tree(file_path(*i), build);
+          include_paths.push_back(file_path(*i));
         }
       else
         {
           // in the case where we're just handled a set of paths, we use the builder
           // in this strange way.
           build.visit_file(file_path(*i));
+          include_paths.push_back(file_path(*i));
         }
     }
 
   cset new_work;
   make_cset(base_roster, new_roster, new_work);
   put_work_cset(new_work);
-  update_any_attrs(app);
+  update_any_attrs(include_paths, app);
 }
 
 void
@@ -254,6 +258,8 @@ perform_deletions(path_set const & paths, app_state & app)
 {
   if (paths.empty())
     return;
+
+  std::vector<file_path> include_paths;
 
   temp_node_id_source nis;
   roster_t base_roster, new_roster;
@@ -275,6 +281,7 @@ perform_deletions(path_set const & paths, app_state & app)
     {
       split_path &p(todo.front());
       file_path name(p);
+      include_paths.push_back(name);
 
       if (!new_roster.has_node(p))
         P(F("skipping %s, not currently tracked") % name);
@@ -314,7 +321,7 @@ perform_deletions(path_set const & paths, app_state & app)
   cset new_work;
   make_cset(base_roster, new_roster, new_work);
   put_work_cset(new_work);
-  update_any_attrs(app);
+  update_any_attrs(include_paths, app);
 }
 
 static void
@@ -342,6 +349,8 @@ perform_rename(set<file_path> const & src_paths,
   split_path dst;
   set<split_path> srcs;
   set< pair<split_path, split_path> > renames;
+  std::vector<file_path> include_paths;
+  include_paths.push_back(dst_path);
 
   I(!src_paths.empty());
 
@@ -438,7 +447,7 @@ perform_rename(set<file_path> const & src_paths,
             }
         }
     }
-  update_any_attrs(app);
+  update_any_attrs(include_paths, app);
 }
 
 void
@@ -501,7 +510,9 @@ perform_pivot_root(file_path const & new_root, file_path const & put_old,
       editable_working_tree e(app, efcs);
       cs.apply_to(e);
     }
-  update_any_attrs(app);
+  std::vector<file_path> include_paths;
+  include_paths.push_back(new_root);
+  update_any_attrs(include_paths, app);
 }
 
 
@@ -826,23 +837,32 @@ get_attribute_from_roster(roster_t const & ros,
 }
 
 
-void update_any_attrs(app_state & app)
+void update_any_attrs(std::vector<file_path> include_paths, app_state & app)
 {
   temp_node_id_source nis;
   roster_t new_roster;
   get_current_roster_shape(new_roster, nis, app);
+  node_restriction mask(paths, app.get_exclude_pattern(), new_roster, app);
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
-      split_path sp;
-      new_roster.get_name(i->first, sp);
-
-      // FIXME_RESTRICTIONS: do we need this check?
-      // if (!app.restriction_includes(sp))
-      //  continue;
-
+      node_id nid = i->first;
       node_t n = i->second;
+      split_path sp;
+
+      // Only update restriction-included files.
+      // If this is not used all files in the roster have the corresponding
+      // files in the workspace's attributes on the filesystem set to the
+      // attributes recorded in the roster.  This is rather like reverting
+      // files in the workspace to what was last recorded in the roster, for
+      // every workspace command.
+
+      new_roster.get_name(i->first, sp);
+      file_path name(sp);
+
+      P(F("Updating attributes in workspace for %s") % name);
+
       for (full_attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
         {

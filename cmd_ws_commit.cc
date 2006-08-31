@@ -162,7 +162,7 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
   // Race.
   put_work_cset(excluded);
-  update_any_attrs(app);
+  update_any_attrs(args_to_paths(args), app);
   maybe_update_inodeprints(app);
 }
 
@@ -521,7 +521,8 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
         }
     }
   remove_work_cset();
-  update_any_attrs(app);
+  std::vector<file_path> all_files;
+  update_any_attrs(all_files, app);
   maybe_update_inodeprints(app);
   guard.commit();
 }
@@ -586,7 +587,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
       cset new_work;
       make_cset(old_roster, new_roster, new_work);
       put_work_cset(new_work);
-      update_any_attrs(app);
+      update_any_attrs(args_to_paths(args), app);
     }
   else if (subcmd == "get")
     {
@@ -837,7 +838,7 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
       % app.prog_name);
   }
 
-  update_any_attrs(app);
+  update_any_attrs(args_to_paths(args), app);
   maybe_update_inodeprints(app);
 
   {
