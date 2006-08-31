@@ -8,6 +8,11 @@
 #include <sanity.hh>
 #include <basic_io.hh>
 #include <constants.hh>
+#include <safe_map.hh>
+
+using std::string;
+using std::make_pair;
+using std::pair;
 
 void mtn_automate::check_interface_revision(std::string const& minimum)
 { std::string present=automate("interface_version");
@@ -97,6 +102,9 @@ namespace
     
     // roster symbols
     symbol const format_version("format_version");
+//    symbol const old_revision("old_revision");
+    symbol const new_manifest("new_manifest");
+    
     symbol const dir("dir");
     symbol const file("file");
 //    symbol const content("content");
@@ -252,4 +260,171 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
     result.push_back(cert);
   }
   return result;
+}
+
+static inline void
+parse_path(basic_io::parser & parser, file_path & sp)
+{
+  std::string s;
+  parser.str(s);
+  sp=file_path_internal(s);
+}
+
+static void
+parse_cset(basic_io::parser & parser,
+           mtn_automate::cset & cs)
+{
+//  cs.clear();
+  string t1, t2;
+  MM(t1);
+  MM(t2);
+  file_path p1, p2;
+  MM(p1);
+  MM(p2);
+
+//  split_path prev_path;
+//  MM(prev_path);
+//  pair<split_path, attr_key> prev_pair;
+//  MM(prev_pair.first);
+//  MM(prev_pair.second);
+
+  // we make use of the fact that a valid split_path is never empty
+//  prev_path.clear();
+  while (parser.symp(syms::delete_node))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+//      I(prev_path.empty() || p1 > prev_path);
+//      prev_path = p1;
+      safe_insert(cs.nodes_deleted, p1);
+    }
+
+//  prev_path.clear();
+  while (parser.symp(syms::rename_node))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+//      I(prev_path.empty() || p1 > prev_path);
+//      prev_path = p1;
+      parser.esym(syms::to);
+      parse_path(parser, p2);
+      safe_insert(cs.nodes_renamed, make_pair(p1, p2));
+    }
+
+//  prev_path.clear();
+  while (parser.symp(syms::add_dir))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+//      I(prev_path.empty() || p1 > prev_path);
+//      prev_path = p1;
+      safe_insert(cs.dirs_added, p1);
+    }
+
+//  prev_path.clear();
+  while (parser.symp(syms::add_file))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+//      I(prev_path.empty() || p1 > prev_path);
+//      prev_path = p1;
+      parser.esym(syms::content);
+      parser.hex(t1);
+      safe_insert(cs.files_added, make_pair(p1, file_id(t1)));
+    }
+
+//  prev_path.clear();
+  while (parser.symp(syms::patch))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+//      I(prev_path.empty() || p1 > prev_path);
+//      prev_path = p1;
+      parser.esym(syms::from);
+      parser.hex(t1);
+      parser.esym(syms::to);
+      parser.hex(t2);
+      safe_insert(cs.deltas_applied,
+                  make_pair(p1, make_pair(file_id(t1), file_id(t2))));
+    }
+
+//  prev_pair.first.clear();
+  while (parser.symp(syms::clear))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+      parser.esym(syms::attr);
+      parser.str(t1);
+      pair<file_path, attr_key> new_pair(p1, t1);
+//      I(prev_pair.first.empty() || new_pair > prev_pair);
+//      prev_pair = new_pair;
+      safe_insert(cs.attrs_cleared, new_pair);
+    }
+
+//  prev_pair.first.clear();
+  while (parser.symp(syms::set))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+      parser.esym(syms::attr);
+      parser.str(t1);
+      pair<file_path, attr_key> new_pair(p1, t1);
+//      I(prev_pair.first.empty() || new_pair > prev_pair);
+//      prev_pair = new_pair;
+      parser.esym(syms::value);
+      parser.str(t2);
+      safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2)));
+    }
+}
+
+static void
+parse_edge(basic_io::parser & parser,
+           mtn_automate::edge_map & es)
+{
+  mtn_automate::cset cs;
+//  MM(cs);
+  revision_id old_rev;
+  string tmp;
+
+  parser.esym(syms::old_revision);
+  parser.hex(tmp);
+  old_rev = revision_id(tmp);
+
+  parse_cset(parser, cs);
+
+  es.insert(make_pair(old_rev, cs));
+}
+
+mtn_automate::revision_t mtn_automate::get_revision(revision_id const& rid)
+{ std::vector<std::string> args;
+  args.push_back(rid.inner()());
+  std::string aresult=automate("get_revision",args);
+  
+  basic_io::input_source source(aresult,"automate get_revision result");
+  basic_io::tokenizer tokenizer(source);
+  basic_io::parser parser(tokenizer);
+
+  revision_t result;
+
+// that's from parse_revision
+  string tmp;
+  parser.esym(syms::format_version);
+  parser.str(tmp);
+  E(tmp == "1",
+    F("encountered a revision with unknown format, version '%s'\n"
+      "I only know how to understand the version '1' format\n"
+      "a newer version of mtn_cvs is required to complete this operation")
+    % tmp);
+  parser.esym(syms::new_manifest);
+  parser.hex(tmp);
+//  rev.new_manifest = manifest_id(tmp);
+  while (parser.symp(syms::old_revision))
+    parse_edge(parser, result.edges);
+
+  return result;
+}
+
+template <> void
+dump(file_path const& fp, string & out)
+{ out=fp.as_internal();
 }

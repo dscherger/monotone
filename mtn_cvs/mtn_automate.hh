@@ -19,16 +19,20 @@
 // frontend
 struct mtn_automate : mtn_pipe
 { typedef std::map<file_path,file_id> manifest; // (directories have a null file_id)
-  struct cset // make this more like a mtn cset? (split_paths)
+  // what are the benefits of a split_path?
+  struct cset // perhaps make this more like a mtn cset? (split_paths)
   { std::set<file_path> nodes_deleted;
-    std::map<file_path,file_id> files_added;
     std::set<file_path> dirs_added;
+    std::map<file_path,file_id> files_added;
+    std::map<file_path,file_path> nodes_renamed;
     std::map<file_path,std::pair<file_id,file_id> > deltas_applied;
-    // renames, attrs_cleared, set
-
+    std::set<std::pair<file_path, attr_key> > attrs_cleared;
+    std::map<std::pair<file_path, attr_key>, attr_value> attrs_set;
+    
     bool is_nontrivial() const 
     { return !nodes_deleted.empty() || !files_added.empty() || !deltas_applied.empty()
-          || !dirs_added.empty(); 
+          || !dirs_added.empty() || !nodes_renamed.empty() || !attrs_cleared.empty()
+          || !attrs_set.empty(); 
     }
   };
   typedef std::map<revision_id, cset> edge_map;
@@ -53,6 +57,7 @@ struct mtn_automate : mtn_pipe
   std::string get_file(file_id const& fid);
   std::vector<revision_id> get_revision_children(revision_id const& rid);
   std::vector<revision_id> get_revision_parents(revision_id const& rid);
+  revision_t get_revision(revision_id const& rid);
 };
 
 #endif
