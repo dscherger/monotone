@@ -919,7 +919,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     if (commits.empty())
     { W(F("revision %s: nothing to commit") % e.revision());
       e.delta_base=parent->revision;
-//@@      cert_cvs(e, dbw);
+      cert_cvs(e);
       revision_lookup[e.revision]=edges.insert(e).first;
       fail=false;
       return --(edges.end());
@@ -964,8 +964,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
         e.xfiles[i->first]=newelem.first;
       }
     }
-//@@    app.put_sync_info(...); == cert
-//    cert_cvs(e, dbw);
+    cert_cvs(e);
     revision_lookup[e.revision]=edges.insert(e).first;
     if (global_sanity.debug) L(FL("%s") % debug());
     fail=false;
@@ -1734,4 +1733,10 @@ void cvs_repository::retrieve_modules()
     app.db.get_var(key,value);
   } catch (...) { return; }
 #endif
+}
+
+// we could pass delta_base and forget about it later
+void cvs_repository::cert_cvs(cvs_edge const& e)
+{ std::string content=create_sync_state(e);
+  app.put_sync_info(e.revision,app.domain(),content);
 }

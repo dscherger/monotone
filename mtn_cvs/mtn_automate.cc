@@ -427,3 +427,11 @@ template <> void
 dump(file_path const& fp, string & out)
 { out=fp.as_internal();
 }
+
+void mtn_automate::put_sync_info(revision_id const& rid, std::string const& domain, std::string const& data)
+{ std::vector<std::string> args;
+  args.push_back(rid.inner()());
+  args.push_back(domain);
+  args.push_back(data);
+  automate("put_sync_info",args);
+}

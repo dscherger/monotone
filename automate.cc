@@ -1829,9 +1829,9 @@ AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
 //   data
 // Added in: 3.2
 // Purpose:
-//   Get the sync information for a given revision
+//   Set the sync information for a given revision
 // Output format:
-//   sync-data
+//   none
 // Error conditions:
 //   a runtime exception is thrown if anything goes wrong
 AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))

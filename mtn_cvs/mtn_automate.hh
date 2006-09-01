@@ -50,6 +50,7 @@ struct mtn_automate : mtn_pipe
   void check_interface_revision(std::string const&minimum);
   revision_id find_newest_sync(std::string const& domain, std::string const& branch="");
   std::string get_sync_info(revision_id const& rid, std::string const& domain);
+  void put_sync_info(revision_id const& rid, std::string const& domain, std::string const& data);
   file_id put_file(data const& d, file_id const& base=file_id());
   manifest_map get_manifest_of(revision_id const& rid);
   revision_id put_revision(revision_id const& parent, cset const& changes);
