@@ -120,8 +120,7 @@ namespace
 }
 
 static void print_cset(basic_io::printer printer, mtn_automate::cset const& cs)
-{ typedef std::set<file_path> path_set;
-  for (path_set::const_iterator i = cs.nodes_deleted.begin();
+{ for (path_set::const_iterator i = cs.nodes_deleted.begin();
        i != cs.nodes_deleted.end(); ++i)
     {
       basic_io::stanza st;
@@ -137,7 +136,7 @@ static void print_cset(basic_io::printer printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<file_path, file_id>::const_iterator i = cs.files_added.begin();
+  for (std::map<split_path, file_id>::const_iterator i = cs.files_added.begin();
        i != cs.files_added.end(); ++i)
     {
       basic_io::stanza st;
@@ -146,7 +145,7 @@ static void print_cset(basic_io::printer printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<file_path, std::pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
+  for (std::map<split_path, std::pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
        i != cs.deltas_applied.end(); ++i)
     {
       basic_io::stanza st;
@@ -167,7 +166,7 @@ revision_id mtn_automate::put_revision(revision_id const& parent, cset const& ch
   return revision_id(automate("put_revision",args));
 }
 
-mtn_automate::manifest mtn_automate::get_manifest_of(revision_id const& rid)
+mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
 { std::vector<std::string> args(1,rid.inner()());
   std::string aresult=automate("get_manifest_of",args);
   
@@ -175,7 +174,7 @@ mtn_automate::manifest mtn_automate::get_manifest_of(revision_id const& rid)
   basic_io::tokenizer tokenizer(source);
   basic_io::parser pa(tokenizer);
 
-  manifest result;
+  manifest_map result;
   // like roster_t::parse_from
   {
     pa.esym(syms::format_version);
@@ -263,11 +262,11 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
 }
 
 static inline void
-parse_path(basic_io::parser & parser, file_path & sp)
+parse_path(basic_io::parser & parser, split_path & sp)
 {
   std::string s;
   parser.str(s);
-  sp=file_path_internal(s);
+  file_path_internal(s).split(sp);
 }
 
 static void
@@ -278,7 +277,7 @@ parse_cset(basic_io::parser & parser,
   string t1, t2;
   MM(t1);
   MM(t2);
-  file_path p1, p2;
+  split_path p1, p2;
   MM(p1);
   MM(p2);
 
@@ -355,7 +354,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, t1);
+      pair<split_path, attr_key> new_pair(p1, t1);
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
@@ -368,7 +367,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, t1);
+      pair<split_path, attr_key> new_pair(p1, t1);
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       parser.esym(syms::value);
@@ -381,7 +380,7 @@ static void
 parse_edge(basic_io::parser & parser,
            mtn_automate::edge_map & es)
 {
-  mtn_automate::cset cs;
+  boost::shared_ptr<mtn_automate::cset> cs(new mtn_automate::cset());
 //  MM(cs);
   revision_id old_rev;
   string tmp;
@@ -390,7 +389,7 @@ parse_edge(basic_io::parser & parser,
   parser.hex(tmp);
   old_rev = revision_id(tmp);
 
-  parse_cset(parser, cs);
+  parse_cset(parser, *cs);
 
   es.insert(make_pair(old_rev, cs));
 }

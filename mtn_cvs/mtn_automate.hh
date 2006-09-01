@@ -15,19 +15,20 @@
 #include <paths.hh>
 #include <set>
 #include <map>
+#include <boost/shared_ptr.hpp>
 
 // frontend
 struct mtn_automate : mtn_pipe
-{ typedef std::map<file_path,file_id> manifest; // (directories have a null file_id)
-  // what are the benefits of a split_path?
-  struct cset // perhaps make this more like a mtn cset? (split_paths)
-  { std::set<file_path> nodes_deleted;
-    std::set<file_path> dirs_added;
-    std::map<file_path,file_id> files_added;
-    std::map<file_path,file_path> nodes_renamed;
-    std::map<file_path,std::pair<file_id,file_id> > deltas_applied;
-    std::set<std::pair<file_path, attr_key> > attrs_cleared;
-    std::map<std::pair<file_path, attr_key>, attr_value> attrs_set;
+{ typedef std::map<file_path,file_id> manifest_map; // (directories have a null file_id)
+
+  struct cset
+  { path_set nodes_deleted;
+    path_set dirs_added;
+    std::map<split_path,file_id> files_added;
+    std::map<split_path,split_path> nodes_renamed;
+    std::map<split_path,std::pair<file_id,file_id> > deltas_applied;
+    std::set<std::pair<split_path, attr_key> > attrs_cleared;
+    std::map<std::pair<split_path, attr_key>, attr_value> attrs_set;
     
     bool is_nontrivial() const 
     { return !nodes_deleted.empty() || !files_added.empty() || !deltas_applied.empty()
@@ -35,7 +36,7 @@ struct mtn_automate : mtn_pipe
           || !attrs_set.empty(); 
     }
   };
-  typedef std::map<revision_id, cset> edge_map;
+  typedef std::map<revision_id, boost::shared_ptr<cset> > edge_map;
   struct revision_t
   { edge_map edges;
   };
@@ -50,7 +51,7 @@ struct mtn_automate : mtn_pipe
   revision_id find_newest_sync(std::string const& domain, std::string const& branch="");
   std::string get_sync_info(revision_id const& rid, std::string const& domain);
   file_id put_file(data const& d, file_id const& base=file_id());
-  manifest get_manifest_of(revision_id const& rid);
+  manifest_map get_manifest_of(revision_id const& rid);
   revision_id put_revision(revision_id const& parent, cset const& changes);
   void cert_revision(revision_id const& rid, std::string const& name, std::string const& value);
   std::vector<certificate> get_revision_certs(revision_id const& rid);

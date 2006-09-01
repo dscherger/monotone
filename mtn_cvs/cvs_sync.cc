@@ -297,7 +297,7 @@ void cvs_repository::store_delta(const std::string &new_contents,
 }
 
 static
-void add_missing_parents(mtn_automate::manifest const& oldr, 
+void add_missing_parents(mtn_automate::manifest_map const& oldr, 
               split_path const & sp, mtn_automate::cset & cs)
 { split_path tmp;
   std::string log;
@@ -308,17 +308,17 @@ void add_missing_parents(mtn_automate::manifest const& oldr,
     tmp.push_back(*i);
     // already added?
     if (cs.dirs_added.find(tmp)!=cs.dirs_added.end()) continue;
-    mtn_automate::manifest::const_iterator mi=oldr.find(file_path(tmp));
+    mtn_automate::manifest_map::const_iterator mi=oldr.find(file_path(tmp));
     if (mi==oldr.end())
     { L(FL("adding directory %s\n") % file_path(tmp));
-      safe_insert(cs.dirs_added, file_path(tmp));
+      safe_insert(cs.dirs_added, tmp);
     }
   }
 }
 
 // compare the new manifest with the old roster and fill the cset accordingly
 static void 
-build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_manifest &newm,
+build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cvs_manifest &newm,
                  mtn_automate::cset &cs, cvs_file_state const& remove_state)
 {
 //  cvs_manifest cvs_delta;
@@ -326,14 +326,16 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
 //  node_map const & nodes = oldr.all_nodes();
   L(FL("build_change_set(%d,%d,)\n") % oldr.size() % newm.size());
   
-  for (mtn_automate::manifest::const_iterator f = oldr.begin(); f != oldr.end(); ++f)
+  for (mtn_automate::manifest_map::const_iterator f = oldr.begin(); f != oldr.end(); ++f)
     { if (null_id(f->second)) continue; // directory
       
       cvs_manifest::const_iterator fn = newm.find(f->first.as_internal());
       if (fn==newm.end())
       {  
         L(FL("deleting file '%s'\n") % f->first);
-        safe_insert(cs.nodes_deleted, f->first);
+        split_path sp;
+        f->first.split(sp);
+        safe_insert(cs.nodes_deleted, sp);
 //        cvs_delta[path.as_internal()]=remove_state;
       }
       else 
@@ -347,7 +349,9 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % f->first % f->second % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
-              safe_insert(cs.deltas_applied, make_pair(f->first, make_pair(f->second,fn->second->sha1sum)));
+              split_path sp;
+              f->first.split(sp);
+              safe_insert(cs.deltas_applied, make_pair(sp, make_pair(f->second,fn->second->sha1sum)));
 //              cvs_delta[path.as_internal()]=fn->second;
             }
 #warning 2do mode_change
@@ -355,7 +359,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
         }  
     }
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)
-    { mtn_automate::manifest::const_iterator mi=oldr.find(file_path_internal(f->first));
+    { mtn_automate::manifest_map::const_iterator mi=oldr.find(file_path_internal(f->first));
       if (mi==oldr.end())
       {  
         L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
@@ -363,7 +367,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest const& oldr, cvs_ma
         split_path sp;
         file_path_internal(f->first).split(sp);
         add_missing_parents(oldr, sp, cs);
-        safe_insert(cs.files_added, make_pair(file_path_internal(f->first), f->second->sha1sum));
+        safe_insert(cs.files_added, make_pair(sp, f->second->sha1sum));
 //        cvs_delta[f->first]=f->second;
       }
     }
@@ -578,14 +582,14 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 }
 
 static file_id get_sync_id(mtncvs_state &app, revision_id id)
-{ mtn_automate::manifest m=app.get_manifest_of(id);
+{ mtn_automate::manifest_map m=app.get_manifest_of(id);
   return m[file_path_internal(".mtn-sync-"+app.domain())];
 }
 
-file_id cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest const& oldmanifest)
+file_id cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest)
 { std::string state=create_sync_state(e);
   std::string syncname=".mtn-sync-"+app.domain();
-  mtn_automate::manifest::const_iterator it=oldmanifest.find(file_path_internal(syncname));
+  mtn_automate::manifest_map::const_iterator it=oldmanifest.find(file_path_internal(syncname));
   file_id fid;
   if (it!=oldmanifest.end())
     fid=app.put_file(state,it->second);
@@ -652,7 +656,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
     // revision_set rev;
     // boost::shared_ptr<cset> cs(new cset());
-    mtn_automate::manifest oldmanifest;
+    mtn_automate::manifest_map oldmanifest;
     if (!null_id(parent_rid))
       oldmanifest=app.get_manifest_of(parent_rid);
     attach_sync_state(const_cast<cvs_sync::cvs_edge&>(*e),oldmanifest);
@@ -820,7 +824,6 @@ time_t cvs_repository::posix2time_t(std::string posix_format)
   return dur.total_seconds();
 }
 
-#if 1
 std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
 { // check that it's the last one
@@ -834,16 +837,15 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
 
   mtn_automate::revision_t rs=app.get_revision(rid);
   std::vector<commit_arg> commits;
-#if 0 // @@
   
-  for (edge_map::const_iterator j = rs.edges.begin(); 
+  for (mtn_automate::edge_map::const_iterator j = rs.edges.begin(); 
        j != rs.edges.end();
        ++j)
-  { if (!(edge_old_revision(j) == parent->revision)) 
-    { L(FL("%s != %s\n") % edge_old_revision(j) % parent->revision);
+  { if (!(j->first == parent->revision)) 
+    { L(FL("%s != %s\n") % j->first % parent->revision);
       continue;
     }
-    boost::shared_ptr<cset> cs=j->second;
+    boost::shared_ptr<mtn_automate::cset> cs=j->second;
     cvs_manifest parent_manifest=get_files(*parent);
 
     for (path_set::const_iterator i=cs->nodes_deleted.begin();
@@ -875,9 +877,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       a=commit_arg(); // add
       a.file=file_path(i->second).as_internal();
       I(!old->second->sha1sum().empty());
-      file_data dat;
-      app.db.get_file_version(old->second->sha1sum,dat);
-      a.new_content=dat.inner()();
+      a.new_content=app.get_file(old->second->sha1sum);
       commits.push_back(a);
       L(FL("rename to %s %d\n") % a.file % a.new_content.size());
     }
@@ -895,9 +895,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { 
       commit_arg a;
       a.file=file_path(i->first).as_internal();
-      file_data dat;
-      app.db.get_file_version(i->second,dat);
-      a.new_content=dat.inner()();
+      a.new_content=app.get_file(i->second);
       commits.push_back(a);
       L(FL("add %s %d\n") % a.file % a.new_content.size());
     }
@@ -912,9 +910,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       I(old!=parent_manifest.end());
       a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
-      file_data dat;
-      app.db.get_file_version(i->second.second,dat);
-      a.new_content=dat.inner()();
+      a.new_content=app.get_file(i->second.second);
       commits.push_back(a);
       L(FL("delta %s %s %s %d\n") % a.file % a.old_revision % a.keyword_substitution
           % a.new_content.size());
@@ -922,10 +918,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
 
     if (commits.empty())
     { W(F("revision %s: nothing to commit") % e.revision());
-          packet_db_writer dbw(app);
-      e.cm_delta_depth=++cm_delta_depth;
       e.delta_base=parent->revision;
-      cert_cvs(e, dbw);
+//@@      cert_cvs(e, dbw);
       revision_lookup[e.revision]=edges.insert(e).first;
       fail=false;
       return --(edges.end());
@@ -970,20 +964,13 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
         e.xfiles[i->first]=newelem.first;
       }
     }
-    packet_db_writer dbw(app);
-    if (cm_delta_depth+1>=cvs_edge::cm_max_delta_depth) 
-    { get_files(e);
-      cm_delta_depth=0;
-    }
-    else
-      e.cm_delta_depth=++cm_delta_depth;
-    cert_cvs(e, dbw);
+//@@    app.put_sync_info(...); == cert
+//    cert_cvs(e, dbw);
     revision_lookup[e.revision]=edges.insert(e).first;
     if (global_sanity.debug) L(FL("%s") % debug());
     fail=false;
     return --(edges.end());
   }
-#endif
   W(F("no matching parent found\n"));
   fail=true;
   return edges.end();
@@ -1107,7 +1094,6 @@ void cvs_repository::commit()
   }
 //  store_modules();
 }
-#endif
 
 // look for last sync cert in the given monotone branch and assign
 // its value to repository, module, branch
@@ -1229,7 +1215,7 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
 }
 
 void cvs_repository::process_sync_info(std::string const& sync_info, revision_id const& rid)
-{ mtn_automate::manifest manifest=app.get_manifest_of(rid);
+{ mtn_automate::manifest_map manifest=app.get_manifest_of(rid);
   // populate data structure using this sync info
       cvs_edge e(rid.inner(),app);
 
@@ -1268,7 +1254,7 @@ void cvs_repository::process_sync_info(std::string const& sync_info, revision_id
           fs.keyword_substitution=line.substr(slash+1,space-(slash+1));
         
         // determine sha1sum of monotone file
-        mtn_automate::manifest::const_iterator fileiter
+        mtn_automate::manifest_map::const_iterator fileiter
           =manifest.find(file_path_internal(path));
         I(fileiter!=manifest.end());
         fs.sha1sum=fileiter->second.inner();
