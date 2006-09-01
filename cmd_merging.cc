@@ -286,8 +286,6 @@ CMD(update, N_("workspace"), "",
     P(F("switched branch; next commit will use branch %s") % app.branch_name());
   P(F("updated to base revision %s") % chosen_rid);
 
-  std::vector<file_path> all_files;
-  update_any_attrs(all_files, app);
   maybe_update_inodeprints(app);
 }
 
@@ -819,7 +817,6 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
   P(F("applied changes to workspace"));
 
   put_work_cset(remaining);
-  update_any_attrs(args_to_paths(args), app);
   
   // add a note to the user log file about what we did
   {

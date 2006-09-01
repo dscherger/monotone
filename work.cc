@@ -347,8 +347,7 @@ perform_rename(set<file_path> const & src_paths,
   split_path dst;
   set<split_path> srcs;
   set< pair<split_path, split_path> > renames;
-  std::vector<file_path> include_paths;
-  include_paths.push_back(dst_path);
+  std::vector<file_path> fpvect;
 
   I(!src_paths.empty());
 
@@ -429,6 +428,7 @@ perform_rename(set<file_path> const & src_paths,
           if (have_src && !have_dst)
             {
               move_path(s, d);
+              fpvect.push_back(d);
             }
           else if (!have_src && !have_dst)
             {
@@ -444,7 +444,8 @@ perform_rename(set<file_path> const & src_paths,
                 % s % d);
             }
         }
-      update_any_attrs(include_paths, app);
+      if (fpvect.size() > 0)
+        update_any_attrs(fpvect, app);
     }
 }
 

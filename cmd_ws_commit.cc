@@ -103,6 +103,8 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
   check_restricted_cset(old_roster, excluded);
 
+  std::vector<file_paths> fpvect;
+
   node_map const & nodes = old_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); 
        i != nodes.end(); ++i)
@@ -120,6 +122,27 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
       if (!mask.includes(old_roster, nid))
         continue;
 
+      // Is there a difference in attributes in roster vs. filesystem?
+      bool attrs_differ = false;
+      std::map<std::string, std::string> & fs_attrs;
+      unsigned long ros_attr_count = 0;
+      app.lua.hook_init_attributes(fp, fs_attrs);
+      for (full_attr_map_t::const_iterator attr = node->attrs.begin();
+           attr != node->attrs.end(); ++attr)
+        {
+          if (attr->second.first)
+            {
+              ros_attr_count++;
+              if (attr->second.second() != fs_attrs(attr->first()))
+                {
+                  attrs_differ = true;
+                  break;
+                }
+            }
+        }
+      if (ros_attr_count != fs_attrs.size())
+        attrs_differ = true;
+
       if (is_file_t(node))
         {
           file_t f = downcast_to_file_t(node);
@@ -127,23 +150,27 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
             {
               hexenc<id> ident;
               calculate_ident(fp, ident, app.lua);
+
               // don't touch unchanged files
-              if (ident == f->content.inner())
+              if ((ident == f->content.inner()) && !attrs_differ)
                 continue;
             }
 
           P(F("reverting %s") % fp);
-          L(FL("reverting %s to [%s]") % fp % f->content);
+          if (ident != f->content.inner())
+            {
+              L(FL("reverting %s to [%s]") % fp % f->content);
 
-          N(app.db.file_version_exists(f->content),
-            F("no file version %s found in database for %s")
-            % f->content % fp);
+              N(app.db.file_version_exists(f->content),
+                F("no file version %s found in database for %s")
+                % f->content % fp);
 
-          file_data dat;
-          L(FL("writing file %s to %s")
-            % f->content % fp);
-          app.db.get_file_version(f->content, dat);
-          write_localized_data(fp, dat.inner(), app.lua);
+              file_data dat;
+              L(FL("writing file %s to %s")
+                % f->content % fp);
+              app.db.get_file_version(f->content, dat);
+              write_localized_data(fp, dat.inner(), app.lua);
+            }
         }
       else
         {
@@ -152,6 +179,10 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
               P(F("recreating %s/") % fp);
               mkdir_p(fp);
             }
+        }
+      if (attrs_differ)
+        {
+          fpvect.push_back(fp);
         }
     }
 
@@ -162,7 +193,8 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
   // Race.
   put_work_cset(excluded);
-  update_any_attrs(args_to_paths(args), app);
+  if (fpvect.size() > 0)
+    update_any_attrs(fpvect, app);
   maybe_update_inodeprints(app);
 }
 
@@ -541,7 +573,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
 
   app.require_workspace();
   get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
-
+  editable_roster_base er(new_roster, nis);
 
   file_path path = file_path_external(idx(args,1));
   split_path sp;
@@ -561,7 +593,10 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
           attr_key a_key = idx(args, 2)();
           attr_value a_value = idx(args, 3)();
 
-          node->attrs[a_key] = make_pair(true, a_value);
+          if (app.execute)
+            er.set_attr(sp, a_key, a_value);
+          else
+            node->attrs[a_key] = make_pair(true, a_value);
         }
       else
         {
@@ -570,7 +605,10 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
             {
               for (full_attr_map_t::iterator i = node->attrs.begin();
                    i != node->attrs.end(); ++i)
-                i->second = make_pair(false, "");
+                if (app.execute)
+                  er.clear_attr(sp, i->first);
+                else
+                  i->second = make_pair(false, "");
             }
           else if (args.size() == 3)
             {
@@ -578,7 +616,10 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
               N(node->attrs.find(a_key) != node->attrs.end(),
                 F("Path '%s' does not have attribute '%s'\n")
                 % path % a_key);
-              node->attrs[a_key] = make_pair(false, "");
+              if (app.execute)
+                er.clear_attr(sp, a_key);
+              else
+                node->attrs[a_key] = make_pair(false, "");
             }
           else
             throw usage(name);
@@ -587,8 +628,6 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
       cset new_work;
       make_cset(old_roster, new_roster, new_work);
       put_work_cset(new_work);
-      if (app.execute)
-        update_any_attrs(args_to_paths(args), app);
     }
   else if (subcmd == "get")
     {
