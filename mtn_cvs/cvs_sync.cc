@@ -1521,7 +1521,6 @@ void cvs_client::validate_path(const std::string &local, const std::string &serv
   server_dir[local]=server;
 }
 
-#if 0
 void cvs_repository::takeover_dir(const std::string &path)
 { // remember the server path for this subdirectory
   MM(path);
@@ -1567,8 +1566,10 @@ void cvs_repository::takeover_dir(const std::string &path)
         time_t modtime=-1;
         try
         { modtime=cvs_client::Entries2time_t(parts[3]);
-        } catch (std::exception &e) {}
+        } 
         catch (informative_failure &e) {}
+        catch (std::exception &e) {}
+        
         I(files.find(filename)==files.end());
         std::map<std::string,file_history>::iterator f
             =files.insert(std::make_pair(filename,file_history())).first;
@@ -1590,7 +1591,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         // @@ import the file and check whether it is (un-)changed
         fs.log_msg="initial cvs content";
         data new_data;
-        read_localized_data(file_path_internal(filename), new_data, app.lua);
+//@@        read_localized_data(file_path_internal(filename), new_data, app.lua);
         store_contents(new_data, fs.sha1sum);
         f->second.known_states.insert(fs);
       }
@@ -1634,11 +1635,11 @@ void cvs_repository::takeover()
   // commit them all
   commit_cvs2mtn(edges.begin());
   // create a MT directory 
-  app.create_workspace(system_path("."));
+//@@  app.create_workspace(system_path("."));
   
 // like in commit ?
 //  update_any_attrs(app);
-  put_revision_id((--edges.end())->revision);
+//  put_revision_id((--edges.end())->revision);
 //  maybe_update_inodeprints(app);
 
 //  store_modules();
@@ -1670,32 +1671,12 @@ void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
     std::getline(cvs_repository,module);
     W(F("Guessing '%s' as the module name\n") % module);
   }
-  test_key_availability(app);
+//  test_key_availability(app);
   cvs_sync::cvs_repository repo(app,root,module,branch,false);
   // FIXME? check that directory layout matches the module structure
   repo.takeover();
 }
-#endif
-
-#if 0
-void cvs_repository::store_modules()
-{ const std::map<std::string,std::string> &sd=GetServerDir();
-  std::string value;
-  std::string name=create_cvs_cert_header();
-  for (std::map<std::string,std::string>::const_iterator i=sd.begin();
-        i!=sd.end();++i)
-  { value+=i->first+"\t"+i->second+"\n";
-  }
-#if 0  
-  std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
-  var_value oldval;
-  try 
-  { app.db.get_var(key,oldval);
-  } catch (...) {}
-  if (oldval()!=value) app.db.set_var(key, value);
-#endif
-}
-#endif
+//#endif
 
 void cvs_repository::parse_module_paths(std::string const& value_s)
 { 
@@ -1723,16 +1704,9 @@ void cvs_repository::parse_module_paths(std::string const& value_s)
   SetServerDir(sd);
 }
 
+// is this a no-op?
 void cvs_repository::retrieve_modules()
 { if (!GetServerDir().empty()) return;
-#if 0  
-  std::string name=create_cvs_cert_header();
-  std::pair<var_domain,var_name> key(var_domain("cvs-server-path"), var_name(name));
-  var_value value;
-  try {
-    app.db.get_var(key,value);
-  } catch (...) { return; }
-#endif
 }
 
 // we could pass delta_base and forget about it later
