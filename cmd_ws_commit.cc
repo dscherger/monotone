@@ -103,7 +103,7 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
   check_restricted_cset(old_roster, excluded);
 
-  std::vector<file_paths> fpvect;
+  std::vector<file_path> fpvect;
 
   node_map const & nodes = old_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); 
@@ -124,7 +124,7 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
       // Is there a difference in attributes in roster vs. filesystem?
       bool attrs_differ = false;
-      std::map<std::string, std::string> & fs_attrs;
+      std::map<std::string, std::string> fs_attrs;
       unsigned long ros_attr_count = 0;
       app.lua.hook_init_attributes(fp, fs_attrs);
       for (full_attr_map_t::const_iterator attr = node->attrs.begin();
@@ -133,7 +133,7 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
           if (attr->second.first)
             {
               ros_attr_count++;
-              if (attr->second.second() != fs_attrs(attr->first()))
+              if (attr->second.second() != fs_attrs[attr->first()])
                 {
                   attrs_differ = true;
                   break;
@@ -145,33 +145,42 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
       if (is_file_t(node))
         {
+
+          bool content_match = false;
+
           file_t f = downcast_to_file_t(node);
           if (file_exists(fp))
             {
               hexenc<id> ident;
               calculate_ident(fp, ident, app.lua);
-
               // don't touch unchanged files
-              if ((ident == f->content.inner()) && !attrs_differ)
-                continue;
+
+              if (ident == f->content.inner())
+                {
+                  if (!attrs_differ)
+                    continue;
+                  else
+                    content_match = true;
+                }              
             }
 
           P(F("reverting %s") % fp);
-          if (ident != f->content.inner())
+          
+          if (!content_match)
             {
               L(FL("reverting %s to [%s]") % fp % f->content);
-
+              
               N(app.db.file_version_exists(f->content),
                 F("no file version %s found in database for %s")
                 % f->content % fp);
-
+              
               file_data dat;
               L(FL("writing file %s to %s")
                 % f->content % fp);
               app.db.get_file_version(f->content, dat);
-              write_localized_data(fp, dat.inner(), app.lua);
+              write_localized_data(fp, dat.inner(), app.lua);              
             }
-        }
+        }    
       else
         {
           if (!directory_exists(fp))
@@ -182,6 +191,8 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
         }
       if (attrs_differ)
         {
+          // FIXME_ATTRS: If fp is a directory the call to update_any_attrs
+          // will also affect files and/or subdirectories.
           fpvect.push_back(fp);
         }
     }

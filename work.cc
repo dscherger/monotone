@@ -841,7 +841,7 @@ void update_any_attrs(std::vector<file_path> include_paths, app_state & app)
   temp_node_id_source nis;
   roster_t new_roster;
   get_current_roster_shape(new_roster, nis, app);
-  node_restriction mask(paths, app.get_exclude_pattern(), new_roster, app);
+  node_restriction mask(include_paths, app.get_exclude_paths(), new_roster, app);
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
