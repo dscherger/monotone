@@ -843,6 +843,9 @@ void update_any_attrs(std::vector<file_path> const & include_paths, app_state & 
   get_current_roster_shape(new_roster, nis, app);
   node_restriction mask(include_paths, app.get_exclude_paths(), new_roster, app);
   node_map const & nodes = new_roster.all_nodes();
+
+  P(F("Updating attributes on filesystem");
+
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
@@ -860,7 +863,7 @@ void update_any_attrs(std::vector<file_path> const & include_paths, app_state & 
       new_roster.get_name(i->first, sp);
       file_path name(sp);
 
-      L(FL("Updating attributes in workspace for %s") % name);
+      L(FL("  updating %s") % name);
 
       for (full_attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
