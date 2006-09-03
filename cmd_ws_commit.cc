@@ -584,7 +584,6 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
 
   app.require_workspace();
   get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
-  editable_roster_base er(new_roster, nis);
 
   file_path path = file_path_external(idx(args,1));
   split_path sp;
@@ -604,10 +603,10 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
           attr_key a_key = idx(args, 2)();
           attr_value a_value = idx(args, 3)();
 
+          node->attrs[a_key] = make_pair(true, a_value);
+
           if (app.execute)
-            er.set_attr(sp, a_key, a_value);
-          else
-            node->attrs[a_key] = make_pair(true, a_value);
+            app.lua.hook_apply_attr(akey(), path, a_value(), true);
         }
       else
         {
@@ -616,10 +615,11 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
             {
               for (full_attr_map_t::iterator i = node->attrs.begin();
                    i != node->attrs.end(); ++i)
-                if (app.execute)
-                  er.clear_attr(sp, i->first);
-                else
+                {
                   i->second = make_pair(false, "");
+                  if (app.execute)
+                    app.lua.hook_apply_attr(i->first(), path, "", false);
+                }
             }
           else if (args.size() == 3)
             {

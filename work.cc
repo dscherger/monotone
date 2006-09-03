@@ -836,7 +836,7 @@ get_attribute_from_roster(roster_t const & ros,
 }
 
 
-void update_any_attrs(std::vector<file_path> include_paths, app_state & app)
+void update_any_attrs(std::vector<file_path> const & include_paths, app_state & app)
 {
   temp_node_id_source nis;
   roster_t new_roster;
