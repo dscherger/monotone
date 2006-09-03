@@ -860,7 +860,7 @@ void update_any_attrs(std::vector<file_path> const & include_paths, app_state & 
       new_roster.get_name(i->first, sp);
       file_path name(sp);
 
-      P(F("Updating attributes in workspace for %s") % name);
+      L(FL("Updating attributes in workspace for %s") % name);
 
       for (full_attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
