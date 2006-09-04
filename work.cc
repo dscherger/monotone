@@ -844,7 +844,7 @@ void update_any_attrs(std::vector<file_path> const & include_paths, app_state & 
   node_restriction mask(include_paths, app.get_exclude_paths(), new_roster, app);
   node_map const & nodes = new_roster.all_nodes();
 
-  P(F("Updating attributes on filesystem");
+  P(F("Updating attributes on filesystem"));
 
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
