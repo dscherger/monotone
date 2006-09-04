@@ -860,6 +860,9 @@ void update_any_attrs(std::vector<file_path> const & include_paths, app_state & 
       // files in the workspace to what was last recorded in the roster, for
       // every workspace command.
 
+      if (!mask.includes(new_roster, nid))
+        continue;
+
       new_roster.get_name(i->first, sp);
       file_path name(sp);
 
