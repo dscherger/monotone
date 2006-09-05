@@ -677,6 +677,61 @@ lua_hooks::hook_get_netsync_write_permitted(rsa_keypair_id const & identity)
 }
 
 bool
+lua_hooks::hook_get_init_function_list(std::vector<std::string> & avail_funcs)
+{
+  Lua ll(st);
+  string attr;
+  
+  ll
+    .push_str("attr_init_functions")
+    .get_tab();
+  
+  ll.begin();
+  while (ll.next())
+    {
+      ll.pop().extract_str(attr);
+      L(FL("avail attr_init_function '%s'") % attr);
+      avail_funcs.push_back(attr);
+    }
+  return ll.ok();
+}
+
+bool
+lua_hooks::hook_scan_attribute(std::string const & inattr,
+                               file_path const & filename,
+                               std::pair<bool, string> & outvalue)
+{
+  Lua ll(st);
+  
+  // FIXME_ATTRS: Do we want to rename attr_init_functions because it is now
+  // also used for attr scan?
+  
+  ll
+    .push_str("attr_init_functions")
+    .get_tab()
+    .push_str(inattr)
+    .get_fn(-2)
+    .push_str(filename.as_external())
+    
+    L(FL("calling an attr_init_function for attribute '%s'") % inattr % invalue);
+  ll.call(1,1);
+  
+  string luakey, luavalue;
+  if (lua_isnil(st, -1))
+    {
+      outvalue = make_pair(false, string(""));
+    }
+  else
+    {
+      string outstring;
+      ll.extract_str(outstring);
+      outvalue = make_pair(true, outstring);
+    }
+  
+  return ll.pop().ok();
+}
+
+bool
 lua_hooks::hook_init_attributes(file_path const & filename,
                                 map<string, string> & attrs)
 {
@@ -729,7 +784,7 @@ lua_hooks::hook_apply_attribute(string const & attr,
     .push_str(attr)
     .get_fn(-2)
     .push_str(filename.as_external());
-
+  
   if (!is_unset)
     ll.push_str(value);
   else
@@ -739,6 +794,62 @@ lua_hooks::hook_apply_attribute(string const & attr,
 
   return ll.ok();
 }
+
+bool
+hook_list_init_functions(std::vector<std::string> & function_list)
+{
+  Lua ll(st);
+  string attr;
+
+  ll
+    .push_str("attr_init_functions")
+    .get_tab();
+
+  ll.begin();
+  while (ll.next())
+    {
+      ll.pop().extract_str(attr);
+      L(FL("avail attr_init_function '%s'") % attr);
+      function_list.push_back(attr);
+    }
+  return ll.ok();
+}
+
+bool
+hook_scan_attribute(std::string const & inattr,
+                    file_path const & filename,
+                    std::pair<bool, string> & outvalue)
+{
+  Lua ll(st);
+  
+  // FIXME_ATTRS: Do we want to rename attr_init_functions because it is now
+  // also used for attr scan?
+  
+  ll
+    .push_str("attr_init_functions")
+    .get_tab()
+    .push_str(inattr)
+    .get_fn(-2)
+    .push_str(filename.as_external());
+    
+    L(FL("calling an attr_init_function for attribute '%s'") % inattr);
+  ll.call(1,1);
+  
+  string luakey, luavalue;
+  if (lua_isnil(st, -1))
+    {
+      outvalue = make_pair(false, string(""));
+    }
+  else
+    {
+      string outstring;
+      ll.extract_str(outstring);
+      outvalue = make_pair(true, outstring);
+    }
+  
+  return ll.pop().ok();
+}
+
 
 
 bool
