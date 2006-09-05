@@ -113,7 +113,7 @@ public:
   bool hook_list_init_functions(std::vector<std::string> & function_list);
   bool hook_scan_attribute(std::string const & inattr,
                            file_path const & filename,
-                           std::pair<bool, string> & outvalue);
+                           std::pair<bool, std::string> & outvalue);
 
   // conversion hooks
   bool hook_get_system_linesep(std::string & linesep);

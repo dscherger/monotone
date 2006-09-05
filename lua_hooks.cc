@@ -699,7 +699,7 @@ lua_hooks::hook_get_init_function_list(std::vector<std::string> & avail_funcs)
 bool
 lua_hooks::hook_scan_attribute(std::string const & inattr,
                                file_path const & filename,
-                               std::pair<bool, string> & outvalue)
+                               std::pair<bool, std::string> & outvalue)
 {
   Lua ll(st);
   
