@@ -509,9 +509,6 @@ perform_pivot_root(file_path const & new_root, file_path const & put_old,
       editable_working_tree e(app, efcs);
       cs.apply_to(e);
     }
-  std::vector<file_path> include_paths;
-  include_paths.push_back(new_root);
-  update_any_attrs(include_paths, app);
 }
 
 
@@ -1076,7 +1073,7 @@ editable_working_tree::set_attr(split_path const & pth,
                                 attr_value const & val)
 {
   file_path pth_unsplit(pth);
-  app.lua.hook_apply_attribute(name(), pth_unsplit, val(), true);
+  app.lua.hook_apply_attribute(name(), pth_unsplit, val(), false);
 }
 
 void

@@ -817,7 +817,7 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
   P(F("applied changes to workspace"));
 
   put_work_cset(remaining);
-  
+
   // add a note to the user log file about what we did
   {
     data log;

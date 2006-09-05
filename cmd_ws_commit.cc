@@ -606,7 +606,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
           node->attrs[a_key] = make_pair(true, a_value);
 
           if (app.execute)
-            app.lua.hook_apply_attribute(a_key(), path, a_value(), true);
+            app.lua.hook_apply_attribute(a_key(), path, a_value(), false);
         }
       else
         {
@@ -618,7 +618,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
                 {
                   i->second = make_pair(false, "");
                   if (app.execute)
-                    app.lua.hook_apply_attribute(i->first(), path, "", false);
+                    app.lua.hook_apply_attribute(i->first(), path, string(""), true);
                 }
             }
           else if (args.size() == 3)
@@ -631,7 +631,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
                 node->attrs[a_key] = make_pair(false, "");
                 
                 if (app.execute)
-                  app.lua.hook_apply_attribute(a_key(), path, string(""), false);
+                  app.lua.hook_apply_attribute(a_key(), path, string(""), true);
             }
           else
             throw usage(name);
