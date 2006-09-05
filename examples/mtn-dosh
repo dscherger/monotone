@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# WARNING, WARNING, WARNING
+#
+# This script is unsafe as $TMPFILE may have shell meta-characters (this is
+# unchecked), you'd do better to wait until execute_redirout support is added.
+#
+TMPFILE=$1
+shift
+$1 $2 $3 $4 $5 $6 $7 $8 $9 > $TMPFILE
