@@ -84,7 +84,7 @@ struct ui_library
 };
 
 // fake app_state ctor/dtor, we do not use this class at all
-app_state::app_state() : db(system_path()), keys(this) {}
+app_state::app_state() : db(system_path()), keys(this), work(db,lua) {}
 void app_state::process_options() {}
 app_state::~app_state() {}
 lua_hooks::lua_hooks() {}
