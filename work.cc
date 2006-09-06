@@ -342,6 +342,8 @@ perform_attr_scan(std::vector<file_path> const & paths, app_state & app)
   
   node_restriction mask(paths, app.get_exclude_paths(), new_roster, app); 
   editable_roster_base er(new_roster, nis);
+
+  P(F("scanning filesystem for attributes"));
   
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
@@ -357,10 +359,9 @@ perform_attr_scan(std::vector<file_path> const & paths, app_state & app)
       new_roster.get_name(nid, sp);
       file_path name(sp);
 
-      P(F("Scanning attributes of %s") % name);
+      L(FL("%s") % name);
       
       std::pair<bool, attr_value> curval;
-      std::pair<bool, attr_value> newval;
       std::pair<bool, std::string> getval;
       bool luaok;
  
@@ -372,31 +373,30 @@ perform_attr_scan(std::vector<file_path> const & paths, app_state & app)
               curval = node->attrs[attr_key(*i)];
               if (curval.first)
                 {
-                  L(FL("Attribute '%s' currently is '%s'") % *i % curval.second());
+                  L(FL("attribute '%s' currently is '%s'") % *i % curval.second);
                 }
               else
                 {
-                  L(FL("Attribute '%s' is currently unset") % *i);
+                  L(FL("attribute '%s' is currently unset") % *i);
                 }
               
               luaok = app.lua.hook_scan_attribute(*i, name, getval);
-              E(luaok, F("Error doing lua hook_scan_attribute for attribute %s") % *i);
-              if (newval.first)
+              E(luaok, F("error doing lua hook_scan_attribute for attribute %s") % *i);
+              if (getval.first)
                 {
-                  if (curval.first && (curval.second == newval.second))
+                  if (curval.first && (curval.second() == getval.second))
                     {
-                      L(FL("Skipping; filesystem matches recorded workspace."));
+                      L(FL("skipping; filesystem matches recorded workspace."));
                       continue;                    
                     } 
                   else
                     {
-                      L(FL("Setting attribute to '%s'") % newval.second);
-                      er.set_attr(sp, attr_key(*i), attr_value(newval.second));
-                    }
-                }
+                      L(FL("setting attribute to '%s'") % getval.second);
+                      er.set_attr(sp, attr_key(*i), attr_value(getval.second));
+                    }                }
               else
                 {
-                  L(FL("Clearing attribute"));
+                  L(FL("clearing attribute"));
                   er.clear_attr(sp, attr_key(*i));
                 }                
             }  
@@ -926,7 +926,7 @@ void update_any_attrs(std::vector<file_path> const & include_paths, app_state & 
   node_restriction mask(include_paths, app.get_exclude_paths(), new_roster, app);
   node_map const & nodes = new_roster.all_nodes();
 
-  P(F("Updating attributes on filesystem"));
+  P(F("updating attributes on filesystem"));
 
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
