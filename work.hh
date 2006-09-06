@@ -80,6 +80,9 @@ void
 perform_additions(path_set const & targets, app_state & app, bool recursive = true);
 
 void
+perform_attr_scan(std::vector<file_path> const & paths, app_state &app);
+
+void
 perform_deletions(path_set const & targets, app_state & app);
 
 void

@@ -572,29 +572,49 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
 
 ALIAS(co, checkout)
 
-CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [ATTR]"),
-    N_("set, get or drop file attributes"),
+CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [ATTR]\nscan [PATH...]"),
+    N_("set, get or drop file attributes\nor scan filesystem to determine monotone attributes for files in PATH(s)."),
     option::execute)
 {
-  if (args.size() < 2 || args.size() > 4)
+  if (args.size() < 1)
     throw usage(name);
 
-  roster_t old_roster, new_roster;
-  temp_node_id_source nis;
-
-  app.require_workspace();
-  get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
-
-  file_path path = file_path_external(idx(args,1));
-  split_path sp;
-  path.split(sp);
-
-  N(new_roster.has_node(sp), F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(sp);
-
   string subcmd = idx(args, 0)();
-  if (subcmd == "set" || subcmd == "drop")
+  
+  if (subcmd == "scan")
     {
+      std::vector<file_path> paths;
+ 
+      if (args.size() < 2)
+        {
+          paths = std::vector<file_path>();
+        }
+      else
+        {
+          std::vector<utf8>::const_iterator pbegin = args.begin();
+          ++pbegin;
+          for ( ; pbegin != args.end(); ++pbegin) 
+            {
+              paths.push_back(file_path_external(*pbegin));
+            }
+        }
+      perform_attr_scan(paths, app);
+    }
+  else if (subcmd == "set" || subcmd == "drop")
+    {
+      roster_t old_roster, new_roster;
+      temp_node_id_source nis;
+      
+      app.require_workspace();
+      get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+
+      file_path path = file_path_external(idx(args,1));
+      split_path sp;
+      path.split(sp);
+      
+      N(new_roster.has_node(sp), F("Unknown path '%s'") % path);
+      node_t node = new_roster.get_node(sp);
+
       if (subcmd == "set")
         {
           if (args.size() != 4)
@@ -643,6 +663,19 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
     }
   else if (subcmd == "get")
     {
+      roster_t old_roster, new_roster;
+      temp_node_id_source nis;
+
+      app.require_workspace();
+      get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+
+      file_path path = file_path_external(idx(args,1));
+      split_path sp;
+      path.split(sp);
+
+      N(new_roster.has_node(sp), F("Unknown path '%s'") % path);
+      node_t node = new_roster.get_node(sp);
+
       if (args.size() == 2)
         {
           bool has_any_live_attrs = false;

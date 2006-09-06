@@ -322,6 +322,91 @@ perform_deletions(path_set const & paths, app_state & app)
   put_work_cset(new_work);
 }
 
+void
+perform_attr_scan(std::vector<file_path> const & paths, app_state & app)
+{
+ 
+  std::vector<std::string> init_functions;
+  bool get_update_func_ok = app.lua.hook_list_init_functions(init_functions);
+  E(get_update_func_ok, F("Failed to find attribute init functions"));
+  if (!get_update_func_ok) 
+    {
+      return;
+    }
+  
+  roster_t old_roster, new_roster;
+  temp_node_id_source nis;
+  
+  app.require_workspace();
+  get_base_and_current_roster_shape(old_roster, new_roster, nis, app); 
+  
+  node_restriction mask(paths, app.get_exclude_paths(), new_roster, app); 
+  editable_roster_base er(new_roster, nis);
+  
+  node_map const & nodes = new_roster.all_nodes();
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      node_id nid = i->first;
+      node_t node = i->second;
+
+      // Only analyze restriction-included files.
+      if (!mask.includes(new_roster, nid))
+        continue;
+      
+      split_path sp;
+      new_roster.get_name(nid, sp);
+      file_path name(sp);
+
+      P(F("Scanning attributes of %s") % name);
+      
+      std::pair<bool, attr_value> curval;
+      std::pair<bool, attr_value> newval;
+      std::pair<bool, std::string> getval;
+      bool luaok;
+ 
+      if (path_exists(name))
+        {
+          for (std::vector<string>::const_iterator i = init_functions.begin();
+               i != init_functions.end(); ++i)
+            {
+              curval = node->attrs[attr_key(*i)];
+              if (curval.first)
+                {
+                  L(FL("Attribute '%s' currently is '%s'") % *i % curval.second());
+                }
+              else
+                {
+                  L(FL("Attribute '%s' is currently unset") % *i);
+                }
+              
+              luaok = app.lua.hook_scan_attribute(*i, name, getval);
+              E(luaok, F("Error doing lua hook_scan_attribute for attribute %s") % *i);
+              if (newval.first)
+                {
+                  if (curval.first && (curval.second == newval.second))
+                    {
+                      L(FL("Skipping; filesystem matches recorded workspace."));
+                      continue;                    
+                    } 
+                  else
+                    {
+                      L(FL("Setting attribute to '%s'") % newval.second);
+                      er.set_attr(sp, attr_key(*i), attr_value(newval.second));
+                    }
+                }
+              else
+                {
+                  L(FL("Clearing attribute"));
+                  er.clear_attr(sp, attr_key(*i));
+                }                
+            }  
+        }     
+    }
+  cset new_work;
+  make_cset(old_roster, new_roster, new_work);
+  put_work_cset(new_work);
+}
+
 static void
 add_parent_dirs(split_path const & dst, roster_t & ros, node_id_source & nis,
                 app_state & app)
