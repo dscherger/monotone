@@ -58,8 +58,6 @@ function execout(command, ...)
    local tmpfile = tmpname()
    local outhnd
    local errstr
-   local out
-   local tmpfile = temp_file('mtn')
    exec_retval = execute('mtn-dosh', tmpfile, command, unpack(arg)) 
    if (exec_retval == 0) then
       outhnd, errstr = io.open(tmpfile)
@@ -71,24 +69,24 @@ function execout(command, ...)
               end
           end
           outhnd:close()
-    os.remove(tmpfile)
-     else
+          os.remove(tmpfile)
+      else
           print("Error opening " .. tmpfile .. ": " .. errstr)
-    os.remove(tmpfile)
+          os.remove(tmpfile)
       end 
    else
        print('Error executing ' .. argstr(command, unpack(arg)) .. ' > ' .. tmpfile .. ': ' .. tostring(exec_retval))
  os.remove(tmpfile)
    end
 
-    if (getdbgval() > 1) then
+   if (getdbgval() > 1) then
         if (out ~= nil) then
             print('execout; got ' .. out)
         else
             print('no output')
         end
-    end
-    return out
+   end
+   return out
 end
 
 -- function get_defperms(filetype, is_executable)
@@ -164,7 +162,7 @@ function has_perms(filename)
 end
 
 function has_user(filename)
-    local user = execout('stat', '-c', '%u', filename) 
+    local user = execout('stat', '-c', '%U', filename) 
 --  local defuser = get_defuser()
     local retuser = nil
     if (user) then
@@ -199,7 +197,7 @@ function is_symlink(filename)
 end
    
 function has_group(filename)
-    local group = execout('stat', '-c', '%g', filename) 
+    local group = execout('stat', '-c', '%G', filename) 
 --    local defgroup
     local retgroup = nil
     if (group) then
@@ -234,18 +232,24 @@ end
 attr_functions["perms"] = function(filename, value)
     if (value ~= nil) then
         execute("/bin/chmod", value, filename)
+    else
+        execute("/bin/chmod", get_defperms(), filename)
     end
 end
 
 attr_functions["user"] = function(filename, value)
     if (value ~= nil) then
         execute("/bin/chown", value, filename)
+    else
+        execute("/bin/chown", get_defuser(), filename)
     end
 end
 
 attr_functions["group"] = function(filename, value)
     if (value ~= nil) then
         execute("/bin/chgrp", value, filename)
+    else
+        execute("/bin/chgrp", get_defgroup(), filename)
     end
 end
 
