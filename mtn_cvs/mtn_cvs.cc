@@ -90,7 +90,9 @@ app_state::~app_state() {}
 lua_hooks::lua_hooks() {}
 lua_hooks::~lua_hooks() {}
 key_store::key_store(app_state*) {}
-database::database(system_path const&) {}
+database::database(system_path const&) 
+  : roster_cache(constants::db_roster_cache_sz,roster_writeback_manager(*this))
+  {}
 database::~database() {}
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
