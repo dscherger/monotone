@@ -132,7 +132,7 @@ database::database(system_path const & fn) :
   // non-alphabetic ordering of tables in sql source files. we could create
   // a temporary db, write our intended schema into it, and read it back,
   // but this seems like it would be too rude. possibly revisit this issue.
-  schema("c667865b682dfd090144a26b9341b87d41bcbf41"),
+  schema("9d2b5d7b86df00c30ac34fe87a3c20f1195bb2df"),
   pending_writes_size(0),
   __sql(NULL),
   transaction_level(0)
@@ -1057,20 +1057,6 @@ database::put_delta(hexenc<id> const & ident,
           % text(ident())
           % text(base())
           % blob(del_packed()));
-}
-
-void
-database::put_cvsimport_revision(hexenc<id> const & ident,
-								 string const & rcs_revision,
-								 string const & table)
-{
-  I(ident() != "");
-  I(rcs_revision != "");
-
-  string insert = "INSERT INTO " + table + " VALUES (?, ?)";
-  execute(query(insert)
-          % text(ident())
-          % text(rcs_revision));
 }
 
 // static ticker cache_hits("vcache hits", "h", 1);

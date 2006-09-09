@@ -1096,9 +1096,7 @@ migrate_monotone_schema(sqlite3 *sql, app_state *app)
   // also add a new migration test for the new schema version.  See
   // tests/t_migrate_schema.at for details.
 
-  // FIXME: no migration tool, yet: m.migrate(sql, "9d2b5d7b86df00c30ac34fe87a3c20f1195bb2df");
-
-	m.migrate(sql, "c667865b682dfd090144a26b9341b87d41bcbf41");
+  m.migrate(sql, "9d2b5d7b86df00c30ac34fe87a3c20f1195bb2df");
 }
 
 // Local Variables:

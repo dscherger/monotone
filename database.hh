@@ -150,7 +150,6 @@ class database
                  hexenc<id> const & base,
                  delta const & del,
                  std::string const & table);
-
   void put_version(hexenc<id> const & old_id,
                    hexenc<id> const & new_id,
                    delta const & del,
@@ -264,10 +263,6 @@ public:
   void get_arbitrary_file_delta(file_id const & src_id,
                                 file_id const & dst_id,
                                 file_delta & del);
-
-  void put_cvsimport_revision(hexenc<id> const & ident,
-							  std::string const & rcs_revision,
-							  std::string const & table);
 
   // get plain version if it exists, or reconstruct version
   // from deltas (if they exist).

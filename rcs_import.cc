@@ -547,7 +547,6 @@ insert_into_db(data const & curr_data,
                vector< piece > const & next_lines,
                data & next_data,
                hexenc<id> & next_id,
-			   string const & next_version,
                database & db)
 {
   // inserting into the DB
@@ -563,7 +562,6 @@ insert_into_db(data const & curr_data,
   diff(curr_data, next_data, del);
   calculate_ident(next_data, next_id);
   rcs_put_raw_file_edge(next_id, curr_id, del, db);
-  db.put_cvsimport_revision(next_id, next_version, "cvsimport_file_revisions");
 }
 
 
@@ -664,7 +662,7 @@ process_branch(string const & begin_version,
            next_version);
 
          insert_into_db(curr_data, curr_id,
-                     *next_lines, next_data, next_id, next_version, db);
+                     *next_lines, next_data, next_id, db);
       }
 
       // mark the beginning-of-branch time and state of this file if
@@ -742,7 +740,7 @@ process_branch(string const & begin_version,
           
           construct_version(*curr_lines, *i, branch_lines, r);                    
           insert_into_db(curr_data, curr_id, 
-                         branch_lines, branch_data, branch_id, *i, db);
+                         branch_lines, branch_data, branch_id, db);
 
           cvs.push_branch(branch, priv);
           process_branch(*i, branch_lines, branch_data, branch_id, r, db, cvs);
