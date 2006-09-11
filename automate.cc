@@ -1711,6 +1711,7 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"))
   calculate_ident(rev, id);
   
   transaction_guard tr(app.db);
+  rev.made_for=made_for_database;
   app.db.put_revision(id, rev);
   tr.commit();
 

@@ -119,7 +119,7 @@ namespace
   }
 }
 
-static void print_cset(basic_io::printer printer, mtn_automate::cset const& cs)
+static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
 { for (path_set::const_iterator i = cs.nodes_deleted.begin();
        i != cs.nodes_deleted.end(); ++i)
     {
