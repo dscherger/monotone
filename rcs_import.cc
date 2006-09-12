@@ -1429,7 +1429,6 @@ import_cvs_repo(system_path const & cvsroot,
       string branchname = i->first;
       shared_ptr<cvs_branch> branch = i->second;
       L(FL("branch %s has %d entries\n") % branchname % branch->lineage.size());
-      import_branch(cvs, app, branchname, branch, n_revs);
 
       L(FL("checking branch time of branch %s") % branchname);
 
