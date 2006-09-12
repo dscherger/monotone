@@ -670,18 +670,22 @@ process_branch(string const & begin_version,
                          *next_lines, next_data, next_id, db);
 
           /*
-           * resync: check if next_commit timestamp really is _after_ the
-           * curr_commit one. Otherwise, we assign a new resync time. Such
+           * resync: check if curr_commit timestamp really is _before_ the
+           * last_commit one. Otherwise, we assign a new resync time. Such
            * things can (but should not often) happen in CVS due to a clock
            * skew or such.
+           *
            * Remember that process_branch goes downwards, i.e. from 1.6 to
            * 1.5 to 1.4, etc...
+           *
+           * Also note that the resynced_time is mainly used to sort
+           * correctly within one file.
            */
           if ((last_commit_time) && (curr_commit.time >= last_commit_time))
             {
+              curr_commit.resynced_time = last_commit_time - 2;
               L(FL("resyncing time by %d seconds.") %
-                (curr_commit.time - curr_commit.resynced_time)); 
-              curr_commit.resynced_time = last_commit_time - 1;
+                (curr_commit.time - curr_commit.resynced_time));
             }
         }
 
@@ -777,7 +781,7 @@ process_branch(string const & begin_version,
           curr_version = next_version;
           swap(next_lines, curr_lines);
           next_lines->clear();
-          last_commit_time = curr_commit.time;
+          last_commit_time = curr_commit.resynced_time;
         }
       else break;
     }
