@@ -1,6 +1,74 @@
+2006-09-12  Thomas Moschny  <thomas.moschny@gmx.de>
+
+	* .mtn-ignore: Ignore mtn instead of monotone; additionally ignore
+	tester and tester.h, package_full_revision_raw.txt and
+	package_revision_raw.txt.
+
+2006-09-12  Alex Queiroz  <alex@ventonegro.org>
+
+	* po/pt_BR.po: 8 fuzzies, 1 new string.
+
+2006-09-12  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: 4 fuzzies, one new string.
+
+2006-09-12  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (has_node): Do not crash when has_node(foo/bar) is
+	called, and foo exists but is a file.
+	* work.cc (perform_rename, visit_file): Add more sanity checking.
+	* tests/ws_ops_with_wrong_node_type: Un-xfail.
+
+2006-09-12  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/ws_ops_with_wrong_node_type: Add two failing test cases,
+	from bug report from Albert Ramstedt.
+
+2006-09-12  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (perform_additions, perform_deletions) 
+	(perform_rename, perform_pivot_root): 
+	* revision.cc (make_revision_for_workspace): Add some MMs.
+
+2006-09-12  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: 3 fuzzies.
+
+2006-09-11  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/commit_validation_lua_hook/errmsg: Update for new phrasing
+	of error message.
+
+2006-09-11  Nathaniel Smith  <njs@pobox.com>
+
+	* cert.{cc,hh} (cert_revision_changelog): Take utf8 instead of string.
+
+	* work.cc (read_user_log, write_user_log):
+	* lua_hooks.{hh,cc} (hook_validate_commit_message):
+	(hook_edit_comment):
+	* cmd_ws_commit.cc (get_log_message_interactively): 
+	* commands.cc (process_commit_message_args): Type properly, and do
+	charset conversion when necessary.
+
+	* cmd_merging.cc (merge_into_dir): 
+	* cmd_ws_commit.cc (commit): Generate utf8 changelogs.
+
+	* tests/i18n_commit_messages/: New test.
+	
+2006-09-12  Thomas Moschny  <thomas.moschny@gmx.de>
+
+	* Makefile.am (package_revision.txt): Follow-up for the merge of
+	the workspace-merge.migration branch: Use 'mtn automate
+	get_base_revision' to get the base revision instead of copying the
+	contents of _MTN/revision.
+
 2006-09-11  Richard Levitte  <richard@levitte.org>
 
 	* po/sv.po: 2 fuzzies.
+
+2006-09-09  Benoît Dejean  <benoit@placenet.org>
+
+	* fr.po: Updated French translation.
 
 2006-09-09  Nathaniel Smith  <njs@pobox.com>
 
