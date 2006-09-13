@@ -98,7 +98,6 @@ cvs_event
 
   bool is_synthetic_branch_root;
   time_t time;
-  time_t resynced_time;
   bool alive;
   cvs_author author;
   cvs_changelog changelog;
@@ -310,7 +309,6 @@ cvs_event::cvs_event(rcs_file const & r,
 #endif
   time = mktime(&t);
   L(FL("= %i") % time);
-  resynced_time = time;
 
   is_synthetic_branch_root = is_sbr(delta->second,
                                     deltatext->second);
@@ -636,7 +634,6 @@ process_branch(string const & begin_version,
                database & db,
                cvs_history & cvs)
 {
-  time_t last_commit_time = 0;
   string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
@@ -668,25 +665,6 @@ process_branch(string const & begin_version,
 
           insert_into_db(curr_data, curr_id,
                          *next_lines, next_data, next_id, db);
-
-          /*
-           * resync: check if curr_commit timestamp really is _before_ the
-           * last_commit one. Otherwise, we assign a new resync time. Such
-           * things can (but should not often) happen in CVS due to a clock
-           * skew or such.
-           *
-           * Remember that process_branch goes downwards, i.e. from 1.6 to
-           * 1.5 to 1.4, etc...
-           *
-           * Also note that the resynced_time is mainly used to sort
-           * correctly within one file.
-           */
-          if ((last_commit_time) && (curr_commit.time >= last_commit_time))
-            {
-              curr_commit.resynced_time = last_commit_time - 2;
-              L(FL("resyncing time by %d seconds.") %
-                (curr_commit.time - curr_commit.resynced_time));
-            }
         }
 
       // mark the beginning-of-branch time and state of this file if
@@ -781,7 +759,6 @@ process_branch(string const & begin_version,
           curr_version = next_version;
           swap(next_lines, curr_lines);
           next_lines->clear();
-          last_commit_time = curr_commit.resynced_time;
         }
       else break;
     }
