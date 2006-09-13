@@ -1,3 +1,35 @@
+2006-09-12  Thomas Moschny  <thomas.moschny@gmx.de>
+
+	* .mtn-ignore: Ignore mtn instead of monotone; additionally ignore
+	tester and tester.h, package_full_revision_raw.txt and
+	package_revision_raw.txt.
+
+2006-09-12  Alex Queiroz  <alex@ventonegro.org>
+
+	* po/pt_BR.po: 8 fuzzies, 1 new string.
+
+2006-09-12  Richard Levitte  <richard@levitte.org>
+
+	* po/sv.po: 4 fuzzies, one new string.
+
+2006-09-12  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.cc (has_node): Do not crash when has_node(foo/bar) is
+	called, and foo exists but is a file.
+	* work.cc (perform_rename, visit_file): Add more sanity checking.
+	* tests/ws_ops_with_wrong_node_type: Un-xfail.
+
+2006-09-12  Nathaniel Smith  <njs@pobox.com>
+
+	* tests/ws_ops_with_wrong_node_type: Add two failing test cases,
+	from bug report from Albert Ramstedt.
+
+2006-09-12  Nathaniel Smith  <njs@pobox.com>
+
+	* work.cc (perform_additions, perform_deletions) 
+	(perform_rename, perform_pivot_root): 
+	* revision.cc (make_revision_for_workspace): Add some MMs.
+
 2006-09-12  Richard Levitte  <richard@levitte.org>
 
 	* po/sv.po: 3 fuzzies.
