@@ -630,7 +630,7 @@ lineage.
 
 
 static void
-process_branch(string const & begin_version,
+process_branch(shared_ptr<cvs_commit> last_commit,
                vector< piece > const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
@@ -638,8 +638,8 @@ process_branch(string const & begin_version,
                database & db,
                cvs_history & cvs)
 {
-  shared_ptr<cvs_commit> curr_commit, last_commit;
-  string curr_version = begin_version;
+  shared_ptr<cvs_commit> curr_commit;
+  string curr_version = last_commit->rcs;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
                                            (begin_lines.begin(),
@@ -647,14 +647,22 @@ process_branch(string const & begin_version,
   data curr_data(begin_data), next_data;
   hexenc<id> curr_id(begin_id), next_id;
 
+  // add a branch event if we have a previous commit
+  shared_ptr<cvs_event_branch> branch_event =
+    shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit));
+  branch_event->branch = cvs.stk.top();
+  cvs.stk.top()->append_event(branch_event);
+
+  L(FL("added branch event for file %s in branch %s")
+    % cvs.path_interner.lookup(curr_commit->path)
+    % cvs.bstk.top());
+
   while(! (r.deltas.find(curr_version) == r.deltas.end()))
     {
       L(FL("version %s has %d lines") % curr_version % curr_lines->size());
 
-      curr_commit = shared_ptr<cvs_commit>(new cvs_commit(r,
-                                                          curr_version,
-                                                          curr_id,
-                                                          cvs));
+      curr_commit = shared_ptr<cvs_commit>(
+        new cvs_commit(r, curr_version, curr_id, cvs));
 
       if (!curr_commit->is_synthetic_branch_root)
         {
@@ -700,56 +708,6 @@ process_branch(string const & begin_version,
                          *next_lines, next_data, next_id, db);
         }
 
-#if 0
-      // mark the beginning-of-branch time and state of this file if
-      // we're at a branchpoint
-      typedef multimap<string,string>::const_iterator ity;
-      pair<ity,ity> range = cvs.branchpoints.equal_range(curr_version);
-      if (range.first != cvs.branchpoints.end()
-          && range.first->first == curr_version)
-        {
-          for (ity i = range.first; i != range.second; ++i)
-            {
-              cvs.push_branch(i->second, false);
-              shared_ptr<cvs_branch> b = cvs.stk.top();
-              cvs.pop_branch();
-
-              // (ms) should this better be a '!is_synthetic_branchroot'?
-              if (curr_commit->alive)
-                {
-                  // write a branch event
-                  shared_ptr<cvs_event> be = shared_ptr<cvs_event>(new cvs_event(ET_BRANCH, 0, curr_commit->path, cvs));
-                  be->branch = b;
-                  cvs.stk.top()->append_event(be);
-                  L(FL("added branch event for file %s in branch %s")
-                       % cvs.path_interner.lookup(curr_commit->path)
-                       % i->second);
-                }
-            }
-        }
-      if (!curr_commit->is_synthetic_branch_root)
-        {
-          // mark the ending-of-branch time of this file if we're just past a
-          // branchpoint
-          range = cvs.branchpoints.equal_range(next_version);
-          if (range.first != cvs.branchpoints.end()
-              && range.first->first == next_version)
-            {
-              for (ity i = range.first; i != range.second; i++)
-                {
-                  cvs.push_branch(i->second, false);
-                  shared_ptr<cvs_branch> b = cvs.stk.top();
-                  b->note_commit_following_branchpoint(curr_commit->time);
-                  cvs.pop_branch();
-                  L(FL("noted following commit for file %s in branch %s [t:%d]")
-                       % cvs.path_interner.lookup(curr_commit->path)
-                       % i->second
-                       % curr_commit->time);
-                }
-            }
-        }
-#endif
-
       // recursively follow any branch commits coming from the branchpoint
       shared_ptr<rcs_delta> curr_delta = r.deltas.find(curr_version)->second;
       for(vector<string>::const_iterator i = curr_delta->branches.begin();
@@ -769,12 +727,13 @@ process_branch(string const & begin_version,
 
           L(FL("following RCS branch %s = '%s'\n") % (*i) % branch);
           
-          construct_version(*curr_lines, *i, branch_lines, r);                    
+          construct_version(*curr_lines, *i, branch_lines, r);
           insert_into_db(curr_data, curr_id, 
                          branch_lines, branch_data, branch_id, db);
 
           cvs.push_branch(branch, priv);
-          process_branch(*i, branch_lines, branch_data, branch_id, r, db, cvs);
+          process_branch(curr_commit, branch_lines, branch_data, branch_id,
+                         r, db, cvs);
           cvs.pop_branch();
 
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
@@ -821,17 +780,11 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
         db.put_file(fid, dat);
       }
 
-    {
-      // create the head state in case it is a loner
-      //       cvs_key k;
-      //       shared_ptr<cvs_state> s;
-      //       L(FL("noting head version %s : %s") % cvs.curr_file % r.admin.head);
-      //       cvs.find_key_and_state (r, r.admin.head, k, s);
-    }
-
     global_pieces.reset();
-    global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second, head_lines);
-    process_branch(r.admin.head, head_lines, dat, id, r, db, cvs);
+    global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
+                                  head_lines);
+    process_branch(shared_ptr<cvs_commit>(), head_lines, dat, id,
+                   r, db, cvs);
     global_pieces.reset();
   }
 
@@ -1296,7 +1249,7 @@ import_branch(cvs_history & cvs,
   unsigned long commits_remaining = branch->lineage.size();
 
   /* sort the branch lineage */
-  L(FL("sorting lineage brunch %s\n") % branchname);
+  L(FL("sorting lineage of branch %s\n") % branchname);
   stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
 
   /* resync the revisions */
