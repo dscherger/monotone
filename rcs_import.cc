@@ -93,7 +93,8 @@ struct cvs_event_digest
                    shared_ptr<struct cvs_branch> b)
     : author(a),
       changelog(c),
-      tag(t) {};
+      tag(t),
+      branch(shared_ptr<struct cvs_branch>(b)) {};
 };
 
 class
@@ -159,72 +160,16 @@ public:
 struct
 cvs_branch
 {
-  bool has_a_branchpoint;
   bool has_a_commit;
   bool has_parent_rid;
-  time_t last_branchpoint;
-  time_t first_commit;
-  time_t first_commit_after_branching;
-  time_t branch_time;
   revision_id parent_rid;
 
-  map<cvs_path, cvs_version> live_at_beginning;
   vector<shared_ptr<cvs_event> > lineage;
 
   cvs_branch()
-    : has_a_branchpoint(false),
-      has_a_commit(false),
-      has_parent_rid(false),
-      last_branchpoint(0),
-      first_commit(0),
-      first_commit_after_branching(0),
-      branch_time(0)
+    : has_a_commit(false),
+      has_parent_rid(false)
   {
-  }
-
-  void note_commit(time_t now)
-  {
-    if (!has_a_commit)
-      {
-        first_commit = now;
-      }
-    else
-      {
-        if (now < first_commit)
-          first_commit = now;
-      }
-    has_a_commit = true;
-  }
-
-  void note_commit_following_branchpoint(time_t now)
-  {
-    if ((first_commit_after_branching == 0)
-        || (now < first_commit_after_branching))
-      {
-        first_commit_after_branching = now;
-      }
-  }
-
-  void note_branchpoint(time_t now)
-  {
-    has_a_branchpoint = true;
-    if (now > last_branchpoint)
-      last_branchpoint = now;
-  }
-
-  time_t beginning() const
-  {
-    I(has_a_branchpoint || has_a_commit);
-    if (has_a_commit)
-      {
-        I(first_commit != 0);
-        return first_commit;
-      }
-    else
-      {
-        I(last_branchpoint != 0);
-        return last_branchpoint;
-      }
   }
 
   void append_event(const shared_ptr<cvs_event> c) 
@@ -232,7 +177,7 @@ cvs_branch
     if (c->type == ET_COMMIT)
       {
         I(c->time != 0);
-        note_commit(c->time);
+        has_a_commit = true;
       }
     lineage.push_back(c);
   }
@@ -767,11 +712,6 @@ process_branch(string const & begin_version,
             {
               cvs.push_branch(i->second, false);
               shared_ptr<cvs_branch> b = cvs.stk.top();
-              if (curr_commit->alive)
-                {
-                  b->live_at_beginning[cvs.curr_file_interned] = curr_commit->version;
-                  b->note_branchpoint(curr_commit->time);
-                }
               cvs.pop_branch();
 
               // (ms) should this better be a '!is_synthetic_branchroot'?
@@ -1764,6 +1704,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
         }
     }
 
+#if 0
   if ((!branch.live_at_beginning.empty()) && (
       /*
        * We insert a special 'beginning of branch' commit if we eigther
@@ -1802,6 +1743,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
         }
       consume_cluster(initial_cluster);
     }
+  #endif
 }
 
 cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
@@ -1964,7 +1906,7 @@ cluster_consumer::consume_cluster(cvs_cluster const & c)
   else if (c.type == ET_BRANCH)
     {
       /* set the parent revision id of the branch */
-      L(FL("setting the parent revision id of branch at %d") % c.branch->branch_time);
+      L(FL("setting the parent revision id of a branch"));
       c.branch->parent_rid = parent_rid;
       c.branch->has_parent_rid = true;
     }
