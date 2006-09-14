@@ -95,6 +95,20 @@ struct cvs_event_digest
       changelog(c),
       tag(t),
       branch(shared_ptr<struct cvs_branch>(b)) {};
+
+  bool operator < (const struct cvs_event_digest & other) const
+    {
+      if (author != other.author)
+        return author < other.author;
+
+      if (changelog != other.changelog)
+        return changelog < other.changelog;
+
+      if (tag != other.tag)
+        return tag < other.tag;
+
+      return branch < other.branch;
+    }
 };
 
 class
@@ -157,6 +171,8 @@ public:
   virtual cvs_event_digest get_digest(void);
 };
 
+typedef map<cvs_event_digest, vector<shared_ptr<cvs_event> > > blob_collection;
+
 struct
 cvs_branch
 {
@@ -164,7 +180,7 @@ cvs_branch
   bool has_parent_rid;
   revision_id parent_rid;
 
-  vector<shared_ptr<cvs_event> > lineage;
+  blob_collection blobs;
 
   cvs_branch()
     : has_a_commit(false),
@@ -172,14 +188,28 @@ cvs_branch
   {
   }
 
-  void append_event(const shared_ptr<cvs_event> c) 
+  void append_event(shared_ptr<cvs_event> c) 
   {
     if (c->type == ET_COMMIT)
       {
         I(c->time != 0);
         has_a_commit = true;
       }
-    lineage.push_back(c);
+
+    blob_collection::const_iterator i = blobs.find(c->get_digest());
+
+    // create a blob for the digest, if non-existant
+    if (i == blobs.end())
+      {
+        blobs.insert(make_pair(c->get_digest(),
+                     vector<shared_ptr<cvs_event> >()));
+        i = blobs.find(c->get_digest());
+        I(i != blobs.end());
+      }
+
+    vector<shared_ptr<cvs_event> > blob_events = i->second;
+//    blob_events.insert(*c);
+    blob_events.push_back(c);
   }
 };
 
@@ -1196,6 +1226,7 @@ resync_revisions(shared_ptr<cvs_branch> const & branch)
 {
   map<metadata, vector< shared_ptr<resync_information> > > resync_revs;
 
+#if 0
   for (vector<shared_ptr<cvs_event> >::iterator i = branch->lineage.begin();
         i != branch->lineage.end(); ++i)
     {
@@ -1235,6 +1266,8 @@ resync_revisions(shared_ptr<cvs_branch> const & branch)
       if (
 */
     }
+
+#endif
 }
 
 void
@@ -1246,11 +1279,13 @@ import_branch(cvs_history & cvs,
 {
   cluster_set clusters;
   cluster_consumer cons(cvs, app, branchname, *branch, n_revs);
-  unsigned long commits_remaining = branch->lineage.size();
+//  unsigned long commits_remaining = branch->lineage.size();
 
+#if 0
   /* sort the branch lineage */
   L(FL("sorting lineage of branch %s\n") % branchname);
   stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
+#endif
 
   /* resync the revisions */
   resync_revisions(branch);
@@ -1481,7 +1516,7 @@ import_cvs_repo(system_path const & cvsroot,
 
   {
     transaction_guard guard(app.db);
-    L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
+//    L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
     import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
     guard.commit();
   }
