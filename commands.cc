@@ -17,6 +17,7 @@
 #include "cert.hh"
 #include "ui.hh"
 #include "cmd.hh"
+#include "revision.hh"
 
 #ifndef _WIN32
 #include <boost/lexical_cast.hpp>
@@ -391,23 +392,37 @@ complete(app_state & app,
       return;
     }
 
+  bool get_heads = false;
   vector<pair<selectors::selector_type, string> >
-    sels(selectors::parse_selector(str, app));
+    sels(selectors::parse_selector(str, get_heads, app));
 
   P(F("expanding selection '%s'") % str);
 
   // we jam through an "empty" selection on sel_ident type
-  set<string> completions;
+  set<revision_id> completions;
   selectors::selector_type ty = selectors::sel_ident;
-  selectors::complete_selector("", sels, ty, completions, app);
+  {
+    bool dummy_get_heads = false;
+    set<string> completion_strings;
+    selectors::complete_selector("", sels, ty, dummy_get_heads,
+                                 completion_strings, app, true);
+    for (set<string>::const_iterator i = completion_strings.begin();
+         i != completion_strings.end(); ++i)
+      completions.insert(revision_id(*i));
+  }
 
   N(completions.size() != 0,
     F("no match for selection '%s'") % str);
 
-  for (set<string>::const_iterator i = completions.begin();
+  if (get_heads && completions.size() > 1)
+    {
+      erase_ancestors(completions, app);
+    }
+
+  for (set<revision_id>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
     {
-      pair<set<revision_id>::const_iterator, bool> p = completion.insert(revision_id(*i));
+      pair<set<revision_id>::const_iterator, bool> p = completion.insert(*i);
       P(F("expanded to '%s'") % *(p.first));
     }
 }
