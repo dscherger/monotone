@@ -181,6 +181,7 @@ cvs_branch
   revision_id parent_rid;
 
   blob_collection blobs;
+  map<shared_ptr<cvs_event>, cvs_event_digest> blob_lookup;
 
   cvs_branch()
     : has_a_commit(false),
@@ -1037,6 +1038,26 @@ public:
 
 
 
+//
+// After stuffing all cvs_events into blobs of events with the same
+// author and changelog, we have to make sure their dependencies are
+// respected.
+//
+void
+resolve_blob_dependencies(cvs_history &cvs,
+                          string const & branchname,
+                          shared_ptr<cvs_branch> const & branch,
+                          ticker & n_blobs)
+{
+  // first try to resolve all intra-blob dependencies
+  for(blob_collection::const_iterator i = branch->blobs.begin();
+      i != branch->blobs.end(); ++i)
+    {
+    }
+}
+
+
+
 
 //
 // our task here is to produce a sequence of revision descriptions
@@ -1193,87 +1214,6 @@ cluster_ptr_lt
 typedef set<cluster_ptr, cluster_ptr_lt>
 cluster_set;
 
-/*
- * resync revisions
- */
-struct
-metadata
-{
-  cvs_author author_id;
-  cvs_changelog changelog_id;
-
-  metadata(cvs_author a,
-              cvs_changelog c)
-    : author_id(a),
-      changelog_id(c)
-    {}
-
-  bool operator<(metadata const & other) const
-    {
-      if (author_id == other.author_id)
-        return changelog_id < other.changelog_id;
-
-      return author_id < other.author_id;
-    };
-};
-
-struct
-resync_information
-{
-  time_t old_time_lower;
-  time_t old_time_upper;
-  time_t new_time;
-};
-
-void
-resync_revisions(shared_ptr<cvs_branch> const & branch)
-{
-  map<metadata, vector< shared_ptr<resync_information> > > resync_revs;
-
-#if 0
-  for (vector<shared_ptr<cvs_event> >::iterator i = branch->lineage.begin();
-        i != branch->lineage.end(); ++i)
-    {
-      vector< shared_ptr<resync_information> > rev_list;
-
-#if 0
-      metadata mid = metadata(i->author, i->changelog);
-      map<metadata, vector< shared_ptr<resync_information> > >::const_iterator j = resync_revs.find(mid);
-
-      if (j == resync_revs.end())
-        {
-          rev_list = vector< shared_ptr<resync_information> >();
-          resync_revs.insert(make_pair(mid, rev_list));
-        }
-      else
-        {
-          rev_list = j->second;
-        }
-
-      for (vector< shared_ptr<resync_information> >::iterator k = rev_list.begin();
-            k != rev_list.end(); ++k)
-        {
-        }
-#endif
-
-/*
-      if (j == resync_revs.end())
-        {
-          info = shared_ptr<resync_information>(new resync_information());
-          resync_revs.insert(make_pair(mid, info));
-        }
-      else
-        {
-          info = j->second;
-        }
-
-      if (
-*/
-    }
-
-#endif
-}
-
 void
 import_branch(cvs_history & cvs,
               app_state & app,
@@ -1289,12 +1229,7 @@ import_branch(cvs_history & cvs,
   /* sort the branch lineage */
   L(FL("sorting lineage of branch %s\n") % branchname);
   stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
-#endif
 
-  /* resync the revisions */
-  resync_revisions(branch);
-
-#if 0
   for (vector<cvs_event>::iterator i = branch->lineage.begin();
        i != branch->lineage.end(); ++i)
     {
@@ -1509,14 +1444,20 @@ import_cvs_repo(system_path const & cvsroot,
 
   I(cvs.stk.size() == 1);
 
+  ticker n_blobs(_("blobs"), "b", 1);
+  resolve_blob_dependencies(cvs, cvs.base_branch, cvs.trunk, n_blobs);
+
+
   ticker n_revs(_("revisions"), "r", 1);
 
+#if 0
   for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
           i != cvs.branches.end(); ++i)
     {
       string branchname = i->first;
       shared_ptr<cvs_branch> branch = i->second;
     }
+#endif
 
   {
     transaction_guard guard(app.db);
