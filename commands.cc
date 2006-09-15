@@ -332,6 +332,7 @@ get_stdin()
   return tmp;
 }
 
+#ifndef LIBMTN_COMPILE
 string
 describe_revision(app_state & app,
                   revision_id const & id)
@@ -475,7 +476,7 @@ process_commit_message_args(bool & given,
   else
     given = false;
 }
-
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76
