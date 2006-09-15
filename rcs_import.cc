@@ -660,7 +660,8 @@ lineage.
 
 
 static void
-process_branch(shared_ptr<cvs_commit> last_commit,
+process_branch(string const & begin_version,
+               shared_ptr<cvs_commit> last_commit,
                vector< piece > const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
@@ -669,7 +670,7 @@ process_branch(shared_ptr<cvs_commit> last_commit,
                cvs_history & cvs)
 {
   shared_ptr<cvs_commit> curr_commit;
-  string curr_version = last_commit->rcs;
+  string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
                                            (begin_lines.begin(),
@@ -677,15 +678,18 @@ process_branch(shared_ptr<cvs_commit> last_commit,
   data curr_data(begin_data), next_data;
   hexenc<id> curr_id(begin_id), next_id;
 
-  // add a branch event if we have a previous commit
-  shared_ptr<cvs_event_branch> branch_event =
-    shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit));
-  branch_event->branch = cvs.stk.top();
-  cvs.stk.top()->append_event(branch_event);
+  if (last_commit)
+    {
+      // add a branch event if we have a previous commit
+      shared_ptr<cvs_event_branch> branch_event =
+        shared_ptr<cvs_event_branch>(new cvs_event_branch(last_commit));
+      branch_event->branch = cvs.stk.top();
+      cvs.stk.top()->append_event(branch_event);
 
-  L(FL("added branch event for file %s in branch %s")
-    % cvs.path_interner.lookup(curr_commit->path)
-    % cvs.bstk.top());
+      L(FL("added branch event for file %s in branch %s")
+        % cvs.path_interner.lookup(last_commit->path)
+        % cvs.bstk.top());
+    }
 
   while(! (r.deltas.find(curr_version) == r.deltas.end()))
     {
@@ -762,8 +766,8 @@ process_branch(shared_ptr<cvs_commit> last_commit,
                          branch_lines, branch_data, branch_id, db);
 
           cvs.push_branch(branch, priv);
-          process_branch(curr_commit, branch_lines, branch_data, branch_id,
-                         r, db, cvs);
+          process_branch(*i, curr_commit, branch_lines, branch_data,
+                         branch_id, r, db, cvs);
           cvs.pop_branch();
 
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
@@ -813,7 +817,7 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
                                   head_lines);
-    process_branch(shared_ptr<cvs_commit>(), head_lines, dat, id,
+    process_branch(r.admin.head, shared_ptr<cvs_commit>(), head_lines, dat, id,
                    r, db, cvs);
     global_pieces.reset();
   }
