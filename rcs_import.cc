@@ -84,30 +84,15 @@ struct cvs_branch;
 
 struct cvs_event_digest
 {
-  cvs_author author;
-  cvs_changelog changelog;
-  cvs_tag tag;
-  shared_ptr<struct cvs_branch> branch;
+  unsigned int digest;
 
   cvs_event_digest(cvs_author a, cvs_changelog c, cvs_tag t,
                    shared_ptr<struct cvs_branch> b)
-    : author(a),
-      changelog(c),
-      tag(t),
-      branch(shared_ptr<struct cvs_branch>(b)) {};
+    : digest(a | c | t | *reinterpret_cast<int*>(b.get())) {}
 
   bool operator < (const struct cvs_event_digest & other) const
     {
-      if (author != other.author)
-        return author < other.author;
-
-      if (changelog != other.changelog)
-        return changelog < other.changelog;
-
-      if (tag != other.tag)
-        return tag < other.tag;
-
-      return branch < other.branch;
+      return digest < other.digest;
     }
 };
 
@@ -171,7 +156,7 @@ public:
   virtual cvs_event_digest get_digest(void);
 };
 
-typedef map<cvs_event_digest, vector<shared_ptr<cvs_event> > > blob_collection;
+typedef vector<shared_ptr<cvs_event> > cvs_blob;
 
 struct
 cvs_branch
@@ -180,8 +165,8 @@ cvs_branch
   bool has_parent_rid;
   revision_id parent_rid;
 
-  blob_collection blobs;
-  map<shared_ptr<cvs_event>, cvs_event_digest> blob_lookup;
+  // all the blobs
+  multimap<cvs_event_digest, vector<shared_ptr<cvs_event> > > blobs;
 
   cvs_branch()
     : has_a_commit(false),
@@ -197,19 +182,22 @@ cvs_branch
         has_a_commit = true;
       }
 
-    blob_collection::const_iterator i = blobs.find(c->get_digest());
+    typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
+    pair<ity,ity> range = blobs.equal_range(c->get_digest());
 
-    // create a blob for the digest, if non-existant
-    if (i == blobs.end())
+    if (range.first == blobs.end())
       {
         blobs.insert(make_pair(c->get_digest(),
                      vector<shared_ptr<cvs_event> >()));
-        i = blobs.find(c->get_digest());
-        I(i != blobs.end());
+        range = blobs.equal_range(c->get_digest());
+        I(range.first != blobs.end());
       }
 
-    vector<shared_ptr<cvs_event> > blob_events = i->second;
-//    blob_events.insert(*c);
+    // it's a multimap, but we want only one blob per digest
+    // at this time (when filling it)
+    I(range.first == range.second);
+
+    cvs_blob blob_events = range.first->second;
     blob_events.push_back(c);
   }
 };
@@ -1050,9 +1038,10 @@ resolve_blob_dependencies(cvs_history &cvs,
                           ticker & n_blobs)
 {
   // first try to resolve all intra-blob dependencies
-  for(blob_collection::const_iterator i = branch->blobs.begin();
-      i != branch->blobs.end(); ++i)
+  typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
+  for (ity i = branch->blobs.begin(); i != branch->blobs.end(); ++i)
     {
+      cvs_blob blob = i->second;
     }
 }
 
