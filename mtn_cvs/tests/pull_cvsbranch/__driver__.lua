@@ -24,7 +24,7 @@ check(indir("test", cvs("add","B2")),0,false,false)
 os.execute("sleep 1")
 check(indir("test", cvs("ci","-m","B added to HEAD")),0,false,false)
 
-check(indir("test", cvs("update","-t","branch")),0,false,false)
+check(indir("test", cvs("update","-r","branch")),0,false,false)
 check(indir("test", cvs("delete","-f","A")),0,false,false)
 os.execute("sleep 1")
 check(indir("test", cvs("ci","-m","A removed")),0,false,false)
