@@ -73,89 +73,143 @@ typedef unsigned long cvs_tag;
 
 struct cvs_history;
 
-struct
-cvs_commit
+typedef enum event_type
 {
+  ET_COMMIT,
+  ET_BRANCH,
+  ET_TAG
+} event_type;
+
+struct cvs_branch;
+
+struct cvs_event_digest
+{
+  cvs_author author;
+  cvs_changelog changelog;
+  cvs_tag tag;
+  shared_ptr<struct cvs_branch> branch;
+
+  cvs_event_digest(cvs_author a, cvs_changelog c, cvs_tag t,
+                   shared_ptr<struct cvs_branch> b)
+    : author(a),
+      changelog(c),
+      tag(t),
+      branch(shared_ptr<struct cvs_branch>(b)) {};
+
+  bool operator < (const struct cvs_event_digest & other) const
+    {
+      if (author != other.author)
+        return author < other.author;
+
+      if (changelog != other.changelog)
+        return changelog < other.changelog;
+
+      if (tag != other.tag)
+        return tag < other.tag;
+
+      return branch < other.branch;
+    }
+};
+
+class
+cvs_event
+{
+public:
+  event_type type;
+  time_t time;
+  cvs_path path;
+  shared_ptr<struct cvs_event> dependency;
+
+  cvs_event();
+  cvs_event(event_type t);
+  virtual ~cvs_event();
+  virtual cvs_event_digest get_digest(void) = 0;
+};
+
+class
+cvs_commit
+  : public cvs_event
+{
+public:
+  cvs_author author;
+  cvs_changelog changelog;
+  cvs_version version;
+  string rcs;
+
+  bool alive;
+  bool is_synthetic_branch_root;
+
+  cvs_commit();
   cvs_commit(rcs_file const & r,
              string const & rcs_version,
              file_id const & ident,
              cvs_history & cvs);
-
-  bool is_synthetic_branch_root;
-  time_t time;
-  bool alive;
-  cvs_author author;
-  cvs_changelog changelog;
-  cvs_version version;
-  cvs_path path;
-  vector<cvs_tag> tags;
-
-  bool operator<(cvs_commit const & other) const
-  {
-    return time < other.time;
-  }
+  virtual cvs_event_digest get_digest(void);
 };
+
+class
+cvs_event_branch
+  : public cvs_event
+{
+public:
+  shared_ptr<struct cvs_branch> branch;
+  cvs_path path;
+
+  cvs_event_branch(shared_ptr<cvs_commit> dep);
+  virtual cvs_event_digest get_digest(void);
+};
+
+class
+cvs_event_tag
+  : public cvs_event
+{
+public:
+  cvs_tag tag;
+  cvs_path path;
+
+  cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t);
+  virtual cvs_event_digest get_digest(void);
+};
+
+typedef map<cvs_event_digest, vector<shared_ptr<cvs_event> > > blob_collection;
 
 struct
 cvs_branch
 {
-  bool has_a_branchpoint;
   bool has_a_commit;
-  time_t last_branchpoint;
-  time_t first_commit;
+  bool has_parent_rid;
+  revision_id parent_rid;
 
-  map<cvs_path, cvs_version> live_at_beginning;
-  vector<cvs_commit> lineage;
+  blob_collection blobs;
 
   cvs_branch()
-    : has_a_branchpoint(false),
-      has_a_commit(false),
-      last_branchpoint(0),
-      first_commit(0)
+    : has_a_commit(false),
+      has_parent_rid(false)
   {
   }
 
-  void note_commit(time_t now)
+  void append_event(shared_ptr<cvs_event> c) 
   {
-    if (!has_a_commit)
+    if (c->type == ET_COMMIT)
       {
-        first_commit = now;
+        I(c->time != 0);
+        has_a_commit = true;
       }
-    else
-      {
-        if (now < first_commit)
-          first_commit = now;
-      }
-    has_a_commit = true;
-  }
 
-  void note_branchpoint(time_t now)
-  {
-    has_a_branchpoint = true;
-    if (now > last_branchpoint)
-      last_branchpoint = now;
-  }
+    blob_collection::const_iterator i = blobs.find(c->get_digest());
 
-  time_t beginning() const
-  {
-    I(has_a_branchpoint || has_a_commit);
-    if (has_a_commit)
+    // create a blob for the digest, if non-existant
+    if (i == blobs.end())
       {
-        I(first_commit != 0);
-        return first_commit;
+        blobs.insert(make_pair(c->get_digest(),
+                     vector<shared_ptr<cvs_event> >()));
+        i = blobs.find(c->get_digest());
+        I(i != blobs.end());
       }
-    else
-      {
-        I(last_branchpoint != 0);
-        return last_branchpoint;
-      }
-  }
 
-  void append_commit(cvs_commit const & c)
-  {
-    I(c.time != 0);
-    note_commit(c.time);
-    lineage.push_back(c);
+    vector<shared_ptr<cvs_event> > blob_events = i->second;
+//    blob_events.insert(*c);
+    blob_events.push_back(c);
   }
 };
 
@@ -239,12 +293,31 @@ is_sbr(shared_ptr<rcs_delta> dl,
   return i != dt->log.end();
 }
 
+cvs_event::cvs_event(void)
+{
+}
+
+cvs_event::cvs_event(event_type t)
+  : type(t)
+{
+}
+
+cvs_event::~cvs_event(void)
+{
+}
+
+cvs_commit::cvs_commit(void)
+  : cvs_event(ET_COMMIT)
+{
+}
 
 cvs_commit::cvs_commit(rcs_file const & r,
                        string const & rcs_version,
                        file_id const & ident,
                        cvs_history & cvs)
 {
+  type = ET_COMMIT;
+
   map<string, shared_ptr<rcs_delta> >::const_iterator delta =
     r.deltas.find(rcs_version);
   I(delta != r.deltas.end());
@@ -286,20 +359,45 @@ cvs_commit::cvs_commit(rcs_file const & r,
   author = cvs.author_interner.intern(delta->second->author);
   path = cvs.curr_file_interned;
   version = cvs.file_version_interner.intern(ident.inner()());
-
-  typedef multimap<string,string>::const_iterator ity;
-  pair<ity,ity> range = r.admin.symbols.equal_range(rcs_version);
-  for (ity i = range.first; i != range.second; ++i)
-    {
-      if (i->first == rcs_version)
-        {
-          L(FL("version %s -> tag %s") % rcs_version % i->second);
-          tags.push_back(cvs.tag_interner.intern(i->second));
-        }
-    }
-
+  rcs = string(rcs_version);
 }
 
+cvs_event_digest
+cvs_commit::get_digest(void)
+{
+  return cvs_event_digest(author, changelog, 0, shared_ptr<cvs_branch>());
+};
+
+cvs_event_digest
+cvs_event::get_digest(void)
+{
+  return cvs_event_digest(0, 0, 0, shared_ptr<cvs_branch>());
+};
+
+cvs_event_branch::cvs_event_branch(shared_ptr<cvs_commit> dep)
+{
+  type = ET_BRANCH;
+  path = dep->path;
+}
+
+cvs_event_digest
+cvs_event_branch::get_digest(void)
+{
+  return cvs_event_digest(0, 0, 0, branch);
+}
+
+cvs_event_tag::cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t)
+{
+  type = ET_TAG;
+  path = dep->path;
+  tag = t;
+}
+
+cvs_event_digest
+cvs_event_tag::get_digest(void)
+{
+  return cvs_event_digest(0, 0, tag, shared_ptr<cvs_branch>());
+}
 
 // piece table stuff
 
@@ -562,7 +660,7 @@ lineage.
 
 
 static void
-process_branch(string const & begin_version,
+process_branch(shared_ptr<cvs_commit> last_commit,
                vector< piece > const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
@@ -570,7 +668,8 @@ process_branch(string const & begin_version,
                database & db,
                cvs_history & cvs)
 {
-  string curr_version = begin_version;
+  shared_ptr<cvs_commit> curr_commit;
+  string curr_version = last_commit->rcs;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
                                            (begin_lines.begin(),
@@ -578,49 +677,66 @@ process_branch(string const & begin_version,
   data curr_data(begin_data), next_data;
   hexenc<id> curr_id(begin_id), next_id;
 
+  // add a branch event if we have a previous commit
+  shared_ptr<cvs_event_branch> branch_event =
+    shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit));
+  branch_event->branch = cvs.stk.top();
+  cvs.stk.top()->append_event(branch_event);
+
+  L(FL("added branch event for file %s in branch %s")
+    % cvs.path_interner.lookup(curr_commit->path)
+    % cvs.bstk.top());
+
   while(! (r.deltas.find(curr_version) == r.deltas.end()))
     {
       L(FL("version %s has %d lines") % curr_version % curr_lines->size());
 
-      cvs_commit curr_commit(r, curr_version, curr_id, cvs);
-      if (!curr_commit.is_synthetic_branch_root)
+      curr_commit = shared_ptr<cvs_commit>(
+        new cvs_commit(r, curr_version, curr_id, cvs));
+
+      if (!curr_commit->is_synthetic_branch_root)
         {
-          cvs.stk.top()->append_commit(curr_commit);
+          cvs.stk.top()->append_event(curr_commit);
           ++cvs.n_versions;
+        }
+
+      // make the last commit depend on the current one (which
+      // comes _before_ due to the reverse processing here)
+      if (last_commit != NULL)
+        {
+          last_commit->dependency = curr_commit;
+        }
+
+      // create tag events for all tags on this commit
+      typedef multimap<string,string>::const_iterator ity;
+      pair<ity,ity> range = r.admin.symbols.equal_range(curr_version);
+      for (ity i = range.first; i != range.second; ++i)
+        {
+          if (i->first == curr_version)
+           {
+              shared_ptr<cvs_event_tag> event;
+              L(FL("version %s -> tag %s") % curr_version % i->second);
+
+              cvs_tag tag = cvs.tag_interner.intern(i->second);
+              event = shared_ptr<cvs_event_tag>(
+                new cvs_event_tag(curr_commit, tag));
+              cvs.stk.top()->append_event(event);
+            }
         }
 
       string next_version = r.deltas.find(curr_version)->second->next;
 
       if (! next_version.empty())
-      {
-         L(FL("following RCS edge %s -> %s") % curr_version % next_version);
-
-         construct_version(*curr_lines, next_version, *next_lines, r);
-         L(FL("constructed RCS version %s, inserting into database") %
-           next_version);
-
-         insert_into_db(curr_data, curr_id,
-                     *next_lines, next_data, next_id, db);
-      }
-
-      // mark the beginning-of-branch time and state of this file if
-      // we're at a branchpoint
-      typedef multimap<string,string>::const_iterator ity;
-      pair<ity,ity> range = cvs.branchpoints.equal_range(curr_version);
-      if (range.first != cvs.branchpoints.end()
-          && range.first->first == curr_version)
         {
-          for (ity i = range.first; i != range.second; ++i)
-            {
-              cvs.push_branch(i->second, false);
-              shared_ptr<cvs_branch> b = cvs.stk.top();
-              if (curr_commit.alive)
-                b->live_at_beginning[cvs.curr_file_interned] = curr_commit.version;
-              b->note_branchpoint(curr_commit.time);
-              cvs.pop_branch();
-            }
-        }
+          L(FL("following RCS edge %s -> %s") % curr_version % next_version);
 
+          construct_version(*curr_lines, next_version, *next_lines, r);
+          L(FL("constructed RCS version %s, inserting into database") %
+            next_version);
+
+          insert_into_db(curr_data, curr_id,
+                         *next_lines, next_data, next_id, db);
+        }
 
       // recursively follow any branch commits coming from the branchpoint
       shared_ptr<rcs_delta> curr_delta = r.deltas.find(curr_version)->second;
@@ -639,14 +755,15 @@ process_branch(string const & begin_version,
           else
             priv = true;
 
-          L(FL("following RCS branch %s = '%s'") % (*i) % branch);
-
+          L(FL("following RCS branch %s = '%s'\n") % (*i) % branch);
+          
           construct_version(*curr_lines, *i, branch_lines, r);
-          insert_into_db(curr_data, curr_id,
+          insert_into_db(curr_data, curr_id, 
                          branch_lines, branch_data, branch_id, db);
 
           cvs.push_branch(branch, priv);
-          process_branch(*i, branch_lines, branch_data, branch_id, r, db, cvs);
+          process_branch(curr_commit, branch_lines, branch_data, branch_id,
+                         r, db, cvs);
           cvs.pop_branch();
 
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
@@ -660,6 +777,7 @@ process_branch(string const & begin_version,
           curr_version = next_version;
           swap(next_lines, curr_lines);
           next_lines->clear();
+          last_commit = curr_commit;
         }
       else break;
     }
@@ -692,17 +810,11 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
         db.put_file(fid, dat);
       }
 
-    {
-      // create the head state in case it is a loner
-      //       cvs_key k;
-      //       shared_ptr<cvs_state> s;
-      //       L(FL("noting head version %s : %s") % cvs.curr_file % r.admin.head);
-      //       cvs.find_key_and_state (r, r.admin.head, k, s);
-    }
-
     global_pieces.reset();
-    global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second, head_lines);
-    process_branch(r.admin.head, head_lines, dat, id, r, db, cvs);
+    global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
+                                  head_lines);
+    process_branch(shared_ptr<cvs_commit>(), head_lines, dat, id,
+                   r, db, cvs);
     global_pieces.reset();
   }
 
@@ -800,7 +912,7 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
           //
           // such as "1.1.1", where "1.1" is the branchpoint and
           // "1.1.1.1" will be the first commit on it.
-
+          
           first_entry_components = components;
           first_entry_components.push_back("1");
 
@@ -833,14 +945,14 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
       string first_entry_version;
       join_version(first_entry_components, first_entry_version);
 
-      L(FL("first version in branch %s would be %s")
+      L(FL("first version in branch %s would be %s\n") 
         % sym % first_entry_version);
       branch_first_entries.insert(make_pair(first_entry_version, sym));
 
       string branchpoint_version;
       join_version(branchpoint_components, branchpoint_version);
 
-      L(FL("file branchpoint for %s at %s") % sym % branchpoint_version);
+      L(FL("file branchpoint for %s at %s\n") % sym % branchpoint_version);
       branchpoints.insert(make_pair(branchpoint_version, sym));
     }
 }
@@ -895,7 +1007,7 @@ cvs_tree_walker
   cvs_history & cvs;
   database & db;
 public:
-  cvs_tree_walker(cvs_history & c, database & d) :
+  cvs_tree_walker(cvs_history & c, database & d) : 
     cvs(c), db(d)
   {
   }
@@ -981,15 +1093,21 @@ public:
 struct
 cvs_cluster
 {
-  time_t first_time;
+  event_type type;
+  time_t start_time;
+  time_t end_time;
   cvs_author author;
   cvs_changelog changelog;
   set<cvs_tag> tags;
+  shared_ptr<cvs_branch> branch;
 
-  cvs_cluster(time_t t,
+  cvs_cluster(event_type ty,
+              time_t t, 
               cvs_author a,
               cvs_changelog c)
-    : first_time(t),
+    : type(ty),
+      start_time(t),
+      end_time(t),
       author(a),
       changelog(c)
   {}
@@ -1064,12 +1182,93 @@ cluster_ptr_lt
   bool operator()(cluster_ptr const & a,
                   cluster_ptr const & b) const
   {
-    return a->first_time < b->first_time;
+    return a->end_time < b->start_time;
   }
 };
 
 typedef set<cluster_ptr, cluster_ptr_lt>
 cluster_set;
+
+/*
+ * resync revisions
+ */
+struct
+metadata
+{
+  cvs_author author_id;
+  cvs_changelog changelog_id;
+
+  metadata(cvs_author a,
+              cvs_changelog c)
+    : author_id(a),
+      changelog_id(c)
+    {}
+
+  bool operator<(metadata const & other) const
+    {
+      if (author_id == other.author_id)
+        return changelog_id < other.changelog_id;
+
+      return author_id < other.author_id;
+    };
+};
+
+struct
+resync_information
+{
+  time_t old_time_lower;
+  time_t old_time_upper;
+  time_t new_time;
+};
+
+void
+resync_revisions(shared_ptr<cvs_branch> const & branch)
+{
+  map<metadata, vector< shared_ptr<resync_information> > > resync_revs;
+
+#if 0
+  for (vector<shared_ptr<cvs_event> >::iterator i = branch->lineage.begin();
+        i != branch->lineage.end(); ++i)
+    {
+      vector< shared_ptr<resync_information> > rev_list;
+
+#if 0
+      metadata mid = metadata(i->author, i->changelog);
+      map<metadata, vector< shared_ptr<resync_information> > >::const_iterator j = resync_revs.find(mid);
+
+      if (j == resync_revs.end())
+        {
+          rev_list = vector< shared_ptr<resync_information> >();
+          resync_revs.insert(make_pair(mid, rev_list));
+        }
+      else
+        {
+          rev_list = j->second;
+        }
+
+      for (vector< shared_ptr<resync_information> >::iterator k = rev_list.begin();
+            k != rev_list.end(); ++k)
+        {
+        }
+#endif
+
+/*
+      if (j == resync_revs.end())
+        {
+          info = shared_ptr<resync_information>(new resync_information());
+          resync_revs.insert(make_pair(mid, info));
+        }
+      else
+        {
+          info = j->second;
+        }
+
+      if (
+*/
+    }
+
+#endif
+}
 
 void
 import_branch(cvs_history & cvs,
@@ -1080,28 +1279,46 @@ import_branch(cvs_history & cvs,
 {
   cluster_set clusters;
   cluster_consumer cons(cvs, app, branchname, *branch, n_revs);
-  unsigned long commits_remaining = branch->lineage.size();
+//  unsigned long commits_remaining = branch->lineage.size();
 
-  // step 1: sort the lineage
-  stable_sort(branch->lineage.begin(), branch->lineage.end());
+#if 0
+  /* sort the branch lineage */
+  L(FL("sorting lineage of branch %s\n") % branchname);
+  stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
+#endif
 
-  for (vector<cvs_commit>::const_iterator i = branch->lineage.begin();
+  /* resync the revisions */
+  resync_revisions(branch);
+
+#if 0
+  for (vector<cvs_event>::iterator i = branch->lineage.begin();
        i != branch->lineage.end(); ++i)
     {
       commits_remaining--;
 
-      L(FL("examining next commit [t:%d] [p:%s] [a:%s] [c:%s]")
-        % i->time
-        % cvs.path_interner.lookup(i->path)
-        % cvs.author_interner.lookup(i->author)
-        % cvs.changelog_interner.lookup(i->changelog));
-
+      if (i->type == ET_COMMIT)
+        {
+          L(FL("examining next event: commit [t:%d] [p:%s] [a:%s] [c:%s]")
+            % i->time 
+            % cvs.path_interner.lookup(i->path)
+            % cvs.author_interner.lookup(i->author)
+            % cvs.changelog_interner.lookup(i->changelog));
+        }
+      else
+        {
+          // correct the cvs_event time of the branch event
+          i->time = i->branch->branch_time;
+          L(FL("examining next event: branch [t:%d] [p:%s]")
+            % i->time
+            % cvs.path_interner.lookup(i->path));
+        }
+      
       // step 2: expire all clusters from the beginning of the set which
       // have passed the window size
       while (!clusters.empty())
         {
           cluster_set::iterator j = clusters.begin();
-          if ((*j)->first_time + constants::cvs_window < i->time)
+          if ((*j)->end_time + constants::cvs_window < i->time)
             {
               L(FL("expiring cluster"));
               cons.consume_cluster(**j);
@@ -1113,66 +1330,109 @@ import_branch(cvs_history & cvs,
 
       // step 3: find the last still-live cluster to have touched this
       // file
+      // (ms) the current event needs to be inserted into a a cluster
+      // following (i.e. newer than) this cluster. Regardless if it's a
+      // commit or branch event.
       time_t time_of_last_cluster_touching_this_file = 0;
 
       unsigned clu = 0;
       for (cluster_set::const_iterator j = clusters.begin();
            j != clusters.end(); ++j)
         {
-          L(FL("examining cluster %d to see if it touched %d")
+          L(FL("examining cluster %d to see if it touched %s")
             % clu++
-            % i->path);
+            % cvs.path_interner.lookup(i->path));
 
           cvs_cluster::entry_map::const_iterator k = (*j)->entries.find(i->path);
           if ((k != (*j)->entries.end())
               && (k->second.time > time_of_last_cluster_touching_this_file))
             {
-              L(FL("found cluster touching %d: [t:%d] [a:%d] [c:%d]")
-                % i->path
-                % (*j)->first_time
+              L(FL("found cluster touching %s: [t:%d-%d] [a:%d] [c:%d]")
+                % cvs.path_interner.lookup(i->path)
+                % (*j)->start_time
+                % (*j)->end_time
                 % (*j)->author
                 % (*j)->changelog);
-              time_of_last_cluster_touching_this_file = (*j)->first_time;
+              time_of_last_cluster_touching_this_file = (*j)->end_time;
             }
         }
       L(FL("last modification time is %d")
         % time_of_last_cluster_touching_this_file);
 
-      // step 4: find a cluster which starts on or after the
-      // last_modify_time, which doesn't modify the file in question,
-      // and which contains the same author and changelog as our
-      // commit
       cluster_ptr target;
-      for (cluster_set::const_iterator j = clusters.begin();
-           j != clusters.end(); ++j)
+      if (i->type == ET_COMMIT)
         {
-          if (((*j)->first_time >= time_of_last_cluster_touching_this_file)
-              && ((*j)->author == i->author)
-              && ((*j)->changelog == i->changelog)
-              && ((*j)->entries.find(i->path) == (*j)->entries.end()))
+          // step 4: find a commit cluster which starts on or after the
+          // last_modify_time, which doesn't modify the file in question,
+          // and which contains the same author and changelog as our
+          // commit
+          for (cluster_set::const_iterator j = clusters.begin();
+               j != clusters.end(); ++j)
             {
-              L(FL("picked existing cluster [t:%d] [a:%d] [c:%d]")
-                % (*j)->first_time
-                % (*j)->author
-                % (*j)->changelog);
+              if (((*j)->start_time >= time_of_last_cluster_touching_this_file)
+                  && ((*j)->type == ET_COMMIT)
+                  && ((*j)->author == i->author)
+                  && ((*j)->changelog == i->changelog)
+                  && ((*j)->entries.find(i->path) == (*j)->entries.end()))
+                {
+                  L(FL("picked existing cluster (commit) [t:%d-%d] [a:%d] [c:%d]")
+                    % (*j)->start_time
+                    % (*j)->end_time
+                    % (*j)->author
+                    % (*j)->changelog);
 
-              target = (*j);
+                  target = (*j);
+                }
             }
         }
+      else if (i->type == ET_BRANCH)
+        {
+          // step 4: find the branchpoint cluster for the branch in question
+          for (cluster_set::const_iterator j = clusters.begin();
+               j != clusters.end(); ++j)
+            {
+              if (((*j)->type == ET_BRANCH)
+                  // && ((*j)->branch == i->branch)
+                  && ((*j)->entries.find(i->path) == (*j)->entries.end()))
+                {              
+                  L(FL("picked existing cluster (branchpoint) [t:%d-%d]")
+                    % (*j)->start_time
+                    % (*j)->end_time);
 
+                  target = (*j);
+                }
+            }
+        }
+  
       // if we're still not finding an active cluster,
       // this is probably the first commit in it. make
       // a new one.
       if (!target)
         {
-          L(FL("building new cluster [t:%d] [a:%d] [c:%d]")
-            % i->time
-            % i->author
-            % i->changelog);
+          if (i->type == ET_COMMIT)
+            {
+              L(FL("building new cluster: commit [t:%d] [a:%d] [c:%d]")
+                % i->time
+                % i->author
+                % i->changelog);
 
-          target = cluster_ptr(new cvs_cluster(i->time,
-                                               i->author,
-                                               i->changelog));
+              target = cluster_ptr(new cvs_cluster(ET_COMMIT,
+                                                   i->time,
+                                                   i->author,
+                                                   i->changelog));
+            }
+          else
+            {
+              L(FL("building new cluster: branch [t:%d]")
+                % i->time);
+
+              target = cluster_ptr(new cvs_cluster(ET_BRANCH,
+                                                   i->time,
+                                                   i->author,
+                                                   i->changelog));
+              target->branch = i->branch;
+            }
+
           clusters.insert(target);
         }
 
@@ -1181,6 +1441,10 @@ import_branch(cvs_history & cvs,
                                        cvs_cluster::entry(i->alive,
                                                           i->version,
                                                           i->time)));
+      /* update the target's end time */
+      if (target->end_time < i->time)
+        target->end_time = i->time;
+
       for (vector<cvs_tag>::const_iterator j = i->tags.begin();
            j != i->tags.end(); ++j)
         {
@@ -1199,7 +1463,7 @@ import_branch(cvs_history & cvs,
   L(FL("finished writing pending clusters"));
 
   cons.store_revisions();
-
+#endif
 }
 
 void
@@ -1243,26 +1507,114 @@ import_cvs_repo(system_path const & cvsroot,
 
   ticker n_revs(_("revisions"), "r", 1);
 
-  while (cvs.branches.size() > 0)
+  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
+          i != cvs.branches.end(); ++i)
     {
-      transaction_guard guard(app.db);
-      map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
       string branchname = i->first;
       shared_ptr<cvs_branch> branch = i->second;
-      L(FL("branch %s has %d entries") % branchname % branch->lineage.size());
-      import_branch(cvs, app, branchname, branch, n_revs);
-
-      // free up some memory
-      cvs.branches.erase(branchname);
-      guard.commit();
     }
 
+  {
+    transaction_guard guard(app.db);
+//    L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
+    import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
+    guard.commit();
+  }
+
+
+/*
+
+  // check branch times
+  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
+          i != cvs.branches.end(); ++i)
+    {
+      string branchname = i->first;
+      shared_ptr<cvs_branch> branch = i->second;
+      L(FL("branch %s has %d entries\n") % branchname % branch->lineage.size());
+
+      L(FL("checking branch time of branch %s") % branchname);
+
+      time_t branched_before = 0;
+      if (branch->has_a_commit)
+        branched_before = branch->first_commit;
+
+      if (branch->first_commit_after_branching > 0)
+        if ((branch->first_commit_after_branching < branched_before)
+            || (branched_before == 0))
+          {
+            branched_before = branch->first_commit_after_branching;
+          }
+
+      if (branch->last_branchpoint < branched_before)
+        {
+          branch->branch_time = branch->last_branchpoint +
+            ((branched_before - branch->last_branchpoint) / 2);
+          L(FL("guessing branchpoint time for branch %s: %d")
+               % branchname
+               % branch->branch_time);
+        }
+      else
+        {
+          L(FL("unable to find a branchpoint time for branch %s") % branchname);
+          L(FL("last branchpoint:             %d)") % branch->last_branchpoint);
+          L(FL("first commit in branch:       %d)") % branch->first_commit);
+          L(FL("first commit after branching: %d)") % branch->first_commit_after_branching);
+        }
+    }
+
+  // First, sort the lineages of the trunk and all branches. Thanks to the
+  // logic in the 'operator<' this correctly handles branch events, which
+  // have their time stored in branch->branch_time.
+  // This is updated in import_branch later on.
+  L(FL("sorting lineage of trunk\n"));
+  stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
+  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
+          i != cvs.branches.end(); ++i)
+    {
+      string branchname = i->first;
+      shared_ptr<cvs_branch> branch = i->second;
+
+      L(FL("sorting lineage of branch %s") % branchname);
+      stable_sort(branch->lineage.begin(), branch->lineage.end());
+    }
+
+  // import trunk first
   {
     transaction_guard guard(app.db);
     L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
     import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
     guard.commit();
   }
+
+  while (cvs.branches.size() > 0)
+    {
+      transaction_guard guard(app.db);
+      map<string, shared_ptr<cvs_branch> >::const_iterator i;
+      shared_ptr<cvs_branch> branch;
+
+      // import branches in the correct order
+      for (i = cvs.branches.begin(); i != cvs.branches.end(); ++i)
+        {
+          branch = i->second;
+          if (branch->has_parent_rid) break;
+        }
+
+      if (i == cvs.branches.end())
+        {
+          L(FL("no more connected branches... unconnected import"));
+          i = cvs.branches.begin();
+          branch = i->second;
+        }
+
+      string branchname = i->first;
+      
+      L(FL("branch %s has %d entries\n") % branchname % branch->lineage.size());
+      import_branch(cvs, app, branchname, branch, n_revs);
+
+      // free up some memory
+      cvs.branches.erase(branchname); 
+      guard.commit();
+    }
 
   // now we have a "last" rev for each tag
   {
@@ -1279,6 +1631,7 @@ import_cvs_repo(system_path const & cvsroot,
       }
     guard.commit();
   }
+*/
 
 
   return;
@@ -1296,21 +1649,75 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
     n_revisions(n_revs),
     editable_ros(ros, nis)
 {
-  if (!branch.live_at_beginning.empty())
+  if (branch.has_parent_rid)
     {
-      cvs_author synthetic_author =
+      parent_rid = branch.parent_rid;
+      app.db.get_roster(parent_rid, ros);
+
+      L(FL("starting cluster for branch %s from revision %s which contains:")
+           % branchname
+           % branch.parent_rid);
+
+      // populate the cluster_consumer's live_files and created_dirs according
+      // to the roster.
+      node_map nodes = ros.all_nodes();
+      for (node_map::iterator i = nodes.begin(); i != nodes.end(); ++i)
+        {
+          shared_ptr<node> node = i->second;
+
+          if (is_dir_t(node))
+            {
+              split_path dir;
+
+              ros.get_name(node->self, dir);
+              L(FL("   dir:  %s") % dir);
+              safe_insert(created_dirs, dir);
+            }
+          else if (is_file_t(node))
+            {
+              std::string rev;
+              std::string name;
+              cvs_path path;
+              split_path sp;
+
+              ros.get_name(node->self, sp);
+              file_path fp(sp);
+              path = cvs.path_interner.intern(fp.as_internal());
+
+              dump(downcast_to_file_t(node)->content, rev);
+
+              L(FL("   file: %s at revision %s") % fp.as_internal() % rev);
+              live_files[path] = cvs.file_version_interner.intern(rev);
+            }
+        }
+    }
+
+#if 0
+  if ((!branch.live_at_beginning.empty()) && (
+      /*
+       * We insert a special 'beginning of branch' commit if we eigther
+       * have not found a parent revision or...
+       */
+      (!branch.has_parent_rid) ||
+      /*
+       * ..if we found one, but the branch remained empty.
+       */
+      (branch.has_parent_rid && (!branch.has_a_commit))))
+    {
+      cvs_author synthetic_author = 
         cvs.author_interner.intern("cvs_import");
 
       cvs_changelog synthetic_cl =
-        cvs.changelog_interner.intern("beginning of branch "
+        cvs.changelog_interner.intern("beginning of branch " 
                                       + branchname);
 
       time_t synthetic_time = branch.beginning();
-      cvs_cluster initial_cluster(synthetic_time,
+      cvs_cluster initial_cluster(ET_COMMIT,
+                                  synthetic_time,
                                   synthetic_author,
                                   synthetic_cl);
 
-      L(FL("initial cluster on branch %s has %d live entries") %
+      L(FL("initial cluster on branch %s has %d live entries") % 
         branchname % branch.live_at_beginning.size());
 
       for (map<cvs_path, cvs_version>::const_iterator i = branch.live_at_beginning.begin();
@@ -1324,14 +1731,15 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
         }
       consume_cluster(initial_cluster);
     }
+  #endif
 }
 
-cluster_consumer::prepared_revision::prepared_revision(revision_id i,
+cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
                                                        cvs_cluster const & c)
   : rid(i),
     rev(r),
-    time(c.first_time),
+    time(c.start_time),
     author(c.author),
     changelog(c.changelog)
 {
@@ -1458,28 +1866,38 @@ cluster_consumer::build_cset(cvs_cluster const & c,
 void
 cluster_consumer::consume_cluster(cvs_cluster const & c)
 {
-  // we should never have an empty cluster; it's *possible* to have
-  // an empty changeset (say on a vendor import) but every cluster
-  // should have been created by at least one file commit, even
-  // if the commit made no changes. it's a logical inconsistency if
-  // you have an empty cluster.
-  I(!c.entries.empty());
+  if (c.type == ET_COMMIT)
+    {
+      // we should never have an empty cluster; it's *possible* to have
+      // an empty changeset (say on a vendor import) but every cluster
+      // should have been created by at least one file commit, even
+      // if the commit made no changes. it's a logical inconsistency if
+      // you have an empty cluster.
+      I(!c.entries.empty());
 
-  shared_ptr<revision_t> rev(new revision_t());
-  shared_ptr<cset> cs(new cset());
-  build_cset(c, *cs);
+      shared_ptr<revision_t> rev(new revision_t());
+      shared_ptr<cset> cs(new cset());
+      build_cset(c, *cs);
 
-  cs->apply_to(editable_ros);
-  manifest_id child_mid;
-  calculate_ident(ros, child_mid);
+      cs->apply_to(editable_ros);
+      manifest_id child_mid;
+      calculate_ident(ros, child_mid);
   rev->made_for = made_for_database;
-  rev->new_manifest = child_mid;
-  rev->edges.insert(make_pair(parent_rid, cs));
-  calculate_ident(*rev, child_rid);
+      rev->new_manifest = child_mid;
+      rev->edges.insert(make_pair(parent_rid, cs));
+      calculate_ident(*rev, child_rid);
 
-  preps.push_back(prepared_revision(child_rid, rev, c));
+      preps.push_back(prepared_revision(child_rid, rev, c));
 
-  parent_rid = child_rid;
+      parent_rid = child_rid;
+    }
+  else if (c.type == ET_BRANCH)
+    {
+      /* set the parent revision id of the branch */
+      L(FL("setting the parent revision id of a branch"));
+      c.branch->parent_rid = parent_rid;
+      c.branch->has_parent_rid = true;
+    }
 }
 
 // Local Variables:
