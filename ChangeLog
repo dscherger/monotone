@@ -1,5 +1,15 @@
 2006-09-14  Nathaniel Smith  <njs@pobox.com>
 
+	* m4/asm.m4, configure.ac: Determine if we have asm support, and
+	what sort.
+	* sha1/*: Import arm and ppc SHA-1 cores from git, and add Botan
+	glue for them.
+	* Makefile.am: Compile them in, if configure determined they are
+	usable.
+	* AUTHORS: Record copyright of git SHA-1 cores.
+
+2006-09-14  Nathaniel Smith  <njs@pobox.com>
+
 	* cmd.hh: Make hidden_group a proper singleton, so it is safe to
 	use in other files.
 	* platform.hh, {unix,win32}/cputime.cc (cpu_now): New function for

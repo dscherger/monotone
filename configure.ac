@@ -111,6 +111,9 @@ MTN_BOOST_LIB_PROGRAM_OPTIONS
 MTN_NETXX_DEPENDENCIES
 MTN_SQLITE_DEPENDENCIES
 
+# can we use asm?
+MTN_ASM
+
 # allow compiling with different flags/optimisation
 # for monotone versus libs, useful for testing.
 # only makes sense if CFLAGS="" or CXXFLAGS=""

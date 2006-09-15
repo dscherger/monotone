@@ -381,6 +381,18 @@ if MISSING_INET6
   lib3rdparty_a_CPPFLAGS += -DNETXX_NO_INET6
 endif
 
+# platform-specific SHA-1 cores
+
+if ARM_ASM
+MOST_SOURCES += sha1/git_sha1.cc sha1/arm-git/sha1.c sha1/arm-git/sha1.h sha1/arm-git/sha1_arm.S
+AM_CPPFLAGS += -DGIT_SHA1_HEADER=sha1/arm-git/sha1.h
+endif
+
+if PPC_ASM
+MOST_SOURCES += sha1/git_sha1.cc sha1/ppc-git/sha1.c sha1/ppc-git/sha1.h sha1/ppc-git/sha1_arm.S
+AM_CPPFLAGS += -DGIT_SHA1_HEADER=sha1/ppc-git/sha1.h
+endif
+
 # i18n support
 
 SUBDIRS = po

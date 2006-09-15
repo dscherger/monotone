@@ -1,0 +1,10 @@
+This directory contains a number of optimized SHA-1 implementations
+drawn from various sources.  This file records those sources, for
+later synchronization and such.
+
+arm-git: Taken from git 1.4.1, subdirectory 'arm', and adapted for use
+  with Botan.
+
+arm-ppc: Taken from git 1.4.1, subdirectory 'ppc', and adapted for use
+  with Botan.
+

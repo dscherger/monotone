@@ -266,6 +266,18 @@ Audley, which was released under the GNU GPL.
 
 ---
 
+The files in sha1/ppc-git were written by Paul Mackerras
+<paulus@samba.org>, and are licensed under the GPL v2 and _not_ any
+later versions.
+
+---
+
+The files in sha1/arm-git were written by Nicolas Pitre
+<nico@cam.org>, and are licensed under the GPL v2 and _not_ any later
+versions.
+
+---
+
 copyright status:
 -----------------
 
