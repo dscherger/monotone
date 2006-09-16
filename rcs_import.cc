@@ -84,11 +84,13 @@ struct cvs_branch;
 
 struct cvs_event_digest
 {
-  unsigned int digest;
+  unsigned long digest;
 
   cvs_event_digest(cvs_author a, cvs_changelog c, cvs_tag t,
-                   shared_ptr<struct cvs_branch> b)
-    : digest(a | c | t | *reinterpret_cast<int*>(b.get())) {}
+                   cvs_branchname b)
+    {
+      digest = a | (c << 16) | (t << 32) | (b << 48);
+    }
 
   bool operator < (const struct cvs_event_digest & other) const
     {
@@ -164,13 +166,15 @@ cvs_branch
   bool has_a_commit;
   bool has_parent_rid;
   revision_id parent_rid;
+  cvs_branchname branchname;
 
   // all the blobs
   multimap<cvs_event_digest, vector<shared_ptr<cvs_event> > > blobs;
 
-  cvs_branch()
+  cvs_branch(cvs_branchname name)
     : has_a_commit(false),
-      has_parent_rid(false)
+      has_parent_rid(false),
+      branchname(name)
   {
   }
 
@@ -352,15 +356,15 @@ cvs_commit::cvs_commit(rcs_file const & r,
 }
 
 cvs_event_digest
-cvs_commit::get_digest(void)
+cvs_event::get_digest(void)
 {
-  return cvs_event_digest(author, changelog, 0, shared_ptr<cvs_branch>());
+  return cvs_event_digest(0, 0, 0, 0);
 };
 
 cvs_event_digest
-cvs_event::get_digest(void)
+cvs_commit::get_digest(void)
 {
-  return cvs_event_digest(0, 0, 0, shared_ptr<cvs_branch>());
+  return cvs_event_digest(author, changelog, 0, 0);
 };
 
 cvs_event_branch::cvs_event_branch(shared_ptr<cvs_commit> dep)
@@ -372,7 +376,7 @@ cvs_event_branch::cvs_event_branch(shared_ptr<cvs_commit> dep)
 cvs_event_digest
 cvs_event_branch::get_digest(void)
 {
-  return cvs_event_digest(0, 0, 0, branch);
+  return cvs_event_digest(0, 0, 0, branch->branchname);
 }
 
 cvs_event_tag::cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t)
@@ -385,7 +389,7 @@ cvs_event_tag::cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t)
 cvs_event_digest
 cvs_event_tag::get_digest(void)
 {
-  return cvs_event_digest(0, 0, tag, shared_ptr<cvs_branch>());
+  return cvs_event_digest(0, 0, tag, 0);
 }
 
 // piece table stuff
@@ -962,17 +966,21 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
 
   if (private_branch)
     {
-      branch = shared_ptr<cvs_branch>(new cvs_branch());
+      cvs_branchname bn = branch_interner.intern("");
+      branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
       stk.push(branch);
-      bstk.push(branch_interner.intern(""));
+      bstk.push(bn);
       return;
     }
   else
     {
       map<string, shared_ptr<cvs_branch> >::const_iterator b = branches.find(bname);
+
+      cvs_branchname bn = branch_interner.intern(bname);
+
       if (b == branches.end())
         {
-          branch = shared_ptr<cvs_branch>(new cvs_branch());
+          branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
           branches.insert(make_pair(bname, branch));
           ++n_tree_branches;
         }
@@ -980,7 +988,7 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
         branch = b->second;
 
       stk.push(branch);
-      bstk.push(branch_interner.intern(bname));
+      bstk.push(bn);
     }
 }
 
@@ -1415,9 +1423,10 @@ import_cvs_repo(system_path const & cvsroot,
   cvs.base_branch = app.branch_name();
 
   // push the trunk
-  cvs.trunk = shared_ptr<cvs_branch>(new cvs_branch());
+  cvs_branchname bn = cvs.branch_interner.intern(cvs.base_branch);
+  cvs.trunk = shared_ptr<cvs_branch>(new cvs_branch(bn));
   cvs.stk.push(cvs.trunk);
-  cvs.bstk.push(cvs.branch_interner.intern(cvs.base_branch));
+  cvs.bstk.push(bn);
 
   {
     transaction_guard guard(app.db);
