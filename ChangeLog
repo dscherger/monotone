@@ -1,3 +1,11 @@
+2006-09-16  Matt Johnston  <matt@ucc.asn.au>
+
+	* sha1/x86-botan/*: import Botan 1.5.10's x86 asm sha1 implementation
+    * Makefile.am, m4/asm.m4: make the sha1 bits more correct
+    * sha1/git_sha1.cc: let it compile
+    The .S files get compiled to the wrong place due to strange automake
+    behaviour.
+
 2006-09-14  Matt Johnston  <matt@ucc.asn.au>
 
 	* sha1.cc (benchmark_sha1): don't require workspace.

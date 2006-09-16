@@ -320,7 +320,7 @@ pch-file:
         || rm "./$(PCH_FILE).Tdep"
 endif
 
-SUFFIXES = .gch
+SUFFIXES = .gch .S
 
 AM_CPPFLAGS =
 AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DBOOST_DISABLE_THREADS -DBOOST_SP_DISABLE_THREADS -DSQLITE_OMIT_CURSOR -DSQLITE_OMIT_LOAD_EXTENSION -DTHREADSAFE=0 -DSQLITE_THREAD_OVERRIDE_LOCK=-1 $(SQLITE_CPPFLAGS)
@@ -382,15 +382,18 @@ if MISSING_INET6
 endif
 
 # platform-specific SHA-1 cores
-
 if ARM_ASM
 MOST_SOURCES += sha1/git_sha1.cc sha1/arm-git/sha1.c sha1/arm-git/sha1.h sha1/arm-git/sha1_arm.S
-AM_CPPFLAGS += -DGIT_SHA1_HEADER=sha1/arm-git/sha1.h
+AM_CPPFLAGS += -DGIT_SHA1_HEADER=\"sha1/arm-git/sha1.h\"
 endif
 
 if PPC_ASM
-MOST_SOURCES += sha1/git_sha1.cc sha1/ppc-git/sha1.c sha1/ppc-git/sha1.h sha1/ppc-git/sha1_arm.S
-AM_CPPFLAGS += -DGIT_SHA1_HEADER=sha1/ppc-git/sha1.h
+MOST_SOURCES += sha1/git_sha1.cc sha1/ppc-git/sha1.c sha1/ppc-git/sha1.h sha1/ppc-git/sha1_ppc.S
+AM_CPPFLAGS += -DGIT_SHA1_HEADER=\"sha1/ppc-git/sha1.h\"
+endif
+
+if X86_ASM
+MOST_SOURCES += sha1/x86-botan/sha160_x86.cpp sha1/x86-botan/sha160_x86.h sha1/x86-botan/sha1core.S
 endif
 
 # i18n support

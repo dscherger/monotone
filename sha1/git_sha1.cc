@@ -20,6 +20,10 @@ extern "C" {
 #include GIT_SHA1_HEADER
 };
 
+using Botan::HashFunction;
+using Botan::byte;
+using Botan::u32bit;
+
 namespace
 {
   class Git_SHA_160 : public HashFunction
@@ -49,7 +53,7 @@ namespace
     }
   };
 
-  Botan::HashFunction * make_git_sha_160()
+  HashFunction * make_git_sha_160()
   {
     return new Git_SHA_160();
   }
