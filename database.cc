@@ -948,6 +948,8 @@ database::rollback_transaction()
     {
       clear_delayed_writes();
       roster_cache.clear_and_drop_writes();
+      parent_to_child_map.reset();
+      child_to_parent_map.reset();
       execute(query("ROLLBACK"));
     }
   transaction_level--;
@@ -1581,13 +1583,11 @@ database::get_arbitrary_file_delta(file_id const & src_id,
 void
 database::get_revision_ancestry(multimap<revision_id, revision_id> & graph)
 {
-  results res;
-  graph.clear();
-  fetch(res, 2, any_rows,
-        query("SELECT parent,child FROM revision_ancestry"));
-  for (size_t i = 0; i < res.size(); ++i)
-    graph.insert(make_pair(revision_id(res[i][0]),
-                                revision_id(res[i][1])));
+  // FIXME: possibly update the callers to acquire a shared_ptr<... const>?
+  // This might require some COW trickiness, though, if we want to preserve
+  // snapshot semantics for callers.
+  ensure_ancestry_maps_loaded();
+  graph = *parent_to_child_map;
 }
 
 void
@@ -1735,6 +1735,12 @@ database::put_revision(revision_id const & new_id,
   for (edge_map::const_iterator e = rev.edges.begin();
        e != rev.edges.end(); ++e)
     {
+      if (child_to_parent_map || parent_to_child_map)
+        {
+          I(child_to_parent_map && parent_to_child_map);
+          child_to_parent_map->insert(make_pair(new_id, edge_old_revision(e)));
+          parent_to_child_map->insert(make_pair(edge_old_revision(e), new_id));
+        }
       execute(query("INSERT INTO revision_ancestry VALUES(?, ?)")
               % text(edge_old_revision(e).inner()())
               % text(new_id.inner()()));
@@ -2835,33 +2841,182 @@ database::put_roster(revision_id const & rev_id,
 }
 
 
-typedef hashmap::hash_multimap<string, string> ancestry_map;
+// This is a slightly complicated algorithm, but it has to go *very* fast in
+// order for "pull" to work tolerably well.
+//
+// We're aiming to find, for revs A and B:
+// 
+//  - all revs that are ancestors of A and not ancestors of B
+//  - all revs that are ancestors of B and not ancestors of A
+//
+// To do this we build two "candidate sets" for A and B, then take set
+// differences.
+//
+//        a_candidates \ b_candidates ==> a_uncommon_ancestors
+//        b_candidates \ a_candidates ==> b_uncommon_ancestors
+//
+// The candidate sets for X is a *subset* of the ancestors of X. The goal is
+// to make the candidate sets very small, and to stop expanding them
+// rapidly.
+//
+// To this end, we build frontier sets A and B. Each frontier set is
+// expanded incrementally. Each expansion adds a rev to the candidate set,
+// and if the rev is not yet seen, schedules its parents for the next
+// frontier.
+//
+// Crucially, each expansion *also* checks the candidate set of the *other*
+// side.  So when expanding a_frontier, we have a_node, and we check to see
+// if a_node is in b_candidates. If so, then b_frontier has already scanned
+// forward past a_node. We then project a_node forward through all its
+// ancestors in b_candidates, deleting any nodes we encounter in the
+// projection from b_frontier.
+//
+// This should cause b_frontier to collapse rapidly. Naturally we also
+// project nodes from b_frontier through a_candidates, to purge common
+// ancestry from a_frontier.
 
-static void
-transitive_closure(string const & x,
-                   ancestry_map const & m,
-                   set<revision_id> & results)
+typedef std::multimap<revision_id, revision_id> ancestry_map;
+typedef boost::shared_ptr<ancestry_map> ancestry_map_p;
+
+static bool
+member(revision_id const & i, 
+       set<revision_id> const & s)
 {
-  results.clear();
+  return s.find(i) != s.end();
+}
 
-  deque<string> work;
-  work.push_back(x);
+void
+database::ensure_ancestry_maps_loaded()
+{
+  if (! (parent_to_child_map && child_to_parent_map))
+    {
+      results res;
+
+      I( (!parent_to_child_map) && (!child_to_parent_map));
+      parent_to_child_map = ancestry_map_p(new ancestry_map);
+      child_to_parent_map = ancestry_map_p(new ancestry_map);
+      
+      fetch(res, 2, any_rows,
+            query("SELECT parent,child FROM revision_ancestry"));
+      
+      for (size_t i = 0; i < res.size(); ++i) 
+        {
+          parent_to_child_map->insert(make_pair(res[i][0], res[i][1]));
+          child_to_parent_map->insert(make_pair(res[i][1], res[i][0]));
+        }
+    }
+}
+
+static bool
+is_ancestor(ancestry_map const & parent_to_child_map,
+            revision_id const & anc,
+            revision_id const & rev)
+{
+  set<revision_id> seen;
+  deque<revision_id> work;
+  work.push_back(anc);
+
   while (!work.empty())
     {
-      string c = work.front();
+      revision_id r = work.front();
       work.pop_front();
-      revision_id curr(c);
-      if (results.find(curr) == results.end())
+      if (member(r, seen))
+        continue;
+      seen.insert(r);
+      if (r == rev)
+        return true;
+      
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = parent_to_child_map.equal_range(r);
+      
+      for (ci j = range.first; j != range.second; ++j)
+        if (j->first == r && 
+            ! member(j->second, seen))
+          work.push_back(j->second);      
+    }
+  return false;
+}
+
+static void
+check_anc_relation(ancestry_map const & parent_to_child_map,
+                   set<revision_id> const & self_uncommon_ancs,
+                   revision_id const & self,
+                   revision_id const & other)
+{
+  for (set<revision_id>::const_iterator i = self_uncommon_ancs.begin();
+       i != self_uncommon_ancs.end(); ++i)
+    {
+      I(is_ancestor(parent_to_child_map, *i, self));
+      I(!is_ancestor(parent_to_child_map, *i, other));      
+    }
+}
+
+static void
+trim_search_frontier(ancestry_map const & child_to_parent_map,
+                     revision_id const & rev,
+                     set<revision_id> const & candidates,
+                     set<revision_id> & target_frontier)
+{
+  set<revision_id> frontier;
+
+  I(member(rev, candidates));
+
+  safe_insert(frontier, rev);
+
+  while (!frontier.empty())
+    {
+      set<revision_id> next_frontier;
+      for (set<revision_id>::const_iterator i = frontier.begin();
+           i != frontier.end(); ++i)
         {
-          results.insert(curr);
-          pair<ancestry_map::const_iterator, ancestry_map::const_iterator> \
-            range(m.equal_range(c));
-          for (ancestry_map::const_iterator i(range.first); i != range.second; ++i)
+          revision_id const & r = *i;
+          target_frontier.erase(r);
+
+          if (member(r, candidates))
             {
-              if (i->first == c)
-                work.push_back(i->second);
+              typedef ancestry_map::const_iterator ci;
+              pair<ci,ci> range = child_to_parent_map.equal_range(r);
+              for (ci j = range.first; j != range.second; ++j)
+                if (j->first == r
+                    && member(j->second, candidates)
+                    && !member(j->second, next_frontier))
+                  safe_insert(next_frontier, j->second);
             }
         }
+      frontier = next_frontier;
+    }
+}
+                                      
+static void
+expand_uncommon_ancestor_frontier(ancestry_map const & child_to_parent_map,
+                                  set<revision_id> & our_candidates,                                  
+                                  set<revision_id> const & our_frontier,
+                                  set<revision_id> & our_next_frontier,
+                                  set<revision_id> const & other_candidates,
+                                  set<revision_id> & other_frontier)
+{
+  for (set<revision_id>::const_iterator i = our_frontier.begin();
+       i != our_frontier.end(); ++i)
+    {
+      revision_id const & rev = *i;
+
+      if (!member(rev, our_candidates))
+        {
+          safe_insert(our_candidates, rev);
+
+          typedef ancestry_map::const_iterator ci;
+          pair<ci,ci> range = child_to_parent_map.equal_range(rev);
+
+          for (ci j = range.first; j != range.second; ++j)
+            if (j->first == rev && 
+                !member(j->second, our_next_frontier))
+              safe_insert(our_next_frontier, j->second);
+        }
+
+      if (member(rev, other_candidates))
+        trim_search_frontier(child_to_parent_map, rev, 
+                             other_candidates, 
+                             other_frontier);
     }
 }
 
@@ -2871,39 +3026,49 @@ database::get_uncommon_ancestors(revision_id const & a,
                                  set<revision_id> & a_uncommon_ancs,
                                  set<revision_id> & b_uncommon_ancs)
 {
-  // FIXME: This is a somewhat ugly, and possibly unaccepably slow way
-  // to do it. Another approach involves maintaining frontier sets for
-  // each and slowly deepening them into history; would need to
-  // benchmark to know which is actually faster on real datasets.
+  set<revision_id> a_candidates;
+  set<revision_id> b_candidates;
+
+  set<revision_id> a_frontier;
+  set<revision_id> b_frontier;
+
+  ensure_ancestry_maps_loaded();
 
   a_uncommon_ancs.clear();
   b_uncommon_ancs.clear();
 
-  results res;
-  a_uncommon_ancs.clear();
-  b_uncommon_ancs.clear();
+  a_candidates.insert(a);
+  b_candidates.insert(b);
 
-  fetch(res, 2, any_rows,
-        query("SELECT parent,child FROM revision_ancestry"));
+  a_frontier.insert(a);
+  b_frontier.insert(b);
 
-  set<revision_id> a_ancs, b_ancs;
+  while (! (a_frontier.empty() && b_frontier.empty()))
+    {
+      set<revision_id> a_next_frontier;
+      set<revision_id> b_next_frontier;
+      expand_uncommon_ancestor_frontier(*child_to_parent_map, 
+                                        a_candidates, a_frontier, a_next_frontier, 
+                                        b_candidates, b_frontier);
 
-  ancestry_map child_to_parent_map;
-  for (size_t i = 0; i < res.size(); ++i)
-    child_to_parent_map.insert(make_pair(res[i][1], res[i][0]));
+      expand_uncommon_ancestor_frontier(*child_to_parent_map, 
+                                        b_candidates, b_frontier, b_next_frontier, 
+                                        a_candidates, a_frontier);
+      a_frontier = a_next_frontier;
+      b_frontier = b_next_frontier;
+    }
 
-  transitive_closure(a.inner()(), child_to_parent_map, a_ancs);
-  transitive_closure(b.inner()(), child_to_parent_map, b_ancs);
-
-  set_difference(a_ancs.begin(), a_ancs.end(),
-                 b_ancs.begin(), b_ancs.end(),
+  set_difference(a_candidates.begin(), a_candidates.end(),
+                 b_candidates.begin(), b_candidates.end(),
                  inserter(a_uncommon_ancs, a_uncommon_ancs.begin()));
 
-  set_difference(b_ancs.begin(), b_ancs.end(),
-                 a_ancs.begin(), a_ancs.end(),
+  set_difference(b_candidates.begin(), b_candidates.end(),
+                 a_candidates.begin(), a_candidates.end(),
                  inserter(b_uncommon_ancs, b_uncommon_ancs.begin()));
-}
 
+  check_anc_relation(*parent_to_child_map, a_uncommon_ancs, a, b);
+  check_anc_relation(*parent_to_child_map, b_uncommon_ancs, b, a);
+}
 
 u64
 database::next_id_from_table(string const & table)

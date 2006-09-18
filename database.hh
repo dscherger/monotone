@@ -296,6 +296,16 @@ public:
 private:
   // helper
   void get_ids(std::string const & table, std::set< hexenc<id> > & ids);
+
+  // FIXME: perhaps make this use hashmap?
+  boost::shared_ptr<std::multimap<revision_id, revision_id> > 
+  parent_to_child_map;
+
+  boost::shared_ptr<std::multimap<revision_id, revision_id> > 
+  child_to_parent_map;
+
+  void ensure_ancestry_maps_loaded();
+
 public:
   void get_revision_ids(std::set<revision_id> & ids);
   // this is exposed for 'db check':
