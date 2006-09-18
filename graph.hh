@@ -19,6 +19,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include "vocab.hh"
 
 struct reconstruction_graph
 {
@@ -33,5 +34,14 @@ void
 get_reconstruction_path(std::string const & start,
                         reconstruction_graph const & graph,
                         reconstruction_path & path);
+
+typedef std::multimap<revision_id, revision_id> ancestry_map;
+
+void
+get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_rid,
+                       ancestry_map const & child_to_parent_map,
+                       std::set<revision_id> & left_uncommon_ancs,
+                       std::set<revision_id> & right_uncommon_ancs);
+                       
 
 #endif // __GRAPH__HH__
