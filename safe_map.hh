@@ -12,6 +12,8 @@
 
 // some helpers to safely use maps
 
+#include <utility>
+
 #include "sanity.hh"
 
 // errors out if the key does not exist

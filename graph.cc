@@ -1,12 +1,17 @@
+#include <map>
+#include <vector>
+#include <set>
 #include <boost/shared_ptr.hpp>
 
 #include "sanity.hh"
 #include "graph.hh"
+#include "safe_map.hh"
 
 using boost::shared_ptr;
 using std::string;
 using std::vector;
 using std::set;
+using std::pair;
 
 ////////////////////////////////////////////////////////////////////////
 // get_reconstruction_path
@@ -167,70 +172,116 @@ member(revision_id const & i,
 
 static void
 trim_search_frontier(ancestry_map const & child_to_parent_map,
-                     revision_id const & rev,
-                     set<revision_id> const & candidates,
-                     set<revision_id> & target_frontier)
+                     revision_id const & a_rev,
+                     set<revision_id> const & b_candidates,
+                     set<revision_id> & a_candidates,
+                     set<revision_id> & b_frontier)
 {
-  set<revision_id> frontier;
+  // b_frontier must be a subset of b_candidates (in general
+  // b_frontier is much smaller than b_candidates, so we do a loop instead
+  // of using the equivalent STL operation).
+  for (set<revision_id>::const_iterator i = b_frontier.begin();
+       i != b_frontier.end(); ++i)
+    I(member(*i, b_candidates));
+  I(member(a_rev, b_candidates));
 
-  I(member(rev, candidates));
-
-  safe_insert(frontier, rev);
-
+  // We just do a straightforward enumeration of 'rev's ancestry set, keeping
+  // the usual 'seen' set, with the only wrinkles being:
+  //   - we restrict ourselves to nodes that are b_candidates (i.e., our search
+  //     is bounded by how far the other search has gotten)
+  //   - we erase any nodes we find from the b_frontier.
+  //   - we add any nodes we find to the a_candidates set, so they will cancel
+  //     out the corresponding b_candidates
+  set<revision_id> seen;
+  vector<revision_id> frontier;
+  frontier.push_back(a_rev);
   while (!frontier.empty())
     {
-      set<revision_id> next_frontier;
-      for (set<revision_id>::const_iterator i = frontier.begin();
-           i != frontier.end(); ++i)
-        {
-          revision_id const & r = *i;
-          target_frontier.erase(r);
+      revision_id r = frontier.back();
+      frontier.pop_back();
+      if (member(r, seen))
+        continue;
+      if (!member(r, b_candidates))
+        continue;
+      safe_insert(seen, r);
 
-          if (member(r, candidates))
-            {
-              typedef ancestry_map::const_iterator ci;
-              pair<ci,ci> range = child_to_parent_map.equal_range(r);
-              for (ci j = range.first; j != range.second; ++j)
-                if (j->first == r
-                    && member(j->second, candidates)
-                    && !member(j->second, next_frontier))
-                  safe_insert(next_frontier, j->second);
-            }
+      a_candidates.insert(r);
+      b_frontier.erase(r);
+      
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(r);
+      for (ci j = range.first; j != range.second; ++j)
+        {
+          I(j->first == r);
+          frontier.push_back(j->second);
         }
-      frontier = next_frontier;
     }
 }
 
 static void
 expand_uncommon_ancestor_frontier(ancestry_map const & child_to_parent_map,
-                                  set<revision_id> & our_candidates,                                  
-                                  set<revision_id> const & our_frontier,
-                                  set<revision_id> & our_next_frontier,
-                                  set<revision_id> const & other_candidates,
-                                  set<revision_id> & other_frontier)
+                                  set<revision_id> & a_candidates,                                  
+                                  set<revision_id> const & a_frontier,
+                                  set<revision_id> & a_next_frontier,
+                                  set<revision_id> const & b_candidates,
+                                  set<revision_id> & b_frontier)
 {
-  for (set<revision_id>::const_iterator i = our_frontier.begin();
-       i != our_frontier.end(); ++i)
+  for (set<revision_id>::const_iterator i = a_frontier.begin();
+       i != a_frontier.end(); ++i)
     {
       revision_id const & rev = *i;
 
-      if (!member(rev, our_candidates))
+      // We insert revisions to the candidate set _before_ processing them
+      // fully; this makes trim_search_frontier simpler.  It also avoids a
+      // possible failure case where a node is on the frontier, gets trimmed
+      // by the other side, and then it gets put on the frontier again by
+      // another path, and we have no record that we ever saw it:
+      //       *
+      //      /|\                      .
+      //     1 | \                     . These dots brought to you by
+      //     | 3  4                    . the Committee to Shut Up the
+      //     2 |   \                   . C PreProcessor (CTSUCPP).
+      //      \|    \                  .
+      //       A     B
+      // It could happen that A's frontier is {1, *}, and seen set is {2, 3},
+      // when B's frontier reaches *, and trims it from A's frontier.  Then
+      // A's frontier becomes {1}, with seen set {2, 3}, so it immediately
+      // re-loads *.  Maybe this would be okay because * was put into B's
+      // candidate set, but really, just making the candidate set a superset
+      // of the frontier is easier to think about.
+      I(member(rev, a_candidates));
+
+      // Okay, now check to see if we've wandered into the other side's
+      // ancestry set.
+      if (member(rev, b_candidates))
         {
-          safe_insert(our_candidates, rev);
-
-          typedef ancestry_map::const_iterator ci;
-          pair<ci,ci> range = child_to_parent_map.equal_range(rev);
-
-          for (ci j = range.first; j != range.second; ++j)
-            if (j->first == rev && 
-                !member(j->second, our_next_frontier))
-              safe_insert(our_next_frontier, j->second);
+          // Ah, we have!  So we kill off any of our ancestors that b is still
+          // working on exploring -- that exploration is useless.
+          trim_search_frontier(child_to_parent_map, rev,
+                               b_candidates, 
+                               a_candidates, b_frontier);
+          // And we should stop exploring this path ourselves.
+          continue;
         }
 
-      if (member(rev, other_candidates))
-        trim_search_frontier(child_to_parent_map, rev, 
-                             other_candidates, 
-                             other_frontier);
+      // If we got this far, then this is a node that (as far as we know) is
+      // only in a's ancestor set.  So we load its parents and keep
+      // exploring.
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(rev);
+      for (ci j = range.first; j != range.second; ++j)
+        {
+          I(j->first == rev);
+          // Again, we prune already-explored paths now, not when we process
+          // the resulting frontier.
+          if (!member(j->second, a_candidates))
+            {
+              safe_insert(a_candidates, j->second);
+              // This revision might already be on the next frontier -- that's
+              // okay.  Thus, .insert instead of safe_insert.
+              a_next_frontier.insert(j->second);
+            }
+        }
     }
 }
 
@@ -249,24 +300,28 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
   left_uncommon_ancs.clear();
   right_uncommon_ancs.clear();
 
-  left_candidates.insert(a);
-  right_candidates.insert(b);
+  left_candidates.insert(left_rid);
+  right_candidates.insert(right_rid);
 
-  left_frontier.insert(a);
-  right_frontier.insert(b);
+  left_frontier.insert(left_rid);
+  right_frontier.insert(right_rid);
 
   while (! (left_frontier.empty() && right_frontier.empty()))
     {
+      DUMP(left_frontier);
+      DUMP(right_frontier);
       set<revision_id> left_next_frontier;
       set<revision_id> right_next_frontier;
       expand_uncommon_ancestor_frontier(child_to_parent_map, 
                                         left_candidates, left_frontier, left_next_frontier, 
                                         right_candidates, right_frontier);
+      DUMP(left_next_frontier);
+      left_frontier = left_next_frontier;
 
       expand_uncommon_ancestor_frontier(child_to_parent_map, 
                                         right_candidates, right_frontier, right_next_frontier, 
                                         left_candidates, left_frontier);
-      left_frontier = left_next_frontier;
+      DUMP(right_next_frontier);
       right_frontier = right_next_frontier;
     }
 
@@ -278,3 +333,178 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
                  left_candidates.begin(), left_candidates.end(),
                  inserter(right_uncommon_ancs, right_uncommon_ancs.begin()));
 }
+
+#ifdef BUILD_UNIT_TESTS
+#include "unit_tests.hh"
+#include "randomizer.hh"
+
+using namespace randomizer;
+
+double const merge_node_freq = 0.2;
+double const skip_up_freq = 0.5;
+
+static revision_id
+pick_node_from_set(set<revision_id> const & heads)
+{
+  I(!heads.empty());
+  size_t which_start = uniform(heads.size());
+  set<revision_id>::const_iterator i = heads.begin();
+  for (size_t j = 0; j != which_start; ++j)
+    ++i;
+  return *i;
+}
+
+static revision_id
+pick_node_or_ancestor(set<revision_id> const & heads, ancestry_map const & child_to_parent_map)
+{
+  revision_id rev = pick_node_from_set(heads);
+  // now we recurse up from this starting point
+  while (bernoulli(skip_up_freq))
+    {
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(rev);
+      if (range.first == range.second)
+        break;
+      ci second = range.first;
+      ++second;
+      if (second == range.second)
+        // there was only one parent
+        rev = range.first->second;
+      else
+        {
+          // there are two parents, pick one randomly
+          if (flip())
+            rev = range.first->second;
+          else
+            rev = second->second;
+        }
+    }
+  return rev;
+}
+
+static void
+make_random_graph(size_t num_nodes,
+                  ancestry_map & child_to_parent_map, vector<revision_id> & nodes)
+{
+  set<revision_id> heads;
+
+  for (size_t i = 0; i != num_nodes; ++i)
+    {
+      revision_id new_rid = revision_id(fake_id());
+      nodes.push_back(new_rid);
+      set<revision_id> parents;
+      if (heads.empty())
+        parents.insert(revision_id());
+      else if (bernoulli(merge_node_freq) && heads.size() > 1)
+        {
+          // maybe we'll pick the same node twice and end up not doing a
+          // merge, oh well...
+          parents.insert(pick_node_from_set(heads));
+          parents.insert(pick_node_from_set(heads));
+        }
+      else
+        {
+          parents.insert(pick_node_or_ancestor(heads, child_to_parent_map));
+        }
+      for (set<revision_id>::const_iterator j = parents.begin();
+           j != parents.end(); ++j)
+        {
+          heads.erase(*j);
+          child_to_parent_map.insert(std::make_pair(new_rid, *j));
+        }
+      safe_insert(heads, new_rid);
+    }
+}
+
+static void
+get_all_ancestors(revision_id const & start, ancestry_map const & child_to_parent_map,
+                  set<revision_id> & ancestors)
+{
+  ancestors.clear();
+  vector<revision_id> frontier;
+  frontier.push_back(start);
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.back();
+      frontier.pop_back();
+      if (member(rid, ancestors))
+        continue;
+      safe_insert(ancestors, rid);
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(rid);
+      for (ci i = range.first; i != range.second; ++i)
+        frontier.push_back(i->second);
+    }
+}
+
+template <typename T> void
+dump(set<T> const & obj, string & out)
+{
+  out = (FL("set with %s members:\n") % obj.size()).str();
+  for (typename set<T>::const_iterator i = obj.begin(); i != obj.end(); ++i)
+    {
+      string subobj_str;
+      dump(*i, subobj_str);
+      out += "  " + subobj_str + "\n";
+    }
+}
+
+static void
+run_a_get_uncommon_ancestors_random_test(size_t num_nodes, size_t iterations)
+{
+  ancestry_map child_to_parent_map;
+  vector<revision_id> nodes;
+  make_random_graph(num_nodes, child_to_parent_map, nodes);
+  for (size_t i = 0; i != iterations; ++i)
+    {
+      L(FL("get_uncommon_ancestors: random test %s-%s") % num_nodes % i);
+      revision_id left = idx(nodes, uniform(nodes.size()));
+      revision_id right = idx(nodes, uniform(nodes.size()));
+      set<revision_id> true_left_ancestors, true_right_ancestors;
+      get_all_ancestors(left, child_to_parent_map, true_left_ancestors);
+      get_all_ancestors(right, child_to_parent_map, true_right_ancestors);
+      set<revision_id> true_left_uncommon_ancestors, true_right_uncommon_ancestors;
+      MM(true_left_uncommon_ancestors);
+      MM(true_right_uncommon_ancestors);
+      set_difference(true_left_ancestors.begin(), true_left_ancestors.end(),
+                     true_right_ancestors.begin(), true_right_ancestors.end(),
+                     inserter(true_left_uncommon_ancestors, true_left_uncommon_ancestors.begin()));
+      set_difference(true_right_ancestors.begin(), true_right_ancestors.end(),
+                     true_left_ancestors.begin(), true_left_ancestors.end(),
+                     inserter(true_right_uncommon_ancestors, true_right_uncommon_ancestors.begin()));
+      
+      set<revision_id> calculated_left_uncommon_ancestors, calculated_right_uncommon_ancestors;
+      MM(calculated_left_uncommon_ancestors);
+      MM(calculated_right_uncommon_ancestors);
+      get_uncommon_ancestors(left, right, child_to_parent_map,
+                             calculated_left_uncommon_ancestors,
+                             calculated_right_uncommon_ancestors);
+      I(calculated_left_uncommon_ancestors == true_left_uncommon_ancestors);
+      I(calculated_right_uncommon_ancestors == true_right_uncommon_ancestors);
+    }
+}
+
+static void
+test_get_uncommon_ancestors_randomly()
+{
+  run_a_get_uncommon_ancestors_random_test(100, 100);
+  run_a_get_uncommon_ancestors_random_test(1000, 100);
+  run_a_get_uncommon_ancestors_random_test(10000, 1000);
+}
+
+void
+add_graph_tests(test_suite * suite)
+{
+  I(suite);
+  suite->add(BOOST_TEST_CASE(&test_get_uncommon_ancestors_randomly));
+}
+
+#endif // BUILD_UNIT_TESTS
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

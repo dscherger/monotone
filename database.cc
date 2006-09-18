@@ -2873,8 +2873,8 @@ database::get_uncommon_ancestors(revision_id const & a,
 {
   ensure_ancestry_maps_loaded();
   // call the generic (and testable) function in graph.cc
-  get_uncommon_ancestors(a, b, *child_to_parent_map,
-                         a_uncommon_ancs, b_uncommon_ancs);
+  ::get_uncommon_ancestors(a, b, *child_to_parent_map,
+                           a_uncommon_ancs, b_uncommon_ancs);
 }
 
 u64

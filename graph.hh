@@ -16,6 +16,7 @@
 // (e.g., in revision.cc); FIXME it would be good to move them in here as
 // opportunity permits.
 
+#include <map>
 #include <string>
 #include <set>
 #include <vector>
