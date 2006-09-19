@@ -10,7 +10,6 @@
 #include <config.h>
 #include "options.hh"
 #include <i18n.h>
-#include <popt/popt.h>
 #include <sanity.hh>
 #include <charset.hh>
 #include <sstream>
