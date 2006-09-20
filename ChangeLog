@@ -1,7 +1,20 @@
+2006-09-20  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.hh: Oops.
+
+2006-09-20  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.hh: Expose some useful dump() overloads that are already
+	defined in roster.cc.
+
+2006-09-19  Alex Queiroz <alex@ventonegro.org>
+
+	* po/pt_BR.po: 1 fuzzy fixed.
+
 2006-09-18  Matt Johnston  <matt@ucc.asn.au>
 
-    * cmd.hh (ALIAS macro): somehow g++ 4.x is happy with std:string.
-    g++ 3.3.5 isn't.
+	* cmd.hh (ALIAS macro): somehow g++ 4.x is happy with std:string.
+	g++ 3.3.5 isn't.
 
 2006-09-18  Zack Weinberg  <zackw@panix.com>
 
