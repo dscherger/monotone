@@ -130,38 +130,159 @@ get_reconstruction_path(std::string const & start,
 // get_uncommon_ancestors
 ////////////////////////////////////////////////////////////////////////
 
-// This is a slightly complicated algorithm, but it has to go *very* fast in
-// order for "pull" to work tolerably well -- because this must be called once
-// for every merge revision.
+// This is a complicated algorithm, but it has to go very fast in order for
+// "pull" to work tolerably well -- this function is called once for every
+// merge revision written to the database.
 //
 // We're aiming to find, for revs Left and Right:
 // 
 //  - all revs that are ancestors of Left and not ancestors of Right
 //  - all revs that are ancestors of Right and not ancestors of Left
 //
-// To do this we build two "candidate sets" for Left and Right, then take set
-// differences.
+// However, we want to do this without actually enumerating every ancestor of
+// Left and every ancestor of Right, and then taking set differences --
+// usually, divergences are short, and all uncommon ancestors occur within the
+// last few dozen revisions.
 //
-//        left_candidates \ right_candidates ==> left_uncommon_ancestors
-//        right_candidates \ left_candidates ==> right_uncommon_ancestors
+// There are many algorithms for this that work perfectly most of the time
+// cases, but then in some particular torturous case fail.  Here is one that
+// always succeeds, and takes time and space O(total number of uncommon
+// ancestors):
 //
-// The candidate sets for X is a *subset* of the ancestors of X. The goal is
-// to make the candidate sets very small, and to stop expanding them rapidly.
+// Phase 1
+// -------
 //
-// To this end, we build frontier sets Left and Right. Each frontier set is
-// expanded incrementally. Each expansion adds a rev to the candidate set, and
-// if the rev is not yet seen, schedules its parents for the next frontier.
+// Our immediate goal is to construct a set of ancestors of Left that contain
+// every uncommon ancestor of Left (though it might contain other things as
+// well), and similarly for Right.  To do this, we do two
+// breadth-first-by-height traversals in parallel, one starting from Left and
+// one from Right.  Our goal is to stop when we know that each of these
+// traversals contains all of the uncommon ancestors on that side.  We record
+// every node found by these two traversals in left_candidates and
+// right_candidates, respectively.
 //
-// Crucially, each expansion *also* checks the candidate set of the *other*
-// side.  So when expanding left_frontier, we have left_node, and we check to
-// see if left_node is in right_candidates. If so, then right_frontier has
-// already scanned forward past left_node. We then project left_node forward
-// through all its ancestors in right_candidates, deleting any nodes we
-// encounter in the projection from right_frontier.
+// The reason we do breadth-first-by-height search, rather than pure
+// breadth-first search, is that it gives us a convexity property which we
+// will need later.  In particular, if A and B are both in a candidate set,
+// and A is an ancestor of B, then every upward path from B to A stays
+// entirely within the candidate set.  (Proof: intermdiate nodes are ancestors
+// of B, so they will be reached by the search eventually; they are also
+// descendents of A, thus have larger heights, thus will be traversed before
+// A.)
 //
-// This should cause right_frontier to collapse rapidly. Naturally we also
-// project nodes from right_frontier through left_candidates, to purge common
-// ancestry from left_frontier.
+// So, we are going along expanding our sets, and we need to know when to
+// stop.  To do this, we periodically run a check.  (To keep running time
+// linear, the length of these periods doubles each time.)  This check
+// consists of running a secondary, depth-first traversal from each of left
+// and right.  For example, running from left, this traversal:
+//   -- prunes paths that hit the root of the graph
+//   -- prunes paths that enter right_candidates
+//   -- aborts with failure if some path exits the left_candidates set.
+// The last property keeps us from expending arbitrary time on the check; the
+// previous two properties let us determine whether we have expanded our
+// candidate sets far enough to cover all the uncommon ancestors we want.
+//
+// When the traversal from both sides succeeds, without aborting, then we can
+// be certain that every uncommon ancestor is included in at least one
+// candidate set.  This is because we only stop traversing when we have either
+// run out of nodes altogether -- in which case the path we were on certainly
+// was not going to encounter any more uncommon ancestors -- or when we have
+// provably entered the domain of _common_ ancestors -- at which point there
+// cannot possibly be any more uncommon ancestors to be found.
+//
+// We can also infer one more critical property from this check.  If we now
+// take the _union_ of the left_candidates and right_candidates, that union is
+// _also_ a convex set.  Proof: suppose we have two nodes A and B in the
+// union, with A > B.  If A and B were both in the same candidate set, the
+// problem would be trivial, so assume they're not, and without loss of
+// generality assume A is in right_candidates and B is in left_candidates.  We
+// want to show that every upward path from B to A stays within the union of
+// left_candidates and right_candidates.  Obviously, because B is in
+// left_candidates, there is some path from left to B.  Furthermore, because
+// of our check, we know that every extension of this path that leaves
+// left_candidates, immediately enters right_candidates.  Since
+// right_candidates is itself convex, this proves that every path from B to A
+// stays within the union, and thus the union is convex.
+//
+// Phase 2
+// -------
+//
+// Let 'candidates' refer to the union of the old left_candidates and
+// right_candidates (which are otherwise now discarded).  From the arguments
+// above, we know that candidates:
+//   -- contains both left and right
+//   -- contains every uncommon ancestor of left and right
+//   -- is convex.
+//
+// Therefore, to finally find the uncommon ancestor sets, simply enumerate (by
+// yet another depth-first traversal) all ancestors of left and right that are
+// candidates, calling the results left_ancestors and right_ancestors.  Then
+// the uncommon ancestors are simply
+//   left_uncommon_ancestors  = left_ancestors \ right_ancestors
+//   right_uncommon_ancestors = right_ancestors \ left_ancestors
+//
+// Proof: Trivial -- left and right are in the candidates set, and the
+// candidates set is convex, which implies that if some node is in fact an
+// ancestor of either of them, then this will be discovered by the
+// candidates-bounded traversal.  Therefore, left_ancestors and
+// right_ancestors do in fact exactly enumerate those ancestors of left that
+// are in the candidates set, and those ancestors of right that are in the
+// candidates set.  Therefore, the set differences above are exactly those
+// uncommon ancestors which are in the candidates set.  However, since we know
+// that _every_ uncommon ancestor is in the candidates set, this is _all_
+// uncommon ancestors.
+//
+// QED, and about bloody time.
+//
+// Note that the convexity part of the argument is absolutely critical.  Here
+// is an example:
+// 
+//              9
+//              |\                  . Extraneous dots brought to you by the
+//              8 \                 . Committee to Shut Up the C Preprocessor
+//             /|  \                . (CSUCPP), and viewers like you and me.
+//            / |   |
+//           /  7   |
+//          |   |   |
+//          |   6   |
+//          |   |   |
+//          |   5   |
+//          |   |   |
+//          |   4   |
+//          |   |   |
+//          |   :   |  <-- insert arbitrarily many revisions at the ellipsis
+//          |   :   |
+//          |   |   |
+//          1   2   3
+//           \ / \ /
+//            L   R
+//
+// Suppose we did simple breadth-first traversals in Phase 1, rather than
+// breadth-first-by-height, and thus gave up convexity.  After deepening 3
+// times, we have:
+//   left_candidates: 1 2 4 5 8 9 (not 6 or 7 yet!)
+//   right_candidates: 2 3 4 5 9 (not 6, 7, or 8 yet!)
+// Note that since both 2 and 9 are in both sets, our test for termination
+// succeeds.  One path on the left goes 1-8-9 before terminating in the
+// right_candidates, when further deepening would have caused it to terminate
+// after just going 1-8, but it does terminate. (And note that this correctly
+// indicates that we have found all uncommon ancestors, since 6 and 7 are
+// actually common ancestors.)  But, if we now union these two sets and
+// calculate the left_ancestors and right_ancestors sets, we will find:
+//   left_ancestors: 1 2 4 5 8 9
+//   right_ancestors: 2 3 4 5 9
+//   left_ancestors \ right_ancestors: 1 8
+// But this is _wrong_; 8 is a common ancestor!  The problem is that when we
+// restricted to the final candidates set, we left out 6 and 7.  Without those
+// nodes, we cannot reach 8 from right, and thus we cannot tell that it is a
+// common ancestor, and our algorithm gives the wrong answer.
+//
+// When we traverse breadth-first-by-height, however, 9 cannot enter the
+// right_candidates set before 8, and since at least one of them has to enter
+// right_candidates before the termination criterion can be met, this problem
+// goes away.  We must to restricted traversals to bound complexity, but
+// without convexity we have no guarantee that restricted reachability matches
+// true reachability.
 
 static bool
 member(revision_id const & i, 
@@ -170,168 +291,13 @@ member(revision_id const & i,
   return s.find(i) != s.end();
 }
 
-static void
-trim_search_frontier(ancestry_map const & child_to_parent_map,
-                     revision_id const & a_rev,
-                     set<revision_id> const & b_candidates,
-                     set<revision_id> & a_candidates,
-                     set<revision_id> & b_frontier)
-{
-  // b_frontier must be a subset of b_candidates (in general
-  // b_frontier is much smaller than b_candidates, so we do a loop instead
-  // of using the equivalent STL operation).
-  for (set<revision_id>::const_iterator i = b_frontier.begin();
-       i != b_frontier.end(); ++i)
-    I(member(*i, b_candidates));
-  I(member(a_rev, b_candidates));
-
-  // We just do a straightforward enumeration of 'rev's ancestry set, keeping
-  // the usual 'seen' set, with the only wrinkles being:
-  //   - we restrict ourselves to nodes that are b_candidates (i.e., our search
-  //     is bounded by how far the other search has gotten)
-  //   - we erase any nodes we find from the b_frontier.
-  //   - we add any nodes we find to the a_candidates set, so they will cancel
-  //     out the corresponding b_candidates
-  set<revision_id> seen;
-  vector<revision_id> frontier;
-  frontier.push_back(a_rev);
-  while (!frontier.empty())
-    {
-      revision_id r = frontier.back();
-      frontier.pop_back();
-      if (member(r, seen))
-        continue;
-      if (!member(r, b_candidates))
-        continue;
-      safe_insert(seen, r);
-
-      a_candidates.insert(r);
-      b_frontier.erase(r);
-      
-      typedef ancestry_map::const_iterator ci;
-      pair<ci,ci> range = child_to_parent_map.equal_range(r);
-      for (ci j = range.first; j != range.second; ++j)
-        {
-          I(j->first == r);
-          frontier.push_back(j->second);
-        }
-    }
-}
-
-static void
-expand_uncommon_ancestor_frontier(ancestry_map const & child_to_parent_map,
-                                  set<revision_id> & a_candidates,                                  
-                                  set<revision_id> const & a_frontier,
-                                  set<revision_id> & a_next_frontier,
-                                  set<revision_id> const & b_candidates,
-                                  set<revision_id> & b_frontier)
-{
-  for (set<revision_id>::const_iterator i = a_frontier.begin();
-       i != a_frontier.end(); ++i)
-    {
-      revision_id const & rev = *i;
-
-      // We insert revisions to the candidate set _before_ processing them
-      // fully; this makes trim_search_frontier simpler.  It also avoids a
-      // possible failure case where a node is on the frontier, gets trimmed
-      // by the other side, and then it gets put on the frontier again by
-      // another path, and we have no record that we ever saw it:
-      //       *
-      //      /|\                      .
-      //     1 | \                     . These dots brought to you by
-      //     | 3  4                    . the Committee to Shut Up the
-      //     2 |   \                   . C PreProcessor (CTSUCPP).
-      //      \|    \                  .
-      //       A     B
-      // It could happen that A's frontier is {1, *}, and seen set is {2, 3},
-      // when B's frontier reaches *, and trims it from A's frontier.  Then
-      // A's frontier becomes {1}, with seen set {2, 3}, so it immediately
-      // re-loads *.  Maybe this would be okay because * was put into B's
-      // candidate set, but really, just making the candidate set a superset
-      // of the frontier is easier to think about.
-      I(member(rev, a_candidates));
-
-      // Okay, now check to see if we've wandered into the other side's
-      // ancestry set.
-      if (member(rev, b_candidates))
-        {
-          // Ah, we have!  So we kill off any of our ancestors that b is still
-          // working on exploring -- that exploration is useless.
-          trim_search_frontier(child_to_parent_map, rev,
-                               b_candidates, 
-                               a_candidates, b_frontier);
-          // And we should stop exploring this path ourselves.
-          continue;
-        }
-
-      // If we got this far, then this is a node that (as far as we know) is
-      // only in a's ancestor set.  So we load its parents and keep
-      // exploring.
-      typedef ancestry_map::const_iterator ci;
-      pair<ci,ci> range = child_to_parent_map.equal_range(rev);
-      for (ci j = range.first; j != range.second; ++j)
-        {
-          I(j->first == rev);
-          // Again, we prune already-explored paths now, not when we process
-          // the resulting frontier.
-          if (!member(j->second, a_candidates))
-            {
-              safe_insert(a_candidates, j->second);
-              // This revision might already be on the next frontier -- that's
-              // okay.  Thus, .insert instead of safe_insert.
-              a_next_frontier.insert(j->second);
-            }
-        }
-    }
-}
-
+// FIXME: something about heights
 void
 get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_rid,
                        ancestry_map const & child_to_parent_map,
                        std::set<revision_id> & left_uncommon_ancs,
                        std::set<revision_id> & right_uncommon_ancs)
 {
-  set<revision_id> left_candidates;
-  set<revision_id> right_candidates;
-
-  set<revision_id> left_frontier;
-  set<revision_id> right_frontier;
-
-  left_uncommon_ancs.clear();
-  right_uncommon_ancs.clear();
-
-  left_candidates.insert(left_rid);
-  right_candidates.insert(right_rid);
-
-  left_frontier.insert(left_rid);
-  right_frontier.insert(right_rid);
-
-  while (! (left_frontier.empty() && right_frontier.empty()))
-    {
-      DUMP(left_frontier);
-      DUMP(right_frontier);
-      set<revision_id> left_next_frontier;
-      set<revision_id> right_next_frontier;
-      expand_uncommon_ancestor_frontier(child_to_parent_map, 
-                                        left_candidates, left_frontier, left_next_frontier, 
-                                        right_candidates, right_frontier);
-      DUMP(left_next_frontier);
-      left_frontier = left_next_frontier;
-
-      expand_uncommon_ancestor_frontier(child_to_parent_map, 
-                                        right_candidates, right_frontier, right_next_frontier, 
-                                        left_candidates, left_frontier);
-      DUMP(right_next_frontier);
-      right_frontier = right_next_frontier;
-    }
-
-  set_difference(left_candidates.begin(), left_candidates.end(),
-                 right_candidates.begin(), right_candidates.end(),
-                 inserter(left_uncommon_ancs, left_uncommon_ancs.begin()));
-
-  set_difference(right_candidates.begin(), right_candidates.end(),
-                 left_candidates.begin(), left_candidates.end(),
-                 inserter(right_uncommon_ancs, right_uncommon_ancs.begin()));
 }
 
 #ifdef BUILD_UNIT_TESTS
@@ -340,6 +306,112 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
 
 using namespace randomizer;
 
+static void
+get_all_ancestors(revision_id const & start, ancestry_map const & child_to_parent_map,
+                  set<revision_id> & ancestors)
+{
+  ancestors.clear();
+  vector<revision_id> frontier;
+  frontier.push_back(start);
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.back();
+      frontier.pop_back();
+      if (member(rid, ancestors))
+        continue;
+      safe_insert(ancestors, rid);
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(rid);
+      for (ci i = range.first; i != range.second; ++i)
+        frontier.push_back(i->second);
+    }
+}
+
+static void
+run_a_get_uncommon_ancestors_test(ancestry_map const & child_to_parent_map,
+                                  revision_id const & left, revision_id const & right)
+{
+  set<revision_id> true_left_ancestors, true_right_ancestors;
+  get_all_ancestors(left, child_to_parent_map, true_left_ancestors);
+  get_all_ancestors(right, child_to_parent_map, true_right_ancestors);
+  set<revision_id> true_left_uncommon_ancestors, true_right_uncommon_ancestors;
+  MM(true_left_uncommon_ancestors);
+  MM(true_right_uncommon_ancestors);
+  set_difference(true_left_ancestors.begin(), true_left_ancestors.end(),
+                 true_right_ancestors.begin(), true_right_ancestors.end(),
+                 inserter(true_left_uncommon_ancestors, true_left_uncommon_ancestors.begin()));
+  set_difference(true_right_ancestors.begin(), true_right_ancestors.end(),
+                 true_left_ancestors.begin(), true_left_ancestors.end(),
+                 inserter(true_right_uncommon_ancestors, true_right_uncommon_ancestors.begin()));
+      
+  set<revision_id> calculated_left_uncommon_ancestors, calculated_right_uncommon_ancestors;
+  MM(calculated_left_uncommon_ancestors);
+  MM(calculated_right_uncommon_ancestors);
+  get_uncommon_ancestors(left, right, child_to_parent_map,
+                         calculated_left_uncommon_ancestors,
+                         calculated_right_uncommon_ancestors);
+  I(calculated_left_uncommon_ancestors == true_left_uncommon_ancestors);
+  I(calculated_right_uncommon_ancestors == true_right_uncommon_ancestors);
+  get_uncommon_ancestors(right, left, child_to_parent_map,
+                         calculated_right_uncommon_ancestors,
+                         calculated_left_uncommon_ancestors);
+  I(calculated_left_uncommon_ancestors == true_left_uncommon_ancestors);
+  I(calculated_right_uncommon_ancestors == true_right_uncommon_ancestors);
+}
+
+static void
+test_get_uncommon_ancestors_nasty_convexity_case()
+{
+  // This tests the nasty case described in the giant comment above
+  // get_uncommon_ancestors:
+  // 
+  //              9
+  //              |\                  . Extraneous dots brought to you by the
+  //              8 \                 . Committee to Shut Up the C Preprocessor
+  //             /|  \                . (CSUCPP), and viewers like you and me.
+  //            / |   |
+  //           /  7   |
+  //          |   |   |
+  //          |   6   |
+  //          |   |   |
+  //          |   5   |
+  //          |   |   |
+  //          |   4   |
+  //          |   |   |
+  //          |   :   |  <-- insert arbitrarily many revisions at the ellipsis
+  //          |   :   |
+  //          |   |   |
+  //          1   2   3
+  //           \ / \ /
+  //            L   R
+
+  ancestry_map child_to_parent_map;
+  revision_id left(fake_id()), right(fake_id());
+  revision_id one(fake_id()), eight(fake_id()), three(fake_id()), nine(fake_id());
+  safe_insert(child_to_parent_map, make_pair(left, one));
+  safe_insert(child_to_parent_map, make_pair(one, eight));
+  safe_insert(child_to_parent_map, make_pair(eight, nine));
+  safe_insert(child_to_parent_map, make_pair(right, three));
+  safe_insert(child_to_parent_map, make_pair(three, nine));
+
+  revision_id middle(fake_id());
+  safe_insert(child_to_parent_map, make_pair(left, two));
+  safe_insert(child_to_parent_map, make_pair(right, two));
+  // We insert a _lot_ of revisions at the ellipsis, to make sure that
+  // whatever sort of step-size is used on the expansion, we can't take the
+  // entire middle portion in one big gulp and make the test pointless.
+  for (int i = 0; i != 1000; ++i)
+    {
+      revision_id next(fake_id());
+      safe_insert(child_to_parent_map, make_pair(middle, next));
+      middle = next;
+    }
+  safe_insert(child_to_parent_map, make_pair(middle, eight));
+
+  run_a_get_uncommon_ancestors_test(child_to_parent_map, left, right);
+}
+
+double const new_root_freq = 0.05;
 double const merge_node_freq = 0.2;
 double const skip_up_freq = 0.5;
 
@@ -393,7 +465,7 @@ make_random_graph(size_t num_nodes,
       revision_id new_rid = revision_id(fake_id());
       nodes.push_back(new_rid);
       set<revision_id> parents;
-      if (heads.empty())
+      if (heads.empty() || bernoulli(new_root_freq))
         parents.insert(revision_id());
       else if (bernoulli(merge_node_freq) && heads.size() > 1)
         {
@@ -417,39 +489,6 @@ make_random_graph(size_t num_nodes,
 }
 
 static void
-get_all_ancestors(revision_id const & start, ancestry_map const & child_to_parent_map,
-                  set<revision_id> & ancestors)
-{
-  ancestors.clear();
-  vector<revision_id> frontier;
-  frontier.push_back(start);
-  while (!frontier.empty())
-    {
-      revision_id rid = frontier.back();
-      frontier.pop_back();
-      if (member(rid, ancestors))
-        continue;
-      safe_insert(ancestors, rid);
-      typedef ancestry_map::const_iterator ci;
-      pair<ci,ci> range = child_to_parent_map.equal_range(rid);
-      for (ci i = range.first; i != range.second; ++i)
-        frontier.push_back(i->second);
-    }
-}
-
-template <typename T> void
-dump(set<T> const & obj, string & out)
-{
-  out = (FL("set with %s members:\n") % obj.size()).str();
-  for (typename set<T>::const_iterator i = obj.begin(); i != obj.end(); ++i)
-    {
-      string subobj_str;
-      dump(*i, subobj_str);
-      out += "  " + subobj_str + "\n";
-    }
-}
-
-static void
 run_a_get_uncommon_ancestors_random_test(size_t num_nodes, size_t iterations)
 {
   ancestry_map child_to_parent_map;
@@ -460,27 +499,7 @@ run_a_get_uncommon_ancestors_random_test(size_t num_nodes, size_t iterations)
       L(FL("get_uncommon_ancestors: random test %s-%s") % num_nodes % i);
       revision_id left = idx(nodes, uniform(nodes.size()));
       revision_id right = idx(nodes, uniform(nodes.size()));
-      set<revision_id> true_left_ancestors, true_right_ancestors;
-      get_all_ancestors(left, child_to_parent_map, true_left_ancestors);
-      get_all_ancestors(right, child_to_parent_map, true_right_ancestors);
-      set<revision_id> true_left_uncommon_ancestors, true_right_uncommon_ancestors;
-      MM(true_left_uncommon_ancestors);
-      MM(true_right_uncommon_ancestors);
-      set_difference(true_left_ancestors.begin(), true_left_ancestors.end(),
-                     true_right_ancestors.begin(), true_right_ancestors.end(),
-                     inserter(true_left_uncommon_ancestors, true_left_uncommon_ancestors.begin()));
-      set_difference(true_right_ancestors.begin(), true_right_ancestors.end(),
-                     true_left_ancestors.begin(), true_left_ancestors.end(),
-                     inserter(true_right_uncommon_ancestors, true_right_uncommon_ancestors.begin()));
-      
-      set<revision_id> calculated_left_uncommon_ancestors, calculated_right_uncommon_ancestors;
-      MM(calculated_left_uncommon_ancestors);
-      MM(calculated_right_uncommon_ancestors);
-      get_uncommon_ancestors(left, right, child_to_parent_map,
-                             calculated_left_uncommon_ancestors,
-                             calculated_right_uncommon_ancestors);
-      I(calculated_left_uncommon_ancestors == true_left_uncommon_ancestors);
-      I(calculated_right_uncommon_ancestors == true_right_uncommon_ancestors);
+      run_a_get_uncommon_ancestors_test(child_to_parent_map, left, right);
     }
 }
 
@@ -496,6 +515,7 @@ void
 add_graph_tests(test_suite * suite)
 {
   I(suite);
+  suite->add(BOOST_TEST_CASE(&test_get_uncommon_ancestors_nasty_convexity_case));
   suite->add(BOOST_TEST_CASE(&test_get_uncommon_ancestors_randomly));
 }
 
