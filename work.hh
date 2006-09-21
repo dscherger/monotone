@@ -181,7 +181,8 @@ bool get_attribute_from_roster(roster_t const & ros,
                                attr_key const & key,
                                attr_value & val);
 
-void update_any_attrs(std::vector<file_path> const & include_paths, app_state & app);
+void update_any_attrs(std::vector<file_path> const & include_paths, 
+                      app_state & app);
 
 struct file_content_source
 {
