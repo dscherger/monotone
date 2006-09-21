@@ -68,7 +68,7 @@ function get_defperms(filetype, is_executable)
        -- can never end up with an internal mask of 7 (all set bits on).
        local setbits = tonumber(string.sub(perms, 1, 1), 8)
        if (setbits ~= 0) then
-           setbits = !setbits
+           setbits =  not setbits
        end
        
        if (filetype ~= "directory") then

@@ -30,7 +30,7 @@ end
 function execute_redirout(command, out_filename, ...)
    local pid
    local ret = -1
-   pid = spawn_redirected("", out_filename, "", unpack(arg))
+   pid = spawn_redirected("", out_filename, "", command, unpack(arg))
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
 end
