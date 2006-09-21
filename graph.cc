@@ -291,13 +291,218 @@ member(revision_id const & i,
   return s.find(i) != s.end();
 }
 
-// FIXME: something about heights
+bool
+our_ua_candidate_set_is_complete(revision_id const & our_begin,
+                                 ancestry_map const & child_to_parent_map,
+                                 set<revision_id> const & our_candidates,
+                                 set<revision_id> const & their_candidates)
+{
+  //
+  // Given "our" candidates P and "their" candidates Q, we say that P is
+  // "complete" if, for every node N, the ancestors of N are all either:
+  //
+  //   - in P
+  //   - in, or at least require passing through, Q
+  //   - roots of the storage graph
+  // 
+  // We define the quest for completion via a loop. We're "complete" if we
+  // finish the loop without failing. The loop is DFS starting from
+  // "our_begin".
+  //
+  // We trim nodes from our search -- neither considering them nor expanding
+  // into their parents -- that are either roots of the ancestry graph or
+  // members of "their" candidate set, Q.
+  //
+  // We fail if, after considering potential trim conditions, our search has
+  // hit a node outside our candidate set.
+  //
+
+  stack<revision_id> stk;
+  set<revision_id> seen;
+  stk.push(our_begin);
+  while (!stk.empty())
+    {
+      revision_id r = stk.top();
+      stk.pop();
+
+      if (seen.find(r) != seen.end())
+        continue;
+      safe_insert(seen, r);
+
+      if (null_id(r))
+        continue;
+
+      if (their_candidates.find(r) != their_candidates.end())
+        continue;
+
+      if (our_candidates.find(r) != our_candidates.end())
+        return false;
+
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(r);
+      for (ci i = range.first; i != range.second; ++i)
+        {
+          if (i->first == r)
+            stk.push(i->second);
+        }
+    }
+  return true;
+}
+
+struct ua_qentry
+{
+  rev_height height;
+  revision_id rev;
+  ua_qentry(revision_id const & r, 
+            database & db) : rev(r)
+  {
+    db.get_rev_height(rev, height);
+  }
+  bool operator<(ua_qentry const & other) const 
+  {
+    return heght < other.height
+      || height == other.height && rev < other.rev;
+  }
+};
+
+void
+step_ua_candidate_search(revision_id const & our_base_rid,            
+                         ancestry_map const & child_to_parent_map,
+                         set<revision_id> & our_candidates,
+                         set<revision_id> const & their_candidates,
+                         priority_queue<ua_qentry> & our_queue,
+                         database & db,
+                         bool & complete_p,
+                         size_t iter,
+                         size_t next_check)
+{
+  if (!complete_p)
+    {
+      ua_qentry qe = our_queue.top();
+      our_queue.pop();
+
+      if (our_candidates.find(qe.rev) != our_candidates.end())
+        continue;
+      safe_insert(our_candidates, qe.rev);
+
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(qe.rev);
+      for (ci i = range.first; i != range.second; ++i)
+        {
+          if (i->first == qe.rev)
+            our_queue.push(ua_qentry(i->second, db));
+        }
+
+      if (iter == next_check)
+        complete_p = our_ua_candidate_set_is_complete(our_base_rid, 
+                                                      child_to_parent_map,
+                                                      our_candidates,
+                                                      their_candidates);
+    }
+}
+
+void
+constrained_transitive_closure(revision_id const & begin,
+                               set<revision_id> const & candidates,
+                               ancestry_map const & child_to_parent_map,
+                               set<revision_id> & ancs)
+{
+  stack<revision_id> stk;
+  stk.push_back(begin);
+  while (!stk.empty())
+    {
+      revision_id r = stk.top();
+      stk.pop();
+
+      if (candidates.find(r) == candidates.end())
+        continue;
+
+      if (ancs.find(r) != ancs.end())
+        continue;      
+      ancs.insert(r);
+
+      typedef ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(r);
+      for (ci i = range.first; i != range.second; ++i)
+        {
+          if (i->first == r)
+            stk.push(i->second);
+        }
+    }
+}
+
 void
 get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_rid,
                        ancestry_map const & child_to_parent_map,
                        std::set<revision_id> & left_uncommon_ancs,
-                       std::set<revision_id> & right_uncommon_ancs)
+                       std::set<revision_id> & right_uncommon_ancs,
+                       database & db)
 {
+  set<revision_id> candidates;
+
+  {
+    // Phase 1: build the candidate sets and union them.
+    
+    set<revision_id> left_candidates;
+    set<revision_id> right_candidates;
+    
+    priority_queue<ua_qentry> left_queue;
+    priority_queue<ua_qentry> right_queue;
+    
+    left_queue.push(ua_qentry(left_rid, db));
+    right_queue.push(ua_qentry(right_rid, db));
+    
+    bool right_complete = false;
+    bool left_complete = false;
+    
+    size_t iter = 0;
+    size_t next_check = 1;
+    
+    while (!(right_complete && left_complete))
+      {
+        step_ua_candidate_search(left_rid, child_to_parent_map,
+                                 left_candidates, right_candidates, left_queue, 
+                                 db, left_complete, iter, next_check);
+        
+        step_ua_candidate_search(right_rid, child_to_parent_map,
+                                 right_candidates, left_candidates, right_queue, 
+                                 db, right_complete, iter, next_check);
+        
+        if (iter == next_check)
+          next_check <<= 1;
+        iter++;
+      }
+
+    set_union(left_candidates.begin(), left_candidates.end(),
+              right_candidates.begin(), right_candidates.end(),
+              inserter(candidates, candidates.begin()));
+  }
+
+  {
+    // Phase 2: search for anc-sets-that-are-candidates and take differences.
+
+    set<revision_id> left_ancs;
+    set<revision_id> right_ancs;
+
+    constrained_transitive_closure(left_rid, candidates, 
+                                   child_to_parent_map, left_ancs);
+    constrained_transitive_closure(right_rid, candidates, 
+                                   child_to_parent_map, right_ancs);
+
+    left_uncommon_ancestors.clear();
+    right_uncommon_ancestors.clear();
+
+    set_difference(left_ancs.begin(), left_ancs.end(),
+                   right_ancs.begin(), right_ancs.end(),
+                   inserter(left_uncommon_ancestors, 
+                            left_uncommon_ancestors.begin()));
+
+    set_difference(right_ancs.begin(), right_ancs.end(),
+                   left_ancs.begin(), left_ancs.end(),
+                   inserter(right_uncommon_ancestors, 
+                            right_uncommon_ancestors.begin()));    
+  }
+
 }
 
 #ifdef BUILD_UNIT_TESTS
