@@ -67,11 +67,11 @@ function get_defperms(filetype, is_executable)
        -- leave it alone (all set bits off).  This as the consequence that we
        -- can never end up with an internal mask of 7 (all set bits on).
        local setbits = tonumber(string.sub(perms, 1, 1), 8)
-       if (setbits != 0) then
+       if (setbits ~= 0) then
            setbits = !setbits
        end
        
-       if (filetype != "directory") then
+       if (filetype ~= "directory") then
            -- permissions are specified in octal (base 8)
            if (is_executable) then		
                defperms = tonumber(string.format("777"), 8) - tonumber(string.sub(perms, 2), 8)
