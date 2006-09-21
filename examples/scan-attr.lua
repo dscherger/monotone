@@ -19,27 +19,27 @@ function execute_out(command, ...)
    local exec_retval
    local outhnd
    local errstr
-   local tmpfile = temp_file()
+   local tmpfile, tmpstr = temp_file()
    tmpfile:close()
-   exec_retval = execute_redirout(command, tmpfile, unpack(arg)) 
+   exec_retval = execute_redirout(command, tmpstr, unpack(arg)) 
    if (exec_retval == 0) then
-      outhnd, errstr = io.open(tmpfile)
+      outhnd, errstr = io.open(tmpstr)
       if (outhnd) then
           out, errstr = outhnd:read() 
           if (out == nil) then
               if (getdbgval() > 1) then
-                  print("Error reading " .. tmpfile .. ": " .. errstr)
+                  print("Error reading " .. tmpstr .. ": " .. errstr)
               end
           end
           outhnd:close()
-          os.remove(tmpfile)
+          os.remove(tmpstr)
       else
-          print("Error opening " .. tmpfile .. ": " .. errstr)
-          os.remove(tmpfile)
+          print("Error opening " .. tmpstr .. ": " .. errstr)
+          os.remove(tmpstr)
       end 
    else
-       print('Error executing ' .. argstr(command, unpack(arg)) .. ' > ' .. tmpfile .. ': ' .. tostring(exec_retval))
- os.remove(tmpfile)
+       print('Error executing ' .. argstr(command, unpack(arg)) .. ' > ' .. tmpstr .. ': ' .. tostring(exec_retval))
+ os.remove(tmpstr)
    end
 
    if (getdbgval() > 1) then
