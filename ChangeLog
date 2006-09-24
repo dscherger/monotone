@@ -1,3 +1,68 @@
+2006-09-23  Grahame Bowland  <grahame@angrygoats.net>
+
+	* automate.cc (get_content_changed): use the file_content 
+	make rather than the parent_name mark.
+
+2006-09-23  Nathaniel Smith  <njs@pobox.com>
+
+	* randomizer.{cc,hh}: Make randomizer a stateful struct, not a
+	namespace.  Now, each test must instantiate its own randomizer,
+	and the randomizer is deterministically seeded at each test, so
+	the actual tests performed no longer depend on what other tests
+	were run in this session.
+	* diff_patch.cc, graph.cc, randomfile.hh, refiner.cc, roster.cc:
+	Adjust accordingly.
+	* roster.cc (perform_random_action): Remove stateless
+	change_automaton struct.
+
+2006-09-22  Nathaniel Smith  <njs@pobox.com>
+
+	* graph.cc: I dunno, maybe this will make the buildslaves happier?
+	
+2006-09-22  Nathaniel Smith  <njs@pobox.com>
+
+	* graph.cc: Add randomized tests for get_reconstruction_path.
+
+2006-09-22  Zack Weinberg  <zackw@panix.com>
+
+	* work.cc (workspace::perform_pivot_root): Partially revert
+	revision 7e648a47fdd80f004a529ef5ddba9428f59f673d: apply the
+	renames to the current roster and then calculate the complete set
+	of changes, instead of just blindly writing the changeset to the
+	workspace revision.
+	* tests/pivot_root_to_new_dir: No longer expected to fail.
+
+2006-09-22  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/pivot_root_to_new_dir: new test for pivot_root into
+	a directory that hasn't been committed yet (xfailed, 0.30 regression)
+
+2006-09-22  Matt Johnston  <matt@ucc.asn.au>
+
+	* tests/{--*/}: rename to tests/_--*/ so that using
+	the * wildcard in tests/ isn't awkward.
+
+2006-09-21  Nathaniel Smith  <njs@pobox.com>
+
+	* lru_writeback_cache.hh (clean_insert): Correct the cache
+	overflow logic so as to _actually_ never remove the last element.
+	Add an invariant to verify this.
+	(insert_dirty): Add an invariant here too.
+
+2006-09-20  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.hh: *sigh* Previous changes were just dumb.  Remove
+	them again.
+
+2006-09-20  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.hh: Oops.
+
+2006-09-20  Nathaniel Smith  <njs@pobox.com>
+
+	* roster.hh: Expose some useful dump() overloads that are already
+	defined in roster.cc.
+
 2006-09-19  Alex Queiroz <alex@ventonegro.org>
 
 	* po/pt_BR.po: 1 fuzzy fixed.
