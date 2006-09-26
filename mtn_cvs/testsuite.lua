@@ -275,7 +275,7 @@ testdir = srcdir.."/tests"
 
 table.insert(tests, "pull_combined")
 table.insert(tests, "pull_separate")
---table.insert(tests, "pull_committemplate")
+table.insert(tests, "pull_committemplate")
 table.insert(tests, "pull_cvsbranch")
 --table.insert(tests, "pull_md5fail")
 table.insert(tests, "pull_rapid")
