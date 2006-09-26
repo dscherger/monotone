@@ -704,6 +704,12 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
   else
     guess_branch(edge_old_revision(restricted_rev.edges.begin()), app, branchname);
 
+  {
+    // fail early if there isn't a key
+    rsa_keypair_id key;
+    get_user_key(key, app);
+  }
+
   P(F("beginning commit on branch '%s'") % branchname);
   L(FL("new manifest '%s'\n"
        "new revision '%s'\n")
@@ -748,7 +754,7 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
   revision_data new_rev;
   write_revision(restricted_rev, new_rev);
 
-  app.lua.hook_validate_commit_message(log_message, new_rev,
+  app.lua.hook_validate_commit_message(log_message, new_rev, branchname,
                                        message_validated, reason);
   N(message_validated, F("log message rejected by hook: %s") % reason);
 
