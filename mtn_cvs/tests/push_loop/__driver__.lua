@@ -19,7 +19,7 @@ check(mtn("co","--branch=testbranch","test2"),0, false, false)
 check(indir("test", mtn("drop", "A")), 0, false, false)
 check(indir("test", mtn("ci", "-m", "a dropped")), 0, false, false)
 
-check(mtn("automate", "heads"), 0, false, false)
+check(mtn("automate", "heads"), 0, true, false)
 canonicalize("stdout")
 left = readfile("stdout")
 
