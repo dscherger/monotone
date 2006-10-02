@@ -82,14 +82,16 @@ typedef enum event_type
 
 struct cvs_branch;
 
+typedef unsigned long long digest_type;
+
 struct cvs_event_digest
 {
-  unsigned long digest;
+  digest_type digest;
 
   cvs_event_digest(cvs_author a, cvs_changelog c, cvs_tag t,
                    cvs_branchname b)
     {
-      digest = a | (c << 16) | (t << 32) | (b << 48);
+      digest = (digest_type) a | ((digest_type) c << 16) | ((digest_type) t << 32) | ((digest_type) b << 48);
     }
 
   bool operator < (const struct cvs_event_digest & other) const
@@ -178,6 +180,26 @@ cvs_branch
   {
   }
 
+
+  cvs_blob get_blob(const cvs_event_digest & d)
+  {
+    typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
+    pair<ity,ity> range = blobs.equal_range(d);
+
+    if (range.first == range.second)
+      {
+        blobs.insert(make_pair(d,
+                     vector<shared_ptr<cvs_event> >()));
+        range = blobs.equal_range(d);
+        I(range.first != range.second);
+      }
+
+    // it's a multimap, but we want only one blob per digest
+    // at this time (when filling it)
+    I(range.first != range.second);
+    return range.first->second;
+  }
+
   void append_event(shared_ptr<cvs_event> c) 
   {
     if (c->type == ET_COMMIT)
@@ -186,23 +208,8 @@ cvs_branch
         has_a_commit = true;
       }
 
-    typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
-    pair<ity,ity> range = blobs.equal_range(c->get_digest());
-
-    if (range.first == blobs.end())
-      {
-        blobs.insert(make_pair(c->get_digest(),
-                     vector<shared_ptr<cvs_event> >()));
-        range = blobs.equal_range(c->get_digest());
-        I(range.first != blobs.end());
-      }
-
-    // it's a multimap, but we want only one blob per digest
-    // at this time (when filling it)
-    I(range.first == range.second);
-
-    cvs_blob blob_events = range.first->second;
-    blob_events.push_back(c);
+    cvs_blob b = get_blob(c->get_digest());
+    b.push_back(c);
   }
 };
 
