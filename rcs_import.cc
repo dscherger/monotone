@@ -100,6 +100,11 @@ struct cvs_event_digest
     }
 };
 
+std::ostream & operator<<(std::ostream & o, struct cvs_event_digest const & d)
+{
+  return o << d.digest;
+}
+
 class
 cvs_event
 {
@@ -142,7 +147,6 @@ cvs_event_branch
 {
 public:
   shared_ptr<struct cvs_branch> branch;
-  cvs_path path;
 
   cvs_event_branch(shared_ptr<cvs_commit> dep);
   virtual cvs_event_digest get_digest(void);
@@ -154,13 +158,13 @@ cvs_event_tag
 {
 public:
   cvs_tag tag;
-  cvs_path path;
 
   cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t);
   virtual cvs_event_digest get_digest(void);
 };
 
 typedef vector<shared_ptr<cvs_event> > cvs_blob;
+typedef multimap<cvs_event_digest, cvs_blob>::iterator blob_iterator;
 
 struct
 cvs_branch
@@ -181,13 +185,13 @@ cvs_branch
   }
 
 
-  cvs_blob get_blob(const cvs_event_digest & d)
+  blob_iterator get_blob(const cvs_event_digest & d)
   {
-    typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
-    pair<ity,ity> range = blobs.equal_range(d);
+    pair<blob_iterator,blob_iterator> range = blobs.equal_range(d);
 
     if (range.first == range.second)
       {
+        L(FL("creating blob %s") % d);
         blobs.insert(make_pair(d,
                      vector<shared_ptr<cvs_event> >()));
         range = blobs.equal_range(d);
@@ -197,7 +201,7 @@ cvs_branch
     // it's a multimap, but we want only one blob per digest
     // at this time (when filling it)
     I(range.first != range.second);
-    return range.first->second;
+    return range.first;
   }
 
   void append_event(shared_ptr<cvs_event> c) 
@@ -208,8 +212,9 @@ cvs_branch
         has_a_commit = true;
       }
 
-    cvs_blob b = get_blob(c->get_digest());
-    b.push_back(c);
+    blob_iterator b = get_blob(c->get_digest());
+    b->second.push_back(c);
+    L(FL("blob %s now has %d events") % b->first % b->second.size());
   }
 };
 
@@ -678,19 +683,6 @@ process_branch(string const & begin_version,
   data curr_data(begin_data), next_data;
   hexenc<id> curr_id(begin_id), next_id;
 
-  if (last_commit)
-    {
-      // add a branch event if we have a previous commit
-      shared_ptr<cvs_event_branch> branch_event =
-        shared_ptr<cvs_event_branch>(new cvs_event_branch(last_commit));
-      branch_event->branch = cvs.stk.top();
-      cvs.stk.top()->append_event(branch_event);
-
-      L(FL("added branch event for file %s in branch %s")
-        % cvs.path_interner.lookup(last_commit->path)
-        % cvs.bstk.top());
-    }
-
   while(! (r.deltas.find(curr_version) == r.deltas.end()))
     {
       L(FL("version %s has %d lines") % curr_version % curr_lines->size());
@@ -759,13 +751,26 @@ process_branch(string const & begin_version,
           else
             priv = true;
 
+          /* add a branch event */
+          shared_ptr<cvs_event_branch> branch_event =
+            shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit));
+          cvs.stk.top()->append_event(branch_event);
+          L(FL("added branch event for file %s from branch %s into branch %s")
+            % cvs.path_interner.lookup(curr_commit->path)
+            % cvs.bstk.top()
+            % branch);
+
           L(FL("following RCS branch %s = '%s'\n") % (*i) % branch);
-          
+
           construct_version(*curr_lines, *i, branch_lines, r);
           insert_into_db(curr_data, curr_id, 
                          branch_lines, branch_data, branch_id, db);
 
           cvs.push_branch(branch, priv);
+
+          /* link the branch event to the branch */
+          branch_event->branch = cvs.stk.top();
+
           process_branch(*i, curr_commit, branch_lines, branch_data,
                          branch_id, r, db, cvs);
           cvs.pop_branch();
@@ -1052,11 +1057,42 @@ resolve_blob_dependencies(cvs_history &cvs,
                           shared_ptr<cvs_branch> const & branch,
                           ticker & n_blobs)
 {
+  L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
+
   // first try to resolve all intra-blob dependencies
   typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
   for (ity i = branch->blobs.begin(); i != branch->blobs.end(); ++i)
     {
       cvs_blob blob = i->second;
+
+      L(FL("blob %s contains:") % i->first);
+      L(FL("    %d events:") % i->second.size());
+      for(vector< shared_ptr< cvs_event> >::const_iterator j = blob.begin();
+          j != blob.end(); ++j)
+        {
+          shared_ptr<cvs_event> event = *j;
+
+          if (event->type == ET_COMMIT)
+            {
+              L(FL("    commit    file: %s") % cvs.path_interner.lookup(event->path));
+            }
+          else if (event->type == ET_TAG)
+            {
+              L(FL("    tag       file: %s") % cvs.path_interner.lookup(event->path));
+            }
+          else if (event->type == ET_BRANCH)
+            {
+              L(FL("    branch    file: %s") % cvs.path_interner.lookup(event->path));
+            }
+/*
+          if (j->type == ET_COMMIT)
+          {
+            L(FL("    commit"));
+//            shared_ptr<cvs_commit> c = j;
+//            L(FL("    commit of %s") % c->path
+          }
+*/
+        }
     }
 }
 
@@ -1455,14 +1491,13 @@ import_cvs_repo(system_path const & cvsroot,
 
   ticker n_revs(_("revisions"), "r", 1);
 
-#if 0
   for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
           i != cvs.branches.end(); ++i)
     {
       string branchname = i->first;
       shared_ptr<cvs_branch> branch = i->second;
+      resolve_blob_dependencies(cvs, branchname, branch, n_blobs);
     }
-#endif
 
   {
     transaction_guard guard(app.db);
