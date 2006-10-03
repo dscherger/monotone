@@ -82,16 +82,19 @@ typedef enum event_type
 
 struct cvs_branch;
 
-typedef unsigned long long digest_type;
-
 struct cvs_event_digest
 {
-  digest_type digest;
+  u32 digest;
 
   cvs_event_digest(cvs_author a, cvs_changelog c, cvs_tag t,
                    cvs_branchname b)
     {
-      digest = (digest_type) a | ((digest_type) c << 16) | ((digest_type) t << 32) | ((digest_type) b << 48);
+      if (c)
+        digest = c;
+      else if (t)
+        digest = ((u32) 2 << 30) | t;
+      else
+        digest = ((u32) 3 << 30) | b;
     }
 
   bool operator < (const struct cvs_event_digest & other) const
@@ -754,11 +757,6 @@ process_branch(string const & begin_version,
           /* add a branch event */
           shared_ptr<cvs_event_branch> branch_event =
             shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit));
-          cvs.stk.top()->append_event(branch_event);
-          L(FL("added branch event for file %s from branch %s into branch %s")
-            % cvs.path_interner.lookup(curr_commit->path)
-            % cvs.bstk.top()
-            % branch);
 
           L(FL("following RCS branch %s = '%s'\n") % (*i) % branch);
 
@@ -768,12 +766,20 @@ process_branch(string const & begin_version,
 
           cvs.push_branch(branch, priv);
 
+          process_branch(*i, curr_commit, branch_lines, branch_data,
+                         branch_id, r, db, cvs);
+
           /* link the branch event to the branch */
           branch_event->branch = cvs.stk.top();
 
-          process_branch(*i, curr_commit, branch_lines, branch_data,
-                         branch_id, r, db, cvs);
           cvs.pop_branch();
+
+          /* then append it to the parent branch */
+          cvs.stk.top()->append_event(branch_event);
+          L(FL("added branch event for file %s from branch %s into branch %s")
+            % cvs.path_interner.lookup(curr_commit->path)
+            % cvs.bstk.top()
+            % branch);
 
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
         }
