@@ -151,7 +151,7 @@ cvs_event_branch
 public:
   shared_ptr<struct cvs_branch> branch;
 
-  cvs_event_branch(shared_ptr<cvs_commit> dep);
+  cvs_event_branch(shared_ptr<cvs_commit> dep, shared_ptr<struct cvs_branch> b);
   virtual cvs_event_digest get_digest(void);
 };
 
@@ -382,10 +382,13 @@ cvs_commit::get_digest(void)
   return cvs_event_digest(author, changelog, 0, 0);
 };
 
-cvs_event_branch::cvs_event_branch(shared_ptr<cvs_commit> dep)
+cvs_event_branch::cvs_event_branch(shared_ptr<cvs_commit> dep,
+                                   shared_ptr<struct cvs_branch> b)
 {
   type = ET_BRANCH;
+  dependency = dep;
   path = dep->path;
+  branch = b;
 }
 
 cvs_event_digest
@@ -397,6 +400,7 @@ cvs_event_branch::get_digest(void)
 cvs_event_tag::cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t)
 {
   type = ET_TAG;
+  dependency = dep;
   path = dep->path;
   tag = t;
 }
@@ -754,10 +758,6 @@ process_branch(string const & begin_version,
           else
             priv = true;
 
-          /* add a branch event */
-          shared_ptr<cvs_event_branch> branch_event =
-            shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit));
-
           L(FL("following RCS branch %s = '%s'\n") % (*i) % branch);
 
           construct_version(*curr_lines, *i, branch_lines, r);
@@ -769,10 +769,13 @@ process_branch(string const & begin_version,
           process_branch(*i, curr_commit, branch_lines, branch_data,
                          branch_id, r, db, cvs);
 
-          /* link the branch event to the branch */
-          branch_event->branch = cvs.stk.top();
+          /* add a branch event, linked to this new branch */
+          shared_ptr<cvs_event_branch> branch_event =
+            shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit, cvs.stk.top()));
 
           cvs.pop_branch();
+
+          L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
 
           /* then append it to the parent branch */
           cvs.stk.top()->append_event(branch_event);
@@ -780,8 +783,6 @@ process_branch(string const & begin_version,
             % cvs.path_interner.lookup(curr_commit->path)
             % cvs.bstk.top()
             % branch);
-
-          L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -1065,18 +1066,26 @@ resolve_blob_dependencies(cvs_history &cvs,
 {
   L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
 
-  // first try to resolve all intra-blob dependencies
+  // first split blobs which have events for the same file (i.e. intra-blob
+  // dependencies)
   typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
   for (ity i = branch->blobs.begin(); i != branch->blobs.end(); ++i)
     {
       cvs_blob blob = i->second;
 
-      L(FL("blob %s contains:") % i->first);
-      L(FL("    %d events:") % i->second.size());
+      L(FL("blob %s contains %d events:") % i->first % i->second.size());
       for(vector< shared_ptr< cvs_event> >::const_iterator j = blob.begin();
           j != blob.end(); ++j)
         {
           shared_ptr<cvs_event> event = *j;
+
+          /* check the event's dependency */
+          if (event->dependency)
+            {
+              cvs_event_digest d = event->dependency->get_digest();
+              blob_iterator b = branch->get_blob(d);
+              L(FL("    depends on blob %d") % b->first);
+            }
 
           if (event->type == ET_COMMIT)
             {
@@ -1090,14 +1099,6 @@ resolve_blob_dependencies(cvs_history &cvs,
             {
               L(FL("    branch    file: %s") % cvs.path_interner.lookup(event->path));
             }
-/*
-          if (j->type == ET_COMMIT)
-          {
-            L(FL("    commit"));
-//            shared_ptr<cvs_commit> c = j;
-//            L(FL("    commit of %s") % c->path
-          }
-*/
         }
     }
 }
