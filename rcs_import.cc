@@ -167,7 +167,8 @@ public:
 };
 
 typedef vector<shared_ptr<cvs_event> > cvs_blob;
-typedef multimap<cvs_event_digest, cvs_blob>::iterator blob_iterator;
+typedef vector<shared_ptr<cvs_event> >::size_type cvs_blob_index;
+typedef multimap<cvs_event_digest, cvs_blob_index>::iterator blob_index_iterator;
 
 struct
 cvs_branch
@@ -178,7 +179,10 @@ cvs_branch
   cvs_branchname branchname;
 
   // all the blobs
-  multimap<cvs_event_digest, vector<shared_ptr<cvs_event> > > blobs;
+  vector<cvs_blob> blobs;
+
+  // to lookup blobs by their event_digest
+  multimap<cvs_event_digest, cvs_blob_index> blob_index;
 
   cvs_branch(cvs_branchname name)
     : has_a_commit(false),
@@ -187,17 +191,26 @@ cvs_branch
   {
   }
 
-
-  blob_iterator get_blob(const cvs_event_digest & d, bool create)
+  void add_blob(const cvs_event_digest & d)
   {
-    pair<blob_iterator,blob_iterator> range = blobs.equal_range(d);
+    cvs_blob_index i = blobs.size();
+    blobs.push_back(cvs_blob());
+
+    /* add an index entry for the blob */
+    blob_index.insert(make_pair(d, i));
+  }
+
+  blob_index_iterator get_blob(const cvs_event_digest & d, bool create)
+  {
+    pair<blob_index_iterator, blob_index_iterator> range = 
+      blob_index.equal_range(d);
 
     if ((range.first == range.second) && create)
       {
-        L(FL("creating blob %s") % d);
-        blobs.insert(make_pair(d,
-                     vector<shared_ptr<cvs_event> >()));
-        range = blobs.equal_range(d);
+        add_blob(d);
+
+        /* lookup the blob */
+        range = blob_index.equal_range(d);
         I(range.first != range.second);
       }
 
@@ -215,9 +228,8 @@ cvs_branch
         has_a_commit = true;
       }
 
-    blob_iterator b = get_blob(c->get_digest(), true);
-    b->second.push_back(c);
-    L(FL("blob %s now has %d events") % b->first % b->second.size());
+    blob_index_iterator b = get_blob(c->get_digest(), true);
+    blobs[b->second].push_back(c);
   }
 };
 
@@ -1070,14 +1082,12 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // first split blobs which have events for the same file (i.e. intra-blob
   // dependencies)
-  typedef multimap<cvs_event_digest, cvs_blob>::const_iterator ity;
-  for (ity i = branch->blobs.begin(); i != branch->blobs.end(); ++i)
+  for (cvs_blob_index i = 0; i < branch->blobs.size(); ++i)
     {
-      cvs_blob blob = i->second;
+      L(FL("blob %d contains %d events:") % i % branch->blobs[i].size());
 
-      L(FL("blob %s contains %d events:") % i->first % i->second.size());
-      for(vector< shared_ptr< cvs_event> >::const_iterator j = blob.begin();
-          j != blob.end(); ++j)
+      typedef vector< shared_ptr< cvs_event> >::const_iterator ity;
+      for(ity j = branch->blobs[i].begin(); j != branch->blobs[i].end(); ++j)
         {
           shared_ptr<cvs_event> event = *j;
 
@@ -1099,7 +1109,7 @@ resolve_blob_dependencies(cvs_history &cvs,
           if (event->dependency)
             {
               L(FL("    depends on digest %d") % event->dependency->get_digest());
-              blob_iterator b = branch->get_blob(event->dependency->get_digest(), false);
+              blob_index_iterator b = branch->get_blob(event->dependency->get_digest(), false);
               L(FL("    depends on blob %d") % b->first);
             }
           else
