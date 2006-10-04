@@ -188,11 +188,11 @@ cvs_branch
   }
 
 
-  blob_iterator get_blob(const cvs_event_digest & d)
+  blob_iterator get_blob(const cvs_event_digest & d, bool create)
   {
     pair<blob_iterator,blob_iterator> range = blobs.equal_range(d);
 
-    if (range.first == range.second)
+    if ((range.first == range.second) && create)
       {
         L(FL("creating blob %s") % d);
         blobs.insert(make_pair(d,
@@ -215,7 +215,7 @@ cvs_branch
         has_a_commit = true;
       }
 
-    blob_iterator b = get_blob(c->get_digest());
+    blob_iterator b = get_blob(c->get_digest(), true);
     b->second.push_back(c);
     L(FL("blob %s now has %d events") % b->first % b->second.size());
   }
@@ -673,7 +673,6 @@ lineage.
 
 static void
 process_branch(string const & begin_version,
-               shared_ptr<cvs_commit> last_commit,
                vector< piece > const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
@@ -682,6 +681,7 @@ process_branch(string const & begin_version,
                cvs_history & cvs)
 {
   shared_ptr<cvs_commit> curr_commit;
+  shared_ptr<cvs_commit> last_commit;
   string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
@@ -697,11 +697,9 @@ process_branch(string const & begin_version,
       curr_commit = shared_ptr<cvs_commit>(
         new cvs_commit(r, curr_version, curr_id, cvs));
 
-      if (!curr_commit->is_synthetic_branch_root)
-        {
-          cvs.stk.top()->append_event(curr_commit);
-          ++cvs.n_versions;
-        }
+      // add the commit (even synthetic ones) to the branch
+      cvs.stk.top()->append_event(curr_commit);
+      ++cvs.n_versions;
 
       // make the last commit depend on the current one (which
       // comes _before_ due to the reverse processing here)
@@ -766,23 +764,28 @@ process_branch(string const & begin_version,
 
           cvs.push_branch(branch, priv);
 
-          process_branch(*i, curr_commit, branch_lines, branch_data,
+          process_branch(*i, branch_lines, branch_data,
                          branch_id, r, db, cvs);
 
           /* add a branch event, linked to this new branch */
           shared_ptr<cvs_event_branch> branch_event =
-            shared_ptr<cvs_event_branch>(new cvs_event_branch(curr_commit, cvs.stk.top()));
+            shared_ptr<cvs_event_branch>(
+              new cvs_event_branch(curr_commit, cvs.stk.top()));
 
           cvs.pop_branch();
 
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
 
+          /* make sure curr_commit exists in the blob */
+          cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
+
           /* then append it to the parent branch */
           cvs.stk.top()->append_event(branch_event);
-          L(FL("added branch event for file %s from branch %s into branch %s")
+          L(FL("added branch event for file %s from branch %s into branch %s (dep %s)")
             % cvs.path_interner.lookup(curr_commit->path)
             % cvs.bstk.top()
-            % branch);
+            % branch
+            % curr_commit->get_digest());
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -829,8 +832,7 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
                                   head_lines);
-    process_branch(r.admin.head, shared_ptr<cvs_commit>(), head_lines, dat, id,
-                   r, db, cvs);
+    process_branch(r.admin.head, head_lines, dat, id, r, db, cvs);
     global_pieces.reset();
   }
 
@@ -1079,14 +1081,7 @@ resolve_blob_dependencies(cvs_history &cvs,
         {
           shared_ptr<cvs_event> event = *j;
 
-          /* check the event's dependency */
-          if (event->dependency)
-            {
-              cvs_event_digest d = event->dependency->get_digest();
-              blob_iterator b = branch->get_blob(d);
-              L(FL("    depends on blob %d") % b->first);
-            }
-
+          /* some debug information */
           if (event->type == ET_COMMIT)
             {
               L(FL("    commit    file: %s") % cvs.path_interner.lookup(event->path));
@@ -1098,6 +1093,18 @@ resolve_blob_dependencies(cvs_history &cvs,
           else if (event->type == ET_BRANCH)
             {
               L(FL("    branch    file: %s") % cvs.path_interner.lookup(event->path));
+            }
+
+          /* check the event's dependency */
+          if (event->dependency)
+            {
+              L(FL("    depends on digest %d") % event->dependency->get_digest());
+              blob_iterator b = branch->get_blob(event->dependency->get_digest(), false);
+              L(FL("    depends on blob %d") % b->first);
+            }
+          else
+            {
+              L(FL("    no dependency."));
             }
         }
     }
