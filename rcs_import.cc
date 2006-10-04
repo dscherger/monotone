@@ -1086,35 +1086,26 @@ resolve_blob_dependencies(cvs_history &cvs,
     {
       L(FL("blob %d contains %d events:") % i % branch->blobs[i].size());
 
+      set<cvs_path> files;
+
       typedef vector< shared_ptr< cvs_event> >::const_iterator ity;
       for(ity j = branch->blobs[i].begin(); j != branch->blobs[i].end(); ++j)
         {
           shared_ptr<cvs_event> event = *j;
 
-          /* some debug information */
-          if (event->type == ET_COMMIT)
+          if (files.find(event->path) != files.end())
             {
-              L(FL("    commit    file: %s") % cvs.path_interner.lookup(event->path));
+              throw oops("splitting blobs not implemented, yet.");
             }
-          else if (event->type == ET_TAG)
-            {
-              L(FL("    tag       file: %s") % cvs.path_interner.lookup(event->path));
-            }
-          else if (event->type == ET_BRANCH)
-            {
-              L(FL("    branch    file: %s") % cvs.path_interner.lookup(event->path));
-            }
+          files.insert(event->path);
 
-          /* check the event's dependency */
           if (event->dependency)
             {
-              L(FL("    depends on digest %d") % event->dependency->get_digest());
-              blob_index_iterator b = branch->get_blob(event->dependency->get_digest(), false);
-              L(FL("    depends on blob %d") % b->first);
-            }
-          else
-            {
-              L(FL("    no dependency."));
+              // we can still use get_blob here, as there is only one blob
+              // per digest
+              blob_index_iterator k =
+                branch->get_blob(event->dependency->get_digest(), false);
+              L(FL("blob %d depends on blob %d") % i % k->second);
             }
         }
     }
