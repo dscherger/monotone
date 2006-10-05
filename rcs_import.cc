@@ -1069,101 +1069,6 @@ public:
 };
 
 
-class revision_iterator
-{
-private:
-	cvs_blob_index current_blob;
-
-public:
-  revision_iterator(void)
-    : current_blob(0)
-    {}
-
-  revision_iterator(const revision_iterator & ri)
-    : current_blob(ri.current_blob) { }
-
-	revision_iterator & operator * (void)
-    {
-      return *this;
-    };
-
-  revision_iterator & operator = (cvs_blob_index i)
-    {
-      L(FL("assigned a value: %d") % i);
-      current_blob = i;
-      return *this;
-    }
-
-	revision_iterator & operator ++ (void)
-    {
-      return *this;
-    }
-
-	revision_iterator & operator ++ (int i)
-    {
-      return *this;
-    };
-};
-
-//
-// After stuffing all cvs_events into blobs of events with the same
-// author and changelog, we have to make sure their dependencies are
-// respected.
-//
-void
-resolve_blob_dependencies(cvs_history &cvs,
-                          string const & branchname,
-                          shared_ptr<cvs_branch> const & branch,
-                          ticker & n_blobs)
-{
-  L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
-
-	typedef pair< cvs_blob_index, cvs_blob_index > Edge;
-	typedef boost::adjacency_list< boost::vecS, boost::vecS,
-                                 boost::directedS > Graph;
-
-  Graph g(branch->blobs.size());
-
-  // first split blobs which have events for the same file (i.e. intra-blob
-  // dependencies)
-  for (cvs_blob_index i = 0; i < branch->blobs.size(); ++i)
-    {
-      L(FL("blob %d contains %d events:") % i % branch->blobs[i].size());
-
-      set<cvs_path> files;
-
-      typedef vector< shared_ptr< cvs_event> >::const_iterator ity;
-      for(ity j = branch->blobs[i].begin(); j != branch->blobs[i].end(); ++j)
-        {
-          shared_ptr<cvs_event> event = *j;
-
-          if (files.find(event->path) != files.end())
-            {
-              throw oops("splitting blobs not implemented, yet.");
-            }
-          files.insert(event->path);
-
-          if (event->dependency)
-            {
-              // we can still use get_blob here, as there is only one blob
-              // per digest
-              blob_index_iterator k =
-                branch->get_blob(event->dependency->get_digest(), false);
-              L(FL("blob %d depends on blob %d") % i % k->second);
-
-              add_edge(i, k->second, g);
-            }
-        }
-    }
-
-  // start the topological sort, which calls our revision
-  // iterator to insert the revisions into our database. 
-  revision_iterator ri;
-  topological_sort(g, ri);
-}
-
-
-
 
 //
 // our task here is to produce a sequence of revision descriptions
@@ -1319,6 +1224,99 @@ cluster_ptr_lt
 
 typedef set<cluster_ptr, cluster_ptr_lt>
 cluster_set;
+
+
+class revision_iterator
+{
+private:
+	cvs_blob_index current_blob;
+
+public:
+  revision_iterator(void)
+    : current_blob(0)
+    {}
+
+  revision_iterator(const revision_iterator & ri)
+    : current_blob(ri.current_blob) { }
+
+	revision_iterator & operator * (void)
+    {
+      return *this;
+    };
+
+  revision_iterator & operator = (cvs_blob_index i)
+    {
+      L(FL("assigned a value: %d") % i);
+      current_blob = i;
+      return *this;
+    }
+
+	revision_iterator & operator ++ (void)
+    {
+      return *this;
+    }
+
+	revision_iterator & operator ++ (int i)
+    {
+      return *this;
+    };
+};
+
+//
+// After stuffing all cvs_events into blobs of events with the same
+// author and changelog, we have to make sure their dependencies are
+// respected.
+//
+void
+resolve_blob_dependencies(cvs_history &cvs,
+                          string const & branchname,
+                          shared_ptr<cvs_branch> const & branch,
+                          ticker & n_blobs)
+{
+  L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
+
+	typedef pair< cvs_blob_index, cvs_blob_index > Edge;
+	typedef boost::adjacency_list< boost::vecS, boost::vecS,
+                                 boost::directedS > Graph;
+
+  Graph g(branch->blobs.size());
+
+  // first split blobs which have events for the same file (i.e. intra-blob
+  // dependencies)
+  for (cvs_blob_index i = 0; i < branch->blobs.size(); ++i)
+    {
+      set<cvs_path> files;
+
+      typedef vector< shared_ptr< cvs_event> >::const_iterator ity;
+      for(ity j = branch->blobs[i].begin(); j != branch->blobs[i].end(); ++j)
+        {
+          shared_ptr<cvs_event> event = *j;
+
+          if (files.find(event->path) != files.end())
+            {
+              throw oops("splitting blobs not implemented, yet.");
+            }
+          files.insert(event->path);
+
+          if (event->dependency)
+            {
+              // we can still use get_blob here, as there is only one blob
+              // per digest
+              blob_index_iterator k =
+                branch->get_blob(event->dependency->get_digest(), false);
+              L(FL("blob %d depends on blob %d") % i % k->second);
+
+              add_edge(i, k->second, g);
+            }
+        }
+    }
+
+  // start the topological sort, which calls our revision
+  // iterator to insert the revisions into our database. 
+  revision_iterator ri;
+  topological_sort(g, ri);
+}
+
 
 void
 import_branch(cvs_history & cvs,
