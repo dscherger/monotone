@@ -27,6 +27,9 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/topological_sort.hpp>
+
 #include "app_state.hh"
 #include "cert.hh"
 #include "constants.hh"
@@ -1066,6 +1069,41 @@ public:
 };
 
 
+class revision_iterator
+{
+private:
+	cvs_blob_index current_blob;
+
+public:
+  revision_iterator(void)
+    : current_blob(0)
+    {}
+
+  revision_iterator(const revision_iterator & ri)
+    : current_blob(ri.current_blob) { }
+
+	revision_iterator & operator * (void)
+    {
+      return *this;
+    };
+
+  revision_iterator & operator = (cvs_blob_index i)
+    {
+      L(FL("assigned a value: %d") % i);
+      current_blob = i;
+      return *this;
+    }
+
+	revision_iterator & operator ++ (void)
+    {
+      return *this;
+    }
+
+	revision_iterator & operator ++ (int i)
+    {
+      return *this;
+    };
+};
 
 //
 // After stuffing all cvs_events into blobs of events with the same
@@ -1079,6 +1117,12 @@ resolve_blob_dependencies(cvs_history &cvs,
                           ticker & n_blobs)
 {
   L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
+
+	typedef pair< cvs_blob_index, cvs_blob_index > Edge;
+	typedef boost::adjacency_list< boost::vecS, boost::vecS,
+                                 boost::directedS > Graph;
+
+  Graph g(branch->blobs.size());
 
   // first split blobs which have events for the same file (i.e. intra-blob
   // dependencies)
@@ -1106,9 +1150,16 @@ resolve_blob_dependencies(cvs_history &cvs,
               blob_index_iterator k =
                 branch->get_blob(event->dependency->get_digest(), false);
               L(FL("blob %d depends on blob %d") % i % k->second);
+
+              add_edge(i, k->second, g);
             }
         }
     }
+
+  // start the topological sort, which calls our revision
+  // iterator to insert the revisions into our database. 
+  revision_iterator ri;
+  topological_sort(g, ri);
 }
 
 
