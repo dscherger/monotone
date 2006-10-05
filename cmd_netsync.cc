@@ -113,6 +113,25 @@ process_netsync_args(string const & name,
     }
 }
 
+CMD_NO_WORKSPACE(clone, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
+    N_("initializes a new database and pull branches matching PATTERN from server at ADDRESS"),
+    option::exclude % option::set_default)
+{
+  // not using defaults because it's a new db
+  utf8 addr, include_pattern, exclude_pattern;
+  process_netsync_args(name, args, addr, include_pattern, exclude_pattern, 
+                       false, false, false, app);
+
+  // args ok, initialize new database
+  app.db.initialize();
+
+  if (app.signing_key() == "")
+    P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
+
+  run_netsync_protocol(client_voice, sink_role, addr,
+                       include_pattern, exclude_pattern, app);
+}
+
 CMD(push, N_("network"), N_("[ADDRESS[:PORTNUMBER] [PATTERN]]"),
     N_("push branches matching PATTERN to netsync server at ADDRESS"),
     option::set_default % option::exclude % option::key_to_push)
