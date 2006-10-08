@@ -389,6 +389,16 @@ app_state::set_automate_stdio_size(long size)
   automate_stdio_size = (size_t)size;
 }
 
+
+std::vector<file_path> 
+app_state::get_exclude_paths()
+{
+  std::vector<file_path> paths;
+  for (std::vector<utf8>::const_iterator i = exclude_patterns.begin(); i != exclude_patterns.end(); ++i)
+    paths.push_back(file_path_external(*i));
+  return paths;
+}
+
 system_path
 app_state::get_confdir()
 {

@@ -118,6 +118,8 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
   check_restricted_cset(old_roster, excluded);
 
+  std::vector<file_path> fpvect;
+
   node_map const & nodes = old_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); 
        i != nodes.end(); ++i)
@@ -135,31 +137,65 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
       if (!mask.includes(old_roster, nid))
         continue;
 
+      // Is there a difference in attributes in roster vs. filesystem?
+      bool attrs_differ = false;
+      std::map<std::string, std::string> fs_attrs;
+      unsigned long ros_attr_count = 0;
+      app.lua.hook_init_attributes(fp, fs_attrs);
+      for (full_attr_map_t::const_iterator attr = node->attrs.begin();
+           attr != node->attrs.end(); ++attr)
+        {
+          if (attr->second.first)
+            {
+              ros_attr_count++;
+              if (attr->second.second() != fs_attrs[attr->first()])
+                {
+                  attrs_differ = true;
+                  break;
+                }
+            }
+        }
+      if (ros_attr_count != fs_attrs.size())
+        attrs_differ = true;
+
       if (is_file_t(node))
         {
+
+          bool content_match = false;
+
           file_t f = downcast_to_file_t(node);
           if (file_exists(fp))
             {
               hexenc<id> ident;
               calculate_ident(fp, ident, app.lua);
               // don't touch unchanged files
+
               if (ident == f->content.inner())
-                continue;
+                {
+                  if (!attrs_differ)
+                    continue;
+                  else
+                    content_match = true;
+                }              
             }
 
           P(F("reverting %s") % fp);
-          L(FL("reverting %s to [%s]") % fp % f->content);
-
-          N(app.db.file_version_exists(f->content),
-            F("no file version %s found in database for %s")
-            % f->content % fp);
-
-          file_data dat;
-          L(FL("writing file %s to %s")
-            % f->content % fp);
-          app.db.get_file_version(f->content, dat);
-          write_localized_data(fp, dat.inner(), app.lua);
-        }
+          
+          if (!content_match)
+            {
+              L(FL("reverting %s to [%s]") % fp % f->content);
+              
+              N(app.db.file_version_exists(f->content),
+                F("no file version %s found in database for %s")
+                % f->content % fp);
+              
+              file_data dat;
+              L(FL("writing file %s to %s")
+                % f->content % fp);
+              app.db.get_file_version(f->content, dat);
+              write_localized_data(fp, dat.inner(), app.lua);              
+            }
+        }    
       else
         {
           if (!directory_exists(fp))
@@ -167,6 +203,12 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
               P(F("recreating %s/") % fp);
               mkdir_p(fp);
             }
+        }
+      if (attrs_differ)
+        {
+          // FIXME_ATTRS: If fp is a directory the call to update_any_attrs
+          // will also affect files and/or subdirectories.
+          fpvect.push_back(fp);
         }
     }
 
@@ -181,9 +223,10 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
   make_revision_for_workspace(base, excluded, remaining);
 
   // Race.
-  app.work.put_work_rev(remaining);
-  app.work.update_any_attrs();
-  app.work.maybe_update_inodeprints();
+  put_work_cset(excluded);
+  if (fpvect.size() > 0)
+    update_any_attrs(fpvect, app);
+  maybe_update_inodeprints(app);
 }
 
 CMD(disapprove, N_("review"), N_("REVISION"),
@@ -550,38 +593,58 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
           write_localized_data(path, dat.inner(), app.lua);
         }
     }
-
-  app.work.update_any_attrs();
-  app.work.maybe_update_inodeprints();
+  remove_work_cset();
+  std::vector<file_path> all_files;
+  update_any_attrs(all_files, app);
+  maybe_update_inodeprints(app);
   guard.commit();
 }
 
 ALIAS(co, checkout)
 
-CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [ATTR]"),
-    N_("set, get or drop file attributes"),
-    option::none)
+CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [ATTR]\nscan [PATH...]"),
+    N_("set, get or drop file attributes\nor scan filesystem to determine monotone attributes for files in PATH(s)."),
+    option::execute)
 {
-  if (args.size() < 2 || args.size() > 4)
+  if (args.size() < 1)
     throw usage(name);
 
-  roster_t old_roster, new_roster;
-  temp_node_id_source nis;
-
-  app.require_workspace();
-  app.work.get_base_and_current_roster_shape(old_roster, new_roster, nis);
-
-
-  file_path path = file_path_external(idx(args,1));
-  split_path sp;
-  path.split(sp);
-
-  N(new_roster.has_node(sp), F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(sp);
-
   string subcmd = idx(args, 0)();
-  if (subcmd == "set" || subcmd == "drop")
+  
+  if (subcmd == "scan")
     {
+      std::vector<file_path> paths;
+ 
+      if (args.size() < 2)
+        {
+          paths = std::vector<file_path>();
+        }
+      else
+        {
+          std::vector<utf8>::const_iterator pbegin = args.begin();
+          ++pbegin;
+          for ( ; pbegin != args.end(); ++pbegin) 
+            {
+              paths.push_back(file_path_external(*pbegin));
+            }
+        }
+      perform_attr_scan(paths, app);
+    }
+  else if (subcmd == "set" || subcmd == "drop")
+    {
+      roster_t old_roster, new_roster;
+      temp_node_id_source nis;
+      
+      app.require_workspace();
+      get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+
+      file_path path = file_path_external(idx(args,1));
+      split_path sp;
+      path.split(sp);
+      
+      N(new_roster.has_node(sp), F("Unknown path '%s'") % path);
+      node_t node = new_roster.get_node(sp);
+
       if (subcmd == "set")
         {
           if (args.size() != 4)
@@ -591,6 +654,9 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
           attr_value a_value = idx(args, 3)();
 
           node->attrs[a_key] = make_pair(true, a_value);
+
+          if (app.execute)
+            app.lua.hook_apply_attribute(a_key(), path, a_value(), false);
         }
       else
         {
@@ -599,7 +665,11 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
             {
               for (full_attr_map_t::iterator i = node->attrs.begin();
                    i != node->attrs.end(); ++i)
-                i->second = make_pair(false, "");
+                {
+                  i->second = make_pair(false, "");
+                  if (app.execute)
+                    app.lua.hook_apply_attribute(i->first(), path, string(""), true);
+                }
             }
           else if (args.size() == 3)
             {
@@ -607,7 +677,11 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
               N(node->attrs.find(a_key) != node->attrs.end(),
                 F("Path '%s' does not have attribute '%s'\n")
                 % path % a_key);
-              node->attrs[a_key] = make_pair(false, "");
+
+                node->attrs[a_key] = make_pair(false, "");
+                
+                if (app.execute)
+                  app.lua.hook_apply_attribute(a_key(), path, string(""), true);
             }
           else
             throw usage(name);
@@ -622,6 +696,19 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
     }
   else if (subcmd == "get")
     {
+      roster_t old_roster, new_roster;
+      temp_node_id_source nis;
+
+      app.require_workspace();
+      get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+
+      file_path path = file_path_external(idx(args,1));
+      split_path sp;
+      path.split(sp);
+
+      N(new_roster.has_node(sp), F("Unknown path '%s'") % path);
+      node_t node = new_roster.get_node(sp);
+
       if (args.size() == 2)
         {
           bool has_any_live_attrs = false;
@@ -876,8 +963,8 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
       % ui.prog_name);
   }
 
-  app.work.update_any_attrs();
-  app.work.maybe_update_inodeprints();
+  update_any_attrs(args_to_paths(args), app);
+  maybe_update_inodeprints(app);
 
   {
     // Tell lua what happened. Yes, we might lose some information

@@ -151,6 +151,7 @@ public:
   void set_confdir(system_path const & cd);
   system_path get_confdir();
   void set_automate_stdio_size(long size);
+  std::vector<file_path> get_exclude_paths();
 
   explicit app_state();
   ~app_state();

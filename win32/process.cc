@@ -156,8 +156,11 @@ struct redir
   ~redir();
 };
 redir::redir(int which, char const * filename)
- : what(which)
+ : what(-1)
 {
+  if (file == 0 || file[0] == '\0')
+    return;
+  what = which;
   HANDLE file;
   SECURITY_ATTRIBUTES sa;
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -202,6 +205,8 @@ redir::~redir()
   case 2:
     CloseHandle(GetStdHandle(STD_ERROR_HANDLE));
     SetStdHandle(STD_ERROR_HANDLE, saved);
+    break;
+  default:
     break;
   }
 }

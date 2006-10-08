@@ -797,7 +797,8 @@ void
 editable_working_tree::clear_attr(split_path const & pth,
                                   attr_key const & name)
 {
-  // FIXME_ROSTERS: call a lua hook
+  file_path pth_unsplit(pth);
+  app.lua.hook_apply_attribute(name(), pth_unsplit, string(""), true);
 }
 
 void
@@ -805,7 +806,8 @@ editable_working_tree::set_attr(split_path const & pth,
                                 attr_key const & name,
                                 attr_value const & val)
 {
-  // FIXME_ROSTERS: call a lua hook
+  file_path pth_unsplit(pth);
+  app.lua.hook_apply_attribute(name(), pth_unsplit, val(), false);
 }
 
 void
@@ -1076,7 +1078,6 @@ workspace::perform_additions(path_set const & paths, bool recursive)
   revision_t new_work;
   make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
   put_work_rev(new_work);
-  update_any_attrs();
 }
 
 void
@@ -1150,7 +1151,6 @@ workspace::perform_deletions(path_set const & paths,
   revision_t new_work;
   make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
   put_work_rev(new_work);
-  update_any_attrs();
 }
 
 void
@@ -1272,7 +1272,6 @@ workspace::perform_rename(set<file_path> const & src_paths,
             }
         }
     }
-  update_any_attrs();
 }
 
 void
@@ -1341,7 +1340,6 @@ workspace::perform_pivot_root(file_path const & new_root,
       content_merge_empty_adaptor cmea;
       perform_content_update(cs, cmea);
     }
-  update_any_attrs();
 }
 
 void
@@ -1352,27 +1350,53 @@ workspace::perform_content_update(cset const & update,
   update.apply_to(ewt);
 }
 
-void
-workspace::update_any_attrs()
+void 
+update_any_attrs(std::vector<file_path> const & include_paths, app_state & app)
 {
   temp_node_id_source nis;
   roster_t new_roster;
-  get_current_roster_shape(new_roster, nis);
+  get_current_roster_shape(new_roster, nis, app);
+  node_restriction mask(include_paths, app.get_exclude_paths(), new_roster, app);
   node_map const & nodes = new_roster.all_nodes();
+
+  P(F("updating attributes on filesystem"));
+
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
-      split_path sp;
-      new_roster.get_name(i->first, sp);
-
+      node_id nid = i->first;
       node_t n = i->second;
+      split_path sp;
+
+      // Only update restriction-included files.
+      // If this is not used all files in the roster have the corresponding
+      // files in the workspace's attributes on the filesystem set to the
+      // attributes recorded in the roster.  This is rather like reverting
+      // files in the workspace to what was last recorded in the roster, for
+      // every workspace command.
+
+      if (!mask.includes(new_roster, nid))
+        continue;
+
+      new_roster.get_name(i->first, sp);
+      file_path name(sp);
+
+      L(FL("  updating %s") % name);
+
       for (full_attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
-        if (j->second.first)
-          lua.hook_apply_attribute (j->first(), file_path(sp),
-                                    j->second.second());
+        {
+          if (j->second.first)
+            {
+              app.lua.hook_apply_attribute (j->first(),
+                                            file_path(sp),
+                                            j->second.second(),
+                                            false);
+            }
+        }
     }
 }
+
 
 // Local Variables:
 // mode: C++
