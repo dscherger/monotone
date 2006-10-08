@@ -93,7 +93,9 @@ struct workspace
   void perform_content_update(cset const & cs,
                               content_merge_adaptor const & ca);
 
-  void update_any_attrs(std::vector<file_path> const & include_paths, app_state & app);
+  void perform_attr_scan(roster_t & new_roster, node_restriction const & mask);
+
+  void apply_attrs(file_path const & pth, full_attr_map_t const & attrs);
 
   // transitional: the write half of this is exposed, the read half isn't.
   // write out a new (partial) revision describing the current workspace;

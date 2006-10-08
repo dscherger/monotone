@@ -365,7 +365,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.exclude_patterns),
                             app.depth,
-                            old_roster, new_roster, app);
+                            old_roster, new_roster, app.lua);
 
       app.work.update_current_roster_from_filesystem(new_roster, mask);
       make_restricted_csets(old_roster, new_roster, 
@@ -394,7 +394,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.exclude_patterns), 
                             app.depth,
-                            old_roster, new_roster, app);
+                            old_roster, new_roster, app.lua);
 
       app.work.update_current_roster_from_filesystem(new_roster, mask);
       make_restricted_csets(old_roster, new_roster, 
@@ -423,7 +423,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.exclude_patterns),
                             app.depth,
-                            old_roster, new_roster, app);
+                            old_roster, new_roster, app.lua);
 
       // FIXME: this is *possibly* a UI bug, insofar as we
       // look at the restriction name(s) you provided on the command
@@ -586,7 +586,7 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
       mask = node_restriction(args_to_paths(args),
                               args_to_paths(app.exclude_patterns), 
                               app.depth,
-                              old_roster, new_roster, app);
+                              old_roster, new_roster, app.lua);
     }
 
   cert_name author_name(author_cert_name);

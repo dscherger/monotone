@@ -262,7 +262,7 @@ CMD(update, N_("workspace"), "",
     P(F("switched branch; next commit will use branch %s") % app.branch_name());
   P(F("updated to base revision %s") % chosen_rid);
 
-  maybe_update_inodeprints(app);
+  app.work.maybe_update_inodeprints();
 }
 
 // Subroutine of CMD(merge) and CMD(explicit_merge).  Merge LEFT with RIGHT,
@@ -749,7 +749,7 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
     node_restriction mask(args_to_paths(args),
                           args_to_paths(app.exclude_patterns),
                           app.depth,
-                          *from_roster, to_true_roster, app);
+                          *from_roster, to_true_roster, app.lua);
     make_restricted_csets(*from_roster, to_true_roster,
                           from_to_to, from_to_to_excluded,
                           mask);
@@ -787,8 +787,16 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
 
   P(F("applied changes to workspace"));
 
-  put_work_cset(remaining);
+  // and record any remaining changes in _MTN/revision
+  revision_id base_id;
+  revision_t remaining;
+  MM(remaining);
+  app.work.get_revision_id(base_id);
+  make_revision_for_workspace(base_id, base_roster, merged_roster, remaining);
 
+  // small race condition here...
+  app.work.put_work_rev(remaining);
+  
   // add a note to the user log file about what we did
   {
     utf8 log;

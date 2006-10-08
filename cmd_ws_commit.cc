@@ -80,7 +80,7 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
 
   node_restriction mask(args_to_paths(args), args_to_paths(app.exclude_patterns),
                         app.depth,
-                        old_roster, new_roster, app);
+                        old_roster, new_roster, app.lua);
 
   if (app.missing)
     {
@@ -106,7 +106,7 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
       // replace the original mask with a more restricted one
       mask = node_restriction(missing_files, std::vector<file_path>(),
                               app.depth,
-                              old_roster, new_roster, app);
+                              old_roster, new_roster, app.lua);
     }
 
   make_restricted_csets(old_roster, new_roster,
@@ -205,11 +205,7 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
             }
         }
       if (attrs_differ)
-        {
-          // FIXME_ATTRS: If fp is a directory the call to update_any_attrs
-          // will also affect files and/or subdirectories.
-          fpvect.push_back(fp);
-        }
+        app.work.apply_attrs(fp, node->attrs);
     }
 
   // Included_work is thrown away which effectively reverts any adds,
@@ -223,10 +219,8 @@ CMD(revert, N_("workspace"), N_("[PATH]..."),
   make_revision_for_workspace(base, excluded, remaining);
 
   // Race.
-  put_work_cset(excluded);
-  if (fpvect.size() > 0)
-    update_any_attrs(fpvect, app);
-  maybe_update_inodeprints(app);
+  app.work.put_work_rev(remaining);
+  app.work.maybe_update_inodeprints();
 }
 
 CMD(disapprove, N_("review"), N_("REVISION"),
@@ -294,7 +288,7 @@ CMD(add, N_("workspace"), N_("[PATH]..."),
   if (app.unknown)
     {
       vector<file_path> roots = args_to_paths(args);
-      path_restriction mask(roots, args_to_paths(app.exclude_patterns), app.depth, app);
+      path_restriction mask(roots, args_to_paths(app.exclude_patterns), app.depth, app.lua);
       path_set ignored;
 
       // if no starting paths have been specified use the workspace root
@@ -333,7 +327,7 @@ CMD(drop, N_("workspace"), N_("[PATH]..."),
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.exclude_patterns),
                             app.depth,
-                            current_roster_shape, app);
+                            current_roster_shape, app.lua);
       app.work.find_missing(current_roster_shape, mask, paths);
     }
   else
@@ -411,7 +405,7 @@ CMD(status, N_("informative"), N_("[PATH]..."), N_("show status of workspace"),
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.exclude_patterns),
                         app.depth,
-                        old_roster, new_roster, app);
+                        old_roster, new_roster, app.lua);
 
   app.work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_csets(old_roster, new_roster, 
@@ -592,11 +586,11 @@ CMD(checkout, N_("tree"), N_("[DIRECTORY]\n"),
           app.db.get_file_version(file->content, dat);
           write_localized_data(path, dat.inner(), app.lua);
         }
+
+      app.work.apply_attrs(path, node->attrs);
     }
-  remove_work_cset();
-  std::vector<file_path> all_files;
-  update_any_attrs(all_files, app);
-  maybe_update_inodeprints(app);
+
+  app.work.maybe_update_inodeprints();
   guard.commit();
 }
 
@@ -611,32 +605,13 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
 
   string subcmd = idx(args, 0)();
   
-  if (subcmd == "scan")
-    {
-      std::vector<file_path> paths;
- 
-      if (args.size() < 2)
-        {
-          paths = std::vector<file_path>();
-        }
-      else
-        {
-          std::vector<utf8>::const_iterator pbegin = args.begin();
-          ++pbegin;
-          for ( ; pbegin != args.end(); ++pbegin) 
-            {
-              paths.push_back(file_path_external(*pbegin));
-            }
-        }
-      perform_attr_scan(paths, app);
-    }
-  else if (subcmd == "set" || subcmd == "drop")
+  if (subcmd == "scan" || subcmd == "set" || subcmd == "drop")
     {
       roster_t old_roster, new_roster;
       temp_node_id_source nis;
       
       app.require_workspace();
-      get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+      app.work.get_base_and_current_roster_shape(old_roster, new_roster, nis);
 
       file_path path = file_path_external(idx(args,1));
       split_path sp;
@@ -645,7 +620,16 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
       N(new_roster.has_node(sp), F("Unknown path '%s'") % path);
       node_t node = new_roster.get_node(sp);
 
-      if (subcmd == "set")
+      if (subcmd == "scan")
+        {
+          vector<utf8> pathargs(args.begin() + 1, args.end());
+          node_restriction mask(args_to_paths(pathargs),
+                                args_to_paths(app.exclude_patterns),
+                                app.depth,
+                                old_roster, new_roster, app.lua);
+          app.work.perform_attr_scan(new_roster, mask);
+        }
+      else if (subcmd == "set")
         {
           if (args.size() != 4)
             throw usage(name);
@@ -658,7 +642,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
           if (app.execute)
             app.lua.hook_apply_attribute(a_key(), path, a_value(), false);
         }
-      else
+      else if (subcmd == "drop")
         {
           // Clear all attrs (or a specific attr).
           if (args.size() == 2)
@@ -692,7 +676,6 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
       revision_t new_work;
       make_revision_for_workspace(base, old_roster, new_roster, new_work);
       app.work.put_work_rev(new_work);
-      app.work.update_any_attrs();
     }
   else if (subcmd == "get")
     {
@@ -700,7 +683,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
       temp_node_id_source nis;
 
       app.require_workspace();
-      get_base_and_current_roster_shape(old_roster, new_roster, nis, app);
+      app.work.get_base_and_current_roster_shape(old_roster, new_roster, nis);
 
       file_path path = file_path_external(idx(args,1));
       split_path sp;
@@ -765,7 +748,7 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.exclude_patterns),
                         app.depth,
-                        old_roster, new_roster, app);
+                        old_roster, new_roster, app.lua);
 
   app.work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_csets(old_roster, new_roster, 
@@ -963,8 +946,7 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
       % ui.prog_name);
   }
 
-  update_any_attrs(args_to_paths(args), app);
-  maybe_update_inodeprints(app);
+  app.work.maybe_update_inodeprints();
 
   {
     // Tell lua what happened. Yes, we might lose some information
