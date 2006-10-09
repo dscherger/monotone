@@ -15,7 +15,7 @@ Log2Gxl.class: Log2Gxl.java
 	javac -g -classpath "gxl/gxl-0.92/gxl.jar${SEP}." Log2Gxl.java
 
 Monotone.class Monotone$$ErrorReader.class Monotone$$StreamCopier.class Monotone$$1.class Monotone$$HighlightTypes.class InternalURIResolver.class: Monotone.java Log2Gxl.class
-	javac -g Monotone.java
+	javac -g -classpath "gxl/gxl-0.92/gxl.jar;." Monotone.java
 
 GXLViewer$$OnClickAction.class GXLViewer$$ReadBranches.class GXLViewer$$2$$1.class GXLViewer$$DisplayLog.class GXLViewer$$1.class GXLViewer$$2.class GXLViewer$$3.class GXLViewer$$4.class GXLViewer$$5 GXLViewer$$6 GXLViewer.class GXLViewer$$MonotoneFileFilter.class GXLViewer$$ReadBranches$$1.class GXLViewer$$DisplayLog$$1.class GXLViewer$$GXLUserAgent.class GXLViewer$$7.class GXLViewer$$OnClickAction$$1.class: GXLViewer.java Monotone.class
 	javac -g -classpath "batik/batik-1.5.1/batik.jar${SEP}gxl/gxl-0.92/gxl.jar${SEP}." GXLViewer.java

@@ -62,7 +62,7 @@ public class Monotone {
      * @return the base monotone command
      */
     public String[] getBaseCommand() {
-	return new String[] { "monotone","--db="+database };
+	return new String[] { "mtn","--db="+database };
     }
 
     /**
@@ -82,7 +82,7 @@ public class Monotone {
      * @return a list of strings which enumerates the heads of the specified branch in the current monotone database
      */
     public List<String> listHeads(String branch) throws IOException {
-	List<String>result=runMonotone(new String[] { "heads", "--branch",branch});
+	List<String>result=runMonotone(new String[] { "heads", "--branch", branch});
 	return result;
     }
 

@@ -6,58 +6,66 @@
  * I.e., do what you like, but keep copyright and there's NO WARRANTY.
  */
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import javax.swing.*;
-import java.util.List;
-import javax.swing.tree.*;
-import javax.swing.event.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.SystemColor;
-import javax.swing.border.LineBorder;
-import javax.swing.filechooser.FileFilter;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.util.List;
 import java.util.logging.Logger;
-import java.util.logging.Level;
 
+import javax.swing.*;
+import javax.swing.border.LineBorder;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+
+import net.sourceforge.gxl.GXLAttr;
+import net.sourceforge.gxl.GXLDocument;
+import net.sourceforge.gxl.GXLNode;
+import net.sourceforge.gxl.GXLSet;
+import net.sourceforge.gxl.GXLString;
+
+import org.apache.batik.bridge.ScriptingEnvironment;
+import org.apache.batik.bridge.UpdateManager;
+import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
+import org.apache.batik.script.Interpreter;
 import org.apache.batik.swing.JSVGCanvas;
-import org.apache.batik.swing.svg.JSVGComponent;
 import org.apache.batik.swing.JSVGScrollPane;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
-import org.apache.batik.swing.svg.SVGDocumentLoaderAdapter;
-import org.apache.batik.swing.svg.SVGDocumentLoaderEvent;
 import org.apache.batik.swing.svg.GVTTreeBuilderAdapter;
 import org.apache.batik.swing.svg.GVTTreeBuilderEvent;
-import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
-import org.apache.batik.util.XMLResourceDescriptor;
-import org.apache.batik.swing.svg.LinkActivationListener;
-import org.apache.batik.swing.svg.SVGUserAgentGUIAdapter;
+import org.apache.batik.swing.svg.JSVGComponent;
 import org.apache.batik.swing.svg.LinkActivationEvent;
-import org.apache.batik.util.ParsedURL;
-import org.apache.batik.bridge.UpdateManager;
-import org.apache.batik.bridge.ScriptingEnvironment;
-import org.apache.batik.script.Interpreter;
-import org.w3c.dom.svg.SVGDocument;
+import org.apache.batik.swing.svg.LinkActivationListener;
+import org.apache.batik.swing.svg.SVGDocumentLoaderAdapter;
+import org.apache.batik.swing.svg.SVGDocumentLoaderEvent;
+import org.apache.batik.swing.svg.SVGUserAgentGUIAdapter;
+import org.apache.batik.util.XMLResourceDescriptor;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
-import org.w3c.dom.Node;
-import org.w3c.dom.events.EventTarget;
-import org.w3c.dom.events.EventListener;
 import org.w3c.dom.events.Event;
+import org.w3c.dom.events.EventListener;
+import org.w3c.dom.events.EventTarget;
 import org.w3c.dom.events.MouseEvent;
-
-import net.sourceforge.gxl.GXLDocument;
-import net.sourceforge.gxl.GXLGraph;
-import net.sourceforge.gxl.GXLNode;
-import net.sourceforge.gxl.GXLEdge;
-import net.sourceforge.gxl.GXLString;
-import net.sourceforge.gxl.GXLSet;
-import net.sourceforge.gxl.GXLAttr;
-import net.sourceforge.gxl.GXLInt;
-import net.sourceforge.gxl.GXLTup;
-import net.sourceforge.gxl.GXL;
-import net.sourceforge.gxl.GXLValue;
+import org.w3c.dom.svg.SVGDocument;
 
 /**
  * Somewhat misnamed class to provide a simple GUI against a monotone database
@@ -507,7 +515,7 @@ public class GXLViewer {
     }
 
     /**
-     * File filter which only displays monotone .db files
+     * File filter which only displays monotone .mtn files
      * Note: It actually displays all files which end in .db 
      */
     private class MonotoneFileFilter extends FileFilter {
@@ -516,11 +524,11 @@ public class GXLViewer {
 	 * Return true for directories and monotone database files
 	 *
 	 * @param file the file to test
-	 * @return true if the file is a directory or ends in .db
+	 * @return true if the file is a directory or ends in .mtn
 	 */
 	public boolean accept(File file) {
 	    if(file.isDirectory()) return true;
-	    return file.getName().endsWith(".db");
+	    return file.getName().endsWith(".mtn");
 	}
 
 	/**
