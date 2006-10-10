@@ -709,10 +709,14 @@ process_branch(string const & begin_version,
     {
       L(FL("version %s has %d lines") % curr_version % curr_lines->size());
 
-      curr_commit = shared_ptr<cvs_commit>(
+      shared_ptr<cvs_commit> c = shared_ptr<cvs_commit>(
         new cvs_commit(r, curr_version, curr_id, cvs));
 
-      // add the commit (even synthetic ones) to the branch
+      if (c->alive)
+        {
+          curr_commit = c;
+
+      // add the commit to the branch
       cvs.stk.top()->append_event(curr_commit);
       ++cvs.n_versions;
 
@@ -722,6 +726,7 @@ process_branch(string const & begin_version,
         {
           last_commit->dependency = curr_commit;
         }
+        }
 
       // create tag events for all tags on this commit
       typedef multimap<string,string>::const_iterator ity;
@@ -730,6 +735,9 @@ process_branch(string const & begin_version,
         {
           if (i->first == curr_version)
            {
+              // ignore tags on dead commits
+              if (c->alive)
+                {
               shared_ptr<cvs_event_tag> event;
               L(FL("version %s -> tag %s") % curr_version % i->second);
 
@@ -737,6 +745,7 @@ process_branch(string const & begin_version,
               event = shared_ptr<cvs_event_tag>(
                 new cvs_event_tag(curr_commit, tag));
               cvs.stk.top()->append_event(event);
+                }
             }
         }
 
@@ -782,7 +791,10 @@ process_branch(string const & begin_version,
           process_branch(*i, branch_lines, branch_data,
                          branch_id, r, db, cvs);
 
-          /* add a branch event, linked to this new branch */
+          // add a branch event, linked to this new branch if it's
+          // not a dead commit
+          if (c->alive)
+            {
           shared_ptr<cvs_event_branch> branch_event =
             shared_ptr<cvs_event_branch>(
               new cvs_event_branch(curr_commit, cvs.stk.top()));
@@ -801,6 +813,14 @@ process_branch(string const & begin_version,
             % cvs.bstk.top()
             % branch
             % curr_commit->get_digest());
+            }
+          else
+            {
+              // in case we come from a dead commit, we don't have to
+              // add a branch dependency.
+              cvs.pop_branch();
+              L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+            }
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
