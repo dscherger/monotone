@@ -1180,7 +1180,7 @@ cluster_consumer
   {
     prepared_revision(revision_id i,
                       shared_ptr<revision_t> r,
-                      cvs_cluster const & c);
+                      cvs_blob const & blob);
     revision_id rid;
     shared_ptr<revision_t> rev;
     time_t time;
@@ -1202,9 +1202,9 @@ cluster_consumer
                    cvs_branch const & branch,
                    ticker & n_revs);
 
-  void consume_cluster(cvs_cluster const & c);
+  void consume_blob(cvs_blob const & blob);
   void add_missing_parents(split_path const & sp, cset & cs);
-  void build_cset(cvs_cluster const & c, cset & cs);
+  void build_cset(cvs_blob const & blob, cset & cs);
   void store_auxiliary_certs(prepared_revision const & p);
   void store_revisions();
 };
@@ -1230,14 +1230,22 @@ class revision_iterator
 {
 private:
 	cvs_blob_index current_blob;
+  shared_ptr<cluster_consumer> cons;
+  shared_ptr<cvs_branch> branch;
 
 public:
-  revision_iterator(void)
-    : current_blob(0)
+  revision_iterator(shared_ptr<cluster_consumer> const & c,
+                    shared_ptr<cvs_branch> const & b)
+    : current_blob(0),
+      cons(c),
+      branch(b)
     {}
 
   revision_iterator(const revision_iterator & ri)
-    : current_blob(ri.current_blob) { }
+    : current_blob(ri.current_blob),
+      cons(ri.cons),
+      branch(ri.branch)
+    {}
 
 	revision_iterator & operator * (void)
     {
@@ -1248,6 +1256,7 @@ public:
     {
       L(FL("assigned a value: %d") % i);
       current_blob = i;
+      cons->consume_blob(branch->blobs[current_blob]);
       return *this;
     }
 
@@ -1269,9 +1278,10 @@ public:
 //
 void
 resolve_blob_dependencies(cvs_history &cvs,
+                          app_state & app,
                           string const & branchname,
                           shared_ptr<cvs_branch> const & branch,
-                          ticker & n_blobs)
+                          ticker & n_revs)
 {
   L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
 
@@ -1313,8 +1323,15 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
-  revision_iterator ri;
+  shared_ptr<cluster_consumer> cons = shared_ptr<cluster_consumer>(
+    new cluster_consumer(cvs, app, branchname, *branch, n_revs));
+  revision_iterator ri(cons, branch);
+
+  L(FL("starting toposort the blobs of branch %s") % branchname);
+
   topological_sort(g, ri);
+
+  cons->store_revisions();
 }
 
 
@@ -1549,29 +1566,31 @@ import_cvs_repo(system_path const & cvsroot,
 
   I(cvs.stk.size() == 1);
 
-  ticker n_blobs(_("blobs"), "b", 1);
-  resolve_blob_dependencies(cvs, cvs.base_branch, cvs.trunk, n_blobs);
-
-
   ticker n_revs(_("revisions"), "r", 1);
+
+  {
+    transaction_guard guard(app.db);
+    resolve_blob_dependencies(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
+    guard.commit();
+  }
 
   for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
           i != cvs.branches.end(); ++i)
     {
+      transaction_guard guard(app.db);
       string branchname = i->first;
       shared_ptr<cvs_branch> branch = i->second;
-      resolve_blob_dependencies(cvs, branchname, branch, n_blobs);
+      resolve_blob_dependencies(cvs, app, branchname, branch, n_revs);
+      guard.commit();
     }
 
+/*
   {
     transaction_guard guard(app.db);
 //    L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
     import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
     guard.commit();
   }
-
-
-/*
 
   // check branch times
   for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
@@ -1700,12 +1719,12 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
 {
   if (branch.has_parent_rid)
     {
-      parent_rid = branch.parent_rid;
-      app.db.get_roster(parent_rid, ros);
-
       L(FL("starting cluster for branch %s from revision %s which contains:")
            % branchname
            % branch.parent_rid);
+
+      parent_rid = branch.parent_rid;
+      app.db.get_roster(parent_rid, ros);
 
       // populate the cluster_consumer's live_files and created_dirs according
       // to the roster.
@@ -1785,18 +1804,20 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
 
 cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
-                                                       cvs_cluster const & c)
+                                                       cvs_blob const & blob)
   : rid(i),
     rev(r),
-    time(c.start_time),
-    author(c.author),
-    changelog(c.changelog)
+    time(0),   //FIXME: determine blob time     c.start_time),
+    author(0), // FIXME: store author and clog in blob c.author),
+    changelog(0) // c.changelog)
 {
+/* FIXME:
   for (set<cvs_tag>::const_iterator i = c.tags.begin();
        i != c.tags.end(); ++i)
     {
       tags.push_back(*i);
     }
+*/
 }
 
 
@@ -1868,84 +1889,107 @@ cluster_consumer::add_missing_parents(split_path const & sp, cset & cs)
 }
 
 void
-cluster_consumer::build_cset(cvs_cluster const & c,
+cluster_consumer::build_cset(cvs_blob const & blob,
                              cset & cs)
 {
-  for (cvs_cluster::entry_map::const_iterator i = c.entries.begin();
-       i != c.entries.end(); ++i)
+  for (cvs_blob::const_iterator i = blob.begin(); i != blob.end(); ++i)
     {
-      file_path pth = file_path_internal(cvs.path_interner.lookup(i->first));
+      I((*i)->type == ET_COMMIT);
+
+      shared_ptr<cvs_commit> ce =
+        boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+
+      file_path pth = file_path_internal(cvs.path_interner.lookup(ce->path));
+
+      L(FL("cluster_consumer::build_cset: file_path: %s") % pth);
+
       split_path sp;
       pth.split(sp);
 
-      file_id fid(cvs.file_version_interner.lookup(i->second.version));
-      if (i->second.live)
+      file_id fid(cvs.file_version_interner.lookup(ce->version));
+
+      if (ce->alive)
         {
-          map<cvs_path, cvs_version>::const_iterator e = live_files.find(i->first);
+          map<cvs_path, cvs_version>::const_iterator e =
+            live_files.find(ce->path);
+
           if (e == live_files.end())
             {
               add_missing_parents(sp, cs);
               L(FL("adding entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.files_added, make_pair(sp, fid));
-              live_files[i->first] = i->second.version;
+              live_files[ce->path] = ce->version;
             }
-          else if (e->second != i->second.version)
+          else if (e->second != ce->version)
             {
               file_id old_fid(cvs.file_version_interner.lookup(e->second));
               L(FL("applying state delta on '%s' : '%s' -> '%s'")
                 % pth % old_fid % fid);
               safe_insert(cs.deltas_applied,
                           make_pair(sp, make_pair(old_fid, fid)));
-              live_files[i->first] = i->second.version;
+              live_files[ce->path] = ce->version;
             }
         }
       else
         {
-          map<cvs_path, cvs_version>::const_iterator e = live_files.find(i->first);
+          map<cvs_path, cvs_version>::const_iterator e =
+            live_files.find(ce->path);
+
           if (e != live_files.end())
             {
               L(FL("deleting entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.nodes_deleted, sp);
-              live_files.erase(i->first);
+              live_files.erase(ce->path);
             }
         }
     }
 }
 
 void
-cluster_consumer::consume_cluster(cvs_cluster const & c)
+cluster_consumer::consume_blob(cvs_blob const & blob)
 {
-  if (c.type == ET_COMMIT)
+  if ((*blob.begin())->type == ET_COMMIT)
     {
       // we should never have an empty cluster; it's *possible* to have
       // an empty changeset (say on a vendor import) but every cluster
       // should have been created by at least one file commit, even
       // if the commit made no changes. it's a logical inconsistency if
       // you have an empty cluster.
-      I(!c.entries.empty());
+      I(!blob.empty());
 
       shared_ptr<revision_t> rev(new revision_t());
       shared_ptr<cset> cs(new cset());
-      build_cset(c, *cs);
+
+      build_cset(blob, *cs);
 
       cs->apply_to(editable_ros);
       manifest_id child_mid;
       calculate_ident(ros, child_mid);
-  rev->made_for = made_for_database;
+
+      rev->made_for = made_for_database;
       rev->new_manifest = child_mid;
       rev->edges.insert(make_pair(parent_rid, cs));
+
       calculate_ident(*rev, child_rid);
 
-      preps.push_back(prepared_revision(child_rid, rev, c));
+      preps.push_back(prepared_revision(child_rid, rev, blob));
 
       parent_rid = child_rid;
     }
-  else if (c.type == ET_BRANCH)
+  else if ((*blob.begin())->type == ET_BRANCH)
     {
       /* set the parent revision id of the branch */
       L(FL("setting the parent revision id of a branch"));
-      c.branch->parent_rid = parent_rid;
-      c.branch->has_parent_rid = true;
+
+      shared_ptr<cvs_event_branch> cbe =
+        boost::static_pointer_cast<cvs_event_branch, cvs_event>(*blob.begin());
+
+      cbe->branch->parent_rid = parent_rid;
+      cbe->branch->has_parent_rid = true;
+    }
+  else if ((*blob.begin())->type == ET_TAG)
+    {
+      L(FL("ignoring tag blob"));
     }
 }
 
