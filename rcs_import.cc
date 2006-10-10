@@ -780,13 +780,13 @@ process_branch(string const & begin_version,
               // ignore tags on dead commits
               if (c->alive)
                 {
-              shared_ptr<cvs_event_tag> event;
-              L(FL("version %s -> tag %s") % curr_version % i->second);
+                  shared_ptr<cvs_event_tag> event;
+                  L(FL("version %s -> tag %s") % curr_version % i->second);
 
-              cvs_tag tag = cvs.tag_interner.intern(i->second);
-              event = shared_ptr<cvs_event_tag>(
-                new cvs_event_tag(curr_commit, tag));
-              cvs.stk.top()->append_event(event);
+                  cvs_tag tag = cvs.tag_interner.intern(i->second);
+                  event = shared_ptr<cvs_event_tag>(
+                    new cvs_event_tag(curr_commit, tag));
+                  cvs.stk.top()->append_event(event);
                 }
             }
         }
@@ -837,24 +837,24 @@ process_branch(string const & begin_version,
           // not a dead commit
           if (c->alive)
             {
-          shared_ptr<cvs_event_branch> branch_event =
-            shared_ptr<cvs_event_branch>(
-              new cvs_event_branch(curr_commit, cvs.stk.top()));
+              shared_ptr<cvs_event_branch> branch_event =
+                shared_ptr<cvs_event_branch>(
+                  new cvs_event_branch(curr_commit, cvs.stk.top()));
 
-          cvs.pop_branch();
+              cvs.pop_branch();
 
-          L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+              L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
 
-          /* make sure curr_commit exists in the blob */
-          cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
+              /* make sure curr_commit exists in the blob */
+              cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
 
-          /* then append it to the parent branch */
-          cvs.stk.top()->append_event(branch_event);
-          L(FL("added branch event for file %s from branch %s into branch %s (dep %s)")
-            % cvs.path_interner.lookup(curr_commit->path)
-            % cvs.bstk.top()
-            % branch
-            % curr_commit->get_digest());
+              /* then append it to the parent branch */
+              cvs.stk.top()->append_event(branch_event);
+              L(FL("added branch event for file %s from branch %s into branch %s (dep %s)")
+                % cvs.path_interner.lookup(curr_commit->path)
+                % cvs.bstk.top()
+                % branch
+                % curr_commit->get_digest());
             }
           else
             {
