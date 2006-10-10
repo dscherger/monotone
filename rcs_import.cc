@@ -169,8 +169,52 @@ public:
   virtual cvs_event_digest get_digest(void);
 };
 
-typedef vector<shared_ptr<cvs_event> > cvs_blob;
-typedef vector<shared_ptr<cvs_event> >::size_type cvs_blob_index;
+typedef vector< shared_ptr< cvs_event> >::const_iterator blob_event_iter;
+
+class
+cvs_blob
+{
+private:
+  event_type type;
+  vector<shared_ptr<cvs_event> > events;
+
+public:
+  cvs_blob() { };
+  cvs_blob(const cvs_blob & b)
+    : type(b.type),
+      events(b.events)
+    { };
+
+  void push_back(shared_ptr<cvs_event> c)
+    {
+      // FIXME: this should go into the constructor!
+      type = c->type;
+      events.push_back(c);
+    }
+
+  blob_event_iter & begin() const
+    {
+      return *(new blob_event_iter(events.begin()));
+    }
+
+  blob_event_iter & end() const
+    {
+      // blob_event_iter i = events.end();
+      return *(new blob_event_iter(events.end()));
+    }
+
+  bool empty() const
+    {
+      return events.empty();
+    }
+
+  const event_type get_type() const
+    {
+      return type;
+    }
+};
+
+typedef vector<cvs_blob>::size_type cvs_blob_index;
 typedef multimap<cvs_event_digest, cvs_blob_index>::iterator blob_index_iterator;
 
 struct
@@ -1102,7 +1146,7 @@ cluster_consumer
   {
     prepared_revision(revision_id i,
                       shared_ptr<revision_t> r,
-                      cvs_blob const & blob);
+                      const cvs_blob & blob);
     revision_id rid;
     shared_ptr<revision_t> rev;
     time_t time;
@@ -1124,9 +1168,9 @@ cluster_consumer
                    cvs_branch const & branch,
                    ticker & n_revs);
 
-  void consume_blob(cvs_blob const & blob);
+  void consume_blob(const cvs_blob & blob);
   void add_missing_parents(split_path const & sp, cset & cs);
-  void build_cset(cvs_blob const & blob, cset & cs);
+  void build_cset(const cvs_blob & blob, cset & cs);
   void store_auxiliary_certs(prepared_revision const & p);
   void store_revisions();
 };
@@ -1157,10 +1201,9 @@ public:
       return *this;
     };
 
-  revision_iterator & operator = (cvs_blob_index i)
+  revision_iterator & operator = (cvs_blob_index current_blob)
     {
-      L(FL("assigned a value: %d") % i);
-      current_blob = i;
+      L(FL("assigned a value: %d") % current_blob);
       cons->consume_blob(branch->blobs[current_blob]);
       return *this;
     }
@@ -1202,8 +1245,7 @@ resolve_blob_dependencies(cvs_history &cvs,
     {
       set<cvs_path> files;
 
-      typedef vector< shared_ptr< cvs_event> >::const_iterator ity;
-      for(ity j = branch->blobs[i].begin(); j != branch->blobs[i].end(); ++j)
+      for(blob_event_iter j = branch->blobs[i].begin(); j != branch->blobs[i].end(); ++j)
         {
           shared_ptr<cvs_event> event = *j;
 
@@ -1517,13 +1559,23 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
 
 cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
-                                                       cvs_blob const & blob)
+                                                       const cvs_blob & blob)
   : rid(i),
     rev(r),
     time(0),   //FIXME: determine blob time     c.start_time),
     author(0), // FIXME: store author and clog in blob c.author),
     changelog(0) // c.changelog)
 {
+  if (blob.get_type() == ET_COMMIT)
+  {
+    shared_ptr<cvs_commit> ce =
+      boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
+
+    changelog = ce->changelog;
+    author = ce->author;
+    time = ce->time;
+  }
+
 /* FIXME:
   for (set<cvs_tag>::const_iterator i = c.tags.begin();
        i != c.tags.end(); ++i)
@@ -1602,10 +1654,10 @@ cluster_consumer::add_missing_parents(split_path const & sp, cset & cs)
 }
 
 void
-cluster_consumer::build_cset(cvs_blob const & blob,
+cluster_consumer::build_cset(const cvs_blob & blob,
                              cset & cs)
 {
-  for (cvs_blob::const_iterator i = blob.begin(); i != blob.end(); ++i)
+  for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
       I((*i)->type == ET_COMMIT);
 
@@ -1659,9 +1711,9 @@ cluster_consumer::build_cset(cvs_blob const & blob,
 }
 
 void
-cluster_consumer::consume_blob(cvs_blob const & blob)
+cluster_consumer::consume_blob(const cvs_blob & blob)
 {
-  if ((*blob.begin())->type == ET_COMMIT)
+  if (blob.get_type() == ET_COMMIT)
     {
       // we should never have an empty cluster; it's *possible* to have
       // an empty changeset (say on a vendor import) but every cluster
@@ -1689,21 +1741,25 @@ cluster_consumer::consume_blob(cvs_blob const & blob)
 
       parent_rid = child_rid;
     }
-  else if ((*blob.begin())->type == ET_BRANCH)
+  else if (blob.get_type() == ET_BRANCH)
     {
       /* set the parent revision id of the branch */
       L(FL("setting the parent revision id of a branch"));
 
+      //FIXME: this is wrong because branch and tag events may
+      //       come in out of order!
       shared_ptr<cvs_event_branch> cbe =
         boost::static_pointer_cast<cvs_event_branch, cvs_event>(*blob.begin());
 
       cbe->branch->parent_rid = parent_rid;
       cbe->branch->has_parent_rid = true;
     }
-  else if ((*blob.begin())->type == ET_TAG)
+  else if (blob.get_type() == ET_TAG)
     {
       L(FL("ignoring tag blob"));
     }
+  else
+    I(false);
 }
 
 // Local Variables:
