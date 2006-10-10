@@ -716,16 +716,14 @@ process_branch(string const & begin_version,
         {
           curr_commit = c;
 
-      // add the commit to the branch
-      cvs.stk.top()->append_event(curr_commit);
-      ++cvs.n_versions;
+          // add the commit to the branch
+          cvs.stk.top()->append_event(curr_commit);
+          ++cvs.n_versions;
 
-      // make the last commit depend on the current one (which
-      // comes _before_ due to the reverse processing here)
-      if (last_commit != NULL)
-        {
-          last_commit->dependency = curr_commit;
-        }
+          // make the last commit depend on the current one (which
+          // comes _before_ due to the reverse processing here)
+          if (last_commit != NULL)
+            last_commit->dependency = curr_commit;
         }
 
       // create tag events for all tags on this commit
@@ -1089,102 +1087,6 @@ public:
 };
 
 
-
-//
-// our task here is to produce a sequence of revision descriptions
-// from the per-file commit records we have. we do this by rolling
-// forwards through the temporally sorted file-commit list
-// accumulating file-commits into revisions and flushing the
-// revisions when we feel they are "complete".
-//
-// revisions have to have a time associated with them. this time
-// will be the first time of any commit associated with the
-// revision. they have an author and a changelog, which is shared
-// by all the file-commits in the revision.
-//
-// there might be multiple revisions overlapping in time. this is
-// legal wrt. CVS. we keep a set, and search all members of the set
-// for the best match.
-//
-// consider this situation of overlapping revisions:
-//
-//    +---------------+   +---------------+   +---------------+
-//    | rev #1 @ 0011 |   | rev #2 @ 0012 |   | rev #3 @ 0013 |
-//    |~~~~~~~~~~~~~~~|   |~~~~~~~~~~~~~~~|   |~~~~~~~~~~~~~~~|
-//    | patch foo.txt |   | patch bar.txt |   | patch baz.txt |
-//    +---------------+   +---------------+   +---------------+
-//
-// suppose you have this situation and you run across a "patch
-// bar.txt" commit at timestamp 0014. what do you do?
-//
-// - you know that rev #2 cannot accept this commit, simply because
-//   two commits on the same file makes *two* revisions, not one.
-//
-// - perhaps rev #3 could accept it; after all, it could be that the
-//   commit associated with rev #2 released its commit lock, and the
-//   commit associated with rev #3 quickly updated and committed at
-//   0013, finishing off at 0014.
-//
-// - can rev #1 accept it? no. because CVS calcualted the version it
-//   expected to see in bar.txt before calling up the server, when
-//   committing rev #1. the version it expected to see was the version
-//   in bar.txt *before* time 0012; that is, before rev #2 had any affect
-//   on bar.txt. when it contacted the server, the commit associated
-//   with rev #1 would have aborted if it had seen any other number.
-//   so rev #1 could not start before an edit to bar.txt and then
-//   include its own edit to bar.txt.
-//
-// so we have only one case where bar.txt can be accepted. if the
-// commit is not accepted into a legal rev (outside the window,
-// wrong changelog/author) it starts a new revision.
-//
-// as we scan forwards, if we hit timestamps which lie beyond rev #n's
-// window, we flush rev #n.
-//
-// if there are multiple coincident and legal revs to direct a
-// commit to (all with the same author/changelog), we direct the
-// commit to the rev with the closest initial timestamp. that is,
-// the *latest* beginning time.
-
-struct
-cvs_cluster
-{
-  event_type type;
-  time_t start_time;
-  time_t end_time;
-  cvs_author author;
-  cvs_changelog changelog;
-  set<cvs_tag> tags;
-  shared_ptr<cvs_branch> branch;
-
-  cvs_cluster(event_type ty,
-              time_t t, 
-              cvs_author a,
-              cvs_changelog c)
-    : type(ty),
-      start_time(t),
-      end_time(t),
-      author(a),
-      changelog(c)
-  {}
-
-  struct entry
-  {
-    bool live;
-    cvs_version version;
-    time_t time;
-    entry(bool l, cvs_version v, time_t t)
-      : live(l),
-        version(v),
-        time(t)
-    {}
-  };
-
-  typedef map<cvs_path, entry> entry_map;
-  entry_map entries;
-};
-
-
 struct
 cluster_consumer
 {
@@ -1228,23 +1130,6 @@ cluster_consumer
   void store_auxiliary_certs(prepared_revision const & p);
   void store_revisions();
 };
-
-typedef shared_ptr<cvs_cluster>
-cluster_ptr;
-
-struct
-cluster_ptr_lt
-{
-  bool operator()(cluster_ptr const & a,
-                  cluster_ptr const & b) const
-  {
-    return a->end_time < b->start_time;
-  }
-};
-
-typedef set<cluster_ptr, cluster_ptr_lt>
-cluster_set;
-
 
 class revision_iterator
 {
@@ -1356,197 +1241,6 @@ resolve_blob_dependencies(cvs_history &cvs,
 
 
 void
-import_branch(cvs_history & cvs,
-              app_state & app,
-              string const & branchname,
-              shared_ptr<cvs_branch> const & branch,
-              ticker & n_revs)
-{
-  cluster_set clusters;
-  cluster_consumer cons(cvs, app, branchname, *branch, n_revs);
-//  unsigned long commits_remaining = branch->lineage.size();
-
-#if 0
-  /* sort the branch lineage */
-  L(FL("sorting lineage of branch %s\n") % branchname);
-  stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
-
-  for (vector<cvs_event>::iterator i = branch->lineage.begin();
-       i != branch->lineage.end(); ++i)
-    {
-      commits_remaining--;
-
-      if (i->type == ET_COMMIT)
-        {
-          L(FL("examining next event: commit [t:%d] [p:%s] [a:%s] [c:%s]")
-            % i->time 
-            % cvs.path_interner.lookup(i->path)
-            % cvs.author_interner.lookup(i->author)
-            % cvs.changelog_interner.lookup(i->changelog));
-        }
-      else
-        {
-          // correct the cvs_event time of the branch event
-          i->time = i->branch->branch_time;
-          L(FL("examining next event: branch [t:%d] [p:%s]")
-            % i->time
-            % cvs.path_interner.lookup(i->path));
-        }
-      
-      // step 2: expire all clusters from the beginning of the set which
-      // have passed the window size
-      while (!clusters.empty())
-        {
-          cluster_set::iterator j = clusters.begin();
-          if ((*j)->end_time + constants::cvs_window < i->time)
-            {
-              L(FL("expiring cluster"));
-              cons.consume_cluster(**j);
-              clusters.erase(j);
-            }
-          else
-            break;
-        }
-
-      // step 3: find the last still-live cluster to have touched this
-      // file
-      // (ms) the current event needs to be inserted into a a cluster
-      // following (i.e. newer than) this cluster. Regardless if it's a
-      // commit or branch event.
-      time_t time_of_last_cluster_touching_this_file = 0;
-
-      unsigned clu = 0;
-      for (cluster_set::const_iterator j = clusters.begin();
-           j != clusters.end(); ++j)
-        {
-          L(FL("examining cluster %d to see if it touched %s")
-            % clu++
-            % cvs.path_interner.lookup(i->path));
-
-          cvs_cluster::entry_map::const_iterator k = (*j)->entries.find(i->path);
-          if ((k != (*j)->entries.end())
-              && (k->second.time > time_of_last_cluster_touching_this_file))
-            {
-              L(FL("found cluster touching %s: [t:%d-%d] [a:%d] [c:%d]")
-                % cvs.path_interner.lookup(i->path)
-                % (*j)->start_time
-                % (*j)->end_time
-                % (*j)->author
-                % (*j)->changelog);
-              time_of_last_cluster_touching_this_file = (*j)->end_time;
-            }
-        }
-      L(FL("last modification time is %d")
-        % time_of_last_cluster_touching_this_file);
-
-      cluster_ptr target;
-      if (i->type == ET_COMMIT)
-        {
-          // step 4: find a commit cluster which starts on or after the
-          // last_modify_time, which doesn't modify the file in question,
-          // and which contains the same author and changelog as our
-          // commit
-          for (cluster_set::const_iterator j = clusters.begin();
-               j != clusters.end(); ++j)
-            {
-              if (((*j)->start_time >= time_of_last_cluster_touching_this_file)
-                  && ((*j)->type == ET_COMMIT)
-                  && ((*j)->author == i->author)
-                  && ((*j)->changelog == i->changelog)
-                  && ((*j)->entries.find(i->path) == (*j)->entries.end()))
-                {
-                  L(FL("picked existing cluster (commit) [t:%d-%d] [a:%d] [c:%d]")
-                    % (*j)->start_time
-                    % (*j)->end_time
-                    % (*j)->author
-                    % (*j)->changelog);
-
-                  target = (*j);
-                }
-            }
-        }
-      else if (i->type == ET_BRANCH)
-        {
-          // step 4: find the branchpoint cluster for the branch in question
-          for (cluster_set::const_iterator j = clusters.begin();
-               j != clusters.end(); ++j)
-            {
-              if (((*j)->type == ET_BRANCH)
-                  // && ((*j)->branch == i->branch)
-                  && ((*j)->entries.find(i->path) == (*j)->entries.end()))
-                {              
-                  L(FL("picked existing cluster (branchpoint) [t:%d-%d]")
-                    % (*j)->start_time
-                    % (*j)->end_time);
-
-                  target = (*j);
-                }
-            }
-        }
-  
-      // if we're still not finding an active cluster,
-      // this is probably the first commit in it. make
-      // a new one.
-      if (!target)
-        {
-          if (i->type == ET_COMMIT)
-            {
-              L(FL("building new cluster: commit [t:%d] [a:%d] [c:%d]")
-                % i->time
-                % i->author
-                % i->changelog);
-
-              target = cluster_ptr(new cvs_cluster(ET_COMMIT,
-                                                   i->time,
-                                                   i->author,
-                                                   i->changelog));
-            }
-          else
-            {
-              L(FL("building new cluster: branch [t:%d]")
-                % i->time);
-
-              target = cluster_ptr(new cvs_cluster(ET_BRANCH,
-                                                   i->time,
-                                                   i->author,
-                                                   i->changelog));
-              target->branch = i->branch;
-            }
-
-          clusters.insert(target);
-        }
-
-      I(target);
-      target->entries.insert(make_pair(i->path,
-                                       cvs_cluster::entry(i->alive,
-                                                          i->version,
-                                                          i->time)));
-      /* update the target's end time */
-      if (target->end_time < i->time)
-        target->end_time = i->time;
-
-      for (vector<cvs_tag>::const_iterator j = i->tags.begin();
-           j != i->tags.end(); ++j)
-        {
-          target->tags.insert(*j);
-        }
-    }
-
-
-  // now we are done this lineage; flush all remaining clusters
-  L(FL("finished branch commits, writing all pending clusters"));
-  while (!clusters.empty())
-    {
-      cons.consume_cluster(**clusters.begin());
-      clusters.erase(clusters.begin());
-    }
-  L(FL("finished writing pending clusters"));
-
-  cons.store_revisions();
-#endif
-}
-
-void
 import_cvs_repo(system_path const & cvsroot,
                 app_state & app)
 {
@@ -1604,7 +1298,7 @@ import_cvs_repo(system_path const & cvsroot,
       guard.commit();
     }
 
-/*
+#if 0
   {
     transaction_guard guard(app.db);
 //    L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
@@ -1719,8 +1413,7 @@ import_cvs_repo(system_path const & cvsroot,
       }
     guard.commit();
   }
-*/
-
+#endif
 
   return;
 }
