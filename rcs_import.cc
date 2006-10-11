@@ -289,7 +289,7 @@ cvs_branch
     cvs_blob_index i = blobs.size();
     blobs.push_back(cvs_blob(d));
 
-    /* add an index entry for the blob */
+    // add an index entry for the blob
     blob_index.insert(make_pair(d, i));
   }
 
@@ -302,7 +302,7 @@ cvs_branch
       {
         add_blob(d);
 
-        /* lookup the blob */
+        // lookup the blob
         range = blob_index.equal_range(d);
         I(range.first != range.second);
       }
@@ -614,65 +614,6 @@ insert_into_db(data const & curr_data,
 }
 
 
-
-/*
-
-please read this exhaustingly long comment and understand it
-before mucking with the branch inference logic.
-
-we are processing a file version. a branch might begin here. if
-the current version is X.Y, then there is a branch B starting
-here iff there is a symbol in the admin section called X.Y.0.Z,
-where Z is the branch number (or if there is a private branch
-called X.Y.Z, which is either an import branch or some private
-RCS cruft).
-
-the version X.Y is then considered the branchpoint of B in the
-current file. this does *not* mean that the CVS key -- an
-abstraction representing whole-tree operations -- of X.Y is the
-branchpoint across the CVS archive we're processing.
-
-in fact, CVS does not record the occurrence of a branching
-action (tag -b). we have no idea who executed that command and
-when. what we know instead is the commit X.Y immediately
-preceeding the branch -- CVS consideres this the branchpoint --
-in this file's reduced view of history. we also know the first
-commit X.Y.Z.1 inside the branch (which might not exist).
-
-our old strategy was to consider all branches nested in a
-hierarchy, which was a super-tree of all the branch trees in all
-the CVS files in a repository. this involved considering X.Y as
-the parent version of branch X.Y.Z, an selecting "the"
-branchpoint connecting the two as the least CVS key X.Y.Z.1
-committed inside the branch B.
-
-this was a mistake, for two significant reasons.
-
-first, some files do not *have* any commit inside the branch B,
-only a branchpoint X.Y.0.Z. this branchpoint is actually the
-last commit *before* the user branched, and could be a very old
-commit, long before the branch was formed, so it is useless in
-determining the branch structure.
-
-second, some files do not have a branch B, or worse, have
-branched into B from an "ancestor" branch A, where a different
-file branches into B from a different ancestor branch C. in
-other words, while there *is* a tree structure within the X.Y.Z
-branches of each file, there is *no* shared tree structure
-between the branch names across a repository. in one file A can
-be an ancestor of B, in another file B can be an ancestor of A.
-
-thus, we give up on establishing a hierarchy between branches
-altogether. all branches exist in a flat namespace, and all are
-direct descendents of the empty revision at the root of
-history. each branchpoint symbol mentioned in the
-administrative section of a file is considered the root of a new
-lineage.
-
-*/
-
-
-
 static time_t
 parse_time(const char * dp)
 {
@@ -723,7 +664,7 @@ process_branch(string const & begin_version,
     {
       L(FL("version %s has %d lines") % curr_version % curr_lines->size());
 
-      /* fetch the next deltas */
+      // fetch the next deltas
       map<string, shared_ptr<rcs_delta> >::const_iterator delta =
         r.deltas.find(curr_version);
       I(delta != r.deltas.end());
@@ -852,10 +793,10 @@ process_branch(string const & begin_version,
                 shared_ptr<cvs_event_branch>(
                   new cvs_event_branch(curr_commit, sub_branch));
 
-              /* make sure curr_commit exists in the blob */
+              // make sure curr_commit exists in the blob
               cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
 
-              /* then append it to the parent branch */
+              // then append it to the parent branch
               cvs.stk.top()->append_event(branch_event);
               L(FL("added branch event for file %s from branch %s into branch %s")
                 % cvs.path_interner.lookup(curr_commit->path)
@@ -1205,7 +1146,7 @@ public:
 
   revision_iterator & operator = (cvs_blob_index current_blob)
     {
-      L(FL("assigned a value: %d") % current_blob);
+      L(FL("next blob number from toposort: %d") % current_blob);
       cons->consume_blob(branch->blobs[current_blob]);
       return *this;
     }
@@ -1343,123 +1284,6 @@ import_cvs_repo(system_path const & cvsroot,
       guard.commit();
     }
 
-#if 0
-  {
-    transaction_guard guard(app.db);
-//    L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
-    import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
-    guard.commit();
-  }
-
-  // check branch times
-  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
-          i != cvs.branches.end(); ++i)
-    {
-      string branchname = i->first;
-      shared_ptr<cvs_branch> branch = i->second;
-      L(FL("branch %s has %d entries\n") % branchname % branch->lineage.size());
-
-      L(FL("checking branch time of branch %s") % branchname);
-
-      time_t branched_before = 0;
-      if (branch->has_a_commit)
-        branched_before = branch->first_commit;
-
-      if (branch->first_commit_after_branching > 0)
-        if ((branch->first_commit_after_branching < branched_before)
-            || (branched_before == 0))
-          {
-            branched_before = branch->first_commit_after_branching;
-          }
-
-      if (branch->last_branchpoint < branched_before)
-        {
-          branch->branch_time = branch->last_branchpoint +
-            ((branched_before - branch->last_branchpoint) / 2);
-          L(FL("guessing branchpoint time for branch %s: %d")
-               % branchname
-               % branch->branch_time);
-        }
-      else
-        {
-          L(FL("unable to find a branchpoint time for branch %s") % branchname);
-          L(FL("last branchpoint:             %d)") % branch->last_branchpoint);
-          L(FL("first commit in branch:       %d)") % branch->first_commit);
-          L(FL("first commit after branching: %d)") % branch->first_commit_after_branching);
-        }
-    }
-
-  // First, sort the lineages of the trunk and all branches. Thanks to the
-  // logic in the 'operator<' this correctly handles branch events, which
-  // have their time stored in branch->branch_time.
-  // This is updated in import_branch later on.
-  L(FL("sorting lineage of trunk\n"));
-  stable_sort(cvs.trunk->lineage.begin(), cvs.trunk->lineage.end());
-  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
-          i != cvs.branches.end(); ++i)
-    {
-      string branchname = i->first;
-      shared_ptr<cvs_branch> branch = i->second;
-
-      L(FL("sorting lineage of branch %s") % branchname);
-      stable_sort(branch->lineage.begin(), branch->lineage.end());
-    }
-
-  // import trunk first
-  {
-    transaction_guard guard(app.db);
-    L(FL("trunk has %d entries") % cvs.trunk->lineage.size());
-    import_branch(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
-    guard.commit();
-  }
-
-  while (cvs.branches.size() > 0)
-    {
-      transaction_guard guard(app.db);
-      map<string, shared_ptr<cvs_branch> >::const_iterator i;
-      shared_ptr<cvs_branch> branch;
-
-      // import branches in the correct order
-      for (i = cvs.branches.begin(); i != cvs.branches.end(); ++i)
-        {
-          branch = i->second;
-          if (branch->has_parent_rid) break;
-        }
-
-      if (i == cvs.branches.end())
-        {
-          L(FL("no more connected branches... unconnected import"));
-          i = cvs.branches.begin();
-          branch = i->second;
-        }
-
-      string branchname = i->first;
-      
-      L(FL("branch %s has %d entries\n") % branchname % branch->lineage.size());
-      import_branch(cvs, app, branchname, branch, n_revs);
-
-      // free up some memory
-      cvs.branches.erase(branchname); 
-      guard.commit();
-    }
-
-  // now we have a "last" rev for each tag
-  {
-    ticker n_tags(_("tags"), "t", 1);
-    packet_db_writer dbw(app);
-    transaction_guard guard(app.db);
-    for (map<unsigned long, pair<time_t, revision_id> >::const_iterator i = cvs.resolved_tags.begin();
-         i != cvs.resolved_tags.end(); ++i)
-      {
-        string tag = cvs.tag_interner.lookup(i->first);
-        ui.set_tick_trailer("marking tag " + tag);
-        cert_revision_tag(i->second.second, tag, app, dbw);
-        ++n_tags;
-      }
-    guard.commit();
-  }
-#endif
-
   return;
 }
 
@@ -1518,55 +1342,17 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
         }
     }
 
-#if 0
-  if ((!branch.live_at_beginning.empty()) && (
-      /*
-       * We insert a special 'beginning of branch' commit if we eigther
-       * have not found a parent revision or...
-       */
-      (!branch.has_parent_rid) ||
-      /*
-       * ..if we found one, but the branch remained empty.
-       */
-      (branch.has_parent_rid && (!branch.has_a_commit))))
+  if (!branch.has_a_commit)
     {
-      cvs_author synthetic_author = 
-        cvs.author_interner.intern("cvs_import");
-
-      cvs_changelog synthetic_cl =
-        cvs.changelog_interner.intern("beginning of branch " 
-                                      + branchname);
-
-      time_t synthetic_time = branch.beginning();
-      cvs_cluster initial_cluster(ET_COMMIT,
-                                  synthetic_time,
-                                  synthetic_author,
-                                  synthetic_cl);
-
-      L(FL("initial cluster on branch %s has %d live entries") % 
-        branchname % branch.live_at_beginning.size());
-
-      for (map<cvs_path, cvs_mnt_version>::const_iterator i = branch.live_at_beginning.begin();
-           i != branch.live_at_beginning.end(); ++i)
-        {
-          cvs_cluster::entry e(true, i->second, synthetic_time);
-          L(FL("initial cluster contains %s at %s") %
-            cvs.path_interner.lookup(i->first) %
-            cvs.mtn_version_interner.lookup(i->second));
-          initial_cluster.entries.insert(make_pair(i->first, e));
-        }
-      consume_cluster(initial_cluster);
+      W(F("Ignoring branch %s because it is empty.") % branchname);
     }
-  #endif
 }
 
 cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
                                                        const cvs_blob & blob)
   : rid(i),
-    rev(r),
-    time(0),   //FIXME: determine blob time     c.start_time),
-    authorclog(0) // FIXME: store author and clog in blob c.author),
+    rev(r)
 {
   I(blob.get_digest().is_commit());
 
@@ -1574,6 +1360,8 @@ cluster_consumer::prepared_revision::prepared_revision(revision_id i,
     boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
 
   authorclog = ce->authorclog;
+
+  // FIXME: calculate an avg time
   time = ce->time;
 
 /* FIXME:
@@ -1721,11 +1509,11 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
 {
   if (blob.get_digest().is_commit())
     {
-      // we should never have an empty cluster; it's *possible* to have
+      // we should never have an empty blob; it's *possible* to have
       // an empty changeset (say on a vendor import) but every cluster
       // should have been created by at least one file commit, even
       // if the commit made no changes. it's a logical inconsistency if
-      // you have an empty cluster.
+      // you have an empty blob.
       I(!blob.empty());
 
       shared_ptr<revision_t> rev(new revision_t());
@@ -1752,18 +1540,17 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
       shared_ptr<cvs_event_branch> cbe =
         boost::static_pointer_cast<cvs_event_branch, cvs_event>(*blob.begin());
 
-      /* set the parent revision id of the branch */
-      L(FL("setting the parent revision id of branch %s to:") % 
-        cvs.branch_interner.lookup(cbe->branch->branchname));
+      string child_rid_str;
+      dump(child_rid, child_rid_str);
 
-      string r_str;
-      dump(child_rid, r_str);
+      L(FL("setting the parent revision id of branch %s to: %s") % 
+        cvs.branch_interner.lookup(cbe->branch->branchname) % child_rid_str);
 
       cbe->branch->parent_rid = child_rid;
     }
   else if (blob.get_digest().is_tag())
     {
-      L(FL("ignoring tag blob"));
+      W(F("ignoring tag blob (not implemented)"));
     }
   else
     I(false);
