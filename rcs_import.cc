@@ -74,35 +74,56 @@ typedef unsigned long cvs_version;
 typedef unsigned long cvs_path;
 typedef unsigned long cvs_tag;
 
-struct cvs_history;
-
-typedef enum event_type
+typedef enum
 {
-  ET_COMMIT,
-  ET_BRANCH,
-  ET_TAG
+  ET_COMMIT = 0,
+  ET_TAG = 2,
+  ET_BRANCH = 3
 } event_type;
 
+struct cvs_history;
 struct cvs_branch;
 
 struct cvs_event_digest
 {
   u32 digest;
 
-  cvs_event_digest(cvs_author a, cvs_changelog c, cvs_tag t,
-                   cvs_branchname b)
+  cvs_event_digest(const event_type t, const unsigned int v)
     {
-      if (c)
-        digest = c;
-      else if (t)
-        digest = ((u32) 2 << 30) | t;
-      else
-        digest = ((u32) 3 << 30) | b;
+      I(sizeof(struct cvs_event_digest) == 4);
+
+      I(v < ((u32) 1 << 30));
+      I(t < 4);
+      digest = t << 30 | v;
     }
+
+  cvs_event_digest(const cvs_event_digest & d)
+    : digest(d.digest)
+    { };
 
   bool operator < (const struct cvs_event_digest & other) const
     {
       return digest < other.digest;
+    }
+
+  bool operator == (const struct cvs_event_digest & other) const
+    {
+      return digest == other.digest;
+    }
+
+  bool is_commit() const
+    {
+      return digest >> 30 <= 1;
+    }
+
+  bool is_tag() const
+    {
+      return digest >> 30 == 2;
+    }
+
+  bool is_branch() const
+    {
+      return digest >> 30 == 3;
     }
 };
 
@@ -115,26 +136,23 @@ class
 cvs_event
 {
 public:
-  event_type type;
   time_t time;
   cvs_path path;
   shared_ptr<struct cvs_event> dependency;
 
-  cvs_event(const event_type ty, const cvs_path p, const time_t ti)
-    : type(ty),
-      time(ti),
+  cvs_event(const cvs_path p, const time_t ti)
+    : time(ti),
       path(p)
     { };
 
-  cvs_event(const event_type ty, const shared_ptr<struct cvs_event> dep)
-    : type(ty),
-      time(dep->time),
+  cvs_event(const shared_ptr<struct cvs_event> dep)
+    : time(dep->time),
       path(dep->path),
       dependency(dep)
     { };
 
   virtual ~cvs_event() { };
-  virtual cvs_event_digest get_digest(void) = 0;
+  virtual cvs_event_digest get_digest(void) const = 0;
 };
 
 class
@@ -151,7 +169,7 @@ public:
   cvs_commit(const cvs_path p, const time_t ti, const cvs_version v,
              const string r, const cvs_author a, const cvs_changelog c,
              const bool al)
-    : cvs_event(ET_COMMIT, p, ti),
+    : cvs_event(p, ti),
       author(a),
       changelog(c),
       version(v),
@@ -159,9 +177,9 @@ public:
       alive(al)
     { }
 
-  virtual cvs_event_digest get_digest(void)
+  virtual cvs_event_digest get_digest(void) const
     {
-      return cvs_event_digest(author, changelog, 0, 0);
+      return cvs_event_digest(ET_COMMIT, changelog);
     };
 };
 
@@ -173,11 +191,11 @@ public:
   shared_ptr<struct cvs_branch> branch;
 
   cvs_event_branch(const shared_ptr<cvs_commit> dep, shared_ptr<struct cvs_branch> b)
-    : cvs_event(ET_BRANCH, dep),
+    : cvs_event(dep),
       branch(b)
     { };
 
-  virtual cvs_event_digest get_digest(void);
+  virtual cvs_event_digest get_digest(void) const;
 };
 
 class
@@ -188,13 +206,13 @@ public:
   cvs_tag tag;
 
   cvs_event_tag(const shared_ptr<cvs_commit> dep, const cvs_tag t)
-    : cvs_event(ET_TAG, dep),
+    : cvs_event(dep),
       tag(t)
     { };
 
-  virtual cvs_event_digest get_digest(void)
+  virtual cvs_event_digest get_digest(void) const
     {
-      return cvs_event_digest(0, 0, tag, 0);
+      return cvs_event_digest(ET_TAG, tag);
     };
 };
 
@@ -204,20 +222,22 @@ class
 cvs_blob
 {
 private:
-  event_type type;
+  cvs_event_digest digest;
   vector<shared_ptr<cvs_event> > events;
 
 public:
-  cvs_blob() { };
+  cvs_blob(const cvs_event_digest d)
+    : digest(d)
+    { };
+
   cvs_blob(const cvs_blob & b)
-    : type(b.type),
+    : digest(b.digest),
       events(b.events)
     { };
 
   void push_back(shared_ptr<cvs_event> c)
     {
-      // FIXME: this should go into the constructor!
-      type = c->type;
+      I(digest == c->get_digest());
       events.push_back(c);
     }
 
@@ -237,9 +257,9 @@ public:
       return events.empty();
     }
 
-  const event_type get_type() const
+  const cvs_event_digest get_digest() const
     {
-      return type;
+      return digest;
     }
 };
 
@@ -267,16 +287,16 @@ cvs_branch
   {
   }
 
-  void add_blob(const cvs_event_digest & d)
+  void add_blob(const cvs_event_digest d)
   {
     cvs_blob_index i = blobs.size();
-    blobs.push_back(cvs_blob());
+    blobs.push_back(cvs_blob(d));
 
     /* add an index entry for the blob */
     blob_index.insert(make_pair(d, i));
   }
 
-  blob_index_iterator get_blob(const cvs_event_digest & d, bool create)
+  blob_index_iterator get_blob(const cvs_event_digest d, bool create)
   {
     pair<blob_index_iterator, blob_index_iterator> range = 
       blob_index.equal_range(d);
@@ -298,7 +318,7 @@ cvs_branch
 
   void append_event(shared_ptr<cvs_event> c) 
   {
-    if (c->type == ET_COMMIT)
+    if (c->get_digest().is_commit())
       {
         I(c->time != 0);
         has_a_commit = true;
@@ -310,9 +330,9 @@ cvs_branch
 };
 
 cvs_event_digest
-cvs_event_branch::get_digest(void)
+cvs_event_branch::get_digest(void) const
 {
-  return cvs_event_digest(0, 0, 0, branch->branchname);
+  return cvs_event_digest(ET_BRANCH, branch->branchname);
 };
 
 struct
@@ -1540,15 +1560,14 @@ cluster_consumer::prepared_revision::prepared_revision(revision_id i,
     author(0), // FIXME: store author and clog in blob c.author),
     changelog(0) // c.changelog)
 {
-  if (blob.get_type() == ET_COMMIT)
-  {
-    shared_ptr<cvs_commit> ce =
-      boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
+  I(blob.get_digest().is_commit());
 
-    changelog = ce->changelog;
-    author = ce->author;
-    time = ce->time;
-  }
+  shared_ptr<cvs_commit> ce =
+    boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
+
+  changelog = ce->changelog;
+  author = ce->author;
+  time = ce->time;
 
 /* FIXME:
   for (set<cvs_tag>::const_iterator i = c.tags.begin();
@@ -1633,7 +1652,7 @@ cluster_consumer::build_cset(const cvs_blob & blob,
 {
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
-      I((*i)->type == ET_COMMIT);
+      I((*i)->get_digest().is_commit());
 
       shared_ptr<cvs_commit> ce =
         boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
@@ -1687,7 +1706,7 @@ cluster_consumer::build_cset(const cvs_blob & blob,
 void
 cluster_consumer::consume_blob(const cvs_blob & blob)
 {
-  if (blob.get_type() == ET_COMMIT)
+  if (blob.get_digest().is_commit())
     {
       // we should never have an empty cluster; it's *possible* to have
       // an empty changeset (say on a vendor import) but every cluster
@@ -1715,20 +1734,23 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
 
       parent_rid = child_rid;
     }
-  else if (blob.get_type() == ET_BRANCH)
+  else if (blob.get_digest().is_branch())
     {
-      /* set the parent revision id of the branch */
-      L(FL("setting the parent revision id of a branch"));
-
-      //FIXME: this is wrong because branch and tag events may
-      //       come in out of order!
       shared_ptr<cvs_event_branch> cbe =
         boost::static_pointer_cast<cvs_event_branch, cvs_event>(*blob.begin());
 
+      /* set the parent revision id of the branch */
+      L(FL("setting the parent revision id branch %s") % cbe->branch->branchname);
+
+#if 0
+      //FIXME: this is wrong because branch and tag events may
+      //       come in out of order!
+
       cbe->branch->parent_rid = parent_rid;
       cbe->branch->has_parent_rid = true;
+#endif
     }
-  else if (blob.get_type() == ET_TAG)
+  else if (blob.get_digest().is_tag())
     {
       L(FL("ignoring tag blob"));
     }
