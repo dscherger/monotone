@@ -30,7 +30,7 @@
    db... then we could have commands to list certs, dump info on a
    given cert, get a packet for a given cert, etc.)
 * merkle dir stuff that doesn't require loading entire chunks into
-   memory all the time
+   memory all the time, partialy done (revision data, keys), left: certs
 * pipelining on http read? (is urlgrabber thread-safe?)
 * possibly better rollback stuff?
   - truncate DATA when possible? (local, sftp (with a simple call

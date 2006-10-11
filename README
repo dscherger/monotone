@@ -18,7 +18,6 @@ NOTES:
 
 The monotone plain protocol always involves three entities:
  a (local) monotone database
- a local transit merkle-directory
  a (possibly remote) merkle-directory to sync with
 The sync directories are called merkle-directories because essentially contain a two-level merkle trie plus a datafile with the revision data.
 
@@ -50,7 +49,6 @@ rsakey = /home/zbigg/id_rsa
 [d:/repo/monotone-dumb.mtn]
 verbose = 0
 repository = "dws://zzagorski.strony.wi.ps.pl/mtdumb/index.php:monotone-plain/"
-local = file:C:\DOCUME~1\zbigg\USTAWI~1\Temp\_d_\repo\monotone-dumb.mtn-mtndumbtemp
 
 [d:/repo/xxx.mtn]
 rsakey = /home/zbigg/id_rsa_other

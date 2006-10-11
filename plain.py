@@ -43,20 +43,6 @@ def readConfig(cfgfile):
     cfg.read(cfgfile)
     return cfg
 
-def getTempDir(database):
-    try:
-        tmpDir = os.environ['TEMP']
-    except KeyError:
-        try:
-            tmpDir = os.environ['TMP']
-        except KeyError:
-            tmpDir = "/tmp"
-    tmpDir = os.path.normpath(tmpDir)
-    if database[0].isalpha() and database[1] == ':':
-        database = "_" + database[0] + "_" + database[2:]
-    database = os.path.normpath(database)
-    return os.path.join(tmpDir, database + "-mtndumbtemp")
-
 def getDefaultDatabase():
     dir = "."
     while True:
@@ -99,7 +85,6 @@ def parseOpt():
          is used to decrypt the private key file.""")
     
     par.add_option("-d","--db", help="monotone db to use", metavar="STRING")
-    par.add_option("-l","--local", help="local transit directory", metavar="PATH")
     par.add_option("--dsskey", 
         help="optional, sftp only. DSS private key file. Can't be specified with --rsakey", metavar="FILE")
     par.add_option("--rsakey",
@@ -160,16 +145,9 @@ def parseOpt():
     elif len(args) == 2:
         url = args[1]
     else:
-        par.error("only one remote-URL allowed")
-        
-    if options.local is None:        
-        defaultTmpDir = getTempDir(options.db)
-        if defaultTmpDir is None:
-            par.error("local transit directory not specified")
-        options.local = "file:" + defaultTmpDir
+        par.error("only one remote-URL allowed")    
             
-    config.set(options.db, "repository", url)
-    config.set(options.db, "local", options.local)
+    config.set(options.db, "repository", url)    
     return (options, config, action, url)
 
 def saveConfig(options,config):
@@ -188,12 +166,13 @@ def main():
                    "proxy":options.proxy}
 
     mtn = Dumbtone(options.db, options.verbose)
+
     if action=="pull":
-        mtn.do_pull(options.local, url, **optdict)
+        mtn.do_pull(url, **optdict)
     elif action=="push":
-        mtn.do_push(options.local, url, **optdict)
+        mtn.do_push(url, **optdict)
     elif action=="sync":
-        mtn.do_sync(options.local, url, **optdict)
+        mtn.do_sync(url, **optdict)
                 
     saveConfig(options,config)
 

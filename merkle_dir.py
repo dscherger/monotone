@@ -323,6 +323,7 @@ class MerkleDir:
     #### Compressing and adding new items 
     # can only be called from inside a transaction.
     def add(self, id, data):
+        data = data()
         # print ">>>>>>>>>>\n",data,"<<<<<<<<<<<<<<<\n"
         cp_data = zlib.compress(data)
         self._add_verbatim(id, cp_data)
@@ -388,10 +389,13 @@ class MerkleDir:
             # we build up a list of all chunks and then fetch them in a single
             # call, to give the chunk optimized and pipelining maximum
             # opportunity to work
+            total = len( new_chunks )
             for id, data in self.get_chunks(new_chunks):
                 target._add_verbatim(id, data)
                 if new_chunk_callback is not None:
-                    new_chunk_callback(id, data)
+                    new_chunk_callback(id, data, total)
+            if new_chunk_callback:
+                new_chunk_callback.finish()
             target.commit()
         except LockError:
             raise
@@ -404,5 +408,128 @@ class MerkleDir:
 
     def sync(self, other,
              new_self_chunk_callback=None, new_other_chunk_callback=None):
-        self.pull(other, new_self_chunk_callback)
+        self.pull(other, new_self_chunk_callback)        
         self.push(other, new_other_chunk_callback)
+        
+        
+        
+class MemoryMerkleDir(MerkleDir):
+    def __init__(self):
+        self._chunksCache = {}
+        self._hashes = {}
+        self._root_hash = None
+        self._ids_to_flush = []
+        
+    def begin(self):
+        pass
+        
+    def commit(self):
+        self.flush()
+        
+    def rollback(self):
+        pass
+        
+    def flush(self):
+        self._flush_hashes()
+        
+    def _add_verbatim(self,id, data):
+        # memory merkle dir doesn't collect 
+        # DATA, only hashes
+        pass
+        
+    def add(self, id, data):
+        self._ids_to_flush.append(id)
+        self._chunksCache[id] = data
+        
+    def all_ids(self):
+        return self._chunksCache.iterkeys()
+        
+    def all_chunks(self):
+        for id, chunkHandle in self._chunksCache.iteritems():
+            yield id, self.__realizeChunk(chunkHandle)
+            
+    def get_chunks(self, id_locations):
+        locations_to_ids = {}
+        for id, location in id_locations:
+            if location[1] == 0:
+                # empty chunks ...
+                yield ( id, "" )
+            else:
+                assert self._chunksCache.has_key(id)                
+                yield ( id, self.__realizeChunk(self._chunksCache[id]) )
+                    
+    #
+    # internal merkle_dir stuff hash tree related
+    #
+
+    #### Hash fetching machinery -- does caching to avoid multiple fetches
+    #### during sync
+    def _get_root_hash(self):
+        if self._root_hash is not None:
+            return self._root_hash
+        self._root_hash = _RootHash()
+        return self._root_hash
+
+    def _set_root_hash(self, obj):
+        self._root_hash = obj
+
+    # pass an iterable of prefixes
+    # returns a dict {prefix -> _ChildHash object}
+    def _get_child_hashes(self, prefixes):
+        child_hashes = {}
+        needed = []
+        for prefix in prefixes:
+            if self._hashes.has_key(prefix):
+                child_hashes[prefix] = self._hashes[prefix]
+            else:
+                needed.append(prefix)
+        if needed:
+            for prefix in needed:
+                ch = _ChildHash()                                
+                self._hashes[prefix] = ch
+                child_hashes[prefix] = ch
+        return child_hashes
+
+    # pass a dict of prefix -> new child hash obj
+    # automatically updates root hash as well
+    def _set_child_hashes(self, objs):        
+        if not objs:
+            return
+        root_hash = self._get_root_hash()        
+        for prefix, obj in objs.iteritems():
+            self._hashes[prefix] = obj
+            child_data = obj.export()
+            new_child_id = sha.new(child_data).hexdigest()
+            
+            root_hash.set(prefix, new_child_id)        
+        self._set_root_hash(root_hash)
+
+    #### Cheap hash updating
+    def _bin(self, ids):
+        bins = {}
+        for id in ids:
+            prefix = id[:2]
+            if not bins.has_key(prefix):
+                bins[prefix] = []
+            bins[prefix].append((id, (-1,-1)))
+        return bins
+
+    def _flush_hashes(self):
+        bins = self._bin(self._ids_to_flush)
+        child_hashes = self._get_child_hashes(bins.iterkeys())
+        for k in bins.iterkeys():
+            for id, location in bins[k]:
+                assert id not in child_hashes[k]
+                child_hashes[k].assign(id, location)        
+        self._set_child_hashes(child_hashes)
+        self._ids_to_flush = []
+        
+    #
+    # private stuff
+    #
+    
+    # realize and compress chunk    
+    def __realizeChunk(self, chunkHandle):
+        rawValue = chunkHandle()
+        chunkData = zlib.compress(rawValue)
+        return chunkData

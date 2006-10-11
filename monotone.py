@@ -122,6 +122,9 @@ class Monotone:
         assert not curr_packet
         return packets
 
+    def keys(self):
+        return self.basic_io_parser( self.automate("keys") )
+        
     def key_names(self):
         output = self.automate("keys")
         keys_parsed = self.basic_io_parser(output)
