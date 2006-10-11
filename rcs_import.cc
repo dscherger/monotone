@@ -70,7 +70,8 @@ using boost::lexical_cast;
 typedef unsigned long cvs_branchname;
 typedef unsigned long cvs_author;
 typedef unsigned long cvs_changelog;
-typedef unsigned long cvs_version;
+typedef unsigned long cvs_mtn_version;   // the new file id in monotone
+typedef unsigned long cvs_rcs_version;   // the old RCS version number
 typedef unsigned long cvs_path;
 typedef unsigned long cvs_tag;
 
@@ -162,17 +163,17 @@ cvs_commit
 public:
   cvs_author author;
   cvs_changelog changelog;
-  cvs_version version;
-  string rcs_version;
+  cvs_mtn_version mtn_version;
+  cvs_rcs_version rcs_version;
   bool alive;
 
-  cvs_commit(const cvs_path p, const time_t ti, const cvs_version v,
-             const string r, const cvs_author a, const cvs_changelog c,
-             const bool al)
+  cvs_commit(const cvs_path p, const time_t ti, const cvs_mtn_version v,
+             const cvs_rcs_version r, const cvs_author a,
+             const cvs_changelog c, const bool al)
     : cvs_event(p, ti),
       author(a),
       changelog(c),
-      version(v),
+      mtn_version(v),
       rcs_version(r),
       alive(al)
     { }
@@ -342,7 +343,8 @@ cvs_history
   interner<unsigned long> branch_interner;
   interner<unsigned long> author_interner;
   interner<unsigned long> changelog_interner;
-  interner<unsigned long> file_version_interner;
+  interner<unsigned long> mtn_version_interner;
+  interner<unsigned long> rcs_version_interner;
   interner<unsigned long> path_interner;
   interner<unsigned long> tag_interner;
 
@@ -752,12 +754,14 @@ process_branch(string const & begin_version,
 
       if (alive)
         {
-          cvs_version ver = cvs.file_version_interner.intern(
+          cvs_mtn_version mv = cvs.mtn_version_interner.intern(
             file_id(curr_id).inner()());
+
+          cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
 
           curr_commit = shared_ptr<cvs_commit>(
             new cvs_commit(cvs.curr_file_interned,
-                           commit_time, ver, curr_version,
+                           commit_time, mv, rv,
                            author, changelog, alive));
 
           // add the commit to the branch
@@ -1133,7 +1137,7 @@ cluster_consumer
   string const & branchname;
   cvs_branch const & branch;
   set<split_path> created_dirs;
-  map<cvs_path, cvs_version> live_files;
+  map<cvs_path, cvs_mtn_version> live_files;
   ticker & n_revisions;
 
   struct prepared_revision
@@ -1504,7 +1508,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
               dump(downcast_to_file_t(node)->content, rev);
 
               L(FL("   file: %s at revision %s") % fp.as_internal() % rev);
-              live_files[path] = cvs.file_version_interner.intern(rev);
+              live_files[path] = cvs.mtn_version_interner.intern(rev);
             }
         }
     }
@@ -1537,13 +1541,13 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
       L(FL("initial cluster on branch %s has %d live entries") % 
         branchname % branch.live_at_beginning.size());
 
-      for (map<cvs_path, cvs_version>::const_iterator i = branch.live_at_beginning.begin();
+      for (map<cvs_path, cvs_mnt_version>::const_iterator i = branch.live_at_beginning.begin();
            i != branch.live_at_beginning.end(); ++i)
         {
           cvs_cluster::entry e(true, i->second, synthetic_time);
           L(FL("initial cluster contains %s at %s") %
             cvs.path_interner.lookup(i->first) %
-            cvs.file_version_interner.lookup(i->second));
+            cvs.mtn_version_interner.lookup(i->second));
           initial_cluster.entries.insert(make_pair(i->first, e));
         }
       consume_cluster(initial_cluster);
@@ -1664,11 +1668,11 @@ cluster_consumer::build_cset(const cvs_blob & blob,
       split_path sp;
       pth.split(sp);
 
-      file_id fid(cvs.file_version_interner.lookup(ce->version));
+      file_id fid(cvs.mtn_version_interner.lookup(ce->mtn_version));
 
       if (ce->alive)
         {
-          map<cvs_path, cvs_version>::const_iterator e =
+          map<cvs_path, cvs_mtn_version>::const_iterator e =
             live_files.find(ce->path);
 
           if (e == live_files.end())
@@ -1676,21 +1680,21 @@ cluster_consumer::build_cset(const cvs_blob & blob,
               add_missing_parents(sp, cs);
               L(FL("adding entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.files_added, make_pair(sp, fid));
-              live_files[ce->path] = ce->version;
+              live_files[ce->path] = ce->mtn_version;
             }
-          else if (e->second != ce->version)
+          else if (e->second != ce->mtn_version)
             {
-              file_id old_fid(cvs.file_version_interner.lookup(e->second));
+              file_id old_fid(cvs.mtn_version_interner.lookup(e->second));
               L(FL("applying state delta on '%s' : '%s' -> '%s'")
                 % pth % old_fid % fid);
               safe_insert(cs.deltas_applied,
                           make_pair(sp, make_pair(old_fid, fid)));
-              live_files[ce->path] = ce->version;
+              live_files[ce->path] = ce->mtn_version;
             }
         }
       else
         {
-          map<cvs_path, cvs_version>::const_iterator e =
+          map<cvs_path, cvs_mtn_version>::const_iterator e =
             live_files.find(ce->path);
 
           if (e != live_files.end())
