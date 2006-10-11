@@ -138,7 +138,7 @@ cvs_event
 public:
   time_t time;
   cvs_path path;
-  shared_ptr<struct cvs_event> dependency;
+  vector< shared_ptr<struct cvs_event> > dependencies;
 
   cvs_event(const cvs_path p, const time_t ti)
     : time(ti),
@@ -147,9 +147,10 @@ public:
 
   cvs_event(const shared_ptr<struct cvs_event> dep)
     : time(dep->time),
-      path(dep->path),
-      dependency(dep)
-    { };
+      path(dep->path)
+    {
+      dependencies.push_back(dep);
+    };
 
   virtual ~cvs_event() { };
   virtual cvs_event_digest get_digest(void) const = 0;
@@ -268,7 +269,6 @@ struct
 cvs_branch
 {
   bool has_a_commit;
-  bool has_parent_rid;
   revision_id parent_rid;
   cvs_branchname branchname;
 
@@ -280,7 +280,6 @@ cvs_branch
 
   cvs_branch(cvs_branchname name)
     : has_a_commit(false),
-      has_parent_rid(false),
       branchname(name)
   {
   }
@@ -767,9 +766,9 @@ process_branch(string const & begin_version,
           ++cvs.n_versions;
 
           // make the last commit depend on the current one (which
-          // comes _before_ due to the reverse processing here)
+          // comes _before_ in the CVS history).
           if (last_commit != NULL)
-            last_commit->dependency = curr_commit;
+            last_commit->dependencies.push_back(curr_commit);
         }
 
       // create tag events for all tags on this commit
@@ -789,6 +788,10 @@ process_branch(string const & begin_version,
                   event = shared_ptr<cvs_event_tag>(
                     new cvs_event_tag(curr_commit, tag));
                   cvs.stk.top()->append_event(event);
+
+                  // append to the last_commit deps
+                  if (last_commit)
+                    last_commit->dependencies.push_back(event);
                 }
             }
         }
@@ -858,6 +861,10 @@ process_branch(string const & begin_version,
                 % cvs.path_interner.lookup(curr_commit->path)
                 % cvs.bstk.top()
                 % branch);
+
+              // append to the last_commit deps
+              if (last_commit)
+                last_commit->dependencies.push_back(branch_event);
             }
         }
 
@@ -1174,12 +1181,12 @@ class revision_iterator
 {
 private:
 	cvs_blob_index current_blob;
-  shared_ptr<cluster_consumer> cons;
-  shared_ptr<cvs_branch> branch;
+  shared_ptr< cluster_consumer > cons;
+  shared_ptr< cvs_branch > branch;
 
 public:
-  revision_iterator(shared_ptr<cluster_consumer> const & c,
-                    shared_ptr<cvs_branch> const & b)
+  revision_iterator(shared_ptr< cluster_consumer > const c,
+                    shared_ptr< cvs_branch > const b)
     : current_blob(0),
       cons(c),
       branch(b)
@@ -1228,8 +1235,8 @@ resolve_blob_dependencies(cvs_history &cvs,
 {
   L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
 
-	typedef pair< cvs_blob_index, cvs_blob_index > Edge;
-	typedef boost::adjacency_list< boost::vecS, boost::vecS,
+  typedef pair< cvs_blob_index, cvs_blob_index > Edge;
+  typedef boost::adjacency_list< boost::vecS, boost::vecS,
                                  boost::directedS > Graph;
 
   Graph g(branch->blobs.size());
@@ -1250,12 +1257,13 @@ resolve_blob_dependencies(cvs_history &cvs,
             }
           files.insert(event->path);
 
-          if (event->dependency)
+          for(blob_event_iter dep = event->dependencies.begin();
+              dep != event->dependencies.end(); ++dep)
             {
               // we can still use get_blob here, as there is only one blob
               // per digest
               blob_index_iterator k =
-                branch->get_blob(event->dependency->get_digest(), false);
+                branch->get_blob((*dep)->get_digest(), false);
               L(FL("blob %d depends on blob %d") % i % k->second);
 
               add_edge(i, k->second, g);
@@ -1467,7 +1475,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
     n_revisions(n_revs),
     editable_ros(ros, nis)
 {
-  if (branch.has_parent_rid)
+  if (!null_id(branch.parent_rid))
     {
       L(FL("starting cluster for branch %s from revision %s which contains:")
            % branchname
@@ -1745,15 +1753,13 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
         boost::static_pointer_cast<cvs_event_branch, cvs_event>(*blob.begin());
 
       /* set the parent revision id of the branch */
-      L(FL("setting the parent revision id branch %s") % cbe->branch->branchname);
+      L(FL("setting the parent revision id of branch %s to:") % 
+        cvs.branch_interner.lookup(cbe->branch->branchname));
 
-#if 0
-      //FIXME: this is wrong because branch and tag events may
-      //       come in out of order!
+      string r_str;
+      dump(child_rid, r_str);
 
-      cbe->branch->parent_rid = parent_rid;
-      cbe->branch->has_parent_rid = true;
-#endif
+      cbe->branch->parent_rid = child_rid;
     }
   else if (blob.get_digest().is_tag())
     {
