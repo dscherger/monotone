@@ -68,8 +68,7 @@ using boost::lexical_cast;
 // cvs history recording stuff
 
 typedef unsigned long cvs_branchname;
-typedef unsigned long cvs_author;
-typedef unsigned long cvs_changelog;
+typedef unsigned long cvs_authorclog;
 typedef unsigned long cvs_mtn_version;   // the new file id in monotone
 typedef unsigned long cvs_rcs_version;   // the old RCS version number
 typedef unsigned long cvs_path;
@@ -161,18 +160,16 @@ cvs_commit
   : public cvs_event
 {
 public:
-  cvs_author author;
-  cvs_changelog changelog;
+  cvs_authorclog authorclog;
   cvs_mtn_version mtn_version;
   cvs_rcs_version rcs_version;
   bool alive;
 
   cvs_commit(const cvs_path p, const time_t ti, const cvs_mtn_version v,
-             const cvs_rcs_version r, const cvs_author a,
-             const cvs_changelog c, const bool al)
+             const cvs_rcs_version r, const cvs_authorclog ac,
+             const bool al)
     : cvs_event(p, ti),
-      author(a),
-      changelog(c),
+      authorclog(ac),
       mtn_version(v),
       rcs_version(r),
       alive(al)
@@ -180,7 +177,7 @@ public:
 
   virtual cvs_event_digest get_digest(void) const
     {
-      return cvs_event_digest(ET_COMMIT, changelog);
+      return cvs_event_digest(ET_COMMIT, authorclog);
     };
 };
 
@@ -341,8 +338,7 @@ cvs_history
 {
 
   interner<unsigned long> branch_interner;
-  interner<unsigned long> author_interner;
-  interner<unsigned long> changelog_interner;
+  interner<unsigned long> authorclog_interner;
   interner<unsigned long> mtn_version_interner;
   interner<unsigned long> rcs_version_interner;
   interner<unsigned long> path_interner;
@@ -744,13 +740,15 @@ process_branch(string const & begin_version,
 
       bool alive = delta->second->state != "dead";
 
-      cvs_changelog changelog;
-      cvs_author author;
+      string ac_str = delta->second->author + "|||\n";
+
       if (is_synthetic_branch_root)
-        changelog = cvs.changelog_interner.intern("synthetic branch root changelog");
+        ac_str += "synthetic branch root changelog";
       else
-        changelog = cvs.changelog_interner.intern(deltatext->second->log);
-      author = cvs.author_interner.intern(delta->second->author);
+        ac_str += deltatext->second->log;
+
+      L(FL("authorclog: %s") % ac_str);
+      cvs_authorclog ac = cvs.authorclog_interner.intern(ac_str);
 
       if (alive)
         {
@@ -762,7 +760,7 @@ process_branch(string const & begin_version,
           curr_commit = shared_ptr<cvs_commit>(
             new cvs_commit(cvs.curr_file_interned,
                            commit_time, mv, rv,
-                           author, changelog, alive));
+                           ac, alive));
 
           // add the commit to the branch
           cvs.stk.top()->append_event(curr_commit);
@@ -1148,8 +1146,7 @@ cluster_consumer
     revision_id rid;
     shared_ptr<revision_t> rev;
     time_t time;
-    cvs_author author;
-    cvs_changelog changelog;
+    cvs_authorclog authorclog;
     vector<cvs_tag> tags;
   };
 
@@ -1561,16 +1558,14 @@ cluster_consumer::prepared_revision::prepared_revision(revision_id i,
   : rid(i),
     rev(r),
     time(0),   //FIXME: determine blob time     c.start_time),
-    author(0), // FIXME: store author and clog in blob c.author),
-    changelog(0) // c.changelog)
+    authorclog(0) // FIXME: store author and clog in blob c.author),
 {
   I(blob.get_digest().is_commit());
 
   shared_ptr<cvs_commit> ce =
     boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
 
-  changelog = ce->changelog;
-  author = ce->author;
+  authorclog = ce->authorclog;
   time = ce->time;
 
 /* FIXME:
@@ -1626,9 +1621,15 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
         }
     }
 
+  string ac_str = cvs.authorclog_interner.lookup(p.authorclog);
+  int i = ac_str.find("|||\n");
+
+  string author = ac_str.substr(0, i);
+  string changelog = ac_str.substr(i+4);
+
   cert_revision_in_branch(p.rid, cert_value(branchname), app, dbw);
-  cert_revision_author(p.rid, cvs.author_interner.lookup(p.author), app, dbw);
-  cert_revision_changelog(p.rid, cvs.changelog_interner.lookup(p.changelog), app, dbw);
+  cert_revision_author(p.rid, author, app, dbw);
+  cert_revision_changelog(p.rid, changelog, app, dbw);
   cert_revision_date_time(p.rid, p.time, app, dbw);
 }
 
