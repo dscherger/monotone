@@ -27,6 +27,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
+#include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
 
@@ -1118,6 +1119,41 @@ cluster_consumer
   void store_revisions();
 };
 
+struct blob_splitter 
+  : public boost::dfs_visitor<>
+{
+protected:
+  bool & _has_cycle;
+  cvs_branch & branch;
+
+public:
+  blob_splitter(bool & c, cvs_branch & b)
+    : has_cycle(c),
+      branch(b)
+    { }
+
+  template < class Edge, class Graph >
+  void tree_edge(Edge e, Graph & g)
+    {
+      L(FL("blob_splitter: tree edge: %s") % e);
+    }
+
+  template < class Edge, class Graph >
+  void back_edge(Edge e, Graph & g)
+    {
+      L(FL("blob_splitter: back edge: %s") % e);
+
+      if (e->first == e->second)
+        {
+        }
+      else
+        {
+        }
+
+      _has_cycle = true;
+    }
+};
+
 class revision_iterator
 {
 private:
@@ -1182,24 +1218,15 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   Graph g(branch->blobs.size());
 
-  // first split blobs which have events for the same file (i.e. intra-blob
-  // dependencies)
+  // fill the graph with all blob dependencies as edges between
+  // the blobs (vertices).
   for (cvs_blob_index i = 0; i < branch->blobs.size(); ++i)
     {
-      set<cvs_path> files;
-
-      for(blob_event_iter j = branch->blobs[i].begin(); j != branch->blobs[i].end(); ++j)
+      for(blob_event_iter event = branch->blobs[i].begin();
+          event != branch->blobs[i].end(); ++event)
         {
-          shared_ptr<cvs_event> event = *j;
-
-          if (files.find(event->path) != files.end())
-            {
-              throw oops("splitting blobs not implemented, yet.");
-            }
-          files.insert(event->path);
-
-          for(blob_event_iter dep = event->dependencies.begin();
-              dep != event->dependencies.end(); ++dep)
+          for(blob_event_iter dep = (*event)->dependencies.begin();
+              dep != (*event)->dependencies.end(); ++dep)
             {
               // we can still use get_blob here, as there is only one blob
               // per digest
@@ -1212,6 +1239,13 @@ resolve_blob_dependencies(cvs_history &cvs,
         }
     }
 
+  // check for cycles
+	bool has_cycle = false;
+	blob_splitter vis(branch, has_cycle);
+	depth_first_search(g, visitor(vis));
+
+  I(!has_cycle);
+
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
   shared_ptr<cluster_consumer> cons = shared_ptr<cluster_consumer>(
@@ -1219,9 +1253,10 @@ resolve_blob_dependencies(cvs_history &cvs,
   revision_iterator ri(cons, branch);
 
   L(FL("starting toposort the blobs of branch %s") % branchname);
-
   topological_sort(g, ri);
 
+  // finally store the revisions
+  // (ms) why is this an extra step? Is it faster?
   cons->store_revisions();
 }
 
