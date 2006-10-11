@@ -120,9 +120,20 @@ public:
   cvs_path path;
   shared_ptr<struct cvs_event> dependency;
 
-  cvs_event();
-  cvs_event(event_type t);
-  virtual ~cvs_event();
+  cvs_event(const event_type ty, const cvs_path p, const time_t ti)
+    : type(ty),
+      time(ti),
+      path(p)
+    { };
+
+  cvs_event(const event_type ty, const shared_ptr<struct cvs_event> dep)
+    : type(ty),
+      time(dep->time),
+      path(dep->path),
+      dependency(dep)
+    { };
+
+  virtual ~cvs_event() { };
   virtual cvs_event_digest get_digest(void) = 0;
 };
 
@@ -134,17 +145,24 @@ public:
   cvs_author author;
   cvs_changelog changelog;
   cvs_version version;
-  string rcs;
-
+  string rcs_version;
   bool alive;
-  bool is_synthetic_branch_root;
 
-  cvs_commit();
-  cvs_commit(rcs_file const & r,
-             string const & rcs_version,
-             file_id const & ident,
-             cvs_history & cvs);
-  virtual cvs_event_digest get_digest(void);
+  cvs_commit(const cvs_path p, const time_t ti, const cvs_version v,
+             const string r, const cvs_author a, const cvs_changelog c,
+             const bool al)
+    : cvs_event(ET_COMMIT, p, ti),
+      author(a),
+      changelog(c),
+      version(v),
+      rcs_version(r),
+      alive(al)
+    { }
+
+  virtual cvs_event_digest get_digest(void)
+    {
+      return cvs_event_digest(author, changelog, 0, 0);
+    };
 };
 
 class
@@ -154,7 +172,11 @@ cvs_event_branch
 public:
   shared_ptr<struct cvs_branch> branch;
 
-  cvs_event_branch(shared_ptr<cvs_commit> dep, shared_ptr<struct cvs_branch> b);
+  cvs_event_branch(const shared_ptr<cvs_commit> dep, shared_ptr<struct cvs_branch> b)
+    : cvs_event(ET_BRANCH, dep),
+      branch(b)
+    { };
+
   virtual cvs_event_digest get_digest(void);
 };
 
@@ -165,8 +187,15 @@ cvs_event_tag
 public:
   cvs_tag tag;
 
-  cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t);
-  virtual cvs_event_digest get_digest(void);
+  cvs_event_tag(const shared_ptr<cvs_commit> dep, const cvs_tag t)
+    : cvs_event(ET_TAG, dep),
+      tag(t)
+    { };
+
+  virtual cvs_event_digest get_digest(void)
+    {
+      return cvs_event_digest(0, 0, tag, 0);
+    };
 };
 
 typedef vector< shared_ptr< cvs_event> >::const_iterator blob_event_iter;
@@ -280,6 +309,12 @@ cvs_branch
   }
 };
 
+cvs_event_digest
+cvs_event_branch::get_digest(void)
+{
+  return cvs_event_digest(0, 0, 0, branch->branchname);
+};
+
 struct
 cvs_history
 {
@@ -358,116 +393,6 @@ is_sbr(shared_ptr<rcs_delta> dl,
                                     log_bit.end());
 
   return i != dt->log.end();
-}
-
-cvs_event::cvs_event(void)
-{
-}
-
-cvs_event::cvs_event(event_type t)
-  : type(t)
-{
-}
-
-cvs_event::~cvs_event(void)
-{
-}
-
-cvs_commit::cvs_commit(void)
-  : cvs_event(ET_COMMIT)
-{
-}
-
-cvs_commit::cvs_commit(rcs_file const & r,
-                       string const & rcs_version,
-                       file_id const & ident,
-                       cvs_history & cvs)
-{
-  type = ET_COMMIT;
-
-  map<string, shared_ptr<rcs_delta> >::const_iterator delta =
-    r.deltas.find(rcs_version);
-  I(delta != r.deltas.end());
-
-  map<string, shared_ptr<rcs_deltatext> >::const_iterator deltatext =
-    r.deltatexts.find(rcs_version);
-  I(deltatext != r.deltatexts.end());
-
-  struct tm t;
-  // We need to initialize t to all zeros, because strptime has a habit of
-  // leaving bits of the data structure alone, letting garbage sneak into
-  // our output.
-  memset(&t, 0, sizeof(t));
-  char const * dp = delta->second->date.c_str();
-  L(FL("Calculating time of %s") % dp);
-#ifdef HAVE_STRPTIME
-  if (strptime(dp, "%y.%m.%d.%H.%M.%S", &t) == NULL)
-    I(strptime(dp, "%Y.%m.%d.%H.%M.%S", &t) != NULL);
-#else
-  I(sscanf(dp, "%d.%d.%d.%d.%d.%d", &(t.tm_year), &(t.tm_mon),
-           &(t.tm_mday), &(t.tm_hour), &(t.tm_min), &(t.tm_sec))==6);
-  t.tm_mon--;
-  // Apparently some RCS files have 2 digit years, others four; tm always
-  // wants a 2 (or 3) digit year (years since 1900).
-  if (t.tm_year > 1900)
-    t.tm_year-=1900;
-#endif
-  time = mktime(&t);
-  L(FL("= %i") % time);
-
-  is_synthetic_branch_root = is_sbr(delta->second,
-                                    deltatext->second);
-
-  alive = delta->second->state != "dead";
-  if (is_synthetic_branch_root)
-    changelog = cvs.changelog_interner.intern("synthetic branch root changelog");
-  else
-    changelog = cvs.changelog_interner.intern(deltatext->second->log);
-  author = cvs.author_interner.intern(delta->second->author);
-  path = cvs.curr_file_interned;
-  version = cvs.file_version_interner.intern(ident.inner()());
-  rcs = string(rcs_version);
-}
-
-cvs_event_digest
-cvs_event::get_digest(void)
-{
-  return cvs_event_digest(0, 0, 0, 0);
-};
-
-cvs_event_digest
-cvs_commit::get_digest(void)
-{
-  return cvs_event_digest(author, changelog, 0, 0);
-};
-
-cvs_event_branch::cvs_event_branch(shared_ptr<cvs_commit> dep,
-                                   shared_ptr<struct cvs_branch> b)
-{
-  type = ET_BRANCH;
-  dependency = dep;
-  path = dep->path;
-  branch = b;
-}
-
-cvs_event_digest
-cvs_event_branch::get_digest(void)
-{
-  return cvs_event_digest(0, 0, 0, branch->branchname);
-}
-
-cvs_event_tag::cvs_event_tag(shared_ptr<cvs_commit> dep, const cvs_tag t)
-{
-  type = ET_TAG;
-  dependency = dep;
-  path = dep->path;
-  tag = t;
-}
-
-cvs_event_digest
-cvs_event_tag::get_digest(void)
-{
-  return cvs_event_digest(0, 0, tag, 0);
 }
 
 // piece table stuff
@@ -730,6 +655,34 @@ lineage.
 */
 
 
+
+static time_t
+parse_time(const char * dp)
+{
+  time_t time;
+  struct tm t;
+  // We need to initialize t to all zeros, because strptime has a habit of
+  // leaving bits of the data structure alone, letting garbage sneak into
+  // our output.
+  memset(&t, 0, sizeof(t));
+  L(FL("Calculating time of %s") % dp);
+#ifdef HAVE_STRPTIME
+  if (strptime(dp, "%y.%m.%d.%H.%M.%S", &t) == NULL)
+    I(strptime(dp, "%Y.%m.%d.%H.%M.%S", &t) != NULL);
+#else
+  I(sscanf(dp, "%d.%d.%d.%d.%d.%d", &(t.tm_year), &(t.tm_mon),
+           &(t.tm_mday), &(t.tm_hour), &(t.tm_min), &(t.tm_sec))==6);
+  t.tm_mon--;
+  // Apparently some RCS files have 2 digit years, others four; tm always
+  // wants a 2 (or 3) digit year (years since 1900).
+  if (t.tm_year > 1900)
+    t.tm_year-=1900;
+#endif
+  time = mktime(&t);
+  L(FL("= %i") % time);
+  return time;
+}
+
 static void
 process_branch(string const & begin_version,
                vector< piece > const & begin_lines,
@@ -753,12 +706,39 @@ process_branch(string const & begin_version,
     {
       L(FL("version %s has %d lines") % curr_version % curr_lines->size());
 
-      shared_ptr<cvs_commit> c = shared_ptr<cvs_commit>(
-        new cvs_commit(r, curr_version, curr_id, cvs));
+      /* fetch the next deltas */
+      map<string, shared_ptr<rcs_delta> >::const_iterator delta =
+        r.deltas.find(curr_version);
+      I(delta != r.deltas.end());
 
-      if (c->alive)
+      map<string, shared_ptr<rcs_deltatext> >::const_iterator deltatext =
+        r.deltatexts.find(curr_version);
+      I(deltatext != r.deltatexts.end());
+
+      time_t commit_time = parse_time(delta->second->date.c_str());
+
+      bool is_synthetic_branch_root = is_sbr(delta->second,
+                                             deltatext->second);
+
+      bool alive = delta->second->state != "dead";
+
+      cvs_changelog changelog;
+      cvs_author author;
+      if (is_synthetic_branch_root)
+        changelog = cvs.changelog_interner.intern("synthetic branch root changelog");
+      else
+        changelog = cvs.changelog_interner.intern(deltatext->second->log);
+      author = cvs.author_interner.intern(delta->second->author);
+
+      if (alive)
         {
-          curr_commit = c;
+          cvs_version ver = cvs.file_version_interner.intern(
+            file_id(curr_id).inner()());
+
+          curr_commit = shared_ptr<cvs_commit>(
+            new cvs_commit(cvs.curr_file_interned,
+                           commit_time, ver, curr_version,
+                           author, changelog, alive));
 
           // add the commit to the branch
           cvs.stk.top()->append_event(curr_commit);
@@ -778,7 +758,7 @@ process_branch(string const & begin_version,
           if (i->first == curr_version)
            {
               // ignore tags on dead commits
-              if (c->alive)
+              if (alive)
                 {
                   shared_ptr<cvs_event_tag> event;
                   L(FL("version %s -> tag %s") % curr_version % i->second);
@@ -833,35 +813,29 @@ process_branch(string const & begin_version,
           process_branch(*i, branch_lines, branch_data,
                          branch_id, r, db, cvs);
 
+          shared_ptr<struct cvs_branch> sub_branch = cvs.stk.top();
+
+          cvs.pop_branch();
+          L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+
+
           // add a branch event, linked to this new branch if it's
           // not a dead commit
-          if (c->alive)
+          if (alive)
             {
               shared_ptr<cvs_event_branch> branch_event =
                 shared_ptr<cvs_event_branch>(
-                  new cvs_event_branch(curr_commit, cvs.stk.top()));
-
-              cvs.pop_branch();
-
-              L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+                  new cvs_event_branch(curr_commit, sub_branch));
 
               /* make sure curr_commit exists in the blob */
               cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
 
               /* then append it to the parent branch */
               cvs.stk.top()->append_event(branch_event);
-              L(FL("added branch event for file %s from branch %s into branch %s (dep %s)")
+              L(FL("added branch event for file %s from branch %s into branch %s")
                 % cvs.path_interner.lookup(curr_commit->path)
                 % cvs.bstk.top()
-                % branch
-                % curr_commit->get_digest());
-            }
-          else
-            {
-              // in case we come from a dead commit, we don't have to
-              // add a branch dependency.
-              cvs.pop_branch();
-              L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+                % branch);
             }
         }
 
