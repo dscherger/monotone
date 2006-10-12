@@ -38,6 +38,7 @@
 #include "options.hh"
 #include "paths.hh"
 #include "sha1.hh"
+#include "simplestring_xform.hh"
 
 using std::cout;
 using std::cerr;
@@ -87,7 +88,7 @@ namespace po = boost::program_options;
 // Wrapper class to ensure Botan is properly initialized and deinitialized.
 struct botan_library
 {
-  botan_library() { 
+  botan_library() {
     Botan::Init::initialize();
     Botan::set_default_allocator("malloc");
     hook_botan_sha1();
@@ -119,7 +120,7 @@ tokenize_for_command_line(string const & from, vector<string> & to)
   string cur;
   quote_type type = none;
   bool have_tok(false);
-  
+
   for (string::const_iterator i = from.begin(); i != from.end(); ++i)
     {
       if (*i == '\'')
@@ -432,7 +433,9 @@ cpp_main(int argc, char ** argv)
 
       if (option::message.given(vm))
         {
-          app.set_message(option::message.get(vm));
+          string combined_message = "";
+          join_lines(option::message.get(vm), combined_message);
+          app.set_message(combined_message);
           app.set_is_explicit_option(option::message());
         }
 
@@ -662,7 +665,7 @@ cpp_main(int argc, char ** argv)
     }
   catch (po::ambiguous_option const & e)
     {
-      string msg = (F("%s:\n") % e.what()).str();
+      string msg = (i18n_format("%s:\n") % e.what()).str();
       vector<string>::const_iterator it = e.alternatives.begin();
       for (; it != e.alternatives.end(); ++it)
         msg += *it + "\n";
@@ -670,7 +673,7 @@ cpp_main(int argc, char ** argv)
     }
   catch (po::error const & e)
     {
-      N(false, F("%s") % e.what());
+      N(false, i18n_format("%s") % e.what());
     }
   catch (usage & u)
     {
