@@ -1119,16 +1119,17 @@ cluster_consumer
   void store_revisions();
 };
 
+template < class MyEdge >
 struct blob_splitter 
   : public boost::dfs_visitor<>
 {
 protected:
-  bool & _has_cycle;
+  vector< MyEdge > & back_edges;
   cvs_branch & branch;
 
 public:
-  blob_splitter(bool & c, cvs_branch & b)
-    : has_cycle(c),
+  blob_splitter(cvs_branch & b, vector< MyEdge > & be)
+    : back_edges(be),
       branch(b)
     { }
 
@@ -1142,15 +1143,7 @@ public:
   void back_edge(Edge e, Graph & g)
     {
       L(FL("blob_splitter: back edge: %s") % e);
-
-      if (e->first == e->second)
-        {
-        }
-      else
-        {
-        }
-
-      _has_cycle = true;
+      back_edges.push_back(MyEdge(e.m_source, e.m_target));
     }
 };
 
@@ -1198,6 +1191,20 @@ public:
     };
 };
 
+typedef pair< cvs_blob_index, cvs_blob_index > Edge;
+typedef boost::adjacency_list< boost::vecS, boost::vecS,
+                               boost::directedS > Graph;
+
+void
+split_blobs_at(shared_ptr<cvs_branch> const & branch,
+               const Edge & e, Graph & g)
+{
+  L(FL("splitting at edge: %d -> %d") % e.first % e.second);
+
+  // TODO
+  I(false);
+}
+
 //
 // After stuffing all cvs_events into blobs of events with the same
 // author and changelog, we have to make sure their dependencies are
@@ -1211,10 +1218,6 @@ resolve_blob_dependencies(cvs_history &cvs,
                           ticker & n_revs)
 {
   L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
-
-  typedef pair< cvs_blob_index, cvs_blob_index > Edge;
-  typedef boost::adjacency_list< boost::vecS, boost::vecS,
-                                 boost::directedS > Graph;
 
   Graph g(branch->blobs.size());
 
@@ -1240,11 +1243,16 @@ resolve_blob_dependencies(cvs_history &cvs,
     }
 
   // check for cycles
-	bool has_cycle = false;
-	blob_splitter vis(branch, has_cycle);
-	depth_first_search(g, visitor(vis));
+  vector< Edge > back_edges;
+	blob_splitter< Edge > vis(*branch, back_edges);
 
-  I(!has_cycle);
+  do
+  {
+  	depth_first_search(g, visitor(vis));
+    for (vector< Edge >::const_iterator i = back_edges.begin();
+         i != back_edges.end(); ++i)
+            split_blobs_at(branch, *i, g);
+  } while (!back_edges.empty());
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
