@@ -24,9 +24,6 @@
 #include "mtncvs_state.hh"
 #include <cvs_sync.hh>
 
-char * argstr = NULL;
-long arglong = 0;
-
 // options are split into two categories.  the first covers global options,
 // which globally affect program behaviour.  the second covers options
 // specific to one or more commands.  these command-specific options are
@@ -413,8 +410,13 @@ cpp_main(int argc, char ** argv)
       if (option::since.given(vm)) app.since=string(option::since.get(vm));
 
       if (option::branch_name.given(vm))
-      { L(FL("branch %s") % argstr);
+      { L(FL("branch %s") % option::branch_name.get(vm));
         app.branch=option::branch_name.get(vm);
+      }
+
+      if (option::revision.given(vm))
+      { L(FL("revision %s") % option::revision.get(vm));
+        app.revisions.push_back(revision_id(option::revision.get(vm)));
       }
 
       if (option::help.given(vm)) requested_help = true;
