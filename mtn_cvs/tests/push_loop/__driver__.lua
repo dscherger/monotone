@@ -28,7 +28,7 @@ check(indir("test2", mtn("add", "C")), 0, false, false)
 check(indir("test2", mtn("ci", "-m", "c added")), 0, false, false)
 
 check(mtn("merge"), 0, false, false)
-check(mtn_cvs("--branch=testbranch","-r",left,"push"),0, false,false)
+check(mtn_cvs("--branch=testbranch","push"),0, false,false)
 -- no change yet
 check(exists(cvsroot .. "/test/A,v"))
 check(not exists(cvsroot .. "/test/C,v"))
