@@ -60,7 +60,9 @@ std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& 
   piece::index_deltatext(children,lines);
   result.reserve(children.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
-    result.push_back(revision_id((**p).substr(constants::idlen)));
+  { // L(FL("child '%s'") % (**p).substr(0,constants::idlen));
+    result.push_back(revision_id((**p).substr(0,constants::idlen)));
+  }
   piece::reset();
   return result;
 }
@@ -74,7 +76,7 @@ std::vector<revision_id> mtn_automate::get_revision_parents(revision_id const& r
   piece::index_deltatext(children,lines);
   result.reserve(children.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
-    result.push_back(revision_id((**p).substr(constants::idlen)));
+    result.push_back(revision_id((**p).substr(0,constants::idlen)));
   piece::reset();
   return result;
 }

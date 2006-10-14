@@ -976,7 +976,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
 }
 
 std::string cvs_repository::gather_merge_information(revision_id const& id)
-{ std::vector<revision_id> parents=app.get_revision_parents(id);
+{ L(FL("gather_merge_information(%s)") % id);
+  std::vector<revision_id> parents=app.get_revision_parents(id);
   std::string result;
   for (std::vector<revision_id>::const_iterator i=parents.begin();i!=parents.end();++i)
   { if (*i==revision_id()) continue;
@@ -1131,6 +1132,8 @@ void cvs_sync::push(const std::string &_repository, const std::string &_module,
 { cvs_repository *repo=cvs_sync::prepare_sync(_repository,_module,_branch,app);
   
   N(!repo->empty(),F("no revision certs for this repository/module\n"));
+  L(FL("push"));
+  std::cerr << repo->debug() << '\n';
   repo->commit();
   delete repo;
 }

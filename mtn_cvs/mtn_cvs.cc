@@ -128,7 +128,8 @@ CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     if (args.size()==3) 
       branch=idx(args, 2)();
   }
-//  cvs_sync::push(repository,module,branch,myapp);
+  mtncvs_state &myapp=mtncvs_state::upcast(app);
+  cvs_sync::push(repository,module,branch,myapp);
 }
 
 CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
