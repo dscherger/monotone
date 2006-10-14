@@ -1998,6 +1998,7 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
       L(FL("sync info encoded as delta from %s") % edge_old_revision(e));
       return;
     }
+    catch (std::informative_failure &er) {}
     catch (std::runtime_error &er) {}
   }
   cert_value cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+new_data);
