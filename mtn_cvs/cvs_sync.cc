@@ -943,7 +943,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       { e.xfiles[i->first]=remove_state;
       }
       else
-      { file_state fs(e.time,i->second.first);
+      { MM(i->first);
+        file_state fs(e.time,i->second.first);
         fs.log_msg=e.changelog;
         fs.author=e.author;
         fs.keyword_substitution=i->second.second;
@@ -1133,7 +1134,7 @@ void cvs_sync::push(const std::string &_repository, const std::string &_module,
   
   N(!repo->empty(),F("no revision certs for this repository/module\n"));
   L(FL("push"));
-  std::cerr << repo->debug() << '\n';
+//  std::cerr << repo->debug() << '\n';
   repo->commit();
   delete repo;
 }

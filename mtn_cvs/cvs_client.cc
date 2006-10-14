@@ -1417,6 +1417,8 @@ std::map<std::string,std::pair<std::string,std::string> >
         std::string file=lresult[2].second;
         I(!file.empty());
         if (file[0]=='/') file=rcs_file2path(file);
+        else // relative path name - relative to what?
+          file=rcs_file2path(root+"/"+file);
         parse_entry(lresult[3].second,p.first,p.second);
         result[file]=p;
       }
@@ -1426,6 +1428,8 @@ std::map<std::string,std::pair<std::string,std::string> >
         std::string file=lresult[2].second;
         I(!file.empty());
         if (file[0]=='/') file=rcs_file2path(file);
+        else // relative path name - relative to what?
+          file=rcs_file2path(root+"/"+file);
         result[file]=std::make_pair(std::string(),std::string());
       }
       else if (lresult[0].second=="Mod-time")
@@ -1444,6 +1448,8 @@ std::map<std::string,std::pair<std::string,std::string> >
         std::string file=lresult[2].second;
         I(!file.empty());
         if (file[0]=='/') file=rcs_file2path(file);
+        else // relative path name - relative to what?
+          file=rcs_file2path(root+"/"+file);
         parse_entry(lresult[3].second,p.first,p.second);
         result[file]=p;
         W(F("Commit: Update-existing %s rev.%s%s (%db)\n") % file 
