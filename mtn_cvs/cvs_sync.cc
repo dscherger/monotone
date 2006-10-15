@@ -1525,6 +1525,17 @@ void cvs_client::validate_path(const std::string &local, const std::string &serv
   server_dir[local]=server;
 }
 
+void read_file(std::string const& name, data &result)
+{ std::string dest;
+  ifstream is(name.c_str());
+  while (is.good())
+  { char buf[10240];
+    is.read(buf,sizeof buf);
+    if (is.gcount()) dest+=std::string(buf,buf+is.gcount());
+  }
+  result=data(dest);
+}
+
 void cvs_repository::takeover_dir(const std::string &path)
 { // remember the server path for this subdirectory
   MM(path);
@@ -1592,10 +1603,10 @@ void cvs_repository::takeover_dir(const std::string &path)
             fs.cvs_version=std::string();
           }
         }
-        // @@ import the file and check whether it is (un-)changed
+        // import the file and check whether it is (un-)changed
         fs.log_msg="initial cvs content";
         data new_data;
-//@@        read_localized_data(file_path_internal(filename), new_data, app.lua);
+        read_file(filename, new_data);
         store_contents(new_data, fs.sha1sum);
         f->second.known_states.insert(fs);
       }
@@ -1639,6 +1650,14 @@ void cvs_repository::takeover()
   // commit them all
   commit_cvs2mtn(edges.begin());
   // create a MT directory 
+  // mtn setup . -d X -b X
+  // write into _MTN/revision
+/* format_version "1"
+
+new_manifest []
+
+old_revision [X]
+*/
 //@@  app.create_workspace(system_path("."));
   
 // like in commit ?
