@@ -22,6 +22,7 @@ check(indir("test", mtn("ci", "-m", "a dropped")), 0, false, false)
 check(mtn("automate", "heads"), 0, true, false)
 canonicalize("stdout")
 left = readfile("stdout")
+left = string.sub(left,0,40)
 
 writefile("test2/C", "C\n")
 check(indir("test2", mtn("add", "C")), 0, false, false)
