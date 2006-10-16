@@ -194,7 +194,6 @@ void print_some_output(int cmdnum,
       s<<size<<':'<<text.substr(pos, size);
       pos+=size;
     }
-  s.flush();
 }
 
 static ssize_t automate_stdio_read(int d, void *buf, size_t nbytes)
@@ -311,11 +310,12 @@ AUTOMATE(stdio, "")
                   //will be split into properly-sized blocks automatically.
                   s<<f.what();
                 }
-              if(do_flush)
-                {
-                  print_some_output(cmdnum, err, true, sb.str(),
-                                      output, outpos, -1, app.automate_stdio_size);                  
-                }
+                print_some_output(cmdnum, err, true, sb.str(),
+                                  output, outpos, -1, app.automate_stdio_size);
+                if(do_flush)
+                 {
+                   s.flush();
+                 }
             }
         }
       cmdnum++;
