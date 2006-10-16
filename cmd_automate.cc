@@ -213,6 +213,8 @@ AUTOMATE(stdio, "")
     throw usage(help_name);
   int cmdnum = 0;
   char c;
+  bool do_flush = true;
+  std::ostringstream s;
   ssize_t n=1;
   while(n)//while(!EOF)
     {
@@ -252,48 +254,69 @@ AUTOMATE(stdio, "")
         }
       if(cmd() != "")
         {
-          int outpos=0;
-          int err;
-          std::ostringstream s;
-          my_stringbuf sb(app.automate_stdio_size);
-          sb.set_on_write(boost::bind(print_some_output,
-                                      cmdnum,
-                                      boost::ref(err),
-                                      false,
-                                      boost::bind(&my_stringbuf::str, &sb),
-                                      boost::ref(output),
-                                      boost::ref(outpos),
-                                      _1,
-                                      app.automate_stdio_size));
-          {
-            // Do not use s.std::basic_ios<...>::rdbuf here, 
-            // it confuses VC8.
-            using std::basic_ios;
-            s.basic_ios<char, std::char_traits<char> >::rdbuf(&sb);
-          }
-          try
+          if(cmd() == "flush")
             {
-              err=0;
-              automate_command(cmd, args, help_name, app, s);
+              I(args.size() == 1);
+              utf8 arg = args.front();
+              N(arg == utf8("on") || arg == utf8("off"),
+                F("expected 'on' or 'off' as only argument to 'flush'")
+               );
+              do_flush = arg == utf8("on");
+              // do explicit flush
+              if(do_flush)
+                {
+                  s.flush();
+                }
             }
-          catch(usage &)
+          else
             {
-              if(sb.str().size())
-                s.flush();
-              err=1;
-              commands::explain_usage(help_name, s);
+              int outpos=0;
+              int err;
+              my_stringbuf sb(app.automate_stdio_size);
+              sb.set_on_write(boost::bind(print_some_output,
+                                          cmdnum,
+                                          boost::ref(err),
+                                          false,
+                                          boost::bind(&my_stringbuf::str, &sb),
+                                          boost::ref(output),
+                                          boost::ref(outpos),
+                                          _1,
+                                          app.automate_stdio_size));
+              {
+                // Do not use s.std::basic_ios<...>::rdbuf here, 
+                // it confuses VC8.
+                using std::basic_ios;
+                s.basic_ios<char, std::char_traits<char> >::rdbuf(&sb);
+              }
+              
+              
+              try
+                {
+                  err=0;
+                  automate_command(cmd, args, help_name, app, s);
+                }
+              catch(usage &)
+                {
+                  if(sb.str().size())
+                    s.flush();
+                  err=1;
+                  commands::explain_usage(help_name, s);
+                }
+              catch(informative_failure & f)
+                {
+                  if(sb.str().size())
+                    s.flush();
+                  err=2;
+                  //Do this instead of printing f.what directly so the output
+                  //will be split into properly-sized blocks automatically.
+                  s<<f.what();
+                }
+              if(do_flush)
+                {
+                  print_some_output(cmdnum, err, true, sb.str(),
+                                      output, outpos, -1, app.automate_stdio_size);                  
+                }
             }
-          catch(informative_failure & f)
-            {
-              if(sb.str().size())
-                s.flush();
-              err=2;
-              //Do this instead of printing f.what directly so the output
-              //will be split into properly-sized blocks automatically.
-              s<<f.what();
-            }
-            print_some_output(cmdnum, err, true, sb.str(),
-                              output, outpos, -1, app.automate_stdio_size);
         }
       cmdnum++;
     }
