@@ -133,20 +133,39 @@ std::ostream & operator<<(std::ostream & o, struct cvs_event_digest const & d)
   return o << d.digest;
 }
 
+class cvs_event;
+
+class
+cvs_event_ptr
+  : public shared_ptr< cvs_event >
+{
+public:
+
+  cvs_event_ptr(void)
+    : shared_ptr< cvs_event >()
+    { }
+
+  cvs_event_ptr(const shared_ptr< cvs_event > & p)
+    : shared_ptr< cvs_event >(p)
+    { }
+
+  bool operator < (const cvs_event_ptr & c) const;
+};
+
 class
 cvs_event
 {
 public:
   time_t time;
   cvs_path path;
-  vector< shared_ptr<struct cvs_event> > dependencies;
+  vector< cvs_event_ptr > dependencies;
 
   cvs_event(const cvs_path p, const time_t ti)
     : time(ti),
       path(p)
     { };
 
-  cvs_event(const shared_ptr<struct cvs_event> dep)
+  cvs_event(const cvs_event_ptr dep)
     : time(dep->time),
       path(dep->path)
     {
@@ -155,6 +174,17 @@ public:
 
   virtual ~cvs_event() { };
   virtual cvs_event_digest get_digest(void) const = 0;
+
+  const bool operator < (const cvs_event & e) const
+    {
+      return time < e.time;
+    }
+};
+
+bool
+cvs_event_ptr::operator < (const cvs_event_ptr & c) const
+{
+  return ((*this)->time < c->time);
 };
 
 class
@@ -190,7 +220,7 @@ cvs_event_branch
 public:
   shared_ptr<struct cvs_branch> branch;
 
-  cvs_event_branch(const shared_ptr<cvs_commit> dep, shared_ptr<struct cvs_branch> b)
+  cvs_event_branch(const cvs_event_ptr dep, shared_ptr<struct cvs_branch> b)
     : cvs_event(dep),
       branch(b)
     { };
@@ -205,7 +235,7 @@ cvs_event_tag
 public:
   cvs_tag tag;
 
-  cvs_event_tag(const shared_ptr<cvs_commit> dep, const cvs_tag t)
+  cvs_event_tag(const cvs_event_ptr dep, const cvs_tag t)
     : cvs_event(dep),
       tag(t)
     { };
@@ -216,14 +246,14 @@ public:
     };
 };
 
-typedef vector< shared_ptr< cvs_event> >::const_iterator blob_event_iter;
+typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
 
 class
 cvs_blob
 {
 private:
   cvs_event_digest digest;
-  vector<shared_ptr<cvs_event> > events;
+  vector< cvs_event_ptr > events;
 
 public:
   cvs_blob(const cvs_event_digest d)
@@ -235,7 +265,7 @@ public:
       events(b.events)
     { };
 
-  void push_back(shared_ptr<cvs_event> c)
+  void push_back(cvs_event_ptr c)
     {
       I(digest == c->get_digest());
       events.push_back(c);
@@ -314,7 +344,7 @@ cvs_branch
     return range.first;
   }
 
-  void append_event(shared_ptr<cvs_event> c) 
+  void append_event(cvs_event_ptr c) 
   {
     if (c->get_digest().is_commit())
       {
@@ -651,8 +681,8 @@ process_branch(string const & begin_version,
                database & db,
                cvs_history & cvs)
 {
-  shared_ptr<cvs_commit> curr_commit;
-  shared_ptr<cvs_commit> last_commit;
+  cvs_event_ptr curr_commit;
+  cvs_event_ptr last_commit;
   string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
@@ -698,10 +728,11 @@ process_branch(string const & begin_version,
 
           cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
 
-          curr_commit = shared_ptr<cvs_commit>(
-            new cvs_commit(cvs.curr_file_interned,
-                           commit_time, mv, rv,
-                           ac, alive));
+          curr_commit = boost::static_pointer_cast<cvs_event, cvs_commit>(
+            shared_ptr<cvs_commit>(
+              new cvs_commit(cvs.curr_file_interned,
+                             commit_time, mv, rv,
+                             ac, alive)));
 
           // add the commit to the branch
           cvs.stk.top()->append_event(curr_commit);
@@ -723,12 +754,13 @@ process_branch(string const & begin_version,
               // ignore tags on dead commits
               if (alive)
                 {
-                  shared_ptr<cvs_event_tag> event;
                   L(FL("version %s -> tag %s") % curr_version % i->second);
 
                   cvs_tag tag = cvs.tag_interner.intern(i->second);
-                  event = shared_ptr<cvs_event_tag>(
-                    new cvs_event_tag(curr_commit, tag));
+                  cvs_event_ptr event = 
+                    boost::static_pointer_cast<cvs_event, cvs_event_tag>(
+                      shared_ptr<cvs_event_tag>(
+                        new cvs_event_tag(curr_commit, tag)));
                   cvs.stk.top()->append_event(event);
 
                   // append to the last_commit deps
@@ -790,9 +822,10 @@ process_branch(string const & begin_version,
           // not a dead commit
           if (alive)
             {
-              shared_ptr<cvs_event_branch> branch_event =
-                shared_ptr<cvs_event_branch>(
-                  new cvs_event_branch(curr_commit, sub_branch));
+              cvs_event_ptr branch_event =
+                boost::static_pointer_cast<cvs_event, cvs_event_branch>(
+                  shared_ptr<cvs_event_branch>(
+                    new cvs_event_branch(curr_commit, sub_branch)));
 
               // make sure curr_commit exists in the blob
               cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
