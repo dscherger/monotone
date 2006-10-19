@@ -1,0 +1,244 @@
+commands with a capital letter do not give a response
+first command must be Root (only as first command)
+
+Interesting commands:
+ Checkin-time Gzip-stream 
+ list status history annotate 
+
+history -c -l -a -w ?
+
+rlist -e christof/mf
+[-de]
+cvs rls: Listing module: `christof/mf'
+/slantsl.mf/1.1.1.1/Mon Nov 18 14:03:17 1996//
+/steno.mf/1.1.1.1/Mon Nov 18 14:03:17 1996//
+
+rlist -l christof/mf
+cvs rls: Listing module: `christof/mf'
+---- 1996-11-18 14:03:17 +0000 1.1.1.1    slantsl.mf
+---- 1996-11-18 14:03:17 +0000 1.1.1.1    steno.mf
+
+Root /usr/local/cvsroot
+Valid-responses ok error Valid-requests Checked-in New-entry Checksum Copy-file Updated Created Update-existing Merged Patched Rcs-diff Mode Mod-time Removed Remove-entry Set-static-directory Clear-static-directory Set-sticky Clear-sticky Template Clear-template Notified Module-expansion Wrapper-rcsOption M Mbinary E F MT
+valid-requests
+UseUnchanged
+Argument -d
+Argument -P
+Argument -u
+Argument --
+Directory .
+/usr/local/cvsroot/christof/tex
+Entry /.cvsignore/1.1.1.1///
+Unchanged .cvsignore
+Entry /c....tgz/1.1//-ko/
+Unchanged c...s.tgz
+Directory a...um
+/usr/local/cvsroot/christof/tex/a...um
+Entry /te....tex/1.21///
+Modified te....tex
+u=rw,g=rw,o=r
+1762
+...
+Questionable F...nst.txt
+update
+
+
+---- how
+
+Root
+...
+rlist -Red
+...
+feststellen, welche Versionen vermutlich importiert sind und welche fehlen
+(nur timestamp)
+
+fehlende revisions/cmanifests mittels
+rlog -d 'Jun 20 09:38:29 1997<Jun 20 09:38:29 2000' christof/localsrc/indent2.c
+aufbauen [cmanifest= (path,version)*]
+
+(log optionen -b? -N -r1.7::)
+
+fehlende manifests inkrementell durch patch request besorgen 
+(evtl. bekannte Version mitnehmen)
+
+Option: letztes erkanntes manifest prüfen
+
+----- Update mit Checksum
+Directory .
+/usr/local/cvsroot/christof/tex/alptraum
+Entry /alptraum.tex/1.1///
+Unchanged alptraum.tex
+update
+
+Clear-static-directory ./
+/usr/local/cvsroot/christof/tex/alptraum/
+Clear-sticky ./
+MT text P 
+MT fname alptraum.tex
+E cvs update: Updating .
+MT text P 
+MT fname alptraum.tex
+MT newline
+Checksum 35a9f38ba4c2f329d8b840adbe41e169
+Rcs-diff ./
+/usr/local/cvsroot/christof/tex/alptraum/alptraum.tex
+/alptraum.tex/1.2///
+u=rw,g=r,o=r
+66
+a0 1
+% $Id: alptraum.tex,v 1.2 1997/03/27 08:52:56 christof Exp $
+Clear-sticky ./
+/usr/local/cvsroot/christof/tex/alptraum/
+ok
+
+
+----- syntax
+monotone pull [--branch foo] cvs://localhost/usr/local/cvsroot module[:branch]
+
+----- push
+find the last available revision
+for each unique(!) successor commit each changed file (with timestamp)
+
+---- thoughts
+changed changelogs/dates will result in ugly fork forests 
+
+we might use update with all files to check which files are dead
+ "Removed name\n"
+
+-----
+rls -lRPd scheint geeigneter zu sein:
+d--- 2005-01-08 23:57:35 +0000                 WWW
+-kb  1998-05-28 08:18:53 +0000 1.1             cpcline-1.0.tgz
+---- 1998-07-17 13:52:32 +0000 1.2        dead glademm-010-011.patch.gz
+---- 1996-11-18 14:27:15 +0000 1.1.1.1         beowulf.asc
+---- 2005-01-09 00:05:39 +0000 1.1.2.1.2+      XX
+dann cvs -d /tmp/y rls -r b3 -edR test
+/XX/1.1.2.1.2.1.2.1/Sun Jan  9 00:05:39 2005//Tb3
+ohne -d
+---- 2005-01-09 00:05:39 +0000 1.1.2.1.2+ XX
+
+------ Problems:
+what about the time zone offset when communicating with a CVS server
+
+--------------------------------------------------------
+branch update:
+
+we need to store the branch inside the CVS tag, once non-HEAD revisions occur
+we can use log -r NAME. to get the latest revision info
+we can use log -r NAME to get the radix for the branch
+
+-N -S? 
+
+-------------------- TODO ------------------------------
+correct < when calculating manifests
+faster initial db-access (multimap? without timestamp access?)
+
+tests: md5sum failure
+  merge+commit without changes
+
+enhancement: erase_ancestors will drastically reduce memory footprint
+	use interner for cvs_revisions, author and changelog
+
+tests: time jump import
+  takeover modified, cvs commit changed (conflict), pull (MD5 sum failure)
+  pull, repull, merge, commit, push
+  takeover modified, repull, merge+push (two contents for one revision)
+
+pull since future (two hours), push/commit, pull again (gives dismonotoneous
+time)
+
+binary files, execution permission
+
+-------------------------- refactor ---------------------------------
+[fdelta 597049a62d0a2e6af7df0b19f4945ec7d6458727
+	229c7f621b65f7e4970ae5aaec993812b9daa1d4]
+H4sIAAAAAAAA/0WOy0oEMRBF9/mKS2/c9LQg4t5lw+BGf6BIKtNhkpSkKop/b9II7m49OOfu
+eHp5dnvEj/SHL0aQ75qFAgcQGmcm5RXKjP3t/eP1ekWUhlTVKGeyJNXNoXU/s27AP8sf7O8D
+ZEdSSLd1JMaNKzeysY8ps4Iao4oNjM99eFdQDbMOSldDV8ZC3aSxlxpxufzJF5jANx6oyS2b
+c0uhO+OwkpezZhCvK0bf8TVrMLZUo5zi0/I4j4UqPunGA+B+AfHvKEIPAQAA
+[end]
+[fdelta <oldID> <newID>]\n<xdiff.gzip.b64enc>\n[end]
+[fdata <ID>]\n<gzip.b64enc>\n[end]
+[rdata <ID>]\n<gzip.b64enc>\n[end]
+[rcert <ID>\n <name>\n <key>\n <value>]\n<sig.b64enc>\n[end]
+
+AFAIK cvssync needs the following features:
+- register a file's data (optionally as a delta) [preparing for a future
+commit]
+put_file [base_ID.hint] contents
+put_file_delta base_ID xdiff.gz
+	consume_file_delta()
+	consume_file_data()
+
+- check in a new revision by specifying a parent and a changeset
+[preferrably without a workspace]
+put_revision ID contents
+	consume_revision_data()
+
+- issue a certificate [already there]
+cert ID CERTNAME CERTVAL
+
+read <data>
+	(packet::extract_packets)
+	packet::read_packets()
+
+db_set DOMAIN NAME VALUE
+db_get DOMAIN NAME
+
+- find the last synchronized revision [for cvssync this means: find the
+latest (either time or (preferred) ancestry) revision which either
+changes the synchronization information file ".mt-cvs_revisions" or has
+a (after commit attached) delta certificate ("cvs_revisions") *]
+find_newest_sync DOMAIN
+- request file contents [already there?]
+- request change sets [already there?]
+- request manifests (a list of files and contents)
+
+perhaps?
+- automatically and transparently handle the file/certificate mechanism
+to attach synchronization (cvs manifest=map<file,rcs revision>)
+information to monotone revisions
+[sync_attach ID DOMAIN VALUE]
+- find a root for a side branch (find the revision which matches a
+specified cvs manifest, git id, svn revision number)
+[find_sync DOMAIN VALUE]
+
+The first two functionalities would also enable advanced scripting
+functionalities within monotone (already requested IIRC).
+
+PS: this all dawned to me while I noticed that only a small subset of
+cvssync had to be changed to support rosters (done).
+   Christof
+
+*) cvssync can not change files in an already commited monotone revision
+when it pushes it into the cvs repository, so it has to certify a change
+in the synchronization information (basically a file/revision map)
+
+==============================
+old revision cert:
+cvs.manuproc.berlios.de:/cvsroot/manuproc	c++
++80a800ce1719688467120ad2e366852c99b103ad
+1.38/-ko Artikel/Artikelpreis.cc
+1.13 Artikel/Prozess_sql.pgcc
+
+repository \t module [\t branch]
+[+base_id]
+revision [/ keyexpansion] ' ' relative_path
+
+old module var:
+cvs-server-path: cvs.gnome.org:/cvs/gnome       glade--
+        /cvs/gnome/glade--/
+intl/   /cvs/gnome/gnome-common/intl/
+macros/ /cvs/gnome/gnome-common/macros/
+
+DOMAIN="cvs-server-path", NAME={repository \t module [\t branch]\n}
+VALUE={[localpath \t serverpath \n] ...}
+
+========== neues Format ==============
+repository \t module [\t branch]
+#modules
+/serverpath \t localpath
+#files
+revision [ / keyexpansion ] ' ' localpath
+
+revision kann später "(1.2)" sein (= lokal geändert)
