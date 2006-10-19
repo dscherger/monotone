@@ -271,6 +271,11 @@ public:
       events.push_back(c);
     }
 
+  vector< cvs_event_ptr > & get_events()
+    {
+      return events;
+    }
+
   blob_event_iter & begin() const
     {
       return *(new blob_event_iter(events.begin()));
@@ -1233,6 +1238,51 @@ split_blobs_at(shared_ptr<cvs_branch> const & branch,
                const Edge & e, Graph & g)
 {
   L(FL("splitting at edge: %d -> %d") % e.first % e.second);
+
+  cvs_event_digest target_blob_digest(branch->blobs[e.second].get_digest());
+
+  // we can only split commit events, not branches or tags
+  I(target_blob_digest.is_commit());
+
+  vector< cvs_event_ptr > & blob_events(branch->blobs[e.second].get_events());
+
+  // sort the blob events by timestamp
+  sort(blob_events.begin(), blob_events.end());
+
+  // now detect the largest gap between any two events
+  time_t max_diff = 0;
+  blob_event_iter max_at = blob_events.begin();
+
+  blob_event_iter i, last;
+  i = blob_events.begin();
+  last = i;
+  i++;
+  for ( ; i != blob_events.end(); ++i)
+    {
+      time_t diff = (*i)->time - (*last)->time;
+
+      if (diff > max_diff)
+        {
+          max_diff = diff;
+          max_at = i;
+        }
+
+      last = i;
+    }
+
+  L(FL("max. time difference is: %d") % max_diff);
+
+  for (i = blob_events.begin(); i != blob_events.end(); ++i)
+    {
+      if ((*i)->time < (*max_at)->time)
+        {
+          L(FL("before split: %d (time: %d)") % (*i)->path % (*i)->time);
+        }
+      else
+        {
+          L(FL("after split: %d (time: %d)") % (*i)->path % (*i)->time);
+        }
+    }
 
   // TODO
   I(false);
