@@ -321,13 +321,15 @@ cvs_branch
   {
   }
 
-  void add_blob(const cvs_event_digest d)
+  blob_index_iterator add_blob(const cvs_event_digest d)
   {
+    // add a blob..
     cvs_blob_index i = blobs.size();
     blobs.push_back(cvs_blob(d));
 
-    // add an index entry for the blob
-    blob_index.insert(make_pair(d, i));
+    // ..and an index entry for the blob
+    blob_index_iterator j = blob_index.insert(make_pair(d, i));
+    return j;
   }
 
   blob_index_iterator get_blob(const cvs_event_digest d, bool create)
@@ -336,13 +338,7 @@ cvs_branch
       blob_index.equal_range(d);
 
     if ((range.first == range.second) && create)
-      {
-        add_blob(d);
-
-        // lookup the blob
-        range = blob_index.equal_range(d);
-        I(range.first != range.second);
-      }
+      return add_blob(d);
 
     // it's a multimap, but we want only one blob per digest
     // at this time (when filling it)
