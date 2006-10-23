@@ -158,7 +158,7 @@ cvs_event
 public:
   time_t time;
   cvs_path path;
-  vector< cvs_event_ptr > dependencies;
+  set< cvs_event_ptr > dependencies;
 
   cvs_event(const cvs_path p, const time_t ti)
     : time(ti),
@@ -169,7 +169,7 @@ public:
     : time(dep->time),
       path(dep->path)
     {
-      dependencies.push_back(dep);
+      dependencies.insert(dep);
     };
 
   virtual ~cvs_event() { };
@@ -247,6 +247,7 @@ public:
 };
 
 typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
+typedef set< cvs_event_ptr >::const_iterator dependency_iter;
 
 class
 cvs_blob
@@ -746,7 +747,7 @@ process_branch(string const & begin_version,
           // make the last commit depend on the current one (which
           // comes _before_ in the CVS history).
           if (last_commit != NULL)
-            last_commit->dependencies.push_back(curr_commit);
+            last_commit->dependencies.insert(curr_commit);
         }
 
       // create tag events for all tags on this commit
@@ -770,7 +771,7 @@ process_branch(string const & begin_version,
 
                   // append to the last_commit deps
                   if (last_commit)
-                    last_commit->dependencies.push_back(event);
+                    last_commit->dependencies.insert(event);
                 }
             }
         }
@@ -844,7 +845,7 @@ process_branch(string const & begin_version,
 
               // append to the last_commit deps
               if (last_commit)
-                last_commit->dependencies.push_back(branch_event);
+                last_commit->dependencies.insert(branch_event);
             }
         }
 
@@ -1311,7 +1312,7 @@ resolve_blob_dependencies(cvs_history &cvs,
       for(blob_event_iter event = branch->blobs[i].begin();
           event != branch->blobs[i].end(); ++event)
         {
-          for(blob_event_iter dep = (*event)->dependencies.begin();
+          for(dependency_iter dep = (*event)->dependencies.begin();
               dep != (*event)->dependencies.end(); ++dep)
             {
               // we can still use get_blob here, as there is only one blob
