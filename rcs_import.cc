@@ -1231,6 +1231,29 @@ typedef boost::adjacency_list< boost::vecS, boost::vecS,
                                boost::directedS > Graph;
 
 void
+add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
+                          const cvs_blob_index i,
+                          Graph & g)
+{
+  const cvs_blob & blob = branch->blobs[i];
+
+  for(blob_event_iter event = blob.begin(); event != blob.end(); ++event)
+    {
+      for(dependency_iter dep = (*event)->dependencies.begin();
+          dep != (*event)->dependencies.end(); ++dep)
+        {
+          // we can still use get_blob here, as there is only one blob
+          // per digest
+          blob_index_iterator k =
+            branch->get_blob((*dep)->get_digest(), false);
+          L(FL("blob %d depends on blob %d") % i % k->second);
+
+          add_edge(i, k->second, g);
+        }
+    }
+}
+
+void
 split_blobs_at(shared_ptr<cvs_branch> const & branch,
                const Edge & e, Graph & g)
 {
@@ -1304,23 +1327,7 @@ resolve_blob_dependencies(cvs_history &cvs,
   // fill the graph with all blob dependencies as edges between
   // the blobs (vertices).
   for (cvs_blob_index i = 0; i < branch->blobs.size(); ++i)
-    {
-      for(blob_event_iter event = branch->blobs[i].begin();
-          event != branch->blobs[i].end(); ++event)
-        {
-          for(dependency_iter dep = (*event)->dependencies.begin();
-              dep != (*event)->dependencies.end(); ++dep)
-            {
-              // we can still use get_blob here, as there is only one blob
-              // per digest
-              blob_index_iterator k =
-                branch->get_blob((*dep)->get_digest(), false);
-              L(FL("blob %d depends on blob %d") % i % k->second);
-
-              add_edge(i, k->second, g);
-            }
-        }
-    }
+    add_blob_dependency_edges(branch, i, g);
 
   // check for cycles
   vector< Edge > back_edges;
