@@ -30,6 +30,7 @@
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
+#include <boost/graph/graph_traits.hpp>
 
 #include "app_state.hh"
 #include "cert.hh"
@@ -1159,13 +1160,13 @@ struct blob_splitter
   : public boost::dfs_visitor<>
 {
 protected:
+  shared_ptr< cvs_branch > branch;
   vector< MyEdge > & back_edges;
-  cvs_branch & branch;
 
 public:
-  blob_splitter(cvs_branch & b, vector< MyEdge > & be)
-    : back_edges(be),
-      branch(b)
+  blob_splitter(shared_ptr< cvs_branch > b, vector< MyEdge > & be)
+    : branch(b),
+      back_edges(be)
     { }
 
   template < class Edge, class Graph >
@@ -1228,7 +1229,7 @@ public:
 
 typedef pair< cvs_blob_index, cvs_blob_index > Edge;
 typedef boost::adjacency_list< boost::vecS, boost::vecS,
-                               boost::directedS > Graph;
+                               boost::bidirectionalS > Graph;
 
 void
 add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
@@ -1264,7 +1265,7 @@ split_blobs_at(shared_ptr<cvs_branch> const & branch,
   // we can only split commit events, not branches or tags
   I(target_blob_digest.is_commit());
 
-  vector< cvs_event_ptr > & blob_events(branch->blobs[e.second].get_events());
+  vector< cvs_event_ptr > blob_events(branch->blobs[e.second].get_events());
 
   // sort the blob events by timestamp
   sort(blob_events.begin(), blob_events.end());
@@ -1292,20 +1293,94 @@ split_blobs_at(shared_ptr<cvs_branch> const & branch,
 
   L(FL("max. time difference is: %d") % max_diff);
 
-  for (i = blob_events.begin(); i != blob_events.end(); ++i)
-    {
-      if ((*i)->time < (*max_at)->time)
-        {
-          L(FL("before split: %d (time: %d)") % (*i)->path % (*i)->time);
-        }
-      else
-        {
-          L(FL("after split: %d (time: %d)") % (*i)->path % (*i)->time);
-        }
-    }
+  // add a blob
+  cvs_event_digest d = branch->blobs[e.second].get_digest();
+  cvs_blob_index new_blob = branch->add_blob(d)->second;
 
-  // TODO
-  I(false);
+  // reassign all events and split into the two blobs
+  branch->blobs[e.second].get_events().clear();
+  I(!blob_events.empty());
+  I(branch->blobs[e.second].empty());
+
+  for (i = blob_events.begin(); i != blob_events.end(); ++i)
+    if ((*i)->time >= (*max_at)->time)
+      branch->blobs[new_blob].push_back(*i);
+    else
+      branch->blobs[e.second].push_back(*i);
+
+  {
+    // in edges, blobs which depend on this one blob we should split
+    pair< boost::graph_traits<Graph>::in_edge_iterator,
+          boost::graph_traits<Graph>::in_edge_iterator > range;
+
+    range = in_edges(e.second, g);
+
+    vector< cvs_blob_index > in_deps_from;
+
+    // get all blobs with dependencies to the blob which has been split
+    for (boost::graph_traits<Graph>::in_edge_iterator ity = range.first;
+         ity != range.second; ++ity)
+      {
+        L(FL("removing in edge %s") % *ity);
+        in_deps_from.push_back(ity->m_source);
+        I(ity->m_target == e.second);
+      }
+
+    // remove all those edges
+    for (vector< cvs_blob_index >::const_iterator ity = in_deps_from.begin();
+         ity != in_deps_from.end(); ++ity)
+          remove_edge(*ity, e.second, const_cast<Graph &>(g));
+
+    // now check each in_deps_from blob and add proper edges to the
+    // newly splitted blobs
+    for (vector< cvs_blob_index >::const_iterator ity = in_deps_from.begin();
+         ity != in_deps_from.end(); ++ity)
+      {
+        cvs_blob & other_blob = branch->blobs[*ity];
+
+        for (vector< cvs_event_ptr >::const_iterator j = 
+              other_blob.get_events().begin();
+              j != other_blob.get_events().end(); ++j)
+          {
+            for (dependency_iter ob_dep = (*j)->dependencies.begin();
+                 ob_dep != (*j)->dependencies.end(); ++ob_dep)
+
+              if ((*ob_dep)->get_digest() == d)
+              {
+                if ((*ob_dep)->time >= (*max_at)->time)
+                {
+                  L(FL("adding new edge %d -> %d") % *ity % new_blob);
+                  add_edge(*ity, new_blob, const_cast<Graph &>(g));
+                }
+                else
+                {
+                  L(FL("keeping edge %d -> %d") % *ity % new_blob);
+                  add_edge(*ity, e.second, const_cast<Graph &>(g));
+                }
+              }
+          }
+      }
+  }
+
+  // adjust out edges of the new blob
+  {
+    // in edges, blobs which depend on this one blob which we are splitting
+    pair< boost::graph_traits<Graph>::out_edge_iterator,
+          boost::graph_traits<Graph>::out_edge_iterator > range;
+
+    range = out_edges(e.second, g);
+
+    // remove all existing out edges
+    for (boost::graph_traits<Graph>::out_edge_iterator ity = range.first;
+         ity != range.second; ++ity)
+      {
+        L(FL("removing out edge %s") % *ity);
+        remove_edge(ity->m_source, ity->m_target, const_cast<Graph &>(g));
+      }
+
+    add_blob_dependency_edges(branch, e.second, const_cast<Graph &>(g));
+    add_blob_dependency_edges(branch, new_blob, const_cast<Graph &>(g));
+  }
 }
 
 //
@@ -1331,14 +1406,17 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // check for cycles
   vector< Edge > back_edges;
-	blob_splitter< Edge > vis(*branch, back_edges);
+	blob_splitter< Edge > vis(branch, back_edges);
 
   do
   {
+    back_edges.clear();
   	depth_first_search(g, visitor(vis));
-    for (vector< Edge >::const_iterator i = back_edges.begin();
-         i != back_edges.end(); ++i)
-            split_blobs_at(branch, *i, g);
+
+    // Just split the first blob which had a back edge
+    if (back_edges.begin() != back_edges.end())
+        split_blobs_at(branch, *back_edges.begin(), g);
+
   } while (!back_edges.empty());
 
   // start the topological sort, which calls our revision
