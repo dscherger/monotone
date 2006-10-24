@@ -1650,21 +1650,30 @@ void cvs_repository::takeover()
   // commit them all
   commit_cvs2mtn(edges.begin());
   // create a MT directory 
-  // mtn setup . -d X -b X
-  // write into _MTN/revision
-/* format_version "1"
-
-new_manifest []
-
-old_revision [X]
-*/
-//@@  app.create_workspace(system_path("."));
-  
+  // mtn setup .
+  { std::vector<std::string> args;
+    args.push_back(app.mtn_binary());
+    for (std::vector<utf8>::const_iterator i=app.mtn_options.begin();i!=app.mtn_options.end();++i)
+      args.push_back((*i)());
+    if (args[0].empty()) args[0]="mtn";
+    args.push_back("setup");
+    args.push_back(".");
+    I(args.size()<30);
+    const char *argv[30];
+    unsigned i=0;
+    for (;i<30;++i) argv[i]=args[i].c_str();
+    argv[i]=0;
+    process_spawn(argv);
+  }
+  { ofstream of("_MTN/revision");
+    of << "format_version \"1\"\n\n"
+      "new_manifest []\n\n"
+      "old_revision [" << (--edges.end())->revision() << "]\n";
+  }
 // like in commit ?
 //  update_any_attrs(app);
 //  put_revision_id((--edges.end())->revision);
 //  maybe_update_inodeprints(app);
-
 //  store_modules();
 }
 
