@@ -141,9 +141,11 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
   cvs_sync::takeover(myapp, module);
 }
 
+#include <package_revision.h>
+
 void
 get_full_version(std::string & out)
-{ out="mtn_cvs version 0.1";
+{ out="mtn_cvs version 0.1 ("+std::string(package_revision_constant)+")";
 }
 
 namespace po = boost::program_options;
@@ -418,6 +420,13 @@ cpp_main(int argc, char ** argv)
       if (option::revision.given(vm))
       { L(FL("revision %s") % option::revision.get(vm));
         app.revisions.push_back(revision_id(option::revision.get(vm)));
+      }
+      
+      if (option::version.given(vm))
+      { std::string version;
+        get_full_version(version);
+        std::cout << version << '\n'; 
+        return 0;
       }
 
       if (option::help.given(vm)) requested_help = true;
