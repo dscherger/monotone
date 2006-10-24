@@ -136,8 +136,8 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
   if (args.size() > 1) throw usage(name);
   std::string module;
   if (args.size() == 1) module = idx(args, 0)();
-  N(!app.branch_name().empty(), F("no destination branch specified\n"));
   mtncvs_state &myapp=mtncvs_state::upcast(app);
+  N(!myapp.branch().empty(), F("no destination branch specified\n"));
   cvs_sync::takeover(myapp, module);
 }
 

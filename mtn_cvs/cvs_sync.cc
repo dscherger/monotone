@@ -588,6 +588,7 @@ static file_id get_sync_id(mtncvs_state &app, revision_id id)
 
 file_id cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest)
 { std::string state=create_sync_state(e);
+  if (state.empty()) return file_id(); // locally changed CVS tree state
   std::string syncname=".mtn-sync-"+app.domain();
   mtn_automate::manifest_map::const_iterator it=oldmanifest.find(file_path_internal(syncname));
   file_id fid;
@@ -616,12 +617,15 @@ std::string cvs_repository::create_sync_state(cvs_edge const& e)
   state+="#files\n";
   
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
-  { I(!i->second->cvs_version.empty());
-#if 0  
+  { 
+#if 1
+    if (i->second->cvs_version.empty())
     { W(F("blocking attempt to certify an empty CVS revision\n"
         "(this is normal for a cvs_takeover of a locally modified tree)\n"));
-      return;
+      return std::string();
     }
+#else
+    I(!i->second->cvs_version.empty());
 #endif
     state+=i->second->cvs_version;
     if (!i->second->keyword_substitution.empty())
@@ -1615,7 +1619,8 @@ void cvs_repository::takeover_dir(const std::string &path)
 }
 
 void cvs_repository::takeover()
-{ takeover_dir("");
+{ app.open();
+  takeover_dir("");
   
   bool need_second=false;
   cvs_edge e1,e2;
@@ -1649,7 +1654,9 @@ void cvs_repository::takeover()
   }
   // commit them all
   commit_cvs2mtn(edges.begin());
-  // create a MT directory 
+  
+  app.close();
+  // now we initialize the workspace
   // mtn setup .
   { std::vector<std::string> args;
     args.push_back(app.mtn_binary());
