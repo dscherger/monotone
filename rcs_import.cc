@@ -159,7 +159,7 @@ cvs_event
 public:
   time_t time;
   cvs_path path;
-  set< cvs_event_ptr > dependencies;
+  vector< cvs_event_ptr > dependencies;
 
   cvs_event(const cvs_path p, const time_t ti)
     : time(ti),
@@ -170,7 +170,7 @@ public:
     : time(dep->time),
       path(dep->path)
     {
-      dependencies.insert(dep);
+      dependencies.push_back(dep);
     };
 
   virtual ~cvs_event() { };
@@ -248,7 +248,7 @@ public:
 };
 
 typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
-typedef set< cvs_event_ptr >::const_iterator dependency_iter;
+typedef vector< cvs_event_ptr >::const_iterator dependency_iter;
 
 class
 cvs_blob
@@ -744,7 +744,7 @@ process_branch(string const & begin_version,
           // make the last commit depend on the current one (which
           // comes _before_ in the CVS history).
           if (last_commit != NULL)
-            last_commit->dependencies.insert(curr_commit);
+            last_commit->dependencies.push_back(curr_commit);
         }
 
       // create tag events for all tags on this commit
@@ -767,8 +767,8 @@ process_branch(string const & begin_version,
                   cvs.stk.top()->append_event(event);
 
                   // append to the last_commit deps
-                  if (last_commit)
-                    last_commit->dependencies.insert(event);
+                  if (last_commit != NULL)
+                    last_commit->dependencies.push_back(event);
                 }
             }
         }
@@ -815,7 +815,7 @@ process_branch(string const & begin_version,
           process_branch(*i, branch_lines, branch_data,
                          branch_id, r, db, cvs);
 
-          shared_ptr<struct cvs_branch> sub_branch = cvs.stk.top();
+          shared_ptr<struct cvs_branch> sub_branch(cvs.stk.top());
 
           cvs.pop_branch();
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
@@ -841,8 +841,8 @@ process_branch(string const & begin_version,
                 % branch);
 
               // append to the last_commit deps
-              if (last_commit)
-                last_commit->dependencies.insert(branch_event);
+              if (last_commit != NULL)
+                last_commit->dependencies.push_back(branch_event);
             }
         }
 
@@ -1245,6 +1245,7 @@ add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
         {
           // we can still use get_blob here, as there is only one blob
           // per digest
+          // FIXME: this is wrong, since we are called from split_blobs_at...
           blob_index_iterator k =
             branch->get_blob((*dep)->get_digest(), false);
           L(FL("blob %d depends on blob %d") % i % k->second);
