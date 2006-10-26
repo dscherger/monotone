@@ -1248,9 +1248,24 @@ add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
           // FIXME: this is wrong, since we are called from split_blobs_at...
           blob_index_iterator k =
             branch->get_blob((*dep)->get_digest(), false);
-          L(FL("blob %d depends on blob %d") % i % k->second);
 
-          add_edge(i, k->second, g);
+          for ( ; (branch->blobs[k->second].get_digest() == (*dep)->get_digest()); ++k)
+            {
+              bool found = false;
+
+              for (dependency_iter di = branch->blobs[k->second].get_events().begin();
+                   di != branch->blobs[k->second].get_events().end(); ++ di)
+                {
+                  if (*di == *dep)
+                    found = true;
+                }
+
+              if (found)
+                {
+                  L(FL("blob %d depends on blob %d") % i % k->second);
+                  add_edge(i, k->second, g);
+                }
+            }
         }
     }
 }
