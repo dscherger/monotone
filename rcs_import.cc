@@ -394,12 +394,6 @@ cvs_history
   stack< shared_ptr<cvs_branch> > stk;
   stack< cvs_branchname > bstk;
 
-  // tag -> time, revision
-  //
-  // used to resolve the *last* revision which has a given tag
-  // applied; this is the revision which wins the tag.
-  map<unsigned long, pair<time_t, revision_id> > resolved_tags;
-
   file_path curr_file;
   cvs_path curr_file_interned;
 
@@ -1619,27 +1613,6 @@ void
 cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
 {
   packet_db_writer dbw(app);
-
-  for (vector<cvs_tag>::const_iterator i = p.tags.begin();
-       i != p.tags.end(); ++i)
-    {
-      map<unsigned long, pair<time_t, revision_id> >::const_iterator j
-        = cvs.resolved_tags.find(*i);
-
-      if (j != cvs.resolved_tags.end())
-        {
-          if (j->second.first < p.time)
-            {
-              // move the tag forwards
-              cvs.resolved_tags.erase(*i);
-              cvs.resolved_tags.insert(make_pair(*i, make_pair(p.time, p.rid)));
-            }
-        }
-      else
-        {
-          cvs.resolved_tags.insert(make_pair(*i, make_pair(p.time, p.rid)));
-        }
-    }
 
   string ac_str = cvs.authorclog_interner.lookup(p.authorclog);
   int i = ac_str.find("|||\n");
