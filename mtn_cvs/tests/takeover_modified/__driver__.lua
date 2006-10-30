@@ -42,4 +42,4 @@ check(mtn("automate", "get_file", tsha2), 0, false)
 os.execute("mv test test.old")
 
 check(cvs("co", "test"), 0, false, false)
-check(sha1("test/B") == tsha1)
+check(sha1("test/B") == tsha2)

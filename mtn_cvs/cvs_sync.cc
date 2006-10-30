@@ -857,6 +857,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { commit_arg a;
       a.file=file_path(*i).as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
+      if (a.file==".mtn-sync-"+app.domain()) continue;
       I(old!=parent_manifest.end());
       a.removed=true;
       a.old_revision=old->second->cvs_version;
@@ -899,6 +900,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { 
       commit_arg a;
       a.file=file_path(i->first).as_internal();
+      if (a.file==".mtn-sync-"+app.domain()) continue;
       a.new_content=app.get_file(i->second);
       commits.push_back(a);
       L(FL("add %s %d\n") % a.file % a.new_content.size());
@@ -910,6 +912,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { 
       commit_arg a;
       a.file=file_path(i->first).as_internal();
+      if (a.file==".mtn-sync-"+app.domain()) continue;
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.old_revision=old->second->cvs_version;
@@ -1660,15 +1663,17 @@ void cvs_repository::takeover()
   // mtn setup .
   { std::vector<std::string> args;
     args.push_back(app.mtn_binary());
+    if (args[0].empty()) args[0]="mtn";
     for (std::vector<utf8>::const_iterator i=app.mtn_options.begin();i!=app.mtn_options.end();++i)
       args.push_back((*i)());
-    if (args[0].empty()) args[0]="mtn";
+    args.push_back("--branch");
+    args.push_back(app.branch());
     args.push_back("setup");
     args.push_back(".");
     I(args.size()<30);
     const char *argv[30];
     unsigned i=0;
-    for (;i<30;++i) argv[i]=args[i].c_str();
+    for (;i<30 && i<args.size();++i) argv[i]=args[i].c_str();
     argv[i]=0;
     process_spawn(argv);
   }
