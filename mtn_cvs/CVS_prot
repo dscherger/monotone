@@ -234,7 +234,7 @@ macros/ /cvs/gnome/gnome-common/macros/
 DOMAIN="cvs-server-path", NAME={repository \t module [\t branch]\n}
 VALUE={[localpath \t serverpath \n] ...}
 
-========== neues Format ==============
+========== new Format ==============
 repository \t module [\t branch]
 #modules
 /serverpath \t localpath
@@ -242,3 +242,15 @@ repository \t module [\t branch]
 revision [ / keyexpansion ] ' ' localpath
 
 revision kann später "(1.2)" sein (= lokal geändert)
+
+=========== attributes ==============
+"" "cvs:root" "cvs.gnome.org:/cvs/gnome" (Root)
+"" "cvs:module" "glade--" (?Repository)
+["" "cvs:path" "glade--" (only if different from module)]
+"" "cvs:branch" "STABLE" (tag)
+
+["po" "cvs:path" "glade--/po"]
+
+"README" "cvs:revision" "1.15"
+["README" "cvs:keywords" "-kb" (only if different from -kk)]
+
