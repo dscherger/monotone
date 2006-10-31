@@ -1237,13 +1237,12 @@ add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
       for(dependency_iter dep = (*event)->dependencies.begin();
           dep != (*event)->dependencies.end(); ++dep)
         {
-          // we can still use get_blob here, as there is only one blob
-          // per digest
-          // FIXME: this is wrong, since we are called from split_blobs_at...
           blob_index_iterator k =
             branch->get_blob((*dep)->get_digest(), false);
 
-          for ( ; (branch->blobs[k->second].get_digest() == (*dep)->get_digest()); ++k)
+          for ( ; (k->second < branch->blobs.size()) &&
+                  (branch->blobs[k->second].get_digest() == 
+                                    (*dep)->get_digest()); ++k)
             {
               bool found = false;
 
