@@ -369,8 +369,7 @@ cvs_event_branch::get_digest(void) const
 struct
 cvs_history
 {
-
-  interner<unsigned long> branch_interner;
+  interner<unsigned long> branchname_interner;
   interner<unsigned long> authorclog_interner;
   interner<unsigned long> mtn_version_interner;
   interner<unsigned long> rcs_version_interner;
@@ -378,16 +377,12 @@ cvs_history
   interner<unsigned long> tag_interner;
 
   // assume admin has foo:X.Y.0.N in it, then
-  // this multimap contains entries of the form
-  // X.Y   -> foo
-  multimap<string, string> branchpoints;
-
-  // and this map contains entries of the form
+  // this map contains entries of the form
   // X.Y.N.1 -> foo
   map<string, string> branch_first_entries;
 
   // branch name -> branch
-  map<string, shared_ptr<cvs_branch> > branches;
+  map<cvs_branchname, shared_ptr<cvs_branch> > branches;
   shared_ptr<cvs_branch> trunk;
 
   // stack of branches we're injecting states into
@@ -960,7 +955,6 @@ cvs_history::set_filename(string const & file,
 
 void cvs_history::index_branchpoint_symbols(rcs_file const & r)
 {
-  branchpoints.clear();
   branch_first_entries.clear();
 
   for (multimap<string, string>::const_iterator i =
@@ -1021,9 +1015,6 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
 
       string branchpoint_version;
       join_version(branchpoint_components, branchpoint_version);
-
-      L(FL("file branchpoint for %s at %s\n") % sym % branchpoint_version);
-      branchpoints.insert(make_pair(branchpoint_version, sym));
     }
 }
 
@@ -1039,7 +1030,7 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
 
   if (private_branch)
     {
-      cvs_branchname bn = branch_interner.intern("");
+      cvs_branchname bn = branchname_interner.intern("");
       branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
       stk.push(branch);
       bstk.push(bn);
@@ -1047,14 +1038,14 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
     }
   else
     {
-      map<string, shared_ptr<cvs_branch> >::const_iterator b = branches.find(bname);
+      cvs_branchname bn = branchname_interner.intern(bname);
 
-      cvs_branchname bn = branch_interner.intern(bname);
+      map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator b = branches.find(bn);
 
       if (b == branches.end())
         {
           branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
-          branches.insert(make_pair(bname, branch));
+          branches.insert(make_pair(bn, branch));
           ++n_tree_branches;
         }
       else
@@ -1464,7 +1455,7 @@ import_cvs_repo(system_path const & cvsroot,
   cvs.base_branch = app.branch_name();
 
   // push the trunk
-  cvs_branchname bn = cvs.branch_interner.intern(cvs.base_branch);
+  cvs_branchname bn = cvs.branchname_interner.intern(cvs.base_branch);
   cvs.trunk = shared_ptr<cvs_branch>(new cvs_branch(bn));
   cvs.stk.push(cvs.trunk);
   cvs.bstk.push(bn);
@@ -1491,11 +1482,11 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
-  for(map<string, shared_ptr<cvs_branch> >::const_iterator i = cvs.branches.begin();
-          i != cvs.branches.end(); ++i)
+  for(map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator i =
+          cvs.branches.begin(); i != cvs.branches.end(); ++i)
     {
       transaction_guard guard(app.db);
-      string branchname = i->first;
+      string branchname = cvs.branchname_interner.lookup(i->first);
       shared_ptr<cvs_branch> branch = i->second;
       resolve_blob_dependencies(cvs, app, branchname, branch, n_revs);
       guard.commit();
@@ -1740,7 +1731,7 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
       dump(child_rid, child_rid_str);
 
       L(FL("setting the parent revision id of branch %s to: %s") % 
-        cvs.branch_interner.lookup(cbe->branch->branchname) % child_rid_str);
+        cvs.branchname_interner.lookup(cbe->branch->branchname) % child_rid_str);
 
       cbe->branch->parent_rid = child_rid;
     }
