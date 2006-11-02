@@ -94,7 +94,7 @@ database::~database() {}
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("(re-)import a module from a remote cvs repository"), 
-    option::branch_name % option::since % option::full)
+    options::opts::branch | options::opts::since | options::opts::full)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 
@@ -114,7 +114,7 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
 
 CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("commit changes in local database to a remote cvs repository"), 
-    option::branch_name % option::revision)
+    options::opts::branch | options::opts::revision)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 
@@ -131,7 +131,7 @@ CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
 
 CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
       N_("put a CVS working directory under monotone's control"), 
-      option::branch_name)
+      options::opts::branch)
 {
   if (args.size() > 1) throw usage(name);
   std::string module;
@@ -148,7 +148,7 @@ get_full_version(std::string & out)
 { out="mtn_cvs version 0.1 ("+std::string(package_revision_constant)+")";
 }
 
-namespace po = boost::program_options;
+//namespace po = boost::program_options;
 using std::cout;
 using std::endl;
 using std::string;
@@ -321,6 +321,7 @@ cpp_main(int argc, char ** argv)
   utf8 prog_name(prog_path);
 
   mtncvs_state app;
+#if 0
   try
     {
 
@@ -412,9 +413,9 @@ cpp_main(int argc, char ** argv)
             
       if (option::since.given(vm)) app.since=string(option::since.get(vm));
 
-      if (option::branch_name.given(vm))
-      { L(FL("branch %s") % option::branch_name.get(vm));
-        app.branch=option::branch_name.get(vm);
+      if (option::branch.given(vm))
+      { L(FL("branch %s") % option::branch.get(vm));
+        app.branch=option::branch.get(vm);
       }
 
       if (option::revision.given(vm))
@@ -522,6 +523,7 @@ cpp_main(int argc, char ** argv)
         return 2;
 
     }
+#endif
   }
   catch (informative_failure & inf)
     {

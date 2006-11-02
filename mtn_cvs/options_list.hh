@@ -8,11 +8,39 @@
 
 OPTSET(globals)
 
+OPTVAR(globals, std::vector<utf8>, args, )
 
-COPT(branch_name, "branch,b", string, N_("select branch cert for operation"));
+OPTVAR(branch, utf8, branch_name, )
+OPTION(branch, branch, true, "branch,b", N_("select branch cert for operation"))
+#ifdef option_bodies
+{
+  branch_name = utf8(arg);
+}
+#endif
+
+OPT(since, "since", bool, false, N_("set history start for CVS pull"))
+#ifdef option_bodies
+{
+  since = true;
+}
+#endif
+
+OPT(full, "full", bool, false, N_("ignore already pulled CVS revisions"))
+#ifdef option_bodies
+{
+  full = true;
+}
+#endif
+
+OPT(revision, "revision,r", std::string, "", N_("select revision id for operation"))
+#ifdef option_bodies
+{
+  // revision = true;
+}
+#endif
+
+#if 0
 COPT(revision, "revision,r", string, N_("select revision id for operation"));
-COPT(since, "since", string, N_("set history start for CVS pull"));
-COPT(full, "full", string, N_("ignore already pulled CVS revisions"));
 
 GOPT(debug, "debug", nil, N_("print debug log to stderr while running"));
 GOPT(help, "help,h", nil, N_("display help message"));
@@ -28,3 +56,4 @@ GOPT(key, "key,k", string, N_("passed: key"));
 GOPT(norc, "norc", nil, N_("passed: norc"));
 GOPT(root, "root", string, N_("passed: root"));
 GOPT(confdir, "confdir", string, N_("passed: confdir"));
+#endif
