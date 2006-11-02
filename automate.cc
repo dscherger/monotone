@@ -1625,7 +1625,7 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
 //   The ID of the new file (40 digit hex string)
 // Error conditions:
 //   a runtime exception is thrown if base revision is not available
-AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
+AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
 { 
   hexenc<id> sha1sum;
   transaction_guard tr(app.db);
@@ -1678,7 +1678,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"))
 //   The ID of the new revision
 // Error conditions:
 //   none
-AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"))
+AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"), options::opts::none)
 { 
   if (args.size() != 1)
     throw usage(name);
@@ -1734,7 +1734,7 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"))
 //   nothing
 // Error conditions:
 //   none
-AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
+AUTOMATE(cert, N_("REVISION-ID NAME VALUE"), options::opts::none)
 {
   if (args.size() != 3)
     throw usage(name);
@@ -1759,7 +1759,7 @@ AUTOMATE(cert, N_("REVISION-ID NAME VALUE"))
 //   nothing
 // Error conditions:
 //   none
-AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
+AUTOMATE(db_set, N_("DOMAIN NAME VALUE"), options::opts::none)
 {
   if (args.size() != 3)
     throw usage(name);
@@ -1781,7 +1781,7 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"))
 //   variable value
 // Error conditions:
 //   a runtime exception is thrown if the variable is not set
-AUTOMATE(db_get, N_("DOMAIN NAME"))
+AUTOMATE(db_get, N_("DOMAIN NAME"), options::opts::none)
 {
   if (args.size() != 2)
     throw usage(name);
@@ -1832,7 +1832,7 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
 // Error conditions:
 //   a runtime exception is thrown if no synchronized revisions are found 
 //   in this domain
-AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
+AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"), options::opts::none)
 { /* if workspace exists use it to determine branch (and starting revision?)
      traverse tree upwards to find a synced revision, 
      then traverse tree downwards to find newest revision 
@@ -1950,7 +1950,7 @@ static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string c
 //   sync-data
 // Error conditions:
 //   a runtime exception is thrown if the data is unavailable
-AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
+AUTOMATE(get_sync_info, N_("REVISION DOMAIN"), options::opts::none)
 { 
   if (args.size() != 2)
     throw usage(name);
@@ -1971,7 +1971,7 @@ AUTOMATE(get_sync_info, N_("REVISION DOMAIN"))
 //   none
 // Error conditions:
 //   a runtime exception is thrown if anything goes wrong
-AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
+AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"), options::opts::none)
 { 
   if (args.size() != 3)
     throw usage(name);
