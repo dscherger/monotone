@@ -249,11 +249,11 @@ getopt(map<string, concrete_option> const & by_name, string const & name)
   if (i != by_name.end())
     return i->second;
   else
-    throw option::unknown_option(name);
+    throw unknown_option(name);
 }
 
-void concrete_option_set::from_command_line(std::vector<std::string> & args,
-                                            bool allow_xargs)
+static map<string, concrete_option>
+get_by_name(std::set<concrete_option> const & options)
 {
   map<string, concrete_option> by_name;
   for (std::set<concrete_option>::const_iterator i = options.begin();
@@ -264,6 +264,13 @@ void concrete_option_set::from_command_line(std::vector<std::string> & args,
       if (!i->shortname.empty())
         by_name.insert(make_pair(i->shortname, *i));
     }
+  return by_name;
+}
+
+void concrete_option_set::from_command_line(std::vector<std::string> & args,
+                                            bool allow_xargs)
+{
+  map<string, concrete_option> by_name = get_by_name(options);
 
   bool seen_dashdash = false;
   for (unsigned int i = 0; i < args.size(); ++i)
@@ -374,6 +381,37 @@ void concrete_option_set::from_command_line(std::vector<std::string> & args,
     }
 }
 
+void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > const & keyvals)
+{
+  map<string, concrete_option> by_name = get_by_name(options);
+
+  for (vector<pair<string, string> >::const_iterator i = keyvals.begin();
+       i != keyvals.end(); ++i)
+    {
+      string const & key(i->first);
+      string const & value(i->second);
+
+      concrete_option o = getopt(by_name, key);
+
+      try
+        {
+          if (o.setter)
+            o.setter(value);
+        }
+      catch (boost::bad_lexical_cast)
+        {
+          throw bad_arg(o.longname, value);
+        }
+      catch (bad_arg_internal & e)
+        {
+          if (e.reason == "")
+            throw bad_arg(o.longname, value);
+          else
+            throw bad_arg(o.longname, value, e.reason);
+        }
+    }
+}
+
 static vector<string> wordwrap(string str, unsigned int width)
 {
   vector<string> out;
@@ -397,7 +435,7 @@ static vector<string> wordwrap(string str, unsigned int width)
 
 // Get the non-description part of the usage string,
 // looks like "--long [ -s ] <arg>".
-static string usagestr(option::concrete_option const & opt)
+static string usagestr(concrete_option const & opt)
 {
   string out;
   if (opt.longname == "--")

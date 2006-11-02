@@ -13,8 +13,11 @@
 
 #include "cmd.hh"
 
+using std::istream;
+using std::make_pair;
 using std::map;
 using std::ostream;
+using std::pair;
 using std::string;
 using std::vector;
 
@@ -23,8 +26,9 @@ namespace automation {
   // guarantees about initialization order. So, use something we can
   // initialize ourselves.
   static map<string, automate * const> * automations;
-  automate::automate(string const &n, string const &p)
-   : name(n), params(p)
+  automate::automate(string const &n, string const &p,
+                     options::options_type const & o)
+    : name(n), params(p), options(o)
   {
     static bool first(true);
     if (first)
@@ -37,21 +41,27 @@ namespace automation {
   automate::~automate() {}
 }
 
+automation::automate &
+find_automation(utf8 const & name, string const & root_cmd_name)
+{
+  map<string, automation::automate * const>::const_iterator
+    i = automation::automations->find(name());
+  if (i == automation::automations->end())
+    throw usage(root_cmd_name);
+  else
+    return *(i->second);
+}
+
 void
 automate_command(utf8 cmd, vector<utf8> args,
                  string const & root_cmd_name,
                  app_state & app,
                  ostream & output)
 {
-  map<string, automation::automate * const>::const_iterator
-    i = automation::automations->find(cmd());
-  if (i == automation::automations->end())
-    throw usage(root_cmd_name);
-  else
-    i->second->run(args, root_cmd_name, app, output);
+  find_automation(cmd, root_cmd_name).run(args, root_cmd_name, app, output);
 }
 
-static string const interface_version = "3.1";
+static string const interface_version = "4.0";
 
 // Name: interface_version
 // Arguments: none
@@ -62,7 +72,7 @@ static string const interface_version = "3.1";
 // Output format: "<decimal number>.<decimal number>\n".  Always matches
 //   "[0-9]+\.[0-9]+\n".
 // Error conditions: None.
-AUTOMATE(interface_version, "")
+AUTOMATE(interface_version, "", options::opts::none)
 {
   if (args.size() != 0)
     throw usage(help_name);
@@ -113,8 +123,8 @@ AUTOMATE(interface_version, "")
 
 class automate_reader
 {
-  std::istream & in;
-  enum location {cmd, none, eof};
+  istream & in;
+  enum location {opt, cmd, none, eof};
   location loc;
   bool get_string(std::string & out)
   {
@@ -163,12 +173,13 @@ class automate_reader
   {
     if (loc == eof)
       return;
-    std::string starters("l");
-    std::string foo;
+    string starters("ol");
+    string whitespace(" \r\n\t");
+    string foo;
     while (loc != none)
       get_string(foo);
     char c('e');
-    while (starters.find(c) == std::string::npos)
+    do
       {
         if (read(&c, 1, true) == 0)
           {
@@ -176,21 +187,33 @@ class automate_reader
             return;
           }
       }
+    while (whitespace.find(c) != std::string::npos);
     switch (c)
       {
+      case 'o': loc = opt; break;
       case 'l': loc = cmd; break;
+      default: E(false, F("Bad input to automate stdio"));
       }
   }
 public:
-  automate_reader(std::istream & is) : in(is), loc(none)
+  automate_reader(istream & is) : in(is), loc(none)
   {}
-  bool get_command(std::vector<std::string> & cmdline)
+  bool get_command(vector<pair<string, string> > & params,
+                   vector<string> & cmdline)
   {
+    params.clear();
     cmdline.clear();
-    while (loc == none)
+    if (loc == none)
       go_to_next_item();
     if (loc == eof)
       return false;
+    else if (loc == opt)
+      {
+        string key, val;
+        while(get_string(key) && get_string(val))
+          params.push_back(make_pair(key, val));
+        go_to_next_item();
+      }
     E(loc == cmd, F("Bad input to automate stdio"));
     string item;
     while (get_string(item))
@@ -282,7 +305,8 @@ struct automate_ostream : public std::ostream
   automate_streambuf _M_autobuf;
   
   automate_ostream(std::ostream &out, size_t blocksize)
-    : _M_autobuf(out, blocksize)
+    : std::ostream(NULL),
+      _M_autobuf(out, blocksize)
   { this->init(&_M_autobuf); }
   
   ~automate_ostream()
@@ -300,14 +324,15 @@ struct automate_ostream : public std::ostream
 };
 
 
-AUTOMATE(stdio, "")
+AUTOMATE(stdio, "", options::opts::automate_stdio_size)
 {
   if (args.size() != 0)
     throw usage(help_name);
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
+  vector<pair<string, string> > params;
   vector<string> cmdline;
-  while(ar.get_command(cmdline))//while(!EOF)
+  while(ar.get_command(params, cmdline))//while(!EOF)
     {
       utf8 cmd;
       vector<utf8> args;
@@ -320,12 +345,10 @@ AUTOMATE(stdio, "")
         }
       try
         {
+          options::options_type opts = options::opts::globals();
+          opts = opts | find_automation(cmd, help_name).options;
+          opts.instantiate(&app.opts).from_key_value_pairs(params);
           automate_command(cmd, args, help_name, app, os);
-        }
-      catch(usage &)
-        {
-          os.set_err(1);
-          commands::explain_usage(help_name, os);
         }
       catch(informative_failure & f)
         {
@@ -339,9 +362,9 @@ AUTOMATE(stdio, "")
 }
 
 
-CMD_PARAMS_FN(automate, N_("automation"),
-              N_("automation interface"),
-    options::opts::automate_stdio_size)
+CMD_WITH_SUBCMDS(automate, N_("automation"),
+                 N_("automation interface"),
+                 options::opts::none)
 {
   if (args.size() == 0)
     throw usage(name);
@@ -368,6 +391,14 @@ std::string commands::cmd_automate::params()
         out += "\n";
     }
   return out;
+}
+
+options::options_type
+commands::cmd_automate::get_options(vector<utf8> const & args)
+{
+  if (args.size() < 2)
+    return options::options_type();
+  return find_automation(idx(args,1), idx(args,0)()).options;
 }
 
 
