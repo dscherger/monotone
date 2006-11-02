@@ -1794,26 +1794,28 @@ AUTOMATE(db_get, N_("DOMAIN NAME"))
 }
 
 // needed by find_newest_sync: check whether a revision has up to date synch information
-static const char *const sync_prefix="mtn-sync-";
+static const char *const sync_postfix="sync-info";
+typedef std::map<std::pair<split_path, attr_key>, attr_value> sync_map_t;
 
 static bool is_synchronized(app_state &app, revision_id const& rid, 
                       revision_t const& rev, std::string const& domain)
 {
-  // merge nodes should never have an up to date sync file
+  std::string prefix=domain+":";
+  // merge nodes should never have up to date sync attributes
   if (rev.edges.size()==1)
   {
     L(FL("is_synch: rev %s testing changeset\n") % rid);
-    split_path path;
-    file_path_internal(string(".")+sync_prefix+domain).split(path);
     cset cs=edge_changes(rev.edges.begin());
-    if (cs.files_added.find(path)!=cs.files_added.end() ||
-        cs.deltas_applied.find(path)!=cs.deltas_applied.end())
-      return true;
+    for (sync_map_t::const_iterator i=cs.attrs_set.begin();
+          i!=cs.attrs_set.end();++i)
+    { if (i->first.second().substr(0,prefix.size())==prefix)
+        return true;
+    }
   }
   
-  // look into certificates
+  // look for a certificate
   std::vector< revision<cert> > certs;
-  app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
+  app.db.get_revision_certs(rid,cert_name(prefix+sync_postfix),certs);
   return !certs.empty();
 }
 
@@ -1823,8 +1825,8 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
 //   branch (optional)
 // Added in: 3.2
 // Purpose:
-//   Get the newest revision which has sync certificates 
-//   (or a changed sync file)
+//   Get the newest revision which has a sync certificate
+//   (or changed sync attributes)
 // Output format:
 //   revision ID
 // Error conditions:
@@ -1839,7 +1841,7 @@ AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"))
        but might not appropriate for different RCSs)
    */
 
-  string branch=app.branch_name();  
+  string branch=app.opts.branch_name();  
   if (args.size() == 2)
     branch=idx(args,1)();
   else if (args.size() != 1)
@@ -1886,10 +1888,11 @@ continue_outer:
   output << rid;
 }
 
-static std::string get_sync_info(app_state &app, revision_id const& rid, string const& domain)
+#if 0
+static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string const& domain)
 {
-  /* sync information is initially coded in a file called .mtn-sync-DOMAIN
-     if this file is old then information gets 
+  /* sync information is initially coded in DOMAIN: prefixed attributes
+     if no attribute was changed then information gets 
      (base_revision_id+xdiff).gz encoded in certificates
      
      SPECIAL CASE of no parent: certificate is (40*' '+plain_data).gz encoded
@@ -2008,6 +2011,7 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"))
   dbw.consume_revision_cert(rc);
   L(FL("sync info attached to %s") % rid);
 }
+#endif
 
 // Local Variables:
 // mode: C++
