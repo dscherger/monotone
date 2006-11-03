@@ -143,6 +143,27 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
 
 #include <package_revision.h>
 
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::ostringstream;
+using std::string;
+
+void
+get_version(string & out)
+{
+  out = (F("%s (base revision: %s)")
+         % PACKAGE_STRING % string(package_revision_constant)).str();
+}
+
+void
+print_version()
+{
+  string s;
+  get_version(s);
+  cout << s << endl;
+}
+
 void
 get_full_version(std::string & out)
 { out="mtn_cvs version 0.1 ("+std::string(package_revision_constant)+")";
@@ -160,6 +181,7 @@ using std::vector;
 using std::ios_base;
 using boost::shared_ptr;
 
+#if 0
 static void
 tokenize_for_command_line(string const & from, vector<string> & to)
 {
@@ -228,6 +250,7 @@ tokenize_for_command_line(string const & from, vector<string> & to)
   if (have_tok)
     to.push_back(cur);
 }
+#endif
 
 // This is in a sepaarte procedure so it can be called from code that's called
 // before cpp_main(), such as program option object creation code.  It's made
@@ -242,6 +265,33 @@ void localize_monotone()
 //      textdomain(PACKAGE);
       init = 1;
     }
+}
+
+// read command-line options and return the command name
+string read_options(options & opts, vector<string> args)
+{
+  option::concrete_option_set optset =
+    options::opts::all_options().instantiate(&opts);
+  optset.from_command_line(args);
+
+  // consume the command, and perform completion if necessary
+  string cmd;
+  if (!opts.args.empty())
+    cmd = commands::complete_command(idx(opts.args, 0)());
+
+  // reparse options, now that we know what command-specific
+  // options are allowed.
+
+  options::options_type cmdopts = commands::command_options(opts.args);
+  optset.reset();
+
+  optset = (options::opts::globals() | cmdopts).instantiate(&opts);
+  optset.from_command_line(args, false);
+
+  if (!opts.args.empty())
+    opts.args.erase(opts.args.begin());
+
+  return cmd;
 }
 
 int 
@@ -262,153 +312,51 @@ cpp_main(int argc, char ** argv)
   // conversion etc
   try
   {
-  bool requested_help=false;
-
   // Set up the global sanity object.  No destructor is needed and
   // therefore no wrapper object is needed either.
   global_sanity.initialize(argc, argv, setlocale(LC_ALL, 0));
 
   // Set up secure memory allocation etc
   botan_library acquire_botan;
-
-  // set up some marked strings, so even if our logbuf overflows, we'll get
-  // this data in a crash.
-  std::string cmdline_string;
-  {
-    std::ostringstream cmdline_ss;
-    for (int i = 0; i < argc; ++i)
-      {
-        if (i)
-          cmdline_ss << ", ";
-        cmdline_ss << "'" << argv[i] << "'";
-      }
-    cmdline_string = cmdline_ss.str();
-  }
-  MM(cmdline_string);
-  L(FL("command line: %s\n") % cmdline_string);
-
-  std::string locale_string = (setlocale(LC_ALL, NULL) == NULL ? "n/a" : setlocale(LC_ALL, NULL));
-  MM(locale_string);
-  L(FL("set locale: LC_ALL=%s\n") % locale_string);
-
-  std::string full_version_string;
-  get_full_version(full_version_string);
-  MM(full_version_string);
-
-  // Set up secure memory allocation etc
-  Botan::Init::initialize();
-  Botan::set_default_allocator("malloc");
   
-  // decode all argv values into a UTF-8 array
+  // Record where we are.  This has to happen before any use of
+  // boost::filesystem.
   save_initial_path();
-  std::vector<std::string> args;
-  utf8 progname;
-  for (int i = 0; i < argc; ++i)
+
+  // decode all argv values into a UTF-8 array
+  vector<string> args;
+  for (int i = 1; i < argc; ++i)
     {
       external ex(argv[i]);
       utf8 ut;
       system_to_utf8(ex, ut);
-      if (i)
-        args.push_back(ut());
-      else
-        progname = ut;
+      args.push_back(ut());
     }
 
-  // find base name of executable
-  std::string prog_path = fs::path(progname()).leaf();
-  if (prog_path.rfind(".exe") == prog_path.size() - 4)
-    prog_path = prog_path.substr(0, prog_path.size() - 4);
-  utf8 prog_name(prog_path);
+  // find base name of executable, convert to utf8, and save it in the
+  // global ui object
+  {
+    string prog_name = fs::path(argv[0]).leaf();
+    if (prog_name.rfind(".exe") == prog_name.size() - 4)
+      prog_name = prog_name.substr(0, prog_name.size() - 4);
+    utf8 prog_name_u;
+    system_to_utf8(prog_name, prog_name_u);
+    ui.prog_name = prog_name_u();
+    I(!ui.prog_name.empty());
+  }
 
   mtncvs_state app;
-#if 0
   try
     {
+      string cmd = read_options(app.opts, args);
+      
+      if (app.opts.version_given)
+        {
+          print_version();
+          return 0;
+        }
 
-//      app.set_prog_name(prog_name);
-
-      // set up for parsing.  we add a hidden argument that collections all
-      // positional arguments, which we process ourselves in a moment.
-      po::options_description all_options;
-      all_options.add(option::global_options);
-      all_options.add(option::specific_options);
-      all_options.add_options()
-        ("all_positional_args", po::value< vector<string> >());
-      po::positional_options_description all_positional_args;
-      all_positional_args.add("all_positional_args", -1);
-
-      // Check the command line for -@/--xargs
-      {
-        po::parsed_options parsed = po::command_line_parser(args)
-          .style(po::command_line_style::default_style &
-                 ~po::command_line_style::allow_guessing)
-          .options(all_options)
-          .run();
-        po::variables_map vm;
-        po::store(parsed, vm);
-        po::notify(vm);
 #if 0
-        if (option::argfile.given(vm))
-          {
-            vector<string> files = option::argfile.get(vm);
-            for (vector<string>::iterator f = files.begin();
-                 f != files.end(); ++f)
-              {
-                data dat;
-                read_data_for_command_line(*f, dat);
-                vector<string> fargs;
-                tokenize_for_command_line(dat(), fargs);
-                for (vector<string>::const_iterator i = fargs.begin();
-                     i != fargs.end(); ++i)
-                  {
-                    args.push_back(*i);
-                  }
-              }
-          }
-#endif
-      }
-
-      po::parsed_options parsed = po::command_line_parser(args)
-        .style(po::command_line_style::default_style &
-               ~po::command_line_style::allow_guessing)
-        .options(all_options)
-        .positional(all_positional_args)
-        .run();
-      po::variables_map vm;
-      po::store(parsed, vm);
-      po::notify(vm);
-
-      // consume the command, and perform completion if necessary
-      std::string cmd;
-      vector<string> positional_args;
-      if (vm.count("all_positional_args"))
-        {
-          positional_args = vm["all_positional_args"].as< vector<string> >();
-          cmd = commands::complete_command(idx(positional_args, 0));
-          positional_args.erase(positional_args.begin());
-        }
-
-      // build an options_description specific to this cmd.
-      po::options_description cmd_options_desc = commands::command_options(cmd);
-
-      po::options_description all_for_this_cmd;
-      all_for_this_cmd.add(option::global_options);
-      all_for_this_cmd.add(cmd_options_desc);
-
-      // reparse arguments using specific options.
-      parsed = po::command_line_parser(args)
-        .style(po::command_line_style::default_style &
-               ~po::command_line_style::allow_guessing)
-        .options(all_for_this_cmd)
-        .run();
-      po::store(parsed, vm);
-      po::notify(vm);
-
-      if (option::debug.given(vm))
-        {
-          global_sanity.set_debug();
-        }
-
       if (option::full.given(vm)) app.full=true;
             
       if (option::since.given(vm)) app.since=string(option::since.get(vm));
@@ -423,13 +371,6 @@ cpp_main(int argc, char ** argv)
         app.revisions.push_back(revision_id(option::revision.get(vm)));
       }
       
-      if (option::version.given(vm))
-      { std::string version;
-        get_full_version(version);
-        std::cout << version << '\n'; 
-        return 0;
-      }
-
       if (option::help.given(vm)) requested_help = true;
             
       if (option::mtn.given(vm)) app.mtn_binary = option::mtn.get(vm);
@@ -457,9 +398,10 @@ cpp_main(int argc, char ** argv)
 
       if (option::key.given(vm)) 
         app.mtn_options.push_back(string("--key=")+option::key.get(vm));
+#endif
 
       // stop here if they asked for help
-      if (requested_help)
+      if (app.opts.help)
         {
           throw usage(cmd);     // cmd may be empty, and that's fine.
         }
@@ -483,47 +425,41 @@ cpp_main(int argc, char ** argv)
         }
       else
         {
-          vector<utf8> args(positional_args.begin(), positional_args.end());
+          vector<utf8> args(app.opts.args.begin(), app.opts.args.end());
           return commands::process(app.downcast(), cmd, args);
         }
     }
-  catch (po::ambiguous_option const & e)
+  catch (option::option_error const & e)
     {
-      std::string msg = (F("%s:\n") % e.what()).str();
-      vector<string>::const_iterator it = e.alternatives.begin();
-      for (; it != e.alternatives.end(); ++it)
-        msg += *it + "\n";
-      N(false, i18n_format(msg));
-    }
-  catch (po::error const & e)
-    {
-      N(false, F("%s") % e.what());
+      N(false, i18n_format("%s") % e.what());
     }
   catch (usage & u)
     {
+      // we send --help output to stdout, so that "mtn --help | less" works
+      // but we send error-triggered usage information to stderr, so that if
+      // you screw up in a script, you don't just get usage information sent
+      // merrily down your pipes.
+      std::ostream & usage_stream = (app.opts.help ? cout : cerr);
+
+      usage_stream << F("Usage: %s [OPTION...] command [ARG...]") % ui.prog_name << "\n\n";
+      usage_stream << options::opts::globals().instantiate(&app.opts).get_usage_str() << "\n";
+
       // Make sure to hide documentation that's not part of
       // the current command.
-
-      po::options_description cmd_options_desc = commands::command_options(u.which);
-      unsigned count = cmd_options_desc.options().size();
-
-      cout << F("Usage: %s [OPTION...] command [ARG...]") % prog_name << "\n\n";
-      cout << option::global_options << "\n";
-
-      if (count > 0)
+      options::options_type cmd_options = commands::toplevel_command_options(u.which);
+      if (!cmd_options.empty())
         {
-          cout << F("Options specific to '%s %s':") % prog_name % u.which << "\n\n";
-          cout << cmd_options_desc << "\n";
+          usage_stream << F("Options specific to '%s %s':") % ui.prog_name % u.which << "\n\n";
+          usage_stream << cmd_options.instantiate(&app.opts).get_usage_str() << "\n";
         }
 
-      commands::explain_usage(u.which, cout);
-      if (requested_help)
+      commands::explain_usage(u.which, usage_stream);
+      if (app.opts.help)
         return 0;
       else
         return 2;
 
     }
-#endif
   }
   catch (informative_failure & inf)
     {

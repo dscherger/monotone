@@ -32,20 +32,46 @@ OPT(full, "full", bool, false, N_("ignore already pulled CVS revisions"))
 }
 #endif
 
-OPT(revision, "revision,r", std::string, "", N_("select revision id for operation"))
+OPTVAR(revision, std::vector<revision_id>, revisions, )
+OPTION(revision, revision, true, "revision,r", 
+      N_("select revision id(s) for operation"))
 #ifdef option_bodies
 {
-  // revision = true;
+  revisions.push_back(revision_id(arg));
+}
+#endif
+
+GOPT(version, "version,V", bool, false,
+     gettext_noop("print version number, then exit"))
+#ifdef option_bodies
+{
+  version = true;
+}
+#endif
+
+GOPT(help, "help,h", bool, false, gettext_noop("display help message"))
+#ifdef option_bodies
+{
+  help = true;
+}
+#endif
+
+OPTION(globals, debug, false, "debug",
+        gettext_noop("print debug log to stderr while running"))
+#ifdef option_bodies
+{
+  global_sanity.set_debug();
+}
+#endif
+
+GOPT(mtn, "mtn", std::string, , gettext_noop("monotone binary name"))
+#ifdef option_bodies
+{
+  mtn = arg;
 }
 #endif
 
 #if 0
-COPT(revision, "revision,r", string, N_("select revision id for operation"));
-
-GOPT(debug, "debug", nil, N_("print debug log to stderr while running"));
-GOPT(help, "help,h", nil, N_("display help message"));
-GOPT(version, "version,V", nil, N_("print version number, then exit"));
-GOPT(mtn, "mtn", string, N_("monotone binary name"));
 GOPT(mtn_option, "mtn-option", string, N_("pass option to monotone"));
 // these options are passed transparently
 GOPT(db, "db,d", string, N_("passed: database location"));

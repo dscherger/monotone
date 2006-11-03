@@ -22,6 +22,8 @@ struct mtncvs_state : private app_state, public mtn_automate
   std::vector<utf8> mtn_options;
   utf8 branch;
   utf8 domain;
+
+  options opts;
   
   mtncvs_state() : full(), mtn_binary("mtn"), domain("cvs") {}
  
