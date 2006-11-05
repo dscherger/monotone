@@ -107,7 +107,7 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
   }
   mtncvs_state &myapp=mtncvs_state::upcast(app);
 //myapp.dump();
-  N(!myapp.branch().empty(), F("no destination branch specified\n"));
+  N(!myapp.opts.branch_name().empty(), F("no destination branch specified\n"));
       
   cvs_sync::pull(repository,module,branch,myapp);
 }
@@ -137,7 +137,7 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
   std::string module;
   if (args.size() == 1) module = idx(args, 0)();
   mtncvs_state &myapp=mtncvs_state::upcast(app);
-  N(!myapp.branch().empty(), F("no destination branch specified\n"));
+  N(!myapp.opts.branch_name().empty(), F("no destination branch specified\n"));
   cvs_sync::takeover(myapp, module);
 }
 

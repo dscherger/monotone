@@ -583,13 +583,13 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 
 static file_id get_sync_id(mtncvs_state &app, revision_id id)
 { mtn_automate::manifest_map m=app.get_manifest_of(id);
-  return m[file_path_internal(".mtn-sync-"+app.domain())];
+  return m[file_path_internal(".mtn-sync-"+app.opts.domain())];
 }
 
 file_id cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest)
 { std::string state=create_sync_state(e);
   if (state.empty()) return file_id(); // locally changed CVS tree state
-  std::string syncname=".mtn-sync-"+app.domain();
+  std::string syncname=".mtn-sync-"+app.opts.domain();
   mtn_automate::manifest_map::const_iterator it=oldmanifest.find(file_path_internal(syncname));
   file_id fid;
   if (it!=oldmanifest.end())
@@ -691,7 +691,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("CVS Sync: Inserted revision %s into repository\n") % child_rid);
     e->revision=child_rid.inner();
 
-    app.cert_revision(child_rid,"branch",app.branch());
+    app.cert_revision(child_rid,"branch",app.opts.branch_name());
     std::string author=e->author;
     if (author.find('@')==std::string::npos) author+="@"+host;
     app.cert_revision(child_rid, "author", author); 
@@ -803,8 +803,8 @@ cvs_repository::cvs_repository(mtncvs_state &_app, const std::string &repository
 {
   file_id_ticker.reset(new ticker("file ids", "F", 10));
   remove_state=remove_set.insert(file_state(0,"-",true)).first;
-  if (!app.since().empty())
-  { sync_since=posix2time_t(app.since());
+  if (!app.opts.since().empty())
+  { sync_since=posix2time_t(app.opts.since());
     N(sync_since<=time(0), F("Since lies in the future. Remember to specify time in UTC\n"));
   }
 }
@@ -857,7 +857,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { commit_arg a;
       a.file=file_path(*i).as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
-      if (a.file==".mtn-sync-"+app.domain()) continue;
+      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
       I(old!=parent_manifest.end());
       a.removed=true;
       a.old_revision=old->second->cvs_version;
@@ -900,7 +900,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { 
       commit_arg a;
       a.file=file_path(i->first).as_internal();
-      if (a.file==".mtn-sync-"+app.domain()) continue;
+      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
       a.new_content=app.get_file(i->second);
       commits.push_back(a);
       L(FL("add %s %d\n") % a.file % a.new_content.size());
@@ -912,7 +912,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { 
       commit_arg a;
       a.file=file_path(i->first).as_internal();
-      if (a.file==".mtn-sync-"+app.domain()) continue;
+      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.old_revision=old->second->cvs_version;
@@ -1004,7 +1004,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
     // this revision is already in _this_ repository
 // TODO: has sync info would be sufficient
     try
-    { if (!app.get_sync_info(*i,app.domain()).empty()) continue;
+    { if (!app.get_sync_info(*i,app.opts.domain()).empty()) continue;
     } catch (std::exception &e)
     { W(F("get sync info threw %s") % e.what());
     }
@@ -1056,14 +1056,14 @@ void cvs_repository::commit()
     L(FL("looking for children of revision %s\n") % now.revision);
     std::vector<revision_id> children=app.get_revision_children(now.revision);
     
-    if (!app.branch().empty())
-    { // app.branch
+    if (!app.opts.branch_name().empty())
+    { // app.opts.branch_name
       // ignore revisions not belonging to the specified branch
       for (std::vector<revision_id>::iterator i=children.begin();
                     i!=children.end();)
       { std::vector<mtn_automate::certificate> certs
           = app.get_revision_certs(*i);
-        if (std::remove_if(certs.begin(),certs.end(),is_branch(app.branch()))==certs.begin())
+        if (std::remove_if(certs.begin(),certs.end(),is_branch(app.opts.branch_name()))==certs.begin())
           i=children.erase(i);
         else ++i;
       }
@@ -1071,8 +1071,8 @@ void cvs_repository::commit()
     if (children.empty()) return;
     revision_id next;
     if (children.size()>1) // && !ap.revision_selectors.size())
-    { for (std::vector<revision_id>::const_iterator i=app.revisions.begin();
-          i!=app.revisions.end();++i)
+    { for (std::vector<revision_id>::const_iterator i=app.opts.revisions.begin();
+          i!=app.opts.revisions.end();++i)
       { for (std::vector<revision_id>::const_iterator j=children.begin();
           j!=children.end();++j)
         { if (*i==*j)
@@ -1108,14 +1108,14 @@ void cvs_repository::commit()
 
 static void guess_repository(std::string &repository, std::string &module,
         std::string & branch,std::string &last_state, revision_id &lastid, mtncvs_state &app)
-{ I(!app.branch().empty());
+{ I(!app.opts.branch_name().empty());
   try
-  { lastid=app.find_newest_sync(app.domain(),app.branch());
+  { lastid=app.find_newest_sync(app.opts.domain(),app.opts.branch_name());
     if (null_id(lastid)) 
-    { L(FL("no sync information found on branch %s\n")%app.branch());
+    { L(FL("no sync information found on branch %s\n")%app.opts.branch_name());
       return;
     }
-    last_state=app.get_sync_info(lastid,app.domain());
+    last_state=app.get_sync_info(lastid,app.opts.domain());
     cvs_repository::parse_cvs_cert_header(last_state,repository,module,branch);
     if (branch.empty())
       L(FL("using module '%s' in repository '%s'\n") % module % repository);
@@ -1125,7 +1125,7 @@ static void guess_repository(std::string &repository, std::string &module,
   }
   catch (std::runtime_error)
   { N(false, F("can not guess repository (in domain %s), "
-        "please specify on first pull") % app.domain);
+        "please specify on first pull") % app.opts.domain);
   }
 }
 
@@ -1662,12 +1662,12 @@ void cvs_repository::takeover()
   // now we initialize the workspace
   // mtn setup .
   { std::vector<std::string> args;
-    args.push_back(app.mtn_binary());
+    args.push_back(app.opts.mtn_binary());
     if (args[0].empty()) args[0]="mtn";
-    for (std::vector<utf8>::const_iterator i=app.mtn_options.begin();i!=app.mtn_options.end();++i)
+    for (std::vector<utf8>::const_iterator i=app.opts.mtn_options.begin();i!=app.opts.mtn_options.end();++i)
       args.push_back((*i)());
     args.push_back("--branch");
-    args.push_back(app.branch());
+    args.push_back(app.opts.branch_name());
     args.push_back("setup");
     args.push_back(".");
     I(args.size()<30);
@@ -1756,5 +1756,5 @@ void cvs_repository::retrieve_modules()
 // we could pass delta_base and forget about it later
 void cvs_repository::cert_cvs(cvs_edge const& e)
 { std::string content=create_sync_state(e);
-  app.put_sync_info(e.revision,app.domain(),content);
+  app.put_sync_info(e.revision,app.opts.domain(),content);
 }

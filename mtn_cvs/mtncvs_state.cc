@@ -18,18 +18,18 @@ std::ostream& operator<<(std::ostream &o, std::vector<utf8> const& v)
 }
 
 void mtncvs_state::dump()
-{ std::cerr D(full) D(since) D(mtn_binary) D(branch) << '\n';
-  std::cerr D(mtn_options) << '\n';
+{ std::cerr D(opts.full) D(opts.since) D(opts.mtn_binary) D(opts.branch_name) << '\n';
+  std::cerr D(opts.mtn_options) << '\n';
 }
 
 void mtncvs_state::open()
 { std::vector<std::string> args;
-  for (std::vector<utf8>::const_iterator i=mtn_options.begin();i!=mtn_options.end();++i)
+  for (std::vector<utf8>::const_iterator i=opts.mtn_options.begin();i!=opts.mtn_options.end();++i)
     args.push_back((*i)());
-  std::string binary=mtn_binary();
+  std::string binary=opts.mtn_binary();
   if (binary.empty()) binary="mtn";
   I(!is_open());
   L(FL("mtncvs_state: opening mtn binary %s") % binary);
   mtn_automate::open(binary,args);
-  check_interface_revision("3.3");
+  check_interface_revision("4.1");
 }

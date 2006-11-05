@@ -10,22 +10,22 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-
+#include "options.hh"
 #include <app_state.hh>
 #include <mtn_automate.hh>
 
 struct mtncvs_state : private app_state, public mtn_automate
-{ bool full;
+{ /*bool full;
   utf8 since;
   std::vector<revision_id> revisions;
   utf8 mtn_binary;
   std::vector<utf8> mtn_options;
   utf8 branch;
-  utf8 domain;
+  utf8 domain; */
 
   options opts;
   
-  mtncvs_state() : full(), mtn_binary("mtn"), domain("cvs") {}
+//  mtncvs_state() : full(), mtn_binary("mtn"), domain("cvs") {}
  
 // to access the private base class (only to pass it around)
   app_state& downcast() { return *this; }
