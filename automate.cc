@@ -1794,8 +1794,14 @@ AUTOMATE(db_get, N_("DOMAIN NAME"), options::opts::none)
 }
 
 // needed by find_newest_sync: check whether a revision has up to date synch information
-static const char *const sync_postfix="sync-info";
+static const char *const sync_prefix="x-sync-attr-";
 typedef std::map<std::pair<split_path, attr_key>, attr_value> sync_map_t;
+
+static bool begins_with(const std::string &s, const std::string &sub)
+{ std::string::size_type len=sub.size();
+  if (s.size()<len) return false;
+  return !s.compare(0,len,sub);
+}
 
 static bool is_synchronized(app_state &app, revision_id const& rid, 
                       revision_t const& rev, std::string const& domain)
@@ -1808,14 +1814,14 @@ static bool is_synchronized(app_state &app, revision_id const& rid,
     cset cs=edge_changes(rev.edges.begin());
     for (sync_map_t::const_iterator i=cs.attrs_set.begin();
           i!=cs.attrs_set.end();++i)
-    { if (i->first.second().substr(0,prefix.size())==prefix)
+    { if (begins_with(i->first.second(),prefix))
         return true;
     }
   }
   
   // look for a certificate
   std::vector< revision<cert> > certs;
-  app.db.get_revision_certs(rid,cert_name(prefix+sync_postfix),certs);
+  app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
   return !certs.empty();
 }
 
@@ -1888,55 +1894,114 @@ continue_outer:
   output << rid;
 }
 
-#if 0
-static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string const& domain)
+namespace
+{
+  namespace syms
+  {
+    symbol const clear("clear");
+    symbol const attr("attr");
+    symbol const set("set");
+  }
+}
+
+static inline void
+parse_path(basic_io::parser & parser, split_path & sp)
+{
+  string s;
+  parser.str(s);
+  file_path_internal(s).split(sp);
+}
+
+static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string const& domain, int &depth)
 {
   /* sync information is initially coded in DOMAIN: prefixed attributes
-     if no attribute was changed then information gets 
+     if information needs to be changed after commit then it gets 
      (base_revision_id+xdiff).gz encoded in certificates
      
      SPECIAL CASE of no parent: certificate is (40*' '+plain_data).gz encoded
    */
-  revision_t rev;
-  app.db.get_revision(rid, rev);
-  split_path path;
-  file_path_internal(string(".")+sync_prefix+domain).split(path);
-  if (rev.edges.size()==1)
-  { 
-    L(FL("get_sync_info: checking revision files %s") % rid);
-    cset cs=edge_changes(rev.edges.begin());
-    std::map<split_path, file_id>::const_iterator fadd_it=cs.files_added.find(path);
-    if (fadd_it!=cs.files_added.end())
-    { 
-      file_data dat;
-      app.db.get_file_version(fadd_it->second, dat);
-      return dat.inner()();
-    }
-    std::map<split_path, std::pair<file_id, file_id> >::const_iterator delta_it
-        =cs.deltas_applied.find(path);
-    if (delta_it!=cs.deltas_applied.end())
-    { 
-      file_data dat;
-      app.db.get_file_version(delta_it->second.second, dat);
-      return dat.inner()();
-    }
-  }
+  sync_map_t result;
+  
   L(FL("get_sync_info: checking revision certificates %s") % rid);
   std::vector< revision<cert> > certs;
   app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
-  N(!certs.empty(), F("no sync cerficate found in revision %s for domain %s")
+  I(certs.size()<=1); // FIXME: what to do with multiple certs ...
+  if (certs.size()==1) 
+  { cert_value tv;
+    decode_base64(idx(certs,0).inner().value, tv);
+    std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(tv());
+    I(decomp_cert_val.size()>constants::idlen+1);
+    I(decomp_cert_val[constants::idlen]=='\n');
+    if (decomp_cert_val[0]!=' ')
+    { revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen));
+      result=get_sync_info(app,old_rid,domain,depth);
+      ++depth;
+    }
+    else depth=0;
+    basic_io::input_source source(decomp_cert_val.substr(constants::idlen+1),"x-sync-attr cert");
+    basic_io::tokenizer tokenizer(source);
+    basic_io::parser parser(tokenizer);
+    
+    std::string t1, t2;
+    split_path p1;
+    while (parser.symp(syms::clear))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+      parser.esym(syms::attr);
+      parser.str(t1);
+      pair<split_path, attr_key> new_pair(p1, t1);
+      safe_erase(result, new_pair);
+    }
+    while (parser.symp(syms::set))
+    { 
+      parser.sym();
+      parse_path(parser, p1);
+      parser.esym(syms::attr);
+      parser.str(t1);
+      pair<split_path, attr_key> new_pair(p1, t1);
+      parser.esym(syms::value);
+      parser.str(t2);
+      safe_insert(result, make_pair(new_pair, attr_value(t2)));
+    }
+    return result;
+  }
+  
+  revision_t rev;
+  app.db.get_revision(rid, rev);
+//  split_path path;
+//  file_path_internal(string(".")+sync_prefix+domain).split(path);
+  if (rev.edges.size()==1)
+  { 
+    L(FL("get_sync_info: checking revision attributes %s") % rid);
+//    revision_t rev;
+//    app.db.get_revision(rid, rev);
+    roster_t ros;
+    marking_map mm;
+    app.db.get_roster(rid, ros, mm);
+    node_map const & nodes = ros.all_nodes();
+    std::string prefix=domain+":";
+    for (node_map::const_iterator i = nodes.begin();
+       i != nodes.end(); ++i)
+    {
+      node_t node = i->second;
+      split_path sp;
+      ros.get_name(i->first, sp);
+      for (full_attr_map_t::const_iterator j = node->attrs.begin();
+           j != node->attrs.end(); ++j)
+      {
+        if (begins_with(j->first(),prefix))
+        { 
+          I(j->second.first); // value is not undefined
+          result[std::make_pair(sp,j->first)]=j->second.second;
+        }
+      }
+    }
+    depth=0;
+  }
+  N(result.empty(), F("no sync cerficate found in revision %s for domain %s")
         % rid % domain);
-  I(certs.size()==1); // FIXME: what to do with multiple certs ...
-  cert_value tv;
-  decode_base64(idx(certs,0).inner().value, tv);
-  std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(tv());
-  if (decomp_cert_val[0]==' ') return decomp_cert_val.substr(constants::idlen);
-  revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen));
-  std::string old_data=get_sync_info(app,old_rid,domain);
-  delta del=decomp_cert_val.substr(constants::idlen);
-  data newdata;
-  patch(old_data,del,newdata);
-  return newdata();
+  return result;
 }
 
 // Name: get_sync_info
@@ -1956,9 +2021,21 @@ AUTOMATE(get_sync_info, N_("REVISION DOMAIN"), options::opts::none)
     throw usage(name);
   revision_id rid(idx(args,0)());
   string domain=idx(args,1)();
-  output << get_sync_info(app,rid,domain);
+  int dummy=0;
+  sync_map_t result = get_sync_info(app,rid,domain,dummy);
+  basic_io::printer printer;
+  for (sync_map_t::const_iterator i = result.begin(); i != result.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::set, file_path(i->first.first));
+      st.push_str_pair(syms::attr, i->first.second());
+      st.push_str_pair(syms::value, i->second());
+      printer.print_stanza(st);
+    }
+  output.write(printer.buf.data(), printer.buf.size());
 }
 
+#if 0
 // Name: put_sync_info
 // Arguments:
 //   revision
