@@ -616,7 +616,7 @@ ALIAS(co, checkout)
 
 CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [ATTR]\nscan [PATH...]"),
     N_("set, get or drop file attributes\nor scan filesystem to determine monotone attributes for files in PATH(s)."),
-    option::opts::execute)
+    options::opts::execute)
 {
   if (args.size() < 1)
     throw usage(name);
@@ -642,8 +642,8 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
         {
           vector<utf8> pathargs(args.begin() + 1, args.end());
           node_restriction mask(args_to_paths(pathargs),
-                                args_to_paths(app.exclude_patterns),
-                                app.depth,
+                                args_to_paths(app.opts.exclude_patterns),
+                                app.opts.depth,
                                 old_roster, new_roster, app.lua);
           app.work.perform_attr_scan(new_roster, mask);
         }
@@ -657,7 +657,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
 
           node->attrs[a_key] = make_pair(true, a_value);
 
-          if (app.execute)
+          if (app.opts.execute)
             app.lua.hook_apply_attribute(a_key(), path, a_value(), false);
         }
       else if (subcmd == "drop")
@@ -669,7 +669,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
                    i != node->attrs.end(); ++i)
                 {
                   i->second = make_pair(false, "");
-                  if (app.execute)
+                  if (app.opts.execute)
                     app.lua.hook_apply_attribute(i->first(), path, string(""), true);
                 }
             }
@@ -682,7 +682,7 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
 
                 node->attrs[a_key] = make_pair(false, "");
                 
-                if (app.execute)
+                if (app.opts.execute)
                   app.lua.hook_apply_attribute(a_key(), path, string(""), true);
             }
           else
