@@ -1912,6 +1912,36 @@ parse_path(basic_io::parser & parser, split_path & sp)
   file_path_internal(s).split(sp);
 }
 
+static void parse_attributes(std::string const& in, sync_map_t& result)
+{
+  basic_io::input_source source(in,"parse_attributes");
+  basic_io::tokenizer tokenizer(source);
+  basic_io::parser parser(tokenizer);
+  
+  std::string t1, t2;
+  split_path p1;
+  while (parser.symp(syms::clear))
+  {
+    parser.sym();
+    parse_path(parser, p1);
+    parser.esym(syms::attr);
+    parser.str(t1);
+    pair<split_path, attr_key> new_pair(p1, t1);
+    safe_erase(result, new_pair);
+  }
+  while (parser.symp(syms::set))
+  { 
+    parser.sym();
+    parse_path(parser, p1);
+    parser.esym(syms::attr);
+    parser.str(t1);
+    pair<split_path, attr_key> new_pair(p1, t1);
+    parser.esym(syms::value);
+    parser.str(t2);
+    safe_insert(result, make_pair(new_pair, attr_value(t2)));
+  }
+}
+
 static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string const& domain, int &depth)
 {
   /* sync information is initially coded in DOMAIN: prefixed attributes
@@ -1938,32 +1968,7 @@ static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string c
       ++depth;
     }
     else depth=0;
-    basic_io::input_source source(decomp_cert_val.substr(constants::idlen+1),"x-sync-attr cert");
-    basic_io::tokenizer tokenizer(source);
-    basic_io::parser parser(tokenizer);
-    
-    std::string t1, t2;
-    split_path p1;
-    while (parser.symp(syms::clear))
-    {
-      parser.sym();
-      parse_path(parser, p1);
-      parser.esym(syms::attr);
-      parser.str(t1);
-      pair<split_path, attr_key> new_pair(p1, t1);
-      safe_erase(result, new_pair);
-    }
-    while (parser.symp(syms::set))
-    { 
-      parser.sym();
-      parse_path(parser, p1);
-      parser.esym(syms::attr);
-      parser.str(t1);
-      pair<split_path, attr_key> new_pair(p1, t1);
-      parser.esym(syms::value);
-      parser.str(t2);
-      safe_insert(result, make_pair(new_pair, attr_value(t2)));
-    }
+    parse_attributes(decomp_cert_val.substr(constants::idlen+1),result);
     return result;
   }
   
@@ -2035,7 +2040,6 @@ AUTOMATE(get_sync_info, N_("REVISION DOMAIN"), options::opts::none)
   output.write(printer.buf.data(), printer.buf.size());
 }
 
-#if 0
 // Name: put_sync_info
 // Arguments:
 //   revision
@@ -2056,6 +2060,8 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"), options::opts::none)
   string domain=idx(args,1)();
   revision_t rev;
   app.db.get_revision(rid, rev);
+  
+  static const int max_indirection_nest=30;
 
   std::string new_data=idx(args,2)();
   cert c;
@@ -2064,13 +2070,47 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"), options::opts::none)
   { 
     if (null_id(edge_old_revision(e))) continue;
     try
-    { 
-      std::string oldinfo=get_sync_info(app,edge_old_revision(e),domain);
-      delta del;
-      diff(oldinfo,new_data,del);
-      if (del().size()>=new_data.size()) continue;
+    {
+      int depth=0; 
+      sync_map_t oldinfo=get_sync_info(app,edge_old_revision(e),domain,depth);
+      if (depth>=max_indirection_nest) continue; // do not nest deeper
+      
+      sync_map_t newinfo;
+      parse_attributes(new_data,newinfo);
+      
+      basic_io::printer printer;
+      for (sync_map_t::const_iterator o=oldinfo.begin(),n=newinfo.begin();
+            o!=oldinfo.end() && n!=newinfo.end();)
+      { if (n==newinfo.end() || o->first<n->first
+            || (o->first==n->first && o->second!=n->second))
+        { basic_io::stanza st;
+          st.push_file_pair(syms::clear, file_path(o->first.first));
+          st.push_str_pair(syms::attr, o->first.second());
+          printer.print_stanza(st);
+          if (o->first==n->first) ++n;
+          ++o;
+        }
+        else ++n;
+      }
+      for (sync_map_t::const_iterator o=oldinfo.begin(),n=newinfo.begin();
+            o!=oldinfo.end() && n!=newinfo.end();)
+      { if (o==oldinfo.end() || o->first>n->first
+            || (o->first==n->first && o->second!=n->second))
+        { basic_io::stanza st;
+          st.push_file_pair(syms::set, file_path(n->first.first));
+          st.push_str_pair(syms::attr, n->first.second());
+          st.push_str_pair(syms::value, n->second());
+          printer.print_stanza(st);
+          if (o->first==n->first) ++o;
+          ++n;
+        }
+        else ++o;
+      }
+      // printer.buf
+      if (printer.buf.size()>=new_data.size()) continue;
+      
       I(edge_old_revision(e).inner()().size()==constants::idlen);
-      cert_value cv=xform<Botan::Gzip_Compression>(edge_old_revision(e).inner()()+del());
+      cert_value cv=xform<Botan::Gzip_Compression>(edge_old_revision(e).inner()()+"\n"+printer.buf);
       make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
       revision<cert> rc(c); 
       packet_db_writer dbw(app);
@@ -2081,14 +2121,13 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"), options::opts::none)
     catch (informative_failure &er) {}
     catch (std::runtime_error &er) {}
   }
-  cert_value cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+new_data);
+  cert_value cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data);
   make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
   revision<cert> rc(c);
   packet_db_writer dbw(app);
   dbw.consume_revision_cert(rc);
   L(FL("sync info attached to %s") % rid);
 }
-#endif
 
 // Local Variables:
 // mode: C++
