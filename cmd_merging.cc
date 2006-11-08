@@ -262,7 +262,6 @@ CMD(update, N_("workspace"), "",
     P(F("switched branch; next commit will use branch %s") % app.opts.branch_name());
   P(F("updated to base revision %s") % chosen_rid);
 
-  app.work.update_any_attrs();
   app.work.maybe_update_inodeprints();
 }
 
@@ -750,7 +749,7 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
     node_restriction mask(args_to_paths(args),
                           args_to_paths(app.opts.exclude_patterns),
                           app.opts.depth,
-                          *from_roster, to_true_roster, app);
+                          *from_roster, to_true_roster, app.lua);
     make_restricted_csets(*from_roster, to_true_roster,
                           from_to_to, from_to_to_excluded,
                           mask);
@@ -797,7 +796,6 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
 
   // small race condition here...
   app.work.put_work_rev(remaining);
-  app.work.update_any_attrs();
   
   // add a note to the user log file about what we did
   {

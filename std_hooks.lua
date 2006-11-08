@@ -27,6 +27,14 @@ function execute(path, ...)
    return ret
 end
 
+function execute_redirout(command, out_filename, ...)
+   local pid
+   local ret = -1
+   pid = spawn_redirected("", out_filename, "", command, unpack(arg))
+   if (pid ~= -1) then ret, pid = wait(pid) end
+   return ret
+end
+
 -- Wrapper around execute to let user confirm in the case where a subprocess
 -- returns immediately
 -- This is needed to work around some brokenness with some merge tools

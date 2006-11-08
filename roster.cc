@@ -821,7 +821,6 @@ roster_t::set_attr(split_path const & pth,
   if (i == n->attrs.end())
     i = safe_insert(n->attrs, make_pair(name,
                                         make_pair(false, attr_value())));
-  I(i->second != val);
   i->second = val;
 }
 

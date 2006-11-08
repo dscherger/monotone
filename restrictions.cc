@@ -84,7 +84,7 @@ static void
 validate_roster_paths(path_set const & included_paths, 
                       path_set const & excluded_paths, 
                       path_set const & known_paths,
-                      app_state & app)
+                      lua_hooks & lua)
 {
   int bad = 0;
 
@@ -97,7 +97,7 @@ validate_roster_paths(path_set const & included_paths,
       if (known_paths.find(*i) == known_paths.end())
         {
           file_path fp(*i);
-          if (!app.lua.hook_ignore_file(fp))
+          if (!lua.hook_ignore_file(fp))
             {
               bad++;
               W(F("restriction includes unknown path '%s'") % *i);
@@ -121,7 +121,7 @@ validate_roster_paths(path_set const & included_paths,
 void
 validate_workspace_paths(path_set const & included_paths, 
                          path_set const & excluded_paths,
-                         app_state & app)
+                         lua_hooks & lua)
 {
   int bad = 0;
 
@@ -135,7 +135,7 @@ validate_workspace_paths(path_set const & included_paths,
       // considered invalid if they are found in none of the restriction's
       // rosters
       file_path fp(*i);
-      if (!path_exists(fp) && !app.lua.hook_ignore_file(fp))
+      if (!path_exists(fp) && !lua.hook_ignore_file(fp))
         {
           bad++;
           W(F("restriction includes unknown path '%s'") % *i);
@@ -172,7 +172,7 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
                                    std::vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster,
-                                   app_state & a) :
+                                   lua_hooks & lua) :
   restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster, included_paths, known_paths, 
@@ -180,7 +180,7 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
   map_nodes(node_map, roster, excluded_paths, known_paths, 
             restricted_path::excluded);
 
-  validate_roster_paths(included_paths, excluded_paths, known_paths, a);
+  validate_roster_paths(included_paths, excluded_paths, known_paths, lua);
 }
 
 node_restriction::node_restriction(std::vector<file_path> const & includes,
@@ -188,7 +188,7 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
                                    long depth,
                                    roster_t const & roster1,
                                    roster_t const & roster2,
-                                   app_state & a) :
+                                   lua_hooks & lua) :
   restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster1, included_paths, known_paths, 
@@ -201,19 +201,19 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
   map_nodes(node_map, roster2, excluded_paths, known_paths, 
             restricted_path::excluded);
 
-  validate_roster_paths(included_paths, excluded_paths, known_paths, a);
+  validate_roster_paths(included_paths, excluded_paths, known_paths, lua);
 }
 
 path_restriction::path_restriction(std::vector<file_path> const & includes,
                                    std::vector<file_path> const & excludes,
                                    long depth,
-                                   app_state & a) :
+                                   lua_hooks & lua) :
   restriction(includes, excludes, depth)
 {
   map_paths(path_map, included_paths, restricted_path::included);
   map_paths(path_map, excluded_paths, restricted_path::excluded);
 
-  validate_workspace_paths(included_paths, excluded_paths, a);
+  validate_workspace_paths(included_paths, excluded_paths, lua);
 }
 
 bool
@@ -619,7 +619,7 @@ UNIT_TEST(restrictions, simple_include)
 
   // check restricted nodes
 
-  node_restriction nmask(includes, excludes, -1, roster, app);
+  node_restriction nmask(includes, excludes, -1, roster, app.lua);
 
   BOOST_CHECK(!nmask.empty());
 
@@ -649,7 +649,7 @@ UNIT_TEST(restrictions, simple_include)
 
   // check restricted paths
 
-  path_restriction pmask(includes, excludes, -1, app);
+  path_restriction pmask(includes, excludes, -1, app.lua);
 
   BOOST_CHECK(!pmask.empty());
 
@@ -691,7 +691,7 @@ UNIT_TEST(restrictions, simple_exclude)
 
   // check restricted nodes
 
-  node_restriction nmask(includes, excludes, -1, roster, app);
+  node_restriction nmask(includes, excludes, -1, roster, app.lua);
 
   BOOST_CHECK(!nmask.empty());
 
@@ -721,7 +721,7 @@ UNIT_TEST(restrictions, simple_exclude)
 
   // check restricted paths
 
-  path_restriction pmask(includes, excludes, -1, app);
+  path_restriction pmask(includes, excludes, -1, app.lua);
 
   BOOST_CHECK(!pmask.empty());
 
@@ -765,7 +765,7 @@ UNIT_TEST(restrictions, include_exclude)
 
   // check restricted nodes
 
-  node_restriction nmask(includes, excludes, -1, roster, app);
+  node_restriction nmask(includes, excludes, -1, roster, app.lua);
 
   BOOST_CHECK(!nmask.empty());
 
@@ -795,7 +795,7 @@ UNIT_TEST(restrictions, include_exclude)
 
   // check restricted paths
 
-  path_restriction pmask(includes, excludes, -1, app);
+  path_restriction pmask(includes, excludes, -1, app.lua);
 
   BOOST_CHECK(!pmask.empty());
 
@@ -842,7 +842,7 @@ UNIT_TEST(restrictions, exclude_include)
 
   // check restricted nodes
 
-  node_restriction nmask(includes, excludes, -1, roster, app);
+  node_restriction nmask(includes, excludes, -1, roster, app.lua);
 
   BOOST_CHECK(!nmask.empty());
 
@@ -872,7 +872,7 @@ UNIT_TEST(restrictions, exclude_include)
 
   // check restricted paths
 
-  path_restriction pmask(includes, excludes, -1, app);
+  path_restriction pmask(includes, excludes, -1, app.lua);
 
   BOOST_CHECK(!pmask.empty());
 
@@ -911,7 +911,7 @@ UNIT_TEST(restrictions, invalid_roster_paths)
   excludes.push_back(file_path_internal("bar"));
 
   app_state app;
-  BOOST_CHECK_THROW(node_restriction(includes, excludes, -1, roster, app), 
+  BOOST_CHECK_THROW(node_restriction(includes, excludes, -1, roster, app.lua), 
                     informative_failure);
 }
 
@@ -925,7 +925,7 @@ UNIT_TEST(restrictions, invalid_workspace_paths)
   excludes.push_back(file_path_internal("bar"));
 
   app_state app;
-  BOOST_CHECK_THROW(path_restriction(includes, excludes, -1, app),
+  BOOST_CHECK_THROW(path_restriction(includes, excludes, -1, app.lua),
                     informative_failure);
 }
 
@@ -946,7 +946,7 @@ UNIT_TEST(restrictions, include_depth_0)
 
   // check restricted nodes
 
-  node_restriction nmask(includes, excludes, depth, roster, app);
+  node_restriction nmask(includes, excludes, depth, roster, app.lua);
 
   BOOST_CHECK(!nmask.empty());
 
@@ -976,7 +976,7 @@ UNIT_TEST(restrictions, include_depth_0)
 
   // check restricted paths
 
-  path_restriction pmask(includes, excludes, depth, app);
+  path_restriction pmask(includes, excludes, depth, app.lua);
 
   BOOST_CHECK(!pmask.empty());
 
@@ -1020,7 +1020,7 @@ UNIT_TEST(restrictions, include_depth_0_empty_restriction)
 
   // check restricted nodes
 
-  node_restriction nmask(includes, excludes, depth, roster, app);
+  node_restriction nmask(includes, excludes, depth, roster, app.lua);
 
   BOOST_CHECK( nmask.empty());
 
@@ -1050,7 +1050,7 @@ UNIT_TEST(restrictions, include_depth_0_empty_restriction)
 
   // check restricted paths
 
-  path_restriction pmask(includes, excludes, depth, app);
+  path_restriction pmask(includes, excludes, depth, app.lua);
 
   BOOST_CHECK( pmask.empty());
 
@@ -1096,7 +1096,7 @@ UNIT_TEST(restrictions, include_depth_1)
 
   // check restricted nodes
 
-  node_restriction nmask(includes, excludes, depth, roster, app);
+  node_restriction nmask(includes, excludes, depth, roster, app.lua);
 
   BOOST_CHECK(!nmask.empty());
 
@@ -1126,7 +1126,7 @@ UNIT_TEST(restrictions, include_depth_1)
 
   // check restricted paths
 
-  path_restriction pmask(includes, excludes, depth, app);
+  path_restriction pmask(includes, excludes, depth, app.lua);
 
   BOOST_CHECK(!pmask.empty());
 

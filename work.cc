@@ -802,7 +802,8 @@ void
 editable_working_tree::clear_attr(split_path const & pth,
                                   attr_key const & name)
 {
-  // FIXME_ROSTERS: call a lua hook
+  file_path pth_unsplit(pth);
+  lua.hook_apply_attribute(name(), pth_unsplit, string(""), true);
 }
 
 void
@@ -810,7 +811,8 @@ editable_working_tree::set_attr(split_path const & pth,
                                 attr_key const & name,
                                 attr_value const & val)
 {
-  // FIXME_ROSTERS: call a lua hook
+  file_path pth_unsplit(pth);
+  lua.hook_apply_attribute(name(), pth_unsplit, val(), false);
 }
 
 void
@@ -1094,7 +1096,6 @@ workspace::perform_additions(path_set const & paths,
   revision_t new_work;
   make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
   put_work_rev(new_work);
-  update_any_attrs();
 }
 
 void
@@ -1168,7 +1169,6 @@ workspace::perform_deletions(path_set const & paths,
   revision_t new_work;
   make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
   put_work_rev(new_work);
-  update_any_attrs();
 }
 
 void
@@ -1290,7 +1290,6 @@ workspace::perform_rename(set<file_path> const & src_paths,
             }
         }
     }
-  update_any_attrs();
 }
 
 void
@@ -1359,7 +1358,6 @@ workspace::perform_pivot_root(file_path const & new_root,
       content_merge_empty_adaptor cmea;
       perform_content_update(cs, cmea);
     }
-  update_any_attrs();
 }
 
 void
@@ -1371,26 +1369,94 @@ workspace::perform_content_update(cset const & update,
 }
 
 void
-workspace::update_any_attrs()
-{
+workspace::perform_attr_scan(roster_t & new_roster, node_restriction const & mask)
+{ 
+  std::vector<std::string> init_functions;
+  bool get_update_func_ok = lua.hook_list_init_functions(init_functions);
+  E(get_update_func_ok, 
+    F("Failed to find attribute init functions"));
+  
   temp_node_id_source nis;
-  roster_t new_roster;
-  get_current_roster_shape(new_roster, nis);
-  node_map const & nodes = new_roster.all_nodes();
-  for (node_map::const_iterator i = nodes.begin();
-       i != nodes.end(); ++i)
-    {
-      split_path sp;
-      new_roster.get_name(i->first, sp);
+  editable_roster_base er(new_roster, nis);
 
-      node_t n = i->second;
-      for (full_attr_map_t::const_iterator j = n->attrs.begin();
-           j != n->attrs.end(); ++j)
-        if (j->second.first)
-          lua.hook_apply_attribute (j->first(), file_path(sp),
-                                    j->second.second());
+  P(F("scanning filesystem for attributes"));
+  
+  node_map const & nodes = new_roster.all_nodes();
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      node_id nid = i->first;
+      node_t node = i->second;
+
+      // Only analyze restriction-included files.
+      if (!mask.includes(new_roster, nid))
+        continue;
+      
+      split_path sp;
+      new_roster.get_name(nid, sp);
+      file_path name(sp);
+
+      L(FL("scanning attributes of %s") % name);
+      
+      std::pair<bool, attr_value> curval;
+      std::pair<bool, std::string> getval;
+      bool luaok;
+ 
+      if (path_exists(name))
+        {
+          for (std::vector<string>::const_iterator i = init_functions.begin();
+               i != init_functions.end(); ++i)
+            {
+              curval = node->attrs[attr_key(*i)];
+              if (curval.first)
+                {
+                  L(FL("attribute '%s' is currently '%s'") % *i % curval.second);
+                }
+              else
+                {
+                  L(FL("attribute '%s' is currently unset") % *i);
+                }
+              
+              luaok = lua.hook_scan_attribute(*i, name, getval);
+              E(luaok, F("error doing lua hook_scan_attribute for attribute %s") % *i);
+              if (getval.first)
+                {
+                  if (curval.first && (curval.second() == getval.second))
+                    {
+                      L(FL("skipping; filesystem matches recorded workspace."));
+                      continue;                    
+                    } 
+                  else
+                    {
+                      L(FL("setting attribute to '%s'") % getval.second);
+                      er.set_attr(sp, attr_key(*i), attr_value(getval.second));
+                    }                }
+              else
+                {
+                  L(FL("clearing attribute"));
+                  er.clear_attr(sp, attr_key(*i));
+                }                
+            }  
+        }     
     }
 }
+
+void 
+workspace::apply_attrs(file_path const & pth, full_attr_map_t const & attrs)
+{
+  L(FL("applying attrs to %s") % pth);
+  for (full_attr_map_t::const_iterator j = attrs.begin();
+       j != attrs.end(); ++j)
+    {
+      if (j->second.first)
+        {
+          lua.hook_apply_attribute (j->first(),
+                                    pth,
+                                    j->second.second(),
+                                    false);
+        }
+    }
+}
+
 
 // Local Variables:
 // mode: C++

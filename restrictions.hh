@@ -81,14 +81,14 @@ class node_restriction : public restriction
                    std::vector<file_path> const & excludes,
                    long depth,
                    roster_t const & roster,
-                   app_state & a);
+                   lua_hooks & lua);
 
   node_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
                    roster_t const & roster1,
                    roster_t const & roster2,
-                   app_state & a);
+                   lua_hooks & lua);
 
   bool includes(roster_t const & roster, node_id nid) const;
 
@@ -115,7 +115,7 @@ class path_restriction : public restriction
   path_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
-                   app_state & a);
+                   lua_hooks & lua);
 
   bool includes(split_path const & sp) const;
 
