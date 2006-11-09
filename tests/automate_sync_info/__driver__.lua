@@ -2,7 +2,7 @@
 mtn_setup()
 
 addfile("foo", "blah")
-addfile(".mtn-sync-test", "one")
+check(mtn("attr","set","foo","test:sync","one"))
 check(mtn("commit", "--date=2005-05-21T12:30:51", "--branch=testbranch",
           "--message=blah-blah"), 0, false, false)
 base = base_revision()

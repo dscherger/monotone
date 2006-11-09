@@ -2004,7 +2004,7 @@ static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string c
     }
     depth=0;
   }
-  N(result.empty(), F("no sync cerficate found in revision %s for domain %s")
+  N(!result.empty(), F("no sync cerficate found in revision %s for domain %s")
         % rid % domain);
   return result;
 }
