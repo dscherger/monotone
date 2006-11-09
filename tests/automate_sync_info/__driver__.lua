@@ -24,9 +24,9 @@ check(mtn("automate", "find_newest_sync", "notest"), 1, true, false)
 check(readfile("stdout") == "")
 
 check(mtn("automate", "get_sync_info", base, "test"), 0, true, false)
-check(readfile("stdout") == "one")
+check(readfile("stdout") == "  set \"foo\"\n attr \"test:sync\"\nvalue \"one\"\n")
 
-check(mtn("automate", "put_sync_info", rev1, "test", "one-two"), 0, true, false)
+check(mtn("automate", "put_sync_info", rev1, "test", "  set \"foo\"\n attr \"test:sync\"\nvalue \"one-two\"\n"), 0, true, false)
 check(readfile("stdout") == "")
 
 -- 
@@ -35,5 +35,5 @@ check(mtn("automate", "find_newest_sync", "test"), 0, true, false)
 check(readfile("stdout") == rev1)
 
 check(mtn("automate", "get_sync_info", rev1, "test"), 0, true, false)
-check(readfile("stdout") == "one-two")
+check(readfile("stdout") == "  set \"foo\"\n attr \"test:sync\"\nvalue \"one-two\"\n")
 
