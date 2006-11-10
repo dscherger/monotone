@@ -29,11 +29,31 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
   return revision_id(result);
 }
 
-std::string mtn_automate::get_sync_info(revision_id const& rid, std::string const& domain)
+mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std::string const& domain)
 { std::vector<std::string> args;
   args.push_back(rid.inner()());
   args.push_back(domain);
-  return automate("get_sync_info",args);
+  std::string aresult=automate("get_sync_info",args);
+  
+  basic_io::input_source source(aresult,"automate get_sync_info result");
+  basic_io::tokenizer tokenizer(source);
+  basic_io::parser parser(tokenizer);
+  
+  std::string t1;
+  split_path p1;
+  sync_map_t result;
+  while (parser.symp(syms::set))
+  { 
+    parser.sym();
+    parse_path(parser, p1);
+    parser.esym(syms::attr);
+    parser.str(t1);
+    pair<split_path, attr_key> new_pair(p1, t1);
+    parser.esym(syms::value);
+    parser.str(t2);
+    safe_insert(result, make_pair(new_pair, attr_value(t2)));
+  }
+  return result;
 }
 
 file_id mtn_automate::put_file(data const& d, file_id const& base)
@@ -430,10 +450,19 @@ dump(file_path const& fp, string & out)
 { out=fp.as_internal();
 }
 
-void mtn_automate::put_sync_info(revision_id const& rid, std::string const& domain, std::string const& data)
+void mtn_automate::put_sync_info(revision_id const& rid, std::string const& domain, sync_map_t const& data)
 { std::vector<std::string> args;
   args.push_back(rid.inner()());
   args.push_back(domain);
-  args.push_back(data);
+  basic_io::printer printer;
+  for (sync_map_t::const_iterator i = data.begin(); i != data.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::set, file_path(i->first.first));
+      st.push_str_pair(syms::attr, i->first.second());
+      st.push_str_pair(syms::value, i->second());
+      printer.print_stanza(st);
+    }
+  args.push_back(printer.buf);
   automate("put_sync_info",args);
 }

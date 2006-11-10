@@ -1107,7 +1107,7 @@ void cvs_repository::commit()
 // its value to repository, module, branch
 
 static void guess_repository(std::string &repository, std::string &module,
-        std::string & branch,std::string &last_state, revision_id &lastid, mtncvs_state &app)
+        std::string & branch,mtn_automate::sync_map_t &last_state, revision_id &lastid, mtncvs_state &app)
 { I(!app.opts.branch_name().empty());
   try
   { lastid=app.find_newest_sync(app.opts.domain(),app.opts.branch_name());
@@ -1151,7 +1151,7 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
 { app.open();
   std::string repository=_repository, module=_module, branch=_branch;
   
-  std::string last_sync_info;
+  mtn_automate::sync_map_t last_sync_info;
   revision_id lastid;
 
   { std::string rep,mod,br;
@@ -1224,33 +1224,29 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
   return iter.first;
 }
 
-void cvs_repository::process_sync_info(std::string const& sync_info, revision_id const& rid)
+void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info, revision_id const& rid)
 { mtn_automate::manifest_map manifest=app.get_manifest_of(rid);
   // populate data structure using this sync info
       cvs_edge e(rid.inner(),app);
 
-      piece::piece_table pieces;
+      //piece::piece_table pieces;
       // in Zeilen aufteilen
-      piece::index_deltatext(sync_info,pieces);
-      I(!pieces.empty());
-      piece::piece_table::const_iterator p=pieces.begin()+1;
+      //piece::index_deltatext(sync_info,pieces);
+//      I(!pieces.empty());
+//      piece::piece_table::const_iterator p=pieces.begin()+1;
       
-      while (p!=pieces.end() && (**p)!="#files\n") ++p;
-      if (p!=pieces.end()) ++p; // skip the #files line
-      for (;p!=pieces.end();++p)
-      { std::string line=**p;
-        I(!line.empty());
-        I(line[line.size()-1]=='\n');
-        line.erase(line.size()-1,1); // erase the newline char
-        // the format is "<revision>[/<keyword_substitution>] <path>\tsha1sum\n"
-        // e.g. "1.1 .cvsignore",     "1.43/-kb test.png"
-        std::string::size_type space=line.find(' ');
-        I(space!=std::string::npos);
-        std::string::size_type sha1=line.find('\t',space+1);
-        I(sha1!=std::string::npos);
-        std::string monotone_path=line.substr(space+1,sha1-space-1);
-        std::string path=monotone_path;
-        std::string cvssha1sum=line.substr(sha1+1);
+//      while (p!=pieces.end() && (**p)!="#files\n") ++p;
+//      if (p!=pieces.end()) ++p; // skip the #files line
+      for (mtn_automate::manifest_map::const_iterator i=manifest.begin();
+              i!=manifest.end();++i)
+      {
+        // populate the file info
+        split_path sp;
+        i->first.split(sp);
+//        std::string monotone_path=line.substr(space+1,sha1-space-1);
+//        std::string path=monotone_path;
+        std::string cvssha1sum=sync_info[std::make_pair(sp,domain+":sha1")];
+        @@
         // look for the optional initial slash separating the keyword mode
         std::string::size_type slash=line.find('/');
         if (slash==std::string::npos || slash>space)
