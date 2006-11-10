@@ -583,6 +583,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 
 static file_id get_sync_id(mtncvs_state &app, revision_id id)
 { mtn_automate::manifest_map m=app.get_manifest_of(id);
+@@@
   return m[file_path_internal(".mtn-sync-"+app.opts.domain())];
 }
 
@@ -857,7 +858,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { commit_arg a;
       a.file=file_path(*i).as_internal();
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
-      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
+//      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
       I(old!=parent_manifest.end());
       a.removed=true;
       a.old_revision=old->second->cvs_version;
@@ -900,7 +901,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { 
       commit_arg a;
       a.file=file_path(i->first).as_internal();
-      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
+//      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
       a.new_content=app.get_file(i->second);
       commits.push_back(a);
       L(FL("add %s %d\n") % a.file % a.new_content.size());
@@ -912,7 +913,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     { 
       commit_arg a;
       a.file=file_path(i->first).as_internal();
-      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
+//      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
       cvs_manifest::const_iterator old=parent_manifest.find(a.file);
       I(old!=parent_manifest.end());
       a.old_revision=old->second->cvs_version;
@@ -1245,23 +1246,24 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
         i->first.split(sp);
 //        std::string monotone_path=line.substr(space+1,sha1-space-1);
 //        std::string path=monotone_path;
-        std::string cvssha1sum=sync_info[std::make_pair(sp,domain+":sha1")];
-        @@
+//        std::string cvssha1sum=sync_info[std::make_pair(sp,domain+":sha1")];
+        
         // look for the optional initial slash separating the keyword mode
-        std::string::size_type slash=line.find('/');
-        if (slash==std::string::npos || slash>space)
-          slash=space;
+//        std::string::size_type slash=line.find('/');
+//        if (slash==std::string::npos || slash>space)
+//          slash=space;
 
         file_state fs;
         fs.since_when=e.time;
-        fs.cvs_version=line.substr(0,slash);
-        fs.cvssha1sum=cvssha1sum;
-        if (space!=slash) 
-          fs.keyword_substitution=line.substr(slash+1,space-(slash+1));
+        fs.cvs_version=sync_info[std::make_pair(sp,app.opts.domain()+":revision")];
+//        line.substr(0,slash);
+        fs.cvssha1sum=sync_info[std::make_pair(sp,app.opts.domain()+":sha1")];
+//        if (space!=slash) 
+        fs.keyword_substitution=sync_info[std::make_pair(sp,app.opts.domain()+":keywords")];
+          //line.substr(slash+1,space-(slash+1));
         
         // determine sha1sum of monotone file
-        mtn_automate::manifest_map::const_iterator fileiter
-          =manifest.find(file_path_internal(path));
+        mtn_automate::manifest_map::const_iterator fileiter=manifest.find(i->first);
         I(fileiter!=manifest.end());
         fs.sha1sum=fileiter->second.inner();
         fs.log_msg=e.changelog;
@@ -1271,6 +1273,7 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
       }
       piece::reset();
       revision_lookup[e.revision]=edges.insert(e).first;
+#warning do I need this code?
 #if 0
   // because some manifests might have been absolute (not delta encoded)
   // we possibly did not notice removes. check for them
@@ -1718,29 +1721,25 @@ void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
 }
 //#endif
 
-void cvs_repository::parse_module_paths(std::string const& value_s)
+void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
 { 
   std::map<std::string,std::string> sd;
-  piece::piece_table pieces;
-  piece::index_deltatext(value_s,pieces);
+//  piece::piece_table pieces;
+//  piece::index_deltatext(value_s,pieces);
   bool active=false;
-  for (piece::piece_table::const_iterator p=pieces.begin();p!=pieces.end();++p)
-  { std::string line=**p;
-    MM(line);
-    if (!active)
-    { if (line=="#modules\n") active=true;
-      continue;
-    }
-    if (line=="#files\n") break;
-    I(!line.empty());
-    std::string::size_type tab=line.find('\t');
-    I(tab!=std::string::npos);
-    I(line[line.size()-1]=='\n');
-    line.erase(line.size()-1,1);
-    L(FL("found modules %s:%s") % line.substr(0,tab) % line.substr(tab+1));
-    sd[line.substr(0,tab)]=line.substr(tab+1);
+  for (sync_map_t::const_iterator i=mp.begin(); i!=mp.end(); ++i)
+//  piece::piece_table::const_iterator p=pieces.begin();p!=pieces.end();++p)
+  { //std::string line=**p;
+    //MM(line);
+    //if (!active)
+    //{ if (line=="#modules\n") active=true;
+    //  continue;
+    //}
+    //if (line=="#files\n") break;
+    if (i->first.second()==app.opts.domain()+":path")
+    L(FL("found modules %s:%s") % i->first.first % i->second());
+    sd[i->first.first]=i->second();
   }
-  piece::reset();
   SetServerDir(sd);
 }
 
