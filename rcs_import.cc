@@ -347,7 +347,7 @@ cvs_branch
     return range.first;
   }
 
-  void append_event(cvs_event_ptr c) 
+  cvs_blob_index append_event(cvs_event_ptr c) 
   {
     if (c->get_digest().is_commit())
       {
@@ -357,6 +357,7 @@ cvs_branch
 
     blob_index_iterator b = get_blob(c->get_digest(), true);
     blobs[b->second].push_back(c);
+    return b->second;
   }
 };
 
@@ -385,6 +386,9 @@ cvs_history
   map<cvs_branchname, shared_ptr<cvs_branch> > branches;
   shared_ptr<cvs_branch> trunk;
 
+  // store a list of possible parents for every symbol
+  map< cvs_event_digest, set< shared_ptr< cvs_branch > > > symbol_parents;
+
   // stack of branches we're injecting states into
   stack< shared_ptr<cvs_branch> > stk;
   stack< cvs_branchname > bstk;
@@ -403,6 +407,7 @@ cvs_history
 
   void index_branchpoint_symbols(rcs_file const & r);
 
+  void add_symbol_parent(const cvs_event_digest d);
   void push_branch(string const & branch_name, bool private_branch);
   void pop_branch();
 };
@@ -753,7 +758,9 @@ process_branch(string const & begin_version,
                     boost::static_pointer_cast<cvs_event, cvs_event_tag>(
                       shared_ptr<cvs_event_tag>(
                         new cvs_event_tag(curr_commit, tag)));
-                  cvs.stk.top()->append_event(event);
+
+                  cvs_blob_index bi = cvs.stk.top()->append_event(event);
+                  cvs.add_symbol_parent(event->get_digest());
 
                   // append to the last_commit deps
                   if (last_commit != NULL)
@@ -823,7 +830,9 @@ process_branch(string const & begin_version,
               cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
 
               // then append it to the parent branch
-              cvs.stk.top()->append_event(branch_event);
+              cvs_blob_index bi = cvs.stk.top()->append_event(branch_event);
+              cvs.add_symbol_parent(branch_event->get_digest());
+
               L(FL("added branch event for file %s from branch %s into branch %s")
                 % cvs.path_interner.lookup(curr_commit->path)
                 % cvs.bstk.top()
@@ -1018,6 +1027,23 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
     }
 }
 
+void
+cvs_history::add_symbol_parent(const cvs_event_digest d)
+{
+  if (symbol_parents.find(d) == symbol_parents.end())
+    symbol_parents.insert(make_pair(d, set< shared_ptr < cvs_branch > > ()));
+
+  map< cvs_event_digest,
+       set< shared_ptr< cvs_branch > > >::iterator parent_list_iter =
+          symbol_parents.find(d);
+
+  I(parent_list_iter != symbol_parents.end());
+
+  set< shared_ptr< cvs_branch > > & parent_list = parent_list_iter->second;
+
+  if (parent_list.find(stk.top()) == parent_list.end())
+    parent_list.insert(stk.top());
+}
 
 
 void
@@ -1471,6 +1497,68 @@ import_cvs_repo(system_path const & cvsroot,
     walk_tree(file_path(), walker);
     guard.commit();
   }
+
+  // make sure all symbol blobs are only present in one branch
+  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::const_iterator i;
+  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
+    {
+      I(i->second.size() > 0);
+      cvs_event_digest d = i->first;
+
+      if (i->second.size() == 1)
+        {
+          shared_ptr< cvs_branch > branch = *i->second.begin();
+          blob_index_iterator bi = branch->get_blob(d, false);
+          cvs_blob & blob = branch->blobs[bi->second];
+
+          shared_ptr< cvs_event > ev = *(blob.get_events().begin());
+
+          if (d.is_branch())
+            {
+              shared_ptr<cvs_event_branch> be =
+                boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
+
+              L(FL("Branch %s is a child of branch %s")
+                % cvs.branchname_interner.lookup(be->branch->branchname)
+                % cvs.branchname_interner.lookup(branch->branchname));
+            }
+        }
+      else if (i->second.size() > 1)
+        {
+          I(!d.is_commit());
+
+          for (set< shared_ptr< cvs_branch > >::const_iterator j =
+              i->second.begin(); j != i->second.end(); ++j)
+            {
+              blob_index_iterator bi = (*j)->get_blob(d, false);
+              cvs_blob & blob = (*j)->blobs[bi->second];
+
+              shared_ptr< cvs_event > ev = *(blob.get_events().begin());
+
+              if (d.is_branch())
+                {
+                  shared_ptr<cvs_event_branch> be =
+                    boost::static_pointer_cast<cvs_event_branch,
+                                               cvs_event>(ev);
+
+                  L(FL("XXXXX: Symbol (branch %s) is in branch %s")
+                    % cvs.branchname_interner.lookup(be->branch->branchname)
+                    % cvs.branchname_interner.lookup((*j)->branchname));
+                }
+              else if (d.is_tag())
+                {
+                  shared_ptr<cvs_event_tag> te =
+                    boost::static_pointer_cast<cvs_event_tag, cvs_event>(ev);
+
+                  L(FL("XXXXX: symbol tag %s is in branch %s")
+                    % cvs.tag_interner.lookup(te->tag)
+                    % cvs.branchname_interner.lookup((*j)->branchname));
+                }
+              else
+                I(false);
+            }
+        }
+    }
 
   I(cvs.stk.size() == 1);
 
