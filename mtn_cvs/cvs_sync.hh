@@ -134,10 +134,9 @@ private:
 
 public:
   mtn_automate::sync_map_t create_cvs_cert_header() const;
-  std::string::size_type parse_cvs_cert_header(mtn_automate::sync_map_t const& c, 
-      std::string &repository, std::string& module, std::string& branch) const;
-//  static std::string::size_type parse_cvs_cert_header(cert_value const& value, 
-//      std::string &repository, std::string& module, std::string& branch);
+  static void parse_cvs_cert_header(
+      mtn_automate::sync_map_t const& c, std::string const& domain,
+      std::string &repository, std::string& module, std::string& branch);
       
 private:
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
