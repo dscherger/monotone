@@ -278,6 +278,11 @@ public:
       return events;
     }
 
+  void clear()
+    {
+      events.clear();
+    }
+
   blob_event_iter & begin() const
     {
       return *(new blob_event_iter(events.begin()));
@@ -1460,6 +1465,141 @@ resolve_blob_dependencies(cvs_history &cvs,
   cons->store_revisions();
 }
 
+void
+move_symbol_events(cvs_history & cvs, const cvs_event_digest d,
+                   shared_ptr< cvs_branch > from_branch,
+                   shared_ptr< cvs_branch > to_branch)
+{
+  L(FL("moving symbol from branch %s to branch %s")
+    % cvs.branchname_interner.lookup(from_branch->branchname)
+    % cvs.branchname_interner.lookup(to_branch->branchname));
+
+  blob_index_iterator bi;
+
+  bi = from_branch->get_blob(d, false);
+  cvs_blob & from_blob = from_branch->blobs[bi->second];
+
+  bi = to_branch->get_blob(d, false);
+  cvs_blob & to_blob = to_branch->blobs[bi->second];
+
+  vector< cvs_event_ptr > & events = from_blob.get_events();
+
+  for (blob_event_iter i = events.begin(); i != events.end(); ++i)
+    {
+      (*i)->dependencies.clear();
+      to_blob.push_back(*i);
+    }
+
+  from_blob.clear();
+}
+
+void
+mark_branch_ancestors(cvs_history & cvs)
+{
+  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::iterator i;
+  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
+    {
+      I(i->second.size() > 0);
+      cvs_event_digest d = i->first;
+      I(!d.is_commit());
+
+      if (i->second.size() == 1)
+        {
+          shared_ptr< cvs_branch > branch = *i->second.begin();
+          blob_index_iterator bi = branch->get_blob(d, false);
+          cvs_blob & blob = branch->blobs[bi->second];
+
+          shared_ptr< cvs_event > ev = *(blob.get_events().begin());
+
+          if (d.is_branch())
+            {
+              shared_ptr<cvs_event_branch> be =
+                boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
+
+              be->branch->parent_branch = branch;
+            }
+        }
+    }
+}
+
+pair< int, int >
+move_symbols(cvs_history & cvs)
+{
+  int unresolved_symbols = 0;
+  int symbols_moved = 0;
+
+  typedef vector< pair< cvs_event_digest, shared_ptr< cvs_branch > > > remp;
+  remp removable_parents;
+
+  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::iterator i;
+  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
+    {
+      cvs_event_digest d = i->first;
+      I(!d.is_commit());
+
+      if (i->second.size() > 1)
+        {
+          for (set< shared_ptr< cvs_branch > >::iterator j =
+              i->second.begin(); j != i->second.end(); ++j)
+            {
+              unresolved_symbols++;
+
+              blob_index_iterator bi = (*j)->get_blob(d, false);
+              cvs_blob & blob = (*j)->blobs[bi->second];
+
+              shared_ptr< cvs_event > ev = *(blob.get_events().begin());
+
+              for (set< shared_ptr< cvs_branch > >::iterator k = j;
+                  k != i->second.end(); ++k)
+                {
+                  if ((*j)->parent_branch == (*k))
+                    {
+                      L(FL("branch %s is a child of branch %s")
+                        % cvs.branchname_interner.lookup((*j)->branchname)
+                        % cvs.branchname_interner.lookup((*k)->branchname));
+
+                      move_symbol_events(cvs, d, *k, *j);
+                      removable_parents.push_back(make_pair(d, *k));
+                      symbols_moved++;
+                    }
+                  else if ((*k)->parent_branch == (*j))
+                    {
+                      L(FL("branch %s is a child of branch %s")
+                        % cvs.branchname_interner.lookup((*k)->branchname)
+                        % cvs.branchname_interner.lookup((*j)->branchname));
+
+                      move_symbol_events(cvs, d, *j, *k);
+                      removable_parents.push_back(make_pair(d, *j));
+                      symbols_moved++;
+                    }
+                }
+            }
+        }
+    }
+
+  // remove the symbol parents of the blobs we have moved
+  for (remp::const_iterator w = removable_parents.begin();
+    w != removable_parents.end(); ++w)
+      cvs.symbol_parents[w->first].erase(w->second);
+
+  return make_pair(unresolved_symbols, symbols_moved);
+}
+
+void
+resolve_symbols(cvs_history & cvs)
+{
+  mark_branch_ancestors(cvs);
+
+  pair< int, int > move_result = move_symbols(cvs);
+  L(FL("XXXX: unresolved symbols: %d, moved %d") % move_result.first % move_result.second);
+  while ((move_result.first > 0) && (move_result.second > 0))
+    {
+      move_result = move_symbols(cvs);
+      L(FL("XXXX: unresolved symbols: %d, moved %d") % move_result.first % move_result.second);
+    }
+
+  I(move_result.first == 0);
+}
 
 void
 import_cvs_repo(system_path const & cvsroot,
@@ -1499,102 +1639,9 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
-  // make sure all symbol blobs are only present in one branch
-  int unresolved_symbols = 99999998;
-  int prev_unresolved_symbols = 99999999;
-
-  while ((unresolved_symbols > 0) && (unresolved_symbols < prev_unresolved_symbols))
-    {
-      prev_unresolved_symbols = unresolved_symbols;
-      unresolved_symbols = 0;
-
-  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::iterator i;
-  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
-    {
-      I(i->second.size() > 0);
-      cvs_event_digest d = i->first;
-
-      if (i->second.size() == 1)
-        {
-          shared_ptr< cvs_branch > branch = *i->second.begin();
-          blob_index_iterator bi = branch->get_blob(d, false);
-          cvs_blob & blob = branch->blobs[bi->second];
-
-          shared_ptr< cvs_event > ev = *(blob.get_events().begin());
-
-          if (d.is_branch())
-            {
-              shared_ptr<cvs_event_branch> be =
-                boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
-
-              be->branch->parent_branch = branch;
-            }
-        }
-      else if (i->second.size() > 1)
-        {
-
-          I(!d.is_commit());
-
-          for (set< shared_ptr< cvs_branch > >::iterator j =
-              i->second.begin(); j != i->second.end(); ++j)
-            {
-              unresolved_symbols++;
-
-              blob_index_iterator bi = (*j)->get_blob(d, false);
-              cvs_blob & blob = (*j)->blobs[bi->second];
-
-              shared_ptr< cvs_event > ev = *(blob.get_events().begin());
-
-              if (d.is_branch())
-                {
-                  shared_ptr<cvs_event_branch> be =
-                    boost::static_pointer_cast<cvs_event_branch,
-                                               cvs_event>(ev);
-
-                  L(FL("XXXXX: Symbol (branch %s) is in branch %s")
-                    % cvs.branchname_interner.lookup(be->branch->branchname)
-                    % cvs.branchname_interner.lookup((*j)->branchname));
-                }
-              else if (d.is_tag())
-                {
-                  shared_ptr<cvs_event_tag> te =
-                    boost::static_pointer_cast<cvs_event_tag, cvs_event>(ev);
-
-                  L(FL("XXXXX: symbol tag %s is in branch %s")
-                    % cvs.tag_interner.lookup(te->tag)
-                    % cvs.branchname_interner.lookup((*j)->branchname));
-                }
-              else
-                I(false);
-
-              for (set< shared_ptr< cvs_branch > >::iterator k = j;
-                  k != i->second.end(); ++k)
-                {
-                  if ((*j)->parent_branch == (*k))
-                    {
-                      L(FL("branch %s is a child of branch %s")
-                        % cvs.branchname_interner.lookup((*j)->branchname)
-                        % cvs.branchname_interner.lookup((*k)->branchname));
-
-                      i->second.erase(*k);
-                    }
-                  else if ((*k)->parent_branch == (*j))
-                    {
-                      L(FL("branch %s is a child of branch %s")
-                        % cvs.branchname_interner.lookup((*k)->branchname)
-                        % cvs.branchname_interner.lookup((*j)->branchname));
-
-                      i->second.erase(*j);
-                    }
-                }
-            }
-        }
-    }
-
-      L(FL("XXXX: still unresolved symbols: %d") % unresolved_symbols);
-    }
-
   I(cvs.stk.size() == 1);
+
+  resolve_symbols(cvs);
 
   ticker n_revs(_("revisions"), "r", 1);
 
@@ -1604,14 +1651,28 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
-  for(map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator i =
-          cvs.branches.begin(); i != cvs.branches.end(); ++i)
+  while (!cvs.branches.empty())
     {
-      transaction_guard guard(app.db);
-      string branchname = cvs.branchname_interner.lookup(i->first);
-      shared_ptr<cvs_branch> branch = i->second;
-      resolve_blob_dependencies(cvs, app, branchname, branch, n_revs);
-      guard.commit();
+      // import the first branch which has a parent_rid
+      map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator i;
+
+      for(i = cvs.branches.begin(); i != cvs.branches.end(); ++i)
+        {
+          shared_ptr<cvs_branch> branch = i->second;
+          if (!null_id(branch->parent_rid))
+            {
+              transaction_guard guard(app.db);
+              string branchname = cvs.branchname_interner.lookup(i->first);
+              resolve_blob_dependencies(cvs, app, branchname, branch, n_revs);
+              guard.commit();
+
+              cvs.branches.erase(i->first);
+              break;
+            }
+        }
+
+      // hopefully we found at least one branch with a parent_rid...
+      I(i != cvs.branches.end());
     }
 
   return;
@@ -1849,13 +1910,16 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
       shared_ptr<cvs_event_branch> cbe =
         boost::static_pointer_cast<cvs_event_branch, cvs_event>(*blob.begin());
 
-      string child_rid_str;
-      dump(child_rid, child_rid_str);
+      if (!blob.empty())
+        {
+          string child_rid_str;
+          dump(child_rid, child_rid_str);
 
-      L(FL("setting the parent revision id of branch %s to: %s") % 
-        cvs.branchname_interner.lookup(cbe->branch->branchname) % child_rid_str);
+          L(FL("setting the parent revision id of branch %s to: %s") % 
+            cvs.branchname_interner.lookup(cbe->branch->branchname) % child_rid_str);
 
-      cbe->branch->parent_rid = child_rid;
+          cbe->branch->parent_rid = child_rid;
+        }
     }
   else if (blob.get_digest().is_tag())
     {
