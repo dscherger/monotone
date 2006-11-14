@@ -144,35 +144,34 @@ std::string debug_files(const std::map<std::string,file_history> &files)
 #endif
 
 // returns the length of the first line (header) and fills in fields
-std::string::size_type cvs_repository::parse_cvs_cert_header(std::string const& value,
+void cvs_repository::parse_cvs_cert_header(
+      mtn_automate::sync_map_t const& value, std::string const& domain,
       std::string &repository, std::string& module, std::string& branch)
 { 
-  MM(value);
-  std::string::size_type nlpos=value.find('\n');
-  E(nlpos!=std::string::npos, F("malformed cvs-revision cert %s") % value);
-  std::string repo=value.substr(0,nlpos);
-  std::string::size_type modulebegin=repo.find('\t'); 
-  E(modulebegin!=std::string::npos, F("malformed cvs-revision header %s") % repo);
-  std::string::size_type branchbegin=repo.find('\t', modulebegin+1);
-  std::string::size_type modulelen=std::string::npos;
-  
-  if (branchbegin!=std::string::npos)
-  { branch=repo.substr(branchbegin+1);
-    modulelen=branchbegin-modulebegin-1;
-  }
-  else branch.clear();
-  L(FL("parse_header %d %d %d %d %s") % nlpos % modulebegin % branchbegin % modulelen % branch);
-  repository=repo.substr(0,modulebegin);
-  module=repo.substr(modulebegin+1,modulelen);
-  return nlpos;
+//  MM(value);
+  split_path sp;
+  repository.clear();
+  module.clear();
+  branch.clear();
+  mtn_automate::sync_map_t::const_iterator i=
+          value.find(std::make_pair(sp,domain+":root"));
+  if (i!=value.end()) repository=*i;
+  i= value.find(std::make_pair(sp,domain+":module"));
+  if (i!=value.end()) module=*i;
+  i= value.find(std::make_pair(sp,domain+":branch"));
+  if (i!=value.end()) branch=*i;
 }
 
-std::string cvs_repository::create_cvs_cert_header() const
+mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
 { 
   // I assume that at least TAB is uncommon in path names - even on Windows
-  std::string result=host+":"+root+"\t"+module;
-  if (!branch.empty()) result+="\t"+branch;
-  return result+"\n";
+  mtn_automate::sync_map_t result;
+  split_path sp;
+  result[std::make_pair(sp,app.opts.domain()+":root")]= host+":"+root;
+  result[std::make_pair(sp,app.opts.domain()+":module")]= module;
+  if (branch.empty())
+    result[std::make_pair(sp,app.opts.domain()+":branch")]= branch;
+  return result;
 }
 
 std::string cvs_repository::debug() const
@@ -581,11 +580,13 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   }
 }
 
+#if 0
 static file_id get_sync_id(mtncvs_state &app, revision_id id)
 { mtn_automate::manifest_map m=app.get_manifest_of(id);
 @@@
   return m[file_path_internal(".mtn-sync-"+app.opts.domain())];
 }
+#endif
 
 file_id cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest)
 { std::string state=create_sync_state(e);

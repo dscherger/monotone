@@ -133,9 +133,9 @@ private:
   time_t sync_since;
 
 public:
-  std::string create_cvs_cert_header() const;
-  static std::string::size_type parse_cvs_cert_header(std::string const& c, 
-      std::string &repository, std::string& module, std::string& branch);
+  mtn_automate::sync_map_t create_cvs_cert_header() const;
+  std::string::size_type parse_cvs_cert_header(mtn_automate::sync_map_t const& c, 
+      std::string &repository, std::string& module, std::string& branch) const;
 //  static std::string::size_type parse_cvs_cert_header(cert_value const& value, 
 //      std::string &repository, std::string& module, std::string& branch);
       
@@ -174,17 +174,17 @@ private:
   void store_modules();
   void retrieve_modules();
   std::string gather_merge_information(revision_id const& id);
-  file_id attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest);
-  std::string create_sync_state(cvs_edge const& e);
+//  file_id attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest);
+  mtn_automate::sync_map_t create_sync_state(cvs_edge const& e);
   
   static std::string time_t2human(const time_t &t);
 public: // semi public interface for push/pull
   void prime();
   void update();
   void commit();
-  void process_sync_info(std::string const& sync_info, revision_id const& rid);
+  void process_sync_info(mtn_automate::sync_map_t const& sync_info, revision_id const& rid);
   bool empty() const { return edges.empty() && files.empty(); }
-  void parse_module_paths(const std::string&);
+  void parse_module_paths(mtn_automate::sync_map_t const&);
 
   const cvs_manifest &get_files(const revision_id &e);
   
