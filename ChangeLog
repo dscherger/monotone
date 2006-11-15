@@ -1,3 +1,51 @@
+2006-11-15  Richard Levitte  <richard@levitte.org>
+
+	* lua.cc (LUAEXT): Implement includedirpattern(), which is like
+	includedir() but also takes a glob pattern for the files to load.
+	* monotone.texi (Additional Lua Functions): Document
+	includedirpattern().
+	* testsuite.lua,
+	tests/include()_and_includedir()_lua_functions/:
+	Renamed to include()_includedir()_and_includedirpattern()_lua_functions
+	__driver__.lua: Test includedirpattern().
+
+2006-11-15  Richard Levitte  <richard@levitte.org>
+
+	* debian/monotone-server.postinst: Add a note that a db migration
+	may take a while.
+
+2006-11-15  Thomas Keller  <me@thomaskeller.biz>
+
+	* cmd_automate.cc: defined equal sounding error message
+	"Bad input to stdio" further
+
+2006-11-14  Thomas Keller  <me@thomaskeller.biz>
+
+	* new automate content_diff command which is basically
+	the same like mtn diff (also uses most of its infrastructure)
+	minus the display of the basic_io revision header
+	* tests/automate_content_diff: test for that
+	* tests/automate_automate_version test renamed to
+	automate_interface_version
+	* monotone.texi: list formatting for automate attributes
+	documentation, docs for automate content_diff
+	* fixed commented version number for two commands
+
+2006-11-14  Richard Levitte  <richard@levitte.org>
+
+	NOTE: I bumped the Debian version number to 0.31-90.1 in this
+	change so needed upgrades of the monotone-server package would
+	get through easily.  I'm regarding that as a very early pre-
+	release of 0.32.  Debian maintainers should still release 0.31
+	the normal way (updating to the monotone-0.31 tag) and insert
+	their entry in debian/changelog directly above the 0.31-0.1 entry.
+	* debian/NEWS: Added to provide information on important changes
+	to Debian users.
+	* debian/changelog: Added an entry for 0.31-90.1
+	* debian/monotone-server.postinst: Changed to provide automatic
+	upgrade using 'mtn db regenerate_caches" if the previous monotone
+	version is less than 0.31-90.1.
+
 2006-11-13  Thomas Moschny  <thomas.moschny@gmx.de>
 
 	* cmd_diff_log.cc (CMD(log)): Fix-ups from last propagate nvm ->
