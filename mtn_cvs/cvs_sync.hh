@@ -173,7 +173,8 @@ private:
   void store_modules();
   void retrieve_modules();
   std::string gather_merge_information(revision_id const& id);
-//  file_id attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest);
+  void attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest,
+        mtn_automate::cset &cs);
   mtn_automate::sync_map_t create_sync_state(cvs_edge const& e);
   
   static std::string time_t2human(const time_t &t);

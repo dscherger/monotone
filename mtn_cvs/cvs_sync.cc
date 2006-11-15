@@ -155,11 +155,11 @@ void cvs_repository::parse_cvs_cert_header(
   branch.clear();
   mtn_automate::sync_map_t::const_iterator i=
           value.find(std::make_pair(sp,domain+":root"));
-  if (i!=value.end()) repository=*i;
+  if (i!=value.end()) repository=i->second();
   i= value.find(std::make_pair(sp,domain+":module"));
-  if (i!=value.end()) module=*i;
+  if (i!=value.end()) module=i->second();
   i= value.find(std::make_pair(sp,domain+":branch"));
-  if (i!=value.end()) branch=*i;
+  if (i!=value.end()) branch=i->second();
 }
 
 mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
@@ -588,35 +588,49 @@ static file_id get_sync_id(mtncvs_state &app, revision_id id)
 }
 #endif
 
-file_id cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest)
-{ std::string state=create_sync_state(e);
-  if (state.empty()) return file_id(); // locally changed CVS tree state
-  std::string syncname=".mtn-sync-"+app.opts.domain();
-  mtn_automate::manifest_map::const_iterator it=oldmanifest.find(file_path_internal(syncname));
-  file_id fid;
-  if (it!=oldmanifest.end())
-    fid=app.put_file(state,it->second);
-  else
-    fid=app.put_file(state);
-  static time_t serial;
-  file_state fs(++serial,"");
-  fs.size=state.size();
-  fs.sha1sum=fid.inner();
-  std::pair<cvs_file_state,bool> ires=files[syncname].known_states.insert(fs);
-  I(ires.second);
-  e.xfiles[syncname]=ires.first;
-  return fid;
+void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest,
+        mtn_automate::cset &cs)
+{ mtn_automate::sync_map_t state=create_sync_state(e);
+  for (mtn_automate::sync_map_t::const_iterator i=state.begin(); 
+        i!=state.end(); ++i)
+  { 
+    mtn_automate::manifest_map::const_iterator f= oldmanifest.find(file_path(i.first));
+    if (f==oldmanifest.end()) cs.attrs_set[i->first]=i->second;
+    else
+    {
+      mtn_automate::attr_map_t::const_iterator a=f->second.find(i.first.second);
+      if (a==f->second.end()) cs.attrs_set[i->first]=i->second;
+      else if (a->second!=i->second)
+      {
+        cs.attrs_cleared.insert(i->first);
+        cs.attrs_set[i->first]=i->second;
+      }
+    }
+  }
+  
+  for (mtn_automate::manifest_map::const_iterator i=oldmanifest.begin(); 
+        i!=oldmanifest.end(); ++i)
+  {
+    split_path sp;
+    i->first.split(sp);
+    for (mtn_automate::sync_map_t::const_iterator f=state.begin(); f!=state.end(); ++f)
+    {
+      if (f->first.first!=sp) continue;
+      mtn_automate::attr_map_t::const_iterator a=f->first 
+      ??? @@@ delete superfluous attrs
+    }
+  }
 }
 
-std::string cvs_repository::create_sync_state(cvs_edge const& e)
+mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
 { std::string state=create_cvs_cert_header();
-  state+="#modules\n";
   const std::map<std::string,std::string> &sd=GetServerDir();
   for (std::map<std::string,std::string>::const_iterator i=sd.begin();
         i!=sd.end();++i)
-  { state+=i->first+"\t"+i->second+"\n";
+  { split_path sp;
+    file_path_internal(i->first).split(sp);
+    state[std::make_pair(sp,app.opts.domain()+":directory")]=i->second;
   }
-  state+="#files\n";
   
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
   { 
@@ -624,16 +638,19 @@ std::string cvs_repository::create_sync_state(cvs_edge const& e)
     if (i->second->cvs_version.empty())
     { W(F("blocking attempt to certify an empty CVS revision\n"
         "(this is normal for a cvs_takeover of a locally modified tree)\n"));
-      return std::string();
+      return mtn_automate::sync_map_t();
     }
 #else
     I(!i->second->cvs_version.empty());
 #endif
-    state+=i->second->cvs_version;
+    split_path sp;
+    file_path_internal(i->first).split(sp);
+    state[std::make_pair(sp,app.opts.domain()+":revision")]=i->second->cvs_version;
     if (!i->second->keyword_substitution.empty())
-      state+="/"+i->second->keyword_substitution;
+      state[std::make_pair(sp,app.opts.domain()+":keyword")]=i->second->keyword_substitution;
 // FIXME: How to flag locally modified files? add the synched sha1sum?
-    state+=" "+i->first+"\t"+i->second->sha1sum()+"\n";
+    if (!i->second->sha1sum().empty())
+      state[std::make_pair(sp,app.opts.domain()+":sha1")]=i->second->sha1sum()/*.substr(0,6)*/;
   }
   return state;
 }
@@ -665,8 +682,8 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     mtn_automate::manifest_map oldmanifest;
     if (!null_id(parent_rid))
       oldmanifest=app.get_manifest_of(parent_rid);
-    attach_sync_state(const_cast<cvs_sync::cvs_edge&>(*e),oldmanifest);
     build_change_set(*this,oldmanifest,e->xfiles,cs,remove_state);
+    attach_sync_state(const_cast<cvs_sync::cvs_edge&>(*e),oldmanifest,cs);
     //cs->apply_to(eros);
     //calculate_ident(new_roster, rev.new_manifest);
     //safe_insert(rev.edges, std::make_pair(parent_rid, cs));

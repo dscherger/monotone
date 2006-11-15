@@ -19,7 +19,9 @@
 
 // frontend
 struct mtn_automate : mtn_pipe
-{ typedef std::map<file_path,file_id> manifest_map; // (directories have a null file_id)
+{ typedef std::map<attr_key, attr_value> attr_map_t;
+  // (directories have a null file_id)
+  typedef std::map<file_path,std::pair<file_id,attr_map_t> > manifest_map;
 
   struct cset
   { path_set nodes_deleted;
@@ -46,11 +48,12 @@ struct mtn_automate : mtn_pipe
     bool trusted; 
     certificate() : signature(unknown), trusted() {}
   };
+  typedef std::map<std::pair<split_path, attr_key>, attr_value> sync_map_t;
 
+// methods
   void check_interface_revision(std::string const&minimum);
   revision_id find_newest_sync(std::string const& domain, std::string const& branch="");
   
-  typedef std::map<std::pair<split_path, attr_key>, attr_value> sync_map_t;
   sync_map_t get_sync_info(revision_id const& rid, std::string const& domain);
   void put_sync_info(revision_id const& rid, std::string const& domain, sync_map_t const& data);
 

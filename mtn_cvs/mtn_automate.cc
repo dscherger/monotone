@@ -216,7 +216,7 @@ mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
           pa.str(pth);
           pa.esym(syms::content);
           pa.hex(content);
-          result[file_path_internal(pth)]=file_id(content);
+          result[file_path_internal(pth)].first=file_id(content);
         }
       else if (pa.symp(syms::dir))
         {
@@ -226,6 +226,27 @@ mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
         }
       else
         break;
+      
+      // Non-dormant attrs
+      while(pa.symp(basic_io::syms::attr))
+        {
+          pa.sym();
+          std::string k, v;
+          pa.str(k);
+          pa.str(v);
+          safe_insert(result[file_path_internal(pth)].second, 
+                    make_pair(attr_key(k),attr_value(v)));
+        }
+        
+      // Dormant attrs
+      while(pa.symp(basic_io::syms::dormant_attr))
+        {
+          pa.sym();
+          string k;
+          pa.str(k);
+          safe_insert(result[file_path_internal(pth)].second, 
+                    make_pair(attr_key(k),attr_value()));
+        }
     }
   return result;
 }
