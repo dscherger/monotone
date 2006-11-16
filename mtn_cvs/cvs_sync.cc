@@ -580,17 +580,10 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   }
 }
 
-#if 0
-static file_id get_sync_id(mtncvs_state &app, revision_id id)
-{ mtn_automate::manifest_map m=app.get_manifest_of(id);
-@@@
-  return m[file_path_internal(".mtn-sync-"+app.opts.domain())];
-}
-#endif
-
 void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest,
         mtn_automate::cset &cs)
 { mtn_automate::sync_map_t state=create_sync_state(e);
+  // added and changed attributes
   for (mtn_automate::sync_map_t::const_iterator i=state.begin(); 
         i!=state.end(); ++i)
   { 
@@ -607,17 +600,19 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
       }
     }
   }
-  
+  // deleted attributes
   for (mtn_automate::manifest_map::const_iterator i=oldmanifest.begin(); 
         i!=oldmanifest.end(); ++i)
   {
     split_path sp;
     i->first.split(sp);
-    for (mtn_automate::sync_map_t::const_iterator f=state.begin(); f!=state.end(); ++f)
+    for (mtn_automate::attr_map_t::const_iterator a=i->second.second.begin();
+              a!=i->second.second.end(); ++a)
     {
-      if (f->first.first!=sp) continue;
-      mtn_automate::attr_map_t::const_iterator a=f->first 
-      ??? @@@ delete superfluous attrs
+      mtn_automate::sync_map_t::const_iterator f
+          =state.find(std::make_pair(sp,a->first));
+      if (f==state.end()) 
+         cs.attrs_cleared.insert(std::make_pair(sp,a->first));
     }
   }
 }
