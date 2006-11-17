@@ -23,6 +23,13 @@
 #define sleep(x) _sleep(x)
 #endif
 
+template <class A,class B>
+ B const_map_access(std::map<A,B> const& m, A const& a)
+{ typename std::map<A,B>::const_iterator i=m.find(a);
+  if (i!=m.end()) return i->second;
+  else return B();
+}
+
 using namespace std;
 
 //  -> investigate under which conditions a string gets copied
@@ -150,16 +157,9 @@ void cvs_repository::parse_cvs_cert_header(
 { 
 //  MM(value);
   split_path sp;
-  repository.clear();
-  module.clear();
-  branch.clear();
-  mtn_automate::sync_map_t::const_iterator i=
-          value.find(std::make_pair(sp,domain+":root"));
-  if (i!=value.end()) repository=i->second();
-  i= value.find(std::make_pair(sp,domain+":module"));
-  if (i!=value.end()) module=i->second();
-  i= value.find(std::make_pair(sp,domain+":branch"));
-  if (i!=value.end()) branch=i->second();
+  repository=const_map_access(value,std::make_pair(sp,attr_key(domain+":root")))();
+  module=const_map_access(value,std::make_pair(sp,attr_key(domain+":module")))();
+  branch=const_map_access(value,std::make_pair(sp,attr_key(domain+":branch")))();
 }
 
 mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
@@ -326,7 +326,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
   L(FL("build_change_set(%d,%d,)\n") % oldr.size() % newm.size());
   
   for (mtn_automate::manifest_map::const_iterator f = oldr.begin(); f != oldr.end(); ++f)
-    { if (null_id(f->second)) continue; // directory
+    { if (null_id(f->second.first)) continue; // directory
       
       cvs_manifest::const_iterator fn = newm.find(f->first.as_internal());
       if (fn==newm.end())
@@ -338,7 +338,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
 //        cvs_delta[path.as_internal()]=remove_state;
       }
       else 
-        { if (f->second == fn->second->sha1sum)
+        { if (f->second.first == fn->second->sha1sum)
             {
 //              L(FL("skipping preserved entry state '%s' on '%s'\n")
 //                % fn->second->sha1sum % fn->first);         
@@ -346,11 +346,11 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
           else
             {
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
-                % f->first % f->second % fn->second->sha1sum);
+                % f->first % f->second.first % fn->second->sha1sum);
               I(!fn->second->sha1sum().empty());
               split_path sp;
               f->first.split(sp);
-              safe_insert(cs.deltas_applied, make_pair(sp, make_pair(f->second,fn->second->sha1sum)));
+              safe_insert(cs.deltas_applied, std::make_pair(sp, std::make_pair(f->second,fn->second->sha1sum)));
 //              cvs_delta[path.as_internal()]=fn->second;
             }
 #warning 2do mode_change
@@ -587,12 +587,14 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
   for (mtn_automate::sync_map_t::const_iterator i=state.begin(); 
         i!=state.end(); ++i)
   { 
-    mtn_automate::manifest_map::const_iterator f= oldmanifest.find(file_path(i.first));
+    mtn_automate::manifest_map::const_iterator f
+          = oldmanifest.find(file_path(i->first.first));
     if (f==oldmanifest.end()) cs.attrs_set[i->first]=i->second;
     else
     {
-      mtn_automate::attr_map_t::const_iterator a=f->second.find(i.first.second);
-      if (a==f->second.end()) cs.attrs_set[i->first]=i->second;
+      mtn_automate::attr_map_t::const_iterator a
+          = f->second.second.find(i->first.second);
+      if (a==f->second.second.end()) cs.attrs_set[i->first]=i->second;
       else if (a->second!=i->second)
       {
         cs.attrs_cleared.insert(i->first);
@@ -618,13 +620,13 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
 }
 
 mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
-{ std::string state=create_cvs_cert_header();
+{ mtn_automate::sync_map_t state=create_cvs_cert_header();
   const std::map<std::string,std::string> &sd=GetServerDir();
   for (std::map<std::string,std::string>::const_iterator i=sd.begin();
         i!=sd.end();++i)
   { split_path sp;
     file_path_internal(i->first).split(sp);
-    state[std::make_pair(sp,app.opts.domain()+":directory")]=i->second;
+    state[std::make_pair(sp,attr_key(app.opts.domain()+":directory"))]=i->second;
   }
   
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
@@ -640,12 +642,15 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
 #endif
     split_path sp;
     file_path_internal(i->first).split(sp);
-    state[std::make_pair(sp,app.opts.domain()+":revision")]=i->second->cvs_version;
+    state[std::make_pair(sp,attr_key(app.opts.domain()+":revision"))]
+        =i->second->cvs_version;
     if (!i->second->keyword_substitution.empty())
-      state[std::make_pair(sp,app.opts.domain()+":keyword")]=i->second->keyword_substitution;
+      state[std::make_pair(sp,attr_key(app.opts.domain()+":keyword"))]
+          =i->second->keyword_substitution;
 // FIXME: How to flag locally modified files? add the synched sha1sum?
     if (!i->second->sha1sum().empty())
-      state[std::make_pair(sp,app.opts.domain()+":sha1")]=i->second->sha1sum()/*.substr(0,6)*/;
+      state[std::make_pair(sp,attr_key(app.opts.domain()+":sha1"))]
+            =i->second->sha1sum()/*.substr(0,6)*/;
   }
   return state;
 }
@@ -1130,7 +1135,7 @@ static void guess_repository(std::string &repository, std::string &module,
       return;
     }
     last_state=app.get_sync_info(lastid,app.opts.domain());
-    cvs_repository::parse_cvs_cert_header(last_state,repository,module,branch);
+    cvs_repository::parse_cvs_cert_header(last_state,app.opts.domain(),repository,module,branch);
     if (branch.empty())
       L(FL("using module '%s' in repository '%s'\n") % module % repository);
     else
@@ -1243,44 +1248,26 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
   // populate data structure using this sync info
       cvs_edge e(rid.inner(),app);
 
-      //piece::piece_table pieces;
-      // in Zeilen aufteilen
-      //piece::index_deltatext(sync_info,pieces);
-//      I(!pieces.empty());
-//      piece::piece_table::const_iterator p=pieces.begin()+1;
-      
-//      while (p!=pieces.end() && (**p)!="#files\n") ++p;
-//      if (p!=pieces.end()) ++p; // skip the #files line
       for (mtn_automate::manifest_map::const_iterator i=manifest.begin();
               i!=manifest.end();++i)
       {
         // populate the file info
         split_path sp;
         i->first.split(sp);
-//        std::string monotone_path=line.substr(space+1,sha1-space-1);
-//        std::string path=monotone_path;
-//        std::string cvssha1sum=sync_info[std::make_pair(sp,domain+":sha1")];
         
-        // look for the optional initial slash separating the keyword mode
-//        std::string::size_type slash=line.find('/');
-//        if (slash==std::string::npos || slash>space)
-//          slash=space;
-
         file_state fs;
         fs.since_when=e.time;
-        fs.cvs_version=sync_info[std::make_pair(sp,app.opts.domain()+":revision")];
-//        line.substr(0,slash);
-        fs.cvssha1sum=sync_info[std::make_pair(sp,app.opts.domain()+":sha1")];
-//        if (space!=slash) 
-        fs.keyword_substitution=sync_info[std::make_pair(sp,app.opts.domain()+":keywords")];
-          //line.substr(slash+1,space-(slash+1));
+        fs.cvs_version=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":revision")))();
+        fs.cvssha1sum=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":sha1")))();
+        fs.keyword_substitution=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":keywords")))();
         
         // determine sha1sum of monotone file
         mtn_automate::manifest_map::const_iterator fileiter=manifest.find(i->first);
         I(fileiter!=manifest.end());
-        fs.sha1sum=fileiter->second.inner();
+        fs.sha1sum=fileiter->second.first.inner();
         fs.log_msg=e.changelog;
         fs.author=e.author;
+        std::string path=file_path(i->first).as_internal();
         cvs_file_state cfs=remember(files[path].known_states,fs,path);
         e.xfiles.insert(std::make_pair(path,cfs));
       }
@@ -1737,21 +1724,12 @@ void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
 void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
 { 
   std::map<std::string,std::string> sd;
-//  piece::piece_table pieces;
-//  piece::index_deltatext(value_s,pieces);
   bool active=false;
-  for (sync_map_t::const_iterator i=mp.begin(); i!=mp.end(); ++i)
-//  piece::piece_table::const_iterator p=pieces.begin();p!=pieces.end();++p)
-  { //std::string line=**p;
-    //MM(line);
-    //if (!active)
-    //{ if (line=="#modules\n") active=true;
-    //  continue;
-    //}
-    //if (line=="#files\n") break;
+  for (mtn_automate::sync_map_t::const_iterator i=mp.begin(); i!=mp.end(); ++i)
+  {
     if (i->first.second()==app.opts.domain()+":path")
-    L(FL("found modules %s:%s") % i->first.first % i->second());
-    sd[i->first.first]=i->second();
+    L(FL("found module %s:%s") % i->first.first % i->second());
+    sd[file_path(i->first.first).as_internal()]=i->second();
   }
   SetServerDir(sd);
 }
@@ -1763,6 +1741,6 @@ void cvs_repository::retrieve_modules()
 
 // we could pass delta_base and forget about it later
 void cvs_repository::cert_cvs(cvs_edge const& e)
-{ std::string content=create_sync_state(e);
+{ mtn_automate::sync_map_t content=create_sync_state(e);
   app.put_sync_info(e.revision,app.opts.domain(),content);
 }
