@@ -350,7 +350,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
               I(!fn->second->sha1sum().empty());
               split_path sp;
               f->first.split(sp);
-              safe_insert(cs.deltas_applied, std::make_pair(sp, std::make_pair(f->second,fn->second->sha1sum)));
+              safe_insert(cs.deltas_applied, std::make_pair(sp, std::make_pair(f->second.first,fn->second->sha1sum)));
 //              cvs_delta[path.as_internal()]=fn->second;
             }
 #warning 2do mode_change
