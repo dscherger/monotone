@@ -29,6 +29,54 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
   return revision_id(result);
 }
 
+namespace
+{
+  namespace syms
+  {
+    // cset symbols
+    symbol const delete_node("delete");
+    symbol const rename_node("rename");
+    symbol const content("content");
+    symbol const add_file("add_file");
+    symbol const add_dir("add_dir");
+    symbol const patch("patch");
+    symbol const from("from");
+    symbol const to("to");
+    symbol const clear("clear");
+    symbol const set("set");
+    symbol const attr("attr");
+    symbol const value("value");
+    
+    // revision
+    symbol const old_revision("old_revision");
+    
+    // roster symbols
+    symbol const format_version("format_version");
+//    symbol const old_revision("old_revision");
+    symbol const new_manifest("new_manifest");
+    
+    symbol const dir("dir");
+    symbol const file("file");
+//    symbol const content("content");
+//    symbol const attr("attr");
+
+    // cmd_list symbols
+    symbol const key("key");
+    symbol const signature("signature");
+    symbol const name("name");
+//    symbol const value("value");
+    symbol const trust("trust");
+  }
+}
+
+static inline void
+parse_path(basic_io::parser & parser, split_path & sp)
+{
+  std::string s;
+  parser.str(s);
+  file_path_internal(s).split(sp);
+}
+
 mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std::string const& domain)
 { std::vector<std::string> args;
   args.push_back(rid.inner()());
@@ -39,7 +87,7 @@ mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std
   basic_io::tokenizer tokenizer(source);
   basic_io::parser parser(tokenizer);
   
-  std::string t1;
+  std::string t1,t2;
   split_path p1;
   sync_map_t result;
   while (parser.symp(syms::set))
@@ -99,46 +147,6 @@ std::vector<revision_id> mtn_automate::get_revision_parents(revision_id const& r
     result.push_back(revision_id((**p).substr(0,constants::idlen)));
   piece::reset();
   return result;
-}
-
-namespace
-{
-  namespace syms
-  {
-    // cset symbols
-    symbol const delete_node("delete");
-    symbol const rename_node("rename");
-    symbol const content("content");
-    symbol const add_file("add_file");
-    symbol const add_dir("add_dir");
-    symbol const patch("patch");
-    symbol const from("from");
-    symbol const to("to");
-    symbol const clear("clear");
-    symbol const set("set");
-    symbol const attr("attr");
-    symbol const value("value");
-    
-    // revision
-    symbol const old_revision("old_revision");
-    
-    // roster symbols
-    symbol const format_version("format_version");
-//    symbol const old_revision("old_revision");
-    symbol const new_manifest("new_manifest");
-    
-    symbol const dir("dir");
-    symbol const file("file");
-//    symbol const content("content");
-//    symbol const attr("attr");
-
-    // cmd_list symbols
-    symbol const key("key");
-    symbol const signature("signature");
-    symbol const name("name");
-//    symbol const value("value");
-    symbol const trust("trust");
-  }
 }
 
 static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
@@ -302,14 +310,6 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
     result.push_back(cert);
   }
   return result;
-}
-
-static inline void
-parse_path(basic_io::parser & parser, split_path & sp)
-{
-  std::string s;
-  parser.str(s);
-  file_path_internal(s).split(sp);
 }
 
 static void
