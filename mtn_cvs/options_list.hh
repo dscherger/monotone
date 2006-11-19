@@ -9,6 +9,12 @@
 OPTSET(globals)
 
 OPTVAR(globals, std::vector<utf8>, args, )
+OPTION(globals, positionals, true, "--", "")
+#ifdef option_bodies
+{
+  args.push_back(utf8(arg));
+}
+#endif
 
 OPTVAR(branch, utf8, branch_name, )
 OPTION(branch, branch, true, "branch,b", N_("select branch cert for operation"))

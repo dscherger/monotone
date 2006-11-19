@@ -181,77 +181,6 @@ using std::vector;
 using std::ios_base;
 using boost::shared_ptr;
 
-#if 0
-static void
-tokenize_for_command_line(string const & from, vector<string> & to)
-{
-  // Unfortunately, the tokenizer in basic_io is too format-specific
-  to.clear();
-  enum quote_type {none, one, two};
-  string cur;
-  quote_type type = none;
-  bool have_tok(false);
-  
-  for (string::const_iterator i = from.begin(); i != from.end(); ++i)
-    {
-      if (*i == '\'')
-        {
-          if (type == none)
-            type = one;
-          else if (type == one)
-            type = none;
-          else
-            {
-              cur += *i;
-              have_tok = true;
-            }
-        }
-      else if (*i == '"')
-        {
-          if (type == none)
-            type = two;
-          else if (type == two)
-            type = none;
-          else
-            {
-              cur += *i;
-              have_tok = true;
-            }
-        }
-      else if (*i == '\\')
-        {
-          if (type != one)
-            ++i;
-          N(i != from.end(), F("Invalid escape in --xargs file"));
-          cur += *i;
-          have_tok = true;
-        }
-      else if (string(" \n\t").find(*i) != string::npos)
-        {
-          if (type == none)
-            {
-              if (have_tok)
-                to.push_back(cur);
-              cur.clear();
-              have_tok = false;
-            }
-          else
-            {
-              cur += *i;
-              have_tok = true;
-            }
-        }
-      else
-        {
-          cur += *i;
-          have_tok = true;
-        }
-    }
-  if (have_tok)
-    to.push_back(cur);
-}
-#endif
-
 // This is in a sepaarte procedure so it can be called from code that's called
 // before cpp_main(), such as program option object creation code.  It's made
 // so it can be called multiple times as well.
@@ -294,7 +223,7 @@ string read_options(options & opts, vector<string> args)
   return cmd;
 }
 
-int 
+int
 cpp_main(int argc, char ** argv)
 {
   int ret = 0;
@@ -318,7 +247,7 @@ cpp_main(int argc, char ** argv)
 
   // Set up secure memory allocation etc
   botan_library acquire_botan;
-  
+
   // Record where we are.  This has to happen before any use of
   // boost::filesystem.
   save_initial_path();
@@ -349,56 +278,12 @@ cpp_main(int argc, char ** argv)
   try
     {
       string cmd = read_options(app.opts, args);
-      
+
       if (app.opts.version_given)
         {
           print_version();
           return 0;
         }
-
-#if 0
-      if (option::full.given(vm)) app.full=true;
-            
-      if (option::since.given(vm)) app.since=string(option::since.get(vm));
-
-      if (option::branch.given(vm))
-      { L(FL("branch %s") % option::branch.get(vm));
-        app.branch=option::branch.get(vm);
-      }
-
-      if (option::revision.given(vm))
-      { L(FL("revision %s") % option::revision.get(vm));
-        app.revisions.push_back(revision_id(option::revision.get(vm)));
-      }
-      
-      if (option::help.given(vm)) requested_help = true;
-            
-      if (option::mtn.given(vm)) app.mtn_binary = option::mtn.get(vm);
-            
-      if (option::db.given(vm)) 
-        app.mtn_options.push_back(string("--db=")+option::db.get(vm));
-
-      if (option::rcfile.given(vm)) 
-        app.mtn_options.push_back(string("--rcfile=")+option::rcfile.get(vm));
-
-      if (option::nostd.given(vm)) 
-        app.mtn_options.push_back(string("--nostd"));
-
-      if (option::norc.given(vm)) 
-        app.mtn_options.push_back(string("--norc"));
-
-      if (option::keydir.given(vm)) 
-        app.mtn_options.push_back(string("--keydir=")+option::keydir.get(vm));
-
-      if (option::root.given(vm)) 
-        app.mtn_options.push_back(string("--root=")+option::root.get(vm));
-
-      if (option::confdir.given(vm)) 
-        app.mtn_options.push_back(string("--confdir=")+option::confdir.get(vm));
-
-      if (option::key.given(vm)) 
-        app.mtn_options.push_back(string("--key=")+option::key.get(vm));
-#endif
 
       // stop here if they asked for help
       if (app.opts.help)
@@ -487,6 +372,7 @@ cpp_main(int argc, char ** argv)
   return 3;
 }
 
+#if 0
 int
 main(int argc, char **argv)
 {
@@ -502,4 +388,4 @@ main(int argc, char **argv)
       return 3;
     }
 }
-
+#endif
