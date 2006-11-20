@@ -28,7 +28,7 @@ namespace automation {
   static map<string, automate * const> * automations;
   automate::automate(string const &n, string const &p,
                      options::options_type const & o)
-    : name(n), params(p), options(o)
+    : name(n), params(p), opts(o)
   {
     static bool first(true);
     if (first)
@@ -74,8 +74,8 @@ static string const interface_version = "4.0";
 // Error conditions: None.
 AUTOMATE(interface_version, "", options::opts::none)
 {
-  if (args.size() != 0)
-    throw usage(help_name);
+  N(args.size() == 0,
+    F("no arguments needed"));
 
   output << interface_version << "\n";
 }
@@ -146,7 +146,8 @@ class automate_reader
         size = (size*10)+(c-'0');
         read(&c, 1);
       }
-    E(c == ':', F("Bad input to automate stdio"));
+    E(c == ':',
+        F("Bad input to automate stdio: expected ':' after string size"));
     char *str = new char[size];
     size_t got = 0;
     while(got < size)
@@ -166,7 +167,7 @@ class automate_reader
     rv = ::read(0, buf, nbytes);
 
     E(rv >= 0, F("read from client failed with error code: %d") % rv);
-    E(eof_ok || rv > 0, F("Bad input to automate stdio (unexpected EOF)"));
+    E(eof_ok || rv > 0, F("Bad input to automate stdio: unexpected EOF"));
     return rv;
   }
   void go_to_next_item()
@@ -192,7 +193,9 @@ class automate_reader
       {
       case 'o': loc = opt; break;
       case 'l': loc = cmd; break;
-      default: E(false, F("Bad input to automate stdio"));
+      default:
+        E(false, 
+            F("Bad input to automate stdio: unknown start token '%c'") % c);
       }
   }
 public:
@@ -214,7 +217,7 @@ public:
           params.push_back(make_pair(key, val));
         go_to_next_item();
       }
-    E(loc == cmd, F("Bad input to automate stdio"));
+    E(loc == cmd, F("Bad input to automate stdio: expected '%c' token") % cmd);
     string item;
     while (get_string(item))
       {
@@ -326,8 +329,9 @@ struct automate_ostream : public std::ostream
 
 AUTOMATE(stdio, "", options::opts::automate_stdio_size)
 {
-  if (args.size() != 0)
-    throw usage(help_name);
+  N(args.size() == 0,
+    F("no arguments needed"));
+
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
@@ -337,7 +341,8 @@ AUTOMATE(stdio, "", options::opts::automate_stdio_size)
       utf8 cmd;
       vector<utf8> args;
       vector<string>::iterator i = cmdline.begin();
-      E(i != cmdline.end(), F("Bad input to automate stdio"));
+      E(i != cmdline.end(),
+        F("Bad input to automate stdio: command name is missing"));
       cmd = utf8(*i);
       for (++i; i != cmdline.end(); ++i)
         {
@@ -345,8 +350,12 @@ AUTOMATE(stdio, "", options::opts::automate_stdio_size)
         }
       try
         {
-          options::options_type opts = options::opts::globals();
-          opts = opts | find_automation(cmd, help_name).options;
+          options::options_type opts;
+          opts = options::opts::all_options() - options::opts::globals();
+          opts.instantiate(&app.opts).reset();
+
+          opts = options::opts::globals();
+          opts = opts | find_automation(cmd, help_name).opts;
           opts.instantiate(&app.opts).from_key_value_pairs(params);
           automate_command(cmd, args, help_name, app, os);
         }
@@ -398,7 +407,7 @@ commands::cmd_automate::get_options(vector<utf8> const & args)
 {
   if (args.size() < 2)
     return options::options_type();
-  return find_automation(idx(args,1), idx(args,0)()).options;
+  return find_automation(idx(args,1), idx(args,0)()).opts;
 }
 
 

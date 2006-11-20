@@ -12,7 +12,9 @@
 
 #include "transforms.hh"
 #include "simplestring_xform.hh"
+#include "localized_file_io.hh"
 #include "charset.hh"
+#include "diff_patch.hh"
 #include "inodeprint.hh"
 #include "cert.hh"
 #include "ui.hh"
@@ -24,6 +26,8 @@
 #endif
 
 using std::cin;
+using std::map;
+using std::ostream;
 using std::pair;
 using std::set;
 using std::string;
@@ -64,7 +68,7 @@ namespace commands
                    bool u,
                    options::options_type const & o)
     : name(n), cmdgroup(g), params_(p), desc_(d), use_workspace_options(u),
-      options(o)
+      opts(o)
   {
     if (cmds == NULL)
       cmds = new map<string, command *>;
@@ -75,7 +79,7 @@ namespace commands
   std::string command::desc() {return safe_gettext(desc_.c_str());}
   options::options_type command::get_options(vector<utf8> const & args)
   {
-    return options;
+    return opts;
   }
   bool operator<(command const & self, command const & other);
   std::string const & hidden_group()
@@ -258,7 +262,7 @@ namespace commands
   {
     if ((*cmds).find(cmd) != (*cmds).end())
       {
-        return (*cmds)[cmd]->options;
+        return (*cmds)[cmd]->opts;
       }
     else
       {

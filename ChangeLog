@@ -1,3 +1,105 @@
+2006-11-20  Thomas Keller  <me@thomaskeller.biz>
+
+       * moved automate get_file into cmd_files.cc
+       * new automate command get_file_of which is basically mtn cat
+       * replaced exception by user error for get_file and get_file_of
+       if no arguments are given 
+
+2006-11-18  Richard Levitte  <richard@levitte.org>
+
+	* debian/monotone-server.monotone.init (d_start): Remove the
+	branch argument, which was all-inklusive anyway.
+	* debian/changelog: Mark a new version to make it possible to
+	write a ...
+	* debian/NEWS: New news item indicating to Debian users that
+	they may need to do some changes if they want their servers
+	to still run.
+
+2006-11-18  Timtohy Brownawell  <tbrownaw@gmail.com>
+
+	Make 'serve' always serve everything, and no longer take
+	include/exclude patterns on the command line.
+
+	Make the testsuite not use --nostd, so it can use the standard
+	permissions hooks for tests that need restricted serve.
+
+	Un-xfail the mtn:execute / umask test, since not having the
+	standard hooks available was what made it not work.
+
+2006-11-17  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Make spawn_redirected work with blank filenames to not redirect
+	some streams.
+
+2006-11-17  Timothy Brownawell  <tbrownaw@gmail.com>
+
+	Add status code reporting to the note_netsync_{begin,end} hooks.
+
+2006-11-16  Richard Levitte  <richard@levitte.org>
+
+	* contrib/ext_hooks.lua.in, contrib/ext_hooks_expand.pl: New
+	files that implement a system that allows easy addition of hooks
+	implementations without having to edit any file. You need to
+	run the perl script contrib/ext_hooks_expand.pl to produce the
+	file contrib/ext_hooks.lua, using contrib/ext_hooks.lua.in as
+	a template and the hook function definitions found in
+	monotone.texi.
+	* README: Add a small blurb about the above files.
+
+2006-11-17  Thomas Keller  <me@thomaskeller.biz>
+
+	* cmd_automate.cc, cmd.hh, ...: renamed member variable 
+	"options" to "opts" to make (hopefully) the gcc-3.3 build
+	slaves happy
+
+2006-11-15  Richard Levitte  <richard@levitte.org>
+
+	* lua.cc (LUAEXT): Implement includedirpattern(), which is like
+	includedir() but also takes a glob pattern for the files to load.
+	* monotone.texi (Additional Lua Functions): Document
+	includedirpattern().
+	* testsuite.lua,
+	tests/include()_and_includedir()_lua_functions/:
+	Renamed to include()_includedir()_and_includedirpattern()_lua_functions
+	__driver__.lua: Test includedirpattern().
+
+2006-11-15  Richard Levitte  <richard@levitte.org>
+
+	* debian/monotone-server.postinst: Add a note that a db migration
+	may take a while.
+
+2006-11-15  Thomas Keller  <me@thomaskeller.biz>
+
+	* cmd_automate.cc: defined equal sounding error message
+	"Bad input to stdio" further
+
+2006-11-14  Thomas Keller  <me@thomaskeller.biz>
+
+	* new automate content_diff command which is basically
+	the same like mtn diff (also uses most of its infrastructure)
+	minus the display of the basic_io revision header
+	* tests/automate_content_diff: test for that
+	* tests/automate_automate_version test renamed to
+	automate_interface_version
+	* monotone.texi: list formatting for automate attributes
+	documentation, docs for automate content_diff
+	* fixed commented version number for two commands
+
+2006-11-14  Richard Levitte  <richard@levitte.org>
+
+	NOTE: I bumped the Debian version number to 0.31-90.1 in this
+	change so needed upgrades of the monotone-server package would
+	get through easily.  I'm regarding that as a very early pre-
+	release of 0.32.  Debian maintainers should still release 0.31
+	the normal way (updating to the monotone-0.31 tag) and insert
+	their entry in debian/changelog directly above the 0.31-0.1 entry.
+	* debian/NEWS: Added to provide information on important changes
+	to Debian users.
+	* debian/changelog: Added an entry for 0.31-90.1
+	* debian/monotone-server.postinst: Changed to provide automatic
+	upgrade using 'mtn db regenerate_caches" if the previous monotone
+	version is less than 0.31-90.1.
+
 2006-11-13  Thomas Moschny  <thomas.moschny@gmx.de>
 
 	* cmd_diff_log.cc (CMD(log)): Fix-ups from last propagate nvm ->

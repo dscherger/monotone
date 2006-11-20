@@ -1,3 +1,27 @@
+monotone (0.31-90.2) unstable; urgency=low
+
+  * Another pre-0.32 "release", just to mark that an important behavior
+    change has been made to the "mtn serve" command.
+
+ -- Richard Levitte <richard@levitte.org>  Sat, 18 Nov 2006 22:25:11 +0100
+
+monotone (0.31-90.1) unstable; urgency=low
+
+  * Pre-0.32 "release", serving as a marker for a new infrastructure which
+    has been merged into mainline and that requires database upgrades,
+    which is reflected in monotone-server.postinst.
+
+ -- Richard Levitte <richard@levitte.org>  Mon, 13 Nov 2006 23:50:45 +0100
+
+monotone (0.31-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update policy to version 3.7.2.2. No changes were necessary.
+  * New packages: monotone-doc and monotone-server.
+  * Add ps2eps, tetex-bin, texinfo, xpdf-utils to Build-Depends-Indep.
+
+ -- Shaun Jackman <sjackman@debian.org>  Mon, 13 Nov 2006 10:16:14 -0700
+
 monotone (0.31-0.1) unstable; urgency=low
 
   * New upstream release.
