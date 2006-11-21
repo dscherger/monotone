@@ -156,7 +156,7 @@ void cvs_repository::parse_cvs_cert_header(
       std::string &repository, std::string& module, std::string& branch)
 { 
 //  MM(value);
-  split_path sp;
+  split_path sp(1,the_null_component);
   repository=const_map_access(value,std::make_pair(sp,attr_key(domain+":root")))();
   module=const_map_access(value,std::make_pair(sp,attr_key(domain+":module")))();
   branch=const_map_access(value,std::make_pair(sp,attr_key(domain+":branch")))();
@@ -166,7 +166,7 @@ mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
 { 
   // I assume that at least TAB is uncommon in path names - even on Windows
   mtn_automate::sync_map_t result;
-  split_path sp;
+  split_path sp(1,the_null_component);
   result[std::make_pair(sp,app.opts.domain()+":root")]= host+":"+root;
   result[std::make_pair(sp,app.opts.domain()+":module")]= module;
   if (branch.empty())
