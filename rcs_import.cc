@@ -399,6 +399,12 @@ cvs_history
   stack< shared_ptr<cvs_branch> > stk;
   stack< cvs_branchname > bstk;
 
+  // tag -> time, revision
+  //
+  // used to resolve the *last* revision which has a given tag
+  // applied; this is the revision which wins the tag.
+  map<cvs_tag, revision_id > resolved_tags;
+
   file_path curr_file;
   cvs_path curr_file_interned;
 
@@ -1675,6 +1681,23 @@ import_cvs_repo(system_path const & cvsroot,
       I(i != cvs.branches.end());
     }
 
+  // set all tag certificates
+  {
+    ticker n_tags(_("tags"), "t", 1);
+    packet_db_writer dbw(app);
+    transaction_guard guard(app.db);
+    for (map<cvs_tag, revision_id>::const_iterator
+         i = cvs.resolved_tags.begin();
+         i != cvs.resolved_tags.end(); ++i)
+      {
+        string tag = cvs.tag_interner.lookup(i->first);
+        ui.set_tick_trailer("marking tag " + tag);
+        cert_revision_tag(i->second, tag, app, dbw);
+        ++n_tags;
+      }
+    guard.commit();
+  }
+
   return;
 }
 
@@ -1923,7 +1946,10 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
     }
   else if (blob.get_digest().is_tag())
     {
-      W(F("ignoring tag blob (not implemented)"));
+      shared_ptr<cvs_event_tag> cte =
+        boost::static_pointer_cast<cvs_event_tag, cvs_event>(*blob.begin());
+
+      cvs.resolved_tags.insert(make_pair(cte->tag, child_rid));
     }
   else
     I(false);
