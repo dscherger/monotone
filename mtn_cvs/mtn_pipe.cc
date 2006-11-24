@@ -69,9 +69,10 @@ static int blocking_read(Netxx::PipeStream &s, Netxx::PipeCompatibleProbe &p,
   static Netxx::Timeout timeout(60L);
   while (read<len)
   { Netxx::Probe::result_type res = p.ready(timeout);
-    if (!res.second & Netxx::Probe::ready_read) return read;
+    if (!(res.second & Netxx::Probe::ready_read)) return read;
+    // it looks like ready_read && !readres indicates a broken pipe ? (not -1)
     int readres=s.read(buf+read,len-read);
-    if (readres<0) return read?read:readres;
+    if (readres<=0) return read?read:-1;
     read+=readres;
   }
   return read;
@@ -99,7 +100,7 @@ again:
   // at least we can expect 8 bytes
   
   int read=blocking_read(*pipe,probe,buf,7+s_cmdnum.size());
-  I(read==7+s_cmdnum.size());
+  N(read==7+s_cmdnum.size(), F("mtn pipe failure\n"));
   int colons;
   while ((colons=count_colons(buf,read))<4 && read+(4-colons)<=sizeof(buf))
   { int res=blocking_read(*pipe,probe,buf+read,4-colons);
