@@ -2060,7 +2060,7 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"), options::opts::none)
       for (sync_map_t::const_iterator o=oldinfo.begin(),n=newinfo.begin();
             o!=oldinfo.end() && n!=newinfo.end();)
       { if (n==newinfo.end() || o->first<n->first
-            || (o->first==n->first && o->second!=n->second))
+            /*|| (o->first==n->first && o->second!=n->second)*/)
         { basic_io::stanza st;
           st.push_file_pair(syms::clear, file_path(o->first.first));
           st.push_str_pair(syms::attr, o->first.second());
