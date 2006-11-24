@@ -169,7 +169,7 @@ mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
   split_path sp(1,the_null_component);
   result[std::make_pair(sp,app.opts.domain()+":root")]= host+":"+root;
   result[std::make_pair(sp,app.opts.domain()+":module")]= module;
-  if (branch.empty())
+  if (!branch.empty())
     result[std::make_pair(sp,app.opts.domain()+":branch")]= branch;
   return result;
 }

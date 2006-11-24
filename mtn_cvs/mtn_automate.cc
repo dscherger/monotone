@@ -158,6 +158,15 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
+  for (std::map<split_path, split_path>::const_iterator i = cs.nodes_renamed.begin();
+       i != cs.nodes_renamed.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::rename_node, file_path(i->first));
+      st.push_file_pair(syms::to, file_path(i->second));
+      printer.print_stanza(st);
+    }
+
   for (path_set::const_iterator i = cs.dirs_added.begin();
        i != cs.dirs_added.end(); ++i)
     {
@@ -182,6 +191,25 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       st.push_file_pair(syms::patch, i->first);
       st.push_hex_pair(syms::from, i->second.first.inner());
       st.push_hex_pair(syms::to, i->second.second.inner());
+      printer.print_stanza(st);
+    }
+
+  for (std::set<std::pair<split_path, attr_key> >::const_iterator i = cs.attrs_cleared.begin();
+       i != cs.attrs_cleared.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::clear, file_path(i->first));
+      st.push_str_pair(syms::attr, i->second());
+      printer.print_stanza(st);
+    }
+
+  for (std::map<std::pair<split_path, attr_key>, attr_value>::const_iterator i = cs.attrs_set.begin();
+       i != cs.attrs_set.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::set, file_path(i->first.first));
+      st.push_str_pair(syms::attr, i->first.second());
+      st.push_str_pair(syms::value, i->second());
       printer.print_stanza(st);
     }
 }
