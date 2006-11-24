@@ -1731,8 +1731,9 @@ void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
   for (mtn_automate::sync_map_t::const_iterator i=mp.begin(); i!=mp.end(); ++i)
   {
     if (i->first.second()==app.opts.domain()+":path")
-    L(FL("found module %s:%s") % i->first.first % i->second());
-    sd[file_path(i->first.first).as_internal()]=i->second();
+    { L(FL("found module %s:%s") % i->first.first % i->second());
+      sd[file_path(i->first.first).as_internal()]=i->second();
+    }
   }
   SetServerDir(sd);
 }
