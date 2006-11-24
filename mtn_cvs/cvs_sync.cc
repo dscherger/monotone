@@ -597,7 +597,7 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
       if (a==f->second.second.end()) cs.attrs_set[i->first]=i->second;
       else if (a->second!=i->second)
       {
-        cs.attrs_cleared.insert(i->first);
+//        cs.attrs_cleared.insert(i->first);
         cs.attrs_set[i->first]=i->second;
       }
     }
@@ -613,7 +613,8 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
     {
       mtn_automate::sync_map_t::const_iterator f
           =state.find(std::make_pair(sp,a->first));
-      if (f==state.end()) 
+      // we do not have to delete attributes of deleted notes 
+      if (f==state.end() && cs.nodes_deleted.find(sp)==cs.nodes_deleted.end())
          cs.attrs_cleared.insert(std::make_pair(sp,a->first));
     }
   }
@@ -633,8 +634,14 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
   { 
 #if 1
     if (i->second->cvs_version.empty())
-    { W(F("blocking attempt to certify an empty CVS revision\n"
-        "(this is normal for a cvs_takeover of a locally modified tree)\n"));
+    { if (i->first.empty())
+      { W(F("internal error: empty node\n")); 
+        continue;
+      }
+      W(F("blocking attempt to certify an empty CVS revision of '%s'\n"
+        "(this is normal for a cvs_takeover of a locally modified tree)\n"
+        "%s")
+        % i->first % debug_manifest(e.xfiles));
       return mtn_automate::sync_map_t();
     }
 #else
