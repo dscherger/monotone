@@ -650,7 +650,7 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
 // FIXME: How to flag locally modified files? add the synched sha1sum?
     if (!i->second->sha1sum().empty())
       state[std::make_pair(sp,attr_key(app.opts.domain()+":sha1"))]
-            =i->second->sha1sum()/*.substr(0,6)*/;
+            =i->second->sha1sum().substr(0,6);
   }
   return state;
 }
@@ -1188,9 +1188,12 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
       MM(mod); 
       MM(branch); 
       MM(br);
-      I(last_sync_info.empty() || repository==rep);
-      I(last_sync_info.empty() || module==mod);
-      // I(branch==br); // ?
+      if (!last_sync_info.empty() && repository!=rep)
+        W(F("Repositories do not match: '%s' != '%s'\n") % repository % rep);
+      if (!last_sync_info.empty() && module!=mod)
+        W(F("Modules do not match: '%s' != '%s'\n") % module % mod);
+      if (!last_sync_info.empty() && branch!=br)
+        W(F("Branches do not match: '%s' != '%s'\n") % branch % br);
     }
   }
   N(!repository.empty(), F("you must name a repository, I can't guess"));
