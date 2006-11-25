@@ -164,7 +164,6 @@ void cvs_repository::parse_cvs_cert_header(
 
 mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
 { 
-  // I assume that at least TAB is uncommon in path names - even on Windows
   mtn_automate::sync_map_t result;
   split_path sp(1,the_null_component);
   result[std::make_pair(sp,app.opts.domain()+":root")]= host+":"+root;
@@ -583,6 +582,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
 void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest,
         mtn_automate::cset &cs)
 { mtn_automate::sync_map_t state=create_sync_state(e);
+  bool any_change=false;
   // added and changed attributes
   for (mtn_automate::sync_map_t::const_iterator i=state.begin(); 
         i!=state.end(); ++i)
@@ -599,6 +599,7 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
       {
 //        cs.attrs_cleared.insert(i->first);
         cs.attrs_set[i->first]=i->second;
+        any_change=true;
       }
     }
   }
@@ -615,8 +616,22 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
           =state.find(std::make_pair(sp,a->first));
       // we do not have to delete attributes of deleted notes 
       if (f==state.end() && cs.nodes_deleted.find(sp)==cs.nodes_deleted.end())
-         cs.attrs_cleared.insert(std::make_pair(sp,a->first));
+      {
+        cs.attrs_cleared.insert(std::make_pair(sp,a->first));
+        any_change=true;
+      }
     }
+  }
+  // delete old dummy attribute if present
+  { mtn_automate::manifest_map::const_iterator f=oldmanifest.find(file_path_internal(""));
+    if (f!=oldmanifest.end() && f->second.second.find(attr_key(app.opts.domain()+":touch"))!=f->second.second.end())
+    { cs.attrs_cleared.insert(std::make_pair(split_path(1,the_null_component),attr_key(app.opts.domain()+":touch")));
+      any_change=true;
+    }
+  }
+  if (!any_change) // this happens if only deletions happened
+  { cs.attrs_set[std::make_pair(split_path(1,the_null_component),attr_key(app.opts.domain()+":touch"))]
+        =attr_value("synchronized");
   }
 }
 
