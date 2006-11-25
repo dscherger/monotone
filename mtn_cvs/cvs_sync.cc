@@ -589,7 +589,10 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
   { 
     mtn_automate::manifest_map::const_iterator f
           = oldmanifest.find(file_path(i->first.first));
-    if (f==oldmanifest.end()) cs.attrs_set[i->first]=i->second;
+    if (f==oldmanifest.end()) 
+    { cs.attrs_set[i->first]=i->second;
+      any_change=true;
+    }
     else
     {
       mtn_automate::attr_map_t::const_iterator a
