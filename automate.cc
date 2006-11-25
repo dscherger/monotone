@@ -1975,8 +1975,9 @@ static sync_map_t get_sync_info(app_state &app, revision_id const& rid, string c
       {
         if (begins_with(j->first(),prefix))
         { 
-          I(j->second.first); // value is not undefined
-          result[std::make_pair(sp,j->first)]=j->second.second;
+          if (j->second.first) // value is not undefined
+            result[std::make_pair(sp,j->first)]=j->second.second;
+          // else W(F("undefined value of %s %s\n") % sp % j->first());
         }
       }
     }
