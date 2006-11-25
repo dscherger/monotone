@@ -634,8 +634,8 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
   { 
 #if 1
     if (i->second->cvs_version.empty())
-    { if (i->first.empty())
-      { W(F("internal error: empty node\n")); 
+    { if (i->second->sha1sum().empty())
+      { W(F("internal error: directory '%s' skipped\n") % i->first); 
         continue;
       }
       W(F("blocking attempt to certify an empty CVS revision of '%s'\n"
