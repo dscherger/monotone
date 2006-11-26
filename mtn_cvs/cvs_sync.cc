@@ -590,8 +590,12 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
     mtn_automate::manifest_map::const_iterator f
           = oldmanifest.find(file_path(i->first.first));
     if (f==oldmanifest.end()) 
-    { cs.attrs_set[i->first]=i->second;
-      any_change=true;
+    { // only add attributes on existing nodes
+      if (cs.dirs_added.find(i->first.first)!=cs.dirs_added.end()
+          || cs.files_added.find(i->first.first)!=cs.files_added.end())
+      { cs.attrs_set[i->first]=i->second;
+        any_change=true;
+      }
     }
     else
     {
@@ -600,7 +604,6 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
       if (a==f->second.second.end()) cs.attrs_set[i->first]=i->second;
       else if (a->second!=i->second)
       {
-//        cs.attrs_cleared.insert(i->first);
         cs.attrs_set[i->first]=i->second;
         any_change=true;
       }
