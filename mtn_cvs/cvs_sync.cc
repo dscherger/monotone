@@ -650,7 +650,8 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
       dirname.erase(--dirname.end());
     }
     file_path_internal(dirname).split(sp);
-    state[std::make_pair(sp,attr_key(app.opts.domain()+":path"))]=i->second;
+    if (!dirname.empty() || i->second!=root+"/"+module+"/")
+      state[std::make_pair(sp,attr_key(app.opts.domain()+":path"))]=i->second;
   }
   
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
@@ -1767,7 +1768,7 @@ void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
   }
   // how can we know that this is all?
   if (sd.empty())
-  { sd[""]=root+"/"+module;
+  { sd[""]=root+"/"+module+"/";
   }
   SetServerDir(sd);
 }
