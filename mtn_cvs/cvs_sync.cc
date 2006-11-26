@@ -644,8 +644,13 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
   for (std::map<std::string,std::string>::const_iterator i=sd.begin();
         i!=sd.end();++i)
   { split_path sp;
-    file_path_internal(i->first).split(sp);
-    state[std::make_pair(sp,attr_key(app.opts.domain()+":directory"))]=i->second;
+    std::string dirname=i->first;
+    if (!dirname.empty())
+    { I(dirname[dirname.size()-1]=='/');
+      dirname.erase(--dirname.end());
+    }
+    file_path_internal(dirname).split(sp);
+    state[std::make_pair(sp,attr_key(app.opts.domain()+":path"))]=i->second;
   }
   
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
@@ -1223,7 +1228,7 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   }
   N(!repository.empty(), F("you must name a repository, I can't guess"));
   N(!module.empty(), F("you must name a module, I can't guess"));
-  
+   
   cvs_repository *repo = new cvs_repository(app,repository,module,branch);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
@@ -1757,8 +1762,12 @@ void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
   {
     if (i->first.second()==app.opts.domain()+":path")
     { L(FL("found module %s:%s") % i->first.first % i->second());
-      sd[file_path(i->first.first).as_internal()]=i->second();
+      sd[file_path(i->first.first).as_internal()+"/"]=i->second();
     }
+  }
+  // how can we know that this is all?
+  if (sd.empty())
+  { sd[""]=root+"/"+module;
   }
   SetServerDir(sd);
 }
