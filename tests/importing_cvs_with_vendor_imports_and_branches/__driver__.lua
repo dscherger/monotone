@@ -46,7 +46,7 @@ check(indir("testsrc", cvs ("commit", "-m", 'commit on mainline after branch')),
 
 -- import into monotone and check presence of files
 
-check(mtn("--branch=test", "--debug", "--verbose", "cvs_import", cvsroot.."/testsrc"), 0, false, false)
+check(mtn("--branch=test", "cvs_import", cvsroot.."/testsrc"), 0, false, false)
 
 -- also check that checkout is correct
 -- right one.
