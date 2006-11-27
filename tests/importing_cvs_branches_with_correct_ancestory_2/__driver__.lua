@@ -97,14 +97,13 @@ check(cvs("commit", "-m", 'commit on mainline after branch', "testdir/file1", "t
 -- import into monotone and check presence of files
 check(mtn("--branch=test", "cvs_import", cvsroot.."/testdir"), 0, false, false)
 
--- check if all branches were imported
+-- check if all non-empty branches were imported
 check(mtn("list", "branches"), 0, true, false)
-check(samelines("stdout", {"test", "test.A", "test.B", "test.C", "test.D"}))
+check(samelines("stdout", {"test", "test.A", "test.C", "test.D"}))
 
 -- checkout the imported repository into maindir and branchdir
 check(mtn("checkout", "--branch=test", "maindir"), 0, false, false)
 check(mtn("checkout", "--branch=test.A", "branchA"), 0, false, false)
-check(mtn("checkout", "--branch=test.B", "branchB"), 0, false, false)
 check(mtn("checkout", "--branch=test.C", "branchC"), 0, false, false)
 check(mtn("checkout", "--branch=test.D", "branchD"), 0, false, false)
 
@@ -117,11 +116,6 @@ check(samefile("changelog.2", "maindir/changelog"))
 check(samefile("file1.1", "branchA/file1"))
 check(samefile("file2.1", "branchA/file2"))
 check(samefile("changelog.3", "branchA/changelog"))
-
--- check for correctness of the files in branch B
-check(samefile("file1.1", "branchB/file1"))
-check(samefile("file2.1", "branchB/file2"))
-check(samefile("changelog.3", "branchB/changelog"))
 
 -- check for correctness of the files in branch C
 check(samefile("file1.1", "branchC/file1"))
@@ -145,15 +139,6 @@ check(grep("commit on branch B", "stdout"), 1, false, false)
 check(grep("commit on branch C", "stdout"), 1, false, false)
 check(grep("commit on branch D", "stdout"), 1, false, false)
 
--- check the log of branch B for correctness
-check(indir("branchB", mtn("log")), 0, true, false)
-check(grep("initial import", "stdout"), 0, false, false)
-check(grep("first commit", "stdout"), 0, false, false)
-check(grep("commit on branch A", "stdout"), 0, false, false)
-check(grep("beginning of branch test.B", "stdout"), 0, false, false)
-check(grep("commit on branch C", "stdout"), 1, false, false)
-check(grep("commit on branch D", "stdout"), 1, false, false)
-
 -- check the log of branch C for correctness
 check(indir("branchC", mtn("log")), 0, true, false)
 check(grep("beginning of branch", "stdout"), 1, false, false)
@@ -169,8 +154,8 @@ check(indir("branchD", mtn("log")), 0, true, false)
 check(grep("beginning of branch", "stdout"), 1, false, false)
 check(grep("initial import", "stdout"), 0, false, false)
 check(grep("first commit", "stdout"), 0, false, false)
-xfail(grep("commit on branch A", "stdout"), 0, false, false)
-xfail(grep("commit on branch B", "stdout"), 1, false, false)
-xfail(grep("commit on branch C", "stdout"), 0, false, false)
-xfail(grep("commit on branch D", "stdout"), 0, false, false)
+check(grep("commit on branch A", "stdout"), 0, false, false)
+check(grep("commit on branch B", "stdout"), 1, false, false)
+check(grep("commit on branch C", "stdout"), 0, false, false)
+check(grep("commit on branch D", "stdout"), 0, false, false)
 
