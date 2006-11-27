@@ -820,7 +820,15 @@ process_branch(string const & begin_version,
           else
             priv = true;
 
-          L(FL("following RCS branch %s = '%s'\n") % (*i) % branch);
+          if (!priv)
+            {
+              I(branch.length() > 0);
+              L(FL("following RCS branch %s = '%s'") % (*i) % branch);
+            }
+          else
+            {
+              L(FL("following private branch RCS %s") % (*i));
+            }
 
           construct_version(*curr_lines, *i, branch_lines, r);
           insert_into_db(curr_data, curr_id, 
@@ -834,7 +842,10 @@ process_branch(string const & begin_version,
           shared_ptr<struct cvs_branch> sub_branch(cvs.stk.top());
 
           cvs.pop_branch();
-          L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+          if (!priv)
+            L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+          else
+            L(FL("finished private RCS branch %s") % (*i));
 
           cvs_event_ptr branch_event =
             boost::static_pointer_cast<cvs_event, cvs_event_branch>(
