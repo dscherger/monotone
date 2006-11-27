@@ -745,25 +745,25 @@ process_branch(string const & begin_version,
       L(FL("authorclog: %s") % ac_str);
       cvs_authorclog ac = cvs.authorclog_interner.intern(ac_str);
 
-          cvs_mtn_version mv = cvs.mtn_version_interner.intern(
-            file_id(curr_id).inner()());
+      cvs_mtn_version mv = cvs.mtn_version_interner.intern(
+        file_id(curr_id).inner()());
 
-          cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
+      cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
 
-          curr_commit = boost::static_pointer_cast<cvs_event, cvs_commit>(
-            shared_ptr<cvs_commit>(
-              new cvs_commit(cvs.curr_file_interned,
-                             commit_time, mv, rv,
-                             ac, alive)));
+      curr_commit = boost::static_pointer_cast<cvs_event, cvs_commit>(
+        shared_ptr<cvs_commit>(
+          new cvs_commit(cvs.curr_file_interned,
+                         commit_time, mv, rv,
+                         ac, alive)));
 
-          // add the commit to the branch
-          cvs.stk.top()->append_event(curr_commit);
-          ++cvs.n_versions;
+      // add the commit to the branch
+      cvs.stk.top()->append_event(curr_commit);
+      ++cvs.n_versions;
 
-          // make the last commit depend on the current one (which
-          // comes _before_ in the CVS history).
-          if (last_commit != NULL)
-            last_commit->dependencies.push_back(curr_commit);
+      // make the last commit depend on the current one (which
+      // comes _before_ in the CVS history).
+      if (last_commit != NULL)
+        last_commit->dependencies.push_back(curr_commit);
 
       // create tag events for all tags on this commit
       typedef multimap<string,string>::const_iterator ity;
@@ -772,20 +772,20 @@ process_branch(string const & begin_version,
         {
           if (i->first == curr_version)
            {
-                  L(FL("version %s -> tag %s") % curr_version % i->second);
+              L(FL("version %s -> tag %s") % curr_version % i->second);
 
-                  cvs_tag tag = cvs.tag_interner.intern(i->second);
-                  cvs_event_ptr event = 
-                    boost::static_pointer_cast<cvs_event, cvs_event_tag>(
-                      shared_ptr<cvs_event_tag>(
-                        new cvs_event_tag(curr_commit, tag)));
+              cvs_tag tag = cvs.tag_interner.intern(i->second);
+              cvs_event_ptr event = 
+                boost::static_pointer_cast<cvs_event, cvs_event_tag>(
+                  shared_ptr<cvs_event_tag>(
+                    new cvs_event_tag(curr_commit, tag)));
 
-                  cvs_blob_index bi = cvs.stk.top()->append_event(event);
-                  cvs.add_symbol_parent(event->get_digest());
+              cvs_blob_index bi = cvs.stk.top()->append_event(event);
+              cvs.add_symbol_parent(event->get_digest());
 
-                  // append to the last_commit deps
-                  if (last_commit != NULL)
-                    last_commit->dependencies.push_back(event);
+              // append to the last_commit deps
+              if (last_commit != NULL)
+                last_commit->dependencies.push_back(event);
             }
         }
 
@@ -836,26 +836,26 @@ process_branch(string const & begin_version,
           cvs.pop_branch();
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
 
-              cvs_event_ptr branch_event =
-                boost::static_pointer_cast<cvs_event, cvs_event_branch>(
-                  shared_ptr<cvs_event_branch>(
-                    new cvs_event_branch(curr_commit, sub_branch)));
+          cvs_event_ptr branch_event =
+            boost::static_pointer_cast<cvs_event, cvs_event_branch>(
+              shared_ptr<cvs_event_branch>(
+                new cvs_event_branch(curr_commit, sub_branch)));
 
-              // make sure curr_commit exists in the blob
-              cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
+          // make sure curr_commit exists in the blob
+          cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
 
-              // then append it to the parent branch
-              cvs_blob_index bi = cvs.stk.top()->append_event(branch_event);
-              cvs.add_symbol_parent(branch_event->get_digest());
+          // then append it to the parent branch
+          cvs_blob_index bi = cvs.stk.top()->append_event(branch_event);
+          cvs.add_symbol_parent(branch_event->get_digest());
 
-              L(FL("added branch event for file %s from branch %s into branch %s")
-                % cvs.path_interner.lookup(curr_commit->path)
-                % cvs.bstk.top()
-                % branch);
+          L(FL("added branch event for file %s from branch %s into branch %s")
+            % cvs.path_interner.lookup(curr_commit->path)
+            % cvs.bstk.top()
+            % branch);
 
-              // append to the last_commit deps
-              if (last_commit != NULL)
-                last_commit->dependencies.push_back(branch_event);
+          // append to the last_commit deps
+          if (last_commit != NULL)
+            last_commit->dependencies.push_back(branch_event);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -2010,24 +2010,24 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
 
       if (ce->alive)
         {
-      shared_ptr<revision_t> rev(new revision_t());
-      shared_ptr<cset> cs(new cset());
+          shared_ptr<revision_t> rev(new revision_t());
+          shared_ptr<cset> cs(new cset());
 
-      build_cset(blob, *cs);
+          build_cset(blob, *cs);
 
-      cs->apply_to(editable_ros);
-      manifest_id child_mid;
-      calculate_ident(ros, child_mid);
+          cs->apply_to(editable_ros);
+          manifest_id child_mid;
+          calculate_ident(ros, child_mid);
 
-      rev->made_for = made_for_database;
-      rev->new_manifest = child_mid;
-      rev->edges.insert(make_pair(parent_rid, cs));
+          rev->made_for = made_for_database;
+          rev->new_manifest = child_mid;
+          rev->edges.insert(make_pair(parent_rid, cs));
 
-      calculate_ident(*rev, child_rid);
+          calculate_ident(*rev, child_rid);
 
-      preps.push_back(prepared_revision(child_rid, rev, blob));
+          preps.push_back(prepared_revision(child_rid, rev, blob));
 
-      parent_rid = child_rid;
+          parent_rid = child_rid;
         }
     }
   else if (blob.get_digest().is_branch())
