@@ -5,6 +5,7 @@ mkdir("importdir")
 ------------------------------------------------------------------------------
 -- First attempt, import something completely fresh.
 writefile("importdir/importmefirst", "version 0 of first test file\n")
+writefile("importdir/.mtn-ignore", "CVS\n")
 
 check(mtn("import", "importdir",
 	  "--message", "Import one, fresh start",
@@ -18,22 +19,29 @@ check(samefile("importdir/importmefirst", "exportdir1/importmefirst"))
 ------------------------------------------------------------------------------
 -- Second attempt, import something with a changed file.
 writefile("importdir/importmefirst", "version 1 of first test file\n")
+writefile("importdir/importmeignored", "version 0 of first ignored file\n")
 
 check(mtn("import", "importdir",
+	  "--no-respect-ignore",
+	  "--exclude", "importmeignored",
 	  "--message", "Import two, a changed file",
 	  "--branch", "importbranch"), 0, false, false)
+
+remove("importdir/importmeignored")
 
 check(mtn("checkout", "exportdir2", "--branch", "importbranch"),
       0, false, false)
 
+check(not exists("exportdir2/importmeignored"))
 check(samefile("importdir/importmefirst", "exportdir2/importmefirst"))
 
 ------------------------------------------------------------------------------
 -- Third attempt, import something with an added file.
 writefile("importdir/importmesecond", "version 0 of second test file\n")
+writefile("message", "Import three, an added file")
 
 check(mtn("import", "importdir",
-	  "--message", "Import three, an added file",
+	  "--message-file", "message",
 	  "--branch", "importbranch"), 0, false, false)
 
 check(mtn("checkout", "exportdir3", "--branch", "importbranch"),
