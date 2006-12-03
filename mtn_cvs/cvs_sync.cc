@@ -33,7 +33,7 @@ template <class A,class B>
 using namespace std;
 
 //  -> investigate under which conditions a string gets copied
-static std::string const cvs_cert_name="cvs-revisions";
+//static std::string const cvs_cert_name="cvs-revisions";
 
 using namespace cvs_sync;
 
@@ -1123,7 +1123,7 @@ void cvs_repository::commit()
     }
     if (children.empty()) return;
     revision_id next;
-    if (children.size()>1) // && !ap.revision_selectors.size())
+    if (children.size()>1 && !app.opts.first)
     { for (std::vector<revision_id>::const_iterator i=app.opts.revisions.begin();
           i!=app.opts.revisions.end();++i)
       { for (std::vector<revision_id>::const_iterator j=children.begin();

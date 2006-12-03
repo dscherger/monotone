@@ -114,7 +114,7 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
 
 CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("commit changes in local database to a remote cvs repository"), 
-    options::opts::branch | options::opts::revision)
+    options::opts::branch | options::opts::revision | options::opts::first)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 

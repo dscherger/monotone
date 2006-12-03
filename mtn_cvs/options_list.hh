@@ -38,6 +38,13 @@ OPT(full, "full", bool, false, N_("ignore already pulled CVS revisions"))
 }
 #endif
 
+OPT(first, "first", bool, false, N_("take first child if choice necessary"))
+#ifdef option_bodies
+{
+  first = true;
+}
+#endif
+
 OPTVAR(revision, std::vector<revision_id>, revisions, )
 OPTION(revision, revision, true, "revision,r", 
       N_("select revision id(s) for operation"))
