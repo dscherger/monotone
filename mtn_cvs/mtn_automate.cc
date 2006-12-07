@@ -9,6 +9,7 @@
 #include <basic_io.hh>
 #include <constants.hh>
 #include <safe_map.hh>
+#include <fstream>
 
 using std::string;
 using std::make_pair;
@@ -299,7 +300,7 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
 { std::vector<std::string> args;
   args.push_back(rid.inner()());
   std::string aresult=automate("certs",args);
-  
+
   basic_io::input_source source(aresult,"automate get_revision_certs result");
   basic_io::tokenizer tokenizer(source);
   basic_io::parser pa(tokenizer);

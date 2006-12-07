@@ -141,6 +141,15 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
   cvs_sync::takeover(myapp, module);
 }
 
+CMD(test, N_("debug"), "", 
+      N_("attempt to parse certs"), 
+      options::opts::revision)
+{
+  if (args.size()) throw usage(name);
+  mtncvs_state &myapp=mtncvs_state::upcast(app);
+  cvs_sync::test(myapp);
+}
+
 #include <package_revision.h>
 
 using std::cout;

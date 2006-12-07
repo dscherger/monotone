@@ -1725,6 +1725,14 @@ void cvs_repository::takeover()
 //  store_modules();
 }
 
+void cvs_sync::test(mtncvs_state &app)
+{
+  I(!app.opts.revisions.empty());
+  app.open();
+  revision_id rid=*app.opts.revisions.begin();
+  app.get_revision_certs(rid);
+}
+
 // read in directory put into db
 void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
 { std::string root,module=_module,branch;

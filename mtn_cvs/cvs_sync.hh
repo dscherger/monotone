@@ -214,4 +214,5 @@ void push(const std::string &repository, const std::string &module,
             std::string const& branch, mtncvs_state &app);
 void debug(const std::string &command, const std::string &arg, mtncvs_state &app);
 void takeover(mtncvs_state &app, const std::string &module);
+void test(mtncvs_state &app);
 } // end namespace cvs_sync
