@@ -197,7 +197,6 @@ UNIT_TEST(basic_io, binary_transparency)
   basic_io::parser parser(tokenizer);
   std::string t1;
   parser.esym(test);
-  parser.sym();
   parser.str(t1);
   assert(testpattern==t1);
 }
