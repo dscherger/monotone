@@ -28,6 +28,7 @@
 
 #include <typeinfo>
 #include <cstring>
+#include <cstdio>
 
 // Add #ifdeffage here as appropriate for other compiler-specific ways to
 // get this information.  Windows note: as best I can determine from poking
@@ -575,23 +576,15 @@ user_interface::ensure_clean_line()
 void
 user_interface::redirect_output_to(system_path const & filename)
 {
-  static ofstream filestr;
-  if (filestr.is_open())
-    filestr.close();
-  filestr.open(filename.as_external().c_str(), ofstream::out | ofstream::app);
-  E(filestr.is_open(), F("failed to open log file '%s'") % filename);
-  cout.rdbuf(filestr.rdbuf());
+  FILE *f = freopen(filename.as_external().c_str(), "a", stdout);
+  E(f, F("failed to open log file '%s'") % filename);
 }
 
 void
 user_interface::redirect_errors_to(system_path const & filename)
 {
-  static ofstream filestr;
-  if (filestr.is_open())
-    filestr.close();
-  filestr.open(filename.as_external().c_str(), ofstream::out | ofstream::app);
-  E(filestr.is_open(), F("failed to open log file '%s'") % filename);
-  cerr.rdbuf(filestr.rdbuf());
+  FILE *f = freopen(filename.as_external().c_str(), "a", stderr);
+  E(f, F("failed to open log file '%s'") % filename);
 }
 
 void

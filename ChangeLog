@@ -1,3 +1,9 @@
+2006-12-10  Richard Levitte  <richard@levitte.org>
+
+	* ui.cc (redirect_output_to, redirect_errors_to): Changed the
+	implementation to use cstdio's freopen(), so the redirection
+	is also recognised by C libraries we call, such as Lua.
+
 2006-12-09  Richard Levitte  <richard@levitte.org>
 
 	* ui.cc, ui.hh (redirect_output_to, redirect_errors_to): New
