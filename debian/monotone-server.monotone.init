@@ -25,6 +25,7 @@ DAEMON=/usr/bin/$EXECNAME
 PIDFILE=/var/run/$NAME/$EXECNAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 MAINLOG=/var/log/$NAME/$EXECNAME.log
+DUMPLOG=/var/log/$NAME/dump.log
 ERRORLOG=/var/log/$NAME/error.log
 
 MTN_HOME=/var/lib/monotone
@@ -56,7 +57,7 @@ d_start() {
        start-stop-daemon --start --quiet --pidfile $PIDFILE --background \
           --exec $DAEMON --chuid monotone --chdir $MTN_HOME -- \
           --confdir=$MTN_CONFDIR --db=$MTN_DB --norc --pid-file=$PIDFILE \
-          --log=$MAINLOG --dump=$ERRORLOG \
+          --log=$MAINLOG --errors=$ERRORLOG --dump=$DUMPLOG \
           --rcfile=$MTN_CONFDIR/hooks.lua --keydir=$MTN_KEYDIR --quiet \
           --bind=$ADDRESS serve
 }

@@ -102,6 +102,8 @@ public:
   void set_tick_trailer(std::string const & trailer);
   void set_tick_writer(tick_writer * t_writer);
   void ensure_clean_line();
+  void redirect_output_to(system_path const & filename);
+  void redirect_errors_to(system_path const & filename);
   void redirect_log_to(system_path const & filename);
 
   std::string output_prefix();

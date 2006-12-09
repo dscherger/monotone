@@ -1,5 +1,16 @@
 2006-12-09  Richard Levitte  <richard@levitte.org>
 
+	* ui.cc, ui.hh (redirect_output_to, redirect_errors_to): New
+	functions to redirect the rest of the output streams.
+	* options_list.hh: New option to redirect error messages.  This
+	is particularly useful in environments with no terminal and no
+	available shell redirection specifications and you still want to
+	be able to see what kinds of errors occured.
+	* debian/monotone-server.monotone.init: Tell the server where
+	it should write error messages.
+
+2006-12-09  Richard Levitte  <richard@levitte.org>
+
 	* tests/netsync_permissions_wildcards/__driver__.lua:
 	Don't forget to get() read-permissions and write-permissions.
 	Also, netsync.start should use the full blown netsync.lua,

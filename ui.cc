@@ -58,6 +58,7 @@
  #define get_current_exception_type() 0
 #endif
 
+using std::cerr;
 using std::clog;
 using std::cout;
 using std::endl;
@@ -569,6 +570,28 @@ user_interface::ensure_clean_line()
       t_writer->clear_line();
     }
   last_write_was_a_tick = false;
+}
+
+void
+user_interface::redirect_output_to(system_path const & filename)
+{
+  static ofstream filestr;
+  if (filestr.is_open())
+    filestr.close();
+  filestr.open(filename.as_external().c_str(), ofstream::out | ofstream::app);
+  E(filestr.is_open(), F("failed to open log file '%s'") % filename);
+  cout.rdbuf(filestr.rdbuf());
+}
+
+void
+user_interface::redirect_errors_to(system_path const & filename)
+{
+  static ofstream filestr;
+  if (filestr.is_open())
+    filestr.close();
+  filestr.open(filename.as_external().c_str(), ofstream::out | ofstream::app);
+  E(filestr.is_open(), F("failed to open log file '%s'") % filename);
+  cerr.rdbuf(filestr.rdbuf());
 }
 
 void

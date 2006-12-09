@@ -325,6 +325,13 @@ OPTION(globals, log, true, "log", gettext_noop("file to write the log to"))
 }
 #endif
 
+OPTION(globals, errors, true, "errors", gettext_noop("file to write the error messages to"))
+#ifdef option_bodies
+{
+  ui.redirect_errors_to(system_path(arg));
+}
+#endif
+
 OPTSET(messages)
 OPTVAR(messages, std::vector<std::string>, message, )
 OPTVAR(messages, utf8, msgfile, )
