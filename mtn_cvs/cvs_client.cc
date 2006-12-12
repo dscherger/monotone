@@ -1566,3 +1566,13 @@ void cvs_client::primeModules()
   // so reconnect
   reconnect();
 }
+
+void cvs_client::AddDirectory(std::string const& name, std::string const& _parent)
+{ std::string parent=_parent;
+  if (parent.empty()) parent=".";
+  if (parent!=".") primeModules();
+  else server_dir[""]=module;
+  Directory(parent!="." ? (parent+"/"+name) : name);
+  Directory(parent);
+  SendCommand(std::string("add"),std::vector<std::string>(1,name));
+}

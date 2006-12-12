@@ -117,6 +117,43 @@ dann cvs -d /tmp/y rls -r b3 -edR test
 ohne -d
 ---- 2005-01-09 00:05:39 +0000 1.1.2.1.2+ XX
 
+------------------- cvs co . ----------------------
+Command-prep checkout
+Argument .
+Directory .
+
+expand-modules     | Module-expansion . \n ok
+Argument -N
+Argument -P
+Argument --
+Argument .
+Directory .
+
+co  | Clear-static-directory ./ \n ./ \n Clear-template ./ \n ./ \n 
+	E cvs checkout: Updating . \n Clear-sticky CVSROOT/ \n CVSROOT/ \n 
+	Clear-static-directory CVSROOT/ \n CVSROOT/ \n 
+	Clear-template CVSROOT/ \n CVSROOT/ \n 
+	E cvs checkout: Updating CVSROOT \n Mod-time 9 Dec 2006 13:37:44 -0000 \n
+	MT +updated \n MT text U  \n MT fname CVSROOT/checkoutlist \n 
+	MT newline \n MT -updated \n Created CVSROOT/ \n CVSROOT/checkoutlist \n
+	/checkoutlist/1.1/// \n u=rw,g=rw,o=rw \n 495 \n ...
+	Clear-sticky CVSROOT/ \n CVSROOT/ \n ok
+
+------------------ cvs add directory -----------------------------------
+Command-prep add
+wrapper-sendme-rcsOptions	| ok \n
+Argument --
+Directory x
+x
+Directory .
+
+Argument x
+add   | Clear-template x/ \n x/ \n 
+	M Directory /tmp/X/x added to the repository \n ok
+
+(does not harm twice)
+--------------------------------------------------------------------------
+
 ------ Problems:
 what about the time zone offset when communicating with a CVS server
 

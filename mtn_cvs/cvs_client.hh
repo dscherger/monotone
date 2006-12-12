@@ -164,6 +164,8 @@ public:
   std::map<std::string,std::pair<std::string,std::string> >
          Commit(const std::string &changelog, time_t when, 
                     const std::vector<commit_arg> &commits);
+  // parent_path is module relative
+  void AddDirectory(std::string const& name, std::string const& parent_path);
   
   bool CommandValid(const std::string &cmd) const
   { return Valid_requests.find(cmd)!=Valid_requests.end(); }

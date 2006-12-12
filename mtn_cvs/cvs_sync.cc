@@ -944,7 +944,14 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
             i!=cs->dirs_added.end(); ++i)
     { std::string name=file_path(*i).as_internal();
       L(FL("dir add %s\n") % name);
-#warning create directory
+      
+      std::string parent,dir=name;
+      std::string::size_type last_slash=name.rfind('/');
+      if (last_slash!=std::string::npos)
+      { parent=name.substr(0,last_slash);
+        dir=name.substr(last_slash+1);
+      }
+      AddDirectory(dir,parent);
     }
 
     for (std::map<split_path, file_id>::const_iterator 
