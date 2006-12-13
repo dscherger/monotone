@@ -695,4 +695,7 @@ table.insert(tests, "import")
 table.insert(tests, "netsync_permissions_wildcards")
 table.insert(tests, "log_--to")
 table.insert(tests, "mkdir")
-
+table.insert(tests, "importing_cvs_branches_with_correct_ancestory_2")
+table.insert(tests, "importing_cvs_with_multiple_vendor_imports")
+table.insert(tests, "importing_cvs_with_conflicting_tag")
+table.insert(tests, "importing_cvs_with_tags_after_delete")
