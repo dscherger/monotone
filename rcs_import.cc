@@ -1110,15 +1110,11 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
   string bname = base_branch + "." + branch_name;
   I(stk.size() > 0);
 
+  // Private branches will be split up later. The semicolon is
+  // hopefully an illegal character for CVS branch names
   if (private_branch)
-    {
-      cvs_branchname bn = branchname_interner.intern("");
-      branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
-      stk.push(branch);
-      bstk.push(bn);
-      return;
-    }
-  else
+    bname = ";NONAME";
+
     {
       cvs_branchname bn = branchname_interner.intern(bname);
 
