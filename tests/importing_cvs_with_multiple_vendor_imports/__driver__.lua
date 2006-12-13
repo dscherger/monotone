@@ -34,7 +34,7 @@ copy("fileB.1", "vendorB_dir/fileB")
 check(indir("vendorB_dir", cvs("import", "-m", "Initial import from VendorA", "-b", "1.1.3", "testsrc", "VendorB", "VendorB_REL_2")), 0, false, false)
 
 -- import into monotone and check presence of files
-check(mtn("--branch=test", "--debug", "cvs_import", cvsroot.."/testsrc"), 0, false, false)
+check(mtn("--branch=test", "cvs_import", cvsroot.."/testsrc"), 0, false, false)
 
 -- check if all non-empty branches were imported
 check(mtn("list", "branches"), 0, true, false)
