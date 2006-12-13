@@ -396,9 +396,10 @@ cvs_history
   interner<unsigned long> path_interner;
   interner<unsigned long> tag_interner;
 
-  // assume admin has foo:X.Y.0.N in it, then
+  // assume an RCS file has foo:X.Y.0.N in it, then
   // this map contains entries of the form
   // X.Y.N.1 -> foo
+  // this map is cleared for every RCS file.
   map<string, string> branch_first_entries;
 
   // branch name -> branch
@@ -828,9 +829,15 @@ process_branch(string const & begin_version,
               L(FL("following private branch RCS %s") % (*i));
             }
 
-          construct_version(*curr_lines, *i, branch_lines, r);
-          insert_into_db(curr_data, curr_id, 
-                         branch_lines, branch_data, branch_id, db);
+          // Only construct the version if the delta exists. We
+          // have possbily added invalid deltas in
+          // index_branchpoint_symbols().
+          if (r.deltas.find(*i) != r.deltas.end())
+            {
+		          construct_version(*curr_lines, *i, branch_lines, r);
+		          insert_into_db(curr_data, curr_id, 
+    		                     branch_lines, branch_data, branch_id, db);
+            }
 
           cvs.push_branch(branch, priv);
 
@@ -1025,7 +1032,7 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
           // this is a "normal" branch
           //
           // such as "1.3.0.2", where "1.3" is the branchpoint and
-          // "1.3.2.1"
+          // "1.3.2.1" is the first commit in the branch.
 
           first_entry_components = components;
           first_entry_components[first_entry_components.size() - 2]
@@ -1041,12 +1048,38 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
       string first_entry_version;
       join_version(first_entry_components, first_entry_version);
 
-      L(FL("first version in branch %s would be %s\n") 
+      L(FL("first version in branch %s would be %s") 
         % sym % first_entry_version);
       branch_first_entries.insert(make_pair(first_entry_version, sym));
 
       string branchpoint_version;
       join_version(branchpoint_components, branchpoint_version);
+
+      if (branchpoint_version.length() > 0)
+        {
+          // possibly add the branch to a delta
+          map< string, shared_ptr<rcs_delta> >::const_iterator di =
+            r.deltas.find(branchpoint_version);
+
+          // the delta must exist
+          E(di != r.deltas.end(),
+            F("delta for a branchpoint is missing (%s)")
+              % branchpoint_version);
+
+          shared_ptr<rcs_delta> curr_delta = di->second;
+
+          vector<string>::const_iterator j;
+          for(j = curr_delta->branches.begin();
+              j != curr_delta->branches.end(); ++j)
+            {
+              if (*j == first_entry_version)
+                break;
+            }
+
+          // if the delta does not yet contain that branch, we add it
+          if (j == curr_delta->branches.end())
+            curr_delta->branches.push_back(first_entry_version);
+        }
     }
 }
 
@@ -1845,7 +1878,8 @@ import_cvs_repo(system_path const & cvsroot,
  
   for(map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator i =
       cvs.branches.begin(); i != cvs.branches.end(); ++i)
-    W(F("unable to import branch %s") % i->first);
+    W(F("unable to import branch %s")
+      % cvs.branchname_interner.lookup(i->first));
 
 
   // set all tag certificates
