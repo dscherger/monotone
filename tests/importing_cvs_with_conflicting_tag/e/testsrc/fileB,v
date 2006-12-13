@@ -2,6 +2,7 @@ head	1.2;
 access;
 symbols
 	CONFLICTING_TAG:1.1
+    ANOTHER_TAG:1.2
 	initial:1.1.1.1
 	Vendor:1.1.1;
 locks; strict;
