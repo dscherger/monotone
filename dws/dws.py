@@ -50,6 +50,8 @@ class HTTPLibOpener:
         return (req.status, req.reason, dict(req.getheaders()), req.read())
 
 class Connection:
+    MAX_POST = 512*1024
+    
     def __init__(self, base, path="", verbosity=0):
         """
             base - address of DWS server (example: http://yourhost.org/dws.php"
@@ -136,24 +138,44 @@ class Connection:
         partsArg = ",".join( [ "%i:%i" % (off, size) for off, size in parts ] )
         return  self.request("getparts", n = realName, parts = partsArg)
 
+    # TODO: test split!
     def put(self,name, content):
         realName = self.path + name
-        return self.request("put", n = realName, postData=content)
+        if len(content) > self.MAX_POST:
+            i = splitContent(content, self.MAX_POST)
+            chunk = i.next()
+            result = self.request("put", n = realName, postData=chunk)
+            for chunk in i:
+                result = self.request("append", n = realName, postData=chunk)
+            return result
+        else:
+            return self.request("put", n = realName, postData=content)
 
     # params:
     #    files = [ (name, content), ... ]
     # returns:
     #    dws.Response
+    # TODO: test split!
     def putMany(self, files):        
         agrContent = ""
         names = []
         sizes = []
+        result = None
         for name, content in files:
-            agrContent += content
-            names.append(self.path + name)
-            sizes.append(str(len(content)))
-                    
-        return self.request("put_many", n=",".join(names), s=",".join(sizes), postData = agrContent)
+            if  len(content) > self.MAX_POST:
+                result = self.put(name,content)
+            elif len(agrContent) + len(content) > self.MAX_POST:
+                result = self.request("put_many", n=",".join(names), s=",".join(sizes), postData = agrContent)
+                agrContent = ""
+                names = []
+                sizes = []
+            else:
+                agrContent += content
+                names.append(self.path + name)
+                sizes.append(str(len(content)))        
+        if names:
+            result = self.request("put_many", n=",".join(names), s=",".join(sizes), postData = agrContent)
+        return result
      
     # 
     # params:
@@ -193,9 +215,14 @@ class Connection:
                 result.append(None)
         return result
         
+    # TODO: test split!
     def append(self, name, content):
         realName = self.path + name
-        return self.request("append", n = realName, postData=content)
+        lastResult = None
+        for chunk in splitContent(content, self.MAX_POST):
+            lastResult = self.request("append", n = realName, postData=chunk)
+        return lastResult
+            
 
     def error(self, msg):
         print >> sys.stderr, "dws: error: %s" % msg
@@ -206,4 +233,17 @@ class Connection:
 
     def warning(self, msg):
         print >> sys.stderr, "dws: warning: %s" % msg
+
+        
+def splitContent(content, size):
+    offset = 0
+    todo = len(content)
+    while todo > 0:
+        if todo > size:
+            yield content[offset:offset+size]
+            todo -= size
+            offset += size
+        else:
+            yield content[offset:offset+todo]
+            break
 

@@ -60,26 +60,17 @@ class AppendableFileFake:
     def __init__(self, conn,name):
         self.conn = conn
         self.name = name
-        self.content = ""
-        self._need_flush = False
         
     def write(self, a):
-        self.content += a
-        self._need_flush = True
+        self.conn.append(self.name, a)
         return len(a)
         
     def flush(self):
-        return self._flush()
+        pass
         
     def close(self):
-        self._flush()
         return True
-        
-    def _flush(self):
-        if self._need_flush:
-            self.conn.append(self.name, self.content)
-        self._need_flush = False
-        return True
+
 
 class DWSWriteableFS(DWSReadableFS, fs.WriteableFS):
     def open_append(self, filename):

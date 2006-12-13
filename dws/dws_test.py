@@ -12,7 +12,8 @@ import unittest
 
 class TestSequenceFunctions(unittest.TestCase):    
     def setUp(self):
-        self.c = Connection("http://zbigg.internet.v.pl/zbigg-dump/","dws_python_test/")        
+        self.c = Connection("http://zbigg.internet.v.pl/zbigg-dump/","dws_python_test2/")        
+        self.c.verbosity = 1
         
     def testList(self):
         self.c.list()
@@ -91,6 +92,26 @@ class TestSequenceFunctions(unittest.TestCase):
         
     def testGet(self):
         pass
+        
+    def testSplit(self):
+        om = self.c.MAX_POST
+        try:
+            self.c.MAX_POST = 127
+            
+            self.c.MAX_POST = 1
+            self.__doTestContent("s1","abcdefg")
+            
+            self.c.MAX_POST = 3
+            self.__doTestContent("s1","abcdefg" * 50)
+            
+            self.c.MAX_POST = 512
+            self.__doTestContent("s1","abcdefghij" * 52)
+            
+            self.c.MAX_POST = 520
+            self.__doTestContent("s1","abcdefghij" * 52)
+            
+        finally:
+            self.c.MAX_POST = om
     
 if __name__ == '__main__':            
     unittest.main()
