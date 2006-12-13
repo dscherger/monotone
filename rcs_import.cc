@@ -1115,23 +1115,22 @@ cvs_history::push_branch(string const & branch_name, bool private_branch)
   if (private_branch)
     bname = ";NONAME";
 
+  cvs_branchname bn = branchname_interner.intern(bname);
+
+  map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator b =
+    branches.find(bn);
+
+  if (b == branches.end())
     {
-      cvs_branchname bn = branchname_interner.intern(bname);
-
-      map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator b = branches.find(bn);
-
-      if (b == branches.end())
-        {
-          branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
-          branches.insert(make_pair(bn, branch));
-          ++n_tree_branches;
-        }
-      else
-        branch = b->second;
-
-      stk.push(branch);
-      bstk.push(bn);
+      branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
+      branches.insert(make_pair(bn, branch));
+      ++n_tree_branches;
     }
+  else
+    branch = b->second;
+
+  stk.push(branch);
+  bstk.push(bn);
 }
 
 void
