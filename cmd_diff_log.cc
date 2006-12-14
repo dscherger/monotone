@@ -513,8 +513,8 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
 // Added in: 4.0
 // Purpose: Availability of mtn diff as automate command.
 //
-// Output format: Like mtn diff, but with the header part omitted (as this is
-// doubles the output of automate get_revision). If no content changes happened,
+// Output format: Like mtn diff, but with the header part omitted (this is
+// outputted in revision_diff separately). If no content changes happened,
 // the output is empty. All file operations beside mtn add are omitted,
 // as they don't change the content of the file.
 AUTOMATE(content_diff, N_("[FILE [...]]"),
@@ -529,6 +529,26 @@ AUTOMATE(content_diff, N_("[FILE [...]]"),
   dump_diffs(included, app, new_is_archived, output);
 }
 
+// Name: revision_diff
+// Arguments:
+//   (optional) one or two revisions to diff
+// Added in: 4.0
+// Purpose: Availability of mtn diff as automate command.
+//
+// Output format: basic_io changesets
+AUTOMATE(revision_diff, N_(""), options::opts::revision)
+{
+  cset included;
+  std::string dummy_header;
+  bool dummy_bool;
+  
+  prepare_diff(included, app, args, dummy_bool, dummy_header);
+
+  data revdiff;
+  write_cset(included, revdiff);
+  
+  output << revdiff;
+}
 
 static void
 log_certs(app_state & app, revision_id id, cert_name name,
