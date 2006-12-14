@@ -58,7 +58,10 @@ parse_uri(string const & in, uri & out)
 	  string port_part = "(?::([[:digit:]]+))?";
 	  string auth_rx = user_part + host_part + port_part;
 	  boost::match_results<std::string::const_iterator> auth_matches;
-	  I(boost::regex_match(authority, auth_matches, boost::regex(auth_rx)));
+	  
+      N(boost::regex_match(authority, auth_matches, boost::regex(auth_rx)),
+        F("The URI syntax is invalid. Maybe you used an URI in scp-style?"));
+      
 	  u.user = auth_matches.str(1);
 	  u.port = auth_matches.str(4);
 	  if (auth_matches[2].matched)	
@@ -168,9 +171,7 @@ test_one_uri(string scheme,
   BOOST_CHECK(u.fragment == fragment);
 }
 
-
-static void
-uri_test()
+UNIT_TEST(uri, uri)
 {
   test_one_uri("ssh", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
   test_one_uri("ssh", "graydon", "", "venge.net", "",   "/tmp/foo.mtn", "", "");
@@ -179,14 +180,6 @@ uri_test()
   test_one_uri("file", "",       "", "",          "",   "/tmp/foo.mtn", "", "");
   test_one_uri("", "", "", "", "", "/tmp/foo.mtn", "", "");
   test_one_uri("http", "graydon", "", "venge.net", "8080", "/foo.cgi", "branch=foo", "tip");
-}
-
-
-void
-add_uri_tests(test_suite * suite)
-{
-  I(suite);
-  suite->add(BOOST_TEST_CASE(&uri_test));
 }
 
 #endif // BUILD_UNIT_TESTS

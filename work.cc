@@ -479,10 +479,12 @@ addition_builder
   lua_hooks & lua;
   roster_t & ros;
   editable_roster_base & er;
+  bool respect_ignore;
 public:
   addition_builder(database & db, lua_hooks & lua,
-                   roster_t & r, editable_roster_base & e)
-    : db(db), lua(lua), ros(r), er(e)
+                   roster_t & r, editable_roster_base & e,
+                   bool i = true)
+    : db(db), lua(lua), ros(r), er(e), respect_ignore(i)
   {}
   virtual void visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
@@ -534,7 +536,7 @@ addition_builder::visit_dir(file_path const & path)
 void
 addition_builder::visit_file(file_path const & path)
 {
-  if (lua.hook_ignore_file(path) || db.is_dbfile(path))
+  if ((respect_ignore && lua.hook_ignore_file(path)) || db.is_dbfile(path))
     {
       P(F("skipping ignorable file %s") % path);
       return;
@@ -736,8 +738,11 @@ editable_working_tree::attach_node(node_id nid, split_path const & dst)
   // middle of an update to avoid clobbering a file, we just end up leaving
   // the working copy in an inconsistent state instead.  so for now, we leave
   // this check down here.
-  require_path_is_nonexistent(dst_pth,
-                              F("path '%s' already exists, cannot create") % dst_pth);
+  if (!workspace_root(dst))
+    {
+      require_path_is_nonexistent(dst_pth,
+                                  F("path '%s' already exists, cannot create") % dst_pth);
+    }
 
   // If we get here, we're doing a file/dir rename, or a dir-create.
   map<bookkeeping_path, file_path>::const_iterator i
@@ -1032,7 +1037,8 @@ workspace::find_unknown_and_ignored(path_restriction const & mask,
 }
 
 void
-workspace::perform_additions(path_set const & paths, bool recursive)
+workspace::perform_additions(path_set const & paths,
+                             bool recursive, bool respect_ignore)
 {
   if (paths.empty())
     return;
@@ -1053,7 +1059,7 @@ workspace::perform_additions(path_set const & paths, bool recursive)
     }
 
   I(new_roster.has_root());
-  addition_builder build(db, lua, new_roster, er);
+  addition_builder build(db, lua, new_roster, er, respect_ignore);
 
   for (path_set::const_iterator i = paths.begin(); i != paths.end(); ++i)
     {
@@ -1066,7 +1072,19 @@ workspace::perform_additions(path_set const & paths, bool recursive)
         {
           // in the case where we're just handled a set of paths, we use the builder
           // in this strange way.
-          build.visit_file(file_path(*i));
+          file_path path(*i);
+          switch (get_path_status(path))
+            {
+            case path::nonexistent:
+              N(false, F("no such file or directory: '%s'") % path);
+              break;
+            case path::file:
+              build.visit_file(path);
+              break;
+            case path::directory:
+              build.visit_dir(path);
+              break;
+            }
         }
     }
 
@@ -1184,7 +1202,7 @@ workspace::perform_rename(set<file_path> const & src_paths,
     {
       // "rename SRC1 SRC2 DST" case
       N(new_roster.has_node(dst),
-        F("destination dir %s/ does not exist in current revision") % dst_path);
+        F("destination dir %s/ is not versioned (perhaps add it?)") % dst_path);
 
       N(is_dir_t(new_roster.get_node(dst)),
         F("destination %s is an existing file in current revision") % dst_path);
@@ -1324,11 +1342,16 @@ workspace::perform_pivot_root(file_path const & new_root,
   safe_insert(cs.nodes_renamed, make_pair(new_root_sp, root_sp));
 
   {
+    editable_roster_base e(new_roster, nis);
+    cs.apply_to(e);
+  }
+
+  {
     revision_id base_rev;
     get_revision_id(base_rev);
 
     revision_t new_work;
-    make_revision_for_workspace(base_rev, cs, new_work);
+    make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
     put_work_rev(new_work);
   }
   if (execute)

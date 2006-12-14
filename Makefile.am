@@ -68,6 +68,7 @@ MOST_SOURCES = 								\
 	graph.cc graph.hh						\
 	roster_delta.cc roster_delta.hh					\
 	sha1.hh sha1.cc sha1_engine.hh                                  \
+	rev_height.cc rev_height.hh					\
 									\
         lru_writeback_cache.hh						\
 									\
@@ -77,7 +78,7 @@ MOST_SOURCES = 								\
         netio.hh smap.hh gettext.h					\
         package_revision.c package_revision.h				\
         package_full_revision.c package_full_revision.h			\
-        options.cc options.hh options_list.hh				\
+        option.cc option.hh options.cc options.hh options_list.hh	\
         i18n.h parallel_iter.hh safe_map.hh pch.hh
 
 NETXX_SOURCES =								\
@@ -459,7 +460,7 @@ TESTS_ENVIRONMENT=AUTOTEST_PATH="."
 mostlyclean-local:
 	rm -rf tester_dir package_full_revision.txt
 
-DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep run_tester_tests run_lua_tests
+DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep run_tester_tests run_lua_tests unit_tests.log
 
 # distcheck stuff
 
