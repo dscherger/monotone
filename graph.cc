@@ -126,6 +126,119 @@ get_reconstruction_path(std::string const & start,
 
 
 
+#ifdef BUILD_UNIT_TESTS
+
+#include "unit_tests.hh"
+#include "randomizer.hh"
+
+#include <boost/lexical_cast.hpp>
+
+using boost::lexical_cast;
+
+typedef std::multimap<string, string> rg_map;
+struct mock_reconstruction_graph : public reconstruction_graph
+{
+  rg_map ancestry;
+  set<string> bases;
+  mock_reconstruction_graph(rg_map const & ancestry, set<string> const & bases)
+    : ancestry(ancestry), bases(bases)
+  {}
+  virtual bool is_base(string const & node) const
+  {
+    return bases.find(node) != bases.end();
+  }
+  virtual void get_next(string const & from, set<string> & next) const
+  {
+    typedef rg_map::const_iterator ci;
+    pair<ci, ci> range = ancestry.equal_range(from);
+    for (ci i = range.first; i != range.second; ++i)
+      next.insert(i->second);
+  }
+};
+
+static void
+make_random_reconstruction_graph(size_t num_nodes, size_t num_random_edges,
+                                 size_t num_random_bases,
+                                 vector<string> & all_nodes, rg_map & ancestry,
+                                 set<string> & bases,
+                                 randomizer & rng)
+{
+  for (size_t i = 0; i != num_nodes; ++i)
+    all_nodes.push_back(lexical_cast<string>(i));
+  // We put a single long chain of edges in, to make sure that everything is
+  // reconstructable somehow.
+  for (size_t i = 1; i != num_nodes; ++i)
+    ancestry.insert(make_pair(idx(all_nodes, i - 1), idx(all_nodes, i)));
+  bases.insert(all_nodes.back());
+  // Then we insert a bunch of random edges too.  These edges always go
+  // forwards, to avoid creating cycles (which make get_reconstruction_path
+  // unhappy).
+  for (size_t i = 0; i != num_random_edges; ++i)
+    {
+      size_t from_idx = rng.uniform(all_nodes.size() - 1);
+      size_t to_idx = from_idx + 1 + rng.uniform(all_nodes.size() - 1 - from_idx);
+      ancestry.insert(make_pair(idx(all_nodes, from_idx),
+                                idx(all_nodes, to_idx)));
+    }
+  // And a bunch of random bases.
+  for (size_t i = 0; i != num_random_bases; ++i)
+    bases.insert(idx(all_nodes, rng.uniform(all_nodes.size())));
+}
+
+static void
+check_reconstruction_path(string const & start, reconstruction_graph const & graph,
+                          reconstruction_path const & path)
+{
+  I(!path.empty());
+  I(*path.begin() == start);
+  reconstruction_path::const_iterator last = path.end();
+  --last;
+  I(graph.is_base(*last));
+  for (reconstruction_path::const_iterator i = path.begin(); i != last; ++i)
+    {
+      set<string> children;
+      graph.get_next(*i, children);
+      reconstruction_path::const_iterator next = i;
+      ++next;
+      I(children.find(*next) != children.end());
+    }
+}
+
+static void
+run_get_reconstruction_path_tests_on_random_graph(size_t num_nodes,
+                                                  size_t num_random_edges,
+                                                  size_t num_random_bases,
+                                                  randomizer & rng)
+{
+  vector<string> all_nodes;
+  rg_map ancestry;
+  set<string> bases;
+  make_random_reconstruction_graph(num_nodes, num_random_edges, num_random_bases,
+                                   all_nodes, ancestry, bases,
+                                   rng);
+  mock_reconstruction_graph graph(ancestry, bases);
+  for (vector<string>::const_iterator i = all_nodes.begin();
+       i != all_nodes.end(); ++i)
+    {
+      reconstruction_path path;
+      get_reconstruction_path(*i, graph, path);
+      check_reconstruction_path(*i, graph, path);
+    }
+}
+
+UNIT_TEST(graph, random_get_reconstruction_path)
+{
+  randomizer rng;
+  // Some arbitrary numbers.
+  run_get_reconstruction_path_tests_on_random_graph(100, 100, 10, rng);
+  run_get_reconstruction_path_tests_on_random_graph(100, 200, 5, rng);
+  run_get_reconstruction_path_tests_on_random_graph(1000, 1000, 50, rng);
+  run_get_reconstruction_path_tests_on_random_graph(1000, 2000, 100, rng);
+}
+
+#endif // BUILD_UNIT_TESTS
+
+
 ////////////////////////////////////////////////////////////////////////
 // get_uncommon_ancestors
 ////////////////////////////////////////////////////////////////////////
@@ -509,8 +622,6 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
 #include "unit_tests.hh"
 #include "randomizer.hh"
 
-using namespace randomizer;
-
 static void
 get_all_ancestors(revision_id const & start, ancestry_map const & child_to_parent_map,
                   set<revision_id> & ancestors)
@@ -564,8 +675,7 @@ run_a_get_uncommon_ancestors_test(ancestry_map const & child_to_parent_map,
   I(calculated_right_uncommon_ancestors == true_right_uncommon_ancestors);
 }
 
-static void
-test_get_uncommon_ancestors_nasty_convexity_case()
+UNIT_TEST(graph, get_uncommon_ancestors_nasty_convexity_case)
 {
   // This tests the nasty case described in the giant comment above
   // get_uncommon_ancestors:
@@ -621,10 +731,11 @@ double const merge_node_freq = 0.2;
 double const skip_up_freq = 0.5;
 
 static revision_id
-pick_node_from_set(set<revision_id> const & heads)
+pick_node_from_set(set<revision_id> const & heads,
+                   randomizer & rng)
 {
   I(!heads.empty());
-  size_t which_start = uniform(heads.size());
+  size_t which_start = rng.uniform(heads.size());
   set<revision_id>::const_iterator i = heads.begin();
   for (size_t j = 0; j != which_start; ++j)
     ++i;
@@ -632,11 +743,13 @@ pick_node_from_set(set<revision_id> const & heads)
 }
 
 static revision_id
-pick_node_or_ancestor(set<revision_id> const & heads, ancestry_map const & child_to_parent_map)
+pick_node_or_ancestor(set<revision_id> const & heads,
+                      ancestry_map const & child_to_parent_map,
+                      randomizer & rng)
 {
-  revision_id rev = pick_node_from_set(heads);
+  revision_id rev = pick_node_from_set(heads, rng);
   // now we recurse up from this starting point
-  while (bernoulli(skip_up_freq))
+  while (rng.bernoulli(skip_up_freq))
     {
       typedef ancestry_map::const_iterator ci;
       pair<ci,ci> range = child_to_parent_map.equal_range(rev);
@@ -650,7 +763,7 @@ pick_node_or_ancestor(set<revision_id> const & heads, ancestry_map const & child
       else
         {
           // there are two parents, pick one randomly
-          if (flip())
+          if (rng.flip())
             rev = range.first->second;
           else
             rev = second->second;
@@ -661,7 +774,9 @@ pick_node_or_ancestor(set<revision_id> const & heads, ancestry_map const & child
 
 static void
 make_random_graph(size_t num_nodes,
-                  ancestry_map & child_to_parent_map, vector<revision_id> & nodes)
+                  ancestry_map & child_to_parent_map,
+                  vector<revision_id> & nodes,
+                  randomizer & rng)
 {
   set<revision_id> heads;
 
@@ -670,9 +785,9 @@ make_random_graph(size_t num_nodes,
       revision_id new_rid = revision_id(fake_id());
       nodes.push_back(new_rid);
       set<revision_id> parents;
-      if (heads.empty() || bernoulli(new_root_freq))
+      if (heads.empty() || rng.bernoulli(new_root_freq))
         parents.insert(revision_id());
-      else if (bernoulli(merge_node_freq) && heads.size() > 1)
+      else if (rng.bernoulli(merge_node_freq) && heads.size() > 1)
         {
           // maybe we'll pick the same node twice and end up not doing a
           // merge, oh well...
@@ -694,11 +809,13 @@ make_random_graph(size_t num_nodes,
 }
 
 static void
-run_a_get_uncommon_ancestors_random_test(size_t num_nodes, size_t iterations)
+run_a_get_uncommon_ancestors_random_test(size_t num_nodes,
+                                         size_t iterations,
+                                         randomizer & rng)
 {
   ancestry_map child_to_parent_map;
   vector<revision_id> nodes;
-  make_random_graph(num_nodes, child_to_parent_map, nodes);
+  make_random_graph(num_nodes, child_to_parent_map, nodes, rng);
   for (size_t i = 0; i != iterations; ++i)
     {
       L(FL("get_uncommon_ancestors: random test %s-%s") % num_nodes % i);
@@ -708,141 +825,12 @@ run_a_get_uncommon_ancestors_random_test(size_t num_nodes, size_t iterations)
     }
 }
 
-static void
-test_get_uncommon_ancestors_randomly()
-{
-  run_a_get_uncommon_ancestors_random_test(100, 100);
-  run_a_get_uncommon_ancestors_random_test(1000, 100);
-  run_a_get_uncommon_ancestors_random_test(10000, 1000);
-}
-
-void
-add_graph_tests(test_suite * suite)
-{
-  I(suite);
-  suite->add(BOOST_TEST_CASE(&test_get_uncommon_ancestors_nasty_convexity_case));
-  suite->add(BOOST_TEST_CASE(&test_get_uncommon_ancestors_randomly));
-}
-
-#endif // BUILD_UNIT_TESTS
-
-// Local Variables:
-// mode: C++
-// fill-column: 76
-// c-file-style: "gnu"
-// indent-tabs-mode: nil
-// End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-#ifdef BUILD_UNIT_TESTS
-
-#include <map>
-#include "unit_tests.hh"
-#include "randomizer.hh"
-
-#include <boost/lexical_cast.hpp>
-
-using boost::lexical_cast;
-using std::pair;
-
-typedef std::multimap<string, string> rg_map;
-struct mock_reconstruction_graph : public reconstruction_graph
-{
-  rg_map ancestry;
-  set<string> bases;
-  mock_reconstruction_graph(rg_map const & ancestry, set<string> const & bases)
-    : ancestry(ancestry), bases(bases)
-  {}
-  virtual bool is_base(string const & node) const
-  {
-    return bases.find(node) != bases.end();
-  }
-  virtual void get_next(string const & from, set<string> & next) const
-  {
-    typedef rg_map::const_iterator ci;
-    pair<ci, ci> range = ancestry.equal_range(from);
-    for (ci i = range.first; i != range.second; ++i)
-      next.insert(i->second);
-  }
-};
-
-static void
-make_random_reconstruction_graph(size_t num_nodes, size_t num_random_edges,
-                                 size_t num_random_bases,
-                                 vector<string> & all_nodes, rg_map & ancestry,
-                                 set<string> & bases,
-                                 randomizer & rng)
-{
-  for (size_t i = 0; i != num_nodes; ++i)
-    all_nodes.push_back(lexical_cast<string>(i));
-  // We put a single long chain of edges in, to make sure that everything is
-  // reconstructable somehow.
-  for (size_t i = 1; i != num_nodes; ++i)
-    ancestry.insert(make_pair(idx(all_nodes, i - 1), idx(all_nodes, i)));
-  bases.insert(all_nodes.back());
-  // Then we insert a bunch of random edges too.  These edges always go
-  // forwards, to avoid creating cycles (which make get_reconstruction_path
-  // unhappy).
-  for (size_t i = 0; i != num_random_edges; ++i)
-    {
-      size_t from_idx = rng.uniform(all_nodes.size() - 1);
-      size_t to_idx = from_idx + 1 + rng.uniform(all_nodes.size() - 1 - from_idx);
-      ancestry.insert(make_pair(idx(all_nodes, from_idx),
-                                idx(all_nodes, to_idx)));
-    }
-  // And a bunch of random bases.
-  for (size_t i = 0; i != num_random_bases; ++i)
-    bases.insert(idx(all_nodes, rng.uniform(all_nodes.size())));
-}
-
-static void
-check_reconstruction_path(string const & start, reconstruction_graph const & graph,
-                          reconstruction_path const & path)
-{
-  I(!path.empty());
-  I(*path.begin() == start);
-  reconstruction_path::const_iterator last = path.end();
-  --last;
-  I(graph.is_base(*last));
-  for (reconstruction_path::const_iterator i = path.begin(); i != last; ++i)
-    {
-      set<string> children;
-      graph.get_next(*i, children);
-      reconstruction_path::const_iterator next = i;
-      ++next;
-      I(children.find(*next) != children.end());
-    }
-}
-
-static void
-run_get_reconstruction_path_tests_on_random_graph(size_t num_nodes,
-                                                  size_t num_random_edges,
-                                                  size_t num_random_bases,
-                                                  randomizer & rng)
-{
-  vector<string> all_nodes;
-  rg_map ancestry;
-  set<string> bases;
-  make_random_reconstruction_graph(num_nodes, num_random_edges, num_random_bases,
-                                   all_nodes, ancestry, bases,
-                                   rng);
-  mock_reconstruction_graph graph(ancestry, bases);
-  for (vector<string>::const_iterator i = all_nodes.begin();
-       i != all_nodes.end(); ++i)
-    {
-      reconstruction_path path;
-      get_reconstruction_path(*i, graph, path);
-      check_reconstruction_path(*i, graph, path);
-    }
-}
-
-UNIT_TEST(graph, random_get_reconstruction_path)
+UNIT_TEST(graph, get_uncommon_ancestors_randomly)
 {
   randomizer rng;
-  // Some arbitrary numbers.
-  run_get_reconstruction_path_tests_on_random_graph(100, 100, 10, rng);
-  run_get_reconstruction_path_tests_on_random_graph(100, 200, 5, rng);
-  run_get_reconstruction_path_tests_on_random_graph(1000, 1000, 50, rng);
-  run_get_reconstruction_path_tests_on_random_graph(1000, 2000, 100, rng);
+  run_a_get_uncommon_ancestors_random_test(100, 100, rng);
+  run_a_get_uncommon_ancestors_random_test(1000, 100, rng);
+  run_a_get_uncommon_ancestors_random_test(10000, 1000, rng);
 }
 
 #endif // BUILD_UNIT_TESTS
