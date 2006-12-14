@@ -6857,9 +6857,9 @@ workspace is needed in this case.
 
 Prints the content changes between two revisions or a revision and the current
 workspace. This command differs from @command{mtn diff} in that way that it only
-outputs content changes and keeps quite on renames or drops, as the header of
-@command{mtn diff} is omitted (this is what @command{mtn automate get_revision} 
-already provides).
+outputs content changes and keeps quite on any other, non-content changes 
+(renames, attribute sets, aso.), as the header of @command{mtn diff} is omitted.
+Non-content differences are provided by @command{mtn automate revision_diff}.
 
 @item Sample output:
 
@@ -6880,6 +6880,73 @@ already provides).
 
 The GNU unified diff format. If there have been no content changes, the output
 is empty.
+
+@item Error conditions:
+
+If more than two revisions are given or a workspace is required, but
+not found, prints to stderr and exits with status 1. If one or more file 
+restrictions can't be applied, the command prints to stderr and exits as well.
+
+@end table
+
+@item mtn automate revision_diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
+
+@table @strong
+@item Arguments:
+
+One or more @var{file} arguments restrict the diff output to these files,
+otherwise all changed files in the given revision(s) and/or current workspace
+are considered.
+
+If zero or more revisions are given, the command behaves as follows:
+
+@itemize
+@item
+no revision: the diff is done between the workspace revision and the 
+parent (base) revision of this workspace
+@item
+one revision: the diff is done between the workspace revision and the
+given revision @option{id1},
+@item
+two revisions: the diff is done between @option{id1} and @option{id2}; no
+workspace is needed in this case.
+@end itemize
+
+@item Added in:
+
+4.0
+
+@item Purpose:
+
+Prints the changeset between two revisions or a revision and the current
+workspace. This command differs from @command{mtn diff} in that way that it 
+omits the actual content changes but only prints meta information about the
+actual changeset (which files are added, dropped, patched, etc.). Content 
+differences are provided by @command{mtn automate content_diff}.
+
+@item Sample output:
+
+@verbatim
+delete "md5.c"
+
+add_file "sha1.c"
+ content [da39a3ee5e6b4b0d3255bfef95601890afd80709]
+
+  set "sha1.c"
+ attr "foo"
+value "bar"
+[...]
+@end verbatim
+
+@item Output format:
+
+The output format are basic_io stanzas, formatted just like the output of 
+@command{mtn automate get_revision} and ordered equally by type. However, the
+following stanzas are not part of revision_diff:
+
+'format_version', 'new_manifest' and 'old_revision'.
+
+If there are no changes recorded, the output is empty.
 
 @item Error conditions:
 
