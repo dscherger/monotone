@@ -531,12 +531,12 @@ AUTOMATE(content_diff, N_("[FILE [...]]"),
 
 // Name: revision_diff
 // Arguments:
-//   (optional) one or two revisions to diff
+//   (optional) one or more paths to restrict the output on
 // Added in: 4.0
 // Purpose: Availability of mtn diff as automate command.
 //
 // Output format: basic_io changesets
-AUTOMATE(revision_diff, N_(""), options::opts::revision)
+AUTOMATE(revision_diff, N_("[FILE [...]]"), options::opts::revision)
 {
   cset included;
   std::string dummy_header;
