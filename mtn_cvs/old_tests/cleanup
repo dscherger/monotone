@@ -1,0 +1,4 @@
+#!/bin/sh
+rm -rf *~ test.cvsroot test.db test.db-journal test.mt test.cvstemp keys
+chmod u+x cleanup cvs_test_setup cvs_test_setup2 cvs_test_setup3 \
+	db_setup db_setup2 show_disk_usage test_all
