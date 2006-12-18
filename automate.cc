@@ -1602,7 +1602,7 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
 // Arguments:
 //   base ID (optional).
 //   file contents (binary, intended for automate stdio use)
-// Added in: 3.2
+// Added in: 4.1
 // Purpose:
 //   Store a file in the database.
 //   Optionally encode it as a file_delta
@@ -1611,7 +1611,7 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
 // Error conditions:
 //   a runtime exception is thrown if base revision is not available
 AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
-{ 
+{
   hexenc<id> sha1sum;
   transaction_guard tr(app.db);
   if (args.size()==1)
@@ -1619,7 +1619,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
     data dat(idx(args,0)());
     calculate_ident(dat,sha1sum);
     if (!app.db.file_version_exists(sha1sum))
-    { 
+    {
       app.db.put_file(sha1sum, dat);
     }
     else L(FL("revision %s already known") % sha1sum);
@@ -1629,7 +1629,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
     data dat(idx(args,1)());
     calculate_ident(dat,sha1sum);
     if (!app.db.file_version_exists(sha1sum))
-    { 
+    {
       file_id base_id(idx(args,0)());
       N(app.db.file_version_exists(base_id),
         F("no file version %s found in database") % base_id);
@@ -1642,13 +1642,13 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
       if (dat().size()<=del().size())
       // the data is smaller or of equal size to the patch
         app.db.put_file(sha1sum, dat);
-      else 
+      else
         app.db.put_file_version(base_id,sha1sum,del);
     }
     else L(FL("revision %s already known") % sha1sum);
   }
   else throw usage(name);
-  
+
   tr.commit();
   output << sha1sum;
 }
@@ -1656,7 +1656,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
 // Name: put_revision
 // Arguments:
 //   single edge specification (part of a full revision)
-// Added in: 3.2
+// Added in: 4.1
 // Purpose:
 //   Store a revision into the database.
 // Output format:
@@ -1664,7 +1664,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
 // Error conditions:
 //   none
 AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"), options::opts::none)
-{ 
+{
   if (args.size() != 1)
     throw usage(name);
   revision_t rev;
@@ -1676,7 +1676,7 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"), options::opts::none)
   temp_node_id_source nis;
   // I chose a single edge variant since this was much more simple to code
   // and sufficient to my needs.
-  // make this a loop if you need to create merge revisions  
+  // make this a loop if you need to create merge revisions
   { boost::shared_ptr<cset> cs(new cset());
     MM(*cs);
     // like revision::parse_edge
@@ -1685,7 +1685,7 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"), options::opts::none)
     parser.hex(tmp);
     revision_id old_rev=revision_id(tmp);
     parse_cset(parser, *cs);
-    
+
     // calculate new manifest
     roster_t old_roster;
     if (!null_id(old_rev)) app.db.get_roster(old_rev, old_roster);
@@ -1695,10 +1695,10 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"), options::opts::none)
     calculate_ident(new_roster, rev.new_manifest);
     safe_insert(rev.edges, std::make_pair(old_rev, cs));
   }
-  
+
   revision_id id;
   calculate_ident(rev, id);
-  
+
   transaction_guard tr(app.db);
   rev.made_for=made_for_database;
   app.db.put_revision(id, rev);
@@ -1712,7 +1712,7 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"), options::opts::none)
 //   revision ID
 //   certificate name
 //   certificate value
-// Added in: 3.2
+// Added in: 4.1
 // Purpose:
 //   Add a revision certificate (like mtn cert).
 // Output format:
@@ -1737,7 +1737,7 @@ AUTOMATE(cert, N_("REVISION-ID NAME VALUE"), options::opts::none)
 //   variable domain
 //   variable name
 //   veriable value
-// Added in: 3.2
+// Added in: 4.1
 // Purpose:
 //   Set a database variable (like mtn database set)
 // Output format:
@@ -1759,7 +1759,7 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"), options::opts::none)
 // Arguments:
 //   variable domain
 //   variable name
-// Added in: 3.2
+// Added in: 4.1
 // Purpose:
 //   Get a database variable (like mtn database ls vars | grep NAME)
 // Output format:
@@ -1774,7 +1774,14 @@ AUTOMATE(db_get, N_("DOMAIN NAME"), options::opts::none)
   utf8 name = idx(args, 1);
   var_key key(domain, var_name(name()));
   var_value value;
-  app.db.get_var(key, value);
+  try
+  {
+    app.db.get_var(key, value);
+  }
+  catch (std::logic_error)
+  {
+    N(false, F("variable not found"));
+  }
   output << value();
 }
 
