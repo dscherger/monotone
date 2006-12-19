@@ -1784,7 +1784,9 @@ void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
   {
     if (i->first.second()==app.opts.domain()+":path")
     { L(FL("found module %s:%s") % i->first.first % i->second());
-      sd[file_path(i->first.first).as_internal()+"/"]=i->second();
+      std::string path=file_path(i->first.first).as_internal();
+      if (!path.empty()) path+='/';
+      sd[path]=i->second();
     }
   }
   // how can we know that this is all?
