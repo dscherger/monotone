@@ -492,6 +492,35 @@ CMD(status, N_("informative"), N_("[PATH]..."), N_("show status of workspace"),
     }
 }
 
+CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
+    N_("publish a revision from a database to a directory.\n"
+       "the resulting filesystem tree will not be a workspace."),
+    options::opts::branch | options::opts::revision)
+{
+  std::vector<utf8> fake_args;
+  string fake_cmd("checkout");   //we're going to be a wrapper around checkout.
+
+  if (args.size() != 1)
+    throw usage(name);
+
+  utf8 dest(idx(args, 0));
+  system_path dest_path(dest);
+//  require_path_is_nonexistent(dest_path,
+//          F("publish destination path '%s' already exists.") % dest_path);
+  system_path tmp_dir((FL("%s.tmp.%d") % dest() % get_process_id()).str());
+  //system_path tmp((FL("/tmp/mtn_pub.tmp.%d") % get_process_id()).str());
+  fake_args.push_back(tmp_dir.as_internal());
+
+  //this should bail out on error, so anything below shouldn't happen
+  //if the checkout breaks (eg: disk full, bad revision, etc.)
+  commands::process(app, fake_cmd, fake_args);
+
+  //at this point, we'll assume the checkout went swimmingly.  move the temp
+  //path into the final location, after killing _MTN
+  delete_dir_recursive(tmp_dir/"_MTN");
+  move_path(tmp_dir, dest_path);
+}
+
 CMD(checkout, N_("tree"), N_("[DIRECTORY]"),
     N_("check out a revision from database into directory.\n"
        "If a revision is given, that's the one that will be checked out.\n"
