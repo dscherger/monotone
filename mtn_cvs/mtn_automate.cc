@@ -30,6 +30,11 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
   return revision_id(result);
 }
 
+std::string mtn_automate::get_option(std::string const& name)
+{
+  return automate("get_option",std::vector<std::string>(1,name));
+}
+
 namespace
 {
   namespace syms

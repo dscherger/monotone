@@ -109,7 +109,6 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
   }
   mtncvs_state &myapp=mtncvs_state::upcast(app);
 //myapp.dump();
-  N(!myapp.opts.branch_name().empty(), F("no destination branch specified\n"));
       
   cvs_sync::pull(repository,module,branch,myapp);
 }

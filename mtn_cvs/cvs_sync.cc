@@ -1213,7 +1213,13 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   
   mtn_automate::sync_map_t last_sync_info;
   revision_id lastid;
-
+  if (app.opts.branch_name().empty())
+  {
+    app.opts.branch_name=app.get_option("branch");
+    if (!app.opts.branch_name().empty() && app.opts.branch_name()[app.opts.branch_name().size()-1]=='\n')
+      app.opts.branch_name=app.opts.branch_name().substr(0,app.opts.branch_name().size()-1);
+  }
+  N(!app.opts.branch_name().empty(), F("no destination branch specified\n"));
   { std::string rep,mod,br;
     // search for module and last revision
     guess_repository(rep, mod, br, last_sync_info, lastid, app);
@@ -1305,17 +1311,14 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
         fs.cvssha1sum=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":sha1")))();
         fs.keyword_substitution=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":keywords")))();
         
-        // determine sha1sum of monotone file
-        mtn_automate::manifest_map::const_iterator fileiter=manifest.find(i->first);
-        I(fileiter!=manifest.end());
-        fs.sha1sum=fileiter->second.first.inner();
+        fs.sha1sum=i->second.first.inner();
+        if (fs.sha1sum().empty()) continue; // directory node
         fs.log_msg=e.changelog;
         fs.author=e.author;
         std::string path=file_path(i->first).as_internal();
         cvs_file_state cfs=remember(files[path].known_states,fs,path);
         e.xfiles.insert(std::make_pair(path,cfs));
       }
-      piece::reset();
       revision_lookup[e.revision]=edges.insert(e).first;
 #warning do I need this code?
 #if 0
@@ -1785,7 +1788,7 @@ void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
     }
   }
   // how can we know that this is all?
-  if (sd.empty())
+  if (sd.find("")==sd.end())
   { sd[""]=root+"/"+module+"/";
   }
   SetServerDir(sd);

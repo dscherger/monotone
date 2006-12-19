@@ -66,6 +66,8 @@ struct mtn_automate : mtn_pipe
   std::vector<revision_id> get_revision_children(revision_id const& rid);
   std::vector<revision_id> get_revision_parents(revision_id const& rid);
   revision_t get_revision(revision_id const& rid);
+  
+  std::string get_option(std::string const& name);
 };
 
 #endif
