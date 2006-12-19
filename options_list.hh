@@ -471,7 +471,7 @@ OPT(set_default, "set-default", bool, false,
 #endif
 
 GOPT(ticker, "ticker", std::string, ,
-     gettext_noop("set ticker style (count|dot|none)"))
+     gettext_noop("set ticker style (count|dot|stdio|none)"))
 #ifdef option_bodies
 {
   ticker = arg;
@@ -481,8 +481,10 @@ GOPT(ticker, "ticker", std::string, ,
     ui.set_tick_writer(new tick_write_dot);
   else if (ticker == "count")
     ui.set_tick_writer(new tick_write_count);
+  else if (ticker == "stdio")
+    ui.set_tick_writer(new tick_write_stdio);
   else
-    throw bad_arg_internal(F("argument must be 'none', 'dot', or 'count'").str());
+    throw bad_arg_internal(F("argument must be 'none', 'dot', 'count' or 'stdio'").str());
 }
 #endif
 

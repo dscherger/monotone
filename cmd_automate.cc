@@ -12,6 +12,7 @@
 #include <map>
 
 #include "cmd.hh"
+#include "ui.hh"
 
 using std::istream;
 using std::make_pair;
@@ -331,6 +332,10 @@ AUTOMATE(stdio, "", options::opts::automate_stdio_size)
   N(args.size() == 0,
     F("no arguments needed"));
 
+  // overwrite any former --ticker option with 'stdio'
+  tick_write_stdio * tick_writer = new tick_write_stdio();
+  ui.set_tick_writer(tick_writer);
+  
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
@@ -366,6 +371,7 @@ AUTOMATE(stdio, "", options::opts::automate_stdio_size)
           os<<f.what();
         }
       os.end_cmd();
+      tick_writer->next_cmd();
     }
 }
 
