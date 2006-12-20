@@ -495,7 +495,7 @@ CMD(status, N_("informative"), N_("[PATH]..."), N_("show status of workspace"),
 CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
     N_("publish a revision from a database to a directory.\n"
        "the resulting filesystem tree will not be a workspace."),
-    options::opts::branch | options::opts::revision)
+    options::opts::branch | options::opts::revision | options::opts::force)
 {
   std::vector<utf8> fake_args;
   L(FL("setting 'fake' command to checkout"));
@@ -507,8 +507,12 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
   utf8 dest(idx(args, 0));
   system_path dest_path(dest);
 
-//  require_path_is_nonexistent(dest_path,
-//          F("publish destination path '%s' already exists.") % dest_path);
+  
+  //we'll trample an existing path, but only with --force
+  E((app.opts.force || ! path_exists(dest_path)),
+  //require_path_is_nonexistent(dest_path,
+    F("destination path already exists."));
+
   system_path tmp_dir((FL("%s.tmp.%d") % dest() % get_process_id()).str());
   L(FL("temporary checkout area is: %s") % tmp_dir);
   //system_path tmp((FL("/tmp/mtn_pub.tmp.%d") % get_process_id()).str());

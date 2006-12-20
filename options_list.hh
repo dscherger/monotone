@@ -100,6 +100,14 @@ OPTION(branch, branch, true, "branch,b",
 }
 #endif
 
+GOPT(force, "force", bool, false,
+		 gettext_noop("force a potentially destructive action"))
+#ifdef option_bodies
+{
+	force = true;
+}
+#endif
+
 GOPT(brief, "brief", bool, false,
      gettext_noop("print a brief version of the normal output"))
 #ifdef option_bodies
