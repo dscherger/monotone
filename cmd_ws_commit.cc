@@ -498,6 +498,7 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
     options::opts::branch | options::opts::revision)
 {
   std::vector<utf8> fake_args;
+  L(FL("setting 'fake' command to checkout"));
   string fake_cmd("checkout");   //we're going to be a wrapper around checkout.
 
   if (args.size() != 1)
@@ -505,19 +506,35 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
 
   utf8 dest(idx(args, 0));
   system_path dest_path(dest);
+
 //  require_path_is_nonexistent(dest_path,
 //          F("publish destination path '%s' already exists.") % dest_path);
   system_path tmp_dir((FL("%s.tmp.%d") % dest() % get_process_id()).str());
+  L(FL("temporary checkout area is: %s") % tmp_dir);
   //system_path tmp((FL("/tmp/mtn_pub.tmp.%d") % get_process_id()).str());
   fake_args.push_back(tmp_dir.as_internal());
 
   //this should bail out on error, so anything below shouldn't happen
   //if the checkout breaks (eg: disk full, bad revision, etc.)
+  L(FL("calling fake command checkout with fake args"));
   commands::process(app, fake_cmd, fake_args);
+  L(FL("checkout to %s succeeded") % tmp_dir);
 
   //at this point, we'll assume the checkout went swimmingly.  move the temp
   //path into the final location, after killing _MTN
+  L(FL("removing _MTN from fake checkout area"));
   delete_dir_recursive(tmp_dir/"_MTN");
+  L(FL("removed"));
+
+
+  if (directory_exists(dest_path))
+    {
+      system_path backup_orig((FL("%s.bak.%d") % dest_path % get_process_id()).str());
+      L(FL("saving backup of '%s' to '%s'") % dest_path % backup_orig);
+      move_path(dest_path, backup_orig);
+    }
+
+  L(FL("moving fake checkout to final location '%s'") % dest_path);;
   move_path(tmp_dir, dest_path);
 }
 
