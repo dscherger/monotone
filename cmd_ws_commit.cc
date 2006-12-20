@@ -507,12 +507,22 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
   utf8 dest(idx(args, 0));
   system_path dest_path(dest);
 
-  
   //we'll trample an existing path, but only with --force
-  E((app.opts.force || ! path_exists(dest_path)),
-  //require_path_is_nonexistent(dest_path,
-    F("destination path already exists."));
+  //we check for force first, since it's lighter than a path test.
+  //this is treated as a general error, not a user error
+  if (path_exists(dest_path))
+    {
+      E(app.opts.force,
+        F("destination path already exists. use --force"));
+      E(directory_exists(dest_path),
+        F("destination exists but is not a directory.  too dangerous, even for --force"));
+    }
 
+  //tmp_dir will reside on the same filesystem as the final location.
+  //this is important for edge cases involving a full filesystem.
+  //we'll be able to bail out before doing any of the re-arranging below
+  //eg: when using force to supercede an existing directory, the existing will
+  //still be in place, which could (likely is?) be important to the user
   system_path tmp_dir((FL("%s.tmp.%d") % dest() % get_process_id()).str());
   L(FL("temporary checkout area is: %s") % tmp_dir);
   //system_path tmp((FL("/tmp/mtn_pub.tmp.%d") % get_process_id()).str());
@@ -531,7 +541,10 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
   L(FL("removed"));
 
 
-  if (directory_exists(dest_path))
+  //if we're here, and the path exists, we were 'forced'
+  //we'll move the existing path out of the way before moving the
+  //temp checkout in place.
+  if (path_exists(dest_path))
     {
       system_path backup_orig((FL("%s.bak.%d") % dest_path % get_process_id()).str());
       L(FL("saving backup of '%s' to '%s'") % dest_path % backup_orig);
