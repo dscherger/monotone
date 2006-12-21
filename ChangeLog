@@ -1,7 +1,7 @@
 2006-12-21  Ben Walton       <bdwalton@gmail.com>
   * cmd_ws_commit.cc (CMD_NO_WORKSPACE(export)): added this
-		command, which exports a revision/branch from the db.
-	* Aliased publish to export.
+    command, which exports a revision/branch from the db.
+  * Aliased publish to export.
   * options_list.hh: added a --force to be used with export.
   * monotone.texi: added documentation for the new command.																														
 2006-12-19  Thomas Keller  <me@thomaskeller.biz>
