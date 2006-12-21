@@ -492,8 +492,8 @@ CMD(status, N_("informative"), N_("[PATH]..."), N_("show status of workspace"),
     }
 }
 
-CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
-    N_("publish a revision from a database to a directory.\n"
+CMD_NO_WORKSPACE(export, N_("tree"), N_("[DIRECTORY]"),
+    N_("export a revision from a database to a directory.\n"
        "the resulting filesystem tree will not be a workspace."),
     options::opts::branch | options::opts::revision | options::opts::force)
 {
@@ -508,7 +508,7 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
 
   //not sure if this is really necessary as a precaution,
   //but we'll leave it for now.
-  N(dest() != ".", F("we won't publish to the cwd"));
+  N(dest() != ".", F("we won't export to the cwd"));
 
   system_path dest_path(dest);
 
@@ -545,7 +545,6 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
   delete_dir_recursive(tmp_dir/"_MTN");
   L(FL("removed"));
 
-
   //if we're here, and the path exists, we were 'forced'
   //we'll move the existing path out of the way before moving the
   //temp checkout in place.
@@ -559,6 +558,8 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
   L(FL("moving fake checkout to final location '%s'") % dest_path);;
   move_path(tmp_dir, dest_path);
 }
+
+ALIAS(publish, export)
 
 CMD(checkout, N_("tree"), N_("[DIRECTORY]"),
     N_("check out a revision from database into directory.\n"

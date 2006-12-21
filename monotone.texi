@@ -4003,6 +4003,8 @@ the command be executed from within a workspace.
 With an explicit @option{--revision} argument, the command outputs
 contents of @var{path} at that revision.
 
+@item mtn export [--force] --db=@var{database} --revision=@var{id} @var{destination_directory}
+@itemx mtn export --branch=@var{branchname} @var{destination_directory}
 @item mtn publish [--force] --db=@var{database} --revision=@var{id} @var{destination_directory}
 @itemx mtn publish --branch=@var{branchname} @var{destination_directory}
 
@@ -4013,7 +4015,8 @@ If @var{destination_directory} exists and is a file, monotone will _not_
 proceed at all.  Monotone will not publish to the current working directory (.).
 In the case where @var{destination_directory} exists and is a directory and
 @option{--force} is supplied, the original directory will be preserved as
-@var{destination_directory}.bak.@{@var{pid of mtn process}@}.
+@var{destination_directory}.bak.@{@var{pid of mtn process}@}.  Publish is an
+alias for export.
 
 @item mtn checkout --revision=@var{id} @var{directory}
 @itemx mtn co --revision=@var{id} @var{directory}
