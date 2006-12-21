@@ -146,11 +146,9 @@ std::string debug_files(const std::map<std::string,file_history> &files)
     result += " (";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
-    { result +=  boost::lexical_cast<string>(j->since_when%1000) + ":" + j->cvs_version + "=";
-      if (j->dead) result +=  "dead";
-      else if (j->size) result +=  boost::lexical_cast<string>(j->size);
-      else if (j->patchsize) result +=  'p' + boost::lexical_cast<string>(j->patchsize);
-      else if (!j->sha1sum().empty()) result +=  j->sha1sum().substr(0,4) + j->keyword_substitution;
+    { string toadd;
+      dump(*j,toadd);
+      result+=toadd;
       ++j;
       if (j!=i->second.known_states.end()) result += ",";
     }
@@ -217,10 +215,9 @@ std::string cvs_repository::debug() const
     result+= " (";
     for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
           j!=i->second.known_states.end();)
-    { if (j->dead) result+= "dead";
-      else if (j->size) result+= boost::lexical_cast<string>(j->size);
-      else if (j->patchsize) result+= "p" + boost::lexical_cast<string>(j->patchsize);
-      else if (!j->sha1sum().empty()) result+= j->sha1sum().substr(0,4) + j->keyword_substitution;
+    { std::string toadd;
+      dump(*j,toadd);
+      result+=toadd;
       ++j;
       if (j!=i->second.known_states.end()) result+= ",";
     }
@@ -422,7 +419,7 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     unsigned hashidx=hash.OUTPUT_LENGTH;
     for (;hashidx && hashval[hashidx-1]==Botan::byte(md5sum[hashidx-1]);--hashidx) ;
     if (!hashidx)
-    { //store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+    { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
     }
     else
     { E(false, F("MD5 sum %s<>%s") % u.checksum 
@@ -582,9 +579,11 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
       }
       else // file was present in last manifest, check whether next revision already fits
       {
+        MM(mi->first);
         cvs_file_state s=mi->second;
         MM(*s);
         ++s;
+        MM(*s);
         if (s!=f->second.known_states.end() 
             && (*s)<=(*e)
             && ( next_edge==edges.end() || ((*s)<(*next_edge)) ) )
