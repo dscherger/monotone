@@ -4003,16 +4003,17 @@ the command be executed from within a workspace.
 With an explicit @option{--revision} argument, the command outputs
 contents of @var{path} at that revision.
 
-@item mtn publish [--force] --db=@var{database} --revision=@var{id} @var{directory}
+@item mtn publish [--force] --db=@var{database} --revision=@var{id} @var{destination_directory}
+@itemx mtn publish --branch=@var{branchname} @var{destination_directory}
 
-These commands checkout a revision @var{id} from your database but
-don't create a workspace.  If directory @var{directory} already exists,
-monotone will require the --force option to proceed.  If @var{directory}
-exists and is a file, monotone will _not_ proceed at all.  Monotone will
-not publish to the current working directory (.).  In the case where
-@var{directory} exists and is a directory and --force is supplied, the
-original directory will be preserved as @var{directory}.bak.@{@var{pid
-of mtn process}@}.
+This command checks out a revision @var{id} from your database but
+doesn't create a workspace.  If directory @var{destination_directory}
+already exists, monotone will require the @option{--force} option to proceed.
+If @var{destination_directory} exists and is a file, monotone will _not_
+proceed at all.  Monotone will not publish to the current working directory (.).
+In the case where @var{destination_directory} exists and is a directory and
+@option{--force} is supplied, the original directory will be preserved as
+@var{destination_directory}.bak.@{@var{pid of mtn process}@}.
 
 @item mtn checkout --revision=@var{id} @var{directory}
 @itemx mtn co --revision=@var{id} @var{directory}
