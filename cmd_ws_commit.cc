@@ -505,6 +505,11 @@ CMD_NO_WORKSPACE(publish, N_("tree"), N_("[DIRECTORY]"),
     throw usage(name);
 
   utf8 dest(idx(args, 0));
+
+  //not sure if this is really necessary as a precaution,
+  //but we'll leave it for now.
+  N(dest() != ".", F("we won't publish to the cwd"));
+
   system_path dest_path(dest);
 
   //we'll trample an existing path, but only with --force
