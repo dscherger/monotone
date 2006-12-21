@@ -110,19 +110,29 @@ std::string debug_manifest(const cvs_manifest &mf)
   return result;
 }
 
+template <> void
+static dump(cvs_sync::file_state const& fs, std::string& result)
+{ 
+    result="since "+cvs_repository::time_t2human(fs.since_when);
+    result+=" V"+fs.cvs_version+" ";
+    if (fs.dead) result+= "dead";
+    else if (fs.size) result+= boost::lexical_cast<string>(fs.size);
+    else if (fs.patchsize) result+= "p" + boost::lexical_cast<string>(fs.patchsize);
+    else if (!fs.sha1sum().empty()) result+= fs.sha1sum().substr(0,4) + fs.keyword_substitution;
+    result+=" "+fs.log_msg.substr(0,20)+"\n";
+}
+
 std::string cvs_repository::debug_file(std::string const& name)
 { std::map<std::string,file_history>::const_iterator i=files.find(name);
   E(i!=files.end(),F("file '%s' not found\n") % name);
   std::string result;
   for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
         j!=i->second.known_states.end();++j)
-  { result+="since "+time_t2human(j->since_when);
-    result+=" V"+j->cvs_version+" ";
-    if (j->dead) result+= "dead";
-    else if (j->size) result+= boost::lexical_cast<string>(j->size);
-    else if (j->patchsize) result+= "p" + boost::lexical_cast<string>(j->patchsize);
-    else if (!j->sha1sum().empty()) result+= j->sha1sum().substr(0,4) + j->keyword_substitution;
-    result+=" "+j->log_msg.substr(0,20)+"\n";
+  { 
+    std::string part;
+    dump(*j, part);
+    result+=part;
+    result+='\n';
   }
   return result;
 }
@@ -173,6 +183,20 @@ mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
   return result;
 }
 
+template <> void
+static dump(cvs_sync::cvs_edge const& e, std::string& result)
+{ result= "[" + cvs_repository::time_t2human(e.time);
+    if (e.time!=e.time2) result+= "+" + boost::lexical_cast<string>(e.time2-e.time);
+    if (!e.revision().empty()) result+= "," + e.revision().substr(0,4);
+    if (!e.xfiles.empty()) 
+      result+= "," + boost::lexical_cast<string>(e.xfiles.size()) 
+         + (e.delta_base.inner()().empty()?"files":"deltas");
+    result+= "," + e.author + ",";
+    std::string::size_type nlpos=e.changelog.find_first_of("\n\r");
+    if (nlpos>50) nlpos=50;
+    result+= e.changelog.substr(0,nlpos) + "]";
+}
+
 std::string cvs_repository::debug() const
 { std::string result;
 
@@ -180,16 +204,11 @@ std::string cvs_repository::debug() const
   result+= "Edges :\n";
   for (std::set<cvs_edge>::const_iterator i=edges.begin();
       i!=edges.end();++i)
-  { result+= "[" + time_t2human(i->time);
-    if (i->time!=i->time2) result+= "+" + boost::lexical_cast<string>(i->time2-i->time);
-    if (!i->revision().empty()) result+= "," + i->revision().substr(0,4);
-    if (!i->xfiles.empty()) 
-      result+= "," + boost::lexical_cast<string>(i->xfiles.size()) 
-         + (i->delta_base.inner()().empty()?"files":"deltas");
-    result+= "," + i->author + ",";
-    std::string::size_type nlpos=i->changelog.find_first_of("\n\r");
-    if (nlpos>50) nlpos=50;
-    result+= i->changelog.substr(0,nlpos) + "]\n";
+  {
+    std::string edge_part;
+    dump(*i, edge_part);
+    result+=edge_part;
+    result+='\n';
   }
   result+= "Files :\n";
   for (std::map<std::string,file_history>::const_iterator i=files.begin();
@@ -524,7 +543,8 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
     current_manifest=get_files(*before);
   }
   for (;e!=edges.end();++e)
-  { std::set<cvs_edge>::iterator next_edge=e;
+  { MM(*e);
+    std::set<cvs_edge>::iterator next_edge=e;
     ++next_edge;
     for (std::map<std::string,file_history>::const_iterator f=files.begin();f!=files.end();++f)
     { I(!branch.empty() || !f->second.known_states.empty());
@@ -561,14 +581,17 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
         }
       }
       else // file was present in last manifest, check whether next revision already fits
-      { cvs_file_state s=mi->second;
+      {
+        cvs_file_state s=mi->second;
+        MM(*s);
         ++s;
         if (s!=f->second.known_states.end() 
             && (*s)<=(*e)
             && ( next_edge==edges.end() || ((*s)<(*next_edge)) ) )
         { if (s->dead) current_manifest.erase(mi);
           else 
-          { mi->second=s;
+          { 
+            mi->second=s;
             I(!s->sha1sum().empty());
           }
           check_split(s,f->second.known_states.end(),e);

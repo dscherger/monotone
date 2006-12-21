@@ -77,6 +77,42 @@ OPTION(globals, debug, false, "debug",
 }
 #endif
 
+GOPT(quiet, "quiet", bool, false,
+     gettext_noop("suppress verbose, informational and progress messages"))
+#ifdef option_bodies
+{
+  quiet = true;
+  global_sanity.set_quiet();
+  ui.set_tick_writer(new tick_write_nothing);
+}
+#endif
+
+GOPT(reallyquiet, "reallyquiet", bool, false,
+gettext_noop("suppress warning, verbose, informational and progress messages"))
+#ifdef option_bodies
+{
+  reallyquiet = true;
+  global_sanity.set_reallyquiet();
+  ui.set_tick_writer(new tick_write_nothing);
+}
+#endif
+
+GOPT(ticker, "ticker", std::string, ,
+     gettext_noop("set ticker style (count|dot|none)"))
+#ifdef option_bodies
+{
+  ticker = arg;
+  if (ticker == "none" || global_sanity.quiet)
+    ui.set_tick_writer(new tick_write_nothing);
+  else if (ticker == "dot")
+    ui.set_tick_writer(new tick_write_dot);
+  else if (ticker == "count")
+    ui.set_tick_writer(new tick_write_count);
+  else
+    throw bad_arg_internal(F("argument must be 'none', 'dot', or 'count'").str());
+}
+#endif
+
 GOPT(mtn_binary, "mtn", utf8, , gettext_noop("monotone binary name"))
 #ifdef option_bodies
 {
@@ -96,6 +132,14 @@ OPTION(globals, mtn_option, true, "mtn-option", N_("pass option to monotone"))
 #ifdef option_bodies
 {
   mtn_options.push_back(arg);
+}
+#endif
+
+OPTION(globals, dump, true, "dump",
+        gettext_noop("file to dump debugging log to, on failure"))
+#ifdef option_bodies
+{
+  global_sanity.filename = system_path(arg).as_external();
 }
 #endif
 
@@ -119,26 +163,16 @@ OPTION(globals, mtn_option, true, "mtn-option", N_("pass option to monotone"))
 #endif
 
 // these options are passed transparently
-TRANSOPT3(db, "db,d", N_("passed: database location"));
-TRANSOPT(rcfile, N_("passed: config file"));
-TRANSOPT_BOOL(nostd, N_("passed: do not read standard hooks"));
-TRANSOPT(keydir, N_("passed: key directory"));
-TRANSOPT3(key, "key,k", N_("passed: key"));
-TRANSOPT_BOOL(norc, N_("passed: norc"));
-TRANSOPT(root, N_("passed: root"));
-TRANSOPT(confdir, N_("passed: confdir"));
+TRANSOPT3(db, "db,d", N_("passed: set name of database"));
+TRANSOPT(rcfile, N_("passed: load extra rc file"));
+TRANSOPT_BOOL(nostd, N_("passed: do not load standard lua hooks"));
+TRANSOPT(keydir, N_("passed: set location of key store"));
+TRANSOPT3(key, "key,k", N_("passed: set key for signatures"));
+TRANSOPT_BOOL(norc, N_("passed: do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"));
+TRANSOPT(root, N_("passed: limit search for workspace to specified root"));
+TRANSOPT(confdir, N_("passed: set location of configuration directory"));
 
 #undef TRANSOPT3
 #undef TRANSOPT_BOOL
 #undef TRANSOPT
 
-#if 0
-GOPT(db, "db,d", string, N_("passed: database location"));
-GOPT(rcfile, "rcfile", string, N_("passed: config file"));
-GOPT(nostd, "nostd", nil, N_("passed: do not read standard hooks"));
-GOPT(keydir, "keydir", string, N_("passed: key directory"));
-GOPT(key, "key,k", string, N_("passed: key"));
-GOPT(norc, "norc", nil, N_("passed: norc"));
-GOPT(root, "root", string, N_("passed: root"));
-GOPT(confdir, "confdir", string, N_("passed: confdir"));
-#endif

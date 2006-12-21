@@ -177,7 +177,6 @@ private:
         mtn_automate::cset &cs);
   mtn_automate::sync_map_t create_sync_state(cvs_edge const& e);
   
-  static std::string time_t2human(const time_t &t);
 public: // semi public interface for push/pull
   void prime();
   void update();
@@ -189,6 +188,7 @@ public: // semi public interface for push/pull
   const cvs_manifest &get_files(const revision_id &e);
   
   static time_t posix2time_t(std::string s);
+  static std::string time_t2human(const time_t &t);
 
   void takeover();
   std::string debug_file(std::string const& name);
