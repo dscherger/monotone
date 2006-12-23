@@ -1480,6 +1480,76 @@ AUTOMATE(get_option, N_("OPTION"), options::opts::none)
     N(false, F("'%s' is not a recognized workspace option") % opt);
 }
 
+// Name: set_option
+// Arguments:
+//   2: an option name and the new value
+// Added in: 3.1
+// Purpose: Set the value of the named option in _MTN/options
+//
+// Output format: A string; the new value of the option
+// (to possibly be used for verification)
+//
+// Errors:
+//   on any error condition, stdout is empty, stderr contains the error
+//   message and exit status should be 1.
+//
+// Sample output (for 'mtn automate set_option branch net.venge.monotone:
+//   net.venge.monotone
+//
+AUTOMATE(set_option, N_("OPTION"), options::opts::none)
+{
+  N(args.size() == 2,
+    F("wrong argument count"));
+
+  // this command requires a workspace to be run in
+  app.require_workspace();
+
+  utf8 database_option, branch_option, key_option, keydir_option;
+  utf8 blank(""), user_output;
+  app.work.get_ws_options(database_option, branch_option,
+                          key_option, keydir_option);
+
+  string opt = idx(args, 0)();
+  string value = idx(args, 1)();
+
+  if (opt == "database")
+    {
+      system_path db_path(value);
+      N(file_exists(db_path), F("invalid db file"));
+      database_option = db_path.as_internal();
+      user_output = database_option;
+    }
+  else if (opt == "branch")
+    {
+	    branch_option = value;
+      user_output = branch_option;
+    }
+  else if (opt == "key")
+    {
+      system_path key(keydir_option() + "/" + value);
+      N(file_exists(key),
+        F("invalid key; doesn't exist in keydir '%s'") % keydir_option);
+      key_option = value;
+      user_output = key_option;
+    }
+  else if (opt == "keydir")
+    {
+      system_path kd_path(value);
+      N(path_exists(kd_path), F("keydir does not exist"));
+      keydir_option = kd_path.as_internal();
+      user_output = keydir_option;
+    }
+  else
+    N(false, F("'%s' is not a recognized workspace option") % opt);
+
+  //we may set a keydir that doesn't contain the previously set key
+  //since emptying key_option only serves to make set_ws_options use
+  //the previously existing value, we'll let other parts of monotone
+  //handle the invalid key option.
+  app.work.set_ws_options(database_option, branch_option,
+                          key_option, keydir_option);
+  output << user_output << "\n";
+}
 // Name: get_content_changed
 // Arguments:
 //   1: a revision ID

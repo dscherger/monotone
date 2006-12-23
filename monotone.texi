@@ -7012,6 +7012,45 @@ with status 1.
 
 @end table
 
+@item mtn automate set_option @var{option} @var{value}
+
+@table @strong
+@item Arguments:
+
+The @var{option} argument specifies the option name of the option to be set.
+The @var{value} argument specifies the new value for the option.
+
+@item Added in:
+
+3.1
+
+@item Purpose:
+
+Set an option from _MTN/option for the current workspace.
+
+@item Sample output:
+
+@verbatim
+$ mtn automate set_option keydir /tmp
+/tmp
+@end verbatim
+
+@item Output format:
+
+The new option value is written out without modification.
+
+@item Error conditions:
+
+If the option is unknown, prints an error message to stderr and exits
+with status 1.
+
+If setting the keydir option and the keydir doesn't exist, prints a message
+to stderr and exits with status 1.
+
+If setting key and key doesn't exist in the previously set keydir, prints a
+message to stderr and exits with status 1.
+@end table
+
 
 @item mtn automate keys
 

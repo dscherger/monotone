@@ -1,4 +1,8 @@
 2006-12-21  Ben Walton       <bdwalton@gmail.com>
+  * automate.cc: added set_option.
+  * monotone.texi: documented 'automate set_option'
+
+2006-12-21  Ben Walton       <bdwalton@gmail.com>
   * cmd_ws_commit.cc (CMD_NO_WORKSPACE(export)): added this
     command, which exports a revision/branch from the db.
   * Aliased publish to export.
