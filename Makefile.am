@@ -304,6 +304,7 @@ lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 if INCLUDED_PCRE
 lib3rdparty_a_SOURCES += $(PCRE_SOURCES)
 endif
+RXPCFILES = uri.cc packet.cc
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
@@ -551,6 +552,28 @@ apidocs:
 	./txt2c $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
+
+if PCRE_PRECOMPILED
+noinst_PROGRAMS += pcrepc
+pcrepc_SOURCES = pcrepc.cc
+if INCLUDED_PCRE
+pcrepc_LDADD = lib3rdparty.a
+else
+pcrepc_LDADD = $(PCRE_LIBS)
+endif
+
+%-rxpc.hh : s-rxpc; @true
+
+s-rxpc: pcrepc $(RXPCFILES)
+	./pcrepc $(RXPCFILES)
+	echo timestamp > s-rxpc
+
+CLEANFILES += s-rxpc $(patsubst %.cc, %-rxpc.hh, $(RXPCFILES))
+
+$(RXPCFILES:%.cc=mtn-%.o): mtn-%.o: %-rxpc.hh
+$(RXPCFILES:%.cc=unit_tests-%.o): unit_tests-%.o: %-rxpc.hh
+
+endif
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its

@@ -86,6 +86,8 @@ namespace pcre
     // for use only by subclass constructors
     basic_regex(std::pair<void const *, void const *> p)
       : basedat(p.first), extradat(p.second) {}
+    basic_regex(void const * b, void const * e)
+      : basedat(b), extradat(e) {}
 
   public:
     ~basic_regex() {}
@@ -120,6 +122,38 @@ namespace pcre
     regex(std::string const & pattern, pcre::flags options = DEFAULT);
     ~regex();
   };
+
+#ifdef PCRE_PRECOMPILED
+  // When build-time-constant regular expressions are precompiled,
+  // their regex objects become precompiled_regex objects.  Do not
+  // attempt to construct such an object yourself; instead, declare
+  // regex objects that you wish to have precompiled as file-scope
+  // entities, and surround them with the #ifdef construct that
+  // precompilation looks for, like this:
+  //
+  //   #ifdef PCRE_PRECOMPILED
+  //   #include "FILE-rxpc.hh"
+  //   #else
+  //   static pcre::regex EXP("PATTERN");
+  //   ...
+  //   #endif
+  //
+  // where FILE is the basename of your source file, EXP is an
+  // identifier, and PATTERN is the appropriate regular expression.
+  // You can declare as many regexps like this as you want, but there
+  // should be only one such block per file.  Comments within this
+  // construct are okay; so is string-constant concatenation and
+  // arbitrary whitespace between the parentheses.  However, the
+  // leading declaration specifiers must be exactly "static
+  // pcre::regex", the strings cannot come from macro expansion, and
+  // numeric character escapes in the strings do not work.  Finally,
+  // add the source file to the Makefile variable RXPCFILES, and
+  // there you are!
+  struct precompiled_regex : public basic_regex
+  {
+    precompiled_regex(void const * b, void const * e) : basic_regex(b, e) {}
+  };
+#endif
 
   // exceptions thrown for errors from PCRE APIs
   struct compile_error : public std::runtime_error

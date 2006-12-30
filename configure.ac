@@ -24,6 +24,19 @@ AC_PROG_RANLIB
 test "z$GCC" = "zyes" && CFLAGS="$CFLAGS -fno-strict-aliasing"
 test "z$GXX" = "zyes" && CXXFLAGS="$CXXFLAGS -fno-strict-aliasing"
 
+# If we have GCC and we are not cross compiling, enable PCRE precompilation.
+# (GCC __attribute__ is used to get alignment right; PCRE claims to support
+# cross usage of its regexes but this way we don't have to worry about bugs
+# in that, or about distinguishing the host and target compilers.)
+if test "z$GXX" = "zyes" && test "z$cross_compiling" = "zno"; then
+  PCRE_PRECOMPILED=yes
+  AC_DEFINE(PCRE_PRECOMPILED, 1,
+     [Define if constant regular expressions can be precompiled.])
+else
+  PCRE_PRECOMPILED=no
+fi
+AM_CONDITIONAL(PCRE_PRECOMPILED, [test "x$PCRE_PRECOMPILED" = xyes])
+
 AC_C_CONST
 AC_C_INLINE
 AC_CC_FEXCEPTIONS

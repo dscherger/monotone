@@ -62,7 +62,7 @@ int main(int argc, char **argv)
   for (unsigned int i = 0; i < dat.size(); ++i)
     {
       if (i == 0) cout << "\t";
-      else if (i % 20 == 0) cout << "\n\t";
+      else if (i % 14 == 0) cout << "\n\t";
       cout << static_cast<int>(dat[i]) << ", ";
     }
   cout << "0\n};\n";

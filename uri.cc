@@ -15,6 +15,9 @@
 
 using std::string;
 
+#ifdef PCRE_PRECOMPILED
+#include "uri-rxpc.hh"
+#else
 static pcre::regex uri_rx(
   "^"
   "(?:([^:/?#]+):)?"            // scheme
@@ -32,6 +35,7 @@ static pcre::regex auth_rx(
   "([^:/]+)"                    // normal host
   ")"
   "(?::([[:digit:]]+))?");      // port
+#endif
 
 bool
 parse_uri(string const & in, uri & out)

@@ -326,6 +326,9 @@ packet_writer::consume_key_pair(rsa_keypair_id const & ident,
 // Note: If these change, the character sets in constants.cc may need to
 // change too.
 
+#ifdef PCRE_PRECOMPILED
+#include "packet-rxpc.hh"
+#else
 static pcre::regex identr("\\A[[:xdigit:]]{40}\\Z");
 static pcre::regex keyr("\\A[-a-zA-Z0-9\\.@\\+_]+\\Z");
 static pcre::regex base64r("\\A[a-zA-Z0-9+/=[:space:]]+\\Z");
@@ -345,6 +348,11 @@ static pcre::regex rcert_hdr("\\A([[:xdigit:]]{40})"           // ident
 static pcre::regex keypair_body("\\A([a-zA-Z0-9+/=[:space:]]+)"   // base64
                                 "#"
                                 "([a-zA-Z0-9+/=[:space:]]+)\\Z"); // base64
+
+static pcre::regex extract_re("\\[([a-z]+)[[:space:]]+([^\\[\\]]+)\\]"
+                              "([^\\[\\]]+)"
+                              "\\[end\\]");
+#endif
 
 inline void require(bool x)
 {
@@ -455,13 +463,10 @@ static void feed_packet_consumer(pcre::matches & res,
 static size_t
 extract_packets(string const & s, packet_consumer & cons, app_state & app)
 {
-  static pcre::regex expr("\\[([a-z]+)[[:space:]]+([^\\[\\]]+)\\]"
-                          "([^\\[\\]]+)"
-                          "\\[end\\]");
   size_t count = 0;
   pcre::matches m;
 
-  while (expr.nextmatch(s, m))
+  while (extract_re.nextmatch(s, m))
     {
       feed_packet_consumer(m, cons, app);
       count++;
