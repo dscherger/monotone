@@ -562,13 +562,13 @@ else
 pcrepc_LDADD = $(PCRE_LIBS)
 endif
 
-%-rxpc.hh : s-rxpc; @true
+%-rxpc.hh : stamp-rxpc; @true
 
-s-rxpc: pcrepc $(RXPCFILES)
+stamp-rxpc: pcrepc $(RXPCFILES)
 	./pcrepc $(RXPCFILES)
-	echo timestamp > s-rxpc
+	echo timestamp > stamp-rxpc
 
-CLEANFILES += s-rxpc $(patsubst %.cc, %-rxpc.hh, $(RXPCFILES))
+CLEANFILES += stamp-rxpc $(patsubst %.cc, %-rxpc.hh, $(RXPCFILES))
 
 $(RXPCFILES:%.cc=mtn-%.o): mtn-%.o: %-rxpc.hh
 $(RXPCFILES:%.cc=unit_tests-%.o): unit_tests-%.o: %-rxpc.hh

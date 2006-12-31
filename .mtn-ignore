@@ -4,6 +4,7 @@ tester_dir
 ^build/
 \.dirstamp
 ^txt2c$
+^pcrepc$
 ^unit_tests$
 ^unit_tests\.log$
 ^mtn$
@@ -19,6 +20,7 @@ tester_dir
 ^configure$
 ^schema.h$
 ^(std|test)_hooks.h$
+^[a-z0-9_]+-rxpc.hh$
 ^Makefile$
 ^Makefile\.in$
 ^texinfo.tex$
