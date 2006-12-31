@@ -65,6 +65,7 @@ rcs_file.cc
 rcs_file.hh
 rcs_import.cc
 rcs_import.hh
+restrictions.cc
 revision.cc
 revision.hh
 sanity.cc
