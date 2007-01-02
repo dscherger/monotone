@@ -623,12 +623,13 @@ typedef priority_queue<pair<rev_height, revision_id>,
 CMD(log, N_("informative"), N_("[FILE] ..."),
     N_("print history in reverse order (filtering by 'FILE'). If one or more\n"
     "revisions are given, use them as a starting point."),
-    options::opts::last | options::opts::next | options::opts::revision
-    | options::opts::brief | options::opts::diffs | options::opts::no_merges
-    | options::opts::no_files | options::opts::to)
+    options::opts::last | options::opts::next
+    | options::opts::from | options::opts::to
+    | options::opts::brief | options::opts::diffs 
+    | options::opts::no_merges | options::opts::no_files)
 {
-  if (app.opts.revision_selectors.size() == 0)
-    app.require_workspace("try passing a --revision to start at");
+  if (app.opts.from.size() == 0)
+    app.require_workspace("try passing a --from revision to start at");
 
   long last = app.opts.last;
   long next = app.opts.next;
@@ -638,8 +639,8 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
 
   frontier_t frontier(rev_cmp(!(next>0)));
   revision_id first_rid; // for mapping paths to node ids when restricted
-
-  if (app.opts.revision_selectors.size() == 0)
+  
+  if (app.opts.from.size() == 0)
     {
       app.work.get_revision_id(first_rid);
       rev_height height;
@@ -648,8 +649,8 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
     }
   else
     {
-      for (vector<utf8>::const_iterator i = app.opts.revision_selectors.begin();
-           i != app.opts.revision_selectors.end(); i++)
+      for (vector<utf8>::const_iterator i = app.opts.from.begin();
+           i != app.opts.from.end(); i++)
         {
           set<revision_id> rids;
           complete(app, (*i)(), rids);
@@ -660,7 +661,7 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
               app.db.get_rev_height(*j, height);
               frontier.push(make_pair(height, *j));
             }
-          if (i == app.opts.revision_selectors.begin())
+          if (i == app.opts.from.begin())
             first_rid = *rids.begin();
         }
     }
@@ -672,7 +673,7 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
       // User wants to trace only specific files
       roster_t old_roster, new_roster;
 
-      if (app.opts.revision_selectors.size() == 0)
+      if (app.opts.from.size() == 0)
         {
           temp_node_id_source nis;
           app.work.get_base_and_current_roster_shape(old_roster,
@@ -757,7 +758,6 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
 
   set<revision_id> seen;
   revision_t rev;
-
   while(! frontier.empty() && (last == -1 || last > 0) 
         && (next == -1 || next > 0))
     {
