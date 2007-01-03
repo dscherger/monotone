@@ -281,6 +281,17 @@ lua_hooks::hook_get_author(cert_value const & branchname,
 }
 
 bool
+lua_hooks::hook_patch_workspace(system_path const & patch_file)
+{
+  bool exec_ok = Lua(st)
+                 .func("patch_workspace")
+                 .push_str(patch_file.as_external())
+                 .call(1,0)
+                 .ok();
+  return exec_ok;
+}
+
+bool
 lua_hooks::hook_edit_comment(external const & commentary,
                              external const & user_log_message,
                              external & result)

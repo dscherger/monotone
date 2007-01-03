@@ -47,6 +47,7 @@ public:
   bool hook_get_branch_key(cert_value const & branchname, rsa_keypair_id & k);
   bool hook_get_passphrase(rsa_keypair_id const & k, std::string & phrase);
   bool hook_get_author(cert_value const & branchname, std::string & author);
+  bool hook_patch_workspace(system_path const & patch_file);
   bool hook_edit_comment(external const & commentary,
                          external const & user_log_message,
                          external & result);

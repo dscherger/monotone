@@ -233,6 +233,24 @@ function get_encloser_pattern(name)
    return "^[[:alnum:]$_]"
 end
 
+function patch_workspace(patch_file)
+	local exe = nil
+	if (program_exists_in_path("patch")) then exe = "patch" end
+
+	if (exe == nil) then
+		io.write(string.format(gettext("couldn't find a suitable patch tool")))
+	end
+
+	io.write("using patch file: " .. patch_file)
+
+  if (execute(exe, "-p0", "-i", patch_file) ~= 0) then
+		io.write(string.format(gettext("Error running patch tool '%s'\n"), exe))
+		return false
+	end
+
+	return true
+end
+
 function edit_comment(basetext, user_log_message)
    local exe = nil
    if (program_exists_in_path("vi")) then exe = "vi" end

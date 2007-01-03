@@ -718,7 +718,24 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
     throw usage(name);
 }
 
+CMD(patch, N_("workspace"), N_("[DIFF FILE]"),
+    N_("apply a diff/patch file to a workspace and record"
+       "added or removed files"),
+    options::opts::none)
+{
+  N((args.size() == 1),
+    F("Please supply _one_ diff file to patch with"));
 
+  system_path patch_file(idx(args,0));
+
+  require_path_is_file(patch_file,
+                       F("patch file %s doesn't exist") % patch_file,
+                       F("patch file %s is a directory") % patch_file);
+
+  app.require_workspace();
+
+  app.lua.hook_patch_workspace(patch_file);
+}
 
 CMD(commit, N_("workspace"), N_("[PATH]..."),
     N_("commit workspace to database"),
