@@ -10,6 +10,7 @@
 #include <set>
 #include <string>
 
+#define BOOST_MULTI_INDEX_DISABLE_SERIALIZATION
 #include <boost/shared_ptr.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>

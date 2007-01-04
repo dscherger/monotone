@@ -74,14 +74,13 @@ namespace pcre
   struct basic_regex
   {
   private:
-    // disable the default and copy constructors
+    // disable the default constructor; the default copy constructor and
+    // operator= are fine.
     basic_regex();
-    basic_regex(basic_regex const &);
-    basic_regex & operator=(basic_regex const &);
 
   protected:
-    void const * const basedat;
-    void const * const extradat;
+    void const * basedat;
+    void const * extradat;
 
     // for use only by subclass constructors
     basic_regex(std::pair<void const *, void const *> p)
@@ -119,6 +118,10 @@ namespace pcre
     regex(char const * pattern, pcre::flags options = DEFAULT);
     regex(std::string const & pattern, pcre::flags options = DEFAULT);
     ~regex();
+
+    // the default copy constructor and operator= are not fine.
+    regex(regex const &);
+    regex & operator=(regex const &);
   };
 
   // exceptions thrown for errors from PCRE APIs

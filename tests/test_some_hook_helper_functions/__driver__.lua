@@ -1,7 +1,8 @@
 
 mtn_setup()
 
-check(get("testhooks"))
+check(get("testhooks.lua"))
+writefile("dummy")
 
-check(raw_mtn("--rcfile=testhooks", "ls", "unknown"), 0, false, false)
+check(mtn("--rcfile=testhooks.lua", "add", "dummy"), 0, false, false)
 check(exists("outfile"))

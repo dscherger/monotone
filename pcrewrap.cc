@@ -67,22 +67,49 @@ get_capturecount(void const * bd)
   return cc;
 }
 
+// We do occasionally need to copy regex objects around, so we make use of
+// the PCRE refcount machinery to ensure the underlying data blocks are
+// freed only once.  Encapsulate the pointer diddling needed for this.
+inline unsigned short adjrefcount(void const * bd, short n)
+{
+  return pcre_refcount(static_cast<pcre_t *>(const_cast<void *>(bd)), n);
+}
+
 namespace pcre
 {
   regex::regex(char const * pattern, flags options)
     : basic_regex(compile(pattern, options))
-  {}
+  {
+    I(adjrefcount(basedat, 1) == 1);
+  }
 
   regex::regex(string const & pattern, flags options)
     : basic_regex(compile(pattern.c_str(), options))
-  {}
+  {
+    I(adjrefcount(basedat, 1) == 1);
+  }
+
+  regex::regex(regex const & other)
+    : basic_regex(other)
+  {
+    I(adjrefcount(basedat, 1) < 65535);
+  }
+
+  regex & regex::operator=(regex const & other)
+  {
+    *(static_cast<basic_regex *>(this)) = static_cast<basic_regex>(other);
+    I(adjrefcount(basedat, 1) < 65535);
+    return *this;
+  }
 
   regex::~regex()
   {
-    if (basedat)
-      pcre_free(const_cast<void *>(basedat));
-    if (extradat)
-      pcre_free(const_cast<void *>(extradat));
+    if (adjrefcount(basedat, -1) == 0)
+      {
+        pcre_free(const_cast<void *>(basedat));
+        if (extradat)
+          pcre_free(const_cast<void *>(extradat));
+      }
   }
 
   bool

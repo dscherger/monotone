@@ -12,29 +12,29 @@ writefile("foo.ignored", "foo.ignored")
 writefile("bar.ignored", "bar.ignored")
 writefile("baz.ignored", "baz.ignored")
 
-check(get("ignore.lua"))
-
 commit()
 
 writefile("foo", "foofoo")
 writefile("bar", "barbar")
 writefile("baz", "bazbaz")
 
-check(mtn("status", "--rcfile=ignore.lua"), 0, true, false)
+append(".mtn-ignore", "\\.ignored$\n")
+
+check(mtn("status"), 0, true, false)
 check(qgrep("foo", "stdout"))
 check(qgrep("bar", "stdout"))
 check(qgrep("baz", "stdout"))
 
-check(mtn("status", "--rcfile=ignore.lua", "foo.ignored", "bar.ignored", "baz.ignored"), 0, true, false)
+check(mtn("status", "foo.ignored", "bar.ignored", "baz.ignored"), 0, true, false)
 check(not qgrep("foo", "stdout"))
 check(not qgrep("bar", "stdout"))
 check(not qgrep("baz", "stdout"))
 
 -- revert with nothing but ignored files should do nothing
 
-check(mtn("revert", "--rcfile=ignore.lua", "foo.ignored", "bar.ignored", "baz.ignored"))
+check(mtn("revert", "foo.ignored", "bar.ignored", "baz.ignored"))
 
-check(mtn("status", "--rcfile=ignore.lua"), 0, true, false)
+check(mtn("status"), 0, true, false)
 check(qgrep("foo", "stdout"))
 check(qgrep("bar", "stdout"))
 check(qgrep("baz", "stdout"))

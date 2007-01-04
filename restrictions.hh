@@ -123,6 +123,11 @@ class path_restriction : public restriction
   std::map<split_path, restricted_path::status> path_map;
 };
 
+// Call this function to see whether a file should be ignored by most
+// operations.
+extern bool ignore_file(file_path const &);
+
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

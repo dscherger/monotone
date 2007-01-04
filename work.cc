@@ -435,15 +435,14 @@ namespace {
 struct file_itemizer : public tree_walker
 {
   database & db;
-  lua_hooks & lua;
   path_set & known;
   path_set & unknown;
   path_set & ignored;
   path_restriction const & mask;
-  file_itemizer(database & db, lua_hooks & lua,
+  file_itemizer(database & db,
                 path_set & k, path_set & u, path_set & i, 
                 path_restriction const & r)
-    : db(db), lua(lua), known(k), unknown(u), ignored(i), mask(r) {}
+    : db(db), known(k), unknown(u), ignored(i), mask(r) {}
   virtual void visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
 };
@@ -462,7 +461,7 @@ file_itemizer::visit_file(file_path const & path)
 
   if (mask.includes(sp) && known.find(sp) == known.end())
     {
-      if (lua.hook_ignore_file(path) || db.is_dbfile(path))
+      if (ignore_file(path) || db.is_dbfile(path))
         ignored.insert(sp);
       else
         unknown.insert(sp);
@@ -534,7 +533,7 @@ addition_builder::visit_dir(file_path const & path)
 void
 addition_builder::visit_file(file_path const & path)
 {
-  if ((respect_ignore && lua.hook_ignore_file(path)) || db.is_dbfile(path))
+  if ((respect_ignore && ignore_file(path)) || db.is_dbfile(path))
     {
       P(F("skipping ignorable file %s") % path);
       return;
@@ -1029,7 +1028,7 @@ workspace::find_unknown_and_ignored(path_restriction const & mask,
 
   new_roster.extract_path_set(known);
 
-  file_itemizer u(db, lua, known, unknown, ignored, mask);
+  file_itemizer u(db, known, unknown, ignored, mask);
   for (vector<file_path>::const_iterator 
          i = roots.begin(); i != roots.end(); ++i)
     {

@@ -10,15 +10,17 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 #include "restrictions.hh"
 #include "revision.hh"
 #include "safe_map.hh"
 #include "transforms.hh"
+#include "pcrewrap.hh"
 
 using std::make_pair;
 using std::map;
-using std::set;
 using std::vector;
 
 // TODO: add check for relevant rosters to be used by log
@@ -80,11 +82,130 @@ map_paths(map<split_path, restricted_path::status> & path_map,
     }
 }
 
+// Ignored file logic.
+
+// The file .mtn-ignore, at the top level of the tree, contains a list of
+// regexes; we are to ignore the file if its full path matches any of these.
+// We also have the following hardwired list of regexes which cause the file
+// to be ignored.
+
+// D(x) in the array below ignores any directory named X and everything in it
+#define D(x) "^" x "/", "^" x "$", "/" x "/", "/" x "$"
+
+char const * const default_ignore_pats[] = {
+  // c/c++
+  "\\.a$", "\\.so$", "\\.o$", "\\.la$", "\\.lo$",
+  "^core$", "/core$", "/core\\.\\d+$",
+  // java
+  "\\.class$",
+  // python
+  "\\.pyc$", "\\.pyo$",
+  // gettext
+  "\\.g?mo$",
+  // intltool
+  "\\.intltool-merge-cache$",
+  // TeX -- ?? .log, .toc, lots more
+  "\\.aux$",
+  // backup files
+  "\\.bak$", "\\.orig$", "\\.rej$", "~$",
+  // vim creates .foo.swp files
+  "\\.[^/]*\\.swp$",
+  // emacs creates #foo# files
+  "#[^/]*#$",
+  // other VCSes (where metadata is stored in named files):
+  "\\.scc$",
+  // desktop/directory configuration metadata
+  "^\\.DS_Store$", "/\\.DS_Store$", "^desktop\\.ini$", "/desktop\\.ini$"
+
+  // autotools detritus
+  D("autom4te\\.cache"), D("\\.deps"), D("\\.libs"),
+  // Cons/SCons detritus
+  D("\\.consign"), D("\\.sconsign"),
+  // other VCSes (where metadata is stored in named dirs):
+  D("CVS"), D("\\.svn"), D("SCCS"), D("_darcs"), D("\\.cdv"),
+  D("\\.git"), D("\\.bzr"), D("\\.hg")
+};
+#undef D
+
+typedef vector<pcre::regex> regex_set;
+
+static regex_set ignore_set;
+
+// Read the table above, and the .mtn-ignore file, and establish a set of
+// regexes from them. To consider:
+// 1. There's an implicit dependency on the current directory here.
+//    Read the .mtn-ignore file from the database instead?
+//    (Which revision's version of that file?)
+// 2. Merge all the regexes together into one mega-regex?
+// 3. Have some way for .mtn-ignore to kick entries out of the default set?
+// 4. Change to globs?
+// 5. Use a more CVS-like model with one ignore file per directory?
+// 5a.Or a more SVN-like model using directory attributes?
+//    (Could then establish the default ignore set using attr init hooks,
+//     thus making it natural for users to kick entries back out?)
+
+static void
+initialize_ignore_set()
+{
+  for (size_t i = 0; i < (sizeof(default_ignore_pats)
+                          / sizeof(default_ignore_pats[0])); i++)
+    ignore_set.push_back(pcre::regex(default_ignore_pats[i]));
+
+  std::ifstream f(".mtn-ignore");
+  int line = 0;
+  if (f)
+    // Please someone tell me there is a better way to read lines from
+    // an ifstream.
+    while (!f.eof())
+      {
+        std::stringbuf sb;
+        char newline;
+        f.get(sb);
+        // An empty line is ignored; so is a line that provokes a syntax
+        // error.
+        if (f.good())
+          try
+            {
+              line++;
+              ignore_set.push_back(pcre::regex(sb.str()));
+            }
+          catch (pcre::compile_error & e)
+            {
+              W(F(".mtn-ignore:%d: %s\n\t- skipping this regex.")
+                % line % e.what());
+            }
+        f.clear(f.rdstate() & ~std::ios::failbit);
+        f.get(newline);
+      }
+}
+
+bool
+ignore_file(file_path const & fp)
+{
+  if (ignore_set.size() == 0)
+    initialize_ignore_set();
+
+  for (regex_set::const_iterator p = ignore_set.begin();
+       p != ignore_set.end(); p++)
+    try
+      {
+        if (p->match(fp.as_external()))
+          return true;
+      }
+    catch (pcre::match_error & e)
+      {
+        W(F("while deciding whether to ignore '%s': %s")
+          % fp.as_external() % e.what());
+        // PCRE match errors don't necessarily mean the regex is no good,
+        // so leave it in the set.
+      }
+  return false;
+}
+
 static void
 validate_roster_paths(path_set const & included_paths, 
                       path_set const & excluded_paths, 
-                      path_set const & known_paths,
-                      app_state & app)
+                      path_set const & known_paths)
 {
   int bad = 0;
 
@@ -97,7 +218,7 @@ validate_roster_paths(path_set const & included_paths,
       if (known_paths.find(*i) == known_paths.end())
         {
           file_path fp(*i);
-          if (!app.lua.hook_ignore_file(fp))
+          if (!ignore_file(fp))
             {
               bad++;
               W(F("restriction includes unknown path '%s'") % *i);
@@ -120,8 +241,7 @@ validate_roster_paths(path_set const & included_paths,
 
 void
 validate_workspace_paths(path_set const & included_paths, 
-                         path_set const & excluded_paths,
-                         app_state & app)
+                         path_set const & excluded_paths)
 {
   int bad = 0;
 
@@ -135,7 +255,7 @@ validate_workspace_paths(path_set const & included_paths,
       // considered invalid if they are found in none of the restriction's
       // rosters
       file_path fp(*i);
-      if (!path_exists(fp) && !app.lua.hook_ignore_file(fp))
+      if (!path_exists(fp) && !ignore_file(fp))
         {
           bad++;
           W(F("restriction includes unknown path '%s'") % *i);
@@ -172,7 +292,7 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
                                    std::vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster,
-                                   app_state & a) :
+                                   app_state &) :
   restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster, included_paths, known_paths, 
@@ -180,7 +300,7 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
   map_nodes(node_map, roster, excluded_paths, known_paths, 
             restricted_path::excluded);
 
-  validate_roster_paths(included_paths, excluded_paths, known_paths, a);
+  validate_roster_paths(included_paths, excluded_paths, known_paths);
 }
 
 node_restriction::node_restriction(std::vector<file_path> const & includes,
@@ -188,7 +308,7 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
                                    long depth,
                                    roster_t const & roster1,
                                    roster_t const & roster2,
-                                   app_state & a) :
+                                   app_state &) :
   restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster1, included_paths, known_paths, 
@@ -201,19 +321,19 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
   map_nodes(node_map, roster2, excluded_paths, known_paths, 
             restricted_path::excluded);
 
-  validate_roster_paths(included_paths, excluded_paths, known_paths, a);
+  validate_roster_paths(included_paths, excluded_paths, known_paths);
 }
 
 path_restriction::path_restriction(std::vector<file_path> const & includes,
                                    std::vector<file_path> const & excludes,
                                    long depth,
-                                   app_state & a) :
+                                   app_state &) :
   restriction(includes, excludes, depth)
 {
   map_paths(path_map, included_paths, restricted_path::included);
   map_paths(path_map, excluded_paths, restricted_path::excluded);
 
-  validate_workspace_paths(included_paths, excluded_paths, a);
+  validate_workspace_paths(included_paths, excluded_paths);
 }
 
 bool

@@ -49,14 +49,6 @@ function get_author(branchname)
 	return "tester@test.net"
 end
 
-function ignore_file(name)
-	if (string.find(name, "ts-std", 1, true)) then return true end
-	if (string.find(name, "testsuite.log")) then return true end
-	if (string.find(name, "test_hooks.lua")) then return true end
-	if (string.find(name, "keys")) then return true end
-	return false
-end
-
 function merge2(left_path, right_path, merged_path, left, right)
 	io.write("running merge2 hook\n") 
 	return left

@@ -8,8 +8,6 @@ writefile("modified1", "this is different 1")
 writefile("modified2", "this is different 2")
 writefile("modified3", "this is different 3")
 
-check(get("ignore_hook.lua"))
-
 copy("origfile", "testfile")
 copy("orig.ignore", "file.ignore")
 copy("orig2", "file2")
@@ -20,7 +18,10 @@ commit()
 copy("modified1", "testfile")
 copy("modified2", "file.ignore")
 
-check(mtn("--rcfile=ignore_hook.lua", "revert", "file.ignore"), 0, false, false)
+-- start ignoring the 'ignored' files
+append(".mtn-ignore", "\\.ignore$\n")
+
+check(mtn("revert", "file.ignore"), 0, false, false)
 
 -- check that only the 'ignored' file was reverted
 check(samefile("testfile", "modified1"))
@@ -32,7 +33,7 @@ copy("modified1", "testfile")
 copy("modified2", "file.ignore")
 copy("modified3", "file2")
 
-check(mtn("--rcfile=ignore_hook.lua", "revert", "file.ignore", "testfile"), 0, false, false)
+check(mtn("revert", "file.ignore", "testfile"), 0, false, false)
 
 -- check that the files are correct
 check(samefile("testfile", "origfile"))
@@ -46,7 +47,7 @@ copy("modified1", "testfile")
 copy("modified2", "file.ignore")
 remove("file2")
 
-check(mtn("--rcfile=ignore_hook.lua", "revert", "--missing", ".", "--debug"), 0, false, false)
+check(mtn("revert", "--missing", "."), 0, false, false)
 
 check(samefile("testfile", "modified1"))
 check(samefile("file.ignore", "modified2"))
@@ -60,7 +61,7 @@ copy("modified1", "testfile")
 copy("orig.ignore", "file.ignore")
 copy("orig2", "file2")
 
-check(mtn("--rcfile=ignore_hook.lua", "revert", "--missing", ".", "--debug"), 0, false, false)
+check(mtn("revert", "--missing", "."), 0, false, false)
 
 check(samefile("testfile", "modified1"))
 check(samefile("file.ignore", "orig.ignore"))

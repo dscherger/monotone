@@ -77,7 +77,6 @@ public:
   bool hook_get_netsync_write_permitted(rsa_keypair_id const & identity);
 
   // local repo hooks
-  bool hook_ignore_file(file_path const & p);
   bool hook_ignore_branch(std::string const & branch);
   bool hook_merge3(file_path const & anc_path,
                    file_path const & left_path,

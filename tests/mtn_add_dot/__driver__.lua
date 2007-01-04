@@ -13,6 +13,7 @@ check(mtn("setup", "--branch=testbranch", "subdir"), 0, false, false)
 
 -- Make sure that "add ." works, even at the root of the tree
 chdir("subdir")
+copy("../.mtn-ignore", ".mtn-ignore")
 -- Recursive and non-recursive may process things differently, check
 -- that both return success
 check(mtn("add", "."), 0, false, false)

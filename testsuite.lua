@@ -131,11 +131,18 @@ function mtn_setup()
   check(getstd("test_keys"))
   check(getstd("test_hooks.lua"))
   check(getstd("min_hooks.lua"))
-  
+
   check(mtn("db", "init"), 0, false, false)
   check(mtn("read", "test_keys"), 0, false, false)
   check(mtn("setup", "--branch=testbranch", "."), 0, false, false)
   remove("test_keys")
+  writefile(".mtn-ignore",
+            "^ts-std\n" ..
+	    "^testsuite\\.log$\n" ..
+	    "^test_hooks\\.lua$\n" ..
+	    "^min_hooks\\.lua$\n" ..
+	    "^test.db$\n" ..
+	    "^keys/\n")
 end
 
 function base_revision()

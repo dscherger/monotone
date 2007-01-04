@@ -102,11 +102,14 @@ checkall({"ls", "unknown"}, "stdout")
 check(mtn("revert", "."), 0, false, false)
 
 -- ls ignored
-check(get("ignore.lua"))
+copy(".mtn-ignore", "saved-mtn-ignore")
+append(".mtn-ignore", "1$\n2$\n")
+
 -- only unknown files are considered by ls ignored
 check(mtn("drop", unpack(allfiles)), 0, false, false)
-checkall({"ls", "ignored", "--rcfile=ignore.lua"}, "stdout")
+checkall({"ls", "ignored"}, "stdout")
 check(mtn("revert", "."), 0, false, false)
+rename("saved-mtn-ignore", ".mtn-ignore")
 
 -- ls missing
 for _,x in pairs(allfiles) do remove(x) end

@@ -1,3 +1,41 @@
+2007-01-03  Zack Weinberg  <zackw@panix.com>
+
+	* annotate.cc: Add a #define to suppress boost.serialization
+	(which we do not use).
+	* pcrewrap.hh (basic_regex, regex): Don't disallow the default
+	copy constructor or operator=, so that these objects can be put
+	into STL containers.
+	* pcrewrap.cc (adjrefcount): New function to access a pcre_t's
+	internal reference count conveniently.
+	(regex): Bump the reference count in all constructors.
+	Add definitions of the copy constructor and operator=.
+	Call pcre_free in destructor only if refcount is zero after
+	decrement.
+
+	* restrictions.cc: Transplant all logic for ignoring files here.
+	(ignore_file): New export.
+	(validate_roster_paths, validate_workspace_paths): Use
+	ignore_file.  Remove app_state argument.  All callers changed.
+	* restrictions.hh: Declare ignore_file.
+	* lua_hooks.cc, lua_hooks.hh (hook_ignore_file): Delete.
+	* std_hooks.lua (dir_matches, ignore_file): Delete.
+	* tests/test_hooks.lua (ignore_file): Delete.
+	* testsuite.lua (mtn_setup): Provide a sane .mtn-ignore.
+
+	* work.cc: Use ignore_file not hook_ignore_file; remove lua_hooks
+	references everywhere they are no longer necessary.
+	* cmd_ws_commit.cc (CMD(mkdir)): Use ignore_file.
+
+	* tests/addition_of_files_and_directories, tests/automate_inventory
+	* tests/manifest_restrictions, tests/mkdir, tests/mtn_add_dot
+	* tests/restricted_commands_are_consistent
+	* tests/revert_ignored_files, tests/revert_works_with_restrictions
+	* tests/spawn_redirected_hook_helper
+	* tests/syntax_errors_in_.mtn-ignore
+	* tests/test_some_hook_helper_functions
+	* tests/things_in_.mtn-ignore_get_ignored:
+	Rejigger for ignore no longer being a hook.
+
 2006-12-29  Zack Weinberg  <zackw@panix.com>
 
 	* pcrewrap.cc (pcre_match_error): Remove "subject" parameter.
@@ -76,14 +114,14 @@
 
 	* cmd_diff_log.cc: renamed --revision option to --to
 	* option_list.hh: new block for --to
-        * monotone.texi: ...documented here
+	* monotone.texi: ...documented here
 	* NEWS: ...noted here
 	* tests/*: ..honored appropriately
 
 2006-12-21  Thomas Keller  <me@thomaskeller.biz>
 
 	* NEWS: refined some sections and added notes about
-        fixes in automate inventory and the localization code
+	fixes in automate inventory and the localization code
 
 2006-12-19  Thomas Keller  <me@thomaskeller.biz>
 
@@ -164,11 +202,11 @@
 
 2006-12-14  Thomas Keller  <me@thomaskeller.biz>
 
-	* work.cc: handle missing directories properly in 
-        classify_roster_paths
-        * automate.cc: trailing slash also for missing directories
-        * tests/...: adapted automate_inventory test which now tests
-        for unknown, added (but missing) and dropped (uncommitted) dirs
+	* work.cc: handle missing directories properly in
+	classify_roster_paths
+	* automate.cc: trailing slash also for missing directories
+	* tests/...: adapted automate_inventory test which now tests
+	for unknown, added (but missing) and dropped (uncommitted) dirs
 
 2006-12-14  Thomas Keller  <me@thomaskeller.biz>
 
@@ -192,25 +230,25 @@
 	* NEWS: added note about new automate get_file_of
 
 2006-12-12  Ben Walton  <bdwalton@gmail.com>
- 
-        * cmd_ws_cc: Added mtn mkdir
-        * testsuite.lua: added mtn mkdir test
-        * included tests/mkdir as unit testing for mtn mkdir
-        * added documentation to monotone.texi
+
+	* cmd_ws_cc: Added mtn mkdir
+	* testsuite.lua: added mtn mkdir test
+	* included tests/mkdir as unit testing for mtn mkdir
+	* added documentation to monotone.texi
 
 2006-12-12  Thomas Moschny  <thomas.moschny@gmx.de>
 
 	* HACKING: Updated "Patch submission guidelines" section.
 
 2006-12-11  Ben Walton  <bdwalton@gmail.com>
- 
-        * cmd_ws_commit.cc,
-        tests/commit_using__MTN_log/commit_log_modified_return.lua,
-        tests/commit_using__MTN_log/__driver__.lua:
-        Added the requirement that when _MTN/log is pre-specified by
-        the user, that the user remove a 'magic' line prior to the
-        commit being accepted.  Modified the units tests to verify this.
-        Updated texinfo to match this new behaviour.
+
+	* cmd_ws_commit.cc,
+	tests/commit_using__MTN_log/commit_log_modified_return.lua,
+	tests/commit_using__MTN_log/__driver__.lua:
+	Added the requirement that when _MTN/log is pre-specified by
+	the user, that the user remove a 'magic' line prior to the
+	commit being accepted.  Modified the units tests to verify this.
+	Updated texinfo to match this new behaviour.
 
 2006-12-10  Timothy Brownawell <tbrownaw@gmail.com>
 
@@ -1520,7 +1558,7 @@
     * netsync.cc (~session): fixup for Botan 1.5
 
 2006-09-02  Matt Johnston  <matt@ucc.asn.au>
-    
+
     * botan/: import of Botan 1.5
 
 2006-08-31  Nathaniel Smith  <njs@pobox.com>

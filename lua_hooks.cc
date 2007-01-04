@@ -298,19 +298,6 @@ lua_hooks::hook_edit_comment(external const & commentary,
 }
 
 bool
-lua_hooks::hook_ignore_file(file_path const & p)
-{
-  bool ignore_it = false;
-  bool exec_ok = Lua(st)
-    .func("ignore_file")
-    .push_str(p.as_external())
-    .call(1,1)
-    .extract_bool(ignore_it)
-    .ok();
-  return exec_ok && ignore_it;
-}
-
-bool
 lua_hooks::hook_ignore_branch(string const & branch)
 {
   bool ignore_it = false;

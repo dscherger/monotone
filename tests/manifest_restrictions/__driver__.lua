@@ -1,8 +1,6 @@
 
 mtn_setup()
 
-check(get("ignored.lua"))
-
 mkdir("work")
 mkdir("work/A")
 mkdir("work/A/B")
@@ -58,10 +56,10 @@ check(qgrep("work/file2", "stdout"))
 
 rename("work/filex2", "work/file2")
 
-check(mtn("ls", "ignored", "--rcfile=ignored.lua"), 0, true, false)
+check(mtn("ls", "ignored"), 0, true, false)
 check(qgrep("work/foo.o", "stdout"))
 
-check(mtn("ls", "ignored", "--rcfile=ignored.lua", "work"), 0, true, false)
+check(mtn("ls", "ignored", "work"), 0, true, false)
 check(qgrep("work/foo.o", "stdout"))
 
 -- create moved, dropped, and changed work to test status, diff, commit

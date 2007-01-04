@@ -1,4 +1,4 @@
-function ignore_file (name)
+attr_init_functions["magic"] = function(name)
   ok = true
 
   filename = write_to_temporary_file("foo")
@@ -18,6 +18,5 @@ function ignore_file (name)
     end
   end
 
-  ignore_file = function (name) return true end
-return true
+  return nil
 end

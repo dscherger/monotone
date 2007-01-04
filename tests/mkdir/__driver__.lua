@@ -2,8 +2,6 @@
 skip_if(not existsonpath("test"))
 mtn_setup()
 
-check(get("ignore_hook.lua"))
-
 --no args
 check(mtn("mkdir"), 2, false, false)
 
@@ -42,14 +40,16 @@ check(mtn("mkdir", "test1", "test3"), 1, false, false)
 check({"test", "-d", "test3"}, 1, false, false)
 
 --ignore feature
-check(mtn("--rcfile=ignore_hook.lua", "mkdir", "testing4"), 1, false, false)
+append(".mtn-ignore", "testing4\n")
+
+check(mtn("mkdir", "testing4"), 1, false, false)
 check({"test", "-d", "testing4"}, 1, false, false)
 
 --multiple with some ignored (all should fail, workspace should be unchanged)
-check(mtn("--rcfile=ignore_hook.lua", "mkdir", "testing4", "testing5"), 1, false, false)
+check(mtn("mkdir", "testing4", "testing5"), 1, false, false)
 check({"test", "-d", "testing4"}, 1, false, false)
 check({"test", "-d", "testing5"}, 1, false, false)
 
 --not respecting ignore
-check(mtn("--no-respect-ignore", "--rcfile=ignore_hook.lua", "mkdir", "testing4"), 0, false, false)
+check(mtn("--no-respect-ignore", "mkdir", "testing4"), 0, false, false)
 check({"test", "-d", "testing4"})
