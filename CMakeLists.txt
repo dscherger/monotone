@@ -32,6 +32,8 @@ CHECK_FUNCTION_EXISTS(geteuid HAVE_GETEUID)
 # XXX: configure.ac checks first, then tries again with -lucb for this:
 CHECK_FUNCTION_EXISTS(getreuid HAVE_GETEUID)
 
+INCLUDE(FindBoost)
+
 # XXX: how do we make a missing lib fatal here?
 INCLUDE(CheckLibraryExists)
 CHECK_LIBRARY_EXISTS(dl dlsym "" USE_DLOPEN)
