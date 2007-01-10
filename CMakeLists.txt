@@ -1,8 +1,14 @@
 PROJECT(MONOTONE)
 
+SET(CMAKE_MODULE_PATH
+    ${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
+
 ############################################################################
 # a few simple configure-y bits; stolen from configure.ac
 ############################################################################
+INCLUDE(CheckCConst)
+INCLUDE(CheckCInline)
+
 IF (WIN32)
   SET(os_err_t unsigned int)
 ELSE (WIN32)

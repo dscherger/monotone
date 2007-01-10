@@ -228,12 +228,12 @@
 #cmakedefine VERSION ${VERSION}
 
 /* Define to empty if `const' does not conform to ANSI C. */
-#cmakedefine const ${const}
+#cmakedefine const ${CMAKE_C_CONST}
 
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus
-#cmakedefine inline ${inline}
+#cmakedefine inline ${CMAKE_C_INLINE}
 #endif
 
 /* Define to `long int' if <sys/types.h> does not define. */
