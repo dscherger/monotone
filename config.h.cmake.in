@@ -1,0 +1,249 @@
+/* Define to 1 if translation of program messages to the user's native
+   language is requested. */
+#cmakedefine ENABLE_NLS
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#cmakedefine HAVE_ARPA_INET_H
+
+/* Define to 1 if you have the `atexit' function. */
+#cmakedefine HAVE_ATEXIT
+
+/* Define to 1 if you have the <cxxabi.h> header file. */
+#cmakedefine HAVE_CXXABI_H
+
+/* Define if the GNU dcgettext() function is already present or preinstalled.
+   */
+#cmakedefine HAVE_DCGETTEXT
+
+/* Define to 1 if you have the <errno.h> header file. */
+#cmakedefine HAVE_ERRNO_H
+
+/* Define if the compiler supports "extern template". */
+#cmakedefine HAVE_EXTERN_TEMPLATE
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#cmakedefine HAVE_FCNTL_H
+
+/* For SQLite; use fdatasync if available */
+#cmakedefine HAVE_FDATASYNC
+
+/* Define to 1 if you have the `gethostbyaddr' function. */
+#cmakedefine HAVE_GETHOSTBYADDR
+
+/* Define if the GNU gettext() function is already present or preinstalled. */
+#cmakedefine HAVE_GETTEXT
+
+/* Define if the compiler supports __gnu_cxx::hash_map. */
+#cmakedefine HAVE_GNUCXX_HASHMAP
+
+/* Define if you have the iconv() function. */
+#cmakedefine HAVE_ICONV
+
+/* Define to 1 if you have the `inet_ntoa' function. */
+#cmakedefine HAVE_INET_NTOA
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#cmakedefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `lrint' function. */
+#cmakedefine HAVE_LRINT
+
+/* Define to 1 if you have the <memory.h> header file. */
+#cmakedefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the `memset' function. */
+#cmakedefine HAVE_MEMSET
+
+/* Define to 1 if you have the `mkstemp' function. */
+#cmakedefine HAVE_MKSTEMP
+
+/* Define to 1 if you have the <netdb.h> header file. */
+#cmakedefine HAVE_NETDB_H
+
+/* Define to 1 if you have the <netinet/in.h> header file. */
+#cmakedefine HAVE_NETINET_IN_H
+
+/* Define if you have POSIX threads libraries and header files. */
+#cmakedefine HAVE_PTHREAD
+
+/* Define to 1 if you have the `setenv' function. */
+#cmakedefine HAVE_SETENV
+
+/* Define to 1 if you have the `socket' function. */
+#cmakedefine HAVE_SOCKET
+
+/* Define to 1 if the system has the type `socklen_t'. */
+#cmakedefine HAVE_SOCKLEN_T
+
+/* Define to 1 if `stat' has the bug that it succeeds when given the
+   zero-length file name argument. */
+#cmakedefine HAVE_STAT_EMPTY_STRING_BUG
+
+/* Define to 1 if stdbool.h conforms to C99. */
+#cmakedefine HAVE_STDBOOL_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#cmakedefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#cmakedefine HAVE_STDLIB_H
+
+/* Define if the compiler supports std::hash_map. */
+#cmakedefine HAVE_STLPORT_HASHMAP
+
+/* Define to 1 if you have the <strings.h> header file. */
+#cmakedefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#cmakedefine HAVE_STRING_H
+
+/* Define to 1 if you have the `strptime' function. */
+#cmakedefine HAVE_STRPTIME
+
+/* Define to 1 if `st_ctimensec' is member of `struct stat'. */
+#cmakedefine HAVE_STRUCT_STAT_ST_CTIMENSEC
+
+/* Define to 1 if `st_ctimespec.tv_nsec' is member of `struct stat'. */
+#cmakedefine HAVE_STRUCT_STAT_ST_CTIMESPEC_TV_NSEC
+
+/* Define to 1 if `st_ctim.tv_nsec' is member of `struct stat'. */
+#cmakedefine HAVE_STRUCT_STAT_ST_CTIM_TV_NSEC
+
+/* Define to 1 if `st_mtimensec' is member of `struct stat'. */
+#cmakedefine HAVE_STRUCT_STAT_ST_MTIMENSEC
+
+/* Define to 1 if `st_mtimespec.tv_nsec' is member of `struct stat'. */
+#cmakedefine HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC
+
+/* Define to 1 if `st_mtim.tv_nsec' is member of `struct stat'. */
+#cmakedefine HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
+
+/* Define to 1 if you have the <sys/file.h> header file. */
+#cmakedefine HAVE_SYS_FILE_H
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#cmakedefine HAVE_SYS_SOCKET_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#cmakedefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#cmakedefine HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#cmakedefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <termios.h> header file. */
+#cmakedefine HAVE_TERMIOS_H
+
+/* Define to 1 if your C++ compiler provides tr1::unordered_map and
+   tr1::unordered_set. */
+#cmakedefine HAVE_TR1_UNORDERED_MAP_AND_SET
+
+/* Define if the compiler supports typeof. */
+#cmakedefine HAVE_TYPEOF
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/* For SQLite; use usleep if available */
+#cmakedefine HAVE_USLEEP
+
+/* Define if tr1::unordered_{map,set} actually work */
+#cmakedefine HAVE_WORKING_TR1_UNORDERED_MAP_AND_SET
+
+/* Define to 1 if the system has the type `_Bool'. */
+#cmakedefine HAVE__BOOL
+
+/* Define to 1 if you have the `__cxa_current_exception_type' function. */
+#cmakedefine HAVE___CXA_CURRENT_EXCEPTION_TYPE
+
+/* Define to 1 if you have the `__cxa_demangle' function. */
+#cmakedefine HAVE___CXA_DEMANGLE
+
+/* Define as const if the declaration of iconv() needs const. */
+#cmakedefine ICONV_CONST
+
+/* Define to value of INADDR_NONE if not provided by your system header files.
+   */
+#cmakedefine INADDR_NONE
+
+/* Define if setlocale() and nl_langinfo() work. */
+#cmakedefine LOCALE_WORKS
+
+/* Define to 1 if `lstat' dereferences a symlink specified with a trailing
+   slash. */
+#cmakedefine LSTAT_FOLLOWS_SLASHED_SYMLINK
+
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#cmakedefine NO_MINUS_C_MINUS_O
+
+/* Name of package */
+#cmakedefine PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#cmakedefine PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#cmakedefine PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#cmakedefine PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#cmakedefine PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#cmakedefine PACKAGE_VERSION
+
+/* Define to necessary symbol if this constant uses a non-standard name on
+   your system. */
+#cmakedefine PTHREAD_CREATE_JOINABLE
+
+/* The size of `char', as computed by sizeof. */
+#cmakedefine SIZEOF_CHAR
+
+/* The size of `int', as computed by sizeof. */
+#cmakedefine SIZEOF_INT
+
+/* The size of `long', as computed by sizeof. */
+#cmakedefine SIZEOF_LONG
+
+/* The size of `short', as computed by sizeof. */
+#cmakedefine SIZEOF_SHORT
+
+/* The size of `void*', as computed by sizeof. */
+#cmakedefine SIZEOF_VOIDP
+
+/* Define to 1 if you have the ANSI C header files. */
+#cmakedefine STDC_HEADERS
+
+/* Define to 1 if ios::sync_with_stdio(false) works */
+#cmakedefine SYNC_WITH_STDIO_WORKS
+
+/* Define if IPv6 support should be included. */
+#cmakedefine USE_IPV6
+
+/* Version number of package */
+#cmakedefine VERSION ${VERSION}
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#cmakedefine const ${CMAKE_C_CONST}
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#cmakedefine inline ${CMAKE_C_INLINE}
+#endif
+
+/* Define to `long int' if <sys/types.h> does not define. */
+#cmakedefine off_t ${off_t}
+
+/* OS-specific error type */
+#cmakedefine os_err_t ${os_err_t}
+
+/* Define to `int' if <sys/types.h> does not define. */
+#cmakedefine pid_t ${pid_t}
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#cmakedefine size_t ${size_t}
