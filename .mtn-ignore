@@ -63,3 +63,10 @@ tester_dir
 ^m4/stdint_h\.m4$
 ^m4/uintmax_t\.m4$
 ^m4/ulonglong\.m4$
+^CMakeCache\.txt$
+^(.*/)?CMakeFiles($|/)
+^(.*/)?cmake_install\.cmake
+^(.*/)?progress\.make
+^CPack(Source)?Config\.cmake$
+^_CPack_Packages($|/)
+^(.*/)?Makefile$
