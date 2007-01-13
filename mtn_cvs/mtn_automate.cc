@@ -161,7 +161,7 @@ std::vector<revision_id> mtn_automate::heads(std::string const& branch)
   std::vector<revision_id> result;
   piece::piece_table lines;
   piece::index_deltatext(heads,lines);
-  result.reserve(children.size());
+  result.reserve(heads.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
     result.push_back(revision_id((**p).substr(0,constants::idlen)));
   piece::reset();
