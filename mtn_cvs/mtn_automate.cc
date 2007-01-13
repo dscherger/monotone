@@ -155,6 +155,19 @@ std::vector<revision_id> mtn_automate::get_revision_parents(revision_id const& r
   return result;
 }
 
+std::vector<revision_id> mtn_automate::heads(std::string const& branch)
+{ std::vector<std::string> args(1,branch);
+  std::string heads=automate("heads",args);
+  std::vector<revision_id> result;
+  piece::piece_table lines;
+  piece::index_deltatext(heads,lines);
+  result.reserve(children.size());
+  for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
+    result.push_back(revision_id((**p).substr(0,constants::idlen)));
+  piece::reset();
+  return result;
+}
+
 static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
 { for (path_set::const_iterator i = cs.nodes_deleted.begin();
        i != cs.nodes_deleted.end(); ++i)

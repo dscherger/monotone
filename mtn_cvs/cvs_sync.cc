@@ -1130,6 +1130,38 @@ struct is_branch
 
 void cvs_repository::commit()
 { retrieve_modules();
+  if (edges.empty())
+  { // search for a matching start of history
+    // take first head 
+    std::vector<revision_id> heads=app.heads(app.opts.branch_name());
+    N(!heads.empty(), F("branch %s has no heads") % app.opts.branch_name());
+    
+    revision_id actual=*heads.begin();
+    is_branch branch_comparer(app.opts.branch_name());
+    do
+    { std::vector<revision_id> parents=app.get_revision_parents(actual);
+      for (std::vector<revision_id>::const_iterator i=parents.begin();
+              i!=parents.end();++i)
+      { if (*i==revision_id()) break; // root revision
+        std::vector<mtn_automate::certificate> certs
+          = app.get_revision_certs(*i);
+        for (std::vector<mtn_automate::certificate>::const_iterator j=certs.begin();
+              j!=certs.end();++j)
+          if (branch_comparer(*j))
+          { actual=*i;
+            goto continue_outer;
+          }
+      }
+     continue_outer: ;
+    } while (true);
+    // start with actual
+    I(!null_id(actual));
+    bool fail=false;
+//    commit_mtn2cvs(edges.end(), actual, fail);
+//    automate::manifest_map root_manifest=app.get_manifest_of(actual);
+    
+    I(!fail);
+  }
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
   while (now_iter!=edges.end())
   { const cvs_edge &now=*now_iter;
@@ -1221,7 +1253,8 @@ void cvs_sync::push(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
 { cvs_repository *repo=cvs_sync::prepare_sync(_repository,_module,_branch,app);
   
-  N(!repo->empty(),F("no revision certs for this repository/module\n"));
+  if (repo->empty())
+    W(F("no revision certs for this module, exporting all\n"));
   L(FL("push"));
 //  std::cerr << repo->debug() << '\n';
   repo->commit();
