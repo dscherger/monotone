@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# This file is part of 'mtnplain'
+# This file is part of 'mtndumb'
 #
 # Copyright (C) Zbigniew Zagorski <zzbigg@o2.pl>
 # licensed to the public under the terms of the GNU GPL (>= 2)
@@ -68,7 +68,7 @@ def getDefaultConfigFile():
             homeDir = os.environ['USERPROFILE']
         except KeyError:
             homeDir = "."
-    return os.path.normpath(os.path.join(homeDir, ".mtnplain"))   
+    return os.path.normpath(os.path.join(homeDir, ".mtndumb"))   
     
 def parseOpt():
     

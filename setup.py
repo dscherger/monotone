@@ -1,5 +1,5 @@
 #
-# This file is part of 'mtnplain'
+# This file is part of 'mtndumb'
 #
 # Copyright (C) Zbigniew Zagorski <zzbigg@o2.pl> and others,
 # licensed to the public under the terms of the GNU GPL (>= 2)
@@ -9,10 +9,10 @@
 
 import re as _re
 
-name = "mtnplain"
-description = """The monotone plain database synchronizer"""
+name = "mtndumb"
+description = """The monotone dumb database synchronizer"""
 
-long_description = """The monotone plain (or "dumb") protocol allows
+long_description = """The monotone dumb (aka 'plain') protocol allows
 two-way synchronization via sftp or plain files,
 and one-way (pull) via http(s) and ftp."""
 
@@ -26,14 +26,14 @@ _authors = [ 'Nathaniel Smith',
 author       = ', '.join(_authors)
 url = 'http://www.venge.net/monotone'
 
-packages = ['monotone_plain', 'monotone_plain.dws','monotone_plain.paramiko']
+packages = ['monotone_dumb', 'monotone_dumb.dws','monotone_dumb.paramiko']
 package_dir = {
-    'monotone_plain' : '.',
-    'monotone_plain.dws' : 'dws',
-    'monotone_plain.paramiko' : 'paramiko'
+    'monotone_dumb' : '.',
+    'monotone_dumb.dws' : 'dws',
+    'monotone_dumb.paramiko' : 'paramiko'
 }
 
-scripts = ['mtnplain']
+scripts = ['mtndumb']
 options = { 'clean' : { 'all' : 1 } }
 classifiers = [
         'Development Status :: 4 - Beta',

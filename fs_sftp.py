@@ -1,5 +1,5 @@
 #
-# This file is part of 'mtnplain'
+# This file is part of 'mtndumb'
 #
 # Copyright (C) Nathaniel Smith <njs@pobox.com> and others, 
 # licensed to the public under the terms of the GNU GPL (>= 2)

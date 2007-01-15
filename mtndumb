@@ -8,6 +8,6 @@
 # I.e., do what you like, but keep copyright and there's NO WARRANTY.
 #
 
-from monotone_plain import plain
+from monotone_dumb import plain
 plain.main()
 
