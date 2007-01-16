@@ -416,6 +416,7 @@ class MerkleDir:
 class MemoryMerkleDir(MerkleDir):
     def __init__(self):
         self._chunksCache = {}
+        self._chunksList = []
         self._hashes = {}
         self._root_hash = None
         self._ids_to_flush = []
@@ -438,18 +439,23 @@ class MemoryMerkleDir(MerkleDir):
         pass
         
     def add(self, id, data):
-        self._ids_to_flush.append(id)
+        location = (len(self._chunksList),1)
+        self._ids_to_flush.append( (id, location ) )
         self._chunksCache[id] = data
+        self._chunksList.append( (id,data) )
         
     def all_ids(self):
         return self._chunksCache.iterkeys()
         
     def all_chunks(self):
-        for id, chunkHandle in self._chunksCache.iteritems():
+        for id, chunkHandle in self._chunksList:
             yield id, self.__realizeChunk(chunkHandle)
             
     def get_chunks(self, id_locations):
         locations_to_ids = {}
+        id_locations = list(id_locations)
+        id_locations.sort( key=lambda a: a[1][0] )
+        
         for id, location in id_locations:
             if location[1] == 0:
                 # empty chunks ...
@@ -507,11 +513,11 @@ class MemoryMerkleDir(MerkleDir):
     #### Cheap hash updating
     def _bin(self, ids):
         bins = {}
-        for id in ids:
+        for id,location in ids:
             prefix = id[:2]
             if not bins.has_key(prefix):
                 bins[prefix] = []
-            bins[prefix].append((id, (-1,-1)))
+            bins[prefix].append((id, location))
         return bins
 
     def _flush_hashes(self):
