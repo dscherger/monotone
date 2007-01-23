@@ -14,7 +14,7 @@ import os.path
 from cStringIO import StringIO
 from merkle_dir import MerkleDir, MemoryMerkleDir, LockError
 from fs import readable_fs_for_url, writeable_fs_for_url
-from monotone import Monotone
+from monotone import Monotone, find_stanza_entry
 
 class partial:
     def __init__(self, fn, *args):
@@ -105,14 +105,16 @@ class Dumbtone:
             curr_ids = Set(md.all_ids())
             keys = self.monotone.keys()
             for stanza in keys:
-                keyid = stanza[0][1][0]
-                publicHash = stanza[1][1][0]                
+                keyid = find_stanza_entry(stanza, "name")[0]
+                publicHash = find_stanza_entry(stanza, "public_hash")[0]
+                publicLocations = find_stanza_entry(stanza, "public_location")
                 kp = partial(self.monotone.get_pubkey_packet,keyid)
-                ids = "\n".join((keyid,publicHash))
-                id = sha.new(ids).hexdigest()
-                if id not in curr_ids:
-                    md.add(id, kp)
-                    if callback: callback(id, "", None)
+                if "database" in publicLocations:
+                    ids = "\n".join((keyid,publicHash))
+                    id = sha.new(ids).hexdigest()
+                    if id not in curr_ids:
+                        md.add(id, kp)
+                        if callback: callback(id, "", None)
             for rid in self.monotone.toposort(self.monotone.revisions_list()):
                 if rid not in curr_ids:
                     md.add(rid, partial(self.__make_revision_packet,rid))

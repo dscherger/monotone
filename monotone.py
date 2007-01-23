@@ -34,7 +34,7 @@ class Feeder:
             self.process = subprocess.Popen(self.args,
                                             stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE)
+                                            stderr=None)
         self.process.stdin.write(data)
         if self.verbosity>1:
             # processing every single call with a new process
@@ -265,3 +265,9 @@ class Monotone:
 
 def basic_io_parser(data):
         return Monotone(None,None).basic_io_parser(data)
+        
+def find_stanza_entry(stanza, name):
+        for entry in stanza:
+            if entry[0] == name:
+                return entry[1]
+        raise Exception("entry '%s' not found in stanza" % name)
