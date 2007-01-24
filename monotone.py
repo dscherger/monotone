@@ -271,3 +271,12 @@ def find_stanza_entry(stanza, name):
             if entry[0] == name:
                 return entry[1]
         raise Exception("entry '%s' not found in stanza" % name)
+    
+        
+cert_packet_info_re = re.compile(r'^\[rcert ([0-9a-f]+)\r?\n\s+(\S+)\s*\r?\n\s+(.*)\r?\n')
+
+def decode_cert_packet_info(cert_packet):
+    m = cert_packet_info_re.match(cert_packet)
+    if not m:
+        raise Exception("bad cert packet: %s..." % repr(cert_packet))
+    return (m.group(1), m.group(2), m.group(3))

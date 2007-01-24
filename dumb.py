@@ -14,7 +14,7 @@ import os.path
 from cStringIO import StringIO
 from merkle_dir import MerkleDir, MemoryMerkleDir, LockError
 from fs import readable_fs_for_url, writeable_fs_for_url
-from monotone import Monotone, find_stanza_entry
+from monotone import Monotone, find_stanza_entry, decode_cert_packet_info
 
 class partial:
     def __init__(self, fn, *args):
@@ -104,17 +104,19 @@ class Dumbtone:
             md.begin()
             curr_ids = Set(md.all_ids())
             keys = self.monotone.keys()
+            exported_keys = Set()
+            key_packets = {}
             for stanza in keys:
                 keyid = find_stanza_entry(stanza, "name")[0]
                 publicHash = find_stanza_entry(stanza, "public_hash")[0]
-                publicLocations = find_stanza_entry(stanza, "public_location")
-                kp = partial(self.monotone.get_pubkey_packet,keyid)
+                publicLocations = find_stanza_entry(stanza, "public_location")                
                 if "database" in publicLocations:
+                    kp = partial(self.monotone.get_pubkey_packet,keyid)
                     ids = "\n".join((keyid,publicHash))
                     id = sha.new(ids).hexdigest()
-                    if id not in curr_ids:
-                        md.add(id, kp)
-                        if callback: callback(id, "", None)
+                    key_packets[keyid] = (id, kp) # keys are queued for export
+                                                  # and are exported only if used 
+                                                  # to sign some exported cert
             for rid in self.monotone.toposort(self.monotone.revisions_list()):
                 if rid not in curr_ids:
                     md.add(rid, partial(self.__make_revision_packet,rid))
@@ -123,6 +125,17 @@ class Dumbtone:
                 if self.verbosity > 0:
                     print "rev ", rid, " certs:",certs
                 for cert in certs:
+                    cert_parts = decode_cert_packet_info(cert)
+                    key_name = cert_parts[2]
+                    if key_name not in exported_keys:
+                        if self.verbosity > 0:
+                            print "key: %s" % key_name
+                        # add key only if needed by any cert
+                        id, kp = key_packets[key_name]
+                        if id not in curr_ids:
+                            md.add(id, kp)
+                            if callback: callback(id, "", None)
+                        exported_keys.add(key_name)
                     id = sha.new(cert).hexdigest()
                     if id not in curr_ids:
                         md.add(id, returnthis(cert) )
