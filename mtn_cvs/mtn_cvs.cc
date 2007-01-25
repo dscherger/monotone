@@ -82,16 +82,18 @@ struct ui_library
 };
 
 // fake app_state ctor/dtor, we do not use this class at all
-app_state::app_state() : db(system_path()), keys(this), work(db,lua) {}
+app_state::app_state() : db(system_path()), keys(this), work(db,lua), branch_is_sticky(), project(*this) {}
 void app_state::process_options() {}
 app_state::~app_state() {}
 lua_hooks::lua_hooks() {}
 lua_hooks::~lua_hooks() {}
 key_store::key_store(app_state*) {}
-database::database(system_path const&) 
-  : roster_cache(constants::db_roster_cache_sz,roster_writeback_manager(*this))
-  {}
+database::database(system_path const&) : roster_cache(constants::db_roster_cache_sz,roster_writeback_manager(*this)) {}
 database::~database() {}
+outdated_indicator_factory::outdated_indicator_factory() {}
+outdated_indicator_factory::~outdated_indicator_factory() {}
+outdated_indicator::outdated_indicator() {}
+project_t::project_t(app_state&a) : app(a) {}
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),

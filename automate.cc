@@ -1839,7 +1839,7 @@ AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"), options::opts::none)
   else if (args.size() != 1)
     throw usage(name);
   set<revision_id> heads;
-  get_branch_heads(branch, app, heads);
+  app.get_project().get_branch_heads(branch, heads);
   revision_t rev;
   revision_id rid;
   std::string domain = idx(args,0)();
