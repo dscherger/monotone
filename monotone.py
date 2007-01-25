@@ -12,6 +12,7 @@ import threading
 import os.path
 import re
 import zlib
+import fnmatch
 
 class MonotoneError (Exception):
     pass
@@ -89,6 +90,15 @@ class Monotone:
         output = self.automate("select", "i:")
         return output.split()
     
+    def revisions_for_pattern(self,branch_pattern):
+        branches = self.branches_for_pattern(branch_pattern)
+        revs = set()
+        for branch in branches:            
+            heads = self.automate("heads", branch).split()            
+            revs.update(heads)
+            revs.update(self.automate("ancestors", *heads).split())        
+        return list(revs)
+                     
     def toposort(self, revisions):
         output = self.automate("toposort", *revisions)
         sorted = output.split()
@@ -122,6 +132,17 @@ class Monotone:
         assert not curr_packet
         return packets
 
+    def branches(self):
+        return self.automate("branches").split("\n")
+        
+    def branches_for_pattern(self, branch_pattern):
+        """all_branches = self.branches()
+        x =  fnmatch.filter( all_branches, branch_pattern )
+        print "branch filter : %s" % branch_pattern
+        print "           in : %s" % ",".join(all_branches)
+        print "          out : %s" % ",".join(x)"""
+        return fnmatch.filter(self.branches(), branch_pattern)
+
     def keys(self):
         return self.basic_io_parser( self.automate("keys") )
         
@@ -135,6 +156,11 @@ class Monotone:
             ids[key_name[0]] = None
 
         return ids.keys()
+
+    def certs(self, revision):
+        output = self.automate("certs", revision)
+        certs_parsed = self.basic_io_parser(output)
+        return certs_parsed
 
     # returns output as a string, raises an error on error
     def run_monotone(self, args, input=None):
