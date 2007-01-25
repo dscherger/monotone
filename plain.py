@@ -167,12 +167,14 @@ def main():
 
     mtn = Dumbtone(options.db, options.verbose)
 
+    # TODO ... make UI for branch pattern
+    branch_pattern = ""
     if action=="pull":
-        mtn.do_pull(url, **optdict)
+        mtn.do_pull(url, branch_pattern, **optdict)
     elif action=="push":
-        mtn.do_push(url, **optdict)
+        mtn.do_push(url, branch_pattern, **optdict)
     elif action=="sync":
-        mtn.do_sync(url, **optdict)
+        mtn.do_sync(url, branch_pattern, **optdict)
                 
     saveConfig(options,config)
 
