@@ -24,12 +24,23 @@ namespace selectors
   static void
   decode_selector(string const & orig_sel,
                   selector_type & type,
+                  bool & get_heads,
                   string & sel,
-                  app_state & app)
+                  app_state & app,
+                  bool first_selector)
   {
     sel = orig_sel;
 
     L(FL("decoding selector '%s'") % sel);
+
+    if (first_selector)
+      {
+        if (sel[0] == 'H' && sel[1] == ':')
+          {
+            get_heads = true;
+            sel.erase(0,2);
+          }
+      }
 
     string tmp;
     if (sel.size() < 2 || sel[1] != ':')
@@ -82,7 +93,7 @@ namespace selectors
           }
         sel.erase(0,2);
 
-        /* a selector date-related should be validated */	
+        /* a selector date-related should be validated */
         if (sel_date==type || sel_later==type || sel_earlier==type)
           {
             N (app.lua.hook_expand_date(sel, tmp),
@@ -106,16 +117,19 @@ namespace selectors
   complete_selector(string const & orig_sel,
                     vector<pair<selector_type, string> > const & limit,
                     selector_type & type,
+                    bool & get_heads,
                     set<string> & completions,
-                    app_state & app)
+                    app_state & app,
+                    bool first_selector)
   {
     string sel;
-    decode_selector(orig_sel, type, sel, app);
+    decode_selector(orig_sel, type, get_heads, sel, app, first_selector);
     app.db.complete(type, sel, limit, completions);
   }
 
   vector<pair<selector_type, string> >
   parse_selector(string const & str,
+                 bool & get_heads,
                  app_state & app)
   {
     vector<pair<selector_type, string> > sels;
@@ -136,14 +150,16 @@ namespace selectors
         vector<string> selector_strings;
         copy(tokens.begin(), tokens.end(), back_inserter(selector_strings));
 
+        bool first = true;
         for (vector<string>::const_iterator i = selector_strings.begin();
              i != selector_strings.end(); ++i)
           {
             string sel;
             selector_type type = sel_unknown;
 
-            decode_selector(*i, type, sel, app);
+            decode_selector(*i, type, get_heads, sel, app, first);
             sels.push_back(make_pair(type, sel));
+            first = false;
           }
       }
 
