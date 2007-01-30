@@ -41,8 +41,8 @@ struct file_state
   unsigned patchsize;
   bool dead;
   std::string md5sum; // hexenc<something?>
-  hexenc<id> cvssha1sum;
-  hexenc<id> sha1sum; // make this a file_id
+  file_id cvssha1sum;
+  file_id sha1sum;
   std::string log_msg;
   std::string author;
   std::string keyword_substitution;
@@ -76,8 +76,7 @@ struct cvs_edge // careful this name is also used in cvs_import
   mutable cvs_manifest xfiles; // manifest (or use cvs_manifest)
 //  mutable unsigned cm_delta_depth; // we store a full manifest every N revisions
 //  static const unsigned cm_max_delta_depth=50;
-  mutable hexenc<id> revision; // monotone revision
-      // make this a revision_id
+  mutable revision_id revision; // monotone revision
 
   // I do not want this to be 3 hours (how comes?)
   static size_t const cvs_window = 5;
@@ -155,9 +154,9 @@ private:
   void fill_manifests(std::set<cvs_edge>::iterator e);
   void commit_cvs2mtn(std::set<cvs_edge>::iterator e);
 
-// std::string is equivalent to data
-  void store_contents(const data &contents, hexenc<id> &sha1sum);
-  void store_delta(const std::string &new_contents, const std::string &old_contents, const std::string &patch, const hexenc<id> &from, hexenc<id> &to);
+  void store_contents(file_data const&contents, file_id &sha1sum);
+  void store_delta(file_data const& new_contents, file_data const &old_contents, 
+		file_id const&from, file_id &to);
   
   void cert_cvs(const cvs_edge &e);
   cvs_file_state remember(std::set<file_state> &s,const file_state &fs, cvs_file_path const& filename);

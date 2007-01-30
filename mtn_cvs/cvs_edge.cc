@@ -98,7 +98,7 @@ void cvs_repository::join_edge_parts(std::set<cvs_edge>::iterator i)
 
 cvs_edge::cvs_edge(const revision_id &rid, mtncvs_state &app)
  : changelog_valid(), time(), time2()
-{ revision=hexenc<id>(rid.inner());
+{ revision=rid;
   // get author + date 
   std::vector<mtn_automate::certificate> certs=app.get_revision_certs(rid);
   

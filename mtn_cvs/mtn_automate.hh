@@ -57,12 +57,12 @@ struct mtn_automate : mtn_pipe
   sync_map_t get_sync_info(revision_id const& rid, std::string const& domain);
   void put_sync_info(revision_id const& rid, std::string const& domain, sync_map_t const& data);
 
-  file_id put_file(data const& d, file_id const& base=file_id());
+  file_id put_file(file_data const& d, file_id const& base=file_id());
   manifest_map get_manifest_of(revision_id const& rid);
   revision_id put_revision(revision_id const& parent, cset const& changes);
   void cert_revision(revision_id const& rid, std::string const& name, std::string const& value);
   std::vector<certificate> get_revision_certs(revision_id const& rid);
-  std::string get_file(file_id const& fid);
+  file_data get_file(file_id const& fid);
   std::vector<revision_id> get_revision_children(revision_id const& rid);
   std::vector<revision_id> get_revision_parents(revision_id const& rid);
   revision_t get_revision(revision_id const& rid);

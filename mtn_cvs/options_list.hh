@@ -27,7 +27,7 @@ OPTION(branch, branch, true, "branch,b", N_("select branch cert for operation"))
 OPT(since, "since", utf8, , N_("set history start for CVS pull"))
 #ifdef option_bodies
 {
-  since = arg;
+  since = utf8(arg);
 }
 #endif
 
@@ -116,14 +116,14 @@ GOPT(ticker, "ticker", std::string, ,
 GOPT(mtn_binary, "mtn", utf8, , gettext_noop("monotone binary name"))
 #ifdef option_bodies
 {
-  mtn_binary = arg;
+  mtn_binary = utf8(arg);
 }
 #endif
 
 GOPT(domain, "domain", utf8, "cvs", gettext_noop("synchronization domain"))
 #ifdef option_bodies
 {
-  domain = arg;
+  domain = utf8(arg);
 }
 #endif
 
@@ -131,7 +131,7 @@ OPTVAR(globals, std::vector<utf8>, mtn_options, )
 OPTION(globals, mtn_option, true, "mtn-option", N_("pass option to monotone"))
 #ifdef option_bodies
 {
-  mtn_options.push_back(arg);
+  mtn_options.push_back(utf8(arg));
 }
 #endif
 
@@ -148,7 +148,7 @@ OPTION(globals, dump, true, "dump",
 
 #ifdef option_bodies
 #define TRANSOPT3(name,optstring,desc) TRANSOPT_sub(name,true,optstring,desc) \
-{ mtn_options.push_back("--" #name "=" +arg); }
+{ mtn_options.push_back(utf8("--" #name "=" +arg)); }
 #else
 #define TRANSOPT3(name,optstring,desc) TRANSOPT_sub(name,true,optstring,desc) 
 #endif

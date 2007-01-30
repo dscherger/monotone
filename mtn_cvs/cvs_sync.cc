@@ -105,7 +105,7 @@ std::string debug_manifest(const cvs_manifest &mf)
   { result+= i->first + " " + i->second->cvs_version;
     if (!i->second->keyword_substitution.empty()) 
       result+="/"+i->second->keyword_substitution;
-    result+=" " + std::string(i->second->dead?"dead ":"") + i->second->sha1sum() + "\n";
+    result+=" " + std::string(i->second->dead?"dead ":"") + i->second->sha1sum.inner()() + "\n";
   }
   return result;
 }
@@ -118,7 +118,7 @@ static dump(cvs_sync::file_state const& fs, std::string& result)
     if (fs.dead) result+= "dead";
     else if (fs.size) result+= boost::lexical_cast<string>(fs.size);
     else if (fs.patchsize) result+= "p" + boost::lexical_cast<string>(fs.patchsize);
-    else if (!fs.sha1sum().empty()) result+= fs.sha1sum().substr(0,4) + fs.keyword_substitution;
+    else if (!fs.sha1sum.inner()().empty()) result+= fs.sha1sum.inner()().substr(0,4) + fs.keyword_substitution;
     result+=" "+fs.log_msg.substr(0,20)+"\n";
 }
 
@@ -174,10 +174,10 @@ mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
 { 
   mtn_automate::sync_map_t result;
   split_path sp(1,the_null_component);
-  result[std::make_pair(sp,app.opts.domain()+":root")]= host+":"+root;
-  result[std::make_pair(sp,app.opts.domain()+":module")]= module;
+  result[std::make_pair(sp,attr_key(app.opts.domain()+":root"))]= attr_value(host+":"+root);
+  result[std::make_pair(sp,attr_key(app.opts.domain()+":module"))]= attr_value(module);
   if (!branch.empty())
-    result[std::make_pair(sp,app.opts.domain()+":branch")]= branch;
+    result[std::make_pair(sp,attr_key(app.opts.domain()+":branch"))]= attr_value(branch);
   return result;
 }
 
@@ -185,7 +185,7 @@ template <> void
 static dump(cvs_sync::cvs_edge const& e, std::string& result)
 { result= "[" + cvs_repository::time_t2human(e.time);
     if (e.time!=e.time2) result+= "+" + boost::lexical_cast<string>(e.time2-e.time);
-    if (!e.revision().empty()) result+= "," + e.revision().substr(0,4);
+    if (!e.revision.inner()().empty()) result+= "," + e.revision.inner()().substr(0,4);
     if (!e.xfiles.empty()) 
       result+= "," + boost::lexical_cast<string>(e.xfiles.size()) 
          + (e.delta_base.inner()().empty()?"files":"deltas");
@@ -285,10 +285,10 @@ void cvs_repository::prime_log_cb::revision(const std::string &file,time_t check
   if (iter2.second && repo.cvs_edges_ticker.get()) ++(*repo.cvs_edges_ticker);
 }
 
-void cvs_repository::store_contents(const data &dat, hexenc<id> &sha1sum)
+void cvs_repository::store_contents(file_data const &dat, file_id &sha1sum)
 {
   if (file_id_ticker.get()) ++(*file_id_ticker);
-  sha1sum=app.put_file(dat).inner();
+  sha1sum=app.put_file(dat);
 }
 
 static void apply_delta(piece::piece_table &contents, const std::string &patch)
@@ -297,17 +297,15 @@ static void apply_delta(piece::piece_table &contents, const std::string &patch)
   std::swap(contents,after);
 }
 
-void cvs_repository::store_delta(const std::string &new_contents, 
-          const std::string &old_contents, 
-          // this argument is unused since we can no longer use the rcs patch
-          const std::string &dummy, 
-          const hexenc<id> &from, hexenc<id> &to)
-{ if (old_contents.empty())
+void cvs_repository::store_delta(file_data const& new_contents, 
+          file_data const& old_contents, 
+          file_id const&from, file_id &to)
+{ if (old_contents.inner()().empty())
   { store_contents(new_contents, to);
     return;
   }
   if (file_id_ticker.get()) ++(*file_id_ticker);
-  to=app.put_file(new_contents,from).inner();
+  to=app.put_file(new_contents,from);
 }
 
 static
@@ -362,7 +360,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
             {
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % f->first % f->second.first % fn->second->sha1sum);
-              I(!fn->second->sha1sum().empty());
+              I(!fn->second->sha1sum.inner()().empty());
               split_path sp;
               f->first.split(sp);
               safe_insert(cs.deltas_applied, std::make_pair(sp, std::make_pair(f->second.first,fn->second->sha1sum)));
@@ -377,7 +375,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
       if (mi==oldr.end())
       {  
         L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
-        I(!f->second->sha1sum().empty());
+        I(!f->second->sha1sum.inner()().empty());
         split_path sp;
         file_path_internal(f->first).split(sp);
         add_missing_parents(oldr, sp, cs);
@@ -419,7 +417,8 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     unsigned hashidx=hash.OUTPUT_LENGTH;
     for (;hashidx && hashval[hashidx-1]==Botan::byte(md5sum[hashidx-1]);--hashidx) ;
     if (!hashidx)
-    { store_delta(contents, old_contents, u.patch, s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+    { store_delta(file_data(contents), file_data(old_contents), s->sha1sum, 
+			const_cast<file_id&>(s2->sha1sum));
     }
     else
     { E(false, F("MD5 sum %s<>%s") % u.checksum 
@@ -427,11 +426,11 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     }
   }
   else
-  { if (!s->sha1sum().empty()) 
+  { if (!s->sha1sum.inner()().empty()) 
     // we default to patch if it's at all possible
-      store_delta(u.contents, contents, std::string(), s->sha1sum, const_cast<hexenc<id>&>(s2->sha1sum));
+      store_delta(file_data(u.contents), file_data(contents), s->sha1sum, const_cast<file_id&>(s2->sha1sum));
     else
-      store_contents(u.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      store_contents(file_data(u.contents), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=u.contents.size();
     contents=u.contents;
     const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
@@ -462,7 +461,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -482,7 +481,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
-      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
       const_cast<unsigned&>(s2->size)=c.contents.size();
       contents=c.contents;
       const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -494,7 +493,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
-      store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+      store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
       const_cast<unsigned&>(s2->size)=c.contents.size();
       contents=c.contents;
       const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -510,7 +509,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -525,7 +524,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+    store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -573,7 +572,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
         if (s!=f->second.known_states.end() && !s->dead)
         // a matching revision was found
         { current_manifest[f->first]=s;
-          I(!s->sha1sum().empty());
+          I(!s->sha1sum.inner()().empty());
           check_split(s,f->second.known_states.end(),e);
         }
       }
@@ -591,7 +590,7 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
           else 
           { 
             mi->second=s;
-            I(!s->sha1sum().empty());
+            I(!s->sha1sum.inner()().empty());
           }
           check_split(s,f->second.known_states.end(),e);
         }
@@ -676,14 +675,14 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
     }
     file_path_internal(dirname).split(sp);
     if (!dirname.empty() || i->second!=root+"/"+module+"/")
-      state[std::make_pair(sp,attr_key(app.opts.domain()+":path"))]=i->second;
+      state[std::make_pair(sp,attr_key(app.opts.domain()+":path"))]=attr_value(i->second);
   }
   
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
   { 
 #if 1
     if (i->second->cvs_version.empty())
-    { if (i->second->sha1sum().empty())
+    { if (i->second->sha1sum.inner()().empty())
       { W(F("internal error: directory '%s' skipped\n") % i->first); 
         continue;
       }
@@ -699,14 +698,14 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
     split_path sp;
     file_path_internal(i->first).split(sp);
     state[std::make_pair(sp,attr_key(app.opts.domain()+":revision"))]
-        =i->second->cvs_version;
+        =attr_value(i->second->cvs_version);
     if (!i->second->keyword_substitution.empty())
       state[std::make_pair(sp,attr_key(app.opts.domain()+":keyword"))]
-          =i->second->keyword_substitution;
+          =attr_value(i->second->keyword_substitution);
 // FIXME: How to flag locally modified files? add the synched sha1sum?
-    if (!i->second->sha1sum().empty())
+    if (!i->second->sha1sum.inner()().empty())
       state[std::make_pair(sp,attr_key(app.opts.domain()+":sha1"))]
-            =i->second->sha1sum().substr(0,6);
+            =attr_value(i->second->sha1sum.inner()().substr(0,6));
   }
   return state;
 }
@@ -716,13 +715,13 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 { revision_id parent_rid;
   
   cvs_edges_ticker.reset(0);
-  L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision());
+  L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision.inner()());
   revision_ticker.reset(new ticker("revisions", "R", 3));
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
     --before;
-    L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision());
-    I(!before->revision().empty());
+    L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision.inner()());
+    I(!before->revision.inner()().empty());
     parent_rid=before->revision;
   }
 //  temp_node_id_source nis;
@@ -732,7 +731,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     mtn_automate::cset cs;
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
-    L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision());
+    L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision.inner()());
     // revision_set rev;
     // boost::shared_ptr<cset> cs(new cset());
     mtn_automate::manifest_map oldmanifest;
@@ -764,7 +763,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     revision_id child_rid=app.put_revision(parent_rid,cs);
     if (revision_ticker.get()) ++(*revision_ticker);
     L(FL("CVS Sync: Inserted revision %s into repository\n") % child_rid);
-    e->revision=child_rid.inner();
+    e->revision=child_rid;
 
     app.cert_revision(child_rid,"branch",app.opts.branch_name());
     std::string author=e->author;
@@ -956,8 +955,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       
       a=commit_arg(); // add
       a.file=file_path(i->second).as_internal();
-      I(!old->second->sha1sum().empty());
-      a.new_content=app.get_file(old->second->sha1sum);
+      I(!old->second->sha1sum.inner()().empty());
+      a.new_content=app.get_file(old->second->sha1sum).inner()();
       commits.push_back(a);
       L(FL("rename to %s %d\n") % a.file % a.new_content.size());
     }
@@ -983,7 +982,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       commit_arg a;
       a.file=file_path(i->first).as_internal();
 //      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
-      a.new_content=app.get_file(i->second);
+      a.new_content=app.get_file(i->second).inner()();
       commits.push_back(a);
       L(FL("add %s %d\n") % a.file % a.new_content.size());
     }
@@ -999,14 +998,14 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       I(old!=parent_manifest.end());
       a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
-      a.new_content=app.get_file(i->second.second);
+      a.new_content=app.get_file(i->second.second).inner()();
       commits.push_back(a);
       L(FL("delta %s %s %s %d\n") % a.file % a.old_revision % a.keyword_substitution
           % a.new_content.size());
     }
 
     if (commits.empty())
-    { W(F("revision %s: nothing to commit") % e.revision());
+    { W(F("revision %s: nothing to commit") % e.revision.inner()());
       e.delta_base=parent->revision;
       cert_cvs(e);
       revision_lookup[e.revision]=edges.insert(e).first;
@@ -1015,7 +1014,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     }
     std::string changelog;
     changelog=e.changelog+"\nmonotone "+e.author+" "
-        +cvs_client::time_t2rfc822(e.time)+" "+e.revision()+"\n";
+        +cvs_client::time_t2rfc822(e.time)+" "+e.revision.inner()().substr(0,6)+"\n";
     // gather information CVS does not know about into the changelog
     changelog+=gather_merge_information(e.revision);
     std::map<std::string,std::pair<std::string,std::string> > result
@@ -1041,12 +1040,12 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
         file_path_internal(i->first).split(sp);
         std::map<split_path, std::pair<file_id, file_id> >::const_iterator mydelta=cs->deltas_applied.find(sp);
         if (mydelta!=cs->deltas_applied.end())
-        { fs.sha1sum=mydelta->second.second.inner();
+        { fs.sha1sum=mydelta->second.second;
         }
         else // newly added?
         { std::map<split_path, file_id>::const_iterator myadd=cs->files_added.find(sp);
           I(myadd!=cs->files_added.end());
-          fs.sha1sum=myadd->second.inner();
+          fs.sha1sum=myadd->second;
         }
         std::pair<std::set<file_state>::iterator,bool> newelem=
             files[i->first].known_states.insert(fs);
@@ -1165,7 +1164,7 @@ void cvs_repository::commit()
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
   while (now_iter!=edges.end())
   { const cvs_edge &now=*now_iter;
-    I(!now.revision().empty());
+    I(!now.revision.inner()().empty());
     
     L(FL("looking for children of revision %s\n") % now.revision);
     std::vector<revision_id> children=app.get_revision_children(now.revision);
@@ -1270,9 +1269,9 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   revision_id lastid;
   if (app.opts.branch_name().empty())
   {
-    app.opts.branch_name=app.get_option("branch");
+    app.opts.branch_name=utf8(app.get_option("branch"));
     if (!app.opts.branch_name().empty() && app.opts.branch_name()[app.opts.branch_name().size()-1]=='\n')
-      app.opts.branch_name=app.opts.branch_name().substr(0,app.opts.branch_name().size()-1);
+      app.opts.branch_name=utf8(app.opts.branch_name().substr(0,app.opts.branch_name().size()-1));
   }
   N(!app.opts.branch_name().empty(), F("no destination branch specified\n"));
   { std::string rep,mod,br;
@@ -1331,9 +1330,9 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
         const_cast<time_t&>(i->since_when)=fs.since_when;
       static file_id emptysha1sum;
       if (emptysha1sum.inner()().empty())
-        calculate_ident(data(),const_cast<hexenc<id>&>(emptysha1sum.inner()));
+        calculate_ident(file_data(),emptysha1sum);
       if (i->log_msg=="last cvs update (modified)" 
-            && i->sha1sum==emptysha1sum.inner()
+            && i->sha1sum==emptysha1sum
             && i->author==("unknown@"+host))
       { W(F("replacing fake contents for %s V%s\n")
             % filename % i->cvs_version);
@@ -1351,7 +1350,7 @@ cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state
 void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info, revision_id const& rid)
 { mtn_automate::manifest_map manifest=app.get_manifest_of(rid);
   // populate data structure using this sync info
-      cvs_edge e(rid.inner(),app);
+      cvs_edge e(rid,app);
 
       for (mtn_automate::manifest_map::const_iterator i=manifest.begin();
               i!=manifest.end();++i)
@@ -1363,11 +1362,11 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
         file_state fs;
         fs.since_when=e.time;
         fs.cvs_version=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":revision")))();
-        fs.cvssha1sum=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":sha1")))();
+        fs.cvssha1sum=file_id(const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":sha1")))());
         fs.keyword_substitution=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":keywords")))();
         
-        fs.sha1sum=i->second.first.inner();
-        if (fs.sha1sum().empty()) continue; // directory node
+        fs.sha1sum=i->second.first;
+        if (fs.sha1sum.inner()().empty()) continue; // directory node
         fs.log_msg=e.changelog;
         fs.author=e.author;
         std::string path=file_path(i->first).as_internal();
@@ -1396,14 +1395,14 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
             fs.log_msg=i->changelog;
             fs.author=i->author;
             fs.dead=true;
-            L(FL("file %s gets removed at %s\n") % j->first % i->revision());
+            L(FL("file %s gets removed at %s\n") % j->first % i->revision.inner()());
             remember(files[j->first].known_states,fs,j->first);
           }
         }
       }
       catch (informative_failure &e)
       { L(FL("failed to reconstruct CVS revisions: %s: %s->%s\n")
-            % e.what % last->revision() % i->revision());
+            % e.what % last->revision.inner()() % i->revision.inner()());
       }
     last=i;
   }
@@ -1428,7 +1427,7 @@ void cvs_repository::update()
   retrieve_modules();
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
   const cvs_edge &now=*now_iter;
-  I(!now.revision().empty());
+  I(!now.revision.inner()().empty());
   std::vector<update_args> file_revisions;
   std::vector<cvs_client::update> results;
   const cvs_manifest &m=get_files(now);
@@ -1479,8 +1478,8 @@ void cvs_repository::update()
       store_checkout(s2,c,file_contents);
     }
     else
-    { I(!last->sha1sum().empty());
-      file_contents=app.get_file(last->sha1sum);
+    { I(!last->sha1sum.inner()().empty());
+      file_contents=app.get_file(last->sha1sum).inner()();
       initial_contents=file_contents;
     }
     for (std::set<file_state>::const_iterator s=last;
@@ -1498,7 +1497,7 @@ void cvs_repository::update()
           cvs_client::update c=Update(i->file,s2->cvs_version);
           const_cast<std::string&>(s2->md5sum)="";
           const_cast<unsigned&>(s2->patchsize)=0;
-          store_contents(c.contents, const_cast<hexenc<id>&>(s2->sha1sum));
+          store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=c.contents.size();
           const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
         }
@@ -1633,7 +1632,7 @@ void cvs_client::validate_path(const std::string &local, const std::string &serv
   server_dir[local]=server;
 }
 
-void read_file(std::string const& name, data &result)
+static void read_file(std::string const& name, file_data &result)
 { std::string dest;
   ifstream is(name.c_str());
   while (is.good())
@@ -1641,7 +1640,7 @@ void read_file(std::string const& name, data &result)
     is.read(buf,sizeof buf);
     if (is.gcount()) dest+=std::string(buf,buf+is.gcount());
   }
-  result=data(dest);
+  result=file_data(dest);
 }
 
 void cvs_repository::takeover_dir(const std::string &path)
@@ -1704,7 +1703,7 @@ void cvs_repository::takeover_dir(const std::string &path)
           if (sbuf.st_mtime!=modtime)
           { L(FL("modified %s %u %u\n") % filename % modtime % sbuf.st_mtime);
             fs.log_msg="partially overwritten content from last update";
-            store_contents(std::string(), fs.sha1sum);
+            store_contents(file_data(), fs.sha1sum);
             f->second.known_states.insert(fs);
             
             fs.since_when=time(NULL);
@@ -1713,7 +1712,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         }
         // import the file and check whether it is (un-)changed
         fs.log_msg="initial cvs content";
-        data new_data;
+        file_data new_data;
         read_file(filename, new_data);
         store_contents(new_data, fs.sha1sum);
         f->second.known_states.insert(fs);
@@ -1781,7 +1780,7 @@ void cvs_repository::takeover()
   { ofstream of("_MTN/revision");
     of << "format_version \"1\"\n\n"
       "new_manifest []\n\n"
-      "old_revision [" << (--edges.end())->revision() << "]\n";
+      "old_revision [" << (--edges.end())->revision.inner()() << "]\n";
   }
 // like in commit ?
 //  update_any_attrs(app);

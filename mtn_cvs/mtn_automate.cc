@@ -102,7 +102,7 @@ mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std
     parse_path(parser, p1);
     parser.esym(syms::attr);
     parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, t1);
+    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
     parser.esym(syms::value);
     parser.str(t2);
     safe_insert(result, make_pair(new_pair, attr_value(t2)));
@@ -110,17 +110,17 @@ mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std
   return result;
 }
 
-file_id mtn_automate::put_file(data const& d, file_id const& base)
+file_id mtn_automate::put_file(file_data const& d, file_id const& base)
 { std::vector<std::string> args;
   if (!null_id(base.inner())) args.push_back(base.inner()());
-  args.push_back(d());
+  args.push_back(d.inner()());
   return file_id(automate("put_file",args));
 }
 
-std::string mtn_automate::get_file(file_id const& fid)
+file_data mtn_automate::get_file(file_id const& fid)
 { std::vector<std::string> args;
   args.push_back(fid.inner()());
-  return automate("get_file",args);
+  return file_data(automate("get_file",args));
 }
 
 #include <piece_table.hh>
@@ -444,7 +444,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<split_path, attr_key> new_pair(p1, t1);
+      pair<split_path, attr_key> new_pair(p1, attr_key(t1));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
@@ -457,7 +457,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<split_path, attr_key> new_pair(p1, t1);
+      pair<split_path, attr_key> new_pair(p1, attr_key(t1));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       parser.esym(syms::value);
