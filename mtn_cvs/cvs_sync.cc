@@ -1778,8 +1778,17 @@ void cvs_repository::takeover()
     process_spawn(argv);
   }
   { ofstream of("_MTN/revision");
+    if (!of.good())
+    {
+      W(F("_MTN/revision still busy?"));
+      sleep(1);
+      of.open("_MTN/revision",std::ios_base::out|std::ios_base::trunc);
+    }
+    I(of.good());
+    I(!edges.empty());
+    I(!(--edges.end())->revision.inner()().empty());
     of << "format_version \"1\"\n\n"
-      "new_manifest []\n\n"
+      "new_manifest [0000000000000000000000000000000000000001]\n\n"
       "old_revision [" << (--edges.end())->revision.inner()() << "]\n";
   }
 // like in commit ?

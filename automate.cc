@@ -1692,10 +1692,15 @@ AUTOMATE(put_revision, N_("SINGLE-EDGE-DATA"), options::opts::none)
   revision_id id;
   calculate_ident(rev, id);
 
-  transaction_guard tr(app.db);
-  rev.made_for=made_for_database;
-  app.db.put_revision(id, rev);
-  tr.commit();
+  if (app.db.revision_exists(id))
+    W(F("revision %s already present in the database") % id);
+  else
+  {
+    transaction_guard tr(app.db);
+    rev.made_for=made_for_database;
+    app.db.put_revision(id, rev);
+    tr.commit();
+  }
 
   output << id;
 }
