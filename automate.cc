@@ -1832,9 +1832,9 @@ AUTOMATE(find_newest_sync, N_("DOMAIN [BRANCH]"), options::opts::none)
        but might not appropriate for different RCSs)
    */
 
-  string branch=app.opts.branch_name();  
+  utf8 branch=app.opts.branch_name;
   if (args.size() == 2)
-    branch=idx(args,1)();
+    branch=idx(args,1);
   else if (args.size() != 1)
     throw usage(name);
   set<revision_id> heads;
@@ -1911,7 +1911,7 @@ static void parse_attributes(std::string const& in, sync_map_t& result)
     parse_path(parser, p1);
     parser.esym(syms::attr);
     parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, t1);
+    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
     safe_erase(result, new_pair);
   }
   while (parser.symp(syms::set))
@@ -1920,7 +1920,7 @@ static void parse_attributes(std::string const& in, sync_map_t& result)
     parse_path(parser, p1);
     parser.esym(syms::attr);
     parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, t1);
+    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
     parser.esym(syms::value);
     parser.str(t2);
     safe_insert(result, make_pair(new_pair, attr_value(t2)));
@@ -2096,7 +2096,7 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"), options::opts::none)
       if (printer.buf.size()>=new_data.size()) continue;
       
       I(edge_old_revision(e).inner()().size()==constants::idlen);
-      cert_value cv=xform<Botan::Gzip_Compression>(edge_old_revision(e).inner()()+"\n"+printer.buf);
+      cert_value cv=cert_value(xform<Botan::Gzip_Compression>(edge_old_revision(e).inner()()+"\n"+printer.buf));
       make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
       revision<cert> rc(c); 
       packet_db_writer dbw(app);
@@ -2107,7 +2107,7 @@ AUTOMATE(put_sync_info, N_("REVISION DOMAIN DATA"), options::opts::none)
     catch (informative_failure &er) {}
     catch (std::runtime_error &er) {}
   }
-  cert_value cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data);
+  cert_value cv=cert_value(xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data));
   make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
   revision<cert> rc(c);
   packet_db_writer dbw(app);
