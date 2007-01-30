@@ -1605,11 +1605,11 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
 //   a runtime exception is thrown if base revision is not available
 AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
 {
-  hexenc<id> sha1sum;
+  file_id sha1sum;
   transaction_guard tr(app.db);
   if (args.size()==1)
   {
-    data dat(idx(args,0)());
+    file_data dat(idx(args,0)());
     calculate_ident(dat,sha1sum);
     if (!app.db.file_version_exists(sha1sum))
     {
@@ -1619,7 +1619,7 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
   }
   else if (args.size()==2)
   {
-    data dat(idx(args,1)());
+    file_data dat(idx(args,1)());
     calculate_ident(dat,sha1sum);
     if (!app.db.file_version_exists(sha1sum))
     {
@@ -1630,13 +1630,13 @@ AUTOMATE(put_file, N_("[BASE-ID] CONTENTS"), options::opts::none)
       file_data olddat;
       app.db.get_file_version(base_id, olddat);
       delta del;
-      diff(olddat.inner(), dat, del);
-      L(FL("data size %d, delta size %d") % dat().size() % del().size());
-      if (dat().size()<=del().size())
+      diff(olddat.inner(), dat.inner(), del);
+      L(FL("data size %d, delta size %d") % dat.inner()().size() % del().size());
+      if (dat.inner()().size()<=del().size())
       // the data is smaller or of equal size to the patch
         app.db.put_file(sha1sum, dat);
       else
-        app.db.put_file_version(base_id,sha1sum,del);
+        app.db.put_file_version(base_id,sha1sum,file_delta(del));
     }
     else L(FL("revision %s already known") % sha1sum);
   }
