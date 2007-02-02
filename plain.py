@@ -154,17 +154,32 @@ def parseOpt():
     if action not in ACTIONS:
         par.error("invalid operation specified")
         
+    branch_pattern = None
     if len(args) == 1:
         url = config.get(options.db, "repository")
         if not url:
             par.error("missing remote-URL")
     elif len(args) == 2:
         url = args[1]
+    elif len(args) == 3:
+        url = args[1]
+        branch_pattern = args[2]
     else:
         par.error("only one remote-URL allowed")    
-            
-    config.set(options.db, "repository", url)    
-    return (options, config, action, url)
+        
+    config.set(options.db, "repository", url)
+    
+    workspaceRoot = getWorkspaceRoot()
+    if branch_pattern:
+        config.set(workspaceRoot, "branch_pattern", branch_pattern)
+    else:        
+        branch_pattern = config.get(workspaceRoot, "branch_pattern")
+
+    informative("performing %s of %s with %s" % (action, options.db, url))
+    if branch_pattern:
+        informative("using branch pattern: %s" %  branch_pattern) 
+
+    return (options, config, action, url, branch_pattern)
 
 def saveConfig(options,config):
     if not options.storeconfig: return
@@ -174,7 +189,7 @@ def saveConfig(options,config):
         pass
 
 def main():
-    (options, config, action, url) = parseOpt()    
+    (options, config, action, url, branch_pattern) = parseOpt()    
     optdict = {"dsskey":options.dsskey,
                    "rsakey":options.rsakey,
                    "hostkey":options.hostkey,
@@ -182,9 +197,7 @@ def main():
                    "proxy":options.proxy}
 
     mtn = Dumbtone(options.db, options.verbose)
-
-    # TODO ... make UI for branch pattern
-    branch_pattern = ""
+    
     if action=="pull":
         mtn.do_pull(url, branch_pattern, **optdict)
     elif action=="push":
