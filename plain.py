@@ -43,21 +43,31 @@ def readConfig(cfgfile):
     cfg.read(cfgfile)
     return cfg
 
-def getDefaultDatabase():
+def getWorkspaceRoot():
     dir = "."
     while True:
-        optionsFN = os.path.join(dir,"_MTN","options")
-        if os.path.exists(optionsFN):
-            fh = file(optionsFN,"r")
-            try:
-                for stanza in monotone.basic_io_parser(fh.read()):
-                    for k,v in stanza:
-                        if k == "database": 
-                            return v[0]
-            finally:
-                fh.close()
+        bookkeepingDir = os.path.join(dir,"_MTN")
+        if os.path.isdir(bookkeepingDir):
+            return os.path.abspath(dir)
+
         dir = os.path.join("..",dir)
         if not os.path.exists(dir): break
+    return None
+    
+def getDefaultDatabase():
+    workspaceRoot = getWorkspaceRoot()
+    if not workspaceRoot: return None
+    
+    optionsFN = os.path.join(workspaceRoot,"_MTN","options")
+    if os.path.exists(optionsFN):
+        fh = file(optionsFN,"r")
+        try:
+            for stanza in monotone.basic_io_parser(fh.read()):
+                for k,v in stanza:
+                    if k == "database": 
+                        return v[0]
+        finally:
+            fh.close()
     return None
 
 def getDefaultConfigFile():
@@ -70,6 +80,12 @@ def getDefaultConfigFile():
             homeDir = "."
     return os.path.normpath(os.path.join(homeDir, ".mtndumb"))   
     
+def informative(message):
+    print "mtndumb: %s" % message
+    
+def verbose(message):
+    print "mtndumb: %s" % message
+
 def parseOpt():
     
     par = OptionParser(usage=
