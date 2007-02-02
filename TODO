@@ -8,8 +8,7 @@
      - unused method rollback_name in WriteableFS
      - SFTP's put and rollback code
      - local transport's non-existent rollback code
-* write command-line frontend
-* add README
+* finish README
 * should readers do the pause/retry dance?  (makes them very slow when
    files simply don't exist, which is common, to only protect against
    a very small race condition... hrm.)
@@ -22,9 +21,6 @@
    non-atomic rename can share code.
 * make sftp support nicer (support agents, keys, etc. -- see demo.py
    in the real paramiko distribution)
-* packet commands -> automate (combines with next item:)
-* use automate stdio interface (and automate get_revision) to make
-   export much faster
 * better automate-ish way to deal with keys and certs (perhaps certs
    should get their own top-level ids, they already have hashes in the
    db... then we could have commands to list certs, dump info on a
