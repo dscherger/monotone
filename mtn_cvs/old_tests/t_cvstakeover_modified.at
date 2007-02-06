@@ -1,0 +1,58 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([take over a modified CVS checkout and push changes into CVS])
+
+MTN_SETUP
+
+AT_DATA(d_import, [initial import
+])
+AT_DATA(d_add, [file added
+])
+AT_DATA(d_change, [something different
+])
+
+TSHA0=`SHA1(d_import)`
+TSHA1=`SHA1(d_add)`
+TSHA2=`SHA1(d_change)`
+
+# build the cvs repository
+
+CVSROOT=`pwd`/cvs-repository
+AT_CHECK(cvs -q -d $CVSROOT init)
+AT_CHECK(test -e $CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT/history)
+
+# import a test project
+
+AT_CHECK(mkdir cvstemp)
+AT_CHECK(cp d_import cvstemp/A)
+AT_CHECK([cd cvstemp ; cvs -q -d $CVSROOT import -m 'initial import' test vendor_tag initial_import], [], [ignore], [ignore])
+
+# change the repository in various ways
+
+AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
+AT_CHECK(cp d_add test/B)
+AT_CHECK([cd test;cvs -Q add B])
+AT_CHECK([sleep 1;cd test;cvs -Q ci -m 'B added'])
+
+AT_CHECK([cd test;cvs -Q delete -f A])
+AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A removed'])
+
+AT_CHECK(cp d_change test/B)
+
+AT_CHECK([cd test;MTN --root . --branch testbranch cvs_takeover test], [0], [ignore], [ignore])
+
+AT_CHECK(MTN --branch testbranch cvs_push, [0], [ignore], [ignore])
+########
+# check presence of files
+
+AT_CHECK(MTN automate get_file $TSHA2, [], [ignore])
+
+# also check that CVS sees this newly changed file
+
+AT_CHECK(mv test test.old)
+AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
+AT_CHECK(cmp d_change test/B)
+
+AT_CLEANUP
