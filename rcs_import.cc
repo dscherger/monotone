@@ -1889,7 +1889,7 @@ import_cvs_repo(system_path const & cvsroot,
       {
         string tag = cvs.tag_interner.lookup(i->first);
         ui.set_tick_trailer("marking tag " + tag);
-        app.get_project().put_tag(i->second.second, tag, dbw);
+        app.get_project().put_tag(i->second, tag, dbw);
         ++n_tags;
       }
     guard.commit();
@@ -2002,14 +2002,14 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
   string ac_str = cvs.authorclog_interner.lookup(p.authorclog);
   int i = ac_str.find("|||\n");
 
-  string author = utf8(ac_str.substr(0, i));
-  string changelog = utf8(ac_str.substr(i+4));
+  utf8 author = utf8(ac_str.substr(0, i));
+  utf8 changelog = utf8(ac_str.substr(i+4));
 
   app.get_project().put_standard_certs(p.rid,
                                        utf8(branchname),
-                                       changelog),
+                                       changelog,
                                        time_from_time_t(p.time),
-                                       author),
+                                       author,
                                        dbw);
 }
 
