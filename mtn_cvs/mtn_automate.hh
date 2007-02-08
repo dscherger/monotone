@@ -62,6 +62,7 @@ struct mtn_automate : mtn_pipe
   revision_id put_revision(revision_id const& parent, cset const& changes);
   void cert_revision(revision_id const& rid, std::string const& name, std::string const& value);
   std::vector<certificate> get_revision_certs(revision_id const& rid);
+  std::vector<certificate> get_revision_certs(revision_id const& rid, cert_name const& name);
   file_data get_file(file_id const& fid);
   std::vector<revision_id> get_revision_children(revision_id const& rid);
   std::vector<revision_id> get_revision_parents(revision_id const& rid);
@@ -69,6 +70,9 @@ struct mtn_automate : mtn_pipe
   std::vector<revision_id> heads(std::string const& branch);
   
   std::string get_option(std::string const& name);
+
+private:
+  bool is_synchronized(revision_id const& rid, revision_t const& rev, std::string const& domain);
 };
 
 #endif
