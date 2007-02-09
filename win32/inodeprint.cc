@@ -3,6 +3,7 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
+#define WIN32_LEAN_AND_MEAN
 #include <sys/stat.h>
 #include <windows.h>
 

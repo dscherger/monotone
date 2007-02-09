@@ -6,6 +6,7 @@
 #include "sanity.hh"
 
 #include <string>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 struct table_entry
