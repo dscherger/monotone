@@ -125,42 +125,36 @@ make_executable(const char * path)
 pid_t
 process_spawn(const char * const argv[])
 {
-  char * realexe, * filepart;
-  int realexelen;
-  std::string cmd, tmp1, tmp2;
-  std::string::iterator it;
-  STARTUPINFO si;
-  PROCESS_INFORMATION pi;
+  std::vector<char> realexe;
+  realexe.resize(strlen(argv[0]) + 1 + MAXPATH);
 
-  realexelen = strlen(argv[0]) + 1 + MAX_PATH;
-  realexe = new char[realexelen];
-  if (realexe == NULL)
-    return 0;
-  L(FL("searching for exe: %s\n") % argv[0]);
-  if (SearchPath(NULL, argv[0], ".exe", realexelen, realexe, &filepart) == 0)
+  L(FL("searching for exe: %s\n") % realexe);
+  char * filepart;
+  if (SearchPath(NULL, argv[0], ".exe", realexe.size(), &*realexe.begin(), &filepart) == 0)
     {
       os_err_t errnum = GetLastError();
       L(FL("SearchPath failed, err=%s (%d)\n") % os_strerror(errnum) % errnum);
-      delete [] realexe;
       return -1;
     }
 
-  cmd = munge_argv_into_cmdline(argv);
-  L(FL("spawning command: '%s' '%s'\n") % realexe % cmd);
+  std::string cmd = munge_argv_into_cmdline(argv);
+  L(FL("spawning command: '%s' '%s'\n") % &*realexe.begin() % cmd);
+
+  STARTUPINFO si;
+  PROCESS_INFORMATION pi;
 
   memset(&si, 0, sizeof(si));
   si.cb = sizeof(STARTUPINFO);
+
   /* We don't need to set any of the STARTUPINFO members */
-  if (CreateProcess(realexe, (char *) cmd.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)==0)
+  if (CreateProcess(realexe, (char *) cmd.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi) == 0)
     {
       os_err_t errnum = GetLastError();
       L(FL("CreateProcess failed, err=%s (%d)\n") % os_strerror(errnum) % errnum);
-      delete [] realexe;
       return -1;
     }
-  delete [] realexe;
   CloseHandle(pi.hThread);
-  return (pid_t) pi.hProcess;
+  return static_cast<pid_t>(pi.hProcess);
 }
 
 struct redir
@@ -187,10 +181,10 @@ redir::redir(int which, char const * filename)
   sa.bInheritHandle = true;
 
   file = CreateFile(filename,
-                    (which == 0 ? GENERIC_READ:GENERIC_WRITE),
+                    (which == 0 ? GENERIC_READ : GENERIC_WRITE),
                     FILE_SHARE_READ,
                     &sa,
-                    (which == 0 ? OPEN_EXISTING:CREATE_ALWAYS),
+                    (which == 0 ? OPEN_EXISTING : CREATE_ALWAYS),
                     FILE_ATTRIBUTE_NORMAL,
                     NULL);
   switch(which)
