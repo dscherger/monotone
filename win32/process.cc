@@ -5,31 +5,35 @@
 
 #include <string>
 #include <sstream>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "sanity.hh"
 #include "platform.hh"
 
-static std::string munge_inner_argument(const char* arg)
+static std::string
+munge_inner_argument(std::string arg)
 {
   std::string result;
   bool has_space = false;
-  int quotes = 0;
+  unsigned quotes = 0;
   bool space_outside_quote = false;
-  const char* arg_end = arg + std::strlen(arg) - 1;
 
-  for (const char* c = arg; *c; ++c) {
-    switch (*c) {
-    case ' ':
-      has_space = true;
-      if (quotes % 2 == 0)
-        space_outside_quote = true;
-      break;
-    case '"':
-      quotes++;
-      break;
+  for (std::string::const_iterator it = arg.begin();
+       it != arg.end(); ++it)
+    {
+      switch (*it)
+	{
+	case ' ':
+	  has_space = true;
+	  if (quotes % 2 == 0)
+	    space_outside_quote = true;
+	  break;
+	case '"':
+	  ++quotes;
+	  break;
+	}
     }
-  }
 
   I(quotes % 2 == 0);
 
@@ -40,14 +44,17 @@ static std::string munge_inner_argument(const char* arg)
   // copy argument
   if (quotes == 0)
     result += arg;
-  else {
-    // escape inner quotes
-    for (const char* c = arg; *c; ++c) {
-      if (*c == '"' && c != arg && '"' && c != arg_end)
-        result += '\\';
-      result += *c;
+  else
+    {
+      // escape inner quotes
+      for (std::string::const_iterator it = arg.begin();
+	   it != arg.end(); ++it)
+	{
+	  if (*it == '"' && it != arg.begin() && it != arg.end() - 1)
+	    result += '\\';
+	  result += *it;
+	}
     }
-  }
 
   // quote end of argument
   if (has_space && space_outside_quote)
@@ -56,76 +63,85 @@ static std::string munge_inner_argument(const char* arg)
   return result;
 }
 
-static std::string munge_argument(const char* arg)
+static std::string
+munge_argument(std::string arg)
 {
-  std::string result;
-
   // handle DOS-style '/file:c:\path to\file.txt' by splitting at the colon
   // and handling the last part as a standard argument, then reassembling
   // for the cmdline.
-  if (arg[0] == '/') {
-    const char* dos_cmd = std::strchr(arg, ':');
-    if (dos_cmd != 0) {
-      result += std::string(arg, dos_cmd - arg + 1);
-      result += munge_inner_argument(dos_cmd + 1);
-    } else
-      result += arg;
-    return result;
-  }
-
-  if (*arg == 0)
+  if (arg.empty())
     return "\"\"";
+  else if (arg[0] == '/')
+    {
+      std::string result;
+      std::string::size_type dos_cmd = arg.find(':');
+      if (dos_cmd != std::string::size_type)
+	{
+	  result += arg.substr(0, dos_cmd + 1);
+	  result += munge_inner_argument(std::string(dos_cmd + 1));
+	}
+      else
+	result += arg;
+      return result;
+    }
   else
     return munge_inner_argument(arg);
 }
 
-std::string munge_argv_into_cmdline(const char* const argv[])
+std::string
+munge_argv_into_cmdline(const char * const argv[])
 {
   std::string cmdline;
 
-  for (int i = 0; argv[i]; ++i) {
-    cmdline += munge_argument(argv[i]);
-    cmdline += " ";
-  }
+  for (int i = 0; argv[i]; ++i)
+    {
+      cmdline += munge_argument(std::string(argv[i]));
+      cmdline += " ";
+    }
 
   return cmdline;
 }
 
-int existsonpath(const char *exe)
+int
+existsonpath(const char * exe)
 {
   if (SearchPath(NULL, exe, ".exe", 0, NULL, NULL)==0)
     return -1;
   return 0;
 }
 
-bool is_executable(const char *path)
+bool
+is_executable(const char * path)
 {
   return false; /* Basically meaningless on win32 */
 }
 
-int make_executable(const char *path)
+int
+make_executable(const char * path)
 {
   return 0; /* Basically meaningless on win32 */
 }
 
-pid_t process_spawn(const char * const argv[])
+pid_t
+process_spawn(const char * const argv[])
 {
-  char *realexe,*filepart;
+  char * realexe, * filepart;
   int realexelen;
-  std::string cmd,tmp1,tmp2;
+  std::string cmd, tmp1, tmp2;
   std::string::iterator it;
   STARTUPINFO si;
   PROCESS_INFORMATION pi;
 
-  realexelen = strlen(argv[0])+1+MAX_PATH;
-  realexe = (char*)malloc(realexelen);
-  if (realexe==NULL) return 0;
+  realexelen = strlen(argv[0]) + 1 + MAX_PATH;
+  realexe = new char[realexelen];
+  if (realexe == NULL)
+    return 0;
   L(FL("searching for exe: %s\n") % argv[0]);
-  if (SearchPath(NULL, argv[0], ".exe", realexelen, realexe, &filepart)==0)
+  if (SearchPath(NULL, argv[0], ".exe", realexelen, realexe, &filepart) == 0)
     {
       os_err_t errnum = GetLastError();
       L(FL("SearchPath failed, err=%s (%d)\n") % os_strerror(errnum) % errnum);
-      free(realexe);
+      delete [] realexe;
       return -1;
     }
 
@@ -135,16 +151,16 @@ pid_t process_spawn(const char * const argv[])
   memset(&si, 0, sizeof(si));
   si.cb = sizeof(STARTUPINFO);
   /* We don't need to set any of the STARTUPINFO members */
-  if (CreateProcess(realexe, (char*)cmd.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)==0)
+  if (CreateProcess(realexe, (char *) cmd.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)==0)
     {
       os_err_t errnum = GetLastError();
       L(FL("CreateProcess failed, err=%s (%d)\n") % os_strerror(errnum) % errnum);
-      free(realexe);
+      delete [] realexe;
       return -1;
     }
-  free(realexe);
+  delete [] realexe;
   CloseHandle(pi.hThread);
-  return (pid_t)pi.hProcess;
+  return (pid_t) pi.hProcess;
 }
 
 struct redir
@@ -155,8 +171,9 @@ struct redir
   redir(int which, char const * file);
   ~redir();
 };
+
 redir::redir(int which, char const * filename)
- : what(which)
+  : what(which)
 {
   if (!filename || *filename == '\0')
     {
@@ -168,52 +185,55 @@ redir::redir(int which, char const * filename)
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
   sa.lpSecurityDescriptor = 0;
   sa.bInheritHandle = true;
-  
+
   file = CreateFile(filename,
-                    (which==0?GENERIC_READ:GENERIC_WRITE),
+                    (which == 0 ? GENERIC_READ:GENERIC_WRITE),
                     FILE_SHARE_READ,
                     &sa,
-                    (which==0?OPEN_EXISTING:CREATE_ALWAYS),
+                    (which == 0 ? OPEN_EXISTING:CREATE_ALWAYS),
                     FILE_ATTRIBUTE_NORMAL,
                     NULL);
   switch(which)
-  {
-  case 0:
-    saved = GetStdHandle(STD_INPUT_HANDLE);
-    SetStdHandle(STD_INPUT_HANDLE, file);
-    break;
-  case 1:
-    saved = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetStdHandle(STD_OUTPUT_HANDLE, file);
-    break;
-  case 2:
-    saved = GetStdHandle(STD_ERROR_HANDLE);
-    SetStdHandle(STD_ERROR_HANDLE, file);
-    break;
-  }
+    {
+    case 0:
+      saved = GetStdHandle(STD_INPUT_HANDLE);
+      SetStdHandle(STD_INPUT_HANDLE, file);
+      break;
+    case 1:
+      saved = GetStdHandle(STD_OUTPUT_HANDLE);
+      SetStdHandle(STD_OUTPUT_HANDLE, file);
+      break;
+    case 2:
+      saved = GetStdHandle(STD_ERROR_HANDLE);
+      SetStdHandle(STD_ERROR_HANDLE, file);
+      break;
+    }
 }
+
 redir::~redir()
 {
   switch(what)
-  {
-  case 0:
-    CloseHandle(GetStdHandle(STD_INPUT_HANDLE));
-    SetStdHandle(STD_INPUT_HANDLE, saved);
-    break;
-  case 1:
-    CloseHandle(GetStdHandle(STD_OUTPUT_HANDLE));
-    SetStdHandle(STD_OUTPUT_HANDLE, saved);
-    break;
-  case 2:
-    CloseHandle(GetStdHandle(STD_ERROR_HANDLE));
-    SetStdHandle(STD_ERROR_HANDLE, saved);
-    break;
-  }
+    {
+    case 0:
+      CloseHandle(GetStdHandle(STD_INPUT_HANDLE));
+      SetStdHandle(STD_INPUT_HANDLE, saved);
+      break;
+    case 1:
+      CloseHandle(GetStdHandle(STD_OUTPUT_HANDLE));
+      SetStdHandle(STD_OUTPUT_HANDLE, saved);
+      break;
+    case 2:
+      CloseHandle(GetStdHandle(STD_ERROR_HANDLE));
+      SetStdHandle(STD_ERROR_HANDLE, saved);
+      break;
+    }
 }
-pid_t process_spawn_redirected(char const * in,
-                               char const * out,
-                               char const * err,
-                               char const * const argv[])
+
+pid_t
+process_spawn_redirected(char const * in,
+			 char const * out,
+			 char const * err,
+			 char const * const argv[])
 {
   try
     {
@@ -228,9 +248,10 @@ pid_t process_spawn_redirected(char const * in,
     }
 }
 
-int process_wait(pid_t pid, int *res, int timeout)
+int
+process_wait(pid_t pid, int * res, int timeout)
 {
-  HANDLE hProcess = (HANDLE)pid;
+  HANDLE hProcess = static_cast<DWORD>(pid);
   DWORD time = INFINITE;
   if (timeout != -1)
     time = timeout * 1000;
@@ -242,27 +263,30 @@ int process_wait(pid_t pid, int *res, int timeout)
       CloseHandle(hProcess); /* May well not work, but won't harm */
       return -1;
     }
-  if (GetExitCodeProcess(hProcess, (DWORD*)res)==0)
+  if (GetExitCodeProcess(hProcess, static_cast<DWORD *>(res)) == 0)
     *res = -1;
   CloseHandle(hProcess); /* Let the process die */
   return 0;
 }
 
-int process_kill(pid_t pid, int signal)
+int
+process_kill(pid_t pid, int signal)
 {
-  HANDLE hProcess = (HANDLE)pid;
-  if (TerminateProcess(hProcess, 1)==0)
+  HANDLE hProcess = static_cast<HANDLE>(pid);
+  if (TerminateProcess(hProcess, 1) == 0)
     return -1;
   return 0;
 }
 
-int process_sleep(unsigned int seconds)
+int
+process_sleep(unsigned int seconds)
 {
-  Sleep(seconds*1000);
+  Sleep(seconds * 1000);
   return 0;
 }
 
-pid_t get_process_id()
+pid_t
+get_process_id()
 {
   return GetCurrentProcessId();
 }

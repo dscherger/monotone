@@ -1,5 +1,9 @@
 2007-02-08  Matthew Gregan  <kinetik@orcon.net.nz>
 
+	* win32/process.cc: Rework munge_argv_into_cmdline and its helpers
+	to use std::string rather than char *.  Also add
+	WIN32_LEAN_AND_MEAN and make the rest of the code GNU-style.
+
 	* win32/{get_system_flavour.cc, inodeprint.cc, read_password.cc,
 	terminal.cc}: More Win32_LEAN_AND_MEAN.
 
