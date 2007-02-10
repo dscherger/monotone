@@ -85,7 +85,6 @@ typedef enum
 } event_type;
 
 struct cvs_history;
-struct cvs_branch;
 
 struct cvs_event_digest
 {
@@ -220,11 +219,12 @@ cvs_event_branch
   : public cvs_event
 {
 public:
-  shared_ptr<struct cvs_branch> branch;
+  cvs_branchname branchname;
 
-  cvs_event_branch(const cvs_event_ptr dep, shared_ptr<struct cvs_branch> b)
+  cvs_event_branch(const cvs_event_ptr dep,
+                   const cvs_branchname bn)
     : cvs_event(dep),
-      branch(b)
+      branchname(bn)
     { };
 
   virtual cvs_event_digest get_digest(void) const;
@@ -291,7 +291,6 @@ public:
 
   blob_event_iter & end() const
     {
-      // blob_event_iter i = events.end();
       return *(new blob_event_iter(events.end()));
     }
 
@@ -309,25 +308,47 @@ public:
 typedef vector<cvs_blob>::size_type cvs_blob_index;
 typedef multimap<cvs_event_digest, cvs_blob_index>::iterator blob_index_iterator;
 
-struct
-cvs_branch
+cvs_event_digest
+cvs_event_branch::get_digest(void) const
 {
-  bool has_a_commit;
-  revision_id parent_rid;
-  cvs_branchname branchname;
-  shared_ptr< cvs_branch > parent_branch;
+  return cvs_event_digest(ET_BRANCH, branchname);
+};
 
-  // all the blobs
+struct
+cvs_history
+{
+  interner<unsigned long> branchname_interner;
+  interner<unsigned long> authorclog_interner;
+  interner<unsigned long> mtn_version_interner;
+  interner<unsigned long> rcs_version_interner;
+  interner<unsigned long> path_interner;
+  interner<unsigned long> tag_interner;
+
+  // all the blobs of the whole repository
   vector<cvs_blob> blobs;
 
-  // to lookup blobs by their event_digest
+  // all the blobs by their event_digest
   multimap<cvs_event_digest, cvs_blob_index> blob_index;
 
-  cvs_branch(cvs_branchname name)
-    : has_a_commit(false),
-      branchname(name)
-  {
-  }
+  // assume an RCS file has foo:X.Y.0.N in it, then
+  // this map contains entries of the form
+  // X.Y.N.1 -> foo
+  // this map is cleared for every RCS file.
+  map<string, string> branch_first_entries;
+
+  file_path curr_file;
+  cvs_path curr_file_interned;
+
+  string base_branch;
+
+  ticker n_versions;
+  ticker n_tree_branches;
+
+  cvs_history();
+  void set_filename(string const & file,
+                    file_id const & ident);
+
+  void index_branchpoint_symbols(rcs_file const & r);
 
   blob_index_iterator add_blob(const cvs_event_digest d)
   {
@@ -357,86 +378,12 @@ cvs_branch
   cvs_blob_index append_event(cvs_event_ptr c) 
   {
     if (c->get_digest().is_commit())
-      {
-        I(c->time != 0);
-        has_a_commit = true;
-      }
+      I(c->time != 0);
 
     blob_index_iterator b = get_blob(c->get_digest(), true);
     blobs[b->second].push_back(c);
     return b->second;
   }
-
-  bool is_child_of(shared_ptr<cvs_branch> br)
-  {
-    shared_ptr<cvs_branch> parent = parent_branch;
-
-    while (parent != NULL)
-      {
-        if (br == parent) return true;
-        parent = parent->parent_branch;
-      }
-
-    return false;
-  }
-};
-
-cvs_event_digest
-cvs_event_branch::get_digest(void) const
-{
-  return cvs_event_digest(ET_BRANCH, branch->branchname);
-};
-
-struct
-cvs_history
-{
-  interner<unsigned long> branchname_interner;
-  interner<unsigned long> authorclog_interner;
-  interner<unsigned long> mtn_version_interner;
-  interner<unsigned long> rcs_version_interner;
-  interner<unsigned long> path_interner;
-  interner<unsigned long> tag_interner;
-
-  // assume an RCS file has foo:X.Y.0.N in it, then
-  // this map contains entries of the form
-  // X.Y.N.1 -> foo
-  // this map is cleared for every RCS file.
-  map<string, string> branch_first_entries;
-
-  // branch name -> branch
-  map<cvs_branchname, shared_ptr<cvs_branch> > branches;
-  shared_ptr<cvs_branch> trunk;
-
-  // store a list of possible parents for every symbol
-  map< cvs_event_digest, set< shared_ptr< cvs_branch > > > symbol_parents;
-
-  // stack of branches we're injecting states into
-  stack< shared_ptr<cvs_branch> > stk;
-  stack< cvs_branchname > bstk;
-
-  // tag -> time, revision
-  //
-  // used to resolve the *last* revision which has a given tag
-  // applied; this is the revision which wins the tag.
-  map<cvs_tag, revision_id > resolved_tags;
-
-  file_path curr_file;
-  cvs_path curr_file_interned;
-
-  string base_branch;
-
-  ticker n_versions;
-  ticker n_tree_branches;
-
-  cvs_history();
-  void set_filename(string const & file,
-                    file_id const & ident);
-
-  void index_branchpoint_symbols(rcs_file const & r);
-
-  void add_symbol_parent(const cvs_event_digest d);
-  void push_branch(string const & branch_name, bool private_branch);
-  void pop_branch();
 };
 
 
@@ -697,7 +644,7 @@ parse_time(const char * dp)
 }
 
 static void
-process_branch(string const & begin_version,
+process_rcs_branch(string const & begin_version,
                vector< piece > const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
@@ -742,7 +689,7 @@ process_branch(string const & begin_version,
       else
         ac_str += deltatext->second->log;
 
-      L(FL("authorclog: %s") % ac_str);
+      L(FL("author and changelog: %s") % ac_str);
       cvs_authorclog ac = cvs.authorclog_interner.intern(ac_str);
 
       cvs_mtn_version mv = cvs.mtn_version_interner.intern(
@@ -756,8 +703,8 @@ process_branch(string const & begin_version,
                          commit_time, mv, rv,
                          ac, alive)));
 
-      // add the commit to the branch
-      cvs.stk.top()->append_event(curr_commit);
+      // add the commit to the cvs history
+      cvs.append_event(curr_commit);
       ++cvs.n_versions;
 
       // make the last commit depend on the current one (which
@@ -780,8 +727,7 @@ process_branch(string const & begin_version,
                   shared_ptr<cvs_event_tag>(
                     new cvs_event_tag(curr_commit, tag)));
 
-              cvs_blob_index bi = cvs.stk.top()->append_event(event);
-              cvs.add_symbol_parent(event->get_digest());
+              cvs_blob_index bi = cvs.append_event(event);
 
               // append to the last_commit deps
               if (last_commit != NULL)
@@ -808,22 +754,24 @@ process_branch(string const & begin_version,
       for(vector<string>::const_iterator i = curr_delta->branches.begin();
           i != curr_delta->branches.end(); ++i)
         {
-          string branch;
+          string branchname;
           data branch_data;
           hexenc<id> branch_id;
           vector< piece > branch_lines;
           bool priv = false;
-          map<string, string>::const_iterator be = cvs.branch_first_entries.find(*i);
+
+          map<string, string>::const_iterator be =
+            cvs.branch_first_entries.find(*i);
 
           if (be != cvs.branch_first_entries.end())
-            branch = be->second;
+              branchname = be->second;
           else
             priv = true;
 
           if (!priv)
             {
-              I(branch.length() > 0);
-              L(FL("following RCS branch %s = '%s'") % (*i) % branch);
+              I(branchname.length() > 0);
+              L(FL("following RCS branch %s = '%s'") % (*i) % branchname);
             }
           else
             {
@@ -840,39 +788,35 @@ process_branch(string const & begin_version,
     		                     branch_lines, branch_data, branch_id, db);
             }
 
-          cvs.push_branch(branch, priv);
-
-          process_branch(*i, branch_lines, branch_data,
+          // recursively process child branches
+          process_rcs_branch(*i, branch_lines, branch_data,
                          branch_id, r, db, cvs);
 
-          shared_ptr<struct cvs_branch> sub_branch(cvs.stk.top());
-
-          cvs.pop_branch();
           if (!priv)
-            L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
+            L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
             L(FL("finished private RCS branch %s") % (*i));
 
           cvs_event_ptr branch_event =
             boost::static_pointer_cast<cvs_event, cvs_event_branch>(
               shared_ptr<cvs_event_branch>(
-                new cvs_event_branch(curr_commit, sub_branch)));
+                new cvs_event_branch(curr_commit, 
+                  cvs.branchname_interner.intern(branchname))));
 
+          // FIXME: is this still needed here?
           // make sure curr_commit exists in the blob
-          cvs.stk.top()->get_blob(curr_commit->get_digest(), false);
+          cvs.get_blob(curr_commit->get_digest(), false);
 
-          // then append it to the parent branch
-          cvs_blob_index bi = cvs.stk.top()->append_event(branch_event);
-          cvs.add_symbol_parent(branch_event->get_digest());
+          // add the blob to the bucket
+          cvs_blob_index bi = cvs.append_event(branch_event);
 
-          L(FL("added branch event for file %s from branch %s into branch %s")
+          L(FL("added branch event for file %s into branch %s")
             % cvs.path_interner.lookup(curr_commit->path)
-            % cvs.bstk.top()
-            % branch);
+            % branchname);
 
           // append to the last_commit deps
-          if (last_commit != NULL)
-            last_commit->dependencies.push_back(branch_event);
+          I(last_commit != NULL);
+          last_commit->dependencies.push_back(branch_event);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -919,7 +863,7 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
                                   head_lines);
-    process_branch(r.admin.head, head_lines, dat, id, r, db, cvs);
+    process_rcs_branch(r.admin.head, head_lines, dat, id, r, db, cvs);
     global_pieces.reset();
   }
 
@@ -1084,65 +1028,6 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
     }
 }
 
-void
-cvs_history::add_symbol_parent(const cvs_event_digest d)
-{
-  if (symbol_parents.find(d) == symbol_parents.end())
-    symbol_parents.insert(make_pair(d, set< shared_ptr < cvs_branch > > ()));
-
-  map< cvs_event_digest,
-       set< shared_ptr< cvs_branch > > >::iterator parent_list_iter =
-          symbol_parents.find(d);
-
-  I(parent_list_iter != symbol_parents.end());
-
-  set< shared_ptr< cvs_branch > > & parent_list = parent_list_iter->second;
-
-  if (parent_list.find(stk.top()) == parent_list.end())
-    parent_list.insert(stk.top());
-}
-
-
-void
-cvs_history::push_branch(string const & branch_name, bool private_branch)
-{
-  shared_ptr<cvs_branch> branch;
-
-  string bname = base_branch + "." + branch_name;
-  I(stk.size() > 0);
-
-  // Private branches will be split up later. The semicolon is
-  // hopefully an illegal character for CVS branch names
-  if (private_branch)
-    bname = ";NONAME";
-
-  cvs_branchname bn = branchname_interner.intern(bname);
-
-  map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator b =
-    branches.find(bn);
-
-  if (b == branches.end())
-    {
-      branch = shared_ptr<cvs_branch>(new cvs_branch(bn));
-      branches.insert(make_pair(bn, branch));
-      ++n_tree_branches;
-    }
-  else
-    branch = b->second;
-
-  stk.push(branch);
-  bstk.push(bn);
-}
-
-void
-cvs_history::pop_branch()
-{
-  I(stk.size() > 1);
-  stk.pop();
-  bstk.pop();
-}
-
-
 class
 cvs_tree_walker
   : public tree_walker
@@ -1181,7 +1066,6 @@ cluster_consumer
   cvs_history & cvs;
   app_state & app;
   string const & branchname;
-  cvs_branch const & branch;
   set<split_path> created_dirs;
   map<cvs_path, cvs_mtn_version> live_files;
   ticker & n_revisions;
@@ -1208,7 +1092,6 @@ cluster_consumer
   cluster_consumer(cvs_history & cvs,
                    app_state & app,
                    string const & branchname,
-                   cvs_branch const & branch,
                    ticker & n_revs);
 
   void consume_blob(const cvs_blob & blob);
@@ -1223,12 +1106,12 @@ struct blob_splitter
   : public boost::dfs_visitor<>
 {
 protected:
-  shared_ptr< cvs_branch > branch;
+  cvs_history & cvs;
   vector< MyEdge > & back_edges;
 
 public:
-  blob_splitter(shared_ptr< cvs_branch > b, vector< MyEdge > & be)
-    : branch(b),
+  blob_splitter(cvs_history & c, vector< MyEdge > & be)
+    : cvs(c),
       back_edges(be)
     { }
 
@@ -1250,21 +1133,20 @@ class revision_iterator
 {
 private:
 	cvs_blob_index current_blob;
-  shared_ptr< cluster_consumer > cons;
-  shared_ptr< cvs_branch > branch;
+  cvs_history & cvs;
+  cluster_consumer & cons;
 
 public:
-  revision_iterator(shared_ptr< cluster_consumer > const c,
-                    shared_ptr< cvs_branch > const b)
+  revision_iterator(cvs_history & h, cluster_consumer & c)
     : current_blob(0),
-      cons(c),
-      branch(b)
+      cvs(h),
+      cons(c)
     {}
 
   revision_iterator(const revision_iterator & ri)
     : current_blob(ri.current_blob),
-      cons(ri.cons),
-      branch(ri.branch)
+      cvs(ri.cvs),
+      cons(ri.cons)
     {}
 
 	revision_iterator & operator * (void)
@@ -1275,7 +1157,7 @@ public:
   revision_iterator & operator = (cvs_blob_index current_blob)
     {
       L(FL("next blob number from toposort: %d") % current_blob);
-      cons->consume_blob(branch->blobs[current_blob]);
+      cons.consume_blob(cvs.blobs[current_blob]);
       return *this;
     }
 
@@ -1295,11 +1177,11 @@ typedef boost::adjacency_list< boost::vecS, boost::vecS,
                                boost::bidirectionalS > Graph;
 
 void
-add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
+add_blob_dependency_edges(cvs_history & cvs,
                           const cvs_blob_index i,
                           Graph & g)
 {
-  const cvs_blob & blob = branch->blobs[i];
+  const cvs_blob & blob = cvs.blobs[i];
 
   for(blob_event_iter event = blob.begin(); event != blob.end(); ++event)
     {
@@ -1307,16 +1189,16 @@ add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
           dep != (*event)->dependencies.end(); ++dep)
         {
           blob_index_iterator k =
-            branch->get_blob((*dep)->get_digest(), false);
+            cvs.get_blob((*dep)->get_digest(), false);
 
-          for ( ; (k->second < branch->blobs.size()) &&
-                  (branch->blobs[k->second].get_digest() == 
+          for ( ; (k->second < cvs.blobs.size()) &&
+                  (cvs.blobs[k->second].get_digest() == 
                                     (*dep)->get_digest()); ++k)
             {
               bool found = false;
 
-              for (dependency_iter di = branch->blobs[k->second].get_events().begin();
-                   di != branch->blobs[k->second].get_events().end(); ++ di)
+              for (dependency_iter di = cvs.blobs[k->second].get_events().begin();
+                   di != cvs.blobs[k->second].get_events().end(); ++ di)
                 {
                   if (*di == *dep)
                     found = true;
@@ -1333,17 +1215,18 @@ add_blob_dependency_edges(shared_ptr<cvs_branch> const & branch,
 }
 
 void
-split_blobs_at(shared_ptr<cvs_branch> const & branch,
+split_blobs_at(cvs_history & cvs,
                const Edge & e, Graph & g)
 {
   L(FL("splitting at edge: %d -> %d") % e.first % e.second);
 
-  cvs_event_digest target_blob_digest(branch->blobs[e.second].get_digest());
+  cvs_event_digest target_blob_digest(cvs.blobs[e.second].get_digest());
 
+  // FIXME:
   // we can only split commit events, not branches or tags
   I(target_blob_digest.is_commit());
 
-  vector< cvs_event_ptr > blob_events(branch->blobs[e.second].get_events());
+  vector< cvs_event_ptr > blob_events(cvs.blobs[e.second].get_events());
 
   // sort the blob events by timestamp
   sort(blob_events.begin(), blob_events.end());
@@ -1372,19 +1255,19 @@ split_blobs_at(shared_ptr<cvs_branch> const & branch,
   L(FL("max. time difference is: %d") % max_diff);
 
   // add a blob
-  cvs_event_digest d = branch->blobs[e.second].get_digest();
-  cvs_blob_index new_blob = branch->add_blob(d)->second;
+  cvs_event_digest d = cvs.blobs[e.second].get_digest();
+  cvs_blob_index new_blob = cvs.add_blob(d)->second;
 
   // reassign all events and split into the two blobs
-  branch->blobs[e.second].get_events().clear();
+  cvs.blobs[e.second].get_events().clear();
   I(!blob_events.empty());
-  I(branch->blobs[e.second].empty());
+  I(cvs.blobs[e.second].empty());
 
   for (i = blob_events.begin(); i != blob_events.end(); ++i)
     if ((*i)->time >= (*max_at)->time)
-      branch->blobs[new_blob].push_back(*i);
+      cvs.blobs[new_blob].push_back(*i);
     else
-      branch->blobs[e.second].push_back(*i);
+      cvs.blobs[e.second].push_back(*i);
 
   {
     // in edges, blobs which depend on this one blob we should split
@@ -1414,7 +1297,7 @@ split_blobs_at(shared_ptr<cvs_branch> const & branch,
     for (vector< cvs_blob_index >::const_iterator ity = in_deps_from.begin();
          ity != in_deps_from.end(); ++ity)
       {
-        cvs_blob & other_blob = branch->blobs[*ity];
+        cvs_blob & other_blob = cvs.blobs[*ity];
 
         for (vector< cvs_event_ptr >::const_iterator j = 
               other_blob.get_events().begin();
@@ -1456,8 +1339,8 @@ split_blobs_at(shared_ptr<cvs_branch> const & branch,
         remove_edge(ity->m_source, ity->m_target, const_cast<Graph &>(g));
       }
 
-    add_blob_dependency_edges(branch, e.second, const_cast<Graph &>(g));
-    add_blob_dependency_edges(branch, new_blob, const_cast<Graph &>(g));
+    add_blob_dependency_edges(cvs, e.second, const_cast<Graph &>(g));
+    add_blob_dependency_edges(cvs, new_blob, const_cast<Graph &>(g));
   }
 }
 
@@ -1470,21 +1353,20 @@ void
 resolve_blob_dependencies(cvs_history &cvs,
                           app_state & app,
                           string const & branchname,
-                          shared_ptr<cvs_branch> const & branch,
                           ticker & n_revs)
 {
-  L(FL("branch %s currently has %d blobs.") % branchname % branch->blobs.size());
+  L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
-  Graph g(branch->blobs.size());
+  Graph g(cvs.blobs.size());
 
   // fill the graph with all blob dependencies as edges between
   // the blobs (vertices).
-  for (cvs_blob_index i = 0; i < branch->blobs.size(); ++i)
-    add_blob_dependency_edges(branch, i, g);
+  for (cvs_blob_index i = 0; i < cvs.blobs.size(); ++i)
+    add_blob_dependency_edges(cvs, i, g);
 
   // check for cycles
   vector< Edge > back_edges;
-	blob_splitter< Edge > vis(branch, back_edges);
+	blob_splitter< Edge > vis(cvs, back_edges);
 
   do
   {
@@ -1493,306 +1375,21 @@ resolve_blob_dependencies(cvs_history &cvs,
 
     // Just split the first blob which had a back edge
     if (back_edges.begin() != back_edges.end())
-        split_blobs_at(branch, *back_edges.begin(), g);
+        split_blobs_at(cvs, *back_edges.begin(), g);
 
   } while (!back_edges.empty());
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
-  shared_ptr<cluster_consumer> cons = shared_ptr<cluster_consumer>(
-    new cluster_consumer(cvs, app, branchname, *branch, n_revs));
-  revision_iterator ri(cons, branch);
+  cluster_consumer cons(cvs, app, branchname, n_revs);
+  revision_iterator ri(cvs, cons);
 
   L(FL("starting toposort the blobs of branch %s") % branchname);
   topological_sort(g, ri);
 
   // finally store the revisions
   // (ms) why is this an extra step? Is it faster?
-  cons->store_revisions();
-}
-
-void
-move_symbol_events(cvs_history & cvs, const cvs_event_digest d,
-                   shared_ptr< cvs_branch > from_branch,
-                   shared_ptr< cvs_branch > to_branch)
-{
-  L(FL("      moving symbol from branch %s to branch %s")
-    % cvs.branchname_interner.lookup(from_branch->branchname)
-    % cvs.branchname_interner.lookup(to_branch->branchname));
-
-  blob_index_iterator bi;
-
-  bi = from_branch->get_blob(d, false);
-  cvs_blob & from_blob = from_branch->blobs[bi->second];
-
-  bi = to_branch->get_blob(d, false);
-  cvs_blob & to_blob = to_branch->blobs[bi->second];
-
-  vector< cvs_event_ptr > & events = from_blob.get_events();
-
-  for (blob_event_iter i = events.begin(); i != events.end(); ++i)
-    {
-      (*i)->dependencies.clear();
-      to_blob.push_back(*i);
-    }
-
-  from_blob.clear();
-}
-
-void
-mark_branch_ancestors(cvs_history & cvs)
-{
-  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::iterator i;
-  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
-    {
-      I(i->second.size() > 0);
-      cvs_event_digest d = i->first;
-      I(!d.is_commit());
-
-      I(i->second.size() >= 1);
-      if (i->second.size() == 1)
-        {
-          shared_ptr< cvs_branch > branch = *i->second.begin();
-          blob_index_iterator bi = branch->get_blob(d, false);
-          cvs_blob & blob = branch->blobs[bi->second];
-
-          shared_ptr< cvs_event > ev = *(blob.get_events().begin());
-
-          if (d.is_branch())
-            {
-              shared_ptr<cvs_event_branch> be =
-                boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
-
-              be->branch->parent_branch = branch;
-            }
-        }
-    }
-}
-
-int
-move_symbols(cvs_history & cvs)
-{
-  int symbols_resolved = 0;
-
-  typedef vector< pair< cvs_event_digest, shared_ptr< cvs_branch > > > remp;
-  remp removable_parents;
-
-  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::iterator i;
-  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
-    {
-      cvs_event_digest d = i->first;
-      I(!d.is_commit());
-
-      if (i->second.size() > 1)
-        {
-          blob_index_iterator bi = (*i->second.begin())->get_blob(d, false);
-          cvs_blob & blob = (*i->second.begin())->blobs[bi->second];
-          shared_ptr< cvs_event > ev = *(blob.get_events().begin());
-
-          if (d.is_branch())
-            {
-              shared_ptr<cvs_event_branch> ceb =
-                  boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
-
-              L(FL("symbol: branch to %s") % cvs.branchname_interner.lookup(ceb->branch->branchname));
-            }
-          else if (d.is_tag())
-            {
-              shared_ptr<cvs_event_tag> cet =
-                  boost::static_pointer_cast<cvs_event_tag, cvs_event>(ev);
-
-              L(FL("symbol: tag: %s") % cvs.tag_interner.lookup(cet->tag));
-            }
-          else
-            {
-              I(false);
-            }
-
-          L(FL("   trying to resolve symbol for event digest %d in:") % d);
-
-          for (set< shared_ptr< cvs_branch > >::iterator j =
-              i->second.begin(); j != i->second.end(); ++j)
-            {
-              L(FL("      branch %s")
-                % cvs.branchname_interner.lookup((*j)->branchname));
-            }
-
-
-          for (set< shared_ptr< cvs_branch > >::iterator j =
-              i->second.begin(); j != i->second.end(); ++j)
-            {
-              blob_index_iterator bi = (*j)->get_blob(d, false);
-              cvs_blob & blob = (*j)->blobs[bi->second];
-
-              shared_ptr< cvs_event > ev = *(blob.get_events().begin());
-
-              set< shared_ptr< cvs_branch > >::iterator k = j;
-              for (++k; k != i->second.end(); ++k)
-                {
-                  if ((*j)->is_child_of(*k))
-                    {
-                      L(FL("   branch %s is a child of branch %s")
-                        % cvs.branchname_interner.lookup((*j)->branchname)
-                        % cvs.branchname_interner.lookup((*k)->branchname));
-
-                      move_symbol_events(cvs, d, *k, *j);
-                      removable_parents.push_back(make_pair(d, *k));
-                    }
-                  else if ((*k)->is_child_of(*j))
-                    {
-                      L(FL("   branch %s is a child of branch %s")
-                        % cvs.branchname_interner.lookup((*k)->branchname)
-                        % cvs.branchname_interner.lookup((*j)->branchname));
-
-                      move_symbol_events(cvs, d, *j, *k);
-                      removable_parents.push_back(make_pair(d, *j));
-                    }
-                }
-            }
-        }
-    }
-
-  // remove impossible parents and perhaps
-  // assign the remaining, unique parent of the symbol.
-  for (remp::const_iterator w = removable_parents.begin();
-       w != removable_parents.end(); ++w)
-    {
-      cvs_event_digest d = w->first;
-      shared_ptr<cvs_branch> parent_branch = w->second;
-
-      cvs.symbol_parents[d].erase(parent_branch);
-
-      if (cvs.symbol_parents[d].size() == 1)
-        {
-          parent_branch = *cvs.symbol_parents[d].begin();
-
-          blob_index_iterator bi = parent_branch->get_blob(d, false);
-          cvs_blob & blob = parent_branch->blobs[bi->second];
-          shared_ptr< cvs_event > ev = *(blob.get_events().begin());
-
-          if (d.is_branch())
-            {
-              shared_ptr<cvs_event_branch> ceb =
-                  boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
-
-              L(FL("   resolved symbol: branch to %s") % cvs.branchname_interner.lookup(ceb->branch->branchname));
-              ceb->branch->parent_branch = parent_branch;
-            }
-          else if (d.is_tag())
-            {
-              shared_ptr<cvs_event_tag> cet =
-                  boost::static_pointer_cast<cvs_event_tag, cvs_event>(ev);
-
-              L(FL("   resolved symbol: tag: %s") % cvs.tag_interner.lookup(cet->tag));
-            }
-          else
-            {
-              I(false);
-            }
-
-          symbols_resolved++;
-        }
-    }
-
-  return symbols_resolved;
-}
-
-int
-count_unresolved_symbols(cvs_history & cvs)
-{
-  int counter = 0;
-  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::iterator i;
-  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
-    {
-      I(i->second.size() > 0);
-      cvs_event_digest d = i->first;
-      I(!d.is_commit());
-
-      I(i->second.size() >= 1);
-      if (i->second.size() > 1)
-        counter++;
-    }
-  return counter;
-}
-
-void
-dump_unresolved_symbols(cvs_history & cvs)
-{
-  int symbols_resolved = 0;
-
-  L(FL("\n\n**********************"));
-
-  map< cvs_event_digest, set< shared_ptr< cvs_branch > > >::iterator i;
-  for (i = cvs.symbol_parents.begin(); i != cvs.symbol_parents.end(); ++i)
-    {
-      cvs_event_digest d = i->first;
-
-      if (i->second.size() > 1)
-        {
-          blob_index_iterator bi = (*i->second.begin())->get_blob(d, false);
-          cvs_blob & blob = (*i->second.begin())->blobs[bi->second];
-          shared_ptr< cvs_event > ev = *(blob.get_events().begin());
-
-          if (d.is_branch())
-            {
-              shared_ptr<cvs_event_branch> ceb =
-                  boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
-
-              W(F("  unresolved symbol: branch to %s") % cvs.branchname_interner.lookup(ceb->branch->branchname));
-            }
-          else if (d.is_tag())
-            {
-              shared_ptr<cvs_event_tag> cet =
-                  boost::static_pointer_cast<cvs_event_tag, cvs_event>(ev);
-
-              W(F("  unresolved symbol: tag: %s") % cvs.tag_interner.lookup(cet->tag));
-            }
-          else
-            {
-              I(false);
-            }
-
-          for (set< shared_ptr< cvs_branch > >::iterator j =
-              i->second.begin(); j != i->second.end(); ++j)
-            {
-              L(FL("    branch %s")
-                % cvs.branchname_interner.lookup((*j)->branchname));
-
-              blob_index_iterator bi = (*j)->get_blob(d, false);
-              cvs_blob & blob = (*j)->blobs[bi->second];
-
-              for (blob_event_iter k = blob.get_events().begin();
-                   k != blob.get_events().end(); ++k)
-                {
-                  shared_ptr< cvs_event > ev = *k;
-                  L(FL("        filename: %s")
-                    % cvs.path_interner.lookup(ev->path));
-                }
-            }
-        }
-    }
-
-  L(FL("**********************\n\n"));
-}
-
-void
-resolve_symbols(cvs_history & cvs)
-{
-  mark_branch_ancestors(cvs);
-
-  int syms_resolved = move_symbols(cvs);
-  L(FL("Unresolved symbols: %d, moved %d") % count_unresolved_symbols(cvs) % syms_resolved);
-  while ((count_unresolved_symbols(cvs) > 0) && (syms_resolved > 0))
-    {
-      syms_resolved = move_symbols(cvs);
-      L(FL("Unresolved symbols: %d, moved %d") % count_unresolved_symbols(cvs) % syms_resolved);
-    }
-
-  if (count_unresolved_symbols(cvs) > 0)
-    {
-      dump_unresolved_symbols(cvs);
-      I(false);
-    }
+  cons.store_revisions();
 }
 
 void
@@ -1815,12 +1412,14 @@ import_cvs_repo(system_path const & cvsroot,
   N(app.opts.branch_name() != "", F("need base --branch argument for importing"));
   cvs.base_branch = app.opts.branch_name();
 
-  // push the trunk
+  // add the trunk branch name
   cvs_branchname bn = cvs.branchname_interner.intern(cvs.base_branch);
-  cvs.trunk = shared_ptr<cvs_branch>(new cvs_branch(bn));
-  cvs.stk.push(cvs.trunk);
-  cvs.bstk.push(bn);
 
+
+  //
+  // first step of importing legacy VCS: collect all revisions
+  // of all files we know. This already creates file deltas and
+  // hashes. We end up with a DAG of blobs,
   {
     transaction_guard guard(app.db);
     cvs_tree_walker walker(cvs, app.db);
@@ -1833,65 +1432,11 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
-  I(cvs.stk.size() == 1);
-
-  resolve_symbols(cvs);
-
   ticker n_revs(_("revisions"), "r", 1);
 
   {
     transaction_guard guard(app.db);
-    resolve_blob_dependencies(cvs, app, cvs.base_branch, cvs.trunk, n_revs);
-    guard.commit();
-  }
-
-  while (!cvs.branches.empty())
-    {
-      // import the first branch which has a parent_rid
-      map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator i;
-
-      for(i = cvs.branches.begin(); i != cvs.branches.end(); ++i)
-        {
-          shared_ptr<cvs_branch> branch = i->second;
-          if (!null_id(branch->parent_rid))
-            {
-              transaction_guard guard(app.db);
-              string branchname = cvs.branchname_interner.lookup(i->first);
-              resolve_blob_dependencies(cvs, app, branchname, branch, n_revs);
-              guard.commit();
-
-              cvs.branches.erase(i->first);
-              break;
-            }
-        }
-
-      // hopefully we found at least one branch with a parent_rid...
-      if (i != cvs.branches.end())
-        cvs.branches.erase(i->first);
-      else
-        break;
-    }
- 
-  for(map<cvs_branchname, shared_ptr<cvs_branch> >::const_iterator i =
-      cvs.branches.begin(); i != cvs.branches.end(); ++i)
-    W(F("unable to import branch %s")
-      % cvs.branchname_interner.lookup(i->first));
-
-
-  // set all tag certificates
-  {
-    ticker n_tags(_("tags"), "t", 1);
-    packet_db_writer dbw(app);
-    transaction_guard guard(app.db);
-    for (map<cvs_tag, revision_id>::const_iterator
-         i = cvs.resolved_tags.begin();
-         i != cvs.resolved_tags.end(); ++i)
-      {
-        string tag = cvs.tag_interner.lookup(i->first);
-        ui.set_tick_trailer("marking tag " + tag);
-        app.get_project().put_tag(i->second, tag, dbw);
-        ++n_tags;
-      }
+    resolve_blob_dependencies(cvs, app, cvs.base_branch, n_revs);
     guard.commit();
   }
 
@@ -1901,22 +1446,20 @@ import_cvs_repo(system_path const & cvsroot,
 cluster_consumer::cluster_consumer(cvs_history & cvs,
                                    app_state & app,
                                    string const & branchname,
-                                   cvs_branch const & branch,
                                    ticker & n_revs)
   : cvs(cvs),
     app(app),
     branchname(branchname),
-    branch(branch),
     n_revisions(n_revs),
     editable_ros(ros, nis)
 {
+#if 0
   if (!null_id(branch.parent_rid))
     {
-      L(FL("starting cluster for branch %s from revision %s which contains:")
-           % branchname
-           % branch.parent_rid);
+      L(FL("starting cluster for branch %s from revision")
+           % branchname);
 
-      parent_rid = branch.parent_rid;
+      // ??? FIXME: parent_rid = branch.parent_rid;
       app.db.get_roster(parent_rid, ros);
 
       // populate the cluster_consumer's live_files and created_dirs according
@@ -1957,6 +1500,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
     {
       W(F("Ignoring branch %s because it is empty.") % branchname);
     }
+#endif
 }
 
 cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
@@ -2135,12 +1679,6 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
           shared_ptr<cvs_event_branch> cbe =
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(
               *blob.begin());
-
-          L(FL("setting the parent revision id of branch %s to: %s")
-            % cvs.branchname_interner.lookup(cbe->branch->branchname)
-            % child_rid_str);
-
-          cbe->branch->parent_rid = child_rid;
         }
     }
   else if (blob.get_digest().is_tag())
@@ -2151,7 +1689,8 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
             boost::static_pointer_cast<cvs_event_tag, cvs_event>(
               *blob.begin());
 
-          cvs.resolved_tags.insert(make_pair(cte->tag, child_rid));
+          // FIXME: before, I've only inserted into cvs.resolved_tags,
+          //        but I should just add the cert here...
         }
     }
   else
