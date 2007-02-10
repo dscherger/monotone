@@ -227,7 +227,10 @@ public:
       branchname(bn)
     { };
 
-  virtual cvs_event_digest get_digest(void) const;
+  virtual cvs_event_digest get_digest(void) const
+    {
+      return cvs_event_digest(ET_BRANCH, branchname);
+    };
 };
 
 class
@@ -306,13 +309,8 @@ public:
 };
 
 typedef vector<cvs_blob>::size_type cvs_blob_index;
-typedef multimap<cvs_event_digest, cvs_blob_index>::iterator blob_index_iterator;
-
-cvs_event_digest
-cvs_event_branch::get_digest(void) const
-{
-  return cvs_event_digest(ET_BRANCH, branchname);
-};
+typedef multimap<cvs_event_digest, cvs_blob_index>::iterator
+  blob_index_iterator;
 
 struct
 cvs_history
