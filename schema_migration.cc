@@ -637,6 +637,17 @@ migrate_add_ccode_and_drop_manifest_tables(sqlite3 * db, app_state &)
             "DROP TABLE manifest_deltas;");
 }
 
+char const migrate_add_sentinels[] =
+  "CREATE TABLE sentinels"
+  "  ( id not null,  -- revision id of just missing nodes\n"
+  "    unique(id)"
+  "  );"
+  "CREATE TABLE horizon_manifests"
+  "  ( id not null,  -- revision id\n"
+  "    manifest_with_ids, -- compressed, like a roster without markings\n"
+  "    unique(id)"
+  "  );"
+  ;
 
 // these must be listed in order so that ones listed earlier override ones
 // listed later
@@ -701,9 +712,12 @@ const migration_event migration_events[] = {
   { "48fd5d84f1e5a949ca093e87e5ac558da6e5956d",
     0, migrate_add_ccode_and_drop_manifest_tables, upgrade_none },
 
+  { "2881277287f6ee9bfc5ee255a503a6dc20dd5994",
+    migrate_add_sentinels, 0, upgrade_none },
+
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "2881277287f6ee9bfc5ee255a503a6dc20dd5994", 0, 0, upgrade_none }
+  { "6590eaed45a523308bcc9d0edcb54b33b10ef5df", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
