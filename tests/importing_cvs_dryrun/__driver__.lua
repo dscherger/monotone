@@ -28,7 +28,7 @@ tsha2 = sha1("testdir/importme")
 check(cvs("commit", "-m", 'commit 2', "testdir/importme"), 0, false, false)
 writefile("testdir/importme", "version 3 of test file")
 tsha3 = sha1("testdir/importme")
-xfail(cvs("commit", "-m", 'commit 3', "testdir/importme"), 0, false, false)
+check(cvs("commit", "-m", 'commit 3', "testdir/importme"), 0, false, false)
 
 -- import into monotone using dryrun and check if the database has really
 -- not been touched

@@ -597,7 +597,8 @@ insert_into_db(data const & curr_data,
                vector< piece > const & next_lines,
                data & next_data,
                hexenc<id> & next_id,
-               database & db)
+               database & db,
+               bool dryrun)
 {
   // inserting into the DB
   // note: curr_lines is a "new" (base) version
@@ -611,7 +612,9 @@ insert_into_db(data const & curr_data,
   delta del;
   diff(curr_data, next_data, del);
   calculate_ident(next_data, next_id);
-  rcs_put_raw_file_edge(next_id, curr_id, del, db);
+
+  if (!dryrun)
+    rcs_put_raw_file_edge(next_id, curr_id, del, db);
 }
 
 
@@ -649,7 +652,8 @@ process_rcs_branch(string const & begin_version,
                hexenc<id> const & begin_id,
                rcs_file const & r,
                database & db,
-               cvs_history & cvs)
+               cvs_history & cvs,
+               bool dryrun)
 {
   cvs_event_ptr curr_commit;
   cvs_event_ptr last_commit;
@@ -745,7 +749,7 @@ process_rcs_branch(string const & begin_version,
             next_version);
 
           insert_into_db(curr_data, curr_id,
-                         *next_lines, next_data, next_id, db);
+                         *next_lines, next_data, next_id, db, dryrun);
         }
 
       // recursively follow any branch commits coming from the branchpoint
@@ -782,14 +786,15 @@ process_rcs_branch(string const & begin_version,
           // index_branchpoint_symbols().
           if (r.deltas.find(*i) != r.deltas.end())
             {
-		          construct_version(*curr_lines, *i, branch_lines, r);
-		          insert_into_db(curr_data, curr_id, 
-    		                     branch_lines, branch_data, branch_id, db);
+              construct_version(*curr_lines, *i, branch_lines, r);
+              insert_into_db(curr_data, curr_id, 
+                             branch_lines, branch_data, branch_id, db,
+                             dryrun);
             }
 
           // recursively process child branches
           process_rcs_branch(*i, branch_lines, branch_data,
-                         branch_id, r, db, cvs);
+                         branch_id, r, db, cvs, dryrun);
 
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
@@ -835,7 +840,8 @@ process_rcs_branch(string const & begin_version,
 
 
 static void
-import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & cvs)
+import_rcs_file_with_cvs(string const & filename, app_state & app,
+                         cvs_history & cvs)
 {
   rcs_file r;
   L(FL("parsing RCS file %s") % filename);
@@ -855,15 +861,14 @@ import_rcs_file_with_cvs(string const & filename, database & db, cvs_history & c
     cvs.set_filename (filename, fid);
     cvs.index_branchpoint_symbols (r);
 
-    if (! db.file_version_exists (fid))
-      {
-        db.put_file(fid, file_data(dat));
-      }
+    if (!app.db.file_version_exists (fid) && !app.opts.dryrun)
+      app.db.put_file(fid, file_data(dat));
 
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
                                   head_lines);
-    process_rcs_branch(r.admin.head, head_lines, dat, id, r, db, cvs);
+    process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
+                       app.opts.dryrun);
     global_pieces.reset();
   }
 
@@ -1033,10 +1038,10 @@ cvs_tree_walker
   : public tree_walker
 {
   cvs_history & cvs;
-  database & db;
+  app_state & app;
 public:
-  cvs_tree_walker(cvs_history & c, database & d) : 
-    cvs(c), db(d)
+  cvs_tree_walker(cvs_history & c, app_state & a) : 
+    cvs(c), app(a)
   {
   }
   virtual void visit_file(file_path const & path)
@@ -1046,7 +1051,7 @@ public:
       {
         try
           {
-            import_rcs_file_with_cvs(file, db, cvs);
+            import_rcs_file_with_cvs(file, app, cvs);
           }
         catch (oops const & o)
           {
@@ -1490,7 +1495,7 @@ import_cvs_repo(system_path const & cvsroot,
   // hashes. We end up with a DAG of blobs,
   {
     transaction_guard guard(app.db);
-    cvs_tree_walker walker(cvs, app.db);
+    cvs_tree_walker walker(cvs, app);
     require_path_is_directory(cvsroot,
                               F("path %s does not exist") % cvsroot,
                               F("'%s' is not a directory") % cvsroot);
@@ -1595,13 +1600,16 @@ cluster_consumer::store_revisions()
   for (vector<prepared_revision>::const_iterator i = preps.begin();
        i != preps.end(); ++i)
     {
-      if (! app.db.revision_exists(i->rid))
+      if (!app.db.revision_exists(i->rid))
         {
-          data tmp;
-          write_revision(*(i->rev), tmp);
-          app.db.put_revision(i->rid, *(i->rev));
-          store_auxiliary_certs(*i);
-          ++n_revisions;
+          if (!app.opts.dryrun)
+            {
+              data tmp;
+              write_revision(*(i->rev), tmp);
+              app.db.put_revision(i->rid, *(i->rev));
+              store_auxiliary_certs(*i);
+              ++n_revisions;
+            }
         }
     }
 }
