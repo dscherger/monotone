@@ -707,7 +707,7 @@ process_rcs_branch(string const & begin_version,
 
       // make the last commit depend on the current one (which
       // comes _before_ in the CVS history).
-      if (last_commit != NULL)
+      if (last_commit)
         last_commit->dependencies.push_back(curr_commit);
 
       // create tag events for all tags on this commit
@@ -728,7 +728,7 @@ process_rcs_branch(string const & begin_version,
               cvs_blob_index bi = cvs.append_event(event);
 
               // append to the last_commit deps
-              if (last_commit != NULL)
+              if (last_commit)
                 last_commit->dependencies.push_back(event);
             }
         }
@@ -813,8 +813,8 @@ process_rcs_branch(string const & begin_version,
             % branchname);
 
           // append to the last_commit deps
-          I(last_commit != NULL);
-          last_commit->dependencies.push_back(branch_event);
+          if (last_commit)
+            last_commit->dependencies.push_back(branch_event);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
