@@ -344,3 +344,11 @@ for _,candidate in ipairs(read_directory(testdir)) do
    end
 end
 table.sort(tests)
+table.insert(tests, "importing_cvs_branches_with_correct_ancestory_2")
+table.insert(tests, "importing_cvs_with_multiple_vendor_imports")
+table.insert(tests, "importing_cvs_with_conflicting_tag")
+table.insert(tests, "importing_cvs_with_tags_after_delete")
+table.insert(tests, "importing_cvs_branch_from_empty_branch")
+table.insert(tests, "importing_cvs_with_unnamed_branch")
+table.insert(tests, "importing_cvs_with_missing_delta")
+table.insert(tests, "importing_cvs_with_multiple_unnamed_branches")
