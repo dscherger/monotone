@@ -8,6 +8,7 @@
 // PURPOSE.
 
 #include <algorithm>
+#include <ostream>
 #include <fstream>
 #include <iterator>
 #include <list>
@@ -1356,7 +1357,7 @@ class blob_label_writer
     blob_label_writer(cvs_history & c) : cvs(c) {};
 
     template <class VertexOrEdge>
-    void operator()(ostream & out, const VertexOrEdge & v) const
+    void operator()(std::ostream & out, const VertexOrEdge & v) const
     {
       string label;
       cvs_blob b = cvs.blobs[v];
@@ -1438,9 +1439,12 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   do
   {
-    viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
-    boost::write_graphviz(viz_file, g, blw);
-    viz_file.close();
+    if (global_sanity.debug)
+      {
+        viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
+        boost::write_graphviz(viz_file, g, blw);
+        viz_file.close();
+      }
 
     back_edges.clear();
   	depth_first_search(g, visitor(vis));
