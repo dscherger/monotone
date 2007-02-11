@@ -383,6 +383,24 @@ cvs_history
     blobs[b->second].push_back(c);
     return b->second;
   }
+
+  void split_authorclog(const cvs_authorclog ac, utf8 & author,
+                        utf8 & changelog)
+  {
+    string ac_str = authorclog_interner.lookup(ac);
+    int i = ac_str.find("|||");
+    I(i > 0);
+
+    author = utf8(ac_str.substr(0, i));
+    changelog = utf8(ac_str.substr(i+4));
+  }
+
+  string join_authorclog(const string author, const string clog)
+  {
+    I(author.size() > 0);
+    I(clog.size() > 0);
+    return author + "|||" + clog;
+  }
 };
 
 
@@ -685,12 +703,13 @@ process_rcs_branch(string const & begin_version,
 
       bool alive = delta->second->state != "dead";
 
-      string ac_str = delta->second->author + "|||\n";
-
+      string ac_str;
       if (is_synthetic_branch_root)
-        ac_str += "synthetic branch root changelog";
+        ac_str = cvs.join_authorclog(delta->second->author,
+                                     "systhetic branch root changelog");
       else
-        ac_str += deltatext->second->log;
+        ac_str = cvs.join_authorclog(delta->second->author,
+                                     deltatext->second->log);
 
       L(FL("author and changelog: %s") % ac_str);
       cvs_authorclog ac = cvs.authorclog_interner.intern(ac_str);
@@ -1364,11 +1383,16 @@ class blob_label_writer
 
       if (b.get_digest().is_commit())
         {
+          L(FL("blob %d: commit") % v);
+          //utf8 author, clog;
           const shared_ptr< cvs_commit > ce =
             boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
 
           label = (FL("blob %d: commit") % v).str();
-          label += "\\n" + cvs.authorclog_interner.lookup(ce->authorclog);
+
+          // FIXME: won't work because I need to escape...
+          //cvs.split_authorclog(ce->authorclog, author, clog);
+          //label += "\\n" + author;
           label += "\\n\\n";
 
           for (blob_event_iter i = b.begin(); i != b.end(); i++)
@@ -1384,6 +1408,8 @@ class blob_label_writer
         }
       else if (b.get_digest().is_branch())
         {
+          L(FL("blob %d: branch") % v);
+
           label = (FL("blob %d: branch: ") % v).str();
 
           const shared_ptr< cvs_event_branch > cb =
@@ -1393,6 +1419,8 @@ class blob_label_writer
         }
       else if (b.get_digest().is_tag())
         {
+          L(FL("blob %d: tag") % v);
+
           label = (FL("blob %d: tag") % v).str();
 
           const shared_ptr< cvs_event_tag > cb =
@@ -1620,14 +1648,10 @@ cluster_consumer::store_revisions()
 void
 cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
 {
+  utf8 author, changelog;
+
+  cvs.split_authorclog(p.authorclog, author, changelog);
   packet_db_writer dbw(app);
-
-  string ac_str = cvs.authorclog_interner.lookup(p.authorclog);
-  int i = ac_str.find("|||\n");
-
-  utf8 author = utf8(ac_str.substr(0, i));
-  utf8 changelog = utf8(ac_str.substr(i+4));
-
   app.get_project().put_standard_certs(p.rid,
                                        utf8(branchname),
                                        changelog,
