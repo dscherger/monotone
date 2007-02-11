@@ -8,7 +8,7 @@
 // PURPOSE.
 
 #include <algorithm>
-#include <iostream>
+#include <fstream>
 #include <iterator>
 #include <list>
 #include <map>
@@ -31,6 +31,7 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
 #include <boost/graph/graph_traits.hpp>
+#include <boost/graph/graphviz.hpp>
 
 #include "app_state.hh"
 #include "cert.hh"
@@ -812,7 +813,8 @@ process_rcs_branch(string const & begin_version,
             % cvs.path_interner.lookup(curr_commit->path)
             % branchname);
 
-          // append to the last_commit deps
+          // make the last commit depend on this branch, so
+          // that comes after the new branchpoint
           if (last_commit)
             last_commit->dependencies.push_back(branch_event);
         }
@@ -1342,6 +1344,66 @@ split_blobs_at(cvs_history & cvs,
   }
 }
 
+class blob_label_writer
+{
+  public:
+    cvs_history & cvs;
+
+    blob_label_writer(cvs_history & c) : cvs(c) {};
+
+    template <class VertexOrEdge>
+    void operator()(ostream & out, const VertexOrEdge & v) const
+    {
+      string label;
+      cvs_blob b = cvs.blobs[v];
+
+      if (b.get_digest().is_commit())
+        {
+          const shared_ptr< cvs_commit > ce =
+            boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
+
+          label = (FL("blob %d: commit") % v).str();
+          label += "\\n" + cvs.authorclog_interner.lookup(ce->authorclog);
+          label += "\\n\\n";
+
+          for (blob_event_iter i = b.begin(); i != b.end(); i++)
+            {
+              const shared_ptr< cvs_commit > ce =
+                boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+
+              label += cvs.path_interner.lookup(ce->path);
+              label += "@";
+              label += cvs.rcs_version_interner.lookup(ce->rcs_version);
+              label += "\\n";
+            }
+        }
+      else if (b.get_digest().is_branch())
+        {
+          label = (FL("blob %d: branch: ") % v).str();
+
+          const shared_ptr< cvs_event_branch > cb =
+            boost::static_pointer_cast<cvs_event_branch, cvs_event>(*b.begin());
+
+          label += cvs.branchname_interner.lookup(cb->branchname);
+        }
+      else if (b.get_digest().is_tag())
+        {
+          label = (FL("blob %d: tag") % v).str();
+
+          const shared_ptr< cvs_event_tag > cb =
+            boost::static_pointer_cast<cvs_event_tag, cvs_event>(*b.begin());
+
+          label += cvs.tag_interner.lookup(cb->tag);
+        }
+      else
+        {
+          label = (FL("blob %d: unknow type") % v).str();
+        }
+
+      out << "[label=\"" << label << "\"]";
+    }
+};
+
 //
 // After stuffing all cvs_events into blobs of events with the same
 // author and changelog, we have to make sure their dependencies are
@@ -1355,6 +1417,10 @@ resolve_blob_dependencies(cvs_history &cvs,
 {
   L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
+  int step_no = 1;
+  std::ofstream viz_file;
+  blob_label_writer blw(cvs);
+
   Graph g(cvs.blobs.size());
 
   // fill the graph with all blob dependencies as edges between
@@ -1364,14 +1430,18 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // check for cycles
   vector< Edge > back_edges;
-	blob_splitter< Edge > vis(cvs, back_edges);
+  blob_splitter< Edge > vis(cvs, back_edges);
 
   do
   {
+    viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
+    boost::write_graphviz(viz_file, g, blw);
+    viz_file.close();
+
     back_edges.clear();
   	depth_first_search(g, visitor(vis));
 
-    // Just split the first blob which had a back edge
+    // only split the first blob which had a back edge
     if (back_edges.begin() != back_edges.end())
         split_blobs_at(cvs, *back_edges.begin(), g);
 
