@@ -1344,13 +1344,15 @@ split_blobs_at(cvs_history & cvs,
               {
                 if ((*ob_dep)->time >= (*max_at)->time)
                 {
-                  L(FL("adding new edge %d -> %d") % *ity % new_blob);
-                  add_edge(*ity, new_blob, const_cast<Graph &>(g));
+                  // L(FL("adding new edge %d -> %d") % *ity % new_blob);
+                  if (!boost::edge(*ity, new_blob, g).second)
+                    add_edge(*ity, new_blob, const_cast<Graph &>(g));
                 }
                 else
                 {
-                  L(FL("keeping edge %d -> %d") % *ity % new_blob);
-                  add_edge(*ity, e.second, const_cast<Graph &>(g));
+                  // L(FL("keeping edge %d -> %d") % *ity % new_blob);
+                  if (!boost::edge(*ity, e.second, g).second)
+                    add_edge(*ity, e.second, const_cast<Graph &>(g));
                 }
               }
           }
@@ -1431,7 +1433,7 @@ class blob_label_writer
         {
           L(FL("blob %d: tag") % v);
 
-          label = (FL("blob %d: tag") % v).str();
+          label = (FL("blob %d: tag: ") % v).str();
 
           const shared_ptr< cvs_event_tag > cb =
             boost::static_pointer_cast<cvs_event_tag, cvs_event>(*b.begin());
@@ -1482,6 +1484,7 @@ resolve_blob_dependencies(cvs_history &cvs,
         viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
         boost::write_graphviz(viz_file, g, blw);
         viz_file.close();
+        step_no++;
       }
 
     back_edges.clear();
