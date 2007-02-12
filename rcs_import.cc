@@ -665,7 +665,6 @@ parse_time(const char * dp)
 
 static void
 process_rcs_branch(string const & begin_version,
-               cvs_event_ptr const & dep_commit,
                vector< piece > const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
@@ -675,7 +674,7 @@ process_rcs_branch(string const & begin_version,
                bool dryrun)
 {
   cvs_event_ptr curr_commit;
-  cvs_event_ptr last_commit = dep_commit;
+  cvs_event_ptr last_commit;
   string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
@@ -812,20 +811,20 @@ process_rcs_branch(string const & begin_version,
                              dryrun);
             }
 
-          cvs_event_ptr branch_event =
-            boost::static_pointer_cast<cvs_event, cvs_event_branch>(
-              shared_ptr<cvs_event_branch>(
-                new cvs_event_branch(curr_commit,
-                  cvs.branchname_interner.intern(branchname))));
-
           // recursively process child branches
-          process_rcs_branch(*i, branch_event, branch_lines, branch_data,
-                             branch_id, r, db, cvs, dryrun);
+          process_rcs_branch(*i, branch_lines, branch_data,
+                         branch_id, r, db, cvs, dryrun);
 
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
             L(FL("finished private RCS branch %s") % (*i));
+
+          cvs_event_ptr branch_event =
+            boost::static_pointer_cast<cvs_event, cvs_event_branch>(
+              shared_ptr<cvs_event_branch>(
+                new cvs_event_branch(curr_commit, 
+                  cvs.branchname_interner.intern(branchname))));
 
           // FIXME: is this still needed here?
           // make sure curr_commit exists in the blob
@@ -887,10 +886,8 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
                                   head_lines);
-
-    // start processing branches, with an empty cvs_event_ptr
-    process_rcs_branch(r.admin.head, cvs_event_ptr(), head_lines, dat, id,
-                       r, app.db, cvs, app.opts.dryrun);
+    process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
+                       app.opts.dryrun);
     global_pieces.reset();
   }
 
