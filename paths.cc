@@ -411,6 +411,48 @@ split_paths(std::vector<file_path> const & file_paths, path_set & split_paths)
     }
 }
 
+split_path
+make_relative(split_path const & sp)
+{
+  I(initial_rel_path.initialized);
+  fs::path base = initial_rel_path.get_but_unused();
+  file_path fp = file_path_internal(base.string());
+  split_path bp;
+  fp.split(bp);
+
+  split_path relative;
+  static const path_component dot(".");
+  static const path_component dotdot("..");
+  
+  relative.push_back(the_null_component);
+
+  split_path::const_iterator i = sp.begin();
+  split_path::const_iterator j = bp.begin();
+
+  while (i != sp.end() && j != bp.end() && *i == *j)
+    {
+      i++;
+      j++;
+    }
+  while (j != bp.end())
+    {
+      relative.push_back(dotdot);
+      j++;
+    }
+
+  if (relative.size() == 1)
+    relative.push_back(dot);
+
+  while (i != sp.end())
+    {
+      relative.push_back(*i);
+      i++;
+    }
+
+  return relative;
+}
+
+
 template <>
 void dump(split_path const & sp, string & out)
 {

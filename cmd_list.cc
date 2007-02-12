@@ -330,6 +330,23 @@ ls_vars(string name, app_state & app, vector<utf8> const & args)
 }
 
 static void
+print_paths(path_set const & paths)
+{
+  vector<split_path> relative_paths;
+
+  for (path_set::const_iterator i = paths.begin(); i != paths.end(); ++i)
+    {
+      relative_paths.push_back(make_relative(*i));
+    }
+
+  sort(relative_paths.begin(), relative_paths.end());
+
+  for (vector<split_path>::const_iterator sp = relative_paths.begin();
+       sp != relative_paths.end(); sp++)
+    cout << file_path(*sp).as_external() << "\n";
+}
+
+static void
 ls_known(app_state & app, vector<utf8> const & args)
 {
   roster_t new_roster;
@@ -343,8 +360,7 @@ ls_known(app_state & app, vector<utf8> const & args)
                         app.opts.depth,
                         new_roster, app);
 
-  // to be printed sorted
-  vector<split_path> print_paths;
+  path_set paths;
 
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
@@ -352,21 +368,15 @@ ls_known(app_state & app, vector<utf8> const & args)
     {
       node_id nid = i->first;
 
-      if (!new_roster.is_root(nid)
-          && mask.includes(new_roster, nid))
+      if (mask.includes(new_roster, nid))
         {
           split_path sp;
           new_roster.get_name(nid, sp);
-          print_paths.push_back(sp);
+          paths.insert(sp);
         }
     }
     
-  sort(print_paths.begin(), print_paths.end());
-  for (vector<split_path>::const_iterator sp = print_paths.begin();
-       sp != print_paths.end(); sp++)
-  {
-    cout << *sp << "\n";
-  }
+  print_paths(paths);
 }
 
 static void
@@ -387,13 +397,9 @@ ls_unknown_or_ignored(app_state & app, bool want_ignored,
   app.work.find_unknown_and_ignored(mask, roots, unknown, ignored);
 
   if (want_ignored)
-    for (path_set::const_iterator i = ignored.begin();
-         i != ignored.end(); ++i)
-      cout << file_path(*i) << "\n";
+    print_paths(ignored);
   else
-    for (path_set::const_iterator i = unknown.begin();
-         i != unknown.end(); ++i)
-      cout << file_path(*i) << "\n";
+    print_paths(unknown);
 }
 
 static void
@@ -410,11 +416,7 @@ ls_missing(app_state & app, vector<utf8> const & args)
   path_set missing;
   app.work.find_missing(current_roster_shape, mask, missing);
 
-  for (path_set::const_iterator i = missing.begin();
-       i != missing.end(); ++i)
-    {
-      cout << file_path(*i) << "\n";
-    }
+  print_paths(missing);
 }
 
 
@@ -441,7 +443,7 @@ ls_changed(app_state & app, vector<utf8> const & args)
   make_restricted_revision(parents, new_roster, mask, rrev);
 
   // to be printed sorted, with duplicates removed
-  set<split_path> print_paths;
+  path_set paths;
 
   for (edge_map::const_iterator i = rrev.edges.begin();
        i != rrev.edges.end(); i++)
@@ -460,16 +462,11 @@ ls_changed(app_state & app, vector<utf8> const & args)
             old_roster.get_name(*i, sp);
           else
             new_roster.get_name(*i, sp);
-          print_paths.insert(sp);
+          paths.insert(sp);
         }
     }
 
-    for (set<split_path>::const_iterator sp = print_paths.begin();
-         sp != print_paths.end(); sp++)
-    {
-      cout << *sp << endl;
-    }
-
+  print_paths(paths);
 }
 
 

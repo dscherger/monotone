@@ -279,6 +279,9 @@ split_paths(std::vector<file_path> const & file_paths, path_set & split_paths);
 void
 internal_string_to_split_path(std::string const & path, split_path & sp);
 
+split_path
+make_relative(split_path const & sp);
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
