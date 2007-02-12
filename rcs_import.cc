@@ -822,29 +822,29 @@ process_rcs_branch(string const & begin_version,
 
           if (first_event_in_branch)
             {
-          cvs_event_ptr branch_event =
-            boost::static_pointer_cast<cvs_event, cvs_event_branch>(
-              shared_ptr<cvs_event_branch>(
-                new cvs_event_branch(curr_commit, 
-                  cvs.branchname_interner.intern(branchname))));
+              cvs_event_ptr branch_event =
+                boost::static_pointer_cast<cvs_event, cvs_event_branch>(
+                  shared_ptr<cvs_event_branch>(
+                    new cvs_event_branch(curr_commit, 
+                      cvs.branchname_interner.intern(branchname))));
 
-          first_event_in_branch->dependencies.push_back(branch_event);
+              first_event_in_branch->dependencies.push_back(branch_event);
 
-          // FIXME: is this still needed here?
-          // make sure curr_commit exists in the blob
-          cvs.get_blob(curr_commit->get_digest(), false);
+              // FIXME: is this still needed here?
+              // make sure curr_commit exists in the blob
+              cvs.get_blob(curr_commit->get_digest(), false);
 
-          // add the blob to the bucket
-          cvs_blob_index bi = cvs.append_event(branch_event);
+              // add the blob to the bucket
+              cvs_blob_index bi = cvs.append_event(branch_event);
 
-          L(FL("added branch event for file %s into branch %s")
-            % cvs.path_interner.lookup(curr_commit->path)
-            % branchname);
+              L(FL("added branch event for file %s into branch %s")
+                % cvs.path_interner.lookup(curr_commit->path)
+                % branchname);
 
-          // make the last commit depend on this branch, so
-          // that comes after the new branchpoint
-          if (last_commit)
-            last_commit->dependencies.push_back(branch_event);
+              // make the last commit depend on this branch, so
+              // that comes after the new branchpoint
+              if (last_commit)
+                last_commit->dependencies.push_back(branch_event);
             }
         }
 
