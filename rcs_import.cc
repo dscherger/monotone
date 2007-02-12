@@ -663,7 +663,7 @@ parse_time(const char * dp)
   return time;
 }
 
-static void
+static cvs_event_ptr
 process_rcs_branch(string const & begin_version,
                vector< piece > const & begin_lines,
                data const & begin_data,
@@ -812,19 +812,23 @@ process_rcs_branch(string const & begin_version,
             }
 
           // recursively process child branches
-          process_rcs_branch(*i, branch_lines, branch_data,
-                         branch_id, r, db, cvs, dryrun);
-
+          cvs_event_ptr first_event_in_branch =
+            process_rcs_branch(*i, branch_lines, branch_data,
+                               branch_id, r, db, cvs, dryrun);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
             L(FL("finished private RCS branch %s") % (*i));
 
+          if (first_event_in_branch)
+            {
           cvs_event_ptr branch_event =
             boost::static_pointer_cast<cvs_event, cvs_event_branch>(
               shared_ptr<cvs_event_branch>(
                 new cvs_event_branch(curr_commit, 
                   cvs.branchname_interner.intern(branchname))));
+
+          first_event_in_branch->dependencies.push_back(branch_event);
 
           // FIXME: is this still needed here?
           // make sure curr_commit exists in the blob
@@ -841,6 +845,7 @@ process_rcs_branch(string const & begin_version,
           // that comes after the new branchpoint
           if (last_commit)
             last_commit->dependencies.push_back(branch_event);
+            }
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -855,6 +860,8 @@ process_rcs_branch(string const & begin_version,
         }
       else break;
     }
+
+  return curr_commit;
 }
 
 
