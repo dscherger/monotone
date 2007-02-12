@@ -384,15 +384,15 @@ cvs_history
     return b->second;
   }
 
-  void split_authorclog(const cvs_authorclog ac, utf8 & author,
-                        utf8 & changelog)
+  void split_authorclog(const cvs_authorclog ac, string & author,
+                        string & changelog)
   {
     string ac_str = authorclog_interner.lookup(ac);
     int i = ac_str.find("|||");
     I(i > 0);
 
-    author = utf8(ac_str.substr(0, i));
-    changelog = utf8(ac_str.substr(i+4));
+    author = ac_str.substr(0, i);
+    changelog = ac_str.substr(i+4);
   }
 
   string join_authorclog(const string author, const string clog)
@@ -1397,17 +1397,24 @@ class blob_label_writer
         {
           L(FL("blob %d: commit") % v);
 
-          label = (FL("blob %d: commit\\n\\n") % v).str();
+          label = (FL("blob %d: commit\\n") % v).str();
 
           if (b.begin() != b.end())
             {
-              //utf8 author, clog;
+              string author, clog;
               const shared_ptr< cvs_commit > ce =
                 boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
 
-              // FIXME: won't work because I need to escape...
-              //cvs.split_authorclog(ce->authorclog, author, clog);
-              //label += "\\n" + author;
+              cvs.split_authorclog(ce->authorclog, author, clog);
+              label += author + "\\n";
+
+              // poor man's escape...
+              for (unsigned int i = 0; i < clog.length(); ++i)
+                if (clog[i] < 32)
+                  clog[i] = ' ';
+              label += "\\\"" + clog + "\\\"\\n";
+
+              label += "\\n";
 
               for (blob_event_iter i = b.begin(); i != b.end(); i++)
                 {
@@ -1666,15 +1673,15 @@ cluster_consumer::store_revisions()
 void
 cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
 {
-  utf8 author, changelog;
+  string author, changelog;
 
   cvs.split_authorclog(p.authorclog, author, changelog);
   packet_db_writer dbw(app);
   app.get_project().put_standard_certs(p.rid,
                                        utf8(branchname),
-                                       changelog,
+                                       utf8(changelog),
                                        time_from_time_t(p.time),
-                                       author,
+                                       utf8(author),
                                        dbw);
 }
 
