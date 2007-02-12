@@ -1401,24 +1401,24 @@ class blob_label_writer
 
           if (b.begin() != b.end())
             {
-          //utf8 author, clog;
-          const shared_ptr< cvs_commit > ce =
-            boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
-
-          // FIXME: won't work because I need to escape...
-          //cvs.split_authorclog(ce->authorclog, author, clog);
-          //label += "\\n" + author;
-
-          for (blob_event_iter i = b.begin(); i != b.end(); i++)
-            {
+              //utf8 author, clog;
               const shared_ptr< cvs_commit > ce =
-                boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+                boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
 
-              label += cvs.path_interner.lookup(ce->path);
-              label += "@";
-              label += cvs.rcs_version_interner.lookup(ce->rcs_version);
-              label += "\\n";
-            }
+              // FIXME: won't work because I need to escape...
+              //cvs.split_authorclog(ce->authorclog, author, clog);
+              //label += "\\n" + author;
+
+              for (blob_event_iter i = b.begin(); i != b.end(); i++)
+                {
+                  const shared_ptr< cvs_commit > ce =
+                    boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+
+                  label += cvs.path_interner.lookup(ce->path);
+                  label += "@";
+                  label += cvs.rcs_version_interner.lookup(ce->rcs_version);
+                  label += "\\n";
+                }
             }
           else
             label += "-- empty --";
