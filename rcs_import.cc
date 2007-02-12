@@ -1396,16 +1396,18 @@ class blob_label_writer
       if (b.get_digest().is_commit())
         {
           L(FL("blob %d: commit") % v);
+
+          label = (FL("blob %d: commit\\n\\n") % v).str();
+
+          if (b.begin() != b.end())
+            {
           //utf8 author, clog;
           const shared_ptr< cvs_commit > ce =
             boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
 
-          label = (FL("blob %d: commit") % v).str();
-
           // FIXME: won't work because I need to escape...
           //cvs.split_authorclog(ce->authorclog, author, clog);
           //label += "\\n" + author;
-          label += "\\n\\n";
 
           for (blob_event_iter i = b.begin(); i != b.end(); i++)
             {
@@ -1417,6 +1419,9 @@ class blob_label_writer
               label += cvs.rcs_version_interner.lookup(ce->rcs_version);
               label += "\\n";
             }
+            }
+          else
+            label += "-- empty --";
         }
       else if (b.get_digest().is_branch())
         {
