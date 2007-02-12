@@ -1219,20 +1219,23 @@ add_blob_dependency_edges(cvs_history & cvs,
                   (cvs.blobs[k->second].get_digest() == 
                                     (*dep)->get_digest()); ++k)
             {
-              bool found = false;
+              bool found_dep = false;
 
-              for (dependency_iter di = cvs.blobs[k->second].get_events().begin();
+              for (dependency_iter di =
+                     cvs.blobs[k->second].get_events().begin();
                    di != cvs.blobs[k->second].get_events().end(); ++ di)
                 {
                   if (*di == *dep)
-                    found = true;
+                    {
+                      found_dep = true;
+                      break;
+                    }
                 }
 
-              if (found)
-                {
-                  L(FL("blob %d depends on blob %d") % i % k->second);
-                  add_edge(i, k->second, g);
-                }
+              // add the edge, if we found the dependency *and* if the
+              // edge does not exist, yet.
+              if (found_dep && (!boost::edge(i, k->second, g).second))
+                add_edge(i, k->second, g);
             }
         }
     }
