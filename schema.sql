@@ -9,6 +9,7 @@
 
 
 -- copyright (C) 2002, 2003, 2004 graydon hoare <graydon@pobox.com>
+-- copyright (C) 2006 Christof Petig <christof.petig@arcor.de>
 -- all rights reserved.
 -- licensed to the public under the terms of the GNU GPL 2.1+
 -- see the file COPYING for details
@@ -115,6 +116,23 @@ CREATE TABLE db_vars
         name not null,        -- var key
         value not null,       -- var value
         unique(domain, name)
+        );
+
+-- revisions which are just above the horizon (partial pull)
+
+CREATE TABLE sentinels
+        (
+        id not null,  -- revision id of just missing nodes
+        unique(id)
+        );
+
+-- manifest+file_id for revisions just below the horizon (partial pull)
+
+CREATE TABLE horizon_manifests
+        (
+        id not null,       -- revision id
+        manifest_with_ids, -- compressed, like a roster without markings
+        unique(id)
         );
 
 COMMIT;
