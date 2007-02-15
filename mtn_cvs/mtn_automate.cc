@@ -10,6 +10,7 @@
 #include <constants.hh>
 #include <safe_map.hh>
 #include <fstream>
+#include <set>
 
 using std::string;
 using std::make_pair;
@@ -573,7 +574,7 @@ bool mtn_automate::is_synchronized(revision_id const& rid,
   return !certs.empty();
 }
 
-#if 0
+#if 1
 // Name: find_newest_sync
 // Arguments:
 //   sync-domain
@@ -596,54 +597,45 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
        but might not appropriate for different RCSs)
    */
 
-  set<revision_id> heads;
-  app.get_project().get_branch_heads(branch, heads);
+  std::vector<revision_id> heads;
+  heads=mtn_automate::heads(branch);
   revision_t rev;
   revision_id rid;
-  std::string domain = idx(args,0)();
   
   while (!heads.empty())
   {
     rid = *heads.begin();
     L(FL("find_newest_sync: testing node %s") % rid);
-    app.db.get_revision(rid, rev);
+    rev=get_revision(rid);
     heads.erase(heads.begin());
     // is there a more efficient way than to create a revision_t object?
-    if (is_synchronized(app,rid,rev,domain))
+    if (is_synchronized(rid,rev,domain))
       break;
     for (edge_map::const_iterator e = rev.edges.begin();
                      e != rev.edges.end(); ++e)
     { 
-      if (!null_id(edge_old_revision(e)))
-        heads.insert(edge_old_revision(e));
+      if (!null_id(e->first))
+        heads.push_back(e->first);
     }
     N(!heads.empty(), F("no synchronized revision found in branch %s for domain %s")
         % branch % domain);
   }
 
-  set<revision_id> children;
+  std::vector<revision_id> children;
 continue_outer:
   L(FL("find_newest_sync: testing children of %s") % rid);
-  app.db.get_revision_children(rid, children);
-  for (set<revision_id>::const_iterator i=children.begin(); 
+  children=get_revision_children(rid);
+  for (std::vector<revision_id>::const_iterator i=children.begin(); 
           i!=children.end(); ++i)
   {
-    app.db.get_revision(*i, rev);
-    if (is_synchronized(app,*i,rev,domain))
+    rev=get_revision(*i);
+    if (is_synchronized(*i,rev,domain))
     { 
       rid=*i;
       goto continue_outer;
     }
   }
-  output << rid;
-}
-
-static inline void
-parse_path(basic_io::parser & parser, split_path & sp)
-{
-  string s;
-  parser.str(s);
-  file_path_internal(s).split(sp);
+  return rid;
 }
 
 static void parse_attributes(std::string const& in, sync_map_t& result)
@@ -676,7 +668,7 @@ static void parse_attributes(std::string const& in, sync_map_t& result)
   }
 }
 
-static sync_map_t get_sync_info(revision_id const& rid, string const& domain, int &depth)
+sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& domain, int &depth)
 {
   /* sync information is initially coded in DOMAIN: prefixed attributes
      if information needs to be changed after commit then it gets 
@@ -688,7 +680,7 @@ static sync_map_t get_sync_info(revision_id const& rid, string const& domain, in
   
   L(FL("get_sync_info: checking revision certificates %s") % rid);
   std::vector< revision<cert> > certs;
-  app.db.get_revision_certs(rid,cert_name(sync_prefix+domain),certs);
+  certs=get_revision_certs(rid,cert_name(sync_prefix+domain));
   I(certs.size()<=1); // FIXME: what to do with multiple certs ...
   if (certs.size()==1) 
   { cert_value tv;
