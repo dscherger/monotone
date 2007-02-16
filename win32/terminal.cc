@@ -12,10 +12,11 @@
 
 #include "platform.hh"
 
-bool have_smart_terminal()
+bool
+have_smart_terminal()
 {
   std::string term;
-  if (const char* term_cstr = getenv("TERM"))
+  if (char const * term_cstr = getenv("TERM"))
     term = term_cstr;
   else
     term = "";
@@ -29,7 +30,8 @@ bool have_smart_terminal()
     return true;
 }
 
-unsigned int terminal_width()
+unsigned int
+terminal_width()
 {
   HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
   if (h != INVALID_HANDLE_VALUE)
@@ -40,7 +42,7 @@ unsigned int terminal_width()
           return static_cast<unsigned int>(ci.dwSize.X);
         }
     }
-  
+
   // default to 80 columns if the width query failed.
   return 80;
 }

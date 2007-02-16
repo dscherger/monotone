@@ -1,4 +1,4 @@
-// Copyright (C) 2006  Matthew Gregan <kinetik@.orcon.net.nz>
+// Copyright (C) 2006  Matthew Gregan <kinetik@orcon.net.nz>
 // all rights reserved.
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details

@@ -10,7 +10,8 @@
 #include "platform.hh"
 #include "sanity.hh"
 
-inline double difftime(FILETIME now, FILETIME then)
+inline double
+difftime(FILETIME now, FILETIME then)
 {
   // 100 ns (1e-7 second) resolution
   double out = now.dwHighDateTime - then.dwHighDateTime;
@@ -20,20 +21,22 @@ inline double difftime(FILETIME now, FILETIME then)
   return out * 1e-7;
 }
 
-inline bool is_nowish(FILETIME now, FILETIME then)
+inline bool
+is_nowish(FILETIME now, FILETIME then)
 {
   double diff = difftime(now, then);
   return (diff >= -3 && diff <= 3);
 }
 
-inline bool is_future(FILETIME now, FILETIME then)
+inline bool
+is_future(FILETIME now, FILETIME then)
 {
   double diff = difftime(now, then);
   return (diff < 0);
 }
 
-
-bool inodeprint_file(std::string const & file, inodeprint_calculator & calc)
+bool
+inodeprint_file(std::string const & file, inodeprint_calculator & calc)
 {
   struct _stati64 st;
   if (_stati64(file.c_str(), &st) < 0)
@@ -50,7 +53,8 @@ bool inodeprint_file(std::string const & file, inodeprint_calculator & calc)
   calc.add_item(st.st_dev);
   calc.add_item(st.st_size);
 
-  HANDLE filehandle = CreateFile(file.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE filehandle = CreateFile(file.c_str(), GENERIC_READ, 0, NULL,
+				 OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (filehandle == INVALID_HANDLE_VALUE)
     return false;
 

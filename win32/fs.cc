@@ -14,7 +14,6 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
 
-//#include "vocab.hh"
 #include "sanity.hh"
 #include "platform.hh"
 
@@ -23,10 +22,11 @@ namespace fs = boost::filesystem;
 std::string
 get_current_working_dir()
 {
-  char buffer[4096];
-  E(getcwd(buffer, 4096),
+  std::vector<char> buffer;
+  buffer.resize(4096);
+  E(getcwd(&*buffer.begin(), buffer.size()),
     F("cannot get working directory: %s") % strerror(errno));
-  std::string str(buffer);
+  std::string str(&*buffer.begin());
   if (str[str.size() - 1] == '\\')
     str = str.substr(0, str.size() - 1);
   return str;
@@ -39,20 +39,22 @@ change_current_working_dir(std::string const & to)
     F("cannot change to directory %s: %s") % to % strerror(errno));
 }
 
+static std::string
+get_default_confdir_base()
+{
+ char * appdata = getenv("APPDATA");
+  if (appdata != NULL)
+    return appdata;
+  TCHAR szPath[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, szPath)))
+    return szPath;
+  return "";
+}
+
 std::string
 get_default_confdir()
 {
-  std::string base;
-  char * appdata;
-  appdata = getenv("APPDATA");
-  if (appdata != NULL)
-    base = appdata;
-  else
-    {
-      TCHAR szPath[MAX_PATH];
-      if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, szPath)))
-        base = szPath;
-    }
+  std::string base = get_default_confdir_base();
   N(!base.empty(), F("could not determine configuration path"));
   return base + "\\monotone";
 }
@@ -69,12 +71,11 @@ get_homedir()
   // file for the discussion).  For consistency, we now calculate the user's
   // home path using the same technique that Qt's QDir::homePath() uses on
   // Windows.
-  char * home;
-  home = getenv("HOME");
+  char * home = getenv("HOME");
   if (home != NULL)
     {
       L(FL("Home directory from HOME\n"));
-      return std::string(home);
+      return home;
     }
   // Otherwise, try USERPROFILE.  We could also use SHGetFolderPath() to get
   // at USERPROFILE without requiring it to be set as an environment
@@ -83,7 +84,7 @@ get_homedir()
   if (userprofile != NULL)
     {
       L(FL("Home directory from USERPROFILE\n"));
-      return std::string(userprofile);
+      return userprofile;
     }
   // Try concatenating HOMEDRIVE and HOMEPATH
   char * homedrive = getenv("HOMEDRIVE");
@@ -91,15 +92,15 @@ get_homedir()
   if (homedrive != NULL && homepath != NULL)
     {
       L(FL("Home directory from HOMEDRIVE+HOMEPATH\n"));
-      return std::string(homedrive) + std::string(homepath);
+      return std::string(homedrive) + homepath;
     }
   char * systemdrive = getenv("SystemDrive");
   if (systemdrive != NULL)
     {
       L(FL("Home directory from SystemDrive\n"));
-      return std::string(systemdrive);
+      return systemdrive;
     }
-  return std::string("C:");
+  return "C:";
 }
 
 std::string
@@ -139,7 +140,7 @@ get_path_status(std::string const & path)
 }
 
 static bool
-rename_clobberingly_impl(const char * from, const char * to)
+rename_clobberingly_impl(std::string const & from, std::string const & to)
 {
   // MoveFileEx is only available on NT-based systems.  We will revert to a
   // more compatible DeleteFile/MoveFile pair as a compatibility fall-back.
@@ -163,7 +164,7 @@ rename_clobberingly_impl(const char * from, const char * to)
 
   if (MoveFileExAvailable)
     {
-      if (fnMoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING))
+      if (fnMoveFileEx(from.c_str(), to.c_str(), MOVEFILE_REPLACE_EXISTING))
 	return true;
       else if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
 	{
@@ -174,8 +175,8 @@ rename_clobberingly_impl(const char * from, const char * to)
   else
     {
       // This is not even remotely atomic, but what can you do?
-      DeleteFile(to);
-      if (MoveFile(from, to))
+      DeleteFile(to.c_str());
+      if (MoveFile(from.c_str(), to.c_str()))
 	return true;
     }
   return false;
@@ -192,17 +193,18 @@ rename_clobberingly(std::string const & from, std::string const & to)
   // (arbitrary) maximum of 16 attempts.  This is a gross hack to work
   // around the common problem where another process (e.g. a virus checker)
   // will exclusive open a file you've just touched.
-  for (int i = 0; i < renameAttempts; ++i) {
-    if (rename_clobberingly_impl(from.c_str(), to.c_str()))
-      return;
-    lastError = GetLastError();
-    L(FL("attempted rename of '%s' to '%s' failed: (%s) %d")
-      % from % to % os_strerror(lastError) % lastError);
-    Sleep(sleepTime);
-    if (sleepTime < 250)
-      sleepTime *= 2;
-  }
+  for (int i = 0; i < renameAttempts; ++i)
+    {
+      if (rename_clobberingly_impl(from, to))
+	return;
+      lastError = GetLastError();
+      L(FL("attempted rename of '%s' to '%s' failed: (%s) %d")
+	% from % to % os_strerror(lastError) % lastError);
+      Sleep(sleepTime);
+      if (sleepTime < 250)
+	sleepTime *= 2;
+    }
   E(false, F("renaming '%s' to '%s' failed: %s (%d)") % from % to
-           % os_strerror(lastError) % lastError);
+    % os_strerror(lastError) % lastError);
 }
 

@@ -12,13 +12,14 @@
 struct table_entry
 {
   unsigned long key;
-  char *val;
+  char * val;
 };
 
-void key_to_string(unsigned long key, 
-                   table_entry *table,
-                   std::string & str, 
-                   std::string const & def)
+void
+key_to_string(unsigned long key,
+	      table_entry * table,
+	      std::string & str,
+	      std::string const & def)
 {
   while (table->val != 0)
     {
@@ -71,10 +72,9 @@ static table_entry processor_types[] = {
   { 0, 0 }
 };
 
-
 static table_entry processors[] = {
 #ifdef PROCESSOR_ARCHITECTURE_INTEL
-  { PROCESSOR_ARCHITECTURE_INTEL, "ia32" },  
+  { PROCESSOR_ARCHITECTURE_INTEL, "ia32" },
 #endif
 #ifdef PROCESSOR_ARCHITECTURE_IA64
   { PROCESSOR_ARCHITECTURE_IA64, "ia64" },
@@ -103,7 +103,6 @@ static table_entry processors[] = {
   { 0, 0 }
 };
 
-
 static table_entry families[] = {
 #ifdef VER_PLATFORM_WIN32s
   { VER_PLATFORM_WIN32s, "32s/3.1" },
@@ -112,7 +111,7 @@ static table_entry families[] = {
   { VER_PLATFORM_WIN32_WINDOWS, "95/98/SE/ME" },
 #endif
 #ifdef VER_PLATFORM_WIN32_NT
-  { VER_PLATFORM_WIN32_NT, "NT/2000/XP/2003" },
+  { VER_PLATFORM_WIN32_NT, "NT/2000/XP/2003/Vista" },
 #endif
 #ifdef VER_PLATFORM_WIN32_CE
   { VER_PLATFORM_WIN32_CE, "CE" },
@@ -120,9 +119,9 @@ static table_entry families[] = {
   { 0, 0 }
 };
 
-void get_system_flavour(std::string & ident)
+void
+get_system_flavour(std::string & ident)
 {
-
   SYSTEM_INFO si;
   OSVERSIONINFO vi;
 
@@ -130,7 +129,7 @@ void get_system_flavour(std::string & ident)
 
   GetSystemInfo(&si);
   I(GetVersionEx(&vi));
-  
+
   std::string family, processor;
 
   key_to_string(vi.dwPlatformId, families, family, "unknown");
@@ -161,7 +160,7 @@ void get_system_flavour(std::string & ident)
     }
 
   ident = (F("Windows %s (%d.%d, build %d, %s) on %s")
-           % family 
+           % family
            % vi.dwMajorVersion
            % vi.dwMinorVersion
            % vi.dwBuildNumber
