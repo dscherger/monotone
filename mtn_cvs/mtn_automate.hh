@@ -73,7 +73,7 @@ struct mtn_automate : mtn_pipe
 
 private:
   bool is_synchronized(revision_id const& rid, revision_t const& rev, std::string const& domain);
-  sync_map_t get_sync_info(revision_id const& rid, string const& domain, int &depth);
+  sync_map_t get_sync_info(revision_id const& rid, std::string const& domain, int &depth);
 };
 
 #endif

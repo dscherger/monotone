@@ -679,18 +679,16 @@ sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& dom
   sync_map_t result;
   
   L(FL("get_sync_info: checking revision certificates %s") % rid);
-  std::vector< revision<cert> > certs;
+  std::vector<certificate> certs;
   certs=get_revision_certs(rid,cert_name(sync_prefix+domain));
   I(certs.size()<=1); // FIXME: what to do with multiple certs ...
   if (certs.size()==1) 
-  { cert_value tv;
-    decode_base64(idx(certs,0).inner().value, tv);
-    std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(tv());
+  { std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(idx(certs,0).value);
     I(decomp_cert_val.size()>constants::idlen+1);
     I(decomp_cert_val[constants::idlen]=='\n');
     if (decomp_cert_val[0]!=' ')
     { revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen));
-      result=get_sync_info(app,old_rid,domain,depth);
+      result=get_sync_info(old_rid,domain,depth);
       ++depth;
     }
     else depth=0;
@@ -699,32 +697,23 @@ sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& dom
   }
   
   revision_t rev;
-  app.db.get_revision(rid, rev);
-//  split_path path;
-//  file_path_internal(string(".")+sync_prefix+domain).split(path);
+  get_revision(rid, rev);
   if (rev.edges.size()==1)
   { 
     L(FL("get_sync_info: checking revision attributes %s") % rid);
-//    revision_t rev;
-//    app.db.get_revision(rid, rev);
-    roster_t ros;
-    marking_map mm;
-    app.db.get_roster(rid, ros, mm);
-    node_map const & nodes = ros.all_nodes();
+    manifest_map m=get_manifest_of(rid);
     std::string prefix=domain+":";
-    for (node_map::const_iterator i = nodes.begin();
-       i != nodes.end(); ++i)
+    for (manifest_map::const_iterator i = m.begin();
+       i != m.end(); ++i)
     {
-      node_t node = i->second;
-      split_path sp;
-      ros.get_name(i->first, sp);
-      for (full_attr_map_t::const_iterator j = node->attrs.begin();
-           j != node->attrs.end(); ++j)
+      for (attr_map_t::const_iterator j = i->second.second.begin();
+           j != i->second.second.end(); ++j)
       {
         if (begins_with(j->first(),prefix))
         { 
-          if (j->second.first) // value is not undefined
-            result[std::make_pair(sp,j->first)]=j->second.second;
+          split_path sp;
+          i->first.split(sp);
+          result[std::make_pair(sp,j->first)]=j->second;
           // else W(F("undefined value of %s %s\n") % sp % j->first());
         }
       }
@@ -765,11 +754,11 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
   for (edge_map::const_iterator e = rev.edges.begin();
                      e != rev.edges.end(); ++e)
   { 
-    if (null_id(edge_old_revision(e))) continue;
+    if (null_id(e->first)) continue;
     try
     {
       int depth=0; 
-      sync_map_t oldinfo=get_sync_info(app,edge_old_revision(e),domain,depth);
+      sync_map_t oldinfo=get_sync_info(e->first,domain,depth);
       if (depth>=max_indirection_nest) continue; // do not nest deeper
       
       sync_map_t newinfo;
@@ -806,23 +795,17 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
       // printer.buf
       if (printer.buf.size()>=new_data.size()) continue;
       
-      I(edge_old_revision(e).inner()().size()==constants::idlen);
-      cert_value cv=cert_value(xform<Botan::Gzip_Compression>(edge_old_revision(e).inner()()+"\n"+printer.buf));
-      make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
-      revision<cert> rc(c); 
-      packet_db_writer dbw(app);
-      dbw.consume_revision_cert(rc); 
-      L(FL("sync info encoded as delta from %s") % edge_old_revision(e));
+      I(e->first.inner()().size()==constants::idlen);
+      cert_value cv=cert_value(xform<Botan::Gzip_Compression>(e->first.inner()()+"\n"+printer.buf));
+      cert_revision(rid,sync_prefix+domain,cv);
+      L(FL("sync info encoded as delta from %s") % e->first);
       return;
     }
     catch (informative_failure &er) {}
     catch (std::runtime_error &er) {}
   }
   cert_value cv=cert_value(xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data));
-  make_simple_cert(rid.inner(),cert_name(sync_prefix+domain), cv, app, c);
-  revision<cert> rc(c);
-  packet_db_writer dbw(app);
-  dbw.consume_revision_cert(rc);
+  cert_revision(rid,sync_prefix+domain,cv);
   L(FL("sync info attached to %s") % rid);
 }
 
