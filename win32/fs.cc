@@ -169,7 +169,7 @@ rename_clobberingly_impl(std::string const & from, std::string const & to)
     {
       if (fnMoveFileEx(from.c_str(), to.c_str(), MOVEFILE_REPLACE_EXISTING))
 	return true;
-      else if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
+      if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
 	{
 	  fnMoveFileEx = NULL;
 	  L(FL("MoveFileEx failed with CALL_NOT_IMPLEMENTED, using fallback"));
