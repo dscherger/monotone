@@ -1,0 +1,69 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Historical records - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Concepts.html#Concepts" title="Concepts">
+<link rel="prev" href="Versions-of-trees.html#Versions-of-trees" title="Versions of trees">
+<link rel="next" href="Certificates.html#Certificates" title="Certificates">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Historical-records"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Certificates.html#Certificates">Certificates</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Versions-of-trees.html#Versions-of-trees">Versions of trees</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Concepts.html#Concepts">Concepts</a>
+<hr>
+</div>
+
+<h3 class="section">1.3 Historical records</h3>
+
+<p>Suppose you sit down to edit some files. Before you start working, you
+may record a manifest of the files, for reference sake. When you
+finish working, you may record another manifest. These &ldquo;before and
+after&rdquo; snapshots of the tree of files you worked on can serve as
+historical records of the set of changes, or <dfn>changeset</dfn>, that you
+made. In order to capture a &ldquo;complete&rdquo; view of history &ndash; both the
+changes made and the state of your file tree on either side of those
+changes &ndash; monotone builds a special composite file called a
+<dfn>revision</dfn> each time you make changes. Like manifests, revisions
+are ordinary text files which can be passed through the <span class="sc">sha1</span>
+function and thus assigned a <dfn>revision ID</dfn>.
+
+   <div class="block-image"><img src="figures/revision.png" alt="figures/revision.png"></div>
+
+   <p>The content of a revision includes one or more changesets.  These
+changesets make reference to file IDs, to describe how the tree changed. 
+The revision also contains manifest IDs, as another way of describing
+the tree &ldquo;before and after&rdquo; the changeset &mdash; storing this information
+in two forms allows monotone to detect any bugs or corrupted data before
+they can enter your history.  Finally and crucially, revisions also make
+reference to <i>other revision IDs</i>. This fact &ndash; that revisions include
+the IDs of other revisions &ndash; causes the set of revisions to join
+together into a historical <i>chain of events</i>, somewhat like a &ldquo;linked
+list&rdquo;.  Each revision in the chain has a unique ID, which includes
+<i>by reference</i> all the revisions preceding it. Even if you undo a
+changeset, and return to a previously-visited manifest ID during the
+course of your edits, each revision will incorporate the ID of its
+predecessor, thus forming a new unique ID for each point in history.
+
+   <div class="block-image"><img src="figures/revision-chaining.png" alt="figures/revision-chaining.png"></div>
+
+   </body></html>
+

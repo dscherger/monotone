@@ -1,0 +1,96 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Certificates - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Concepts.html#Concepts" title="Concepts">
+<link rel="prev" href="Historical-records.html#Historical-records" title="Historical records">
+<link rel="next" href="Storage-and-workflow.html#Storage-and-workflow" title="Storage and workflow">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Certificates"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Storage-and-workflow.html#Storage-and-workflow">Storage and workflow</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Historical-records.html#Historical-records">Historical records</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Concepts.html#Concepts">Concepts</a>
+<hr>
+</div>
+
+<h3 class="section">1.4 Certificates</h3>
+
+<p>Often, you will wish to make a <i>statement</i> about a revision, such as
+stating the reason that you made some changes, or stating the time at
+which you made the changes, or stating that the revision passes a test
+suite. Statements such as these can be thought of, generally, as a
+bundle of information with three parts:
+
+     <ul>
+<li>an <i>ID</i>, indicating which revision you are making a statement about
+<li>a <i>name</i> indicating the type of statement you are making, such as
+&ldquo;changelog&rdquo;, &ldquo;date&rdquo; or &ldquo;testresult&rdquo;
+<li>a <i>value</i> indicating the remaining detail of the statement, such as
+&ldquo;fixed a bug&rdquo;, &ldquo;March 9th&rdquo; or &ldquo;1&rdquo;
+</ul>
+
+   <p>For example, if you want to say that a particular revision was
+composed on April 4, 2003, you might make a statement like this:
+
+   <div class="block-image"><img src="figures/statement.png" alt="figures/statement.png"></div>
+
+   <p>In an ideal world, these are all the parts of a statement we would
+need in order to go about our work. In the real world, however, there
+are sometimes malicious people who would make false or misleading
+statements; so we need a way to verify that a particular person made a
+particular statement about a revision. We therefore will add two more
+pieces of information to our bundle:
+
+     <ul>
+<li>a <i>key</i> which identifies the person making a statement
+<li>a <i>signature</i> &mdash; just a large number with particular properties &mdash;
+certifying the fact that the person made the statement
+</ul>
+
+   <p>When these 2 items accompany a statement, we call the total bundle of
+5 items a <dfn>certificate</dfn>, or <i>cert</i>. A cert makes a statement in
+a secure fashion. The security of the signature in a cert is derived
+from the <span class="sc">rsa</span> cryptography system, the details of which are beyond
+the scope of this document.
+
+   <div class="block-image"><img src="figures/cert.png" alt="figures/cert.png"></div>
+
+   <p>Monotone uses certs extensively. Any &ldquo;extra&rdquo; information which needs
+to be stored, transmitted or retrieved &mdash; above and beyond files,
+manifests, and revisions &mdash; is kept in the form of certs. This
+includes change logs, time and date records, branch membership,
+authorship, test results, and more. When monotone makes a decision
+about storing, transmitting, or extracting files, manifests, or
+revisions, the decision is often based on certs it has seen, and the
+trustworthiness you assign to those certs.
+
+   <p>The <span class="sc">rsa</span> cryptography system &mdash; and therefore monotone itself &mdash;
+requires that you exchange special &ldquo;public&rdquo; numbers with your
+friends, before they will trust certificates signed by you. These
+numbers are called <dfn>public keys</dfn>. Giving someone your public key
+does not give them the power to <i>impersonate</i> you, only to verify
+signatures made by you. Exchanging public keys should be done over a
+trusted medium, in person, or via a trusted third party. Advanced
+secure key exchange techniques are beyond the scope of this document.
+
+   </body></html>
+

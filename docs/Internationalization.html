@@ -1,0 +1,261 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Internationalization - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Special-Topics.html#Special-Topics" title="Special Topics">
+<link rel="next" href="Hash-Integrity.html#Hash-Integrity" title="Hash Integrity">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Internationalization"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Hash-Integrity.html#Hash-Integrity">Hash Integrity</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Special-Topics.html#Special-Topics">Special Topics</a>
+<hr>
+</div>
+
+<h3 class="section">7.1 Internationalization</h3>
+
+<p>Monotone initially dealt with only ASCII characters, in file path
+names, certificate names, key names, and packets. Some
+conservative extensions are provided to permit internationalized
+use. These extensions can be summarized as follows:
+
+     <ul>
+<li>Monotone uses GNU gettext to provide localized progress and error
+messages. Translations may or may not exist for your locale, but the
+infrastructure is present to add them.
+
+     <li>All command-line arguments are mapped from your local character set to
+UTF-8 before processing. This means that monotone can <em>only</em>
+handle key names, file names and certificate names which map cleanly
+into UTF-8.
+
+     <li>Monotone's control files are stored in UTF-8. This includes: revisions
+and manifests, both inside the database and when written to the
+<samp><span class="file">_MTN/</span></samp> directory of the workspace; the <samp><span class="file">_MTN/options</span></samp> and
+<samp><span class="file">_MTN/revision</span></samp> files. Converting these files to any other
+character set will cause monotone to break; do not do so.
+
+     <li>File path names in the workspace are converted to the locale's
+character set (determined via the LANG or CHARSET environment
+variables) before monotone interacts with the file system. If you are
+accustomed to being able to use file names in your locale's character
+set, this should &ldquo;just work&rdquo; with monotone.
+
+     <li>Key and cert names, and similar &ldquo;name-like&rdquo; entities are subject to
+some cleaning and normalization, and conversion into network-safe
+subsets of ASCII (typically ACE). Generally, you should be able to use
+&ldquo;sensible&rdquo; strings in your locale's character set as names, but they
+may appear mangled or escaped in certain contexts such as network
+transmission.
+
+     <li>Monotone's transmission and storage forms are otherwise
+unchanged. Packets and database contents are 7-bit clean ASCII.
+
+   </ul>
+
+   <p>The remainder of this section is a precise specification of monotone's
+internationalization behavior.
+
+<h3 class="heading">General Terms</h3>
+
+     <dl>
+<dt>Character set conversion<dd>The process of mapping a string of bytes representing wide characters
+from one encoding to another. Per-file character set conversions are
+specified by a Lua hook <code>get_charset_conv</code> which takes a filename
+and returns a table of two strings: the first represents the
+"internal" (database) charset, the second represents the "external"
+(file system) charset.
+
+     <br><dt>Line ending conversion<dd>The process of converting platform-dependent end-of-line codes
+(<code>0x0D</code>, <code>0x0A</code>, or the pair <code>0x0D 0x0A</code>) from one
+convention to another. Per-file line ending conversion is specified by
+a Lua hook <code>get_linesep_conv</code> which takes a filename and returns
+a table of two strings: the first represents the "internal" (database)
+line ending convention, the second represents the "external"
+(file system) line ending convention. each string should be one of the
+three strings "CR", "LF", or "CRLF".
+
+     <p>Note that Line ending conversion is always performed on the internal
+character set, when both character set and line ending conversion are
+enabled; this behavior is meant to encourage the use of the monotone's
+&ldquo;normal form&rdquo; (UTF-8, '\n') as an internal form for your source
+files, when working with multiple external forms. Also note that line
+ending conversion only works on character encodings with the specific
+code bytes described above, such as ASCII, ISO-8859x, and UTF-8.
+
+     <br><dt>Normal form conversion<dd>Character set and line ending conversions done between a "system form"
+and a "normal form". The system character set form is inferred from
+the environment, using the various locale environment variables. The
+system line ending form can be additionally specialized using the
+<code>get_system_linesep</code> hook. No hooks exist for adjusting the
+system character set, since the system character set must be known
+during command-line argument processing, before any Lua hooks are
+loaded.
+
+     <p>Monotone's normal form is the UTF-8 character set and the <code>0x0A</code>
+(LF) line ending form. This form is used in any files monotone needs
+to read, write, and interpret itself, such as <samp><span class="file">_MTN/revision</span></samp> and
+<samp><span class="file">_MTN/options</span></samp>.
+
+     <br><dt>LDH<dd>Letters, digits, and hyphen: the set of ASCII bytes <code>0x2D</code>,
+<code>0x30..0x39</code>, <code>0x41..0x5A</code>, and <code>0x61..0x7A</code>.
+
+     <br><dt>stringprep<dd>RFC 3454, a general framework for mapping, normalizing, prohibiting
+and bidirectionality checking for international names prior to use in
+public network protocols.
+
+     <br><dt>nameprep<dd>RFC 3491, a specific profile of stringprep, used for preparing
+international domain names (IDNs)
+
+     <br><dt>punycode<dd>RFC 3492, a "bootstring" encoding of unicode into ASCII.
+
+     <br><dt>IDNA<dd>RFC 3490, international domain names for applications, a combination
+of the above technologies (nameprep, punycoding, limiting to LDH
+characters) to form a specific "ASCII compatible encoding" (ACE) of
+unicode, signified by the presence of an "unlikely" ACE prefix string
+"xn&ndash;". IDNA is intended to make it possible to use unicode relatively
+"safely" over legacy ASCII-based applications. the general picture of
+an IDNA string is this:
+
+     <pre class="smallexample">                {ACE-prefix}{LDH-sanitized(punycode(nameprep(UTF-8-string)))}
+     </pre>
+     <p>It is important to understand that IDNA encoding does <em>not</em>
+preserve the input string: it both prohibits a wide variety of
+possible strings and normalizes non-equal strings to supposedly
+"equivalent" forms.
+
+     <p>By default, monotone does <em>not</em> decode IDNA when printing to the
+console (IDNA names are ASCII, which is a subset of UTF-8, so this
+normal form conversion can still apply, albeit oddly). this behavior
+is to protect users against security problems associated with
+malicious use of "similar-looking" characters. If the hook
+<code>display_decoded_idna</code> returns true, IDNA names are decoded for
+display.
+
+</dl>
+
+<h3 class="heading">Filenames</h3>
+
+     <ul>
+<li>Filenames are subject to normal form conversion.
+
+     <li>Filenames are subject to an additional normal form stage which adjusts
+for platform name semantics, for example changing the Windows
+<code>0x5C</code> '\' path separator to <code>0x2F</code> '/'. This extra
+processing is performed by boost::filesystem.
+
+     <li>FIXME: Monotone does not properly handle case insensitivity on windows.
+
+     <li>A filename (in normal form) is constrained to be a nonempty sequence
+of path components, separated by byte <code>0x2F</code> (ASCII / ), and
+without a leading or trailing <code>0x2F</code>.
+
+     <li>A path component is a nonempty sequence of any UTF-8 character codes
+except the path separator byte <code>0x2F</code> and any ASCII "control codes"
+(<code>0x00..0x1F</code> and <code>0x7F</code>).
+
+     <li>The path components "." and ".." are prohibited.
+
+     <li>Manifests and revisions are constructed from the normal form
+(UTF-8). The LC_COLLATE locale category is <em>not</em> used to sort
+manifest or revision entries.
+
+</ul>
+
+<h3 class="heading">File contents</h3>
+
+     <ul>
+<li>Files are subject to character set conversion and line ending
+conversion.
+
+     <li>File SHA1 values are calculated from the internal form of the
+conversions. If the external form of a file differs from the internal
+form, running a 3rd party program such as <samp><span class="command">sha1sum</span></samp> will produce
+different results than those entries shown in a corresponding manifest.
+
+</ul>
+
+<h3 class="heading">UI messages</h3>
+
+<p>UI messages are displayed via calls to <code>gettext()</code>.
+
+<h3 class="heading">Host names</h3>
+
+<p>Host names are read on the command-line and subject to normal form
+conversion. Host names are then split at <code>0x2E</code> (ASCII '.'), each
+component is subject to IDNA encoding, and the components are
+rejoined.
+
+   <p>After processing, host names are stored internally as ASCII. The
+invariant is that a host name inside monotone contains only sequences
+of LDH separated by <code>0x2E</code>.
+
+<h3 class="heading">Cert names</h3>
+
+<p>Read on the command line and subject to normal form conversion and
+IDNA encoding as a single component. The invariant is that a cert name
+inside monotone is a single LDH ASCII string.
+
+<h3 class="heading">Cert values</h3>
+
+<p>Cert values may be either text or binary, depending on the return
+value of the hook <code>cert_is_binary</code>. If binary, the cert value is
+never printed to the screen (the literal string "&lt;binary&gt;" is
+displayed, instead), and is never subjected to line ending or
+character conversion. If text, the cert value is subject to normal
+form conversion, as well as having all UTF-8 codes corresponding to
+ASCII control codes (<code>0x0..0x1F</code> and <code>0x7F</code>) prohibited in
+the normal form, except <code>0x0A</code> (ASCII LF).
+
+<h3 class="heading">Var domains</h3>
+
+<p>Read on the command line and subject to normal form conversion and IDNA
+encoding as a single component. The invariant is that a var domain
+inside monotone is a single LDH ASCII string.
+
+<h3 class="heading">Var names and values</h3>
+
+<p>Var names and values are assumed to be text, and subject to normal form
+conversion.
+
+<h3 class="heading">Key names</h3>
+
+<p>Read on the command line and subject to normal form conversion and
+IDNA encoding as an email address (split and joined at '.' and '@'
+characters). The invariant is that a key name inside monotone contains
+only LDH, <code>0x2E</code> (ASCII '.') and <code>0x40</code> (ASCII '@')
+characters.
+
+<h3 class="heading">Packets</h3>
+
+<p>Packets are 7-bit ASCII. The characters permitted in packets are
+the union of these character sets:
+
+     <ul>
+<li>The 65 characters of base64 encoding (64 coding + "=" pad). 
+<li>The 16 characters of hex encoding. 
+<li>LDH, '@' and '.' characters, as required for key and cert names. 
+<li>'[' and ']', the packet delimiters. 
+<li>ASCII codes 0x0D (CR), 0x0A (LF), 0x09 (HT), and 0x20 (SP). 
+</ul>
+
+   </body></html>
+

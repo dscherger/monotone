@@ -1,0 +1,68 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Forks and merges - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Concepts.html#Concepts" title="Concepts">
+<link rel="prev" href="Storage-and-workflow.html#Storage-and-workflow" title="Storage and workflow">
+<link rel="next" href="Branches.html#Branches" title="Branches">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Forks-and-merges"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Branches.html#Branches">Branches</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Storage-and-workflow.html#Storage-and-workflow">Storage and workflow</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Concepts.html#Concepts">Concepts</a>
+<hr>
+</div>
+
+<h3 class="section">1.6 Forks and merges</h3>
+
+<p>So far we have been talking about revisions as though each logically
+follows exactly one revision before it, in a simple sequence of
+revisions.
+
+   <div class="block-image"><img src="figures/linear-history.png" alt="figures/linear-history.png"></div>
+
+   <p>This is a rosy picture, but sometimes it does not work out this
+way. Sometimes when you make new revisions, other people are
+<i>simultaneously</i> making new revisions as well, and their revisions
+might be derived from the same parent as yours, or contain different
+changesets. Without loss of generality, we will assume simultaneous
+edits only happen two-at-a-time; in fact many more edits may happen at
+once but our reasoning will be the same.
+
+   <p>We call this situation of simultaneous edits a <dfn>fork</dfn>, and will
+refer to the two children of a fork as the <i>left child</i> and <i>right
+child</i>. In a large collection of revisions with many people editing
+files, especially on many different computers spread all around the
+world, forks are a common occurrence.
+
+   <div class="block-image"><img src="figures/fork.png" alt="figures/fork.png"></div>
+
+   <p>If we analyze the changes in each child revision, we will often find
+that the changeset between the parent and the left child are unrelated
+to the changeset between the parent and the right child. When this
+happens, we can usually <dfn>merge</dfn> the fork, producing a common
+grandchild revision which contains both changesets.
+
+   <div class="block-image"><img src="figures/merge.png" alt="figures/merge.png"></div>
+
+   </body></html>
+

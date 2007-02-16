@@ -1,0 +1,116 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Committing Work - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
+<link rel="prev" href="Adding-Files.html#Adding-Files" title="Adding Files">
+<link rel="next" href="Basic-Network-Service.html#Basic-Network-Service" title="Basic Network Service">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Committing-Work"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Basic-Network-Service.html#Basic-Network-Service">Basic Network Service</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Adding-Files.html#Adding-Files">Adding Files</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
+<hr>
+</div>
+
+<h3 class="section">2.7 Committing Work</h3>
+
+<p>Satisfied with the work he's done, Jim wants to save his changes.  He
+then commits his workspace, which causes monotone to process the
+<samp><span class="file">_MTN/revision</span></samp> file and record the file contents, manifest, and
+revision into the database. Since he provided a branch name when he
+ran <samp><span class="command">setup</span></samp>, monotone will use this as the default branch name
+when he commits.
+
+<pre class="smallexample">     $ mtn commit --message="initial checkin of project"
+     mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+     mtn: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+</pre>
+   <p>When monotone committed Jim's revision, it updated <samp><span class="file">_MTN/revision</span></samp>
+to record the workspace's new base revision ID. Jim can use this
+revision ID in the future, as an argument to the <samp><span class="command">checkout</span></samp>
+command, if he wishes to return to this revision:
+
+<pre class="smallexample">     $ mtn automate get_base_revision_id
+     2e24d49a48adf9acf3a1b6391a080008cbef9c21
+</pre>
+   <p>Monotone also generated a number of certificates attached to
+the new revision, and made sure that the database contained a copy of Jim's
+public key. These certs store metadata about the commit. Jim can
+ask monotone for a list of certs on this revision.
+
+<pre class="smallexample">     $ mtn ls certs 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+     -----------------------------------------------------------------
+     Key   : jim@juicebot.co.jp
+     Sig   : ok
+     Name  : branch
+     Value : jp.co.juicebot.jb7
+     -----------------------------------------------------------------
+     Key   : jim@juicebot.co.jp
+     Sig   : ok
+     Name  : date
+     Value : 2004-10-26T02:53:08
+     -----------------------------------------------------------------
+     Key   : jim@juicebot.co.jp
+     Sig   : ok
+     Name  : author
+     Value : jim@juicebot.co.jp
+     -----------------------------------------------------------------
+     Key   : jim@juicebot.co.jp
+     Sig   : ok
+     Name  : changelog
+     Value : initial checkin of project
+</pre>
+   <p>The output of this command has a block for each cert found. Each block
+has 4 significant pieces of information. The first indicates the
+signer of the cert, in this case <code>jim@juicebot.co.jp</code>. The
+second indicates whether this cert is &ldquo;ok&rdquo;, meaning whether the
+<span class="sc">rsa</span> signature provided is correct for the cert data. The third is
+the cert name, and the fourth is the cert value. This list shows us
+that monotone has confirmed that, according to
+<code>jim@juicebot.co.jp</code>, the revision
+<code>2e24d49a48adf9acf3a1b6391a080008cbef9c21</code> is a member of the
+branch <code>jp.co.juicebot.jb7</code>, written by
+<code>jim@juicebot.co.jp</code>, with the given date and changelog.
+
+   <p>It is important to keep in mind that revisions are not &ldquo;in&rdquo; or
+&ldquo;out&rdquo; of a branch in any global sense, nor are any of these cert
+values <i>true</i> or <i>false</i> in any global sense. Each cert indicates
+that <i>some person</i> &ndash; in this case Jim &ndash; would like to associate a
+revision with some value; it is up to you to decide if you want to
+accept that association.
+
+   <p>Jim can now check the status of his branch using the &ldquo;heads&rdquo;
+command, which lists all the head revisions in the branch:
+
+<pre class="smallexample">     $ mtn heads
+     branch 'jp.co.juicebot.jb7' is currently merged:
+     2e24d49a48adf9acf3a1b6391a080008cbef9c21 jim@juicebot.co.jp 2004-10-26T02:53:08
+</pre>
+   <p>The output of this command tells us that there is only one current
+&ldquo;head&rdquo; revision in the branch <code>jp.co.juicebot.jb7</code>, and it is
+the revision Jim just committed. A head revision is one without any
+descendents. Since Jim has not committed any changes to this revision
+yet, it has no descendents.
+
+   </body></html>
+

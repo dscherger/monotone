@@ -1,0 +1,78 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Versions of trees - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Concepts.html#Concepts" title="Concepts">
+<link rel="prev" href="Versions-of-files.html#Versions-of-files" title="Versions of files">
+<link rel="next" href="Historical-records.html#Historical-records" title="Historical records">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Versions-of-trees"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Historical-records.html#Historical-records">Historical records</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Versions-of-files.html#Versions-of-files">Versions of files</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Concepts.html#Concepts">Concepts</a>
+<hr>
+</div>
+
+<h3 class="section">1.2 Versions of trees</h3>
+
+<p>After you have made many different files, you may wish to capture a
+&ldquo;snapshot&rdquo; of the versions of all the files in a particular collection. 
+Since files are typically collected into <i>trees</i> in a file system,
+we say that you want to capture a <i>version of your tree</i>. Doing
+so will permit you to undo changes to multiple files at once, or send
+your friend a <i>set</i> of changes to many files at once.
+
+   <p>To make a snapshot of a tree, we begin by writing a special file called
+a <dfn>manifest</dfn>. In fact, monotone will write this file for us, but we
+could write it ourselves too. It is just a plain text file, in a
+structured but human-readable format used by several parts of monotone. 
+Each file entry of a manifest binds a specific name, as a full path from
+the root of the workspace, to a specific file ID, as the hash of its
+content.  In this way, the manifest collects together the snapshot of
+the file names and contents you have at this point in time; other
+snapshots with other manifests can use different names for the same
+file, or different contents for the same name.
+
+   <p>Other entries in the manifest format name directories or store file
+attrs, which we will cover later.
+
+   <div class="block-image"><img src="figures/manifest.png" alt="figures/manifest.png"></div>
+
+   <p>Now we note that a manifest is itself a file. Therefore a manifest can
+serve as input to the <span class="sc">sha1</span> function, and thus every manifest has
+an ID of its own. By calculating the <span class="sc">sha1</span> value of a manifest, we
+capture the <i>state of our tree</i> in a single <dfn>manifest ID</dfn>. In
+other words, the ID of the manifest essentially captures all the IDs
+and file names of every file in our tree, combined. So we may treat
+manifests and their IDs as <i>snapshots</i> of a tree of files, though
+lacking the actual contents of the files themselves.
+
+   <div class="block-image"><img src="figures/file-id-manifest-id.png" alt="figures/file-id-manifest-id.png"></div>
+
+   <p>As with versions of files, we may decide to store manifests in their
+entirety, or else we may store only a compact description of changes
+which occur between different versions of manifests. As with files,
+when possible monotone stores compact descriptions of changes between
+manifests; when necessary it stores complete versions of manifests.
+
+   </body></html>
+

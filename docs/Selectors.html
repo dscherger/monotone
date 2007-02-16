@@ -1,0 +1,176 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Selectors - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Other-Transports.html#Other-Transports" title="Other Transports">
+<link rel="next" href="Restrictions.html#Restrictions" title="Restrictions">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Selectors"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Restrictions.html#Restrictions">Restrictions</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Other-Transports.html#Other-Transports">Other Transports</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.2 Selectors</h3>
+
+<p>Revisions can be specified on the monotone command line, precisely, by
+entering the entire 40-character hexadecimal <span class="sc">sha1</span> code. This can
+be cumbersome, so monotone also allows a more general syntax called
+&ldquo;selectors&rdquo; which is less precise but more &ldquo;human friendly&rdquo;. Any
+command which expects a precise revision ID can also accept a selector
+in its place; in fact a revision ID is just a special type of selector
+which is very precise.
+
+<h3 class="heading">Simple examples</h3>
+
+<p>Some selector examples are helpful in clarifying the idea:
+
+     <dl>
+<dt><code>a432</code><dd>Revision IDs beginning with the string <code>a432</code>
+<br><dt><code>graydon@pobox.com/2004-04</code><dd>Revisions written by <code>graydon@pobox.com</code> in April 2004. 
+<br><dt><code>"jrh@example.org/2 weeks ago"</code><dd>Revisions written by <code>jrh@example.org</code> 2 weeks ago. 
+<br><dt><code>graydon/net.venge.monotone.win32/yesterday</code><dd>Revisions in the <code>net.venge.monotone.win32</code> branch, written by
+<code>graydon</code>, yesterday. 
+</dl>
+
+   <p>A moment's examination reveals that these specifications are &ldquo;fuzzy&rdquo;
+and indeed may return multiple values, or may be ambiguous. When
+ambiguity arises, monotone will inform you that more detail is
+required, and list various possibilities. The precise specification
+of selectors follows.
+
+<h3 class="heading">Selectors in detail</h3>
+
+<p>A selector is a combination of a selector type, which is a single
+ASCII character, followed by a <code>:</code> character and a selector
+string. All selectors strings except for selector type <code>c</code>
+are just values. The value is matched against identifiers or certs,
+depending on its type, in an attempt to match a single revision. 
+Selectors are matched as prefixes. The current set of selection
+types are:
+
+     <dl>
+<dt>Generic cert selector<dd>Uses selector type <code>c</code>.  The selector string has the syntax
+<var>name</var> or <var>name</var><code>=</code><var>value</var>.  The former syntax will
+select any revision that has a cert with that name, regardless of
+value; the latter will match any revision that has a cert with that
+name and value.  Values to match for can have shell wildcards.  For
+example, <code>c:tag</code> matches all revisions that have a tag, and
+<code>c:tag=monotone-0.25</code> will match the revision tagged
+<code>monotone-0.25</code>.  (See also the <code>t</code> selector below.) 
+<br><dt>Author selection<dd>Uses selector type <code>a</code>. For example, <code>a:graydon</code> matches
+<code>author</code> certs where the cert value contains <code>graydon</code>. 
+<br><dt>Branch selection<dd>Uses selector type <code>b</code>. For example, <code>b:net.venge.monotone</code> matches
+<code>branch</code> certs where the cert value is <code>net.venge.monotone</code>. 
+Values to match for can have shell wildcards.  If you give a bare <code>b:</code>
+monotone will require you to be in a workspace, and will use the branch
+value recorded in your _MTN/options file. 
+<br><dt>Heads selection<dd>Uses selector type <code>h</code>. For example, <code>h:net.venge.monotone</code> matches
+<code>branch</code> certs where the cert value is <code>net.venge.monotone</code> and
+the associated revision is a head revision on that branch.  Values to match
+for can have shell wildcards like the branch selector.  If you give a bare
+<code>h:</code> monotone will require you to be in a workspace, and use the branch
+recorded in your _MTN/options file. 
+<br><dt>Date selection<dd>Uses selector type <code>d</code>. For example, <code>d:2004-04</code> matches
+<code>date</code> certs where the cert value begins with
+<code>2004-04</code>. This selector also accepts expanded date syntax (see below). 
+<br><dt>"Earlier or equal than" selection<dd>Uses selector type <code>e</code>. For example, <code>e:2004-04-25</code> matches
+<code>date</code> certs where the cert value is less or equal than
+<code>2004-04-25T00:00:00</code>. If the time component is unspecified,
+monotone will assume 00:00:00. This selector also accepts expanded date
+syntax (see below)
+<br><dt>"Later than" selection<dd>Uses selector type <code>l</code>. For example, <code>l:2004-04-25</code> matches
+<code>date</code> certs where the cert value is strictly greater than
+<code>2004-04-25T00:00:00</code>. If the time component is unspecified,
+monotone will assume 00:00:00. This selector also accepts expanded date
+syntax (see below)
+<br><dt>Identifier selection<dd>Uses selector type <code>i</code>. For example, <code>i:0f3a</code> matches
+revision IDs which begin with <code>0f3a</code>. 
+<br><dt>Tag selection<dd>Uses selector type <code>t</code>. For example, <code>t:monotone-0.11</code> matches
+<code>tag</code> certs where the cert value begins with <code>monotone-0.11</code>. 
+Values to match for can have shell wildcards. 
+</dl>
+
+   <p>Further selector types may be added in the future.
+
+<h3 class="heading">Composite selectors</h3>
+
+<p>Selectors may be combined with the <code>/</code> character. The combination
+acts as database intersection (or logical <code>and</code>). For example,
+the selector <code>a:graydon/d:2004-04</code> can be used to select a
+revision which has an <code>author</code> cert beginning with <code>graydon</code>
+<em>as well as</em> a <code>date</code> cert beginning with <code>2004-04</code>. The
+<code>/</code> character can be escaped using the <code>\</code> character if necessary.
+
+<h3 class="heading">Selector expansion</h3>
+
+<p>Before selectors are passed to the database, they are expanded using a
+lua hook: <code>expand_selector</code>. The default definition of this hook
+attempts to guess a number of common forms for selection, allowing you
+to omit selector types in many cases. For example, the hook guesses
+that the typeless selector <code>jrh@example.org</code> is an author
+selector, due to its syntactic form, so modifies it to read
+<code>a:jrh@example.org</code>. This hook will generally assign a selector
+type to values which &ldquo;look like&rdquo; partial hex strings, email
+addresses, branch names, or date specifications. For the complete
+source code of the hook, see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>.
+
+<h3 class="heading">Expanding dates</h3>
+
+<p>All date-related selectors (<code>d</code>, <code>e</code>, <code>l</code>) support an
+english-like syntax similar to CVS.  This syntax is expanded to the
+numeric format by a lua hook: <code>expand_date</code>. 
+The allowed date formats are:
+     <dl>
+<dt>now<dd>Expands to the current date and time. 
+<br><dt>today<dd>Expands to today's date. <code>e</code> and <code>l</code> selectors assume time 00:00:00
+<br><dt>yesterday<dd>Expands to yesterday's date. <code>e</code> and <code>l</code> selectors assume
+time 00:00:00
+<br><dt>&lt;number&gt; {minute|hour} &lt;ago&gt;<dd>Expands to today date and time, minus the specified <code>number</code> of
+minutes|hours. 
+<br><dt>&lt;number&gt; {day|week|month|year} &lt;ago&gt;<dd>Expands to today date, minus the specified <code>number</code> of
+days|weeks|months|years. <code>e</code> and <code>l</code> selectors assume time
+00:00:00
+<br><dt>&lt;year&gt;-&lt;month&gt;[-day[Thour:minute:second]]<dd>Expands to the supplied year/month. The day and time component are
+optional. If missing, <code>e</code> and <code>l</code> selectors assume the first
+day of month and time 00:00:00. 
+The time component, if supplied, must be complete to the second. 
+</dl>
+
+   <p>For the complete source code of the hook, see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>.
+
+<h3 class="heading">Typeless selection</h3>
+
+<p>If, after expansion, a selector still has no type, it is matched as a
+special &ldquo;unknown&rdquo; selector type, which will match either a tag, an
+author, or a branch. This costs slightly more database access, but
+often permits simple selection using an author's login name and a
+date. For example, the selector
+<code>graydon/net.venge.monotone.win32/yesterday</code> would pass through
+the selector <code>graydon</code> as an unknown selector; so long as there
+are no branches or tags beginning with the string <code>graydon</code> this
+is just as effective as specifying <code>a:graydon</code>.
+
+   </body></html>
+

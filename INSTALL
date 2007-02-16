@@ -1,148 +1,86 @@
 building and installation process for monotone
 ==============================================
 
-1. prerequisites:
+1. prerequisites: 
 
   * hardware prerequisites:
 
     - g++ consumes a lot of memory building monotone, due to
       monotone's liberal use of C++ features. it may be possible to
-      build on a system with 128mb of memory, but not pleasant.
+      build on a system with 128mb of memory, but not pleasant. we are
+      working on making this situation better.
 
   * software prerequisites:
 
-    - autoconf
-    - automake
-    - gettext
-    - a supported C++ compiler: g++ 3.2 or later
-    - boost 1.33.0 or later: either an installed copy or an extracted
-      tarball of its unbuilt sources somewhere in the file system are
-      supported
-    - zlib 1.1.4 or later
-    - libiconv if the iconv() function is missing
-    - texinfo (to build the documentation)
-    - Botan 1.6.3 or later (Botan might require bzip2, OpenSSL and / or
-      GnuMP in addition, depending on the package you're using.)
-    - PCRE 7.4 or later
-    - SQLite 3.3.8 or later
-    - Lua 5.1
-    - GNU IDN Library
+    - a supported C++ compiler: g++ 3.2 or later.
+    - an installed copy of boost 1.33.0 or later.
+    - zlib 1.1.4 or later.
 
-        on Debian and Ubuntu:
+        on debian: 
 
-           install the following packages:
-             autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan1.7-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
-             libidn11-dev libgmp3-dev libbz2-dev texinfo
+           apt-get install libboost-date-time-dev
+           apt-get install libboost-filesystem-dev
+           apt-get install libboost-regex-dev
+           apt-get install libboost-serialization-dev
+           apt-get install libboost-test-dev
+           apt-get install libboost-dev
+           apt-get install g++
 
-           (monotone works with older and newer Botan versions as well, 
-            so libbotan1.6-dev or libbotan1.8-dev are also good to go.)
+        on fedora: 
 
-        on FreeBSD:
-
-           install the following packages from the ports collection:
-             databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
-             devel/gmake devel/pcre lang/lua security/botan dns/libidn
-
-        on Gentoo:
-
-           emerge the following packages:
-             autoconf automake boost botan gettext libpcre libidn lua sqlite
-             zlib
-
-        on Fedora:
-
-           install the following packages:
-             autoconf automake gettext boost boost-devel zlib zlib-devel
-             lua lua-devel pcre pcre-devel sqlite sqlite-devel libidn
-             libidn-devel gcc-c++ texinfo texinfo-tex botan botan-devel
- 
-        on openSUSE:
-
-            install the following extra packages with YaST or zypper:
-              autoconf automake gettext-tools gcc-c++ boost-devel zlib-devel
-              libbotan-devel sqlite3-devel pcre-devel lua-devel libidn-devel
-              libbz2-devel texinfo make
-
-        on Mac OS X:
-
-           use MacPorts (http://www.macports.org) to install the following
-           packages:
-             autoconf automake gettext boost zlib lua pcre botan
-             sqlite3 libidn libiconv texinfo
-
-           monotone only uses header-only libraries from boost, so if you don't
-           like to spend a lot of time building boost via MacPorts, you can also
-           download and extract it manually and let CXXFLAGS point to the
-           include/ directory of the extracted version.
-
-        on Windows (using MinGW): see INSTALL_windows_native
-
-        on Windows (using Cygwin): see INSTALL_windows_cygwin
+           apt-get install boost-devel 
+           apt-get install g++
 
         on other systems:
 
-           check your system package repository, you may need to
+           check your system package repository, you may need to 
            build some of these from source. if your package repository
            does not contain the libraries, see:
 
-                http://gcc.gnu.org/                  for g++
-                http://www.boost.org/                for Boost
-                http://www.pcre.org/                 for PCRE
-                http://www.lua.org/                  for Lua
-                http://www.sqlite.org/               for SQLite
-                http://botan.randombit.net/          for Botan
-                http://www.gnu.org/software/libidn/  for GNU IDN
+                http://gcc.gnu.org      for g++
+                http://www.boost.org    for boost
 
-1.1 using boost in the build process:
+1.1 building boost:
 
-  monotone uses the boost libraries in multiple parts of its code.
-  fortunately, it only uses the so-called header-only libraries: these
-  can be used very easily from other projects, as there is no need to
-  build them by hand prior usage.
+  many people have reported difficulty building boost. the main
+  problem is that boost builds with an unorthodox build tool called
+  "bjam" which must, itself, be built or installed before boost can be
+  built. the bjam sources are contained within the boost distribution,
+  but somewhat hidden. there are instructions on
+  http://www.boost.org/more/getting_started.html, but we have
+  assembled this abbreviated bourne shell sequence for advanced users
+  who do not need all the preamble:
 
-  therefore you can use an installed version of boost if shipped with your
-  distribution but, if you do not want to mess with the Boost.Build build
-  system (which is hard to deal with for beginners), you can simply use an
-  extracted copy of the boost sources.  the two procedures are detailed
-  below:
+    wget http://internap.dl.sourceforge.net/sourceforge/boost/boost_1_33_1.tar.gz
+    tar -xzf boost_1_33_1.tar.gz
+    cd boost_1_33_1
+    (cd tools/build/jam_src && ./build.sh)
+    BJAM=`find tools/build/jam_src/ -name bjam -a -type f`
+    $BJAM "-sBUILD=release <threading>single <optimization>speed <runtime-link>static"
+    for i in `find bin -type d -a -name \*.a`; 
+      do for j in `find $i -type f -a -name \*.a`; 
+        do mv $j libs/`basename $i`; 
+      done; 
+    done
+    ranlib libs/*.a
 
-  * if your system already has the boost development libraries installed,
-    you must tell the compiler where to find them.  their location will
-    usually be somewhere under /usr/include.  try the following command:
+  if this completes successfully, you will have a selection of boost
+  libraries in boost_1_33_1/libs and boost headers in
+  boost_1_33_1/boost. you can then either copy the .a files to your
+  standard library path and the directory "boost_1_33_1/boost" to your
+  standard include path, or you can pass additional configuration
+  options to your monotone configure build, such as:
 
-      ls -d /usr/include/boost*
+    ./configure CPPFLAGS="-Iboost_1_33_1" LDFLAGS="-Lboost_1_33_1/libs"
 
-    if the command shows a single directory named 'boost', you do not have
-    to take any extra steps.  configure will automatically find the
-    necessary files.  instead, if the command shows a directory name of the
-    form boost_1_33_1, boost-1.33.1 or similar, you will have to pass that
-    to the configure script.  do so as follows:
-
-      ./configure CPPFLAGS="-I/usr/include/boost-1.33.1"
-
-    if no directories are shown, look for prebuilt boost packages for your
-    system and install them.  if there aren't any, resort to the procedure
-    described in the following point.
-
-  * if you do not have boost already installed, and you cannot easily
-    install it from prebuilt packages, fetch a copy of the boost sources
-    from their site (see previous section) and unpack them somewhere in
-    your system -- for example, your home directory.  once done, tell the
-    configure script where the files are:
-
-      ./configure CPPFLAGS="-I${HOME}/boost-1.33.1"
-
-  it is important to note that, once monotone is built, you can get rid of
-  all the boost sources or boost development packages from your system.
-  the required header-only libraries will have been built into the final
-  binary, which will not rely on any binary boost library.  in some sense,
-  you can think of it as static linkage.
+  monotone does not use all of boost -- for instance, people often
+  have trouble building boost.python, which we do not use.  you don't
+  need to build any libraries that we don't use!
 
 2. configuring monotone:
 
   * if there is no ./configure script in your source tree you'll need
-    to create one before proceeding to the next step. one of the
+    to create one before proceeding to the next step. one of the 
     following auto* commands should work:
 
         $ aclocal-1.9 && autoreconf --install
@@ -161,11 +99,43 @@ building and installation process for monotone
        results.  however, you can force IPv6 detection by saying 'yes'
        or completely disable it using 'no'.
 
+     --enable-static-boost[=prefix]
+
+       this will attempt to link a "mostly static" version of monotone
+       using the .a files supplied with your installation of
+       boost. the resulting binary will be larger but more portable
+       than a normal (dynamic) link.
+
+       you can optionally pass a prefix to the option, which will be
+       used to look for the static libraries; otherwise a list of
+       predefined directories will be used.  for example:
+
+         ./configure --enable-static-boost=/usr/local/boost
+
      --disable-nls
 
        build a version of monotone without support for local message
        catalogs. you might like to do this if you do not have a
        working installation of GNU gettext.
+
+     --disable-large-file
+
+       this will disable large file support from the builtin sqlite, to
+       achieve maximum binary compatibility with old systems.
+
+     BOOST_SUFFIX=string
+
+       this variable, to be set on configure's command line, can be used
+       to specify a special string suffix to be appended to boost library
+       names.  many Linux distributions provide symlinks to hide this
+       suffix, but others do not.  therefore, you need to pass it to the
+       configure script through this variable for correct detection of
+       boost.  for example:
+
+         ./configure BOOST_SUFFIX=-gcc
+
+       note that, sometimes, the configure script will be able to guess
+       the correct suffix by itself.
 
      --enable-pch
 
@@ -175,10 +145,8 @@ building and installation process for monotone
 
 3. building monotone
 
-  * type "make" to invoke GNU make (please notice it might be named
-    "gmake" on systems where system make is not GNU make).
-    this should produce a mtn binary in your current directory.
-    if not, please send a build log to
+  * type "make". this should produce a mtn binary in your current
+    directory. if not, please send a build log to 
     monotone-devel@nongnu.org with a description of the failure.
 
 4. testing monotone
@@ -187,17 +155,18 @@ building and installation process for monotone
     confirm monotone's functionality on your system.
     Do not run "make check" as root (Unix)!  Doing so will cause the
     failure of some of the tests!
-    Also, make sure your testing process has enough memory.  Experience
-    has shown that some tests may fail "mysteriously" when there is too
-    little memory.  A possible hint is that 128MB was too little on
-    FreeBSD 6 on x86 while 256MB was enough.
 
     You might also like to try fetching monotone's sources from our
     monotone server. this process will transfer the complete development
-    history to your database, and you will then be free to share it with
-    others or make changes and submit them to us:
+    history (about 40 megabytes) to your database, and you will then
+    be free to share it with others or make changes and submit them to
+    us:
 
-        mtn clone 'mtn://code.monotone.ca/monotone?net.venge.monotone'
+        mtn --db=mt.mtn db init
+
+        mtn --db=mt.mtn pull venge.net "net.venge.monotone*"
+
+        mtn --db=mt.mtn --branch=net.venge.monotone checkout monotone-sources
 
 5. upgrading
 

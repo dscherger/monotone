@@ -1,0 +1,73 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Certificate - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
+<link rel="prev" href="Key-and-Cert-Trust.html#Key-and-Cert-Trust" title="Key and Cert Trust">
+<link rel="next" href="Packet-I_002fO.html#Packet-I_002fO" title="Packet I/O">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Certificate"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Packet-I_002fO.html#Packet-I_002fO">Packet I/O</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Key-and-Cert-Trust.html#Key-and-Cert-Trust">Key and Cert Trust</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+<hr>
+</div>
+
+<h3 class="section">5.6 Certificate</h3>
+
+     <dl>
+<dt><samp><span class="command">mtn cert </span><var>id</var> <var>certname</var></samp><a name="index-mtn-cert-_0040var_007bid_007d-_0040var_007bcertname_007d-106"></a><dt><samp><span class="command">mtn cert </span><var>id</var> <var>certname</var> <var>certval</var></samp><a name="index-mtn-cert-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-107"></a><dd>
+These commands create a new certificate with name <var>certname</var>, for a
+revision with version <var>id</var>.  The <var>id</var> argument can be a selector
+using certs already on the revision, such as <code>h:</code><var>branchname</var>.
+
+     <p>If <var>certval</var> is provided, it is the value of the certificate. 
+Otherwise the certificate value is read from <code>stdin</code>.
+
+     <br><dt><samp><span class="command">mtn approve </span><var>id</var></samp><a name="index-mtn-approve-_0040var_007bid_007d-108"></a><dd>
+This command is a synonym for <samp><span class="command">mtn cert </span><var>id</var><span class="command"> branch
+</span><var>branchname</var></samp> where <var>branchname</var> is the current branch name
+(either deduced from the workspace or from the <samp><span class="option">--branch</span></samp>
+option).
+
+     <br><dt><samp><span class="command">mtn comment </span><var>id</var></samp><a name="index-mtn-comment-_0040var_007bid_007d-109"></a><dt><samp><span class="command">mtn comment </span><var>id</var> <var>comment</var></samp><a name="index-mtn-comment-_0040var_007bid_007d-_0040var_007bcomment_007d-110"></a><dd>
+These commands are synonyms for <samp><span class="command">mtn cert </span><var>id</var><span class="command">
+comment </span><var>comment</var></samp>. If <var>comment</var> is not provided, it is read
+from <code>stdin</code>.
+
+     <br><dt><samp><span class="command">mtn tag </span><var>id</var> <var>tagname</var></samp><a name="index-mtn-tag-_0040var_007bid_007d-_0040var_007btagname_007d-111"></a><dd>
+This command associates the symbolic name <var>tagname</var> with the
+revision <var>id</var>, so that symbolic name can later be used in
+<a href="Selectors.html#Selectors">Selectors</a> for specifying revisions for commands like
+<samp><span class="command">update</span></samp> or <samp><span class="command">diff</span></samp>.
+
+     <p>This command is a synonym for <samp><span class="command">mtn cert </span><var>id</var><span class="command"> tag
+</span><var>tagname</var></samp>.
+
+     <br><dt><samp><span class="command">mtn testresult </span><var>id</var><span class="command"> 0</span></samp><a name="index-mtn-testresult-_0040var_007bid_007d-0-112"></a><dt><samp><span class="command">mtn testresult </span><var>id</var><span class="command"> 1</span></samp><a name="index-mtn-testresult-_0040var_007bid_007d-1-113"></a><dd>
+These commands are synonyms for <samp><span class="command">mtn cert </span><var>id</var><span class="command">
+testresult 0</span></samp> or <samp><span class="command">mtn cert </span><var>id</var><span class="command"> testresult 1</span></samp>.
+
+</dl>
+
+   </body></html>
+

@@ -1,0 +1,92 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Quality Assurance - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Inodeprints.html#Inodeprints" title="Inodeprints">
+<link rel="next" href="Vars.html#Vars" title="Vars">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Quality-Assurance"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Vars.html#Vars">Vars</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Inodeprints.html#Inodeprints">Inodeprints</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.6 Quality Assurance</h3>
+
+<p>Monotone was constructed to serve both as a version control tool and
+as a quality assurance tool. The quality assurance features permit
+users to ignore, or &ldquo;filter out&rdquo;, versions which do not meet their
+criteria for quality. This section describes the way monotone
+represents and reasons about quality information.
+
+   <p>Monotone often views the collection of revisions as a directed graph,
+in which revisions are the nodes and changes between revisions are the
+edges. We call this the <dfn>revision graph</dfn>. The revision graph has a
+number of important subgraphs, many of which overlap. For example,
+each branch is a subgraph of the revision graph, containing only the
+nodes carrying a particular <code>branch</code> cert.
+
+   <p>Many of monotone's operations involve searching the revision graph for
+the ancestors or descendents of a particular revision, or extracting
+the &ldquo;heads&rdquo; of a subgraph, which is the subgraph's set of nodes with
+no descendents. For example, when you run the <samp><span class="command">update</span></samp> command,
+monotone searches the subgraph consisting of descendents of the base
+revision of the current workspace, trying to locate a unique head to
+update the base revision to.
+
+   <p>Monotone's quality assurance mechanisms are mostly based on
+restricting the subgraph each command operates on. There are two
+methods used to restrict the subgraph:
+
+     <ul>
+<li>By restricting the set of trusted <code>branch</code> certificates, you
+can require that specific code reviewers have approved of each edge in
+the subgraph you focus on. 
+<li>By restricting the set of trusted <code>testresult</code> certificates, you
+can require that the <em>endpoints</em> of an update operation have a
+certificate asserting that the revision in question passed a certain
+test, or testsuite. 
+</ul>
+
+   <p>The evaluation of trust is done on a cert-by-cert basis by calling a
+set of lua hooks: <code>get_revision_cert_trust</code>,
+<code>get_manifest_cert_trust</code> and <code>get_file_cert_trust</code>. These
+hooks are only called when a cert has at least one good signature from
+a known key, and are passed <em>all</em> the keys which have signed the
+cert, as well as the cert's ID, name and value. The hook can then
+evaluate the set of signers, as a group, and decide whether to grant
+or deny trust to the assertion made by the cert.
+
+   <p>The evaluation of testresults is controlled by the
+<code>accept_testresult_change</code> hook. This hook is called when
+selecting update candidates, and is passed a pair of tables describing
+the <code>testresult</code> certs present on the source and proposed
+destination of an update. Only if the change in test results are
+deemed &ldquo;acceptable&rdquo; does monotone actually select an update target
+to merge into your workspace.
+
+   <p>For details on these hooks, see the <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>.
+
+   </body></html>
+

@@ -1,0 +1,127 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Network - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
+<link rel="prev" href="Workspace.html#Workspace" title="Workspace">
+<link rel="next" href="Informative.html#Informative" title="Informative">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Network"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Informative.html#Informative">Informative</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Workspace.html#Workspace">Workspace</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+<hr>
+</div>
+
+<h3 class="section">5.3 Network</h3>
+
+     <dl>
+<dt><samp><span class="command">mtn serve [--bind=[</span><var>address</var><span class="command">][:</span><var>port</var><span class="command">]]</span></samp><a name="index-mtn-serve-_005b_002d_002dbind_003d_005b_0040var_007baddress_007d_005d_005b_003a_0040var_007bport_007d_005d_005d-45"></a><br><dt><samp><span class="command">mtn serve --stdio [--no-transport-auth]</span></samp><a name="index-mtn-serve-_002d_002dstdio-_005b_002d_002dno_002dtransport_002dauth_005d-46"></a><dt><samp><span class="command">mtn pull [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-pull-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-47"></a><dt><samp><span class="command">mtn push [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-push-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-48"></a><dt><samp><span class="command">mtn sync [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-sync-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-49"></a><dd>
+These commands operate the &ldquo;netsync&rdquo; protocol built into
+monotone. This is a custom protocol for rapidly synchronizing two
+monotone databases using a hash tree index. The protocol is &ldquo;peer to
+peer&rdquo;, but requires one peer to listen for incoming connections (the
+server) and the other peer (the client) to connect to the server. When
+run with <samp><span class="option">--stdio</span></samp>, the server listens for a single connection
+then terminates. When run with <samp><span class="option">--bind</span></samp>, or with neither
+option, the server listens for TCP connections and serves them
+continuously, until it is shut down.
+
+     <p>The network <var>address</var> given to <samp><span class="command">serve</span></samp> as an argument to
+<samp><span class="option">--bind</span></samp> should be a host name to listen on, optionally
+followed by a colon and a port number. The default port number is
+4691. If no <samp><span class="option">--bind</span></samp> option is given, the server listens on
+port 4691 of every network interface.
+
+     <p>If <samp><span class="command">serve</span></samp> is run with <samp><span class="option">--stdio</span></samp>, a single netsync
+session is served over the <code>stdin</code> and <code>stdout</code> file
+descriptors. If <samp><span class="option">--no-transport-auth</span></samp> is provided along with
+<samp><span class="option">--stdio</span></samp>, transport authentication and access control mechanisms
+are disabled. Only use <samp><span class="option">--no-transport-auth</span></samp> if you are certain
+that the transport channel in use already provides sufficient
+authentication and authorization facilities.
+
+     <p>The <var>uri-or-address</var> arguments given to <samp><span class="command">push</span></samp>,
+<samp><span class="command">pull</span></samp>, and <samp><span class="command">sync</span></samp> can be of two possible forms. If
+the argument is a URI, a lua hook may transform the URI into a
+connection command, and execute the command as a transport channel for
+netsync. If the argument is a simple hostname (with optional port
+number), monotone will use a TCP socket to the specified host and port
+as a transport channel for netsync.
+
+     <p>The <var>glob</var> parameters indicate a set of branches to exchange. 
+Multiple <var>glob</var> and <samp><span class="option">--exclude</span></samp> options can be specified;
+every branch which matches a <var>glob</var> exactly, and does not match an
+<var>exclude-glob</var>, will be indexed and made available for
+synchronization.
+
+     <p>For example, perhaps Bob and Alice wish to synchronize their
+<code>net.venge.monotone.win32</code> and <code>net.venge.monotone.i18n</code>
+branches. Supposing Alice's computer has hostname
+<code>alice.someisp.com</code>, then Alice might run:
+
+     <pre class="smallexample">          $ mtn --bind=alice.someisp.com serve
+     </pre>
+     <p>And Bob might run
+
+     <pre class="smallexample">          $ mtn sync alice.someisp.com "net.venge.monotone*"
+     </pre>
+     <p>When the operation completes, all branches matching
+<code>net.venge.monotone*</code> will be synchronized between Alice and Bob's
+databases.
+
+     <p>The <samp><span class="command">pull</span></samp>, <samp><span class="command">push</span></samp>, and <samp><span class="command">sync</span></samp> commands only
+require you pass <var>address</var> and <var>glob</var> the first time you use one
+of them; monotone will memorize this use and in the future default to
+the same server and glob.  For instance, if Bob wants to <samp><span class="command">sync</span></samp>
+with Alice again, he can simply run:
+
+     <pre class="smallexample">          $ mtn sync
+     </pre>
+     <p>Of course, he can still <samp><span class="command">sync</span></samp> with other people and other
+branches by passing an address or address plus globs on the command
+line; this will not affect his default affinity for Alice.  If you ever
+do want to change your defaults, simply pass the <samp><span class="option">--set-default</span></samp>
+option when connecting to the server and branch pattern that you want to
+make the new default.
+
+     <p>In the server, different permissions can be applied to each branch; see
+the hooks <code>get_netsync_read_permitted</code> and
+<code>get_netsync_write_permitted</code> (see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>).
+
+     <p>If a <samp><span class="option">--pid-file</span></samp> option is specified, the command
+<samp><span class="command">serve</span></samp> will create the specified file and record the process
+identifier of the server in the file.  This file can then be read to
+identify specific monotone server processes.
+
+     <p>The syntax for patterns is very simple.  <code>*</code> matches 0 or more
+arbitrary characters.  <code>?</code> matches exactly 1 arbitrary character. 
+<code>{foo,bar,baz}</code> matches &ldquo;foo&rdquo;, or &ldquo;bar&rdquo;, or &ldquo;baz&rdquo;.  These
+can be combined arbitrarily.  A backslash, <code>\</code>, can be prefixed to
+any character, to match exactly that character &mdash; this might be useful
+in case someone, for some odd reason, decides to put a &ldquo;*&rdquo; into their
+branch name.
+
+</dl>
+
+   </body></html>
+

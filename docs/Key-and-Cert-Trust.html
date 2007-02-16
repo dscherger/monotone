@@ -1,0 +1,75 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Key and Cert Trust - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
+<link rel="prev" href="Informative.html#Informative" title="Informative">
+<link rel="next" href="Certificate.html#Certificate" title="Certificate">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Key-and-Cert-Trust"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Certificate.html#Certificate">Certificate</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Informative.html#Informative">Informative</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+<hr>
+</div>
+
+<h3 class="section">5.5 Key and Cert Trust</h3>
+
+     <dl>
+<dt><samp><span class="command">mtn genkey </span><var>keyid</var></samp><a name="index-mtn-genkey-_0040var_007bkeyid_007d-102"></a><dd>
+This command generates an <span class="sc">rsa</span> public/private key pair, using a
+system random number generator, and stores it in your keystore under
+the key name <var>keyid</var>.
+
+     <p>The private half of the key is stored in an encrypted form, so that anyone
+who can read your keystore cannot extract your private key and use it. 
+You must provide a passphrase for your key when it is generated, which is used
+to determine the encryption key. In the future you will need to enter this
+passphrase again each time you sign a certificate, which happens every
+time you <samp><span class="command">commit</span></samp> to your database. You can tell monotone to
+automatically use a certain passphrase for a given key using the
+<code>get_passphrase(</code><var>keypair_id</var><code>)</code>, but this significantly
+increases the risk of a key compromise on your local computer. Be
+careful using this hook.
+
+     <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-103"></a><dd>
+This command drops the public and/or private key. If both exist, both
+are dropped, if only one exists, it is dropped. This command should
+be used with caution as changes are irreversible without a backup of
+the key(s) that were dropped.
+
+     <br><dt><samp><span class="command">mtn chkeypass </span><var>id</var></samp><a name="index-mtn-chkeypass-_0040var_007bid_007d-104"></a><dd>
+This command lets you change the passphrase of the private half of the
+key <var>id</var>.
+
+     <br><dt><samp><span class="command">mtn trusted </span><var>id</var> <var>certname</var> <var>certval</var> <var>signers</var></samp><a name="index-mtn-trusted-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-_0040var_007bsigners_007d-105"></a><dd>
+This command lets you test your revision trust hook
+<code>get_revision_cert_trust</code> (see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>).  You pass it
+a revision ID, a certificate name, a certificate value, and one or more
+key IDs, and it will tell you whether, under your current settings,
+Monotone would trust a cert on that revision with that value signed by
+those keys.
+
+</dl>
+
+   </body></html>
+

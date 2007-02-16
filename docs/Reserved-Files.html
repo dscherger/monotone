@@ -1,0 +1,116 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Reserved Files - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Vars.html#Vars" title="Vars">
+<link rel="next" href="Reserved-Certs.html#Reserved-Certs" title="Reserved Certs">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Reserved-Files"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Reserved-Certs.html#Reserved-Certs">Reserved Certs</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Vars.html#Vars">Vars</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.8 Reserved Files</h3>
+
+<p>A monotone workspace consists of control files and non-control
+files. Each type of file can be versioned or non-versioned. These
+classifications lead to four groups of files:
+
+     <ul>
+<li>versioned control files
+<li>non-versioned control files
+<li>versioned non-control files
+<li>non-versioned non-control files
+</ul>
+
+   <p>Control files contain special content formatted for use by
+monotone. Versioned files are recorded in a monotone database and have
+their state tracked as they are modified.
+
+   <p>If a control file is versioned, it is considered <em>part of</em> the
+state of the workspace, and will be recorded as a manifest
+entry. If a control file is not versioned, it is used to <em>manage</em>
+the state of the workspace, but it not considered an intrinsic part
+of it.
+
+   <p>Most files you manage with monotone will be versioned non-control
+files. For example, if you keep source code or documents in a monotone
+database, they are versioned non-control files. Non-versioned,
+non-control files in your workspace are generally temporary or junk
+files, such as backups made by editors or object files made by
+compilers. Such files are ignored by monotone.
+
+<h3 class="heading">Identifying control files</h3>
+
+<p>Control files are identified by their names. Non-control files can
+have any name <em>except</em> the names reserved for control files. The
+names of control files follow a regular pattern:
+
+     <dl>
+<dt>Versioned control files<dd>Any file name beginning with <samp><span class="file">.mtn-</span></samp>
+<br><dt>Non-versioned control files<dd>Any file in the directory <samp><span class="file">_MTN/</span></samp>
+</dl>
+
+   <p>The general intention is that versioned control files are things that
+you may want to edit directly.  In comparison, you should never have
+to edit non-versioned control files directly; monotone should do that
+for you whenever it is appropriate.  However, both are documented
+here, just in case a situation arises where you need to go &ldquo;under the
+hood&rdquo;.
+
+<h3 class="heading">Existing control files</h3>
+
+<p>The following control files are currently used. More control files may be added
+in the future, but they will follow the patterns given above.
+
+     <dl>
+<dt><samp><span class="file">.mtn-ignore</span></samp><dd>Contains a list of regular expression patterns, one per line. If it exists,
+any file with a name matching one of these patterns is ignored. 
+<br><dt><samp><span class="file">_MTN/wanted-testresults</span></samp><dd>Contains a list of testresult key names, one per line. If it exists, update
+will only select revisions that do not have regressions according to the given
+testresult keys. 
+<br><dt><samp><span class="file">_MTN/revision</span></samp><dd>Contains the identity of the &ldquo;base&rdquo; revision of the workspace, and a
+list of additions, deletions, and renames which have occurred in the
+current workspace, relative to that version.
+
+     <p>Every workspace has a base revision, which is the revision that was
+originally checked out to create that workspace.  When the workspace
+is committed, the base revision is considered to be the ancestor of
+the committed revision. 
+<br><dt><samp><span class="file">_MTN/options</span></samp><dd>Contains &ldquo;sticky&rdquo; command-line options such as <samp><span class="option">--db</span></samp> or
+<samp><span class="option">--branch</span></samp>, such that you do not need to enter them repeatedly
+after checking out a particular workspace. 
+<br><dt><samp><span class="file">_MTN/log</span></samp><dd>Contains log messages to append to the &ldquo;changelog&rdquo; cert upon
+commit. The user may add content to this file while they work.  Upon a
+successful commit monotone will empty the file making it ready for the
+next edit/commit cycle. 
+<br><dt><samp><span class="file">_MTN/inodeprints</span></samp><dd>If this file exists, monotone considers the directory to be in
+<a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode, and uses this file to cache the inodeprints. 
+<br><dt><samp><span class="file">_MTN/debug</span></samp><dd>If monotone detects a bug in itself or crashes, then before exiting it
+dumps a log of its recent activity to this file, to aid in debugging. 
+</dl>
+
+   </body></html>
+

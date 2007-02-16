@@ -1,0 +1,100 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Reserved Certs - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Reserved-Files.html#Reserved-Files" title="Reserved Files">
+<link rel="next" href="Naming-Conventions.html#Naming-Conventions" title="Naming Conventions">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Reserved-Certs"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Naming-Conventions.html#Naming-Conventions">Naming Conventions</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Reserved-Files.html#Reserved-Files">Reserved Files</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.9 Reserved Certs</h3>
+
+<p>Every certificate has a name. Some names have meaning which is built
+in to monotone, others may be used for customization by a particular
+user, site, or community. If you wish to define custom certificates,
+you should prefix such certificate names with <code>x-</code>. For example,
+if you want to make a certificate describing the existence of security
+vulnerabilities in a revision, you might wish to create a certificate
+called <code>x-vulnerability</code>.  Monotone reserves all names which do
+not begin with <code>x-</code> for possible internal use. If an <code>x-</code>
+certificate becomes widely used, monotone will likely adopt it as a
+reserved cert name and standardize its semantics.
+
+   <p>Most reserved certificate names have no meaning yet; some do. Usually
+monotone is also responsible for <em>generating</em> many of these certs
+as part of normal operation, such as during a <samp><span class="command">commit</span></samp>. Others
+will be added explicitly via other commands, like <samp><span class="command">tag</span></samp> or
+<samp><span class="command">approve</span></samp>.
+
+   <p>As well as carrying other information, certs (and combinations of certs)
+are useful for identifying revisions with <a href="Selectors.html#Selectors">Selectors</a>; in
+particular, this is the primary purpose of the <code>tag</code> cert.
+
+   <p>The pre-defined, reserved certificate names are:
+
+     <dl>
+<dt><code>author</code><dd>This cert's value is the name of a person who committed the revision
+the cert is attached to. The cert is generated when you commit a
+revision. It is displayed by the <samp><span class="command">log</span></samp> command.
+
+     <br><dt><code>branch</code><dd>This cert's value is the name of a branch. A <code>branch</code> cert
+associates a revision with a branch. The revision is said to be &ldquo;in
+the branch&rdquo; named by the cert. The cert is generated when you commit
+a revision, either directly with the <samp><span class="command">commit</span></samp> command or
+indirectly with the <samp><span class="command">merge</span></samp> or <samp><span class="command">propagate</span></samp> commands. The
+<code>branch</code> certs are read and directly interpreted by <em>many</em>
+monotone commands, and play a fundamental role in organizing work in
+any monotone database.
+
+     <br><dt><code>changelog</code><dd>This cert's value is the change log message you provide when you
+commit a revision. It is displayed by the <samp><span class="command">log</span></samp> command.
+
+     <br><dt><code>comment</code><dd>This cert's value is an additional comment, usually provided after
+committing, about a revision. Certs with the name <code>comment</code> will be
+shown together with <code>changelog</code> certs by the <samp><span class="command">log</span></samp> command.
+
+     <br><dt><code>date</code><dd>This cert's value is an ISO date string indicating the time at which a
+revision was committed. It is displayed by the <samp><span class="command">log</span></samp> command, and
+may be used as an additional heuristic or selection criterion in other
+commands in the future.
+
+     <br><dt><code>tag</code><dd>This cert's value is a symbolic name given to a revision, which may be
+used as a way of selecting the revision by name for later commands like
+<samp><span class="command">checkout</span></samp> and <samp><span class="command">diff</span></samp>.
+
+     <br><dt><code>testresult</code><dd>This cert's value is interpreted as a boolean string, either <code>0</code>
+or <code>1</code>. It is generated by the <samp><span class="command">testresult</span></samp> command and
+represents the results of running a particular test on the underlying
+revision. Typically you will make a separate signing key for each test
+you intend to run on revisions. This cert influences the
+<samp><span class="command">update</span></samp> algorithm.
+
+   </dl>
+
+   </body></html>
+

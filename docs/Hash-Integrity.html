@@ -1,0 +1,175 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Hash Integrity - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Special-Topics.html#Special-Topics" title="Special Topics">
+<link rel="prev" href="Internationalization.html#Internationalization" title="Internationalization">
+<link rel="next" href="Rebuilding-ancestry.html#Rebuilding-ancestry" title="Rebuilding ancestry">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Hash-Integrity"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Rebuilding-ancestry.html#Rebuilding-ancestry">Rebuilding ancestry</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Internationalization.html#Internationalization">Internationalization</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Special-Topics.html#Special-Topics">Special Topics</a>
+<hr>
+</div>
+
+<h3 class="section">7.2 Hash Integrity</h3>
+
+<p>Some proponents of a competing, proprietary version control system
+have suggested, in a
+<a href="http://www.usenix.org/events/hotos03/tech/full_papers/henson/henson_html/">usenix paper</a>, that the use of a cryptographic hash function such as
+<span class="sc">sha1</span> as an identifier for a version is unacceptably unsafe. This
+section addresses the argument presented in that paper and describes
+monotone's additional precautions.
+
+   <p>To summarize our position:
+     <ul>
+<li>the analysis in the paper is wrong,
+<li>even if it were right, monotone is sufficiently safe. 
+</ul>
+
+<h3 class="heading">The analysis is wrong</h3>
+
+<p>The paper displays a fundamental lack of understanding about what a
+<em>cryptographic</em> hash function is, and how it differs from a
+normal hash function. Furthermore it confuses accidental collision
+with attack scenarios, and mixes up its analysis of the risk involved
+in each. We will try to untangle these issues here.
+
+   <p>A cryptographic hash function such as <span class="sc">sha1</span> is more than just a
+uniform spread of inputs to an output range. Rather, it must be
+designed to withstand attempts at:
+
+     <ul>
+<li>reversal: deriving an input value from the output
+<li>collision: finding two different inputs which hash to the same output
+</ul>
+
+   <p>Collision is the problem the paper is concerned with. Formally, an
+n-bit cryptographic hash should cost 2^n work units to collide
+against a given value, and sqrt(2^n) tries to find a random
+pair of colliding values. This latter probability is sometimes called
+the hash's &ldquo;birthday paradox probability&rdquo;.
+
+<h4 class="subheading">Accidental collision</h4>
+
+<p>One way of measuring these bounds is by measuring how single-bit
+changes in the input affect bits in the hash output. The <span class="sc">sha1</span>
+hash has a strong <em>avalanche property</em>, which means that flipping
+<em>any one bit</em> in the input will cause on average half the 160
+bits in the output code to change. The fanciful <span class="sc">val1</span> hash
+presented in the paper does not have such a property &mdash; flipping its
+first bit when all the rest are zero causes <em>no change</em> to any of
+the 160 output bits &mdash; and is completely unsuited for use as a
+<em>cryptographic hash</em>, regardless of the general shape of its
+probability distribution.
+
+   <p>The paper also suggests that birthday paradox probability cannot be
+used to measure the chance of accidental <span class="sc">sha1</span> collision on &ldquo;real
+inputs&rdquo;, because birthday paradox probability assumes a uniformly
+random sample and &ldquo;real inputs&rdquo; are not uniformly random. The paper
+is wrong: the inputs to <span class="sc">sha1</span> are not what is being measured (and
+in any case can be arbitrarily long); the collision probability being
+measured is of <em>output space</em>. On output space, the hash is
+designed to produce uniformly random spread, even given nearly
+identical inputs. In other words, it is <em>a primary design
+criterion</em> of such a hash that a birthday paradox probability is a
+valid approximation of its collision probability.
+
+   <p>The paper's characterization of risk when hashing &ldquo;non-random
+inputs&rdquo; is similarly deceptive. It presents a fanciful case of a
+program which is <em>storing</em> every possible 2kb block in a
+file system addressed by <span class="sc">sha1</span> (the program is trying to find a
+<span class="sc">sha1</span> collision). While this scenario <em>will</em> very likely
+encounter a collision <em>somewhere</em> in the course of storing all
+such blocks, the paper neglects to mention that we only expect it to
+collide after storing about 2^80 of the 2^16384 possible
+such blocks (not to mention the requirements for compute time to
+search, or disk space to store 2^80 2kb blocks).
+
+   <p>Noting that monotone can only store 2^41 bytes in a database,
+and thus probably some lower number (say 2^32 or so) active
+rows, we consider such birthday paradox probability well out of
+practical sight. Perhaps it will be a serious concern when
+multi-yottabyte hard disks are common.
+
+<h4 class="subheading">Collision attacks</h4>
+
+<p>Setting aside accidental collisions, then, the paper's underlying
+theme of vulnerability rests on the assertion that someone will break
+<span class="sc">sha1</span>. Breaking a cryptographic hash usually means finding a way
+to collide it trivially. While we note that <span class="sc">sha1</span> has in fact
+resisted attempts at breaking for 8 years already, we cannot say that
+it will last forever. Someone might break it. We can say, however,
+that finding a way to trivially collide it only changes the resistance
+to <em>active attack</em>, rather than the behavior of the hash on
+benign inputs.
+
+   <p>Therefore the vulnerability is not that the hash might suddenly cease
+to address benign blocks well, but merely that additional security
+precautions might become a requirement to ensure that blocks are
+benign, rather than malicious. The paper fails to make this
+distinction, suggesting that a hash becomes &ldquo;unusable&rdquo; when it is
+broken. This is plainly not true, as a number of systems continue to
+get useful low collision hashing behavior &mdash; just not good security
+behavior &mdash; out of &ldquo;broken&rdquo; cryptographic hashes such as MD4.
+
+<h3 class="heading">Monotone is probably safe anyways</h3>
+
+<p>Perhaps our arguments above are unconvincing, or perhaps you are the
+sort of person who thinks that practice never lines up with
+theory. Fair enough. Below we present <em>practical</em> procedures you
+can follow to compensate for the supposed threats presented in the
+paper.
+
+<h4 class="subheading">Collision attacks</h4>
+
+<p>A successful collision attack on <span class="sc">sha1</span>, as mentioned, does not
+disrupt the <em>probability</em> features of <span class="sc">sha1</span> on benign
+blocks. So if, at any time, you believe <span class="sc">sha1</span> is &ldquo;broken&rdquo;, it
+does <em>not</em> mean that you cannot use it for your work with
+monotone. It means, rather, that you cannot base your <em>trust</em> on
+<span class="sc">sha1</span> values anymore. You must trust who you communicate with.
+
+   <p>The way around this is reasonably simple: if you do not trust
+<span class="sc">sha1</span> to prevent malicious blocks from slipping into your
+communications, you can always augment it by enclosing your
+communications in more security, such as tunnels or additional
+signatures on your email posts. If you choose to do this, you will
+still have the benefit of self-identifying blocks, you will simply
+cease to trust such blocks unless they come with additional
+authentication information.
+
+   <p>If in the future <span class="sc">sha1</span> (or, indeed, <span class="sc">rsa</span>) becomes accepted as
+broken we will naturally upgrade monotone to a newer hash or public
+key scheme, and provide migration commands to recalculate existing
+databases based on the new algorithm.
+
+   <p>Similarly, if you do not trust our vigilance in keeping up to date
+with cryptography literature, you can modify monotone to use any
+stronger hash you like, at the cost of isolating your own
+communications to a group using the modified version. Monotone is free
+software, and runs atop <code>botan</code>, so it is both legal and
+relatively simple to change it to use some other algorithm.
+
+   </body></html>
+

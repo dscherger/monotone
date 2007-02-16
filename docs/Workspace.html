@@ -1,0 +1,306 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Workspace - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
+<link rel="prev" href="Tree.html#Tree" title="Tree">
+<link rel="next" href="Network.html#Network" title="Network">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Workspace"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Network.html#Network">Network</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Tree.html#Tree">Tree</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+<hr>
+</div>
+
+<h3 class="section">5.2 Workspace</h3>
+
+     <dl>
+<dt><samp><span class="command">mtn setup [</span><var>directory</var><span class="command">]</span></samp><a name="index-mtn-setup-_005b_0040var_007bdirectory_007d_005d-15"></a><dd>This command prepares <var>directory</var> as a monotone workspace,
+by creating and populating the <samp><span class="file">_MTN</span></samp> directory with basic
+information.  This information must include at least the branch and the
+database to be used, both of which will be placed in the
+<samp><span class="file">_MTN/options</span></samp> file.
+
+     <p>This can be used with an empty directory to start a new blank project,
+or within an existing directory full of files, prior to using
+<samp><span class="command">mtn commit</span></samp>. If no directory is specified, the current
+directory is used.
+
+     <br><dt><samp><span class="command">mtn add </span><var>pathname...</var></samp><a name="index-mtn-add-_0040var_007bpathname_002e_002e_002e_007d-16"></a><br><dt><samp><span class="command">mtn add --unknown</span></samp><a name="index-mtn-add-_002d_002dunknown-17"></a><dd>This command places &ldquo;add&rdquo; entries for the paths specified in
+<var>pathname...</var> in the workspace's &ldquo;work list&rdquo;. The work list of
+your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
+explicit pathname changes you wish to commit at some future time, such
+as addition, removal or renaming of files.
+
+     <p>As a convenience, the <samp><span class="option">--unknown</span></samp> option can be used; this
+option will cause all of the files listed by <samp><span class="command">mtn list
+unknown</span></samp> to be added.
+
+     <p>While this command places an &ldquo;add&rdquo; entry on your work list, it does
+not immediately affect your database. When you <samp><span class="command">commit</span></samp> your
+workspace, monotone will use the work list to build a new revision,
+which it will then commit to the database. The new revision will have
+any added entries inserted in its manifest.
+
+     <br><dt><samp><span class="command">mtn [--no-respect-ignore] mkdir </span><var>directory...</var></samp><a name="index-mtn-_005b_002d_002dno_002drespect_002dignore_005d-mkdir-_0040var_007bdirectory_002e_002e_002e_007d-18"></a><dd>This command creates a directory in the filesystem relative to your
+current location and adds it to your workspace's &ldquo;work list&rdquo;.  The
+changes are not reflected in your database until such time as you
+perform a commit.  If you use the <samp><span class="option">--no-respect-ignore</span></samp> flag,
+entries in .mtn-ignore will not be honoured.
+
+     <br><dt><samp><span class="command">mtn [--execute] drop </span><var>pathname...</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-19"></a><dt><samp><span class="command">mtn drop --missing</span></samp><a name="index-mtn-drop-_002d_002dmissing-20"></a><dd>This command places &ldquo;drop&rdquo; entries for the paths specified in
+<var>pathname...</var> in the workspace's &ldquo;work list&rdquo;. The work list of
+your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
+explicit pathname changes you wish to commit at some future time, such
+as addition, removal, or renaming of files.  This command also removes
+any attributes on <var>pathname</var>; see <a href="File-Attributes.html#File-Attributes">File Attributes</a> for more
+details.  If you use the <samp><span class="option">--missing</span></samp> flag it will add drop
+entries for any paths that monotone is tracking for which you have
+already removed the files from the filesystem, in addition to all those
+specified in <var>pathname...</var>.
+
+     <p>While this command places a &ldquo;drop&rdquo; entry on your work list, it does
+not immediately affect your database. When you <samp><span class="command">commit</span></samp> your
+workspace, monotone will use the work list to build a new revision,
+which it will then commit to the database. The new revision will have
+any dropped entries removed from its manifest.
+
+     <p>Currently this command does <em>not</em> actually delete the file
+<var>src</var> in your filesystem; if you want to actually delete the file,
+you should run <samp><span class="command">drop</span></samp>, and then perform the actual delete using
+whatever mechanism you normally use to delete files.
+
+     <p>The option <samp><span class="option">--execute</span></samp> will make &ldquo;drop&rdquo; perform the actual
+deletion operations in the filesystem.  It will ignore files or
+directories which have already been deleted.
+
+     <br><dt><samp><span class="command">mtn [--execute] rename </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-rename-_0040var_007bsrc_007d-_0040var_007bdst_007d-21"></a><br><dt><samp><span class="command">mtn [--execute] mv </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-mv-_0040var_007bsrc_007d-_0040var_007bdst_007d-22"></a><dt><samp><span class="command">mtn [--execute] rename </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-rename-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-23"></a><dt><samp><span class="command">mtn [--execute] mv </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-mv-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-24"></a><dd>This command places &ldquo;rename&rdquo; entries for the paths specified in
+<var>src</var> and <var>dst</var> in the workspace's &ldquo;work list&rdquo;. The second form
+renames a number of source paths to the given destination. The work
+list of your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
+explicit pathname changes you wish to commit at some future time, such
+as addition, removal, or renaming of files.  This command also moves any
+attributes on <var>src</var> to <var>dst</var>; see <a href="File-Attributes.html#File-Attributes">File Attributes</a> for more
+details.
+
+     <p>While this command places a &ldquo;rename&rdquo; entry on your work list, it
+does not immediately affect your database. When you <samp><span class="command">commit</span></samp>
+your workspace, monotone will use the work list to build a new
+revision, which it will then commit to the database. The new revision
+will have any renamed entries in its manifest adjusted to their new
+names.
+
+     <p>The option <samp><span class="option">--execute</span></samp> will make &ldquo;rename&rdquo; perform the actual
+rename operations in the filesystem. It will ignore missing source files
+and will not overwrite existing destination files.
+
+     <br><dt><samp><span class="command">mtn commit</span></samp><a name="index-mtn-commit-25"></a><br><dt><samp><span class="command">mtn ci</span></samp><a name="index-mtn-ci-26"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-27"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-28"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-29"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-30"></a><dt><samp><span class="command">mtn commit </span><var>pathname...</var></samp><a name="index-mtn-commit-_0040var_007bpathname_002e_002e_002e_007d-31"></a><dt><samp><span class="command">mtn ci </span><var>pathname...</var></samp><a name="index-mtn-ci-_0040var_007bpathname_002e_002e_002e_007d-32"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-33"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-34"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-35"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-36"></a><dd>
+This command looks at your workspace, decides which files have
+changed, and saves the changes to your database. It does this by
+loading the revision named in <samp><span class="file">_MTN/revision</span></samp>, locating the base
+manifest for your workspace, applying any pathname changes described
+in <samp><span class="file">_MTN/revision</span></samp>, and then comparing the updated base manifest
+to the files it finds in your workspace, to determine which files have
+been edited.
+
+     <p>For each edited file, a delta is copied into the database. Then the
+newly constructed manifest is recorded (as a delta) and finally the
+new revision.  Once all these objects are recorded in you database,
+<samp><span class="command">commit</span></samp> updates <samp><span class="file">_MTN/revision</span></samp> to indicate that the base
+revision is now the newly created revision, and that there are no
+pathname changes to apply.
+
+     <p>Specifying pathnames to <samp><span class="command">commit</span></samp> restricts the set of changes
+that are visible and results in only a partial commit of the workspace. 
+Changes to files not included in the specified set of pathnames will be
+ignored and will remain in the workspace until they are included in a
+future commit. With a partial commit, only the relevant entries in
+<samp><span class="file">_MTN/revision</span></samp> will be removed and other entries will remain for
+future commits.
+
+     <p>From within a subdirectory of the workspace the <samp><span class="command">commit</span></samp> command
+will, by default, include <em>all changes</em> in the workspace. 
+Specifying only the pathname "." will restrict <samp><span class="command">commit</span></samp> to files
+changed within the current subdirectory of the workspace.
+
+     <p>The <samp><span class="option">--message</span></samp> and <samp><span class="option">--message-file</span></samp> options are mutually
+exclusive.  Both provide a <var>logmsg</var> describing the commit. 
+<samp><span class="option">--message-file</span></samp> actually specifies the name of the file containing
+the log message, while <samp><span class="option">--message</span></samp> provides it directly.
+
+     <p>Multiple <samp><span class="option">--message</span></samp> options may be provided on the command line. 
+The log message will be formed by concatenating the <samp><span class="option">--message</span></samp>
+options provided, with each one starting at the beginning of a new line.
+
+     <p>The <samp><span class="file">_MTN/log</span></samp> file can be edited by the user during their daily
+work to record the changes made to the workspace. When running the
+<samp><span class="command">commit</span></samp> command without a <var>logmsg</var> supplied, the contents of
+the <samp><span class="file">_MTN/log</span></samp> file will be read and passed to the Lua hook
+<code>edit_comment</code> as a second parameter named <var>user_log_content</var>. 
+The log message will be prepended with a 'magic' string that must be
+removed to confirm the commit.  This allows the user to easily cancel a
+commit, without emptying the entire log message.  If the commit is
+successful, the <samp><span class="file">_MTN/log</span></samp> file is cleared of all content making it
+ready for another edit/commit cycle.
+
+     <p>If a <samp><span class="option">--branch</span></samp> option is specified, the <samp><span class="command">commit</span></samp> command
+commits to this branch (creating it if necessary).  The branch becomes
+the new default branch of the workspace.
+
+     <p>The <samp><span class="command">commit</span></samp> command also synthesizes a number of
+certificates, which it attaches to the new manifest version and copies
+into your database:
+          <ul>
+<li>An <code>author</code> cert, indicating the person responsible for the changes
+leading to the new revision.  Normally this defaults to your signing key
+or the return value of the <code>get_author</code> hook; you may override this
+by passing the <samp><span class="option">--author</span></samp> option to commit.  This is useful when
+committing a patch on behalf of someone else, or when importing &ldquo;by
+hand&rdquo; from another version control system. 
+<li>A <code>branch</code> cert, indicating the branch the committed revision
+belongs to. 
+<li>A <code>date</code> cert, indicating when the new revision was created. 
+Normally this defaults to the current time; you may override this by
+passing the <samp><span class="option">--date</span></samp> option to commit.  This is useful when
+importing &ldquo;by hand&rdquo; from another version control system. 
+<li>A <code>changelog</code> cert, containing the &ldquo;log message&rdquo; for these
+changes.  If you provided <var>logmsg</var> on the command line, this text
+will be used, otherwise <samp><span class="command">commit</span></samp> will run the Lua hook
+<code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_content</var><code>)</code>, which
+typically invokes an external editor program, in which you can compose
+and/or review your log message for the change. 
+</ul>
+
+     <br><dt><samp><span class="command">mtn revert </span><var>pathname...</var></samp><a name="index-mtn-revert-_0040var_007bpathname_002e_002e_002e_007d-37"></a><dt><samp><span class="command">mtn revert --missing </span><var>pathname...</var></samp><a name="index-mtn-revert-_002d_002dmissing-_0040var_007bpathname_002e_002e_002e_007d-38"></a><dd>This command changes your workspace, so that changes you have made
+since the last checkout or update are discarded. The command is
+restricted the set of files or directories given as arguments.  To
+revert the entire workspace, use <samp><span class="command">revert</span></samp> "." in the
+top-level directory. Specifying "." in a subdirectory will restrict
+<samp><span class="command">revert</span></samp> to files changed within the current subdirectory.
+
+     <p>If the flag <samp><span class="option">--missing</span></samp> is given it reverts (ie, restores) any
+files which monotone has listed in its manifest, but which have been
+deleted from the workspace.  Only missing files matching the given
+file or directory arguments are reverted.
+
+     <br><dt><samp><span class="command">mtn update</span></samp><a name="index-mtn-update-39"></a><dt><samp><span class="command">mtn update --revision=</span><var>revision</var></samp><a name="index-mtn-update-_002d_002drevision_003d_0040var_007brevision_007d-40"></a><dd>Without a <samp><span class="option">--revision</span></samp> argument, this command incorporates
+&ldquo;recent&rdquo; changes found in your database into your workspace. It
+does this by performing 3 separate stages. If any of these stages
+fails, the update aborts, doing nothing. The stages are:
+
+          <ul>
+<li>Examine the ancestry graph of revisions in your database, and (subject
+to trust evaluation) select the set of all descendents of your
+workspace's base revision. Call this set the &ldquo;candidates&rdquo; of the
+update. 
+<li>Remove any candidates which lack acceptable testresult
+certificates. From the remaining candidates, select the deepest child
+by ancestry and call it the &ldquo;target&rdquo; of the update. 
+<li>Merge the target of the update with the workspace, in memory, and
+if the merge is successful, write the result over top of the workspace. 
+</ul>
+
+     <p>With an explicit <samp><span class="option">--revision</span></samp> argument, the command uses that revision
+as the update target instead of finding an acceptable candidate.
+
+     <p>The effect is always to take whatever changes you have made in the
+workspace, and to &ldquo;transpose&rdquo; them onto a new revision, using
+monotone's 3-way merge algorithm to achieve good results.  Note that
+with the explicit <samp><span class="option">--revision</span></samp> argument, it is possible to update
+&ldquo;backwards&rdquo; or &ldquo;sideways&rdquo; in history &mdash; for example, reverting to
+an earlier revision, or if your branch has two heads, updating to the
+other.  In all cases, the end result will be whatever revision you
+specified, with your local changes (and only your local changes)
+applied.
+
+     <p>If a <samp><span class="option">--branch</span></samp> option is specified, the <samp><span class="command">update</span></samp> command
+tries to select the revision to update to from this branch.  The branch
+becomes the new default branch of the workspace (even if you also
+specify an explicit <samp><span class="option">--revision</span></samp> argument).
+
+     <br><dt><samp><span class="command">mtn pluck --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bto_007d-41"></a><dt><samp><span class="command">mtn pluck --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-42"></a><dd>
+This command takes changes made at any point in history, and attempts to
+edit your current workspace to include those changes.  The end result is
+identical to running <samp><span class="command">mtn diff <samp>-r</samp> </span><var>from</var><span class="command">
+<samp>-r</samp> </span><var>to</var><span class="command"> | patch <samp>-p0</samp></span></samp>, except that this command
+uses monotone's merger, and thus intelligently handles renames,
+conflicts, and so on.
+
+     <p>If only one revision is given, applies the changes made in <var>to</var> as
+compared with <var>to</var>'s parent.  If two revisions are given, applies
+the changes made to get from <var>from</var> to <var>to</var>.
+
+     <p>Note that this is not a true cherrypick operation.  A true cherrypick,
+as that word is used in version control theory, involves applying some
+changes out of context, and then recording the identity between the
+original changes and the newly applied changes for the use of later
+merges.  This command does the first part, not the second.  As far as
+monotone is concerned, the changes made by <samp><span class="command">mtn pluck</span></samp> are
+exactly like those made in an editor; the command is simply a
+convenient way to make certain edits quickly.  In practice, this is
+rarely a problem.  <samp><span class="command">mtn pluck</span></samp> should almost always be used
+between branches that will never be merged &mdash; for instance,
+backporting fixes from a development branch to a stable branch.
+
+     <p>When you use <samp><span class="command">pluck</span></samp> you are going behind monotone's back, and
+reducing its ability to help you keep track of what has happened in
+your history.  Never use <samp><span class="command">pluck</span></samp> where a true merging command
+like <samp><span class="command">merge</span></samp>, <samp><span class="command">propagate</span></samp>, or <samp><span class="command">explicit_merge</span></samp>
+will do.  If you find yourself using <samp><span class="command">pluck</span></samp> often, you should
+consider carefully whether there is any way to change your workflow to
+reduce your need for <samp><span class="command">pluck</span></samp>ing.
+
+     <br><dt><samp><span class="command">mtn refresh_inodeprints</span></samp><a name="index-mtn-refresh_005finodeprints-43"></a><dd>This command puts the current workspace into <a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode,
+if it was not already, and forces a full inodeprints cache refresh. 
+After running this command, you are guaranteed that your workspace is
+in inodeprints mode, and that the inodeprints cache is accurate and up
+to date.
+
+     <br><dt><samp><span class="command">mtn pivot_root [--execute] pivot_root </span><var>new_root</var> <var>put_old</var></samp><a name="index-mtn-pivot_005froot-_005b_002d_002dexecute_005d-pivot_005froot-_0040var_007bnew_005froot_007d-_0040var_007bput_005fold_007d-44"></a><dd>Most users will never need this command.  It is primarily useful in
+certain tricky cases where one wishes to combine several projects
+into one, or split one project into several. See also <samp><span class="command">merge_into_dir</span></samp>.
+
+     <p>Its effect is to rename the directory whose name is currently
+<var>new_root</var> to become the root directory of the versioned tree, and
+to at the same time rename the directory that is currently the root of
+the versioned tree to have the name <var>put_old</var>.  Conceptually, it
+is equivalent to executing the following commands in the root of the
+workspace:
+
+     <pre class="smallexample">          $ mtn rename . <var>new_root</var>/<var>put_old</var>
+          $ mtn rename <var>new_root</var> .
+     </pre>
+     <p>Except, of course, that these <samp><span class="command">rename</span></samp> commands are illegal,
+because after the first command the tree has no root at all, and there
+is a directory loop.  This illegality is the only reason for
+<samp><span class="command">pivot_root</span></samp>'s existence; internally, the result is treated
+exactly like two renames, including with respect to merges and
+updates.
+
+     <p>The use of <samp><span class="option">--execute</span></samp> with this command is strongly
+recommended, though not required.
+
+</dl>
+
+   </body></html>
+

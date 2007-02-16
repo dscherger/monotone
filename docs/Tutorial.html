@@ -1,0 +1,115 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Tutorial - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="prev" href="Concepts.html#Concepts" title="Concepts">
+<link rel="next" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Tutorial"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Concepts.html#Concepts">Concepts</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="index.html#Top">Top</a>
+<hr>
+</div>
+
+<h2 class="chapter">2 Tutorial</h2>
+
+<p>This chapter illustrates the basic uses of monotone by means of an
+example, fictional software project.
+
+<h3 class="section">2.1 Issues</h3>
+
+<p>Before we walk through the tutorial, there are two minor issues to
+address: standard options and revision selectors.
+
+<h4 class="subsection">2.1.1 Standard Options</h4>
+
+<p>Before operating monotone, two important command-line options should
+be explained.
+
+     <ul>
+<li>Most commands operate on a <i>database</i>, which is selected with
+the <samp><span class="option">--db</span></samp> option. 
+<li>Many commands operate on a subset of the database, called a
+<i>branch</i>, which is selected with the <samp><span class="option">--branch</span></samp> option. 
+</ul>
+
+   <p>Monotone will cache the settings for these options in your workspace, so
+ordinarily once you have checked out a project, you will not need to
+specify them again.  We will therefore only mention these arguments in
+the first example.
+
+<h4 class="subsection">2.1.2 Revision Selectors</h4>
+
+<p>Many commands require you to supply 40-character <span class="sc">sha1</span> values as
+arguments, which identify revisions. These &ldquo;revision IDs&rdquo; are
+tedious to type, so monotone permits you to supply &ldquo;revision
+selectors&rdquo; rather than complete revision IDs. Selectors are a more
+&ldquo;human friendly&rdquo; way of specifying revisions by combining certificate
+values into unique identifiers. This &ldquo;selector&rdquo; mechanism can be
+used anywhere a revision ID would normally be used. For details on
+selector syntax, see <a href="Selectors.html#Selectors">Selectors</a>.
+
+   <p>We are now ready to explore our fictional project.
+
+<h3 class="section">2.2 The Fictional Project</h3>
+
+<p>Our fictional project involves 3 programmers cooperating to write
+firmware for a robot, the JuiceBot 7, which dispenses fruit juice. The
+programmers are named Jim, Abe and Beth.
+
+     <ul>
+<li>Jim lives in Japan, and owns JuiceBot Inc. You will know when we're talking
+about Jim, because everything he does involves the letter &ldquo;j&rdquo;. 
+<li>Abe lives in Australia and writes code related to apple juice. You will
+know when we're talking about Abe, because everything he does involves
+the letter &ldquo;a&rdquo;. 
+<li>Beth lives in Brazil and writes code related to banana juice. You will
+know when we're talking about Beth, because everything she does involves
+the letter &ldquo;b&rdquo;. 
+</ul>
+
+   <p>In our example the programmers work privately on laptops, and are
+usually <em>disconnected</em> from the network. They share no storage
+system. Thus when each programmer enters a command, it affects only
+his or her own computer, unless otherwise stated.
+
+   <p>In the following, our fictional project team will work through several
+version control tasks. Some tasks must be done by each member of our
+example team; other tasks involve only one member.
+
+<ul class="menu">
+<li><a accesskey="1" href="Creating-a-Database.html#Creating-a-Database">Creating a Database</a>
+<li><a accesskey="2" href="Generating-Keys.html#Generating-Keys">Generating Keys</a>
+<li><a accesskey="3" href="Starting-a-New-Project.html#Starting-a-New-Project">Starting a New Project</a>
+<li><a accesskey="4" href="Adding-Files.html#Adding-Files">Adding Files</a>
+<li><a accesskey="5" href="Committing-Work.html#Committing-Work">Committing Work</a>
+<li><a accesskey="6" href="Basic-Network-Service.html#Basic-Network-Service">Basic Network Service</a>
+<li><a accesskey="7" href="Synchronising-Databases.html#Synchronising-Databases">Synchronising Databases</a>
+<li><a accesskey="8" href="Making-Changes.html#Making-Changes">Making Changes</a>
+<li><a accesskey="9" href="Dealing-with-a-Fork.html#Dealing-with-a-Fork">Dealing with a Fork</a>
+<li><a href="Branching-and-Merging.html#Branching-and-Merging">Branching and Merging</a>
+<li><a href="Network-Service-Revisited.html#Network-Service-Revisited">Network Service Revisited</a>
+</ul>
+
+   </body></html>
+

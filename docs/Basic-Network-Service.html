@@ -1,0 +1,108 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Basic Network Service - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
+<link rel="prev" href="Committing-Work.html#Committing-Work" title="Committing Work">
+<link rel="next" href="Synchronising-Databases.html#Synchronising-Databases" title="Synchronising Databases">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Basic-Network-Service"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Synchronising-Databases.html#Synchronising-Databases">Synchronising Databases</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Committing-Work.html#Committing-Work">Committing Work</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
+<hr>
+</div>
+
+<h3 class="section">2.8 Basic Network Service</h3>
+
+<p>Jim now decides he will make his base revision available to his
+employees.  To do this, he arranges for Abe and Beth to synchronise
+their databases with his, over the network.  There are two
+pre-requisites for this: first, he has to get a copy of each of their
+public keys; then, he has to tell monotone that the holders of those
+keys are permitted to access his database. Finally, with these
+pre-requisites in place, he needs to tell monotone to provide network
+access to his database.
+
+   <p>First, Abe exports his public key:
+
+<pre class="smallexample">     $ mtn --db=~/abe.mtn pubkey abe@juicebot.co.jp &gt;~/abe.pubkey
+</pre>
+   <p>His public key is just a plain block of ASCII text:
+
+<pre class="smallexample">     $ cat ~/abe.pubkey
+     [pubkey abe@juicebot.co.jp]
+     MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQCbaVff9SF78FiB/1nUdmjbU/TtPyQqe/fW
+     CDg7hSg1yY/hWgClXE9FI0bHtjPMIx1kBOig09AkCT7tBXM9z6iGWxTBhSR7D/qsJQGPorOD
+     DO7xovIHthMbZZ9FnvyB/BCyiibdWgGT0Gtq94OKdvCRNuT59e5v9L4pBkvajb+IzQIBEQ==
+     [end]
+</pre>
+   <p>Beth also exports her public key:
+
+<pre class="smallexample">     $ mtn --db=~/beth.mtn pubkey beth@juicebot.co.jp &gt;~/beth.pubkey
+</pre>
+   <p>Then Abe and Beth both send their keys to Jim.  The keys are not secret,
+but the team members must be relatively certain that they are exchanging
+keys with the person they intend to trust, and not some malicious person
+pretending to be a team member. Key exchange may involve sending keys
+over an encrypted medium, or meeting in person to exchange physical
+copies, or any number of techniques. All that matters, ultimately, is
+that Jim receives both Abe's and Beth's key in a way that he can be sure
+of.
+
+   <p>So eventually, after key exchange, Jim has the public key files in his
+home directory. He tells monotone to read the associated key packets
+into his database:
+
+<pre class="smallexample">     $ cat ~/abe.pubkey ~/beth.pubkey | mtn --db=~/jim.mtn read
+     mtn: read 2 packets
+</pre>
+   <p>Now Jim's monotone is able to identify Beth and Abe, and he is ready to
+give them permission to access his database.  He does this by editing a
+pair of small files in his <samp><span class="file">~/.monotone</span></samp> directory:
+
+<pre class="smallexample">     $ cat &gt;&gt;~/.monotone/read-permissions
+     pattern "*"
+     allow "abe@juicebot.co.jp"
+     allow "beth@juicebot.co.jp"
+     ^D
+     
+     $ cat &gt;&gt;~/.monotone/write-permissions
+     abe@juicebot.co.jp
+     beth@juicebot.co.jp
+     ^D
+</pre>
+   <p>These files are read by the default monotone hooks that will decide
+whether remote monotone users will be allowed access to Jim's database,
+identified by the named keys.
+
+   <p>Jim then makes sure that his TCP port 4691 is open to incoming
+connections, adjusting his firewall settings as necessary, and runs
+the monotone <samp><span class="command">serve</span></samp> command:
+
+<pre class="smallexample">     $ mtn --db=jim.mtn serve
+</pre>
+   <p>This command starts monotone listening on all network interfaces of
+his laptop on the default port 4691, serving everything in his database.
+
+   </body></html>
+

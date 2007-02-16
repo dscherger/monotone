@@ -1,0 +1,115 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Generating Keys - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
+<link rel="prev" href="Creating-a-Database.html#Creating-a-Database" title="Creating a Database">
+<link rel="next" href="Starting-a-New-Project.html#Starting-a-New-Project" title="Starting a New Project">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Generating-Keys"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Starting-a-New-Project.html#Starting-a-New-Project">Starting a New Project</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Creating-a-Database.html#Creating-a-Database">Creating a Database</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
+<hr>
+</div>
+
+<h3 class="section">2.4 Generating Keys</h3>
+
+<p>Now Jim, Abe and Beth must each generate an <span class="sc">rsa</span> key pair for
+themselves. This step requires choosing a key identifier. Typical key
+identifiers are similar to email addresses, possibly modified with
+some prefix or suffix to distinguish multiple keys held by the same
+owner. Our example programmers will use their email addresses at the
+fictional &ldquo;juicebot.co.jp&rdquo; domain name. When we ask for a key to be
+generated, monotone will ask us for a passphrase. This phrase is used
+to encrypt the key when storing it on disk, as a security measure.
+
+   <p>Jim does the following:
+
+<pre class="smallexample">     $ mtn genkey jim@juicebot.co.jp
+     mtn: generating key-pair 'jim@juicebot.co.jp'
+     enter passphrase for key ID [jim@juicebot.co.jp] : <i>&lt;Jim enters his passphrase&gt;</i>
+     confirm passphrase for key ID [jim@juicebot.co.jp]: <i>&lt;Jim confirms his passphrase&gt;</i>
+     mtn: storing key-pair 'jim@juicebot.co.jp' in /home/jim/.monotone/keys
+</pre>
+   <p>Abe does something similar:
+
+<pre class="smallexample">     $ mtn genkey abe@juicebot.co.jp
+     mtn: generating key-pair 'abe@juicebot.co.jp'
+     enter passphrase for key ID [abe@juicebot.co.jp] : <i>&lt;Abe enters his passphrase&gt;</i>
+     confirm passphrase for key ID [abe@juicebot.co.jp]: <i>&lt;Abe confirms his passphrase&gt;</i>
+     mtn: storing key-pair 'abe@juicebot.co.jp' in /home/abe/.monotone/keys
+</pre>
+   <p>as does Beth:
+
+<pre class="smallexample">     $ mtn genkey beth@juicebot.co.jp
+     mtn: generating key-pair 'beth@juicebot.co.jp'
+     enter passphrase for key ID [beth@juicebot.co.jp] : <i>&lt;Beth enters her passphrase&gt;</i>
+     confirm passphrase for key ID [beth@juicebot.co.jp]: <i>&lt;Beth confirms her passphrase&gt;</i>
+     mtn: storing key-pair 'beth@juicebot.co.jp' in /home/beth/.monotone/keys
+</pre>
+   <p>Each programmer has now generated a key pair and placed it in their
+keystore. Each can list the keys in their keystore, to ensure
+the correct key was generated. For example, Jim might see this:
+
+<pre class="smallexample">     $ mtn list keys
+     
+     [public keys]
+     9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c jim@juicebot.co.jp   (*)
+     (*) - only in /home/jim/.monotone/keys/
+     
+     
+     [private keys]
+     771ace046c27770a99e5fddfa99c9247260b5401 jim@juicebot.co.jp
+</pre>
+   <p>The hexadecimal string printed out before each key name is a
+<em>fingerprint</em> of the key, and can be used to verify that the key
+you have stored under a given name is the one you intended to
+store. Monotone will never permit one keystore to store two keys with
+the same name or the same fingerprint.
+
+   <p>This output shows one private and one public key stored under the name
+<code>jim@juicebot.co.jp</code>, so it indicates that Jim's key-pair has been
+successfully generated and stored. On subsequent commands, Jim will need
+to re-enter his passphrase in order to perform security-sensitive
+tasks. Jim isn't very worried about security (and, more importantly, it
+simplifies the tutorial text to skip the passphrase prompts) so he
+decides to store his passphrase in his <samp><span class="file">monotonerc</span></samp> file.  He does
+this by writing a <em>hook function</em> which returns the passphrase:
+
+<pre class="smallexample">     $ mkdir ~/.monotone
+     $ cat &gt;&gt;~/.monotone/monotonerc
+     function get_passphrase(keypair_id)
+       return "jimsekret"
+     end
+     ^D
+</pre>
+   <p>Now whenever monotone needs his passphrase, it will call this function
+instead of prompting him to type it.  Note that we are appending the new
+hook to the (possibly existing) file.  We do this to avoid losing other
+changes by mistake; therefore, be sure to check that no other
+<code>get_passphrase</code> function appears in the configuration file.
+
+   <p>Abe and Beth do the same, with their secret passphrases.
+
+   </body></html>
+

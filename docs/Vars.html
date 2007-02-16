@@ -1,0 +1,87 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Vars - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Quality-Assurance.html#Quality-Assurance" title="Quality Assurance">
+<link rel="next" href="Reserved-Files.html#Reserved-Files" title="Reserved Files">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Vars"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Reserved-Files.html#Reserved-Files">Reserved Files</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Quality-Assurance.html#Quality-Assurance">Quality Assurance</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.7 Vars</h3>
+
+<p>Every monotone database has a set of <em>vars</em> associated with it. 
+Vars are simple configuration variables that monotone refers to in some
+circumstances; they are used for configuration that monotone needs to be
+able to modify itself, and that should be per-database (rather than
+per-user or per-workspace, both of which are supported by
+<samp><span class="file">monotonerc</span></samp> scripts).  Vars are local to a database, and never
+transferred by netsync.
+
+   <p>A var is a <em>name</em> = <em>value</em> pairing inside a <em>domain</em>. 
+Domains define what the vars inside it are used for; for instance, one
+domain might contain database-global settings, and particular vars
+inside it would define things like that database's default netsync
+server.  Another domain might contain key fingerprints for servers that
+monotone has interacted with in the past, to detect man-in-the-middle
+attacks; the vars inside this domain would map server names to their
+fingerprints.
+
+   <p>You can set vars with the <samp><span class="command">set</span></samp> command, delete them with the
+<samp><span class="command">unset</span></samp> command, and see them with the <samp><span class="command">ls vars</span></samp>
+command.  See the documentation for these specific commands for more
+details.
+
+<h3 class="heading">Existing vars</h3>
+
+<p>There are several pre-defined domains that monotone knows about:
+
+     <dl>
+<dt><code>database</code><dd>Contains database-global configuration information.  Defined names are:
+          <dl>
+<dt><code>default-exclude-pattern</code><dd>The default branch exclusion glob pattern for netsync operations to
+use. Automatically set by first use of netsync, and by any netsync
+that uses the <samp><span class="option">--set-default</span></samp> option. 
+<br><dt><code>default-include-pattern</code><dd>The default branch glob pattern for netsync operations to use. 
+Automatically set by first use of netsync, and by any netsync that
+uses the <samp><span class="option">--set-default</span></samp> option. 
+<br><dt><code>default-server</code><dd>The default server for netsync operations to use.  Automatically set
+by first use of netsync, and by any netsync that uses the
+<samp><span class="option">--set-default</span></samp> option. 
+</dl>
+
+     <br><dt><code>known-servers</code><dd>Contains key hashes for servers that we have netsynced with in the
+past.  Analogous to <samp><span class="command">ssh</span></samp>'s <samp><span class="file">known_hosts</span></samp> file, this is
+needed to detect man-in-the-middle attacks.  Automatically set the first
+time you netsync with any given server.  If that server's key later
+changes, monotone will notice, and refuse to connect until you have run
+<samp><span class="command">mtn unset known-servers </span><var>server-name</var></samp>.
+
+   </dl>
+
+   </body></html>
+

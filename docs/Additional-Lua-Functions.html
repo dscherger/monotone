@@ -1,0 +1,156 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Additional Lua Functions - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Hook-Reference.html#Hook-Reference" title="Hook Reference">
+<link rel="prev" href="Hooks.html#Hooks" title="Hooks">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Additional-Lua-Functions"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Hooks.html#Hooks">Hooks</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Hook-Reference.html#Hook-Reference">Hook Reference</a>
+<hr>
+</div>
+
+<h3 class="section">6.2 Additional Lua Functions</h3>
+
+<p>This section documents the additional lua functions made available to
+hook writers.
+
+     <dl>
+<dt><code>existonpath(</code><var>possible_command</var><code>)</code><a name="index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-206"></a><dd>
+This function receives a string containing the name of an external
+program and returns 0 if it exists on path and is executable, -1
+otherwise. 
+As an example, <code>existonpath("xxdiff")</code> returns 0 if the
+program xxdiff is available. 
+On windows, this function automatically appends &ldquo;.exe&rdquo; to the
+program name. In the previous example, <code>existonpath</code> would search
+for &ldquo;xxdiff.exe&rdquo;.
+
+     <br><dt><code>guess_binary(</code><var>filespec</var><code>)</code><a name="index-guess_005fbinary_0028_0040var_007bfilespec_007d_0029-207"></a><dd>
+Returns true if the file appears to be binary, i.e. contains one or
+more of the following characters:
+     <pre class="smallexample">          0x00 thru 0x06
+          0x0E thru 0x1a
+          0x1c thru 0x1f
+     </pre>
+     <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-208"></a><dd>
+This function tries to load and execute the script contained into
+scriptfile.  It returns true for success and false if there is an
+error.
+
+     <br><dt><code>includedir(</code><var>scriptpath</var><code>)</code><a name="index-includedir_0028_0040var_007bscriptpath_007d_0029-209"></a><dd>
+This function loads and executes in alphabetical order all the scripts
+contained into the directory scriptpath. 
+If one of the scripts has an error, the functions doesn't process the
+remaining scripts and immediately returns false.
+
+     <br><dt><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code><a name="index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-210"></a><dd>
+This function loads and executes in alphabetical order all the scripts
+contained into the directory scriptpath that match the given pattern. 
+If one of the scripts has an error, the functions doesn't process the
+remaining scripts and immediately returns false.
+
+     <br><dt><code>is_executable(</code><var>filespec</var><code>)</code><a name="index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-211"></a><dd>
+This function returns true if the file is executable, false
+otherwise.  On windows this function returns always false.
+
+     <br><dt><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code><a name="index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-212"></a><dd>
+This function calls the kill() C library function on posix systems and
+TerminateProcess on Win32 (in that case <var>pid</var> is the process
+handle).  If the optional <var>signal</var> parameter is missing, SIGTERM
+will be used. 
+Returns 0 on succes, -1 on error.
+
+     <br><dt><code>make_executable(</code><var>filespec</var><code>)</code><a name="index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-213"></a><dd>
+This function marks the named file as executable.  On windows has no
+effect.
+
+     <br><dt><code>mkstemp(</code><var>template</var><code>)</code><a name="index-mkstemp_0028_0040var_007btemplate_007d_0029-214"></a><dd>
+Like its C library counterpart,  mkstemp creates a unique name and
+returns a file descriptor for the newly created file. 
+The value of template should be a pointer to a character buffer loaded
+with a null-terminated string that consists of contiguous, legal file
+ad path name characters followed by six Xs. 
+The function mkstemp replaces the Xs by an alpha-numeric sequence
+that is chosen to ensure that no file in the chosen directory has that
+name. 
+Furthermore, subsequent calls to mkstemp within the same process
+each yield different file names. 
+Unlike other implementations, monotone mkstemp allows the template
+string to contain a complete path, not only a filename, allowing users
+to create temporary files outside the current directory.
+
+     <p><strong>Important notice:</strong><br>
+To create a temporary file, you must use the <code>temp_file()</code>
+function, unless you need to run monotone with the <samp><span class="option">--nostd</span></samp>
+option.  <code>temp_file()</code> builds on <code>mkstemp()</code> and creates a
+file in the standard TMP/TEMP directories. 
+For the definition of <code>temp_file()</code>, see <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
+
+     <br><dt><code>sleep(</code><var>seconds</var><code>)</code><a name="index-sleep_0028_0040var_007bseconds_007d_0029-215"></a><dd>
+Makes the calling process sleep for the specified number of seconds.
+
+     <br><dt><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-216"></a><dd>
+Starts the named executable with the given arguments.  Returns the
+process pid on Posix systems, the process handle on Win32 or -1 if
+there was an error. 
+Calls fork/execvp on Posix, CreateProcess on Win32.
+
+     <p><strong>Important notice:</strong><br>
+To spawn a process and wait for its completion, use the <code>execute()</code>
+function, unless you need to run monotone with the <samp><span class="option">--nostd</span></samp>
+option.  <code>execute()</code> builds on <code>spawn()</code> and <code>wait()</code>
+in a standardized way.
+
+     <br><dt><code>wait(</code><var>pid</var><code>)</code><a name="index-wait_0028_0040var_007bpid_007d_0029-217"></a><dd>
+Wait until the process with given pid (process handle on Win32) exits. 
+Returns two values: a result value and the exit code of the waited-for
+process. 
+The exit code is meaningful only if the result value is 0.
+
+     <br><dt><code>parse_basic_io(</code><var>data</var><code>)</code><a name="index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-218"></a><dd>
+Parse the string <var>data</var>, which should be in basic_io format. It returns nil
+if it can't parse the string; otherwise it returns a table. This will be a list
+of all statements, with each entry being a table having a "name" element that is
+the symbol beginning the statement and a "values" element that is a list of all
+the arguments.
+
+     <p>For example, given this as input:
+
+     <pre class="smallexample">          thingy "foo" "bar"
+          thingy "baz"
+          spork
+          frob "oops"
+     </pre>
+     <p>The output table will be:
+     <pre class="smallexample">          {
+             1 = { name = "thingy", args = { 1 = "foo", 2 = "bar" } },
+             2 = { name = "thingy", args = { 1 = "baz" } },
+             3 = { name = "spork", args = { } },
+             4 = { name = "frob", args = { 1 = "oops" } }
+          }
+     </pre>
+     </dl>
+
+   </body></html>
+

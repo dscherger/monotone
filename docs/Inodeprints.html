@@ -1,0 +1,71 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Inodeprints - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Scripting.html#Scripting" title="Scripting">
+<link rel="next" href="Quality-Assurance.html#Quality-Assurance" title="Quality Assurance">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Inodeprints"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Quality-Assurance.html#Quality-Assurance">Quality Assurance</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Scripting.html#Scripting">Scripting</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.5 Inodeprints</h3>
+
+<p>Fairly often, in order to accomplish its job, monotone has to look at
+your workspace and figure out what has been changed in it since your
+last commit.  Commands that do this include <samp><span class="command">status</span></samp>,
+<samp><span class="command">diff</span></samp>, <samp><span class="command">update</span></samp>, <samp><span class="command">commit</span></samp>, and others.  There
+are two different techniques it can use to do this.  The default, which
+is sufficient for most projects, is to simply read every file in the
+workspace, compute their <span class="sc">sha1</span> hash, and compare them to the
+hashes monotone has stored.  This is very safe and reliable, and turns
+out to be fast enough for most projects.  However, on very large
+projects, ones whose source trees are many megabytes in size, it can
+become unacceptably slow.
+
+   <p>The other technique, known as <em>inodeprints</em>, is designed for this
+situation.  When running in inodeprints mode, monotone does not read the
+whole workspace; rather, it keeps a cache of interesting information
+about each file (its size, its last modification time, and so on), and
+skips reading any file for which these values have not changed.  This is
+inherently somewhat less safe, and, as mentioned above, unnecessary for
+most projects, so it is disabled by default.
+
+   <p>If you do determine that it is necessary to use inodeprints with your
+project, it is simple to enable them.  Simply run <samp><span class="command">mtn
+refresh_inodeprints</span></samp>; this will enable inodeprints mode and generate an
+initial cache.  If you ever wish to turn them off again, simply delete
+the file <samp><span class="file">_MTN/inodeprints</span></samp>.  You can at any time delete or truncate
+the <samp><span class="file">_MTN/inodeprints</span></samp> file; monotone uses it only as a cache and
+will continue to operate correctly.
+
+   <p>Normally, instead of enabling this up on a per-workspace basis, you
+will want to simply define the <code>use_inodeprints</code> hook to return
+<code>true</code>; this will automatically enable inodeprints mode in any new
+workspaces you create.  See <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a> for details.
+
+   </body></html>
+

@@ -1,2082 +1,95 @@
-XXX XXX XX XX:XX:XX UTC 201X
-
-        1.1 release.
-
-        Changes
-
-        New features
-
-        - 'automate atttributes' now also works without a workspace
-          and returns the attributes for a specific file from the
-          revision's manifest
-
-        Bugs fixed
-
-        - Monotone now compiles against Botan 1.10.x (as well as most of
-          the testing releases in 1.9.y).
-
-        - Struct file_handle got renamed to avoid clash with newer glibc's
-          fcntl.h.
-
-        - Monotone now compiles just fine with gcc's option
-          "-Werror=format-security."
-
-        - Fixed recursive file removal on Solaris.
-
-        Internal
-
-        - The performance and memory usage of regular expressions has
-          been improved throughout. This affects any use of the
-          ".mtn-ignore" file such as "mtn ls unknown" and "mtn add",
-          and any calls to "regex.search" in Lua hooks.
-
-        Other
-
-
-Sat Mar 26 10:53:47 UTC 2011
-
-        1.0 release.
-
-        Changes
-
-        - The database scheme was changed; please execute 'mtn db migrate'
-          on all your local and remote databases.
-
-        - In 'mtn conflicts resolve_first interactive', the result
-          file name now defaults to _MTN/resolutions/<left_path>.
-          (fixes monotone issue 103)
-
-        - The French monotone translation has been updated and is
-          now part of the main distribution again. Many thanks to
-          Steve Petruzzello <dlist@bluewin.ch> for the outstanding
-          work!
-
-        - get_netsync_(read|write)_permitted have been extended to not
-          only read the files read-permissions and write-permissions,
-          but also the files in the subdirectories read-permissions.d
-          and write-permissions.d.
-
-        - monotone now also tracks the workspaces of databases which
-          do not reside in a "managed" location.
-
-        - automate now resets the locale to "POSIX" internally.  This
-          means that all scripts can expect the same untranslated
-          messages from mtn automate, regardless of the locale of the
-          calling process.
-
-        - The hook 'get_netsync_key' has been split up into two separate
-          hooks, one for client usage ('get_netsync_client_key', with
-          the same arguments as the original 'get_netsync_key') and one
-          for server usage ('get_netsync_server_key', with a single table
-          argument containing all the given '--bind' options).  Please
-          review your custom hooks accordingly.
- 
-        - Short options ('-b', '-d', ...) are no longer completed.  This
-          fixes an invariant failure originating from wrong option usage.
-          (closes monotone issue 141)
-
-        New Features
-
-        - 'mtn conflicts store' now outputs a count of the conflicts,
-          and the name of the conflicts file.
-          (fixes monotone issue 108)
-
-        - New 'mtn list workspaces' command which outputs all the
-          known workspaces for a specific database.
-          (closes monotone issue 129)
-
-        Bugs fixed
-
-        - The internal line merger will actually preserve your line
-          endings now, instead of changing everything to "\n".
-
-        - Improved the help and fixed the argument indexing in
-          'conflicts resolve_first' (fixes monotone issue 101)
-
-        - A regression from 0.48 prevented monotone from ordering the
-          diff output of individual files alphabetically.
-          (fixes monotone issue 102)
-
-        - 'mtn privkey' did not recognize private keys solely available
-          in the key store. This has been fixed.
-
-        - Added compatibility with Botan 1.9.9 and newer.
-          (fixes monotone issue 104)
-
-        - 'mtn pull' and 'mtn sync' would always say that your workspace
-          has not been updated.  Now, it only does that when you used
-          the '--update' option and there were no updates.
-          (fixes monotone issue 106)
-
-        - 'mtn automate remote' and 'mtn automate remote_stdio' now use
-          a given database given by an alias to read, store and validate
-          a remote server's key fingerprint (fixes monotone issue 95)
-
-        - monotone gives a proper error message now if a netsync URI
-          with the 'mtn' scheme misses the required host part
-          (fixes monotone issue 110)
-
-        - Whenever a binary file was removed and one would try to get
-          a diff using mtn diff, it would report that "/dev/null is
-          binary".  This has been changed to it reports the actual
-          name of the removed file instead.
-          (fixes monotone issue 111)
-
-        - monotone no longer wrongly falls back on a :memory: database
-          when no database option is given. It also prints out an
-          informational message for commands like 'setup' and 'clone'
-          that fall back on the configured default database, again,
-          if no database is specified for these commands.
-          (fixes monotone issue 113)
-
-        - If 'mtn serve' is called with one or more '--bind' options,
-          then the arguments to these options can now be specified
-          again as follows:
-
-            '<ip-or-host>' 
-                to listen to IP or host on the default port
-            '<ip-or-host>:<port>'
-                to listen to IP or host on the specified port  - or
-            ':<port>'
-                to listen on all interfaces on the specified port
-
-          (fixes monotone issue 119)
-          
-        - monotone no longer enforces ".mtn" as file extension for
-          managed databases.  A new Lua hook, get_default_database_glob(),
-          is used instead to determine a pattern which matches
-          accepted database filenames and this pattern by default
-          accept files ending with both, ".mtn" and ".db".
-          (fixes monotone issue 128)
-
-        - monotone now gives a proper error message when an incomplete
-          or partial identifier contains non-hex digits.
-          (fixes monotone issue 143)
-
-        - Performance of "mtn ls changed" has been improved and is now
-          comparable to "mtn status". (fixes monotone issue 120)
-
-        Internal
-
-        - The source tree has been reorganized. Sources, tests and
-          documentation now reside in specific directories and many
-          smaller improvements in terms of source code cleanup,
-          developer documentation and general build infrastructure
-          accompany this big change.
-
-        Other
-
-        - Added a new directory extra/, which contains monotone hooks and
-          related scripts that have been shown to work.  Most of these get
-          installed, usually somewhere under $(prefix)/share/monotone.
-          Please read extra/README for further information.
-
-        - Added the mtn-cleanup Perl script that returns a workspace to its
-          pristine state with the minimum amount of change. This script is
-          in the extra/bin directory.
-
-
-Sun Oct 31 21:51:16 UTC 2010
-
-        0.99.1 release.
-
-        Bugs fixed
-
-        - monotone crashed on x86_64 when a netsync action required
-          the parsing of an URL. This has been fixed.
-          (closes monotone issue 100)
-
-        - monotone's automation interface version was reported wrongly
-          as 12.1, where it should have been 13.0.
-
-
-Thu Oct 28 21:07:18 UTC 2010
-
-        0.99 release.
-
-        Changes
-
-        - The database scheme was changed; please execute 'mtn db migrate'
-          on all your local and remote databases.
-
-        - Normal and automate sync, push, and pull now take a
-          --dry-run option; no data is transferred, but the connection
-          is made and a summary of what would be transferred is
-          output.
-
-        - The changelog editor format was simplified; user entered text
-          is back at the top of file and the instructions have been reduced.
-          The edited text is saved now even if a commit is canceled.
-
-        - Selectors are much more powerful now and selector functions to
-          calculate common sets of revisions have been introduced.
-          The characters '(', ')', and ';' need to be quoted if mean literally
-          (just like '/') because of this. See section 3.2 in the documentation
-          for details.
-          (fixes monotone bug #18302).
-
-        - The SERVER [BRANCH] call syntax for network-related commands
-          has been deprecated in favour of the existing, universal
-          URI syntax.  Additionally, file:// and ssh:// URIs are now
-          parsed for include and exclude patterns just as the native
-          mtn:// URIs.
-
-          The possibility to specify include patterns by using
-          'include=' and exclude patterns by using 'exclude='
-          in the query string has been removed. Patterns are separated
-          by ';' and will be treated as include patterns unless prefixed
-          with '-'. Where you could previously specify
-          'mtn://host/?include=foo,exclude=bar', you would now give
-          'mtn://host/?foo;-bar' instead.
-
-          The URI parser was made a bit more standards compliant and
-          treats the scheme and host in a case insensitive manner.
-          The path and query parts are now automatically URL-decoded.
-
-          We deviate from RFC 3986 however by recognizing the authority
-          part in scheme-less URLs, where the standard would force us
-          to recognize a path instead.  For example, for the URL
-
-              'code.monotone.ca/monotone'
-
-          we'd normally parse 'code.monotone.ca/monotone' as path, but our
-          implementation parses 'code.monotone.ca' as authority and
-          '/monotone' as path, so you are not forced to type 'mtn://' on
-          command line, just as you are not forced to type 'http://' in
-          your browser.  Monotone's native scheme / protocol 'mtn' is by
-          the way set as default in cases like this.
-
-          The format for the server part of the 'default-server',
-          'known-server', 'server-include' and 'server-exclude'
-          database variables has been changed and now always includes
-          the complete (normalized) URI resource, consisting of the
-          used protocol, user, host, port and path parts.  Older entries
-          in existing databases which do not match the new format are
-          preserved and not changed by monotone.
-
-          Please check the manual section 5.3 for more details on the
-          URI syntax.
-
-        - Naturally, the 'clone' command now also accepts mtn:// URIs,
-          though the use of branch globs is forbidden unless a branch is
-          specified separately with the new --branch option.
-
-          To avoid confusion with an existing workspace, clone no longer
-          looks for and loads the options of such a workspace, therefor
-          it now also falls back to the configured default database and
-          no longer to the database used in the workspace if no explicit
-          database is given.
-
-        - Server defaults for netsync operations are now only saved if
-          the exchange was successful.  The progress messages which have
-          been issued for this previously have been removed, since they
-          would come up now unexpectedly and would clutter the output of
-          commands such as 'clone', 'automate remote' and
-          'automate remote_stdio'.
-
-        - The following characters have been deprecated in branch names
-
-                ?,;*%+{}[]!^
-
-          as they denote either meta characters in monotone's URI syntax
-          or are used in globs to resolve branch patterns.
-          Furthermore, branch names should no longer start with a dash
-          (-), since this character is used to denote an exclude pattern
-          in the aforementioned URI syntax.
-
-          monotone warns on the creation of branches which violate these
-          restrictions and gives further directions.
-
-        - The 'cert' command can now operate on multiple revisions at once.
-
-        - The command 'db kill_rev_locally' has been renamed to
-          'local kill_revision', and 'db kill_tag_locally' and
-          'db kill_branch_certs_locally' have been replaced with a more
-          flexible command 'local kill_certs'.
-
-        - The 'import' command now keeps the created bookkeeping root if
-          --dry-run is not specified.  This makes it possible to re-use
-          the import directory as workspace and is also more closely
-          to what our documentation states, when it says that import
-          is basically "setup with a twist".
-
-        - On Win32 native, the option '--no-format-dates' which disables
-          the localized date format, is now the default for 'commit', since
-          dates are not parseable on Win32 native.
-
-        - The automate commands sync, push, and pull now output information
-          about each transferred revision, cert and key, in basic_io format.
-
-        - monotone no longer passes syntactically correct, but non-existent
-          revision ids through the selector machinery.  The most visible
-          place for this change is 'automate select', which no longer
-          echoes every possible 40 hex-byte string.
-
-        - The 'automate genkey' command has been renamed to
-          'automate generate_key'
-
-        New features
-
-        - Options can now be overridden; you can specify '--no-unknown
-          --unknown' on the command line and effectively get back the original
-          state in the application.  Similarly, you can specify '--no-unknown'
-          in the 'get_default_command_options' hook and then override that
-          with '--unknown' on the command line.
-
-        - New global options:
-          --no-ignore-suspend-certs     undo previous --ignore-suspend-certs
-          --use-default-key             undo previous --key
-          --allow-default-confdir       undo previous --no-default-confdir
-          --allow-workspace             undo previous --no-workspace
-          --interactive                 undo previous --non-interactive
-          --no-standard-rcfiles         replaces --norc
-          --standard-rcfiles            undo previous --no-standard-rcfiles
-          --no-builtin-rcfile           replaces --nostd
-          --builtin-rcfile              undo previous --no-builtin-rcfile
-          --clear-rcfiles               undo previous --rcfile
-          --verbose [-v]                increase verbosity (opposite of --quiet)
-
-        - Global options now hidden:
-          --roster-cache-performance-log
-
-        - New command options:
-          add
-            --no-recursive                  undo previous --recursive
-            --respect-ignore                undo previous --no-respect-ignore
-            --no-unknown                    undo previous --unknown
-          bisect *, checkout, pivot_root, pluck, update, automate update
-            --no-move-conflicting-paths     undo previous --move-conflicting-paths
-          diff
-            --without-header                undo previous --with-header
-            --show-encloser                 undo previous --no-show-encloser
-          disapprove, suspend
-            --no-update                     undo previous --update
-          drop
-            --no-recursive                  undo previous --recursive
-          explicit_merge, merge, merge_into_dir propagate
-            --no-resolve-conflicts          undo previous --resolve-conflicts
-            --no-update                     undo previous --update
-          log
-            --no-brief                      undo previous --brief
-            --no-diffs                      undo previous --diffs
-            --clear-from                    undo previous --from
-            --files                         undo previous --no-files
-            --graph                         undo previous --no-graph
-            --merges                        undo previous --no-merges
-            --clear-to                      undo previous --to
-          import
-            --no-dry-run                    undo previous --dry-run
-            --respect-ignore                undo previous --no-respect-ignore
-          mkdir
-            --respect-ignore                undo previous --no-respect-ignore
-          serve
-            --no-pid-file                   undo previous --pid-file
-          sync, pull, push, automate remote_stdio, automate remote
-          automate pull, automate push, automate sync
-            --no-set-default                undo previous --set-default
-          sync, pull, push, automate pull, automate push, automate sync
-            --dry-run                       just report what would be sent/received
-          automate inventory
-            --corresponding-renames         undo previous --no-corresponding-renames
-            --ignored                       undo previous --no-ignored
-            --unchanged                     undo previous --no-unchanged
-            --unknown                       undo previous --no-unknown
-          automate content_diff
-            --without-header                undo previous --with-header
-          automate show_conflicts
-            --no-ignore-suspend-certs       undo previous --ignore-suspend-certs
-          automate log
-            --clear-from                    undo previous --from
-            --merges                        undo previous --no-merges
-            --clear-to                      undo previous --to
-
-        - Command options now hidden:
-          (several commands) --no-prefix
-          serve    --stdio --no-transport-auth
-          (all netsync/remote commands) --min-netsync-version --max-netsync-version
-
-        - Deprecated options:
-          --norc         use --no-standard-rcfiles
-          --nostd        use --no-builtin-rcfile
-          --reallyquiet  use --quiet --quiet
-          --debug        use --verbose
-
-        - To aid command line typing, partial option names are tried to
-          be expanded; if the expansion leads to multiple possibilities,
-          all matches and an accompanying short description of the
-          particular expansion are displayed.
-
-          Two types of expansions are available: simple prefix matching
-          and word abbreviation matching. Single-word options like '--update'
-          are easier to expand from prefixes, as they're unique after a few
-          characters, in this example '--up' already matches.
-
-          Multi-word options like for example '--ignore-suspend-certs' might
-          collide however with single-worded ones and are best expanded from
-          abbreviations, in this case '--isc'.
-
-        - The 'disapprove' command now accepts a revision range in
-          addition to a single revision.
-
-        - A new 'manpage' command has been added which dumps the monotone
-          command help including all global and command specific options in
-          standard troff format.  If this command is used interactively, its
-          output is automatically processed through nroff and less, in case
-          both are available on your system.  If not, you can change the default
-          command by overwriting the 'get_man_page_formatter_command' hook.
-
-          The 'manpage' command is also used to create a static version of
-          mtn(1) which is now installed with the rest of monotone's docs.
-
-        - New 'k:' selector type to query revisions where at least one
-          certificate was signed with the given key.
-
-        - New automate command 'log' which behaves identical to the
-          normal 'log' command, except that it only outputs the
-          revision ids.
-
-        - New automate command 'checkout' which works just as its
-          non-automate counterpart.
-
-        - Monotone now tracks file size information (hence the previously
-          mentioned schema change).
-          File sizes are currently only queryable via the automation
-          interface, directly for specific files via 'get_file_size' or
-          as part of the extended manifest (see below), but these
-          information may become visible as part of the user UI later on
-          as well.
-
-        - New automate command 'get_extended_manifest_of', which prints
-          a beefed-up manifest format with file size and extensive marking
-          information.  This can be used to easily determine when specific
-          nodes have been changed or moved at last.
-
-        - New automate commands 'put_public_key', 'get_public_key' and
-          'drop_public_key'. (closes monotone bug #30345)
-
-        Bugs fixed
-
-        - The 'mv' command now warns when a source is being renamed onto
-          itself or one of its children (fixes monotone bug #29484).
-
-        - The 'mv' command now also handles this usage properly, where
-          'foo' is a directory:
-
-             $ mv foo bar
-             $ mtn mv --bookkeep-only foo bar
-
-        - monotone no longer asks to pick a branch from a set of branches
-          of a revision in which all but one branch have been suspended
-          (fixes monotone bug #29843)
-
-        - The annotate command no longer fails if it should print out
-          empty or untrusted date cert values
-          (fixes monotone bug #30150)
-
-        - monotone now tries harder to find the cancel hint in a commit
-          message and only aborts if it can't find it anywhere
-          (fixes monotone bug #30215)
-
-        - The import command no longer warns about not being able
-          to write out _MTN/options on --dry-run
-          (fixes monotone bug #30225)
-
-        - 'automate remote' and 'automate remote_stdio' can now be used
-          without transport authentication (e.g. on file:// or ssh://
-          transports) as well as anonymously over netsync
-          (fixes monotone bug #30237)
-
-        - monotone does no longer warn about missing implicit includes
-          when dealing with restricted file sets
-          (fixes monotone bug #30291)
-
-        - The 'passphrase' and 'dropkey' commands now handle private keys
-          in old-style key files (without the hash part in the file name)
-          properly.
-          monotone also makes it very sure now that the key file of a
-          private key which is about to be deleted really and only
-          contains the key which should be deleted and nothing else
-          (fixes monotone bug #30376)
-
-        - monotone no longer throws an unrecoverable error if a public or
-          private key is addressed with some non-existing key id
-          (fixes monotone bug #30462)
-
-        - A globish that contains a bracket pair with an empty sub-pattern
-          such as "{,.foo}", "{.foo,}" or even "{.foo,,.bar}" now correctly
-          expands the empty target, so e.g. the branch pattern
-
-             "net.venge.monotone{,.*}"
-
-          now matches "net.venge.monotone" and "net.venge.monotone.*"
-          as expected. (fixes monotone bug #30655)
-
-        - A regression in 0.48 made a path-restricted 'mtn log' show
-          revisions, in which not the picked path(s), but one of its parents
-          were changed.  This has been fixed.
-
-        - 'mtn trusted' will no longer accept single bogus revision ids,
-          but instead validates if the given revision really exists in the
-          current database.
-
-        - 'mtn read' (and also 'mtn automate read_packets') now tests public
-          and private key data more thoroughly and aborts if it encounters
-          invalid data.
-
-        - 'mtn conflicts store' now gives a proper error message when
-          run outside a workspace (fixes monotone bug #30473)
-
-        - monotone did not properly parse URIs which missed a scheme or
-          which did not mark the start of the authority with a double slash.
-          This has been fixed.
-          (fixes monotone issue 94)
-
-
-Thu Oct 21 23:45:45 UTC 2010
-
-        0.48.1 bugfix release.
-
-        Security related changes:
-
-        - Running "mtn ''" or "mtn ls ''" doesn't cause an internal
-          error anymore. In monotone 0.48 and earlier this behavior
-          could be used to crash a server remotely (but only if it was
-          configured to allow execution of remote commands).
-
-          Therefore everyone running such a server should update as
-          soon as possible.
-
-        Other changes:
-
-        - The --no-format-dates option is now set per default on Win32
-          for the commit command, because there's no date parsing
-          method in the Win32 API. In the changelog editor dates are
-          thus showed and (expected to be entered) in monotone's
-          internal datetime format (YYYY-MM-DDTHH:MM:SS).
-
-        - Using mtn:// style URIs for netsync operations didn't work
-          with 0.48 on systems which only have a 'monotone' entry in
-          /etc/services. Failing to find a corresponding entry for the
-          schema in a given URI isn't considered fatal now, instead
-          mtn falls back to its default port.
-
-        - Compilation issues on Win32 have been fixed.
-
-
-Sun Jun 13 22:13:53 UTC 2010
-
-        0.48 release.
-
-        Changes
-
-        - Much more information is now passed to the editor when composing a
-          commit message for a new revision. The Author, Date, Branch and
-          Changelog values may now all be changed directly in the editor
-          allowing new branches to be created without using the --branch option.
-          Changes to other lines of this information must not be made or the
-          commit will abort.
-
-        - The edit_comment lua hook now only takes one argument which is the
-          text to be passed to the editor to edit a commit. Existing hooks that
-          override the default hook will need to be changed to work properly.
-
-        - The long date/time format used by 'status', 'commit' and 'log' must
-          be sufficient to preserve a date through a formatting and parsing
-          cycle. The 'status' command now checks for this and warns if the
-          format is unsuitable and 'commit' will refuse to operate with an
-          unsuitable format.
-
-        - The output of the 'status' and 'log' commands has changed to align
-          with the new information displayed by 'commit' so that all three
-          commands display revisions similarly.
-
-        - The 'setup' as well as the 'clone' command check if no managed default
-          database exists and if no database is given either as command line
-          or as workspace option and eventually create a new default database
-          outside of the bookkeeping directory of the new workspace (see below
-          for more information on the new management features).
-
-        - The output of monotone diff has changed to use /dev/null as the source
-          for added files and as the target for deleted files. This is
-          compatible with patch(1) and will cause it to add and delete files
-          where appropriate. As part of this change diff will now include the
-          removed contents of deleted files which were omitted in earlier
-          versions of monotone.
-
-        - Monotone will only warn about bad certs if there are not also matching
-          trusted certs. So if someone commits a bad branch cert, monotone will
-          only warn about that bad cert until someone else approves that
-          revision into the same branch (fixes monotone bug #8033).
-
-        - 'db check' now checks for errors in the branch heads cache,
-          and 'db regenerate_caches' fixes them.
-
-        - The output of the Lua functions print() and io.write() is now
-          redirected to the standard progress message stream of monotone.
-          See chapter 6.3 in the documentation for details.
-
-        New features
-
-        - Monotone has now database management capabilities: If you place your
-          databases in one or more specific locations (defaults to
-          %APPDIR%/monotone/databases on Windows and $HOME/.monotone/databases
-          on Linux, configurable by a hook), it is able to discover these
-          databases and access them only by giving the (base) name of their
-          filename, for example ":my-database.mtn".
-
-          You can also directly create new databases in the first found default
-          location by issuing 'mtn db init -d ":my-database.mtn".
-
-          Some commands, like 'setup' and 'clone' automatically fall back to
-          a default database (":default.mtn", also configurable by a hook) if
-          no database option is explicitely given.
-
-          Additionally, monotone remembers checked out workspaces for every
-          managed database and displays these "known" registered paths together
-          with other information in the new 'list databases' command
-          (closes monotone bug #8916).
-
-        - A set of accompanying management commands - 'register_workspace',
-          'unregister_workspace' and 'cleanup_workspace_list' - to handle moved
-          or removed workspaces for managed databases have been added.
-
-        - Many commands that change the heads of a branch (approve, disapprove,
-          pull, merge, etc) can now take an option "--update". If run from
-          a workspace which is based on a head of the branch and has no local
-          changes, this option makes these commands update that workspace to
-          the new head. If you always want this behavior, you can define the
-             get_default_command_options(cmd)
-          hook in your monotonerc (fixes monotone bug #17878).
-
-        - New command 'undrop' which undoes a 'drop' done by mistake
-          (fixes monotone bug #13604).
-
-        - New automation command 'update' which behaves identical to
-          the normal 'update' command.
-
-        - 'ls tags' now outputs the branch name(s) a tagged revision is on.
-          The revision id is shortened to the first ten characters to get some
-          more space for this (fixes monotone bug #12773).
-
-        - Default include and exclude patterns are now remembered per server.
-          This means that you can have for example one server that you sync
-          everything to, and one that you only sync some branches to, and you
-          don't have to worry about forgetting to give the include pattern and
-          accidentally trying to sync everything to the second server.
-
-        - A new Lua extension function change_workspace(directory) has been
-          added. This should be most useful for custom commands which need
-          to work on multiple workspaces from the same monotone instance.
-
-        - There is also the new server_set_listening(bool) Lua extention
-          function available since 0.47, which can be used to let a monotone
-          server exit gracefully instead of having to be killed.
-
-        Bugs fixed
-
-        - A regression in 0.47 prevent successful execution of push / pull /
-          sync over pipes (Debian bug 574512); this has been fixed.
-
-        - A bug in 0.46 and 0.47 could lead to pulls or possibly commits taking
-          approximately forever, if any of the previous branch heads was not a
-          "close" relation of the new head. This has been fixed.
-
-        - Several bugs related to restrictions not including the required parent
-          directories of included files have been fixed. It is now possible to
-          say 'mtn add a/b/c' followed by 'mtn commit a/b/c' and have the commit
-          succeed. See the restrictions section in the manual for more details
-          (fixes monotone bugs #15994, #17499, #20447 and #22044).
-
-        - monotone no longer saves changed options from the command line back
-          to _MTN/options in case the command execution was unsuccessful
-          (fixes monotone bug #22928).
-
-        - When monotone reads packets from files, like f.e. keys in a directory
-          given by the --keydir option, and these files are large and do
-          not contain packet data at all, monotone no longer uses an excessive
-          amount of time and memory to figure this out
-          (fixes monotone bug #28799).
-
-        - The 'log' command no longer crashes if it is executed in a workspace
-          whose parent revision(s) do not exist in the specified database
-          (fixes monotone bug #29677).
-
-        - The 'clone' command no longer removes an existing bookkeeping
-          directory if the target directory "." points to a workspace
-          (fixes monotone bug #29927).
-
-        - The commands in monotone's help output are now sorted alphabetically.
-
-        - monotone on Windows will now have a non-zero exit code when
-          interrupted (^C). This was broken in 0.47 when it was fixed to not
-          throw an exception on being interrupted.
-
-        - In 0.46 and 0.47, monotone could sometimes get confused
-          about which revisions were the heads of a particular branch.
-          This would happen when a new branch cert was added to a
-          revision that was an ancestor of one or more of the current
-          heads of the branch, most commonly during netsync when
-          multiple people had performed identical merges. This is
-          fixed now. 'db check' will identify the problem; if your
-          database currently gives incorrect 'heads' results, or 'mtn
-          bug' on 'merge', you can fix it by running 'mtn db
-          regenerate_caches'.
-
-        - In 0.46, spurious network disconnects could occur when transferring
-          sufficiently large items (files, diffs, revisions). This was fixed
-          in 0.47 but not noted in the release notes at that time
-          (fixes monotone bug #28991).
-
-        - monotone on Windows will now have a non-zero exit code when
-          interrupted (^C). This was broken in 0.47 when it was fixed to not
-          throw an exception on being interrupted.
-
-        - the 'mv' command now warns when a source is being renamed onto
-          itself (fixes monotone bug #29484).
-
-        Other
-
-        - Support for the diffuse merger (http://diffuse.sourceforge.net)
-          has been added.
-
-Sun Mar 14 21:15:06 UTC 2010
-
-        0.47 release.
-
-        Changes
-
-        - The default '<unknown>' author used by the git_export command has
-          changed to 'Unknown <unknown>' and must be changed in existing author
-          map files. The old '<unknown>' author will be rejected by the new
-          validate_git_author lua hook.
-
-        - The 'git_export' command now validates all git author and committer
-          values using a new 'validate_git_author' lua hook before they are
-          written to the output stream. The export will fail if any value is
-          rejected by this hook.
-
-        - The 'git_export' command now calls a new 'unmapped_git_author' lua
-          hook for all git author values not found in the author map file. The
-          default implementation of this hook attempts to produce valid git
-          authors using several default pattern replacements.
-
-        - The 'get_date_format_spec' lua hook now has an additional parameter
-          which hints at the wanted format (f.e. a short date or a long date
-          time). The default implementation now returns '%x' for short and
-          long dates, '%X' for short and long times (currently unused) and
-          '%x %X' for short and long date times.
-
-        - The options '--date-format' and '--no-format-dates' are no longer
-          specific to the 'log' command, but can now be used globally.
-
-        - monotone now prompts only three times for a key password.
-
-        New features
-
-        - Added portuguese translation (thanks to Américo Monteiro)
-
-        Bugs fixed
-
-        - 'passphrase' now allows an empty new password to be given
-          (fixes monotone bug #28809)
-
-        - 'automate remote' and 'automate remote_stdio' no longer
-          require an existing database (fixes monotone bug #28885)
-
-        - monotone no longer throws an exception on Windows if it is
-          interrupted (^C); a couple of other bug have been fixed for this
-          platform as well which generally improve the compatibility.
-
-        - The annotation of 'annotate' is now localized.
-
-        - The various occurrences where a revision is described by its
-          certs now come with proper localized date output.
-
-        - Fix problems with newer Lua versions especially when
-          LUA_COMPAT_VARARG not set.
-
-        Other
-
-        - Roster handling has been sped up significantly, and roster cache
-          performance has been fixed for the case of overly large rosters.
-          This should be mostly noticable when digging through history
-          (especially initial pulls, since those send so many revisions),
-          and be more noticable for projects with larger trees.
-
-          The most significant internal change from this is that rosters and
-          marking_maps are now copy-on-write. A longer overview of the internal
-          changes is at:
-          http://lists.gnu.org/archive/html/monotone-devel/2010-02/msg00043.html
-
-        - Improve the compatibility with newer Botan versions.
-
-Sun Jan 17 21:40:35 UTC 2010
-
-        0.46 release.
-
-        Changes
-
-        - "automate stdio" (and "automate remote_stdio", see below)
-          use separate streams to encode out-of-band information like
-          informational messages, warnings or tickers. A special
-          "header" section has been added to the standard output to
-          identify future stdio version changes. The error codes used
-          in the output of both stdio and remote_stdio, have also
-          slightly changed: errors which are the result of a wrong
-          call (unknown command, invalid options, parsing errors, ...)
-          are returned with code 1, while errors which happened while
-          the actual command executed are returned with code 2. Error
-          codes are no longer echoed with every packet, but only as
-          the payload of the final 'l' ("last") packet.
-
-          Please consult the manual section "mtn automate stdio" for a
-          detailed description of the new format.
-
-        - The 'heads' command should be significantly faster now (not
-          that it was particularly slow before). This probably isn't
-          terribly noticable unless you're in the habit of using "h:*"
-          (heads of all branches) as a selector, it's primarily meant
-          to enable future changes that will depend on fast 'heads'.
-
-          The database schema has been changed, so you will need to
-          run 'mtn db migrate' (preferably after making a backup copy
-          of your db).
-
-        - the 'status' command now includes the current (to be committed)
-          revision number and will indicate when the branch option in
-          _MTN/options has been changed and does not match one of the
-          revision's parent branches.
-
-        - Cert labels in the output of the 'log' command are now
-          localized.
-
-        New features
-
-        - There's a new command "automate remote_stdio" that makes it
-          possible to execute automate commands on a remote server
-          (for example, to permit a single database to be used both
-          for serving netsync connections and for running a viewmtn
-          instance). This requires that the server be running monotone
-          0.46 or later. Access control on the server uses a new lua
-          hook "get_remote_automate_permitted(identity, command_line,
-          options)".
-
-        - There's also a new command "automate remote" that's very much
-          the same, but executes only a single command and does not
-          stdio-encode the output.
-
-        - A new 'bisect' command has been added to allow searching for a
-          specific revision within a range of revisions. This can be useful for
-          locating the exact revision that broke something or removed a
-          particular feature.
-
-        - Three new commands - 'push', 'pull' and 'sync' - have been added
-          to the automation interface. They work just as their non-automate
-          counterparts.
-
-        - The global option '--timestamps' has been added which prefixes
-          the current local timestamp before diagnostic messages such as
-          warnings, progress messages, errors and tickers.  For example,
-          this option can be used to log the date and time when clients
-          connect to a monotone server.
-
-        Bugs fixed
-
-        - A regression from 0.45's key migration prevented the proper
-          output of the `committer` field in 'git_export'.
-
-        - 'db info --full' no longer crashes when executed on a database
-          with only one revision.
-
-        - The mtn_automate Lua function which can be used for custom
-          commands now properly handles binary data.
-
-        - `db info` now returns a correct byte count for certs again.
-
-        - If a public key was read in via the `read` or
-          `automate read_packets`, an invariant was triggered if the
-          key was already existing in the database. This has been fixed.
-
-        - `annotate` no longer crashes if the annotated file is empty.
-
-        Other
-
-        - Added the script of the Lua-based contributed Monotone
-          extension command "mtn remote_export" to contrib/command/
-          with which a remote revision can be exported locally without
-          having to fetch all of the history before.
-
-
-Fri Sep 11 20:50:00 UTC 2009
-
-        0.45 release.
-
-        Changes
-
-        - Certs now link to the key that signed them by the key's
-          hash, instead of its name.  This should provide some
-          security and usability improvements.
-
-          The database schema has been changed, so you will need to
-          run 'mtn db migrate' (preferably after making a backup copy
-          of your db).
-
-          The netsync protocol version has also changed. However, we
-          found space to implement full protocol version negotiation,
-          so no flag day is needed.  If your particular project has a
-          situation where there are multiple keys with the same name,
-          you will receive errors when trying to sync certs signed by
-          those keys to older netsync peers.
-
-          A number of commands have slightly different output now,
-          particularly 'ls certs', 'ls tags', 'automate keys',
-          'automate tags' and 'automate certs'.  There is a new Lua
-          hook associated with these changes,
-          'get_local_key_name(identity)', and all Lua hooks that used
-          to take a key name as an argument now instead take a table
-          with several fields.
-
-          Commands which previously accepted a key name now also
-          accept the key's hash or local name, which is a local alias
-          for equally named keys.  'read-permissions' and
-          'write-permissions' accept either the key name or the hash.
-
-          There is also a new 'db fix_certs' command which fixes wrong
-          key assignments in migrated databases if you have the correct
-          key available.
-
-        - The 'resolved_user' conflict resolution is no longer
-          reported by 'automate show_conflicts' for file content
-          conflicts; 'resolved_user_left' is used instead.
-
-        - 'format_version' was removed from 'automate tags' and
-          'automate get_attributes' which both do not need this
-          additional versioning information.
-
-        New features
-
-        - The 'log' command now, by default, converts all dates it
-          prints to your timezone instead of leaving them in UTC, and
-          uses a somewhat more friendly format for the dates.
-
-          You can customize the date format with the new
-          "get_date_format_spec" Lua hook, which returns a strftime(3)
-          format string.  You can also override the format for one
-          command with the new --date-format option, disable date
-          conversion for one command with --no-format-dates, or
-          disable it by default by having the above Lua hook return an
-          empty string.
-
-        - The 'diff' and 'automate content_diff' commands take a
-          '--reverse' option when one revision is specified, to
-          control the order of the diff with the workspace.
-
-        - The 'update', 'checkout', 'pluck', and 'pivot_root' commands
-          take an option '--move-conflicting-paths', to handle
-          unversioned files that are blocking the action. The
-          unversioned files are moved to
-          _MTN/resolutions/<workspace_path>, so the action can
-          succeed, and the user can recover the files if necessary.
-
-        - Resolution of orphaned file conflicts is now supported by
-          'merge --resolve-conflicts' and the 'conflicts' commands.
-
-        - Duplicate name conflicts now support the 'keep' resolution.
-
-        - Monotone now accepts ':memory:' as argument to the --db option
-          and sets up a memory-only SQLite database.
-
-        - 'clone' allows cloning into the current directory when
-          '.' is given as argument.
-
-        Bugs fixed
-
-        - Monotone now sanely skips paths with invalid characters
-          it encounters during 'add' or 'automate inventory'.
-
-        - Key names, cert names, and var domains with non-ASCII
-          characters should work properly now.  Previously, they would
-          be (usually) converted to punycode on input, and not decoded
-          on output. They will now not be converted to punycode at
-          all.
-
-        - The 'conflict' commands can now handle duplicate name
-          conflicts for directories.
-
-        - 'cvs_import' now properly parses CVS timestamps (again).
-
-        - Windows' cmd.exe is recognized as smart terminal and thus
-          monotone should create more readable output in
-          netsync operations.
-
-
-Tue May 12 20:44:00 UTC 2009
-
-        0.44 release.
-
-        Changes
-
-        - Private keys no longer have a separate hash from the associated
-          public key. This changes the hashes output by 'ls keys', and also
-          changes the format of 'automate keys' and 'automate genkey'.
-
-        New features
-
-        - New 'w:' selector type for selecting the revision the workspace
-          is based on.
-
-        Bugs fixed
-
-        - C++ exceptions in Lua extension functions are now converted into
-          Lua errors catchable with pcall, instead of causing a crash.
-
-        - In 0.43 revert became excessively noisy and would report changes to
-          all attributes on included files and directories regardless of whether
-          the attributes had been changed or not. This has been silenced.
-          Monotone will now specifically report changes to execute permissions
-          only when they occur.
-
-        - In 0.43 monotone would lose execute permissions on all files modified
-          during an update operation. Execute permissions are now reset on
-          updated files that have the mtn:execute attribute set to true.
-
-        - Invalid revision selectors now cause an immediate error instead of
-          being dropped from the selection.  The old behavior could produce
-          undesired effects from typoed commands, such as spewing a list of
-          all revisions in the database.
-
-        - If "automate stdio" is in use, invalid selectors are reported via
-          the automate protocol rather than on stderr.
-
-        - "Best-effort" character set conversions now work again; 'mtn log'
-          will not crash just because there is a change log entry with a
-          character not representable in your locale.  However, if your system
-          iconv(3) implementation does not support the //TRANSLIT extension,
-          you may see garbage characters in the above scenario.
-
-        Internal
-
-        - Various small code changes to make monotone compile under (Open)
-          Solaris using Sun Studio, and under Windows with Visual C++.
-
-        - monotone.spec has been removed from the distribution.
-
-
-Sun Mar 22 22:26:00 UTC 2009
-
-        0.43 release.
-
-        Changes
-
-        - The Monotone source distribution no longer includes copies of
-          several third-party libraries.  This means they must be downloaded
-          and built separately, before building monotone.  See INSTALL for a
-          complete list of necessary libraries.
-
-          This allows monotone's developers to concentrate on monotone
-          itself, rather than tracking external library updates, which in
-          practice did not happen.  By way of illustration, we were still
-          shipping sqlite 3.4.1, which is years out of date.  This has also
-          been a long-standing request of various redistributors of binary
-          packages, who prefer the use of globally shared libraries.
-
-        - There is a new db var "database delta-direction", which can have
-          values "reverse" (default), "forward", and "both". This controls
-          what kind of deltas are stored for new file versions. Forward
-          deltas are very fast for netsync, but slow for most other uses.
-          Set this to "both" (or perhaps "forward" if you're very short on
-          disk space) on an empty db and pull everything into it, to get a
-          database which will be much faster for server usage (especially
-          initial pulls).
-
-        - 'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
-          longer print global options, thus making the output of specific help
-          requests more compact. You still see all available global options
-          by executing 'mtn help' without any arguments.
-
-        - 'mtn automate get_current_revision' now returns an empty changeset
-          instead of an error if a workspace contains no changes.
-
-        New features
-
-        - A monotone database may be exported in the git fast-import format
-          using the git_export command. The output from this command may be
-          piped into git fast-import or other tools supporting this format.
-
-        - Additional 'u:' and 'm:' selector types for selecting the revision the
-          workspace was last updated from and revisions matching specified
-          message globs in changelog and comment certs.
-
-        - Additional '--revision' option for 'mtn log' allows logging of
-          selected sets of revisions.
-
-        - Additional '--full' option for 'mtn db info' to display some
-          statistic analysis of the date certs in the database.
-
-        - Command line options in the EDITOR and/or VISUAL environment
-          variables are honored; for instance, EDITOR="emacs -nw"
-          works now.  (Debian bug #320565.)
-
-        - The `mtn_automate' lua function now correctly parses and sets
-          options for executed automate commands.
-
-        - The 'commit' command accepts a non-empty _MTN/log as the log
-          message when '--message-file=_MTN/log' is given.
-
-        Bugs fixed
-
-        - Performance of the log command has been improved significantly.
-          Previous versions of monotone loaded individual certs by name for each
-          printed revision and this caused sqlite to not use the correct
-          index. Now, all certs are loaded for each printed revision once and
-          individual certs are selected from the full list which allows sqlite
-          to use the preferred index.
-
-        - In 0.42, a netsync writer would attempt to queue up all outgoing
-          data as soon as it knew what data to send, in a single operation,
-          without servicing the event loop. If there was a large amount of
-          data to send, this would cause very long pauses and sometimes
-          timeouts and dropped connections (for pauses over 10 minutes).
-          The bug that caused this is fixed, and that operation now has a
-          safety timer that should prevent it from coming back.
-
-        - When the netsync server receives garbage over the network, it
-          should be much better about only terminating the offending connection
-          instead of the entire server.
-
-        - The log command was missing '--depth' and '--exclude' options used to
-          restrict revisions printed to those touching specific paths. Log now
-          allows these options and uses them properly.
-
-        - The update command previously did not clear execute permissions from
-          files that had their associated 'mtn:execute' attribute cleared.
-
-        - Several minor problems with workspace attributes have been fixed.
-          Earlier versions of monotone would reset attributes such as
-          mtn:execute on all files when any workspace modifying command was
-          executed. Applying attribute changes to workspace files is now done
-          much more selectively in the same manner that content and name changes
-          are applied.
-
-        - In certain cases, especially also on FreeBSD and Mac OS X, netsync
-          called select() even after read() returned 0 bytes to indicate the
-          end of the file, resulting in a confusing error message. This
-          is fixed by treating EOF specially and prevent further calls
-          to select() on the file handle, as recommended by the
-          select_tut man page.
-
-        - If given a filename, `mtn ssh_agent_export' now creates that
-          file with the correct permissions (i.e. mode 600), creates
-          directories as necessary, and does not throw an internal
-          error if creation or writing fails.  (You're still on your
-          own for directory creation and permissions if you take the
-          key on standard output and redirect it to a file.)
-
-        - The `p:' selector now accepts single character revision ids.
-
-        - `mtn merge_into_workspace' no longer crashes if one tries to merge
-          in an ancestor or descendant of a workspace, but gives a helpful
-          error message.
-
-        - Several bugfixes to `mtn automate stdio':
-
-          * It now correctly distinguishs between syntax and command errors by
-            returning error code 1 for the former and error code 2 for the
-            latter - just as advertised in the documentation.
-
-          * The stdio event loop no longer quits if a syntax error occurs, but
-            rather discards the wrong state and accepts new (valid) commands.
-
-          * Option errors haven't been catched properly and thus weren't encoded
-            in stdio either; this has been fixed as well.
-
-          * Global options, which were set or changed by a previously executed
-            command, weren't properly reset before the next command was issued.
-            It was f.e. not possible to "unignore" suspended branches for
-            the `branches' command when `--ignore-suspend-certs' was given in
-            a previous run. Now only those global options persist between
-            executed commands which were given to stdio directly.
-
-        Internal
-
-        - Using 64 bit integer values to represent dates internally. This
-          has no user visible effect.
-
-        - The unit test code has been separated from the main source, thus
-          building the tests no longer requires a full recompilation. Also,
-          the number of modules which are linked into unit tester has
-          decreased tremendously.
-
-        - A couple of debug commands have been added to the `database'
-          command group to aid performance timing. See `mtn help --hidden db'
-          for a list of available commands.
-
-        - Our internal error handling has been overhauled. N() is gone, and E()
-          takes three arguments instead of 2: E(bool, origin::type, i18n_format).
-          origin::type is an enum describing the source of the error, eg network,
-          user, internal. Data types can publically inherit origin_aware (as the
-          vocab types do) to obtain a public origin::type member named
-          'made_from'; this can then be supplied to E() when sanity-checking
-          that data. origin_aware and origin::type are in origin_type.hh.
-          I() will throw a unrecoverable_failure, and E() will throw either a
-          unrecoverable_failure or a recoverable_failure depending on the
-          origin::type provided. informative_failure is gone.
-
-
-Fri Dec 26 22:08:00 UTC 2008
-
-        0.42 release.
-
-        Changes
-
-        - The output of 'automate show_conflicts' has been changed; a
-          default resolution for file content conflicts and user resolutions
-          for other conflict types has been added. 'directory_loop_created'
-          changed to 'directory_loop'.
-
-        - The French, Brazilian-Portuguese and Japanese translations were
-          outdated and thus have been removed from the distribution. In case
-          you care about them and want them back, drop us a note at
-          monotone-devel@nongnu.org.
-
-        Bugs fixed
-
-        - 'mtn db kill_rev_locally' did not update the inodeprint
-          cache when executed from a workspace on which the
-          revision's changes where applied.
-
-        - Some recent performance issues have been corrected:
-          * since 0.40, there is much more use of hex encoding/decoding.
-            These functions have been sped up considerably.
-          * since 0.40, every command in an 'automate stdio' session
-            would reinitialize the database. This was rather slow, so
-            monotone will now keep the database open between commands.
-
-        - The Lua-based contributed Monotone extension introduced in
-          0.38 haven't been added to the tarball; this has been fixed.
-
-        - Monotone died if _MTN/options contained an empty / not-existing
-          'keydir' entry. This has been fixed. Also, invalid options are now
-          better detected and give a more useful error message.
-
-        - Monotone crashed if it was called with more than 2048 command
-          line arguments. This has been fixed.
-
-        - If vim is used as merger, it no longer prompts the user for an
-          enter key press.
-
-        - Decoding errors f.e. through to garbage from the network no longer
-          results in informative failures, but in warning. This was made
-          possible by introducing the concept of origin-aware sanity checks.
-
-        - Monotone crashed if it was called with nested wildcards such as
-          'a.{i.{x,y},j}'. This has been fixed.
-
-        - The standard implementation of the 'ignore_file' hook now accepts
-          windows and unix line endings in .mtn-ignore files.
-
-        New features
-
-        - New 'mtn ls duplicates' command which lets you list
-          duplicated files in a given revision or the workspace.
-
-        - New option --no-workspace, to make monotone ignore any
-          workspace it might have been run in.
-
-        - New command group 'mtn conflicts *'; provides asynchronous
-          conflict resolutions for merge and propagate.
-
-        - New 'automate file_merge' command which runs the internal line
-          merger on two files from two revisions and outputs the result.
-
-        - New 'automate lua' command with which lua functions, like
-          monotone hooks, can be called over automate. This is particularily
-          useful to get user defaults, like ignorable files, branch keys and
-          passwords, which are managed through one or more monotonerc files.
-
-        - New 'automate read_packets' command which reads data packets like
-          public keys similar to 'mtn read'.
-
-        - 'merge' and 'propagate' accept user commit messages; the
-          'merge rev rev' or 'propagate branch branch' message will be
-          prefixed to the user message. --no-prefix removes the prefix.
-
-        Internal
-
-        - Update Botan to 1.7.12.
-
-
-Wed Sep  3 21:13:18 UTC 2008
-
-        0.41 release.
-
-        Changes
-
-        - 'mtn clone' now takes a branch argument rather than a branch
-          option which is more what people expect given the fact that
-          mtn push/pull/sync do not use a branch option either.
-
-        - 'mtn automate inventory' will show the birth revision for
-          any file that has been committed.
-
-        Bugs fixed
-
-        - If the options '--db' or '--keydir' were previously
-          specified for a command which was executed inside a
-          workspace and one or both option arguments were invalid
-          (f.e. invalid paths), they were still written to
-          _MTN/options of the particular workspace.  This lead to
-          errors on any subsequent command which used these
-          options. This bug is fixed in so far that basic file type
-          checks are applied on both options, so its no longer
-          possible to set non-existing paths accidentally or use a
-          path to a directory as option argument for '--db'.
-
-        - If a key clash occurs on a netsync operation, i.e. two
-          different keys with the same key id are encountered, mtn now
-          fails cleanly and provides further guidance how to proceed.
-
-        - It was previously not possible to clone a branch / database
-          anonymously; this has been fixed.
-
-        - If the client tries to use an unknown key, try to fall back
-          to anonymous pull instead of failing immediately.
-
-        - 'mtn automate identify' was broken in 0.40 when used over
-          stdio, i.e. the output of the command did not get into the
-          right output channel; this has been fixed.
-
-        - Monotone would produce a warning if executed from the root
-          directory of a Windows drive; this has been fixed.
-
-        - The 'note_commit' hook now returns the new revision id
-          hex-encoded again - the bug was introduced in 0.40.
-
-        New features
-
-        - New 'mtn suspend' command which lets you mark certain
-          revisions and thus whole branches as discontinued
-          ("suspended") by attaching a special suspend cert to the
-          revision. All relevant mtn commands (f.e. mtn heads,
-          mtn ls branches) honor this cert by default. To ignore it,
-          simply add '--ignore-suspend-certs' to your command line.
-          Suspended revisions can have children, which are in no
-          way affected by the cert of their parent, i.e. suspended
-          development lines or branches can simply be "unsuspended"
-          by committing to them.
-          This feature was already added in monotone 0.37, but was
-          forgotten to be mentioned in NEWS back then.
-
-        - New 'get_default_command_options' lua hook which lets you
-          specify default options for a given, triggered command.
-          Useful f.e. if you always want to have your 'mtn add'
-          command executed with '-R' / '--recursive'.
-
-        - Add 'automate show_conflicts' command.
-
-        - Add 'automate get_workspace_root' command.
-
-        - Add Lua hooks 'note_netsync_revision_sent',
-          'note_netsync_cert_sent' and 'note_netsync_pubkey_sent'.
-
-
-Fri Apr 11 22:50:44 UTC 2008
-
-        0.40 release.
-
-        Changes
-
-        - The vim merger has been improved and now uses diff3 to merge
-          non-conflict changes automatically before executing vimdiff.
-
-        - Values used with the --depth option used to control recursion with
-          node and path restrictions have changed. Using --depth=0 now means
-          exactly the specified directories and *not* their children. Using
-          --depth=1 now means the specified directories and their immediate
-          children. Previously --depth=0 included children and --depth=1
-          included grandchildren and it was not possible to exclude children
-          using --depth.  The simple fix for anyone using --depth is to add 1 to
-          the values they are using.
-
-        - Document that ssh: and file: sync transports are not supported on
-          native Win32.
-
-        Bugs fixed
-
-        - `commit' now uses keydir specified in _MTN/options
-
-        - duplicate name conflicts now show a proper error message, even if
-          a parent directory got renamed as well. In that case, the error
-          message now shows both names for the directory and the offending
-          file name.
-
-        New features
-
-        - The bare parent selector 'p:' can now be used in a workspace to
-          query the parent(s) of the workspace' base revision. This is
-          equivalent to "mtn au select p:`mtn au get_base_workspace_revision`".
-
-        - push, pull, and sync can be run with a single argument, which looks
-          like
-             mtn://hostname?include_pattern/-exclude_pattern
-          or
-             mtn://hostname?include=include_pattern/exclude=exclude_pattern
-
-        Internal
-
-        - Update Botan to 1.7.4.
-
-        - Usage of the internal app_state object has been reduced, objects
-          are better encapsulated now. The database interface has been
-          enhanced to ease reduction of locking contention in the future.
-
-        - Merged the two indexes on revision_certs into a single one.
-
-        - The database schema has been changed so that it now stores
-          binary SHA1 hashes rather than their hexadecimal encoding,
-          in most places where these are used.  This reduces the
-          database size and speeds up operations a little.
-
-          Users who like to fiddle with the database directly are
-          advised to use the sqlite functions hex() and quote() to
-          print columns that store hashes (including IDs), and the
-          hexadecimal literal notation x'DEADBEEF' to input them.
-
-        - Binary SHA1 hashes are also used for most in-memory
-          processing, avoiding conversions and saving memory.
-
-Mon Feb 25 15:55:36 UTC 2008
-
-        0.39 release.
-
-        Changes
-
-        - 'mtn di' is now an alias for 'mtn diff'.
-
-        - 'automate db_set' has been renamed to 'automate set_db_variable'.
-
-        - 'automate db_get' has been replaced by 'automate get_db_variables'
-          which returns all database variables similar to 'list vars' in
-          basic_io format, optionally restricted by domain.
-
-        - The REVID argument of 'automate get_revision' is now mandatory;
-          to retrieve the current workspace revision, use the new command
-          'automate get_current_revision'
-
-        - messages describing conflicts from all of the various merge commands
-          have been reworked and should be much more informative.
-
-        - mtn show_conflicts now outputs much more detailed and descriptive
-          messages, however it may report content conflicts that will be
-          resolved automatically by the line merger.
-
-        - The internal copy of PCRE has been updated to version 7.6.
-          If you use the '--with-system-pcre' configure switch, it
-          will insist on at least this version.
-
-        - "emacs" has been removed from the list of dumb terminal types;
-          tickers should now default to --ticker=count with emacs terminals
-
-        - extensive section on merge conflicts and ways to resolve them
-          added to the manual.
-
-        Bugs fixed
-
-        - for changes near the beginning of a file, mtn's unified diff
-          output sometimes contained too many leading context lines.
-
-        - the path handling of 'mtn revert' was improved and fixed two bugs:
-          now a restricted revert on a node "dir1/file1" reverts only the
-          content changes in "file1", but leaves renames of any of its
-          ancestor nodes untouched; furthermore, if "dir0/" was renamed to
-          "dir1" and "dir1/file1" was dropped, mtn now re-creates file1 at the
-          proper place ("dir1/") and leaves no missing files around because
-          of the non-existing "dir0/".
-
-        - a few changes needed to build with gcc 4.3.
-
-        New features
-
-        - 'automate drop_db_variables' which drops one database variable
-          (like the 'unset' command) or all variables within a given domain.
-
-        - 'automate inventory' now accepts the options '--no-ignored',
-          '--no-unknown', '--no-unchanged' and '--no-corresponding-renames'.
-          Please consult the monotone documentation for more information about
-          these new options.
-          In addition, 'automate inventory' no longer recurses into ignored
-          directories. The typical case of listing files that need attention
-          now runs at least four times faster.
-
-        - 'automate get_current_revision' which outputs the revision text of
-           changes in the current workspace
-
-Wed Dec 12 21:21:15 UTC 2007
-
-        0.38 release.
-
-        Changes
-
-        - mtn log now prints a single dot for a project's root
-          directory instead of an empty string.
-
-        - mtn now warns if changes to a file will be ignored because
-          the file has been deleted on one side of a merge.
-
-        - mtn now errors if your chosen private key doesn't match the public
-          key of the same name in your database.
-
-        - mtn now checks for your key before a merge action takes place to
-          ensure that any manually merged file isn't lost in an error case
-
-        Bugs fixed
-
-        - a bug introduced in 0.37 prevented an external merger from being
-          executed unless the MTN_MERGE environment variable was set
-
-        - mtn read successfully reads revision data, and cert packets again
-
-        - mtn consistently supports certs with empty values
-          (fixed 'ls certs' and 'read')
-
-        Internal
-
-        - Update Botan to 1.7.2.
-
-        - Moved the gzip implementation out of the Botan directory.
-
-        Other
-
-        - Added the scripts of the following Lua-based contributed
-          Monotone extension commands to contrib/command/:
-          "mtn base", "mtn fuse", "mtn revision", "mtn conflicts".
-
-        - Added a hooks version of the contributed ciabot script,
-          contrib/ciabot_monotone_hookversion.lua
-
-        - The monotone manual is now licensed under the GPL rather than
-          the GFDL.
-
-Fri Oct 25 22:35:33 UTC 2007
-
-        0.37 release.
-
-        Changes
-
-        - mtn db kill_rev_locally now checks for an existing workspace
-          before the revision is killed and tries to apply the changes
-          of this particular revision back to the workspace to allow
-          easy re-committing afterwards
-
-        - the "--brief" switch for mtn annotate has been renamed to
-          "--revs-only" for clarity
-
-        - mtn help now lists the commands (and their aliases) available
-          within a group, so its easier to get an overview which commands
-          are available at all
-
-        - the "MTN_MERGE=diffutils" merger (provided by std_hooks.lua)
-          was improved. It now accepts a MTN_MERGE_DIFFUTILS environment
-          variable which can be used to control its behaviour
-          through comma-separated "key[=value]" entries. Currently
-          supported entries are "partial" for doing a partial
-          batch/non-modal 3-way merge conflict "resolution" which uses
-          embedded content conflict markers and "diff3opts=[...]" and
-          "sdiffopts=[...]" for passing arbitrary options to the used
-          "diff3" and "sdiff" tools. When used in combination with "mtn
-          merge_into_workspace" this way one especially can achieve a
-          CVS/SVN style non-modal workspace-based merging.
-
-        - There is a new revision selector: "p:REV" selects the
-          parent(s) of revision REV.  For example, if a revision has
-          one parent,
-
-             mtn diff -r p:REV -r REV
-
-          will show the changes made in that revision.
-
-        - Monotone now uses the Perl-Compatible Regular Expression
-          (PCRE) library for all regular expressions, instead of the
-          boost::regex library.  This means that external Boost
-          libraries are no longer required to build or use Monotone.
-          If building from source, you will still need the Boost headers
-          available somewhere.  See INSTALL for details.
-
-          PCRE's syntax for regular expressions is a superset of
-          boost::regex's syntax; it is unlikely that any existing
-          .mtn-ignore files or other user uses of regexps will break.
-          The manual now contains detailed documentation of the regexp
-          syntax, borrowed from PCRE itself.
-
-        - the format of "mtn automate inventory" has changed to basic_io.
-          This fixes a couple of corner cases where the old format
-          returned wrong information and introduces new capabilities like
-          restricted output, recognized attribute changes, and more.
-          For a complete overview on the new format, please take a look
-          in the appropriate manual section.
-
-        Bugs fixed
-
-        - mtn automate heads called without a branch argument now properly
-          returns the head revisions of the workspace's branch if called
-          over mtn automate stdio
-
-        - mtn commit no longer crashes if it creates a revision whose
-          roster already exists, i.e. was left behind by the command
-          `mtn db kill_rev_locally REV` (savannah #18990)
-
-        Documentation changes
-
-        - the documentation of the "--revs-only" (formerly "--brief")
-          switch for the annotate command didn't match its actual
-          behavior, this has been fixed
-
-        - documentation for the "ssh_agent_add" command was missing
-          and has been added
-
-        Other
-
-        - contrib/usher.cc has been removed. Please use the
-          net.venge.monotone.contrib.usher branch instead.
-
-        Internal
-
-        - Update SQLite to 3.4.1.
-
-        - Update Lua to 5.1.2 plus latest bug fixes.
-
-        - Update Botan to 1.5.10.
-
-        - Internal use of regular expressions has been almost eliminated.
-          (Regular expressions are still used for .mtn-ignore and the
-          --show-encloser feature of mtn diff, and are still available to
-          Lua hooks.)
-
-
-
-Fri Aug  3 06:08:36 UTC 2007
-
-        0.36 release.
-
-        Changes
-
-        - The help command is now able to show documentation on subcommands
-          (such as 'attr set').
-
-        - The help command now shows a brief abstract of each command,
-          instead of only listing their names.
-
-        - The command `list changed` now outputs the new path of any
-          renamed item making it easier to copy and paste these paths
-          for external program usage.
-
-        - `automate attributes` has been renamed to `automate get_attributes`,
-          also a bug has been fixed there so resurrected attributes are now
-          properly outputted as "new" and not "changed".
-
-        New features
-
-        - Two new commands to set and drop attributes over automate:
-          `automate set_attribute` and `automate drop_attribute`
-
-        - There is a new function available to the lua hooks,
-          'server_request_sync(what, address, include, exclude)', which will
-          initate a netsync connection to the server at "address", with the
-          given include and exclude patterns, and will sync, push, or pull,
-          as given in the "what" argument. If called from a monotone instance
-          which is not acting as a server, this function will do nothing.
-
-        - There is a new hook available,
-          'get_netsync_key(server, include, exclude)', which is called to
-          determine which key to use for netsync operations. Note that the
-          server calls this once at startup with the address it is listening
-          on, "*", and "" as arguments, rather than for each connection.
-
-        Other
-
-        - Giving the --confdir argument will automatically set the key store
-          directory to keys/ under that directory, unless --keydir is also
-          given. This is a bugfix.
-
-        - Fixed a regression in 0.35 that resulted in some databases
-          becoming significantly larger when storing new revisions. Existing
-          databases with this problem can be fixed by pulling into a fresh
-          database using 0.36.
-
-        - contrib/lua-mode.el, a Lua mode for GNU emacs.
-
-        - contrib/monotone-buildbot-notification.lua, a netsync hook to have a
-          server notify a buildbot when new changes have arrived.  Useful for
-          anyone who uses a buildbot with monotone as source.
-
-        - contrib/monotone-cluster-push.lua, a netsync hook script to have
-          arriving changes be forwarded to other servers automatically.  It
-          uses the new internal lua function 'server_request_sync'.
-
-        - contrib/mtn_makepermissions, a simple script to create
-          read-permissions and write-permissions from files in the directories
-          read-permissions.d and write-permissions.d, Debian style.
-
-        - contrib/Monotone.pm, a first attempt to write a Perl module to
-          interface with 'monotone automate stdio'.
-
-        - contrib/monotone-import.pl has been removed since monotone now has
-          an internal import command.
-
-        Internal
-
-        - Commands are now defined as a tree of commands instead of a
-          plain list, which allows the help system to look up information
-          of a command at an level in the tree.
-
-        - The command class, the automate class and all the associated
-          macros have been cleaned up.
-
-        - All C++ files now depend on base.hh, which includes the few things
-          that are used virtually everywhere.  'make distcheck' will check for
-          the presence of base.hh in all source files and will protest if
-          it's not there.  This is explained further in HACKING.
-
-        - Update the internal SQLite to version 3.4.0.
-
-        - Updated Visual C building system, which now also builds the test
-          programs.  The script visualc/runtests.bat can be used to run the
-          tests.
-
-        - Monotone can now be built successfully with Boost 1.34. Older
-          versions of monotone would sometimes seem to work depending on
-          the compiler used, but would have bugs in path normalization.
-
-        - Monotone now requires Boost 1.33 or later.
-
-        - The Boost filesystem library is no longer required.
-
-        - The Boost unit test system is no longer required.
-
-
-
-Mon May  7 14:08:44 UTC 2007
-
-        0.35 release.
-
-        Changes
-
-        - 'mkdir --no-respect-ignore PATH' now really skips any
-          ignore directives from .mtn-ignore or Lua hooks
-
-        - Private keys are now stored more safely, using file
-          permissions.
-
-        - The editable log summary (what you get in an editor when
-          committing without -m) now includes information about which
-          branch the commit applies to.
-
-        - The status command and the editable log summary now show
-          the same details about the change.
-
-        New features
-
-        - 'automate identify', an automate version of 'mtn identify'.
-
-        - 'automate roots', prints the roots of the revision graph,
-          i.e. all revisions that have no parents.
-
-        Other
-
-        - You can't drop the workspace root any more.
-
-        Internal
-
-        - Update the internal Lua to version 5.1.2.
-
-        - Added build files for Mac OS X.
-
-        - Update the internal SQLite to version 3.3.17.
-
-        - Code cleanup of app_state.
-
-
-
-Sun Apr  1 08:23:34 UTC 2007
-
-        0.34 release.
-
-        The internal data format has changed with this release;
-        migration is straight-forward.  To upgrade your databases,
-        you must run:
-               $ mtn -d mydb.mtn db migrate
-        All of these operations are completely lossless, and 0.34
-        remains compatible with earlier versions all the way back
-        to 0.26 with regards to netsync.
-
-        Changes
-
-        - Text is now output at best of the environment's possibilities,
-          transliterating them or substituting '?' as needed.
-
-        - The lua hook get_author() now takes a second argument, a
-          key identity, in case someone wants to create an author based
-          on that and not only the branch name.
-
-        - The command 'chkeypass' became 'passphrase'.
-
-        - The commands 'drop', 'rename' and 'pivot_root' default to
-          always perform the operation in the file system as well.
-          They do not accept '--execute' any more, but will instead
-          take '--bookkeep-only' in case the user only wants to affect
-          bookkeeping files.
-
-        New features
-
-        - New hook note_mtn_startup(), which is called when monotone is
-          started.
-
-        - New Lua support function spawn_pipe(), which is used to run
-          a command and get back its standard input and standard output
-          file handles as well as the pid.
-
-        - Monotone will automatically add a monotone key in a resident
-          ssh-agent when it's first used, and will then use ssh-agent
-          for all subsequent signing.  Thus, you will only need to give
-          the password once in one session.
-        - New command 'ssh_agent_export' to export a monotone key into
-          an SSH key.
-        - New command 'ssh_agent_add' to add a monotone key explicitly
-          to a resident ssh-agent.
-
-        - New command 'clone' that combines 'pull' and 'checkout'.
-
-        - 'automate put_file' and 'automate put_revision' stores a file
-          and a revision in the database.
-
-        - 'automate cert', an automate version of 'mtn cert'.
-        - 'automate db_set', an automate version of 'mtn set'.
-        - 'automate db_get', an automate version of 'mtn ls vars' with
-          a twist.
-
-        Other
-
-        - contrib/ciabot_monotone_hookversion.py now uses a real
-          basic_io parser and thus should send more precise
-          information to the cia server. Furthermore, it has become
-          more careful with creating zombies.
-
-        - contrib/monotone-log-of-pulled-revs-hook.lua, a lua hook
-          to display information about incoming revisions.
-
-        - contrib/monotone-mirror-postaction-push.sh, a post action
-          script that should be executed by contrib/monotone-mirror.sh
-          to automatically push data on to other servers.
-
-        - contrib/monotone-mirror.lua, a lua hook that executes
-          contrib/monotone-mirror.sh after any netsync session is done.
-
-        - contrib/monotone-mirror.sh now takes keydir and keyid
-          configuration and has better protection against overlapping
-          duplicate runs.
-
-        - contrib/monotone.bash_completion now handles signals.
-
-        - contrib/monotone.el now includes a commit button.
-
-        Internal
-
-        - Date and time display has now been reimplemented internally
-          to avoid Boost more.  This means that we have lowered our
-          dependency from Boost 1.33.0 to 1.32.0.
-
-        - Lots of code cleanup.
-
-        - The heights cache got an index, making the processing faster.
-
-        - Update the internal SQLite to version 3.3.13.
-
-        - Algorithm to find uncommon ancestors has been rewritten, so
-          'pull' and 'regenerate_caches' should be faster.
-
-
-Wed Feb 28 22:02:43 UTC 2007
-
-        0.33 release.
-
-        The internal data format has changed with this release;
-        migration is straight-forward.  To upgrade your databases,
-        you must run:
-               $ mtn -d mydb.mtn db migrate
-        All of these operations are completely lossless, and 0.33
-        remains compatible with earlier versions with regards to
-        netsync.
-
-        Changes
-
-        - "mtn ls unknown" no longer recurses into unknown directories.
-
-        - update will fail rather than clobbering unversioned files
-          that exist in the workspace.
-
-        - update will detect directories with unversioned files before
-          attempting to drop them and will refuse to run rather than
-          corrupting the workspace. such unversioned files must be
-          removed manually.
-
-        - the character set and line separator conversion hooks
-          (get_system_linesep, get_charset_conv and get_linesep_conv)
-          have been removed. Similar functionality (probably based on
-          file type attributes) is planned and will be added in a future
-          release.
-
-        - update will switch to the branch of a given revision if it
-          differs from the current workspace branch.
-
-        - add will now accept combinations of --unknown, --recursive and
-          --no-respect-ignore.
-
-        - import now imports unknown directory trees properly.
-
-        - use SQLite 3.3.12.
-
-        - schema migrator rebuilt and will now properly detect and report
-          if the database used is created by a newer monotone than the one
-          currently used.
-
-        - removed the man page mtn.1, as it hadn't been updated for a long
-          time.
-
-        New features
-
-        - "mtn merge_into_workspace" (still to be documented).  This command
-          will allow you to review and fix up a merge in your workspace
-          before committing it to the repository.  However, the conflict
-          resolution interface remains the same as that of the 'merge'
-          command for now (i.e. monotone will invoke your specified merge
-          tool on all files with conflicts and you must resolve them as they
-          are presented).  Work on in-workspace conflict presentation and
-          resolution is planned for the future.
-
-        - "mtn log" will now print an ASCII revision graph alongside the
-          usual log text.
-
-        Speed improvements
-
-        - "mtn annotate file" should run even faster now. it exploits
-          the fact that we store deltas of rosters. by peeking at
-          these deltas, it can avoid reconstruction of whole rosters
-          in many cases.
-
-        Other
-
-        - contrib/monotone-mirror.sh and
-          contrib/monotone-mirror-postaction-update.sh, two scripts
-          to mirror and update directories automatically.
-
-        - contrib/monotone-run-script-post-netsync.lua, to automatically
-          update a directory as soon as new revisions or certs arrive for
-          a given branch.
-
-        - contrib/monotone.bash_completion had some improvemens.
-
-        - contrib/monotone.el had some improvements.
-
-        Internal
-
-        - Internally, the concept of "projects" has been introduced.  It
-          currently doesn't mean anything, but will be used later, with
-          policy branches and similar.
-
-
-
 Wed Dec 27 09:57:48 UTC 2006
 
-        0.32 release.
+	0.32 release.
 
-        Changes
+	Changes
 
-        - "mtn serve" no longer takes patterns on the command line.
-          Use the permissions hooks instead.
+	- "mtn serve" no longer takes patterns on the command line.
+	  Use the permissions hooks instead.
 
-        - the name of the option that denoted the revision from which
-          "mtn log" should start logging was renamed from "--revision"
-          to "--from"
+	- the name of the option that denoted the revision from which 
+	  "mtn log" should start logging was renamed from "--revision"
+	  to "--from"
 
-        - author selectors no longer have implicit wildcarding
+	- author selectors no longer have implicit wildcarding
 
-        - if you manually add entries to MTN/log while you are
-          working, in preparation for an eventual commit, you will now
-          be required to remove a "magic" template line from the file
-          before the commit will succeed. This, like the test for an
-          empty log file, helps to prevent accidents.
+	- if you manually add entries to MTN/log while you are
+	  working, in preparation for an eventual commit, you will now
+	  be required to remove a "magic" template line from the file
+	  before the commit will succeed. This, like the test for an
+	  empty log file, helps to prevent accidents.
 
-        - the "db regenerate_caches" migration command replaces the
-          previous "db regenerate_rosters", generalising the task of
-          rebuilding or generating cached data that may be added
-          across an upgrade.  Like "db migrate", which upgrades the
-          database schema, this command fills in the data for new
-          features. In this release, as well as rosters, it also adds
-          "heights" information used to speed up topology operations.
+	- the "db regenerate_caches" migration command replaces the
+	  previous "db regenerate_rosters", generalising the task of
+	  rebuilding or generating cached data that may be added
+	  across an upgrade.  Like "db migrate", which upgrades the
+	  database schema, this command fills in the data for new
+	  features. In this release, as well as rosters, it also adds
+	  "heights" information used to speed up topology operations.
 
-        Speed improvements
+	Speed improvements
 
-        - "mtn annotate file" and "mtn log file" are generally much
-          faster now, dependant on the number of revisions that
-          changed the file. Both commands as well as "mtn automate
-          toposort" make use of data called "heights" caching the
-          topological order of all revisions.  In order to create and
-          use this data, the following must be run once for each db
-          after upgrading:
+	- "mtn annotate file" and "mtn log file" are generally much
+	  faster now, dependant on the number of revisions that
+	  changed the file. Both commands as well as "mtn automate
+	  toposort" make use of data called "heights" caching the
+	  topological order of all revisions.  In order to create and
+	  use this data, the following must be run once for each db
+	  after upgrading:
 
                $ mtn -d mydb.mtn db regenerate_caches
 
-        New features
+	New features
 
-        - "mtn automate content_diff"
+	- "mtn automate content_diff"
 
-        - "mtn automate get_file_of" (same as get_file, but expects
-          a file path and optionally a revision)
+	- "mtn automate get_file_of" (same as get_file, but expects 
+	  a file path and optionally a revision)
 
-        - "mtn import" command
+	- "mtn import" command
 
-        - "mtn log --to"
+	- "mtn log --to"
 
-        - netsync_note_* hooks are given much more information,
-          inlcuding a http/smtp/etc style status code
+	- netsync_note_* hooks are given much more information,
+	  inlcuding a http/smtp/etc style status code
 
-        - includedirpattern(dir, fileglob) function for hooks
-
-
-        Bugs fixed
-
-        - bug in "automate stdio" that would result in monotone
-          garbling its input in some circumstances fixed
-
-        - "mtn annotate file" and "mtn log file" are generally much
-          faster now, dependant on the number of revisions that
-          changed the file. Both commands as well as "mtn automate
-          toposort" make use of data called "heights" caching the
-          topological order of all revisions.
-
-        - spawn_redirected hook function now understands a blank
-          filename to mean not to redirect that stream
-
-        - "mtn log" is now in proper topological order, also due to
-          the use of cached "heights" data
-
-        - reset options between "automate stdio" commands
-
-        - another compile fix for gcc3
-
-        - bug in localization code where option strings where not
-          always properly translated
+	- includedirpattern(dir, fileglob) function for hooks
 
 
-        Other
+	Bugs fixed
 
-        - botan library upgraded to 1.6.0
+	- bug in "automate stdio" that would result in monotone
+	  garbling its input in some circumstances fixed
 
-        - accommodate changes in boost 1.34
+	- "mtn annotate file" and "mtn log file" are generally much
+	  faster now, dependant on the number of revisions that
+	  changed the file. Both commands as well as "mtn automate
+	  toposort" make use of data called "heights" caching the
+	  topological order of all revisions.
 
-        - documentation for "mtn automate get_option"
+	- spawn_redirected hook function now understands a blank
+	  filename to mean not to redirect that stream
 
-        - notes/ directory
+	- "mtn log" is now in proper topological order, also due to
+	  the use of cached "heights" data
+
+	- reset options between "automate stdio" commands
+
+	- another compile fix for gcc3
+
+	- bug in localization code where option strings where not
+	  always properly translated
+
+
+	Other
+
+	- botan library upgraded to 1.6.0
+
+	- accommodate changes in boost 1.34
+
+	- documentation for "mtn automate get_option"
+
+	- notes/ directory
 
 
 
@@ -2177,7 +190,7 @@ Sun Sep 17 12:27:08 PDT 2006
           faster, but also 'mtn commit', 'mtn update', and other
           commands, which were spending most of their time in this
           code.
-
+        
         - The format used in the database to store the roster cache
           was rewritten.  This makes initial pull approximately twice
           as fast, and somewhat improves the speed of restricted log,
@@ -2216,7 +229,7 @@ Sun Sep 17 12:27:08 PDT 2006
 
         - The output of 'mtn annotate' and 'mtn annotate --brief' has
           been switched.  The more human-readable output is now the
-          default.
+          default.        
 
         - 'mtn pluck' now gives an error message if the requested
           operation would have no effect.
@@ -2327,7 +340,7 @@ Sun Aug 20 15:58:08 PDT 2006
 
         - If, during an update, two files both had conflicts, which,
           when resolved, resulting the two files becoming identical, the
-          update would error out.  This has been fixed.
+          update would error out.  This has been fixed.        
 
         - If _MTN/log exists and does not end in a newline, we now add a
           newline before using the log message.  This removes a problem
@@ -2453,7 +466,7 @@ Sat Jun 17 14:43:12 PDT 2006
             for more details.
 
         Minor new features:
-
+        
         - Selectors now support escaping, e.g., b:foo\/bar can be used
           to refer to a branch with name "foo/bar" (normally / is a
           metacharacter that separates multiple selectors).
@@ -2470,8 +483,8 @@ Sat Jun 17 14:43:12 PDT 2006
         - Bug in select() loop fixed, server should no longer pause in
           processing other clients while busy with one, but multiplex
           fairly.
-        - The database has a new write buffer which gives significant
-          speed improvements in initial pulls by cancelling redundant
+        - The database has a new write buffer which gives significant 
+          speed improvements in initial pulls by cancelling redundant 
           database writes.
         - There's been a fair bit of performance tuning all around.
 
@@ -2527,7 +540,7 @@ Sat Apr  8 19:33:35 PDT 2006
         individually.
 
         Major changes since 0.25:
-
+        
         - The most user-visible change is that the default name of the
           monotone binary has changed to 'mtn'.  So, for example, you
           would now run 'mtn checkout', 'mtn diff', 'mtn commit',
@@ -2560,7 +573,7 @@ Sat Apr  8 19:33:35 PDT 2006
           It's mostly useful to know that when someone says something
           about 'roster-enabled monotone' or the like, they're
           referring to this body of new code.
-
+          
           This change has a number of consequences:
           - The textual format for revisions and manifests changed.
             There is no conceptual change, they still contain the same
@@ -2679,7 +692,7 @@ Sat Apr  8 19:33:35 PDT 2006
 
         - Translations updated, and 3 new translations added (de, it,
           sv).
-
+          
         Reliability considerations:
 
         - This new codebase has received much less testing under real
@@ -2712,7 +725,7 @@ Wed Mar 29 05:20:10 PST 2006
         chance!
 
         Major changes since 0.26pre2:
-
+          
         - The name of the monotone binary has changed to 'mtn'.
           - Similarly, the name of the bookkeeping directory in
             workspaces has changed from 'MT' to '_MTN' (if you have an
@@ -2773,7 +786,7 @@ Wed Mar 29 05:20:10 PST 2006
         - Monotone's "dumb server" support (repo distribution over
           HTTP/FTP/SFTP etc.) has been ported to 0.26, a first command
           line version written, etc.
-        - The 'usher' netsync proxy used for hosting many databases on
+        - The 'usher' netsync proxy used for hosting many databases on 
           a single machine has received significant cleanups, and the
           'webhost' project to provide a simple interface to shared
           monotone hosting providers has received even more work.
@@ -2877,7 +890,7 @@ Sun Jan  8 01:08:56 PST 2006
 
         Let's say that again in caps: THIS CODE IS PROBABLY BUGGY, DO
         NOT USE IT IN PRODUCTION UNLESS YOU WANT TO BE A DAREDEVIL.
-
+        
         However, testing of this version with real databases is a good
         idea, and we'd very much appreciate hearing about your
         experiences.
@@ -3378,10 +1391,10 @@ Tue May  3 00:31:37 PDT 2005
 Sun Apr 10 17:49:25 PDT 2005
 
         0.18 release.  performance improvements, features, and bug fixes.
-    This release is dedicated to Shweta Narayan.
+	This release is dedicated to Shweta Narayan.
 
         - most operations sped up by a factor of 2 or better; many sped up
-      by up several orders of magnitude.
+	  by up several orders of magnitude.
                 - special thanks to Matt Johnston <matt@ucc.asn.au>, Derek
                   Scherger <derek@echologic.com>, Linus Torvalds
                   <torvalds@osdl.org>.
@@ -3401,12 +1414,12 @@ Sun Apr 10 17:49:25 PDT 2005
                   previously synced with, to prevent man-in-the-middle
                   attacks.
                 - several powerful new "automate" commands added.
-        - new command 'ls known', lists files that are under version
-          control.  Thanks to Florian Weimer <fw@deneb.enyo.de>.
-        - preliminary "inodeprints" functionality -- speeds up diff,
-          status, etc.  No UI or documentation yet -- in a working
-          copy, 'touch MT/inodeprints' to enable, then commit or
-          update to populate cache.
+		- new command 'ls known', lists files that are under version
+		  control.  Thanks to Florian Weimer <fw@deneb.enyo.de>.
+		- preliminary "inodeprints" functionality -- speeds up diff,
+		  status, etc.  No UI or documentation yet -- in a working
+		  copy, 'touch MT/inodeprints' to enable, then commit or
+		  update to populate cache.
         - UI improvements:
                 - Added short options -r, -b, -k, -m.
                 - default to 'dot' ticker-style when stderr is
@@ -3428,9 +1441,9 @@ Sun Apr 10 17:49:25 PDT 2005
           email notification, Bash completion.
         - 33 new integration tests.  total line coverage: ~82%.
         - many bug fixes
-        - Special thanks to Matt Johnston <matt@ucc.asn.au>,
-          for going above and beyond to track down the last
-          release blocker.
+		- Special thanks to Matt Johnston <matt@ucc.asn.au>,
+		  for going above and beyond to track down the last
+		  release blocker.
 
                 - upgrading from 0.17 requires only a 'db migrate'.
 
@@ -3483,214 +1496,214 @@ Fri Mar 18 15:38:52 PST 2005
 
 Thu Dec 30 01:37:54 EST 2004
 
-    0.16 release. bug fixes.
+	0.16 release. bug fixes.
 
-    - 50+ new integration tests
-    - many NetBSD portability fixes
-    - release build on gcc 3.4 / FC3
-    - masses of changeset bugs in 0.15 fixed
+	- 50+ new integration tests
+	- many NetBSD portability fixes
+	- release build on gcc 3.4 / FC3
+	- masses of changeset bugs in 0.15 fixed
 
-        - some bogus changesets were generated
-          in the 0.16 development cycle. you will
-          need to rebuild revision graph.
+		- some bogus changesets were generated
+		  in the 0.16 development cycle. you will
+		  need to rebuild revision graph.
 
 
 Sun Nov  7 14:06:03 EST 2004
 
-    0.15 release. major changes.
+	0.15 release. major changes.
 
-    - overhauled the internal representation of changes. see
-      README.changesets for details
-    - fixed bugs in merkle trie synchronization code
-    - fixed echoing and progress UI bugs
-      (helps when using in emacs)
-    - upgraded cryptopp to 5.2.1
-    - fixed bug 8715, diff hunk coordinate reporting
-    - added figures, new tutorial to manual
-    - improve accuracy of log command
-    - several build, configure, and linkage fixes
-    - some OSX / PPC portability fixes
+	- overhauled the internal representation of changes. see 
+	  README.changesets for details
+	- fixed bugs in merkle trie synchronization code 
+	- fixed echoing and progress UI bugs 
+	  (helps when using in emacs)
+	- upgraded cryptopp to 5.2.1
+	- fixed bug 8715, diff hunk coordinate reporting
+	- added figures, new tutorial to manual
+	- improve accuracy of log command
+	- several build, configure, and linkage fixes
+	- some OSX / PPC portability fixes
 
 Sat Jul 31 15:38:02 EDT 2004
 
-    0.14 release. bug fixes.
+	0.14 release. bug fixes.
 
-    - some compile fixes for g++ 3.4
-    - made --dump=FILE option for saving traces,
-      otherwise failures just print reason (no trace)
-    - some things disabled, as scheduled for replacement
-      by upcoming changeset branch work
-        - disabled "disapprove" command due to bad semantics
-        - removed "bump" and .mt-nonce machinery
-    - several critical rename-merging bugs fixed
-        - renames vs. deletes
-        - renames vs. deltas
-        - parallel renames
-    - bugs fixed from savannah bug tracker:
-        - 9223 argv overflow
-        - 9075 empty commits
-        - 8919 rename --verbose to --debug
-        - 8958 rename debug to db execute
-        - 8920 empty passphrase message
-        - 8917 connection refused message
-        - 8913 testresult argument
-        - 8912 passphrase read on serve
-        - 8472 approve into branch
-        - 8428 duplicate key warning
-        - 8928 nonce uses too many bits
+	- some compile fixes for g++ 3.4
+	- made --dump=FILE option for saving traces,
+	  otherwise failures just print reason (no trace)
+	- some things disabled, as scheduled for replacement
+	  by upcoming changeset branch work
+		- disabled "disapprove" command due to bad semantics
+		- removed "bump" and .mt-nonce machinery
+	- several critical rename-merging bugs fixed
+		- renames vs. deletes
+		- renames vs. deltas
+		- parallel renames 
+	- bugs fixed from savannah bug tracker:
+		- 9223 argv overflow
+		- 9075 empty commits
+		- 8919 rename --verbose to --debug
+		- 8958 rename debug to db execute
+		- 8920 empty passphrase message
+		- 8917 connection refused message
+		- 8913 testresult argument
+		- 8912 passphrase read on serve
+		- 8472 approve into branch
+		- 8428 duplicate key warning
+		- 8928 nonce uses too many bits
 
 Thu May 20 22:26:27 EDT 2004
 
-    0.13 release. bug fixes.
+	0.13 release. bug fixes.
 
-    - remove (file|manifest) in several commands
-    - "list missing" command
-    - fixed bugs:
-        - (critical) empty data netsync crash
-        - mkstemp, platform lua
-        - runtime error reporting chatter
-        - non-posix database names
-        - non-posix dirnames
-        - non-posix merge names
-        - 2-way merge algorithm and hook
-        - single-character filenames
-        - multiple password reads
-        - .svn ignore pattern
+	- remove (file|manifest) in several commands
+	- "list missing" command
+	- fixed bugs: 
+		- (critical) empty data netsync crash
+		- mkstemp, platform lua
+		- runtime error reporting chatter
+		- non-posix database names
+		- non-posix dirnames
+		- non-posix merge names
+		- 2-way merge algorithm and hook
+		- single-character filenames
+		- multiple password reads
+		- .svn ignore pattern
 
 Sun May  2 21:03:38 EDT 2004
 
-    0.12 release. win32 port, bug fixes and optimizations.
+	0.12 release. win32 port, bug fixes and optimizations.
 
-    - ported to native win32 (mingw)
-    - implemented human friendly version selectors
-    - added post-commit hook for change notification
-    - removed spirit-based parsers, reduced compile costs
-    - many netsync bugs removed, pipeline performance improved
-    - removed old, deprecated networking system
-    - several minor CVS import bugs fixed
-    - upgraded bundled netxx
+	- ported to native win32 (mingw)
+	- implemented human friendly version selectors
+	- added post-commit hook for change notification
+	- removed spirit-based parsers, reduced compile costs
+	- many netsync bugs removed, pipeline performance improved
+	- removed old, deprecated networking system
+	- several minor CVS import bugs fixed
+	- upgraded bundled netxx
 
 Sun Mar 28 12:41:07 EST 2004
 
-    0.11 release. bug fixes and optimizations.
+	0.11 release. bug fixes and optimizations. 
 
-    NOTE: this release expands the sqlite page size. YOU WILL NEED
-    to dump existing databases before upgrading and reload it
-    after upgrading, otherwise monotone will complain that the
-    database image appears malformed. this condition cannot
-    unfortunately be distinguished from a real malformed image on
-    disk. for example:
+	NOTE: this release expands the sqlite page size. YOU WILL NEED
+	to dump existing databases before upgrading and reload it
+	after upgrading, otherwise monotone will complain that the
+	database image appears malformed. this condition cannot
+	unfortunately be distinguished from a real malformed image on
+	disk. for example:
 
-        $ monotone --db=my.db db dump >dump.sql
-        $ <upgrade to new monotone>
-        $ mv my.db my.db.backup
-        $ monotone --db=my.db db load <dump.sql
+		$ monotone --db=my.db db dump >dump.sql
+		$ <upgrade to new monotone>
+		$ mv my.db my.db.backup
+		$ monotone --db=my.db db load <dump.sql
 
-    - fixed bugs:
-        - aliasing bug on debian (-O2 now works)
-        - netsync ppc portability / checksums
-        - sha1 whitespace bug
-        - netsync broken formatter
-        - broken symlink handling
-        - merger execution pessimism
-        - LCA bitset calculation pessimism
-        - static object initialization order
-        - CVS single-version import
-        - CVS first-version changelog
-        - CVS branch inference and topology
-    - cryptographic SSE2 paths enabled on linux/x86.
-    - builds against boost 1.31.0.
-    - removed boost::socket
-    - removed documentation about old networking system.
-    - "officially" deprecated old networking system.
-    - enable building with system-local libraries.
-    - upgraded bundled sqlite.
-    - changed sqlite page size from 1k -> 8k
+	- fixed bugs:
+		- aliasing bug on debian (-O2 now works)
+		- netsync ppc portability / checksums 
+		- sha1 whitespace bug
+		- netsync broken formatter
+		- broken symlink handling
+		- merger execution pessimism	
+		- LCA bitset calculation pessimism
+		- static object initialization order
+		- CVS single-version import
+		- CVS first-version changelog
+		- CVS branch inference and topology
+	- cryptographic SSE2 paths enabled on linux/x86. 
+	- builds against boost 1.31.0. 
+	- removed boost::socket
+	- removed documentation about old networking system. 
+	- "officially" deprecated old networking system. 
+	- enable building with system-local libraries.
+	- upgraded bundled sqlite. 
+	- changed sqlite page size from 1k -> 8k
 
 Mon Mar  1 00:32:07 EST 2004
 
-    0.10 release. new "netsync" protocol implemented, allowing
-    direct monotone-to-monotone database synchronization. random
-    number underflow problem fixed. more tests added. database
-    schema changed, must migrate schema. added new QA logic to
-    update and merge algorithms (testresult / approval).
+	0.10 release. new "netsync" protocol implemented, allowing
+	direct monotone-to-monotone database synchronization. random
+	number underflow problem fixed. more tests added. database
+	schema changed, must migrate schema. added new QA logic to
+	update and merge algorithms (testresult / approval).
 
 Thu Jan  1 18:23:06 EST 2004
 
-    0.9 release. support international users (non-ASCII character
-    sets, locales). some corrections to update algorithm. line
-    merging algorithm reimplemented. support working copy
-    MT/monotonerc file. broke format compatibility with MT/work
-    files; commit any pending work before upgrading. permit
-    spaces, colons, other "funny" characters in filenames. support
-    HTTP 1.1, HTTP proxies, handle some corner cases in ancestry
-    graph and database faults.
+	0.9 release. support international users (non-ASCII character
+	sets, locales). some corrections to update algorithm. line
+	merging algorithm reimplemented. support working copy
+	MT/monotonerc file. broke format compatibility with MT/work
+	files; commit any pending work before upgrading. permit
+	spaces, colons, other "funny" characters in filenames. support
+	HTTP 1.1, HTTP proxies, handle some corner cases in ancestry
+	graph and database faults.
 
 Fri Nov 21 20:25:26 EST 2003
 
-    0.8 release. row size increased to 16mb. more performance
-    improvements in cvs importer. cvs branch tags imported now.
-    minor UI improvements. new commands: SQL dump and load, vcheck
-    for enhanced collision detection, queue addtree for recursive
-    queueing. improved networking scalability. historical rename
-    certs and .mt-attrs file format changed to accomodate upcoming
-    i18n work.
+	0.8 release. row size increased to 16mb. more performance
+	improvements in cvs importer. cvs branch tags imported now.
+	minor UI improvements. new commands: SQL dump and load, vcheck
+	for enhanced collision detection, queue addtree for recursive
+	queueing. improved networking scalability. historical rename
+	certs and .mt-attrs file format changed to accomodate upcoming
+	i18n work.
 
 Sun Nov  2 23:38:09 EST 2003
 
-    0.7 release. many critical merge and patch set calculation
-    bugs fixed. groups merged with URLs, "monotone db migrate"
-    necessary. directory renames and explicit rename certs
-    supported. added SMTP support. incorporated adns library,
-    avoiding gethostbyname(). new queue commands.
+	0.7 release. many critical merge and patch set calculation
+	bugs fixed. groups merged with URLs, "monotone db migrate"
+	necessary. directory renames and explicit rename certs
+	supported. added SMTP support. incorporated adns library,
+	avoiding gethostbyname(). new queue commands.
 
 Sat Oct 18 22:10:09 EDT 2003
 
-    0.6 release. more stability and bug fixing, including fix to
-    some silent failures in LCA calculation. some minor new
-    features: persistent attributes (eg. 'the execute bit'),
-    rename and log commands. performance of cvs importer greatly
-    improved, lua system upgraded to 5.0, much expanded
-    documentation.
+	0.6 release. more stability and bug fixing, including fix to
+	some silent failures in LCA calculation. some minor new
+	features: persistent attributes (eg. 'the execute bit'),
+	rename and log commands. performance of cvs importer greatly
+	improved, lua system upgraded to 5.0, much expanded
+	documentation.
 
 Sat Sep 27 11:50:08 EDT 2003
 
-    0.5 release. stability and bug fixing. many UI issues
-    addressed, including SHA1 completion, persistent options, new
-    revert command and new diff modes. database migration,
-    inspection and debugging interfaces added. LCS algorithm and
-    line-merger overhauled. several multi-depot bugs
-    fixed. existing depot databases should be migrated (depot.cgi
-    migratedb).
+	0.5 release. stability and bug fixing. many UI issues
+	addressed, including SHA1 completion, persistent options, new
+	revert command and new diff modes. database migration,
+	inspection and debugging interfaces added. LCS algorithm and
+	line-merger overhauled. several multi-depot bugs
+	fixed. existing depot databases should be migrated (depot.cgi
+	migratedb).
 
 Thu Sep  4 15:40:07 EDT 2003
 
-    0.4 release. monotone is now self-hosting. database
-    compatibility broken since 0.3. depot uses RSA signatures now,
-    not mac keys. many bugs removed. depot database compatibility
-    broken. database schemas should now remain stable (or be
-    provided with safe schema-upgrading function).
+	0.4 release. monotone is now self-hosting. database
+	compatibility broken since 0.3. depot uses RSA signatures now,
+	not mac keys. many bugs removed. depot database compatibility
+	broken. database schemas should now remain stable (or be
+	provided with safe schema-upgrading function).
 
 Mon Aug 25 18:00:37 EDT 2003
 
-    0.3 release. database compatibility broken. packet format
-    compatibility broken. dropped boost sandbox library dependency.
-    redid networking to support private HTTP+CGI depots along with
-    netnews. wrote depot. added 'propagate' command to move changes
-    between branches asymmetrically. rewrote testsuite in autotest.
-    cleaned up command line processing. expanded testsuite. improved
-    user-friendly error reporting.
+	0.3 release. database compatibility broken. packet format
+	compatibility broken. dropped boost sandbox library dependency.
+	redid networking to support private HTTP+CGI depots along with
+	netnews. wrote depot. added 'propagate' command to move changes
+	between branches asymmetrically. rewrote testsuite in autotest.
+	cleaned up command line processing. expanded testsuite. improved
+	user-friendly error reporting.
 
-Fri Aug  8 10:20:01 EDT 2003
+Fri Aug  8 10:20:01 EDT 2003 
 
-    0.2 release. database compatibility broken. dropped many
-    library dependencies. hand-reimplemented xdelta, parts of
-    nana. incorporated subset of cryptopp and sqlite into
-    sources. added RCS and CVS importer. switched to piecewise
-    reconstruction. generally much more robust storage system.
-    scalability tests against real world CVS archives show
-    performance gap with CVS closing, but still present.
+	0.2 release. database compatibility broken. dropped many
+	library dependencies. hand-reimplemented xdelta, parts of
+	nana. incorporated subset of cryptopp and sqlite into
+	sources. added RCS and CVS importer. switched to piecewise
+	reconstruction. generally much more robust storage system.
+	scalability tests against real world CVS archives show
+	performance gap with CVS closing, but still present.
 
-Sun Apr 6 20:20:42 EDT 2003
+Sun Apr 6 20:20:42 EDT 2003 
 
-    initial release
+	initial release

@@ -1,0 +1,68 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Starting a New Project - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Tutorial.html#Tutorial" title="Tutorial">
+<link rel="prev" href="Generating-Keys.html#Generating-Keys" title="Generating Keys">
+<link rel="next" href="Adding-Files.html#Adding-Files" title="Adding Files">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Starting-a-New-Project"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Adding-Files.html#Adding-Files">Adding Files</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Generating-Keys.html#Generating-Keys">Generating Keys</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
+<hr>
+</div>
+
+<h3 class="section">2.5 Starting a New Project</h3>
+
+<p>Before he can begin work on the project, Jim needs to create a
+<i>workspace</i> &mdash; a directory whose contents monotone will keep track
+of.  Often, one works on projects that someone else has started, and
+creates workspaces with the <samp><span class="command">checkout</span></samp> command, which you'll
+learn about later.  Jim is starting a new project, though, so he does
+something a little bit different.  He uses the <samp><span class="command">mtn setup</span></samp>
+command to create a new workspace.
+
+   <p>This command creates the named directory (if it doesn't already exist),
+and creates the <samp><span class="file">_MTN</span></samp> directory within it.  The <samp><span class="file">_MTN</span></samp> directory
+is how monotone recognizes that a directory is a workspace, and
+monotone stores some bookkeeping files within it.  For instance, command
+line values for the <samp><span class="option">--db</span></samp>, <samp><span class="option">--branch</span></samp> or <samp><span class="option">--key</span></samp>
+options to the <samp><span class="command">setup</span></samp> command will be cached in a file called
+<samp><span class="file">_MTN/options</span></samp>, so you don't have to keep passing them to monotone
+all the time.
+
+   <p>He chooses <code>jp.co.juicebot.jb7</code> as a branch name. (See
+<a href="Naming-Conventions.html#Naming-Conventions">Naming Conventions</a> for more information about appropriate branch
+names.)  Jim then creates his workspace:
+
+<pre class="smallexample">     /home/jim$ mtn --db=jim.mtn --branch=jp.co.juicebot.jb7 setup juice
+     /home/jim$ cd juice
+     /home/jim/juice$
+</pre>
+   <p>Notice that Jim has changed his current directory to his newly created
+workspace. For the rest of this example we will assume that everyone
+issues all further monotone commands from their workspace
+directories.
+
+   </body></html>
+
