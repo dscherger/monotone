@@ -139,36 +139,39 @@ get_path_status(std::string const & path)
     return path::file;
 }
 
+typedef BOOL (WINAPI *MoveFileExFunPtr)(LPCTSTR, LPCTSTR, DWORD);
+
+static MoveFileExFunPtr
+try_get_new_movefileex_api()
+{
+  HMODULE hModule = LoadLibrary("kernel32");
+  if (!hModule)
+    return NULL;
+
+  MoveFileExFunPtr fp =
+    reinterpret_cast<MoveFileExFunPtr>(GetProcAddress(hModule,
+						      "MoveFileExA"));
+  if (fp == NULL)
+    L(FL("using DeleteFile/MoveFile fallback for renames"));
+
+  return fp;
+}
+
 static bool
 rename_clobberingly_impl(std::string const & from, std::string const & to)
 {
   // MoveFileEx is only available on NT-based systems.  We will revert to a
   // more compatible DeleteFile/MoveFile pair as a compatibility fall-back.
-  typedef BOOL (WINAPI *MoveFileExFun)(LPCTSTR, LPCTSTR, DWORD);
-  static MoveFileExFun fnMoveFileEx = 0;
-  static bool MoveFileExAvailable = false;
-  if (fnMoveFileEx == 0)
-    {
-      HMODULE hModule = LoadLibrary("kernel32");
-      if (hModule)
-	fnMoveFileEx = reinterpret_cast<MoveFileExFun>
-	  (GetProcAddress(hModule, "MoveFileExA"));
-      if (fnMoveFileEx)
-	{
-	  L(FL("using MoveFileEx for renames"));
-	  MoveFileExAvailable = true;
-	}
-      else
-	L(FL("using DeleteFile/MoveFile fallback for renames"));
-    }
 
-  if (MoveFileExAvailable)
+  static MoveFileExFunPtr fnMoveFileEx = try_get_new_movefileex_api();
+
+  if (fnMoveFileEx != NULL)
     {
       if (fnMoveFileEx(from.c_str(), to.c_str(), MOVEFILE_REPLACE_EXISTING))
 	return true;
       else if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
 	{
-	  MoveFileExAvailable = false;
+	  fnMoveFileEx = NULL;
 	  L(FL("MoveFileEx failed with CALL_NOT_IMPLEMENTED, using fallback"));
 	}
     }
