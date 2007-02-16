@@ -31,7 +31,7 @@ CMD(rcs_import, N_("debug"), N_("RCSFILE..."),
 
 CMD(cvs_import, N_("rcs"), N_("CVSROOT"), 
     N_("import all versions in CVS repository"),
-    options::opts::branch)
+    options::opts::branch | options::opts::dryrun)
 {
   if (args.size() != 1)
     throw usage(name);
