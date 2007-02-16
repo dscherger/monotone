@@ -89,7 +89,7 @@ munge_argument(std::string arg)
 }
 
 std::string
-munge_argv_into_cmdline(const char * const argv[])
+munge_argv_into_cmdline(char const * const argv[])
 {
   std::string cmdline;
 
@@ -103,7 +103,7 @@ munge_argv_into_cmdline(const char * const argv[])
 }
 
 int
-existsonpath(const char * exe)
+existsonpath(char const * exe)
 {
   if (SearchPath(NULL, exe, ".exe", 0, NULL, NULL)==0)
     return -1;
@@ -111,25 +111,25 @@ existsonpath(const char * exe)
 }
 
 bool
-is_executable(const char * path)
+is_executable(char const * path)
 {
   return false; /* Basically meaningless on win32 */
 }
 
 int
-make_executable(const char * path)
+make_executable(char const * path)
 {
   return 0; /* Basically meaningless on win32 */
 }
 
 pid_t
-process_spawn(const char * const argv[])
+process_spawn(char const * const argv[])
 {
   std::vector<char> realexe;
   realexe.resize(strlen(argv[0]) + 1 + MAXPATH);
 
   L(FL("searching for exe: %s\n") % realexe);
-  char * filepart;
+  char const * filepart;
   if (SearchPath(NULL, argv[0], ".exe", realexe.size(), &*realexe.begin(),
 		 &filepart) == 0)
     {

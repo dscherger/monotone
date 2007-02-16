@@ -42,7 +42,7 @@ change_current_working_dir(std::string const & to)
 static std::string
 get_default_confdir_base()
 {
- char * appdata = getenv("APPDATA");
+ char const * appdata = getenv("APPDATA");
   if (appdata != NULL)
     return appdata;
   TCHAR szPath[MAX_PATH];
@@ -71,7 +71,7 @@ get_homedir()
   // file for the discussion).  For consistency, we now calculate the user's
   // home path using the same technique that Qt's QDir::homePath() uses on
   // Windows.
-  char * home = getenv("HOME");
+  char const * home = getenv("HOME");
   if (home != NULL)
     {
       L(FL("Home directory from HOME\n"));
@@ -80,21 +80,21 @@ get_homedir()
   // Otherwise, try USERPROFILE.  We could also use SHGetFolderPath() to get
   // at USERPROFILE without requiring it to be set as an environment
   // variable, but Qt doesn't, so we won't either.
-  char * userprofile = getenv("USERPROFILE");
+  char const * userprofile = getenv("USERPROFILE");
   if (userprofile != NULL)
     {
       L(FL("Home directory from USERPROFILE\n"));
       return userprofile;
     }
   // Try concatenating HOMEDRIVE and HOMEPATH
-  char * homedrive = getenv("HOMEDRIVE");
-  char * homepath = getenv("HOMEPATH");
+  char const * homedrive = getenv("HOMEDRIVE");
+  char const * homepath = getenv("HOMEPATH");
   if (homedrive != NULL && homepath != NULL)
     {
       L(FL("Home directory from HOMEDRIVE+HOMEPATH\n"));
       return std::string(homedrive) + homepath;
     }
-  char * systemdrive = getenv("SystemDrive");
+  char const * systemdrive = getenv("SystemDrive");
   if (systemdrive != NULL)
     {
       L(FL("Home directory from SystemDrive\n"));

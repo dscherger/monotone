@@ -12,7 +12,7 @@
 struct table_entry
 {
   unsigned long key;
-  char * val;
+  char const * val;
 };
 
 void
