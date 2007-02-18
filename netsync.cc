@@ -264,7 +264,7 @@ struct netsync_error
   netsync_error(string const & s): msg(s) {}
 };
 
-struct
+class
 session:
   public refiner_callbacks,
   public enumerator_callbacks
@@ -274,10 +274,12 @@ session:
   utf8 const & our_include_pattern;
   utf8 const & our_exclude_pattern;
   globish_matcher our_matcher;
+public:
   app_state & app;
 
   string peer_id;
   shared_ptr<Netxx::StreamBase> str;
+private:
 
   string_queue inbuf;
   // deque of pair<string data, size_t cur_pos>
@@ -289,7 +291,9 @@ session:
 
   netcmd cmd;
   bool armed;
+public:
   bool arm();
+private:
 
   id remote_peer_key_hash;
   rsa_keypair_id remote_peer_key_name;
@@ -298,7 +302,9 @@ session:
   chained_hmac write_hmac;
   bool authenticated;
 
+public:
   time_t last_io_time;
+private:
   auto_ptr<ticker> byte_in_ticker;
   auto_ptr<ticker> byte_out_ticker;
   auto_ptr<ticker> cert_in_ticker;
@@ -322,6 +328,7 @@ session:
   id saved_nonce;
   packet_db_writer dbw;
 
+public:
   enum
     {
       working_state,
@@ -331,6 +338,7 @@ session:
     protocol_state;
 
   bool encountered_error;
+private:
 
   static const int no_error = 200;
   static const int partial_transfer = 211;
@@ -361,6 +369,7 @@ session:
 
   // Enumerator_callbacks methods.
   set<file_id> file_items_sent;
+public:
   bool process_this_rev(revision_id const & rev);
   bool queue_this_cert(hexenc<id> const & c);
   bool queue_this_file(hexenc<id> const & f);
@@ -378,7 +387,7 @@ session:
           shared_ptr<Netxx::StreamBase> sock);
 
   virtual ~session();
-
+private:
   void rev_written_callback(revision_id rid);
   void key_written_callback(rsa_keypair_id kid);
   void cert_written_callback(cert const & c);
@@ -394,23 +403,30 @@ session:
   bool queued_all_items();
   bool received_all_items();
   bool finished_working();
+public:
   void maybe_step();
+
   void maybe_say_goodbye(transaction_guard & guard);
+private:
 
   void note_item_arrived(netcmd_item_type ty, id const & i);
   void maybe_note_epochs_finished();
   void note_item_sent(netcmd_item_type ty, id const & i);
 
+public:
   Netxx::Probe::ready_type which_events() const;
   bool read_some();
   bool write_some();
+private:
 
   void error(int errcode, string const & errmsg);
 
   void write_netcmd_and_try_flush(netcmd const & cmd);
 
   // Outgoing queue-writers.
+public: // refiner_callbacks
   void queue_bye_cmd(u8 phase);
+private:
   void queue_error_cmd(string const & errmsg);
   void queue_done_cmd(netcmd_item_type type, size_t n_items);
   void queue_hello_cmd(rsa_keypair_id const & key_name,
@@ -430,7 +446,9 @@ session:
                       string const & signature,
                       base64<rsa_pub_key> server_key_encoded);
   void queue_confirm_cmd();
+public: // refiner_callbacks
   void queue_refine_cmd(refinement_type ty, merkle_node const & node);
+private:
   void queue_data_cmd(netcmd_item_type type,
                       id const & item,
                       string const & dat);
@@ -482,6 +500,7 @@ session:
                             set<utf8> const & branches);
 
   void send_all_data(netcmd_item_type ty, set<id> const & items);
+public:
   void begin_service();
   bool process(transaction_guard & guard);
 };
