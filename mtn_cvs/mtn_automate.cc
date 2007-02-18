@@ -365,6 +365,15 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
   return result;
 }
 
+std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision_id const& rid, cert_name const& name)
+{ std::vector<mtn_automate::certificate> result=get_revision_certs(rid);
+  for (std::vector<mtn_automate::certificate>::iterator i=result.begin();i!=result.end();)
+  { if (i->name!=name()) i=result.erase(i);
+    else ++i;
+  }
+  return result;
+}
+
 static void
 parse_cset(basic_io::parser & parser,
            mtn_automate::cset & cs)
