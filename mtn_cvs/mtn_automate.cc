@@ -11,6 +11,7 @@
 #include <safe_map.hh>
 #include <fstream>
 #include <set>
+#include <transforms.hh>
 
 using std::string;
 using std::make_pair;
@@ -523,13 +524,9 @@ dump(file_path const& fp, string & out)
 { out=fp.as_internal();
 }
 
-#if 0
-void mtn_automate::put_sync_info(revision_id const& rid, std::string const& domain, sync_map_t const& data)
-{ std::vector<std::string> args;
-  args.push_back(rid.inner()());
-  args.push_back(domain);
-  basic_io::printer printer;
-  for (sync_map_t::const_iterator i = data.begin(); i != data.end(); ++i)
+static std::string print_sync_info(mtn_automate::sync_map_t const& data)
+{ basic_io::printer printer;
+  for (mtn_automate::sync_map_t::const_iterator i = data.begin(); i != data.end(); ++i)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::set, file_path(i->first.first));
@@ -537,10 +534,8 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
       st.push_str_pair(syms::value, i->second());
       printer.print_stanza(st);
     }
-  args.push_back(printer.buf);
-  automate("put_sync_info",args);
+  return printer.buf;
 }
-#endif
 
 // needed by find_newest_sync: check whether a revision has up to date synch information
 static const char *const sync_prefix="x-sync-attr-";
@@ -696,8 +691,7 @@ sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& dom
     return result;
   }
   
-  revision_t rev;
-  get_revision(rid, rev);
+  revision_t rev=get_revision(rid);
   if (rev.edges.size()==1)
   { 
     L(FL("get_sync_info: checking revision attributes %s") % rid);
@@ -744,13 +738,13 @@ mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std
 //   data
 // Purpose:
 //   Set the sync information for a given revision
-void mtn_automate::put_sync_info(revision_id const& rid, std::string const& domain, sync_map_t const& new_data)
+void mtn_automate::put_sync_info(revision_id const& rid, std::string const& domain, sync_map_t const& newinfo)
 { 
   revision_t rev=get_revision(rid);
   
   static const int max_indirection_nest=30;
+  std::string new_data=print_sync_info(newinfo);
 
-  cert c;
   for (edge_map::const_iterator e = rev.edges.begin();
                      e != rev.edges.end(); ++e)
   { 
@@ -760,9 +754,6 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
       int depth=0; 
       sync_map_t oldinfo=get_sync_info(e->first,domain,depth);
       if (depth>=max_indirection_nest) continue; // do not nest deeper
-      
-      sync_map_t newinfo;
-      parse_attributes(new_data,newinfo);
       
       basic_io::printer printer;
       for (sync_map_t::const_iterator o=oldinfo.begin(),n=newinfo.begin();
@@ -792,11 +783,10 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
         }
         else ++o;
       }
-      // printer.buf
-      if (printer.buf.size()>=new_data.size()) continue;
+      if (printer.buf.size()>=new_data.size()) continue; // look for a shorter form
       
       I(e->first.inner()().size()==constants::idlen);
-      cert_value cv=cert_value(xform<Botan::Gzip_Compression>(e->first.inner()()+"\n"+printer.buf));
+      std::string cv=xform<Botan::Gzip_Compression>(e->first.inner()()+"\n"+printer.buf);
       cert_revision(rid,sync_prefix+domain,cv);
       L(FL("sync info encoded as delta from %s") % e->first);
       return;
@@ -804,7 +794,7 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
     catch (informative_failure &er) {}
     catch (std::runtime_error &er) {}
   }
-  cert_value cv=cert_value(xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data));
+  std::string cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data);
   cert_revision(rid,sync_prefix+domain,cv);
   L(FL("sync info attached to %s") % rid);
 }
