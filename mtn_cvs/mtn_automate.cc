@@ -24,16 +24,6 @@ void mtn_automate::check_interface_revision(std::string const& minimum)
           "requirements %s") % present % minimum);
 }
 
-#if 0
-revision_id mtn_automate::find_newest_sync(std::string const& domain, std::string const& branch)
-{ std::vector<std::string> args;
-  args.push_back(domain);
-  if (!branch.empty()) args.push_back(branch);
-  std::string result=automate("find_newest_sync",args);
-  return revision_id(result);
-}
-#endif
-
 std::string mtn_automate::get_option(std::string const& name)
 {
   return automate("get_option",std::vector<std::string>(1,name));
@@ -87,40 +77,11 @@ parse_path(basic_io::parser & parser, split_path & sp)
   file_path_internal(s).split(sp);
 }
 
-#if 0
-mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std::string const& domain)
-{ std::vector<std::string> args;
-  args.push_back(rid.inner()());
-  args.push_back(domain);
-  std::string aresult=automate("get_sync_info",args);
-  
-  basic_io::input_source source(aresult,"automate get_sync_info result");
-  basic_io::tokenizer tokenizer(source);
-  basic_io::parser parser(tokenizer);
-  
-  std::string t1,t2;
-  split_path p1;
-  sync_map_t result;
-  while (parser.symp(syms::set))
-  { 
-    parser.sym();
-    parse_path(parser, p1);
-    parser.esym(syms::attr);
-    parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
-    parser.esym(syms::value);
-    parser.str(t2);
-    safe_insert(result, make_pair(new_pair, attr_value(t2)));
-  }
-  return result;
-}
-#endif
-
 file_id mtn_automate::put_file(file_data const& d, file_id const& base)
 { std::vector<std::string> args;
   if (!null_id(base.inner())) args.push_back(base.inner()());
   args.push_back(d.inner()());
-  return file_id(automate("put_file",args));
+  return file_id(automate("put_file",args).substr(0,constants::idlen));
 }
 
 file_data mtn_automate::get_file(file_id const& fid)
@@ -241,12 +202,21 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
 
 revision_id mtn_automate::put_revision(revision_id const& parent, cset const& changes)
 { basic_io::printer printer;
+  basic_io::stanza format_stanza;
+  format_stanza.push_str_pair(syms::format_version, "1");
+  printer.print_stanza(format_stanza);
+      
+  basic_io::stanza manifest_stanza;
+  manifest_stanza.push_hex_pair(syms::new_manifest, hexenc<id>("0000000000000000000000000000000000000001"));
+  printer.print_stanza(manifest_stanza);
+
+// changeset stanza  
   basic_io::stanza st;
   st.push_hex_pair(syms::old_revision, parent.inner());
   printer.print_stanza(st);
   print_cset(printer, changes);
   std::vector<std::string> args(1,printer.buf);
-  return revision_id(automate("put_revision",args));
+  return revision_id(automate("put_revision",args).substr(0,constants::idlen));
 }
 
 mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
@@ -578,7 +548,6 @@ bool mtn_automate::is_synchronized(revision_id const& rid,
   return !certs.empty();
 }
 
-#if 1
 // Name: find_newest_sync
 // Arguments:
 //   sync-domain
@@ -627,6 +596,7 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
 
   std::vector<revision_id> children;
 continue_outer:
+  if (null_id(rid.inner())) return rid;
   L(FL("find_newest_sync: testing children of %s") % rid);
   children=get_revision_children(rid);
   for (std::vector<revision_id>::const_iterator i=children.begin(); 
@@ -808,4 +778,3 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
   L(FL("sync info attached to %s") % rid);
 }
 
-#endif
