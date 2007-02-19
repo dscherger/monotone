@@ -1362,7 +1362,7 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
         file_state fs;
         fs.since_when=e.time;
         fs.cvs_version=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":revision")))();
-        fs.cvssha1sum=file_id(const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":sha1")))());
+        fs.cvssha1sum=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":sha1")))();
         fs.keyword_substitution=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain()+":keywords")))();
         
         fs.sha1sum=i->second.first;

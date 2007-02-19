@@ -41,7 +41,7 @@ struct file_state
   unsigned patchsize;
   bool dead;
   std::string md5sum; // hexenc<something?>
-  file_id cvssha1sum;
+  std::string cvssha1sum; // since this can contain parts of an sha1sum this cannot be a file_id
   file_id sha1sum;
   std::string log_msg;
   std::string author;

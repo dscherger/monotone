@@ -3,7 +3,7 @@
 ostype = string.sub(get_ostype(), 1, string.find(get_ostype(), " ")-1)
 
 -- maybe this should go in tester.lua instead?
-function getpathof(exe, ext, localp)
+function getpathof(exe, ext,localp)
   local function gotit(now)
     if test.log == nil then
       logfile:write(exe, " found at ", now, "\n")
@@ -26,9 +26,8 @@ function getpathof(exe, ext, localp)
   end
   if localp == nil then localp = initial_dir end
   local now = localp.."/"..exe..ext
-  logfile:write(now)
   if exists(now) then return gotit(now) end
-  for x in string.gfind(path, "[^"..char.."]*"..char) do
+  for x in string.gmatch(path, "[^"..char.."]*"..char) do
     local dir = string.sub(x, 0, -2)
     if string.find(dir, "[\\/]$") then
       dir = string.sub(dir, 0, -2)
@@ -107,10 +106,17 @@ function raw_mtn(...)
 end
 
 function mtn(...)
-  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua",
-         "--nostd", "--db=" .. test.root .. "/test.db",
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+         "--db=" .. test.root .. "/test.db",
          "--keydir", test.root .. "/keys",
          "--key=tester@test.net", unpack(arg))
+end
+
+function minhooks_mtn(...)
+  return raw_mtn("--db=" .. test.root .. "/test.db",
+                 "--keydir", test.root .. "/keys",
+                 "--rcfile", test.root .. "/min_hooks.lua",
+                 "--key=tester@test.net", unpack(arg))
 end
 
 function commit(branch, message, mt)
@@ -125,6 +131,16 @@ function sha1(what)
   return trim(readfile("ts-stdout"))
 end
 
+function probe_node(filename, rsha, fsha)
+  remove("_MTN.old")
+  rename("_MTN", "_MTN.old")
+  remove(filename)
+  check(mtn("checkout", "--revision", rsha, "."), 0, false, true)
+  rename("_MTN.old/options", "_MTN")
+  check(base_revision() == rsha)
+  check(sha1(filename) == fsha)
+end
+
 function mtn_setup()
   check(getstd("test_keys"))
   check(getstd("test_hooks.lua"))
@@ -137,7 +153,12 @@ function mtn_setup()
 end
 
 function base_revision()
-  return (string.gsub(readfile("_MTN/revision"), "%s*$", ""))
+  local workrev = readfile("_MTN/revision")
+  local extract = string.gsub(workrev, "^.*old_revision %[(%x*)%].*$", "%1")
+  if extract == workrev then
+    err("failed to extract base revision from _MTN/revision")
+  end
+  return extract
 end
 
 function base_manifest()
@@ -177,11 +198,33 @@ function revert_to(rev, branch, mt)
   if mt == nil then mt = mtn end
   remove("_MTN.old")
   rename("_MTN", "_MTN.old")
-  
+
+  check(mt("automate", "get_manifest_of", rev), 0, true, false)
+  rename("stdout", "paths")
+
+  -- remove all of the files and dirs in this
+  -- manifest to clear the way for checkout
+
+  for path in io.lines("paths") do
+    len = string.len(path) - 1
+    
+    if (string.match(path, "^   file \"")) then
+      path = string.sub(path, 10, len)
+    elseif (string.match(path, "^dir \"")) then
+      path = string.sub(path, 6, len)
+    else
+      path = ""
+    end
+
+    if (string.len(path) > 0) then
+      remove(path)
+    end
+  end
+        
   if branch == nil then
-    check(mt("checkout", "--revision", rev, "."), 0, false)
+    check(mt("checkout", "--revision", rev, "."), 0, false, true)
   else
-    check(mt("checkout", "--branch", branch, "--revision", rev, "."), 0, false)
+    check(mt("checkout", "--branch", branch, "--revision", rev, "."), 0, false, true)
   end
   check(base_revision() == rev)
 end
@@ -268,20 +311,50 @@ function check_different_stdout(a, b, c)
   end
 end
 
+function write_large_file(name, size)
+  local file = io.open(name, "wb")
+  for i = 1,size do
+    for j = 1,128 do -- write 1MB
+      local str8k = ""
+      for k = 1,256 do
+        -- 32
+        str8k = str8k .. string.char(math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255),
+                                     math.random(255), math.random(255))
+      end
+      file:write(str8k)
+    end
+  end
+  file:close()
+end
+
 ------------------------------------------------------------------------
 --====================================================================--
 ------------------------------------------------------------------------
 testdir = srcdir.."/tests"
 
-table.insert(tests, "pull_combined")
-table.insert(tests, "pull_separate")
-table.insert(tests, "pull_committemplate")
-table.insert(tests, "pull_cvsbranch")
-table.insert(tests, "pull_md5fail")
-table.insert(tests, "pull_rapid")
-table.insert(tests, "pull_samedirname")
-table.insert(tests, "pull_xmodule")
-table.insert(tests, "push_simple")
-table.insert(tests, "push_loop")
-table.insert(tests, "takeover_modified")
-table.insert(tests, "takeover_basic")
+-- any directory in testdir with a __driver__.lua inside is a test case
+-- perhaps this should be in tester.lua?
+
+for _,candidate in ipairs(read_directory(testdir)) do
+   -- n.b. it is not necessary to throw out directories before doing
+   -- this check, because exists(nondirectory/__driver__.lua) will
+   -- never be true.
+   if exists(testdir .. "/" .. candidate .. "/__driver__.lua") then
+      table.insert(tests, candidate)
+   end
+end
+table.sort(tests)
