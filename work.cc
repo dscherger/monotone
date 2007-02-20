@@ -8,7 +8,6 @@
 // PURPOSE.
 
 #include <sstream>
-#include <cstdio>
 #include <cstring>
 #include <cerrno>
 #include <queue>
@@ -41,7 +40,6 @@ using boost::lexical_cast;
 
 // workspace / book-keeping file code
 
-static string const attr_file_name(".mt-attrs");
 static string const inodeprints_file_name("inodeprints");
 static string const local_dump_file_name("debug");
 static string const options_file_name("options");
@@ -72,8 +70,8 @@ get_inodeprints_path(bookkeeping_path & ip_path)
 // routines for manipulating the bookkeeping directory
 
 // revision file contains a partial revision describing the workspace
-static void
-get_work_rev(revision_t & rev)
+void
+workspace::get_work_rev(revision_t & rev)
 {
   bookkeeping_path rev_path;
   get_revision_path(rev_path);
@@ -90,9 +88,6 @@ get_work_rev(revision_t & rev)
     }
 
   read_revision(rev_data, rev);
-  // Currently the revision must have only one ancestor.
-  I(rev.edges.size() == 1);
-
   // Mark it so it doesn't creep into the database.
   rev.made_for = made_for_workspace;
 }
@@ -100,9 +95,7 @@ get_work_rev(revision_t & rev)
 void
 workspace::put_work_rev(revision_t const & rev)
 {
-  // Currently the revision must have only one ancestor.
   MM(rev);
-  I(rev.edges.size() == 1);
   I(rev.made_for == made_for_workspace);
   rev.check_sane();
 
@@ -114,82 +107,66 @@ workspace::put_work_rev(revision_t const & rev)
   write_data(rev_path, rev_data);
 }
 
-
-// work file containing rearrangement from uncommitted adds/drops/renames
-void
-workspace::get_work_cset(cset & w)
-{
-  revision_t rev;
-  get_work_rev(rev);
-
-  w = edge_changes(rev.edges.begin());
-}
-
-// base revision ID
-void
-workspace::get_revision_id(revision_id & c)
-{
-  revision_t rev;
-  get_work_rev(rev);
-  c = edge_old_revision(rev.edges.begin());
-  N(null_id(c) || db.revision_exists(c),
-    F("workspace base revision %s does not exist in database") % c);
-}
-
 // structures derived from the work revision, the database, and possibly
 // the workspace
-void
-workspace::get_base_revision(revision_id & rid,
-                             roster_t & ros,
-                             marking_map & mm)
-{
-  get_revision_id(rid);
 
-  if (!null_id(rid))
+static void
+get_roster_for_rid(revision_id const & rid,
+                   database::cached_roster & cr,
+                   database & db)
+{
+  // We may be asked for a roster corresponding to the null rid, which
+  // is not in the database.  In this situation, what is wanted is an empty
+  // roster (and marking map).
+  if (null_id(rid))
     {
-      db.get_roster(rid, ros, mm);
+      cr.first = boost::shared_ptr<roster_t const>(new roster_t);
+      cr.second = boost::shared_ptr<marking_map const>(new marking_map);
     }
-
-  L(FL("base roster has %d entries") % ros.all_nodes().size());
+  else
+    {
+      N(db.revision_exists(rid),
+        F("base revision %s does not exist in database") % rid);
+      db.get_roster(rid, cr);
+    }
+  L(FL("base roster has %d entries") % cr.first->all_nodes().size());
 }
 
 void
-workspace::get_base_revision(revision_id & rid,
-                             roster_t & ros)
+workspace::get_parent_rosters(parent_map & parents)
 {
-  marking_map mm;
-  get_base_revision(rid, ros, mm);
-}
+  revision_t rev;
+  get_work_rev(rev);
 
-void
-workspace::get_base_roster(roster_t & ros)
-{
-  revision_id rid;
-  marking_map mm;
-  get_base_revision(rid, ros, mm);
+  parents.clear();
+  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); i++)
+    {
+      database::cached_roster cr;
+      get_roster_for_rid(edge_old_revision(i), cr, db);
+      safe_insert(parents, make_pair(edge_old_revision(i), cr));
+    }
 }
 
 void
 workspace::get_current_roster_shape(roster_t & ros, node_id_source & nis)
 {
-  get_base_roster(ros);
-  cset cs;
-  get_work_cset(cs);
-  editable_roster_base er(ros, nis);
-  cs.apply_to(er);
-}
+  revision_t rev;
+  get_work_rev(rev);
+  revision_id new_rid(fake_id());
 
-void
-workspace::get_base_and_current_roster_shape(roster_t & base_roster,
-                                             roster_t & current_roster,
-                                             node_id_source & nis)
-{
-  get_base_roster(base_roster);
-  current_roster = base_roster;
-  cset cs;
-  get_work_cset(cs);
-  editable_roster_base er(current_roster, nis);
-  cs.apply_to(er);
+  // If there is just one parent, it might be the null ID, which
+  // make_roster_for_revision does not handle correctly.
+  if (rev.edges.size() == 1 && null_id(edge_old_revision(rev.edges.begin())))
+    {
+      I(ros.all_nodes().size() == 0);
+      editable_roster_base er(ros, nis);
+      edge_changes(rev.edges.begin()).apply_to(er);
+    }
+  else
+    {
+      marking_map dummy;
+      make_roster_for_revision(rev, new_rid, ros, dummy, db, nis);
+    }
 }
 
 // user log file
@@ -222,7 +199,7 @@ workspace::write_user_log(utf8 const & dat)
   get_user_log_path(ul_path);
 
   external tmp;
-  utf8_to_system(dat, tmp);
+  utf8_to_system_best_effort(dat, tmp);
   write_data(ul_path, data(tmp()));
 }
 
@@ -392,36 +369,49 @@ workspace::maybe_update_inodeprints()
 
   inodeprint_map ipm_new;
   temp_node_id_source nis;
-  roster_t old_roster, new_roster;
+  roster_t new_roster;
 
-  get_base_and_current_roster_shape(old_roster, new_roster, nis);
+  get_current_roster_shape(new_roster, nis);
   update_current_roster_from_filesystem(new_roster);
+
+  parent_map parents;
+  get_parent_rosters(parents);
 
   node_map const & new_nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = new_nodes.begin(); i != new_nodes.end(); ++i)
     {
       node_id nid = i->first;
-      if (old_roster.has_node(nid))
+      if (!is_file_t(i->second))
+        continue;
+      file_t new_file = downcast_to_file_t(i->second);
+      bool all_same = true;
+
+      for (parent_map::const_iterator parent = parents.begin();
+           parent != parents.end(); ++parent)
         {
-          node_t old_node = old_roster.get_node(nid);
-          if (is_file_t(old_node))
+          roster_t const & parent_ros = parent_roster(parent);
+          if (parent_ros.has_node(nid))
             {
-              node_t new_node = i->second;
-              I(is_file_t(new_node));
-
+              node_t old_node = parent_ros.get_node(nid);
+              I(is_file_t(old_node));
               file_t old_file = downcast_to_file_t(old_node);
-              file_t new_file = downcast_to_file_t(new_node);
 
-              if (new_file->content == old_file->content)
+              if (new_file->content != old_file->content)
                 {
-                  split_path sp;
-                  new_roster.get_name(nid, sp);
-                  file_path fp(sp);
-                  hexenc<inodeprint> ip;
-                  if (inodeprint_file(fp, ip))
-                    ipm_new.insert(inodeprint_entry(fp, ip));
+                  all_same = false;
+                  break;
                 }
             }
+        }
+
+      if (all_same)
+        {
+          split_path sp;
+          new_roster.get_name(nid, sp);
+          file_path fp(sp);
+          hexenc<inodeprint> ip;
+          if (inodeprint_file(fp, ip))
+            ipm_new.insert(inodeprint_entry(fp, ip));
         }
     }
   data dat;
@@ -447,6 +437,7 @@ struct file_itemizer : public tree_walker
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
 };
+
 
 bool
 file_itemizer::visit_dir(file_path const & path)
@@ -477,14 +468,25 @@ file_itemizer::visit_file(file_path const & path)
 struct workspace_itemizer : public tree_walker
 {
   roster_t & roster;
-  path_set & known;
+  path_set const & known;
   node_id_source & nis;
 
-  workspace_itemizer(roster_t & r, path_set & k, node_id_source & n)
-    : roster(r), known(k), nis(n) {}
+  workspace_itemizer(roster_t & roster, path_set const & paths, 
+                     node_id_source & nis);
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
 };
+
+workspace_itemizer::workspace_itemizer(roster_t & roster, 
+                                       path_set const & paths, 
+                                       node_id_source & nis)
+    : roster(roster), known(paths), nis(nis)
+{
+  split_path root_path;
+  file_path().split(root_path);
+  node_id root_nid = roster.create_dir_node(nis);
+  roster.attach_node(root_nid, root_path);
+}
 
 bool
 workspace_itemizer::visit_dir(file_path const & path)
@@ -610,8 +612,10 @@ addition_builder::visit_file(file_path const & path)
 
 struct editable_working_tree : public editable_tree
 {
-  editable_working_tree(lua_hooks & lua, content_merge_adaptor const & source) 
-    : lua(lua), source(source), next_nid(1), root_dir_attached(true)
+  editable_working_tree(lua_hooks & lua, content_merge_adaptor const & source,
+                        bool const messages) 
+    : lua(lua), source(source), next_nid(1), root_dir_attached(true),
+      messages(messages)
   {};
 
   virtual node_id detach_node(split_path const & src);
@@ -637,15 +641,15 @@ private:
   lua_hooks & lua;
   content_merge_adaptor const & source;
   node_id next_nid;
-  std::map<bookkeeping_path, file_id> written_content;
   std::map<bookkeeping_path, file_path> rename_add_drop_map;
   bool root_dir_attached;
+  bool messages;
 };
 
 
 struct simulated_working_tree : public editable_tree
 {
-  roster_t & roster;
+  roster_t & workspace;
   node_id_source & nis;
   
   path_set blocked_paths;
@@ -653,7 +657,7 @@ struct simulated_working_tree : public editable_tree
   int conflicts;
 
   simulated_working_tree(roster_t & r, temp_node_id_source & n)
-    : roster(r), nis(n), conflicts(0) {}
+    : workspace(r), nis(n), conflicts(0) {}
 
   virtual node_id detach_node(split_path const & src);
   virtual void drop_detached_node(node_id nid);
@@ -679,8 +683,7 @@ struct simulated_working_tree : public editable_tree
 
 struct content_merge_empty_adaptor : public content_merge_adaptor
 {
-  virtual void get_version(file_path const &, 
-                           file_id const &, file_data &) const
+  virtual void get_version(file_id const &, file_data &) const
   { I(false); }
   virtual void record_merge(file_id const &, file_id const &,
                             file_id const &, file_data const &,
@@ -693,9 +696,15 @@ struct content_merge_empty_adaptor : public content_merge_adaptor
 // editable_working_tree implementation
 
 static inline bookkeeping_path
-path_for_nid(node_id nid)
+path_for_detached_nids()
 {
-  return bookkeeping_root / "tmp" / lexical_cast<string>(nid);
+  return bookkeeping_root / "detached";
+}
+
+static inline bookkeeping_path
+path_for_detached_nid(node_id nid)
+{
+  return path_for_detached_nids() / lexical_cast<string>(nid);
 }
 
 // Attaching/detaching the root directory:
@@ -722,9 +731,8 @@ editable_working_tree::detach_node(split_path const & src)
   I(root_dir_attached);
   node_id nid = next_nid++;
   file_path src_pth(src);
-  bookkeeping_path dst_pth = path_for_nid(nid);
+  bookkeeping_path dst_pth = path_for_detached_nid(nid);
   safe_insert(rename_add_drop_map, make_pair(dst_pth, src_pth));
-  make_dir_for(dst_pth);
   if (src_pth == file_path())
     {
       // root dir detach, so we move contents, rather than the dir itself
@@ -746,7 +754,7 @@ editable_working_tree::detach_node(split_path const & src)
 void
 editable_working_tree::drop_detached_node(node_id nid)
 {
-  bookkeeping_path pth = path_for_nid(nid);
+  bookkeeping_path pth = path_for_detached_nid(nid);
   map<bookkeeping_path, file_path>::const_iterator i
     = rename_add_drop_map.find(pth);
   I(i != rename_add_drop_map.end());
@@ -759,7 +767,7 @@ node_id
 editable_working_tree::create_dir_node()
 {
   node_id nid = next_nid++;
-  bookkeeping_path pth = path_for_nid(nid);
+  bookkeeping_path pth = path_for_detached_nid(nid);
   require_path_is_nonexistent(pth,
                               F("path %s already exists") % pth);
   mkdir_p(pth);
@@ -770,63 +778,32 @@ node_id
 editable_working_tree::create_file_node(file_id const & content)
 {
   node_id nid = next_nid++;
-  bookkeeping_path pth = path_for_nid(nid);
+  bookkeeping_path pth = path_for_detached_nid(nid);
   require_path_is_nonexistent(pth,
                               F("path %s already exists") % pth);
-  safe_insert(written_content, make_pair(pth, content));
-  // Defer actual write to moment of attachment, when we know the path
-  // and can thus determine encoding / linesep convention.
+  file_data dat;
+  source.get_version(content, dat);
+  write_data(pth, dat.inner());
+
   return nid;
 }
 
 void
 editable_working_tree::attach_node(node_id nid, split_path const & dst)
 {
-  bookkeeping_path src_pth = path_for_nid(nid);
+  bookkeeping_path src_pth = path_for_detached_nid(nid);
   file_path dst_pth(dst);
 
-  // Possibly just write data out into the workspace, if we're doing
-  // a file-create (not a dir-create or file/dir rename).
-  if (!path_exists(src_pth))
-    {
-      I(root_dir_attached);
-      map<bookkeeping_path, file_id>::const_iterator i
-        = written_content.find(src_pth);
-      if (i != written_content.end())
-        {
-          P(F("adding %s") % dst_pth);
-          file_data dat;
-          source.get_version(dst_pth, i->second, dat);
-          write_data(dst_pth, dat.inner());
-          return;
-        }
-    }
-
-  // FIXME: it is weird to do this here, instead of up above, but if we do it
-  // up above a lot of tests break.  those tests are arguably broken -- they
-  // depend on 'update' clobbering existing, non-versioned files -- but
-  // putting this up there doesn't actually help, since if we abort in the
-  // middle of an update to avoid clobbering a file, we just end up leaving
-  // the working copy in an inconsistent state instead.  so for now, we leave
-  // this check down here.
-  // where are "here" and "there" ?!?
-
-  if (!workspace_root(dst))
-    {
-      require_path_is_nonexistent(dst_pth,
-                                  F("path '%s' already exists, cannot create") % dst_pth);
-    }
-
-  // If we get here, we're doing a file/dir rename, or a dir-create.
   map<bookkeeping_path, file_path>::const_iterator i
     = rename_add_drop_map.find(src_pth);
   if (i != rename_add_drop_map.end())
     {
-      P(F("renaming %s to %s") % i->second % dst_pth);
+      if (messages)
+        P(F("renaming %s to %s") % i->second % dst_pth);
       safe_erase(rename_add_drop_map, src_pth);
     }
-  else
-    P(F("adding %s") % dst_pth);
+  else if (messages)
+     P(F("adding %s") % dst_pth);
 
   if (dst_pth == file_path())
     {
@@ -868,7 +845,7 @@ editable_working_tree::apply_delta(split_path const & pth,
   P(F("modifying %s") % pth_unsplit);
 
   file_data dat;
-  source.get_version(pth_unsplit, new_id, dat);
+  source.get_version(new_id, dat);
   write_data(pth_unsplit, dat.inner());
 }
 
@@ -902,7 +879,7 @@ editable_working_tree::~editable_working_tree()
 node_id
 simulated_working_tree::detach_node(split_path const & src)
 {
-  node_id nid = roster.detach_node(src);
+  node_id nid = workspace.detach_node(src);
   nid_map.insert(make_pair(nid, src));
   return nid;
 }
@@ -910,7 +887,7 @@ simulated_working_tree::detach_node(split_path const & src)
 void
 simulated_working_tree::drop_detached_node(node_id nid)
 {
-  node_t node = roster.get_node(nid);
+  node_t node = workspace.get_node(nid);
   if (is_dir_t(node)) 
     {
       dir_t dir = downcast_to_dir_t(node);
@@ -928,21 +905,29 @@ simulated_working_tree::drop_detached_node(node_id nid)
 node_id
 simulated_working_tree::create_dir_node()
 {
-  return roster.create_dir_node(nis);
+  return workspace.create_dir_node(nis);
 }
 
 node_id
 simulated_working_tree::create_file_node(file_id const & content)
 {
-  return roster.create_file_node(content, nis);
+  return workspace.create_file_node(content, nis);
 }
 
 void
 simulated_working_tree::attach_node(node_id nid, split_path const & dst)
 {
-  if (roster.has_node(dst))
+  // this check is needed for checkout because we're using a roster to
+  // represent paths that *may* block the checkout. however to represent
+  // these we *must* have a root node in the roster which will *always*
+  // block us. so here we check for that case and avoid it.
+
+  if (workspace_root(dst) && workspace.has_root())
+    return;
+
+  if (workspace.has_node(dst))
     {
-      W(F("attach blocked by unversioned path '%s'") % dst);
+      W(F("attach node %d blocked by unversioned path '%s'") % nid % dst);
       blocked_paths.insert(dst);
       conflicts++;
     }
@@ -953,10 +938,10 @@ simulated_working_tree::attach_node(node_id nid, split_path const & dst)
       dirname_basename(dst, dirname, basename);
 
       if (blocked_paths.find(dirname) == blocked_paths.end())
-        roster.attach_node(nid, dst);
+        workspace.attach_node(nid, dst);
       else
         {
-          W(F("attach blocked by unversioned path '%s'") % dst);
+          W(F("attach node %d blocked by blocked parent '%s'") % nid % dst);
           blocked_paths.insert(dst);
         }
     }
@@ -1247,10 +1232,9 @@ workspace::perform_additions(path_set const & paths,
     return;
 
   temp_node_id_source nis;
-  roster_t base_roster, new_roster;
-  MM(base_roster);
+  roster_t new_roster;
   MM(new_roster);
-  get_base_and_current_roster_shape(base_roster, new_roster, nis);
+  get_current_roster_shape(new_roster, nis);
 
   editable_roster_base er(new_roster, nis);
 
@@ -1291,11 +1275,11 @@ workspace::perform_additions(path_set const & paths,
         }
     }
 
-  revision_id base_rev;
-  get_revision_id(base_rev);
+  parent_map parents;
+  get_parent_rosters(parents);
 
   revision_t new_work;
-  make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
+  make_revision_for_workspace(parents, new_roster, new_work);
   put_work_rev(new_work);
   update_any_attrs();
 }
@@ -1308,10 +1292,9 @@ workspace::perform_deletions(path_set const & paths,
     return;
 
   temp_node_id_source nis;
-  roster_t base_roster, new_roster;
-  MM(base_roster);
+  roster_t new_roster;
   MM(new_roster);
-  get_base_and_current_roster_shape(base_roster, new_roster, nis);
+  get_current_roster_shape(new_roster, nis);
 
   // we traverse the the paths backwards, so that we always hit deep paths
   // before shallow paths (because path_set is lexicographically sorted).
@@ -1365,11 +1348,11 @@ workspace::perform_deletions(path_set const & paths,
         }
     }
 
-  revision_id base_rev;
-  get_revision_id(base_rev);
+  parent_map parents;
+  get_parent_rosters(parents);
 
   revision_t new_work;
-  make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
+  make_revision_for_workspace(parents, new_roster, new_work);
   put_work_rev(new_work);
   update_any_attrs();
 }
@@ -1380,8 +1363,7 @@ workspace::perform_rename(set<file_path> const & src_paths,
                           bool execute)
 {
   temp_node_id_source nis;
-  roster_t base_roster, new_roster;
-  MM(base_roster);
+  roster_t new_roster;
   MM(new_roster);
   split_path dst;
   set<split_path> srcs;
@@ -1389,7 +1371,7 @@ workspace::perform_rename(set<file_path> const & src_paths,
 
   I(!src_paths.empty());
 
-  get_base_and_current_roster_shape(base_roster, new_roster, nis);
+  get_current_roster_shape(new_roster, nis);
 
   dst_path.split(dst);
 
@@ -1398,6 +1380,10 @@ workspace::perform_rename(set<file_path> const & src_paths,
       // "rename SRC DST" case
       split_path s;
       src_paths.begin()->split(s);
+      N(new_roster.has_node(s),
+        F("source file %s is not versioned") % s);
+      N(get_path_status(dst_path) != path::directory,
+        F("destination name %s already exists as an unversioned directory") % dst);
       renames.insert( make_pair(s, dst) );
       add_parent_dirs(dst, new_roster, nis, db, lua);
     }
@@ -1457,11 +1443,11 @@ workspace::perform_rename(set<file_path> const & src_paths,
         % file_path(i->second));
     }
 
-  revision_id base_rev;
-  get_revision_id(base_rev);
+  parent_map parents;
+  get_parent_rosters(parents);
 
   revision_t new_work;
-  make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
+  make_revision_for_workspace(parents, new_roster, new_work);
   put_work_rev(new_work);
 
   if (execute)
@@ -1507,10 +1493,9 @@ workspace::perform_pivot_root(file_path const & new_root,
   file_path().split(root_sp);
 
   temp_node_id_source nis;
-  roster_t base_roster, new_roster;
-  MM(base_roster);
+  roster_t new_roster;
   MM(new_roster);
-  get_base_and_current_roster_shape(base_roster, new_roster, nis);
+  get_current_roster_shape(new_roster, nis);
 
   I(new_roster.has_root());
   N(new_roster.has_node(new_root_sp),
@@ -1550,11 +1535,11 @@ workspace::perform_pivot_root(file_path const & new_root,
   }
 
   {
-    revision_id base_rev;
-    get_revision_id(base_rev);
+    parent_map parents;
+    get_parent_rosters(parents);
 
     revision_t new_work;
-    make_revision_for_workspace(base_rev, base_roster, new_roster, new_work);
+    make_revision_for_workspace(parents, new_roster, new_work);
     put_work_rev(new_work);
   }
   if (execute)
@@ -1567,17 +1552,21 @@ workspace::perform_pivot_root(file_path const & new_root,
 
 void
 workspace::perform_content_update(cset const & update,
-                                  content_merge_adaptor const & ca)
+                                  content_merge_adaptor const & ca,
+                                  bool const messages)
 {
   roster_t roster;
   temp_node_id_source nis;
-  split_path root;
   path_set known;
   roster_t new_roster;
+  bookkeeping_path detached = path_for_detached_nids();
 
-  file_path().split(root);
-  node_id nid = roster.create_dir_node(nis);
-  roster.attach_node(nid, root);
+  E(!directory_exists(detached), 
+    F("workspace is locked\n"
+      "you must clean up and remove the %s directory")
+    % detached);
+
+  mkdir_p(detached);
 
   get_current_roster_shape(new_roster, nis);
   new_roster.extract_path_set(known);
@@ -1588,8 +1577,10 @@ workspace::perform_content_update(cset const & update,
   simulated_working_tree swt(roster, nis);
   update.apply_to(swt);
 
-  editable_working_tree ewt(lua, ca);
+  editable_working_tree ewt(lua, ca, messages);
   update.apply_to(ewt);
+
+  delete_dir_shallow(detached);
 }
 
 void
