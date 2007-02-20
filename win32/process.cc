@@ -176,20 +176,20 @@ redir::redir(int which, char const * filename)
       what = -1;
       return;
     }
-  HANDLE file;
   SECURITY_ATTRIBUTES sa;
+  memset(&sa, 0, sizeof(sa));
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
   sa.lpSecurityDescriptor = 0;
   sa.bInheritHandle = true;
 
-  file = CreateFile(filename,
-                    (which == 0 ? GENERIC_READ : GENERIC_WRITE),
-                    FILE_SHARE_READ,
-                    &sa,
-                    (which == 0 ? OPEN_EXISTING : CREATE_ALWAYS),
-                    FILE_ATTRIBUTE_NORMAL,
-                    NULL);
-  switch(which)
+  HANDLE file = CreateFile(filename,
+			   (which == 0 ? GENERIC_READ : GENERIC_WRITE),
+			   FILE_SHARE_READ,
+			   &sa,
+			   (which == 0 ? OPEN_EXISTING : CREATE_ALWAYS),
+			   FILE_ATTRIBUTE_NORMAL,
+			   NULL);
+  switch (which)
     {
     case 0:
       saved = GetStdHandle(STD_INPUT_HANDLE);
@@ -259,6 +259,7 @@ process_wait(pid_t pid, int * res, int timeout)
       CloseHandle(hProcess); /* May well not work, but won't harm */
       return -1;
     }
+  I(res);
   if (GetExitCodeProcess(hProcess, static_cast<DWORD *>(res)) == 0)
     *res = -1;
   CloseHandle(hProcess); /* Let the process die */
