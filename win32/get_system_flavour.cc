@@ -9,6 +9,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+using std::string;
+
 struct table_entry
 {
   unsigned long key;
@@ -18,13 +20,13 @@ struct table_entry
 void
 key_to_string(unsigned long key,
 	      table_entry * table,
-	      std::string & str,
-	      std::string const & def)
+	      string & str,
+	      string const & def)
 {
   while (table->val != 0)
     {
       if (table->key == key) {
-        str = std::string(table->val);
+        str = string(table->val);
         return;
       }
       ++table;
@@ -120,7 +122,7 @@ static table_entry families[] = {
 };
 
 void
-get_system_flavour(std::string & ident)
+get_system_flavour(string & ident)
 {
   SYSTEM_INFO si;
   OSVERSIONINFO vi;
@@ -130,7 +132,7 @@ get_system_flavour(std::string & ident)
   GetSystemInfo(&si);
   I(GetVersionEx(&vi));
 
-  std::string family, processor;
+  string family, processor;
 
   key_to_string(vi.dwPlatformId, families, family, "unknown");
 

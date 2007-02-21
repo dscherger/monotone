@@ -10,6 +10,8 @@
 #include "platform.hh"
 #include "sanity.hh"
 
+using std::string;
+
 inline double
 difftime(FILETIME now, FILETIME then)
 {
@@ -36,7 +38,7 @@ is_future(FILETIME now, FILETIME then)
 }
 
 bool
-inodeprint_file(std::string const & file, inodeprint_calculator & calc)
+inodeprint_file(string const & file, inodeprint_calculator & calc)
 {
   struct _stati64 st;
   if (_stati64(file.c_str(), &st) < 0)

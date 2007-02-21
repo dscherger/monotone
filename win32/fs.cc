@@ -17,29 +17,31 @@
 #include "sanity.hh"
 #include "platform.hh"
 
+using std::string;
+using std::vector;
 namespace fs = boost::filesystem;
 
-std::string
+string
 get_current_working_dir()
 {
-  std::vector<char> buffer;
+  vector<char> buffer;
   buffer.resize(4096);
   E(getcwd(&*buffer.begin(), buffer.size()),
     F("cannot get working directory: %s") % strerror(errno));
-  std::string str(&*buffer.begin());
+  string str(&*buffer.begin());
   if (str[str.size() - 1] == '\\')
     str = str.substr(0, str.size() - 1);
   return str;
 }
 
 void
-change_current_working_dir(std::string const & to)
+change_current_working_dir(string const & to)
 {
   E(!chdir(to.c_str()),
     F("cannot change to directory %s: %s") % to % strerror(errno));
 }
 
-static std::string
+static string
 get_default_confdir_base()
 {
  char const * appdata = getenv("APPDATA");
@@ -51,10 +53,10 @@ get_default_confdir_base()
   return "";
 }
 
-std::string
+string
 get_default_confdir()
 {
-  std::string base = get_default_confdir_base();
+  string base = get_default_confdir_base();
   N(!base.empty(), F("could not determine configuration path"));
   return base + "\\monotone";
 }
@@ -62,7 +64,7 @@ get_default_confdir()
 // FIXME: BUG: this probably mangles character sets
 // (as in, we're treating system-provided data as utf8, but it's probably in
 // the filesystem charset)
-std::string
+string
 get_homedir()
 {
   // Windows is fun!
@@ -92,7 +94,7 @@ get_homedir()
   if (homedrive != NULL && homepath != NULL)
     {
       L(FL("Home directory from HOMEDRIVE+HOMEPATH\n"));
-      return std::string(homedrive) + homepath;
+      return string(homedrive) + homepath;
     }
   char const * systemdrive = getenv("SystemDrive");
   if (systemdrive != NULL)
@@ -103,8 +105,8 @@ get_homedir()
   return "C:";
 }
 
-std::string
-tilde_expand(std::string const & in)
+string
+tilde_expand(string const & in)
 {
   if (in.empty() || in[0] != '~')
     return in;
@@ -128,7 +130,7 @@ tilde_expand(std::string const & in)
 }
 
 path::status
-get_path_status(std::string const & path)
+get_path_status(string const & path)
 {
   fs::path p(path, fs::native);
   if (!fs::exists(p))
@@ -158,7 +160,7 @@ try_get_new_movefileex_api()
 }
 
 static bool
-rename_clobberingly_impl(std::string const & from, std::string const & to)
+rename_clobberingly_impl(string const & from, string const & to)
 {
   // MoveFileEx is only available on NT-based systems.  We will revert to a
   // more compatible DeleteFile/MoveFile pair as a compatibility fall-back.
@@ -186,7 +188,7 @@ rename_clobberingly_impl(std::string const & from, std::string const & to)
 }
 
 void
-rename_clobberingly(std::string const & from, std::string const & to)
+rename_clobberingly(string const & from, string const & to)
 {
   static const int renameAttempts = 16;
   DWORD sleepTime = 1;

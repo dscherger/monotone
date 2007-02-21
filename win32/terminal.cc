@@ -12,10 +12,12 @@
 
 #include "platform.hh"
 
+using std::string;
+
 bool
 have_smart_terminal()
 {
-  std::string term;
+  string term;
   if (char const * term_cstr = getenv("TERM"))
     term = term_cstr;
   else

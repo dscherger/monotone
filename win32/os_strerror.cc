@@ -9,7 +9,9 @@
 #include "sanity.hh"
 #include "platform.hh"
 
-std::string
+using std::string;
+
+string
 os_strerror(os_err_t errnum)
 {
   LPTSTR tstr;
@@ -20,12 +22,12 @@ os_strerror(os_err_t errnum)
                             static_cast<va_list *>(0));
   if (len == 0)
     return (F("unknown error code %d") % errnum).str();
-  std::string errstr = tstr;
+  string errstr = tstr;
   LocalFree(tstr);
 
   // clobber trailing newlines.
-  std::string::size_type end = errstr.find_last_not_of("\r\n");
-  if (end != std::string::npos)
+  string::size_type end = errstr.find_last_not_of("\r\n");
+  if (end != string::npos)
     errstr.erase(end + 1);
   return errstr;
 }

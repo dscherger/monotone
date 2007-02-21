@@ -11,15 +11,18 @@
 #include "sanity.hh"
 #include "platform.hh"
 
-static std::string
-munge_inner_argument(std::string arg)
+using std::string;
+using std::vector;
+
+static string
+munge_inner_argument(string arg)
 {
-  std::string result;
+  string result;
   bool has_space = false;
   unsigned quotes = 0;
   bool space_outside_quote = false;
 
-  for (std::string::const_iterator it = arg.begin();
+  for (string::const_iterator it = arg.begin();
        it != arg.end(); ++it)
     {
       switch (*it)
@@ -47,7 +50,7 @@ munge_inner_argument(std::string arg)
   else
     {
       // escape inner quotes
-      for (std::string::const_iterator it = arg.begin();
+      for (string::const_iterator it = arg.begin();
 	   it != arg.end(); ++it)
 	{
 	  if (*it == '"' && it != arg.begin() && it != arg.end() - 1)
@@ -63,8 +66,8 @@ munge_inner_argument(std::string arg)
   return result;
 }
 
-static std::string
-munge_argument(std::string arg)
+static string
+munge_argument(string arg)
 {
   // handle DOS-style '/file:c:\path to\file.txt' by splitting at the colon
   // and handling the last part as a standard argument, then reassembling
@@ -73,12 +76,12 @@ munge_argument(std::string arg)
     return "\"\"";
   else if (arg[0] == '/')
     {
-      std::string result;
-      std::string::size_type dos_cmd = arg.find(':');
-      if (dos_cmd != std::string::size_type)
+      string result;
+      string::size_type dos_cmd = arg.find(':');
+      if (dos_cmd != string::size_type)
 	{
 	  result += arg.substr(0, dos_cmd + 1);
-	  result += munge_inner_argument(std::string(dos_cmd + 1));
+	  result += munge_inner_argument(string(dos_cmd + 1));
 	}
       else
 	result += arg;
@@ -88,14 +91,14 @@ munge_argument(std::string arg)
     return munge_inner_argument(arg);
 }
 
-std::string
+string
 munge_argv_into_cmdline(char const * const argv[])
 {
-  std::string cmdline;
+  string cmdline;
 
   for (int i = 0; argv[i]; ++i)
     {
-      cmdline += munge_argument(std::string(argv[i]));
+      cmdline += munge_argument(string(argv[i]));
       cmdline += " ";
     }
 
@@ -125,7 +128,7 @@ make_executable(char const * path)
 pid_t
 process_spawn(char const * const argv[])
 {
-  std::vector<char> realexe;
+  vector<char> realexe;
   realexe.resize(strlen(argv[0]) + 1 + MAXPATH);
 
   L(FL("searching for exe: %s\n") % realexe);
@@ -138,7 +141,7 @@ process_spawn(char const * const argv[])
       return -1;
     }
 
-  std::string cmd = munge_argv_into_cmdline(argv);
+  string cmd = munge_argv_into_cmdline(argv);
   L(FL("spawning command: '%s' '%s'\n") % &*realexe.begin() % cmd);
 
   STARTUPINFO si;
