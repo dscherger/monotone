@@ -12,6 +12,7 @@ make_io_binary()
   _setmode(_fileno(stdin), _O_BINARY);
   _setmode(_fileno(stdout), _O_BINARY);
 }
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
