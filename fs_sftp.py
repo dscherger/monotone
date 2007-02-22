@@ -67,7 +67,7 @@ def get_user_password_host_port(hostspec):
 
 def get_host_key(hostname, hostkeyfile):
     hkeys = load_host_keys(hostkeyfile)
-    if hkeys.has_key(hostname):
+    if hkeys and hkeys.has_key(hostname):
         return hkeys[hostname].values()[0]
     else:
         return None
