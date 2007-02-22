@@ -16,6 +16,12 @@ Just invoke
 
 as root/administrator so python will install it for you.
 
+If you want to install as generic user you can try:
+
+  python setup.py install --home $HOME
+  
+and ensure that you have '$HOME/bin' in PATH and '$HOME/lib/python' in PYTHONPATH.
+
 USAGE
 -------------------------
 
