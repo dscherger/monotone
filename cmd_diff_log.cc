@@ -383,7 +383,7 @@ prepare_diff(cset & included,
       check_restricted_cset(old_roster, included);
 
       new_is_archived = false;
-      old_revision = r_old_id;
+      old_revision = old_rid;
     }
   else if (app.opts.revision_selectors.size() == 1)
     {
@@ -527,8 +527,7 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
         }
       else
         {
-          read_localized_data(file_path(i->first),
-                              unpacked, app.lua);
+          read_data(file_path(i->first), unpacked);
         }
 
         // FIXME: if this should _ever_ become a transferrable format
@@ -575,7 +574,7 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
 
       file_data f_old;
       data data_old, data_new;
-      app.db.get_file_version(i->second.first.inner(), f_old);
+      app.db.get_file_version(i->second.first, f_old);
       data_old = f_old.inner();
 
       if (new_is_archived)
@@ -586,8 +585,7 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
         }
       else
         {
-          read_localized_data(file_path(delta_entry_path(i)),
-                              data_new, app.lua);
+          read_data(file_path(delta_entry_path(i)), data_new);
         }   
 
         // FIXME: if this should _ever_ become a transferrable format
