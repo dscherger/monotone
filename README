@@ -1,27 +1,61 @@
-README for Monotone plain
+README for Monotone dumb
 =========================
 
-The monotone plain (or "dumb") protocol allows two-way synchronization via sftp or plain files, and one-way (pull) via http(s) and ftp.
+The monotone dumb (or "plain") protocol allows two-way synchronization via sftp or plain files, and one-way (pull) via http(s) and ftp.
 
 Prerequisites:
  python 2.4 
- the urlgrabber module (http://linux.duke.edu/projects/urlgrabber)
+ the urlgrabber module for HTTP support(http://linux.duke.edu/projects/urlgrabber) (TBD: really?)
 
-Syntax:
+INSTALLATION
+-------------------------
 
+Just invoke 
 
+  python setup.py install
 
+as root/administrator so python will install it for you.
 
+USAGE
+-------------------------
 
+Pull/sync. Currently _ALL_ of the source repository is pulled/synced with.
+  mtndumb pull [repository]
+  mtndumb sync [repository]
+  
+Push permits to use branch pattern, so revision on specific branches (and their 
+ancestors) are pushed:
 
-NOTES:
+  mtndumb push <repository> [branch_pattern]?
+  
+Repository can be anything like this:
 
-The monotone plain protocol always involves three entities:
- a (local) monotone database
- a (possibly remote) merkle-directory to sync with
-The sync directories are called merkle-directories because essentially contain a two-level merkle trie plus a datafile with the revision data.
+  sftp://user@somewhere/somedirectory
+  http://somesite/repo/mtndumb/
+  file:d:/repo/mtndumb
 
-All synchronization is done between the two merkle-directories: the monotone database interacts only with the transit merkle-directory.
+TRANSPORTS
+-------------------------
+
+Currently there are following transports available
+  - local,
+  - sftp
+  - http  (read-only)
+  - dws (experimental, insecure!)
+  
+Local transport is just "store it on disk". You can try it and see how mtndumb represents monotone database. 
+Nothing interesting.
+
+Sample local urls:
+  /var/repo/project_name
+  file:d:/projects/repo/mtndumb
+  
+SFTP
+Sftp stores repository by SFTP.
+
+Sample repository urls:
+  sftp://user@hostname/absolute_path/to_repo
+  sftp://user:password@hostname/again_absolute_path_to_repo
 
 CONFIGURATION
 -------------------------
@@ -53,4 +87,21 @@ repository = "dws://zzagorski.strony.wi.ps.pl/mtdumb/index.php:monotone-plain/"
 [d:/repo/xxx.mtn]
 rsakey = /home/zbigg/id_rsa_other
 -------
+
+HOW DOES IT WORK
+-------------------------
+
+The monotone plain protocol always involves three entities:
+
+ a (local) monotone database
+ a (local) transit merkle-directory representing monotone database state (now in memory) 
+ a (possibly remote) merkle-directory to sync with
+ 
+The sync directories are called merkle-directories because essentially contain a 
+two-level merkle trie plus a datafile with the revision data.
+
+All synchronization is done between the two merkle-directories: the monotone database 
+interacts only with the transit merkle-directory.
+
+
 
