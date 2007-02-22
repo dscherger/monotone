@@ -1,0 +1,25 @@
+Mini-mantis (tm) ;)
+
+NEW
+  1. When pushing from Win32 to Unix by SFTP names with \ instead 
+      are created on SFTP site:
+	-- /sample/
+	-rw-r--r--   1 aci      aci           61 Feb 22 09:54 mtndumb\HASHES_f4
+	-rw-r--r--   1 aci      aci          152 Feb 22 09:54 mtndumb\HASHES_f5
+	-rw-r--r--   1 aci      aci           96 Feb 22 09:54 mtndumb\HASHES_f6
+	-rw-r--r--   1 aci      aci           92 Feb 22 09:54 mtndumb\HASHES_f7
+	-rw-r--r--   1 aci      aci           61 Feb 22 09:54 mtndumb\HASHES_f9
+	-rw-r--r--   1 aci      aci           94 Feb 22 09:54 mtndumb\HASHES_fc
+	-rw-r--r--   1 aci      aci          179 Feb 22 09:54 mtndumb\HASHES_fe
+	-rw-r--r--   1 aci      aci           62 Feb 22 09:54 mtndumb\HASHES_ff
+	--
+    Test case:
+        mtndumb push sftp://user@host/export/home/user/repo/mtndumb net.venge.monotone.dumb
+    where host=unix, local=win32
+    
+    Probably some "os.path.normpath()" is used somewhere.
+    
+	
+RESOLVED
+
+   
