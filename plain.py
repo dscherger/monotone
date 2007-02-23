@@ -11,6 +11,12 @@
 """
 Simpler sync for monotone
 """
+
+import sys
+
+import os.path
+sys.path.insert(0, os.path.dirname(__file__))
+
 from optparse import OptionParser
 from ConfigParser import SafeConfigParser
 from dumb import Dumbtone
