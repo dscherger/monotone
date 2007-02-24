@@ -1,0 +1,4 @@
+MTN=../../../monotone/net.venge.monotone
+gcc -g -fno-strict-aliasing -W -o crescendo -Wall -Wno-unused -I/usr/include/boost-1_33_1 -I${MTN} *.cpp ${MTN}/vocab.cc ${MTN}/sanity.cc ${MTN}/simplestring_xform.cc -lstdc++ -lboost_thread-gcc-mt -lboost_filesystem-gcc-mt -lintl
+
+#gcc -fprofile-arcs -ftest-coverage -g -fno-strict-aliasing -W -o crescendo -Wall -Wno-unused -I/usr/include/boost-1_33_1 -I../monotone/net.venge.monotone *.cpp ../monotone/net.venge.monotone/vocab.cc ../monotone/net.venge.monotone/sanity.cc ../monotone/net.venge.monotone/simplestring_xform.cc -lstdc++ -lboost_thread-gcc-mt -lboost_filesystem-gcc-mt -lintl
