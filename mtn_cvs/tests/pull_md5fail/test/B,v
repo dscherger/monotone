@@ -1,0 +1,41 @@
+head	1.2;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.2
+date	2005.10.16.14.36.00;	author christof;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2005.10.16.14.35.57;	author christof;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.2
+log
+@B changed
+@
+text
+@something different
+@
+
+
+1.1
+log
+@B added
+@
+text
+@d1 1
+a1 1
+file added
+@
+
