@@ -1132,18 +1132,21 @@ cluster_consumer
   void store_revisions();
 };
 
-template < class MyEdge >
+template < class MyEdge, class MyColorMap >
 struct blob_splitter 
   : public boost::dfs_visitor<>
 {
 protected:
   cvs_history & cvs;
-  vector< MyEdge > & back_edges;
+  set< cvs_blob_index > & cycle_members;
+  MyColorMap & colormap;
 
 public:
-  blob_splitter(cvs_history & c, vector< MyEdge > & be)
+  blob_splitter(cvs_history & c, set< cvs_blob_index > & cm,
+                MyColorMap & cmap)
     : cvs(c),
-      back_edges(be)
+      cycle_members(cm),
+      colormap(cmap)
     { }
 
   template < class Edge, class Graph >
@@ -1155,8 +1158,50 @@ public:
   template < class Edge, class Graph >
   void back_edge(Edge e, Graph & g)
     {
+      if (cycle_members.empty())
+        return;
+
       L(FL("blob_splitter: back edge: %s") % e);
-      back_edges.push_back(MyEdge(e.m_source, e.m_target));
+
+      if (e.m_source == e.m_target)
+        {
+          // split that single blob
+          L(FL("would split a single blob: %d") % e.m_source);
+          cycle_members.insert(e.m_source);
+        }
+      else
+        {
+          cycle_members.insert(e.m_source);
+          cycle_members.insert(e.m_target);
+
+          cvs_blob_index ci = target(e, g);
+
+          int limit = 1000;
+          while (limit > 0)
+            {
+              // try to find out what blobs belong to that cycle
+              pair< typename boost::graph_traits<Graph>::adjacency_iterator, typename boost::graph_traits<Graph>::adjacency_iterator > adj_vert_range = boost::adjacent_vertices(ci, g);
+
+              typename boost::graph_traits<Graph>::adjacency_iterator ity;
+              for (ity = adj_vert_range.first; ity != adj_vert_range.second; ++ity)
+                {
+                  typedef typename MyColorMap::value_type ColorValue;
+                  typedef boost::color_traits< ColorValue > Color;
+
+                  if (colormap[*ity] == Color::gray())
+                    break;
+                }
+
+              if (cycle_members.find(*ity) != cycle_members.end())
+                break;
+
+              cycle_members.insert(*ity);
+              L(FL("   adj vertex: %s is %d") % *ity % colormap[*ity]);
+              ci = *ity;
+
+              limit--;
+            }
+        }
     }
 };
 
@@ -1207,6 +1252,10 @@ typedef pair< cvs_blob_index, cvs_blob_index > Edge;
 typedef boost::adjacency_list< boost::vecS, boost::vecS,
                                boost::bidirectionalS > Graph;
 
+typedef map< cvs_blob_index, boost::default_color_type > ColorMap;
+typedef boost::associative_property_map< map< cvs_blob_index, boost::default_color_type> > ColorPMap;
+
+
 void
 add_blob_dependency_edges(cvs_history & cvs,
                           const cvs_blob_index i,
@@ -1245,6 +1294,21 @@ add_blob_dependency_edges(cvs_history & cvs,
                 add_edge(i, k->second, g);
             }
         }
+    }
+}
+
+void
+split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
+            Graph & g)
+{
+  cvs_blob_index blob_to_split;
+
+  /* shortcut for intra blob dependencies */
+  if (cycle_members.size() == 1)
+    blob_to_split = *cycle_members.begin();
+  else
+    {
+      L(FL("choosing a blob to split"));
     }
 }
 
@@ -1485,9 +1549,12 @@ resolve_blob_dependencies(cvs_history &cvs,
   for (cvs_blob_index i = 0; i < cvs.blobs.size(); ++i)
     add_blob_dependency_edges(cvs, i, g);
 
+  ColorMap colormap;
+  ColorPMap colorpmap(colormap);
+
   // check for cycles
-  vector< Edge > back_edges;
-  blob_splitter< Edge > vis(cvs, back_edges);
+  set< cvs_blob_index > cycle_members;
+  blob_splitter< Edge, ColorMap > vis(cvs, cycle_members, colormap);
 
   do
   {
@@ -1499,14 +1566,15 @@ resolve_blob_dependencies(cvs_history &cvs,
         step_no++;
       }
 
-    back_edges.clear();
-  	depth_first_search(g, visitor(vis));
+    cycle_members.clear();
+    depth_first_search(g, vis, colorpmap);
 
-    // only split the first blob which had a back edge
-    if (back_edges.begin() != back_edges.end())
-        split_blobs_at(cvs, *back_edges.begin(), g);
+    L(FL("cycle to break: "));
+    for (set<cvs_blob_index>::iterator bi = cycle_members.begin(); bi != cycle_members.end(); ++bi)
+      L(FL("  m: %d") % *bi);
 
-  } while (!back_edges.empty());
+    split_cycle(cvs, cycle_members, g);
+  } while (!cycle_members.empty());
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
