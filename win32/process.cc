@@ -78,10 +78,10 @@ munge_argument(string arg)
     {
       string result;
       string::size_type dos_cmd = arg.find(':');
-      if (dos_cmd != string::size_type)
+      if (dos_cmd != string::npos)
 	{
 	  result += arg.substr(0, dos_cmd + 1);
-	  result += munge_inner_argument(string(dos_cmd + 1));
+	  result += munge_inner_argument(arg.substr(dos_cmd + 1));
 	}
       else
 	result += arg;
@@ -129,12 +129,12 @@ pid_t
 process_spawn(char const * const argv[])
 {
   vector<char> realexe;
-  realexe.resize(strlen(argv[0]) + 1 + MAXPATH);
+  realexe.resize(strlen(argv[0]) + 1 + MAX_PATH);
 
-  L(FL("searching for exe: %s\n") % realexe);
+  L(FL("searching for exe: %s\n") % argv[0]);
   char const * filepart;
   if (SearchPath(NULL, argv[0], ".exe", realexe.size(), &*realexe.begin(),
-		 &filepart) == 0)
+		 const_cast<char **>(&filepart)) == 0)
     {
       os_err_t errnum = GetLastError();
       L(FL("SearchPath failed, err=%s (%d)\n") % os_strerror(errnum) % errnum);
@@ -151,15 +151,16 @@ process_spawn(char const * const argv[])
   si.cb = sizeof(STARTUPINFO);
 
   /* We don't need to set any of the STARTUPINFO members */
-  if (CreateProcess(realexe, const_cast<char *>(cmd.c_str()), NULL, NULL, TRUE,
-		    0, NULL, NULL, &si, &pi) == 0)
+  if (CreateProcess(&*realexe.begin(), const_cast<char *>(cmd.c_str()), NULL,
+                    NULL, TRUE, 0, NULL, NULL, &si, &pi) == 0)
     {
       os_err_t errnum = GetLastError();
-      L(FL("CreateProcess failed, err=%s (%d)\n") % os_strerror(errnum) % errnum);
+      L(FL("CreateProcess failed, err=%s (%d)\n")
+        % os_strerror(errnum) % errnum);
       return -1;
     }
   CloseHandle(pi.hThread);
-  return static_cast<pid_t>(pi.hProcess);
+  return reinterpret_cast<pid_t>(pi.hProcess);
 }
 
 struct redir
@@ -250,7 +251,7 @@ process_spawn_redirected(char const * in,
 int
 process_wait(pid_t pid, int * res, int timeout)
 {
-  HANDLE hProcess = static_cast<DWORD>(pid);
+  HANDLE hProcess = reinterpret_cast<HANDLE>(pid);
   DWORD time = INFINITE;
   if (timeout != -1)
     time = timeout * 1000;
@@ -263,8 +264,11 @@ process_wait(pid_t pid, int * res, int timeout)
       return -1;
     }
   I(res);
-  if (GetExitCodeProcess(hProcess, static_cast<DWORD *>(res)) == 0)
+  DWORD tmpres;
+  if (GetExitCodeProcess(hProcess, &tmpres) == 0)
     *res = -1;
+  else
+    *res = tmpres;
   CloseHandle(hProcess); /* Let the process die */
   return 0;
 }
@@ -272,7 +276,7 @@ process_wait(pid_t pid, int * res, int timeout)
 int
 process_kill(pid_t pid, int signal)
 {
-  HANDLE hProcess = static_cast<HANDLE>(pid);
+  HANDLE hProcess = reinterpret_cast<HANDLE>(pid);
   if (TerminateProcess(hProcess, 1) == 0)
     return -1;
   return 0;
