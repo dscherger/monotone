@@ -4,6 +4,7 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <io.h>
 
@@ -11,10 +12,13 @@
 
 #include "platform.hh"
 
-bool have_smart_terminal()
+using std::string;
+
+bool
+have_smart_terminal()
 {
-  std::string term;
-  if (const char* term_cstr = getenv("TERM"))
+  string term;
+  if (char const * term_cstr = getenv("TERM"))
     term = term_cstr;
   else
     term = "";
@@ -28,7 +32,8 @@ bool have_smart_terminal()
     return true;
 }
 
-unsigned int terminal_width()
+unsigned int
+terminal_width()
 {
   HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
   if (h != INVALID_HANDLE_VALUE)
@@ -39,7 +44,7 @@ unsigned int terminal_width()
           return static_cast<unsigned int>(ci.dwSize.X);
         }
     }
-  
+
   // default to 80 columns if the width query failed.
   return 80;
 }

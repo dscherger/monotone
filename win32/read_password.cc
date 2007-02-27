@@ -7,12 +7,17 @@
 #include <string.h>
 #include <iostream>
 #include <string>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "sanity.hh"
 
-void 
-read_password(std::string const & prompt, char * buf, size_t bufsz)
+using std::cin;
+using std::cout;
+using std::string;
+
+void
+read_password(string const & prompt, char * buf, size_t bufsz)
 {
   HANDLE mt_stdin;
   DWORD origmode, pwmode = 0;
@@ -21,43 +26,45 @@ read_password(std::string const & prompt, char * buf, size_t bufsz)
 
   mt_stdin = GetStdHandle(STD_INPUT_HANDLE);
   I(mt_stdin != INVALID_HANDLE_VALUE);
-  I(mt_stdin != NULL); // NULL is non-interactive.  Can't get a passphrase if we're non-interactive
+  // NULL is non-interactive.  Can't get a passphrase if we're
+  // non-interactive
+  I(mt_stdin != NULL);
   if (GetConsoleMode(mt_stdin, &origmode) == 0)
-  {
-    /* This looks like we're not a real windows console.  
-       Possibly MSYS or Cygwin.  We'll do the best we can
-       to make the password invisible in the absence of tcsetattr,
-       namely emitting vt100 codes to change the foreground and
-       background colour to the same thing.  If someone knows a
-       better way, be my guest. */
-    mt_stdin = NULL;
-  }
+    {
+      /* This looks like we're not a real windows console.
+	 Possibly MSYS or Cygwin.  We'll do the best we can
+	 to make the password invisible in the absence of tcsetattr,
+	 namely emitting vt100 codes to change the foreground and
+	 background colour to the same thing.  If someone knows a
+	 better way, be my guest. */
+      mt_stdin = NULL;
+    }
   else
     pwmode = origmode & (~ENABLE_ECHO_INPUT);
 
   memset(buf, 0, bufsz);
-  std::cout << prompt;
-  std::cout.flush();
+  cout << prompt;
+  cout.flush();
 
   if (mt_stdin != NULL)
-  {
-    I(SetConsoleMode(mt_stdin, pwmode) != 0);
-    std::cin.getline(buf, bufsz, '\n');
-    I(SetConsoleMode(mt_stdin, origmode) != 0);
-  }
+    {
+      I(SetConsoleMode(mt_stdin, pwmode) != 0);
+      cin.getline(buf, bufsz, '\n');
+      I(SetConsoleMode(mt_stdin, origmode) != 0);
+    }
   else
-  {
-    std::cout << "\x1B\x37\x1B[30;40m";
-    std::cout.flush();
-    fgets(buf, bufsz, stdin); /* Sorry, but cin.getline just doesn't work under MinGW's rxvt */
-    std::cout << "\x1B[0m\x1B\x38";
-    std::cout.flush();
+    {
+      cout << "\x1B\x37\x1B[30;40m";
+      cout.flush();
+      fgets(buf, bufsz, stdin); /* Sorry, but cin.getline just doesn't work under MinGW's rxvt */
+      cout << "\x1B[0m\x1B\x38";
+      cout.flush();
 
-    /* ...and fgets gives us an LF we don't want */
-    size_t bufend = strlen(buf)-1;
-    if (buf[bufend]=='\x0A')
-      buf[bufend] = '\0';
-  }
+      /* ...and fgets gives us an LF we don't want */
+      size_t bufend = strlen(buf) - 1;
+      if (buf[bufend] == '\x0A')
+	buf[bufend] = '\0';
+    }
 }
 
 // Local Variables:

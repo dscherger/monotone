@@ -6,7 +6,8 @@
 
 #include "platform.hh"
 
-void make_io_binary()
+void
+make_io_binary()
 {
   _setmode(_fileno(stdin), _O_BINARY);
   _setmode(_fileno(stdout), _O_BINARY);

@@ -49,6 +49,7 @@ sanity & global_sanity = real_sanity;
 
 
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 bool make_accessible(string const &name)
 {

@@ -13,6 +13,7 @@
 #include <netxx/streamserver.h>
 
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
