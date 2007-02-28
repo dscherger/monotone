@@ -163,6 +163,56 @@ pid_t process_spawn_redirected(char const * in,
     }
 }
 
+pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
+{
+  int infds[2];
+  int outfds[2];
+  pid_t pid;
+  
+  if (pipe(infds) < 0)
+    return -1;
+  if (pipe(outfds) < 0)
+    {
+      close(infds[0]);
+      close(infds[1]);
+      return -1;
+    }
+  
+  switch(pid = vfork())
+    {
+      case -1:
+        close(infds[0]);
+        close(infds[1]);
+        close(outfds[0]);
+        close(outfds[1]);
+        return -1;
+      case 0:
+        {
+          if (infds[0] != STDIN_FILENO)
+            {
+              dup2(infds[0], STDIN_FILENO);
+              close(infds[0]);
+            }
+          close(infds[1]);
+          if (outfds[1] != STDOUT_FILENO)
+            {
+              dup2(outfds[1], STDOUT_FILENO);
+              close(outfds[1]);
+            }
+          close(outfds[0]);
+          
+          execvp(argv[0], (char * const *)argv);
+          raise(SIGKILL);
+        }
+    }
+  close(infds[0]);
+  close(outfds[1]);
+  *in = fdopen(infds[1], "w");
+  *out = fdopen(outfds[0], "r");
+  
+  return pid;
+}
+
 int process_wait(pid_t pid, int *res, int timeout)
 {
   int status;
@@ -206,3 +256,11 @@ void ignore_sigpipe()
 {
   signal(SIGPIPE, SIG_IGN);
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

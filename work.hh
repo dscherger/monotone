@@ -82,15 +82,15 @@ struct workspace
                          bool respect_ignore = true);
 
   void perform_deletions(path_set const & targets, bool recursive, 
-                         bool execute);
+                         bool bookkeep_only);
 
   void perform_rename(std::set<file_path> const & src_paths,
                       file_path const & dst_dir,
-                      bool execute);
+                      bool bookkeep_only);
 
   void perform_pivot_root(file_path const & new_root,
                           file_path const & put_old,
-                          bool execute);
+                          bool bookkeep_only);
 
   void perform_content_update(cset const & cs,
                               content_merge_adaptor const & ca,
@@ -157,14 +157,14 @@ struct workspace
   // implied unless overridden on the command line. the set of valid keys
   // corresponds exactly to the argument list of these functions.
 
-  void get_ws_options(utf8 & database_option,
-                      utf8 & branch_option,
-                      utf8 & key_option,
-                      utf8 & keydir_option);
-  void set_ws_options(utf8 & database_option,
-                      utf8 & branch_option,
-                      utf8 & key_option,
-                      utf8 & keydir_option);
+  void get_ws_options(system_path & database_option,
+                      branch_name & branch_option,
+                      rsa_keypair_id & key_option,
+                      system_path & keydir_option);
+  void set_ws_options(system_path & database_option,
+                      branch_name & branch_option,
+                      rsa_keypair_id & key_option,
+                      system_path & keydir_option);
 
   // the "workspace format version" is a nonnegative integer value, stored
   // in _MTN/format as an unadorned decimal number.  at any given time

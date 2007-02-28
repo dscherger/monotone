@@ -104,7 +104,6 @@ namespace std
 
 namespace commands
 {
-  using std::endl;
   using std::greater;
   using std::ostream;
 
@@ -171,17 +170,17 @@ namespace commands
         split_into_lines(params, lines);
         for (vector<string>::const_iterator j = lines.begin();
              j != lines.end(); ++j)
-          out << "     " << i->second->name << " " << *j << endl;
+          out << "     " << i->second->name << ' ' << *j << '\n';
         split_into_lines(i->second->desc(), lines);
         for (vector<string>::const_iterator j = lines.begin();
              j != lines.end(); ++j)
-          out << "       " << *j << endl;
-        out << endl;
+          out << "       " << *j << '\n';
+        out << '\n';
         return;
       }
 
     vector<command *> sorted;
-    out << _("commands:") << endl;
+    out << _("commands:") << '\n';
     for (i = (*cmds).begin(); i != (*cmds).end(); ++i)
       {
         if (i->second->cmdgroup != hidden_group())
@@ -204,23 +203,23 @@ namespace commands
         if (idx(sorted, i)->cmdgroup != curr_group)
           {
             curr_group = idx(sorted, i)->cmdgroup;
-            out << endl;
+            out << '\n';
             out << "  " << safe_gettext(idx(sorted, i)->cmdgroup.c_str());
             col = display_width(utf8(safe_gettext(idx(sorted, i)->cmdgroup.c_str()))) + 2;
             while (col++ < (col2 + 3))
               out << ' ';
           }
-        out << " " << idx(sorted, i)->name;
+        out << ' ' << idx(sorted, i)->name;
         col += idx(sorted, i)->name.size() + 1;
         if (col >= 70)
           {
-            out << endl;
+            out << '\n';
             col = 0;
             while (col++ < (col2 + 3))
               out << ' ';
           }
       }
-    out << endl << endl;
+    out << "\n\n";
   }
 
   int process(app_state & app, string const & cmd, vector<utf8> const & args)
@@ -462,14 +461,14 @@ void
 notify_if_multiple_heads(app_state & app)
 {
   set<revision_id> heads;
-  app.get_project().get_branch_heads(app.opts.branch_name, heads);
+  app.get_project().get_branch_heads(app.opts.branchname, heads);
   if (heads.size() > 1) {
     string prefixedline;
     prefix_lines_with(_("note: "),
                       _("branch '%s' has multiple heads\n"
                         "perhaps consider '%s merge'"),
                       prefixedline);
-    P(i18n_format(prefixedline) % app.opts.branch_name % ui.prog_name);
+    P(i18n_format(prefixedline) % app.opts.branchname % ui.prog_name);
   }
 }
 

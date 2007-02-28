@@ -92,8 +92,10 @@ lua_hooks::lua_hooks()
   // Disable any functions we don't want. This is easiest
   // to do just by running a lua string.
   if (!run_string(st,
-                  "os.execute = nil "
-                  "io.popen = nil ",
+                  // "os.unsafeexecute = os.execute "
+                  // "io.unsafepopen = io.popen "
+                  "os.execute = function(c) error(\"os.execute disabled for security reasons.  Try spawn().\") end "
+                  "io.popen = function(c,t) error(\"io.popen disabled for security reasons.  Try spawn_pipe().\") end ",
                   string("<disabled dangerous functions>")))
     throw oops("lua error while disabling existing functions");
 }
@@ -253,7 +255,7 @@ lua_hooks::hook_expand_date(string const & sel,
 }
 
 bool
-lua_hooks::hook_get_branch_key(utf8 const & branchname,
+lua_hooks::hook_get_branch_key(branch_name const & branchname,
                                rsa_keypair_id & k)
 {
   string key;
@@ -269,7 +271,7 @@ lua_hooks::hook_get_branch_key(utf8 const & branchname,
 }
 
 bool
-lua_hooks::hook_get_author(utf8 const & branchname,
+lua_hooks::hook_get_author(branch_name const & branchname,
                            string & author)
 {
   return Lua(st)
@@ -311,12 +313,12 @@ lua_hooks::hook_ignore_file(file_path const & p)
 }
 
 bool
-lua_hooks::hook_ignore_branch(string const & branch)
+lua_hooks::hook_ignore_branch(branch_name const & branch)
 {
   bool ignore_it = false;
   bool exec_ok = Lua(st)
     .func("ignore_branch")
-    .push_str(branch)
+    .push_str(branch())
     .call(1,1)
     .extract_bool(ignore_it)
     .ok();
@@ -566,8 +568,8 @@ push_uri(uri const & u, Lua & ll)
 
 bool
 lua_hooks::hook_get_netsync_connect_command(uri const & u,
-                                            std::string const & include_pattern,
-                                            std::string const & exclude_pattern,
+                                            globish const & include_pattern,
+                                            globish const & exclude_pattern,
                                             bool debug,
                                             std::vector<std::string> & argv)
 {
@@ -579,17 +581,17 @@ lua_hooks::hook_get_netsync_connect_command(uri const & u,
 
   ll.push_table();
 
-  if (!include_pattern.empty())
+  if (!include_pattern().empty())
     {
       ll.push_str("include");
-      ll.push_str(include_pattern);
+      ll.push_str(include_pattern());
       ll.set_table();
     }
 
-  if (!exclude_pattern.empty())
+  if (!exclude_pattern().empty())
     {
       ll.push_str("exclude");
-      ll.push_str(exclude_pattern);
+      ll.push_str(exclude_pattern());
       ll.set_table();
     }
 
@@ -738,7 +740,7 @@ lua_hooks::hook_apply_attribute(string const & attr,
 bool
 lua_hooks::hook_validate_commit_message(utf8 const & message,
                                         revision_data const & new_rev,
-                                        utf8 const & branchname,
+                                        branch_name const & branchname,
                                         bool & validated,
                                         string & reason)
 {
@@ -785,8 +787,8 @@ bool
 lua_hooks::hook_note_netsync_start(size_t session_id, string my_role,
                                    int sync_type, string remote_host,
                                    rsa_keypair_id remote_keyname,
-                                   utf8 include_pattern,
-                                   utf8 exclude_pattern)
+                                   globish include_pattern,
+                                   globish exclude_pattern)
 {
   string type;
   switch (sync_type)

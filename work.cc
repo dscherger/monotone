@@ -223,10 +223,10 @@ workspace::has_contents_user_log()
 // _MTN/options handling.
 
 void
-workspace::get_ws_options(utf8 & database_option,
-                          utf8 & branch_option,
-                          utf8 & key_option,
-                          utf8 & keydir_option)
+workspace::get_ws_options(system_path & database_option,
+                          branch_name & branch_option,
+                          rsa_keypair_id & key_option,
+                          system_path & keydir_option)
 {
   bookkeeping_path o_path;
   get_options_path(o_path);
@@ -248,13 +248,13 @@ workspace::get_ws_options(utf8 & database_option,
               parser.str(val);
 
               if (opt == "database")
-                database_option = utf8(val);
+                database_option = system_path(val);
               else if (opt == "branch")
-                branch_option = utf8(val);
+                branch_option = branch_name(val);
               else if (opt == "key")
-                key_option = utf8(val);
+                internalize_rsa_keypair_id(utf8(val), key_option);
               else if (opt == "keydir")
-                keydir_option = utf8(val);
+                keydir_option = system_path(val);
               else
                 W(F("unrecognized key '%s' in options file %s - ignored")
                   % opt % o_path);
@@ -268,37 +268,43 @@ workspace::get_ws_options(utf8 & database_option,
 }
 
 void
-workspace::set_ws_options(utf8 & database_option,
-                          utf8 & branch_option,
-                          utf8 & key_option,
-                          utf8 & keydir_option)
+workspace::set_ws_options(system_path & database_option,
+                          branch_name & branch_option,
+                          rsa_keypair_id & key_option,
+                          system_path & keydir_option)
 {
   // If caller passes an empty string for any of the incoming options,
   // we want to leave that option as is in _MTN/options, not write out
   // an empty option.
-  utf8 old_database_option, old_branch_option;
-  utf8 old_key_option, old_keydir_option;
+  system_path old_database_option;
+  branch_name old_branch_option;
+  rsa_keypair_id old_key_option;
+  system_path old_keydir_option;
   get_ws_options(old_database_option, old_branch_option,
                  old_key_option, old_keydir_option);
 
-  if (database_option().empty())
+  if (database_option.as_internal().empty())
     database_option = old_database_option;
   if (branch_option().empty())
     branch_option = old_branch_option;
   if (key_option().empty())
     key_option = old_key_option;
-  if (keydir_option().empty())
+  if (keydir_option.as_internal().empty())
     keydir_option = old_keydir_option;
 
   basic_io::stanza st;
-  if (!database_option().empty())
-    st.push_str_pair(symbol("database"), database_option());
+  if (!database_option.as_internal().empty())
+    st.push_str_pair(symbol("database"), database_option.as_internal());
   if (!branch_option().empty())
     st.push_str_pair(symbol("branch"), branch_option());
   if (!key_option().empty())
-    st.push_str_pair(symbol("key"), key_option());
-  if (!keydir_option().empty())
-    st.push_str_pair(symbol("keydir"), keydir_option());
+    {
+      utf8 key;
+      externalize_rsa_keypair_id(key_option, key);
+      st.push_str_pair(symbol("key"), key());
+    }
+  if (!keydir_option.as_internal().empty())
+    st.push_str_pair(symbol("keydir"), keydir_option.as_internal());
 
   basic_io::printer pr;
   pr.print_stanza(st);
@@ -389,7 +395,7 @@ workspace::maybe_update_inodeprints()
       for (parent_map::const_iterator parent = parents.begin();
            parent != parents.end(); ++parent)
         {
-          roster_t const parent_ros = parent_roster(parent);
+          roster_t const & parent_ros = parent_roster(parent);
           if (parent_ros.has_node(nid))
             {
               node_t old_node = parent_ros.get_node(nid);
@@ -1284,9 +1290,23 @@ workspace::perform_additions(path_set const & paths,
   update_any_attrs();
 }
 
+static bool
+in_parent_roster(const parent_map & parents, const node_id & nid)
+{
+  for (parent_map::const_iterator i = parents.begin();
+       i != parents.end();
+       i++)
+    {
+      if (parent_roster(i).has_node(nid))
+        return true;
+    }
+  
+  return false;
+}
+
 void
 workspace::perform_deletions(path_set const & paths, 
-                             bool recursive, bool execute)
+                             bool recursive, bool bookkeep_only)
 {
   if (paths.empty())
     return;
@@ -1295,6 +1315,9 @@ workspace::perform_deletions(path_set const & paths,
   roster_t new_roster;
   MM(new_roster);
   get_current_roster_shape(new_roster, nis);
+
+  parent_map parents;
+  get_parent_rosters(parents);
 
   // we traverse the the paths backwards, so that we always hit deep paths
   // before shallow paths (because path_set is lexicographically sorted).
@@ -1335,10 +1358,28 @@ workspace::perform_deletions(path_set const & paths,
                   continue;
                 }
             }
+          if (!bookkeep_only && path_exists(name) && in_parent_roster(parents, n->self))
+            {
+              if (is_dir_t(n))
+                {
+                  if (directory_empty(name))
+                    delete_file_or_dir_shallow(name);
+                  else
+                    W(F("directory %s not empty - it will be dropped but not deleted") % name);
+                }
+              else
+                {
+                  file_t file = downcast_to_file_t(n);
+                  file_id fid;
+                  I(ident_existing_file(name, fid));
+                  if (file->content == fid)
+                    delete_file_or_dir_shallow(name);
+                  else
+                    W(F("file %s changed - it will be dropped but not deleted") % name);
+                }
+            }
           P(F("dropping %s from workspace manifest") % name);
           new_roster.drop_detached_node(new_roster.detach_node(p));
-          if (execute && path_exists(name))
-            delete_file_or_dir_shallow(name);
         }
       todo.pop_front();
       if (i != paths.rend())
@@ -1347,9 +1388,6 @@ workspace::perform_deletions(path_set const & paths,
           ++i;
         }
     }
-
-  parent_map parents;
-  get_parent_rosters(parents);
 
   revision_t new_work;
   make_revision_for_workspace(parents, new_roster, new_work);
@@ -1360,7 +1398,7 @@ workspace::perform_deletions(path_set const & paths,
 void
 workspace::perform_rename(set<file_path> const & src_paths,
                           file_path const & dst_path,
-                          bool execute)
+                          bool bookkeep_only)
 {
   temp_node_id_source nis;
   roster_t new_roster;
@@ -1380,6 +1418,10 @@ workspace::perform_rename(set<file_path> const & src_paths,
       // "rename SRC DST" case
       split_path s;
       src_paths.begin()->split(s);
+      N(new_roster.has_node(s),
+        F("source file %s is not versioned") % s);
+      N(get_path_status(dst_path) != path::directory,
+        F("destination name %s already exists as an unversioned directory") % dst);
       renames.insert( make_pair(s, dst) );
       add_parent_dirs(dst, new_roster, nis, db, lua);
     }
@@ -1446,7 +1488,7 @@ workspace::perform_rename(set<file_path> const & src_paths,
   make_revision_for_workspace(parents, new_roster, new_work);
   put_work_rev(new_work);
 
-  if (execute)
+  if (!bookkeep_only)
     {
       for (set< pair<split_path, split_path> >::const_iterator i = renames.begin();
            i != renames.end(); i++)
@@ -1466,11 +1508,11 @@ workspace::perform_rename(set<file_path> const & src_paths,
             }
           else if (have_src && have_dst)
             {
-              W(F("destination %s already exists in workspace, skipping") % d);
+              W(F("destination %s already exists in workspace, skipping filesystem rename") % d);
             }
           else
             {
-              L(FL("skipping move_path %s->%s silently, src doesn't exist, dst does")
+              W(F("skipping move_path in filesystem %s->%s, source doesn't exist, destination does")
                 % s % d);
             }
         }
@@ -1481,7 +1523,7 @@ workspace::perform_rename(set<file_path> const & src_paths,
 void
 workspace::perform_pivot_root(file_path const & new_root,
                               file_path const & put_old,
-                              bool execute)
+                              bool bookkeep_only)
 {
   split_path new_root_sp, put_old_sp, root_sp;
   new_root.split(new_root_sp);
@@ -1538,7 +1580,7 @@ workspace::perform_pivot_root(file_path const & new_root,
     make_revision_for_workspace(parents, new_roster, new_work);
     put_work_rev(new_work);
   }
-  if (execute)
+  if (!bookkeep_only)
     {
       content_merge_empty_adaptor cmea;
       perform_content_update(cs, cmea);

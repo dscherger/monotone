@@ -25,9 +25,9 @@
 #include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "ui.hh"
+#include "vocab_cast.hh"
 
 using std::cout;
-using std::endl;
 using std::make_pair;
 using std::map;
 using std::ostream_iterator;
@@ -133,7 +133,7 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
     }
 
   if (certs.size() > 0)
-    cout << "\n";
+    cout << '\n';
 
   guard.commit();
 }
@@ -177,7 +177,7 @@ ls_keys(string const & name, app_state & app,
 
   if (pubkeys.size() > 0)
     {
-      cout << "\n" << "[public keys]" << "\n";
+      cout << "\n[public keys]\n";
       for (map<rsa_keypair_id, bool>::iterator i = pubkeys.begin();
            i != pubkeys.end(); i++)
         {
@@ -196,19 +196,19 @@ ls_keys(string const & name, app_state & app,
             }
           key_hash_code(keyid, pub_encoded, hash_code);
           if (indb)
-            cout << hash_code << " " << keyid << "\n";
+            cout << hash_code << ' ' << keyid << '\n';
           else
-            cout << hash_code << " " << keyid << "   (*)" << "\n";
+            cout << hash_code << ' ' << keyid << "   (*)\n";
         }
       if (!all_in_db)
         cout << (F("(*) - only in %s/")
-                 % app.keys.get_key_dir()) << "\n";
-      cout << "\n";
+                 % app.keys.get_key_dir()) << '\n';
+      cout << '\n';
     }
 
   if (privkeys.size() > 0)
     {
-      cout << "\n" << "[private keys]" << "\n";
+      cout << "\n[private keys]\n";
       for (vector<rsa_keypair_id>::iterator i = privkeys.begin();
            i != privkeys.end(); i++)
         {
@@ -216,9 +216,9 @@ ls_keys(string const & name, app_state & app,
           hexenc<id> hash_code;
           app.keys.get_key_pair(*i, kp);
           key_hash_code(*i, kp.priv, hash_code);
-          cout << hash_code << " " << *i << "\n";
+          cout << hash_code << ' ' << *i << '\n';
         }
-      cout << "\n";
+      cout << '\n';
     }
 
   if (pubkeys.size() == 0 &&
@@ -234,23 +234,25 @@ ls_keys(string const & name, app_state & app,
 static void
 ls_branches(string name, app_state & app, vector<utf8> const & args)
 {
-  utf8 inc("*");
-  utf8 exc;
+  globish inc("*");
+  globish exc;
   if (args.size() == 1)
-    inc = idx(args,0);
+    inc = globish(idx(args,0)());
   else if (args.size() > 1)
     throw usage(name);
-  combine_and_check_globish(app.opts.exclude_patterns, exc);
+  vector<globish> excludes;
+  typecast_vocab_container(app.opts.exclude_patterns, excludes);
+  combine_and_check_globish(excludes, exc);
   globish_matcher match(inc, exc);
-  set<utf8> names;
+  set<branch_name> names;
   app.get_project().get_branch_list(names);
 
-  for (set<utf8>::const_iterator i = names.begin();
+  for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
     {
-      if (match((*i)()) && !app.lua.hook_ignore_branch((*i)()))
+      if (match((*i)()) && !app.lua.hook_ignore_branch(*i))
         {
-          cout << *i << "\n";
+          cout << *i << '\n';
         }
     }
 }
@@ -258,16 +260,16 @@ ls_branches(string name, app_state & app, vector<utf8> const & args)
 static void
 ls_epochs(string name, app_state & app, vector<utf8> const & args)
 {
-  map<cert_value, epoch_data> epochs;
+  map<branch_name, epoch_data> epochs;
   app.db.get_epochs(epochs);
 
   if (args.size() == 0)
     {
-      for (map<cert_value, epoch_data>::const_iterator
+      for (map<branch_name, epoch_data>::const_iterator
              i = epochs.begin();
            i != epochs.end(); ++i)
         {
-          cout << i->second << " " << i->first << "\n";
+          cout << i->second << ' ' << i->first << '\n';
         }
     }
   else
@@ -276,9 +278,9 @@ ls_epochs(string name, app_state & app, vector<utf8> const & args)
            i != args.end();
            ++i)
         {
-          map<cert_value, epoch_data>::const_iterator j = epochs.find(cert_value((*i)()));
+          map<branch_name, epoch_data>::const_iterator j = epochs.find(branch_name((*i)()));
           N(j != epochs.end(), F("no epoch for branch %s") % *i);
-          cout << j->second << " " << j->first << "\n";
+          cout << j->second << ' ' << j->first << '\n';
         }
     }
 }
@@ -291,9 +293,9 @@ ls_tags(string name, app_state & app, vector<utf8> const & args)
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
     {
-      cout << i->name << " "
-           << i->ident  << " "
-           << i->key  << "\n";
+      cout << i->name << ' '
+           << i->ident  << ' '
+           << i->key  << '\n';
     }
 }
 
@@ -324,8 +326,8 @@ ls_vars(string name, app_state & app, vector<utf8> const & args)
       external ext_domain, ext_name;
       externalize_var_domain(i->first.first, ext_domain);
       cout << ext_domain << ": "
-           << i->first.second << " "
-           << i->second << "\n";
+           << i->first.second << ' '
+           << i->second << '\n';
     }
 }
 
@@ -365,7 +367,7 @@ ls_known(app_state & app, vector<utf8> const & args)
   for (vector<split_path>::const_iterator sp = print_paths.begin();
        sp != print_paths.end(); sp++)
   {
-    cout << *sp << "\n";
+    cout << *sp << '\n';
   }
 }
 
@@ -389,11 +391,11 @@ ls_unknown_or_ignored(app_state & app, bool want_ignored,
   if (want_ignored)
     for (path_set::const_iterator i = ignored.begin();
          i != ignored.end(); ++i)
-      cout << file_path(*i) << "\n";
+      cout << file_path(*i) << '\n';
   else
     for (path_set::const_iterator i = unknown.begin();
          i != unknown.end(); ++i)
-      cout << file_path(*i) << "\n";
+      cout << file_path(*i) << '\n';
 }
 
 static void
@@ -413,7 +415,7 @@ ls_missing(app_state & app, vector<utf8> const & args)
   for (path_set::const_iterator i = missing.begin();
        i != missing.end(); ++i)
     {
-      cout << file_path(*i) << "\n";
+      cout << file_path(*i) << '\n';
     }
 }
 
@@ -467,7 +469,7 @@ ls_changed(app_state & app, vector<utf8> const & args)
     for (set<split_path>::const_iterator sp = print_paths.begin();
          sp != print_paths.end(); sp++)
     {
-      cout << *sp << endl;
+      cout << *sp << '\n';
     }
 
 }
@@ -677,7 +679,7 @@ AUTOMATE(certs, N_("REV"), options::opts::none)
 
   transaction_guard guard(app.db, false);
 
-  revision_id rid(hexenc<id>(id(idx(args, 0)())));
+  revision_id rid(idx(args, 0)());
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   hexenc<id> ident(rid.inner());
 

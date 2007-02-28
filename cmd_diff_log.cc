@@ -103,12 +103,12 @@ print_indented_set(ostream & os,
       if (cols > 8 && cols + str.size() + 1 >= max_cols)
         {
           cols = 8;
-          os << "\n" << "       ";
+          os << "\n       ";
         }
-      os << " " << str;
+      os << ' ' << str;
       cols += str.size() + 1;
     }
-  os << "\n";
+  os << '\n';
 }
 
 void
@@ -117,18 +117,18 @@ changes_summary::print(ostream & os, size_t max_cols) const
 
   if (! cs.nodes_deleted.empty())
     {
-      os << _("Deleted entries:") << "\n";
+      os << _("Deleted entries:") << '\n';
       print_indented_set(os, cs.nodes_deleted, max_cols);
     }
 
   if (! cs.nodes_renamed.empty())
     {
-      os << _("Renamed entries:") << "\n";
+      os << _("Renamed entries:") << '\n';
       for (map<split_path, split_path>::const_iterator
            i = cs.nodes_renamed.begin();
            i != cs.nodes_renamed.end(); i++)
         os << "        " << file_path(i->first)
-           << " to " << file_path(i->second) << "\n";
+           << " to " << file_path(i->second) << '\n';
     }
 
   if (! cs.files_added.empty())
@@ -138,13 +138,13 @@ changes_summary::print(ostream & os, size_t max_cols) const
              i = cs.files_added.begin();
            i != cs.files_added.end(); ++i)
         tmp.insert(i->first);
-      os << _("Added files:") << "\n";
+      os << _("Added files:") << '\n';
       print_indented_set(os, tmp, max_cols);
     }
 
   if (! cs.dirs_added.empty())
     {
-      os << _("Added directories:") << "\n";
+      os << _("Added directories:") << '\n';
       print_indented_set(os, cs.dirs_added, max_cols);
     }
 
@@ -155,7 +155,7 @@ changes_summary::print(ostream & os, size_t max_cols) const
              i = cs.deltas_applied.begin();
            i != cs.deltas_applied.end(); ++i)
         tmp.insert(i->first);
-      os << _("Modified files:") << "\n";
+      os << _("Modified files:") << '\n';
       print_indented_set(os, tmp, max_cols);
     }
 
@@ -172,7 +172,7 @@ changes_summary::print(ostream & os, size_t max_cols) const
            i != cs.attrs_set.end(); ++i)
         tmp.insert(i->first.first);
 
-      os << _("Modified attrs:") << "\n";
+      os << _("Modified attrs:") << '\n';
       print_indented_set(os, tmp, max_cols);
     }
 }
@@ -238,7 +238,7 @@ dump_diffs(cset const & cs,
       if (limit_paths && paths.find(i->first) == paths.end())
         continue;
 
-      output << patch_sep << "\n";
+      output << patch_sep << '\n';
       data unpacked;
       vector<string> lines;
 
@@ -285,7 +285,7 @@ dump_diffs(cset const & cs,
       file_data f_old;
       data data_old, data_new;
 
-      output << patch_sep << "\n";
+      output << patch_sep << '\n';
 
       app.db.get_file_version(delta_entry_src(i), f_old);
       data_old = f_old.inner();
@@ -490,19 +490,19 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
 
   vector<string> lines;
   split_into_lines(summary(), lines);
-  cout << "# " << "\n";
+  cout << "#\n";
   if (summary().size() > 0)
     {
       cout << "# base_revision [" << old_rev << "]\n" << "#\n";
       for (vector<string>::iterator i = lines.begin();
            i != lines.end(); ++i)
-        cout << "# " << *i << "\n";
+        cout << "# " << *i << '\n';
     }
   else
     {
-      cout << "# " << _("no changes") << "\n";
+      cout << "# " << _("no changes") << '\n';
     }
-  cout << "# " << "\n";
+  cout << "#\n";
 
   if (app.opts.diff_format == external_diff) {
     do_external_diff(included, app, new_is_archived);
@@ -678,7 +678,7 @@ log_certs(ostream & os, app_state & app, revision_id id, cert_name name,
         os << "\n\n";
       os << tv;
       if (newline)
-        os << "\n";
+        os << '\n';
 
       first = false;
     }
@@ -973,8 +973,8 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
             }
           else
             {
-              out << string(65, '-') << "\n";
-              out << "Revision: " << rid << "\n";
+              out << string(65, '-') << '\n';
+              out << "Revision: " << rid << '\n';
 
               changes_summary csum;
 
@@ -989,7 +989,7 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
 
               for (set<revision_id>::const_iterator anc = ancestors.begin();
                    anc != ancestors.end(); ++anc)
-                out << "Ancestor: " << *anc << "\n";
+                out << "Ancestor: " << *anc << '\n';
 
               log_certs(out, app, rid, author_name, "Author: ", false);
               log_certs(out, app, rid, date_name,   "Date: ",   false);
@@ -998,9 +998,9 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
 
               if (!app.opts.no_files && !csum.cs.empty())
                 {
-                  out << "\n";
+                  out << '\n';
                   csum.print(out, 70);
-                  out << "\n";
+                  out << '\n';
                 }
 
               log_certs(out, app, rid, changelog_name, "ChangeLog: ", true);
@@ -1028,7 +1028,7 @@ CMD(log, N_("informative"), N_("[FILE] ..."),
             graph.print(rid, interesting, out_system);
         }
       else if (use_markings && !app.opts.no_graph)
-        graph.print(rid, interesting, (F("(marked node: %s)") % rid).str());
+        graph.print(rid, interesting, (F("(Revision: %s)") % rid).str());
 
       frontier.pop(); // beware: rid is invalid from now on
 

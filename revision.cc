@@ -67,6 +67,10 @@ void revision_t::check_sane() const
 {
   // null id in current manifest only permitted if previous
   // state was null and no changes
+  // FIXME: above comment makes no sense.  This should just be
+  // I(!null_id(new_manifest)), and the only reason I am not making it so
+  // right now is that I don't have time to immediately track down all the
+  // fallout.
   if (null_id(new_manifest))
     {
       for (edge_map::const_iterator i = edges.begin();
@@ -808,7 +812,7 @@ dump(parent_roster_map const & prm, string & out)
   ostringstream oss;
   for (parent_roster_map::const_iterator i = prm.begin(); i != prm.end(); ++i)
     {
-      oss << "roster: " << i->first << "\n";
+      oss << "roster: " << i->first << '\n';
       string roster_str, indented_roster_str;
       dump(*i->second.first, roster_str);
       prefix_lines_with("    ", roster_str, indented_roster_str);
@@ -899,7 +903,7 @@ void anc_graph::write_certs()
         encode_hexenc(data(string(buf, buf + constants::epochlen_bytes)), hexdata);
         epoch_data new_epoch(hexdata);
         L(FL("setting epoch for %s to %s") % *i % new_epoch);
-        app.db.set_epoch(cert_value(*i), new_epoch);
+        app.db.set_epoch(branch_name(*i), new_epoch);
       }
   }
 
