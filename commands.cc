@@ -355,6 +355,7 @@ get_stdin()
   return tmp;
 }
 
+#ifndef LIBMTN_COMPILE
 string
 describe_revision(app_state & app,
                   revision_id const & id)
@@ -527,7 +528,7 @@ get_content_paths(roster_t const & roster, map<file_id, file_path> & paths)
     }
 }
   
-
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76
