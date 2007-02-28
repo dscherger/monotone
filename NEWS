@@ -1,3 +1,86 @@
+Tue Feb 27 18:46:58 UTC 2007
+
+        0.33 release.
+
+        The internal data format has changed with this release;
+        migration is straight-forward.  To upgrade your databases,
+	you must run:
+               $ mtn -d mydb.mtn db migrate
+        All of these operations are completely lossless, and 0.33
+        remains compatible with earlier versions with regards to
+        netsync.
+
+        Changes
+
+        - "mtn ls unknown" no longer recurses into unknown directories.
+
+        - update will fail rather than clobbering unversioned files
+          that exist in the workspace.
+
+        - update will detect directories with unversioned files before
+          attempting to drop them and will refuse to run rather than
+          corrupting the workspace. such unversioned files must be 
+          removed manually.
+
+        - the character set and line separator conversion hooks 
+          (get_system_linesep, get_charset_conv and get_linesep_conv) 
+          have been removed. Similar functionality (probably based on
+          file type attributes) is planned and will be added in a future
+          release.
+
+	- update will switch to the branch of a given revision if it
+	  differs from the current workspace branch.
+
+	- add will now accept combinations of --unknown, --recursive and
+	  --no-respect-ignore.
+
+	- import now imports unknown directory trees properly.
+
+	- use SQLite 3.3.12.
+
+	- schema migrator rebuilt and will now properly detect and report
+	  if the database used is created by a newer monotone than the one
+	  currently used.
+
+	- removed the man page mtn.1, as it hadn't been updated for a long
+	  time.
+
+	New features
+
+	- "mtn merge_into_workspace" (still to be documented)
+
+	- "mtn log" will now print an ASCII revision graph alongside the
+	  usual log text.
+
+	Speed improvements
+
+	- "mtn annotate file" should run even faster now. it exploits
+	  the fact that we store deltas of rosters. by peeking at
+	  these deltas, it can avoid reconstruction of whole rosters
+	  in many cases.
+
+	Other
+
+	- contrib/monotone-mirror.sh and
+	  contrib/monotone-mirror-postaction-update.sh, two scripts
+	  to mirror and update directories automatically.
+
+	- contrib/monotone-run-script-post-netsync.lua, to automatically
+	  update a directory as soon as new revisions or certs arrive for
+	  a given branch.
+
+	- contrib/monotone.bash_completion had some improvemens.
+
+	- contrib/monotone.el had some improvements.
+
+	Internal
+
+	- Internally, the concept of "projects" has been introduced.  It
+	  currently doesn't mean anything, but will be used later, with
+	  policy branches and similar.
+
+
+
 Wed Dec 27 09:57:48 UTC 2006
 
 	0.32 release.

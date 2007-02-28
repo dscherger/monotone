@@ -32,7 +32,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advan
 <hr>
 </div>
 
-<h3 class="section">3.13 Migrating and Dumping</h3>
+<h3 class="section">3.14 Migrating and Dumping</h3>
 
 <p>While the state of your database is logically captured in terms of a
 packet stream, it is sometimes necessary or desirable (especially
@@ -58,7 +58,7 @@ a transaction, so if it fails &mdash; for example if the result of
 migration hashes to an unexpected value &mdash; the migration is aborted.
 
    <p>If more drastic changes to the underlying database are made, such as
-changing the page size of sqlite, or if you simply want to keep a
+changing the page size of SQLite, or if you simply want to keep a
 plain text version of your database on hand, the <samp><span class="command">mtn db
 dump</span></samp> command can produce a plain ASCII SQL statement which generates
 the state of your database. This dump can later be reloaded using the

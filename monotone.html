@@ -25,9 +25,7 @@
 
 <h2 class="unnumbered">Top</h2>
 
-<p>Monotone Documentation
-
-   <p>Monotone is a distributed version control tool. It can help automate
+<p>Monotone is a distributed version control tool. It can help automate
 many tedious and error-prone tasks in group software development.
      <ul>
 <li>Store multiple versions of files you are working on efficiently. 
@@ -89,16 +87,17 @@ version control tools.
 <li><a href="#Restrictions">3.3 Restrictions</a>
 <li><a href="#Scripting">3.4 Scripting</a>
 <li><a href="#Inodeprints">3.5 Inodeprints</a>
-<li><a href="#Quality-Assurance">3.6 Quality Assurance</a>
-<li><a href="#Vars">3.7 Vars</a>
-<li><a href="#Reserved-Files">3.8 Reserved Files</a>
-<li><a href="#Reserved-Certs">3.9 Reserved Certs</a>
-<li><a href="#Naming-Conventions">3.10 Naming Conventions</a>
-<li><a href="#File-Attributes">3.11 File Attributes</a>
-<li><a href="#Merging">3.12 Merging</a>
-<li><a href="#Migrating-and-Dumping">3.13 Migrating and Dumping</a>
-<li><a href="#Importing-from-CVS">3.14 Importing from CVS</a>
-<li><a href="#Using-packets">3.15 Using packets</a>
+<li><a href="#Workspace-Collisions">3.6 Workspace Collisions</a>
+<li><a href="#Quality-Assurance">3.7 Quality Assurance</a>
+<li><a href="#Vars">3.8 Vars</a>
+<li><a href="#Reserved-Files">3.9 Reserved Files</a>
+<li><a href="#Reserved-Certs">3.10 Reserved Certs</a>
+<li><a href="#Naming-Conventions">3.11 Naming Conventions</a>
+<li><a href="#File-Attributes">3.12 File Attributes</a>
+<li><a href="#Merging">3.13 Merging</a>
+<li><a href="#Migrating-and-Dumping">3.14 Migrating and Dumping</a>
+<li><a href="#Importing-from-CVS">3.15 Importing from CVS</a>
+<li><a href="#Using-packets">3.16 Using packets</a>
 </li></ul>
 <li><a name="toc_CVS-Phrasebook" href="#CVS-Phrasebook">4 CVS Phrasebook</a>
 <li><a name="toc_Command-Reference" href="#Command-Reference">5 Command Reference</a>
@@ -126,9 +125,8 @@ version control tools.
 <li><a href="#Hooks">6.1.6 External Diff Tools</a>
 <li><a href="#Hooks">6.1.7 External Merge Tools</a>
 <li><a href="#Hooks">6.1.8 Selector Expansion</a>
-<li><a href="#Hooks">6.1.9 System Line and Character Conversions</a>
-<li><a href="#Hooks">6.1.10 Attribute Handling</a>
-<li><a href="#Hooks">6.1.11 Validation Hooks</a>
+<li><a href="#Hooks">6.1.9 Attribute Handling</a>
+<li><a href="#Hooks">6.1.10 Validation Hooks</a>
 </li></ul>
 <li><a href="#Additional-Lua-Functions">6.2 Additional Lua Functions</a>
 </li></ul>
@@ -1047,8 +1045,8 @@ command, which lists all the head revisions in the branch:
    <p>The output of this command tells us that there is only one current
 &ldquo;head&rdquo; revision in the branch <code>jp.co.juicebot.jb7</code>, and it is
 the revision Jim just committed. A head revision is one without any
-descendents. Since Jim has not committed any changes to this revision
-yet, it has no descendents.
+descendants. Since Jim has not committed any changes to this revision
+yet, it has no descendants.
 
 <p><a name="Basic-Network-Service"></a>
 
@@ -1642,7 +1640,7 @@ multiple monotone processes on the one database file.
 
    <p>When Jim reappears, the next person to <samp><span class="command">sync</span></samp> with him will
 often pass him information about both employees' work that they've
-sync'ed with eachother in the meantime, just as he used to do. In fact,
+sync'ed with each other in the meantime, just as he used to do. In fact,
 Jim now finds it more convenient to initiate the sync with one of the
 other servers when he has a spare moment and dynamic connectivity from a
 hotel room or airport.  Changes will flow between servers automatically
@@ -1837,13 +1835,13 @@ use. It can also transport netsync through SSH, or any program which
 can provide a full-duplex connection over <code>stdio</code>.
 
    <p>When a monotone client initiates a push, pull, or sync operation, it
-parses the first command-line argument as a URI and calls a lua hook
-to convert that URI into a <dfn>connection command</dfn>. If the lua hook
+parses the first command-line argument as a URI and calls a Lua hook
+to convert that URI into a <dfn>connection command</dfn>. If the Lua hook
 returns a connection command, monotone spawns the command locally and
 speaks netsync over a pipe connected to the command's standard I/O
 handles.
 
-   <p>If the lua hook does not return a connection command, monotone
+   <p>If the Lua hook does not return a connection command, monotone
 attempts to parse the command-line argument as a TCP address &ndash; a
 hostname with an optional port number &ndash; connects a TCP socket the
 host and port, and speaks netsync over the socket.
@@ -1878,7 +1876,7 @@ operation. Also note that monotone's default transport authentication
 is <em>disabled</em> over these transports, to reduce the complexity of
 configuration and eliminate redundant protocol cost.
 
-   <p>Additional URI schemes can be supported by customization of the lua
+   <p>Additional URI schemes can be supported by customization of the Lua
 hooks <code>get_netsync_connect_command</code> and
 <code>use_transport_auth</code>. For details on these hooks, see
 <a href="#Netsync-Transport-Hooks">Netsync Transport Hooks</a>.
@@ -1979,7 +1977,7 @@ revision which has an <code>author</code> cert beginning with <code>graydon</cod
 <h3 class="heading">Selector expansion</h3>
 
 <p>Before selectors are passed to the database, they are expanded using a
-lua hook: <code>expand_selector</code>. The default definition of this hook
+Lua hook: <code>expand_selector</code>. The default definition of this hook
 attempts to guess a number of common forms for selection, allowing you
 to omit selector types in many cases. For example, the hook guesses
 that the typeless selector <code>jrh@example.org</code> is an author
@@ -1992,8 +1990,8 @@ source code of the hook, see <a href="#Hook-Reference">Hook Reference</a>.
 <h3 class="heading">Expanding dates</h3>
 
 <p>All date-related selectors (<code>d</code>, <code>e</code>, <code>l</code>) support an
-english-like syntax similar to CVS.  This syntax is expanded to the
-numeric format by a lua hook: <code>expand_date</code>. 
+English-like syntax similar to CVS.  This syntax is expanded to the
+numeric format by a Lua hook: <code>expand_date</code>. 
 The allowed date formats are:
      <dl>
 <dt>now<dd>Expands to the current date and time. 
@@ -2177,9 +2175,97 @@ will want to simply define the <code>use_inodeprints</code> hook to return
 <code>true</code>; this will automatically enable inodeprints mode in any new
 workspaces you create.  See <a href="#Hook-Reference">Hook Reference</a> for details.
 
+<p><a name="Workspace-Collisions"></a>
+
+<h3 class="section">3.6 Workspace Collisions</h3>
+
+<p>Sometimes when you work on a project, several people make similar
+changes in parallel.  When these changes occur in an existing file that
+is known to both sides, monotone can merge the edits when the two
+revisions meet (possibly after getting help to resolve content
+conflicts).  Other kinds of changes cannot be merged so readily,
+especially ones that involve files in your workspace that are not
+tracked by monotone.
+
+   <p>Workspace collisions can happen for many reasons; some examples include:
+     <ul>
+<li>You have a file in your workspace that is unknown to monotone (you
+have not <samp><span class="command">add</span></samp>ed it).  Someone else has <samp><span class="command">add</span></samp>ed and
+<samp><span class="command">commit</span></samp>ed a different file with the same name.  If you try to
+<samp><span class="command">update</span></samp> your workspace to their revision, the added file in the
+incoming revision will collide with your file over use of the name. 
+<li>There is a directory which contains both versioned and unversioned files
+(perhaps versioned sources, and unversioned object files built from the
+sources).  Someone else <samp><span class="command">commit</span></samp>s a revision that
+<samp><span class="command">drop</span></samp>s the versioned files <em>and</em> the containing
+directory.  If you try to <samp><span class="command">update</span></samp> to this revision, your
+directory will still contain the untracked files, and therefore cannot
+be deleted. 
+<li>You have an unversioned file in your workspace, and you're trying to
+<samp><span class="command">update</span></samp> to a revision that <samp><span class="command">add</span></samp>s a directory with the
+same name. 
+</ul>
+
+   <p>These examples describe collisions on <samp><span class="command">update</span></samp>; the same kinds
+of things can happen with other commands that can bring changes into
+your workspace, such as <samp><span class="command">checkout</span></samp> or <samp><span class="command">pluck</span></samp> too.
+
+   <p>Monotone is careful to avoid hitting such collisions. Before changing
+the workspace, it will try and detect the possibility of collisions, and
+the command will fail, warning you about the names that collide.  The
+file content in the database is safe and can be recovered at any time,
+so monotone is conservative and will refuse to destroy the information
+in your workspace contents.
+
+   <p>However, monotone cannot detect all kinds of failures and collisions in
+your workspace. For example:
+     <ul>
+<li>On some systems with case-insensitive and/or internationalised
+filesystems, names that look distinct to monotone may in fact be
+considered the same by the underlying platform. 
+<li>If some other program is creating files in the workspace at the same
+time as monotone, the colliding file might be created after the
+collision check at the start. 
+<li>Other kinds of unpredictable system errors, like permissions problems or
+disk full conditions, might cause failures when monotone is rearranging
+the workspace content. 
+</ul>
+
+   <p>These are all hopefully very rare occurrences. If such a filesystem
+error <em>does</em> cause a failure part-way during a workspace
+alteration, monotone will stop immediately rather than risk potentially
+doing further damage, and your workspace may be left in an incomplete
+state.  If this happens, you will need to resolve the issue and clean up
+the workspace manually.  If you need to do so, understanding how
+monotone manipulates the workspace is helpful.
+
+   <p>When monotone applies renaming changes to the workspace, each file is
+first <dfn>detached</dfn> from the workspace under its old name, then
+<dfn>attached</dfn> under the new name. This is done by moving it to the
+<samp><span class="file">_MTN/detached</span></samp> directory. Newly added files are created here
+before being moved into place, too.  While inside <samp><span class="file">_MTN/detached</span></samp>,
+the file or directory is named as a simple integer (these numbers come
+from monotone's internal identification of the node).  If the detached
+node is a directory, the directory is moved with all of its contents
+(including unversioned files); this can help identify which directory
+has been detached.
+
+   <p>If a previous workspace alteration failed part-way, the
+<samp><span class="file">_MTN/detached</span></samp> directory will still exist, and monotone will
+refuse to attempt another alteration while the workspace is in this
+inconsistent state. This also acts as a lock against multiple monotone
+processes performing workspace alterations (but not other programs).
+
+   <p>The best way to avoid a messy recovery from such a failure is simply to
+ensure that you always <samp><span class="command">commit</span></samp> before trying to
+<samp><span class="command">update</span></samp> (or <samp><span class="command">pluck</span></samp>, etc) other changes from the
+database into your workspace. This ensures that your current workspace
+contents are safely stored, and can be retrieved later (such as with
+<samp><span class="command">revert</span></samp>).
+
 <p><a name="Quality-Assurance"></a>
 
-<h3 class="section">3.6 Quality Assurance</h3>
+<h3 class="section">3.7 Quality Assurance</h3>
 
 <p>Monotone was constructed to serve both as a version control tool and
 as a quality assurance tool. The quality assurance features permit
@@ -2195,10 +2281,10 @@ each branch is a subgraph of the revision graph, containing only the
 nodes carrying a particular <code>branch</code> cert.
 
    <p>Many of monotone's operations involve searching the revision graph for
-the ancestors or descendents of a particular revision, or extracting
+the ancestors or descendants of a particular revision, or extracting
 the &ldquo;heads&rdquo; of a subgraph, which is the subgraph's set of nodes with
-no descendents. For example, when you run the <samp><span class="command">update</span></samp> command,
-monotone searches the subgraph consisting of descendents of the base
+no descendants. For example, when you run the <samp><span class="command">update</span></samp> command,
+monotone searches the subgraph consisting of descendants of the base
 revision of the current workspace, trying to locate a unique head to
 update the base revision to.
 
@@ -2217,7 +2303,7 @@ test, or testsuite.
 </ul>
 
    <p>The evaluation of trust is done on a cert-by-cert basis by calling a
-set of lua hooks: <code>get_revision_cert_trust</code>,
+set of Lua hooks: <code>get_revision_cert_trust</code>,
 <code>get_manifest_cert_trust</code> and <code>get_file_cert_trust</code>. These
 hooks are only called when a cert has at least one good signature from
 a known key, and are passed <em>all</em> the keys which have signed the
@@ -2237,7 +2323,7 @@ to merge into your workspace.
 
 <p><a name="Vars"></a>
 
-<h3 class="section">3.7 Vars</h3>
+<h3 class="section">3.8 Vars</h3>
 
 <p>Every monotone database has a set of <em>vars</em> associated with it. 
 Vars are simple configuration variables that monotone refers to in some
@@ -2290,7 +2376,7 @@ changes, monotone will notice, and refuse to connect until you have run
 
 <p><a name="Reserved-Files"></a>
 
-<h3 class="section">3.8 Reserved Files</h3>
+<h3 class="section">3.9 Reserved Files</h3>
 
 <p>A monotone workspace consists of control files and non-control
 files. Each type of file can be versioned or non-versioned. These
@@ -2372,7 +2458,7 @@ dumps a log of its recent activity to this file, to aid in debugging.
 
 <p><a name="Reserved-Certs"></a>
 
-<h3 class="section">3.9 Reserved Certs</h3>
+<h3 class="section">3.10 Reserved Certs</h3>
 
 <p>Every certificate has a name. Some names have meaning which is built
 in to monotone, others may be used for customization by a particular
@@ -2438,7 +2524,7 @@ you intend to run on revisions. This cert influences the
 
 <p><a name="Naming-Conventions"></a>
 
-<h3 class="section">3.10 Naming Conventions</h3>
+<h3 class="section">3.11 Naming Conventions</h3>
 
 <p>Some names in monotone are private to your work, such as
 filenames. Other names are potentially visible outside your project,
@@ -2467,7 +2553,7 @@ author owns the DNS domain <code>venge.net</code>.
 
 <p><a name="File-Attributes"></a>
 
-<h3 class="section">3.11 File Attributes</h3>
+<h3 class="section">3.12 File Attributes</h3>
 
 <p>Monotone contains a support for storing <dfn>persistent attributes</dfn> on
 files and directories, generally known as <dfn>attrs</dfn> for short.  An
@@ -2515,7 +2601,7 @@ reserved for monotone's own use.
 
 <p><a name="Merging"></a>
 
-<h3 class="section">3.12 Merging</h3>
+<h3 class="section">3.13 Merging</h3>
 
 <p>Monotone has two merging modes, controlled by the <code>manual_merge</code>
 attribute. 
@@ -2552,7 +2638,7 @@ the files to be merged has the <code>manual_merge</code> attribute set.
 
 <p><a name="Migrating-and-Dumping"></a>
 
-<h3 class="section">3.13 Migrating and Dumping</h3>
+<h3 class="section">3.14 Migrating and Dumping</h3>
 
 <p>While the state of your database is logically captured in terms of a
 packet stream, it is sometimes necessary or desirable (especially
@@ -2578,7 +2664,7 @@ a transaction, so if it fails &mdash; for example if the result of
 migration hashes to an unexpected value &mdash; the migration is aborted.
 
    <p>If more drastic changes to the underlying database are made, such as
-changing the page size of sqlite, or if you simply want to keep a
+changing the page size of SQLite, or if you simply want to keep a
 plain text version of your database on hand, the <samp><span class="command">mtn db
 dump</span></samp> command can produce a plain ASCII SQL statement which generates
 the state of your database. This dump can later be reloaded using the
@@ -2590,7 +2676,7 @@ database is <em>included</em> in the dump, so you should not try to
 
 <p><a name="Importing-from-CVS"></a>
 
-<h3 class="section">3.14 Importing from CVS</h3>
+<h3 class="section">3.15 Importing from CVS</h3>
 
 <p>Monotone is capable of reading CVS files directly and importing them
 into a database. This feature is still somewhat immature, but
@@ -2624,7 +2710,7 @@ checking the resulting head version of the import out into a workspace:
 </pre>
    <p><a name="Using-packets"></a>
 
-<h3 class="section">3.15 Using packets</h3>
+<h3 class="section">3.16 Using packets</h3>
 
 <p>Suppose you made changes to your database, and want to send those
 changes to someone else but for some reason you cannot use netsync.  Or
@@ -2766,7 +2852,7 @@ We need to transfer the signatures too (suppose the key used had the ID <code>"j
      $ more test-B/file2
      file 2 getting in
 </pre>
-   <p>And that's it! The revisions were successfully transfered.
+   <p>And that's it! The revisions were successfully transferred.
 
 <p><a name="CVS-Phrasebook"></a>
 
@@ -2859,7 +2945,7 @@ the workspace to a different (usually newer) base revision.
 communication step with monotone. The extra command, <samp><span class="command">merge</span></samp>,
 ensures that the branch your are working on has a unique head. You can
 omit the <samp><span class="command">merge</span></samp> step if you only want <samp><span class="command">update</span></samp> to
-examine descendents of your base revision, and ignore other heads on
+examine descendants of your base revision, and ignore other heads on
 your branch.
 
 <h3 class="heading">Tagging Revisions</h3>
@@ -3064,7 +3150,9 @@ these entries:
      </pre>
      <p>If you wish to <samp><span class="command">checkout</span></samp> in the current directory, you can
 supply the special name <samp><span class="file">.</span></samp> (a single period) for
-<var>directory</var>.
+<var>directory</var>. When running <samp><span class="command">checkout</span></samp> into an existing
+directory, it is sometimes possible for <a href="#Workspace-Collisions">Workspace Collisions</a> to
+occur.
 
      <p>If no <var>id</var> is provided, as in the latter two commands, you
 <em>must</em> provide a <var>branchname</var>; monotone will attempt to infer
@@ -3078,17 +3166,17 @@ will show up as a new head and thus a subsequent <samp><span class="command">mer
 incorporate the inverse of the disapproved changes in the other head(s).
 
      <p>Conceptually, <samp><span class="command">disapprove</span></samp>s contract is that disapprove(A) gives a
-revision B such that whenever B is merged with a descendent D of A the merge
+revision B such that whenever B is merged with a descendant D of A the merge
 will result in what D &ldquo;would have looked like&rdquo; if A had never happened.
 
      <p>Note that as a consequence of this contract the <samp><span class="command">disapprove</span></samp> command
 only works if <var>id</var> has exactly one ancestor, since it hasn't been
-worked out how to generate such a descendent in the multi-ancestor case.
+worked out how to generate such a descendant in the multi-ancestor case.
 
      <br><dt><samp><span class="command">mtn heads --branch=</span><var>branchname</var></samp><a name="index-mtn-heads-_002d_002dbranch_003d_0040var_007bbranchname_007d-8"></a><dd>This command lists the &ldquo;heads&rdquo; of <var>branchname</var>.
 
      <p>The &ldquo;heads&rdquo; of a branch is the set of revisions which are members of
-the branch, but which have no descendents. These revisions are
+the branch, but which have no descendants. These revisions are
 generally the &ldquo;newest&rdquo; revisions committed by you or your
 colleagues, at least in terms of ancestry. The heads of a branch may
 not be the newest revisions, in terms of time, but synchronization of
@@ -3152,7 +3240,7 @@ consequently into the branch that revision resides in).
 
      <p>If the given branch doesn't exist, it is created automatically.  If the
 branch already exists, any missing files are dropped and any unknown
-files are added before commiting.
+files are added before committing.
 
      <p>If <samp><span class="command">--dry-run</span></samp> is given, no commit is done. 
 </dl>
@@ -3193,7 +3281,7 @@ any added entries inserted in its manifest.
 current location and adds it to your workspace's &ldquo;work list&rdquo;.  The
 changes are not reflected in your database until such time as you
 perform a commit.  If you use the <samp><span class="option">--no-respect-ignore</span></samp> flag,
-entries in .mtn-ignore will not be honoured.
+entries in .mtn-ignore will not be honored.
 
      <br><dt><samp><span class="command">mtn [--execute] drop </span><var>pathname...</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-19"></a><dt><samp><span class="command">mtn drop --missing</span></samp><a name="index-mtn-drop-_002d_002dmissing-20"></a><dd>This command places &ldquo;drop&rdquo; entries for the paths specified in
 <var>pathname...</var> in the workspace's &ldquo;work list&rdquo;. The work list of
@@ -3337,7 +3425,7 @@ fails, the update aborts, doing nothing. The stages are:
 
           <ul>
 <li>Examine the ancestry graph of revisions in your database, and (subject
-to trust evaluation) select the set of all descendents of your
+to trust evaluation) select the set of all descendants of your
 workspace's base revision. Call this set the &ldquo;candidates&rdquo; of the
 update. 
 <li>Remove any candidates which lack acceptable testresult
@@ -3364,6 +3452,9 @@ applied.
 tries to select the revision to update to from this branch.  The branch
 becomes the new default branch of the workspace (even if you also
 specify an explicit <samp><span class="option">--revision</span></samp> argument).
+
+     <p>When running <samp><span class="command">update</span></samp>, it is sometimes possible for
+<a href="#Workspace-Collisions">Workspace Collisions</a> to occur.
 
      <br><dt><samp><span class="command">mtn pluck --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bto_007d-41"></a><dt><samp><span class="command">mtn pluck --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-42"></a><dd>
 This command takes changes made at any point in history, and attempts to
@@ -3397,6 +3488,9 @@ will do.  If you find yourself using <samp><span class="command">pluck</span></s
 consider carefully whether there is any way to change your workflow to
 reduce your need for <samp><span class="command">pluck</span></samp>ing.
 
+     <p>When running <samp><span class="command">pluck</span></samp>, it is sometimes possible for
+<a href="#Workspace-Collisions">Workspace Collisions</a> to occur.
+
      <br><dt><samp><span class="command">mtn refresh_inodeprints</span></samp><a name="index-mtn-refresh_005finodeprints-43"></a><dd>This command puts the current workspace into <a href="#Inodeprints">Inodeprints</a> mode,
 if it was not already, and forces a full inodeprints cache refresh. 
 After running this command, you are guaranteed that your workspace is
@@ -3426,6 +3520,9 @@ updates.
 
      <p>The use of <samp><span class="option">--execute</span></samp> with this command is strongly
 recommended, though not required.
+
+     <p>When running <samp><span class="command">pivot_root</span></samp>, it is sometimes possible for
+<a href="#Workspace-Collisions">Workspace Collisions</a> to occur.
 
 </dl>
 
@@ -3461,7 +3558,7 @@ authentication and authorization facilities.
 
      <p>The <var>uri-or-address</var> arguments given to <samp><span class="command">push</span></samp>,
 <samp><span class="command">pull</span></samp>, and <samp><span class="command">sync</span></samp> can be of two possible forms. If
-the argument is a URI, a lua hook may transform the URI into a
+the argument is a URI, a Lua hook may transform the URI into a
 connection command, and execute the command as a transport channel for
 netsync. If the argument is a simple hostname (with optional port
 number), monotone will use a TCP socket to the specified host and port
@@ -3756,7 +3853,7 @@ This command lists all vars in your database, or all vars within a given
 
      <br><dt><samp><span class="command">mtn list known</span></samp><a name="index-mtn-list-known-81"></a><br><dt><samp><span class="command">mtn ls known</span></samp><a name="index-mtn-ls-known-82"></a><dt><samp><span class="command">mtn list known </span><var>pathname...</var></samp><a name="index-mtn-list-known-_0040var_007bpathname_002e_002e_002e_007d-83"></a><dt><samp><span class="command">mtn ls known </span><var>pathname...</var></samp><a name="index-mtn-ls-known-_0040var_007bpathname_002e_002e_002e_007d-84"></a><dd>
 This command lists all files which would become part of the manifest of
-the next revision if you comitted your workspace at this point.
+the next revision if you committed your workspace at this point.
 
      <p>Specifying pathnames to the <samp><span class="command">list known</span></samp> command restricts
 the set of paths that are searched for manifest files. Files not
@@ -3986,7 +4083,7 @@ This command dumps an SQL statement representing the entire state of
 <var>dbfile</var> to the standard output stream. It is a very low-level
 command, and produces the most &ldquo;recoverable&rdquo; dumps of your database
 possible. It is sometimes also useful when migrating databases between
-variants of the underlying sqlite database format.
+variants of the underlying SQLite database format.
 
      <br><dt><samp><span class="command">mtn db load --db=</span><var>dbfile</var></samp><a name="index-mtn-db-load-_002d_002ddb_003d_0040var_007bdbfile_007d-128"></a><dd>
 This command applies a raw SQL statement, read from the standard input
@@ -4143,9 +4240,9 @@ certs attached to it.  It has an ugly name because it is a dangerous
 command; it permanently and irrevocably deletes historical information
 from your database.  There are a number of caveats:
           <ul>
-<li>It can only be applied to revisions that have no descendents.  If you
-want to kill a revision that has descendents, you must kill all of the
-descendents first. 
+<li>It can only be applied to revisions that have no descendants.  If you
+want to kill a revision that has descendants, you must kill all of the
+descendants first. 
 <li>It only removes the revision from your local database (hence the
 &ldquo;locally&rdquo; in the command name).  If you have already pushed this
 revision out to another database, then the next time you pull from that
@@ -4369,7 +4466,7 @@ One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
 0.1
 
           <br><dt><strong>Purpose:</strong><dd>
-Prints the descendents of one or more revisions.
+Prints the descendants of one or more revisions.
 
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
@@ -4378,13 +4475,13 @@ Prints the descendents of one or more revisions.
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
-Zero or more lines, each giving the ID of one descendent of the given
+Zero or more lines, each giving the ID of one descendant of the given
 revisions.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
 
           <p>The output does not include <var>rev1</var>, <var>rev2</var>, etc., except that if
-<var>rev2</var> is itself a descendent of <var>rev1</var>, then <var>rev2</var> will be
+<var>rev2</var> is itself a descendant of <var>rev1</var>, then <var>rev2</var> will be
 included in the output.
 
           <br><dt><strong>Error conditions:</strong><dd>
@@ -4483,7 +4580,7 @@ are no arguments, prints nothing.
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
-Zero or more lines, each giving the ID of one descendent of the given
+Zero or more lines, each giving the ID of one descendant of the given
 revisions.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
@@ -4575,7 +4672,7 @@ None.
 Prints the leaves of the revision graph, i.e. all revision that have no
 children.  This is similar, but not identical to the functionality of
 <samp><span class="command">heads</span></samp>, which prints every revision in a branch, that has no
-descendents in that branch.  If every revision in the database was in
+descendants in that branch.  If every revision in the database was in
 the same branch, then they would be identical.  Generally, every leaf is
 the head of some branch, but not every branch head is a leaf.
 
@@ -4605,7 +4702,7 @@ None.
 
           <br><dt><strong>Purpose:</strong><dd>
 Prints all branch certs present in the revision graph, that are not
-excluded by the lua hook <code>ignore_branch</code>.
+excluded by the Lua hook <code>ignore_branch</code>.
 
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
@@ -4635,7 +4732,7 @@ If a branch pattern is given, prints all tags that are attached to
 revisions on branches matched by the pattern; otherwise prints all
 tags of the revision graph.
 
-          <p>If a branch name is ignored by means of the lua hook
+          <p>If a branch name is ignored by means of the Lua hook
 <code>ignore_branch</code>, it is neither printed, nor can it be matched by
 a pattern.
 
@@ -4685,7 +4782,7 @@ blank line. Values will be escaped, '\' to '\\' and '"' to '\"'.
           <p>Stanzas are printed in arbitrary order.
 
           <br><dt><strong>Error conditions:</strong><dd>
-A run-time exception occures if an illegal branch pattern is
+A run-time exception occurs if an illegal branch pattern is
 specified.
 
      </dl>
@@ -4856,7 +4953,7 @@ are not valid, detailed below.
           '   ' unchanged
           '  P' patched (contents changed)
           '  U' unknown (exists on the filesystem but not tracked)
-          '  I' ignored (exists on the filesystem but excluded by lua hook)
+          '  I' ignored (exists on the filesystem but excluded by Lua hook)
           '  M' missing (exists in the manifest but not on the filesystem)
           
           ' A ' added (invalid, add should have associated patch)
@@ -5054,7 +5151,7 @@ Allow multiple automate commands to be run from one instance of monotone.
 
           <p>The input is a series of commands. The command name plus arguments are
 provided as 'l' &lt;string&gt; [&lt;string&gt; ...] 'e', where &lt;string&gt; = &lt;size&gt; colon
-&lt;data&gt; . This may optionally be preceeded by a set of key=value pairs
+&lt;data&gt; . This may optionally be preceded by a set of key=value pairs
 (command options) as 'o' &lt;string&gt; &lt;string&gt; [&lt;string&gt; &lt;string&gt; ...] 'e', where
 strings come in pairs, key followed by value.
 
@@ -5938,7 +6035,7 @@ only be seen by the new hook. Since in Lua variables default to the global
 scope, the new hook is seen from inside monotone.
 
    <p>Monotone also makes available to hook writers a number of helper
-functions exposing functionality not available with standard lua.
+functions exposing functionality not available with standard Lua.
 
 <p><a name="Hooks"></a>
 
@@ -5961,10 +6058,10 @@ are taken.
 <dt><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code><a name="index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-173"></a><dd>
 Called by monotone after the version <var>new_id</var> is committed. The
 second parameter, <var>revision</var> is the text of the revision, what would
-be given by "monotone cat revision <var>new_id</var>". The
-third parameter, <var>certs</var>, is a lua table containing the set of
-certificate names and values committed along with this version. There
-is no default definition for this hook.
+be given by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. The third
+parameter, <var>certs</var>, is a Lua table containing the set of certificate
+names and values committed along with this version. There is no default
+definition for this hook.
 
      <p>Note that since the <var>certs</var> table does not contain cryptographic
 or trust information, and only contains one entry per cert name, it is
@@ -6007,18 +6104,17 @@ The include and exclude patterns used by the client.
      <br><dt><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-175"></a><dd>
 Called by monotone after the revision <var>new_id</var> is received through
 netsync. <var>revision</var> is the text of the revision, what would be given
-by "monotone cat revision <var>new_id</var>". <var>certs</var> is a lua table
-containing one subtable for each
-cert attached to the revision <var>new_id</var>. These subtables have fields
-named "key", "name", and "value", containing the signing key for the cert,
-the name of the cert, and the value of the cert. There is no default
-definition for this hook. 
+by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. <var>certs</var> is a
+Lua table containing one subtable for each cert attached to the revision
+<var>new_id</var>. These subtables have fields named "key", "name", and
+"value", containing the signing key for the cert, the name of the cert,
+and the value of the cert. There is no default definition for this hook. 
 <var>session_id</var> is used together with <code>note_netsync_start</code> and
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
      <br><dt><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-176"></a><dd>
-Called by monotone after a cert is received through netsync, iff the revision
+Called by monotone after a cert is received through netsync, if the revision
 that the cert is attached to was not also received in the same netsync
 operation. <var>rev_id</var> is the revision id that the cert is attached to,
 <var>key</var> is the key that the cert is signed with, <var>name</var> is the name
@@ -6042,7 +6138,7 @@ tracking, you can ignore that variable entirely.
 been called.  This hook would usually be used for post-netsync purposes,
 like collecting all the data from all other netsync notification hooks,
 make some nice output from them and finally send the result somewhere. 
-It could also be used to prepare parallell databases with all the data
+It could also be used to prepare parallel databases with all the data
 to be displayed through something like viewmtn.
 
      <p><var>status</var> is a three digit integer that tells whether there was an error,
@@ -6406,7 +6502,7 @@ same privileges, or be trusted for the same purposes (indeed, some
 signers might be automated robots, with very specific purposes).
 
    <p>These hooks allow the user to configure which signers will be trusted to
-make which kinds of assertions using certs. Monotone these certs when
+make which kinds of assertions using certs. Monotone uses these certs when
 selecting available revisions for commands such as <samp><span class="command">update</span></samp>.
 
    <p>Each user, or even each workspace, can have their own
@@ -6528,7 +6624,7 @@ be nil.
 
      <p>The default implementation of this hook calls the program <samp><span class="command">diff</span></samp>,
 and if <samp><span class="option">--diff-args</span></samp> were not passed, takes default arguments
-from the lua variable <code>external_diff_default_args</code>.  You can
+from the Lua variable <code>external_diff_default_args</code>.  You can
 override this variable in your configuration file, without overriding
 the whole hook.
 
@@ -6538,7 +6634,7 @@ the whole hook.
 
 <p>Monotone often needs to merge together the work of multiple distributed
 developers, and uses these hooks to help this process when the merge
-does not automatcally succeed.  Often these hooks will be used to invoke
+does not automatically succeed.  Often these hooks will be used to invoke
 an external interactive merge tool.
 
    <p>The <a href="#Default-hooks">Default hooks</a> include helper functions used by the hooks below
@@ -6565,7 +6661,7 @@ on.
 default definition of this hook delegates the actual merge to the
 result of <a href="#get_005fpreferred_005fmerge3_005fcommand">get_preferred_merge3_command</a>.  The default definition
 of <a href="#get_005fpreferred_005fmerge3_005fcommand">get_preferred_merge3_command</a> checks to see if the
-<samp><span class="env">MTN_MERGE</span></samp> environment variable, or the lua variable
+<samp><span class="env">MTN_MERGE</span></samp> environment variable, or the Lua variable
 <code>merger</code> are set to the name of a merge tool that it recognizes,
 and if not, then simply searches for whatever is installed on the
 local system.  For details, see the code in <a href="#Default-hooks">Default hooks</a>.
@@ -6607,76 +6703,7 @@ expressions. For the default definition of this hook, see <a href="#Default-hook
 
    </dl>
 
-<h4 class="subsection">6.1.9 System Line and Character Conversions</h4>
-
-<p>Different operating systems vary in the character(s) used as line
-separators for text files, and in the character set (locale) used for
-filenames. These differences can become annoying when multiple
-developers on a project use different operating systems. Because so much
-of monotone depends on cryptographic checksums, it is often desirable
-that these differences are removed so that files are considered
-identical regardless of platform-specific representations. The hooks in
-this section allow the user to specify these equivalence and conversion
-rules.
-
-     <dl>
-<dt><code>get_system_linesep ()</code><a name="index-get_005fsystem_005flinesep-_0028_0029-200"></a><dd>
-Returns a string which defines the default system line separator. 
-This should be one of the strings <code>CR</code>, <code>LF</code>, or
-<code>CRLF</code>. The system line separator may be used when reading or
-writing data to the terminal, or otherwise interfacing with the user. 
-The system line separator is not used to convert files in the working
-copy; use <code>get_linesep_conv</code> for converting line endings in the
-workspace.
-
-     <p>This hook has no default definition. For more information on line
-ending conversion, see the section on <a href="#Internationalization">Internationalization</a>.
-
-     <br><dt><code>get_linesep_conv (</code><var>filename</var><code>)</code><a name="index-get_005flinesep_005fconv-_0028_0040var_007bfilename_007d_0029-201"></a><dd>
-Returns a table which contains two strings. The first string in the
-return value is the name of a line ending convention to use for the
-&ldquo;internal&rdquo; representation of <var>filename</var>. The second string in
-the return value is the name of a line ending convention to use for
-the &ldquo;external&rdquo; representation of <var>filename</var>. Line ending
-conventions should be one of the strings <code>CR</code>, <code>LF</code>, or
-<code>CRLF</code>.
-
-     <p>When <var>filename</var> is read from the workspace, it is run through
-line ending conversion from the external form to the internal
-form. When <var>filename</var> is written to the workspace, it is run
-through line ending conversion from the internal form to the external
-form. <span class="sc">sha1</span> values are calculated from the internal form of
-<var>filename</var>. It is your responsibility to decide which line ending
-conversions your work will use.
-
-     <p>This hook has no default definition; monotone's default behavior is to
-keep external and internal forms byte-for-byte identical. For more
-information on line ending conversion, see the section on
-<a href="#Internationalization">Internationalization</a>.
-
-     <br><dt><code>get_charset_conv (</code><var>filename</var><code>)</code><a name="index-get_005fcharset_005fconv-_0028_0040var_007bfilename_007d_0029-202"></a><dd>
-Returns a table which contains two strings. The first string in the
-return value is the name of a character set to use for the
-&ldquo;internal&rdquo; representation of <var>filename</var>. The second string in
-the return value is the name of a character set to use for the
-&ldquo;external&rdquo; representation of <var>filename</var>.
-
-     <p>When <var>filename</var> is read from the workspace, it is run through
-character set conversion from the external form to the internal
-form. When <var>filename</var> is written to the workspace, it is run
-through character set conversion from the internal form to the
-external form. <span class="sc">sha1</span> values are calculated from the internal
-form of <var>filename</var>. It is your responsibility to decide which
-character set conversions your work will use.
-
-     <p>This hook has no default definition; monotone's default behavior is to
-keep external and internal forms byte-for-byte identical. For more
-information on character set conversion, see the section on
-<a href="#Internationalization">Internationalization</a>.
-
-   </dl>
-
-<h4 class="subsection">6.1.10 Attribute Handling</h4>
+<h4 class="subsection">6.1.9 Attribute Handling</h4>
 
 <p>Some files in a project are special; they may require different handling
 (such as binary or structured files that should always be manually
@@ -6691,7 +6718,7 @@ they're added, and for custom triggers to be invoked on each file
 according to its attributes when the workspace is changed.
 
      <dl>
-<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-203"></a><dd>
+<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-200"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_functions</code>, at table
 entry <var>attribute</var>, is a function taking a file name <var>filename</var>
@@ -6714,7 +6741,7 @@ attribute. Its definition is:
                 end
              end
      </pre>
-     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-204"></a><dd>
+     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-201"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_init_functions</code>, at
 table entry <var>attribute</var>, is a function taking a file (or
@@ -6742,18 +6769,18 @@ hook functions is called once for each file during an <dfn>add</dfn>.
                 end
              end
      </pre>
-     <p>The <code>binary_file</code> function is also defined as a lua hook. See
+     <p>The <code>binary_file</code> function is also defined as a Lua hook. See
 <a href="#Default-hooks">Default hooks</a>.
 
    </dl>
 
-<h4 class="subsection">6.1.11 Validation Hooks</h4>
+<h4 class="subsection">6.1.10 Validation Hooks</h4>
 
 <p>If there is a policy decision to make, Monotone defines certain hooks to
 allow a client to validate or reject certain behaviors.
 
      <dl>
-<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-205"></a><dd>
+<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-202"></a><dd>
 This hook is called after the user has entered his/her commit message. 
 <var>message</var> is the commit message that the user has entered and
 <var>revision_text</var> is the full text of the changes for this revision,
@@ -6771,60 +6798,60 @@ rejects empty log messages.
 
 <h3 class="section">6.2 Additional Lua Functions</h3>
 
-<p>This section documents the additional lua functions made available to
+<p>This section documents the additional Lua functions made available to
 hook writers.
 
      <dl>
-<dt><code>existonpath(</code><var>possible_command</var><code>)</code><a name="index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-206"></a><dd>
+<dt><code>existonpath(</code><var>possible_command</var><code>)</code><a name="index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-203"></a><dd>
 This function receives a string containing the name of an external
 program and returns 0 if it exists on path and is executable, -1
 otherwise. 
 As an example, <code>existonpath("xxdiff")</code> returns 0 if the
 program xxdiff is available. 
-On windows, this function automatically appends &ldquo;.exe&rdquo; to the
+On Windows, this function automatically appends &ldquo;.exe&rdquo; to the
 program name. In the previous example, <code>existonpath</code> would search
 for &ldquo;xxdiff.exe&rdquo;.
 
-     <br><dt><code>guess_binary(</code><var>filespec</var><code>)</code><a name="index-guess_005fbinary_0028_0040var_007bfilespec_007d_0029-207"></a><dd>
+     <br><dt><code>guess_binary(</code><var>filespec</var><code>)</code><a name="index-guess_005fbinary_0028_0040var_007bfilespec_007d_0029-204"></a><dd>
 Returns true if the file appears to be binary, i.e. contains one or
 more of the following characters:
      <pre class="smallexample">          0x00 thru 0x06
           0x0E thru 0x1a
           0x1c thru 0x1f
      </pre>
-     <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-208"></a><dd>
+     <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-205"></a><dd>
 This function tries to load and execute the script contained into
 scriptfile.  It returns true for success and false if there is an
 error.
 
-     <br><dt><code>includedir(</code><var>scriptpath</var><code>)</code><a name="index-includedir_0028_0040var_007bscriptpath_007d_0029-209"></a><dd>
+     <br><dt><code>includedir(</code><var>scriptpath</var><code>)</code><a name="index-includedir_0028_0040var_007bscriptpath_007d_0029-206"></a><dd>
 This function loads and executes in alphabetical order all the scripts
 contained into the directory scriptpath. 
 If one of the scripts has an error, the functions doesn't process the
 remaining scripts and immediately returns false.
 
-     <br><dt><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code><a name="index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-210"></a><dd>
+     <br><dt><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code><a name="index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-207"></a><dd>
 This function loads and executes in alphabetical order all the scripts
 contained into the directory scriptpath that match the given pattern. 
 If one of the scripts has an error, the functions doesn't process the
 remaining scripts and immediately returns false.
 
-     <br><dt><code>is_executable(</code><var>filespec</var><code>)</code><a name="index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-211"></a><dd>
+     <br><dt><code>is_executable(</code><var>filespec</var><code>)</code><a name="index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-208"></a><dd>
 This function returns true if the file is executable, false
-otherwise.  On windows this function returns always false.
+otherwise.  On Windows this function returns always false.
 
-     <br><dt><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code><a name="index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-212"></a><dd>
-This function calls the kill() C library function on posix systems and
+     <br><dt><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code><a name="index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-209"></a><dd>
+This function calls the kill() C library function on POSIX systems and
 TerminateProcess on Win32 (in that case <var>pid</var> is the process
 handle).  If the optional <var>signal</var> parameter is missing, SIGTERM
 will be used. 
-Returns 0 on succes, -1 on error.
+Returns 0 on success, -1 on error.
 
-     <br><dt><code>make_executable(</code><var>filespec</var><code>)</code><a name="index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-213"></a><dd>
-This function marks the named file as executable.  On windows has no
+     <br><dt><code>make_executable(</code><var>filespec</var><code>)</code><a name="index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-210"></a><dd>
+This function marks the named file as executable.  On Windows has no
 effect.
 
-     <br><dt><code>mkstemp(</code><var>template</var><code>)</code><a name="index-mkstemp_0028_0040var_007btemplate_007d_0029-214"></a><dd>
+     <br><dt><code>mkstemp(</code><var>template</var><code>)</code><a name="index-mkstemp_0028_0040var_007btemplate_007d_0029-211"></a><dd>
 Like its C library counterpart,  mkstemp creates a unique name and
 returns a file descriptor for the newly created file. 
 The value of template should be a pointer to a character buffer loaded
@@ -6846,14 +6873,14 @@ option.  <code>temp_file()</code> builds on <code>mkstemp()</code> and creates a
 file in the standard TMP/TEMP directories. 
 For the definition of <code>temp_file()</code>, see <a href="#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>sleep(</code><var>seconds</var><code>)</code><a name="index-sleep_0028_0040var_007bseconds_007d_0029-215"></a><dd>
+     <br><dt><code>sleep(</code><var>seconds</var><code>)</code><a name="index-sleep_0028_0040var_007bseconds_007d_0029-212"></a><dd>
 Makes the calling process sleep for the specified number of seconds.
 
-     <br><dt><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-216"></a><dd>
+     <br><dt><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-213"></a><dd>
 Starts the named executable with the given arguments.  Returns the
-process pid on Posix systems, the process handle on Win32 or -1 if
+process PID on POSIX systems, the process handle on Win32 or -1 if
 there was an error. 
-Calls fork/execvp on Posix, CreateProcess on Win32.
+Calls fork/execvp on POSIX, CreateProcess on Win32.
 
      <p><strong>Important notice:</strong><br>
 To spawn a process and wait for its completion, use the <code>execute()</code>
@@ -6861,13 +6888,13 @@ function, unless you need to run monotone with the <samp><span class="option">--
 option.  <code>execute()</code> builds on <code>spawn()</code> and <code>wait()</code>
 in a standardized way.
 
-     <br><dt><code>wait(</code><var>pid</var><code>)</code><a name="index-wait_0028_0040var_007bpid_007d_0029-217"></a><dd>
-Wait until the process with given pid (process handle on Win32) exits. 
+     <br><dt><code>wait(</code><var>pid</var><code>)</code><a name="index-wait_0028_0040var_007bpid_007d_0029-214"></a><dd>
+Wait until the process with given PID (process handle on Win32) exits. 
 Returns two values: a result value and the exit code of the waited-for
 process. 
 The exit code is meaningful only if the result value is 0.
 
-     <br><dt><code>parse_basic_io(</code><var>data</var><code>)</code><a name="index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-218"></a><dd>
+     <br><dt><code>parse_basic_io(</code><var>data</var><code>)</code><a name="index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-215"></a><dd>
 Parse the string <var>data</var>, which should be in basic_io format. It returns nil
 if it can't parse the string; otherwise it returns a table. This will be a list
 of all statements, with each entry being a table having a "name" element that is
@@ -6956,37 +6983,6 @@ and returns a table of two strings: the first represents the
 "internal" (database) charset, the second represents the "external"
 (file system) charset.
 
-     <br><dt>Line ending conversion<dd>The process of converting platform-dependent end-of-line codes
-(<code>0x0D</code>, <code>0x0A</code>, or the pair <code>0x0D 0x0A</code>) from one
-convention to another. Per-file line ending conversion is specified by
-a Lua hook <code>get_linesep_conv</code> which takes a filename and returns
-a table of two strings: the first represents the "internal" (database)
-line ending convention, the second represents the "external"
-(file system) line ending convention. each string should be one of the
-three strings "CR", "LF", or "CRLF".
-
-     <p>Note that Line ending conversion is always performed on the internal
-character set, when both character set and line ending conversion are
-enabled; this behavior is meant to encourage the use of the monotone's
-&ldquo;normal form&rdquo; (UTF-8, '\n') as an internal form for your source
-files, when working with multiple external forms. Also note that line
-ending conversion only works on character encodings with the specific
-code bytes described above, such as ASCII, ISO-8859x, and UTF-8.
-
-     <br><dt>Normal form conversion<dd>Character set and line ending conversions done between a "system form"
-and a "normal form". The system character set form is inferred from
-the environment, using the various locale environment variables. The
-system line ending form can be additionally specialized using the
-<code>get_system_linesep</code> hook. No hooks exist for adjusting the
-system character set, since the system character set must be known
-during command-line argument processing, before any Lua hooks are
-loaded.
-
-     <p>Monotone's normal form is the UTF-8 character set and the <code>0x0A</code>
-(LF) line ending form. This form is used in any files monotone needs
-to read, write, and interpret itself, such as <samp><span class="file">_MTN/revision</span></samp> and
-<samp><span class="file">_MTN/options</span></samp>.
-
      <br><dt>LDH<dd>Letters, digits, and hyphen: the set of ASCII bytes <code>0x2D</code>,
 <code>0x30..0x39</code>, <code>0x41..0x5A</code>, and <code>0x61..0x7A</code>.
 
@@ -6997,13 +6993,13 @@ public network protocols.
      <br><dt>nameprep<dd>RFC 3491, a specific profile of stringprep, used for preparing
 international domain names (IDNs)
 
-     <br><dt>punycode<dd>RFC 3492, a "bootstring" encoding of unicode into ASCII.
+     <br><dt>punycode<dd>RFC 3492, a "bootstring" encoding of Unicode into ASCII.
 
      <br><dt>IDNA<dd>RFC 3490, international domain names for applications, a combination
 of the above technologies (nameprep, punycoding, limiting to LDH
 characters) to form a specific "ASCII compatible encoding" (ACE) of
-unicode, signified by the presence of an "unlikely" ACE prefix string
-"xn&ndash;". IDNA is intended to make it possible to use unicode relatively
+Unicode, signified by the presence of an "unlikely" ACE prefix string
+"xn&ndash;". IDNA is intended to make it possible to use Unicode relatively
 "safely" over legacy ASCII-based applications. the general picture of
 an IDNA string is this:
 
@@ -7034,7 +7030,7 @@ for platform name semantics, for example changing the Windows
 <code>0x5C</code> '\' path separator to <code>0x2F</code> '/'. This extra
 processing is performed by boost::filesystem.
 
-     <li>FIXME: Monotone does not properly handle case insensitivity on windows.
+     <li>FIXME: Monotone does not properly handle case insensitivity on Windows.
 
      <li>A filename (in normal form) is constrained to be a nonempty sequence
 of path components, separated by byte <code>0x2F</code> (ASCII / ), and
@@ -7777,7 +7773,7 @@ must debate everything, and there would be no end to the discussion).
 
 <p>Replies and further discussion concerning this email can be found in the  <a href="http://thread.gmane.org/gmane.comp.version-control.monotone.devel/4297">monotone-devel archives</a>.
 
-<h4 class="subheading">Improvments to *-merge</h4>
+<h4 class="subheading">Improvements to *-merge</h4>
 
 <pre class="verbatim">
 From: Nathaniel Smith &lt;njs@...>
@@ -8458,7 +8454,7 @@ end
 function edit_comment(basetext, user_log_message)
    local exe = nil
    if (program_exists_in_path("vi")) then exe = "vi" end
-   if (program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
+   if (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
    local debian_editor = io.open("/usr/bin/editor")
    if (debian_editor ~= nil) then
       debian_editor:close()
@@ -8680,6 +8676,48 @@ mergers.rcsmerge = {
    wanted = function () return os.getenv("MTN_RCSMERGE") ~= nil end
 }
 
+mergers.diffutils = {
+   cmd = function (tbl)
+      local ret = execute(
+          "diff3",
+          "--merge",
+          "--label", string.format("%s [left]",     tbl.left_path ),
+          "--label", string.format("%s [ancestor]", tbl.anc_path  ),
+          "--label", string.format("%s [right]",    tbl.right_path),
+          tbl.lfile,
+          tbl.afile,
+          tbl.rfile
+      )
+      if (ret ~= 0) then
+         io.write(gettext("Error running GNU diffutils 3-way difference tool 'diff3'\n"))
+         return false
+      end
+      local ret = execute(
+          "sdiff",
+          "--diff-program=diff",
+          "--suppress-common-lines",
+          "--minimal",
+          "--output", tbl.outfile,
+          tbl.lfile,
+          tbl.rfile
+      )
+      if (ret == 2) then
+         io.write(gettext("Error running GNU diffutils 2-two merging tool 'sdiff'\n"))
+         return false
+      end
+      return tbl.outfile
+   end,
+   available =
+      function ()
+          return program_exists_in_path("diff3") and
+                 program_exists_in_path("sdiff");
+      end,
+   wanted =
+      function ()
+           return true
+      end
+}
+
 mergers.emacs = {
    cmd = function (tbl)
       local emacs
@@ -8814,7 +8852,7 @@ function program_exists_in_path(program)
 end
 
 function get_preferred_merge3_command (tbl)
-   local default_order = {"kdiff3", "xxdiff", "opendiff", "tortoise", "emacs", "vim", "meld"}
+   local default_order = {"kdiff3", "xxdiff", "opendiff", "tortoise", "emacs", "vim", "meld", "diffutils"}
    local function existmerger(name)
       local m = mergers[name]
       if type(m) == "table" and m.available(tbl) then
@@ -9088,7 +9126,7 @@ function get_netsync_write_permitted(ident)
    return matches
 end
 
--- This is a simple funciton which assumes you're going to be spawning
+-- This is a simple function which assumes you're going to be spawning
 -- a copy of mtn, so reuses a common bit at the end for converting
 -- local args into remote args. You might need to massage the logic a
 -- bit if this doesn't fit your assumptions.
@@ -9163,18 +9201,16 @@ end
 
 <ul class="index-cp" compact>
 <li><a href="#index-accept_005ftestresult_005fchange-_0028_0040var_007bold_005fresults_007d_002c-_0040var_007bnew_005fresults_007d_0029-193"><code>accept_testresult_change (</code><var>old_results</var><code>, </code><var>new_results</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-203"><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-204"><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-200"><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-201"><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-182"><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-206"><code>existonpath(</code><var>possible_command</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-203"><code>existonpath(</code><var>possible_command</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-expand_005fdate-_0028_0040var_007bstr_007d_0029-199"><code>expand_date (</code><var>str</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-expand_005fselector-_0028_0040var_007bstr_007d_0029-198"><code>expand_selector (</code><var>str</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-195"><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>,</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005fauthor-_0028_0040var_007bbranchname_007d_0029-181"><code>get_author (</code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005fbranch_005fkey-_0028_0040var_007bbranchname_007d_0029-179"><code>get_branch_key (</code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fcharset_005fconv-_0028_0040var_007bfilename_007d_0029-202"><code>get_charset_conv (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005fencloser_005fpattern-_0028_0040var_007bfile_005fpath_007d_0029-194"><code>get_encloser_pattern (</code><var>file_path</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005flinesep_005fconv-_0028_0040var_007bfilename_007d_0029-201"><code>get_linesep_conv (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-191"><code>get_mtn_command(</code><var>host</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005fnetsync_005fconnect_005fcommand-_0028_0040var_007buri_007d_002c-_0040var_007bargs_007d_0029-189"><code>get_netsync_connect_command (</code><var>uri</var><code>, </code><var>args</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005fnetsync_005fread_005fpermitted-_0028_0040var_007bbranch_007d_002c-_0040var_007bidentity_007d_0029-187"><code>get_netsync_read_permitted (</code><var>branch</var><code>, </code><var>identity</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
@@ -9182,18 +9218,17 @@ end
 <li><a href="#index-get_005fpassphrase-_0028_0040var_007bkeypair_005fid_007d_0029-180"><code>get_passphrase (</code><var>keypair_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-197"><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-get_005frevision_005fcert_005ftrust-_0028_0040var_007bsigners_007d_002c-_0040var_007bid_007d_002c-_0040var_007bname_007d_002c-_0040var_007bval_007d_0029-192"><code>get_revision_cert_trust (</code><var>signers</var><code>, </code><var>id</var><code>, </code><var>name</var><code>, </code><var>val</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fsystem_005flinesep-_0028_0029-200"><code>get_system_linesep ()</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-guess_005fbinary_0028_0040var_007bfilespec_007d_0029-207"><code>guess_binary(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-guess_005fbinary_0028_0040var_007bfilespec_007d_0029-204"><code>guess_binary(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-ignore_005fbranch-_0028_0040var_007bbranchname_007d_0029-186"><code>ignore_branch (</code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-185"><code>ignore_file (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-include_0028_0040var_007bscriptfile_007d_0029-208"><code>include(</code><var>scriptfile</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-includedir_0028_0040var_007bscriptpath_007d_0029-209"><code>includedir(</code><var>scriptpath</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-210"><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-211"><code>is_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-212"><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-213"><code>make_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-include_0028_0040var_007bscriptfile_007d_0029-205"><code>include(</code><var>scriptfile</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-includedir_0028_0040var_007bscriptpath_007d_0029-206"><code>includedir(</code><var>scriptpath</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-207"><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-208"><code>is_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-209"><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-210"><code>make_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-196"><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-mkstemp_0028_0040var_007btemplate_007d_0029-214"><code>mkstemp(</code><var>template</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-mkstemp_0028_0040var_007btemplate_007d_0029-211"><code>mkstemp(</code><var>template</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-mtn-_002d_002dbranch_003d_0040var_007bbranchname_007d-checkout-_0040var_007bdirectory_007d-5"><code>mtn --branch=</code><var>branchname</var><code> checkout </code><var>directory</var></a>: <a href="#Tree">Tree</a></li>
 <li><a href="#index-mtn-_002d_002dbranch_003d_0040var_007bbranchname_007d-co-_0040var_007bdirectory_007d-6"><code>mtn --branch=</code><var>branchname</var><code> co </code><var>directory</var></a>: <a href="#Tree">Tree</a></li>
 <li><a href="#index-mtn-_005b_002d_002dexecute_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-19"><code>mtn [--execute] drop </code><var>pathname...</var></a>: <a href="#Workspace">Workspace</a></li>
@@ -9372,14 +9407,14 @@ end
 <li><a href="#index-note_005fnetsync_005fpubkey_005freceived-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-177"><code>note_netsync_pubkey_received (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-175"><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-note_005fnetsync_005fstart-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bmy_005frole_007d_002c-_0040var_007bsync_005ftype_007d_002c-174"><code>note_netsync_start (</code><var>session_id</var><code>, </code><var>my_role</var><code>, </code><var>sync_type</var><code>,</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-218"><code>parse_basic_io(</code><var>data</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-215"><code>parse_basic_io(</code><var>data</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-persist_005fphrase_005fok-_0028_0029-183"><code>persist_phrase_ok ()</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-sleep_0028_0040var_007bseconds_007d_0029-215"><code>sleep(</code><var>seconds</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-216"><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-sleep_0028_0040var_007bseconds_007d_0029-212"><code>sleep(</code><var>seconds</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-213"><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-use_005finodeprints-_0028_0029-184"><code>use_inodeprints ()</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-190"><code>use_transport_auth (</code><var>uri</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-205"><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-wait_0028_0040var_007bpid_007d_0029-217"><code>wait(</code><var>pid</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-202"><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-wait_0028_0040var_007bpid_007d_0029-214"><code>wait(</code><var>pid</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
    </ul><div class="footnote">
 <hr>
 <a name="texinfo-footnotes-in-document"></a><h4>Fotnoter</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> We

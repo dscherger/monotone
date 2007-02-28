@@ -6,7 +6,7 @@
 <meta name="generator" content="makeinfo 4.8">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
-<link rel="prev" href="Inodeprints.html#Inodeprints" title="Inodeprints">
+<link rel="prev" href="Workspace-Collisions.html#Workspace-Collisions" title="Workspace Collisions">
 <link rel="next" href="Vars.html#Vars" title="Vars">
 <link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
 <meta http-equiv="Content-Style-Type" content="text/css">
@@ -27,12 +27,12 @@
 <p>
 <a name="Quality-Assurance"></a>
 Next:&nbsp;<a rel="next" accesskey="n" href="Vars.html#Vars">Vars</a>,
-Previous:&nbsp;<a rel="previous" accesskey="p" href="Inodeprints.html#Inodeprints">Inodeprints</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
 <hr>
 </div>
 
-<h3 class="section">3.6 Quality Assurance</h3>
+<h3 class="section">3.7 Quality Assurance</h3>
 
 <p>Monotone was constructed to serve both as a version control tool and
 as a quality assurance tool. The quality assurance features permit
@@ -48,10 +48,10 @@ each branch is a subgraph of the revision graph, containing only the
 nodes carrying a particular <code>branch</code> cert.
 
    <p>Many of monotone's operations involve searching the revision graph for
-the ancestors or descendents of a particular revision, or extracting
+the ancestors or descendants of a particular revision, or extracting
 the &ldquo;heads&rdquo; of a subgraph, which is the subgraph's set of nodes with
-no descendents. For example, when you run the <samp><span class="command">update</span></samp> command,
-monotone searches the subgraph consisting of descendents of the base
+no descendants. For example, when you run the <samp><span class="command">update</span></samp> command,
+monotone searches the subgraph consisting of descendants of the base
 revision of the current workspace, trying to locate a unique head to
 update the base revision to.
 
@@ -70,7 +70,7 @@ test, or testsuite.
 </ul>
 
    <p>The evaluation of trust is done on a cert-by-cert basis by calling a
-set of lua hooks: <code>get_revision_cert_trust</code>,
+set of Lua hooks: <code>get_revision_cert_trust</code>,
 <code>get_manifest_cert_trust</code> and <code>get_file_cert_trust</code>. These
 hooks are only called when a cert has at least one good signature from
 a known key, and are passed <em>all</em> the keys which have signed the

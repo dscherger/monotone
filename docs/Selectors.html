@@ -126,7 +126,7 @@ revision which has an <code>author</code> cert beginning with <code>graydon</cod
 <h3 class="heading">Selector expansion</h3>
 
 <p>Before selectors are passed to the database, they are expanded using a
-lua hook: <code>expand_selector</code>. The default definition of this hook
+Lua hook: <code>expand_selector</code>. The default definition of this hook
 attempts to guess a number of common forms for selection, allowing you
 to omit selector types in many cases. For example, the hook guesses
 that the typeless selector <code>jrh@example.org</code> is an author
@@ -139,8 +139,8 @@ source code of the hook, see <a href="Hook-Reference.html#Hook-Reference">Hook R
 <h3 class="heading">Expanding dates</h3>
 
 <p>All date-related selectors (<code>d</code>, <code>e</code>, <code>l</code>) support an
-english-like syntax similar to CVS.  This syntax is expanded to the
-numeric format by a lua hook: <code>expand_date</code>. 
+English-like syntax similar to CVS.  This syntax is expanded to the
+numeric format by a Lua hook: <code>expand_date</code>. 
 The allowed date formats are:
      <dl>
 <dt>now<dd>Expands to the current date and time. 

@@ -49,10 +49,10 @@ are taken.
 <dt><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code><a name="index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-173"></a><dd>
 Called by monotone after the version <var>new_id</var> is committed. The
 second parameter, <var>revision</var> is the text of the revision, what would
-be given by "monotone cat revision <var>new_id</var>". The
-third parameter, <var>certs</var>, is a lua table containing the set of
-certificate names and values committed along with this version. There
-is no default definition for this hook.
+be given by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. The third
+parameter, <var>certs</var>, is a Lua table containing the set of certificate
+names and values committed along with this version. There is no default
+definition for this hook.
 
      <p>Note that since the <var>certs</var> table does not contain cryptographic
 or trust information, and only contains one entry per cert name, it is
@@ -95,18 +95,17 @@ The include and exclude patterns used by the client.
      <br><dt><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-175"></a><dd>
 Called by monotone after the revision <var>new_id</var> is received through
 netsync. <var>revision</var> is the text of the revision, what would be given
-by "monotone cat revision <var>new_id</var>". <var>certs</var> is a lua table
-containing one subtable for each
-cert attached to the revision <var>new_id</var>. These subtables have fields
-named "key", "name", and "value", containing the signing key for the cert,
-the name of the cert, and the value of the cert. There is no default
-definition for this hook. 
+by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. <var>certs</var> is a
+Lua table containing one subtable for each cert attached to the revision
+<var>new_id</var>. These subtables have fields named "key", "name", and
+"value", containing the signing key for the cert, the name of the cert,
+and the value of the cert. There is no default definition for this hook. 
 <var>session_id</var> is used together with <code>note_netsync_start</code> and
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
      <br><dt><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-176"></a><dd>
-Called by monotone after a cert is received through netsync, iff the revision
+Called by monotone after a cert is received through netsync, if the revision
 that the cert is attached to was not also received in the same netsync
 operation. <var>rev_id</var> is the revision id that the cert is attached to,
 <var>key</var> is the key that the cert is signed with, <var>name</var> is the name
@@ -130,7 +129,7 @@ tracking, you can ignore that variable entirely.
 been called.  This hook would usually be used for post-netsync purposes,
 like collecting all the data from all other netsync notification hooks,
 make some nice output from them and finally send the result somewhere. 
-It could also be used to prepare parallell databases with all the data
+It could also be used to prepare parallel databases with all the data
 to be displayed through something like viewmtn.
 
      <p><var>status</var> is a three digit integer that tells whether there was an error,
@@ -494,7 +493,7 @@ same privileges, or be trusted for the same purposes (indeed, some
 signers might be automated robots, with very specific purposes).
 
    <p>These hooks allow the user to configure which signers will be trusted to
-make which kinds of assertions using certs. Monotone these certs when
+make which kinds of assertions using certs. Monotone uses these certs when
 selecting available revisions for commands such as <samp><span class="command">update</span></samp>.
 
    <p>Each user, or even each workspace, can have their own
@@ -616,7 +615,7 @@ be nil.
 
      <p>The default implementation of this hook calls the program <samp><span class="command">diff</span></samp>,
 and if <samp><span class="option">--diff-args</span></samp> were not passed, takes default arguments
-from the lua variable <code>external_diff_default_args</code>.  You can
+from the Lua variable <code>external_diff_default_args</code>.  You can
 override this variable in your configuration file, without overriding
 the whole hook.
 
@@ -626,7 +625,7 @@ the whole hook.
 
 <p>Monotone often needs to merge together the work of multiple distributed
 developers, and uses these hooks to help this process when the merge
-does not automatcally succeed.  Often these hooks will be used to invoke
+does not automatically succeed.  Often these hooks will be used to invoke
 an external interactive merge tool.
 
    <p>The <a href="Default-hooks.html#Default-hooks">Default hooks</a> include helper functions used by the hooks below
@@ -653,7 +652,7 @@ on.
 default definition of this hook delegates the actual merge to the
 result of <a href="get_005fpreferred_005fmerge3_005fcommand.html#get_005fpreferred_005fmerge3_005fcommand">get_preferred_merge3_command</a>.  The default definition
 of <a href="get_005fpreferred_005fmerge3_005fcommand.html#get_005fpreferred_005fmerge3_005fcommand">get_preferred_merge3_command</a> checks to see if the
-<samp><span class="env">MTN_MERGE</span></samp> environment variable, or the lua variable
+<samp><span class="env">MTN_MERGE</span></samp> environment variable, or the Lua variable
 <code>merger</code> are set to the name of a merge tool that it recognizes,
 and if not, then simply searches for whatever is installed on the
 local system.  For details, see the code in <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
@@ -695,76 +694,7 @@ expressions. For the default definition of this hook, see <a href="Default-hooks
 
    </dl>
 
-<h4 class="subsection">6.1.9 System Line and Character Conversions</h4>
-
-<p>Different operating systems vary in the character(s) used as line
-separators for text files, and in the character set (locale) used for
-filenames. These differences can become annoying when multiple
-developers on a project use different operating systems. Because so much
-of monotone depends on cryptographic checksums, it is often desirable
-that these differences are removed so that files are considered
-identical regardless of platform-specific representations. The hooks in
-this section allow the user to specify these equivalence and conversion
-rules.
-
-     <dl>
-<dt><code>get_system_linesep ()</code><a name="index-get_005fsystem_005flinesep-_0028_0029-200"></a><dd>
-Returns a string which defines the default system line separator. 
-This should be one of the strings <code>CR</code>, <code>LF</code>, or
-<code>CRLF</code>. The system line separator may be used when reading or
-writing data to the terminal, or otherwise interfacing with the user. 
-The system line separator is not used to convert files in the working
-copy; use <code>get_linesep_conv</code> for converting line endings in the
-workspace.
-
-     <p>This hook has no default definition. For more information on line
-ending conversion, see the section on <a href="Internationalization.html#Internationalization">Internationalization</a>.
-
-     <br><dt><code>get_linesep_conv (</code><var>filename</var><code>)</code><a name="index-get_005flinesep_005fconv-_0028_0040var_007bfilename_007d_0029-201"></a><dd>
-Returns a table which contains two strings. The first string in the
-return value is the name of a line ending convention to use for the
-&ldquo;internal&rdquo; representation of <var>filename</var>. The second string in
-the return value is the name of a line ending convention to use for
-the &ldquo;external&rdquo; representation of <var>filename</var>. Line ending
-conventions should be one of the strings <code>CR</code>, <code>LF</code>, or
-<code>CRLF</code>.
-
-     <p>When <var>filename</var> is read from the workspace, it is run through
-line ending conversion from the external form to the internal
-form. When <var>filename</var> is written to the workspace, it is run
-through line ending conversion from the internal form to the external
-form. <span class="sc">sha1</span> values are calculated from the internal form of
-<var>filename</var>. It is your responsibility to decide which line ending
-conversions your work will use.
-
-     <p>This hook has no default definition; monotone's default behavior is to
-keep external and internal forms byte-for-byte identical. For more
-information on line ending conversion, see the section on
-<a href="Internationalization.html#Internationalization">Internationalization</a>.
-
-     <br><dt><code>get_charset_conv (</code><var>filename</var><code>)</code><a name="index-get_005fcharset_005fconv-_0028_0040var_007bfilename_007d_0029-202"></a><dd>
-Returns a table which contains two strings. The first string in the
-return value is the name of a character set to use for the
-&ldquo;internal&rdquo; representation of <var>filename</var>. The second string in
-the return value is the name of a character set to use for the
-&ldquo;external&rdquo; representation of <var>filename</var>.
-
-     <p>When <var>filename</var> is read from the workspace, it is run through
-character set conversion from the external form to the internal
-form. When <var>filename</var> is written to the workspace, it is run
-through character set conversion from the internal form to the
-external form. <span class="sc">sha1</span> values are calculated from the internal
-form of <var>filename</var>. It is your responsibility to decide which
-character set conversions your work will use.
-
-     <p>This hook has no default definition; monotone's default behavior is to
-keep external and internal forms byte-for-byte identical. For more
-information on character set conversion, see the section on
-<a href="Internationalization.html#Internationalization">Internationalization</a>.
-
-   </dl>
-
-<h4 class="subsection">6.1.10 Attribute Handling</h4>
+<h4 class="subsection">6.1.9 Attribute Handling</h4>
 
 <p>Some files in a project are special; they may require different handling
 (such as binary or structured files that should always be manually
@@ -779,7 +709,7 @@ they're added, and for custom triggers to be invoked on each file
 according to its attributes when the workspace is changed.
 
      <dl>
-<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-203"></a><dd>
+<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-200"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_functions</code>, at table
 entry <var>attribute</var>, is a function taking a file name <var>filename</var>
@@ -802,7 +732,7 @@ attribute. Its definition is:
                 end
              end
      </pre>
-     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-204"></a><dd>
+     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-201"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_init_functions</code>, at
 table entry <var>attribute</var>, is a function taking a file (or
@@ -830,18 +760,18 @@ hook functions is called once for each file during an <dfn>add</dfn>.
                 end
              end
      </pre>
-     <p>The <code>binary_file</code> function is also defined as a lua hook. See
+     <p>The <code>binary_file</code> function is also defined as a Lua hook. See
 <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 
    </dl>
 
-<h4 class="subsection">6.1.11 Validation Hooks</h4>
+<h4 class="subsection">6.1.10 Validation Hooks</h4>
 
 <p>If there is a policy decision to make, Monotone defines certain hooks to
 allow a client to validate or reject certain behaviors.
 
      <dl>
-<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-205"></a><dd>
+<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-202"></a><dd>
 This hook is called after the user has entered his/her commit message. 
 <var>message</var> is the commit message that the user has entered and
 <var>revision_text</var> is the full text of the changes for this revision,

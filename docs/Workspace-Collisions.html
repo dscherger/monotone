@@ -1,0 +1,122 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Workspace Collisions - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Inodeprints.html#Inodeprints" title="Inodeprints">
+<link rel="next" href="Quality-Assurance.html#Quality-Assurance" title="Quality Assurance">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Workspace-Collisions"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Quality-Assurance.html#Quality-Assurance">Quality Assurance</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Inodeprints.html#Inodeprints">Inodeprints</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.6 Workspace Collisions</h3>
+
+<p>Sometimes when you work on a project, several people make similar
+changes in parallel.  When these changes occur in an existing file that
+is known to both sides, monotone can merge the edits when the two
+revisions meet (possibly after getting help to resolve content
+conflicts).  Other kinds of changes cannot be merged so readily,
+especially ones that involve files in your workspace that are not
+tracked by monotone.
+
+   <p>Workspace collisions can happen for many reasons; some examples include:
+     <ul>
+<li>You have a file in your workspace that is unknown to monotone (you
+have not <samp><span class="command">add</span></samp>ed it).  Someone else has <samp><span class="command">add</span></samp>ed and
+<samp><span class="command">commit</span></samp>ed a different file with the same name.  If you try to
+<samp><span class="command">update</span></samp> your workspace to their revision, the added file in the
+incoming revision will collide with your file over use of the name. 
+<li>There is a directory which contains both versioned and unversioned files
+(perhaps versioned sources, and unversioned object files built from the
+sources).  Someone else <samp><span class="command">commit</span></samp>s a revision that
+<samp><span class="command">drop</span></samp>s the versioned files <em>and</em> the containing
+directory.  If you try to <samp><span class="command">update</span></samp> to this revision, your
+directory will still contain the untracked files, and therefore cannot
+be deleted. 
+<li>You have an unversioned file in your workspace, and you're trying to
+<samp><span class="command">update</span></samp> to a revision that <samp><span class="command">add</span></samp>s a directory with the
+same name. 
+</ul>
+
+   <p>These examples describe collisions on <samp><span class="command">update</span></samp>; the same kinds
+of things can happen with other commands that can bring changes into
+your workspace, such as <samp><span class="command">checkout</span></samp> or <samp><span class="command">pluck</span></samp> too.
+
+   <p>Monotone is careful to avoid hitting such collisions. Before changing
+the workspace, it will try and detect the possibility of collisions, and
+the command will fail, warning you about the names that collide.  The
+file content in the database is safe and can be recovered at any time,
+so monotone is conservative and will refuse to destroy the information
+in your workspace contents.
+
+   <p>However, monotone cannot detect all kinds of failures and collisions in
+your workspace. For example:
+     <ul>
+<li>On some systems with case-insensitive and/or internationalised
+filesystems, names that look distinct to monotone may in fact be
+considered the same by the underlying platform. 
+<li>If some other program is creating files in the workspace at the same
+time as monotone, the colliding file might be created after the
+collision check at the start. 
+<li>Other kinds of unpredictable system errors, like permissions problems or
+disk full conditions, might cause failures when monotone is rearranging
+the workspace content. 
+</ul>
+
+   <p>These are all hopefully very rare occurrences. If such a filesystem
+error <em>does</em> cause a failure part-way during a workspace
+alteration, monotone will stop immediately rather than risk potentially
+doing further damage, and your workspace may be left in an incomplete
+state.  If this happens, you will need to resolve the issue and clean up
+the workspace manually.  If you need to do so, understanding how
+monotone manipulates the workspace is helpful.
+
+   <p>When monotone applies renaming changes to the workspace, each file is
+first <dfn>detached</dfn> from the workspace under its old name, then
+<dfn>attached</dfn> under the new name. This is done by moving it to the
+<samp><span class="file">_MTN/detached</span></samp> directory. Newly added files are created here
+before being moved into place, too.  While inside <samp><span class="file">_MTN/detached</span></samp>,
+the file or directory is named as a simple integer (these numbers come
+from monotone's internal identification of the node).  If the detached
+node is a directory, the directory is moved with all of its contents
+(including unversioned files); this can help identify which directory
+has been detached.
+
+   <p>If a previous workspace alteration failed part-way, the
+<samp><span class="file">_MTN/detached</span></samp> directory will still exist, and monotone will
+refuse to attempt another alteration while the workspace is in this
+inconsistent state. This also acts as a lock against multiple monotone
+processes performing workspace alterations (but not other programs).
+
+   <p>The best way to avoid a messy recovery from such a failure is simply to
+ensure that you always <samp><span class="command">commit</span></samp> before trying to
+<samp><span class="command">update</span></samp> (or <samp><span class="command">pluck</span></samp>, etc) other changes from the
+database into your workspace. This ensures that your current workspace
+contents are safely stored, and can be retrieved later (such as with
+<samp><span class="command">revert</span></samp>).
+
+   </body></html>
+

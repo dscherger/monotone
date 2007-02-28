@@ -201,7 +201,7 @@ One or more revision IDs, <var>rev1</var>, <var>rev2</var>, etc.
 0.1
 
           <br><dt><strong>Purpose:</strong><dd>
-Prints the descendents of one or more revisions.
+Prints the descendants of one or more revisions.
 
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
@@ -210,13 +210,13 @@ Prints the descendents of one or more revisions.
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
-Zero or more lines, each giving the ID of one descendent of the given
+Zero or more lines, each giving the ID of one descendant of the given
 revisions.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
 
           <p>The output does not include <var>rev1</var>, <var>rev2</var>, etc., except that if
-<var>rev2</var> is itself a descendent of <var>rev1</var>, then <var>rev2</var> will be
+<var>rev2</var> is itself a descendant of <var>rev1</var>, then <var>rev2</var> will be
 included in the output.
 
           <br><dt><strong>Error conditions:</strong><dd>
@@ -315,7 +315,7 @@ are no arguments, prints nothing.
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
-Zero or more lines, each giving the ID of one descendent of the given
+Zero or more lines, each giving the ID of one descendant of the given
 revisions.  Each line consists of a revision ID, in hexadecimal,
 followed by a newline.  The lines are printed in alphabetically sorted
 order.
@@ -407,7 +407,7 @@ None.
 Prints the leaves of the revision graph, i.e. all revision that have no
 children.  This is similar, but not identical to the functionality of
 <samp><span class="command">heads</span></samp>, which prints every revision in a branch, that has no
-descendents in that branch.  If every revision in the database was in
+descendants in that branch.  If every revision in the database was in
 the same branch, then they would be identical.  Generally, every leaf is
 the head of some branch, but not every branch head is a leaf.
 
@@ -437,7 +437,7 @@ None.
 
           <br><dt><strong>Purpose:</strong><dd>
 Prints all branch certs present in the revision graph, that are not
-excluded by the lua hook <code>ignore_branch</code>.
+excluded by the Lua hook <code>ignore_branch</code>.
 
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
@@ -467,7 +467,7 @@ If a branch pattern is given, prints all tags that are attached to
 revisions on branches matched by the pattern; otherwise prints all
 tags of the revision graph.
 
-          <p>If a branch name is ignored by means of the lua hook
+          <p>If a branch name is ignored by means of the Lua hook
 <code>ignore_branch</code>, it is neither printed, nor can it be matched by
 a pattern.
 
@@ -517,7 +517,7 @@ blank line. Values will be escaped, '\' to '\\' and '"' to '\"'.
           <p>Stanzas are printed in arbitrary order.
 
           <br><dt><strong>Error conditions:</strong><dd>
-A run-time exception occures if an illegal branch pattern is
+A run-time exception occurs if an illegal branch pattern is
 specified.
 
      </dl>
@@ -688,7 +688,7 @@ are not valid, detailed below.
           '   ' unchanged
           '  P' patched (contents changed)
           '  U' unknown (exists on the filesystem but not tracked)
-          '  I' ignored (exists on the filesystem but excluded by lua hook)
+          '  I' ignored (exists on the filesystem but excluded by Lua hook)
           '  M' missing (exists in the manifest but not on the filesystem)
           
           ' A ' added (invalid, add should have associated patch)
@@ -886,7 +886,7 @@ Allow multiple automate commands to be run from one instance of monotone.
 
           <p>The input is a series of commands. The command name plus arguments are
 provided as 'l' &lt;string&gt; [&lt;string&gt; ...] 'e', where &lt;string&gt; = &lt;size&gt; colon
-&lt;data&gt; . This may optionally be preceeded by a set of key=value pairs
+&lt;data&gt; . This may optionally be preceded by a set of key=value pairs
 (command options) as 'o' &lt;string&gt; &lt;string&gt; [&lt;string&gt; &lt;string&gt; ...] 'e', where
 strings come in pairs, key followed by value.
 

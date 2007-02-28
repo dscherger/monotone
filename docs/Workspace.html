@@ -66,7 +66,7 @@ any added entries inserted in its manifest.
 current location and adds it to your workspace's &ldquo;work list&rdquo;.  The
 changes are not reflected in your database until such time as you
 perform a commit.  If you use the <samp><span class="option">--no-respect-ignore</span></samp> flag,
-entries in .mtn-ignore will not be honoured.
+entries in .mtn-ignore will not be honored.
 
      <br><dt><samp><span class="command">mtn [--execute] drop </span><var>pathname...</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-19"></a><dt><samp><span class="command">mtn drop --missing</span></samp><a name="index-mtn-drop-_002d_002dmissing-20"></a><dd>This command places &ldquo;drop&rdquo; entries for the paths specified in
 <var>pathname...</var> in the workspace's &ldquo;work list&rdquo;. The work list of
@@ -210,7 +210,7 @@ fails, the update aborts, doing nothing. The stages are:
 
           <ul>
 <li>Examine the ancestry graph of revisions in your database, and (subject
-to trust evaluation) select the set of all descendents of your
+to trust evaluation) select the set of all descendants of your
 workspace's base revision. Call this set the &ldquo;candidates&rdquo; of the
 update. 
 <li>Remove any candidates which lack acceptable testresult
@@ -237,6 +237,9 @@ applied.
 tries to select the revision to update to from this branch.  The branch
 becomes the new default branch of the workspace (even if you also
 specify an explicit <samp><span class="option">--revision</span></samp> argument).
+
+     <p>When running <samp><span class="command">update</span></samp>, it is sometimes possible for
+<a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
      <br><dt><samp><span class="command">mtn pluck --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bto_007d-41"></a><dt><samp><span class="command">mtn pluck --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-42"></a><dd>
 This command takes changes made at any point in history, and attempts to
@@ -270,6 +273,9 @@ will do.  If you find yourself using <samp><span class="command">pluck</span></s
 consider carefully whether there is any way to change your workflow to
 reduce your need for <samp><span class="command">pluck</span></samp>ing.
 
+     <p>When running <samp><span class="command">pluck</span></samp>, it is sometimes possible for
+<a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
+
      <br><dt><samp><span class="command">mtn refresh_inodeprints</span></samp><a name="index-mtn-refresh_005finodeprints-43"></a><dd>This command puts the current workspace into <a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode,
 if it was not already, and forces a full inodeprints cache refresh. 
 After running this command, you are guaranteed that your workspace is
@@ -299,6 +305,9 @@ updates.
 
      <p>The use of <samp><span class="option">--execute</span></samp> with this command is strongly
 recommended, though not required.
+
+     <p>When running <samp><span class="command">pivot_root</span></samp>, it is sometimes possible for
+<a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
 </dl>
 

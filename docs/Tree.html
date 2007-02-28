@@ -70,7 +70,9 @@ these entries:
      </pre>
      <p>If you wish to <samp><span class="command">checkout</span></samp> in the current directory, you can
 supply the special name <samp><span class="file">.</span></samp> (a single period) for
-<var>directory</var>.
+<var>directory</var>. When running <samp><span class="command">checkout</span></samp> into an existing
+directory, it is sometimes possible for <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to
+occur.
 
      <p>If no <var>id</var> is provided, as in the latter two commands, you
 <em>must</em> provide a <var>branchname</var>; monotone will attempt to infer
@@ -84,17 +86,17 @@ will show up as a new head and thus a subsequent <samp><span class="command">mer
 incorporate the inverse of the disapproved changes in the other head(s).
 
      <p>Conceptually, <samp><span class="command">disapprove</span></samp>s contract is that disapprove(A) gives a
-revision B such that whenever B is merged with a descendent D of A the merge
+revision B such that whenever B is merged with a descendant D of A the merge
 will result in what D &ldquo;would have looked like&rdquo; if A had never happened.
 
      <p>Note that as a consequence of this contract the <samp><span class="command">disapprove</span></samp> command
 only works if <var>id</var> has exactly one ancestor, since it hasn't been
-worked out how to generate such a descendent in the multi-ancestor case.
+worked out how to generate such a descendant in the multi-ancestor case.
 
      <br><dt><samp><span class="command">mtn heads --branch=</span><var>branchname</var></samp><a name="index-mtn-heads-_002d_002dbranch_003d_0040var_007bbranchname_007d-8"></a><dd>This command lists the &ldquo;heads&rdquo; of <var>branchname</var>.
 
      <p>The &ldquo;heads&rdquo; of a branch is the set of revisions which are members of
-the branch, but which have no descendents. These revisions are
+the branch, but which have no descendants. These revisions are
 generally the &ldquo;newest&rdquo; revisions committed by you or your
 colleagues, at least in terms of ancestry. The heads of a branch may
 not be the newest revisions, in terms of time, but synchronization of
@@ -158,7 +160,7 @@ consequently into the branch that revision resides in).
 
      <p>If the given branch doesn't exist, it is created automatically.  If the
 branch already exists, any missing files are dropped and any unknown
-files are added before commiting.
+files are added before committing.
 
      <p>If <samp><span class="command">--dry-run</span></samp> is given, no commit is done. 
 </dl>

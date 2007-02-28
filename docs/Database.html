@@ -59,7 +59,7 @@ This command dumps an SQL statement representing the entire state of
 <var>dbfile</var> to the standard output stream. It is a very low-level
 command, and produces the most &ldquo;recoverable&rdquo; dumps of your database
 possible. It is sometimes also useful when migrating databases between
-variants of the underlying sqlite database format.
+variants of the underlying SQLite database format.
 
      <br><dt><samp><span class="command">mtn db load --db=</span><var>dbfile</var></samp><a name="index-mtn-db-load-_002d_002ddb_003d_0040var_007bdbfile_007d-128"></a><dd>
 This command applies a raw SQL statement, read from the standard input
@@ -216,9 +216,9 @@ certs attached to it.  It has an ugly name because it is a dangerous
 command; it permanently and irrevocably deletes historical information
 from your database.  There are a number of caveats:
           <ul>
-<li>It can only be applied to revisions that have no descendents.  If you
-want to kill a revision that has descendents, you must kill all of the
-descendents first. 
+<li>It can only be applied to revisions that have no descendants.  If you
+want to kill a revision that has descendants, you must kill all of the
+descendants first. 
 <li>It only removes the revision from your local database (hence the
 &ldquo;locally&rdquo; in the command name).  If you have already pushed this
 revision out to another database, then the next time you pull from that
