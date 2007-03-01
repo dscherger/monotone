@@ -10,7 +10,12 @@ commit()
  rev = base_revision()
 
 check(indir("subdir", mtn("rename", "foo", "foo-renamed")), 0, false, false)
+check(not exists("subdir/foo"))
+check(exists("subdir/foo-renamed"))
 check(indir("subdir", mtn("rename", "anotherdir", "../anotherdir-renamed")), 0, false, false)
+check(not exists("subdir/anotherdir"))
+check(exists("anotherdir-renamed/bar"))
+
 commit()
 
 check(mtn("checkout", "--revision", rev, "codir"), 0, false, false)
