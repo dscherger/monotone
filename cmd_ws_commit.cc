@@ -687,14 +687,63 @@ CMD(branch, N_("workspace"), N_("BRANCHNAME"),
   
   branch_name branch(idx(args, 0)());
   
-  // check if the branch cert is already known and refuse if this is right
-  // TODO!!
+  app.require_workspace();
+  
+  E(branch != app.opts.branchname,
+    F("branch of the current workspace is already set to %s") % branch);
+
+  std::set<branch_name> branches;
+  app.get_project().get_branch_list(branches);
+  
+  bool existing_branch = false;
+  for (set<branch_name>::const_iterator i = branches.begin();
+    i != branches.end(); ++i)
+    {
+        if (branch == *i)
+          {
+              existing_branch = true;
+              break;
+          }
+    }
+
+  // if this is an existing branch, check if this branch's head revs and
+  // the current workspace parent share any common ancestors, if not warn
+  // the user about it
+  if (existing_branch)
+    {
+        set<revision_id> revs, common_ancestors;
+        app.get_project().get_branch_heads(branch, revs);
+        
+        // FIXME: is there an easier way to just get the revids of the parent(s)
+        // of the current workspace?
+        revision_t work_rev;
+        app.work.get_work_rev(work_rev);
+        for (edge_map::iterator i = work_rev.edges.begin();
+            i != work_rev.edges.end(); i++)
+          {
+              revs.insert(i->first);
+          }
+        
+        app.db.get_common_ancestors(revs, common_ancestors);
+        
+        if (common_ancestors.size() == 0)
+          {
+            W(F("the new branch has no common ancestors with the current branch;\n"
+                "any next commit could therefor create two unmergable heads in\n"
+                "%s") % branch);
+          }
+    }
   
   // leave the other parameters empty so they won't get changed
   system_path path;
   rsa_keypair_id key;
   
   app.work.set_ws_options(path, branch, key, path);
+  
+  if (existing_branch)
+    P(F("next commit will use the existing branch %s") % branch);
+  else
+    P(F("next commit will use the new branch %s") % branch);
 }
 
 CMD(commit, N_("workspace"), N_("[PATH]..."),
