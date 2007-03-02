@@ -6,7 +6,7 @@ get("expected")
 writefile("empty", "")
 
 addfile("foo", "blah")
-check(mtn("commit", "--date=2005-05-21T12:30:51", "--branch=testbranch",
+check(mtn("commit", "--date=2005-05-21T12:30:51",
           "--message=blah-blah"), 0, false, false)
 base = base_revision()
 
