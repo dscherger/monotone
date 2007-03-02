@@ -8,8 +8,7 @@ addfile("input.txt", "version 0 of the file")
 check(get("hook.lua"))
 pass = "xyzzypassphrasexyzzy"
 check(mtn("genkey", "quux"), 0, false, false, string.rep(pass.."\n", 2))
-
-check(mtn("--branch=testbranch", "--debug", "commit", "-m", "foo",
+check(mtn("--debug", "commit", "-m", "foo",
           "--rcfile=hook.lua", "-k", "quux"), 0, false, true)
 
 check(not qgrep("xyzzypassphrasexyzzy", "stderr"))

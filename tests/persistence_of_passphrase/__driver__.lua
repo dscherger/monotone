@@ -9,7 +9,7 @@ check(mtn("add", "input.txt"), 0, false, false)
 
 writefile("input.txt", "version 1 of the file\n")
 
-check(mtn("--branch=testbranch", "--rcfile=persist.lua", "--message=blah-blah", "commit"), 0, false, false, "tester@test.net\n")
+check(mtn("--rcfile=persist.lua", "--message=blah-blah", "commit"), 0, false, false, "tester@test.net\n")
 
 tsha = base_revision()
 
