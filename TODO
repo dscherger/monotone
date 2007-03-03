@@ -41,3 +41,45 @@
    unsightly local fs repo, and make it easier for remote sides to use
    unusual representations (e.g., viewmtn could bake support in,
    backed against its real monotone db)... (more speculative)
+
+* pseudocode for idea of storage independent (safe?) transaction:
+
+   t.begin()
+	-- begin trans
+        storage.mkdir("_lock")
+   t.touchfile(a):
+	-- tell transaction that we replace this file
+        log.append("rollback_content " + a)
+        log_command.append("mv %s _lock", a)
+   t.appendfile(a):
+	-- tell transaction that we will append to this file
+        log.append("truncate_at + storage.filesize(a))
+
+   t.record(): 
+	-- record what will be done in this transaction
+        for cmd in log_command: storage.exec(a, "_lock")
+        storage.put("_lock/log", log)
+
+   t.commit()
+       drop evertyhng from _lock/*
+       drop _lock
+   t.rollback()
+       execute_rollback(get("_lock/%s" % log))
+       drop evertyhng from _lock/*
+       drop _lock
+
+use case will be:
+
+   put 100 files & append to 'appendable':
+
+try:
+  for a in files:
+      t.touchfile(a)
+  t.appendfile(appendable)
+  t.record()
+
+  doDangerousAndLenghtyThings(storage,files, appendable)
+
+  t.commit()
+finally:
+  t.rollback()
