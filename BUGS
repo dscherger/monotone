@@ -1,6 +1,10 @@
 Mini-mantis (tm) ;)
 
 NEW
+  2. When monotone asks for db migration script goes into infinite loop.
+     Seen on pre-0.33 database used with mtn 0.33
+     
+NEW 
   1. When pushing from Win32 to Unix by SFTP names with \ instead 
       are created on SFTP site:
 	-- /sample/
