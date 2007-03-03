@@ -1,0 +1,130 @@
+BEGIN EXCLUSIVE;
+CREATE TABLE branch_epochs
+	(
+	hash not null unique,         -- hash of remaining fields separated by ":"
+	branch not null unique,       -- joins with revision_certs.value
+	epoch not null                -- random hex-encoded id
+	);
+CREATE TABLE db_vars
+        (
+        domain not null,      -- scope of application of a var
+        name not null,        -- var key
+        value not null,       -- var value
+        unique(domain, name)
+        );
+CREATE TABLE file_deltas
+	(
+	id not null,      -- strong hash of file contents
+	base not null,    -- joins with files.id or file_deltas.id
+	delta not null,   -- compressed rdiff to construct current from base
+	unique(id, base)
+	);
+INSERT INTO file_deltas VALUES('3773dea65156909838fa6c22825cafe090ff8030','e81daec0385673562ae66971d78bfd91bb92c276',X'1f8b08000000000000fff35430e74acbcf57484a2ce2020048bc7d390c000000');
+CREATE TABLE files
+	(
+	id primary key,   -- strong hash of file contents
+	data not null     -- compressed contents of a file
+	);
+INSERT INTO files VALUES('135a1e01bae742c4a576b20fd41a683f6483ca43',X'1f8b08000000000000ff4bca49cc50480212005a5312f409000000');
+INSERT INTO files VALUES('e81daec0385673562ae66971d78bfd91bb92c276',X'1f8b08000000000000ffcb4b2d57282e294d4b0300f704a35b09000000');
+CREATE TABLE heights
+	(
+	revision not null,	-- joins with revisions.id
+	height not null,	-- complex height, array of big endian u32 integers
+	unique(revision, height)
+	);
+CREATE TABLE horizon_manifests
+        (
+        id not null,       -- revision id
+        manifest_with_ids, -- compressed, like a roster without markings
+        unique(id)
+        );
+INSERT INTO horizon_manifests VALUES('f3a4bd9a3014c594676792e16b4a62e5cb9e8547',X'1f8b080852acd4450203663361342e6d696400adce5d0ac2300c07f0f79da2f4044b3fd2ee2c2292b629167485ae787edd5490896fe629217ff24baeed4afd74e3b6943a0b097218c456a93421e53694c473ffdc0991cb8585acfdcc6d6de11914b1ce7dcd1e405b021e21103ba3a221eb30a8312703845e67345e4732faf8bef832f46f43fdcb305f46e7a5afdd5e600f89388eda5b74daa222469c1c24e7434e138430a9a81cee85c7ab77548c339f59010000');
+INSERT INTO horizon_manifests VALUES('02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc',X'1f8b08085dabd4450203303264632e6d696400658d5d0ac2301084df7b8a2527e8e667939e454436c90603da400c9e5f5a15a4ced30c33cc575abff3b83ca53f6a5b41a19a26d8956b07a5f650b3ace3b70328f526a0dab84adf2cbe8790da3ab6ed098d639419238bb73a59769ea29e4bb6c8144c211b4c626bcedfc70fc3fc31863cc6e68e04099859d26c82236f1c6916a2c563f62196bc608c8b4edad391a0d5f402d7aa2e67f5000000');
+INSERT INTO horizon_manifests VALUES('cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340',X'1f8b080819acd4450203636237622e6d696400ad8e5b0a02310c45ff6715a52b689bbe662d229269132ce8143ac5f5eb8c0f44f1cf7cdd90cb39e1daced80f176a4ba9b3905a0e83d8269726a4dc969269eeef3721b89c48c8da8fd4d6a8ef4591eadcd7ee4e83434d4a4f48c19a64d1053f19c5d96af411d8db08092dec9fc487037e3bccbf1cf6cbd169e96b92c30b0e214026f44e3b3faa314264f4c998685c4226352ae6a8407dc26f5f5e012cd73ed254010000');
+CREATE TABLE next_roster_node_number
+	(
+	node primary key        -- only one entry in this table, ever
+	);
+INSERT INTO next_roster_node_number VALUES('4');
+CREATE TABLE public_keys
+	(
+	hash not null unique,   -- hash of remaining fields separated by ":"
+	id primary key,         -- key identifier chosen by user
+	keydata not null        -- RSA public params
+	);
+INSERT INTO public_keys VALUES('46ec58576f9e4f34a9eede521422aa5fd299dc50','tester@test.net',X'30819f300d06092a864886f70d010101050003818d0030818902818100ba3f3f88bef3820c3ab337d5853bfcce8cbeecf5d5424bece7b3f2fd8d0da41df3565c5a1fe0672098cbb80df538b14ad1cf7f50c43954af110ebe621cf73dc336e21c6c5671ed4660f4359f7660e6bdb5bbf5b66554c788b9d0085306ba7ae5f5eb700ae6169c9aa25fb81e54edac1033da37ae7f096142e5780a33e504ed6b0203010001');
+CREATE TABLE revision_ancestry
+	(
+	parent not null,     -- joins with revisions.id
+	child not null,      -- joins with revisions.id
+	unique(parent, child)
+	);
+INSERT INTO revision_ancestry VALUES('19e52b0eb50c4fa1365a3140bf315b59339881e2','02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc');
+INSERT INTO revision_ancestry VALUES('d332d04ba9a52a560cc39ecfa68bcdae3d0c3cdb','02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc');
+INSERT INTO revision_ancestry VALUES('19e52b0eb50c4fa1365a3140bf315b59339881e2','cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340');
+INSERT INTO revision_ancestry VALUES('cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340','f3a4bd9a3014c594676792e16b4a62e5cb9e8547');
+INSERT INTO revision_ancestry VALUES('d332d04ba9a52a560cc39ecfa68bcdae3d0c3cdb','f3a4bd9a3014c594676792e16b4a62e5cb9e8547');
+INSERT INTO revision_ancestry VALUES('02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc','6a968810e289f83b4d906a5424d786bd20bd79bb');
+INSERT INTO revision_ancestry VALUES('f3a4bd9a3014c594676792e16b4a62e5cb9e8547','6a968810e289f83b4d906a5424d786bd20bd79bb');
+CREATE TABLE revision_certs
+	(
+	hash not null unique,   -- hash of remaining fields separated by ":"
+	id not null,            -- joins with revisions.id
+	name not null,          -- opaque string chosen by user
+	value not null,         -- opaque blob
+	keypair not null,       -- joins with public_keys.id
+	signature not null,     -- RSA/SHA1 signature of "[name@id:val]"
+	unique(name, id, value, keypair, signature)
+	);
+INSERT INTO revision_certs VALUES('1646c280c4e1ccfd148ce28a830af89fbd11760f','02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc','branch',X'746573746272616e6368','tester@test.net',X'36bba064e6874f5cb8591d2871523f4a517378cd87d72ba65f585b3af28945f62e4c723117ce34cd54afc41da21b67fe90d95c919c31e082e2f7a0fcaa5830071b4f9b9228f761554db0a0588acdb6aa4a45ef8cc4c4404b24cab0e4a4bd0633a83055744f575edee39eb15a51a111527187756065d80fba4fc4c79c6e526055');
+INSERT INTO revision_certs VALUES('225657724c4eb2cb88f977ce7f2fc9780a1d5479','02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc','changelog',X'6d65726765206f66202731396535326230656235306334666131333635613331343062663331356235393333393838316532270a2020202020616e64202764333332643034626139613532613536306363333965636661363862636461653364306333636462270a','tester@test.net',X'6315cae36de90fafd3ad25d8840bc1ad13ce6ca24da017f5249b8b1241a5e366f01b7f50354edfd11bf4eb5b6d49e8fef6637ad2b34ba8d085e00ff9df2d5fe090100417c61219fcf084335c8cbfd9baff59e2e403ef91bf699b882ad1cc3869b7d477d292e6d8e1c0b7f9376a92d97c69eb35105599c2af0d0e3871ab867e32');
+INSERT INTO revision_certs VALUES('5338be0f832b9621682db8d1dc5f83a823651cbd','02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc','date',X'323030372d30322d31335431303a33393a3136','tester@test.net',X'8fa08638feb4dc7e023ef9bacd45d01ee5ceaf83adf4f2b018a9777ba7266bef581db97bbdb1c664f6aacf269a34821be104779b667e85339752d4fd788b0d4db20d20161d0e40e6fb091fe671c236a5d7d9cbae9a74be683f5b7d35ad47a3fe28f859946eb9bc1a416c292713e11ec7850adc5722563663ce28d23818cd70d5');
+INSERT INTO revision_certs VALUES('6333581aa3bd6cec37df6108227aa8413db2ff63','02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc','author',X'74657374657240746573742e6e6574','tester@test.net',X'2273707c39604ecf81379c09d02daf4ff3a69ce1ea52e3ea001c459f6a2dc471d8e074a098c61867fb246c89a7eeae2e26617b991ef1da632a308b826167020cc7c425e9d83835abe3cf7cf0867ee56710b92c0ffd55b132b0ddf28fb73136f550e4fb661e740b55c38a4360851bf69c35a074ca58133b580527ea53dd07f344');
+INSERT INTO revision_certs VALUES('eb48dc6d57abe9f4f59c2656306e245e65bba65f','cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340','branch',X'746573746272616e6368','tester@test.net',X'61d8df8e450fb821033d3bc0aa4609b502ee8fd05d7bfac293f2b983450ac21cec953b0764ff95777d2766935f7b89e307dc2c6028aaa869c761901e5319495439e6d94bf193bb98e96ad013350dbe1dfa68070e3573fc81da03182dc6e63b5e526aa66800586ad1273919ce9430a9a27e083e5e0ea1722521b634901c2a1ac7');
+INSERT INTO revision_certs VALUES('31b164fa773b9ccda3929b49f21483fc966e0697','cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340','changelog',X'626c61682d626c61680a','tester@test.net',X'8c45a96f39cc71b1a98680faa2e4c2e8455ccc746835da6cdd3d359a6fdd5f71da222f7bca5605f8d6c8b239887621a9dbd2e082fc0144dc000da7eff84b77c8bbb334b95a6b0861ff0dd8ba695963deec00d35bc45cd0280938e11480497190da0468b81ca75d771aa879d9ea6cd0f6ea2461c4d184d63ee87d64c48126aca9');
+INSERT INTO revision_certs VALUES('d476e1ea41e45739b5f55a3222fd8b99fd487764','cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340','date',X'323030372d30322d31335431303a33393a3137','tester@test.net',X'6aeaa608752a9f15808ee06a6f8a6ac74ae68fac2e414355db7ce7e0d5eae0b2c2fd4ca136e8e1e73875f6237167ef8bdc03c3397318afd0893ffffcd8af6dabddb075a2cf4eb541f2d2d566bb5d3d94fcee58c5a72e61df23e57d3ff604fa5839375ca78ad461a783b33e802151909d8e59146473645bf62d2d233af1037218');
+INSERT INTO revision_certs VALUES('1a2a2c4a012e7673cd812789d4a8927813504f79','cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340','author',X'74657374657240746573742e6e6574','tester@test.net',X'47e0a4b61c81c9989adcd61fd90f003156b39627b8e67af29f132773c6063588c213e5038a8684e8c5d89503957fc688a26ce767c63f4ae364b4f73064c22609e56e03acff8088e2d840de9b1697491fdc8379d3ad50f5630a59de6b2fd06f9e251c14aa2ea200e0e8ef506a6678c39752e8485a6a4f5e00df55912ec571b202');
+INSERT INTO revision_certs VALUES('b0fcffe3ea80899008900c7c2455f77e275256c0','f3a4bd9a3014c594676792e16b4a62e5cb9e8547','branch',X'746573746272616e6368','tester@test.net',X'225427be658115093b7f9174f6ec31ef9b3fdf308ae7dd7d6cd9ef252f9829f13162cbb0c92fd4c8dcf1f37558efee1318abc21b2d4460b1ea05b659bcf34a2f04f968366e71ae00423c40fa08569a1afec5b3843f9d4c6074142489c20cc8f9c5011ccae2705d2ab98429ad23c7effb3fecfd26fa6a7b7a217d04706d1dfc69');
+INSERT INTO revision_certs VALUES('09fb89337e786d911ece3eb80288a0d4bea4c14a','f3a4bd9a3014c594676792e16b4a62e5cb9e8547','changelog',X'6578706c69636974206d65726765206f66202763623762346633626238616333626136356235626166326437646431613932383661336436333430270a2020202020202020202020202020616e64202764333332643034626139613532613536306363333965636661363862636461653364306333636462270a','tester@test.net',X'1963dd2b237de53b0c3c4c7fd9c71964cd154a83011490fd3647a9413d1c3c62ff293c4191f0f630959bc74647847c608dcec1cd489ca232ddb8a95fdc30f1389f16b949a26779f66ffba6d68f3de7dce89582ae51fb2fa80b9e952f9d37cedeefc32011ade677a863684b96c70519f5c61d1355855039fd6fd29448e28a4677');
+INSERT INTO revision_certs VALUES('9bf14f0f09316fcc4a7a92af9f35d27ab3b55232','f3a4bd9a3014c594676792e16b4a62e5cb9e8547','date',X'323030372d30322d31335431303a33393a3137','tester@test.net',X'23f57e48a9428c1e463912f9c866291ae5bcf90e2bb3c392024bd2e48cf78275fa01363f93863f22a20d8e89de0fef715cbdf9ae0d38250a468dfc7c3e8e3d35259a482ef448c6118c340f8948c270f42e20a3848d65b0b0f59a6a64c9355495af0b4b7ad2614abfbd940d9b56f5ccd95baeaef934c1a266b53de4f51e4576f3');
+INSERT INTO revision_certs VALUES('4798aa333d60ba9a4500bd175d8d9a8e0ab7e3a6','f3a4bd9a3014c594676792e16b4a62e5cb9e8547','author',X'74657374657240746573742e6e6574','tester@test.net',X'595dbeffcea3b7a8cc729e672069b81dbaf92c0d8a35fe01afa9ee176c4641f2deb876a6dc279fde1fe28a4257dbc021c446a95a95f449a3654bb50a81c7aefc762e5afc275c8a19820847d49e80bc7f6649971bfa71cf48967b30c454af4a9a8face6b9bafcb538a007ee188a8bf4dfc004b2111ca44c436fe55ff1116d46f6');
+INSERT INTO revision_certs VALUES('18e01ad5a86ac62a1733ece080d80ab07b1ba8d1','6a968810e289f83b4d906a5424d786bd20bd79bb','branch',X'746573746272616e6368','tester@test.net',X'1a91c46c54143615ea49b383a7e5d4a86de5f21391d6c8b7a864c4786bd7dd1fd8a6af0a28742de55b21765572bbf685d65759b4a8176f66cafcd5aa309b36a8eecc40a3d062c42124fccc4488ce880d7de3d84604d89256ca94bb810e49ebbea633062a64f11acdd226244ea3a91a2b28499f8a7254d0911f25e409bd881e05');
+INSERT INTO revision_certs VALUES('5caf241b73db3cb33f2be5fc541d6f04e4dc46ae','6a968810e289f83b4d906a5424d786bd20bd79bb','changelog',X'6d65726765206f66202730326463653361343536313662386632656266623366613637653237663563666465636164326263270a2020202020616e64202766336134626439613330313463353934363736373932653136623461363265356362396538353437270a','tester@test.net',X'39572b0c488540a37f2ca97b54addfb324373c92f57b4be28b7425143866cb18862214f8984b870ee2b93742df10cf481b2bcde3480446abed3e6cea19895d085112224d66996665f2e641cd3183fb62ab35f33687031ed8f295cbfceb7e8d87725187e881664fb1fbec4eb18166b14894e8384ac891ac044925f0007c2eb717');
+INSERT INTO revision_certs VALUES('8e0741816454f033979b30bf0ece4c1659e87b3a','6a968810e289f83b4d906a5424d786bd20bd79bb','date',X'323030372d30322d31335431303a33393a3137','tester@test.net',X'49bb8ef93861d33a833078cc14dc36516631fa98252aaa259949f9a01292d7754e13cc2e7cdd4133bd24d8c4a710c2f79d2bb9b9c2fa880b7aab1e46de6d0c2b953f6ac2a8f266093329641def35d507cd31626e1c75fd44be148159179df60a4f8cf90003daf501d51f14261a84fd2525f77ad59bf1994810940d7b3fe1a99b');
+INSERT INTO revision_certs VALUES('8033e0e66d3b2cbe85bbd643fcde66ec74b75023','6a968810e289f83b4d906a5424d786bd20bd79bb','author',X'74657374657240746573742e6e6574','tester@test.net',X'1356c4df0cc73a8b724d53a7138473ea6841bf64b0e00a3d199d68080c28a07b27febfe6df7667a37fd197da1b4f6c5e5fa7baac4b02dec3cd1e5674a0001edf45e5aee8c16231dc1adf46b6687e2a0495c5cfa1db01490fbeead1d6b674a97ac1bd760ea7238f8c3ffe94a672b67ec9b80b511a760ed9a0de7766350034b2f7');
+CREATE TABLE revisions
+	(
+	id primary key,      -- SHA1(text of revision)
+	data not null        -- compressed, encoded contents of a revision
+	);
+INSERT INTO revisions VALUES('02dce3a45616b8f2ebfb3fa67e27f5cfdecad2bc',X'1f8b08000000000000ff6590416ec3300c04ef7e85e01790a225516f090283a428c4406217ae917ebf4aaf3d710fdc9dc5f6e37cc9b5befdfcde8e3dcc384fd3ee3feb4bf6adfbf7156e05522a892b2b5514f7acc654a8a94a4ea0ce344e45be4fd3f16cebe9efed2fea86d55354704d604b171c7f42b88076c2a4a9125566f4388c5f72d923ccd700f6ede9f314fa79bcc28dca00f9e060ca152a1377c91623c764d21d2af4ce40709f4208d7116eced8c40d88532e947214cfb9166c85b5b78aaa355a2cf95fd946141b2c2a55529494c18caadbc0b1da88a40646d67418a5b5f5d332ccc7f5f0f323c76ac18efdf27d0c8694041d50c5cb126d9154b246e86dc191463d2f4c260bdda75f81e1c6ad7d010000');
+INSERT INTO revisions VALUES('cb7b4f3bb8ac3ba65b5baf2d7dd1a9286a3d6340',X'1f8b08000000000000ff1d8e418ac3300c00ef7e45c80b2cc976ecb7941224596203ad0d6968bfbfddbdcd6586f1793ef9dadf76be8e399615d610867df6278fc3ed752db7dc2ab64daa47691ad57b84120551b56056b206a206e8f710e6a3efa7bd8fffd40d9a65946892a32667a09299204571822cb911b55ac1f02b72efbb1f0f5bd679fdd8f987b88645e7b86c7c1f8032834510b62da126ce5b118cde1370a9e42555524e740fbfbc0d5a7ad0000000');
+INSERT INTO revisions VALUES('f3a4bd9a3014c594676792e16b4a62e5cb9e8547',X'1f8b08000000000000ff9d903b6ec33010447b9d82d009482eb924cf6204c2fe080bb0a540169ceb874a9b54e9a6796f06d3f7e349e7f2b6e3b5ee9b9bc33c4d9b7d2d4fdad66eafd3ddcc2b352cbe62a7de62ca924a934cd12a22d7d63037300f1fd3b43f7439ecbdfea86ec2855307e64a024c983933f5a84535508b15091421f9017ed22977379fa3b0af0f9b27d78ffde96e500aa80d34646cbe55a89d5062ac310b75f3cdf75e3d0c8573eedcc7d81a944c3cd48c05324632c4568296ca5d5b606e5162c15f631520aa4f4c8d72a48c5e049ac9a8ab2c4309ea05447980a4ba5c2bddbc9f773bae385e73b26fa76de3b0009982f9c064254549940b72f45d531836e8982a08a5ebb03f54f17faa6f67f49b2cc8010000');
+INSERT INTO revisions VALUES('6a968810e289f83b4d906a5424d786bd20bd79bb',X'1f8b08000000000000ff658e418ec3200c45f79c22ca09c0180367a9aac8185b8dd412298d3ad71f66b6ddfdc5ffef3f3bce175fdb47cff77e8c650dab73437fb6178fddf47d2d37f59d2b655fc8d82a6012cc55128316a2566aa554a3fa7877ee78f6edd4cffe8fba79e8a2913151983d036dd6a23165856c49acab70872673c8bd6fb63f75598feba1e75f84d52d728c4bc774083171501f1a6b4610e494a981b78e81a944232c5118bf1d6cfeb75e39fa80922a52a65c41a71032812669554bc27c77bf4086f82509010000');
+CREATE TABLE roster_deltas
+	(
+	id primary key,         -- a revision id
+	checksum not null,      -- checksum of 'delta', to protect against disk corruption
+	base not null,          -- joins with either rosters.id or roster_deltas.id
+	delta not null          -- rdiff to construct current from base
+	);
+CREATE TABLE rosters
+	(
+	id primary key,         -- a revision id
+	checksum not null,      -- checksum of 'data', to protect against disk corruption
+	data not null           -- compressed, encoded contents of the roster
+	);
+CREATE TABLE sentinels
+        (
+        id not null,  -- revision id of just missing nodes
+        unique(id)
+        );
+INSERT INTO sentinels VALUES('c9e76c041a3395aa0bea1fa8924d1b7c86d2a13a');
+INSERT INTO sentinels VALUES('d332d04ba9a52a560cc39ecfa68bcdae3d0c3cdb');
+INSERT INTO sentinels VALUES('19e52b0eb50c4fa1365a3140bf315b59339881e2');
+CREATE INDEX revision_ancestry__child ON revision_ancestry (child);
+CREATE INDEX revision_certs__id ON revision_certs (id);
+CREATE INDEX revision_certs__name_value ON revision_certs (name, value);
+PRAGMA user_version = 1598903374;
+COMMIT;
