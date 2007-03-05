@@ -925,6 +925,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     }
     boost::shared_ptr<mtn_automate::cset> cs=j->second;
     cvs_manifest parent_manifest=get_files(*parent);
+    std::map<split_path, file_id> renamed_ids;
 
     for (path_set::const_iterator i=cs->nodes_deleted.begin();
             i!=cs->nodes_deleted.end(); ++i)
@@ -956,7 +957,14 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       a=commit_arg(); // add
       a.file=file_path(i->second).as_internal();
       I(!old->second->sha1sum.inner()().empty());
-      a.new_content=app.get_file(old->second->sha1sum).inner()();
+      std::map<split_path, std::pair<file_id, file_id> >::const_iterator change_ent =
+          cs->deltas_applied.find(i->second);
+      if (change_ent != cs->deltas_applied.end())
+        // the file content is going to change - handle that little detail now...
+        renamed_ids[i->second] = change_ent->second.second;
+      else
+        renamed_ids[i->second] = old->second->sha1sum;
+      a.new_content=app.get_file(renamed_ids[i->second]).inner()();
       commits.push_back(a);
       L(FL("rename to %s %d\n") % a.file % a.new_content.size());
     }
@@ -991,6 +999,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
             i=cs->deltas_applied.begin();
             i!=cs->deltas_applied.end(); ++i)
     { 
+      if (renamed_ids.find(i->first) != renamed_ids.end())
+        continue; // a renamed file that's already been added with the correct contents
       commit_arg a;
       a.file=file_path(i->first).as_internal();
 //      if (a.file==".mtn-sync-"+app.opts.domain()) continue;
@@ -1044,8 +1054,14 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
         }
         else // newly added?
         { std::map<split_path, file_id>::const_iterator myadd=cs->files_added.find(sp);
-          I(myadd!=cs->files_added.end());
-          fs.sha1sum=myadd->second;
+          if (myadd!=cs->files_added.end())
+          { fs.sha1sum=myadd->second;
+          }
+          else  // renamed?
+          { std::map<split_path, file_id>::const_iterator myrename=renamed_ids.find(sp);
+            I(myrename!=renamed_ids.end());
+            fs.sha1sum=myrename->second;
+          }
         }
         std::pair<std::set<file_state>::iterator,bool> newelem=
             files[i->first].known_states.insert(fs);
