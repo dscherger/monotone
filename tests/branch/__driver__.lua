@@ -21,5 +21,30 @@ check(qgrep("the new branch new_branch", "stderr"))
 check(mtn("branch", "testbranch"), 0, false, true)
 check(qgrep("the existing branch testbranch", "stderr"))
 
--- TODO: check for the divergence warning
+-- check if branch issues a warning if we're trying to change the
+-- branch to a branch with an entirely independent base
+check(mtn("automate", "put_file", "blablabla"), 0, true, false)
+canonicalize("stdout")
+fileid = string.sub(readfile("stdout"), 0, -2)
+rev = [[
+format_version "1"
+
+new_manifest [0000000000000000000000000000000000000000]
+
+old_revision []
+
+add_dir ""
+
+add_file "bla"
+]]
+
+rev = rev .. "content [" .. fileid .. "]\n"
+
+check(mtn("automate", "put_revision", rev), 0, true, false)
+canonicalize("stdout")
+revid = string.sub(readfile("stdout"), 0, -2)
+check(mtn("automate", "cert", revid, "branch", "other_branch"), 0, false, false)
+
+check(mtn("branch", "other_branch"), 0, false, true)
+check(qgrep("two unmergable heads", "stderr"))
 
