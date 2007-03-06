@@ -6,7 +6,7 @@ revs = {}
 
 writefile("testfile", "some data")
 check(mtn2("add", "testfile"), 0, false, false)
-check(mtn2("commit", "--message=foo", "--branch=testbranch"), 0, false, false)
+check(mtn2("commit", "--message=foo"), 0, false, false)
 revs[0] = base_revision()
 
 netsync.push("testbranch")
@@ -19,7 +19,8 @@ check(mtn("list", "epochs"), 0, true, false)
 rename("stdout", "orig-epochs")
 writefile("otherfile", "other data")
 check(mtn2("add", "otherfile"), 0, false, false)
-check(mtn2("commit", "--message=foo", "--branch=otherbranch"), 0, false, false)
+check(mtn2("branch", "otherbranch"), 0, false, false)
+check(mtn2("commit", "--message=foo"), 0, false, false)
 -- Run an irrelevant netsync, just to force epochs to be regenerated
 srv = netsync.start(2)
 srv:sync("otherbranch", 3)
@@ -32,7 +33,7 @@ check(samefile("orig-epochs", "new-epochs"))
 check_different_stdout{"list", "epochs"}
 
 writefile("testfile", "new version of data")
-check(mtn2("commit", "--message=foo", "--branch=testbranch"), 0, false, false)
+check(mtn2("commit", "--message=foo"), 0, false, false)
 revs[1] = base_revision()
 
 -- change the epochs in the second db

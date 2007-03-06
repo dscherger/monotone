@@ -10,7 +10,7 @@ writefile("bleh", "bleh file")
 -- produce root
 rename("foo1", "foo")
 check(mtn("add", "foo"), 0, false, false)
-check(mtn("--branch=testbranch", "commit", "--message=root"), 0, false, false)
+check(mtn("commit", "--message=root"), 0, false, false)
 root_r_sha=base_revision()
 root_f_sha=sha1("foo")
 
