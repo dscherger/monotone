@@ -7,8 +7,12 @@ check(mtn("commit", "-bfoo"), 1, false, false)
 commit()
 
 -- check parameter checking
-check(mtn("branch"), 2, false, false)
 check(mtn("branch", "foo", "bar"), 2, false, false)
+
+-- check if branch w/o parameters returns the current branch
+check(mtn("branch"), 0, true, false)
+canonicalize("stdout")
+check(readfile("stdout") == "testbranch\n")
 
 -- check if the workspace is already set to the existing branch
 check(mtn("branch", "testbranch"), 1, false, true)

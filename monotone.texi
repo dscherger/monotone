@@ -4363,11 +4363,12 @@ attributes on @var{src} to @var{dst}; see @ref{File Attributes} for more
 details, and, unless the @option{--bookkeep-only} option is supplied, it
 will rename the files immediately in the filesystem.
 
-@item mtn branch @var{branchname}
+@item mtn branch [@var{branchname}]
 
-This command changes the branch name of your current workspace. It does that
-by overwriting any previous branch setting in @file{_MTN/options} so that its
-guaranteed that the next commit gets this new branch as cert attached.
+This command displays the branch name of the current workspace or changes the 
+branch name of your current workspace. It does the latter by overwriting any 
+previous branch setting in @file{_MTN/options} so that its guaranteed that the 
+next commit gets this new branch as cert attached.
 
 Please note that you can't set a branch name which already exists in your
 database. To rebase your workspace to a different branch, please use the 

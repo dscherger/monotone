@@ -692,15 +692,22 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
     throw usage(name);
 }
 
-CMD(branch, N_("workspace"), N_("BRANCHNAME"), 
-    N_("changes the branch of the current workspace"), options::opts::none)
+CMD(branch, N_("workspace"), N_("[BRANCHNAME]"), 
+    N_("changes the branch of the current workspace or "
+       "displays the current branch"), options::opts::none)
 {
-  if (args.size() != 1)
+  if (args.size() > 1)
     throw usage(name);
   
-  branch_name branch(idx(args, 0)());
-  
   app.require_workspace();
+  
+  if (args.size() == 0)
+    {
+      cout << app.opts.branchname << '\n';
+      return;
+    }
+    
+  branch_name branch(idx(args, 0)());
   
   E(branch != app.opts.branchname,
     F("branch of the current workspace is already set to %s") % branch);
