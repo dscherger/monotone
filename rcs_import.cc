@@ -1158,15 +1158,15 @@ public:
   template < class Edge, class Graph >
   void back_edge(Edge e, Graph & g)
     {
-      if (cycle_members.empty())
+      if (!cycle_members.empty())
         return;
 
       L(FL("blob_splitter: back edge: %s") % e);
 
       if (e.m_source == e.m_target)
         {
-          // split that single blob
-          L(FL("would split a single blob: %d") % e.m_source);
+          // The cycle consists of only one blob - we have to solve an
+          // intra blob dependency.
           cycle_members.insert(e.m_source);
         }
       else
@@ -1196,7 +1196,6 @@ public:
                 break;
 
               cycle_members.insert(*ity);
-              L(FL("   adj vertex: %s is %d") % *ity % colormap[*ity]);
               ci = *ity;
 
               limit--;
@@ -1297,6 +1296,41 @@ add_blob_dependency_edges(cvs_history & cvs,
     }
 }
 
+/*
+ * single blob split points: search only for intra-blob dependencies
+ * and return split points to resolve these dependencies.
+ */
+vector< pair<time_t, time_t> >
+get_split_points(cvs_history & cvs, cvs_blob_index bi)
+{
+  cvs_blob & blob = cvs.blobs[bi];
+
+  vector< pair<time_t, time_t> > result_set;
+
+  for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+    {
+      cvs_event_ptr ev = *i;
+
+      for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+        {
+          cvs_event_ptr dep = *j;
+
+          if (dep->get_digest() == blob.get_digest())
+            {
+              I(ev->time > dep->time);
+              L(FL("event time: %d  - dep time: %d") % ev->time % dep->time);
+              result_set.push_back(make_pair(dep->time, ev->time));
+            }
+        }
+    }
+
+  return result_set;
+}
+
+void
+split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
+              time_t split_point, Graph & g);
+
 void
 split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
             Graph & g)
@@ -1304,75 +1338,70 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
   cvs_blob_index blob_to_split;
 
   /* shortcut for intra blob dependencies */
+  I(cycle_members.size() > 0);
   if (cycle_members.size() == 1)
-    blob_to_split = *cycle_members.begin();
+    {
+      L(FL("should split blob %d") % *cycle_members.begin());
+      blob_to_split = *cycle_members.begin();
+
+      vector< pair< time_t, time_t > > split_points =
+        get_split_points(cvs, *cycle_members.begin());
+
+      for (vector< pair< time_t, time_t > >::const_iterator i = split_points.begin();
+           i != split_points.end(); ++i)
+        {
+          time_t split_point = i->second - ((i->second - i->first) / 2);
+          L(FL("splitting blob between %d and %d (at %d)") % i->first % i->second % split_point);
+
+          split_blob_at(cvs, *cycle_members.begin(), split_point, g);
+        }
+    }
   else
     {
       L(FL("choosing a blob to split"));
+      for (set< cvs_blob_index >::const_iterator i = cycle_members.begin();
+           i != cycle_members.end(); ++i)
+        {
+          L(FL("  testing blob %d") % *i);
+        }
+
+      L(FL("splitting a cycle with multiple blobs involved is not yet implemented, sorry!"));
+      I(false);
     }
 }
 
 void
-split_blobs_at(cvs_history & cvs,
-               const Edge & e, Graph & g)
+split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
+              time_t split_point, Graph & g)
 {
-  L(FL("splitting at edge: %d -> %d") % e.first % e.second);
-
-  cvs_event_digest target_blob_digest(cvs.blobs[e.second].get_digest());
-
-  // FIXME:
-  // we can only split commit events, not branches or tags
-  I(target_blob_digest.is_commit());
-
-  vector< cvs_event_ptr > blob_events(cvs.blobs[e.second].get_events());
+  vector< cvs_event_ptr > blob_events(cvs.blobs[bi].get_events());
 
   // sort the blob events by timestamp
   sort(blob_events.begin(), blob_events.end());
 
-  // now detect the largest gap between any two events
-  time_t max_diff = 0;
-  blob_event_iter max_at = blob_events.begin();
-
-  blob_event_iter i, last;
-  i = blob_events.begin();
-  last = i;
-  i++;
-  for ( ; i != blob_events.end(); ++i)
-    {
-      time_t diff = (*i)->time - (*last)->time;
-
-      if (diff > max_diff)
-        {
-          max_diff = diff;
-          max_at = i;
-        }
-
-      last = i;
-    }
-
-  L(FL("max. time difference is: %d") % max_diff);
-
   // add a blob
-  cvs_event_digest d = cvs.blobs[e.second].get_digest();
-  cvs_blob_index new_blob = cvs.add_blob(d)->second;
+  cvs_event_digest d = cvs.blobs[bi].get_digest();
+  cvs_blob_index new_bi = cvs.add_blob(d)->second;
 
   // reassign all events and split into the two blobs
-  cvs.blobs[e.second].get_events().clear();
+  cvs.blobs[bi].get_events().clear();
   I(!blob_events.empty());
-  I(cvs.blobs[e.second].empty());
+  I(cvs.blobs[bi].empty());
+  I(cvs.blobs[new_bi].empty());
 
-  for (i = blob_events.begin(); i != blob_events.end(); ++i)
-    if ((*i)->time >= (*max_at)->time)
-      cvs.blobs[new_blob].push_back(*i);
+  for (blob_event_iter i = blob_events.begin(); i != blob_events.end(); ++i)
+    if ((*i)->time >= split_point)
+      cvs.blobs[new_bi].push_back(*i);
     else
-      cvs.blobs[e.second].push_back(*i);
+      cvs.blobs[bi].push_back(*i);
+
 
   {
     // in edges, blobs which depend on this one blob we should split
     pair< boost::graph_traits<Graph>::in_edge_iterator,
           boost::graph_traits<Graph>::in_edge_iterator > range;
 
-    range = in_edges(e.second, g);
+    range = in_edges(bi, g);
 
     vector< cvs_blob_index > in_deps_from;
 
@@ -1382,13 +1411,13 @@ split_blobs_at(cvs_history & cvs,
       {
         L(FL("removing in edge %s") % *ity);
         in_deps_from.push_back(ity->m_source);
-        I(ity->m_target == e.second);
+        I(ity->m_target == bi);
       }
 
     // remove all those edges
     for (vector< cvs_blob_index >::const_iterator ity = in_deps_from.begin();
          ity != in_deps_from.end(); ++ity)
-          remove_edge(*ity, e.second, const_cast<Graph &>(g));
+          remove_edge(*ity, bi, const_cast<Graph &>(g));
 
     // now check each in_deps_from blob and add proper edges to the
     // newly splitted blobs
@@ -1406,17 +1435,17 @@ split_blobs_at(cvs_history & cvs,
 
               if ((*ob_dep)->get_digest() == d)
               {
-                if ((*ob_dep)->time >= (*max_at)->time)
+                if ((*ob_dep)->time >= split_point)
                 {
-                  // L(FL("adding new edge %d -> %d") % *ity % new_blob);
-                  if (!boost::edge(*ity, new_blob, g).second)
-                    add_edge(*ity, new_blob, const_cast<Graph &>(g));
+                  // L(FL("adding new edge %d -> %d") % *ity % new_bi);
+                  if (!boost::edge(*ity, new_bi, g).second)
+                    add_edge(*ity, new_bi, const_cast<Graph &>(g));
                 }
                 else
                 {
-                  // L(FL("keeping edge %d -> %d") % *ity % new_blob);
-                  if (!boost::edge(*ity, e.second, g).second)
-                    add_edge(*ity, e.second, const_cast<Graph &>(g));
+                  // L(FL("keeping edge %d -> %d") % *ity % new_bi);
+                  if (!boost::edge(*ity, bi, g).second)
+                    add_edge(*ity, bi, const_cast<Graph &>(g));
                 }
               }
           }
@@ -1429,7 +1458,7 @@ split_blobs_at(cvs_history & cvs,
     pair< boost::graph_traits<Graph>::out_edge_iterator,
           boost::graph_traits<Graph>::out_edge_iterator > range;
 
-    range = out_edges(e.second, g);
+    range = out_edges(bi, g);
 
     // remove all existing out edges
     for (boost::graph_traits<Graph>::out_edge_iterator ity = range.first;
@@ -1439,8 +1468,8 @@ split_blobs_at(cvs_history & cvs,
         remove_edge(ity->m_source, ity->m_target, const_cast<Graph &>(g));
       }
 
-    add_blob_dependency_edges(cvs, e.second, const_cast<Graph &>(g));
-    add_blob_dependency_edges(cvs, new_blob, const_cast<Graph &>(g));
+    add_blob_dependency_edges(cvs, bi, const_cast<Graph &>(g));
+    add_blob_dependency_edges(cvs, new_bi, const_cast<Graph &>(g));
   }
 }
 
@@ -1556,7 +1585,7 @@ resolve_blob_dependencies(cvs_history &cvs,
   set< cvs_blob_index > cycle_members;
   blob_splitter< Edge, ColorMap > vis(cvs, cycle_members, colormap);
 
-  do
+  while (1)
   {
     if (global_sanity.debug)
       {
@@ -1569,12 +1598,13 @@ resolve_blob_dependencies(cvs_history &cvs,
     cycle_members.clear();
     depth_first_search(g, vis, colorpmap);
 
-    L(FL("cycle to break: "));
-    for (set<cvs_blob_index>::iterator bi = cycle_members.begin(); bi != cycle_members.end(); ++bi)
-      L(FL("  m: %d") % *bi);
-
-    split_cycle(cvs, cycle_members, g);
-  } while (!cycle_members.empty());
+    // If we have a cycle, go split it. Otherwise we don't have any
+    // cycles left and can proceed.
+    if (!cycle_members.empty())
+      split_cycle(cvs, cycle_members, g);
+    else
+      break;
+  };
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
