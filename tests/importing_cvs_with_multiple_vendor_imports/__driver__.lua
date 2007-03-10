@@ -13,12 +13,18 @@ check(mtn("list", "branches"), 0, true, false)
 check(samelines("stdout", {"test", "test.VendorA", "test.VendorB"}))
 
 check(mtn("checkout", "--branch=test", "maindir"), 0, false, false)
+check(indir("maindir", mtn("list", "known")), 0, true, false)
+check(samelines("stdout", {"fileA", "fileB", "fileC"}))
 check(samelines("maindir/fileA", {"fileA from VendorA"}))
 check(samelines("maindir/fileB", {"fileB from VendorB"}))
 check(samelines("maindir/fileC", {"our own additions"}))
 
 check(mtn("checkout", "--branch=test.VendorA", "vendorA_co"), 0, false, false)
+check(indir("vendorA_co", mtn("list", "known")), 0, true, false)
+check(samelines("stdout", {"fileA"}))
 check(samelines("vendorA_co/fileA", {"fileA from VendorA - changed"}))
 
 check(mtn("checkout", "--branch=test.VendorB", "vendorB_co"), 0, false, false)
+check(indir("vendorB_co", mtn("list", "known")), 0, true, false)
+check(samelines("stdout", {"fileB"}))
 check(samelines("vendorB_co/fileB", {"fileB from VendorB - changed"}))
