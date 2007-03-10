@@ -54,10 +54,6 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h sys/file.h \
 		 [AC_INCLUDES_DEFAULT()])
 AC_HEADER_STDBOOL
 AX_CREATE_STDINT_H(mt-stdint.h)
-# gettext is nominally a library, but its tests don't work in C++ mode.
-AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION(0.11.5)
-AM_ICONV
 AC_PROG_XGETTEXT_FLAG_OPTION
 # similarly, this calls ACX_PTHREAD, which expects C.
 BOOST_THREAD_STUBS
@@ -86,6 +82,9 @@ AC_OUTPUT_COMMANDS([
 ])
 
 AC_LANG([C++])
+PG_NLS_FRAMEWORK
+PG_ICONV
+PG_GETTEXT
 # This header may not be visible to the C compiler.
 AC_CHECK_HEADERS([cxxabi.h],,, [AC_INCLUDES_DEFAULT()])
 
