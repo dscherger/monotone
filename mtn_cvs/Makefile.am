@@ -24,3 +24,13 @@ pipetest: mtn_pipe.cc
 testlinks:
 	cd tests ; ln -sf ../../tests/common ../../tests/min_hooks.lua \
 		../../tests/test_hooks.lua ../../tests/test_keys .
+
+TESTS = run_lua_tests
+TESTS_ENVIRONMENT=AUTOTEST_PATH="."
+
+run_lua_tests: Makefile
+	echo '#!/bin/sh' > $@ ; \
+	echo 'PATH=$(top_builddir):$$PATH' >> $@ ; \
+	echo 'exec $(top_builddir)/tester $(srcdir)/testsuite.lua "$$@"' >> $@ ; \
+	chmod 755 $@
+
