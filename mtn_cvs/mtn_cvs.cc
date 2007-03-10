@@ -94,6 +94,8 @@ outdated_indicator_factory::outdated_indicator_factory() {}
 outdated_indicator_factory::~outdated_indicator_factory() {}
 outdated_indicator::outdated_indicator() {}
 project_t::project_t(app_state&a) : app(a) {}
+ssh_agent::ssh_agent() {}
+ssh_agent::~ssh_agent() {}
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
