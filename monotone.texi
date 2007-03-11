@@ -8629,7 +8629,11 @@ On Windows, this function automatically appends ``.exe'' to the
 program name. In the previous example, @code{existonpath} would search
 for ``xxdiff.exe''.
 
-@item guess_binary(@var{filespec})
+@item get_ostype()
+
+Returns the operating system flavor as a string.
+
+@item guess_binary_file_contents(@var{filespec})
 
 Returns true if the file appears to be binary, i.e. contains one or
 more of the following characters:
@@ -8679,6 +8683,10 @@ Returns 0 on success, -1 on error.
 This function marks the named file as executable.  On Windows has no
 effect. 
 
+@item match(@var{glob}, @var{string})
+
+Returns true if @var{glob} matches @var{str}, return false otherwise.
+
 @item mkstemp(@var{template})
 
 Like its C library counterpart,  mkstemp creates a unique name and
@@ -8701,30 +8709,6 @@ function, unless you need to run monotone with the @option{--nostd}
 option.  @code{temp_file()} builds on @code{mkstemp()} and creates a
 file in the standard TMP/TEMP directories.
 For the definition of @code{temp_file()}, see @ref{Default hooks}.
-
-@item sleep(@var{seconds})
-
-Makes the calling process sleep for the specified number of seconds.
-
-@item spawn(@var{executable} [, @var{args ...}])
-
-Starts the named executable with the given arguments.  Returns the
-process PID on POSIX systems, the process handle on Win32 or -1 if
-there was an error.
-Calls fork/execvp on POSIX, CreateProcess on Win32.
-
-@strong{Important notice:}@*
-To spawn a process and wait for its completion, use the @code{execute()}
-function, unless you need to run monotone with the @option{--nostd}
-option.  @code{execute()} builds on @code{spawn()} and @code{wait()}
-in a standardized way.
-
-@item wait(@var{pid})
-
-Wait until the process with given PID (process handle on Win32) exits.
-Returns two values: a result value and the exit code of the waited-for
-process.
-The exit code is meaningful only if the result value is 0.
 
 @item parse_basic_io(@var{data})
 
@@ -8756,6 +8740,44 @@ The output table will be:
 @}
 @end group
 @end smallexample
+
+@item regex.search(@var{regexp}, @var{string})
+
+Returns true if a match for @var{regexp} is found in @var{str}, return
+false otherwise.
+
+@item sleep(@var{seconds})
+
+Makes the calling process sleep for the specified number of seconds.
+
+@item spawn(@var{executable} [, @var{args ...}])
+
+Starts the named executable with the given arguments.  Returns the
+process PID on POSIX systems, the process handle on Win32 or -1 if
+there was an error.
+Calls fork/execvp on POSIX, CreateProcess on Win32.
+
+@strong{Important notice:}@*
+To spawn a process and wait for its completion, use the @code{execute()}
+function, unless you need to run monotone with the @option{--nostd}
+option.  @code{execute()} builds on @code{spawn()} and @code{wait()}
+in a standardized way.
+
+@item spawn_pipe(@var{executable} [, @var{args ...}])
+
+TO BE DOCUMENTED!
+
+@item spawn_redirected(@var{infile}, @var{outfile}, @var{errfile}, @var{executable} [, @var{args ...}])
+
+Like spawn(), but with standard input, standard output and standard
+error redirected to the given files.
+
+@item wait(@var{pid})
+
+Wait until the process with given PID (process handle on Win32) exits.
+Returns two values: a result value and the exit code of the waited-for
+process.
+The exit code is meaningful only if the result value is 0.
 
 @end ftable
 
