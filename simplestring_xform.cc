@@ -185,6 +185,19 @@ trim_ws(string const & s)
   return tmp;
 }
 
+string
+replace_underscores_with_dashes(string const & s)
+{
+  string tmp = s;
+  string::size_type loc = tmp.find("_");
+  while (loc != string::npos)
+    {
+      tmp.replace(loc, 1, "-");
+      loc = tmp.find("_");        
+    }
+  return tmp;
+}
+
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 #include <stdlib.h>
@@ -228,6 +241,12 @@ UNIT_TEST(simplestring_xform, strip_ws)
   BOOST_CHECK(trim_ws("\t\n both \r \n\r\n") == "both");
   BOOST_CHECK(remove_ws("  I like going\tfor walks\n  ")
               == "Ilikegoingforwalks");
+}
+
+UNIT_TEST(simplestring_xform, replace_underscores_with_dashes)
+{
+  BOOST_CHECK(replace_underscores_with_dashes("this_is_a_test") == "this-is-a-test");
+  BOOST_CHECK(replace_underscores_with_dashes("nothing to do") == "nothing to do");
 }
 
 #endif // BUILD_UNIT_TESTS

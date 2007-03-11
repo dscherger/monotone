@@ -11,6 +11,7 @@
 #include <map>
 
 #include "cmd.hh"
+#include "simplestring_xform.hh"
 
 using std::istream;
 using std::make_pair;
@@ -35,6 +36,8 @@ namespace automation {
         first = false;
         automations = new map<string, automate * const>;
       }
+
+    name = replace_underscores_with_dashes(name);
     automations->insert(make_pair(name, this));
   }
   automate::~automate() {}
@@ -45,6 +48,16 @@ find_automation(utf8 const & name, string const & root_cmd_name)
 {
   map<string, automation::automate * const>::const_iterator
     i = automation::automations->find(name());
+
+  // maintain support for both _ and - style command names for a while
+  // FIXME: should we issue a warning about incorrect usage here?
+
+  if (i == automation::automations->end())
+    {
+      string other_name = replace_underscores_with_dashes(name);
+      i = automation::automations->find(other_name);
+    }
+
   if (i == automation::automations->end())
     throw usage(root_cmd_name);
   else

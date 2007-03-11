@@ -51,14 +51,14 @@ CMD(db, N_("database"),
       "load\n"
       "migrate\n"
       "execute\n"
-      "kill_rev_locally ID\n"
-      "kill_branch_certs_locally BRANCH\n"
-      "kill_tag_locally TAG\n"
+      "kill-rev-locally ID\n"
+      "kill-branch-certs-locally BRANCH\n"
+      "kill-tag-locally TAG\n"
       "check\n"
       "changesetify\n"
       "rosterify\n"
-      "regenerate_caches\n"
-      "set_epoch BRANCH EPOCH\n"),
+      "regenerate-caches\n"
+      "set-epoch BRANCH EPOCH\n"),
     N_("manipulate database state"),
     options::opts::drop_attr)
 {
@@ -82,7 +82,7 @@ CMD(db, N_("database"),
         build_changesets_from_manifest_ancestry(app);
       else if (idx(args, 0)() == "rosterify")
         build_roster_style_revs_from_manifest_style_revs(app);
-      else if (idx(args, 0)() == "regenerate_caches")
+      else if (idx(args, 0)() == "regenerate-caches")
         regenerate_caches(app);
       else
         throw usage(name);
@@ -91,20 +91,20 @@ CMD(db, N_("database"),
     {
       if (idx(args, 0)() == "execute")
         app.db.debug(idx(args, 1)(), cout);
-      else if (idx(args, 0)() == "kill_rev_locally")
+      else if (idx(args, 0)() == "kill-rev-locally")
         kill_rev_locally(app,idx(args, 1)());
-      else if (idx(args, 0)() == "clear_epoch")
+      else if (idx(args, 0)() == "clear-epoch")
         app.db.clear_epoch(branch_name(idx(args, 1)()));
-      else if (idx(args, 0)() == "kill_branch_certs_locally")
+      else if (idx(args, 0)() == "kill-branch-certs-locally")
         app.db.delete_branch_named(cert_value(idx(args, 1)()));
-      else if (idx(args, 0)() == "kill_tag_locally")
+      else if (idx(args, 0)() == "kill-tag-locally")
         app.db.delete_tag_named(cert_value(idx(args, 1)()));
       else
         throw usage(name);
     }
   else if (args.size() == 3)
     {
-      if (idx(args, 0)() == "set_epoch")
+      if (idx(args, 0)() == "set-epoch")
         {
           epoch_data ed(idx(args,2)());
           N(ed.inner()().size() == constants::epochlen,

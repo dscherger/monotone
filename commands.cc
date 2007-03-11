@@ -74,7 +74,10 @@ namespace commands
   {
     if (cmds == NULL)
       cmds = new map<string, command *>;
-    (*cmds)[n] = this;
+
+    name = replace_underscores_with_dashes(name);
+
+    (*cmds)[name] = this;
   }
   command::~command() {}
   std::string command::params() {return safe_gettext(params_.c_str());}

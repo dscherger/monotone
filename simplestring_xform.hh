@@ -34,6 +34,8 @@ std::string remove_ws(std::string const & s);
 // remove leading and trailing whitespace
 std::string trim_ws(std::string const & s);
 
+std::string replace_underscores_with_dashes(std::string const & s);
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
