@@ -54,7 +54,7 @@ find_automation(utf8 const & name, string const & root_cmd_name)
 
   if (i == automation::automations->end())
     {
-      string other_name = replace_underscores_with_dashes(name);
+      string other_name = replace_underscores_with_dashes(name());
       i = automation::automations->find(other_name);
     }
 
