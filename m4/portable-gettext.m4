@@ -16,14 +16,25 @@ AC_DEFUN([PG_NLS],[
         [--disable-nls],
         [Disable support for translated messages]
      ), , enable_nls=yes)
+   AM_CONDITIONAL(ENABLE_NLS, false)
 
 PG_ICONV
 PG_GETTEXT
 
-if test "x$enable_nls" = "xyes" -a "x$ac_cv_func_gettext_exists" = "xyes" -a "x$ac_cv_func_dcgettext_exists" = "xyes" -a "x$ac_cv_func_iconv_exists" = "xyes"; then
-   AC_DEFINE(ENABLE_NLS, 1,
-     [Set to 1 if support for translated messages should be compiled in])
+AC_MSG_CHECKING(if NLS support should be built)
+if test "x$enable_nls" = "xyes"; then
+   AC_MSG_RESULT(yes)
+   AC_MSG_CHECKING(if NLS support can be built)
+   if test "x$ac_cv_func_gettext_exists" = "xyes" -a "x$ac_cv_func_dcgettext_exists" = "xyes" -a "x$ac_cv_func_iconv_exists" = "xyes"; then
+     AC_MSG_RESULT(yes)
+     AC_DEFINE(ENABLE_NLS, 1,
+       [Set to 1 if support for translated messages should be compiled in])
+     AM_CONDITIONAL(ENABLE_NLS, true)
+   else
+     AC_MSG_RESULT(no)
+   fi
 else
+   AC_MSG_RESULT(no)
    enable_nls=no
 fi
 ])
