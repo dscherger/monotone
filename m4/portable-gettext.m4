@@ -10,16 +10,21 @@ dnl @author Patrick Georgi <patrick@georgi-clan.de>
 dnl @version 2007-03-10
 dnl @license MIT
 
-AC_DEFUN([PG_NLS_FRAMEWORK],[
+AC_DEFUN([PG_NLS],[
    AC_ARG_ENABLE([nls],
      AS_HELP_STRING(
         [--disable-nls],
         [Disable support for translated messages]
      ), , enable_nls=yes)
 
-if test "x$enable_nls" = "xyes"; then
+PG_ICONV
+PG_GETTEXT
+
+if test "x$enable_nls" = "xyes" -a "x$ac_cv_func_gettext_exists" = "xyes" -a "x$ac_cv_func_dcgettext_exists" = "xyes" -a "x$ac_cv_func_iconv_exists" = "xyes"; then
    AC_DEFINE(ENABLE_NLS, 1,
      [Set to 1 if support for translated messages should be compiled in])
+else
+   enable_nls=no
 fi
 ])
 

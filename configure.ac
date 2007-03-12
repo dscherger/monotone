@@ -82,9 +82,7 @@ AC_OUTPUT_COMMANDS([
 ])
 
 AC_LANG([C++])
-PG_NLS_FRAMEWORK
-PG_ICONV
-PG_GETTEXT
+PG_NLS
 # This header may not be visible to the C compiler.
 AC_CHECK_HEADERS([cxxabi.h],,, [AC_INCLUDES_DEFAULT()])
 
