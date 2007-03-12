@@ -402,7 +402,18 @@ endif
 
 # i18n support
 
-SUBDIRS = po
+if ENABLE_NLS
+LINGUAS=$(wildcard $(srcdir)/po/*.po)
+LINGUA_RESULTS=$(addsuffix .gmo,$(basename $(LINGUAS)))
+
+%.mo: %.po
+	msgfmt -o $@ $<
+
+%.gmo: %.po
+	msgfmt -o $@ $<
+
+endif
+
 datadir = @datadir@
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
@@ -517,7 +528,7 @@ run_tester_tests: Makefile
 BUILT_SOURCES_CLEAN = std_hooks.h test_hooks.h tester.h schema.h \
 	package_revision.c package_full_revision.txt \
 	package_full_revision_raw.txt package_full_revision.c	\
-	$(PCH_FILE) $(PCH_BUILD)
+	$(PCH_FILE) $(PCH_BUILD) $(LINGUA_RESULTS)
 BUILT_SOURCES_NOCLEAN = package_revision.txt package_full_revision_dist.txt
 BUILT_SOURCES = $(BUILT_SOURCES_CLEAN) $(BUILT_SOURCES_NOCLEAN)
 CLEANFILES = $(BUILT_SOURCES_CLEAN) $(EPS_FIGURES) 
