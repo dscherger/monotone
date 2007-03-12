@@ -1271,12 +1271,12 @@ Pretty soon Jim gets annoyed when he has to enter his passphrase every
 time he invokes @code{mtn} (and, more importantly, it simplifies the
 tutorial text to skip the passphrase prompts) so he decides to use
 @emph{ssh-agent} to store his key. He does this by using the
-@code{ssh_agent_export} command to export his key into a format that
+@code{ssh-agent-export} command to export his key into a format that
 ssh-agent can understand and adding it with @code{ssh-add}.
 
 @smallexample
 @group
-$ mtn ssh_agent_export ~/.ssh/id_monotone
+$ mtn ssh-agent-export ~/.ssh/id_monotone
 enter passphrase for key ID [user@@example.com]:
 enter new passphrase for key ID [user@@example.com]:
 confirm passphrase for key ID [user@@example.com]:
@@ -2954,7 +2954,7 @@ most projects, so it is disabled by default.
 
 If you do determine that it is necessary to use inodeprints with your
 project, it is simple to enable them.  Simply run @command{mtn
-refresh_inodeprints}; this will enable inodeprints mode and generate an
+refresh-inodeprints}; this will enable inodeprints mode and generate an
 initial cache.  If you ever wish to turn them off again, simply delete
 the file @file{_MTN/inodeprints}.  You can at any time delete or truncate
 the @file{_MTN/inodeprints} file; monotone uses it only as a cache and
@@ -3541,7 +3541,7 @@ checking the resulting head version of the import out into a workspace:
 @group
 $ mtn --db=test.mtn db init
 $ mtn --db=test.mtn genkey import@@example.net
-$ mtn --db=test.mtn --branch=net.example.wobbler cvs_import /usr/local/cvsroot/wobbler
+$ mtn --db=test.mtn --branch=net.example.wobbler cvs-import /usr/local/cvsroot/wobbler
 $ mtn --db=test.mtn --branch=net.example.wobbler checkout wobber-checkout
 @end group
 @end smallexample
@@ -4236,7 +4236,7 @@ maintenance branches for stable software releases, trivial bug fix
 branches, public contribution branches, or branches devoted to the
 development of a single module within a larger project.
 
-@item mtn explicit_merge @var{id} @var{id} @var{destbranch}
+@item mtn explicit-merge @var{id} @var{id} @var{destbranch}
 This command merges exactly the two @var{id}s you give it, and places
 the result in branch @var{destbranch}.  It is useful when you need more
 control over the merging process than @command{propagate} or @command{merge}
@@ -4245,19 +4245,19 @@ only want to merge two of them, you can use this command.  Or if you
 have a branch with two heads, and you want to propagate one of them to
 another branch, again, you can use this command.
 
-@item mtn merge_into_dir @var{sourcebranch} @var{destbranch} @var{dir}
+@item mtn merge-into-dir @var{sourcebranch} @var{destbranch} @var{dir}
 This command takes a unique head from @var{sourcebranch} and merges it
 into a unique head of @var{destbranch}, as a directory. The resulting
 revision is committed to @var{destbranch}. If either @var{sourcebranch} or
-@var{destbranch} has multiple heads, @command{merge_into_dir} aborts, doing
+@var{destbranch} has multiple heads, @command{merge-into-dir} aborts, doing
 nothing.
 
-The purpose of @command{merge_into_dir} is to permit a project to contain
+The purpose of @command{merge-into-dir} is to permit a project to contain
 another project in such a way that @command{propagate} can be used to keep
 the contained project up-to-date. It is meant to replace the use of nested
 checkouts in many circumstances.
 
-Note that @command{merge_into_dir} @emph{does not} permit changes made to the
+Note that @command{merge-into-dir} @emph{does not} permit changes made to the
 contained project in @var{destbranch} to be propagated back to
 @var{sourcebranch}. Attempting this would lead to @var{sourcebranch} containing
 both projects nested as in @var{destbranch} instead of only the project
@@ -4541,7 +4541,7 @@ backporting fixes from a development branch to a stable branch.
 When you use @command{pluck} you are going behind monotone's back, and
 reducing its ability to help you keep track of what has happened in
 your history.  Never use @command{pluck} where a true merging command
-like @command{merge}, @command{propagate}, or @command{explicit_merge}
+like @command{merge}, @command{propagate}, or @command{explicit-merge}
 will do.  If you find yourself using @command{pluck} often, you should
 consider carefully whether there is any way to change your workflow to
 reduce your need for @command{pluck}ing.
@@ -4549,17 +4549,17 @@ reduce your need for @command{pluck}ing.
 When running @command{pluck}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn refresh_inodeprints
+@item mtn refresh-inodeprints
 This command puts the current workspace into @ref{Inodeprints} mode,
 if it was not already, and forces a full inodeprints cache refresh.
 After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-@item mtn pivot_root [--bookkeep-only] pivot_root @var{new_root} @var{put_old}
+@item mtn pivot-root [--bookkeep-only] pivot-root @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
-into one, or split one project into several. See also @command{merge_into_dir}.
+into one, or split one project into several. See also @command{merge-into-dir}.
 
 Its effect is to rename the directory whose name is currently
 @var{new_root} to become the root directory of the versioned tree, and
@@ -4578,7 +4578,7 @@ $ mtn rename @var{new_root} .
 Except, of course, that these @command{rename} commands are illegal,
 because after the first command the tree has no root at all, and there
 is a directory loop.  This illegality is the only reason for
-@command{pivot_root}'s existence; internally, the result is treated
+@command{pivot-root}'s existence; internally, the result is treated
 exactly like two renames, including with respect to merges and
 updates.
 
@@ -4586,7 +4586,7 @@ The use of @option{--bookkeep-only} with this command is not
 recommended.  It causes the changes to be made in monotone's
 records, but not in the filesystem itself.
 
-When running @command{pivot_root}, it is sometimes possible for
+When running @command{pivot-root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
 @end ftable
@@ -5073,7 +5073,7 @@ changed} command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for known
 files to the current subdirectory of the workspace.
 
-@item mtn show_conflicts @var{rev} @var{rev}
+@item mtn show-conflicts @var{rev} @var{rev}
 
 This command shows what conflicts would need to be resolved in order to merge
 the given revisions.
@@ -5123,7 +5123,7 @@ key IDs, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
 
-@item mtn ssh_agent_export @var{filename}
+@item mtn ssh-agent-export @var{filename}
 
 This command will export your private key in a format that ssh-agent
 can read (PKCS8, PEM). You will be asked for your current key's password
@@ -5134,7 +5134,7 @@ will cache the key for you.
 
 @smallexample
 @group
-$ mtn ssh_agent_export ~/.ssh/id_monotone
+$ mtn ssh-agent-export ~/.ssh/id_monotone
 enter passphrase for key ID [user@@example.com]:
 enter new passphrase for key ID [user@@example.com]:
 confirm passphrase for key ID [user@@example.com]:
@@ -5376,7 +5376,7 @@ database with @command{read}.
 that exist in the database but are not referenced by their @sc{sha1}
 hash from any existing revision.  In itself, this only indicates some
 wasted space, and is not a problem; it's possible it could arise under
-normal use (for instance, if you have run @command{db kill_rev_locally},
+normal use (for instance, if you have run @command{db kill-rev-locally},
 or in some strange-but-harmless corner cases following an incomplete
 netsync).  It could also arise, though, as a symptom of some other more
 serious problem.
@@ -5465,7 +5465,7 @@ which can be loaded into your database with @command{read}.
 This command also verifies that the @sc{sha1} hash of every file, manifest,
 and revision is correct.
 
-@item mtn db kill_rev_locally @var{id}
+@item mtn db kill-rev-locally @var{id}
 
 This command ``kills'', i.e., deletes, a given revision, as well as any
 certs attached to it.  It has an ugly name because it is a dangerous
@@ -5496,7 +5496,7 @@ you do, after all, need to retrieve the data in @var{id}, then
 work you can extract @var{id}'s data.
 @end itemize
 
-@item mtn db kill_branch_certs_locally @var{branch}
+@item mtn db kill-branch-certs-locally @var{branch}
 
 This command ``kills'' a branch by deleting all branch certs with that
 branch name. You should consider carefully whether you want to use it,
@@ -5505,20 +5505,20 @@ modify or delete any revisions or any of the other certificates on
 revisions in the branch; it simply removes the branch certificates
 matching the given branch name. Because of this, it can leave
 revisions without any branch certificate at all. As with @command{db
-kill_rev_locally}, it only deletes the information from your local
+kill-rev-locally}, it only deletes the information from your local
 database; if there are other databases that you sync with which have
 revisions in this branch, the branch certificates will reappear when
 you sync, unless the owners of those databases also delete those
 certificates locally.
 
-@item mtn db kill_tag_locally @var{tag}
+@item mtn db kill-tag-locally @var{tag}
 
 This command ``kills'' a tag by deleting all tag certs with that tag
 name. You should consider carefully whether you want to use it, because
 it can irrevocably delete important information. It does not modify or
 delete any revisions, or any of the other certificates on tagged
 revisions; it simply removes all tag certificates with the given name.
-As with @command{db kill_rev_locally}, it only deletes the information
+As with @command{db kill-rev-locally}, it only deletes the information
 from your local database; if there are other databases that you sync
 with which have this tag, the tag certificates will reappear when you
 sync, unless the owners of those databases also delete those
@@ -6587,8 +6587,8 @@ whatever error message would have been given.
 
 @end table
 
-@item mtn automate get_revision
-@item mtn automate get_revision @var{id}
+@item mtn automate get-revision
+@item mtn automate get-revision @var{id}
 
 @table @strong
 @item Arguments:
@@ -6693,7 +6693,7 @@ to stderr and exits with status 1.
 
 
 
-@item mtn automate get_base_revision_id
+@item mtn automate get-base-revision-id
 
 @table @strong
 @item Arguments:
@@ -6728,7 +6728,7 @@ message to stderr, and exits with status 1.
 
 
 
-@item mtn automate get_current_revision_id
+@item mtn automate get-current-revision-id
 
 @table @strong
 @item Arguments:
@@ -6764,8 +6764,8 @@ message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate get_manifest_of
-@item mtn automate get_manifest_of @var{revid}
+@item mtn automate get-manifest-of
+@item mtn automate get-manifest-of @var{revid}
 
 @table @strong
 @item Arguments:
@@ -7024,7 +7024,7 @@ workspace is needed in this case.
 Prints the content changes between two revisions or a revision and the current
 workspace. This command differs from @command{mtn diff} in that way that it only
 outputs content changes and keeps quite on renames or drops, as the header of
-@command{mtn diff} is omitted (this is what @command{mtn automate get_revision} 
+@command{mtn diff} is omitted (this is what @command{mtn automate get-revision} 
 already provides).
 
 @item Sample output:
@@ -7055,7 +7055,7 @@ restrictions can't be applied, the command prints to stderr and exits as well.
 
 @end table
 
-@item mtn automate get_file @var{id}
+@item mtn automate get-file @var{id}
 
 @table @strong
 @item Arguments:
@@ -7091,7 +7091,7 @@ to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate get_file_of @var{filename} [--revision=@var{id}]
+@item mtn automate get-file-of @var{filename} [--revision=@var{id}]
 
 @table @strong
 @item Arguments:
@@ -7131,7 +7131,7 @@ with status 1.
 
 @end table
 
-@item mtn automate get_option @var{option}
+@item mtn automate get-option @var{option}
 
 @table @strong
 @item Arguments:
@@ -7393,7 +7393,7 @@ message to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate get_content_changed @var{id} @var{file}
+@item mtn automate get-content-changed @var{id} @var{file}
 
 @table @strong
 @item Arguments:
@@ -7432,7 +7432,7 @@ message to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate get_corresponding_path @var{source_id} @var{file} @var{target_id}
+@item mtn automate get-corresponding-path @var{source_id} @var{file} @var{target_id}
 
 @table @strong
 @item Arguments:
@@ -7686,7 +7686,7 @@ This command imports all the file versions in each RCS file listed in
 database.  Note that this does not do any revision reconstruction, and
 is only useful for debugging.
 
-@item mtn cvs_import @var{pathname}
+@item mtn cvs-import @var{pathname}
 
 This command imports all the file versions in each RCS file found in the
 tree of files starting at @var{pathname}, then reconstructs the
@@ -7779,7 +7779,7 @@ are taken.
 
 Called by monotone after the version @var{new_id} is committed. The
 second parameter, @var{revision} is the text of the revision, what would
-be given by @command{mtn automate get_revision @var{new_id}}. The third
+be given by @command{mtn automate get-revision @var{new_id}}. The third
 parameter, @var{certs}, is a Lua table containing the set of certificate
 names and values committed along with this version. There is no default
 definition for this hook. 
@@ -7833,7 +7833,7 @@ The include and exclude patterns used by the client.
 
 Called by monotone after the revision @var{new_id} is received through
 netsync. @var{revision} is the text of the revision, what would be given
-by @command{mtn automate get_revision @var{new_id}}. @var{certs} is a
+by @command{mtn automate get-revision @var{new_id}}. @var{certs} is a
 Lua table containing one subtable for each cert attached to the revision
 @var{new_id}. These subtables have fields named "key", "name", and
 "value", containing the signing key for the cert, the name of the cert,
