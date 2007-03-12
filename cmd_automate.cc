@@ -75,7 +75,7 @@ automate_command(utf8 cmd, vector<utf8> args,
 
 static string const interface_version = "4.1";
 
-// Name: interface_version
+// Name: interface-version
 // Arguments: none
 // Added in: 0.0
 // Purpose: Prints version of automation interface.  Major number increments

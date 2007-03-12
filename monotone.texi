@@ -1562,7 +1562,7 @@ command, if he wishes to return to this revision:
 
 @smallexample
 @group
-$ mtn automate get_base_revision_id
+$ mtn automate get-base-revision-id
 2e24d49a48adf9acf3a1b6391a080008cbef9c21
 @end group
 @end smallexample
@@ -3624,7 +3624,7 @@ get the meta-information on that revision:
 
 @smallexample
 @group
-$ mtn -d A automate get_revision a423db0ad651c74e41ab2529eca6f17513ccf714
+$ mtn -d A automate get-revision a423db0ad651c74e41ab2529eca6f17513ccf714
 format_version "1"
 
 new_manifest [b6dbdbbe0e7f41e44d9b72f9fe29b1f1a4f47f18]
@@ -3652,9 +3652,9 @@ makes reference to file data and file deltas.
 
 @smallexample
 @group
-mtn -d A automate packet_for_fdata 8714e0ef31edb00e33683f575274379955b3526c > PACKETS
-mtn -d A automate packet_for_rdata a423db0ad651c74e41ab2529eca6f17513ccf714 >> PACKETS
-mtn -d A automate packets_for_certs a423db0ad651c74e41ab2529eca6f17513ccf714 >> PACKETS
+mtn -d A automate packet-for-fdata 8714e0ef31edb00e33683f575274379955b3526c > PACKETS
+mtn -d A automate packet-for-rdata a423db0ad651c74e41ab2529eca6f17513ccf714 >> PACKETS
+mtn -d A automate packets-for-certs a423db0ad651c74e41ab2529eca6f17513ccf714 >> PACKETS
 mtn -d B read < PACKETS
 @end group
 @end smallexample
@@ -3666,7 +3666,7 @@ Now let's transfer one more revision:
 
 @smallexample
 @group
-mtn -d A automate get_revision d14e89582ad9030e1eb62f563c8721be02ca0b65
+mtn -d A automate get-revision d14e89582ad9030e1eb62f563c8721be02ca0b65
 format_version "1"
 
 new_manifest [48a03530005d46ed9c31c8f83ad96c4fa22b8b28]
@@ -3687,10 +3687,10 @@ same we did before for them:
 
 @smallexample
 @group
-mtn -d A automate packet_for_fdata d2178687226560032947c1deacb39d16a16ea5c6 > PACKETS2
-mtn -d A automate packet_for_fdelta 8714e0ef31edb00e33683f575274379955b3526c 8b52d96d4fab6c1e56d6364b0a2673f4111b228e >> PACKETS2
-mtn -d A automate packet_for_rdata d14e89582ad9030e1eb62f563c8721be02ca0b65 >> PACKETS2
-mtn -d A automate packets_for_certs d14e89582ad9030e1eb62f563c8721be02ca0b65 >> PACKETS2
+mtn -d A automate packet-for-fdata d2178687226560032947c1deacb39d16a16ea5c6 > PACKETS2
+mtn -d A automate packet-for-fdelta 8714e0ef31edb00e33683f575274379955b3526c 8b52d96d4fab6c1e56d6364b0a2673f4111b228e >> PACKETS2
+mtn -d A automate packet-for-rdata d14e89582ad9030e1eb62f563c8721be02ca0b65 >> PACKETS2
+mtn -d A automate packets-for-certs d14e89582ad9030e1eb62f563c8721be02ca0b65 >> PACKETS2
 mtn -d B read < PACKETS2
 @end group
 @end smallexample
@@ -5234,15 +5234,15 @@ facility will remain in monotone as a utility for moving individual
 data items around manually.
 
 @ftable @command
-@itemx mtn automate packets_for_certs @var{id}
+@itemx mtn automate packets-for-certs @var{id}
 
 This command prints out an @code{rcert} packet for each cert in your
 database associated with @var{id}. These can be used to transport
 certificates safely between monotone databases.  See @ref{Automation}
 for details of this command.
 
-@item mtn automate packet_for_fdata @var{id}
-@itemx mtn automate packet_for_rdata @var{id}
+@item mtn automate packet-for-fdata @var{id}
+@itemx mtn automate packet-for-rdata @var{id}
 
 These commands print out an @code{fdata} or @code{rdata} packet for
 the file, manifest or revision @var{id} in your database.  These can
@@ -5250,7 +5250,7 @@ be used to transport files or revisions, in their entirety, safely
 between monotone databases.  See @ref{Automation} for details of these
 commands.
 
-@item mtn automate packet_for_fdelta @var{id1} @var{id2}
+@item mtn automate packet-for-fdelta @var{id1} @var{id2}
 
 This command prints out an @code{fdelta} packet for the differences
 between file versions @var{id1} and @var{id2}, in your database.
@@ -5545,7 +5545,7 @@ messages.
 
 
 @ftable @command
-@item mtn automate interface_version
+@item mtn automate interface-version
 
 @table @strong
 @item Arguments:
@@ -5658,7 +5658,7 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate common_ancestors @var{rev1} [@var{rev2} [...]]
+@item mtn automate common-ancestors @var{rev1} [@var{rev2} [...]]
 
 @table @strong
 @item Arguments:
@@ -5861,7 +5861,7 @@ None.
 @end table
 
 
-@item mtn automate erase_ancestors [@var{rev1} [@var{rev2} [...]]]
+@item mtn automate erase-ancestors [@var{rev1} [@var{rev2} [...]]]
 
 @table @strong
 @item Arguments:
@@ -5943,7 +5943,7 @@ an error message to stderr, and exits with status 1.
 @end table
 
 
-@item mtn automate ancestry_difference @var{new} [@var{old1} [@var{old2} [...]]]
+@item mtn automate ancestry-difference @var{new} [@var{old1} [@var{old2} [...]]]
 
 @table @strong
 @item Arguments:
@@ -6992,7 +6992,7 @@ message to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
+@item mtn automate content-diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
 
 @table @strong
 @item Arguments:
@@ -7213,7 +7213,7 @@ None.
 
 @end table
 
-@item mtn automate packet_for_rdata @var{id}
+@item mtn automate packet-for-rdata @var{id}
 
 @table @strong
 @item Arguments:
@@ -7252,7 +7252,7 @@ and exits with status 1.
 
 @end table
 
-@item mtn automate packet_for_certs @var{id}
+@item mtn automate packet-for-certs @var{id}
 
 @table @strong
 @item Arguments:
@@ -7317,7 +7317,7 @@ and exits with status 1.
 
 @end table
 
-@item mtn automate packet_for_fdata @var{id}
+@item mtn automate packet-for-fdata @var{id}
 
 @table @strong
 @item Arguments:
@@ -7354,7 +7354,7 @@ and exits with status 1.
 
 @end table
 
-@item mtn automate packet_for_fdelta @var{from-id} @var{to-id}
+@item mtn automate packet-for-fdelta @var{from-id} @var{to-id}
 
 @table @strong
 @item Arguments:
@@ -7477,7 +7477,7 @@ revision @var{source_id} or is invalid, prints an error message to stderr and ex
 
 @end table
 
-@item mtn automate db_get @var{domain} @var{name}
+@item mtn automate db-get @var{domain} @var{name}
 
 @table @strong 
 @item Arguments:
@@ -7530,7 +7530,7 @@ Change a database variable, see also @ref{Vars}.
 @item Sample usage:
 
 @verbatim 
-mtn automate db_set database default-server off.net 
+mtn automate db-set database default-server off.net 
 @end verbatim
 
 @item Output format:
@@ -7543,7 +7543,7 @@ None.
 
 @end table
 
-@item mtn automate put_file [@var{base-id}] @var{contents}
+@item mtn automate put-file [@var{base-id}] @var{contents}
 
 @table @strong 
 @item Arguments:
@@ -7559,7 +7559,7 @@ the new file.
 @item Purpose:
 
 Preparation of a workspace-less commit. 
-See also @command{automate put_revision}. Normally used via 
+See also @command{automate put-revision}. Normally used via 
 @command{automate stdio}.
 
 @item Sample output:
@@ -7579,13 +7579,13 @@ exits with status 1.
 
 @end table
 
-@item mtn automate put_revision @var{revision-data}
+@item mtn automate put-revision @var{revision-data}
 
 @table @strong 
 @item Arguments:
 
 @var{revision-data} is the new revision. See example below.  Note that
-the new_manifest entry is ignored -- @command{put_revision} will
+the new_manifest entry is ignored -- @command{put-revision} will
 ignore whatever you put here and calculate the correct manifest id
 itself.  (However, for now, you must put 40 hex digits here -- it's
 just that which particular digits you put are entirely irrelevant.
@@ -7678,7 +7678,7 @@ exits with status 1.
 @section RCS
 
 @ftable @command
-@item mtn rcs_import @var{filename...}
+@item mtn rcs-import @var{filename...}
 
 This command imports all the file versions in each RCS file listed in
 @var{filename...}.  These files should be raw RCS files, ending in

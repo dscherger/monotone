@@ -155,7 +155,7 @@ function base_revision()
 end
 
 function base_manifest()
-  check(safe_mtn("automate", "get_manifest_of", base_revision()), 0, false)
+  check(safe_mtn("automate", "get-manifest-of", base_revision()), 0, false)
   check(copy("ts-stdout", "base_manifest_temp"))
   return sha1("base_manifest_temp")
 end
@@ -190,13 +190,13 @@ function revert_to(rev, branch, mt)
   end
   if mt == nil then mt = mtn end
 
-  check(mt("automate", "get_manifest_of", base_revision()), 0, true, false)
+  check(mt("automate", "get-manifest-of", base_revision()), 0, true, false)
   rename("stdout", "paths-new")
 
   remove("_MTN.old")
   rename("_MTN", "_MTN.old")
 
-  check(mt("automate", "get_manifest_of", rev), 0, true, false)
+  check(mt("automate", "get-manifest-of", rev), 0, true, false)
   rename("stdout", "paths-old")
 
   -- remove all of the files and dirs in this

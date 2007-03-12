@@ -332,7 +332,7 @@ dump_diffs(cset const & cs,
   dump_diffs(cs, app, new_is_archived, output, dummy);
 }
 
-// common functionality for diff and automate content_diff to determine
+// common functionality for diff and automate content-diff to determine
 // revisions and rosters which should be diffed
 static void
 prepare_diff(cset & included,
@@ -512,7 +512,7 @@ CMD(diff, N_("informative"), N_("[PATH]..."),
 }
 
 
-// Name: content_diff
+// Name: content-diff
 // Arguments:
 //   (optional) one or more files to include
 // Added in: 4.0

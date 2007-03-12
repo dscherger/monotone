@@ -266,7 +266,7 @@ CMD(cat, N_("informative"),
   dump_file(cout, app, rid, idx(args, 0));
 }
 
-// Name: get_file
+// Name: get-file
 // Arguments:
 //   1: a file id
 // Added in: 1.0
@@ -285,7 +285,7 @@ AUTOMATE(get_file, N_("FILEID"), options::opts::none)
   dump_file(output, app, ident);
 }
 
-// Name: get_fileof
+// Name: get-file-of
 // Arguments:
 //   1: a filename
 //

@@ -167,7 +167,7 @@ AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"), options::opts::none)
 }
 
 
-// Name: erase_ancestors
+// Name: erase-ancestors
 // Arguments:
 //   0 or more: revision ids
 // Added in: 0.1
@@ -342,7 +342,7 @@ AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"), options::opts::none)
     output << (*i).inner()() << '\n';
 }
 
-// Name: ancestry_difference
+// Name: ancestry-difference
 // Arguments:
 //   1: a revision id
 //   0 or more further arguments: also revision ids
@@ -847,7 +847,7 @@ AUTOMATE(inventory, "", options::opts::none)
     }
 }
 
-// Name: get_revision
+// Name: get-revision
 // Arguments:
 //   1: a revision id (optional, determined from the workspace if
 //      non-existant)
@@ -946,7 +946,7 @@ AUTOMATE(get_revision, N_("[REVID]"), options::opts::none)
   output.write(dat.inner()().data(), dat.inner()().size());
 }
 
-// Name: get_base_revision_id
+// Name: get-base-revision-id
 // Arguments: none
 // Added in: 2.0
 // Purpose: Prints the revision id the current workspace is based
@@ -968,7 +968,7 @@ AUTOMATE(get_base_revision_id, "", options::opts::none)
   output << parent_id(parents.begin()) << '\n';
 }
 
-// Name: get_current_revision_id
+// Name: get-current-revision-id
 // Arguments: none
 // Added in: 2.0
 // Purpose: Prints the revision id of the current workspace. This is the
@@ -1002,7 +1002,7 @@ AUTOMATE(get_current_revision_id, "", options::opts::none)
   output << new_revision_id << '\n';
 }
 
-// Name: get_manifest_of
+// Name: get-manifest-of
 // Arguments:
 //   1: a revision id (optional, determined from the workspace if not given)
 // Added in: 2.0
@@ -1075,7 +1075,7 @@ AUTOMATE(get_manifest_of, N_("[REVID]"), options::opts::none)
 }
 
 
-// Name: packet_for_rdata
+// Name: packet-for-rdata
 // Arguments:
 //   1: a revision id
 // Added in: 2.0
@@ -1129,7 +1129,7 @@ AUTOMATE(packets_for_certs, N_("REVID"), options::opts::none)
     pw.consume_revision_cert(idx(certs,i));
 }
 
-// Name: packet_for_fdata
+// Name: packet-for-fdata
 // Arguments:
 //   1: a file id
 // Added in: 2.0
@@ -1155,7 +1155,7 @@ AUTOMATE(packet_for_fdata, N_("FILEID"), options::opts::none)
   pw.consume_file_data(f_id,f_data);
 }
 
-// Name: packet_for_fdelta
+// Name: packet-for-fdelta
 // Arguments:
 //   1: a file id
 //   2: a file id
@@ -1188,7 +1188,7 @@ AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"), options::opts::none)
   pw.consume_file_delta(f_old_id, f_new_id, file_delta(del));
 }
 
-// Name: common_ancestors
+// Name: common-ancestors
 // Arguments:
 //   1 or more revision ids
 // Added in: 2.1
@@ -1450,7 +1450,7 @@ AUTOMATE(genkey, N_("KEYID PASSPHRASE"), options::opts::none)
 
 }
 
-// Name: get_option
+// Name: get-option
 // Arguments:
 //   1: an options name
 // Added in: 3.1
@@ -1458,7 +1458,7 @@ AUTOMATE(genkey, N_("KEYID PASSPHRASE"), options::opts::none)
 //
 // Output format: A string
 //
-// Sample output (for 'mtn automate get_option branch:
+// Sample output (for 'mtn automate get-option branch:
 //   net.venge.monotone
 //
 AUTOMATE(get_option, N_("OPTION"), options::opts::none)
@@ -1490,7 +1490,7 @@ AUTOMATE(get_option, N_("OPTION"), options::opts::none)
     N(false, F("'%s' is not a recognized workspace option") % opt);
 }
 
-// Name: get_content_changed
+// Name: get-content-changed
 // Arguments:
 //   1: a revision ID
 //   2: a file name
@@ -1507,7 +1507,7 @@ AUTOMATE(get_option, N_("OPTION"), options::opts::none)
 //
 //   'content_mark'
 //         the hexadecimal id of the revision the content mark is attached to
-// Sample output (for 'mtn automate get_content_changed 3bccff99d08421df72519b61a4dded16d1139c33 ChangeLog):
+// Sample output (for 'mtn automate get-content-changed 3bccff99d08421df72519b61a4dded16d1139c33 ChangeLog):
 //   content_mark [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
 //
 AUTOMATE(get_content_changed, N_("REV FILE"), options::opts::none)
@@ -1545,7 +1545,7 @@ AUTOMATE(get_content_changed, N_("REV FILE"), options::opts::none)
     output.write(prt.buf.data(), prt.buf.size());
 }
 
-// Name: get_corresponding_path
+// Name: get-corresponding-path
 // Arguments:
 //   1: a source revision ID
 //   2: a file name (in the source revision)
@@ -1567,7 +1567,7 @@ AUTOMATE(get_content_changed, N_("REV FILE"), options::opts::none)
 //   'file'
 //         the file name corresponding to "file name" (arg 2) in the target revision
 //
-// Sample output (for automate get_corresponding_path 91f25c8ee830b11b52dd356c925161848d4274d0 foo2 dae0d8e3f944c82a9688bcd6af99f5b837b41968; see automate_get_corresponding_path test)
+// Sample output (for automate get-corresponding-path 91f25c8ee830b11b52dd356c925161848d4274d0 foo2 dae0d8e3f944c82a9688bcd6af99f5b837b41968; see automate_get_corresponding_path test)
 // file "foo"
 AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
 {
@@ -1606,7 +1606,7 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
   output.write(prt.buf.data(), prt.buf.size());
 }
 
-// Name: put_file
+// Name: put-file
 // Arguments:
 //   base FILEID (optional)
 //   file contents (binary, intended for automate stdio use)
@@ -1661,7 +1661,7 @@ AUTOMATE(put_file, N_("[FILEID] CONTENTS"), options::opts::none)
   output << sha1sum << '\n';
 }
 
-// Name: put_revision
+// Name: put-revision
 // Arguments:
 //   revision-data
 // Added in: 4.1
@@ -1749,7 +1749,7 @@ AUTOMATE(cert, N_("REVISION-ID NAME VALUE"), options::opts::none)
   guard.commit();
 }
 
-// Name: db_set
+// Name: db-set
 // Arguments:
 //   variable domain
 //   variable name
@@ -1773,7 +1773,7 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"), options::opts::none)
   app.db.set_var(key, var_value(value()));
 }
 
-// Name: db_get
+// Name: db-get
 // Arguments:
 //   variable domain
 //   variable name
