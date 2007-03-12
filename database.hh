@@ -539,11 +539,11 @@ public:
   void version(std::ostream &);
   void migrate();
   void test_migration_step(std::string const &);
-  // for kill_rev_locally:
+  // for kill-rev-locally:
   void delete_existing_rev_and_certs(revision_id const & rid);
-  // for kill_branch_certs_locally:
+  // for kill-branch-certs-locally:
   void delete_branch_named(cert_value const & branch);
-  // for kill_tag_locally:
+  // for kill-tag-locally:
   void delete_tag_named(cert_value const & tag);
 
   // misc
@@ -583,7 +583,7 @@ public:
   void put_height_for_revision(revision_id const & new_id,
                                revision_t const & rev);
 
-  // for regenerate_rosters
+  // for regenerate-caches
   void delete_existing_rosters();
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);

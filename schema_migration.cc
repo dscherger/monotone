@@ -999,7 +999,7 @@ migrate_sql_schema(sqlite3 * db, app_state & app)
       break;
     case upgrade_regen_caches:
       P(F("NOTE: this upgrade cleared monotone's caches\n"
-          "you should now run '%s db regenerate_caches'")
+          "you should now run '%s db regenerate-caches'")
         % ui.prog_name);
       break;
     case upgrade_none:

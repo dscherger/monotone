@@ -1207,7 +1207,7 @@ import_cvs_repo(system_path const & cvsroot,
 {
   N(!directory_exists(cvsroot / "CVSROOT"),
     F("%s appears to be a CVS repository root directory\n"
-      "try importing a module instead, with 'cvs_import %s/<module_name>")
+      "try importing a module instead, with 'cvs-import %s/<module_name>")
     % cvsroot % cvsroot);
 
   {
@@ -1298,7 +1298,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
   if (!branch.live_at_beginning.empty())
     {
       cvs_author synthetic_author =
-        cvs.author_interner.intern("cvs_import");
+        cvs.author_interner.intern("cvs-import");
 
       cvs_changelog synthetic_cl =
         cvs.changelog_interner.intern("beginning of branch "

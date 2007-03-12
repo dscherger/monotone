@@ -124,7 +124,7 @@ workspace::check_ws_format()
   E(format >= current_workspace_format,
     F("to use this workspace with this version of monotone, its metadata\n"
       "must be migrated from format %d to format %d, using the command\n"
-      "'%s migrate_workspace'.\n"
+      "'%s migrate-workspace'.\n"
       "once you have done this, you will not be able to use the workspace\n"
       "with versions of monotone older than %s.")
     % format % current_workspace_format % ui.prog_name

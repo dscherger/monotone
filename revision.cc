@@ -1736,7 +1736,7 @@ build_changesets_from_manifest_ancestry(app_state & app)
 }
 
 
-// This is a special function solely for the use of regenerate_caches -- it
+// This is a special function solely for the use of regenerate-caches -- it
 // must work even when caches (especially, the height cache!) do not exist.
 // For all other purposes, use toposort above.
 static void

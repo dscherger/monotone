@@ -248,7 +248,7 @@ check_rosters_marking(app_state & app,
           continue;
 
       // skip marking check on unreferenced rosters -- they're left by
-      // kill_rev_locally, and not expected to have everything they
+      // kill-rev-locally, and not expected to have everything they
       // reference existing
       if (!i->second.revision_refs)
         continue;

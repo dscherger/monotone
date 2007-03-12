@@ -437,7 +437,7 @@ CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"),
     throw usage(name);
   vector<utf8> a = args;
   a.push_back(utf8());
-  process(app, "merge_into_dir", a);
+  process(app, "merge-into-dir", a);
 }
 
 CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),

@@ -175,7 +175,7 @@ database::check_format()
       // Do we need to regenerate cached data?
       E(!have_revisions || (have_rosters && have_heights),
         F("database %s lacks some cached data\n"
-          "run '%s db regenerate_caches' to restore use of this database")
+          "run '%s db regenerate-caches' to restore use of this database")
         % filename % ui.prog_name);
     }
   else
@@ -2101,7 +2101,7 @@ database::delete_existing_heights()
 }
 
 /// Deletes one revision from the local database.
-/// @see kill_rev_locally
+/// @see kill-rev-locally
 void
 database::delete_existing_rev_and_certs(revision_id const & rid)
 {
