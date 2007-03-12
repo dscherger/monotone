@@ -23,12 +23,12 @@ writefile("w3/testfile", "ancestor\nright")
 check(indir("w3", mtn("commit", "--message", "blah-blah")), 0, false, false)
 right = indir("w3", {base_revision})[1]()
 
-check(indir("w3", mtn("merge_into_workspace", left)), 0, false, false)
+check(indir("w3", mtn("merge-into-workspace", left)), 0, false, false)
 check(qgrep("left", "w3/testfile"))
 check(qgrep("right", "w3/testfile"))
 check(not qgrep("ancestor", "w3/testfile"))
 
-check(indir("w3", mtn("pivot_root", "newroot", "oldroot")),
+check(indir("w3", mtn("pivot-root", "newroot", "oldroot")),
       0, nil, false)
 
 check(exists("w3/fileinroot"))

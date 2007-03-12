@@ -20,7 +20,7 @@ writefile("file3", "utahraptor asks, is stomping really "..
 commit()
 right = base_revision()
 
-check(mtn("merge_into_workspace", left), 0, false, false)
+check(mtn("merge-into-workspace", left), 0, false, false)
 
 check(mtn("ls", "changed"), 0, "file1\nfile2\nfile3\n", nil)
 check(mtn("ls", "known"), 0, "file1\nfile2\nfile3\nfile4\n", nil)

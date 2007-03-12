@@ -23,7 +23,7 @@ copy("right", "testfile")
 commit()
 right = base_revision()
 
-check(mtn("merge_into_workspace", left), 0, false, false)
+check(mtn("merge-into-workspace", left), 0, false, false)
 
 -- testfile should be the same as merged
 check(samefile("merged", "testfile"))

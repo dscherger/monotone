@@ -1,7 +1,7 @@
 
 mtn_setup()
 
--- This tests the db kill_branch_certs_locally command
+-- This tests the db kill-branch-certs-locally command
 
 -- Prepare a db with a couple of branches
 addfile("foo", "file named foo")
@@ -13,7 +13,7 @@ check(qgrep("good", "stdout"))
 check(qgrep("bad", "stdout"))
 
 -- Now we delete the branch, and make sure it's gone
-check(mtn("db", "kill_branch_certs_locally", "bad"), 0, false, false)
+check(mtn("db", "kill-branch-certs-locally", "bad"), 0, false, false)
 check(mtn("ls", "branches"), 0, true, false)
 check(qgrep("good", "stdout"))
 check(not qgrep("bad", "stdout"))

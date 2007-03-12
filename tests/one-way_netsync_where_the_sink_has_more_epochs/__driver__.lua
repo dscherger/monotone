@@ -12,7 +12,7 @@ netsync.setup()
 
 addfile("foo", "foo")
 commit()
-check(mtn("db", "set_epoch", "testbranch", string.rep("1234567890", 4)))
+check(mtn("db", "set-epoch", "testbranch", string.rep("1234567890", 4)))
 remove("_MTN")
 check(mtn2("setup", "-b", "otherbranch", "."), 0, false, false)
 writefile("bar", "bar")

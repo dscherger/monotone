@@ -7,9 +7,9 @@ commit()
 addfile("testfile2", "other data")
 commit("otherbranch")
 
-check(mtn("db", "set_epoch", "testbranch", "12345"), 1, false, false)
-check(mtn("db", "set_epoch", "testbranch", string.rep("a", 40)), 0, false, false)
-check(mtn("db", "set_epoch", "otherbranch", string.rep("b", 40)), 0, false, false)
+check(mtn("db", "set-epoch", "testbranch", "12345"), 1, false, false)
+check(mtn("db", "set-epoch", "testbranch", string.rep("a", 40)), 0, false, false)
+check(mtn("db", "set-epoch", "otherbranch", string.rep("b", 40)), 0, false, false)
 
 check(mtn("list", "epochs"), 0, true)
 check(qgrep("testbranch", "stdout"))

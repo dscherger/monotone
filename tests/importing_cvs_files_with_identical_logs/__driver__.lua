@@ -14,7 +14,7 @@ tsha2 = sha1("foo.2")
 tsha3 = sha1("foo.3")
 
 -- import into monotone and check presence of files
-check(mtn("--branch=testbranch", "cvs_import", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=testbranch", "cvs-import", "cvs-repository/test"), 0, false, false)
 check(mtn("automate", "get_file", tsha0), 0, false)
 check(mtn("automate", "get_file", tsha1), 0, false)
 check(mtn("automate", "get_file", tsha2), 0, false)

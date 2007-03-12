@@ -90,24 +90,24 @@ function check_migrate_from(id, need_regen_rosters)
   check(qgrep(id, "stdout"))
   -- migrate it
   check(mtn("--db="..id..".mtn", "db", "migrate"), 0, false, true)
-  -- check to see if it told us to regenerate_caches
+  -- check to see if it told us to regenerate-caches
   if (need_regen_rosters) then
      -- then the migrate should have warned us
-     check(string.find(readfile("stderr"), "regenerate_caches") ~= nil)
+     check(qgrep("regenerate-caches", "stderr"))
      -- and normal commands on the db should notice the problem and error out
      check(mtn("--db="..id..".mtn", "ls", "keys"), 1, false, true)
-     check(qgrep("regenerate_caches", "stderr"))
+     check(qgrep("regenerate-caches", "stderr"))
      -- and we should do the regeneration
-     check(mtn("--db="..id..".mtn", "db", "regenerate_caches"), 0, false, false)
+     check(mtn("--db="..id..".mtn", "db", "regenerate-caches"), 0, false, false)
      -- after which, normal commands should work again
      check(mtn("--db="..id..".mtn", "ls", "keys"), 0, false, true)
-     check(not qgrep("regenerate_caches", "stderr"))
+     check(not qgrep("regenerate-caches", "stderr"))
   else
      -- then the migrate should not have warned us
-     check(string.find(readfile("stderr"), "regenerate_caches") == nil)
+     check(string.find(readfile("stderr"), "regenerate-caches") == nil)
      -- and normal commands on the db should work fine
      check(mtn("--db="..id..".mtn", "ls", "keys"), 0, false, true)
-     check(not qgrep("regenerate_caches", "stderr"))
+     check(not qgrep("regenerate-caches", "stderr"))
   end
   check_same_db_contents(id..".mtn", "latest.mtn")
 end

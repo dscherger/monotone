@@ -18,7 +18,7 @@ check(mtn("cert", revs.s, "branch", "otherbranch"), 0, false, false)
 writefile("testfile", "double double")
 commit("nobranch")
 revs.n = base_revision()
-check(mtn("db", "kill_branch_certs_locally", "nobranch"))
+check(mtn("db", "kill-branch-certs-locally", "nobranch"))
 
 check(mtn("checkout", "--branch=testbranch", "--revision", revs.t, "codir"), 0, false, false)
 check(grep('^ *branch "testbranch"', "codir/_MTN/options"), 0, false, false)

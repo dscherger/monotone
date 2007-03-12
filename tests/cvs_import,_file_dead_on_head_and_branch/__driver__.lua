@@ -10,6 +10,6 @@ tsha = sha1("cvsfile")
 
 -- import into monotone and check presence of files
 
-check(mtn("--branch=testbranch", "cvs_import", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=testbranch", "cvs-import", "cvs-repository/test"), 0, false, false)
 
 check(mtn("automate", "get_file", tsha), 0, false)

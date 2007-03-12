@@ -28,7 +28,7 @@ return {
 	 mkdir("newdir")
 	 writefile("newdir/file3", "twas mimsy and the borogroves\n")
 	 check(mtn("add", "newdir", "newdir/file3"), 0, false, false)
-	 check(mtn("refresh_inodeprints"))
+	 check(mtn("refresh-inodeprints"))
 	 chdir("..")
       end,
    checker =

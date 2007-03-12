@@ -12,7 +12,7 @@ revert_to(anc)
 writefile("foo", "ancestor\nright")
 commit()
 
-check(mtn("merge_into_workspace", other), 0, false, false)
+check(mtn("merge-into-workspace", other), 0, false, false)
 
 writefile("fudgie", "fudgie content")
 

@@ -14,13 +14,13 @@ base = base_revision()
 netsync.sync("*branch")
 append("foo", "bar\n")
 commit()
-check(mtn("merge_into_dir", "otherbranch", "testbranch", "test"), 0, false, false)
+check(mtn("merge-into-dir", "otherbranch", "testbranch", "test"), 0, false, false)
 
 check(mtn("update", "-r", base), 0, false, false)
 
 append("foo", "baz\n")
 commit(nil, nil, mtn2)
-check(mtn2("merge_into_dir", "otherbranch", "testbranch", "test"), 0, false, false)
+check(mtn2("merge-into-dir", "otherbranch", "testbranch", "test"), 0, false, false)
 
 check(get("rcfile"))
 check(mtn("merge", "--rcfile", "rcfile"), 0, false, false)

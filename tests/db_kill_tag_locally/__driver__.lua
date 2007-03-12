@@ -32,7 +32,7 @@ check(qgrep("test_tag", "stdout"))
 check(qgrep(R4, "stdout"))
 check(qgrep("other_tag", "stdout"))
 
-check(mtn("db", "kill_tag_locally", "test_tag"), 0, false, false)
+check(mtn("db", "kill-tag-locally", "test_tag"), 0, false, false)
 
 check(mtn("ls", "tags"), 0, true, false)
 check(qgrep(R1, "stdout"))
@@ -44,7 +44,7 @@ check(not qgrep("test_tag", "stdout"))
 check(qgrep(R4, "stdout"))
 check(qgrep("other_tag", "stdout"))
 
-check(mtn("db", "kill_tag_locally", "ambig_tag"), 0, false, false)
+check(mtn("db", "kill-tag-locally", "ambig_tag"), 0, false, false)
 
 check(mtn("ls", "tags"), 0, true, false)
 check(not qgrep(R1, "stdout"))

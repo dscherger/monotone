@@ -15,7 +15,7 @@ writefile("foo", "ancestor\nright")
 addfile("right", "only on right")
 commit()
 
-check(mtn("merge_into_workspace", other), 0, false, false)
+check(mtn("merge-into-workspace", other), 0, false, false)
 
 -- check that we've got the expected initial status
 check(mtn("status"), 0, true, false)
@@ -44,7 +44,7 @@ commit()
 check(qgrep("in-two-parent", "_MTN/inodeprints"))
 
 remove("_MTN/inodeprints")
-check(mtn("refresh_inodeprints"), 0, false, false)
+check(mtn("refresh-inodeprints"), 0, false, false)
 check(fsize("_MTN/inodeprints") ~= 0)
 check(qgrep("left", "_MTN/inodeprints"))
 check(qgrep("right", "_MTN/inodeprints"))

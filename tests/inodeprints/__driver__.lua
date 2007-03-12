@@ -35,7 +35,7 @@ writefile("testfile", "stuff stuff")
 check(mtn("diff"), 0, true, false)
 check(qgrep("stuff stuff", "stdout"))
 -- Should have changed the inodeprints file
-check(mtn("refresh_inodeprints"), 0, false, false)
+check(mtn("refresh-inodeprints"), 0, false, false)
 check(not samefile("_MTN/inodeprints", "ip1"))
 
 -- Make sure partial commit doesn't screw things up

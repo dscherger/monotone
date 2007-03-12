@@ -1,4 +1,4 @@
--- This test ensures that 'mtn workspace_migrate' can take any old-format
+-- This test ensures that 'mtn migrate-workspace' can take any old-format
 -- workspace and move it forward to the current time; it is basically a
 -- compatibility test (see also the 'schema_migration' test).
 --
@@ -79,10 +79,10 @@ function check_migrate_from(thing, version, checker)
       -- monotone notices and refuses to work
       check(indir(ws, mtn("status")), 1, false, true)
       -- and the error message mentions the command they should run
-      check(qgrep("migrate_workspace", "stderr"))
+      check(qgrep("migrate-workspace", "stderr"))
    end
    -- use raw_mtn here so it's not getting any help from the command line
-   check(indir(ws, raw_mtn("migrate_workspace")), 0, false, false)
+   check(indir(ws, raw_mtn("migrate-workspace")), 0, false, false)
    -- now we should be the current version, and things should work
    check(readfile(ws .. "/_MTN/format") == (current_workspace_format .. "\n"))
    check_workspace_matches_current(ws, thing .. "-current")

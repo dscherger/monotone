@@ -28,7 +28,7 @@ check(mtn("automate", "graph"), 0, true, nil)
 rename("stdout", "ancestry")
 
 -- the merge should succeed
-check(mtn("merge_into_workspace", left), 0, false, false)
+check(mtn("merge-into-workspace", left), 0, false, false)
 
 -- the database should be unaffected, i.e. the operation
 -- should not have created any new revisions
@@ -42,7 +42,7 @@ check(samefile("testfile", "testfile.b"))
 -- in-database merge would generate; in particular, both "left-attr"
 -- and "right-attr" should show up as "dormant_attr"s.
 check(get("expected-roster"))
-check(mtn("get_roster"), 0, true, nil)
+check(mtn("get-roster"), 0, true, nil)
 canonicalize("stdout")
 check(samefile("expected-roster", "stdout"))
 

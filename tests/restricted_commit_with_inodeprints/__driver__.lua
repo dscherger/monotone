@@ -14,7 +14,7 @@ mtn_setup()
 -- would not be updated but the old cached value can't possibly equal the current
 -- value since the file does not exist and cannot have an inodeprint.
 
--- also, it may be a useful feature (?) to allow refresh_inodeprints to update
+-- also, it may be a useful feature (?) to allow refresh-inodeprints to update
 -- its cache for a restricted set of files by allowing paths on the command line
 -- to establish a restriction.
 
@@ -23,7 +23,7 @@ addfile("file1", "file1")
 commit()
 
 -- enable inodeprints mode
-check(mtn("refresh_inodeprints"), 0, false, false)
+check(mtn("refresh-inodeprints"), 0, false, false)
 
 addfile("file2", "file2")
 

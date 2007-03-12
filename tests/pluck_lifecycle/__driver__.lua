@@ -40,7 +40,7 @@ commit()
 two_rev = base_revision()
 
 -- and merge 1
-check(mtn("explicit_merge", one_rev, two_rev, "testbranch"), 0, false, false)
+check(mtn("explicit-merge", one_rev, two_rev, "testbranch"), 0, false, false)
 check(mtn("update"), 0, false, false)
 
 -- check that we need the edit for b

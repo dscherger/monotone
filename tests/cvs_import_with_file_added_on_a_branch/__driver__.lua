@@ -9,4 +9,4 @@ check(get("cvs-repository"))
 -- file on mainline, followed by an add of the file on the branch).
 -- Make sure we handle it correct.
 
-check(mtn("--branch=test", "cvs_import", "cvs-repository"), 0, false, false)
+check(mtn("--branch=test", "cvs-import", "cvs-repository"), 0, false, false)

@@ -25,7 +25,7 @@ function make_graph()
   commit()
   revs.e = base_revision()
 
-  check(mtn("explicit_merge", revs.d, revs.e, "testbranch"), 0, false, false)
+  check(mtn("explicit-merge", revs.d, revs.e, "testbranch"), 0, false, false)
   check(mtn("update"), 0, false, false)
   revs.f = base_revision()
 

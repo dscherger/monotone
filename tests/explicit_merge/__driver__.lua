@@ -24,7 +24,7 @@ copy("right", "testfile")
 commit()
 right = base_revision()
 
-check(mtn("explicit_merge", left, right, "otherbranch"), 0, false, false)
+check(mtn("explicit-merge", left, right, "otherbranch"), 0, false, false)
 
 -- Check that it didn't end up on our current branch, i.e. update doesn't do anything
 check(mtn("update"), 0, false, false)

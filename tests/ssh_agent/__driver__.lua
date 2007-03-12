@@ -1,6 +1,6 @@
 -- with no monotone keys:
 -- * (E) export monotone key
-check(mtn("ssh_agent_export"), 1, false, false)
+check(mtn("ssh-agent-export"), 1, false, false)
 
 mtn_setup()
 
@@ -12,22 +12,22 @@ addfile("some_file", "test")
 check(mtn("ci", "--message", "commit msg"), 0, false, false)
 
 -- * (E) export key with -k that does not exist
-check(mtn("--key", "n@n.com", "ssh_agent_export"), 1, false, false)
+check(mtn("--key", "n@n.com", "ssh-agent-export"), 1, false, false)
 
 -- * (ok) export key without -k
 check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
               "--db=" .. test.root .. "/test.db",
               "--keydir", test.root .. "/keys",
-              "ssh_agent_export"), 0, false, false)
+              "ssh-agent-export"), 0, false, false)
 
 -- * (ok) export key with -k that does exist
-check(mtn("--key", "tester@test.net", "ssh_agent_export"), 0, false, false)
+check(mtn("--key", "tester@test.net", "ssh-agent-export"), 0, false, false)
 
 -- * (ok) export monotone key with passphrase
-check(mtn("ssh_agent_export"), 0, false, false, tkey .. "\n" .. tkey .. "\n")
+check(mtn("ssh-agent-export"), 0, false, false, tkey .. "\n" .. tkey .. "\n")
 
 -- * (ok) export monotone key without passphrase
-check(mtn("ssh_agent_export", "id_monotone"), 0, false, false)
+check(mtn("ssh-agent-export", "id_monotone"), 0, false, false)
 skip_if(not existsonpath("chmod"))
 check({"chmod", "600", "id_monotone"}, 0, false, false)
 
@@ -45,8 +45,8 @@ for line in io.lines("stdout") do
    end
 end
 
--- * (ok) mtn ssh_agent_add adds key to agent
-check(mtn("ssh_agent_add"), 0, false, false)
+-- * (ok) mtn ssh-agent-add adds key to agent
+check(mtn("ssh-agent-add"), 0, false, false)
 check({"ssh-add", "-l"}, 0, true, false)
 ok = false
 for line in io.lines("stdout") do
@@ -154,7 +154,7 @@ addfile("some_file9", "test")
 check(mtn("ci", "--message", "commit msg"), 0, false, false)
 
 -- * (ok) export key with password
-check(mtn("ssh_agent_export", "id_monotone_pass"), 0, false, false, "\npass\npass\n")
+check(mtn("ssh-agent-export", "id_monotone_pass"), 0, false, false, "\npass\npass\n")
 skip_if(not existsonpath("chmod"))
 check({"chmod", "600", "id_monotone_pass"}, 0, false, false)
 
@@ -191,23 +191,23 @@ remove("_MTN/options")
 check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
               "--db=" .. test.root .. "/test.db",
               "--keydir", test.root .. "/keys",
-              "ssh_agent_export"), 1, false, false)
+              "ssh-agent-export"), 1, false, false)
 
 -- * (N)  try to add monotone key without -k
 remove("_MTN/options")
 check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
               "--db=" .. test.root .. "/test.db",
               "--keydir", test.root .. "/keys",
-              "ssh_agent_add"), 1, false, false)
+              "ssh-agent-add"), 1, false, false)
 
 -- * (ok) export monotone key with -k
-check(mtn("ssh_agent_export", "--key", "test2@tester.net", "id_monotone2"), 0, false, false)
+check(mtn("ssh-agent-export", "--key", "test2@tester.net", "id_monotone2"), 0, false, false)
 skip_if(not existsonpath("chmod"))
 check({"chmod", "600", "id_monotone2"}, 0, false, false)
 
--- * (ok) mtn ssh_agent_add with -k adds key to agent
+-- * (ok) mtn ssh-agent-add with -k adds key to agent
 check({"ssh-add", "-D"}, 0, false, false)
-check(mtn("ssh_agent_add", "--key", "test2@tester.net"), 0, false, false)
+check(mtn("ssh-agent-add", "--key", "test2@tester.net"), 0, false, false)
 check({"ssh-add", "-l"}, 0, true, false)
 ok = false
 for line in io.lines("stdout") do
@@ -253,11 +253,11 @@ check(mtn("ci", "--key", "tester@test.net", "--message", "commit msg"), 0, false
 -- * (ok) create passworded key and export it
 check({"ssh-add", "-D"}, 0, false, false)
 check(mtn("genkey", "test_pass@tester.net"), 0, false, false, "pass\npass\n")
-check(mtn("ssh_agent_export", "--key", "test_pass@tester.net"), 0, false, false, "pass\npass2\npass2\n")
+check(mtn("ssh-agent-export", "--key", "test_pass@tester.net"), 0, false, false, "pass\npass2\npass2\n")
 
 -- * (ok) add passworded key
 check({"ssh-add", "-D"}, 0, false, false)
-check(mtn("ssh_agent_add", "--key", "test_pass@tester.net"), 0, false, false, "pass\n")
+check(mtn("ssh-agent-add", "--key", "test_pass@tester.net"), 0, false, false, "pass\n")
 check({"ssh-add", "-l"}, 0, true, false)
 ok = false
 for line in io.lines("stdout") do

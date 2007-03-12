@@ -20,7 +20,7 @@ writefile("testfile", "ancestor\nright")
 commit()
 right = base_revision()
 
-check(mtn("merge_into_workspace", left), 0, false, false)
+check(mtn("merge-into-workspace", left), 0, false, false)
 check(qgrep("left", "testfile"))
 check(qgrep("right", "testfile"))
 check(not qgrep("ancestor", "testfile"))
@@ -29,7 +29,7 @@ diag = "mtn: misuse: this command can only be used in a single-parent workspace\
 diffdiag = ("mtn: misuse: this workspace has more than one parent\n"..
 	    "mtn: misuse: (specify a revision to diff against with --revision)\n")
 
-check(mtn("merge_into_workspace", anc), 1, nil, diag)
+check(mtn("merge-into-workspace", anc), 1, nil, diag)
 
 -- diff with no arguments: what parent?
 check(mtn("diff"), 1, nil, diffdiag)

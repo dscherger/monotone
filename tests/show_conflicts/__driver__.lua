@@ -17,7 +17,7 @@ append("bar", "yyy\n")
 commit("branch")
 right = base_revision()
 
-check(mtn("show_conflicts", left, right), 0, false, true)
+check(mtn("show-conflicts", left, right), 0, false, true)
 rename("stderr", "conflicts")
 
 check(qgrep("There are 1 node_name_conflicts", "conflicts"))

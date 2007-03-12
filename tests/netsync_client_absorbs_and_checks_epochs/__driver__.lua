@@ -34,9 +34,9 @@ commit()
 revs[1] = base_revision()
 
 -- change the epochs in the first db
-check(mtn("db", "set_epoch", "testbranch", "12345"), 1, false, false)
-check(mtn("db", "set_epoch", "testbranch", string.rep("a", 40)), 0, false, false)
-check(mtn("db", "set_epoch", "otherbranch", string.rep("a", 40)), 0, false, false)
+check(mtn("db", "set-epoch", "testbranch", "12345"), 1, false, false)
+check(mtn("db", "set-epoch", "testbranch", string.rep("a", 40)), 0, false, false)
+check(mtn("db", "set-epoch", "otherbranch", string.rep("a", 40)), 0, false, false)
 
 -- this should *fail* to sync 
 srv = netsync.start()

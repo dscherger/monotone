@@ -43,7 +43,7 @@ addfile("otherfile2", "blah blah")
 commit()
 revs.d = base_revision()
 
-check(mtn("explicit_merge", revs.d, revs.c, "testbranch"), 0, false, false)
+check(mtn("explicit-merge", revs.d, revs.c, "testbranch"), 0, false, false)
 check(mtn("update"), 0, false, false)
 revs.e = base_revision()
 

@@ -269,10 +269,10 @@ function check_same_db_contents(db1, db2)
     rev = trim(rev)
     check_same_stdout(mtn("--db", db1, "automate", "certs", rev),
                       mtn("--db", db2, "automate", "certs", rev))
-    check_same_stdout(mtn("--db", db1, "automate", "get_revision", rev),
-                      mtn("--db", db2, "automate", "get_revision", rev))
-    check_same_stdout(mtn("--db", db1, "automate", "get_manifest_of", rev),
-                      mtn("--db", db2, "automate", "get_manifest_of", rev))
+    check_same_stdout(mtn("--db", db1, "automate", "get-revision", rev),
+                      mtn("--db", db2, "automate", "get-revision", rev))
+    check_same_stdout(mtn("--db", db1, "automate", "get-manifest-of", rev),
+                      mtn("--db", db2, "automate", "get-manifest-of", rev))
   end
   
   check(mtn("--db", db1, "complete", "file", ""), 0, true, false)

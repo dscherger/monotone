@@ -8,8 +8,8 @@ netsync.setup()
 
 addfile("foo", "foo")
 commit()
-check(mtn("db", "set_epoch", "testbranch", string.rep("1234567890", 4)))
-check(mtn2("db", "set_epoch", "testbranch", string.rep("1234567890", 4)))
+check(mtn("db", "set-epoch", "testbranch", string.rep("1234567890", 4)))
+check(mtn2("db", "set-epoch", "testbranch", string.rep("1234567890", 4)))
 
 -- If we completely ignore the epoch (because we already have it), we'll
 -- never notice that refinement is done.

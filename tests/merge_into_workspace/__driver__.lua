@@ -1,4 +1,4 @@
--- this is very similar to the explicit_merge test, except that the
+-- this is very similar to the explicit-merge test, except that the
 -- result of the merge winds up in the current workspace.
 
 function samefile_ignore_dates(a, b)
@@ -49,17 +49,17 @@ right = base_revision()
 check(mtn("automate", "graph"), 0, true, nil)
 rename("stdout", "ancestry")
 
--- we're currently at "right", so a merge_into_workspace of "left"
+-- we're currently at "right", so a merge-into-workspace of "left"
 -- is the merge we want; but first, test the sanity checks
 
 copy("otherfile_mod", "otherfile")
 
 -- this should fail, because the workspace is unclean
-check(mtn("merge_into_workspace", left), 1, false, false)
+check(mtn("merge-into-workspace", left), 1, false, false)
 
 -- after reverting, it should work
 check(mtn("revert", "otherfile"), 0, false, false)
-check(mtn("merge_into_workspace", left), 0, false, false)
+check(mtn("merge-into-workspace", left), 0, false, false)
 
 -- testfile should be the same as merged
 check(samefile("merged", "testfile"))

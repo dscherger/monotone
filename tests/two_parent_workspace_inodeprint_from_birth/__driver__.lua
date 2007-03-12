@@ -28,7 +28,7 @@ remove("left")
 -- create second child from ancestor (right)
 revert_to(anc)
 sleep(5)
-check(mtn("refresh_inodeprints"), 0, false, false)
+check(mtn("refresh-inodeprints"), 0, false, false)
 
 check(qgrep("foo", "_MTN/inodeprints"))
 check(not qgrep("right", "_MTN/inodeprints"))
@@ -43,7 +43,7 @@ check(qgrep("right", "_MTN/inodeprints"))
 check(qgrep("foo", "_MTN/inodeprints"))
 
 -- now create a two parent workspace
-check(mtn("merge_into_workspace", other), 0, false, false)
+check(mtn("merge-into-workspace", other), 0, false, false)
 
 check(fsize("_MTN/inodeprints") ~= 0)
 
@@ -54,19 +54,19 @@ check(not qgrep("foo", "_MTN/inodeprints"))
 check(qgrep("bar", "_MTN/inodeprints"))
 
 -- left and right are unchanged, but added in the other parent, so should be
--- inodeprinted, except that left was added during the merge_into_workspace,
+-- inodeprinted, except that left was added during the merge-into-workspace,
 -- so it might be too new to be inodeprinted (depending on the speed the
 -- test happens to run), so we don't check for it.
 check(qgrep("right", "_MTN/inodeprints"))
 
 -- wait a bit, refresh, and check that left shows up now
 sleep(5)
-check(mtn("refresh_inodeprints"))
+check(mtn("refresh-inodeprints"))
 check(qgrep("left", "_MTN/inodeprints"))
 
--- test explicit refresh_inodeprints
+-- test explicit refresh-inodeprints
 addfile("in-two-parent", "in-two-parent's file content")
 sleep(5)
-check(mtn("refresh_inodeprints"), 0, false, false)
+check(mtn("refresh-inodeprints"), 0, false, false)
 check(fsize("_MTN/inodeprints") ~= 0)
 check(qgrep("in-two-parent", "_MTN/inodeprints"))

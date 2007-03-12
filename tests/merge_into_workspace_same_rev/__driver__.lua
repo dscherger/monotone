@@ -9,4 +9,4 @@ commit()
 other = base_revision()
 
 -- try merging the current workspace head into the workspace
-check(mtn("merge_into_workspace", other), 1, nil, false)
+check(mtn("merge-into-workspace", other), 1, nil, false)

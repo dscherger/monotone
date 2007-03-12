@@ -24,7 +24,7 @@ return {
 	 commit()
 	 right = base_revision()
 
-	 check(mtn("merge_into_workspace", left), 0, false, false)
+	 check(mtn("merge-into-workspace", left), 0, false, false)
 	 chdir("..")
       end,
    checker = function (dir, refdir) end

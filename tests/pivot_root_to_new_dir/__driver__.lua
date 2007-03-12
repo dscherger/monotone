@@ -1,6 +1,6 @@
 mtn_setup()
 
--- pivot_root to a directory that hasn't been commited yet should work
+-- pivot-root to a directory that hasn't been commited yet should work
 
 mkdir("workspace")
 check(indir("workspace", mtn("setup", ".", "-b", "testbranch")),
@@ -14,7 +14,7 @@ check(indir("workspace", mtn("commit", "-m", "foo")), 0, false, false)
 mkdir("workspace/new_root")
 check(indir("workspace", mtn("add", "new_root")), 0, false, false)
 
-check(indir("workspace", mtn("pivot_root", "new_root", "Attic")),
+check(indir("workspace", mtn("pivot-root", "new_root", "Attic")),
       0, false, false)
 
 check(isdir("workspace/_MTN"))

@@ -17,7 +17,7 @@ writefile("changelog.3", readfile("changelog.1").."third changelog -on branch-\n
 
 
 -- import into monotone and check presence of files
-check(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=test", "cvs-import", "cvs-repository/test"), 0, false, false)
 
 check(mtn("checkout", "--branch=test", "maindir"), 0, false, false)
 check(mtn("checkout", "--branch=test.branched", "branchdir"), 0, false, false)

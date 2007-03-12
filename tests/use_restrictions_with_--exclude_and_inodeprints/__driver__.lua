@@ -9,7 +9,7 @@ check(mtn("add", "file1"), 0, false, false)
 check(mtn("add", "foo/bar"), 0, false, false)
 check(mtn("ci", "-m", "x"), 0, false, false)
 
-check(mtn("refresh_inodeprints"))
+check(mtn("refresh-inodeprints"))
 append("file1", "a")
 append("foo/bar", "b")
 check(mtn("ci", "--exclude", "foo", "-m", 'x'), 0, false, false)

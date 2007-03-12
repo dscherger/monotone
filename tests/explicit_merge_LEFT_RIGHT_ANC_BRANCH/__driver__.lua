@@ -23,9 +23,9 @@ commit()
 right = base_revision()
 
 -- This should fail:
-xfail_if(true, mtn("explicit_merge", left, right, bad_anc, "testbranch"), 1, false, false)
+xfail_if(true, mtn("explicit-merge", left, right, bad_anc, "testbranch"), 1, false, false)
 -- But this should work:
-xfail_if(true, mtn("explicit_merge", left, right, good_anc, "testbranch"), 0, false, false)
+xfail_if(true, mtn("explicit-merge", left, right, good_anc, "testbranch"), 0, false, false)
 -- And produce the logical result:
 check(mtn("update"), 0, false, false)
 writefile("expected", "a\nNEW\nc\nNEW\ne\n")

@@ -28,7 +28,7 @@ check(mtn("automate", "graph"), 0, true, nil)
 rename("stdout", "ancestry")
 
 -- the merge should succeed
-check(mtn("merge_into_workspace", left), 0, false, false)
+check(mtn("merge-into-workspace", left), 0, false, false)
 
 -- testfile, left, right should all exist and equal their originals
 

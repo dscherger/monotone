@@ -34,7 +34,7 @@ check(mtn("automate", "graph"), 0, true, nil)
 rename("stdout", "ancestry")
 
 -- the merge should succeed
-check(mtn("merge_into_workspace", left), 0, false, false)
+check(mtn("merge-into-workspace", left), 0, false, false)
 
 -- testfile should be the same as left
 check(samefile("left", "testfile"))
@@ -49,7 +49,7 @@ check(qgrep("no changes", "stdout"))
 
 -- we should not be able to merge anything on top of this, despite
 -- there being no changes in the workspace
-check(mtn("merge_into_workspace", unrelated), 1, false, false)
+check(mtn("merge-into-workspace", unrelated), 1, false, false)
 
 -- a commit at this point should succeed, again despite having no changes
 commit()
