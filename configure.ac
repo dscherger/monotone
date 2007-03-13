@@ -58,29 +58,6 @@ AC_PROG_XGETTEXT_FLAG_OPTION
 # similarly, this calls ACX_PTHREAD, which expects C.
 BOOST_THREAD_STUBS
 
-# Stick some logic into config.status, after the logic that
-# AM_GNU_GETTEXT sticks into config.status, to annul the UPDATEPOFILES
-# variable in po/Makefile.  This prevents auto-regeneration of the
-# .po files when the sources change, which the translators do not want.
-AC_OUTPUT_COMMANDS([
-    for ac_file in $CONFIG_FILES; do
-      # Support "outfile[:infile[:infile...]]"
-      case "$ac_file" in
-        *:*) ac_file=`echo "$ac_file"|sed 's%:.*%%'` ;;
-      esac
-      # PO directories have a Makefile.in generated from Makefile.in.in.
-      case "$ac_file" in */Makefile.in)
-        target="`echo x$ac_file | sed -e 's/.in$//' -e 's/^x//'`"
-	mtn_tmp="${target}.tmp"
-        test -n "$as_me" && echo "$as_me: fixing $target" || echo "fixing $target"
-	sed -e 's/^MSGMERGE =.*$/MSGMERGE = false/' \
-            -e 's/^MSGMERGE_UPDATE =.*$/MSGMERGE_UPDATE = true/' \
-               "$target" > "$mtn_tmp"
-	mv -f "$mtn_tmp" "$target" ;;
-      esac
-    done
-])
-
 AC_LANG([C++])
 PG_NLS
 # This header may not be visible to the C compiler.

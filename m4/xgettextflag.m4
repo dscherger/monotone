@@ -14,9 +14,4 @@ AC_DEFUN([AC_PROG_XGETTEXT_FLAG_OPTION],
    then ac_cv_prog_xgettext_flag_option=yes
    else ac_cv_prog_xgettext_flag_option=no
    fi])
- AC_CONFIG_FILES([po/Makefile.in],
-  [if test $xgettext_flag_option = no; then
-     echo 'XGETTEXT_OPTIONS = $(XGETTEXT_OPTIONS_NO_FLAG)' >>po/Makefile.in
-   fi],
-  [xgettext_flag_option=$ac_cv_prog_xgettext_flag_option])
 ])
