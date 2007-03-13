@@ -403,14 +403,23 @@ endif
 # i18n support
 
 if ENABLE_NLS
-LINGUAS=$(wildcard $(srcdir)/po/*.po)
-LINGUA_RESULTS=$(addsuffix .gmo,$(basename $(LINGUAS)))
+LINGUAS=$(basename $(notdir $(wildcard $(srcdir)/po/*.po)))
+LINGUA_FORMAT=.mo
+LINGUA_DOMAIN=monotone
+LINGUA_RESULTS=$(addprefix po/,$(addsuffix $(LINGUA_FORMAT),$(LINGUAS)))
 
 %.mo: %.po
 	msgfmt -o $@ $<
 
 %.gmo: %.po
 	msgfmt -o $@ $<
+
+install-data-local: $(LINGUA_RESULTS)
+	for lang in $(LINGUAS); do \
+		target=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
+		$(mkinstalldirs) $$target; \
+		$(INSTALL_DATA) po/$$lang$(LINGUA_FORMAT) $$target/$(LINGUA_DOMAIN)$(LINGUA_FORMAT); \
+	done
 
 endif
 
