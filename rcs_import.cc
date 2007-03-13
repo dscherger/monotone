@@ -1138,11 +1138,11 @@ struct blob_splitter
 {
 protected:
   cvs_history & cvs;
-  map< int, cvs_blob_index > & cycle_members;
+  set< cvs_blob_index > & cycle_members;
   MyColorMap & colormap;
 
 public:
-  blob_splitter(cvs_history & c, map< int, cvs_blob_index > & cm,
+  blob_splitter(cvs_history & c, set< cvs_blob_index > & cm,
                 MyColorMap & cmap)
     : cvs(c),
       cycle_members(cm),
@@ -1167,12 +1167,12 @@ public:
         {
           // The cycle consists of only one blob - we have to solve an
           // intra blob dependency.
-          cycle_members.insert(make_pair(cycle_members.size(), e.m_source));
+          cycle_members.insert(e.m_source);
         }
       else
         {
-          cycle_members.insert(make_pair(cycle_members.size(), e.m_source));
-          cycle_members.insert(make_pair(cycle_members.size(), e.m_target));
+          cycle_members.insert(e.m_source);
+          cycle_members.insert(e.m_target);
 
           cvs_blob_index ci = target(e, g);
 
@@ -1195,7 +1195,7 @@ public:
               if (cycle_members.find(*ity) != cycle_members.end())
                 break;
 
-              cycle_members.insert(make_pair(cycle_members.size(), *ity));
+              cycle_members.insert(*ity);
               ci = *ity;
 
               limit--;
@@ -1301,7 +1301,7 @@ add_blob_dependency_edges(cvs_history & cvs,
  * and return split points to resolve these dependencies.
  */
 vector< pair<time_t, time_t> >
-get_split_points(cvs_history & cvs, const cvs_blob_index bi)
+get_split_points(cvs_history & cvs, cvs_blob_index bi)
 {
   cvs_blob & blob = cvs.blobs[bi];
 
@@ -1332,18 +1332,20 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
               time_t split_point, Graph & g);
 
 void
-split_cycle(cvs_history & cvs,
-            map< int, cvs_blob_index > & cycle_members,
+split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
             Graph & g)
 {
+  cvs_blob_index blob_to_split;
+
   /* shortcut for intra blob dependencies */
   I(cycle_members.size() > 0);
   if (cycle_members.size() == 1)
     {
-      L(FL("should split blob %d") % cycle_members[0]);
+      L(FL("should split blob %d") % *cycle_members.begin());
+      blob_to_split = *cycle_members.begin();
 
       vector< pair< time_t, time_t > > split_points =
-        get_split_points(cvs, cycle_members[0]);
+        get_split_points(cvs, *cycle_members.begin());
 
       for (vector< pair< time_t, time_t > >::const_iterator i = split_points.begin();
            i != split_points.end(); ++i)
@@ -1351,16 +1353,16 @@ split_cycle(cvs_history & cvs,
           time_t split_point = i->second - ((i->second - i->first) / 2);
           L(FL("splitting blob between %d and %d (at %d)") % i->first % i->second % split_point);
 
-          split_blob_at(cvs, cycle_members[0], split_point, g);
+          split_blob_at(cvs, *cycle_members.begin(), split_point, g);
         }
     }
   else
     {
       L(FL("choosing a blob to split"));
-      for (unsigned int i = 0; i < cycle_members.size(); ++i)
+      for (set< cvs_blob_index >::const_iterator i = cycle_members.begin();
+           i != cycle_members.end(); ++i)
         {
-          map< int, cvs_blob_index > xx;
-          L(FL("  testing blob %d") % xx[i]);
+          L(FL("  testing blob %d") % *i);
         }
 
       L(FL("splitting a cycle with multiple blobs involved is not yet implemented, sorry!"));
@@ -1580,7 +1582,7 @@ resolve_blob_dependencies(cvs_history &cvs,
   ColorPMap colorpmap(colormap);
 
   // check for cycles
-  map< int, cvs_blob_index > cycle_members;
+  set< cvs_blob_index > cycle_members;
   blob_splitter< Edge, ColorMap > vis(cvs, cycle_members, colormap);
 
   while (1)
