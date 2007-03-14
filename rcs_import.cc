@@ -263,6 +263,8 @@ private:
   vector< cvs_event_ptr > events;
 
 public:
+  shared_ptr< cvs_event_branch > in_branch;
+
   cvs_blob(const cvs_event_digest d)
     : digest(d)
     { };
@@ -1156,7 +1158,7 @@ cluster_consumer
                    app_state & app,
                    ticker & n_revs);
 
-  void consume_blob(const cvs_blob & blob);
+  void consume_blob(cvs_blob & blob);
   void add_missing_parents(split_path const & sp, cset & cs);
   void build_cset(const cvs_blob & blob, cset & cs);
   void store_auxiliary_certs(prepared_revision const & p);
@@ -1950,8 +1952,75 @@ cluster_consumer::build_cset(const cvs_blob & blob,
 }
 
 void
-cluster_consumer::consume_blob(const cvs_blob & blob)
+cluster_consumer::consume_blob(cvs_blob & blob)
 {
+  // Search through all direct dependencies and check what branches
+  // those are in.
+  set< shared_ptr< cvs_event_branch > > dep_branches;
+  set< cvs_blob_index > dep_branchpoints;
+  for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+    {
+      cvs_event_ptr ev = *i;
+
+      for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+        {
+          cvs_event_ptr dep = *j;
+
+          // Get the blob this dependency event is part of.
+          cvs_blob_index bi = cvs.get_blob_of(dep);
+          cvs_blob & dep_blob = cvs.blobs[bi];
+
+          if ((dep_blob.in_branch) &&
+              (dep_branches.find(dep_blob.in_branch) == dep_branches.end()))
+            dep_branches.insert(dep_blob.in_branch);
+
+          if (dep_blob.get_digest().is_branch())
+            dep_branchpoints.insert(bi);
+        }
+    }
+
+  I(dep_branchpoints.size() <= 1);
+  if (dep_branchpoints.size() > 0)
+    {
+      I(dep_branches.size() <= 1);
+
+      cvs_blob_index branchpoint_bi = *dep_branchpoints.begin();
+      blob.in_branch = boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+              *cvs.blobs[branchpoint_bi].begin());
+    }
+  else
+    {
+      if (dep_branches.size() > 0)
+        {
+          // eliminate direct parent branches
+          bool can_remove;
+          do
+          {
+            can_remove = false;
+            set< shared_ptr< cvs_event_branch > >::const_iterator i;
+            cvs_blob_index bi;
+            shared_ptr< cvs_event_branch > cbe;
+            for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
+              {
+                cbe = *i;
+
+                bi = cvs.get_blob_of(boost::static_pointer_cast<cvs_event, cvs_event_branch>(cbe));
+                if (dep_branches.find(cvs.blobs[bi].in_branch) != dep_branches.end())
+                  {
+                    can_remove = true;
+                    break;
+                  }
+              }
+
+            if (can_remove)
+              dep_branches.erase(cvs.blobs[bi].in_branch);
+          } while (can_remove);
+
+          I(dep_branches.size() <= 1);
+          blob.in_branch = *dep_branches.begin();
+        }
+    }
+
   if (blob.get_digest().is_commit())
     {
       // we should never have an empty blob; it's *possible* to have
@@ -1981,9 +2050,12 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
 
           calculate_ident(*rev, child_rid);
 
-          // TODO: We need to select the correct branchname here, instead of
-          //       stuffing it all into the base branch.
-          cvs_branchname bn = cvs.branchname_interner.intern(cvs.base_branch);
+          cvs_branchname bn;
+          if (blob.in_branch)
+            bn = blob.in_branch->branchname;
+          else
+            bn = cvs.branchname_interner.intern(cvs.base_branch);
+
           preps.push_back(prepared_revision(child_rid, rev, bn, blob));
 
           parent_rid = child_rid;
