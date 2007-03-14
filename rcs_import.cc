@@ -1317,8 +1317,8 @@ get_split_points(cvs_history & cvs, cvs_blob_index bi)
 
           if (dep->get_digest() == blob.get_digest())
             {
-              I(ev->time > dep->time);
               L(FL("event time: %d  - dep time: %d") % ev->time % dep->time);
+              I(ev->time >= dep->time);
               result_set.push_back(make_pair(dep->time, ev->time));
             }
         }
@@ -1358,15 +1358,71 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
     }
   else
     {
-      L(FL("choosing a blob to split"));
+      L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
+
+      // convert the set to a map
+      map< int, cvs_blob_index > mymap;
+      unsigned int cc = 0;
       for (set< cvs_blob_index >::const_iterator i = cycle_members.begin();
            i != cycle_members.end(); ++i)
         {
-          L(FL("  testing blob %d") % *i);
+          mymap[cc] = *i;
+          cc++;
         }
 
-      L(FL("splitting a cycle with multiple blobs involved is not yet implemented, sorry!"));
-      I(false);
+      cc = 0;
+      for (cc = 0; cc < mymap.size(); ++cc)
+        {
+          cvs_blob_index prev_blob = mymap[(cc > 0 ? cc - 1 : mymap.size() - 1)];
+          cvs_blob_index this_blob = mymap[cc];
+          cvs_blob_index next_blob = mymap[(cc < mymap.size() - 1 ? cc + 1 : 0)];
+
+          L(FL("  testing deps %d -> %d -> %d") % prev_blob % this_blob % next_blob);
+
+          time_t prev_min_time = 0;
+          for (blob_event_iter ii = cvs.blobs[prev_blob].begin(); ii != cvs.blobs[prev_blob].end(); ++ii)
+            {
+              cvs_event_ptr ev = *ii;
+
+              for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+                {
+                  cvs_event_ptr dep = *j;
+
+                  if (dep->get_digest() == cvs.blobs[this_blob].get_digest())
+                    {
+                      if ((prev_min_time == 0) || (dep->time < prev_min_time))
+                        prev_min_time = dep->time;
+                    }
+                }
+            }
+          L(FL("      prev min time: %d") % prev_min_time);
+
+          time_t next_max_time = 0;
+          for (blob_event_iter ii = cvs.blobs[this_blob].begin(); ii != cvs.blobs[this_blob].end(); ++ii)
+            {
+              cvs_event_ptr ev = *ii;
+
+              for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+                {
+                  cvs_event_ptr dep = *j;
+
+                  if (dep->get_digest() == cvs.blobs[next_blob].get_digest())
+                    {
+                      if (dep->time > next_max_time)
+                        next_max_time = dep->time;
+                    }
+                }
+            }
+          L(FL("      next max time: %d") % next_max_time);
+
+          if (prev_min_time < next_max_time)
+            {
+              L(FL("      this blob is a candidate for splitting..."));
+              L(FL("      for now, we just split that one!"));
+              split_blob_at(cvs, this_blob, next_max_time, g);
+              break;
+            }
+        }
     }
 }
 
