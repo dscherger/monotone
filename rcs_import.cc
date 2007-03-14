@@ -1415,6 +1415,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
             }
           L(FL("      next max time: %d") % next_max_time);
 
+          // We assume we have found both dependencies
+          I(prev_min_time > 0);
+          I(next_max_time > 0);
+
           if (prev_min_time < next_max_time)
             {
               L(FL("      this blob is a candidate for splitting..."));
