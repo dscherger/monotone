@@ -1993,10 +1993,10 @@ cluster_consumer::consume_blob(cvs_blob & blob)
       if (dep_branches.size() > 0)
         {
           // eliminate direct parent branches
-          bool can_remove;
+          bool set_modified;
           do
           {
-            can_remove = false;
+            set_modified = false;
             set< shared_ptr< cvs_event_branch > >::const_iterator i;
             cvs_blob_index bi;
             shared_ptr< cvs_event_branch > cbe;
@@ -2005,16 +2005,26 @@ cluster_consumer::consume_blob(cvs_blob & blob)
                 cbe = *i;
 
                 bi = cvs.get_blob_of(boost::static_pointer_cast<cvs_event, cvs_event_branch>(cbe));
-                if (dep_branches.find(cvs.blobs[bi].in_branch) != dep_branches.end())
+                while (cvs.blobs[bi].in_branch)
                   {
-                    can_remove = true;
-                    break;
+                    if (dep_branches.find(cvs.blobs[bi].in_branch) != dep_branches.end())
+                      {
+                        // remove that branch, since it's a parent of another branch
+                        // this blob depends on.
+                        dep_branches.erase(cvs.blobs[bi].in_branch);
+                      }
+
+                    // continue to remove grand-parents
+                    bi = cvs.get_blob_of(boost::static_pointer_cast<cvs_event, cvs_event_branch>(
+                      cvs.blobs[bi].in_branch));
+                    set_modified = true;
                   }
+
+                if (set_modified)
+                  break;
               }
 
-            if (can_remove)
-              dep_branches.erase(cvs.blobs[bi].in_branch);
-          } while (can_remove);
+          } while (set_modified);
 
           I(dep_branches.size() <= 1);
           blob.in_branch = *dep_branches.begin();
