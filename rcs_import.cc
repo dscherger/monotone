@@ -1096,7 +1096,6 @@ cluster_consumer
 {
   cvs_history & cvs;
   app_state & app;
-  string const & branchname;
   set<split_path> created_dirs;
   map<cvs_path, cvs_mtn_version> live_files;
   ticker & n_revisions;
@@ -1105,9 +1104,11 @@ cluster_consumer
   {
     prepared_revision(revision_id i,
                       shared_ptr<revision_t> r,
+                      const cvs_branchname branchname,
                       const cvs_blob & blob);
     revision_id rid;
     shared_ptr<revision_t> rev;
+    cvs_branchname branchname;
     time_t time;
     cvs_authorclog authorclog;
     vector<cvs_tag> tags;
@@ -1122,7 +1123,6 @@ cluster_consumer
 
   cluster_consumer(cvs_history & cvs,
                    app_state & app,
-                   string const & branchname,
                    ticker & n_revs);
 
   void consume_blob(const cvs_blob & blob);
@@ -1668,7 +1668,7 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
-  cluster_consumer cons(cvs, app, branchname, n_revs);
+  cluster_consumer cons(cvs, app, n_revs);
   revision_iterator ri(cvs, cons);
 
   L(FL("starting toposort the blobs of branch %s") % branchname);
@@ -1732,11 +1732,9 @@ import_cvs_repo(system_path const & cvsroot,
 
 cluster_consumer::cluster_consumer(cvs_history & cvs,
                                    app_state & app,
-                                   string const & branchname,
                                    ticker & n_revs)
   : cvs(cvs),
     app(app),
-    branchname(branchname),
     n_revisions(n_revs),
     editable_ros(ros, nis)
 {
@@ -1792,9 +1790,11 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
 
 cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
+                                                       const cvs_branchname bn,
                                                        const cvs_blob & blob)
   : rid(i),
-    rev(r)
+    rev(r),
+    branchname(bn)
 {
   I(blob.get_digest().is_commit());
 
@@ -1836,7 +1836,7 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
   cvs.split_authorclog(p.authorclog, author, changelog);
   packet_db_writer dbw(app);
   app.get_project().put_standard_certs(p.rid,
-                                       branch_name(branchname),
+                                       branch_name(cvs.branchname_interner.lookup(p.branchname)),
                                        utf8(changelog),
                                        date_t::from_unix_epoch(p.time),
                                        utf8(author),
@@ -1950,7 +1950,10 @@ cluster_consumer::consume_blob(const cvs_blob & blob)
 
           calculate_ident(*rev, child_rid);
 
-          preps.push_back(prepared_revision(child_rid, rev, blob));
+          // TODO: We need to select the correct branchname here, instead of
+          //       stuffing it all into the base branch.
+          cvs_branchname bn = cvs.branchname_interner.intern(cvs.base_branch);
+          preps.push_back(prepared_revision(child_rid, rev, bn, blob));
 
           parent_rid = child_rid;
         }
