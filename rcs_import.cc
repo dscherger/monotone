@@ -360,18 +360,25 @@ cvs_history
     return j;
   }
 
-  blob_index_iterator get_blob(const cvs_event_digest d, bool create)
+  pair< blob_index_iterator, blob_index_iterator >
+  get_blobs(const cvs_event_digest d, bool create)
   {
     pair<blob_index_iterator, blob_index_iterator> range = 
       blob_index.equal_range(d);
 
     if ((range.first == range.second) && create)
-      return add_blob(d);
+      {
+        // TODO: is this correct?
+        range.first = add_blob(d);
+        range.second = range.first;
+        range.second++;
+        return range;
+      }
 
     // it's a multimap, but we want only one blob per digest
     // at this time (when filling it)
     I(range.first != range.second);
-    return range.first;
+    return range;
   }
 
   cvs_blob_index append_event(cvs_event_ptr c) 
@@ -379,7 +386,7 @@ cvs_history
     if (c->get_digest().is_commit())
       I(c->time != 0);
 
-    blob_index_iterator b = get_blob(c->get_digest(), true);
+    blob_index_iterator b = get_blobs(c->get_digest(), true).first;
     blobs[b->second].push_back(c);
     return b->second;
   }
@@ -832,7 +839,7 @@ process_rcs_branch(string const & begin_version,
 
               // FIXME: is this still needed here?
               // make sure curr_commit exists in the blob
-              cvs.get_blob(curr_commit->get_digest(), false);
+              cvs.get_blobs(curr_commit->get_digest(), false);
 
               // add the blob to the bucket
               cvs_blob_index bi = cvs.append_event(branch_event);
@@ -1268,7 +1275,7 @@ add_blob_dependency_edges(cvs_history & cvs,
           dep != (*event)->dependencies.end(); ++dep)
         {
           blob_index_iterator k =
-            cvs.get_blob((*dep)->get_digest(), false);
+            cvs.get_blobs((*dep)->get_digest(), false).first;
 
           for ( ; (k->second < cvs.blobs.size()) &&
                   (cvs.blobs[k->second].get_digest() == 
