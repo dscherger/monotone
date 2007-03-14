@@ -381,6 +381,30 @@ cvs_history
     return range;
   }
 
+  cvs_blob_index
+  get_blob_of(const cvs_event_ptr ev)
+  {
+    // We have to check all the blobs in the equal_range, if the event we
+    // are looking for is in that blob.
+    pair<blob_index_iterator, blob_index_iterator> range = 
+      get_blobs(ev->get_digest(), false);
+
+    I(range.first != range.second);
+    for ( ; range.first != range.second; range.first++)
+      {
+        cvs_blob_index bi = range.first->second;
+        cvs_blob & dep_blob = blobs[bi];
+
+        for (blob_event_iter k = dep_blob.begin(); k != dep_blob.end(); ++k)
+          {
+            if (*k == ev)
+              return bi;
+          }
+      }
+
+    I(false);
+  }
+
   cvs_blob_index append_event(cvs_event_ptr c) 
   {
     if (c->get_digest().is_commit())
