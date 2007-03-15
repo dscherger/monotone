@@ -222,6 +222,12 @@ cvs_event_branch
 public:
   cvs_branchname branchname;
 
+  // The first event in the branch. This is used in the blob_consumer, to
+  // distinguish between events which only depend on the branchpoint (i.e.
+  // have to come later) and events which are taking place in the branch
+  // and therefore depend on the branchpoint, too.
+  cvs_event_ptr branch_direction;
+
   cvs_event_branch(const cvs_event_ptr dep,
                    const cvs_branchname bn)
     : cvs_event(dep),
@@ -868,7 +874,12 @@ process_rcs_branch(string const & begin_version,
                     new cvs_event_branch(curr_commit, 
                       cvs.branchname_interner.intern(branchname))));
 
+              // add correct dependencies and remember the first event in
+              // the branch, to be able to differenciate between that and
+              // other events which depend on this branch event, later on.
               first_event_in_branch->dependencies.push_back(branch_event);
+              boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+                branch_event)->branch_direction = first_event_in_branch;
 
               // FIXME: is this still needed here?
               // make sure curr_commit exists in the blob
@@ -1969,7 +1980,8 @@ blob_consumer::consume_blob(cvs_blob & blob)
     {
       cvs_event_ptr ev = *i;
 
-      for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+      for (dependency_iter j = ev->dependencies.begin();
+           j != ev->dependencies.end(); ++j)
         {
           cvs_event_ptr dep = *j;
 
@@ -1981,8 +1993,21 @@ blob_consumer::consume_blob(cvs_blob & blob)
               (dep_branches.find(dep_blob.in_branch) == dep_branches.end()))
             dep_branches.insert(dep_blob.in_branch);
 
+          // If this blob depends on a branch event, we have to check if
+          // this blob is the first blob in the branch, i.e. the branch
+          // direction. In that case, we add the branch to the dep_branches.
           if (dep_blob.get_digest().is_branch())
-            dep_branches.insert(boost::static_pointer_cast<cvs_event_branch, cvs_event>(*dep_blob.begin()));
+            {
+              shared_ptr<cvs_event_branch> cbe =
+                boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+                  *dep_blob.begin());
+
+              cvs_blob_index dir_bi = cvs.get_blob_of(cbe->branch_direction);
+              if (*cvs.blobs[dir_bi].begin() == *blob.begin())
+                dep_branches.insert(
+                  boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+                    *dep_blob.begin()));
+            }
         }
     }
 
@@ -1994,7 +2019,8 @@ blob_consumer::consume_blob(cvs_blob & blob)
       L(FL("This blob depends on the following branches:"));
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
         {
-          L(FL("  branch %s") % cvs.branchname_interner.lookup((*i)->branchname));
+          L(FL("  branch %s") % cvs.branchname_interner.lookup(
+            (*i)->branchname));
         }
 
       // eliminate direct parent branches
@@ -2111,6 +2137,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
 
           calculate_ident(*rev, child_rid);
 
+          L(FL("prepared revision for branch %s") % bn);
           preps.push_back(prepared_revision(child_rid, rev, bn, blob));
 
           current_rids[bname] = child_rid;
