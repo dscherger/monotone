@@ -819,7 +819,7 @@ process_rcs_branch(string const & begin_version,
             cvs.branch_first_entries.find(*i);
 
           if (be != cvs.branch_first_entries.end())
-              branchname = be->second;
+            branchname = be->second;
           else
             priv = true;
 
@@ -1137,11 +1137,11 @@ cluster_consumer
   {
     prepared_revision(revision_id i,
                       shared_ptr<revision_t> r,
-                      const cvs_branchname branchname,
+                      const string branchname,
                       const cvs_blob & blob);
     revision_id rid;
     shared_ptr<revision_t> rev;
-    cvs_branchname branchname;
+    string branchname;
     time_t time;
     cvs_authorclog authorclog;
     vector<cvs_tag> tags;
@@ -1823,7 +1823,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
 
 cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
-                                                       const cvs_branchname bn,
+                                                       const string bn,
                                                        const cvs_blob & blob)
   : rid(i),
     rev(r),
@@ -1869,7 +1869,7 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
   cvs.split_authorclog(p.authorclog, author, changelog);
   packet_db_writer dbw(app);
   app.get_project().put_standard_certs(p.rid,
-                                       branch_name(cvs.branchname_interner.lookup(p.branchname)),
+                                       branch_name(p.branchname),
                                        utf8(changelog),
                                        date_t::from_unix_epoch(p.time),
                                        utf8(author),
@@ -2099,11 +2099,14 @@ cluster_consumer::consume_blob(cvs_blob & blob)
 
           calculate_ident(*rev, child_rid);
 
-          cvs_branchname bn;
+          string bn;
           if (blob.in_branch)
-            bn = blob.in_branch->branchname;
+            {
+              bn = cvs.base_branch;
+              bn += "." + blob.in_branch->branchname;
+            }
           else
-            bn = cvs.branchname_interner.intern(cvs.base_branch);
+            bn = cvs.base_branch;
 
           preps.push_back(prepared_revision(child_rid, rev, bn, blob));
 
