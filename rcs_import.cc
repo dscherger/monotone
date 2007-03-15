@@ -2055,6 +2055,21 @@ cluster_consumer::consume_blob(cvs_blob & blob)
 
       if (ce->alive)
         {
+          // determine the final branchname
+          cvs_branchname bname;
+          string bn;
+          if (blob.in_branch)
+            {
+              bname = blob.in_branch->branchname;
+              bn = cvs.base_branch + "." +
+                cvs.branchname_interner.lookup(blob.in_branch->branchname);
+            }
+          else
+            {
+              bname = cvs.branchname_interner.intern(cvs.base_branch);
+              bn = cvs.base_branch;
+            }
+
           shared_ptr<revision_t> rev(new revision_t());
           shared_ptr<cset> cs(new cset());
 
@@ -2069,13 +2084,6 @@ cluster_consumer::consume_blob(cvs_blob & blob)
           rev->edges.insert(make_pair(parent_rid, cs));
 
           calculate_ident(*rev, child_rid);
-
-          string bn;
-          if (blob.in_branch)
-            bn = cvs.base_branch + "." +
-              cvs.branchname_interner.lookup(blob.in_branch->branchname);
-          else
-            bn = cvs.base_branch;
 
           preps.push_back(prepared_revision(child_rid, rev, bn, blob));
 
