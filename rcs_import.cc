@@ -228,6 +228,11 @@ public:
   // and therefore depend on the branchpoint, too.
   cvs_event_ptr branch_direction;
 
+  cvs_event_branch(const cvs_path p, const cvs_branchname bn)
+    : cvs_event(p, 0),
+      branchname(bn)
+    { };
+
   cvs_event_branch(const cvs_event_ptr dep,
                    const cvs_branchname bn)
     : cvs_event(dep),
@@ -383,8 +388,6 @@ cvs_history
         return range;
       }
 
-    // it's a multimap, but we want only one blob per digest
-    // at this time (when filling it)
     I(range.first != range.second);
     return range;
   }
@@ -945,8 +948,24 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
                                   head_lines);
-    process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
-                       app.opts.dryrun);
+
+    // add a pseudo trunk branch event (at time 0)
+    cvs_event_ptr root_event =
+      boost::static_pointer_cast<cvs_event, cvs_event_branch>(
+        shared_ptr<cvs_event_branch>(
+          new cvs_event_branch(cvs.curr_file_interned,
+            cvs.branchname_interner.intern(cvs.base_branch))));
+    cvs.append_event(root_event);
+
+    cvs_event_ptr first_event =
+      process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
+                         app.opts.dryrun);
+
+    // link the pseudo trunk branch to the first event in the branch
+    first_event->dependencies.push_back(root_event);
+    boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+      root_event)->branch_direction = first_event;
+
     global_pieces.reset();
   }
 
@@ -2002,6 +2021,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
                 boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                   *dep_blob.begin());
 
+              I(cbe->branch_direction);
               cvs_blob_index dir_bi = cvs.get_blob_of(cbe->branch_direction);
               if (*cvs.blobs[dir_bi].begin() == *blob.begin())
                 dep_branches.insert(
@@ -2104,8 +2124,12 @@ blob_consumer::consume_blob(cvs_blob & blob)
           if (blob.in_branch)
             {
               bname = blob.in_branch->branchname;
-              bn = cvs.base_branch + "." +
-                cvs.branchname_interner.lookup(blob.in_branch->branchname);
+
+              if (bname == cvs.branchname_interner.intern(cvs.base_branch))
+                bn = cvs.base_branch;
+              else
+                bn = cvs.base_branch + "." +
+                  cvs.branchname_interner.lookup(blob.in_branch->branchname);
 
               // determine the parent branch
               // FIXME: this might differ from trunk!
