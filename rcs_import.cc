@@ -783,10 +783,6 @@ process_rcs_branch(string const & begin_version,
                     new cvs_event_tag(curr_commit, tag)));
 
               cvs_blob_index bi = cvs.append_event(event);
-
-              // append to the last_commit deps
-              if (last_commit)
-                last_commit->dependencies.push_back(event);
             }
         }
 
@@ -873,11 +869,6 @@ process_rcs_branch(string const & begin_version,
               L(FL("added branch event for file %s into branch %s")
                 % cvs.path_interner.lookup(curr_commit->path)
                 % branchname);
-
-              // make the last commit depend on this branch, so
-              // that comes after the new branchpoint
-              if (last_commit)
-                last_commit->dependencies.push_back(branch_event);
             }
         }
 
