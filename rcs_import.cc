@@ -1957,7 +1957,6 @@ cluster_consumer::consume_blob(cvs_blob & blob)
   // Search through all direct dependencies and check what branches
   // those are in.
   set< shared_ptr< cvs_event_branch > > dep_branches;
-  set< cvs_blob_index > dep_branchpoints;
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
       cvs_event_ptr ev = *i;
@@ -1975,36 +1974,10 @@ cluster_consumer::consume_blob(cvs_blob & blob)
             dep_branches.insert(dep_blob.in_branch);
 
           if (dep_blob.get_digest().is_branch())
-            dep_branchpoints.insert(bi);
+            dep_branches.insert(boost::static_pointer_cast<cvs_event_branch, cvs_event>(*dep_blob.begin()));
         }
     }
 
-  if (dep_branchpoints.size() >= 1)
-    {
-      // this is only for debug information
-      L(FL("This blob depends on the following branchpoints:"));
-      set< cvs_blob_index >::const_iterator i;
-      for (i = dep_branchpoints.begin(); i != dep_branchpoints.end(); ++i)
-        {
-          cvs_blob & blob = cvs.blobs[*i];
-          shared_ptr< cvs_event_branch > cbe = boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-              *blob.begin());
-          L(FL("    branch %s") % cvs.branchname_interner.lookup(cbe->branchname));
-        }
-    }
-
-
-  I(dep_branchpoints.size() <= 1);
-  if (dep_branchpoints.size() > 0)
-    {
-      I(dep_branches.size() <= 1);
-
-      cvs_blob_index branchpoint_bi = *dep_branchpoints.begin();
-      blob.in_branch = boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-              *cvs.blobs[branchpoint_bi].begin());
-    }
-  else
-    {
       if (dep_branches.size() > 0)
         {
           set< shared_ptr< cvs_event_branch > >::const_iterator i;
@@ -2068,7 +2041,6 @@ cluster_consumer::consume_blob(cvs_blob & blob)
           I(dep_branches.size() <= 1);
           blob.in_branch = *dep_branches.begin();
         }
-    }
 
   if (blob.get_digest().is_commit())
     {
@@ -2101,10 +2073,8 @@ cluster_consumer::consume_blob(cvs_blob & blob)
 
           string bn;
           if (blob.in_branch)
-            {
-              bn = cvs.base_branch;
-              bn += "." + blob.in_branch->branchname;
-            }
+            bn = cvs.base_branch + "." +
+              cvs.branchname_interner.lookup(blob.in_branch->branchname);
           else
             bn = cvs.base_branch;
 
