@@ -447,7 +447,7 @@ is_sbr(shared_ptr<rcs_delta> dl,
   // a commit with dead state, empty text, and a log message
   // containing the string "file foo was initially added on branch
   // bar". We recognize and ignore these cases, as they do not
-  // "really" represent commits to be clustered together.
+  // "really" represent commits to be put together in a blob.
 
   if (dl->state != "dead")
     return false;
@@ -1116,7 +1116,7 @@ public:
 
 
 struct
-cluster_consumer
+blob_consumer
 {
   cvs_history & cvs;
   app_state & app;
@@ -1145,7 +1145,7 @@ cluster_consumer
   editable_roster_base editable_ros;
   map< cvs_branchname, revision_id > current_rids;
 
-  cluster_consumer(cvs_history & cvs,
+  blob_consumer(cvs_history & cvs,
                    app_state & app,
                    ticker & n_revs);
 
@@ -1233,10 +1233,10 @@ class revision_iterator
 private:
 	cvs_blob_index current_blob;
   cvs_history & cvs;
-  cluster_consumer & cons;
+  blob_consumer & cons;
 
 public:
-  revision_iterator(cvs_history & h, cluster_consumer & c)
+  revision_iterator(cvs_history & h, blob_consumer & c)
     : current_blob(0),
       cvs(h),
       cons(c)
@@ -1692,7 +1692,7 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
-  cluster_consumer cons(cvs, app, n_revs);
+  blob_consumer cons(cvs, app, n_revs);
   revision_iterator ri(cvs, cons);
 
   L(FL("starting toposort the blobs of branch %s") % branchname);
@@ -1754,7 +1754,7 @@ import_cvs_repo(system_path const & cvsroot,
   return;
 }
 
-cluster_consumer::cluster_consumer(cvs_history & cvs,
+blob_consumer::blob_consumer(cvs_history & cvs,
                                    app_state & app,
                                    ticker & n_revs)
   : cvs(cvs),
@@ -1765,13 +1765,13 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
 #if 0
   if (!null_id(branch.parent_rid))
     {
-      L(FL("starting cluster for branch %s from revision")
+      L(FL("starting branch %s from revision")
            % branchname);
 
       // ??? FIXME: parent_rid = branch.parent_rid;
       app.db.get_roster(parent_rid, ros);
 
-      // populate the cluster_consumer's live_files and created_dirs according
+      // populate the blob_consumer's live_files and created_dirs according
       // to the roster.
       node_map nodes = ros.all_nodes();
       for (node_map::iterator i = nodes.begin(); i != nodes.end(); ++i)
@@ -1812,7 +1812,7 @@ cluster_consumer::cluster_consumer(cvs_history & cvs,
 #endif
 }
 
-cluster_consumer::prepared_revision::prepared_revision(revision_id i, 
+blob_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
                                                        const string bn,
                                                        const cvs_blob & blob)
@@ -1833,7 +1833,7 @@ cluster_consumer::prepared_revision::prepared_revision(revision_id i,
 
 
 void
-cluster_consumer::store_revisions()
+blob_consumer::store_revisions()
 {
   for (vector<prepared_revision>::const_iterator i = preps.begin();
        i != preps.end(); ++i)
@@ -1853,7 +1853,7 @@ cluster_consumer::store_revisions()
 }
 
 void
-cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
+blob_consumer::store_auxiliary_certs(prepared_revision const & p)
 {
   string author, changelog;
 
@@ -1868,7 +1868,7 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
 }
 
 void
-cluster_consumer::add_missing_parents(split_path const & sp, cset & cs)
+blob_consumer::add_missing_parents(split_path const & sp, cset & cs)
 {
   split_path tmp(sp);
   if (tmp.empty())
@@ -1886,7 +1886,7 @@ cluster_consumer::add_missing_parents(split_path const & sp, cset & cs)
 }
 
 void
-cluster_consumer::build_cset(const cvs_blob & blob,
+blob_consumer::build_cset(const cvs_blob & blob,
                              cset & cs)
 {
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
@@ -1898,7 +1898,7 @@ cluster_consumer::build_cset(const cvs_blob & blob,
 
       file_path pth = file_path_internal(cvs.path_interner.lookup(ce->path));
 
-      L(FL("cluster_consumer::build_cset: file_path: %s") % pth);
+      L(FL("blob_consumer::build_cset: file_path: %s") % pth);
 
       split_path sp;
       pth.split(sp);
@@ -1943,7 +1943,7 @@ cluster_consumer::build_cset(const cvs_blob & blob,
 }
 
 void
-cluster_consumer::consume_blob(cvs_blob & blob)
+blob_consumer::consume_blob(cvs_blob & blob)
 {
   // Search through all direct dependencies and check what branches
   // those are in.
@@ -2044,7 +2044,7 @@ cluster_consumer::consume_blob(cvs_blob & blob)
   if (blob.get_digest().is_commit())
     {
       // we should never have an empty blob; it's *possible* to have
-      // an empty changeset (say on a vendor import) but every cluster
+      // an empty changeset (say on a vendor import) but every blob
       // should have been created by at least one file commit, even
       // if the commit made no changes. it's a logical inconsistency if
       // you have an empty blob.
