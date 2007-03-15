@@ -1143,7 +1143,7 @@ cluster_consumer
   roster_t ros;
   temp_node_id_source nis;
   editable_roster_base editable_ros;
-  revision_id parent_rid, child_rid;
+  map< cvs_branchname, revision_id > current_rids;
 
   cluster_consumer(cvs_history & cvs,
                    app_state & app,
@@ -2063,12 +2063,21 @@ cluster_consumer::consume_blob(cvs_blob & blob)
               bname = blob.in_branch->branchname;
               bn = cvs.base_branch + "." +
                 cvs.branchname_interner.lookup(blob.in_branch->branchname);
+
+              // determine the parent branch
+              // FIXME: this might differ from trunk!
+              if (current_rids.find(bname) == current_rids.end())
+                current_rids[bname] = current_rids[
+                  cvs.branchname_interner.intern(cvs.base_branch)];
             }
           else
             {
               bname = cvs.branchname_interner.intern(cvs.base_branch);
               bn = cvs.base_branch;
             }
+
+          revision_id parent_rid, child_rid;
+          parent_rid = current_rids[bname];
 
           shared_ptr<revision_t> rev(new revision_t());
           shared_ptr<cset> cs(new cset());
@@ -2087,16 +2096,13 @@ cluster_consumer::consume_blob(cvs_blob & blob)
 
           preps.push_back(prepared_revision(child_rid, rev, bn, blob));
 
-          parent_rid = child_rid;
+          current_rids[bname] = child_rid;
         }
     }
   else if (blob.get_digest().is_branch())
     {
       if (!blob.empty())
         {
-          string child_rid_str;
-          dump(child_rid, child_rid_str);
-
           shared_ptr<cvs_event_branch> cbe =
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(
               *blob.begin());
