@@ -783,6 +783,17 @@ process_rcs_branch(string const & begin_version,
                     new cvs_event_tag(curr_commit, tag)));
 
               cvs_blob_index bi = cvs.append_event(event);
+
+              // Append to the last_commit deps. While not quite obvious,
+              // we absolutely need this dependency! Think of it as: the
+              // 'action of tagging must' come before the next commit.
+              //
+              // If we didn't add this dependency, the tag could be deferred
+              // by the toposort to many revisions later. Instead, we want
+              // to raise conflict, if a commit interferes with a tagging
+              // action.
+              if (last_commit)
+                last_commit->dependencies.push_back(event);
             }
         }
 
@@ -869,6 +880,12 @@ process_rcs_branch(string const & begin_version,
               L(FL("added branch event for file %s into branch %s")
                 % cvs.path_interner.lookup(curr_commit->path)
                 % branchname);
+
+              // Make the last commit depend on this branch, so that this
+              // commit action certainly comes after the branch action. See
+              // the comment above for tags.
+              if (last_commit)
+                last_commit->dependencies.push_back(branch_event);
             }
         }
 
