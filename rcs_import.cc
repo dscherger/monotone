@@ -1979,6 +1979,21 @@ cluster_consumer::consume_blob(cvs_blob & blob)
         }
     }
 
+  if (dep_branchpoints.size() >= 1)
+    {
+      // this is only for debug information
+      L(FL("This blob depends on the following branchpoints:"));
+      set< cvs_blob_index >::const_iterator i;
+      for (i = dep_branchpoints.begin(); i != dep_branchpoints.end(); ++i)
+        {
+          cvs_blob & blob = cvs.blobs[*i];
+          shared_ptr< cvs_event_branch > cbe = boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+              *blob.begin());
+          L(FL("    branch %s") % cvs.branchname_interner.lookup(cbe->branchname));
+        }
+    }
+
+
   I(dep_branchpoints.size() <= 1);
   if (dep_branchpoints.size() > 0)
     {
