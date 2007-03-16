@@ -409,10 +409,10 @@ LINGUA_DOMAIN=monotone
 LINGUA_RESULTS=$(addprefix po/,$(addsuffix $(LINGUA_FORMAT),$(LINGUAS)))
 
 %.mo: %.po
-	msgfmt -o $@ $<
+	$(MSGFMT) -o $@ $<
 
 %.gmo: %.po
-	msgfmt -o $@ $<
+	$(MSGFMT) -o $@ $<
 
 install-data-local: $(LINGUA_RESULTS)
 	for lang in $(LINGUAS); do \

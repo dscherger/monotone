@@ -20,12 +20,13 @@ AC_DEFUN([PG_NLS],[
 
 PG_ICONV
 PG_GETTEXT
+PG_GETTEXT_PROGS
 
 AC_MSG_CHECKING(if NLS support should be built)
 if test "x$enable_nls" = "xyes"; then
    AC_MSG_RESULT(yes)
    AC_MSG_CHECKING(if NLS support can be built)
-   if test "x$ac_cv_func_gettext_exists" = "xyes" -a "x$ac_cv_func_dcgettext_exists" = "xyes" -a "x$ac_cv_func_iconv_exists" = "xyes"; then
+   if test "x$ac_cv_func_gettext_exists" = "xyes" -a "x$ac_cv_func_dcgettext_exists" = "xyes" -a "x$ac_cv_func_iconv_exists" = "xyes" -a "x$MSGFMT" != "x"; then
      AC_MSG_RESULT(yes)
      AC_DEFINE(ENABLE_NLS, 1,
        [Set to 1 if support for translated messages should be compiled in])
@@ -119,5 +120,24 @@ if test "x$enable_nls" = "xyes"; then
   if test "x$ac_cv_func_dcgettext_exists" = "xyes"; then
     AC_DEFINE(HAVE_DCGETTEXT, 1, [Defines if dcgettext() is available])
   fi
+fi
+])
+
+dnl @synopsis PG_GETTEXT_PROG
+dnl
+dnl @summary looks for various gettext related programs
+dnl
+dnl
+dnl @category InstalledPackages
+dnl @author Patrick Georgi <patrick@georgi-clan.de>
+dnl @version 2007-03-16
+dnl @license MIT
+
+AC_DEFUN([PG_GETTEXT_PROGS],
+[
+if test "x$enable_nls" = "xyes"; then
+ AC_CHECK_TOOL(MSGFMT, msgfmt)
+ AC_CHECK_TOOL(MSGMERGE, msgmerge, :)
+ AC_CHECK_TOOL(XGETTEXT, xgettext, :)
 fi
 ])

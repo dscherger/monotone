@@ -54,12 +54,12 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h sys/file.h \
 		 [AC_INCLUDES_DEFAULT()])
 AC_HEADER_STDBOOL
 AX_CREATE_STDINT_H(mt-stdint.h)
-AC_PROG_XGETTEXT_FLAG_OPTION
 # similarly, this calls ACX_PTHREAD, which expects C.
 BOOST_THREAD_STUBS
 
 AC_LANG([C++])
 PG_NLS
+AC_PROG_XGETTEXT_FLAG_OPTION
 # This header may not be visible to the C compiler.
 AC_CHECK_HEADERS([cxxabi.h],,, [AC_INCLUDES_DEFAULT()])
 
