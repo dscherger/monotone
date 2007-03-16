@@ -352,6 +352,7 @@ cvs_history
   cvs_path curr_file_interned;
 
   cvs_branchname base_branch;
+  cvs_blob_index root_event;
 
   ticker n_versions;
   ticker n_tree_branches;
@@ -963,7 +964,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
       boost::static_pointer_cast<cvs_event, cvs_event_branch>(
         shared_ptr<cvs_event_branch>(
           new cvs_event_branch(cvs.curr_file_interned, cvs.base_branch)));
-    cvs.append_event(root_event);
+    cvs.root_event = cvs.append_event(root_event);
 
     cvs_event_ptr first_event =
       process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
@@ -1176,7 +1177,7 @@ blob_consumer
   cvs_history & cvs;
   app_state & app;
   set<split_path> created_dirs;
-  map<cvs_path, cvs_mtn_version> live_files;
+  map<cvs_branchname, map<cvs_path, cvs_mtn_version> > live_files;
   ticker & n_revisions;
 
   struct prepared_revision
@@ -1943,6 +1944,10 @@ void
 blob_consumer::build_cset(const cvs_blob & blob,
                              cset & cs)
 {
+  I(blob.in_branch);
+  map<cvs_path, cvs_mtn_version> & branch_live_files =
+    live_files[blob.in_branch->branchname];
+
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
       I((*i)->get_digest().is_commit());
@@ -1962,14 +1967,14 @@ blob_consumer::build_cset(const cvs_blob & blob,
       if (ce->alive)
         {
           map<cvs_path, cvs_mtn_version>::const_iterator e =
-            live_files.find(ce->path);
+            branch_live_files.find(ce->path);
 
-          if (e == live_files.end())
+          if (e == branch_live_files.end())
             {
               add_missing_parents(sp, cs);
               L(FL("adding entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.files_added, make_pair(sp, fid));
-              live_files[ce->path] = ce->mtn_version;
+              branch_live_files[ce->path] = ce->mtn_version;
             }
           else if (e->second != ce->mtn_version)
             {
@@ -1978,19 +1983,19 @@ blob_consumer::build_cset(const cvs_blob & blob,
                 % pth % old_fid % fid);
               safe_insert(cs.deltas_applied,
                           make_pair(sp, make_pair(old_fid, fid)));
-              live_files[ce->path] = ce->mtn_version;
+              branch_live_files[ce->path] = ce->mtn_version;
             }
         }
       else
         {
           map<cvs_path, cvs_mtn_version>::const_iterator e =
-            live_files.find(ce->path);
+            branch_live_files.find(ce->path);
 
-          if (e != live_files.end())
+          if (e != branch_live_files.end())
             {
               L(FL("deleting entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.nodes_deleted, sp);
-              live_files.erase(ce->path);
+              branch_live_files.erase(ce->path);
             }
         }
     }
@@ -2015,8 +2020,11 @@ blob_consumer::consume_blob(cvs_blob & blob)
           cvs_blob_index bi = cvs.get_blob_of(dep);
           cvs_blob & dep_blob = cvs.blobs[bi];
 
-          if ((dep_blob.in_branch) &&
-              (dep_branches.find(dep_blob.in_branch) == dep_branches.end()))
+          // The blob we depend on must have been imported already, and thus
+          // must already be in a branch.
+          I(dep_blob.in_branch);
+
+          if (dep_branches.find(dep_blob.in_branch) == dep_branches.end())
             dep_branches.insert(dep_blob.in_branch);
 
           // If this blob depends on a branch event, we have to check if
@@ -2084,7 +2092,9 @@ blob_consumer::consume_blob(cvs_blob & blob)
                   boost::static_pointer_cast<cvs_event, cvs_event_branch>(
                     cvs.blobs[bi].in_branch));
 
-                I((bi != new_bi));
+                if (bi == new_bi)
+                  break;
+
                 I((boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                     *(cvs.blobs[bi].begin()))->branchname !=
                    boost::static_pointer_cast<cvs_event_branch, cvs_event>(
@@ -2108,8 +2118,21 @@ blob_consumer::consume_blob(cvs_blob & blob)
         }
 
       I(dep_branches.size() <= 1);
+    }
+
+  if (dep_branches.size() == 1)
+    {
       blob.in_branch = *dep_branches.begin();
     }
+  else
+    {
+      // set to the pseude branch event for the trunk
+      shared_ptr<cvs_event> ce = *cvs.blobs[cvs.root_event].begin();
+      blob.in_branch = boost::static_pointer_cast<cvs_event_branch, cvs_event>(ce);
+      I(blob.in_branch);
+    }
+
+  I(blob.in_branch);
 
   if (blob.get_digest().is_commit())
     {
@@ -2169,6 +2192,9 @@ blob_consumer::consume_blob(cvs_blob & blob)
           shared_ptr<cvs_event_branch> cbe =
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(
               *blob.begin());
+
+          // initialize the branch's live_files from the branchpoint
+          live_files[cbe->branchname] = live_files[blob.in_branch->branchname];
         }
     }
   else if (blob.get_digest().is_tag())
