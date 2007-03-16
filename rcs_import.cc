@@ -351,7 +351,7 @@ cvs_history
   file_path curr_file;
   cvs_path curr_file_interned;
 
-  string base_branch;
+  cvs_branchname base_branch;
 
   ticker n_versions;
   ticker n_tree_branches;
@@ -446,10 +446,11 @@ cvs_history
 
   string get_branchname(const cvs_branchname bname)
   {
-    if (bname == branchname_interner.intern(base_branch))
-      return base_branch;
+    if (bname == base_branch)
+      return branchname_interner.lookup(base_branch);
     else
-      return base_branch + "." + branchname_interner.lookup(bname);
+      return branchname_interner.lookup(base_branch) + "." +
+        branchname_interner.lookup(bname);
   }
 };
 
@@ -961,8 +962,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
     cvs_event_ptr root_event =
       boost::static_pointer_cast<cvs_event, cvs_event_branch>(
         shared_ptr<cvs_event_branch>(
-          new cvs_event_branch(cvs.curr_file_interned,
-            cvs.branchname_interner.intern(cvs.base_branch))));
+          new cvs_event_branch(cvs.curr_file_interned, cvs.base_branch)));
     cvs.append_event(root_event);
 
     cvs_event_ptr first_event =
@@ -1701,7 +1701,6 @@ class blob_label_writer
 void
 resolve_blob_dependencies(cvs_history &cvs,
                           app_state & app,
-                          string const & branchname,
                           ticker & n_revs)
 {
   L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
@@ -1750,7 +1749,6 @@ resolve_blob_dependencies(cvs_history &cvs,
   blob_consumer cons(cvs, app, n_revs);
   revision_iterator ri(cvs, cons);
 
-  L(FL("starting toposort the blobs of branch %s") % branchname);
   topological_sort(g, ri);
 
   // finally store the revisions
@@ -1776,10 +1774,10 @@ import_cvs_repo(system_path const & cvsroot,
 
   cvs_history cvs;
   N(app.opts.branchname() != "", F("need base --branch argument for importing"));
-  cvs.base_branch = app.opts.branchname();
 
   // add the trunk branch name
-  cvs_branchname bn = cvs.branchname_interner.intern(cvs.base_branch);
+  string bn = app.opts.branchname();
+  cvs.base_branch = cvs.branchname_interner.intern(bn);
 
 
   //
@@ -1802,7 +1800,7 @@ import_cvs_repo(system_path const & cvsroot,
 
   {
     transaction_guard guard(app.db);
-    resolve_blob_dependencies(cvs, app, cvs.base_branch, n_revs);
+    resolve_blob_dependencies(cvs, app, n_revs);
     guard.commit();
   }
 
@@ -2136,11 +2134,10 @@ blob_consumer::consume_blob(cvs_blob & blob)
               // determine the parent branch
               // FIXME: this might differ from trunk!
               if (current_rids.find(bname) == current_rids.end())
-                current_rids[bname] = current_rids[
-                  cvs.branchname_interner.intern(cvs.base_branch)];
+                current_rids[bname] = current_rids[cvs.base_branch];
             }
           else
-            bname = cvs.branchname_interner.intern(cvs.base_branch);
+            bname = cvs.base_branch;
 
           revision_id parent_rid, child_rid;
           parent_rid = current_rids[bname];
