@@ -2151,14 +2151,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
           // determine the final branchname
           cvs_branchname bname;
           if (blob.in_branch)
-            {
-              bname = blob.in_branch->branchname;
-
-              // determine the parent branch
-              // FIXME: this might differ from trunk!
-              if (current_rids.find(bname) == current_rids.end())
-                current_rids[bname] = current_rids[cvs.base_branch];
-            }
+            bname = blob.in_branch->branchname;
           else
             bname = cvs.base_branch;
 
@@ -2193,8 +2186,15 @@ blob_consumer::consume_blob(cvs_blob & blob)
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(
               *blob.begin());
 
+          // Set the last imported revision of the branch, this is the
+          // branchpoint revision.
+          I(current_rids.find(cbe->branchname) == current_rids.end());
+          current_rids[cbe->branchname] =
+            current_rids[blob.in_branch->branchname];
+
           // initialize the branch's live_files from the branchpoint
-          live_files[cbe->branchname] = live_files[blob.in_branch->branchname];
+          live_files[cbe->branchname] =
+            live_files[blob.in_branch->branchname];
         }
     }
   else if (blob.get_digest().is_tag())
