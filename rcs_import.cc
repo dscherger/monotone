@@ -434,7 +434,7 @@ cvs_history
     I(i > 0);
 
     author = ac_str.substr(0, i);
-    changelog = ac_str.substr(i+4);
+    changelog = ac_str.substr(i+3);
   }
 
   string join_authorclog(const string author, const string clog)
@@ -442,6 +442,14 @@ cvs_history
     I(author.size() > 0);
     I(clog.size() > 0);
     return author + "|||" + clog;
+  }
+
+  string get_branchname(const cvs_branchname bname)
+  {
+    if (bname == branchname_interner.intern(base_branch))
+      return base_branch;
+    else
+      return base_branch + "." + branchname_interner.lookup(bname);
   }
 };
 
@@ -1175,11 +1183,11 @@ blob_consumer
   {
     prepared_revision(revision_id i,
                       shared_ptr<revision_t> r,
-                      const string branchname,
+                      const cvs_branchname bn,
                       const cvs_blob & blob);
     revision_id rid;
     shared_ptr<revision_t> rev;
-    string branchname;
+    cvs_branchname branchname;
     time_t time;
     cvs_authorclog authorclog;
     vector<cvs_tag> tags;
@@ -1861,7 +1869,7 @@ blob_consumer::blob_consumer(cvs_history & cvs,
 
 blob_consumer::prepared_revision::prepared_revision(revision_id i, 
                                                        shared_ptr<revision_t> r,
-                                                       const string bn,
+                                                       const cvs_branchname bn,
                                                        const cvs_blob & blob)
   : rid(i),
     rev(r),
@@ -1906,8 +1914,9 @@ blob_consumer::store_auxiliary_certs(prepared_revision const & p)
 
   cvs.split_authorclog(p.authorclog, author, changelog);
   packet_db_writer dbw(app);
+  string bn = cvs.get_branchname(p.branchname);
   app.get_project().put_standard_certs(p.rid,
-                                       branch_name(p.branchname),
+                                       branch_name(bn),
                                        utf8(changelog),
                                        date_t::from_unix_epoch(p.time),
                                        utf8(author),
@@ -2120,16 +2129,9 @@ blob_consumer::consume_blob(cvs_blob & blob)
         {
           // determine the final branchname
           cvs_branchname bname;
-          string bn;
           if (blob.in_branch)
             {
               bname = blob.in_branch->branchname;
-
-              if (bname == cvs.branchname_interner.intern(cvs.base_branch))
-                bn = cvs.base_branch;
-              else
-                bn = cvs.base_branch + "." +
-                  cvs.branchname_interner.lookup(blob.in_branch->branchname);
 
               // determine the parent branch
               // FIXME: this might differ from trunk!
@@ -2138,10 +2140,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
                   cvs.branchname_interner.intern(cvs.base_branch)];
             }
           else
-            {
-              bname = cvs.branchname_interner.intern(cvs.base_branch);
-              bn = cvs.base_branch;
-            }
+            bname = cvs.branchname_interner.intern(cvs.base_branch);
 
           revision_id parent_rid, child_rid;
           parent_rid = current_rids[bname];
@@ -2161,8 +2160,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
 
           calculate_ident(*rev, child_rid);
 
-          L(FL("prepared revision for branch %s") % bn);
-          preps.push_back(prepared_revision(child_rid, rev, bn, blob));
+          preps.push_back(prepared_revision(child_rid, rev, bname, blob));
 
           current_rids[bname] = child_rid;
         }
