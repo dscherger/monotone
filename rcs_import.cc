@@ -2148,15 +2148,8 @@ blob_consumer::consume_blob(cvs_blob & blob)
 
       if (ce->alive)
         {
-          // determine the final branchname
-          cvs_branchname bname;
-          if (blob.in_branch)
-            bname = blob.in_branch->branchname;
-          else
-            bname = cvs.base_branch;
-
           revision_id parent_rid, child_rid;
-          parent_rid = current_rids[bname];
+          parent_rid = current_rids[blob.in_branch->branchname];
 
           shared_ptr<revision_t> rev(new revision_t());
           shared_ptr<cset> cs(new cset());
@@ -2173,9 +2166,9 @@ blob_consumer::consume_blob(cvs_blob & blob)
 
           calculate_ident(*rev, child_rid);
 
-          preps.push_back(prepared_revision(child_rid, rev, bname, blob));
+          preps.push_back(prepared_revision(child_rid, rev, blob.in_branch->branchname, blob));
 
-          current_rids[bname] = child_rid;
+          current_rids[blob.in_branch->branchname] = child_rid;
         }
     }
   else if (blob.get_digest().is_branch())
