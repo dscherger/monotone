@@ -1176,7 +1176,7 @@ blob_consumer
 {
   cvs_history & cvs;
   app_state & app;
-  set<split_path> created_dirs;
+  map<cvs_branchname, set<split_path> > created_dirs;
   map<cvs_branchname, map<cvs_path, cvs_mtn_version> > live_files;
   ticker & n_revisions;
 
@@ -1206,7 +1206,8 @@ blob_consumer
                    ticker & n_revs);
 
   void consume_blob(cvs_blob & blob);
-  void add_missing_parents(split_path const & sp, cset & cs);
+  void add_missing_parents(const cvs_branchname bn,
+                           split_path const & sp, cset & cs);
   void build_cset(const cvs_blob & blob, cset & cs);
   void store_auxiliary_certs(prepared_revision const & p);
   void store_revisions();
@@ -1923,7 +1924,8 @@ blob_consumer::store_auxiliary_certs(prepared_revision const & p)
 }
 
 void
-blob_consumer::add_missing_parents(split_path const & sp, cset & cs)
+blob_consumer::add_missing_parents(const cvs_branchname bn,
+                                   split_path const & sp, cset & cs)
 {
   split_path tmp(sp);
   if (tmp.empty())
@@ -1931,9 +1933,9 @@ blob_consumer::add_missing_parents(split_path const & sp, cset & cs)
   tmp.pop_back();
   while (!tmp.empty())
     {
-      if (created_dirs.find(tmp) == created_dirs.end())
+      if (created_dirs[bn].find(tmp) == created_dirs[bn].end())
         {
-          safe_insert(created_dirs, tmp);
+          safe_insert(created_dirs[bn], tmp);
           safe_insert(cs.dirs_added, tmp);
         }
       tmp.pop_back();
@@ -1971,7 +1973,7 @@ blob_consumer::build_cset(const cvs_blob & blob,
 
           if (e == branch_live_files.end())
             {
-              add_missing_parents(sp, cs);
+              add_missing_parents(blob.in_branch->branchname, sp, cs);
               L(FL("adding entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.files_added, make_pair(sp, fid));
               branch_live_files[ce->path] = ce->mtn_version;
@@ -2186,6 +2188,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
             current_rids[blob.in_branch->branchname];
 
           // initialize the branch's live_files from the branchpoint
+          I(live_files.find(cbe->branchname) == live_files.end());
           live_files[cbe->branchname] =
             live_files[blob.in_branch->branchname];
         }
