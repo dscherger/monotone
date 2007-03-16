@@ -1,0 +1,23 @@
+This is the directory for mtn_cvs - a program allowing syncing between
+Monotone and CVS.
+
+This program can be built by placing the mtn_cvs source directory
+inside a monotone source directory, applying the 'mainline.patch'
+file to that monotone source directory, and then building
+the monotone executable as normal.
+
+This particular branch has an old mainline in it.  This branch of
+mainline may not have all the changes propagated from trunk.
+
+--- internals ---
+
+Monotone cvs importing works by adding attributes to to the files
+recording which CVS version they correspond to.  A commit in
+monotone will simply carry those attributes forward, but they
+will then be out of date.  Hence there is also a certificate
+added to revisions that are synchronised.  The attributes
+then correspond to the last synchronised CVS revision, not
+the current cvs revision.
+
+A result of this design is that push into cvs results in a
+commit into monotone adding a child with the updated attributes.

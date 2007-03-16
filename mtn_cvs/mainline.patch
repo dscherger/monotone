@@ -1,0 +1,102 @@
+#
+# old_revision [1f4eadd15f38e6a052855ee8debee9fe820040e7]
+#
+# patch "Makefile.am"
+#  from [c7cdc7a6ff99623495792d2e28bebccc79483c67]
+#    to [e0638602fba204e244a40ba2221166267c1ce302]
+# 
+# patch "commands.cc"
+#  from [9454002d33c19c074f9ec98d9bb9df61727e7370]
+#    to [5686c701981ed763ae6a257584dfd5e0639f4a10]
+# 
+# patch "configure.ac"
+#  from [1f07631ee9cb6ec27c1b383af23ef8f037fc1356]
+#    to [9acf01ae17ad420a61e783823879dba9af9499cb]
+# 
+# patch "ui.cc"
+#  from [21bba61b39d2178a31aa97437d0b60688003ff42]
+#    to [ea3134e946bf6d91320782c1965d21d43623f15b]
+# 
+# patch "ui.hh"
+#  from [ea2c11aaa5de4bc00851ee8bb7a9730f509c93fc]
+#    to [3ea8ae8257415bf8adf7845bb1a4b4279923941f]
+#
+============================================================
+--- Makefile.am	c7cdc7a6ff99623495792d2e28bebccc79483c67
++++ Makefile.am	e0638602fba204e244a40ba2221166267c1ce302
+@@ -402,7 +402,7 @@ endif
+ 
+ # i18n support
+ 
+-SUBDIRS = po
++SUBDIRS = po . mtn_cvs
+ datadir = @datadir@
+ localedir = $(datadir)/locale
+ DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
+============================================================
+--- commands.cc	9454002d33c19c074f9ec98d9bb9df61727e7370
++++ commands.cc	5686c701981ed763ae6a257584dfd5e0639f4a10
+@@ -343,6 +343,7 @@ CMD(crash, hidden_group(), "{ N | E | I 
+ #undef maybe_throw_bare
+ }
+ 
++#ifndef LIBMTN_COMPILE
+ string
+ describe_revision(app_state & app,
+                   revision_id const & id)
+@@ -514,8 +515,10 @@ get_content_paths(roster_t const & roste
+         }
+     }
+ }
+-  
+ 
++#endif
++
++
+ // Local Variables:
+ // mode: C++
+ // fill-column: 76
+============================================================
+--- configure.ac	1f07631ee9cb6ec27c1b383af23ef8f037fc1356
++++ configure.ac	9acf01ae17ad420a61e783823879dba9af9499cb
+@@ -6,7 +6,7 @@ AM_CONFIG_HEADER([config.h])
+ AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
+ AC_CONFIG_SRCDIR([app_state.cc])
+ AM_CONFIG_HEADER([config.h])
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([Makefile mtn_cvs/Makefile])
+ 
+ # Checks for programs.
+ dnl Note: AC_PROG_CC is implied by AM_PROG_CC_C_O and in any case has
+============================================================
+--- ui.cc	21bba61b39d2178a31aa97437d0b60688003ff42
++++ ui.cc	ea3134e946bf6d91320782c1965d21d43623f15b
+@@ -112,6 +112,17 @@ ticker::operator++()
+     ui.write_ticks();
+ }
+ 
++void 
++ticker::operator--()
++{
++  I(ui.tickers.find(keyname) != ui.tickers.end());
++  I(ticks);
++  ticks--;
++  ui.some_tick_is_dirty = true;
++  if (ticks % mod == 0)
++    ui.write_ticks();
++}
++
+ void
+ ticker::operator+=(size_t t)
+ {
+============================================================
+--- ui.hh	ea2c11aaa5de4bc00851ee8bb7a9730f509c93fc
++++ ui.hh	3ea8ae8257415bf8adf7845bb1a4b4279923941f
+@@ -40,6 +40,7 @@ struct ticker
+   void set_total(size_t tot) { use_total = true; total = tot; }
+   void set_count_size(size_t csiz) { count_size = csiz; }
+   void operator++();
++  void operator--();
+   void operator+=(size_t t);
+   ~ticker();
+ };
