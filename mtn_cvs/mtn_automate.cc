@@ -584,6 +584,12 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
      linearly chained.
    */
 
+#warning fix find_newest_sync
+		// can replace this with something like:
+		// 'automate erase_ancestors(automate select c:mtn-cvs-sync=domain)'
+		// if you get one rev, that's the solution
+		// 0 or more than 1 rev == error
+
   std::vector<revision_id> heads;
   std::set<revision_id> nodes_checked;
   heads=mtn_automate::heads(branch);
@@ -633,7 +639,9 @@ mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, str
   /* sync information is coded in DOMAIN: prefixed attributes
    */
   sync_map_t result;
-#warning should check for presence of sync cert on revision
+
+  I(is_synchronized(rid, domain));
+
   revision_t rev=get_revision(rid);
   L(FL("get_sync_info: checking revision attributes %s") % rid);
   manifest_map m=get_manifest_of(rid);
@@ -641,17 +649,26 @@ mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, str
   for (manifest_map::const_iterator i = m.begin();
      i != m.end(); ++i)
   {
+    file_id fid = i->second.first;
+    bool found_rev(false), found_sha(false), am_dir(fid.inner()() == "");
     for (attr_map_t::const_iterator j = i->second.second.begin();
          j != i->second.second.end(); ++j)
     {
       if (begins_with(j->first(),prefix))
       { 
+        if (j->first() == prefix + "revision")
+          found_rev = true;
+        else if (j->first() == prefix + "sha1")
+        {
+          found_sha = true;
+          I(fid.inner()().substr(0,6) == j->second());
+        }
         split_path sp;
         i->first.split(sp);
         result[std::make_pair(sp,j->first)]=j->second;
-        // else W(F("undefined value of %s %s\n") % sp % j->first());
       }
     }
+    I(am_dir || (found_rev && found_sha));
   }
   return result;
 }
