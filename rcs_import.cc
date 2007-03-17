@@ -1176,8 +1176,6 @@ blob_consumer
 {
   cvs_history & cvs;
   app_state & app;
-  map<cvs_branchname, set<split_path> > created_dirs;
-  map<cvs_branchname, map<cvs_path, cvs_mtn_version> > live_files;
   ticker & n_revisions;
 
   struct prepared_revision
@@ -1194,21 +1192,27 @@ blob_consumer
     vector<cvs_tag> tags;
   };
 
-  vector<prepared_revision> preps;
+  struct branch_state
+  {
+    revision_id current_rid;
+    roster_t ros;
+    set<split_path> created_dirs;
+    map<cvs_path, cvs_mtn_version> live_files;
+  };
 
-  roster_t ros;
   temp_node_id_source nis;
-  editable_roster_base editable_ros;
-  map< cvs_branchname, revision_id > current_rids;
+  map<cvs_branchname, branch_state> branch_states;
+
+  vector<prepared_revision> preps;
 
   blob_consumer(cvs_history & cvs,
                    app_state & app,
                    ticker & n_revs);
 
   void consume_blob(cvs_blob & blob);
-  void add_missing_parents(const cvs_branchname bn,
+  void add_missing_parents(branch_state & bstate,
                            split_path const & sp, cset & cs);
-  void build_cset(const cvs_blob & blob, cset & cs);
+  void build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
   void store_auxiliary_certs(prepared_revision const & p);
   void store_revisions();
 };
@@ -1810,61 +1814,15 @@ import_cvs_repo(system_path const & cvsroot,
 }
 
 blob_consumer::blob_consumer(cvs_history & cvs,
-                                   app_state & app,
-                                   ticker & n_revs)
+                             app_state & app,
+                             ticker & n_revs)
   : cvs(cvs),
     app(app),
-    n_revisions(n_revs),
-    editable_ros(ros, nis)
+    n_revisions(n_revs)
 {
-#if 0
-  if (!null_id(branch.parent_rid))
-    {
-      L(FL("starting branch %s from revision")
-           % branchname);
-
-      // ??? FIXME: parent_rid = branch.parent_rid;
-      app.db.get_roster(parent_rid, ros);
-
-      // populate the blob_consumer's live_files and created_dirs according
-      // to the roster.
-      node_map nodes = ros.all_nodes();
-      for (node_map::iterator i = nodes.begin(); i != nodes.end(); ++i)
-        {
-          shared_ptr<node> node = i->second;
-
-          if (is_dir_t(node))
-            {
-              split_path dir;
-
-              ros.get_name(node->self, dir);
-              L(FL("   dir:  %s") % dir);
-              safe_insert(created_dirs, dir);
-            }
-          else if (is_file_t(node))
-            {
-              std::string rev;
-              std::string name;
-              cvs_path path;
-              split_path sp;
-
-              ros.get_name(node->self, sp);
-              file_path fp(sp);
-              path = cvs.path_interner.intern(fp.as_internal());
-
-              dump(downcast_to_file_t(node)->content, rev);
-
-              L(FL("   file: %s at revision %s") % fp.as_internal() % rev);
-              live_files[path] = cvs.mtn_version_interner.intern(rev);
-            }
-        }
-    }
-
-  if (!branch.has_a_commit)
-    {
-      W(F("Ignoring branch %s because it is empty.") % branchname);
-    }
-#endif
+  // add an initial branch state for the trunk
+  branch_states.insert(make_pair(
+    cvs.base_branch, branch_state()));
 }
 
 blob_consumer::prepared_revision::prepared_revision(revision_id i, 
@@ -1924,7 +1882,7 @@ blob_consumer::store_auxiliary_certs(prepared_revision const & p)
 }
 
 void
-blob_consumer::add_missing_parents(const cvs_branchname bn,
+blob_consumer::add_missing_parents(branch_state & bstate,
                                    split_path const & sp, cset & cs)
 {
   split_path tmp(sp);
@@ -1933,9 +1891,9 @@ blob_consumer::add_missing_parents(const cvs_branchname bn,
   tmp.pop_back();
   while (!tmp.empty())
     {
-      if (created_dirs[bn].find(tmp) == created_dirs[bn].end())
+      if (bstate.created_dirs.find(tmp) == bstate.created_dirs.end())
         {
-          safe_insert(created_dirs[bn], tmp);
+          safe_insert(bstate.created_dirs, tmp);
           safe_insert(cs.dirs_added, tmp);
         }
       tmp.pop_back();
@@ -1944,11 +1902,13 @@ blob_consumer::add_missing_parents(const cvs_branchname bn,
 
 void
 blob_consumer::build_cset(const cvs_blob & blob,
-                             cset & cs)
+                          branch_state & bstate,
+                          cset & cs)
 {
   I(blob.in_branch);
+
   map<cvs_path, cvs_mtn_version> & branch_live_files =
-    live_files[blob.in_branch->branchname];
+    bstate.live_files;
 
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
@@ -1973,7 +1933,7 @@ blob_consumer::build_cset(const cvs_blob & blob,
 
           if (e == branch_live_files.end())
             {
-              add_missing_parents(blob.in_branch->branchname, sp, cs);
+              add_missing_parents(bstate, sp, cs);
               L(FL("adding entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.files_added, make_pair(sp, fid));
               branch_live_files[ce->path] = ce->mtn_version;
@@ -2132,9 +2092,21 @@ blob_consumer::consume_blob(cvs_blob & blob)
       shared_ptr<cvs_event> ce = *cvs.blobs[cvs.root_event].begin();
       blob.in_branch = boost::static_pointer_cast<cvs_event_branch, cvs_event>(ce);
       I(blob.in_branch);
+
+#if 0
+      if (branch_states.find(blob.in_branch->branchname) == branch_states.end())
+        {
+          I(blob.in_branch->branchname == cvs.base_branch);
+          branch_states.insert(make_pair(
+            blob.in_branch->branchname, branch_state()));
+        }
+#endif
     }
 
   I(blob.in_branch);
+  I(branch_states.find(blob.in_branch->branchname) != branch_states.end());
+  branch_state & bstate =
+    branch_states.find(blob.in_branch->branchname)->second;
 
   if (blob.get_digest().is_commit())
     {
@@ -2151,16 +2123,18 @@ blob_consumer::consume_blob(cvs_blob & blob)
       if (ce->alive)
         {
           revision_id parent_rid, child_rid;
-          parent_rid = current_rids[blob.in_branch->branchname];
+          parent_rid = bstate.current_rid;
 
           shared_ptr<revision_t> rev(new revision_t());
           shared_ptr<cset> cs(new cset());
 
-          build_cset(blob, *cs);
+          build_cset(blob, bstate, *cs);
+
+          editable_roster_base editable_ros(bstate.ros, nis);
 
           cs->apply_to(editable_ros);
           manifest_id child_mid;
-          calculate_ident(ros, child_mid);
+          calculate_ident(bstate.ros, child_mid);
 
           rev->made_for = made_for_database;
           rev->new_manifest = child_mid;
@@ -2170,7 +2144,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
 
           preps.push_back(prepared_revision(child_rid, rev, blob.in_branch->branchname, blob));
 
-          current_rids[blob.in_branch->branchname] = child_rid;
+          bstate.current_rid = child_rid;
         }
     }
   else if (blob.get_digest().is_branch())
@@ -2181,16 +2155,20 @@ blob_consumer::consume_blob(cvs_blob & blob)
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(
               *blob.begin());
 
-          // Set the last imported revision of the branch, this is the
-          // branchpoint revision.
-          I(current_rids.find(cbe->branchname) == current_rids.end());
-          current_rids[cbe->branchname] =
-            current_rids[blob.in_branch->branchname];
+          // Set the base revision of the branch to the branchpoint revision
+          // and initialize the map of live files.
+          if (cbe->branchname != blob.in_branch->branchname)
+            {
+              I(cbe->branchname != cvs.base_branch);
+              I(branch_states.find(cbe->branchname) == branch_states.end());
 
-          // initialize the branch's live_files from the branchpoint
-          I(live_files.find(cbe->branchname) == live_files.end());
-          live_files[cbe->branchname] =
-            live_files[blob.in_branch->branchname];
+              branch_states.insert(make_pair(cbe->branchname,
+                branch_state(bstate)));
+            }
+          else
+            {
+              // this must be the trunk?
+            }
         }
     }
   else if (blob.get_digest().is_tag())
