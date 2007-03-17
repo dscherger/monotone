@@ -346,9 +346,6 @@ cvs_history
   // all the blobs by their event_digest
   multimap<cvs_event_digest, cvs_blob_index> blob_index;
 
-  // all branch events by branchname
-  map<cvs_branchname, cvs_blob_index> branch_blobs;
-
   // assume an RCS file has foo:X.Y.0.N in it, then
   // this map contains entries of the form
   // X.Y.N.1 -> foo
@@ -428,8 +425,18 @@ cvs_history
   get_branch_blob(const cvs_branchname bn)
   {
     I(bn != invalid_branch);
-    I(branch_blobs.find(bn) != branch_blobs.end());
-    return branch_blobs.find(bn)->second;
+
+    pair<blob_index_iterator, blob_index_iterator> range =
+      get_blobs(cvs_event_digest(ET_BRANCH, bn), false);
+
+    I(range.first != range.second);
+    cvs_blob_index result(range.first->second);
+
+    // We are unable to handle split branches here, check for that.
+    range.first++;
+    I(range.first == range.second);
+
+    return result;
   }
 
   cvs_blob_index append_event(cvs_event_ptr c) 
@@ -439,12 +446,6 @@ cvs_history
 
     blob_index_iterator b = get_blobs(c->get_digest(), true).first;
     blobs[b->second].push_back(c);
-
-    if (c->get_digest().is_branch())
-      {
-        cvs_branchname bn = boost::static_pointer_cast<cvs_event_branch, cvs_event>(c)->branchname;
-        branch_blobs.insert(make_pair(bn, b->second));
-      }
 
     return b->second;
   }
