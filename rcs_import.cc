@@ -352,6 +352,12 @@ cvs_history
   // this map is cleared for every RCS file.
   map<string, string> branch_first_entries;
 
+  // tag -> revision
+  //
+  // used to resolve the *last* revision which has a given tag
+  // applied; this is the revision which wins the tag.
+  map<cvs_tag, revision_id> resolved_tags;
+
   file_path curr_file;
   cvs_path curr_file_interned;
 
@@ -1834,6 +1840,22 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
+  // add all the tags
+  {
+    ticker n_tags(_("tags"), "t", 1);
+    packet_db_writer dbw(app);
+    transaction_guard guard(app.db);
+    for (map<cvs_tag, revision_id>::const_iterator i = cvs.resolved_tags.begin();
+         i != cvs.resolved_tags.end(); ++i)
+      {
+        string tag = cvs.tag_interner.lookup(i->first);
+        ui.set_tick_trailer("marking tag " + tag);
+        app.get_project().put_tag(i->second, tag, dbw);
+        ++n_tags;
+      }
+    guard.commit();
+  }
+
   return;
 }
 
@@ -2172,8 +2194,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
             boost::static_pointer_cast<cvs_event_tag, cvs_event>(
               *blob.begin());
 
-          // FIXME: before, I've only inserted into cvs.resolved_tags,
-          //        but I should just add the cert here...
+          cvs.resolved_tags.insert(make_pair(cte->tag, bstate.current_rid));
         }
     }
   else
