@@ -68,12 +68,14 @@ struct mtn_automate : mtn_pipe
   std::vector<revision_id> get_revision_parents(revision_id const& rid);
   revision_t get_revision(revision_id const& rid);
   std::vector<revision_id> heads(std::string const& branch);
-  
+  bool in_branch(revision_id const& rid, std::string const& branch);
   std::string get_option(std::string const& name);
 
 private:
-  bool is_synchronized(revision_id const& rid, revision_t const& rev, std::string const& domain);
+  bool is_synchronized(revision_id const& rid, std::string const& domain);
   sync_map_t get_sync_info(revision_id const& rid, std::string const& domain, int &depth);
 };
+
+extern cert_name const branch_cert_name;
 
 #endif

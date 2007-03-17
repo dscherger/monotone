@@ -10,12 +10,15 @@
 #include <constants.hh>
 #include <safe_map.hh>
 #include <fstream>
+#include <iostream>
 #include <set>
 #include <transforms.hh>
 
 using std::string;
 using std::make_pair;
 using std::pair;
+
+cert_name const branch_cert_name("branch");
 
 void mtn_automate::check_interface_revision(std::string const& minimum)
 { std::string present=automate("interface_version");
@@ -526,10 +529,26 @@ static bool begins_with(const std::string &s, const std::string &sub)
   return !s.compare(0,len,sub);
 }
 
+bool mtn_automate::in_branch(revision_id const& rid, 
+                      std::string const& branch)
+{
+  std::vector<certificate> branch_certs = get_revision_certs(rid, branch_cert_name);
+  for (std::vector<certificate>::const_iterator cert=branch_certs.begin(); 
+      cert!=branch_certs.end(); ++cert)
+  {
+    if (!cert->trusted || cert->signature!=mtn_automate::certificate::ok)
+      continue;
+    if (cert->value == branch)
+      return true;
+  }
+  return false;
+}
+
 bool mtn_automate::is_synchronized(revision_id const& rid, 
-                      revision_t const& rev, std::string const& domain)
+                      std::string const& domain)
 {
   std::string prefix=domain+":";
+  revision_t const& rev = get_revision(rid);
   // merge nodes should never have up to date sync attributes
   if (rev.edges.size()==1)
   {
@@ -562,54 +581,53 @@ bool mtn_automate::is_synchronized(revision_id const& rid,
 //   a runtime exception is thrown if no synchronized revisions are found 
 //   in this domain
 revision_id mtn_automate::find_newest_sync(std::string const& domain, std::string const& branch)
-{ /* if workspace exists use it to determine branch (and starting revision?)
-     traverse tree upwards to find a synced revision, 
-     then traverse tree downwards to find newest revision 
-     
-     this assumes a linear and connected synch graph (which is true for CVS,
-       but might not appropriate for different RCSs)
+{ /* search the revisions in the branch in reverse topologically sorted order for the first
+     one that is synchronized.  We don't have to worry about ties for CVS as CVS syncs must be
+     linearly chained.
    */
 
   std::vector<revision_id> heads;
+  std::set<revision_id> nodes_checked;
   heads=mtn_automate::heads(branch);
-  revision_t rev;
   revision_id rid;
-  
+
+  // heads contains the nodes who have had all their decendents checked
+
+  if (heads.empty())
+    return revision_id();
+
   while (!heads.empty())
   {
     rid = *heads.begin();
     L(FL("find_newest_sync: testing node %s") % rid);
-    rev=get_revision(rid);
+    std::cerr << "find_newest_sync: testing node " << rid << std::endl;
     heads.erase(heads.begin());
-    // is there a more efficient way than to create a revision_t object?
-    if (is_synchronized(rid,rev,domain))
-      break;
-    for (edge_map::const_iterator e = rev.edges.begin();
-                     e != rev.edges.end(); ++e)
-    { 
-      if (!null_id(e->first))
-        heads.push_back(e->first);
-    }
-    N(!heads.empty(), F("no synchronized revision found in branch %s for domain %s")
-        % branch % domain);
-  }
+    if (is_synchronized(rid,domain))
+      return rid;
+    nodes_checked.insert(rid);
+    // add to heads all parents (i) whose children (j) have all been checked
+    // each node will be added just after its last child is checked
+    std::vector<revision_id> parents=get_revision_parents(rid);
+    for (std::vector<revision_id>::const_iterator i=parents.begin(); 
+          i!=parents.end(); ++i)
+    {
+      std::vector<revision_id> children = get_revision_children(*i);
+      std::vector<revision_id>::const_iterator j;
+      for (j=children.begin(); j!=children.end(); ++j)
+      {
+        if (nodes_checked.find(*j) != nodes_checked.end())
+          continue;
+        if (!in_branch(*j, branch))
+          continue;
 
-  std::vector<revision_id> children;
-continue_outer:
-  if (null_id(rid.inner())) return rid;
-  L(FL("find_newest_sync: testing children of %s") % rid);
-  children=get_revision_children(rid);
-  for (std::vector<revision_id>::const_iterator i=children.begin(); 
-          i!=children.end(); ++i)
-  {
-    rev=get_revision(*i);
-    if (is_synchronized(*i,rev,domain))
-    { 
-      rid=*i;
-      goto continue_outer;
+        break;
+      }
+      if (j == children.end())
+        heads.push_back(*i);
     }
   }
-  return rid;
+  N(false, F("no synchronized revision found in branch %s for domain %s")
+        % branch % domain);
 }
 
 static void parse_attributes(std::string const& in, sync_map_t& result)
