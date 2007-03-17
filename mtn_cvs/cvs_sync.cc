@@ -600,9 +600,15 @@ void cvs_repository::fill_manifests(std::set<cvs_edge>::iterator e)
   }
 }
 
-void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest,
+bool cvs_repository::attach_sync_state(cvs_edge & e, mtn_automate::manifest_map const& oldmanifest,
         mtn_automate::cset &cs)
 { mtn_automate::sync_map_t state=create_sync_state(e);
+  return attach_sync_state(state, oldmanifest, cs);
+}
+
+bool cvs_repository::attach_sync_state(mtn_automate::sync_map_t & state, mtn_automate::manifest_map const& oldmanifest,
+        mtn_automate::cset &cs)
+{
   bool any_change=false;
   // added and changed attributes
   for (mtn_automate::sync_map_t::const_iterator i=state.begin(); 
@@ -622,7 +628,10 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
     {
       mtn_automate::attr_map_t::const_iterator a
           = f->second.second.find(i->first.second);
-      if (a==f->second.second.end()) cs.attrs_set[i->first]=i->second;
+      if (a==f->second.second.end())
+      { cs.attrs_set[i->first]=i->second;
+        any_change=true;
+      }
       else if (a->second!=i->second)
       {
         cs.attrs_set[i->first]=i->second;
@@ -656,10 +665,7 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
       any_change=true;
     }
   }
-  if (!any_change) // this happens if only deletions happened
-  { cs.attrs_set[std::make_pair(split_path(1,the_null_component),attr_key(app.opts.domain()+":touch"))]
-        =attr_value("synchronized");
-  }
+  return any_change;
 }
 
 mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
@@ -708,6 +714,32 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
             =attr_value(i->second->sha1sum.inner()().substr(0,6));
   }
   return state;
+}
+
+void cvs_repository::update_sync_state(mtn_automate::sync_map_t &state, std::set<cvs_edge>::iterator e)
+{
+  for (cvs_manifest::const_iterator i=e->xfiles.begin(); i!=e->xfiles.end(); ++i)
+  {
+    split_path sp;
+    file_path_internal(i->first).split(sp);
+    if (i->second == remove_state)
+    {
+      state.erase(std::make_pair(sp,attr_key(app.opts.domain()+":revision")));
+      state.erase(std::make_pair(sp,attr_key(app.opts.domain()+":keyword")));
+      state.erase(std::make_pair(sp,attr_key(app.opts.domain()+":sha1")));
+    } else
+    {
+      I(!i->second->cvs_version.empty());
+      state[std::make_pair(sp,attr_key(app.opts.domain()+":revision"))]
+          =attr_value(i->second->cvs_version);
+      if (!i->second->keyword_substitution.empty())
+        state[std::make_pair(sp,attr_key(app.opts.domain()+":keyword"))]
+            =attr_value(i->second->keyword_substitution);
+      if (!i->second->sha1sum.inner()().empty())
+        state[std::make_pair(sp,attr_key(app.opts.domain()+":sha1"))]
+              =attr_value(i->second->sha1sum.inner()().substr(0,6));
+    }
+  }
 }
 
 // commit CVS revisions to monotone (pull)
@@ -765,12 +797,13 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     L(FL("CVS Sync: Inserted revision %s into repository\n") % child_rid);
     e->revision=child_rid;
 
-    app.cert_revision(child_rid,"branch",app.opts.branch_name());
+    app.cert_revision(child_rid, branch_cert_name_s, app.opts.branch_name());
     std::string author=e->author;
     if (author.find('@')==std::string::npos) author+="@"+host;
-    app.cert_revision(child_rid, "author", author); 
-    app.cert_revision(child_rid, "changelog", e->changelog);
-    app.cert_revision(child_rid, "date", time_t2monotone(e->time));
+    app.cert_revision(child_rid, author_cert_name_s, author); 
+    app.cert_revision(child_rid, changelog_cert_name_s, e->changelog);
+    app.cert_revision(child_rid, date_cert_name_s, time_t2monotone(e->time));
+    app.cert_revision(child_rid, sync_cert_name_s, app.opts.domain());
     parent_rid = child_rid;
   }
 }
@@ -826,7 +859,7 @@ void cvs_repository::prime()
   
   if (!branch_point.empty())
   { time_t root_time(0);
-    // FIXME: look for this edge already in the database
+#warning FIXME: look for this edge already in the database
     if (edges.begin()!=edges.end()) root_time=edges.begin()->time-1;
     std::set<cvs_edge>::iterator root_edge
      =edges.insert(cvs_edge(branch+" branching point",root_time,app_signing_key)).first;
@@ -1014,62 +1047,59 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
           % a.new_content.size());
     }
 
-    if (commits.empty())
-    { W(F("revision %s: nothing to commit") % e.revision.inner()());
-      e.delta_base=parent->revision;
-      cert_cvs(e);
-      revision_lookup[e.revision]=edges.insert(e).first;
-      fail=false;
-      return --(edges.end());
+    if (!commits.empty())
+    {
+      std::string changelog;
+      changelog=e.changelog+"\nmonotone "+e.author+" "
+          +cvs_client::time_t2rfc822(e.time)+" "+e.revision.inner()().substr(0,6)+"\n";
+      // gather information CVS does not know about into the changelog
+      changelog+=gather_merge_information(e.revision);
+      std::map<std::string,std::pair<std::string,std::string> > result
+        =Commit(changelog,e.time,commits);
+
+      if (result.empty()) { fail=true; return edges.end(); }
+
+      // parse history data (file state) from the result of the commit
+      for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
+              i=result.begin(); i!=result.end(); ++i)
+      { std::string cvs_file_rev(i->second.first);
+        if (cvs_file_rev.empty())
+        { e.xfiles[i->first]=remove_state;
+        }
+        else
+        { MM(i->first);
+          file_state fs(e.time,cvs_file_rev);
+          fs.log_msg=e.changelog;
+          fs.author=e.author;
+          fs.keyword_substitution=i->second.second;
+          split_path sp;
+          file_path_internal(i->first).split(sp);
+          std::map<split_path, std::pair<file_id, file_id> >::const_iterator mydelta=cs->deltas_applied.find(sp);
+          if (mydelta!=cs->deltas_applied.end())
+          { fs.sha1sum=mydelta->second.second;
+          }
+          else // newly added?
+          { std::map<split_path, file_id>::const_iterator myadd=cs->files_added.find(sp);
+            if (myadd!=cs->files_added.end())
+            { fs.sha1sum=myadd->second;
+            }
+            else  // renamed?
+            { std::map<split_path, file_id>::const_iterator myrename=renamed_ids.find(sp);
+              I(myrename!=renamed_ids.end());
+              fs.sha1sum=myrename->second;
+            }
+          }
+          std::pair<std::set<file_state>::iterator,bool> newelem=
+              files[i->first].known_states.insert(fs);
+          I(newelem.second);
+          e.xfiles[i->first]=newelem.first;
+        }
+      }
+      
     }
-    std::string changelog;
-    changelog=e.changelog+"\nmonotone "+e.author+" "
-        +cvs_client::time_t2rfc822(e.time)+" "+e.revision.inner()().substr(0,6)+"\n";
-    // gather information CVS does not know about into the changelog
-    changelog+=gather_merge_information(e.revision);
-    std::map<std::string,std::pair<std::string,std::string> > result
-      =Commit(changelog,e.time,commits);
-    if (result.empty()) { fail=true; return edges.end(); }
+    else W(F("revision %s: nothing to commit") % e.revision.inner()());
     
     e.delta_base=parent->revision;
-    
-    // the result of the commit: create history entry (file state)
-    //    FIXME: is this really necessary?
-    for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
-            i=result.begin(); i!=result.end(); ++i)
-    { if (i->second.first.empty())
-      { e.xfiles[i->first]=remove_state;
-      }
-      else
-      { MM(i->first);
-        file_state fs(e.time,i->second.first);
-        fs.log_msg=e.changelog;
-        fs.author=e.author;
-        fs.keyword_substitution=i->second.second;
-        split_path sp;
-        file_path_internal(i->first).split(sp);
-        std::map<split_path, std::pair<file_id, file_id> >::const_iterator mydelta=cs->deltas_applied.find(sp);
-        if (mydelta!=cs->deltas_applied.end())
-        { fs.sha1sum=mydelta->second.second;
-        }
-        else // newly added?
-        { std::map<split_path, file_id>::const_iterator myadd=cs->files_added.find(sp);
-          if (myadd!=cs->files_added.end())
-          { fs.sha1sum=myadd->second;
-          }
-          else  // renamed?
-          { std::map<split_path, file_id>::const_iterator myrename=renamed_ids.find(sp);
-            I(myrename!=renamed_ids.end());
-            fs.sha1sum=myrename->second;
-          }
-        }
-        std::pair<std::set<file_state>::iterator,bool> newelem=
-            files[i->first].known_states.insert(fs);
-        I(newelem.second);
-        e.xfiles[i->first]=newelem.first;
-      }
-    }
-    cert_cvs(e);
     revision_lookup[e.revision]=edges.insert(e).first;
     if (global_sanity.debug) L(FL("%s") % debug());
     fail=false;
@@ -1112,13 +1142,13 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
     for (std::vector<mtn_automate::certificate>::const_iterator j=certs.begin();j!=certs.end();++j)
     { if (!j->trusted || j->signature!=mtn_automate::certificate::ok)
         continue;
-      if (j->name=="date")
+      if (j->name==date_cert_name_s)
       { date=cvs_repository::posix2time_t(j->value);
       }
-      else if (j->name=="author")
+      else if (j->name==author_cert_name_s)
       { author=j->value;
       }
-      else if (j->name=="changelog")
+      else if (j->name==changelog_cert_name_s)
       { changelog=j->value;
       }
     }
@@ -1130,21 +1160,10 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
   return result;
 }
 
-namespace {
-struct is_branch
-{ std::string comparison;
-  is_branch(std::string const& br) : comparison(br) {}
-  bool operator()(mtn_automate::certificate const& cert)
-  { return cert.trusted 
-        && cert.signature==mtn_automate::certificate::ok
-        && cert.name=="branch"
-        && cert.value==comparison;
-  }
-};
-}
-
 void cvs_repository::commit()
 { retrieve_modules();
+  N(!edges.empty(), F("you can't push from a branch you haven't already pulled into from cvs"));
+#if 0
   if (edges.empty())
   { // search for a matching start of history
     // take first head 
@@ -1177,7 +1196,12 @@ void cvs_repository::commit()
     
     I(!fail);
   }
+#endif
   std::set<cvs_edge>::iterator now_iter=last_known_revision();
+  bool update_sync_info = false;
+
+  mtn_automate::sync_map_t sync_state=create_sync_state(*now_iter);
+
   while (now_iter!=edges.end())
   { const cvs_edge &now=*now_iter;
     I(!now.revision.inner()().empty());
@@ -1190,14 +1214,13 @@ void cvs_repository::commit()
       // ignore revisions not belonging to the specified branch
       for (std::vector<revision_id>::iterator i=children.begin();
                     i!=children.end();)
-      { std::vector<mtn_automate::certificate> certs
-          = app.get_revision_certs(*i);
-        if (std::remove_if(certs.begin(),certs.end(),is_branch(app.opts.branch_name()))==certs.begin())
+      {
+        if (!app.in_branch(*i, app.opts.branch_name()))
           i=children.erase(i);
         else ++i;
       }
     }
-    if (children.empty()) return;
+    if (children.empty()) break;
     revision_id next;
     if (children.size()>1 && !app.opts.first)
     { for (std::vector<revision_id>::const_iterator i=app.opts.revisions.begin();
@@ -1217,17 +1240,56 @@ void cvs_repository::commit()
         { W(F("%s\n") % *i);
         }
         W(F("please specify direction using --revision\n"));
-        return;
+        break;
       }
     }
     else next=*children.begin();
     bool fail=bool();
     now_iter=commit_mtn2cvs(now_iter,next,fail);
-    
-    if (!fail)
-      P(F("checked %s into cvs repository") % now.revision);
+
+    if (fail)
+    {
+      W(F("failed to commit %s into cvs repository - aborting push") % next);
+      break;
+    }
+    P(F("checked %s into cvs repository") % next);
+
+    update_sync_state(sync_state, now_iter);
+    update_sync_info = true;
+
     // we'd better seperate the commits so that ordering them is possible
     if (now_iter!=edges.end()) sleep(2);
+  }
+  if (update_sync_info)
+  {
+    mtn_automate::cset cs;
+    now_iter=last_known_revision();
+    revision_id last_rev(now_iter->revision);
+
+    //std::cerr<< "attempting to attach sync state after rev: " << last_rev << std::endl;
+    //std::cerr << "sync changes: " << app.print_sync_info(sync_state) << std::endl;
+
+    if (attach_sync_state(sync_state, app.get_manifest_of(last_rev), cs))
+    {
+      revision_id child_rid=app.put_revision(last_rev,cs);
+      app.cert_revision(child_rid, branch_cert_name_s, app.opts.branch_name());
+      app.cert_revision(child_rid, author_cert_name_s, "mtn_cvs"); 
+      app.cert_revision(child_rid, changelog_cert_name_s, "Updated sync information after mtn_cvs push");
+      app.cert_revision(child_rid, date_cert_name_s, time_t2monotone(now_iter->time));
+      app.cert_revision(child_rid, sync_cert_name_s, app.opts.domain());
+
+      if (revision_ticker.get()) ++(*revision_ticker);
+
+      P(F("Committed sync revision %s to repository\n") % child_rid);
+    }
+    else
+    { // we were already synced.  Make sure we have a sync cert
+      if (!app.is_synchronized(last_rev, app.opts.domain()))
+        app.cert_revision(last_rev, sync_cert_name_s, app.opts.domain());
+    }
+
+    // std::cerr << "built cset: " << app.print_cset_info(cs) << std::endl;
+
   }
 //  store_modules();
 }
@@ -1333,9 +1395,15 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
 { cvs_repository *repo=prepare_sync(_repository,_module,_branch,app);
 
   // initial checkout
-  if (repo->empty()) 
+  if (repo->empty())
+  {
+    // std::cerr << "pulling fresh" << std::endl;
     repo->prime();
-  else repo->update();
+  } else
+  {
+    // std::cerr << "updating" << std::endl;
+    repo->update();
+  }
   delete repo;
 }
 
@@ -1448,7 +1516,7 @@ void cvs_repository::update()
   std::vector<cvs_client::update> results;
   const cvs_manifest &m=get_files(now);
   file_revisions.reserve(m.size());
-#warning FIXME: changed files
+// #warning FIXME: changed files
   for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
     file_revisions.push_back(update_args(i->first,i->second->cvs_version,
                             std::string(),i->second->keyword_substitution));
@@ -1878,10 +1946,4 @@ void cvs_repository::parse_module_paths(mtn_automate::sync_map_t const& mp)
 // is this a no-op?
 void cvs_repository::retrieve_modules()
 { if (!GetServerDir().empty()) return;
-}
-
-// we could pass delta_base and forget about it later
-void cvs_repository::cert_cvs(cvs_edge const& e)
-{ mtn_automate::sync_map_t content=create_sync_state(e);
-  app.put_sync_info(e.revision,app.opts.domain(),content);
 }

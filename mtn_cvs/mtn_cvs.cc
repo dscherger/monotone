@@ -131,6 +131,7 @@ CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
       branch=idx(args, 2)();
   }
   mtncvs_state &myapp=mtncvs_state::upcast(app);
+
   cvs_sync::push(repository,module,branch,myapp);
 }
 

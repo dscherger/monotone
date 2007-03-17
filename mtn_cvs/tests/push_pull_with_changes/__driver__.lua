@@ -46,7 +46,7 @@ writefile("test-cvs-wc/A","and again\n")
 writefile("test-cvs-wc/B","and again\n")
 check(indir("test-cvs-wc", cvs("commit", "-m", "A again")), 0, false, false)
 
-skip_if(true)   -- the following line causes mtn_cvs to freeze
+-- skip_if(true)   -- the following line causes mtn_cvs to freeze
 
 check(mtn_cvs("--branch=testbranch","pull",cvsroot,"test"),0, false,false)
 

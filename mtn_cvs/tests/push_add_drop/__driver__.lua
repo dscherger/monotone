@@ -34,6 +34,7 @@ check(not exists("test/A"))
 
 -- Now, without any CVS changes, check if another pull pulls anything across
 
+check(indir("testbr", mtn("up")), 0, false, false)
 writefile("testbr/B","change\n")
 check(indir("testbr", mtn("ci", "-m", "B changed")), 0, false, false)
 check(mtn_cvs("--branch=testbranch","pull",cvsroot,"test"),0, false,false)  -- should be noop.

@@ -18,7 +18,11 @@ using std::string;
 using std::make_pair;
 using std::pair;
 
-cert_name const branch_cert_name("branch");
+std::string const branch_cert_name_s("branch");
+std::string const date_cert_name_s("date");
+std::string const author_cert_name_s("author");
+std::string const changelog_cert_name_s("changelog");
+std::string const sync_cert_name_s("mtn-cvs-sync");
 
 void mtn_automate::check_interface_revision(std::string const& minimum)
 { std::string present=automate("interface_version");
@@ -285,7 +289,7 @@ mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
   return result;
 }
 
-void mtn_automate::cert_revision(revision_id const& rid, std::string const& name, std::string const& value)
+void mtn_automate::cert_revision(revision_id const& rid, string const& name, std::string const& value)
 { std::vector<std::string> args;
   args.push_back(rid.inner()());
   args.push_back(name);
@@ -338,10 +342,10 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
   return result;
 }
 
-std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision_id const& rid, cert_name const& name)
+std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision_id const& rid, string const& name)
 { std::vector<mtn_automate::certificate> result=get_revision_certs(rid);
   for (std::vector<mtn_automate::certificate>::iterator i=result.begin();i!=result.end();)
-  { if (i->name!=name()) i=result.erase(i);
+  { if (i->name!=name) i=result.erase(i);
     else ++i;
   }
   return result;
@@ -506,7 +510,7 @@ dump(file_path const& fp, string & out)
 { out=fp.as_internal();
 }
 
-static std::string print_sync_info(mtn_automate::sync_map_t const& data)
+std::string mtn_automate::print_sync_info(mtn_automate::sync_map_t const& data)
 { basic_io::printer printer;
   for (mtn_automate::sync_map_t::const_iterator i = data.begin(); i != data.end(); ++i)
     {
@@ -519,9 +523,11 @@ static std::string print_sync_info(mtn_automate::sync_map_t const& data)
   return printer.buf;
 }
 
-// needed by find_newest_sync: check whether a revision has up to date synch information
-static const char *const sync_prefix="x-sync-attr-";
-typedef std::map<std::pair<split_path, attr_key>, attr_value> sync_map_t;
+std::string mtn_automate::print_cset_info(mtn_automate::cset const& data)
+{ basic_io::printer printer;
+	print_cset(printer, data);
+	return printer.buf;
+}
 
 static bool begins_with(const std::string &s, const std::string &sub)
 { std::string::size_type len=sub.size();
@@ -532,7 +538,7 @@ static bool begins_with(const std::string &s, const std::string &sub)
 bool mtn_automate::in_branch(revision_id const& rid, 
                       std::string const& branch)
 {
-  std::vector<certificate> branch_certs = get_revision_certs(rid, branch_cert_name);
+  std::vector<certificate> branch_certs = get_revision_certs(rid, branch_cert_name_s);
   for (std::vector<certificate>::const_iterator cert=branch_certs.begin(); 
       cert!=branch_certs.end(); ++cert)
   {
@@ -547,24 +553,16 @@ bool mtn_automate::in_branch(revision_id const& rid,
 bool mtn_automate::is_synchronized(revision_id const& rid, 
                       std::string const& domain)
 {
-  std::string prefix=domain+":";
-  revision_t const& rev = get_revision(rid);
-  // merge nodes should never have up to date sync attributes
-  if (rev.edges.size()==1)
-  {
-    L(FL("is_synch: rev %s testing changeset\n") % rid);
-    boost::shared_ptr<mtn_automate::cset> cs=rev.edges.begin()->second;
-    for (std::map<std::pair<split_path, attr_key>, attr_value>::const_iterator i=cs->attrs_set.begin();
-          i!=cs->attrs_set.end();++i)
-    { if (begins_with(i->first.second(),prefix)) // TODO: omit some attribute changes (repository, keyword, directory)
-        return true;
-    }
-  }
-  
   // look for a certificate
   std::vector<certificate> certs;
-  certs=get_revision_certs(rid,cert_name(sync_prefix+domain));
-  return !certs.empty();
+  certs=get_revision_certs(rid,sync_cert_name_s);
+  for (std::vector<certificate>::iterator i=certs.begin();i!=certs.end();)
+  { if (!i->trusted || i->signature!=mtn_automate::certificate::ok)
+      continue;
+    if (i->value==domain)
+      return true;
+  }
+  return false;
 }
 
 // Name: find_newest_sync
@@ -600,7 +598,7 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
   {
     rid = *heads.begin();
     L(FL("find_newest_sync: testing node %s") % rid);
-    std::cerr << "find_newest_sync: testing node " << rid << std::endl;
+    // std::cerr << "find_newest_sync: testing node " << rid << std::endl;
     heads.erase(heads.begin());
     if (is_synchronized(rid,domain))
       return rid;
@@ -630,169 +628,30 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
         % branch % domain);
 }
 
-static void parse_attributes(std::string const& in, sync_map_t& result)
+mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& domain)
 {
-  basic_io::input_source source(in,"parse_attributes");
-  basic_io::tokenizer tokenizer(source);
-  basic_io::parser parser(tokenizer);
-  
-  std::string t1, t2;
-  split_path p1;
-  while (parser.symp(syms::clear))
-  {
-    parser.sym();
-    parse_path(parser, p1);
-    parser.esym(syms::attr);
-    parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
-    safe_erase(result, new_pair);
-  }
-  while (parser.symp(syms::set))
-  { 
-    parser.sym();
-    parse_path(parser, p1);
-    parser.esym(syms::attr);
-    parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
-    parser.esym(syms::value);
-    parser.str(t2);
-    safe_insert(result, make_pair(new_pair, attr_value(t2)));
-  }
-}
-
-sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& domain, int &depth)
-{
-  /* sync information is initially coded in DOMAIN: prefixed attributes
-     if information needs to be changed after commit then it gets 
-     (base_revision_id+xdiff).gz encoded in certificates
-     
-     SPECIAL CASE of no parent: certificate is (40*' '+plain_data).gz encoded
+  /* sync information is coded in DOMAIN: prefixed attributes
    */
   sync_map_t result;
-  
-  L(FL("get_sync_info: checking revision certificates %s") % rid);
-  std::vector<certificate> certs;
-  certs=get_revision_certs(rid,cert_name(sync_prefix+domain));
-  I(certs.size()<=1); // FIXME: what to do with multiple certs ...
-  if (certs.size()==1) 
-  { std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(idx(certs,0).value);
-    I(decomp_cert_val.size()>constants::idlen+1);
-    I(decomp_cert_val[constants::idlen]=='\n');
-    if (decomp_cert_val[0]!=' ')
-    { revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen));
-      result=get_sync_info(old_rid,domain,depth);
-      ++depth;
-    }
-    else depth=0;
-    parse_attributes(decomp_cert_val.substr(constants::idlen+1),result);
-    return result;
-  }
-  
+#warning should check for presence of sync cert on revision
   revision_t rev=get_revision(rid);
-  if (rev.edges.size()==1)
-  { 
-    L(FL("get_sync_info: checking revision attributes %s") % rid);
-    manifest_map m=get_manifest_of(rid);
-    std::string prefix=domain+":";
-    for (manifest_map::const_iterator i = m.begin();
-       i != m.end(); ++i)
+  L(FL("get_sync_info: checking revision attributes %s") % rid);
+  manifest_map m=get_manifest_of(rid);
+  std::string prefix=domain+":";
+  for (manifest_map::const_iterator i = m.begin();
+     i != m.end(); ++i)
+  {
+    for (attr_map_t::const_iterator j = i->second.second.begin();
+         j != i->second.second.end(); ++j)
     {
-      for (attr_map_t::const_iterator j = i->second.second.begin();
-           j != i->second.second.end(); ++j)
-      {
-        if (begins_with(j->first(),prefix))
-        { 
-          split_path sp;
-          i->first.split(sp);
-          result[std::make_pair(sp,j->first)]=j->second;
-          // else W(F("undefined value of %s %s\n") % sp % j->first());
-        }
+      if (begins_with(j->first(),prefix))
+      { 
+        split_path sp;
+        i->first.split(sp);
+        result[std::make_pair(sp,j->first)]=j->second;
+        // else W(F("undefined value of %s %s\n") % sp % j->first());
       }
     }
-    depth=0;
   }
-  N(!result.empty(), F("no sync cerficate found in revision %s for domain %s")
-        % rid % domain);
   return result;
 }
-
-// Name: get_sync_info
-// Arguments:
-//   revision
-//   sync-domain
-// Purpose:
-//   Get the sync information for a given revision
-mtn_automate::sync_map_t mtn_automate::get_sync_info(revision_id const& rid, std::string const& domain)
-{ 
-  int dummy=0;
-  return get_sync_info(rid,domain,dummy);
-}
-
-// Name: put_sync_info
-// Arguments:
-//   revision
-//   sync-domain
-//   data
-// Purpose:
-//   Set the sync information for a given revision
-void mtn_automate::put_sync_info(revision_id const& rid, std::string const& domain, sync_map_t const& newinfo)
-{ 
-  revision_t rev=get_revision(rid);
-  
-  static const int max_indirection_nest=30;
-  std::string new_data=print_sync_info(newinfo);
-
-  for (edge_map::const_iterator e = rev.edges.begin();
-                     e != rev.edges.end(); ++e)
-  { 
-    if (null_id(e->first)) continue;
-    try
-    {
-      int depth=0; 
-      sync_map_t oldinfo=get_sync_info(e->first,domain,depth);
-      if (depth>=max_indirection_nest) continue; // do not nest deeper
-      
-      basic_io::printer printer;
-      for (sync_map_t::const_iterator o=oldinfo.begin(),n=newinfo.begin();
-            o!=oldinfo.end() && n!=newinfo.end();)
-      { if (n==newinfo.end() || o->first<n->first
-            /*|| (o->first==n->first && o->second!=n->second)*/)
-        { basic_io::stanza st;
-          st.push_file_pair(syms::clear, file_path(o->first.first));
-          st.push_str_pair(syms::attr, o->first.second());
-          printer.print_stanza(st);
-          if (o->first==n->first) ++n;
-          ++o;
-        }
-        else ++n;
-      }
-      for (sync_map_t::const_iterator o=oldinfo.begin(),n=newinfo.begin();
-            o!=oldinfo.end() && n!=newinfo.end();)
-      { if (o==oldinfo.end() || o->first>n->first
-            || (o->first==n->first && o->second!=n->second))
-        { basic_io::stanza st;
-          st.push_file_pair(syms::set, file_path(n->first.first));
-          st.push_str_pair(syms::attr, n->first.second());
-          st.push_str_pair(syms::value, n->second());
-          printer.print_stanza(st);
-          if (o->first==n->first) ++o;
-          ++n;
-        }
-        else ++o;
-      }
-      if (printer.buf.size()>=new_data.size()) continue; // look for a shorter form
-      
-      I(e->first.inner()().size()==constants::idlen);
-      std::string cv=xform<Botan::Gzip_Compression>(e->first.inner()()+"\n"+printer.buf);
-      cert_revision(rid,sync_prefix+domain,cv);
-      L(FL("sync info encoded as delta from %s") % e->first);
-      return;
-    }
-    catch (informative_failure &er) {}
-    catch (std::runtime_error &er) {}
-  }
-  std::string cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data);
-  cert_revision(rid,sync_prefix+domain,cv);
-  L(FL("sync info attached to %s") % rid);
-}
-

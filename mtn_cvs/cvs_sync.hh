@@ -172,9 +172,12 @@ private:
   void store_modules();
   void retrieve_modules();
   std::string gather_merge_information(revision_id const& id);
-  void attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest,
+  bool attach_sync_state(cvs_edge & e,mtn_automate::manifest_map const& oldmanifest,
+        mtn_automate::cset &cs);
+  bool attach_sync_state(mtn_automate::sync_map_t & state, mtn_automate::manifest_map const& oldmanifest,
         mtn_automate::cset &cs);
   mtn_automate::sync_map_t create_sync_state(cvs_edge const& e);
+  void update_sync_state(mtn_automate::sync_map_t & state, std::set<cvs_edge>::iterator e);
   
 public: // semi public interface for push/pull
   void prime();
