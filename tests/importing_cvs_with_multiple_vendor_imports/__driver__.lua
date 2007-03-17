@@ -6,7 +6,7 @@ check(get("cvs-repository"))
 
 
 -- import into monotone and check presence of files
-check(mtn("--branch=test", "--debug", "cvs_import", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
 
 -- check if all non-empty branches were imported
 check(mtn("list", "branches"), 0, true, false)
