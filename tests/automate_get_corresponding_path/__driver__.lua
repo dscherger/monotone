@@ -16,7 +16,7 @@ check(mtn("commit", "--date=2005-05-21T12:30:51",
 rev = base_revision()
 
 -- file foo has been renamed to foo2, in the new revision we should be able to find the old name
-check(mtn("automate", "get_corresponding_path", rev, "foo2", old_rev), 0, true, false)
+check(mtn("automate", "get-corresponding-path", rev, "foo2", old_rev), 0, true, false)
 canonicalize("stdout")
 check(samefile("expected", "stdout"))
 
@@ -25,7 +25,7 @@ addfile("foo3", "blah\n")
 check(mtn("commit", "--date=2005-05-21T12:30:51",
           "--branch=testbranch", "--message=blah-blah"), 0, false, false)
 rev = base_revision()
-check(mtn("automate", "get_corresponding_path", rev, "foo3", old_rev), 0, true, false)
+check(mtn("automate", "get-corresponding-path", rev, "foo3", old_rev), 0, true, false)
 canonicalize("stdout")
 check(samefile("expected2", "stdout"))
 

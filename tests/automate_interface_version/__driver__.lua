@@ -1,7 +1,10 @@
 
 mtn_setup()
 
+-- check the old underscore command name first to ensure both names are valid
 check(mtn("automate", "interface_version"), 0, true, false)
+
+check(mtn("automate", "interface-version"), 0, true, false)
 rename("stdout", "a_v")
 
 -- MinGW's wc produces "      1" as output.  Arithmetic comparison works, string comparison doesn't

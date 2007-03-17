@@ -20,7 +20,7 @@ addfile("file", "contents")
 commit("testbranch")
 writefile("file", "modified")
 
-diffcmd = "o1:r12:h:testbranche l12:content_diffe"
+diffcmd = "o1:r12:h:testbranche l12:content-diffe"
 check(mtn("automate", "stdio"), 0, true, false, string.rep(diffcmd, 2))
 dat = readfile("stdout")
 check(parse_stdio(dat, 0) == parse_stdio(dat, 1))

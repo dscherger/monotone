@@ -13,7 +13,7 @@ mtn_setup()
 
 -- check an empty base revision id
 
-check(mtn("automate", "get_base_revision_id"), 0, true, false)
+check(mtn("automate", "get-base-revision-id"), 0, true, false)
 check(trim(readfile("stdout")) == extract_base_revision())
 
 addfile("foo", "this is file foo")
@@ -22,12 +22,12 @@ addfile("foo", "this is file foo")
 
 commit()
 
-check(mtn("automate", "get_base_revision_id"), 0, true, false)
+check(mtn("automate", "get-base-revision-id"), 0, true, false)
 check(trim(readfile("stdout")) == extract_base_revision())
 
 -- check that pending changes don't affect the base revision id
 
 addfile("foo", "this is foo")
 
-check(mtn("automate", "get_base_revision_id"), 0, true, false)
+check(mtn("automate", "get-base-revision-id"), 0, true, false)
 check(trim(readfile("stdout")) == extract_base_revision())

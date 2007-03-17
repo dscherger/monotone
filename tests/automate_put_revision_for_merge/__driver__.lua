@@ -1,4 +1,4 @@
--- test that 'automate put_revision' works for merge revisions
+-- test that 'automate put-revision' works for merge revisions
 mtn_setup()
 
 addfile("foo", "blah blah parent")
@@ -34,8 +34,8 @@ revision_text = ("format_version \"1\"\n"
                  .. "\n"
                  .. "\n\n\n" -- just for fun
               )
-check(mtn("automate", "put_file", readfile("foo-merge")), 0, false, false)
-check(mtn("automate", "put_revision", revision_text), 0, true, false)
+check(mtn("automate", "put-file", readfile("foo-merge")), 0, false, false)
+check(mtn("automate", "put-revision", revision_text), 0, true, false)
 r_merge = trim(readfile("stdout"))
 
 check(mtn("update", "-r", r_merge, "-b", "asdf"), 0, false, false)
