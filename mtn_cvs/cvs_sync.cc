@@ -1451,6 +1451,8 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
         
         fs.sha1sum=i->second.first;
         if (fs.sha1sum.inner()().empty()) continue; // directory node
+        I(!fs.cvs_version.empty());
+        I(fs.cvssha1sum == fs.sha1sum.inner()().substr(0,6));
         fs.log_msg=e.changelog;
         fs.author=e.author;
         std::string path=file_path(i->first).as_internal();
@@ -1516,6 +1518,22 @@ void cvs_repository::update()
   std::vector<cvs_client::update> results;
   const cvs_manifest &m=get_files(now);
   file_revisions.reserve(m.size());
+
+#warning Turn this strict sync checking into an option
+  if (true)
+  {
+    for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
+    {
+      std::string file_contents;
+      file_id cvs_sha1sum, mtn_sha1sum(i->second->sha1sum);
+      std::cerr << "checking sync on file: " << i->first << std::endl;
+      cvs_client::update c=Update(i->first,i->second->cvs_version);
+      store_checkout(i->second,c,file_contents);
+      calculate_ident(file_data(file_contents), cvs_sha1sum);
+      I(cvs_sha1sum == mtn_sha1sum);
+    }
+  }
+
 // #warning FIXME: changed files
   for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
     file_revisions.push_back(update_args(i->first,i->second->cvs_version,

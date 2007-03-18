@@ -66,3 +66,5 @@ check(mtn("checkout", "--branch=testbranch", "mtcodir"), 0, false, false)
 check(sha1("mtcodir/A") == tsha4)
 check(sha1("mtcodir/B") == tsha2)
 check(sha1("mtcodir/dir/D") == tsha3)
+
+-- check(false)
