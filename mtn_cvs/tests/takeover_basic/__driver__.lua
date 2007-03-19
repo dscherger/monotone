@@ -36,12 +36,9 @@ check(mtn_cvs("--branch=testbranch","push"), 0, false, false)
 ---------------
 -- check presence of files
 
-check(mtn("automate", "get_file", tsha2), 0, false)
+check(mtn("automate", "get_file", tsha2), 0, false, false)
 
 -- also check that CVS sees this newly changed file
 
--- FIXME: win32
-os.execute("mv test test.old")
-
-check(cvs("co", "test"), 0, false, false)
-check(sha1("test/B") == tsha2)
+check(cvs("co", "testII"), 0, false, false)
+check(sha1("testII/B") == tsha2)
