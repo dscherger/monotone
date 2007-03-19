@@ -31,6 +31,13 @@ OPT(since, "since", utf8, , N_("set history start for CVS pull"))
 }
 #endif
 
+OPT(extended_checking, "extended-checking", bool, false, N_("run more checks on the mtn/cvs sync state"))
+#ifdef option_bodies
+{
+  extended_checking = true;
+}
+#endif
+
 OPT(full, "full", bool, false, N_("ignore already pulled CVS revisions"))
 #ifdef option_bodies
 {

@@ -100,7 +100,7 @@ ssh_agent::~ssh_agent() {}
 // missing: compression level (-z), cvs-branch (-r), since (-D)
 CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("(re-)import a module from a remote cvs repository"), 
-    options::opts::branch | options::opts::since | options::opts::full)
+    options::opts::branch | options::opts::since | options::opts::full | options::opts::extended_checking)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
 

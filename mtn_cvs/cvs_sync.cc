@@ -1308,6 +1308,8 @@ static void guess_repository(std::string &repository, std::string &module,
     }
     last_state=app.get_sync_info(lastid,app.opts.domain());
     cvs_repository::parse_cvs_cert_header(last_state,app.opts.domain(),repository,module,branch);
+    if (app.opts.full)
+      last_state = mtn_automate::sync_map_t();
     if (branch.empty())
       L(FL("using module '%s' in repository '%s'\n") % module % repository);
     else
@@ -1383,7 +1385,7 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   if (!getenv("CVS_CLIENT_LOG"))
     repo->GzipStream(3);
 
-  if (!last_sync_info.empty())
+  if (app.opts.full || !last_sync_info.empty())
   { repo->parse_module_paths(last_sync_info);
     repo->process_sync_info(last_sync_info, lastid);
   }
@@ -1519,18 +1521,17 @@ void cvs_repository::update()
   const cvs_manifest &m=get_files(now);
   file_revisions.reserve(m.size());
 
-#warning Turn this strict sync checking into an option
-  if (true)
+  if (app.opts.extended_checking)
   {
     for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
     {
       std::string file_contents;
       file_id cvs_sha1sum, mtn_sha1sum(i->second->sha1sum);
-      std::cerr << "checking sync on file: " << i->first << std::endl;
+      // std::cerr << "checking sync on file: " << i->first;
       cvs_client::update c=Update(i->first,i->second->cvs_version);
-      store_checkout(i->second,c,file_contents);
-      calculate_ident(file_data(file_contents), cvs_sha1sum);
+      calculate_ident(file_data(c.contents), cvs_sha1sum);
       I(cvs_sha1sum == mtn_sha1sum);
+      // std::cerr << " ok" << std::endl;
     }
   }
 
