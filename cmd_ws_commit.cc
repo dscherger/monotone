@@ -19,6 +19,7 @@
 #include "transforms.hh"
 #include "work.hh"
 #include "charset.hh"
+#include "ui.hh"
 
 using std::cout;
 using std::make_pair;

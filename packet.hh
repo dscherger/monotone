@@ -11,13 +11,12 @@
 // PURPOSE.
 
 #include <iosfwd>
-#include <memory>
-
 #include <boost/function.hpp>
 
-#include "app_state.hh"
-#include "ui.hh"
 #include "vocab.hh"
+
+class app_state;
+struct cert;
 
 // the idea here is that monotone can produce and consume "packet streams",
 // where each packet is *informative* rather than transactional. that is to
@@ -72,6 +71,10 @@ public:
                                   base64< rsa_pub_key > const & k) = 0;
   virtual void consume_key_pair(rsa_keypair_id const & ident,
                                 keypair const & kp) = 0;
+  virtual void consume_old_private_key(rsa_keypair_id const & ident,
+                                       base64< arc4<rsa_priv_key> > const & k)
+  = 0;
+                                       
 };
 
 // this writer writes packets into a stream
@@ -95,6 +98,9 @@ struct packet_writer : public packet_consumer
                                   base64< rsa_pub_key > const & k);
   virtual void consume_key_pair(rsa_keypair_id const & ident,
                                 keypair const & kp);
+  // this one always I()s [stupid C++ won't let me leave it pure-virtual]
+  virtual void consume_old_private_key(rsa_keypair_id const & ident,
+                                       base64< arc4<rsa_priv_key> > const & k);
 };
 
 // this writer injects packets it receives to the database.
@@ -119,9 +125,11 @@ public:
                                   base64< rsa_pub_key > const & k);
   virtual void consume_key_pair(rsa_keypair_id const & ident,
                                 keypair const & kp);
+  virtual void consume_old_private_key(rsa_keypair_id const & ident,
+                                       base64< arc4<rsa_priv_key> > const & k);
 };
 
-size_t read_packets(std::istream & in, packet_consumer & cons, app_state & app);
+size_t read_packets(std::istream & in, packet_consumer & cons);
 
 // Local Variables:
 // mode: C++

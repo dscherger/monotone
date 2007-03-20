@@ -1507,7 +1507,7 @@ session::process_auth_cmd(protocol_role their_role,
     {
       // If it's not in the db, it still could be in the keystore if we
       // have the private key that goes with it.
-      if (!app.keys.try_ensure_in_db(their_key_hash))
+      if (!app.keys.try_ensure_in_db(their_key_hash, app.db))
         {
           this->saved_nonce = id("");
 
@@ -3159,7 +3159,7 @@ session::rebuild_merkle_trees(app_state & app,
           if (!app.db.public_key_exists(*key))
             {
               if (app.keys.key_pair_exists(*key))
-                app.keys.ensure_in_database(*key);
+                app.keys.ensure_in_database(*key, app.db);
               else
                 W(F("Cannot find key '%s'") % *key);
             }

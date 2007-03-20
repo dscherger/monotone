@@ -5,6 +5,7 @@
 #include "packet.hh"
 #include "keys.hh"
 #include "globish.hh"
+#include "database.hh"
 
 using std::make_pair;
 using std::istringstream;
@@ -38,6 +39,10 @@ struct keyreader : public packet_consumer
                                   base64< rsa_pub_key > const & k)
   {E(false, F("Extraneous data in key store."));}
 
+  virtual void consume_old_private_key(rsa_keypair_id const & ident,
+                                       base64< arc4<rsa_priv_key> > const & k)
+  {E(false, F("Extraneous data in key store."));}
+
   virtual void consume_key_pair(rsa_keypair_id const & ident,
                                 keypair const & kp)
   {
@@ -52,7 +57,7 @@ struct keyreader : public packet_consumer
   }
 };
 
-key_store::key_store(app_state * a): have_read(false), app(a)
+key_store::key_store() : have_read(false)
 {
 }
 
@@ -87,7 +92,7 @@ key_store::read_key_dir()
       data dat;
       read_data(key_dir / (*i)(), dat);
       istringstream is(dat());
-      read_packets(is, kr, *app);
+      read_packets(is, kr);
     }
 }
 
@@ -101,27 +106,27 @@ key_store::maybe_read_key_dir()
 }
 
 void
-key_store::ensure_in_database(rsa_keypair_id const & ident)
+key_store::ensure_in_database(rsa_keypair_id const & ident, database & db)
 {
   maybe_read_key_dir();
-  if (app->db.public_key_exists(ident))
+  if (db.public_key_exists(ident))
     {
       L(FL("public key '%s' is already in db, not loading") % ident);
       return;
     }
   map<rsa_keypair_id, keypair>::iterator i = keys.find(ident);
   I(i != keys.end());
-  app->db.put_key(ident, i->second.pub);
+  db.put_key(ident, i->second.pub);
   L(FL("loaded public key '%s' into db") % ident);
 }
 
 bool
-key_store::try_ensure_in_db(hexenc<id> const & hash)
+key_store::try_ensure_in_db(hexenc<id> const & hash, database & db)
 {
   map<hexenc<id>, rsa_keypair_id>::const_iterator i = hashes.find(hash);
   if (i == hashes.end())
     return false;
-  ensure_in_database(i->second);
+  ensure_in_database(i->second, db);
   return true;
 }
 

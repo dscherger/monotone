@@ -5,10 +5,8 @@
 
 #include "vocab.hh"
 #include "paths.hh"
-#include "platform.hh"
 
-class app_state;
-
+class database;
 struct keyreader;
 
 class key_store
@@ -17,7 +15,6 @@ private:
   friend struct keyreader;
   system_path key_dir;
   bool have_read;
-  app_state * app;
   std::map<rsa_keypair_id, keypair> keys;
   std::map<hexenc<id>, rsa_keypair_id> hashes;
 
@@ -26,12 +23,12 @@ private:
   void read_key_dir();
   void maybe_read_key_dir();
 public:
-  key_store(app_state * a);
+  key_store();
   void set_key_dir(system_path const & kd);
   system_path const & get_key_dir();
 
-  void ensure_in_database(rsa_keypair_id const & ident);
-  bool try_ensure_in_db(hexenc<id> const & hash);
+  void ensure_in_database(rsa_keypair_id const & ident, database &);
+  bool try_ensure_in_db(hexenc<id> const & hash, database &);
 
   void get_key_ids(std::string const & pattern,
                    std::vector<rsa_keypair_id> & priv);

@@ -253,6 +253,16 @@ packet_db_writer::consume_key_pair(rsa_keypair_id const & ident,
   guard.commit();
 }
 
+void
+packet_db_writer::consume_old_private_key(rsa_keypair_id const & ident,
+                                          base64< arc4<rsa_priv_key> >
+                                          const & k)
+{
+  keypair kp;
+  migrate_private_key(app, ident, k, kp);
+  consume_key_pair(ident, kp);
+}
+
 // --- packet writer ---
 
 packet_writer::packet_writer(ostream & o) : ost(o) {}
@@ -321,13 +331,20 @@ packet_writer::consume_key_pair(rsa_keypair_id const & ident,
       << "[end]\n";
 }
 
+void
+packet_writer::consume_old_private_key(rsa_keypair_id const & ident,
+                                       base64< arc4<rsa_priv_key> > const & k)
+{
+  I(!"packet_writer::consume_old_private_key called");
+}
+
 
 // -- remainder just deals with the regexes for reading packets off streams
-
+namespace
+{
 struct
 feed_packet_consumer
 {
-  app_state & app;
   size_t & count;
   packet_consumer & cons;
   string ident;
@@ -335,8 +352,8 @@ feed_packet_consumer
   string certname;
   string base;
   string sp;
-  feed_packet_consumer(size_t & count, packet_consumer & c, app_state & app_)
-   : app(app_), count(count), cons(c),
+  feed_packet_consumer(size_t & count, packet_consumer & c)
+   : count(count), cons(c),
      ident(constants::regex_legal_id_bytes),
      key(constants::regex_legal_key_name_bytes),
      certname(constants::regex_legal_cert_name_bytes),
@@ -436,12 +453,8 @@ feed_packet_consumer
         require(regex_match(args, regex(key)));
         require(regex_match(body, regex(base)));
         string contents(trim_ws(body));
-        keypair kp;
-        migrate_private_key(app,
-                            rsa_keypair_id(args),
-                            base64<arc4<rsa_priv_key> >(contents),
-                            kp);
-        cons.consume_key_pair(rsa_keypair_id(args), kp);
+        cons.consume_old_private_key(rsa_keypair_id(args),
+                                     base64<arc4<rsa_priv_key> >(contents));
       }
     else
       {
@@ -452,9 +465,10 @@ feed_packet_consumer
     return true;
   }
 };
+}
 
 static size_t
-extract_packets(string const & s, packet_consumer & cons, app_state & app)
+extract_packets(string const & s, packet_consumer & cons)
 {
   static string const head("\\[([a-z]+)[[:space:]]+([^\\[\\]]+)\\]");
   static string const body("([^\\[\\]]+)");
@@ -462,13 +476,13 @@ extract_packets(string const & s, packet_consumer & cons, app_state & app)
   static string const whole = head + body + tail;
   regex expr(whole);
   size_t count = 0;
-  regex_grep(feed_packet_consumer(count, cons, app), s, expr, match_default);
+  regex_grep(feed_packet_consumer(count, cons), s, expr, match_default);
   return count;
 }
 
 
 size_t
-read_packets(istream & in, packet_consumer & cons, app_state & app)
+read_packets(istream & in, packet_consumer & cons)
 {
   string accum, tmp;
   size_t count = 0;
@@ -485,7 +499,7 @@ read_packets(istream & in, packet_consumer & cons, app_state & app)
         {
           endpos += end.size();
           string tmp = accum.substr(0, endpos);
-          count += extract_packets(tmp, cons, app);
+          count += extract_packets(tmp, cons);
           if (endpos < accum.size() - 1)
             accum = accum.substr(endpos+1);
           else
@@ -564,18 +578,13 @@ UNIT_TEST(packet, roundabout)
     tmp = oss.str();
   }
 
-  // read_packets needs this to convert privkeys to keypairs.
-  // This doesn't test privkey packets (theres a tests/ test for that),
-  // so we don't actually use the app_state for anything. So a default one
-  // is ok.
-  app_state aaa;
   for (int i = 0; i < 10; ++i)
     {
       // now spin around sending and receiving this a few times
       ostringstream oss;
       packet_writer pw(oss);
       istringstream iss(tmp);
-      read_packets(iss, pw, aaa);
+      read_packets(iss, pw);
       BOOST_CHECK(oss.str() == tmp);
       tmp = oss.str();
     }
