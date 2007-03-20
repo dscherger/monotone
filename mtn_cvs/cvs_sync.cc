@@ -906,6 +906,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       std::set<cvs_edge>::iterator parent, const revision_id &rid, bool &fail)
 { // check that it's the last one
   L(FL("commit %s -> %s\n") % parent->revision % rid);
+  if (parent!=edges.end()) // accept full push
   { std::set<cvs_edge>::iterator test=parent;
     ++test;
     I(test==edges.end());
@@ -919,12 +920,17 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   for (mtn_automate::edge_map::const_iterator j = rs.edges.begin(); 
        j != rs.edges.end();
        ++j)
-  { if (!(j->first == parent->revision)) 
-    { L(FL("%s != %s\n") % j->first % parent->revision);
+  { if ((parent==edges.end() && !is_empty(j->first)))
+    { L(FL("%s != \"\"\n") % j->first);
+      continue;
+    }
+    else if ((parent!=edges.end() && !(j->first == parent->revision)))
+    { L(FL("%s != %s\n") % j->first % (parentparent->revision));
       continue;
     }
     boost::shared_ptr<mtn_automate::cset> cs=j->second;
-    cvs_manifest parent_manifest=get_files(*parent);
+    cvs_manifest parent_manifest;
+    if (parent!=edges.end()) parent_manifest=get_files(*parent);
     std::map<split_path, file_id> renamed_ids;
 
     for (path_set::const_iterator i=cs->nodes_deleted.begin();
@@ -1016,7 +1022,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
 
     if (commits.empty())
     { W(F("revision %s: nothing to commit") % e.revision.inner()());
-      e.delta_base=parent->revision;
+      if (parent!=edges.end()) e.delta_base=parent->revision;
       cert_cvs(e);
       revision_lookup[e.revision]=edges.insert(e).first;
       fail=false;
@@ -1030,8 +1036,9 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     std::map<std::string,std::pair<std::string,std::string> > result
       =Commit(changelog,e.time,commits);
     if (result.empty()) { fail=true; return edges.end(); }
-    
-    e.delta_base=parent->revision;
+
+    if (parent!=edges.end())    
+      e.delta_base=parent->revision;
     
     // the result of the commit: create history entry (file state)
     //    FIXME: is this really necessary?
@@ -1172,7 +1179,8 @@ void cvs_repository::commit()
     // start with actual
     I(!null_id(actual));
     bool fail=false;
-//    commit_mtn2cvs(edges.end(), actual, fail);
+    // set up an empty CVS revision?
+    commit_mtn2cvs(edges.end(), actual, fail);
 //    automate::manifest_map root_manifest=app.get_manifest_of(actual);
     
     I(!fail);
