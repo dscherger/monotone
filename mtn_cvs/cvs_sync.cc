@@ -1112,6 +1112,9 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
 
 std::string cvs_repository::gather_merge_information(revision_id const& id)
 { L(FL("gather_merge_information(%s)") % id);
+  // TODO: This is broken.  What we really want to do is get ancestors of this revision,
+  // and then remove ancestors of the synced revisions.  Need to be careful as pushed
+  // revs aren't marked as synced until the end of the sequence of pushes.
   std::vector<revision_id> parents=app.get_revision_parents(id);
   std::string result;
   for (std::vector<revision_id>::const_iterator i=parents.begin();i!=parents.end();++i)
@@ -1129,12 +1132,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
     }
 #endif
     // this revision is already in _this_ repository
-// TODO: has sync info would be sufficient
-    try
-    { if (!app.get_sync_info(*i,app.opts.domain()).empty()) continue;
-    } catch (std::exception &e)
-    { W(F("get sync info threw %s") % e.what());
-    }
+    if (app.is_synchronized(*i,app.opts.domain())) continue;
     
     std::vector<mtn_automate::certificate> certs=app.get_revision_certs(*i);
     std::string author,changelog;
@@ -1300,26 +1298,20 @@ void cvs_repository::commit()
 static void guess_repository(std::string &repository, std::string &module,
         std::string & branch,mtn_automate::sync_map_t &last_state, revision_id &lastid, mtncvs_state &app)
 { I(!app.opts.branch_name().empty());
-  try
-  { lastid=app.find_newest_sync(app.opts.domain(),app.opts.branch_name());
-    if (null_id(lastid)) 
-    { L(FL("no sync information found on branch %s\n")%app.opts.branch_name());
-      return;
-    }
-    last_state=app.get_sync_info(lastid,app.opts.domain());
-    cvs_repository::parse_cvs_cert_header(last_state,app.opts.domain(),repository,module,branch);
-    if (app.opts.full)
-      last_state = mtn_automate::sync_map_t();
-    if (branch.empty())
-      L(FL("using module '%s' in repository '%s'\n") % module % repository);
-    else
-      L(FL("using branch '%s' of module '%s' in repository '%s'\n") 
-                % branch % module % repository);
+  lastid=app.find_newest_sync(app.opts.domain(),app.opts.branch_name());
+  if (null_id(lastid)) 
+  { L(FL("no sync information found on branch %s\n")%app.opts.branch_name());
+    return;
   }
-  catch (std::runtime_error)
-  { N(false, F("can not guess repository (in domain %s), "
-        "please specify on first pull") % app.opts.domain);
-  }
+  last_state=app.get_sync_info(lastid,app.opts.domain());
+  cvs_repository::parse_cvs_cert_header(last_state,app.opts.domain(),repository,module,branch);
+  if (app.opts.full)
+    last_state = mtn_automate::sync_map_t();
+  if (branch.empty())
+    L(FL("using module '%s' in repository '%s'\n") % module % repository);
+  else
+    L(FL("using branch '%s' of module '%s' in repository '%s'\n") 
+              % branch % module % repository);
 }
 
 namespace cvs_sync
@@ -1328,16 +1320,26 @@ cvs_sync::cvs_repository *prepare_sync(const std::string &_repository, const std
             std::string const& _branch, mtncvs_state &app);
 }
 
+class cvs_repository_cleaner {
+public:
+	cvs_repository_cleaner(cvs_repository *repos) : repo(repos), cleanup(true) {}
+  ~cvs_repository_cleaner() { if (cleanup) delete repo; }
+	void dontClean() { cleanup = false; }
+private:
+  cvs_repository *repo;
+	bool cleanup;
+};
+
 void cvs_sync::push(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
 { cvs_repository *repo=cvs_sync::prepare_sync(_repository,_module,_branch,app);
-  
+  cvs_repository_cleaner cleaner(repo);
+
   if (repo->empty())
     W(F("no revision certs for this module, exporting all\n"));
   L(FL("push"));
 //  std::cerr << repo->debug() << '\n';
   repo->commit();
-  delete repo;
 }
 
 cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository, const std::string &_module,
@@ -1381,20 +1383,23 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   N(!module.empty(), F("you must name a module, I can't guess"));
    
   cvs_repository *repo = new cvs_repository(app,repository,module,branch);
+	cvs_repository_cleaner cleaner(repo);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo->GzipStream(3);
 
-  if (app.opts.full || !last_sync_info.empty())
+  if (!last_sync_info.empty())
   { repo->parse_module_paths(last_sync_info);
     repo->process_sync_info(last_sync_info, lastid);
   }
+	cleaner.dontClean();	// allow the repo to be returned without being deleted
   return repo;
 }
 
 void cvs_sync::pull(const std::string &_repository, const std::string &_module,
             std::string const& _branch, mtncvs_state &app)
 { cvs_repository *repo=prepare_sync(_repository,_module,_branch,app);
+  cvs_repository_cleaner cleaner(repo);
 
   // initial checkout
   if (repo->empty())
@@ -1406,7 +1411,6 @@ void cvs_sync::pull(const std::string &_repository, const std::string &_module,
     // std::cerr << "updating" << std::endl;
     repo->update();
   }
-  delete repo;
 }
 
 cvs_file_state cvs_repository::remember(std::set<file_state> &s,const file_state &fs, std::string const& filename)
