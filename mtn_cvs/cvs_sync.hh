@@ -129,6 +129,9 @@ private:
   std::set<file_state> remove_set; // remove_state lives here
   cvs_file_state remove_state;
   
+  //  for gathering merge information
+  std::set<revision_id> known_synced; // for revs that we have synced, but not marked as synced yet
+  
   time_t sync_since;
 
 public:

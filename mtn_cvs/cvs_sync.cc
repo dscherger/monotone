@@ -1115,6 +1115,112 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
   // TODO: This is broken.  What we really want to do is get ancestors of this revision,
   // and then remove ancestors of the synced revisions.  Need to be careful as pushed
   // revs aren't marked as synced until the end of the sequence of pushes.
+  
+  // note that we only want log info for ancestors of id, not for id itself.
+
+#warning fix the gathering of log information when pushing merge nodes
+
+  // or - topologically ordered search back from the head (like find last sync)
+  // mark nodes that are ancestors of a sync node during the search
+  // mark nodes that are ancestors of the rev_id during the search
+  // stop when there are no ancestors of the rev_id that are not also
+  // ancestors of a sync node. (and after you've seen rev_id)
+  // need to add a new argument to pass an "unmarked already synced node" if we're
+  // pushing a whole string of nodes at once.
+  // could possibly do this search once for the whole push, rather than repeat for
+  // each node - but that's an advanced option.
+
+  std::vector<revision_id> heads;
+  std::set<revision_id> nodes_checked;
+  std::set<revision_id> synced(known_synced);
+  std::set<revision_id> ancestor;
+  heads=app.heads(app.opts.branch_name());
+  revision_id rid;
+  string result;
+
+  ancestor.insert(id);
+  bool found_id = false;
+
+  // heads contains the nodes who have had all their decendents checked
+
+  if (heads.empty())
+    return result;
+
+  while (!heads.empty())
+  {
+    bool more_search = false;
+    for (uint i=0; i<heads.size(); i++)
+    {
+      if (!found_id || (ancestor.find(heads[i]) != ancestor.end() && synced.find(heads[i]) == synced.end()))
+      {
+        more_search = true;
+        break;
+      }
+    }
+    if (!more_search)
+      return result;
+    
+    rid = *heads.begin();
+    heads.erase(heads.begin());
+    L(FL("gather_merge_information: testing node %s") % rid);
+    // std::cerr << "gather_merge_information: testing node " << rid << std::endl;
+    if (rid == id)
+      found_id = true;
+    if (synced.find(rid) == synced.end() && app.is_synchronized(rid,app.opts.domain()))
+      synced.insert(rid);
+
+    nodes_checked.insert(rid);
+
+    if (rid != id && ancestor.find(rid) != ancestor.end() && synced.find(rid) == synced.end())
+    {
+      std::vector<mtn_automate::certificate> certs=app.get_revision_certs(rid);
+      std::string author,changelog;
+      time_t date=0;
+      for (std::vector<mtn_automate::certificate>::const_iterator j=certs.begin();j!=certs.end();++j)
+      { if (!j->trusted || j->signature!=mtn_automate::certificate::ok)
+          continue;
+        if (j->name==date_cert_name_s)
+        { date=cvs_repository::posix2time_t(j->value);
+        }
+        else if (j->name==author_cert_name_s)
+        { author=j->value;
+        }
+        else if (j->name==changelog_cert_name_s)
+        { changelog=j->value;
+        }
+      }
+      result+="-------------------\n"
+        +changelog+"\nmonotone "+author+" "
+        +cvs_client::time_t2rfc822(date)+" "+rid.inner()()+"\n";
+    }
+
+    // add to heads all parents (i) whose children (j) have all been checked
+    // each node will be added just after its last child is checked
+    std::vector<revision_id> parents=app.get_revision_parents(rid);
+    for (std::vector<revision_id>::const_iterator i=parents.begin(); 
+          i!=parents.end(); ++i)
+    {
+      if (ancestor.find(rid) != ancestor.end())
+        ancestor.insert(*i);  // your parent is an ancestor if you were
+      if (synced.find(rid) != synced.end())
+        synced.insert(*i);  // your parent is synced if you were
+      std::vector<revision_id> children = app.get_revision_children(*i);
+      std::vector<revision_id>::const_iterator j;
+      for (j=children.begin(); j!=children.end(); ++j)
+      {
+        if (nodes_checked.find(*j) != nodes_checked.end())
+          continue;
+        if (!app.in_branch(*j, app.opts.branch_name()))
+          continue;
+
+        break;
+      }
+      if (j == children.end())
+        heads.push_back(*i);
+    }
+  }
+
+#if 0
   std::vector<revision_id> parents=app.get_revision_parents(id);
   std::string result;
   for (std::vector<revision_id>::const_iterator i=parents.begin();i!=parents.end();++i)
@@ -1155,6 +1261,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
         +cvs_client::time_t2rfc822(date)+" "+i->inner()()+"\n";
     result+=gather_merge_information(*i);
   }
+#endif
   return result;
 }
 
@@ -1252,6 +1359,7 @@ void cvs_repository::commit()
     }
     P(F("checked %s into cvs repository") % next);
 
+    known_synced.insert(now_iter->revision);
     update_sync_state(sync_state, now_iter);
     update_sync_info = true;
 
