@@ -343,6 +343,7 @@ CMD(crash, hidden_group(), "{ N | E | I | exception | signal }",
 #undef maybe_throw_bare
 }
 
+#ifndef LIBMTN_COMPILE
 string
 describe_revision(app_state & app,
                   revision_id const & id)
@@ -515,7 +516,7 @@ get_content_paths(roster_t const & roster, map<file_id, file_path> & paths)
     }
 }
   
-
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76
