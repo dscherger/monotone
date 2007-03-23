@@ -317,7 +317,7 @@ public class GXLViewer {
 		    // Check that our selection is a leaf node (all heads are leaf nodes) and ignore if not
 		    if(!((DefaultMutableTreeNode)node).isLeaf()) return;
 		    // Extract the id from the leaf node (should really use a proper user object for this!)
-		    final String id=node.toString().substring(0,node.toString().indexOf(' ')-1);
+		    final String id=node.toString();
 		    label.setText("Reading log...");
 		    new DisplayLog(GXLViewer.this,id);
 		    setProgressWindow("Reading log for revision");

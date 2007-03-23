@@ -71,7 +71,7 @@ public class Monotone {
      * @return a list of strings which enumerates the branches in the current monotone database
      */
     public List<String> listBranches() throws IOException {
-	List<String> result=runMonotone(new String[] { "list", "branches"});
+	List<String> result=runMonotone(new String[] { "automate", "branches"});
 	return result;
     }
 
@@ -82,7 +82,7 @@ public class Monotone {
      * @return a list of strings which enumerates the heads of the specified branch in the current monotone database
      */
     public List<String> listHeads(String branch) throws IOException {
-	List<String>result=runMonotone(new String[] { "heads", "--branch", branch});
+	List<String>result=runMonotone(new String[] { "automate", "heads", branch});
 	return result;
     }
 
@@ -135,7 +135,7 @@ public class Monotone {
      * @return a stream from which an SVG format graph may be read
      */
     public InputStream getSVGLog(final String id,final HighlightTypes highlight) throws IOException {
-	final String[] command=new String[] { "log","--revision",id };
+	final String[] command=new String[] { "log", "--no-graph", "--from",id };
 	
 	// Start the inferior processes
 	final Process monotone=Runtime.getRuntime().exec(getCommand(command));
