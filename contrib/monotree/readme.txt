@@ -11,6 +11,8 @@ GXL Java API - http://www.gupro.de/GXL/index.html as: gxl/gxl-0.92/gxl.jar to mo
 Batick - SVG library from the Apache project http://xml.apache.org as: batik/batick-1.5.1/batik.jar & batick/batik-1.5.1/lib relative to monotree.jar
 graphviz - Graph layout and SVG generation from ATT http://www.graphviz.org/ with the commands dot and gxl2dot on the path
 
+Currently gxl and Batick are committed to the monotree branch.  Batick is an older version.  If you update it, you'll need to change both the makefile and the META-INF/MANIFEST.MF file to point to the new version.
+
 Run using:
 
 d:\> java -Xmx512m -classpath monotree.jar GXLViewer
