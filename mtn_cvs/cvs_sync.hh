@@ -182,6 +182,8 @@ private:
   mtn_automate::sync_map_t create_sync_state(cvs_edge const& e);
   void update_sync_state(mtn_automate::sync_map_t & state, std::set<cvs_edge>::iterator e);
   
+  std::string get_short_id_for_revision(revision_id const& id);
+  
 public: // semi public interface for push/pull
   void prime();
   void update();

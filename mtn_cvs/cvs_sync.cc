@@ -181,6 +181,11 @@ mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
   return result;
 }
 
+std::string cvs_repository::get_short_id_for_revision(revision_id const& id)
+{
+  return "i:"+id.inner()().substr(0,8);
+}
+
 template <> void
 static dump(cvs_sync::cvs_edge const& e, std::string& result)
 { result= "[" + cvs_repository::time_t2human(e.time);
@@ -1051,7 +1056,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     {
       std::string changelog;
       changelog=e.changelog+"\nmonotone "+e.author+" "
-          +cvs_client::time_t2rfc822(e.time)+" "+e.revision.inner()().substr(0,6)+"\n";
+          +cvs_client::time_t2rfc822(e.time)+" "+get_short_id_for_revision(e.revision)+"\n";
       // gather information CVS does not know about into the changelog
       changelog+=gather_merge_information(e.revision);
       std::map<std::string,std::pair<std::string,std::string> > result
@@ -1112,15 +1117,16 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
 
 std::string cvs_repository::gather_merge_information(revision_id const& id)
 { L(FL("gather_merge_information(%s)") % id);
-  // TODO: This is broken.  What we really want to do is get ancestors of this revision,
+  // What we really want to do is get ancestors of this revision,
   // and then remove ancestors of the synced revisions.  Need to be careful as pushed
   // revs aren't marked as synced until the end of the sequence of pushes.
   
   // note that we only want log info for ancestors of id, not for id itself.
 
-#warning fix the gathering of log information when pushing merge nodes
+  // we could do this using some fancy selectors and erase_ancestors...
 
-  // or - topologically ordered search back from the head (like find last sync)
+  // or we could do what I actually do -
+  // topologically ordered search back from the head (like find last sync)
   // mark nodes that are ancestors of a sync node during the search
   // mark nodes that are ancestors of the rev_id during the search
   // stop when there are no ancestors of the rev_id that are not also
@@ -1191,7 +1197,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
       }
       result+="-------------------\n"
         +changelog+"\nmonotone "+author+" "
-        +cvs_client::time_t2rfc822(date)+" "+rid.inner()()+"\n";
+        +cvs_client::time_t2rfc822(date)+" "+get_short_id_for_revision(rid)+"\n";
     }
 
     // add to heads all parents (i) whose children (j) have all been checked
