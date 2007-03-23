@@ -138,8 +138,8 @@ public class Monotone {
 	final String[] command=new String[] { "log", "--no-graph", "--from",id };
 	
 	// Start the inferior processes
-	final Process monotone=Runtime.getRuntime().exec(getCommand(command));
-	new ErrorReader("monotone",monotone.getErrorStream());
+	//final Process monotone=Runtime.getRuntime().exec(getCommand(command));
+	//new ErrorReader("monotone",monotone.getErrorStream());
 	final Process dot2svg=Runtime.getRuntime().exec(new String[] { "dot","-Tsvg" });
 	new ErrorReader("dot2svg",dot2svg.getErrorStream());
 
@@ -152,7 +152,8 @@ public class Monotone {
 	else args=new String[] { "--colorfile","colors.map" };
 
 	log2gxl=new Log2Gxl();
-	log2gxl.start(args,monotone.getInputStream(),gxl2dotSourceOutputStream);
+	log2gxl.makeGxl(args,this,id,gxl2dotSourceOutputStream);
+	//log2gxl.start(args,monotone.getInputStream(),gxl2dotSourceOutputStream);
 
 	final PipedOutputStream gxl2dotSinkOutputStream=new PipedOutputStream();
 	final PipedInputStream gxl2dotSinkInputStream=new PipedInputStream(gxl2dotSinkOutputStream);

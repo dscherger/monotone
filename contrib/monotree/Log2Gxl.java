@@ -7,6 +7,7 @@
  * I.e., do what you like, but keep copyright and there's NO WARRANTY.
  */
 
+import java.io.CharArrayReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +17,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -156,6 +158,10 @@ public class Log2Gxl extends Thread {
      */    
     private void parseDate() throws IOException,IllegalStateException {
         String line=readLine("Date:");
+		parseDate(line);
+	}
+	
+    private void parseDate(String line) throws IOException,IllegalStateException {
         String date=line.substring("Date:".length()+1);
         if(!simpleGXL) addToAttributeSet("Dates",date);
     }
@@ -260,6 +266,10 @@ public class Log2Gxl extends Thread {
      */
     private void parseAuthor() throws IOException,IllegalStateException {
         String line=readLine("Author:");
+		parseAuthor(line);
+	}
+
+    private void parseAuthor(String line) throws IOException,IllegalStateException {
         String author=line.substring("Author:".length()+1);
         if(author.length()!=0) {
             addToAttributeSet("Authors",author);
@@ -282,6 +292,10 @@ public class Log2Gxl extends Thread {
      */
     private void parseBranch() throws IOException,IllegalStateException {
         String line=readLine("Branch:");
+		parseBranch(line);
+	}
+	
+    private void parseBranch(String line) throws IOException,IllegalStateException {
         String branch=line.substring("Branch:".length()+1);
         if(branch.length()!=0) {
             addToAttributeSet("Branches",branch);
@@ -304,6 +318,10 @@ public class Log2Gxl extends Thread {
      */
     private void parseTag() throws IOException,IllegalStateException {
         String line=readLine("Tag:");
+		parseTag(line);
+	}
+	
+    private void parseTag(String line) throws IOException,IllegalStateException {
         String tag=line.substring("Tag:".length()+1);
         if(tag.length()!=0) {
             addToAttributeSet("Tags",tag);
@@ -1188,6 +1206,11 @@ public class Log2Gxl extends Thread {
      */
     public GXLDocument gxlDocument;
 
+	private boolean singleLog = true;
+	
+	private Monotone mtn;
+	private String baseID;
+
     /**
      * Load a file containing a map of author identifiers to colors
      * This file should consist of lines like
@@ -1252,6 +1275,7 @@ public class Log2Gxl extends Thread {
         }
         source=new LineNumberReader(new InputStreamReader(rawSource));
         this.sink=sink;
+		singleLog = true;
         setDaemon(true);
         start();
     }
@@ -1261,7 +1285,10 @@ public class Log2Gxl extends Thread {
      */
     public void run() {
         try {
-            doRun();
+			if (singleLog)
+            	doRun();
+			else
+				doAutomateRun();
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -1314,4 +1341,140 @@ public class Log2Gxl extends Thread {
         logger.info("Wrote GXL graph.");
         // Note: Don't close rawSource or sink as they may be stdin/out
     }
+
+	public void makeGxl(String argv[], Monotone mtn, final String id, OutputStream sink) throws IOException,IllegalStateException {
+
+        nodes=new HashMap<String,GXLNode>();
+        if(argv.length>0) {
+            for(int I=0;I<argv.length;I++) {
+                if(argv[I]!=null && argv[I].equals("--colorfile")) {
+                    if(I<argv.length-1) loadColorfile(argv[I+1]);
+                    else {
+                        System.err.println("Usage: Log2Gxl --colorfile <colorfile>");
+                        System.exit(-1);
+                    }
+                }
+            }
+        }
+
+		this.sink = sink;
+		baseID = id;
+		this.mtn = mtn;
+		
+		singleLog = false;
+        setDaemon(true);
+        start();
+	}
+
+    public void doAutomateRun() throws IOException,IllegalStateException {
+        if(gxlDocument!=null) throw new IllegalStateException("Can't invoke buildGXLDocument twice on same instance of Log2Gxl");
+        gxlDocument=new GXLDocument();
+        graph=new GXLGraph("Monotone Log");
+        graph.setAttribute(GXL.EDGEMODE,GXL.DIRECTED);
+        gxlDocument.getDocumentElement().add(graph);
+
+		TreeSet<String> revs=new TreeSet(mtn.runMonotone(new String[] { "automate", "ancestors", baseID}));
+		revs.add(new String(baseID));
+
+		for (String rev : revs) {
+			GXLNode n=nodes.get(rev);
+	        if(n==null) {
+	            n=createDefaultNode(rev);
+	        }
+		}
+
+		List<String> mtn_graph=mtn.runMonotone(new String[] { "automate", "graph"});
+
+		for (String nodeLine : mtn_graph) {
+			String[] elts = nodeLine.split(" ");
+			GXLNode node=nodes.get(elts[0]);
+			if (node==null) {
+				continue;
+			}
+
+			for (int j = 1; j < elts.length; j++) {
+				GXLNode ancestorNode=nodes.get(elts[j]);
+				if(ancestorNode==null) {
+					logger.warning("Ancestor " + elts[j] + " of node " + node + " should already have been seen!");
+					continue;
+				}
+				GXLEdge edge=new GXLEdge(ancestorNode,node);
+				// GXL Schema support. Commented out until I understand it a bit better
+				//edge.setType("MonotoneRevisionGraphSchema.gxl#AncestorEdge");
+				edge.setDirected(true);
+				graph.add(edge);
+			}
+		}
+
+		mtn_graph = null;
+
+		for (String rev : revs) {
+			currentNode=nodes.get(rev);
+			if(currentNode==null) {
+				logger.warning("Node " + rev + " should already have been seen!");
+				continue;
+			}
+			try {
+				// TODO: replace this with calls to "automate certs", etc
+				ArrayList<String> log=new ArrayList(mtn.runMonotone(new String[] { "log", "--no-graph", "--next", "1", "--from", rev}));
+
+				if (!log.get(0).equals("-----------------------------------------------------------------")) {
+					logger.warning("Node " + rev + ": unable to match start of log");
+					continue;
+				}
+				if (!log.get(1).startsWith("Revision:")) {
+					logger.warning("Node " + rev + ": unable to match Revision line");
+					continue;
+				}
+				if (!log.get(1).endsWith(rev)) {
+					logger.warning("Node " + rev + ": unable to match to revision in log: " + log.get(1));
+					continue;
+				}
+			
+				int i = 2;
+			
+				for ( ; i < log.size() && log.get(i).startsWith("Ancestor:") ; i++) ;	// skip the ancestor lines: already read in from automate data
+			
+				for ( ; i < log.size() && log.get(i).startsWith("Author:"); i++) {
+					parseAuthor(log.get(i));
+				}
+				for ( ; i < log.size() && log.get(i).startsWith("Date:"); i++) {
+					parseDate(log.get(i));
+				}
+				for ( ; i < log.size() && log.get(i).startsWith("Branch:"); i++) {
+					parseBranch(log.get(i));
+				}
+				for ( ; i < log.size() && log.get(i).startsWith("Tag:"); i++) {
+					parseTag(log.get(i));
+				}
+
+	            logger.finer(currentNode.getID());
+
+				StringBuilder sBuff = new StringBuilder();
+				for (  ; i < log.size() ; i++ ) {
+					sBuff.append(log.get(i));
+					sBuff.append("\n");
+				}
+
+				source = new LineNumberReader(new CharArrayReader(sBuff.toString().toCharArray()));
+
+	            parseFiles();
+	            parseChangeLog();
+			} catch (IOException e) {
+				logger.warning("Node " + rev + ": IOException: " + e);
+			}
+			source = null;
+			currentNode = null;
+		}
+
+        logger.info("Writing GXL graph..");
+
+        // Write the graph to std out
+        gxlDocument.write(sink);
+        sink.flush();
+
+        logger.info("Wrote GXL graph.");
+        // Note: Don't close rawSource or sink as they may be stdin/out
+	}
+
 }
