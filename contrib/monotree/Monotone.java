@@ -20,10 +20,14 @@ import java.io.OutputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedInputStream;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.Source;
+import javax.xml.transform.URIResolver;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.transform.stream.StreamResult;
+import java.util.Arrays;
 
 /**
  * Interface class to control an inferior Monotone process and return information from it
@@ -49,6 +53,7 @@ public class Monotone {
      */
     public Monotone(File database) {
 	this.database=database;
+	logger.setLevel(Level.FINEST);
     }
     
     /**
@@ -56,8 +61,8 @@ public class Monotone {
      *
      * @return the base monotone command
      */
-    public String getBaseCommand() {
-	return "monotone \"--db="+database+"\" ";
+    public String[] getBaseCommand() {
+	return new String[] { "mtn","--db="+database };
     }
 
     /**
@@ -66,7 +71,7 @@ public class Monotone {
      * @return a list of strings which enumerates the branches in the current monotone database
      */
     public List<String> listBranches() throws IOException {
-	List<String> result=runMonotone("list branches");
+	List<String> result=runMonotone(new String[] { "list", "branches"});
 	return result;
     }
 
@@ -77,7 +82,7 @@ public class Monotone {
      * @return a list of strings which enumerates the heads of the specified branch in the current monotone database
      */
     public List<String> listHeads(String branch) throws IOException {
-	List<String>result=runMonotone("heads --branch \""+branch+"\"");
+	List<String>result=runMonotone(new String[] { "heads", "--branch", branch});
 	return result;
     }
 
@@ -103,27 +108,49 @@ public class Monotone {
      */
     public Log2Gxl log2gxl;
 
+    public enum HighlightTypes {
+        NONE,
+	AUTHORS,
+	BRANCHES    
+        };
+
+    /**
+     * Return the full command by composing the base command and the sub-command
+     * @param subCommand an array of strings representing the sub-command
+     * @return an array of strings containing the full command
+     */
+    private String[] getCommand(String[] subCommand) {
+	String[] base=getBaseCommand();
+	ArrayList<String> fullCommand=new ArrayList<String>();
+        fullCommand.addAll(Arrays.asList(base));
+        fullCommand.addAll(Arrays.asList(subCommand));
+        return fullCommand.toArray(new String[0]);
+    }
+
     /** 
      * Run monotone and get an SVG stream from a log 
      *
-     * @param id the identifier for which the log should be generated
+     * @param id the identifier (revision or file) for which the log should be generated (not null)
+     * @param highlight an enum specifing the node background highlight type requested
      * @return a stream from which an SVG format graph may be read
      */
-    public InputStream getSVGLog(String id) throws IOException {
-	String command="log "+id;
+    public InputStream getSVGLog(final String id,final HighlightTypes highlight) throws IOException {
+	final String[] command=new String[] { "log","--revision",id };
 	
 	// Start the inferior processes
-	Process monotone=Runtime.getRuntime().exec(getBaseCommand()+command);
+	final Process monotone=Runtime.getRuntime().exec(getCommand(command));
 	new ErrorReader("monotone",monotone.getErrorStream());
-	Process dot2svg=Runtime.getRuntime().exec("dot -Tsvg");
+	final Process dot2svg=Runtime.getRuntime().exec(new String[] { "dot","-Tsvg" });
 	new ErrorReader("dot2svg",dot2svg.getErrorStream());
 
 	final PipedOutputStream gxl2dotSourceOutputStream=new PipedOutputStream();
 	final PipedInputStream gxl2dotSourceInputStream=new PipedInputStream(gxl2dotSourceOutputStream);
 
 	// Chain the log output to the GXL generator and into the dot converter
-	String[] args=new String[] { "--authorfile","authors.map" };
-	if(!(new File("authors.map")).exists()) args=new String[0];
+        final String[] args;
+	if(!(new File("colors.map")).exists()) args=new String[0];
+	else args=new String[] { "--colorfile","colors.map" };
+
 	log2gxl=new Log2Gxl();
 	log2gxl.start(args,monotone.getInputStream(),gxl2dotSourceOutputStream);
 
@@ -131,10 +158,12 @@ public class Monotone {
 	final PipedInputStream gxl2dotSinkInputStream=new PipedInputStream(gxl2dotSinkOutputStream);
 
 	// Create a thread to transform the GXL semantic graph into an DOT visual graph
-	Thread transformerThread=new Thread(new Runnable() { public void run() {
+	final Thread transformerThread=new Thread(new Runnable() { public void run() {
 	    try {
 		TransformerFactory factory=TransformerFactory.newInstance();
+		factory.setURIResolver(new InternalURIResolver());
 		Transformer transformer=factory.newTransformer(new StreamSource(ClassLoader.getSystemResourceAsStream("gxl2dot.xsl")));
+		transformer.setParameter("HIGHLIGHT",highlight.toString());
 		transformer.transform(new StreamSource(gxl2dotSourceInputStream),new StreamResult(gxl2dotSinkOutputStream));
 	    }
 	    catch(Exception e) {
@@ -156,11 +185,11 @@ public class Monotone {
      * @param command the monotone sub-command to execute, e.g. "list branches"
      * @return a string list containing the output lines from monotone's stdout
      */
-    public List<String> runMonotone(String command) throws IOException {
+    public List<String> runMonotone(String[] command) throws IOException {
 	List<String> results=new ArrayList<String>();
 	LineNumberReader source=null;
 	try {
-	    Process monotone=Runtime.getRuntime().exec(getBaseCommand()+command);
+	    Process monotone=Runtime.getRuntime().exec(getCommand(command));
 	    new ErrorReader("monotone",monotone.getErrorStream());
 	    source=new LineNumberReader(new InputStreamReader(monotone.getInputStream()));
 	    
@@ -295,5 +324,21 @@ public class Monotone {
 		}
 	    }
 	}
+    }
+}
+
+class InternalURIResolver implements URIResolver {
+ 
+    /**
+     * Log sink
+     */
+    private static Logger logger=Logger.getLogger("Monotone");
+   
+    public Source resolve(String href,String base) {
+	logger.info("URI is "+href);
+	if(href.equals("http://www.gupro.de/GXL/gxl-1.0.dtd")) {
+	    return new StreamSource(ClassLoader.getSystemResourceAsStream("gxl-1.0.dtd"));
+	}
+	return null;
     }
 }
