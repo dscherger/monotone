@@ -151,7 +151,7 @@ namespace commands
     string err = (F("command '%s' has multiple ambiguous expansions:") % cmd).str();
     for (vector<string>::iterator i = matched.begin();
          i != matched.end(); ++i)
-      err += (*i + "\n");
+      err += ('\n' + *i);
     W(i18n_format(err));
     return cmd;
   }
@@ -341,19 +341,6 @@ CMD(crash, hidden_group(), "{ N | E | I | exception | signal }",
     }
 #undef maybe_throw
 #undef maybe_throw_bare
-}
-
-string
-get_stdin()
-{
-  char buf[constants::bufsz];
-  string tmp;
-  while(cin)
-    {
-      cin.read(buf, constants::bufsz);
-      tmp.append(buf, cin.gcount());
-    }
-  return tmp;
 }
 
 string

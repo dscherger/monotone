@@ -5121,7 +5121,7 @@ are dropped, if only one exists, it is dropped. This command should
 be used with caution as changes are irreversible without a backup of
 the key(s) that were dropped.
 
-@item mtn chkeypass @var{id}
+@item mtn passphrase @var{id}
 
 This command lets you change the passphrase of the private half of the
 key @var{id}.
@@ -7933,6 +7933,15 @@ error, and 5xx means there was a protocol error. xx1 means some data may
 have been transferred, xx2 means no data was transferred, and xx0 means all
 data was transferred.
 
+@item note_mtn_startup (...)
+
+Called by monotone when it is first started, this hook was added so that
+usage of monotone could be monitored for user interface testing.  Note
+that by default, no monitoring occurs.  The arguments to the hook
+function are the arguments to monotone, without the initial
+@command{mtn} command.  They can be accessed through the lua @var{arg}
+variable which contains the variable list of arguments.
+
 @end ftable
 
 @subsection User Defaults
@@ -7963,22 +7972,36 @@ used when you created your key --- something like
 this hook is not defined or returns false, monotone will prompt you for
 a passphrase each time it needs to use a private key.
 
-@item get_author (@var{branchname})
+@item get_author (@var{branchname}, @var{keypair_id})
 
 Returns a string which is used as a value for automatically generated
 @code{author} certificates when you commit changes to
-@var{branchname}.  Generally this hook remains undefined, and monotone
-selects your signing key name for the author certificate. You can use
-this hook to override that choice, if you like.
+@var{branchname} with the keypair identity @var{keypair_id}.  Generally
+this hook remains undefined, and monotone selects your signing key name
+for the author certificate. You can use this hook to override that
+choice, if you like.
 
-This hook has no default definition, but a possible definition might be:
+This hook has no default definition, but a couple of possible
+definitions might be:
 @smallexample
 @group
-function get_author(branchname)
+function get_author(branchname, keypair_id)
+        -- Key pair identity ignored.
         local user = os.getenv("USER")
         local host = os.getenv("HOSTNAME")
         if ((user == nil) or (host == nil)) then return nil end
         return string.format("%s@@%s", user, host)
+end
+@end group
+@end smallexample
+@smallexample
+@group
+function get_author(branchname, keypair_id)
+        -- Branch name ignored.
+        if (keypair_id == "joe@@example.com") then
+                return "Joe Random <joe@@example.com>"
+        end
+        return keypair_id
 end
 @end group
 @end smallexample
@@ -8386,7 +8409,7 @@ end
 @end smallexample
 
 This definition accepts only those updates which preserve the set of
-@code{true} test results from update source to target. If no rest
+@code{true} test results from update source to target. If no test
 results exist, this hook has no affect; but once a @code{true} test
 result is present, future updates will require it. If you want a more
 lenient behavior you must redefine this hook.
@@ -8640,6 +8663,11 @@ program xxdiff is available.
 On Windows, this function automatically appends ``.exe'' to the
 program name. In the previous example, @code{existonpath} would search
 for ``xxdiff.exe''.
+
+@item get_confdir()
+
+Returns the path to the configuration directory, either implied or given
+with @option{--confdir}.
 
 @item get_ostype()
 

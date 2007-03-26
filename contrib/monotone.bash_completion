@@ -22,6 +22,16 @@ _filedir() {
 }
 fi
 
+_monotone_previous_RETURN=`trap -p RETURN`
+_monotone_previous_SIGHUP=`trap -p SIGHUP`
+_monotone_previous_SIGINT=`trap -p SIGINT`
+_monotone_previous_SIGPIPE=`trap -p SIGPIPE`
+_monotone_previous_SIGTERM=`trap -p SIGTERM`
+if shopt -q extglob; then :; else
+    shopt -s extglob
+    trap "shopt -u extglob; ${_monotone_previous_RETURN:-trap - RETURN}; ${_monotone_previous_SIGHUP:-trap - SIGHUP}; ${_monotone_previous_SIGINT:-trap - SIGINT}; ${_monotone_previous_SIGPIPE:-trap - SIGPIPE}; ${_monotone_previous_SIGTERM:-trap - SIGTERM}" RETURN SIGHUP SIGINT SIGPIPE SIGTERM
+fi
+
 # Call monotone to complete IDs
 _monotone_complete() {
     if (( "${#cur}" >=2 )) ; then
@@ -61,7 +71,7 @@ _monotone() {
 	for i in ${!COMP_WORDS[@]} ; do
 	    [ $i -eq 0 ] && continue
 	    prev="${COMP_WORDS[$i-1]}"
-	    if [ $prev == --db -o $prev == -d ] ; then
+	    if [ "$prev" == --db -o "$prev" == -d ] ; then
 		mono_db="--db=${COMP_WORDS[$i]}" ; break
 	    fi
 	done
@@ -153,7 +163,7 @@ _monotone() {
             ' -- $cur) )
 	    ;;
         * )
-	    case $prev in
+	    case "$prev" in
 		--db | -d | --rcfile | --dump | --root )
 		    _filedir
 		    ;;
@@ -211,7 +221,7 @@ _monotone() {
 		    COMPREPLY=( $(compgen -A hostname -- $cur) )
 		    ;;
 		pubkey | privkey )
-		    _monotone_keys $prev
+		    _monotone_keys "$prev"
 		    ;;
 		chkeypass | dropkey )
 		    _monotone_keys privkey
@@ -222,7 +232,7 @@ _monotone() {
 		* )
 		    if (( $COMP_CWORD >= 2 )) ; then
 			local prev2=${COMP_WORDS[COMP_CWORD-2]}
-			case $prev2 in
+			case "$prev2" in
 			    cdiff | diff | explicit_merge )
 				_monotone_complete revision
 				;;
@@ -230,13 +240,13 @@ _monotone() {
 				_filedir
 				;;
 			    cat )
-				_monotone_complete $prev
+				_monotone_complete "$prev"
 				;;
 			    attr )
 				_filedir
 				;;
 			    list )
-				if [ $prev == certs ] ; then
+				if [ "$prev" == certs ] ; then
 				    _monotone_complete revision
 				    _monotone_complete manifest 
 				    _monotone_complete file
@@ -248,7 +258,7 @@ _monotone() {
 			    * )
 				if (( $COMP_CWORD >= 3 )) ; then
 				    local prev3=${COMP_WORDS[COMP_CWORD-3]}
-				    case $prev3 in
+				    case "$prev3" in
 					explicit_merge )
 					    _monotone_complete revision
 					    _monotone_branches
