@@ -1104,6 +1104,15 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     }
     else W(F("revision %s: nothing to commit") % e.revision.inner()());
     
+    // make sure any files we didn't touch get copied into this revision
+    // this is probably not very efficient... duh
+    for (cvs_manifest::const_iterator i = parent_manifest.begin(); i != parent_manifest.end(); i++) {
+      if (e.xfiles.find(i->first) == e.xfiles.end()) {
+        // this file is totally unchanged from out parent - copy it across
+        e.xfiles[i->first] = i->second;
+      }
+    }
+    
     e.delta_base=parent->revision;
     revision_lookup[e.revision]=edges.insert(e).first;
     if (global_sanity.debug) L(FL("%s") % debug());
