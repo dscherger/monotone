@@ -4,7 +4,7 @@ NEW
   2. When monotone asks for db migration script goes into infinite loop.
      Seen on pre-0.33 database used with mtn 0.33
      
-NEW 
+RESOLVED
   1. When pushing from Win32 to Unix by SFTP names with \ instead 
       are created on SFTP site:
 	-- /sample/
@@ -23,7 +23,6 @@ NEW
     
     Probably some "os.path.normpath()" is used somewhere.
     
-	
-RESOLVED
+    Resolution: don't use os.path.join() when creating remote path.
 
    
