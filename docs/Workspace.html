@@ -35,7 +35,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.2 Workspace</h3>
 
      <dl>
-<dt><samp><span class="command">mtn setup [</span><var>directory</var><span class="command">]</span></samp><a name="index-mtn-setup-_005b_0040var_007bdirectory_007d_005d-15"></a><dd>This command prepares <var>directory</var> as a monotone workspace,
+<dt><samp><span class="command">mtn setup [</span><var>directory</var><span class="command">]</span></samp><a name="index-mtn-setup-_005b_0040var_007bdirectory_007d_005d-16"></a><dd>This command prepares <var>directory</var> as a monotone workspace,
 by creating and populating the <samp><span class="file">_MTN</span></samp> directory with basic
 information.  This information must include at least the branch and the
 database to be used, both of which will be placed in the
@@ -46,7 +46,7 @@ or within an existing directory full of files, prior to using
 <samp><span class="command">mtn commit</span></samp>. If no directory is specified, the current
 directory is used.
 
-     <br><dt><samp><span class="command">mtn add </span><var>pathname...</var></samp><a name="index-mtn-add-_0040var_007bpathname_002e_002e_002e_007d-16"></a><br><dt><samp><span class="command">mtn add --unknown</span></samp><a name="index-mtn-add-_002d_002dunknown-17"></a><dd>This command places &ldquo;add&rdquo; entries for the paths specified in
+     <br><dt><samp><span class="command">mtn add </span><var>pathname...</var></samp><a name="index-mtn-add-_0040var_007bpathname_002e_002e_002e_007d-17"></a><br><dt><samp><span class="command">mtn add --unknown</span></samp><a name="index-mtn-add-_002d_002dunknown-18"></a><dd>This command places &ldquo;add&rdquo; entries for the paths specified in
 <var>pathname...</var> in the workspace's &ldquo;work list&rdquo;. The work list of
 your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
 explicit pathname changes you wish to commit at some future time, such
@@ -62,14 +62,15 @@ workspace, monotone will use the work list to build a new revision,
 which it will then commit to the database. The new revision will have
 any added entries inserted in its manifest.
 
-     <br><dt><samp><span class="command">mtn [--no-respect-ignore] mkdir </span><var>directory...</var></samp><a name="index-mtn-_005b_002d_002dno_002drespect_002dignore_005d-mkdir-_0040var_007bdirectory_002e_002e_002e_007d-18"></a><dd>This command creates a directory in the filesystem relative to your
+     <br><dt><samp><span class="command">mtn [--no-respect-ignore] mkdir </span><var>directory...</var></samp><a name="index-mtn-_005b_002d_002dno_002drespect_002dignore_005d-mkdir-_0040var_007bdirectory_002e_002e_002e_007d-19"></a><dd>This command creates a directory in the filesystem relative to your
 current location and adds it to your workspace's &ldquo;work list&rdquo;.  The
 changes are not reflected in your database until such time as you
 perform a commit.  If you use the <samp><span class="option">--no-respect-ignore</span></samp> flag,
 entries in .mtn-ignore will not be honored.
 
-     <br><dt><samp><span class="command">mtn [--execute] drop </span><var>pathname...</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-19"></a><dt><samp><span class="command">mtn drop --missing</span></samp><a name="index-mtn-drop-_002d_002dmissing-20"></a><dd>This command places &ldquo;drop&rdquo; entries for the paths specified in
-<var>pathname...</var> in the workspace's &ldquo;work list&rdquo;. The work list of
+     <br><dt><samp><span class="command">mtn [--bookkeep-only] drop </span><var>pathname...</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-20"></a><dt><samp><span class="command">mtn drop --missing</span></samp><a name="index-mtn-drop-_002d_002dmissing-21"></a><dd>This command places &ldquo;drop&rdquo; entries for the paths specified in
+<var>pathname...</var> in the workspace's &ldquo;work list&rdquo; and deletes
+the file from the workspace. The work list of
 your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
 explicit pathname changes you wish to commit at some future time, such
 as addition, removal, or renaming of files.  This command also removes
@@ -85,36 +86,23 @@ workspace, monotone will use the work list to build a new revision,
 which it will then commit to the database. The new revision will have
 any dropped entries removed from its manifest.
 
-     <p>Currently this command does <em>not</em> actually delete the file
-<var>src</var> in your filesystem; if you want to actually delete the file,
-you should run <samp><span class="command">drop</span></samp>, and then perform the actual delete using
-whatever mechanism you normally use to delete files.
+     <p>There are situations in which <samp><span class="command">drop</span></samp> will tell monotone
+to remove the file from the revision at commit time, but where it will
+<em>not</em> to remove the file from the workspace immediately.  One
+is if the <samp><span class="option">--bookkeep-only</span></samp> option is supplied.  Another is
+if a file has un-committed changes or if a directory is not empty.
 
-     <p>The option <samp><span class="option">--execute</span></samp> will make &ldquo;drop&rdquo; perform the actual
-deletion operations in the filesystem.  It will ignore files or
-directories which have already been deleted.
-
-     <br><dt><samp><span class="command">mtn [--execute] rename </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-rename-_0040var_007bsrc_007d-_0040var_007bdst_007d-21"></a><br><dt><samp><span class="command">mtn [--execute] mv </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-mv-_0040var_007bsrc_007d-_0040var_007bdst_007d-22"></a><dt><samp><span class="command">mtn [--execute] rename </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-rename-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-23"></a><dt><samp><span class="command">mtn [--execute] mv </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dexecute_005d-mv-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-24"></a><dd>This command places &ldquo;rename&rdquo; entries for the paths specified in
+     <br><dt><samp><span class="command">mtn [--bookkeep-only] rename </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-rename-_0040var_007bsrc_007d-_0040var_007bdst_007d-22"></a><br><dt><samp><span class="command">mtn [--bookkeep-only] mv </span><var>src</var> <var>dst</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-mv-_0040var_007bsrc_007d-_0040var_007bdst_007d-23"></a><dt><samp><span class="command">mtn [--bookkeep-only] rename </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-rename-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-24"></a><dt><samp><span class="command">mtn [--bookkeep-only] mv </span><var>src1</var> <var>...</var> <var>dst/</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-mv-_0040var_007bsrc1_007d-_0040var_007b_002e_002e_002e_007d-_0040var_007bdst_002f_007d-25"></a><dd>This command places &ldquo;rename&rdquo; entries for the paths specified in
 <var>src</var> and <var>dst</var> in the workspace's &ldquo;work list&rdquo;. The second form
 renames a number of source paths to the given destination. The work
 list of your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
 explicit pathname changes you wish to commit at some future time, such
 as addition, removal, or renaming of files.  This command also moves any
 attributes on <var>src</var> to <var>dst</var>; see <a href="File-Attributes.html#File-Attributes">File Attributes</a> for more
-details.
+details, and, unless the <samp><span class="option">--bookkeep-only</span></samp> option is supplied, it
+will rename the files immediately in the filesystem.
 
-     <p>While this command places a &ldquo;rename&rdquo; entry on your work list, it
-does not immediately affect your database. When you <samp><span class="command">commit</span></samp>
-your workspace, monotone will use the work list to build a new
-revision, which it will then commit to the database. The new revision
-will have any renamed entries in its manifest adjusted to their new
-names.
-
-     <p>The option <samp><span class="option">--execute</span></samp> will make &ldquo;rename&rdquo; perform the actual
-rename operations in the filesystem. It will ignore missing source files
-and will not overwrite existing destination files.
-
-     <br><dt><samp><span class="command">mtn commit</span></samp><a name="index-mtn-commit-25"></a><br><dt><samp><span class="command">mtn ci</span></samp><a name="index-mtn-ci-26"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-27"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-28"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-29"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-30"></a><dt><samp><span class="command">mtn commit </span><var>pathname...</var></samp><a name="index-mtn-commit-_0040var_007bpathname_002e_002e_002e_007d-31"></a><dt><samp><span class="command">mtn ci </span><var>pathname...</var></samp><a name="index-mtn-ci-_0040var_007bpathname_002e_002e_002e_007d-32"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-33"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-34"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-35"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-36"></a><dd>
+     <br><dt><samp><span class="command">mtn commit</span></samp><a name="index-mtn-commit-26"></a><br><dt><samp><span class="command">mtn ci</span></samp><a name="index-mtn-ci-27"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-28"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...]</span></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-29"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-30"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-31"></a><dt><samp><span class="command">mtn commit </span><var>pathname...</var></samp><a name="index-mtn-commit-_0040var_007bpathname_002e_002e_002e_007d-32"></a><dt><samp><span class="command">mtn ci </span><var>pathname...</var></samp><a name="index-mtn-ci-_0040var_007bpathname_002e_002e_002e_007d-33"></a><dt><samp><span class="command">mtn commit --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-34"></a><dt><samp><span class="command">mtn ci --message=</span><var>logmsg</var><span class="command"> [--message=</span><var>logmsg</var><span class="command">...] </span><var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_003d_0040var_007blogmsg_007d-_005b_002d_002dmessage_003d_0040var_007blogmsg_007d_002e_002e_002e_005d-_0040var_007bpathname_002e_002e_002e_007d-35"></a><dt><samp><span class="command">mtn commit --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-commit-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-36"></a><dt><samp><span class="command">mtn ci --message-file=</span><var>logfile</var> <var>pathname...</var></samp><a name="index-mtn-ci-_002d_002dmessage_002dfile_003d_0040var_007blogfile_007d-_0040var_007bpathname_002e_002e_002e_007d-37"></a><dd>
 This command looks at your workspace, decides which files have
 changed, and saves the changes to your database. It does this by
 loading the revision named in <samp><span class="file">_MTN/revision</span></samp>, locating the base
@@ -191,7 +179,7 @@ typically invokes an external editor program, in which you can compose
 and/or review your log message for the change. 
 </ul>
 
-     <br><dt><samp><span class="command">mtn revert </span><var>pathname...</var></samp><a name="index-mtn-revert-_0040var_007bpathname_002e_002e_002e_007d-37"></a><dt><samp><span class="command">mtn revert --missing </span><var>pathname...</var></samp><a name="index-mtn-revert-_002d_002dmissing-_0040var_007bpathname_002e_002e_002e_007d-38"></a><dd>This command changes your workspace, so that changes you have made
+     <br><dt><samp><span class="command">mtn revert </span><var>pathname...</var></samp><a name="index-mtn-revert-_0040var_007bpathname_002e_002e_002e_007d-38"></a><dt><samp><span class="command">mtn revert --missing </span><var>pathname...</var></samp><a name="index-mtn-revert-_002d_002dmissing-_0040var_007bpathname_002e_002e_002e_007d-39"></a><dd>This command changes your workspace, so that changes you have made
 since the last checkout or update are discarded. The command is
 restricted the set of files or directories given as arguments.  To
 revert the entire workspace, use <samp><span class="command">revert</span></samp> "." in the
@@ -203,7 +191,7 @@ files which monotone has listed in its manifest, but which have been
 deleted from the workspace.  Only missing files matching the given
 file or directory arguments are reverted.
 
-     <br><dt><samp><span class="command">mtn update</span></samp><a name="index-mtn-update-39"></a><dt><samp><span class="command">mtn update --revision=</span><var>revision</var></samp><a name="index-mtn-update-_002d_002drevision_003d_0040var_007brevision_007d-40"></a><dd>Without a <samp><span class="option">--revision</span></samp> argument, this command incorporates
+     <br><dt><samp><span class="command">mtn update</span></samp><a name="index-mtn-update-40"></a><dt><samp><span class="command">mtn update --revision=</span><var>revision</var></samp><a name="index-mtn-update-_002d_002drevision_003d_0040var_007brevision_007d-41"></a><dd>Without a <samp><span class="option">--revision</span></samp> argument, this command incorporates
 &ldquo;recent&rdquo; changes found in your database into your workspace. It
 does this by performing 3 separate stages. If any of these stages
 fails, the update aborts, doing nothing. The stages are:
@@ -241,7 +229,7 @@ specify an explicit <samp><span class="option">--revision</span></samp> argument
      <p>When running <samp><span class="command">update</span></samp>, it is sometimes possible for
 <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
-     <br><dt><samp><span class="command">mtn pluck --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bto_007d-41"></a><dt><samp><span class="command">mtn pluck --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-42"></a><dd>
+     <br><dt><samp><span class="command">mtn pluck --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bto_007d-42"></a><dt><samp><span class="command">mtn pluck --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-43"></a><dd>
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
 identical to running <samp><span class="command">mtn diff <samp>-r</samp> </span><var>from</var><span class="command">
@@ -276,13 +264,13 @@ reduce your need for <samp><span class="command">pluck</span></samp>ing.
      <p>When running <samp><span class="command">pluck</span></samp>, it is sometimes possible for
 <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
-     <br><dt><samp><span class="command">mtn refresh_inodeprints</span></samp><a name="index-mtn-refresh_005finodeprints-43"></a><dd>This command puts the current workspace into <a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode,
+     <br><dt><samp><span class="command">mtn refresh_inodeprints</span></samp><a name="index-mtn-refresh_005finodeprints-44"></a><dd>This command puts the current workspace into <a href="Inodeprints.html#Inodeprints">Inodeprints</a> mode,
 if it was not already, and forces a full inodeprints cache refresh. 
 After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-     <br><dt><samp><span class="command">mtn pivot_root [--execute] pivot_root </span><var>new_root</var> <var>put_old</var></samp><a name="index-mtn-pivot_005froot-_005b_002d_002dexecute_005d-pivot_005froot-_0040var_007bnew_005froot_007d-_0040var_007bput_005fold_007d-44"></a><dd>Most users will never need this command.  It is primarily useful in
+     <br><dt><samp><span class="command">mtn pivot_root [--bookkeep-only] pivot_root </span><var>new_root</var> <var>put_old</var></samp><a name="index-mtn-pivot_005froot-_005b_002d_002dbookkeep_002donly_005d-pivot_005froot-_0040var_007bnew_005froot_007d-_0040var_007bput_005fold_007d-45"></a><dd>Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
 into one, or split one project into several. See also <samp><span class="command">merge_into_dir</span></samp>.
 
@@ -303,8 +291,9 @@ is a directory loop.  This illegality is the only reason for
 exactly like two renames, including with respect to merges and
 updates.
 
-     <p>The use of <samp><span class="option">--execute</span></samp> with this command is strongly
-recommended, though not required.
+     <p>The use of <samp><span class="option">--bookkeep-only</span></samp> with this command is not
+recommended.  It causes the changes to be made in monotone's
+records, but not in the filesystem itself.
 
      <p>When running <samp><span class="command">pivot_root</span></samp>, it is sometimes possible for
 <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.

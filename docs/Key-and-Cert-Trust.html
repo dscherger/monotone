@@ -35,7 +35,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.5 Key and Cert Trust</h3>
 
      <dl>
-<dt><samp><span class="command">mtn genkey </span><var>keyid</var></samp><a name="index-mtn-genkey-_0040var_007bkeyid_007d-102"></a><dd>
+<dt><samp><span class="command">mtn genkey </span><var>keyid</var></samp><a name="index-mtn-genkey-_0040var_007bkeyid_007d-103"></a><dd>
 This command generates an <span class="sc">rsa</span> public/private key pair, using a
 system random number generator, and stores it in your keystore under
 the key name <var>keyid</var>.
@@ -51,23 +51,54 @@ automatically use a certain passphrase for a given key using the
 increases the risk of a key compromise on your local computer. Be
 careful using this hook.
 
-     <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-103"></a><dd>
+     <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-104"></a><dd>
 This command drops the public and/or private key. If both exist, both
 are dropped, if only one exists, it is dropped. This command should
 be used with caution as changes are irreversible without a backup of
 the key(s) that were dropped.
 
-     <br><dt><samp><span class="command">mtn chkeypass </span><var>id</var></samp><a name="index-mtn-chkeypass-_0040var_007bid_007d-104"></a><dd>
+     <br><dt><samp><span class="command">mtn passphrase </span><var>id</var></samp><a name="index-mtn-passphrase-_0040var_007bid_007d-105"></a><dd>
 This command lets you change the passphrase of the private half of the
 key <var>id</var>.
 
-     <br><dt><samp><span class="command">mtn trusted </span><var>id</var> <var>certname</var> <var>certval</var> <var>signers</var></samp><a name="index-mtn-trusted-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-_0040var_007bsigners_007d-105"></a><dd>
+     <br><dt><samp><span class="command">mtn trusted </span><var>id</var> <var>certname</var> <var>certval</var> <var>signers</var></samp><a name="index-mtn-trusted-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-_0040var_007bsigners_007d-106"></a><dd>
 This command lets you test your revision trust hook
 <code>get_revision_cert_trust</code> (see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>).  You pass it
 a revision ID, a certificate name, a certificate value, and one or more
 key IDs, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
+
+     <br><dt><samp><span class="command">mtn ssh_agent_export </span><var>filename</var></samp><a name="index-mtn-ssh_005fagent_005fexport-_0040var_007bfilename_007d-107"></a><dd>
+This command will export your private key in a format that ssh-agent
+can read (PKCS8, PEM). You will be asked for your current key's password
+and a new password to encrypt the key with. The key will be printed to
+stdout. Once you have put this key in a file simply add it to ssh-agent
+and you will only have to enter your key password once as ssh-agent
+will cache the key for you.
+
+     <pre class="smallexample">          $ mtn ssh_agent_export ~/.ssh/id_monotone
+          enter passphrase for key ID [user@example.com]:
+          enter new passphrase for key ID [user@example.com]:
+          confirm passphrase for key ID [user@example.com]:
+          $ chmod 600 ~/.ssh/id_monotone
+          $ ssh-agent /bin/bash
+          $ ssh-add ~/.ssh/id_monotone
+          Enter passphrase for /home/user/.ssh/id_monotone:
+          Identity added: /home/user/.ssh/id_monotone (/home/user/.ssh/id_monotone)
+          $ mtn ci -m"Changed foo to bar"
+          $ mtn push
+     </pre>
+     <p>You can also use the <samp><span class="option">--ssh-sign</span></samp> option to control whether ssh-agent will
+be used for signing. If set to <em>yes</em>, ssh-agent will be used to sign. If your
+key has not been added to ssh-agent monotone will fall back to its internal signing
+code and ask you for your password. If set to <em>only</em>, monotone will sign only
+with ssh-agent. If set to <em>no</em>, monotone will always use its internal signing
+code even if ssh-agent is running and has your monotone key loaded. If set to
+<em>check</em>, monotone will sign with both ssh-agent (if your key is loaded into
+it) and monotone's internal signing code, then compare the results. <em>check</em>
+will be removed at some future time as it is meant only for testing and will not
+work with all signing algorithms.
 
 </dl>
 
