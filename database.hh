@@ -317,10 +317,10 @@ public:
   void get_revision(revision_id const & ident,
                     revision_data & dat);
 
-  void put_revision(revision_id const & new_id,
+  bool put_revision(revision_id const & new_id,
                     revision_t const & rev);
 
-  void put_revision(revision_id const & new_id,
+  bool put_revision(revision_id const & new_id,
                     revision_data const & dat);
 
   //
@@ -381,7 +381,7 @@ public:
   void get_key(rsa_keypair_id const & ident,
                base64<rsa_pub_key> & pub_encoded);
 
-  void put_key(rsa_keypair_id const & ident,
+  bool put_key(rsa_keypair_id const & ident,
                base64<rsa_pub_key> const & pub_encoded);
 
   void delete_public_key(rsa_keypair_id const & pub_id);
@@ -430,7 +430,7 @@ public:
   bool revision_cert_exists(revision<cert> const & cert);
   bool revision_cert_exists(hexenc<id> const & hash);
 
-  void put_revision_cert(revision<cert> const & cert);
+  bool put_revision_cert(revision<cert> const & cert);
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<hexenc<id>,
@@ -552,6 +552,12 @@ private:
                                     hexenc<id> const & new_id,
                                     delta const & del,
                                     database & db);
+  typedef std::pair<rev_height, revision_id> height_rev_pair;
+  void do_step_ancestor(std::set<height_rev_pair> & this_frontier,
+                        std::set<revision_id> & this_seen,
+                        std::set<revision_id> const & other_seen,
+                        std::set<revision_id> & this_uncommon_ancs);
+
 public:
     // branches
   outdated_indicator get_branches(std::vector<std::string> & names);
