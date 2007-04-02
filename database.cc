@@ -1681,7 +1681,10 @@ void
 database::put_file(file_id const & id,
                    file_data const & dat)
 {
-  schedule_delayed_file(id, dat);
+  if (file_version_exists(id))
+    L(FL("file version '%s' already exists in db") % id);
+  else
+    schedule_delayed_file(id, dat);
 }
 
 void
@@ -1692,6 +1695,19 @@ database::put_file_version(file_id const & old_id,
   file_data old_data, new_data;
   file_delta reverse_delta;
 
+  if (file_version_exists(new_id))
+    {
+      L(FL("file version '%s' already exists in db") % new_id);
+      return;
+    }
+
+  if (!file_version_exists(old_id))
+    {
+      W(F("file preimage '%s' missing in db") % old_id);
+      W(F("dropping delta '%s' -> '%s'") % old_id % new_id);
+      return;
+    }
+  
   get_file_version(old_id, old_data);
   {
     data tmp;
@@ -1747,7 +1763,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
     }
 
   query q2("SELECT delta FROM file_deltas "
-           "WHERE id = ? AND base = ?");
+           "WHERE base = ? AND id = ?");
   fetch(res, one_col, any_rows,
         q2 % text(dst_id.inner()()) % text(src_id.inner()()));
 
@@ -1939,7 +1955,7 @@ database::deltify_revision(revision_id const & rid)
 }
 
 
-void
+bool
 database::put_revision(revision_id const & new_id,
                        revision_t const & rev)
 {
@@ -1947,37 +1963,72 @@ database::put_revision(revision_id const & new_id,
   MM(rev);
 
   I(!null_id(new_id));
-  I(!revision_exists(new_id));
+
+  if (revision_exists(new_id))
+    {
+      L(FL("revision '%s' already exists in db") % new_id);
+      return false;
+    }
 
   I(rev.made_for == made_for_database);
   rev.check_sane();
-  revision_data d;
-  MM(d.inner());
-  write_revision(rev, d);
 
   // Phase 1: confirm the revision makes sense, and we the required files
   // actually exist
-  {
-    revision_id tmp;
-    MM(tmp);
-    calculate_ident(d, tmp);
-    I(tmp == new_id);
-    for (edge_map::const_iterator e = rev.edges.begin(); e != rev.edges.end(); ++e)
-      {
-        cset const & cs = edge_changes(e);
-        for (map<split_path, file_id>::const_iterator
-               i = cs.files_added.begin(); i != cs.files_added.end(); ++i)
-          I(file_version_exists(i->second));
-        for (map<split_path, pair<file_id, file_id> >::const_iterator
-               i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
-          I(file_version_exists(i->second.second));
-      }
-  }
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); ++i)
+    {
+      if (!edge_old_revision(i).inner()().empty()
+          && !revision_exists(edge_old_revision(i)))
+        {
+          W(F("missing prerequisite revision '%s'") % edge_old_revision(i));
+          W(F("dropping revision '%s'") % new_id);
+          return false;
+        }
+
+      for (map<split_path, file_id>::const_iterator a
+             = edge_changes(i).files_added.begin();
+           a != edge_changes(i).files_added.end(); ++a)
+        {
+          if (! file_version_exists(a->second))
+            {
+              W(F("missing prerequisite file '%s'") % a->second);
+              W(F("dropping revision '%s'") % new_id);
+              return false;
+            }
+        }
+
+      for (map<split_path, pair<file_id, file_id> >::const_iterator d
+             = edge_changes(i).deltas_applied.begin();
+           d != edge_changes(i).deltas_applied.end(); ++d)
+        {
+          I(!delta_entry_src(d).inner()().empty());
+          I(!delta_entry_dst(d).inner()().empty());
+
+          if (! file_version_exists(delta_entry_src(d)))
+            {
+              W(F("missing prerequisite file pre-delta '%s'")
+                % delta_entry_src(d));
+              W(F("dropping revision '%s'") % new_id);
+              return false;
+            }
+
+          if (! file_version_exists(delta_entry_dst(d)))
+            {
+              W(F("missing prerequisite file post-delta '%s'")
+                % delta_entry_dst(d));
+              W(F("dropping revision '%s'") % new_id);
+              return false;
+            }
+        }
+    }
 
   transaction_guard guard(*this);
 
   // Phase 2: Write the revision data (inside a transaction)
 
+  revision_data d;
+  write_revision(rev, d);
   gzip<data> d_packed;
   encode_gzip(d.inner(), d_packed);
   execute(query("INSERT INTO revisions VALUES(?, ?)")
@@ -2008,6 +2059,7 @@ database::put_revision(revision_id const & new_id,
   // Finally, commit.
 
   guard.commit();
+  return true;
 }
 
 void
@@ -2064,13 +2116,13 @@ database::put_roster_for_revision(revision_id const & new_id,
   put_roster(new_id, ros, mm);
 }
 
-void
+bool
 database::put_revision(revision_id const & new_id,
                        revision_data const & dat)
 {
   revision_t rev;
   read_revision(dat, rev);
-  put_revision(new_id, rev);
+  return put_revision(new_id, rev);
 }
 
 
@@ -2245,21 +2297,34 @@ database::get_key(rsa_keypair_id const & pub_id,
   encode_base64(rsa_pub_key(res[0][0]), pub_encoded);
 }
 
-void
+bool
 database::put_key(rsa_keypair_id const & pub_id,
                   base64<rsa_pub_key> const & pub_encoded)
 {
+  if (public_key_exists(pub_id))
+    {
+      base64<rsa_pub_key> tmp;
+      get_key(pub_id, tmp);
+      if (!keys_match(pub_id, tmp, pub_id, pub_encoded))
+        W(F("key '%s' is not equal to key '%s' in database") % pub_id % pub_id);
+      L(FL("skipping existing public key %s") % pub_id);
+      return false;
+    }
+
+  L(FL("putting public key %s") % pub_id);
+
   hexenc<id> thash;
   key_hash_code(pub_id, pub_encoded, thash);
   I(!public_key_exists(thash));
-  E(!public_key_exists(pub_id),
-    F("another key with name '%s' already exists") % pub_id);
+
   rsa_pub_key pub_key;
   decode_base64(pub_encoded, pub_key);
   execute(query("INSERT INTO public_keys VALUES(?, ?, ?)")
           % text(thash())
           % text(pub_id())
           % blob(pub_key()));
+
+  return true;
 }
 
 void
@@ -2451,11 +2516,27 @@ database::revision_cert_exists(revision<cert> const & cert)
   return cert_exists(cert.inner(), "revision_certs");
 }
 
-void
+bool
 database::put_revision_cert(revision<cert> const & cert)
 {
+  if (revision_cert_exists(cert))
+    {
+      L(FL("revision cert on '%s' already exists in db")
+        % cert.inner().ident);
+      return false;
+    }
+
+  if (!revision_exists(revision_id(cert.inner().ident)))
+    {
+      W(F("cert revision '%s' does not exist in db")
+        % cert.inner().ident);
+      W(F("dropping cert"));
+      return false;
+    }
+
   put_cert(cert.inner(), "revision_certs");
   cert_stamper.note_change();
+  return true;
 }
 
 outdated_indicator
@@ -3160,35 +3241,39 @@ database::put_roster(revision_id const & rev_id,
   guard.commit();
 }
 
-
-typedef hashmap::hash_multimap<string, string> ancestry_map;
-
-static void
-transitive_closure(string const & x,
-                   ancestry_map const & m,
-                   set<revision_id> & results)
+// helper for get_uncommon_ancestors
+void
+database::do_step_ancestor(set<height_rev_pair> & this_frontier,
+                           set<revision_id> & this_seen,
+                           set<revision_id> const & other_seen,
+                           set<revision_id> & this_uncommon_ancs)
 {
-  results.clear();
+  const height_rev_pair h_rev = *this_frontier.rbegin();
+  const revision_id & rid(h_rev.second);
+  
+  this_frontier.erase(h_rev);
+  
+  if (other_seen.find(rid) == other_seen.end())
+  {
+    this_uncommon_ancs.insert(rid);
+  }
 
-  deque<string> work;
-  work.push_back(x);
-  while (!work.empty())
+  // extend the frontier with parents 
+  results res;
+  fetch(res, 2, any_rows,
+        query("SELECT parent, height FROM revision_ancestry r, heights h"
+          " WHERE child = ? AND r.parent = h.revision")
+        % text(rid.inner()()));
+  
+  for (size_t i = 0; i < res.size(); ++i)
+  {
+    revision_id par_rid(res[i][0]);
+    if (this_seen.find(par_rid) == this_seen.end())
     {
-      string c = work.front();
-      work.pop_front();
-      revision_id curr(c);
-      if (results.find(curr) == results.end())
-        {
-          results.insert(curr);
-          pair<ancestry_map::const_iterator, ancestry_map::const_iterator> \
-            range(m.equal_range(c));
-          for (ancestry_map::const_iterator i(range.first); i != range.second; ++i)
-            {
-              if (i->first == c)
-                work.push_back(i->second);
-            }
-        }
+      this_frontier.insert(make_pair(rev_height(res[i][1]), par_rid));
+      this_seen.insert(par_rid);
     }
+  }
 }
 
 void
@@ -3197,37 +3282,65 @@ database::get_uncommon_ancestors(revision_id const & a,
                                  set<revision_id> & a_uncommon_ancs,
                                  set<revision_id> & b_uncommon_ancs)
 {
-  // FIXME: This is a somewhat ugly, and possibly unaccepably slow way
-  // to do it. Another approach involves maintaining frontier sets for
-  // each and slowly deepening them into history; would need to
-  // benchmark to know which is actually faster on real datasets.
-
   a_uncommon_ancs.clear();
   b_uncommon_ancs.clear();
 
-  results res;
-  a_uncommon_ancs.clear();
-  b_uncommon_ancs.clear();
+  // We extend a frontier from each revision until it reaches
+  // a revision that has been seen by the other frontier. By
+  // traversing in ascending height order we can ensure that
+  // any common ancestor will have been 'seen' by both sides
+  // before it is traversed.
 
-  fetch(res, 2, any_rows,
-        query("SELECT parent,child FROM revision_ancestry"));
-
-  set<revision_id> a_ancs, b_ancs;
-
-  ancestry_map child_to_parent_map;
-  for (size_t i = 0; i < res.size(); ++i)
-    child_to_parent_map.insert(make_pair(res[i][1], res[i][0]));
-
-  transitive_closure(a.inner()(), child_to_parent_map, a_ancs);
-  transitive_closure(b.inner()(), child_to_parent_map, b_ancs);
-
-  set_difference(a_ancs.begin(), a_ancs.end(),
-                 b_ancs.begin(), b_ancs.end(),
-                 inserter(a_uncommon_ancs, a_uncommon_ancs.begin()));
-
-  set_difference(b_ancs.begin(), b_ancs.end(),
-                 a_ancs.begin(), a_ancs.end(),
-                 inserter(b_uncommon_ancs, b_uncommon_ancs.begin()));
+  set<height_rev_pair> a_frontier, b_frontier;
+  rev_height height;
+  get_rev_height(a, height);
+  a_frontier.insert(make_pair(height, a));
+  get_rev_height(b, height);
+  b_frontier.insert(make_pair(height, b));
+  
+  set<revision_id> a_seen, b_seen;
+  a_seen.insert(a);
+  b_seen.insert(b);
+  
+  while (!a_frontier.empty() || !b_frontier.empty())
+  {
+    // We take the leaf-most (ie highest) height entry from either
+    // a_frontier or b_frontier.
+    // If one of them is empty, we take entries from the other.
+    bool step_a;
+    if (a_frontier.empty())
+    {
+      step_a = false;
+    }
+    else
+    {
+      if (!b_frontier.empty())
+      {
+        if (a_frontier == b_frontier)
+        {
+          // if both frontiers are the same, then we can safely say that
+          // we've found all uncommon ancestors. This stopping condition
+          // can result in traversing more nodes than required, but is simple.
+          break;
+        }
+        step_a = (*a_frontier.rbegin() > *b_frontier.rbegin());
+      }
+      else
+      {
+        // b is empty
+        step_a = true;
+      }
+    }
+    
+    if (step_a)
+    {
+      do_step_ancestor(a_frontier, a_seen, b_seen, a_uncommon_ancs);
+    }
+    else
+    {
+      do_step_ancestor(b_frontier, b_seen, a_seen, b_uncommon_ancs);
+    }
+  }  
 }
 
 

@@ -1443,10 +1443,10 @@ namespace
 
   void
   mark_merged_node(marking_t const & left_marking,
-                   set<revision_id> left_uncommon_ancestors,
+                   set<revision_id> const & left_uncommon_ancestors,
                    node_t ln,
                    marking_t const & right_marking,
-                   set<revision_id> right_uncommon_ancestors,
+                   set<revision_id> const & right_uncommon_ancestors,
                    node_t rn,
                    revision_id const & new_rid,
                    node_t n,
@@ -1711,13 +1711,13 @@ namespace {
                         roster_t const & left_roster,
                         marking_map const & left_markings,
                         cset const & left_cs,
-                        set<revision_id> left_uncommon_ancestors,
+                        set<revision_id> const & left_uncommon_ancestors,
 
                         revision_id const & right_rid,
                         roster_t const & right_roster,
                         marking_map const & right_markings,
                         cset const & right_cs,
-                        set<revision_id> right_uncommon_ancestors,
+                        set<revision_id> const & right_uncommon_ancestors,
 
                         revision_id const & new_rid,
                         roster_t & new_roster,
@@ -3138,8 +3138,8 @@ UNIT_TEST(roster, random_actions)
   for (int i = 0; i < 2000; )
     {
       int manychanges = 100 + rng.uniform(300);
-      P(F("random roster actions: outer step at %d, making %d changes")
-        % i % manychanges);
+      // P(F("random roster actions: outer step at %d, making %d changes")
+      //   % i % manychanges);
 
       for (int outer_limit = i + manychanges; i < outer_limit; )
         {
