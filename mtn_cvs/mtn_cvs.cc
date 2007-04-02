@@ -135,18 +135,6 @@ CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
   cvs_sync::push(repository,module,branch,myapp);
 }
 
-CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
-      N_("put a CVS working directory under monotone's control"), 
-      options::opts::branch)
-{
-  if (args.size() > 1) throw usage(name);
-  std::string module;
-  if (args.size() == 1) module = idx(args, 0)();
-  mtncvs_state &myapp=mtncvs_state::upcast(app);
-  N(!myapp.opts.branch_name().empty(), F("no destination branch specified\n"));
-  cvs_sync::takeover(myapp, module);
-}
-
 CMD(test, N_("debug"), "", 
       N_("attempt to parse certs"), 
       options::opts::revision)
