@@ -980,10 +980,8 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     cvs.set_filename (filename, fid);
     cvs.index_branchpoint_symbols (r);
-    // FIXME: hmm.. does put_file check, now? Or has the file_version_exists()
-    //        simply not been ported, yet?
-    // if (! db.file_version_exists (fid) && !app.opts.dryrun)
-    db.put_file(fid, file_data(dat));
+    if (!app.opts.dryrun)
+      app.db.put_file(fid, file_data(dat));
 
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
@@ -1893,20 +1891,14 @@ blob_consumer::prepared_revision::prepared_revision(revision_id i,
 void
 blob_consumer::store_revisions()
 {
-  for (vector<prepared_revision>::const_iterator i = preps.begin();
-       i != preps.end(); ++i)
-    //FIXME: orientation
-    if (! app.opts.dryrun)
-      {
-    //FIXME: put_revision returns false if the revision already exists?
-    //       or does it err out (which would be wrong)?
-    if (app.db.put_revision(i->rid, *(i->rev)))
-      {
-        store_auxiliary_certs(*i);
-        ++n_revisions;
-      }
-      }
-}
+  if (! app.opts.dryrun)
+    for (vector<prepared_revision>::const_iterator i = preps.begin();
+         i != preps.end(); ++i)
+      if (app.db.put_revision(i->rid, *(i->rev)))
+        {
+          store_auxiliary_certs(*i);
+          ++n_revisions;
+        }
 }
 
 void
@@ -1915,7 +1907,6 @@ blob_consumer::store_auxiliary_certs(prepared_revision const & p)
   string author, changelog;
 
   cvs.split_authorclog(p.authorclog, author, changelog);
-  packet_db_writer dbw(app);
   string bn = cvs.get_branchname(p.branchname);
   app.get_project().put_standard_certs(p.rid,
                                        branch_name(bn),
