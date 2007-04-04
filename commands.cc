@@ -22,6 +22,7 @@
 #include "cmd.hh"
 #include "constants.hh"
 #include "app_state.hh"
+#include "revision.hh"
 
 #ifndef _WIN32
 #include <boost/lexical_cast.hpp>
