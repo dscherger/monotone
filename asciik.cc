@@ -371,22 +371,30 @@ CMD(asciik, N_("debug"), N_("SELECTOR"),
   N(args.size() == 1,
     F("wrong argument count"));
 
+  bool get_heads = false;
   vector<pair<selectors::selector_type, string> >
-    sels(selectors::parse_selector(args[0](), app));
+    sels(selectors::parse_selector(args[0](), get_heads, app));
 
   // we jam through an "empty" selection on sel_ident type
-  set<string> completions;
+  set<revision_id> completions;
   //set<hexenc<id>> completions;
   selectors::selector_type ty = selectors::sel_ident;
-  selectors::complete_selector("", sels, ty, completions, app);
+  {
+    bool dummy_get_heads = false;
+    set<string> completion_strings;
+    selectors::complete_selector("", sels, ty, dummy_get_heads,
+				 completion_strings, app, true);
+    for (set<string>::const_iterator i = completion_strings.begin();
+         i != completion_strings.end(); ++i)
+      completions.insert(revision_id(*i));
+  }
 
   asciik graph(std::cout, 10);
   set<revision_id> revs;
-  for (set<string>::const_iterator i = completions.begin();
+  for (set<revision_id>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
     {
-      revision_id rid(*i);
-      revs.insert(rid);
+      revs.insert(*i);
     }
   vector<revision_id> sorted;
   toposort(revs, sorted, app);
