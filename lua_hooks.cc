@@ -272,12 +272,14 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
 
 bool
 lua_hooks::hook_get_author(branch_name const & branchname,
+                           rsa_keypair_id const & k,
                            string & author)
 {
   return Lua(st)
     .func("get_author")
     .push_str(branchname())
-    .call(1,1)
+    .push_str(k())
+    .call(2,1)
     .extract_str(author)
     .ok();
 }
@@ -838,20 +840,17 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
 
   typedef set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > cdat;
 
-  int n=0;
+  int n = 1;
   for (cdat::const_iterator i = certs.begin(); i != certs.end(); ++i)
     {
       ll.push_int(n++);
       ll.push_table();
-      ll.push_str("key");
       ll.push_str(i->first());
-      ll.set_table();
-      ll.push_str("name");
+      ll.set_field("key");
       ll.push_str(i->second.first());
-      ll.set_table();
-      ll.push_str("value");
+      ll.set_field("name");
       ll.push_str(i->second.second());
-      ll.set_table();
+      ll.set_field("value");
       ll.set_table();
     }
 

@@ -41,7 +41,6 @@
 #include "file_io.hh"
 #include "interner.hh"
 #include "keys.hh"
-#include "packet.hh"
 #include "paths.hh"
 #include "platform-wrapped.hh"
 #include "project.hh"
@@ -981,8 +980,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     cvs.set_filename (filename, fid);
     cvs.index_branchpoint_symbols (r);
-
-    if (!app.db.file_version_exists (fid) && !app.opts.dryrun)
+    if (!app.opts.dryrun)
       app.db.put_file(fid, file_data(dat));
 
     global_pieces.reset();
@@ -1850,14 +1848,13 @@ import_cvs_repo(system_path const & cvsroot,
   // add all the tags
   {
     ticker n_tags(_("tags"), "t", 1);
-    packet_db_writer dbw(app);
     transaction_guard guard(app.db);
     for (map<cvs_tag, revision_id>::const_iterator i = cvs.resolved_tags.begin();
          i != cvs.resolved_tags.end(); ++i)
       {
         string tag = cvs.tag_interner.lookup(i->first);
         ui.set_tick_trailer("marking tag " + tag);
-        app.get_project().put_tag(i->second, tag, dbw);
+        app.get_project().put_tag(i->second, tag);
         ++n_tags;
       }
     guard.commit();
@@ -1901,21 +1898,14 @@ blob_consumer::prepared_revision::prepared_revision(revision_id i,
 void
 blob_consumer::store_revisions()
 {
-  for (vector<prepared_revision>::const_iterator i = preps.begin();
-       i != preps.end(); ++i)
-    {
-      if (!app.db.revision_exists(i->rid))
+  if (! app.opts.dryrun)
+    for (vector<prepared_revision>::const_iterator i = preps.begin();
+         i != preps.end(); ++i)
+      if (app.db.put_revision(i->rid, *(i->rev)))
         {
-          if (!app.opts.dryrun)
-            {
-              data tmp;
-              write_revision(*(i->rev), tmp);
-              app.db.put_revision(i->rid, *(i->rev));
-              store_auxiliary_certs(*i);
-              ++n_revisions;
-            }
+          store_auxiliary_certs(*i);
+          ++n_revisions;
         }
-    }
 }
 
 void
@@ -1924,14 +1914,12 @@ blob_consumer::store_auxiliary_certs(prepared_revision const & p)
   string author, changelog;
 
   cvs.split_authorclog(p.authorclog, author, changelog);
-  packet_db_writer dbw(app);
   string bn = cvs.get_branchname(p.branchname);
   app.get_project().put_standard_certs(p.rid,
                                        branch_name(bn),
                                        utf8(changelog),
                                        date_t::from_unix_epoch(p.time),
-                                       utf8(author),
-                                       dbw);
+                                       utf8(author));
 }
 
 void
