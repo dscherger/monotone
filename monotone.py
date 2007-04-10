@@ -175,11 +175,18 @@ class Monotone:
         return stdout
     
     def ensure_running(self):
+        if self.process and self.process.poll() is not None:
+            self.ensure_stopped()
         if not self.process:
             self.process = subprocess.Popen([self.executable, "--db", self.db, "automate", "stdio"],
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+                                   stderr=None)
+            if self.process.poll() is not None:
+                self.process.wait()
+                self.process = None
+                raise MonotoneError, "failed to start monotone backend"
+       
     
     def ensure_stopped(self):
         if self.process:    
@@ -200,12 +207,16 @@ class Monotone:
                     while not sep == ":":
                         field += sep
                         sep = pipe.read(1)
+                        if sep == "": raise MonotoneError, "automate stdio parsing failed (1)"
                     yield field
 
             data = ""
             while 1:
                 cmd, status, cont, size = get_fields()
                 data += pipe.read(int(size))
+                # TODO: why this check is sometimes failing !?
+                #if len(data) != int(size): raise MonotoneError, "automate stdio parsing failed (2)"
+                if len(data) == 0: raise MonotoneError, "automate stdio parsing failed (3)"
                 if cont != "m": break
             return data
             
@@ -213,7 +224,15 @@ class Monotone:
         stdin_write = threading.Thread(target=self.process.stdin.write, args=[formater(args)])
         stdin_write.setDaemon(True)
         stdin_write.start()
-        return parser(self.process.stdout)
+        try:
+            return parser(self.process.stdout)
+        except MonotoneError, e:
+            import time
+            time.sleep(0)
+            if self.process.poll() != None:
+                raise MonotoneError, "monotone process died unexpectedly (exit code %i)" % self.process.poll()
+            else:
+                raise
 
     # feeds stuff into 'monotone read'
     def feeder(self, verbosity):

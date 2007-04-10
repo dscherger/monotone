@@ -1,9 +1,14 @@
 Mini-mantis (tm) ;)
 
-NEW
+RESOLVED
   2. When monotone asks for db migration script goes into infinite loop.
      Seen on pre-0.33 database used with mtn 0.33
+     Seen also on pre-0.34 database used with mtn 0.34
      
+     Resolution: 1. at each read, check if stdio stream returned EOF (empty string)
+                 if yes then alarm user about problem
+		 2. show monotone automate stderr on console, so user
+		 can see monotone's warning about old schema
 RESOLVED
   1. When pushing from Win32 to Unix by SFTP names with \ instead 
       are created on SFTP site:
