@@ -100,9 +100,7 @@ class SFTPReadableFS(fs.ReadableFS):
         self.client = self.transport.open_sftp_client()
         
     def _fname(self, filename):
-        fname = "%s/%s" % (self.dir, filename)
-        print "target name: %s" % fname
-        return fname
+        return "%s/%s" % (self.dir, filename)
 
     def open_read(self, filename):
         return self.client.open(self._fname(filename), "rb")
