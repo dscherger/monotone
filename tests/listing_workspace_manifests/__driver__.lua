@@ -18,7 +18,7 @@ check(mtn("add", "dir/foo", "dir/bar"), 0, false, false)
 check(mtn("ls", "known"), 0, true)
 check(sort("stdout"), 0, "bar\ndir\ndir/bar\ndir/foo\nfoo\n")
 
-check(mtn("--branch=testbranch", "commit", "--message=committed"), 0, false, false)
+check(mtn("commit", "--message=committed"), 0, false, false)
 
 check(mtn("ls", "known"), 0, true)
 check(sort("stdout"), 0, "bar\ndir\ndir/bar\ndir/foo\nfoo\n")

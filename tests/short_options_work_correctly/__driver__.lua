@@ -25,5 +25,6 @@ check(short_mtn("-k", "badkey@example.com", "-b", "test.branch", "commit",
 remove("_MTN/log")
 
 -- and it does work with a key
-check(short_mtn("-k", "tester@test.net", "-b", "test.branch", "commit",
+check(short_mtn("branch", "test.branch"), 0, false, false)
+check(short_mtn("-k", "tester@test.net", "commit",
                 "-d", "test.db", "-m", "happy"), 0, false, false)

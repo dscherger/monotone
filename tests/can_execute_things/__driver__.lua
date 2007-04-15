@@ -15,5 +15,5 @@ mtn_setup()
 writefile("testfile", "blah blah")
 
 check(mtn("add", "cphook.lua"), 0, false, false)
-check(mtn("--branch=testbranch", "--rcfile=cphook.lua", "commit", "--message=test"), 0, false, false)
+check(mtn("--rcfile=cphook.lua", "commit", "--message=test"), 0, false, false)
 check(exists("testfile.copied"))

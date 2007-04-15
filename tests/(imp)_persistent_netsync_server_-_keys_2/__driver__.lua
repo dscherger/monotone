@@ -21,7 +21,7 @@ check(mtn("read"), 0, false, false, true)
 
 addfile("foo", "data data blah")
 check(mtn2("status"), 0, false, false)
-check(mtn2("commit", "--key=foo@bar", "--branch=testbranch", "-m", 'commit foo'), 0, false, false)
+check(mtn2("commit", "--key=foo@bar", "-m", 'commit foo'), 0, false, false)
 
 srv = netsync.start()
 srv:push("testbranch", 2)
