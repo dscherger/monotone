@@ -1431,6 +1431,7 @@ get_split_points(cvs_history & cvs, cvs_blob_index bi)
           if (dep->get_digest() == blob.get_digest())
             {
               L(FL("event time: %d  - dep time: %d") % ev->time % dep->time);
+              // FIXME: this invariant gets violated by tests
               I(ev->time >= dep->time);
               result_set.push_back(make_pair(dep->time, ev->time));
             }
@@ -1483,63 +1484,63 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
           cc++;
         }
 
+      time_t largest_gap = 0;
+      time_t largest_gap_at = 0;
+      int largest_gap_blob = -1;
+
       cc = 0;
       for (cc = 0; cc < mymap.size(); ++cc)
         {
-          cvs_blob_index prev_blob = mymap[(cc > 0 ? cc - 1 : mymap.size() - 1)];
-          cvs_blob_index this_blob = mymap[cc];
-          cvs_blob_index next_blob = mymap[(cc < mymap.size() - 1 ? cc + 1 : 0)];
+          L(FL("  testing blob %d") % mymap[cc]);
 
-          L(FL("  testing deps %d -> %d -> %d") % prev_blob % this_blob % next_blob);
+          // sort the blob events by timestamp
+          vector< cvs_event_ptr > & blob_events = cvs.blobs[mymap[cc]].get_events();
+          sort(blob_events.begin(), blob_events.end());
 
-          time_t prev_min_time = 0;
-          for (blob_event_iter ii = cvs.blobs[prev_blob].begin(); ii != cvs.blobs[prev_blob].end(); ++ii)
+          blob_event_iter ity;
+
+          cvs_event_ptr this_ev, last_ev;
+
+          ity = blob_events.begin();
+          this_ev = *ity;
+          ++ity;
+          for ( ; ity != blob_events.end(); ++ity)
             {
-              cvs_event_ptr ev = *ii;
+              last_ev = this_ev;
+              this_ev = *ity;
 
-              for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+              time_t time_diff = this_ev->time - last_ev->time;
+              L(FL("       time gap: %s") % time_diff);
+
+              if (time_diff > largest_gap)
                 {
-                  cvs_event_ptr dep = *j;
-
-                  if (dep->get_digest() == cvs.blobs[this_blob].get_digest())
-                    {
-                      if ((prev_min_time == 0) || (dep->time < prev_min_time))
-                        prev_min_time = dep->time;
-                    }
+                  largest_gap = time_diff;
+                  largest_gap_at = last_ev->time + time_diff / 2;
+                  largest_gap_blob = mymap[cc];
                 }
             }
-          L(FL("      prev min time: %d") % prev_min_time);
 
-          time_t next_max_time = 0;
-          for (blob_event_iter ii = cvs.blobs[this_blob].begin(); ii != cvs.blobs[this_blob].end(); ++ii)
+          for (unsigned int dd = 0; dd < mymap.size(); ++dd)
             {
-              cvs_event_ptr ev = *ii;
-
-              for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+              for (blob_event_iter ii = cvs.blobs[mymap[cc]].begin(); ii != cvs.blobs[mymap[cc]].end(); ++ii)
                 {
-                  cvs_event_ptr dep = *j;
-
-                  if (dep->get_digest() == cvs.blobs[next_blob].get_digest())
+                  cvs_event_ptr ev = *ii;
+                  for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
                     {
-                      if (dep->time > next_max_time)
-                        next_max_time = dep->time;
+                      cvs_event_ptr dep = *j;
+
+                      if (dep->get_digest() == cvs.blobs[mymap[dd]].get_digest())
+                        {
+                          L(FL("     depends on blob %d") % mymap[dd]);
+                        }
                     }
                 }
-            }
-          L(FL("      next max time: %d") % next_max_time);
-
-          // We assume we have found both dependencies
-          I(prev_min_time > 0);
-          I(next_max_time > 0);
-
-          if (prev_min_time < next_max_time)
-            {
-              L(FL("      this blob is a candidate for splitting..."));
-              L(FL("      for now, we just split that one!"));
-              split_blob_at(cvs, this_blob, next_max_time, g);
-              break;
             }
         }
+
+      I(largest_gap_at != 0);
+      I(largest_gap_blob >= 0);
+      split_blob_at(cvs, largest_gap_blob, largest_gap_at, g);
     }
 }
 
@@ -1547,9 +1548,13 @@ void
 split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
               time_t split_point, Graph & g)
 {
-  vector< cvs_event_ptr > blob_events(cvs.blobs[bi].get_events());
+  L(FL(" splitting blob %d at %d") % bi % split_point);
+
+  I(cvs.blobs[bi].get_digest().is_commit());
+  // FIXME: this invariant gets violated by tests
 
   // sort the blob events by timestamp
+  vector< cvs_event_ptr > blob_events(cvs.blobs[bi].get_events());
   sort(blob_events.begin(), blob_events.end());
 
   // add a blob
@@ -1640,9 +1645,6 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
         L(FL("removing out edge %s") % *ity);
         remove_edge(ity->m_source, ity->m_target, const_cast<Graph &>(g));
       }
-
-    add_blob_dependency_edges(cvs, bi, const_cast<Graph &>(g));
-    add_blob_dependency_edges(cvs, new_bi, const_cast<Graph &>(g));
   }
 }
 
@@ -1750,7 +1752,11 @@ resolve_blob_dependencies(cvs_history &cvs,
   std::ofstream viz_file;
   blob_label_writer blw(cvs);
 
-  Graph g(cvs.blobs.size());
+  Graph g;
+
+  while (1)
+  {
+  g = Graph(cvs.blobs.size());
 
   // fill the graph with all blob dependencies as edges between
   // the blobs (vertices).
@@ -1762,10 +1768,9 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // check for cycles
   set< cvs_blob_index > cycle_members;
+
   blob_splitter< Edge, ColorMap > vis(cvs, cycle_members, colormap);
 
-  while (1)
-  {
     if (global_sanity.debug)
       {
         viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
@@ -1784,6 +1789,8 @@ resolve_blob_dependencies(cvs_history &cvs,
     else
       break;
   };
+
+  L(FL("DEBUG: %s @ %d") % __FILE__ % __LINE__);
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
@@ -2107,6 +2114,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
         L(FL("  branch %s") % cvs.branchname_interner.lookup(*i));
 
+      // FIXME: this invariant gets violated by tests
       I(dep_branches.size() <= 1);
     }
 
