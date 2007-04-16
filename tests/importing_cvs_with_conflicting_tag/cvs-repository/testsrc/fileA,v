@@ -1,0 +1,61 @@
+head	1.2;
+access;
+symbols
+	CONFLICTING_TAG:1.2
+    ANOTHER_TAG:1.1
+	initial:1.1.1.1
+	Vendor:1.1.1;
+locks; strict;
+comment	@# @;
+
+
+1.2
+date	2006.11.27.19.23.52;	author markus;	state Exp;
+branches;
+next	1.1;
+commitid	lDJggPLUg26ZalWr;
+
+1.1
+date	2006.11.27.19.23.12;	author markus;	state Exp;
+branches
+	1.1.1.1;
+next	;
+commitid	a0SVFdahHdLKalWr;
+
+1.1.1.1
+date	2006.11.27.19.23.12;	author markus;	state Exp;
+branches;
+next	;
+commitid	a0SVFdahHdLKalWr;
+
+
+desc
+@@
+
+
+1.2
+log
+@Modification of fileA.
+@
+text
+@Version 1 of fileA.
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d1 1
+a1 1
+Version 0 of fileA.
+@
+
+
+1.1.1.1
+log
+@Initial import
+@
+text
+@@
