@@ -62,7 +62,7 @@ CMD(svn_import, N_("debug"), N_("[SVNDUMP]"),
     {
       system_path in_file = system_path(idx(args, 0));
 
-      N(!file_exists(in_file),
+      N(file_exists(in_file),
         F("File %s does not exist.") % in_file);
 
       ifstream ifs(in_file.as_external().c_str());
