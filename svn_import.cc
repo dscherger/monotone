@@ -244,6 +244,8 @@ struct svn_dump_parser
       }
     I(prop_content_length + text_content_length == content_length);
 
+    if (prop_content_length > 0)
+      {
     int prop_start = charpos;
 
     newline();
@@ -286,6 +288,7 @@ struct svn_dump_parser
 
       while (newlinep())
         eat(TOK_NEWLINE);
+      }
 
       if (text_content_length > 0)
         {
