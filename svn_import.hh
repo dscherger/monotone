@@ -13,7 +13,7 @@
 #include "vocab.hh"
 #include "database.hh"
 
-void import_svn_repo(std::istream const & is, app_state & app);
+void import_svn_repo(std::istream & ist, app_state & app);
 
 // Local Variables:
 // mode: C++
