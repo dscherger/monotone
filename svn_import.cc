@@ -267,9 +267,6 @@ struct svn_dump_parser
             eat_raw_data(value, value_len);
             newline();
 
-            I(key.length() == key_len);
-            I(value.length() == value_len);
-
             L(FL("key: '%s' value: '%s'") % key % value);
   
             if (strp() && (token == "PROPS-END"))
