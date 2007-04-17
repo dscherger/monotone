@@ -31,8 +31,9 @@ svn_token_type;
 static svn_token_type
 get_token(istream & ist,
           string & str,
-      	  size_t & line,
-	        size_t & col)
+          size_t & line,
+          size_t & col,
+          size_t & charpos)
 {
   bool digits_only = true;
   int i = ist.peek();
@@ -49,11 +50,13 @@ get_token(istream & ist,
         {
           col = 0;
           ++line;
+          ++charpos;
           ist.get(c);
           return TOK_NEWLINE;
         }
 
       ++col;
+      ++charpos;
       if (!isspace(i))
         break;
       ist.get(c);
@@ -65,6 +68,7 @@ get_token(istream & ist,
     case ':':
       ist.get(c);
       ++col;
+      ++charpos;
       return TOK_COLON;
       break;
 
@@ -77,6 +81,7 @@ get_token(istream & ist,
             digits_only = false;
           ist.get(c);
           ++col;
+          ++charpos;
           str += c;
           i = ist.peek();
         }
@@ -98,13 +103,13 @@ struct svn_dump_parser
   istream & ist;
   string token;
   svn_token_type ttype;
-  size_t line, col;
+  size_t line, col, charpos;
 
   int svn_dump_version;
   string svn_uuid;
 
   svn_dump_parser(istream & s)
-    : ist(s), line(1), col(1)
+    : ist(s), line(1), col(1), charpos(0)
   {
     advance();
     parse_header();
@@ -130,10 +135,38 @@ struct svn_dump_parser
 
   void advance()
   {
-    ttype = get_token(ist, token, line, col);
-    L(FL("token type %s: '%s'") % tt2str(ttype) % token);
+    ttype = get_token(ist, token, line, col, charpos);
+    // L(FL("token type %s: '%s'") % tt2str(ttype) % token);
   }
 
+  void eat_raw_data(string & s, const size_t count)
+  {
+    // this is a little ugly, because we may already have a token in
+    // the buffer, so we must prepend that or serve only parts of it.
+    int rest = count - token.length();
+    if (rest == 0)
+      {
+        s = token;
+        advance();
+      }
+    else if (rest > 0)
+      {
+        char buf[rest];
+        ist.read(buf, rest);
+        charpos += count;
+        col += 1;
+        s = token + string(buf, rest);
+
+        advance();
+      }
+    else
+      {
+        s = token.substr(0, count);
+        token = token.substr(count);
+      }
+  }
+
+  bool eof() { return ttype == TOK_NONE; }
   bool nump() { return ttype == TOK_NUM; }
   bool strp() { return ttype == TOK_STRING; }
   bool newlinep() { return ttype == TOK_NEWLINE; }
@@ -144,10 +177,8 @@ struct svn_dump_parser
   void eat(svn_token_type want)
   {
     if (ttype != want)
-      {
       throw oops((F("parse failure %d:%d: expecting %s, got %s with value '%s'")
-		  % line % col % tt2str(want) % tt2str(ttype) % token).str());
-      }
+          % line % col % tt2str(want) % tt2str(ttype) % token).str());
     advance();
   }
 
@@ -164,39 +195,154 @@ struct svn_dump_parser
     string tmp;
     if (!strp(expected))
       throw oops((F("parse failure %d:%d: expecting word '%s'")
-		  % line % col % expected).str());
+          % line % col % expected).str());
     advance();
+  }
+
+  void parse_int_field(const string exp, int & dest)
+  {
+    expect(exp);
+    colon();
+    num(dest);
+    newline();
+  }
+
+  void parse_str_field(const string exp, string & dest)
+  {
+    expect(exp);
+    colon();
+    str(dest);
+    newline();
+  }
+
+  void parse_properties()
+  {
+    int prop_content_length = 0, text_content_length = 0, content_length = 0;
+    string text_delta, text_content_md5;
+
+    while (1)
+      {
+        if (token == "Prop-content-length")
+          parse_int_field("Prop-content-length", prop_content_length);
+
+        else if (token == "Text-content-length")
+          parse_int_field("Text-content-length", text_content_length);
+
+        else if (token == "Text-content-md5")
+          parse_str_field("Text-content-md5", text_content_md5);
+
+        else if (token == "Text-delta")
+          parse_str_field("Text-delta", text_delta);
+
+        else if (token == "Content-length")
+          {
+            parse_int_field("Content-length", content_length);
+            break;
+          }
+        else
+          N(false, F("unknown properties header field"));
+      }
+    I(prop_content_length + text_content_length == content_length);
+
+    int prop_start = charpos;
+
+    newline();
+
+    while (((int) charpos - prop_start) < prop_content_length)
+      {
+        int key_len, value_len;
+        string key, value;
+
+        expect("K");
+        num(key_len);
+        newline();
+        eat_raw_data(key, key_len);
+        L(FL("key length: %d key: '%s'") % key_len % key);
+        newline();
+        expect("V");
+        num(value_len);
+        newline();
+        eat_raw_data(value, value_len);
+        newline();
+
+        I(key.length() == key_len);
+        I(value.length() == value_len);
+
+        L(FL("key: '%s' value: '%s'") % key % value);
+
+        if (strp() && (token == "PROPS-END"))
+          {
+            I((int) charpos > prop_start);
+            if (((int) charpos - prop_start) == prop_content_length)
+              {
+                L(FL("warning: charpos - prop_start = %d") % (charpos - prop_start));
+                L(FL("         prop_content_length = %d") % prop_content_length);
+              }
+            break;
+          }
+      }
+
+      expect("PROPS-END");
+
+      while (newlinep())
+        eat(TOK_NEWLINE);
+
+      if (text_content_length > 0)
+        {
+          string marker, size, text;
+          eat_raw_data(marker, 3);
+          I(marker == "SVN");
+          eat_raw_data(size, 7);
+          L(FL("size '%s'") % size);
+          eat_raw_data(text, text_content_length - 10);
+          L(FL("text: '%s'") % text);
+        }
+
+      while (newlinep())
+        eat(TOK_NEWLINE);
   }
 
   void parse_header()
   {
-    expect("SVN-fs-dump-format-version");
-    colon();
-    num(svn_dump_version);
-	newline();
-    L(FL("svn_dump_version: %d") % svn_dump_version);
+    parse_int_field("SVN-fs-dump-format-version", svn_dump_version);
 
+    L(FL("svn_dump_version: %d") % svn_dump_version);
     if ((svn_dump_version < 2) or (svn_dump_version > 3))
       throw oops((F("unable to parse dump format version %d")
-		  % svn_dump_version).str());
+          % svn_dump_version).str());
 
-	while (newlinep())
-		eat(TOK_NEWLINE);
+    while (newlinep())
+        eat(TOK_NEWLINE);
 
-	expect("UUID");
-	colon();
-	str(svn_uuid);
-	L(FL("uuid: %s") % svn_uuid);
-	newline();
+    parse_str_field("UUID", svn_uuid);
+    L(FL("uuid: %s") % svn_uuid);
 
-	while (newlinep())
-		eat(TOK_NEWLINE);
+    while (newlinep())
+        eat(TOK_NEWLINE);
   }
 
-  void parse_record()
+  void parse_revision()
   {
-    // at the end, we need a TOK_NONE
-    eat(TOK_NONE);
+    int rev_nr;
+
+    // To prevent an overrun of the chars counter, we restart
+    // counting for every revision.
+    charpos = 0;
+
+    parse_int_field("Revision-number", rev_nr);
+    parse_properties();
+
+    while (strp() && token == "Node-path")
+      {
+        string path, kind, action;
+        parse_str_field("Node-path", path);
+
+        parse_str_field("Node-kind", kind);
+        I((kind == "dir") || (kind == "file"));
+
+        parse_str_field("Node-action", action);
+        parse_properties();
+      }
   }
 };
 
@@ -213,4 +359,8 @@ import_svn_repo(istream & ist, app_state & app)
   string branch = app.opts.branchname();
 
   svn_dump_parser p(ist);
+  while (!p.eof())
+    {
+      p.parse_revision();
+    }
 };
