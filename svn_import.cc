@@ -93,7 +93,7 @@ get_token(istream & ist,
 }
 
 
-struct parser
+struct svn_dump_parser
 {
   istream & ist;
   string token;
@@ -101,8 +101,9 @@ struct parser
   size_t line, col;
 
   int svn_dump_version;
+  string svn_uuid;
 
-  parser(istream & s)
+  svn_dump_parser(istream & s)
     : ist(s), line(1), col(1)
   {
     advance();
@@ -135,6 +136,7 @@ struct parser
 
   bool nump() { return ttype == TOK_NUM; }
   bool strp() { return ttype == TOK_STRING; }
+  bool newlinep() { return ttype == TOK_NEWLINE; }
   bool strp(string const & val)
   {
     return ttype == TOK_STRING && token == val;
@@ -171,12 +173,24 @@ struct parser
     expect("SVN-fs-dump-format-version");
     colon();
     num(svn_dump_version);
+	newline();
     L(FL("svn_dump_version: %d") % svn_dump_version);
-    newline();
 
     if ((svn_dump_version < 2) or (svn_dump_version > 3))
       throw oops((F("unable to parse dump format version %d")
 		  % svn_dump_version).str());
+
+	while (newlinep())
+		eat(TOK_NEWLINE);
+
+	expect("UUID");
+	colon();
+	str(svn_uuid);
+	L(FL("uuid: %s") % svn_uuid);
+	newline();
+
+	while (newlinep())
+		eat(TOK_NEWLINE);
   }
 
   void parse_record()
@@ -198,5 +212,5 @@ import_svn_repo(istream & ist, app_state & app)
 
   string branch = app.opts.branchname();
 
-  parser p(ist);
+  svn_dump_parser p(ist);
 };
