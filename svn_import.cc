@@ -289,13 +289,8 @@ struct svn_dump_parser
 
       if (text_content_length > 0)
         {
-          string marker, size, text;
-          eat_raw_data(marker, 3);
-          I(marker == "SVN");
-          eat_raw_data(size, 7);
-          L(FL("size '%s'") % size);
-          eat_raw_data(text, text_content_length - 10);
-          L(FL("text: '%s'") % text);
+          string text;
+          eat_raw_data(text, text_content_length);
         }
 
       while (newlinep())
