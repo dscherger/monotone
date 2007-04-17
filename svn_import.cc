@@ -246,48 +246,48 @@ struct svn_dump_parser
 
     if (prop_content_length > 0)
       {
-    int prop_start = charpos;
+        int prop_start = charpos;
 
-    newline();
-
-    while (((int) charpos - prop_start) < prop_content_length)
-      {
-        int key_len, value_len;
-        string key, value;
-
-        expect("K");
-        num(key_len);
-        newline();
-        eat_raw_data(key, key_len);
-        L(FL("key length: %d key: '%s'") % key_len % key);
-        newline();
-        expect("V");
-        num(value_len);
-        newline();
-        eat_raw_data(value, value_len);
         newline();
 
-        I(key.length() == key_len);
-        I(value.length() == value_len);
-
-        L(FL("key: '%s' value: '%s'") % key % value);
-
-        if (strp() && (token == "PROPS-END"))
+        while (((int) charpos - prop_start) < prop_content_length)
           {
-            I((int) charpos > prop_start);
-            if (((int) charpos - prop_start) == prop_content_length)
+            int key_len, value_len;
+            string key, value;
+
+            expect("K");
+            num(key_len);
+            newline();
+            eat_raw_data(key, key_len);
+            L(FL("key length: %d key: '%s'") % key_len % key);
+            newline();
+            expect("V");
+            num(value_len);
+            newline();
+            eat_raw_data(value, value_len);
+            newline();
+
+            I(key.length() == key_len);
+            I(value.length() == value_len);
+
+            L(FL("key: '%s' value: '%s'") % key % value);
+  
+            if (strp() && (token == "PROPS-END"))
               {
-                L(FL("warning: charpos - prop_start = %d") % (charpos - prop_start));
-                L(FL("         prop_content_length = %d") % prop_content_length);
+                I((int) charpos > prop_start);
+                if (((int) charpos - prop_start) == prop_content_length)
+                  {
+                    L(FL("warning: charpos - prop_start = %d") % (charpos - prop_start));
+                    L(FL("         prop_content_length = %d") % prop_content_length);
+                  }
+                break;
               }
-            break;
           }
-      }
 
-      expect("PROPS-END");
+        expect("PROPS-END");
 
-      while (newlinep())
-        eat(TOK_NEWLINE);
+        while (newlinep())
+          eat(TOK_NEWLINE);
       }
 
       if (text_content_length > 0)
