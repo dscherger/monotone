@@ -920,12 +920,12 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   for (mtn_automate::edge_map::const_iterator j = rs.edges.begin(); 
        j != rs.edges.end();
        ++j)
-  { if ((parent==edges.end() && !is_empty(j->first)))
+  { if ((parent==edges.end() && !null_id(j->first)))
     { L(FL("%s != \"\"\n") % j->first);
       continue;
     }
     else if ((parent!=edges.end() && !(j->first == parent->revision)))
-    { L(FL("%s != %s\n") % j->first % (parentparent->revision));
+    { L(FL("%s != %s\n") % j->first % (parent->revision));
       continue;
     }
     boost::shared_ptr<mtn_automate::cset> cs=j->second;
