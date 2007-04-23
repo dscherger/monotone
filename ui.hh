@@ -18,6 +18,7 @@
 #include <set>
 #include <string>
 
+#include "basic_io.hh"
 #include "paths.hh"
 #include "sanity.hh"
 
@@ -77,6 +78,19 @@ private:
   unsigned int chars_on_line;
 };
 
+struct tick_write_stdio : virtual public tick_writer
+{
+public:
+  tick_write_stdio();
+  ~tick_write_stdio();
+  void write_ticks();
+  void clear_line();
+  void next_cmd();
+private:
+  std::map<std::string,size_t> last_ticks;
+  int cmdnum;
+};
+
 struct tick_write_nothing : virtual public tick_writer
 {
 public:
@@ -120,6 +134,7 @@ private:
 
   friend struct tick_write_dot;
   friend struct tick_write_count;
+  friend struct tick_write_stdio;
   friend struct ticker;
 };
 

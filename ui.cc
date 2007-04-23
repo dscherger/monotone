@@ -391,6 +391,76 @@ void tick_write_dot::clear_line()
   clog << endl;
 }
 
+
+tick_write_stdio::tick_write_stdio() :
+ cmdnum(0)
+{
+}
+
+tick_write_stdio::~tick_write_stdio()
+{
+}
+
+void tick_write_stdio::write_ticks()
+{
+  basic_io::printer pr;
+  string ticks;
+  
+  for (map<string,ticker *>::const_iterator i = ui.tickers.begin();
+       i != ui.tickers.end(); ++i)
+    {
+      map<string,size_t>::const_iterator old = last_ticks.find(i->first);
+      ticker * tick = i->second;
+      
+      if (!ui.last_write_was_a_tick)
+        {
+          basic_io::stanza st;
+          st.push_str_pair(symbol("shortname"), tick->shortname);
+          st.push_str_pair(symbol("name"), tick->name);
+          st.push_str_pair(symbol("mod"), lexical_cast<string>(tick->mod));
+          if (tick->use_total)
+            {
+              st.push_str_pair(
+                  symbol("total"), 
+                  lexical_cast<string>(tick->total)
+              );
+            }
+          pr.print_stanza(st);
+        }
+      
+      if (old == last_ticks.end()
+          || ((tick->ticks / tick->mod) > (old->second / tick->mod)))
+        {
+          ticks += lexical_cast<string>(cmdnum)
+            + ":0:t:" + lexical_cast<string>(tick->shortname.size()) 
+            + ":" + tick->shortname + "\n";
+        
+          if (old == last_ticks.end())
+            last_ticks.insert(make_pair(i->first, tick->ticks));
+          else
+            last_ticks[i->first] = tick->ticks;
+        }
+    }
+  
+  if (pr.buf.size() > 0)
+   {
+     cout << cmdnum << ":0:h:" << pr.buf.size() << ":" << pr.buf.data();
+   }
+  cout << ticks;
+  cout.flush();
+}
+
+void tick_write_stdio::clear_line()
+{
+}
+
+void tick_write_stdio::next_cmd()
+{
+    // raise the command counter
+    ++cmdnum;
+}
+
+
 // user_interface has both constructor/destructor and initialize/
 // deinitialize because there's only one of these objects, it's
 // global, and we don't want global constructors/destructors doing
