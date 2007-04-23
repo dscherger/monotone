@@ -10,8 +10,7 @@ addfile("testfile", "blah blah")
 check({"chmod", "a-w", "test.db"})
 
 check(get("my_hook.lua"))
-
-check(mtn("commit", "-btestbranch", "--rcfile=my_hook.lua"), 1, false, false)
+check(mtn("commit", "--rcfile=my_hook.lua"), 1, false, false)
 
 check(samelines("_MTN/log", {"foobar"}))
 
@@ -25,7 +24,7 @@ writefile("_MTN/log", "")
 --   <fixup>
 --   $ mtn commit -m 'foo'
 --   error, _MTN/log non-empty and -m specified
-check(mtn("commit", "-btestbranch", "-m", "blah blah"), 1, false, false)
+check(mtn("commit", "-m", "blah blah"), 1, false, false)
 
 -- So _MTN/log should still be empty
 check(fsize("_MTN/log") == 0)

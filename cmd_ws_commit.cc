@@ -691,11 +691,83 @@ CMD(attr, N_("workspace"), N_("set PATH ATTR VALUE\nget PATH [ATTR]\ndrop PATH [
     throw usage(name);
 }
 
+CMD(branch, N_("workspace"), N_("[BRANCHNAME]"), 
+    N_("changes the branch of the current workspace or "
+       "displays the current branch"), options::opts::none)
+{
+  if (args.size() > 1)
+    throw usage(name);
+  
+  app.require_workspace();
+  
+  if (args.size() == 0)
+    {
+      cout << app.opts.branchname << '\n';
+      return;
+    }
+    
+  branch_name branch(idx(args, 0)());
+  
+  E(branch != app.opts.branchname,
+    F("branch of the current workspace is already set to %s") % branch);
 
+  std::set<branch_name> branches;
+  app.get_project().get_branch_list(branches);
+  
+  bool existing_branch = false;
+  for (set<branch_name>::const_iterator i = branches.begin();
+    i != branches.end(); ++i)
+    {
+        if (branch == *i)
+          {
+              existing_branch = true;
+              break;
+          }
+    }
+
+  // if this is an existing branch, check if this branch's head revs and
+  // the current workspace parent share any common ancestors, if not warn
+  // the user about it
+  if (existing_branch)
+    {
+        set<revision_id> revs, common_ancestors;
+        app.get_project().get_branch_heads(branch, revs);
+        
+        // FIXME: is there an easier way to just get the revids of the parent(s)
+        // of the current workspace?
+        revision_t work_rev;
+        app.work.get_work_rev(work_rev);
+        for (edge_map::iterator i = work_rev.edges.begin();
+            i != work_rev.edges.end(); i++)
+          {
+              revs.insert(i->first);
+          }
+        
+        app.db.get_common_ancestors(revs, common_ancestors);
+        
+        if (common_ancestors.size() == 0)
+          {
+            W(F("the new branch has no common ancestors with the current branch;\n"
+                "any next commit could therefor create two unmergable heads in\n"
+                "%s") % branch);
+          }
+    }
+  
+  // leave the other parameters empty so they won't get changed
+  system_path path;
+  rsa_keypair_id key;
+  
+  app.work.set_ws_options(path, branch, key, path);
+  
+  if (existing_branch)
+    P(F("next commit will use the existing branch %s") % branch);
+  else
+    P(F("next commit will use the new branch %s") % branch);
+}
 
 CMD(commit, N_("workspace"), N_("[PATH]..."),
     N_("commit workspace to database"),
-    options::opts::branch | options::opts::message | options::opts::msgfile
+    options::opts::message | options::opts::msgfile
     | options::opts::date | options::opts::author | options::opts::depth
     | options::opts::exclude)
 {
@@ -715,7 +787,6 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
     get_user_key(key, app);
   }
 
-  app.make_branch_sticky();
   app.work.get_parent_rosters(old_rosters);
   app.work.get_current_roster_shape(new_roster, nis);
 
@@ -733,10 +804,25 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
   revision_id restricted_rev_id;
   calculate_ident(restricted_rev, restricted_rev_id);
 
-  // We need the 'if' because guess_branch will try to override any branch
-  // picked up from _MTN/options.
+  //
+  // FIXME: Obviously this command no longer accepts a --branch option,
+  // app.opts.branchname is set to _MTN/options branchname by default in
+  // app_state::process_options (which is called before the command is executed).
+  //
+  // While it would certainly be cleaner here to read app.work.get_ws_options()
+  // I hesistate to do that _again_ because it has already been done. Also 
+  // referencing the branchname via app.opts.branchname is a bit backwards
+  // since it was never an option for this command actually. Still, I'm open
+  // for ideas how to clean up this mess =)
+  //
+  // So in the end only if no branch is set in _MTN/options we try to detect a
+  // valid one here by looking at the ancestor revisions of the workspace.
+  //
   if (app.opts.branchname().empty())
     {
+      W(F("workspace has no branch name set; trying to detect one "
+          "by looking at the parent revisions"));
+      
       branch_name branchname, bn_candidate;
       for (edge_map::iterator i = restricted_rev.edges.begin();
            i != restricted_rev.edges.end();
@@ -745,14 +831,16 @@ CMD(commit, N_("workspace"), N_("[PATH]..."),
           // this will prefer --branch if it was set
           guess_branch(edge_old_revision(i), app, bn_candidate);
           N(branchname() == "" || branchname == bn_candidate,
-            F("parent revisions of this commit are in different branches:\n"
+            F("parent revisions of this workspace are in different branches:\n"
               "'%s' and '%s'.\n"
-              "please specify a branch name for the commit, with --branch.")
-            % branchname % bn_candidate);
+              "please specify a branch name with '%s branch BRANCHNAME'.")
+            % branchname % bn_candidate % ui.prog_name);
           branchname = bn_candidate;
         }
 
       app.opts.branchname = branchname;
+      // write out the new branch name
+      app.make_branch_sticky();
     }
 
 
