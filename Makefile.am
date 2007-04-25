@@ -412,9 +412,11 @@ LINGUA_DOMAIN=monotone
 LINGUA_RESULTS=$(addprefix po/,$(addsuffix $(LINGUA_FORMAT),$(LINGUAS)))
 
 %.mo: %.po
+	$(mkinstalldirs) $(dir $@)
 	$(MSGFMT) -o $@ $<
 
 %.gmo: %.po
+	$(mkinstalldirs) $(dir $@)
 	$(MSGFMT) -o $@ $<
 
 install-data-local: $(LINGUA_RESULTS)
