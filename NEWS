@@ -4,6 +4,9 @@
 
         Changes
 
+        - 'mkdir --no-respect-ignore PATH' now really skips any
+          ignore directives from .mtn-ignore or Lua hooks
+
         New features
 
         - 'automate identify', an automate version of 'mtn identify'.
@@ -17,6 +20,8 @@
         - Added build files for Mac OS X.
 
         - Update the internal SQLite to version 3.3.16.
+
+	- Code cleanup of app_state.
 
 
 
