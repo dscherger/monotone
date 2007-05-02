@@ -10,7 +10,12 @@ revs = {}
 
 -- like the normal commit function, except it catches the output
 function local_ci(br)
-  check(mtn("commit", "--message=blah-blan", "--branch", br), 0, true, true)
+  check(mtn("automate", "get_option", "branch"), 0, true, false)
+  current_branch = trim(readfile("stdout"))
+  if br ~= current_branch then
+    check(mtn("branch", br), 0, false, false)
+  end
+  check(mtn("commit", "--message=blah-blan"), 0, true, true)
 end
 
 writefile("f", "base data")
