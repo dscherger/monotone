@@ -1,30 +1,7 @@
-#
-# old_revision [1f4eadd15f38e6a052855ee8debee9fe820040e7]
-#
-# patch "Makefile.am"
-#  from [c7cdc7a6ff99623495792d2e28bebccc79483c67]
-#    to [e0638602fba204e244a40ba2221166267c1ce302]
-# 
-# patch "commands.cc"
-#  from [9454002d33c19c074f9ec98d9bb9df61727e7370]
-#    to [5686c701981ed763ae6a257584dfd5e0639f4a10]
-# 
-# patch "configure.ac"
-#  from [1f07631ee9cb6ec27c1b383af23ef8f037fc1356]
-#    to [9acf01ae17ad420a61e783823879dba9af9499cb]
-# 
-# patch "ui.cc"
-#  from [21bba61b39d2178a31aa97437d0b60688003ff42]
-#    to [ea3134e946bf6d91320782c1965d21d43623f15b]
-# 
-# patch "ui.hh"
-#  from [ea2c11aaa5de4bc00851ee8bb7a9730f509c93fc]
-#    to [3ea8ae8257415bf8adf7845bb1a4b4279923941f]
-#
 ============================================================
---- Makefile.am	c7cdc7a6ff99623495792d2e28bebccc79483c67
-+++ Makefile.am	e0638602fba204e244a40ba2221166267c1ce302
-@@ -402,7 +402,7 @@ endif
+--- Makefile.am	ecc00e0b8e9b5350157a1922e430ade4508d31bd
++++ Makefile.am	6f03f3c51fd20e87eb1a044a7ae1772b3acd722e
+@@ -405,7 +405,7 @@ endif
  
  # i18n support
  
@@ -34,9 +11,9 @@
  localedir = $(datadir)/locale
  DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
 ============================================================
---- commands.cc	9454002d33c19c074f9ec98d9bb9df61727e7370
-+++ commands.cc	5686c701981ed763ae6a257584dfd5e0639f4a10
-@@ -343,6 +343,7 @@ CMD(crash, hidden_group(), "{ N | E | I 
+--- commands.cc	b75ca8fe6164c20993fe90c5383ebc888e2eae98
++++ commands.cc	5593222227701d6cbf8b673bfd77b5ab65b04fbb
+@@ -351,6 +351,7 @@ CMD(crash, hidden_group(), "{ N | E | I 
  #undef maybe_throw_bare
  }
  
@@ -44,21 +21,18 @@
  string
  describe_revision(app_state & app,
                    revision_id const & id)
-@@ -514,8 +515,10 @@ get_content_paths(roster_t const & roste
-         }
-     }
+@@ -506,6 +507,8 @@ process_commit_message_args(bool & given
+     given = false;
  }
--  
  
 +#endif
-+
 +
  // Local Variables:
  // mode: C++
  // fill-column: 76
 ============================================================
---- configure.ac	1f07631ee9cb6ec27c1b383af23ef8f037fc1356
-+++ configure.ac	9acf01ae17ad420a61e783823879dba9af9499cb
+--- configure.ac	514115197e68db548065f885f801415f6b7cb38f
++++ configure.ac	f03fe8d606ea1f9ea4bba3d1adfe8f1a4b7eb4d4
 @@ -6,7 +6,7 @@ AM_CONFIG_HEADER([config.h])
  AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
  AC_CONFIG_SRCDIR([app_state.cc])
