@@ -1575,4 +1575,5 @@ void cvs_client::AddDirectory(std::string const& name, std::string const& _paren
   Directory(parent!="." ? (parent+"/"+name) : name);
   Directory(parent);
   SendCommand(std::string("add"),std::vector<std::string>(1,name));
+  reconnect();
 }
