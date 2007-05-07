@@ -100,7 +100,7 @@ again:
   // at least we can expect 8 bytes
   
   int read=blocking_read(*pipe,probe,buf,7+s_cmdnum.size());
-  N(read==7+s_cmdnum.size(), F("mtn pipe failure\n"));
+  N(read==7+s_cmdnum.size(), F("mtn pipe failure\nCommand: %s") % command);
   int colons;
   while ((colons=count_colons(buf,read))<4 && read+(4-colons)<=sizeof(buf))
   { int res=blocking_read(*pipe,probe,buf+read,4-colons);
