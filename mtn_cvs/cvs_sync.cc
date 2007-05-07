@@ -1654,7 +1654,8 @@ void cvs_repository::update()
     for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
     {
       std::string file_contents;
-      file_id cvs_sha1sum, mtn_sha1sum(i->second->sha1sum);
+      file_id cvs_sha1sum;
+      const file_id mtn_sha1sum(i->second->sha1sum);
       // std::cerr << "checking sync on file: " << i->first;
       cvs_client::update c=Update(i->first, std::string(), i->second->cvs_version, i->second->keyword_substitution);
       calculate_ident(file_data(c.contents), cvs_sha1sum);
@@ -1666,7 +1667,9 @@ void cvs_repository::update()
           W(F("The file %s at version %s has a hash mismatch!\nOld hash: %s\nNew hash: %s")
                 % i->first % i->second->cvs_version % mtn_sha1sum % cvs_sha1sum );
           // store the file in the db
-          store_contents(file_data(c.contents), cvs_sha1sum);
+          file_id new_cvs_sha1sum;
+          store_delta(file_data(c.contents), app.get_file(mtn_sha1sum), mtn_sha1sum, new_cvs_sha1sum);
+          I(new_cvs_sha1sum == cvs_sha1sum);
           file_path fp = file_path_internal(i->first);
           split_path sp;
           fp.split(sp);
