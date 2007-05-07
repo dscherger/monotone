@@ -118,12 +118,12 @@ get_passphrase(lua_hooks & lua,
                              : F("enter passphrase for key ID [%s]: "))
                             % keyid()).str();
 
-          read_password(prompt1, pass1, constants::maxpasswd);
+          read_password(prompt1.c_str(), pass1, constants::maxpasswd);
           if (confirm_phrase)
             {
               ui.ensure_clean_line();
               read_password((F("confirm passphrase for key ID [%s]: ")
-                             % keyid()).str(),
+                             % keyid()).str().c_str(),
                             pass2, constants::maxpasswd);
               if (strcmp(pass1, pass2) == 0)
                 break;

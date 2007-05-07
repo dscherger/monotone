@@ -6,13 +6,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <iostream>
-#include <string>
+
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "sanity.hh"
 
 void 
-read_password(std::string const & prompt, char * buf, size_t bufsz)
+read_password(char const * prompt, char * buf, size_t bufsz)
 {
   HANDLE mt_stdin;
   DWORD origmode, pwmode = 0;
