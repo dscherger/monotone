@@ -1062,7 +1062,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       std::map<std::string,std::pair<std::string,std::string> > result
         =Commit(changelog,e.time,commits);
 
-      if (result.empty()) { fail=true; return edges.end(); }
+      if (result.empty()) { fail=true; W(F("Failed commit with empty result")); return edges.end(); }
 
       // parse history data (file state) from the result of the commit
       for (std::map<std::string,std::pair<std::string,std::string> >::const_iterator
@@ -1506,7 +1506,7 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   N(!module.empty(), F("you must name a module, I can't guess"));
    
   cvs_repository *repo = new cvs_repository(app,repository,module,branch);
-	cvs_repository_cleaner cleaner(repo);
+  cvs_repository_cleaner cleaner(repo);
 // turn compression on when not DEBUGGING
   if (!getenv("CVS_CLIENT_LOG"))
     repo->GzipStream(3);
@@ -1515,7 +1515,7 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   { repo->parse_module_paths(last_sync_info);
     repo->process_sync_info(last_sync_info, lastid);
   }
-	cleaner.dontClean();	// allow the repo to be returned without being deleted
+  cleaner.dontClean();	// allow the repo to be returned without being deleted
   return repo;
 }
 
@@ -1650,15 +1650,56 @@ void cvs_repository::update()
 
   if (app.opts.extended_checking)
   {
+    mtn_automate::cset cs;
     for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i)
     {
       std::string file_contents;
       file_id cvs_sha1sum, mtn_sha1sum(i->second->sha1sum);
       // std::cerr << "checking sync on file: " << i->first;
-      cvs_client::update c=Update(i->first,i->second->cvs_version);
+      cvs_client::update c=Update(i->first, std::string(), i->second->cvs_version, i->second->keyword_substitution);
       calculate_ident(file_data(c.contents), cvs_sha1sum);
-      I(cvs_sha1sum == mtn_sha1sum);
+      I(!cvs_sha1sum.inner()().empty());
+      if (false) {
+        I(cvs_sha1sum == mtn_sha1sum);
+      } else {
+        if (cvs_sha1sum != mtn_sha1sum) {
+          W(F("The file %s at version %s has a hash mismatch!\nOld hash: %s\nNew hash: %s")
+                % i->first % i->second->cvs_version % mtn_sha1sum % cvs_sha1sum );
+          // store the file in the db
+          store_contents(file_data(c.contents), cvs_sha1sum);
+          file_path fp = file_path_internal(i->first);
+          split_path sp;
+          fp.split(sp);
+          // add the file to the changeset
+          safe_insert(cs.deltas_applied, std::make_pair(sp, std::make_pair(mtn_sha1sum,cvs_sha1sum)));
+          // update the sha1 attribute
+          cs.attrs_set[std::make_pair(sp,attr_key(app.opts.domain()+":sha1"))]
+              =attr_value(cvs_sha1sum.inner()().substr(0,6));
+        }
+      }
       // std::cerr << " ok" << std::endl;
+    }
+
+    if (cs.is_nontrivial()) {
+
+      W(F("Committing update revision to fix inconsistencies."));
+      W(F("WARNING: This is only papering over some other problem."));
+
+      revision_id parent_rid = now.revision;
+
+      revision_id child_rid=app.put_revision(parent_rid,cs);
+      if (revision_ticker.get()) ++(*revision_ticker);
+      P(F("Committed re-sync revision %s to repository\n") % child_rid);
+
+      app.cert_revision(child_rid, branch_cert_name_s, app.opts.branch_name());
+      app.cert_revision(child_rid, author_cert_name_s, "mtn_cvs");
+      app.cert_revision(child_rid, changelog_cert_name_s, "mtn_cvs update to fix out-of-sync files.\nPossibly there is lost log information.");
+      app.cert_revision(child_rid, date_cert_name_s, time_t2monotone(now.time));
+      app.cert_revision(child_rid, sync_cert_name_s, app.opts.domain());
+
+      W(F("Aborting update because of hash mismatches.  Rerun pull to get new revisions."));
+
+      return;
     }
   }
 
