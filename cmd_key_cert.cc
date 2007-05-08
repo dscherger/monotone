@@ -131,7 +131,7 @@ CMD(ssh_agent_export, N_("key and cert"),
   app.keys.get_key_pair(id, key);
   shared_ptr<RSA_PrivateKey> priv = get_private_key(app.lua, id, key.priv);
   utf8 new_phrase;
-  get_passphrase(app.lua, id, new_phrase, true, true, "enter new passphrase");
+  get_passphrase(app.lua, id, new_phrase, true, true);
   Pipe p;
   p.start_msg();
   if (new_phrase().length())
@@ -150,7 +150,8 @@ CMD(ssh_agent_export, N_("key and cert"),
     cout << decoded_key;
   else
     {
-      ofstream fout(system_path(idx(args, 0)).as_external().c_str(), ofstream::out);
+      string external_path = system_path(idx(args, 0)).as_external();
+      ofstream fout(external_path.c_str(), ofstream::out);
       fout << decoded_key;
     }
 }
