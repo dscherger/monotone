@@ -213,10 +213,11 @@ class Monotone:
             data = ""
             while 1:
                 cmd, status, cont, size = get_fields()
-                data += pipe.read(int(size))
-                # TODO: why this check is sometimes failing !?
-                #if len(data) != int(size): raise MonotoneError, "automate stdio parsing failed (2)"
-                if len(data) == 0: raise MonotoneError, "automate stdio parsing failed (3)"
+                if int(size) > 0:
+                    data += pipe.read(int(size))
+                    # TODO: why this check is sometimes failing !?
+                    #if len(data) != int(size): raise MonotoneError, "automate stdio parsing failed (2)"
+                    if len(data) == 0: raise MonotoneError, "automate stdio parsing failed, expected %i bytes, got %i (3)" % (int(size), len(data))
                 if cont != "m": break
             return data
             
