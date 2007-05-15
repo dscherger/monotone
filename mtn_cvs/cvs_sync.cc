@@ -1715,7 +1715,8 @@ void cvs_repository::update()
     if (cs.is_nontrivial()) {
 
       W(F("Committing update revision to fix inconsistencies."));
-      W(F("WARNING: This is only papering over some other problem."));
+      W(F("This is only covering up some other problem."));
+      W(F("History information may have been lost."));
 
       revision_id parent_rid = now.revision;
 
@@ -1725,7 +1726,7 @@ void cvs_repository::update()
 
       app.cert_revision(child_rid, branch_cert_name_s, app.opts.branch_name());
       app.cert_revision(child_rid, author_cert_name_s, "mtn_cvs");
-      app.cert_revision(child_rid, changelog_cert_name_s, "mtn_cvs update to fix out-of-sync files.\nPossibly there is lost log information.");
+      app.cert_revision(child_rid, changelog_cert_name_s, "mtn_cvs update to fix out-of-sync files.\nPossibly there is lost history information.");
       app.cert_revision(child_rid, date_cert_name_s, time_t2monotone(now.time));
       app.cert_revision(child_rid, sync_cert_name_s, app.opts.domain());
 
