@@ -178,6 +178,14 @@ cvs_client::cvs_client(const std::string &repository, const std::string &_module
     }
     else root_start=0;
     root=d_arg.substr(root_start);
+    for (std::string::iterator i = root.end()-1; ; --i) {
+      // remove any trailing '/' chars
+      // loop back to the first non-/ char then remove the chars after it
+      if ((*i != '/') || (i == root.begin())) {
+        root.erase(i + 1, root.end());
+        break;
+      }
+    }
   }
 
   memset(&compress,0,sizeof compress);
