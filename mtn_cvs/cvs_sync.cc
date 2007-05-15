@@ -1749,7 +1749,7 @@ void cvs_repository::update()
     std::map<std::string, bool> all_files_dead_marker;
     std::map<std::string, std::string> result_files;
     std::map<std::string, std::string> old_files;
-    get_all_files(all_files, all_files_dead_marker);
+    get_all_files(all_files);
     
     for (std::vector<cvs_client::update>::const_iterator i=results.begin();i!=results.end();++i) {
       result_files[i->file]=i->new_revision;
