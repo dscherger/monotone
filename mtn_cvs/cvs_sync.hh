@@ -108,6 +108,7 @@ public:
   typedef cvs_manifest tree_state_t;
   struct prime_log_cb;
   struct get_all_files_log_cb;
+  struct clean_get_all_files_log_cb;
   struct get_all_files_list_cb;
   struct update_cb;
 
@@ -144,6 +145,7 @@ private:
   void check_split(const cvs_file_state &s, const cvs_file_state &end, 
           const std::set<cvs_edge>::iterator &e);
   void get_all_files();
+  void get_all_files(std::map<std::string, std::string> &files);
   void update(std::set<file_state>::const_iterator s,
               std::set<file_state>::iterator s2,cvs_file_path const& file,
               std::string &contents);

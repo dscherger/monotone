@@ -99,6 +99,35 @@ void cvs_repository::get_all_files()
   }
 }
 
+struct cvs_repository::clean_get_all_files_log_cb : rlog_callbacks
+{ std::map<std::string, std::string> &files;
+  std::map<std::string, bool> &dead;
+  clean_get_all_files_log_cb(std::map<std::string, std::string> &f, std::map<std::string, bool> &d) : files(f), dead(d) {}
+  virtual void file(const std::string &file,const std::string &head_rev) const
+  { L(FL("get_all_files_log_cb file: %s head rev: %s") % file % head_rev);
+    files[file] = head_rev; 
+  }
+  virtual void tag(const std::string &file,const std::string &tag, 
+        const std::string &revision) const {}
+  virtual void revision(const std::string &file,time_t t,
+        const std::string &rev,const std::string &author,
+        const std::string &state,const std::string &log) const {
+     L(FL("get_all_files_log_cb file: %s has state: %s in rev: %s") % file % state % rev);
+    if (rev == files[file] && state=="dead") {
+      dead[file] = true;
+    }
+  }
+};
+
+// get all available files, their newest revision and whether they're dead or not
+void cvs_repository::get_all_files(std::map<std::string, std::string> &files)
+{ // rlist seems to be more efficient but it's hard to guess the directory the
+  // server talks about
+  std::map<std::string, bool> dead; // this is not used by this function
+  I(CommandValid("rlog"));
+  RLog(clean_get_all_files_log_cb(files, dead),false,"-N","-h","--",module.c_str(),(void*)0);
+}
+
 std::string debug_manifest(const cvs_manifest &mf)
 { std::string result;
   for (cvs_manifest::const_iterator i=mf.begin(); i!=mf.end(); ++i)
