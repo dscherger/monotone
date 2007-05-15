@@ -1741,6 +1741,52 @@ void cvs_repository::update()
     file_revisions.push_back(update_args(i->first,i->second->cvs_version,
                             std::string(),i->second->keyword_substitution));
   Update(file_revisions,update_cb(*this,results));
+
+  if (app.opts.extended_checking)
+  { // check that we actually know about all files in CVS head
+
+    std::map<std::string, std::string> all_files;
+    std::map<std::string, bool> all_files_dead_marker;
+    std::map<std::string, std::string> result_files;
+    std::map<std::string, std::string> old_files;
+    get_all_files(all_files, all_files_dead_marker);
+    
+    for (std::vector<cvs_client::update>::const_iterator i=results.begin();i!=results.end();++i) {
+      result_files[i->file]=i->new_revision;
+    }
+    
+    for (cvs_manifest::const_iterator i=m.begin();i!=m.end();++i) {
+      old_files[i->first]=i->second->cvs_version;
+    }
+    
+    for (std::map<std::string, std::string>::const_iterator i=all_files.begin(); i!=all_files.end(); ++i) {
+      std::string internal_path = i->first;
+      if (result_files.find(internal_path)==result_files.end() &&
+          (old_files.find(internal_path)==old_files.end() || old_files[internal_path] != i->second)) {
+        // first check to see if it is dead
+        std::map<std::string, std::string> file_data;
+        file_data[internal_path] = all_files[internal_path];
+        std::vector<std::string> args;
+        if (!branch.empty())
+          args.push_back("-r"+branch);
+        else 
+          args.push_back("-b");
+
+        Log(clean_get_all_files_log_cb(file_data, all_files_dead_marker),internal_path,args);
+        // cout << "final rev: " << file_data[internal_path] << endl;
+        if (all_files_dead_marker[internal_path]) {
+          // cout << "file: " << internal_path << " dead - not updating!" << endl;
+          continue;
+        }
+        cvs_client::update fake_result;
+        fake_result.file = internal_path;
+        fake_result.new_revision = "Bad revision string";  // should never match anything
+        W(F("Update seems to be confused - extended checking found an extra live file: %s at rev: %s") % internal_path % i->second);
+        results.push_back(fake_result);
+      }
+    }
+  }
+
   for (std::vector<cvs_client::update>::const_iterator i=results.begin();i!=results.end();++i)
   { // 2do: use tags
     cvs_manifest::const_iterator now_file=m.find(i->file);
@@ -1812,6 +1858,7 @@ void cvs_repository::update()
       }
     }
   }
+  
   drop_connection();
   
   std::set<cvs_edge>::iterator dummy_iter=now_iter;
