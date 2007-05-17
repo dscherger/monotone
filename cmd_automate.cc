@@ -7,11 +7,11 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <iosfwd>
 #include <iostream>
 #include <map>
 
 #include "cmd.hh"
+#include "app_state.hh"
 
 using std::istream;
 using std::make_pair;
@@ -61,7 +61,7 @@ automate_command(utf8 cmd, vector<utf8> args,
   find_automation(cmd, root_cmd_name).run(args, root_cmd_name, app, output);
 }
 
-static string const interface_version = "4.0";
+static string const interface_version = "5.0";
 
 // Name: interface_version
 // Arguments: none
@@ -77,7 +77,7 @@ AUTOMATE(interface_version, "", options::opts::none)
   N(args.size() == 0,
     F("no arguments needed"));
 
-  output << interface_version << "\n";
+  output << interface_version << '\n';
 }
 
 // Name: stdio
@@ -285,10 +285,10 @@ public:
     int num = pptr() - pbase();
     if (num || end)
       {
-        (*out) << cmdnum << ":"
-            << err << ":"
-            << (end?'l':'m') << ":"
-            << num << ":" << std::string(pbase(), num);
+        (*out) << cmdnum << ':'
+            << err << ':'
+            << (end?'l':'m') << ':'
+            << num << ':' << std::string(pbase(), num);
         setp(pbase(), pbase() + _bufsize);
         out->flush();
       }
@@ -330,6 +330,10 @@ AUTOMATE(stdio, "", options::opts::automate_stdio_size)
 {
   N(args.size() == 0,
     F("no arguments needed"));
+
+    // initialize the database early so any calling process is notified
+    // immediately if a version discrepancy exists 
+  app.db.ensure_open();
 
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);

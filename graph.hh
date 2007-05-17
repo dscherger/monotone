@@ -1,4 +1,5 @@
 #ifndef __GRAPH__HH__
+#define __GRAPH__HH__
 
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
 //
@@ -46,3 +47,13 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
                        
 
 #endif // __GRAPH__HH__
+
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+

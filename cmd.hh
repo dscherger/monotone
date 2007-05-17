@@ -1,8 +1,6 @@
 #ifndef __CMD_HH__
 #define __CMD_HH__
 
-#include <boost/shared_ptr.hpp>
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -12,18 +10,15 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "app_state.hh"
 #include "commands.hh"
-#include "constants.hh"
 #include "options.hh"
 #include "sanity.hh"
 
+class app_state;
 
 namespace commands
 {
   std::string const & hidden_group();
-  using boost::shared_ptr;
-
 
   struct command
   {
@@ -56,12 +51,21 @@ args_to_paths(std::vector<utf8> const & args)
 {
   std::vector<file_path> paths;
   for (std::vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
-    paths.push_back(file_path_external(*i));
+    {
+      if (bookkeeping_path::external_string_is_bookkeeping_path(*i))
+        W(F("ignored bookkeeping path '%s'") % *i);
+      else 
+        paths.push_back(file_path_external(*i));
+    }
+  // "it should not be the case that args were passed, but our paths set
+  // ended up empty".  This test is because some commands have default
+  // behavior for empty path sets -- in particular, it is the same as having
+  // no restriction at all.  "mtn revert _MTN" turning into "mtn revert"
+  // would be bad.  (Or substitute diff, etc.)
+  N(!(!args.empty() && paths.empty()),
+    F("all arguments given were bookkeeping paths; aborting"));
   return paths;
 }
-
-std::string
-get_stdin();
 
 std::string
 describe_revision(app_state & app,
@@ -78,38 +82,6 @@ complete(app_state & app,
          std::string const & str,
          std::set<revision_id> & completion,
          bool must_exist=true);
-
-template<typename ID>
-static void
-complete(app_state & app,
-         std::string const & str,
-         ID & completion)
-{
-  N(str.find_first_not_of(constants::legal_id_bytes) == std::string::npos,
-    F("non-hex digits in id"));
-  if (str.size() == constants::idlen)
-    {
-      completion = ID(str);
-      return;
-    }
-  std::set<ID> completions;
-  app.db.complete(str, completions);
-  N(completions.size() != 0,
-    F("partial id '%s' does not have an expansion") % str);
-  if (completions.size() > 1)
-    {
-      std::string err =
-        (F("partial id '%s' has multiple ambiguous expansions:")
-         % str).str();
-      for (typename std::set<ID>::const_iterator i = completions.begin();
-            i != completions.end(); ++i)
-        err += (i->inner()() + "\n");
-      N(completions.size() == 1, i18n_format(err));
-    }
-  completion = *(completions.begin());
-  P(F("expanded partial id '%s' to '%s'")
-    % str % completion);
-}
 
 void
 notify_if_multiple_heads(app_state & app);

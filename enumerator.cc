@@ -16,6 +16,7 @@
 #include "enumerator.hh"
 #include "revision.hh"
 #include "vocab.hh"
+#include "app_state.hh"
 
 using std::make_pair;
 using std::map;
@@ -202,7 +203,7 @@ revision_enumerator::get_revision_certs(revision_id const & rid,
     }
   if (!found_one)
     {
-      app.db.get_revision_certs(rid, hashes);
+      app.get_project().get_revision_cert_hashes(rid, hashes);
     }
 }
 

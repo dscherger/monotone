@@ -131,6 +131,17 @@ file_exists(any_path const & p)
   return get_path_status(p) == path::file;
 }
 
+bool
+directory_empty(any_path const & path)
+{
+  vector<utf8> files;
+  vector<utf8> subdirs;
+  
+  read_directory(path, files, subdirs);
+  
+  return files.empty() && subdirs.empty();
+}
+
 static bool did_char_is_binary_init;
 static bool char_is_binary[256];
 
@@ -322,7 +333,7 @@ read_data(any_path const & p, data & dat)
   pipe.start_msg();
   file >> pipe;
   pipe.end_msg();
-  dat = pipe.read_all_as_string();
+  dat = data(pipe.read_all_as_string());
 }
 
 void read_directory(any_path const & path,
@@ -332,13 +343,14 @@ void read_directory(any_path const & path,
   files.clear();
   dirs.clear();
   fs::directory_iterator ei;
-  for (fs::directory_iterator di(system_path(path).as_external());
+  fs::path native_path = fs::path(system_path(path).as_external(), fs::native);
+  for (fs::directory_iterator di(native_path);
        di != ei; ++di)
     {
       fs::path entry = *di;
       if (!fs::exists(entry)
-          || di->string() == "."
-          || di->string() == "..")
+          || entry.string() == "."
+          || entry.string() == "..")
         continue;
 
       // FIXME: BUG: this screws up charsets (assumes blindly that the fs is
@@ -352,7 +364,7 @@ void read_directory(any_path const & path,
 
 
 // This function can only be called once per run.
-static void
+void
 read_data_stdin(data & dat)
 {
   static bool have_consumed_stdin = false;
@@ -362,7 +374,7 @@ read_data_stdin(data & dat)
   pipe.start_msg();
   cin >> pipe;
   pipe.end_msg();
-  dat = pipe.read_all_as_string();
+  dat = data(pipe.read_all_as_string());
 }
 
 void
@@ -380,53 +392,34 @@ read_data_for_command_line(utf8 const & path, data & dat)
 // trying, and I'm not sure it's really a strict requirement of this tool,
 // but you might want to make this code a bit tighter.
 
-
 static void
 write_data_impl(any_path const & p,
                 data const & dat,
-                any_path const & tmp)
+                any_path const & tmp,
+                bool user_private)
 {
   N(!directory_exists(p),
     F("file '%s' cannot be overwritten as data; it is a directory") % p);
 
   make_dir_for(p);
 
-  {
-    // data.tmp opens
-    ofstream file(tmp.as_external().c_str(),
-                  ios_base::out | ios_base::trunc | ios_base::binary);
-    N(file, F("cannot open file %s for writing") % tmp);
-    Botan::Pipe pipe(new Botan::DataSink_Stream(file));
-    pipe.process_msg(dat());
-    // data.tmp closes
-  }
-
-  rename_clobberingly(tmp, p);
-}
-
-static void
-write_data_impl(any_path const & p,
-                data const & dat)
-{
-  // we write, non-atomically, to _MTN/data.tmp.
-  // nb: no mucking around with multiple-writer conditions. we're a
-  // single-user single-threaded program. you get what you paid for.
-  assert_path_is_directory(bookkeeping_root);
-  bookkeeping_path tmp = bookkeeping_root / (FL("data.tmp.%d") %
-                                             get_process_id()).str();
-  write_data_impl(p, dat, tmp);
+  write_data_worker(p.as_external(), dat(), tmp.as_external(), user_private);
 }
 
 void
 write_data(file_path const & path, data const & dat)
 {
-  write_data_impl(path, dat);
+  // use the bookkeeping root as the temporary directory.
+  assert_path_is_directory(bookkeeping_root);
+  write_data_impl(path, dat, bookkeeping_root, false);
 }
 
 void
 write_data(bookkeeping_path const & path, data const & dat)
 {
-  write_data_impl(path, dat);
+  // use the bookkeeping root as the temporary directory.
+  assert_path_is_directory(bookkeeping_root);
+  write_data_impl(path, dat, bookkeeping_root, false);
 }
 
 void
@@ -434,8 +427,15 @@ write_data(system_path const & path,
            data const & data,
            system_path const & tmpdir)
 {
-  write_data_impl(path, data, tmpdir / (FL("data.tmp.%d") %
-                                             get_process_id()).str());
+  write_data_impl(path, data, tmpdir, false);
+}
+
+void
+write_data_userprivate(system_path const & path,
+                       data const & data,
+                       system_path const & tmpdir)
+{
+  write_data_impl(path, data, tmpdir, true);
 }
 
 tree_walker::~tree_walker() {}
@@ -463,78 +463,72 @@ walk_tree_recursive(fs::path const & absolute,
                     fs::path const & relative,
                     tree_walker & walker)
 {
-  std::vector<std::pair<fs::path, fs::path> > dirs;
-  fs::directory_iterator ei;
-  for(fs::directory_iterator di(absolute);
-      di != ei; ++di)
+  system_path root(absolute.string());
+  vector<utf8> files, dirs;
+
+  read_directory(root, files, dirs);
+
+  // At this point, the directory iterator has gone out of scope, and its
+  // memory released.  This is important, because it can allocate rather a
+  // bit of memory (especially on ReiserFS, see [1]; opendir uses the
+  // filesystem's blocksize as a clue how much memory to allocate).  We used
+  // to recurse into subdirectories directly in the loop below; this left
+  // the memory describing _this_ directory pinned on the heap.  Then our
+  // recursive call itself made another recursive call, etc., causing a huge
+  // spike in peak memory.  By splitting the loop in half, we avoid this
+  // problem. By using read_directory instead of a directory_iterator above
+  // we hopefully make this all a bit more clear.
+  // 
+  // [1] http://lkml.org/lkml/2006/2/24/215
+
+  for (vector<utf8>::const_iterator i = files.begin(); i != files.end(); ++i)
     {
-      fs::path entry = *di;
       // the fs::native is necessary here, or it will bomb out on any paths
       // that look at it funny.  (E.g., rcs files with "," in the name.)
-      fs::path rel_entry = relative / fs::path(entry.leaf(), fs::native);
+      fs::path rel_entry = relative / fs::path((*i)(), fs::native);
       rel_entry.normalize();
 
-      if (bookkeeping_path::is_bookkeeping_path(rel_entry.string()))
+      file_path p;
+      if (!try_file_pathize(rel_entry, p))
+        continue;
+      walker.visit_file(p);
+    }
+
+  for (vector<utf8>::const_iterator i = dirs.begin(); i != dirs.end(); ++i)
+    {
+      // the fs::native is necessary here, or it will bomb out on any paths
+      // that look at it funny.  (E.g., rcs files with "," in the name.)
+      fs::path entry = absolute / fs::path((*i)(), fs::native);
+      fs::path rel_entry = relative / fs::path((*i)(), fs::native);
+      entry.normalize();
+      rel_entry.normalize();
+
+      // FIXME BUG: this utf8() cast is a total lie
+      if (bookkeeping_path::internal_string_is_bookkeeping_path(utf8(rel_entry.string())))
         {
           L(FL("ignoring book keeping entry %s") % rel_entry.string());
           continue;
         }
 
-      if (!fs::exists(entry)
-          || di->string() == "."
-          || di->string() == "..")
-        {
-          // ignore
-          continue;
-        }
-      else
-        {
-          if (fs::is_directory(entry))
-            dirs.push_back(std::make_pair(entry, rel_entry));
-          else
-            {
-              file_path p;
-              if (!try_file_pathize(rel_entry, p))
-                continue;
-              walker.visit_file(p);
-            }
-        }
-    }
-  // At this point, the directory iterator has gone out of scope, and its
-  // memory released.  This is important, because it can allocate rather a
-  // bit of memory (especially on ReiserFS, see [1]; opendir uses the
-  // filesystem's blocksize as a clue how much memory to allocate).  We used
-  // to recurse into subdirectories directly in the loop above; this left
-  // the memory describing _this_ directory pinned on the heap.  Then our
-  // recursive call itself made another recursive call, etc., causing a huge
-  // spike in peak memory.  By splitting the loop in half, we avoid this
-  // problem.
-  // 
-  // [1] http://lkml.org/lkml/2006/2/24/215
-  for (std::vector<std::pair<fs::path, fs::path> >::const_iterator i = dirs.begin();
-       i != dirs.end(); ++i)
-    {
-      fs::path const & entry = i->first;
-      fs::path const & rel_entry = i->second;
       file_path p;
       if (!try_file_pathize(rel_entry, p))
         continue;
-      walker.visit_dir(p);
-      walk_tree_recursive(entry, rel_entry, walker);
+      if (walker.visit_dir(p))
+        walk_tree_recursive(entry, rel_entry, walker);
     }
 }
 
-void
+bool
 tree_walker::visit_dir(file_path const & path)
 {
+  return true;
 }
 
 
 // from some (safe) sub-entry of cwd
 void
 walk_tree(file_path const & path,
-          tree_walker & walker,
-          bool require_existing_path)
+          tree_walker & walker)
 {
   if (path.empty())
     {
@@ -545,19 +539,53 @@ walk_tree(file_path const & path,
   switch (get_path_status(path))
     {
     case path::nonexistent:
-      N(!require_existing_path, F("no such file or directory: '%s'") % path);
-      walker.visit_file(path);
+      N(false, F("no such file or directory: '%s'") % path);
       break;
     case path::file:
       walker.visit_file(path);
       break;
     case path::directory:
-      walker.visit_dir(path);
-      walk_tree_recursive(system_path(path).as_external(),
-                          path.as_external(),
-                          walker);
+      if (walker.visit_dir(path))
+        walk_tree_recursive(system_path(path).as_external(),
+                            path.as_external(),
+                            walker);
       break;
     }
+}
+
+bool
+ident_existing_file(file_path const & p, file_id & ident)
+{
+  switch (get_path_status(p))
+    {
+    case path::nonexistent:
+      return false;
+    case path::file:
+      break;
+    case path::directory:
+      W(F("expected file '%s', but it is a directory.") % p);
+      return false;
+    }
+
+  hexenc<id> id;
+  calculate_ident(p, id);
+  ident = file_id(id);
+
+  return true;
+}
+
+void
+calculate_ident(file_path const & file,
+                hexenc<id> & ident)
+{
+  // no conversions necessary, use streaming form
+  // Best to be safe and check it isn't a dir.
+  assert_path_is_file(file);
+  Botan::Pipe p(new Botan::Hash_Filter("SHA-160"), new Botan::Hex_Encoder());
+  Botan::DataSource_Stream infile(file.as_external(), true);
+  p.process_msg(infile);
+
+  ident = hexenc<id>(lowercase(p.read_all_as_string()));
 }
 
 // Local Variables:

@@ -11,6 +11,8 @@
 #include "ui.hh"
 #include "simplestring_xform.hh"
 #include "revision.hh"
+#include "file_io.hh"
+#include "work.hh"
 
 #include <boost/lexical_cast.hpp>
 #include <exception>
@@ -64,8 +66,16 @@ get_ws_format()
   else
     {
       data f_dat;
-      read_data(f_path, f_dat);
-      format = lexical_cast<unsigned int>(remove_ws(f_dat()));
+      try
+        {
+          read_data(f_path, f_dat);
+          format = lexical_cast<unsigned int>(remove_ws(f_dat()));
+        }
+      catch (exception & e)
+        {
+          E(false, F("workspace is corrupt: %s is invalid")
+                   % f_path);
+        }
       if (format == 1)
         {
           W(F("_MTN/format should not exist in a format 1 workspace; corrected"));

@@ -16,6 +16,7 @@
 #include "config.h"
 
 #include <string>
+#include <stdio.h>
 
 void read_password(std::string const & prompt, char * buf, size_t bufsz);
 void get_system_flavour(std::string & ident);
@@ -29,6 +30,7 @@ pid_t process_spawn_redirected(char const * in,
                                char const * out,
                                char const * err,
                                char const * const argv[]);
+pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out);
 int process_wait(pid_t pid, int *res, int timeout = -1);// default infinite
 int process_kill(pid_t pid, int signal);
 int process_sleep(unsigned int seconds);
@@ -119,6 +121,10 @@ namespace path
 path::status get_path_status(std::string const & path);
 
 void rename_clobberingly(std::string const & from, std::string const & to);
+void write_data_worker(std::string const & p,
+                       std::string const & dat,
+                       std::string const & tmpdir,
+                       bool user_private);
 
 // strerror wrapper for OS-specific errors (e.g. use FormatMessage on Win32)
 std::string os_strerror(os_err_t errnum);
@@ -127,6 +133,15 @@ std::string os_strerror(os_err_t errnum);
 // Returns the processor time used by the current process, plus some
 // arbitrary constant, measured in seconds.
 double cpu_now();
+
+// determine directory to load locale data from
+std::string get_locale_dir();
+
+#ifdef WIN32_PLATFORM
+#include "win32/ssh_agent_platform.hh"
+#else
+#include "unix/ssh_agent_platform.hh"
+#endif
 
 // Local Variables:
 // mode: C++

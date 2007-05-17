@@ -7,9 +7,6 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <stdio.h>
-#include <stdarg.h>
-
 #include <algorithm>
 #include <iterator>
 #include <iostream>
@@ -67,7 +64,7 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
       {
         if (i)
           cmdline_ss << ", ";
-        cmdline_ss << "'" << argv[i] << "'";
+        cmdline_ss << '\'' << argv[i] << '\'';
       }
     cmdline_string = cmdline_ss.str();
   }
@@ -213,48 +210,49 @@ sanity::warning(i18n_format const & i18nfmt,
 }
 
 void
-sanity::naughty_failure(string const & expr, i18n_format const & explain,
-                        string const & file, int line)
+sanity::naughty_failure(char const * expr, i18n_format const & explain,
+                        char const * file, int line)
 {
   string message;
   log(FL("%s:%d: usage constraint '%s' violated") % file % line % expr,
-      file.c_str(), line);
-  prefix_lines_with(_("misuse: "), do_format(explain, file.c_str(), line), message);
+      file, line);
+  prefix_lines_with(_("misuse: "), do_format(explain, file, line), message);
   gasp();
   throw informative_failure(message);
 }
 
 void
-sanity::error_failure(string const & expr, i18n_format const & explain,
-                      string const & file, int line)
+sanity::error_failure(char const * expr, i18n_format const & explain,
+                      char const * file, int line)
 {
   string message;
   log(FL("%s:%d: detected error '%s' violated") % file % line % expr,
-      file.c_str(), line);
-  prefix_lines_with(_("error: "), do_format(explain, file.c_str(), line), message);
+      file, line);
+  gasp();
+  prefix_lines_with(_("error: "), do_format(explain, file, line), message);
   throw informative_failure(message);
 }
 
 void
-sanity::invariant_failure(string const & expr,
-                          string const & file, int line)
+sanity::invariant_failure(char const * expr, char const * file, int line)
 {
   char const * pattern = N_("%s:%d: invariant '%s' violated");
-  log(FL(pattern) % file % line % expr, file.c_str(), line);
+  log(FL(pattern) % file % line % expr, file, line);
   gasp();
   throw logic_error((F(pattern) % file % line % expr).str());
 }
 
 void
-sanity::index_failure(string const & vec_expr,
-                      string const & idx_expr,
+sanity::index_failure(char const * vec_expr,
+                      char const * idx_expr,
                       unsigned long sz,
                       unsigned long idx,
-                      string const & file, int line)
+                      char const * file, int line)
 {
-  char const * pattern = N_("%s:%d: index '%s' = %d overflowed vector '%s' with size %d");
+  char const * pattern
+    = N_("%s:%d: index '%s' = %d overflowed vector '%s' with size %d");
   log(FL(pattern) % file % line % idx_expr % idx % vec_expr % sz,
-      file.c_str(), line);
+      file, line);
   gasp();
   throw logic_error((F(pattern)
                      % file % line % idx_expr % idx % vec_expr % sz).str());
@@ -274,7 +272,7 @@ sanity::gasp()
   L(FL("saving current work set: %i items") % musings.size());
   ostringstream out;
   out << (F("Current work set: %i items") % musings.size())
-      << "\n"; // final newline is kept out of the translation
+      << '\n'; // final newline is kept out of the translation
   for (vector<MusingI const *>::const_iterator
          i = musings.begin(); i != musings.end(); ++i)
     {
@@ -326,6 +324,17 @@ template <> void
 dump(string const & obj, string & out)
 {
   out = obj;
+}
+
+void
+print_var(std::string const & value, char const * var,
+          char const * file, int const line, char const * func)
+{
+  std::cout << (FL("----- begin '%s' (in %s, at %s:%d)\n") 
+                % var % func % file % line)
+            << value
+            << (FL("\n-----   end '%s' (in %s, at %s:%d)\n\n") 
+                % var % func % file % line);
 }
 
 void MusingBase::gasp_head(string & out) const
