@@ -15,7 +15,7 @@
 #include "vocab.hh"
 #include "merkle_tree.hh"
 #include "netcmd.hh"
-#include "netsync.hh"
+#include "network.hh"
 
 // This file defines the "refiner" class, which is a helper encapsulating
 // the main tricky part of the netsync algorithm. You must construct a

@@ -13,22 +13,39 @@
 #include <vector>
 
 #include "app_state.hh"
-#include "netcmd.hh"
+#include "network.hh"
 #include "vocab.hh"
 
-typedef enum
-  {
-    server_voice,
-    client_voice
-  }
-protocol_voice;
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
 
-void run_netsync_protocol(protocol_voice voice,
-                          protocol_role role,
-                          utf8 const & addr,
-                          globish const & include_pattern,
-                          globish const & exclude_pattern,
-                          app_state & app);
+class netsync;
+
+class netsync_service : public service
+{
+  shared_ptr<netsync> impl;
+  static netsync_service mapped;
+  friend class netsync;
+  void send(netcmd const & cmd);
+  bool can_send() const;
+  netsync_service();
+  netsync_service(netsync_service const & other);//I(false)
+  netsync_service const & operator=(netsync_service const & other);//I(false)
+public:
+  enum netsync_op {push, pull, sync};
+  netsync_service(netsync_op what,
+                  globish const & include,
+                  globish const & exclude,
+                  app_state & app);
+  ~netsync_service();
+
+  service * copy();
+  void begin_service();
+  void request_service();
+  bool can_process();
+  state process(transaction_guard & guard);
+  state received(netcmd const & cmd, transaction_guard & guard);
+};
 
 // Local Variables:
 // mode: C++
