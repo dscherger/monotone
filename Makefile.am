@@ -405,7 +405,29 @@ endif
 
 # i18n support
 
-SUBDIRS = po
+if ENABLE_NLS
+LINGUAS=$(basename $(notdir $(wildcard $(srcdir)/po/*.po)))
+LINGUA_FORMAT=.mo
+LINGUA_DOMAIN=monotone
+LINGUA_RESULTS=$(addprefix po/,$(addsuffix $(LINGUA_FORMAT),$(LINGUAS)))
+
+%.mo: %.po
+	$(mkinstalldirs) $(dir $@)
+	$(MSGFMT) -o $@ $<
+
+%.gmo: %.po
+	$(mkinstalldirs) $(dir $@)
+	$(MSGFMT) -o $@ $<
+
+install-data-local: $(LINGUA_RESULTS)
+	for lang in $(LINGUAS); do \
+		target=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
+		$(mkinstalldirs) $$target; \
+		$(INSTALL_DATA) po/$$lang$(LINGUA_FORMAT) $$target/$(LINGUA_DOMAIN)$(LINGUA_FORMAT); \
+	done
+
+endif
+
 datadir = @datadir@
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
@@ -556,7 +578,7 @@ CLEAN_SOURCES = std_hooks.c test_hooks.c testlib.c schema.c \
 	package_revision.c package_full_revision.txt \
 	package_full_revision_raw.txt package_full_revision.c
 
-BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
+BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD) $(LINGUA_RESULTS)
 
 CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES)
 
