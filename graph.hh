@@ -17,11 +17,13 @@
 // (e.g., in revision.cc); FIXME it would be good to move them in here as
 // opportunity permits.
 
-#include <map>
 #include <string>
 #include <set>
 #include <vector>
+#include <utility>
+
 #include "vocab.hh"
+#include "rev_height.hh"
 
 struct reconstruction_graph
 {
@@ -39,12 +41,22 @@ get_reconstruction_path(std::string const & start,
 
 typedef std::multimap<revision_id, revision_id> ancestry_map;
 
+void toposort_ancestry(ancestry_map const & graph,
+                          std::vector<revision_id> & revisions);
+                          
+struct height_store
+{
+  virtual void get_height(revision_id const & rid, rev_height & height) const = 0;
+  virtual ~height_store() {};
+};
+
 void
 get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_rid,
                        ancestry_map const & child_to_parent_map,
+                       height_store const & heights,
                        std::set<revision_id> & left_uncommon_ancs,
                        std::set<revision_id> & right_uncommon_ancs);
-                       
+
 
 #endif // __GRAPH__HH__
 

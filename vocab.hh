@@ -15,6 +15,7 @@
 #include <utility>
 #include <string>
 #include <iosfwd>
+#include <set>
 
 // the purpose of this file is to wrap things which are otherwise strings
 // in a bit of typesafety, set up enumerations and tuple-types, and
@@ -158,6 +159,7 @@ null_id(revision_id const & i)
   return i.inner()().empty();
 }
 
+template <> void dump(std::set<revision_id> const & revids, std::string & out);
 
 hexenc<id>
 fake_id();

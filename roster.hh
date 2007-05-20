@@ -165,7 +165,6 @@ struct marking_t
 
 typedef std::map<node_id, marking_t> marking_map;
 
-template <> void dump(std::set<revision_id> const & revids, std::string & out);
 template <> void dump(marking_t const & marking, std::string & out);
 template <> void dump(marking_map const & marking_map, std::string & out);
 

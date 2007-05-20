@@ -15,6 +15,7 @@
 #include "vocab.hh"
 
 using std::string;
+using std::set;
 
 // verifiers for various types of data
 
@@ -229,6 +230,22 @@ void dump(roster_delta const & d, string &);
 
 template
 void dump(manifest_data const & d, string &);
+
+template <> void
+dump(set<revision_id> const & revids, string & out)
+{
+  out.clear();
+  bool first = true;
+  for (set<revision_id>::const_iterator i = revids.begin();
+       i != revids.end(); ++i)
+    {
+      if (!first)
+        out += ", ";
+      first = false;
+      out += i->inner()();
+    }
+}
+
 
 #ifdef BUILD_UNIT_TESTS
 

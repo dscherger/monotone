@@ -59,21 +59,6 @@ dump(full_attr_map_t const & val, string & out)
 }
 
 template <> void
-dump(set<revision_id> const & revids, string & out)
-{
-  out.clear();
-  bool first = true;
-  for (set<revision_id>::const_iterator i = revids.begin();
-       i != revids.end(); ++i)
-    {
-      if (!first)
-        out += ", ";
-      first = false;
-      out += i->inner()();
-    }
-}
-
-template <> void
 dump(marking_t const & marking, string & out)
 {
   ostringstream oss;

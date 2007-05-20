@@ -1730,9 +1730,9 @@ allrevs_toposorted(vector<revision_id> & revisions,
                    app_state & app)
 {
   // get the complete ancestry
-  rev_ancestry_map graph;
+  ancestry_map graph;
   app.db.get_revision_ancestry(graph);
-  toposort_rev_ancestry(graph, revisions);
+  toposort_ancestry(graph, revisions);
 }
 
 void

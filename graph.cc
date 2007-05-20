@@ -1,17 +1,28 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <utility>
+#include <list>
+#include <stack>
+#include <queue>
 #include <boost/shared_ptr.hpp>
 
 #include "sanity.hh"
 #include "graph.hh"
 #include "safe_map.hh"
+#include "numeric_vocab.hh"
 
 using boost::shared_ptr;
 using std::string;
 using std::vector;
 using std::set;
 using std::pair;
+using std::map;
+using std::multimap;
+using std::make_pair;
+using std::list;
+using std::stack;
+using std::priority_queue;
 
 ////////////////////////////////////////////////////////////////////////
 // get_reconstruction_path
@@ -239,6 +250,42 @@ UNIT_TEST(graph, random_get_reconstruction_path)
 #endif // BUILD_UNIT_TESTS
 
 
+// graph is a parent->child map
+void toposort_ancestry(ancestry_map const & graph,
+                           vector<revision_id> & revisions)
+{
+  typedef multimap<revision_id, revision_id>::const_iterator gi;
+  typedef map<revision_id, int>::iterator pi;
+  
+  revisions.clear();
+  // determine the number of parents for each rev
+  map<revision_id, int> pcount;
+  for (gi i = graph.begin(); i != graph.end(); ++i)
+    pcount.insert(make_pair(i->first, 0));
+  for (gi i = graph.begin(); i != graph.end(); ++i)
+    ++(pcount[i->second]);
+
+  // find the set of graph roots
+  list<revision_id> roots;
+  for (pi i = pcount.begin(); i != pcount.end(); ++i)
+    if(i->second==0)
+      roots.push_back(i->first);
+
+  while (!roots.empty())
+    {
+      revision_id cur = roots.front();
+      roots.pop_front();
+      if (!null_id(cur))
+        revisions.push_back(cur);
+      
+      for(gi i = graph.lower_bound(cur);
+          i != graph.upper_bound(cur); i++)
+        if(--(pcount[i->second]) == 0)
+          roots.push_back(i->second);
+    }
+}
+
+
 ////////////////////////////////////////////////////////////////////////
 // get_uncommon_ancestors
 ////////////////////////////////////////////////////////////////////////
@@ -398,8 +445,7 @@ UNIT_TEST(graph, random_get_reconstruction_path)
 // true reachability.
 
 static bool
-member(revision_id const & i, 
-       set<revision_id> const & s)
+member(revision_id const & i, set<revision_id> const & s)
 {
   return s.find(i) != s.end();
 }
@@ -438,18 +484,22 @@ our_ua_candidate_set_is_complete(revision_id const & our_begin,
       revision_id r = stk.top();
       stk.pop();
 
-      if (seen.find(r) != seen.end())
+      if (member(r, seen))
         continue;
       safe_insert(seen, r);
 
       if (null_id(r))
         continue;
 
-      if (their_candidates.find(r) != their_candidates.end())
+      if (member(r, their_candidates))
+      {
         continue;
+      }
 
-      if (our_candidates.find(r) != our_candidates.end())
+      if (!member(r, our_candidates))
+      {
         return false;
+      }
 
       typedef ancestry_map::const_iterator ci;
       pair<ci,ci> range = child_to_parent_map.equal_range(r);
@@ -467,13 +517,13 @@ struct ua_qentry
   rev_height height;
   revision_id rev;
   ua_qentry(revision_id const & r, 
-            database & db) : rev(r)
+            height_store const & heights) : rev(r)
   {
-    db.get_rev_height(rev, height);
+    heights.get_height(rev, height);
   }
   bool operator<(ua_qentry const & other) const 
   {
-    return heght < other.height
+    return height < other.height
       || height == other.height && rev < other.rev;
   }
 };
@@ -481,21 +531,27 @@ struct ua_qentry
 void
 step_ua_candidate_search(revision_id const & our_base_rid,            
                          ancestry_map const & child_to_parent_map,
+                         height_store const & heights,
                          set<revision_id> & our_candidates,
                          set<revision_id> const & their_candidates,
                          priority_queue<ua_qentry> & our_queue,
-                         database & db,
                          bool & complete_p,
                          size_t iter,
                          size_t next_check)
 {
   if (!complete_p)
     {
+      if (our_queue.empty())
+      {
+        complete_p = true;
+        return;
+      }
+      
       ua_qentry qe = our_queue.top();
       our_queue.pop();
 
       if (our_candidates.find(qe.rev) != our_candidates.end())
-        continue;
+        return;
       safe_insert(our_candidates, qe.rev);
 
       typedef ancestry_map::const_iterator ci;
@@ -503,7 +559,7 @@ step_ua_candidate_search(revision_id const & our_base_rid,
       for (ci i = range.first; i != range.second; ++i)
         {
           if (i->first == qe.rev)
-            our_queue.push(ua_qentry(i->second, db));
+            our_queue.push(ua_qentry(i->second, heights));
         }
 
       if (iter == next_check)
@@ -521,7 +577,7 @@ constrained_transitive_closure(revision_id const & begin,
                                set<revision_id> & ancs)
 {
   stack<revision_id> stk;
-  stk.push_back(begin);
+  stk.push(begin);
   while (!stk.empty())
     {
       revision_id r = stk.top();
@@ -547,12 +603,12 @@ constrained_transitive_closure(revision_id const & begin,
 void
 get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_rid,
                        ancestry_map const & child_to_parent_map,
+                       height_store const & heights,
                        std::set<revision_id> & left_uncommon_ancs,
-                       std::set<revision_id> & right_uncommon_ancs,
-                       database & db)
+                       std::set<revision_id> & right_uncommon_ancs)
 {
   set<revision_id> candidates;
-
+  
   {
     // Phase 1: build the candidate sets and union them.
     
@@ -562,8 +618,8 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
     priority_queue<ua_qentry> left_queue;
     priority_queue<ua_qentry> right_queue;
     
-    left_queue.push(ua_qentry(left_rid, db));
-    right_queue.push(ua_qentry(right_rid, db));
+    left_queue.push(ua_qentry(left_rid, heights));
+    right_queue.push(ua_qentry(right_rid, heights));
     
     bool right_complete = false;
     bool left_complete = false;
@@ -573,13 +629,13 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
     
     while (!(right_complete && left_complete))
       {
-        step_ua_candidate_search(left_rid, child_to_parent_map,
+        step_ua_candidate_search(left_rid, child_to_parent_map, heights,
                                  left_candidates, right_candidates, left_queue, 
-                                 db, left_complete, iter, next_check);
+                                 left_complete, iter, next_check);
         
-        step_ua_candidate_search(right_rid, child_to_parent_map,
+        step_ua_candidate_search(right_rid, child_to_parent_map, heights,
                                  right_candidates, left_candidates, right_queue, 
-                                 db, right_complete, iter, next_check);
+                                 right_complete, iter, next_check);
         
         if (iter == next_check)
           next_check <<= 1;
@@ -602,18 +658,18 @@ get_uncommon_ancestors(revision_id const & left_rid, revision_id const & right_r
     constrained_transitive_closure(right_rid, candidates, 
                                    child_to_parent_map, right_ancs);
 
-    left_uncommon_ancestors.clear();
-    right_uncommon_ancestors.clear();
+    left_uncommon_ancs.clear();
+    right_uncommon_ancs.clear();
 
     set_difference(left_ancs.begin(), left_ancs.end(),
                    right_ancs.begin(), right_ancs.end(),
-                   inserter(left_uncommon_ancestors, 
-                            left_uncommon_ancestors.begin()));
+                   inserter(left_uncommon_ancs, 
+                            left_uncommon_ancs.begin()));
 
     set_difference(right_ancs.begin(), right_ancs.end(),
                    left_ancs.begin(), left_ancs.end(),
-                   inserter(right_uncommon_ancestors, 
-                            right_uncommon_ancestors.begin()));    
+                   inserter(right_uncommon_ancs, 
+                            right_uncommon_ancs.begin()));    
   }
 
 }
@@ -643,6 +699,43 @@ get_all_ancestors(revision_id const & start, ancestry_map const & child_to_paren
     }
 }
 
+struct mock_height_store : height_store
+{
+  mock_height_store(ancestry_map const & child_to_parent_map)
+  {
+    // assign sensible heights
+    height_map.clear();
+    
+    // toposort expects parent->child
+    ancestry_map parent_to_child;
+    for (ancestry_map::const_iterator i = child_to_parent_map.begin();
+      i != child_to_parent_map.end(); i++)
+    {
+      parent_to_child.insert(make_pair(i->second, i->first));
+    }
+    vector<revision_id> topo_revs;
+    toposort_ancestry(parent_to_child, topo_revs);
+    
+    // this is ugly but works. just give each one a sequential number.
+    rev_height top = rev_height::root_height();
+    u32 num = 1;
+    for (vector<revision_id>::const_iterator r = topo_revs.begin();
+      r != topo_revs.end(); r++, num++)
+    {
+      height_map.insert(make_pair(*r, top.child_height(num)));
+    }
+  }
+
+  virtual void get_height(revision_id const & rev, rev_height & h) const
+  {
+    MM(rev);
+    h = safe_get(height_map, rev);
+  }
+
+  map<revision_id, rev_height> height_map;
+};
+
+
 static void
 run_a_get_uncommon_ancestors_test(ancestry_map const & child_to_parent_map,
                                   revision_id const & left, revision_id const & right)
@@ -659,16 +752,18 @@ run_a_get_uncommon_ancestors_test(ancestry_map const & child_to_parent_map,
   set_difference(true_right_ancestors.begin(), true_right_ancestors.end(),
                  true_left_ancestors.begin(), true_left_ancestors.end(),
                  inserter(true_right_uncommon_ancestors, true_right_uncommon_ancestors.begin()));
-      
+
+  mock_height_store heights(child_to_parent_map);
+    
   set<revision_id> calculated_left_uncommon_ancestors, calculated_right_uncommon_ancestors;
   MM(calculated_left_uncommon_ancestors);
   MM(calculated_right_uncommon_ancestors);
-  get_uncommon_ancestors(left, right, child_to_parent_map,
+  get_uncommon_ancestors(left, right, child_to_parent_map, heights,
                          calculated_left_uncommon_ancestors,
                          calculated_right_uncommon_ancestors);
   I(calculated_left_uncommon_ancestors == true_left_uncommon_ancestors);
   I(calculated_right_uncommon_ancestors == true_right_uncommon_ancestors);
-  get_uncommon_ancestors(right, left, child_to_parent_map,
+  get_uncommon_ancestors(right, left, child_to_parent_map, heights,
                          calculated_right_uncommon_ancestors,
                          calculated_left_uncommon_ancestors);
   I(calculated_left_uncommon_ancestors == true_left_uncommon_ancestors);
@@ -702,26 +797,26 @@ UNIT_TEST(graph, get_uncommon_ancestors_nasty_convexity_case)
 
   ancestry_map child_to_parent_map;
   revision_id left(fake_id()), right(fake_id());
-  revision_id one(fake_id()), eight(fake_id()), three(fake_id()), nine(fake_id());
-  safe_insert(child_to_parent_map, make_pair(left, one));
-  safe_insert(child_to_parent_map, make_pair(one, eight));
-  safe_insert(child_to_parent_map, make_pair(eight, nine));
-  safe_insert(child_to_parent_map, make_pair(right, three));
-  safe_insert(child_to_parent_map, make_pair(three, nine));
+  revision_id one(fake_id()), two(fake_id()), eight(fake_id()), three(fake_id()), nine(fake_id());
+  child_to_parent_map.insert(make_pair(left, one));
+  child_to_parent_map.insert(make_pair(one, eight));
+  child_to_parent_map.insert(make_pair(eight, nine));
+  child_to_parent_map.insert(make_pair(right, three));
+  child_to_parent_map.insert(make_pair(three, nine));
 
   revision_id middle(fake_id());
-  safe_insert(child_to_parent_map, make_pair(left, two));
-  safe_insert(child_to_parent_map, make_pair(right, two));
+  child_to_parent_map.insert(make_pair(left, two));
+  child_to_parent_map.insert(make_pair(right, two));
   // We insert a _lot_ of revisions at the ellipsis, to make sure that
   // whatever sort of step-size is used on the expansion, we can't take the
   // entire middle portion in one big gulp and make the test pointless.
   for (int i = 0; i != 1000; ++i)
     {
       revision_id next(fake_id());
-      safe_insert(child_to_parent_map, make_pair(middle, next));
+      child_to_parent_map.insert(make_pair(middle, next));
       middle = next;
     }
-  safe_insert(child_to_parent_map, make_pair(middle, eight));
+    child_to_parent_map.insert(make_pair(middle, eight));
 
   run_a_get_uncommon_ancestors_test(child_to_parent_map, left, right);
 }
@@ -779,33 +874,42 @@ make_random_graph(size_t num_nodes,
                   randomizer & rng)
 {
   set<revision_id> heads;
+  set<revision_id> joined_nodes;
 
   for (size_t i = 0; i != num_nodes; ++i)
     {
       revision_id new_rid = revision_id(fake_id());
-      nodes.push_back(new_rid);
       set<revision_id> parents;
       if (heads.empty() || rng.bernoulli(new_root_freq))
-        parents.insert(revision_id());
-      else if (rng.bernoulli(merge_node_freq) && heads.size() > 1)
         {
-          // maybe we'll pick the same node twice and end up not doing a
-          // merge, oh well...
-          parents.insert(pick_node_from_set(heads));
-          parents.insert(pick_node_from_set(heads));
+          // don't create any edges, this node is lonely
         }
-      else
+      else 
         {
-          parents.insert(pick_node_or_ancestor(heads, child_to_parent_map));
-        }
-      for (set<revision_id>::const_iterator j = parents.begin();
-           j != parents.end(); ++j)
-        {
-          heads.erase(*j);
-          child_to_parent_map.insert(std::make_pair(new_rid, *j));
+          if (rng.bernoulli(merge_node_freq) && heads.size() > 1)
+            {
+              // maybe we'll pick the same node twice and end up not doing a
+              // merge, oh well...
+              parents.insert(pick_node_from_set(heads, rng));
+              parents.insert(pick_node_from_set(heads, rng));
+            }
+          else
+            {
+              parents.insert(pick_node_or_ancestor(heads, child_to_parent_map, rng));
+            }
+          for (set<revision_id>::const_iterator j = parents.begin();
+               j != parents.end(); ++j)
+            {
+              heads.erase(*j);
+              joined_nodes.insert(new_rid);
+              joined_nodes.insert(*j);
+              child_to_parent_map.insert(std::make_pair(new_rid, *j));
+            }
         }
       safe_insert(heads, new_rid);
     }
+  
+  copy(joined_nodes.begin(), joined_nodes.end(), back_inserter(nodes));
 }
 
 static void
@@ -819,8 +923,8 @@ run_a_get_uncommon_ancestors_random_test(size_t num_nodes,
   for (size_t i = 0; i != iterations; ++i)
     {
       L(FL("get_uncommon_ancestors: random test %s-%s") % num_nodes % i);
-      revision_id left = idx(nodes, uniform(nodes.size()));
-      revision_id right = idx(nodes, uniform(nodes.size()));
+      revision_id left = idx(nodes, rng.uniform(nodes.size()));
+      revision_id right = idx(nodes, rng.uniform(nodes.size()));
       run_a_get_uncommon_ancestors_test(child_to_parent_map, left, right);
     }
 }

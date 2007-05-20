@@ -1814,7 +1814,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
 
 
 void
-database::get_revision_ancestry(rev_ancestry_map & graph)
+database::get_revision_ancestry(ancestry_map & graph)
 {
   // FIXME: possibly update the callers to acquire a shared_ptr<... const>?
   // This might require some COW trickiness, though, if we want to preserve
@@ -3293,6 +3293,17 @@ database::ensure_ancestry_maps_loaded()
     }
 }
 
+struct db_height_store : height_store
+{
+  db_height_store(database & db) : db(db) {}
+  virtual void get_height(revision_id const & rid, rev_height & height) const
+  {
+    db.get_rev_height(rid, height);
+  }
+  
+  mutable database & db;
+};
+
 void
 database::get_uncommon_ancestors(revision_id const & a,
                                  revision_id const & b,
@@ -3300,8 +3311,9 @@ database::get_uncommon_ancestors(revision_id const & a,
                                  set<revision_id> & b_uncommon_ancs)
 {
   ensure_ancestry_maps_loaded();
+  db_height_store heights(*this);
   // call the generic (and testable) function in graph.cc
-  ::get_uncommon_ancestors(a, b, *child_to_parent_map,
+  ::get_uncommon_ancestors(a, b, *child_to_parent_map, heights,
                            a_uncommon_ancs, b_uncommon_ancs);
 }
 
