@@ -76,6 +76,7 @@ class app_state;
 struct revision_t;
 struct query;
 class rev_height;
+struct db_height_store;
 
 class database
 {
@@ -313,6 +314,8 @@ private:
 
   boost::shared_ptr<std::multimap<revision_id, revision_id> > 
   child_to_parent_map;
+  
+  boost::shared_ptr<db_height_store> height_cache;
 
   void ensure_ancestry_maps_loaded();
 

@@ -998,6 +998,7 @@ database::rollback_transaction()
       roster_cache.clear_and_drop_writes();
       parent_to_child_map.reset();
       child_to_parent_map.reset();
+      height_cache.reset();
       execute(query("ROLLBACK"));
     }
   transaction_level--;
@@ -1924,6 +1925,7 @@ database::put_rev_height(revision_id const & id,
   execute(query("INSERT INTO heights VALUES(?, ?)")
           % text(id.inner()())
           % blob(height()));
+          
 }
 
 bool
@@ -3268,41 +3270,64 @@ database::put_roster(revision_id const & rev_id,
   guard.commit();
 }
 
+struct db_height_store : height_store
+{
+  db_height_store(database & db) : db(db) {}
+  virtual void get_height(revision_id const & rid, rev_height & height) const
+    {
+      map<revision_id, rev_height>::const_iterator h = heights.find(rid);
+      if (h != heights.end())
+        {
+          height = h->second;
+        }
+      else
+        {
+          db.get_rev_height(rid, height);
+          safe_insert(heights, make_pair(rid, height));
+        }
+    }
+  
+  mutable database & db;
+  mutable map<revision_id, rev_height> heights;
+};
 
 typedef boost::shared_ptr<ancestry_map> ancestry_map_p;
+typedef boost::shared_ptr<db_height_store> height_cache_p;
 
 void
 database::ensure_ancestry_maps_loaded()
 {
-  if (! (parent_to_child_map && child_to_parent_map))
+  if (! (parent_to_child_map && child_to_parent_map && height_cache))
     {
+      I( (!parent_to_child_map) && (!child_to_parent_map) && (!height_cache));
+      
       results res;
-
-      I( (!parent_to_child_map) && (!child_to_parent_map));
       parent_to_child_map = ancestry_map_p(new ancestry_map);
       child_to_parent_map = ancestry_map_p(new ancestry_map);
-      
+    
       fetch(res, 2, any_rows,
             query("SELECT parent,child FROM revision_ancestry"));
-      
+    
       for (size_t i = 0; i < res.size(); ++i) 
         {
           parent_to_child_map->insert(make_pair(res[i][0], res[i][1]));
           child_to_parent_map->insert(make_pair(res[i][1], res[i][0]));
         }
+        
+      height_cache = height_cache_p(new db_height_store(*this));
+      height_cache->heights.clear();
+
+      fetch(res, 2, any_rows,
+            query("SELECT revision, height FROM heights"));
+
+      for (size_t i = 0; i < res.size(); ++i) 
+        {
+          safe_insert(height_cache->heights, make_pair(revision_id(res[i][0]), 
+                              rev_height(res[i][1])));
+        }
     }
 }
 
-struct db_height_store : height_store
-{
-  db_height_store(database & db) : db(db) {}
-  virtual void get_height(revision_id const & rid, rev_height & height) const
-  {
-    db.get_rev_height(rid, height);
-  }
-  
-  mutable database & db;
-};
 
 void
 database::get_uncommon_ancestors(revision_id const & a,
@@ -3311,9 +3336,8 @@ database::get_uncommon_ancestors(revision_id const & a,
                                  set<revision_id> & b_uncommon_ancs)
 {
   ensure_ancestry_maps_loaded();
-  db_height_store heights(*this);
   // call the generic (and testable) function in graph.cc
-  ::get_uncommon_ancestors(a, b, *child_to_parent_map, heights,
+  ::get_uncommon_ancestors(a, b, *child_to_parent_map, *height_cache,
                            a_uncommon_ancs, b_uncommon_ancs);
 }
 
