@@ -17,6 +17,7 @@
 #include <set>
 #include <map>
 #include "file_io.hh"
+#include "option.hh"
 #include "vocab.hh"
 #include "paths.hh"
 
@@ -40,6 +41,7 @@ public:
   void default_rcfilename(system_path & file);
   void load_rcfile(utf8 const & file);
   void load_rcfile(any_path const & file, bool required);
+  bool hook_exists(std::string const & func_name);
 
   // cert hooks
   bool hook_expand_selector(std::string const & sel, std::string & exp);
@@ -149,7 +151,7 @@ public:
                              size_t certs_in, size_t certs_out,
                              size_t revs_in, size_t revs_out,
                              size_t keys_in, size_t keys_out);
-  bool hook_note_mtn_startup(std::vector<std::string> const & args);
+  bool hook_note_mtn_startup(args_vector const & args);
 };
 
 // Local Variables:
