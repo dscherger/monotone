@@ -68,8 +68,6 @@ public:
 
   // network hooks
   bool hook_get_netsync_connect_command(uri const & u,
-                                        globish const & include_pattern,
-                                        globish const & exclude_pattern,
                                         bool debug,
                                         std::vector<std::string> & argv);
   bool hook_use_transport_auth(uri const & u);
