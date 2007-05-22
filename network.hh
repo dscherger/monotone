@@ -16,13 +16,6 @@ namespace service_numbers
 
 class transaction_guard;
 
-typedef enum
-  {
-    server_voice,
-    client_voice
-  }
-protocol_voice;
-
 class session;
 
 struct state

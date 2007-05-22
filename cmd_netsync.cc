@@ -2,7 +2,7 @@
 
 #include "diff_patch.hh"
 #include "netcmd.hh"
-#include "network.hh"
+#include "netsync.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "cert.hh"
