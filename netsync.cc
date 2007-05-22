@@ -276,6 +276,7 @@ class netsync:
   globish const & our_exclude_pattern;
   globish_matcher our_matcher;
   netsync_service & service; // for sending
+  protocol_voice voice;
 public:
   app_state & app;
 
@@ -284,16 +285,24 @@ public:
 
   // Interface.
 public:
+  netsync(protocol_role role,
+          globish const & our_include_pattern,
+          globish const & our_exclude_pattern,
+          netsync_service & wrapper,
+          app_state & app);
+
   void begin_service();
   void request_service();
-  bool can_process() const;
+  bool can_process();
   bool process(transaction_guard & guard);
   //private:
   // The incoming dispatcher.
   bool received(netcmd const & cmd,
                 transaction_guard & guard);
-private:
 
+
+private:
+  void write_netcmd_and_try_flush(netcmd const & cmd);
   id remote_peer_key_hash;
   rsa_keypair_id remote_peer_key_name;
   bool authenticated;
@@ -371,12 +380,6 @@ public:
   void note_rev(revision_id const & rev);
   void note_cert(hexenc<id> const & c);
 
-  netsync(protocol_role role,
-          globish const & our_include_pattern,
-          globish const & our_exclude_pattern,
-          netsync_service & wrapper,
-          app_state & app);
-
   virtual ~netsync();
 private:
   void rev_written_callback(revision_id rid);
@@ -385,8 +388,8 @@ private:
 
   id mk_nonce();
 
-  void set_session_key(string const & key);
-  void set_session_key(rsa_oaep_sha_data const & key_encrypted);
+  //void set_session_key(string const & key);
+  //void set_session_key(rsa_oaep_sha_data const & key_encrypted);
 
   void setup_client_tickers();
   bool done_all_refinements();
@@ -507,13 +510,60 @@ netsync_service::~netsync_service()
 netsync_service::netsync_service(netsync_service const & other)
   : service(0)
 {
-  I(false);
 }
 
 netsync_service const &
 netsync_service::operator=(netsync_service const & other)
 {
   I(false);
+}
+
+bool
+netsync_service::can_send() const
+{
+  return service::can_send();
+}
+
+void
+netsync_service::send(netcmd const & cmd)
+{
+  service::send(cmd);
+}
+
+service *
+netsync_service::copy()
+{
+  return new netsync_service(*this);
+}
+
+void
+netsync_service::begin_service()
+{
+  impl->begin_service();
+}
+
+void
+netsync_service::request_service()
+{
+  impl->request_service();
+}
+
+bool
+netsync_service::can_process()
+{
+  return impl->can_process();
+}
+
+state
+netsync_service::process(transaction_guard & guard)
+{
+  return impl->process(guard)?state::RUNNING:state::ERROR;
+}
+
+state
+netsync_service::received(netcmd const & cmd, transaction_guard & guard)
+{
+  return impl->received(cmd, guard)?state::RUNNING:state::ERROR;
 }
 
 
@@ -550,10 +600,10 @@ netsync::netsync(protocol_role role,
   encountered_error(false),
   error_code(no_transfer),
   set_totals(false),
-  epoch_refiner(epoch_item, voice, *this),
-  key_refiner(key_item, voice, *this),
-  cert_refiner(cert_item, voice, *this),
-  rev_refiner(revision_item, voice, *this),
+  epoch_refiner(epoch_item, *this),
+  key_refiner(key_item, *this),
+  cert_refiner(cert_item, *this),
+  rev_refiner(revision_item, *this),
   rev_enumerator(*this, app)
 {
   dbw.set_on_revision_written(boost::bind(&netsync::rev_written_callback,
@@ -638,6 +688,23 @@ netsync::~netsync()
                                 revs_in, revs_out,
                                 keys_in, keys_out);
 }
+
+void
+netsync::request_service()
+{
+  //FIXME
+}
+
+// This kicks off the whole cascade starting from "hello".
+void
+netsync::begin_service()
+{
+  keypair kp;
+  if (app.opts.use_transport_auth)
+    app.keys.get_key_pair(app.opts.signing_key, kp);
+  queue_hello_cmd(app.opts.signing_key, kp.pub, mk_nonce());
+}
+
 
 bool
 netsync::process_this_rev(revision_id const & rev)
@@ -1063,7 +1130,7 @@ netsync::queue_anonymous_cmd(protocol_role role,
   cmd.write_anonymous_cmd(role, include_pattern, exclude_pattern,
                           hmac_key_encrypted);
   write_netcmd_and_try_flush(cmd);
-  set_session_key(nonce2());
+  //set_session_key(nonce2());
 }
 
 void
@@ -1084,7 +1151,7 @@ netsync::queue_auth_cmd(protocol_role role,
   cmd.write_auth_cmd(role, include_pattern, exclude_pattern, client,
                      nonce1, hmac_key_encrypted, signature);
   write_netcmd_and_try_flush(cmd);
-  set_session_key(nonce2());
+  //set_session_key(nonce2());
 }
 
 void
@@ -1217,7 +1284,7 @@ netsync::process_hello_cmd(rsa_keypair_id const & their_keyname,
       encode_base64(their_key, their_key_encoded);
       key_hash_code(their_keyname, their_key_encoded, their_key_hash);
       L(FL("server key has name %s, hash %s") % their_keyname % their_key_hash);
-      var_key their_key_key(known_servers_domain, var_name(peer_id));
+      var_key their_key_key(known_servers_domain, var_name(/*peer_id*/"peer_id"));
       if (app.db.var_exists(their_key_key))
         {
           var_value expected_key_hash;
@@ -1239,9 +1306,10 @@ netsync::process_hello_cmd(rsa_keypair_id const & their_keyname,
         }
       else
         {
+	  // FIXME
           P(F("first time connecting to server %s\n"
               "I'll assume it's really them, but you might want to double-check\n"
-              "their key's fingerprint: %s") % peer_id % their_key_hash);
+              "their key's fingerprint: %s") % /*peer_id*/"peer_id" % their_key_hash);
           app.db.set_var(their_key_key, var_value(their_key_hash()));
         }
       if (!app.db.public_key_exists(their_key_hash))
@@ -1308,10 +1376,12 @@ netsync::process_hello_cmd(rsa_keypair_id const & their_keyname,
                           our_exclude_pattern, mk_nonce(), their_key_encoded);
     }
 
+  // FIXME
+  /*
   app.lua.hook_note_netsync_start(session_id, "client", this->role,
                                   peer_id, their_keyname,
                                   our_include_pattern, our_exclude_pattern);
-
+  */
   return true;
 }
 
@@ -1331,11 +1401,12 @@ netsync::process_anonymous_cmd(protocol_role their_role,
   //     so we need to check that the opposite role is allowed for us,
   //     in our this->role field.
   //
-
+  // FIXME
+  /*
   app.lua.hook_note_netsync_start(session_id, "server", their_role,
                                   peer_id, rsa_keypair_id(),
                                   their_include_pattern, their_exclude_pattern);
-
+  */
   // Client must be a sink and server must be a source (anonymous
   // read-only), unless transport auth is disabled.
   //
@@ -1441,11 +1512,13 @@ netsync::process_auth_cmd(protocol_role their_role,
       if (!app.keys.try_ensure_in_db(their_key_hash))
         {
           this->saved_nonce = id("");
-
+	  // FIXME
+	  /*
           app.lua.hook_note_netsync_start(session_id, "server", their_role,
                                           peer_id, rsa_keypair_id("-unknown-"),
                                           their_include_pattern,
                                           their_exclude_pattern);
+	  */
           error(unknown_key,
                 (F("remote public key hash '%s' is unknown") % their_key_hash).str());
         }
@@ -1455,11 +1528,12 @@ netsync::process_auth_cmd(protocol_role their_role,
   rsa_keypair_id their_id;
   base64<rsa_pub_key> their_key;
   app.db.get_pubkey(their_key_hash, their_id, their_key);
-
+  // FIXME
+  /*
   app.lua.hook_note_netsync_start(session_id, "server", their_role,
                                   peer_id, their_id,
                                   their_include_pattern, their_exclude_pattern);
-
+  */
   // Check that they replied with the nonce we asked for.
   if (!(nonce1 == this->saved_nonce))
     {
@@ -1962,7 +2036,8 @@ netsync::process_usher_cmd(utf8 const & msg)
         L(FL("Received greeting from usher: %s") % msg().substr(1));
     }
   netcmd cmdout;
-  cmdout.write_usher_reply_cmd(utf8(peer_id), our_include_pattern);
+  // FIXME
+  cmdout.write_usher_reply_cmd(utf8(/*peer_id*/"peer_id"), our_include_pattern);
   write_netcmd_and_try_flush(cmdout);
   L(FL("Sent reply."));
   return true;
@@ -1994,8 +2069,8 @@ netsync::send_all_data(netcmd_item_type ty, set<id> const & items)
 }
 
 bool
-netsync::dispatch_payload(netcmd const & cmd,
-                          transaction_guard & guard)
+netsync::received(netcmd const & cmd,
+		  transaction_guard & guard)
 {
 
   switch (cmd.get_cmd_code())
@@ -2047,7 +2122,7 @@ netsync::dispatch_payload(netcmd const & cmd,
           % (role == source_and_sink_role ? _("source and sink") :
              (role == source_role ? _("source") : _("sink"))));
 
-        set_session_key(hmac_key_encrypted);
+        //set_session_key(hmac_key_encrypted);
         if (!process_anonymous_cmd(role, their_include_pattern, their_exclude_pattern))
             return false;
         queue_confirm_cmd();
@@ -2079,7 +2154,7 @@ netsync::dispatch_payload(netcmd const & cmd,
              (role == source_role ? _("source") : _("sink")))
           % hnonce1);
 
-        set_session_key(hmac_key_encrypted);
+        //set_session_key(hmac_key_encrypted);
 
         if (!process_auth_cmd(role, their_include_pattern, their_exclude_pattern,
                               client, nonce1, signature))
@@ -2164,16 +2239,6 @@ netsync::dispatch_payload(netcmd const & cmd,
   return false;
 }
 
-// This kicks off the whole cascade starting from "hello".
-void
-netsync::begin_service()
-{
-  keypair kp;
-  if (app.opts.use_transport_auth)
-    app.keys.get_key_pair(app.opts.signing_key, kp);
-  queue_hello_cmd(app.opts.signing_key, kp.pub, mk_nonce());
-}
-
 bool
 netsync::can_step()
 {
@@ -2205,7 +2270,7 @@ netsync::maybe_say_goodbye(transaction_guard & guard)
 }
 
 bool
-netsync::can_process() const
+netsync::can_process()
 {
   return can_step();
 }
@@ -2216,38 +2281,15 @@ bool netsync::process(transaction_guard & guard)
     return true;
   try
     {
-      if (!armed())
-        return true;
-
       maybe_step();
-
-      if (!input.have_netcmd())
-        return true;
-
-      L(FL("processing %d byte input buffer from peer %s")
-        % input.size() % peer_id);
-
-      netcmd cmd;
-      input.get_netcmd(cmd);
-
-      size_t sz = cmd.encoded_size();
-      bool ret = dispatch_payload(cmd, guard);
-
-      if (input.full())
-        W(F("input buffer for peer %s is overfull "
-            "after netcmd dispatch") % peer_id);
-
-      guard.maybe_checkpoint(sz);
-
-      if (!ret)
-        L(FL("finishing processing with '%d' packet")
-          % cmd.get_cmd_code());
-      return ret;
+      return true;
     }
   catch (bad_decode & bd)
     {
+      /*
       W(F("protocol error while processing peer %s: '%s'")
         % peer_id % bd.what);
+      */
       return false;
     }
   catch (netsync_error & err)

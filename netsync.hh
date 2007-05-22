@@ -29,7 +29,7 @@ class netsync_service : public service
   void send(netcmd const & cmd);
   bool can_send() const;
   netsync_service();
-  netsync_service(netsync_service const & other);//I(false)
+  netsync_service(netsync_service const & other);
   netsync_service const & operator=(netsync_service const & other);//I(false)
 public:
   enum netsync_op {push, pull, sync};

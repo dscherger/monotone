@@ -3,6 +3,9 @@
 #include "sanity.hh"
 #include "uri.hh"
 
+#include <algorithm>
+using std::min;
+
 #include <map>
 using std::make_pair;
 using std::map;
@@ -81,7 +84,19 @@ public:
   {
     read_hmac.set_key(key);
   }
-  Netxx::signed_size_type read_some_from(shared_ptr<Netxx::StreamBase> str);
+  Netxx::signed_size_type read_some_from(shared_ptr<Netxx::StreamBase> str)
+  {
+    I(!full());
+    char tmp[constants::bufsz];
+    Netxx::signed_size_type count = str->read(tmp, sizeof(tmp));
+    
+    if (count > 0)
+      {
+        buffer.append(tmp,count);
+      }
+
+    return count;
+  }
 };
 
 class output_manager
@@ -112,8 +127,37 @@ public:
   {
     write_hmac.set_key(key);
   }
-  void queue_netcmd(netcmd const & cmd);
-  Netxx::signed_size_type write_some_to(shared_ptr<Netxx::StreamBase> str);
+  void queue_netcmd(netcmd const & cmd)
+  {
+    string buf;
+    cmd.write(buf, write_hmac);
+    buffer.push_back(make_pair(buf, 0));
+    buffer_size += buf.size();
+  }
+  Netxx::signed_size_type write_some_to(shared_ptr<Netxx::StreamBase> str)
+  {
+    I(!buffer.empty());
+    string & to_write(buffer.front().first);
+    size_t & writepos(buffer.front().second);
+    size_t writelen = to_write.size() - writepos;
+    Netxx::signed_size_type count = str->write(to_write.data() + writepos,
+                                               min(writelen,
+                                                   constants::bufsz));
+    if (count > 0)
+      {
+        if ((size_t)count == writelen)
+          {
+            buffer_size -= to_write.size();
+            buffer.pop_front();
+          }
+        else
+          {
+            writepos += count;
+          }
+      }
+    return count;
+  }
+
 };
 
 class session
@@ -139,17 +183,39 @@ public:
   session(protocol_voice voice,
           shared_ptr<Netxx::StreamBase> str,
           utf8 const & addr,
-          app_state & app);
+          app_state & app)
+    : my_voice(voice), input(true), output(true),
+      app(app), peer_id(addr()), str(str)
+  {
+  }
 
 
-  void queue(netcmd const & cmd);
+  void queue(netcmd const & cmd)
+  {
+    output.queue_netcmd(cmd);
+  }
+
+  bool can_send() const
+  {
+    return !output.full();
+  }
 
   // at this level, process() includes to take from the input queue
   bool can_process();
   state process(transaction_guard & guard);
 
-  state read_some();
-  state write_some();
+  state read_some()
+  {
+    input.read_some_from(str);
+    return state::NONE;
+  }
+
+  state write_some()
+  {
+    output.write_some_to(str);
+    return state::NONE;
+  }
+
 
   Netxx::Probe::ready_type which_events();
 };
@@ -245,6 +311,13 @@ service::send(netcmd const & cmd)
 {
   I(sess);
   sess->queue(cmd);
+}
+
+bool
+service::can_send() const
+{
+  I(sess);
+  return sess->can_send();
 }
 
 
