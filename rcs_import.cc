@@ -1704,8 +1704,12 @@ class blob_label_writer
 
           // poor man's escape...
           for (unsigned int i = 0; i < clog.length(); ++i)
-            if (clog[i] < 32)
-              clog[i] = ' ';
+            {
+              if (clog[i] < 32)
+                clog[i] = '?';
+              if (clog[i] == '\"')
+                clog[i] = '\'';
+            }
           label += "\\\"" + clog + "\\\"\\n";
         }
       else if (b.get_digest().is_branch())
@@ -2060,9 +2064,6 @@ blob_consumer::consume_blob(cvs_blob & blob)
           // must already be in a branch.
           I(dep_blob.in_branch != invalid_blob);
 
-          if (dep_branches.find(dep_blob.in_branch) == dep_branches.end())
-            dep_branches.insert(dep_blob.in_branch);
-
           // If this blob depends on a branch event, we have to check if
           // this blob is the first blob in the branch, i.e. the branch
           // direction. In that case, we add the branch to the dep_branches.
@@ -2075,7 +2076,14 @@ blob_consumer::consume_blob(cvs_blob & blob)
               I(cbe->branch_direction);
               cvs_blob_index dir_bi = cvs.get_blob_of(cbe->branch_direction);
               if (*cvs.blobs[dir_bi].begin() == *blob.begin())
-                dep_branches.insert(bi);
+                if (dep_branches.find(bi) == dep_branches.end())
+                  dep_branches.insert(bi);
+            }
+          else
+            {
+              // For commits and tags, we add that blob's branch.
+              if (dep_branches.find(dep_blob.in_branch) == dep_branches.end())
+                dep_branches.insert(dep_blob.in_branch);
             }
         }
     }
