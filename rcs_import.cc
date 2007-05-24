@@ -1790,8 +1790,6 @@ resolve_blob_dependencies(cvs_history &cvs,
       break;
   };
 
-  L(FL("DEBUG: %s @ %d") % __FILE__ % __LINE__);
-
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
   blob_consumer cons(cvs, app, n_revs);
