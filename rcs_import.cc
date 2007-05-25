@@ -400,6 +400,15 @@ cvs_history
     return j;
   }
 
+  bool
+  blob_exists(const cvs_event_digest d)
+  {
+    pair<blob_index_iterator, blob_index_iterator> range = 
+      blob_index.equal_range(d);
+
+    return (range.first != range.second);
+  }
+
   pair< blob_index_iterator, blob_index_iterator >
   get_blobs(const cvs_event_digest d, bool create)
   {
@@ -940,9 +949,8 @@ process_rcs_branch(string const & begin_version,
               boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                 branch_event)->branch_direction = first_event_in_branch;
 
-              // FIXME: is this still needed here?
-              // make sure curr_commit exists in the blob
-              cvs.get_blobs(curr_commit->get_digest(), false);
+              // make sure curr_commit exists in the cvs history
+              I(cvs.blob_exists(curr_commit->get_digest()));
 
               // add the blob to the bucket
               cvs_blob_index bi = cvs.append_event(branch_event);
