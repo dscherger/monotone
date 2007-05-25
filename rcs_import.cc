@@ -2094,6 +2094,11 @@ blob_consumer::consume_blob(cvs_blob & blob)
 
       // this is only for debug information
       L(FL("This blob depends on the following branches:"));
+      if (blob.get_digest().is_commit())
+        {
+          L(FL("    (commit: '%s')") % cvs.authorclog_interner.lookup(static_cast<cvs_commit&>(**blob.begin()).authorclog));
+        }
+
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
         L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_event_branch&>(**cvs.blobs[*i].begin()).branchname));
 

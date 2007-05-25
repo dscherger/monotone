@@ -38,7 +38,7 @@ writefile("changelog.C.4", readfile("changelog.A.3").."fourth changelog -on bran
 writefile("changelog.D.5", readfile("changelog.C.4").."fifth changelog -on branch D-\n")
 
 -- import into monotone and check presence of files
-check(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
+check(mtn("--debug", "--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
 
 -- check if all non-empty branches were imported
 check(mtn("list", "branches"), 0, true, false)
