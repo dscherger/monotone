@@ -713,13 +713,13 @@ const migration_event migration_events[] = {
     
   { "fe48b0804e0048b87b4cea51b3ab338ba187bdc2",
     migrate_add_heights_index, 0, upgrade_none },
-    
+
+  { "7ca81b45279403419581d7fde31ed888a80bd34e",
     migrate_add_sentinels, 0, upgrade_none },
 
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "dcad6092eb28995ba9fbcb11ecc34db643f8aac5", 0, 0, upgrade_none }
-  { "7ca81b45279403419581d7fde31ed888a80bd34e", 0, 0, upgrade_none }
+  { "b0b51e180e49bcc71f91db4b13e54a15707d8e0c", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
