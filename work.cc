@@ -12,6 +12,8 @@
 #include <cerrno>
 #include <queue>
 
+#include <boost/lexical_cast.hpp>
+
 #include "work.hh"
 #include "basic_io.hh"
 #include "cset.hh"
@@ -26,6 +28,7 @@
 #include "diff_patch.hh"
 #include "ui.hh"
 #include "charset.hh"
+#include "lua_hooks.hh"
 
 using std::deque;
 using std::exception;
@@ -729,7 +732,8 @@ struct content_merge_empty_adaptor : public content_merge_adaptor
   virtual void get_version(file_id const &, file_data &) const
   { I(false); }
   virtual void record_merge(file_id const &, file_id const &,
-                            file_id const &, file_data const &,
+                            file_id const &, 
+                            file_data const &, file_data const &,
                             file_data const &)
   { I(false); }
   virtual void get_ancestral_roster(node_id, boost::shared_ptr<roster_t const> &)
@@ -1372,6 +1376,9 @@ workspace::perform_deletions(path_set const & paths,
     {
       split_path &p(todo.front());
       file_path name(p);
+
+      E(!name.empty(),
+        F("unable to drop the root directory"));
 
       if (!new_roster.has_node(p))
         P(F("skipping %s, not currently tracked") % name);

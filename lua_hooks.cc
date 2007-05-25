@@ -32,9 +32,11 @@
 #include "paths.hh"
 #include "uri.hh"
 
-// defined in {std,test}_hooks.lua, converted
-#include "test_hooks.h"
-#include "std_hooks.h"
+// defined in {std,test}_hooks.lua, converted to {std,test}_hooks.c respectively
+extern char const std_hooks_constant[];
+#ifdef BUILD_UNIT_TESTS
+extern char const test_hooks_constant[];
+#endif
 
 using std::make_pair;
 using std::map;
@@ -199,6 +201,14 @@ lua_hooks::load_rcfile(any_path const & rc, bool required)
       N(!required, F("rcfile '%s' does not exist") % rc);
       L(FL("skipping nonexistent rcfile '%s'") % rc);
     }
+}
+
+bool
+lua_hooks::hook_exists(std::string const & func_name)
+{
+  return Lua(st)
+    .func(func_name)
+    .ok();
 }
 
 // concrete hooks
@@ -845,15 +855,12 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
     {
       ll.push_int(n++);
       ll.push_table();
-      ll.push_str("key");
       ll.push_str(i->first());
-      ll.set_table();
-      ll.push_str("name");
+      ll.set_field("key");
       ll.push_str(i->second.first());
-      ll.set_table();
-      ll.push_str("value");
+      ll.set_field("name");
       ll.push_str(i->second.second());
-      ll.set_table();
+      ll.set_field("value");
       ll.set_table();
     }
 
@@ -921,15 +928,15 @@ lua_hooks::hook_note_netsync_end(size_t session_id, int status,
 }
 
 bool
-lua_hooks::hook_note_mtn_startup(vector<string> const & args)
+lua_hooks::hook_note_mtn_startup(args_vector const & args)
 {
   Lua ll(st);
 
   ll.func("note_mtn_startup");
 
   int n=0;
-  for (vector<string>::const_iterator i = args.begin(); i != args.end(); ++i, ++n)
-    ll.push_str(*i);
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i, ++n)
+    ll.push_str((*i)());
 
   ll.call(n, 0);
   return ll.ok();

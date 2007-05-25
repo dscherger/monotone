@@ -70,23 +70,6 @@ Desired:
 Possibly the no-shift-while-drawing-long-edges code could even be removed,
 deferring to the no-edge-crossings code.
 
-3)
-
-It is currently not supported to have more than 2 "next lines".
-This is not a problem as currently the HEAD is on top and parents are downward,
-and in no case a revision can currently have 3 parents, but it should definitely
-be supported either to support possible future 3-parents merges and printing the
-graph with HEAD at the end.
-This can be done, sacrifying 2 more lines per additional parent, as in:
-o
-|\
-| \      2 next
-|\ \
-| \ \    3 next
-|\ \ \
-| \ \ \  4 next
-...there's no limit to that.
-
 
 How this works:
   This is completely iterative; we have no lookahead whatsoever.  We output
@@ -128,8 +111,9 @@ Loop:
 #include <iterator>
 
 #include "asciik.hh"
-#include "cmd.hh"
 #include "simplestring_xform.hh"
+#include "cmd.hh"
+#include "app_state.hh"
 
 using std::insert_iterator;
 using std::max;
@@ -381,8 +365,10 @@ asciik::print(revision_id const & rev,
     }
 }
 
-CMD(asciik, N_("debug"), N_("SELECTOR"),
-  N_("prints an ASCII representation of the graph"), options::opts::none)
+CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
+    N_("Prints an ASCII representation of the revisions' graph"),
+    "",
+    options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));

@@ -36,7 +36,7 @@ using std::vector;
 
 app_state::app_state()
   : db(system_path()),
-    keys(this), work(db, lua),
+    keys(*this), work(db, lua),
 //    search_root(current_root_path()),
 //    diff_format(unified_diff),
     branch_is_sticky(false),
@@ -270,7 +270,7 @@ app_state::load_rcfiles()
 
   // Command-line rcfiles override even that.
 
-  for (vector<utf8>::const_iterator i = opts.extra_rcfiles.begin();
+  for (args_vector::const_iterator i = opts.extra_rcfiles.begin();
        i != opts.extra_rcfiles.end(); ++i)
     {
       lua.load_rcfile(*i);

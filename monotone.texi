@@ -75,7 +75,7 @@ version control tools.
 * Hook Reference::      Functions which extend monotone
 * Special Topics::      Extra explanations and details
 * Default hooks::       The standard hook definitions
-* Index::               Index of concepts and functions
+* General Index::       Index of concepts and functions
 @end menu
 
 @ifnottex
@@ -6028,6 +6028,41 @@ None.
 @end table
 
 
+@item mtn automate roots
+
+@table @strong
+@item Arguments:
+
+None.
+
+@item Added in:
+
+4.3
+
+@item Purpose:
+
+Prints the roots of the revision graph, i.e. all revisions that have
+no parents.
+
+@item Sample output:
+
+@verbatim
+276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f
+@end verbatim
+
+@item Output format:
+
+Zero or more lines, each a root of the revision graph.  Each line
+consists of a revision ID, in hexadecimal, followed by a newline.  The
+lines are printed in alphabetically sorted order.
+
+@item Error conditions:
+
+None.
+
+@end table
+
+
 @item mtn automate branches
 
 @table @strong
@@ -6178,6 +6213,40 @@ None.
 
 @end table
 
+@item mtn automate identify @var{path}
+
+@table @strong
+@item Arguments:
+
+A file path.
+
+@item Added in:
+
+4.2
+
+@item Purpose:
+
+Prints the file ID (aka hash) of the given file.
+
+@item Sample output:
+
+@verbatim
+6265ab1312fbe38bdc3aafa92441139cb2b779b0
+@end verbatim
+
+@item Output format:
+
+A single line with the file's ID, in hexadecimal, followed by a newline.
+
+@item Error conditions:
+
+If the file does not exists, is a special file or not readable, prints an
+error message to stderr and exists with status 1. A single file path only
+consisting of "-" is disallowed since it collides with the UNIX stdin
+marker.
+
+@end table
+
 @item mtn automate inventory
 
 @table @strong
@@ -6315,8 +6384,8 @@ column 3 file-state
       'M' the file is missing but is included in the current manifest
 @end verbatim
 
-Note that there are 45 possible status code combinations, some of which
-are not valid, detailed below.
+Note that out of the 45 possible status code combinations, only 26 are valid,
+detailed below.
 
 @verbatim
 '   ' unchanged
@@ -6328,25 +6397,25 @@ are not valid, detailed below.
 ' A ' added (invalid, add should have associated patch)
 ' AP' added and patched
 ' AU' added but unknown (invalid)
-' AI' added but ignored (seems invalid, but may be possible?)
+' AI' added but ignored (invalid, added files are no longer ignored)
 ' AM' added but missing from the filesystem
 
 ' R ' rename target
 ' RP' rename target and patched
 ' RU' rename target but unknown (invalid)
-' RI' rename target but ignored (seems invalid, but may be possible?)
+' RI' rename target but ignored (invalid)
 ' RM' rename target but missing from the filesystem
 
 'D  ' dropped
 'D P' dropped and patched (invalid)
 'D U' dropped and unknown (still exists on the filesystem)
-'D I' dropped and ignored (seems invalid, but may be possible?)
+'D I' dropped and ignored
 'D M' dropped and missing (invalid)
 
 'DA ' dropped and added (invalid, add should have associated patch)
 'DAP' dropped and added and patched
 'DAU' dropped and added but unknown (invalid)
-'DAI' dropped and added but ignored (seems invalid, but may be possible?)
+'DAI' dropped and added but ignored (invalid, added files are no longer ignored)
 'DAM' dropped and added but missing from the filesystem
 
 'DR ' dropped and rename target
@@ -6358,19 +6427,19 @@ are not valid, detailed below.
 'R  ' rename source
 'R P' rename source and patched (invalid)
 'R U' rename source and unknown (still exists on the filesystem)
-'R I' rename source and ignored (seems invalid, but may be possible?)
+'R I' rename source and ignored
 'R M' rename source and missing (invalid)
 
 'RA ' rename source and added (invalid, add should have associated patch)
 'RAP' rename source and added and patched
 'RAU' rename source and added but unknown (invalid)
-'RAI' rename source and added but ignored (seems invalid, but may be possible?)
+'RAI' rename source and added but ignored (invalid, added files are no longer ignored)
 'RAM' rename source and added but missing from the filesystem
 
 'RR ' rename source and target
 'RRP' rename source and target and target patched
 'RRU' rename source and target and target unknown (invalid)
-'RRI' rename source and target and target ignored (seems invalid, but may be possible?)
+'RRI' rename source and target and target ignored (invalid)
 'RRM' rename source and target and target missing
 @end verbatim
 
@@ -6523,7 +6592,7 @@ Allow multiple automate commands to be run from one instance of monotone.
 @verbatim
 l6:leavese
 l7:parents40:0e3171212f34839c2e3263e7282cdeea22fc5378e
-o6:author7:Timothye l6:commite
+o3:key11:foo@bar.come l4:cert40:0e3171212f34839c2e3263e7282cdeea22fc53783:foo3:bare
 @end verbatim
 
 @item Input format:
@@ -6909,16 +6978,20 @@ message to stderr and exits with status 1.
 
 @end table
 
-@item mtn automate attributes @var{file}
+@item mtn automate get_attributes @var{path}
 
 @table @strong
 @item Arguments:
 
-The argument @var{file} determines which file's attributes should be printed.
+The argument @var{path} determines which path's attributes should be printed.
 
 @item Added in:
 
 3.0
+
+@item Renamed from @command{attributes} to @command{get_attributes} in:
+
+5.0
 
 @item Purpose:
 
@@ -6987,10 +7060,69 @@ The complete format:
 
 @item Error conditions:
 
-If the file specified is unknown to the current workspace prints an error
+If the path specified is unknown in the new workspace revision, prints an error
 message to stderr and exits with status 1.
 
 @end table
+
+@item mtn automate set_attribute @var{path} @var{key} @var{value}
+
+@table @strong
+@item Arguments:
+
+A path, an attribute key and an attribute value.
+
+@item Added in:
+
+5.0
+
+@item Purpose:
+
+Edits the current workspace revision and inserts the given attribute key and
+value for the specified path. Note that this change is not committed and 
+therefor behaves exactly like @command{mtn attr set @var{key} @var{value}}.
+
+@item Output format:
+
+This command does not print out anything if successful.
+
+@item Error conditions:
+
+If the path specified is unknown in the new workspace revision, prints an error
+message to stderr and exits with status 1.
+
+@end table
+
+@item mtn automate drop_attribute @var{path} [@var{key}]
+
+@table @strong
+@item Arguments:
+
+A path and an attribute key (optional).
+
+@item Added in:
+
+5.0
+
+@item Purpose:
+
+Removes an attribute from the current workspace revision for the specified path.
+If no attribute key is given, all attributes of this path are removed. Note that
+this change is not committed and therefor behaves exactly like 
+@command{mtn attr drop @var{path} [@var{key}]}.
+
+@item Output format:
+
+This command does not print out anything if successful.
+
+@item Error conditions:
+
+If the path specified is unknown in the new workspace revision or the attribute
+key is not found for this path, prints an error message to stderr and exits with
+status 1.
+
+@end table
+
 
 @item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
 
@@ -7652,7 +7784,8 @@ and @var{value} its value.
 
 @item Purpose:
 
-@command{automate stdio} capable variant of @command{mtn cert}.
+@command{automate stdio} capable variant of @command{mtn cert}. To sign the
+cert with a specific private key, use @option{--key}.
 
 @item Sample usage:
 
@@ -8652,6 +8785,11 @@ On Windows, this function automatically appends ``.exe'' to the
 program name. In the previous example, @code{existonpath} would search
 for ``xxdiff.exe''.
 
+@item get_confdir()
+
+Returns the path to the configuration directory, either implied or given
+with @option{--confdir}.
+
 @item get_ostype()
 
 Returns the operating system flavor as a string.
@@ -8788,7 +8926,10 @@ in a standardized way.
 
 @item spawn_pipe(@var{executable} [, @var{args ...}])
 
-TO BE DOCUMENTED!
+Like spawn(), but returns three values, where the first two are the
+subprocess' standard input and standard output, and the last is the
+process PID on POSIX systems, the process handle on Win32 or -1 if
+there was an error.
 
 @item spawn_redirected(@var{infile}, @var{outfile}, @var{errfile}, @var{executable} [, @var{args ...}])
 
@@ -10156,8 +10297,8 @@ default values for all hooks.
 
 @verbatiminclude std_hooks.lua
 
-@node Index
-@unnumbered Index
+@node General Index
+@unnumbered General Index
      
 @printindex cp
 

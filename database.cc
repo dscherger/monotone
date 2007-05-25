@@ -45,8 +45,8 @@
 #include "roster_delta.hh"
 #include "rev_height.hh"
 
-// defined in schema.sql, converted to header:
-#include "schema.h"
+// defined in schema.c, generated from schema.sql:
+extern char const schema_constant[];
 
 // this file defines a public, typed interface to the database.
 // the database class encapsulates all knowledge about sqlite,
@@ -922,6 +922,15 @@ database::cancel_delayed_file(file_id const & an_id)
 }
 
 void
+database::drop_or_cancel_file(file_id const & id)
+{
+  if (have_delayed_file(id))
+    cancel_delayed_file(id);
+  else
+    drop(id.inner()(), "files");
+}
+
+void
 database::schedule_delayed_file(file_id const & an_id,
                                 file_data const & dat)
 {
@@ -1030,6 +1039,17 @@ database::delta_exists(string const & ident,
                        string const & table)
 {
   return table_has_entry(ident, "id", table);
+}
+
+bool
+database::delta_exists(string const & ident,
+                       string const & base,
+                       string const & table)
+{
+  results res;
+  query q("SELECT 1 FROM " + table + " WHERE id = ? and base = ? LIMIT 1");
+  fetch(res, one_col, any_rows, q % text(ident) % text(base));
+  return !res.empty();
 }
 
 string
@@ -1681,7 +1701,10 @@ void
 database::put_file(file_id const & id,
                    file_data const & dat)
 {
-  schedule_delayed_file(id, dat);
+  if (file_version_exists(id))
+    L(FL("file version '%s' already exists in db") % id);
+  else
+    schedule_delayed_file(id, dat);
 }
 
 void
@@ -1689,15 +1712,24 @@ database::put_file_version(file_id const & old_id,
                            file_id const & new_id,
                            file_delta const & del)
 {
+  I(!(old_id == new_id));
   file_data old_data, new_data;
   file_delta reverse_delta;
 
+  if (!file_version_exists(old_id))
+    {
+      W(F("file preimage '%s' missing in db") % old_id);
+      W(F("dropping delta '%s' -> '%s'") % old_id % new_id);
+      return;
+    }
+  
   get_file_version(old_id, old_data);
   {
     data tmp;
     patch(old_data.inner(), del.inner(), tmp);
     new_data = file_data(tmp);
   }
+
   {
     string tmp;
     invert_xdelta(old_data.inner()(), del.inner()(), tmp);
@@ -1708,20 +1740,25 @@ database::put_file_version(file_id const & old_id,
     calculate_ident(old_tmp, old_tmp_id);
     I(file_id(old_tmp_id) == old_id);
   }
-
-  transaction_guard guard(*this);
+  
+  transaction_guard guard(*this);  
   if (file_or_manifest_base_exists(old_id.inner(), "files"))
     {
       // descendent of a head version replaces the head, therefore old head
       // must be disposed of
-      if (have_delayed_file(old_id))
-        cancel_delayed_file(old_id);
-      else
-        drop(old_id.inner()(), "files");
+      drop_or_cancel_file(old_id);
     }
-  schedule_delayed_file(new_id, new_data);
-  put_file_delta(old_id, new_id, reverse_delta);
-  guard.commit();
+  if (!file_or_manifest_base_exists(new_id.inner(), "files"))
+    {
+      schedule_delayed_file(new_id, new_data);
+      drop(new_id.inner()(), "file_deltas");
+    }
+    
+  if (!delta_exists(old_id.inner()(), new_id.inner()(), "file_deltas"))
+    {
+      put_file_delta(old_id, new_id, reverse_delta);
+      guard.commit();
+    }
 }
 
 void
@@ -1747,7 +1784,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
     }
 
   query q2("SELECT delta FROM file_deltas "
-           "WHERE id = ? AND base = ?");
+           "WHERE base = ? AND id = ?");
   fetch(res, one_col, any_rows,
         q2 % text(dst_id.inner()()) % text(src_id.inner()()));
 
@@ -1775,7 +1812,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
 
 
 void
-database::get_revision_ancestry(multimap<revision_id, revision_id> & graph)
+database::get_revision_ancestry(rev_ancestry_map & graph)
 {
   results res;
   graph.clear();
@@ -1928,7 +1965,7 @@ database::deltify_revision(revision_id const & rid)
                 delta delt;
                 diff(old_data.inner(), new_data.inner(), delt);
                 file_delta del(delt);
-                drop(delta_entry_dst(j).inner()(), "files");
+                drop_or_cancel_file(delta_entry_dst(j));
                 drop(delta_entry_dst(j).inner()(), "file_deltas");
                 put_file_version(delta_entry_src(j), delta_entry_dst(j), del);
               }
@@ -1939,7 +1976,7 @@ database::deltify_revision(revision_id const & rid)
 }
 
 
-void
+bool
 database::put_revision(revision_id const & new_id,
                        revision_t const & rev)
 {
@@ -1947,37 +1984,72 @@ database::put_revision(revision_id const & new_id,
   MM(rev);
 
   I(!null_id(new_id));
-  I(!revision_exists(new_id));
+
+  if (revision_exists(new_id))
+    {
+      L(FL("revision '%s' already exists in db") % new_id);
+      return false;
+    }
 
   I(rev.made_for == made_for_database);
   rev.check_sane();
-  revision_data d;
-  MM(d.inner());
-  write_revision(rev, d);
 
   // Phase 1: confirm the revision makes sense, and we the required files
   // actually exist
-  {
-    revision_id tmp;
-    MM(tmp);
-    calculate_ident(d, tmp);
-    I(tmp == new_id);
-    for (edge_map::const_iterator e = rev.edges.begin(); e != rev.edges.end(); ++e)
-      {
-        cset const & cs = edge_changes(e);
-        for (map<split_path, file_id>::const_iterator
-               i = cs.files_added.begin(); i != cs.files_added.end(); ++i)
-          I(file_version_exists(i->second));
-        for (map<split_path, pair<file_id, file_id> >::const_iterator
-               i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
-          I(file_version_exists(i->second.second));
-      }
-  }
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); ++i)
+    {
+      if (!edge_old_revision(i).inner()().empty()
+          && !revision_exists(edge_old_revision(i)))
+        {
+          W(F("missing prerequisite revision '%s'") % edge_old_revision(i));
+          W(F("dropping revision '%s'") % new_id);
+          return false;
+        }
+
+      for (map<split_path, file_id>::const_iterator a
+             = edge_changes(i).files_added.begin();
+           a != edge_changes(i).files_added.end(); ++a)
+        {
+          if (! file_version_exists(a->second))
+            {
+              W(F("missing prerequisite file '%s'") % a->second);
+              W(F("dropping revision '%s'") % new_id);
+              return false;
+            }
+        }
+
+      for (map<split_path, pair<file_id, file_id> >::const_iterator d
+             = edge_changes(i).deltas_applied.begin();
+           d != edge_changes(i).deltas_applied.end(); ++d)
+        {
+          I(!delta_entry_src(d).inner()().empty());
+          I(!delta_entry_dst(d).inner()().empty());
+
+          if (! file_version_exists(delta_entry_src(d)))
+            {
+              W(F("missing prerequisite file pre-delta '%s'")
+                % delta_entry_src(d));
+              W(F("dropping revision '%s'") % new_id);
+              return false;
+            }
+
+          if (! file_version_exists(delta_entry_dst(d)))
+            {
+              W(F("missing prerequisite file post-delta '%s'")
+                % delta_entry_dst(d));
+              W(F("dropping revision '%s'") % new_id);
+              return false;
+            }
+        }
+    }
 
   transaction_guard guard(*this);
 
   // Phase 2: Write the revision data (inside a transaction)
 
+  revision_data d;
+  write_revision(rev, d);
   gzip<data> d_packed;
   encode_gzip(d.inner(), d_packed);
   execute(query("INSERT INTO revisions VALUES(?, ?)")
@@ -2008,6 +2080,7 @@ database::put_revision(revision_id const & new_id,
   // Finally, commit.
 
   guard.commit();
+  return true;
 }
 
 void
@@ -2016,30 +2089,33 @@ database::put_height_for_revision(revision_id const & new_id,
 {
   I(!null_id(new_id));
   
-  rev_height height;
+  rev_height highest_parent;
+  // we always branch off the highest parent ...
   for (edge_map::const_iterator e = rev.edges.begin();
        e != rev.edges.end(); ++e)
     {
-      bool found(false);
-      u32 childnr(0);
-      rev_height candidate; MM(candidate);
       rev_height parent; MM(parent);
       get_rev_height(edge_old_revision(e), parent);
-      
-      while(!found)
-        {
-          candidate = parent.child_height(childnr);
-          if (!has_rev_height(candidate))
-            {
-              found = true;
-              if (candidate > height)
-                height = candidate;
-            }
-          I(childnr < std::numeric_limits<u32>::max());
-          ++childnr;
-        }
+      if (parent > highest_parent)
+      {
+        highest_parent = parent;
+      }
     }
-  put_rev_height(new_id, height);
+    
+  // ... then find the first unused child
+  u32 childnr(0);
+  rev_height candidate; MM(candidate);
+  while(true)
+    {
+      candidate = highest_parent.child_height(childnr);
+      if (!has_rev_height(candidate))
+        {
+          break;
+        }
+      I(childnr < std::numeric_limits<u32>::max());
+      ++childnr;
+    }
+  put_rev_height(new_id, candidate);
 }
 
 void
@@ -2061,13 +2137,13 @@ database::put_roster_for_revision(revision_id const & new_id,
   put_roster(new_id, ros, mm);
 }
 
-void
+bool
 database::put_revision(revision_id const & new_id,
                        revision_data const & dat)
 {
   revision_t rev;
   read_revision(dat, rev);
-  put_revision(new_id, rev);
+  return put_revision(new_id, rev);
 }
 
 
@@ -2242,21 +2318,34 @@ database::get_key(rsa_keypair_id const & pub_id,
   encode_base64(rsa_pub_key(res[0][0]), pub_encoded);
 }
 
-void
+bool
 database::put_key(rsa_keypair_id const & pub_id,
                   base64<rsa_pub_key> const & pub_encoded)
 {
+  if (public_key_exists(pub_id))
+    {
+      base64<rsa_pub_key> tmp;
+      get_key(pub_id, tmp);
+      if (!keys_match(pub_id, tmp, pub_id, pub_encoded))
+        W(F("key '%s' is not equal to key '%s' in database") % pub_id % pub_id);
+      L(FL("skipping existing public key %s") % pub_id);
+      return false;
+    }
+
+  L(FL("putting public key %s") % pub_id);
+
   hexenc<id> thash;
   key_hash_code(pub_id, pub_encoded, thash);
   I(!public_key_exists(thash));
-  E(!public_key_exists(pub_id),
-    F("another key with name '%s' already exists") % pub_id);
+
   rsa_pub_key pub_key;
   decode_base64(pub_encoded, pub_key);
   execute(query("INSERT INTO public_keys VALUES(?, ?, ?)")
           % text(thash())
           % text(pub_id())
           % blob(pub_key()));
+
+  return true;
 }
 
 void
@@ -2448,11 +2537,27 @@ database::revision_cert_exists(revision<cert> const & cert)
   return cert_exists(cert.inner(), "revision_certs");
 }
 
-void
+bool
 database::put_revision_cert(revision<cert> const & cert)
 {
+  if (revision_cert_exists(cert))
+    {
+      L(FL("revision cert on '%s' already exists in db")
+        % cert.inner().ident);
+      return false;
+    }
+
+  if (!revision_exists(revision_id(cert.inner().ident)))
+    {
+      W(F("cert revision '%s' does not exist in db")
+        % cert.inner().ident);
+      W(F("dropping cert"));
+      return false;
+    }
+
   put_cert(cert.inner(), "revision_certs");
   cert_stamper.note_change();
+  return true;
 }
 
 outdated_indicator
@@ -3157,36 +3262,26 @@ database::put_roster(revision_id const & rev_id,
   guard.commit();
 }
 
-
-typedef hashmap::hash_multimap<string, string> ancestry_map;
-
-static void
-transitive_closure(string const & x,
-                   ancestry_map const & m,
-                   set<revision_id> & results)
+// for get_uncommon_ancestors
+struct rev_height_graph : rev_graph
 {
-  results.clear();
-
-  deque<string> work;
-  work.push_back(x);
-  while (!work.empty())
-    {
-      string c = work.front();
-      work.pop_front();
-      revision_id curr(c);
-      if (results.find(curr) == results.end())
-        {
-          results.insert(curr);
-          pair<ancestry_map::const_iterator, ancestry_map::const_iterator> \
-            range(m.equal_range(c));
-          for (ancestry_map::const_iterator i(range.first); i != range.second; ++i)
-            {
-              if (i->first == c)
-                work.push_back(i->second);
-            }
-        }
-    }
-}
+  rev_height_graph(database & db) : db(db) {}
+  virtual void get_parents(revision_id const & rev, set<revision_id> & parents) const
+  {
+    db.get_revision_parents(rev, parents);
+  }
+  virtual void get_children(revision_id const & rev, set<revision_id> & parents) const
+  {
+    // not required
+    I(false);
+  }
+  virtual void get_height(revision_id const & rev, rev_height & h) const
+  {
+      db.get_rev_height(rev, h);
+  }
+  
+  database & db;
+};
 
 void
 database::get_uncommon_ancestors(revision_id const & a,
@@ -3194,37 +3289,9 @@ database::get_uncommon_ancestors(revision_id const & a,
                                  set<revision_id> & a_uncommon_ancs,
                                  set<revision_id> & b_uncommon_ancs)
 {
-  // FIXME: This is a somewhat ugly, and possibly unaccepably slow way
-  // to do it. Another approach involves maintaining frontier sets for
-  // each and slowly deepening them into history; would need to
-  // benchmark to know which is actually faster on real datasets.
-
-  a_uncommon_ancs.clear();
-  b_uncommon_ancs.clear();
-
-  results res;
-  a_uncommon_ancs.clear();
-  b_uncommon_ancs.clear();
-
-  fetch(res, 2, any_rows,
-        query("SELECT parent,child FROM revision_ancestry"));
-
-  set<revision_id> a_ancs, b_ancs;
-
-  ancestry_map child_to_parent_map;
-  for (size_t i = 0; i < res.size(); ++i)
-    child_to_parent_map.insert(make_pair(res[i][1], res[i][0]));
-
-  transitive_closure(a.inner()(), child_to_parent_map, a_ancs);
-  transitive_closure(b.inner()(), child_to_parent_map, b_ancs);
-
-  set_difference(a_ancs.begin(), a_ancs.end(),
-                 b_ancs.begin(), b_ancs.end(),
-                 inserter(a_uncommon_ancs, a_uncommon_ancs.begin()));
-
-  set_difference(b_ancs.begin(), b_ancs.end(),
-                 a_ancs.begin(), a_ancs.end(),
-                 inserter(b_uncommon_ancs, b_uncommon_ancs.begin()));
+  
+  rev_height_graph graph(*this);
+  ::get_uncommon_ancestors(a, b, graph, a_uncommon_ancs, b_uncommon_ancs);
 }
 
 

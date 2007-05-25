@@ -26,6 +26,7 @@ int sqlite3_finalize(sqlite3_stmt *);
 #include "cleanup.hh"
 #include "roster.hh"
 #include "selectors.hh"
+#include "graph.hh"
 
 // FIXME: would be better not to include this everywhere
 #include "outdated_indicator.hh"
@@ -186,6 +187,7 @@ private:
   bool have_delayed_file(file_id const & id);
   void load_delayed_file(file_id const & id, file_data & dat);
   void cancel_delayed_file(file_id const & id);
+  void drop_or_cancel_file(file_id const & id);
   void schedule_delayed_file(file_id const & id, file_data const & dat);
 
   std::map<file_id, file_data> delayed_files;
@@ -212,6 +214,10 @@ private:
   
   // "do we have any entry for 'ident' that is a delta"
   bool delta_exists(std::string const & ident,
+                    std::string const & table);
+
+  bool delta_exists(std::string const & ident,
+                    std::string const & base,
                     std::string const & table);
 
   void get_file_or_manifest_base_unchecked(hexenc<id> const & new_id,
@@ -287,7 +293,7 @@ public:
   // --== The ancestry graph ==--
   //
 public:
-  void get_revision_ancestry(std::multimap<revision_id, revision_id> & graph);
+  void get_revision_ancestry(rev_ancestry_map & graph);
 
   void get_revision_parents(revision_id const & ident,
                            std::set<revision_id> & parents);
@@ -317,10 +323,10 @@ public:
   void get_revision(revision_id const & ident,
                     revision_data & dat);
 
-  void put_revision(revision_id const & new_id,
+  bool put_revision(revision_id const & new_id,
                     revision_t const & rev);
 
-  void put_revision(revision_id const & new_id,
+  bool put_revision(revision_id const & new_id,
                     revision_data const & dat);
 
   //
@@ -381,7 +387,7 @@ public:
   void get_key(rsa_keypair_id const & ident,
                base64<rsa_pub_key> & pub_encoded);
 
-  void put_key(rsa_keypair_id const & ident,
+  bool put_key(rsa_keypair_id const & ident,
                base64<rsa_pub_key> const & pub_encoded);
 
   void delete_public_key(rsa_keypair_id const & pub_id);
@@ -430,7 +436,7 @@ public:
   bool revision_cert_exists(revision<cert> const & cert);
   bool revision_cert_exists(hexenc<id> const & hash);
 
-  void put_revision_cert(revision<cert> const & cert);
+  bool put_revision_cert(revision<cert> const & cert);
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<hexenc<id>,

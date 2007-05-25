@@ -414,12 +414,10 @@ toposort(set<revision_id> const & revisions,
 
 static void
 accumulate_strict_ancestors(revision_id const & start,
-                            set<revision_id> & new_ancestors,
                             set<revision_id> & all_ancestors,
                             multimap<revision_id, revision_id> const & inverse_graph)
 {
   typedef multimap<revision_id, revision_id>::const_iterator gi;
-  new_ancestors.clear();
 
   vector<revision_id> frontier;
   frontier.push_back(start);
@@ -433,9 +431,8 @@ accumulate_strict_ancestors(revision_id const & start,
           revision_id const & parent = i->second;
           if (all_ancestors.find(parent) == all_ancestors.end())
             {
-              new_ancestors.insert(parent);
               all_ancestors.insert(parent);
-              frontier.push_back(i->second);
+              frontier.push_back(parent);
             }
         }
     }
@@ -492,16 +489,15 @@ erase_ancestors_and_failures(std::set<revision_id> & candidates,
           continue;
         }
       // okay, it is good enough that all its ancestors should be
-      // eliminated; do that now.
-      {
-        set<revision_id> new_ancestors;
-        accumulate_strict_ancestors(rid, new_ancestors, all_ancestors, inverse_graph);
-        I(new_ancestors.find(rid) == new_ancestors.end());
-        for (set<revision_id>::const_iterator i = new_ancestors.begin();
-             i != new_ancestors.end(); ++i)
-          candidates.erase(*i);
-      }
+      // eliminated
+      accumulate_strict_ancestors(rid, all_ancestors, inverse_graph);
     }
+
+  // now go and eliminate the ancestors
+  for (set<revision_id>::const_iterator i = all_ancestors.begin();
+       i != all_ancestors.end(); ++i)
+    candidates.erase(*i);
+
   L(FL("called predicate %s times") % predicates);
 }
 
@@ -719,7 +715,7 @@ make_restricted_revision(parent_map const & old_rosters,
                          node_restriction const & mask,
                          revision_t & rev,
                          cset & excluded,
-                         string const & cmd_name)
+                         commands::command_id const & cmd_name)
 {
   edge_map edges;
   bool no_excludes = true;
@@ -738,7 +734,7 @@ make_restricted_revision(parent_map const & old_rosters,
 
   N(old_rosters.size() == 1 || no_excludes,
     F("the command '%s %s' cannot be restricted in a two-parent workspace")
-    % ui.prog_name % cmd_name);
+    % ui.prog_name % join_words(cmd_name)());
 
   recalculate_manifest_id_for_restricted_rev(old_rosters, edges, rev);
 }
@@ -925,11 +921,8 @@ void anc_graph::write_certs()
           cert new_cert;
           make_simple_cert(rev.inner(), name, val, app, new_cert);
           revision<cert> rcert(new_cert);
-          if (! app.db.revision_cert_exists(rcert))
-            {
-              ++n_certs_out;
-              app.db.put_revision_cert(rcert);
-            }
+          if (app.db.put_revision_cert(rcert))
+            ++n_certs_out;
         }
     }
 }
@@ -1613,17 +1606,10 @@ anc_graph::construct_revisions_from_ancestry()
           P(F("------------------------------------------------"));
           */
 
-          if (!app.db.revision_exists (new_rid))
-            {
-              L(FL("mapped node %d to revision %s") % child % new_rid);
-              app.db.put_revision(new_rid, rev);
-              ++n_revs_out;
-            }
-          else
-            {
-              L(FL("skipping already existing revision %s") % new_rid);
-            }
-
+          L(FL("mapped node %d to revision %s") % child % new_rid);
+          if (app.db.put_revision(new_rid, rev))
+            ++n_revs_out;
+          
           // Mark this child as done, hooray!
           safe_insert(done, child);
 
@@ -1743,41 +1729,10 @@ static void
 allrevs_toposorted(vector<revision_id> & revisions,
                    app_state & app)
 {
-
-  typedef multimap<revision_id, revision_id>::const_iterator gi;
-  typedef map<revision_id, int>::iterator pi;
-
-  revisions.clear();
-
   // get the complete ancestry
-  multimap<revision_id, revision_id> graph;
+  rev_ancestry_map graph;
   app.db.get_revision_ancestry(graph);
-
-  // determine the number of parents for each rev
-  map<revision_id, int> pcount;
-  for (gi i = graph.begin(); i != graph.end(); ++i)
-    pcount.insert(make_pair(i->first, 0));
-  for (gi i = graph.begin(); i != graph.end(); ++i)
-    ++(pcount[i->second]);
-
-  // find the set of graph roots
-  list<revision_id> roots;
-  for (pi i = pcount.begin(); i != pcount.end(); ++i)
-    if(i->second==0)
-      roots.push_back(i->first);
-
-  while (!roots.empty())
-    {
-      revision_id cur = roots.front();
-      roots.pop_front();
-      if (!null_id(cur))
-        revisions.push_back(cur);
-      
-      for(gi i = graph.lower_bound(cur);
-          i != graph.upper_bound(cur); i++)
-        if(--(pcount[i->second]) == 0)
-          roots.push_back(i->second);
-    }
+  toposort_rev_ancestry(graph, revisions);
 }
 
 void
@@ -1814,11 +1769,13 @@ regenerate_caches(app_state & app)
   P(F("finished regenerating cached rosters and heights"));
 }
 
-CMD(rev_height, hidden_group(), N_("REV"), "show the height for REV",
-    options::opts::none)
+CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
+           N_("Shows a revision's height"),
+           "",
+           options::opts::none)
 {
   if (args.size() != 1)
-    throw usage(name);
+    throw usage(execid);
   revision_id rid(idx(args, 0)());
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   rev_height height;
