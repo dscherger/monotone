@@ -863,7 +863,7 @@ process_rcs_branch(string const & begin_version,
               //
               // If we didn't add this dependency, the tag could be deferred
               // by the toposort to many revisions later. Instead, we want
-              // to raise conflict, if a commit interferes with a tagging
+              // to raise a conflict, if a commit interferes with a tagging
               // action.
               if (last_commit)
                 last_commit->dependencies.push_back(event);
@@ -1610,6 +1610,11 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
       cvs.blobs[bi].push_back(*i);
 
 
+
+#if 0
+This is currently not needed, as we rebuild the graph from scratch anyway. 
+
+
   {
     // in edges, blobs which depend on this one blob we should split
     pair< boost::graph_traits<Graph>::in_edge_iterator,
@@ -1682,6 +1687,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
         remove_edge(ity->m_source, ity->m_target, const_cast<Graph &>(g));
       }
   }
+#endif
 }
 
 class blob_label_writer
