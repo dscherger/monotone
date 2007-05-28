@@ -228,11 +228,11 @@ cvs_event_branch
 public:
   cvs_branchname branchname;
 
-  // The first event in the branch. This is used in the blob_consumer, to
+  // The first event(s) in the branch. This is used in the blob_consumer, to
   // distinguish between events which only depend on the branchpoint (i.e.
-  // have to come later) and events which are taking place in the branch
+  // have to come later) and events which have taken place in the branch
   // and therefore depend on the branchpoint, too.
-  cvs_event_ptr branch_direction;
+  vector< cvs_event_ptr > branch_contents;
 
   cvs_event_branch(const cvs_path p, const cvs_branchname bn)
     : cvs_event(p, 0),
@@ -952,7 +952,7 @@ process_rcs_branch(string const & begin_version,
               // other events which depend on this branch event, later on.
               first_event_in_branch->add_dependency(branch_event);
               boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-                branch_event)->branch_direction = first_event_in_branch;
+                branch_event)->branch_contents.push_back(first_event_in_branch);
 
               // make sure curr_commit exists in the cvs history
               I(cvs.blob_exists(curr_commit->get_digest()));
@@ -1031,7 +1031,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
     // link the pseudo trunk branch to the first event in the branch
     first_event->dependencies.push_back(root_event);
     boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-      root_event)->branch_direction = first_event;
+      root_event)->branch_contents.push_back(first_event);
 
     global_pieces.reset();
   }
@@ -2091,11 +2091,16 @@ blob_consumer::consume_blob(cvs_blob & blob)
                 boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                   *dep_blob.begin());
 
-              I(cbe->branch_direction);
-              cvs_blob_index dir_bi = cvs.get_blob_of(cbe->branch_direction);
+              I(!cbe->branch_contents.empty());
+              vector< cvs_event_ptr >::const_iterator k;
+              for (k = cbe->branch_contents.begin();
+                   k != cbe->branch_contents.end(); ++k)
+                {
+              cvs_blob_index dir_bi = cvs.get_blob_of(*k);
               if (*cvs.blobs[dir_bi].begin() == *blob.begin())
                 if (dep_branches.find(bi) == dep_branches.end())
                   dep_branches.insert(bi);
+                }
             }
           else
             {
