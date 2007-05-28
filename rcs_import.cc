@@ -938,12 +938,12 @@ process_rcs_branch(string const & begin_version,
           else
             L(FL("finished private RCS branch %s") % (*i));
 
-              cvs_branchname bname = cvs.branchname_interner.intern(branchname);
+          cvs_branchname bname = cvs.branchname_interner.intern(branchname);
 
-              cvs_event_ptr branch_event =
-                boost::static_pointer_cast<cvs_event, cvs_event_branch>(
-                  shared_ptr<cvs_event_branch>(
-                    new cvs_event_branch(curr_commit, bname)));
+          cvs_event_ptr branch_event =
+            boost::static_pointer_cast<cvs_event, cvs_event_branch>(
+              shared_ptr<cvs_event_branch>(
+                new cvs_event_branch(curr_commit, bname)));
 
           if (first_event_in_branch)
             {
@@ -954,24 +954,24 @@ process_rcs_branch(string const & begin_version,
               boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                 branch_event)->branch_contents.push_back(first_event_in_branch);
             }
-                else
-                  L(FL("branch %s remained empty for this file") % branchname);
+          else
+            L(FL("branch %s remained empty for this file") % branchname);
 
-              // make sure curr_commit exists in the cvs history
-              I(cvs.blob_exists(curr_commit->get_digest()));
+          // make sure curr_commit exists in the cvs history
+          I(cvs.blob_exists(curr_commit->get_digest()));
 
-              // add the blob to the bucket
-              cvs_blob_index bi = cvs.append_event(branch_event);
+          // add the blob to the bucket
+          cvs_blob_index bi = cvs.append_event(branch_event);
 
-              L(FL("added branch event for file %s into branch %s")
-                % cvs.path_interner.lookup(curr_commit->path)
-                % branchname);
+          L(FL("added branch event for file %s into branch %s")
+            % cvs.path_interner.lookup(curr_commit->path)
+            % branchname);
 
-              // Make the last commit depend on this branch, so that this
-              // commit action certainly comes after the branch action. See
-              // the comment above for tags.
-              if (last_commit)
-                last_commit->add_dependency(branch_event);
+          // Make the last commit depend on this branch, so that this
+          // commit action certainly comes after the branch action. See
+          // the comment above for tags.
+          if (last_commit)
+            last_commit->add_dependency(branch_event);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -2093,19 +2093,20 @@ blob_consumer::consume_blob(cvs_blob & blob)
               for (blob_event_iter l = dep_blob.begin();
                    l != dep_blob.end(); ++l)
                 {
-              shared_ptr<cvs_event_branch> cbe =
-                boost::static_pointer_cast<cvs_event_branch, cvs_event>(*l);
+                  shared_ptr<cvs_event_branch> cbe =
+                    boost::static_pointer_cast<cvs_event_branch,
+                                               cvs_event>(*l);
 
-              vector< cvs_event_ptr >::const_iterator k;
-              for (k = cbe->branch_contents.begin();
-                   k != cbe->branch_contents.end(); ++k)
-                {
-                  cvs_blob_index cont_bi = cvs.get_blob_of(*k);
-                  cvs_blob_index my_bi = cvs.get_blob_of(*blob.begin());
-                  if (my_bi == cont_bi)
-                    if (dep_branches.find(bi) == dep_branches.end())
-                      dep_branches.insert(bi);
-                }
+                  vector< cvs_event_ptr >::const_iterator k;
+                  for (k = cbe->branch_contents.begin();
+                       k != cbe->branch_contents.end(); ++k)
+                    {
+                      cvs_blob_index cont_bi = cvs.get_blob_of(*k);
+                      cvs_blob_index my_bi = cvs.get_blob_of(*blob.begin());
+                      if (my_bi == cont_bi)
+                        if (dep_branches.find(bi) == dep_branches.end())
+                          dep_branches.insert(bi);
+                    }
                 }
             }
           else
