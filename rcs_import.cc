@@ -2096,10 +2096,10 @@ blob_consumer::consume_blob(cvs_blob & blob)
               for (k = cbe->branch_contents.begin();
                    k != cbe->branch_contents.end(); ++k)
                 {
-              cvs_blob_index dir_bi = cvs.get_blob_of(*k);
-              if (*cvs.blobs[dir_bi].begin() == *blob.begin())
-                if (dep_branches.find(bi) == dep_branches.end())
-                  dep_branches.insert(bi);
+                  cvs_blob_index dir_bi = cvs.get_blob_of(*k);
+                  if (*cvs.blobs[dir_bi].begin() == *blob.begin())
+                    if (dep_branches.find(bi) == dep_branches.end())
+                      dep_branches.insert(bi);
                 }
             }
           else
