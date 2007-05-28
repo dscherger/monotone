@@ -17,7 +17,7 @@ check(get("cvs-repository"))
 check(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
 
 check(mtn("list", "branches"), 0, true, false)
-check(samelines("stdout", {"test", "test.A1", "test.A2", "test.B"}))
+check(samelines("stdout", {"test", "test.A1", "test.B"}))
 
 check(mtn("checkout", "-b", "test.A1", "mtnco"), 0, false, false)
 check(indir("mtnco", mtn("list", "known")), 0, true, false)
