@@ -178,6 +178,11 @@ public:
   virtual ~cvs_event() { };
   virtual cvs_event_digest get_digest(void) const = 0;
 
+  void add_dependency(const cvs_event_ptr dep)
+    {
+      dependencies.push_back(dep);
+    }
+
   const bool operator < (const cvs_event & e) const
     {
       return time < e.time;
@@ -835,10 +840,10 @@ process_rcs_branch(string const & begin_version,
       cvs.append_event(curr_commit);
       ++cvs.n_versions;
 
-      // make the last commit depend on the current one (which
-      // comes _before_ in the CVS history).
+      // make the last commit (i.e. 1.3) depend on the current one
+      // (i.e. 1.2), as it which comes _before_ in the CVS history.
       if (last_commit)
-        last_commit->dependencies.push_back(curr_commit);
+        last_commit->add_dependency(curr_commit);
 
       // create tag events for all tags on this commit
       typedef multimap<string,string>::const_iterator ity;
@@ -850,12 +855,12 @@ process_rcs_branch(string const & begin_version,
               L(FL("version %s -> tag %s") % curr_version % i->second);
 
               cvs_tag tag = cvs.tag_interner.intern(i->second);
-              cvs_event_ptr event = 
+              cvs_event_ptr tag_event = 
                 boost::static_pointer_cast<cvs_event, cvs_event_tag>(
                   shared_ptr<cvs_event_tag>(
                     new cvs_event_tag(curr_commit, tag)));
 
-              cvs_blob_index bi = cvs.append_event(event);
+              cvs_blob_index bi = cvs.append_event(tag_event);
 
               // Append to the last_commit deps. While not quite obvious,
               // we absolutely need this dependency! Think of it as: the
@@ -866,7 +871,7 @@ process_rcs_branch(string const & begin_version,
               // to raise a conflict, if a commit interferes with a tagging
               // action.
               if (last_commit)
-                last_commit->dependencies.push_back(event);
+                last_commit->add_dependency(tag_event);
             }
         }
 
@@ -945,7 +950,7 @@ process_rcs_branch(string const & begin_version,
               // add correct dependencies and remember the first event in
               // the branch, to be able to differenciate between that and
               // other events which depend on this branch event, later on.
-              first_event_in_branch->dependencies.push_back(branch_event);
+              first_event_in_branch->add_dependency(branch_event);
               boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                 branch_event)->branch_direction = first_event_in_branch;
 
@@ -963,7 +968,7 @@ process_rcs_branch(string const & begin_version,
               // commit action certainly comes after the branch action. See
               // the comment above for tags.
               if (last_commit)
-                last_commit->dependencies.push_back(branch_event);
+                last_commit->add_dependency(branch_event);
             }
         }
 
@@ -1405,12 +1410,10 @@ add_blob_dependency_edges(cvs_history & cvs,
       for(dependency_iter dep = (*event)->dependencies.begin();
           dep != (*event)->dependencies.end(); ++dep)
         {
-          blob_index_iterator k =
-            cvs.get_blobs((*dep)->get_digest(), false).first;
+          pair< blob_index_iterator, blob_index_iterator > range(
+            cvs.get_blobs((*dep)->get_digest(), false));
 
-          for ( ; (k->second < cvs.blobs.size()) &&
-                  (cvs.blobs[k->second].get_digest() == 
-                                    (*dep)->get_digest()); ++k)
+          for (blob_index_iterator k = range.first; k != range.second; ++k)
             {
               bool found_dep = false;
 
