@@ -216,6 +216,12 @@ public:
     return state::NONE;
   }
 
+  // This should be private.
+  void set_session_key(netsync_session_key const & key)
+  {
+    input.set_hmac_key(key);
+    output.set_hmac_key(key);
+  }
 
   Netxx::Probe::ready_type which_events();
 };
@@ -292,6 +298,13 @@ service::detach(bool received_error)
 void
 service::detached(bool received_error)
 {
+}
+
+void
+service::_set_session_key(netsync_session_key const & key)
+{
+  I(sess);
+  sess->set_session_key(key);
 }
 
 bool

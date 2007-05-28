@@ -269,6 +269,49 @@ class netsync:
   public refiner_callbacks,
   public enumerator_callbacks
 {
+public:
+  // Interface to netsync_service.
+  netsync(protocol_role role,
+          globish const & our_include_pattern,
+          globish const & our_exclude_pattern,
+          netsync_service & wrapper,
+          app_state & app);
+  virtual ~netsync();
+
+  void begin_service();
+  void request_service();
+  bool can_process();
+  bool process(transaction_guard & guard);
+
+  // The incoming dispatcher.
+  bool received(netcmd const & cmd,
+                transaction_guard & guard);
+private:
+  void set_session_key(string const & key);
+  void set_session_key(rsa_oaep_sha_data const & key_encrypted);
+public:
+
+  // enumerator_callbacks interface
+private:
+  // This is only used by queue_this_file and note_file_{data,delta}
+  set<file_id> file_items_sent;
+public:
+  bool process_this_rev(revision_id const & rev);
+  bool queue_this_cert(hexenc<id> const & c);
+  bool queue_this_file(hexenc<id> const & f);
+  void note_file_data(file_id const & f);
+  void note_file_delta(file_id const & src, file_id const & dst);
+  void note_rev(revision_id const & rev);
+  void note_cert(hexenc<id> const & c);
+
+
+  // refiner_callbacks interface
+  void queue_refine_cmd(refinement_type ty, merkle_node const & node);
+  void queue_done_cmd(netcmd_item_type type, size_t n_items);
+
+
+  // Implementation stuff.
+private:
   protocol_role role;
   // protocol_voice const voice;
   globish const & our_include_pattern;
@@ -276,31 +319,11 @@ class netsync:
   globish_matcher our_matcher;
   netsync_service & service; // for sending
   protocol_voice voice;
-public:
+
   app_state & app;
 
-public:
   bool armed();
 
-  // Interface.
-public:
-  netsync(protocol_role role,
-          globish const & our_include_pattern,
-          globish const & our_exclude_pattern,
-          netsync_service & wrapper,
-          app_state & app);
-
-  void begin_service();
-  void request_service();
-  bool can_process();
-  bool process(transaction_guard & guard);
-  //private:
-  // The incoming dispatcher.
-  bool received(netcmd const & cmd,
-                transaction_guard & guard);
-
-
-private:
   void write_netcmd_and_try_flush(netcmd const & cmd);
   id remote_peer_key_hash;
   rsa_keypair_id remote_peer_key_name;
@@ -328,7 +351,6 @@ private:
 
   id saved_nonce;
 
-public:
   enum
     {
       working_state,
@@ -338,7 +360,6 @@ public:
     protocol_state;
 
   bool encountered_error;
-private:
 
   static const int no_error = 200;
   static const int partial_transfer = 211;
@@ -367,23 +388,9 @@ private:
   // Interface to ancestry grovelling.
   revision_enumerator rev_enumerator;
 
-  // Enumerator_callbacks methods.
-  set<file_id> file_items_sent;
-public:
-  bool process_this_rev(revision_id const & rev);
-  bool queue_this_cert(hexenc<id> const & c);
-  bool queue_this_file(hexenc<id> const & f);
-  void note_file_data(file_id const & f);
-  void note_file_delta(file_id const & src, file_id const & dst);
-  void note_rev(revision_id const & rev);
-  void note_cert(hexenc<id> const & c);
 
-  virtual ~netsync();
-private:
   id mk_nonce();
 
-  //void set_session_key(string const & key);
-  //void set_session_key(rsa_oaep_sha_data const & key_encrypted);
 
   void setup_client_tickers();
   bool done_all_refinements();
@@ -394,25 +401,19 @@ private:
   bool can_step();   // refiner
   void maybe_step(); //refiner
 
-public:
   void maybe_say_goodbye(transaction_guard & guard);
-private:
 
   void note_item_arrived(netcmd_item_type ty, id const & i);
   void maybe_note_epochs_finished();
   void note_item_sent(netcmd_item_type ty, id const & i);
 
-private:
 
   void error(int errcode, string const & errmsg);
 
 
   // Outgoing queue-writers.
-public: // refiner_callbacks
   void queue_bye_cmd(u8 phase);
-private:
   void queue_error_cmd(string const & errmsg);
-  void queue_done_cmd(netcmd_item_type type, size_t n_items);
   void queue_hello_cmd(rsa_keypair_id const & key_name,
                        base64<rsa_pub_key> const & pub_encoded,
                        id const & nonce);
@@ -430,9 +431,6 @@ private:
                       string const & signature,
                       base64<rsa_pub_key> server_key_encoded);
   void queue_confirm_cmd();
-public: // refiner_callbacks
-  void queue_refine_cmd(refinement_type ty, merkle_node const & node);
-private:
   void queue_data_cmd(netcmd_item_type type,
                       id const & item,
                       string const & dat);
@@ -685,6 +683,7 @@ netsync::request_service()
 void
 netsync::begin_service()
 {
+  //FIXME: this should move to network.hh
   keypair kp;
   if (app.opts.use_transport_auth)
     app.keys.get_key_pair(app.opts.signing_key, kp);
@@ -783,13 +782,11 @@ netsync::mk_nonce()
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
   return this->saved_nonce;
 }
-/*
+
 void
 netsync::set_session_key(string const & key)
 {
-  netsync_session_key session_key = netsync_session_key(key);
-  input.set_hmac_key(session_key);
-  output.set_hmac_key(session_key);
+  service._set_session_key(netsync_session_key(key));
 }
 
 void
@@ -805,7 +802,7 @@ netsync::set_session_key(rsa_oaep_sha_data const & hmac_key_encrypted)
       set_session_key(hmac_key);
     }
 }
-*/
+
 void
 netsync::setup_client_tickers()
 {
@@ -1101,7 +1098,7 @@ netsync::queue_anonymous_cmd(protocol_role role,
   cmd.write_anonymous_cmd(role, include_pattern, exclude_pattern,
                           hmac_key_encrypted);
   write_netcmd_and_try_flush(cmd);
-  //set_session_key(nonce2());
+  set_session_key(nonce2());
 }
 
 void
@@ -1122,7 +1119,7 @@ netsync::queue_auth_cmd(protocol_role role,
   cmd.write_auth_cmd(role, include_pattern, exclude_pattern, client,
                      nonce1, hmac_key_encrypted, signature);
   write_netcmd_and_try_flush(cmd);
-  //set_session_key(nonce2());
+  set_session_key(nonce2());
 }
 
 void
@@ -2092,7 +2089,7 @@ netsync::received(netcmd const & cmd,
           % (role == source_and_sink_role ? _("source and sink") :
              (role == source_role ? _("source") : _("sink"))));
 
-        //set_session_key(hmac_key_encrypted);
+        set_session_key(hmac_key_encrypted);
         if (!process_anonymous_cmd(role, their_include_pattern, their_exclude_pattern))
             return false;
         queue_confirm_cmd();
@@ -2124,7 +2121,7 @@ netsync::received(netcmd const & cmd,
              (role == source_role ? _("source") : _("sink")))
           % hnonce1);
 
-        //set_session_key(hmac_key_encrypted);
+        set_session_key(hmac_key_encrypted);
 
         if (!process_auth_cmd(role, their_include_pattern, their_exclude_pattern,
                               client, nonce1, signature))

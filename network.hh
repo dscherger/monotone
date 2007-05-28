@@ -43,6 +43,10 @@ private:
   virtual void detached(bool received_error); // default do nothing
 public:
 
+  // Because this is currently intertwined in the netsync protocol.
+  // This really ought to go away sometime.
+  void _set_session_key(netsync_session_key const & key);
+
   virtual void begin_service() = 0;   // called on the server
   virtual void request_service() = 0; // called on the client
 
