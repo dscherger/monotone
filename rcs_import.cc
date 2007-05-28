@@ -938,8 +938,6 @@ process_rcs_branch(string const & begin_version,
           else
             L(FL("finished private RCS branch %s") % (*i));
 
-          if (first_event_in_branch)
-            {
               cvs_branchname bname = cvs.branchname_interner.intern(branchname);
 
               cvs_event_ptr branch_event =
@@ -947,12 +945,17 @@ process_rcs_branch(string const & begin_version,
                   shared_ptr<cvs_event_branch>(
                     new cvs_event_branch(curr_commit, bname)));
 
+          if (first_event_in_branch)
+            {
               // add correct dependencies and remember the first event in
               // the branch, to be able to differenciate between that and
               // other events which depend on this branch event, later on.
               first_event_in_branch->add_dependency(branch_event);
               boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                 branch_event)->branch_contents.push_back(first_event_in_branch);
+            }
+                else
+                  L(FL("branch %s remained empty for this file") % branchname);
 
               // make sure curr_commit exists in the cvs history
               I(cvs.blob_exists(curr_commit->get_digest()));
@@ -969,7 +972,6 @@ process_rcs_branch(string const & begin_version,
               // the comment above for tags.
               if (last_commit)
                 last_commit->add_dependency(branch_event);
-            }
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -2083,23 +2085,27 @@ blob_consumer::consume_blob(cvs_blob & blob)
           I(dep_blob.in_branch != invalid_blob);
 
           // If this blob depends on a branch event, we have to check if
-          // this blob is the first blob in the branch, i.e. the branch
-          // direction. In that case, we add the branch to the dep_branches.
+          // this blob is one of the first blobs in the branch, i.e. the
+          // start of the branch's contents. In that case, we add the
+          // branch to the dep_branches.
           if (dep_blob.get_digest().is_branch())
             {
+              for (blob_event_iter l = dep_blob.begin();
+                   l != dep_blob.end(); ++l)
+                {
               shared_ptr<cvs_event_branch> cbe =
-                boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-                  *dep_blob.begin());
+                boost::static_pointer_cast<cvs_event_branch, cvs_event>(*l);
 
-              I(!cbe->branch_contents.empty());
               vector< cvs_event_ptr >::const_iterator k;
               for (k = cbe->branch_contents.begin();
                    k != cbe->branch_contents.end(); ++k)
                 {
-                  cvs_blob_index dir_bi = cvs.get_blob_of(*k);
-                  if (*cvs.blobs[dir_bi].begin() == *blob.begin())
+                  cvs_blob_index cont_bi = cvs.get_blob_of(*k);
+                  cvs_blob_index my_bi = cvs.get_blob_of(*blob.begin());
+                  if (my_bi == cont_bi)
                     if (dep_branches.find(bi) == dep_branches.end())
                       dep_branches.insert(bi);
+                }
                 }
             }
           else
