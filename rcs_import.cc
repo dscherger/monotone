@@ -1456,9 +1456,10 @@ get_split_points(cvs_history & cvs, cvs_blob_index bi)
           if (dep->get_digest() == blob.get_digest())
             {
               L(FL("event time: %d  - dep time: %d") % ev->time % dep->time);
-              // FIXME: this invariant gets violated by tests
-              I(ev->time >= dep->time);
-              result_set.push_back(make_pair(dep->time, ev->time));
+              if (ev->time >= dep->time)
+                result_set.push_back(make_pair(dep->time, ev->time));
+              else
+                result_set.push_back(make_pair(ev->time, dep->time));
             }
         }
     }
