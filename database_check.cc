@@ -305,7 +305,7 @@ check_revisions(app_state & app,
 {
   set<revision_id> revisions;
 
-  app.db.get_revision_ids(revisions);
+  app.db.get_revision_and_sentinel_ids(revisions);
   L(FL("checking %d revisions") % revisions.size());
 
   ticker ticks(_("revisions"), "r", revisions.size()/70+1);
@@ -314,14 +314,13 @@ check_revisions(app_state & app,
        i != revisions.end(); ++i)
     {
       L(FL("checking revision %s") % *i);
-      revision_data data;
-      app.db.get_revision(*i, data);
       checked_revisions[*i].found = true;
 
       revision_t rev;
       try
         {
-          read_revision(data, rev);
+          app.db.get_revision_or_sentinel(*i, rev);
+          I(!rev.is_sentinel);
         }
       catch (logic_error & e)
         {
