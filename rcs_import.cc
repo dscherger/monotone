@@ -1269,7 +1269,7 @@ blob_consumer
                    app_state & app,
                    ticker & n_revs);
 
-  void consume_blob(cvs_blob & blob);
+  void consume_blob(cvs_blob_index bi);
   void add_missing_parents(branch_state & bstate,
                            split_path const & sp, cset & cs);
   void build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
@@ -1377,7 +1377,7 @@ public:
   revision_iterator & operator = (cvs_blob_index current_blob)
     {
       L(FL("next blob number from toposort: %d") % current_blob);
-      cons.consume_blob(cvs.blobs[current_blob]);
+      cons.consume_blob(current_blob);
       return *this;
     }
 
@@ -2062,8 +2062,11 @@ blob_consumer::build_cset(const cvs_blob & blob,
 }
 
 void
-blob_consumer::consume_blob(cvs_blob & blob)
+blob_consumer::consume_blob(cvs_blob_index bi)
 {
+  cvs_blob & blob = cvs.blobs[bi];
+  I(bi == cvs.get_blob_of(*blob.begin()));
+
   // Search through all direct dependencies and check what branches
   // those are in.
   set< cvs_blob_index > dep_branches;
@@ -2076,9 +2079,8 @@ blob_consumer::consume_blob(cvs_blob & blob)
         {
           cvs_event_ptr dep = *j;
 
-          // Get the blob this dependency event is part of.
-          cvs_blob_index bi = cvs.get_blob_of(dep);
-          cvs_blob & dep_blob = cvs.blobs[bi];
+          cvs_blob_index dep_bi = cvs.get_blob_of(dep);
+          cvs_blob & dep_blob = cvs.blobs[dep_bi];
 
           // The blob we depend on must have been imported already, and thus
           // must already be in a branch.
@@ -2104,8 +2106,8 @@ blob_consumer::consume_blob(cvs_blob & blob)
                       cvs_blob_index cont_bi = cvs.get_blob_of(*k);
                       cvs_blob_index my_bi = cvs.get_blob_of(*blob.begin());
                       if (my_bi == cont_bi)
-                        if (dep_branches.find(bi) == dep_branches.end())
-                          dep_branches.insert(bi);
+                        if (dep_branches.find(dep_bi) == dep_branches.end())
+                          dep_branches.insert(dep_bi);
                     }
                 }
             }
@@ -2137,7 +2139,7 @@ blob_consumer::consume_blob(cvs_blob & blob)
       do
       {
         set_modified = false;
-        cvs_blob_index bi;
+        cvs_blob_index my_bi;
         shared_ptr< cvs_event_branch > cbe;
         for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
           {
@@ -2145,36 +2147,36 @@ blob_consumer::consume_blob(cvs_blob & blob)
             // is parent of another branch we depend on, so we could remove
             // the parent branch dependency.
             I(*i != invalid_blob);
-            bi = *i;
-            while (cvs.blobs[bi].in_branch != invalid_branch)
+            my_bi = *i;
+            while (cvs.blobs[my_bi].in_branch != invalid_branch)
               {
-                L(FL("       checking branch %d: %s") % bi
+                L(FL("       checking branch %d: %s") % my_bi
                   % cvs.branchname_interner.lookup(
                     boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-                      *cvs.blobs[bi].begin())->branchname));
+                      *cvs.blobs[my_bi].begin())->branchname));
 
-                if (dep_branches.find(cvs.blobs[bi].in_branch) !=
+                if (dep_branches.find(cvs.blobs[my_bi].in_branch) !=
                     dep_branches.end())
                   {
                     // remove that branch, since it's a parent of another
                     // branch this blob depends on.
-                    dep_branches.erase(cvs.blobs[bi].in_branch);
+                    dep_branches.erase(cvs.blobs[my_bi].in_branch);
                     set_modified = true;
                   }
 
                 // continue to remove grand-parents
-                I(cvs.blobs[bi].in_branch != invalid_blob);
-                cvs_blob_index new_bi = cvs.blobs[bi].in_branch;
+                I(cvs.blobs[my_bi].in_branch != invalid_blob);
+                cvs_blob_index new_bi = cvs.blobs[my_bi].in_branch;
 
-                if (bi == new_bi)
+                if (my_bi == new_bi)
                   break;
 
                 I((boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-                    *(cvs.blobs[bi].begin()))->branchname !=
+                    *(cvs.blobs[my_bi].begin()))->branchname !=
                    boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                     *(cvs.blobs[new_bi].begin()))->branchname));
 
-                bi = new_bi;
+                my_bi = new_bi;
               }
 
             if (set_modified)
@@ -2246,15 +2248,37 @@ blob_consumer::consume_blob(cvs_blob & blob)
     {
       if (!blob.empty())
         {
-          // FIXME:
-          I(blob.split_counter == 0);
-
           shared_ptr<cvs_event_branch> cbe =
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(
               *blob.begin());
 
+          if (blob.split_counter != 0)
+            {
+              int idx = (blob.split_origin == bi ? 0 : blob.split_index);
+
+              // As the get_blob_of handles invalid entries in the blob_index
+              // just well, we don't care to remove the old entry for that
+              // blob.
+
+              // cvs.blob_index.remove(make_pair(cte->tag->get_digest(), bi));
+
+              string branchname = cvs.branchname_interner.lookup(cbe->branchname);
+              if (branchname.empty())
+                branchname = (FL(";UNNAMED_BRANCH#%d") % idx).str();
+              else
+                branchname = (FL("%s#%d") % cbe->branchname % idx).str();
+
+              cbe->branchname = cvs.branchname_interner.intern(branchname);
+
+              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+                static_cast< cvs_event_branch & >(**i).branchname = cbe->branchname;
+
+              cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
+            }
+
           // Set the base revision of the branch to the branchpoint revision
           // and initialize the map of live files.
+          // FIXME: this is certainly bogus:
           if (cbe->branchname != in_branch)
             {
               I(cbe->branchname != cvs.base_branch);
@@ -2273,12 +2297,29 @@ blob_consumer::consume_blob(cvs_blob & blob)
     {
       if (!blob.empty())
         {
-          // FIXME:
-          I(blob.split_counter == 0);
-
           shared_ptr<cvs_event_tag> cte =
             boost::static_pointer_cast<cvs_event_tag, cvs_event>(
               *blob.begin());
+
+          if (blob.split_counter > 0)
+            {
+              int idx = (blob.split_origin == bi ? 0 : blob.split_index);
+
+              // As the get_blob_of handles invalid entries in the blob_index
+              // just well, we don't care to remove the old entry for that
+              // blob.
+
+              // cvs.blob_index.remove(make_pair(cte->tag->get_digest(), bi));
+
+              string tagname = (FL("%s#%d") % cvs.tag_interner.lookup(cte->tag)
+                                           % idx).str();
+              cte->tag = cvs.tag_interner.intern(tagname);
+
+              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+                static_cast< cvs_event_tag & >(**i).tag = cte->tag;
+
+              cvs.blob_index.insert(make_pair(cte->get_digest(), bi));
+            }
 
           cvs.resolved_tags.insert(make_pair(cte->tag, bstate.current_rid));
         }
