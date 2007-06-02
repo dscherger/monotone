@@ -1,0 +1,25 @@
+head	1.1;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.03.10.12.46.47;	author markus;	state Exp;
+branches;
+next	;
+commitid	7q60H8GdqhwuFx9s;
+
+
+desc
+@@
+
+
+1.1
+log
+@commit 0
+@
+text
+@our own additions
+@
