@@ -10,8 +10,12 @@
 #include <string>
 #include <sstream>
 
+#include <boost/version.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
+
+namespace fs = boost::filesystem;
 
 #include "constants.hh"
 #include "paths.hh"
@@ -249,6 +253,41 @@ internal_string_to_split_path(string const & path, split_path & sp)
   I(fully_normalized_path_split(path, true, sp));
 }
 
+// path::normalize() is deprecated in Boost 1.34, and also
+// doesn't remove leading or trailing dots any more.
+static fs::path
+normalize_path(fs::path const & in)
+{
+#if BOOST_VERSION < 103400
+  return fs::path(in).normalize();
+#else
+  fs::path out;
+  vector<string> stack;
+  for (fs::path::iterator i = in.begin(); i != in.end(); ++i)
+    {
+      // remove . elements
+      if (*i == ".")
+        continue;
+      // remove foo/.. element pairs
+      if (*i == "..")
+        {
+          if (!stack.empty())
+            {
+              stack.pop_back();
+              continue;
+            }
+        }
+      stack.push_back(*i);
+    }
+  for (vector<string>::const_iterator i = stack.begin();
+       i != stack.end(); ++i)
+    {
+      out /= *i;
+    }
+  return out;
+#endif
+}
+
 static void
 normalize_external_path(string const & path, string & normalized)
 {
@@ -272,7 +311,7 @@ normalize_external_path(string const & path, string & normalized)
           base = initial_rel_path.get();
           // the fs::native is needed to get it to accept paths like ".foo".
           relative = fs::path(path, fs::native);
-          out = (base / relative).normalize();
+          out = normalize_path(base / relative);
         }
       catch (exception &)
         {
@@ -539,9 +578,9 @@ static string
 normalize_out_dots(string const & path)
 {
 #ifdef WIN32
-  return fs::path(path, fs::native).normalize().string();
+  return normalize_path(fs::path(path, fs::native)).string();
 #else
-  return fs::path(path, fs::native).normalize().native_file_string();
+  return normalize_path(fs::path(path, fs::native)).native_file_string();
 #endif
 }
 
@@ -565,7 +604,7 @@ system_path::system_path(any_path const & other, bool in_true_workspace)
 static inline string const_system_path(utf8 const & path)
 {
   N(!path().empty(), F("invalid path ''"));
-  string expanded = tilde_expand(path)();
+  string expanded = tilde_expand(path());
   if (is_absolute_here(expanded))
     return normalize_out_dots(expanded);
   else
@@ -612,12 +651,6 @@ dirname_basename(split_path const & sp,
 ///////////////////////////////////////////////////////////////////////////
 // workspace (and path root) handling
 ///////////////////////////////////////////////////////////////////////////
-
-system_path
-current_root_path()
-{
-  return system_path(fs::initial_path().root_path().string());
-}
 
 static bool
 find_bookdir(fs::path const & root, fs::path const & bookdir, 
@@ -679,9 +712,17 @@ find_bookdir(fs::path const & root, fs::path const & bookdir,
     }
 
   // check for _MTN/. and _MTN/.. to see if mt dir is readable
-  if (!fs::exists(check / ".") || !fs::exists(check / ".."))
+  try
     {
-      L(FL("problems with '%s' (missing '.' or '..')") % check.string());
+      if (!fs::exists(check / ".") || !fs::exists(check / ".."))
+        {
+          L(FL("problems with '%s' (missing '.' or '..')") % check.string());
+          return false;
+        }
+    }
+  catch(exception &)
+    {
+      L(FL("problems with '%s' (cannot check for '.' or '..')") % check.string());
       return false;
     }
   return true;
@@ -689,13 +730,26 @@ find_bookdir(fs::path const & root, fs::path const & bookdir,
 
 
 bool
-find_and_go_to_workspace(system_path const & search_root)
+find_and_go_to_workspace(std::string const & search_root)
 {
-  fs::path root(search_root.as_external(), fs::native);
   fs::path bookdir(bookkeeping_root.as_external(), fs::native);
   fs::path oldbookdir(old_bookkeeping_root.as_external(), fs::native);
-  fs::path current, removed;
+  fs::path root, current, removed;
 
+  if (search_root.empty())
+    root = fs::initial_path().root_path();
+  else
+    {
+      L(FL("limiting search for workspace to %s") % search_root);
+      // converting through system_path makes it absolute
+      root = fs::path(system_path(search_root).as_external(), fs::native);
+
+      N(fs::exists(root),
+        F("search root '%s' does not exist") % search_root);
+      N(fs::is_directory(root),
+         F("search root '%s' is not a directory") % search_root);
+    }
+  
   // first look for the current name of the bookkeeping directory.
   // if we don't find it, look for it under the old name, so that
   // migration has a chance to work.
@@ -740,7 +794,7 @@ using std::logic_error;
 
 UNIT_TEST(paths, null_name)
 {
-  BOOST_CHECK(null_name(the_null_component));
+  UNIT_TEST_CHECK(null_name(the_null_component));
 }
 
 UNIT_TEST(paths, file_path_internal)
@@ -782,17 +836,17 @@ UNIT_TEST(paths, file_path_internal)
   initial_rel_path.set(fs::path(), true);
   for (char const ** c = baddies; *c; ++c)
     {
-      BOOST_CHECK_THROW(file_path_internal(*c), logic_error);
+      UNIT_TEST_CHECK_THROW(file_path_internal(*c), logic_error);
     }
   initial_rel_path.unset();
   initial_rel_path.set(fs::path("blah/blah/blah", fs::native), true);
   for (char const ** c = baddies; *c; ++c)
     {
-      BOOST_CHECK_THROW(file_path_internal(*c), logic_error);
+      UNIT_TEST_CHECK_THROW(file_path_internal(*c), logic_error);
     }
 
-  BOOST_CHECK(file_path().empty());
-  BOOST_CHECK(file_path_internal("").empty());
+  UNIT_TEST_CHECK(file_path().empty());
+  UNIT_TEST_CHECK(file_path_internal("").empty());
 
   char const * goodies[] = {"",
                             "a",
@@ -817,17 +871,17 @@ UNIT_TEST(paths, file_path_internal)
       for (char const ** c = goodies; *c; ++c)
         {
           file_path fp = file_path_internal(*c);
-          BOOST_CHECK(fp.as_internal() == *c);
-          BOOST_CHECK(file_path_internal(fp.as_internal()) == fp);
+          UNIT_TEST_CHECK(fp.as_internal() == *c);
+          UNIT_TEST_CHECK(file_path_internal(fp.as_internal()) == fp);
           split_path split_test;
           fp.split(split_test);
-          BOOST_CHECK(!split_test.empty());
+          UNIT_TEST_CHECK(!split_test.empty());
           file_path fp2(split_test);
-          BOOST_CHECK(fp == fp2);
-          BOOST_CHECK(null_name(split_test[0]));
+          UNIT_TEST_CHECK(fp == fp2);
+          UNIT_TEST_CHECK(null_name(split_test[0]));
           for (split_path::const_iterator
                  i = split_test.begin() + 1; i != split_test.end(); ++i)
-            BOOST_CHECK(!null_name(*i));
+            UNIT_TEST_CHECK(!null_name(*i));
         }
     }
 
@@ -839,20 +893,20 @@ static void check_fp_normalizes_to(char * before, char * after)
   L(FL("check_fp_normalizes_to: '%s' -> '%s'") % before % after);
   file_path fp = file_path_external(utf8(before));
   L(FL("  (got: %s)") % fp);
-  BOOST_CHECK(fp.as_internal() == after);
-  BOOST_CHECK(file_path_internal(fp.as_internal()) == fp);
+  UNIT_TEST_CHECK(fp.as_internal() == after);
+  UNIT_TEST_CHECK(file_path_internal(fp.as_internal()) == fp);
   // we compare after to the external form too, since as far as we know
   // relative normalized posix paths are always good win32 paths too
-  BOOST_CHECK(fp.as_external() == after);
+  UNIT_TEST_CHECK(fp.as_external() == after);
   split_path split_test;
   fp.split(split_test);
-  BOOST_CHECK(!split_test.empty());
+  UNIT_TEST_CHECK(!split_test.empty());
   file_path fp2(split_test);
-  BOOST_CHECK(fp == fp2);
-  BOOST_CHECK(null_name(split_test[0]));
+  UNIT_TEST_CHECK(fp == fp2);
+  UNIT_TEST_CHECK(null_name(split_test[0]));
   for (split_path::const_iterator
          i = split_test.begin() + 1; i != split_test.end(); ++i)
-    BOOST_CHECK(!null_name(*i));
+    UNIT_TEST_CHECK(!null_name(*i));
 }
 
 UNIT_TEST(paths, file_path_external_null_prefix)
@@ -891,7 +945,7 @@ UNIT_TEST(paths, file_path_external_null_prefix)
   for (char const ** c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_null_prefix: trying baddie: %s") % *c);
-      BOOST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
+      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
     }
 
   check_fp_normalizes_to("a", "a");
@@ -929,9 +983,9 @@ UNIT_TEST(paths, file_path_external_prefix__MTN)
   initial_rel_path.unset();
   initial_rel_path.set(fs::path("_MTN"), true);
 
-  BOOST_CHECK_THROW(file_path_external(utf8("foo")), informative_failure);
-  BOOST_CHECK_THROW(file_path_external(utf8(".")), informative_failure);
-  BOOST_CHECK_THROW(file_path_external(utf8("./blah")), informative_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8("foo")), informative_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8(".")), informative_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8("./blah")), informative_failure);
   check_fp_normalizes_to("..", "");
   check_fp_normalizes_to("../foo", "foo");
 }
@@ -974,7 +1028,7 @@ UNIT_TEST(paths, file_path_external_prefix_a_b)
   for (char const ** c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_prefix_a_b: trying baddie: %s") % *c);
-      BOOST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
+      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
     }
 
   check_fp_normalizes_to("foo", "a/b/foo");
@@ -1023,42 +1077,42 @@ UNIT_TEST(paths, split_join)
   split_path split1, split2;
   fp1.split(split1);
   fp2.split(split2);
-  BOOST_CHECK(fp1 == file_path(split1));
-  BOOST_CHECK(fp2 == file_path(split2));
-  BOOST_CHECK(!(fp1 == file_path(split2)));
-  BOOST_CHECK(!(fp2 == file_path(split1)));
-  BOOST_CHECK(split1.size() == 4);
-  BOOST_CHECK(split2.size() == 4);
-  BOOST_CHECK(split1[1] != split1[2]);
-  BOOST_CHECK(split1[1] != split1[3]);
-  BOOST_CHECK(split1[2] != split1[3]);
-  BOOST_CHECK(null_name(split1[0])
+  UNIT_TEST_CHECK(fp1 == file_path(split1));
+  UNIT_TEST_CHECK(fp2 == file_path(split2));
+  UNIT_TEST_CHECK(!(fp1 == file_path(split2)));
+  UNIT_TEST_CHECK(!(fp2 == file_path(split1)));
+  UNIT_TEST_CHECK(split1.size() == 4);
+  UNIT_TEST_CHECK(split2.size() == 4);
+  UNIT_TEST_CHECK(split1[1] != split1[2]);
+  UNIT_TEST_CHECK(split1[1] != split1[3]);
+  UNIT_TEST_CHECK(split1[2] != split1[3]);
+  UNIT_TEST_CHECK(null_name(split1[0])
               && !null_name(split1[1])
               && !null_name(split1[2])
               && !null_name(split1[3]));
-  BOOST_CHECK(split1[1] == split2[3]);
-  BOOST_CHECK(split1[2] == split2[1]);
-  BOOST_CHECK(split1[3] == split2[2]);
+  UNIT_TEST_CHECK(split1[1] == split2[3]);
+  UNIT_TEST_CHECK(split1[2] == split2[1]);
+  UNIT_TEST_CHECK(split1[3] == split2[2]);
 
   file_path fp3 = file_path_internal("");
   split_path split3;
   fp3.split(split3);
-  BOOST_CHECK(split3.size() == 1 && null_name(split3[0]));
+  UNIT_TEST_CHECK(split3.size() == 1 && null_name(split3[0]));
 
   // empty split_path is invalid
   split_path split4;
   // this comparison tricks the compiler into not completely eliminating this
   // code as dead...
-  BOOST_CHECK_THROW(file_path(split4) == file_path(), logic_error);
+  UNIT_TEST_CHECK_THROW(file_path(split4) == file_path(), logic_error);
   split4.push_back(the_null_component);
-  BOOST_CHECK(file_path(split4) == file_path());
+  UNIT_TEST_CHECK(file_path(split4) == file_path());
 
   // split_path without null first item is invalid
   split4.clear();
   split4.push_back(split1[1]);
   // this comparison tricks the compiler into not completely eliminating this
   // code as dead...
-  BOOST_CHECK_THROW(file_path(split4) == file_path(), logic_error);
+  UNIT_TEST_CHECK_THROW(file_path(split4) == file_path(), logic_error);
 
   // split_path with non-first item item null is invalid
   split4.clear();
@@ -1067,40 +1121,40 @@ UNIT_TEST(paths, split_join)
   split4.push_back(the_null_component);
   // this comparison tricks the compiler into not completely eliminating this
   // code as dead...
-  BOOST_CHECK_THROW(file_path(split4) == file_path(), logic_error);
+  UNIT_TEST_CHECK_THROW(file_path(split4) == file_path(), logic_error);
 
   // Make sure that we can't use joining to create a path into the bookkeeping
   // dir
   {
     split_path split_mt1, split_mt2;
     file_path_internal("foo/_MTN").split(split_mt1);
-    BOOST_CHECK(split_mt1.size() == 3);
+    UNIT_TEST_CHECK(split_mt1.size() == 3);
     I(split_mt1[2] == bookkeeping_root_component);
     split_mt2.push_back(the_null_component);
     split_mt2.push_back(split_mt1[2]);
     // split_mt2 now contains the component "_MTN"
-    BOOST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
+    UNIT_TEST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
     split_mt2.push_back(split_mt1[1]);
     // split_mt2 now contains the components "_MTN", "foo" in that order
     // this comparison tricks the compiler into not completely eliminating this
     // code as dead...
-    BOOST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
+    UNIT_TEST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
   }
   // and make sure it fails for the klugy security cases -- see comments on
   // in_bookkeeping_dir
   {
     split_path split_mt1, split_mt2;
     file_path_internal("foo/_mTn").split(split_mt1);
-    BOOST_CHECK(split_mt1.size() == 3);
+    UNIT_TEST_CHECK(split_mt1.size() == 3);
     split_mt2.push_back(the_null_component);
     split_mt2.push_back(split_mt1[2]);
     // split_mt2 now contains the component "_mTn"
-    BOOST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
+    UNIT_TEST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
     split_mt2.push_back(split_mt1[1]);
     // split_mt2 now contains the components "_mTn", "foo" in that order
     // this comparison tricks the compiler into not completely eliminating this
     // code as dead...
-    BOOST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
+    UNIT_TEST_CHECK_THROW(file_path(split_mt2) == file_path(), logic_error);
   }
 }
 
@@ -1108,8 +1162,8 @@ static void check_bk_normalizes_to(char * before, char * after)
 {
   bookkeeping_path bp(bookkeeping_root / before);
   L(FL("normalizing %s to %s (got %s)") % before % after % bp);
-  BOOST_CHECK(bp.as_external() == after);
-  BOOST_CHECK(bookkeeping_path(bp.as_internal()).as_internal() == bp.as_internal());
+  UNIT_TEST_CHECK(bp.as_external() == after);
+  UNIT_TEST_CHECK(bookkeeping_path(bp.as_internal()).as_internal() == bp.as_internal());
 }
 
 UNIT_TEST(paths, bookkeeping)
@@ -1136,11 +1190,11 @@ UNIT_TEST(paths, bookkeeping)
   for (char const ** c = baddies; *c; ++c)
     {
       L(FL("test_bookkeeping_path baddie: trying '%s'") % *c);
-            BOOST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign(*c)), logic_error);
-            BOOST_CHECK_THROW(bookkeeping_root / tmp_path_string.assign(*c), logic_error);
+            UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign(*c)), logic_error);
+            UNIT_TEST_CHECK_THROW(bookkeeping_root / tmp_path_string.assign(*c), logic_error);
     }
-  BOOST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign("foo/bar")), logic_error);
-  BOOST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign("a")), logic_error);
+  UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign("foo/bar")), logic_error);
+  UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign("a")), logic_error);
 
   check_bk_normalizes_to("a", "_MTN/a");
   check_bk_normalizes_to("foo", "_MTN/foo");
@@ -1152,8 +1206,8 @@ static void check_system_normalizes_to(char * before, char * after)
 {
   system_path sp(before);
   L(FL("normalizing '%s' to '%s' (got '%s')") % before % after % sp);
-  BOOST_CHECK(sp.as_external() == after);
-  BOOST_CHECK(system_path(sp.as_internal()).as_internal() == sp.as_internal());
+  UNIT_TEST_CHECK(sp.as_external() == after);
+  UNIT_TEST_CHECK(system_path(sp.as_internal()).as_internal() == sp.as_internal());
 }
 
 UNIT_TEST(paths, system)
@@ -1161,7 +1215,7 @@ UNIT_TEST(paths, system)
   initial_abs_path.unset();
   initial_abs_path.set(system_path("/a/b"), true);
 
-  BOOST_CHECK_THROW(system_path(""), informative_failure);
+  UNIT_TEST_CHECK_THROW(system_path(""), informative_failure);
 
   check_system_normalizes_to("foo", "/a/b/foo");
   check_system_normalizes_to("foo/bar", "/a/b/foo/bar");
@@ -1196,18 +1250,18 @@ UNIT_TEST(paths, system)
   // least we can check that it's doing _something_...
   string tilde_expanded = system_path("~/foo").as_external();
 #ifdef WIN32
-  BOOST_CHECK(tilde_expanded[1] == ':');
+  UNIT_TEST_CHECK(tilde_expanded[1] == ':');
 #else
-  BOOST_CHECK(tilde_expanded[0] == '/');
+  UNIT_TEST_CHECK(tilde_expanded[0] == '/');
 #endif
-  BOOST_CHECK(tilde_expanded.find('~') == string::npos);
+  UNIT_TEST_CHECK(tilde_expanded.find('~') == string::npos);
   // and check for the weird WIN32 version
 #ifdef WIN32
   string tilde_expanded2 = system_path("~this_user_does_not_exist_anywhere").as_external();
-  BOOST_CHECK(tilde_expanded2[1] == ':');
-  BOOST_CHECK(tilde_expanded2.find('~') == string::npos);
+  UNIT_TEST_CHECK(tilde_expanded2[1] == ':');
+  UNIT_TEST_CHECK(tilde_expanded2.find('~') == string::npos);
 #else
-  BOOST_CHECK_THROW(system_path("~this_user_does_not_exist_anywhere"), informative_failure);
+  UNIT_TEST_CHECK_THROW(system_path("~this_user_does_not_exist_anywhere"), informative_failure);
 #endif
 
   // finally, make sure that the copy-from-any_path constructor works right
@@ -1218,24 +1272,24 @@ UNIT_TEST(paths, system)
   initial_rel_path.unset();
   initial_rel_path.set(fs::path("rel/initial"), true);
 
-  BOOST_CHECK(system_path(system_path("foo/bar")).as_internal() == "/a/b/foo/bar");
-  BOOST_CHECK(!working_root.used);
-  BOOST_CHECK(system_path(system_path("/foo/bar")).as_internal() == "/foo/bar");
-  BOOST_CHECK(!working_root.used);
-  BOOST_CHECK(system_path(file_path_internal("foo/bar"), false).as_internal()
+  UNIT_TEST_CHECK(system_path(system_path("foo/bar")).as_internal() == "/a/b/foo/bar");
+  UNIT_TEST_CHECK(!working_root.used);
+  UNIT_TEST_CHECK(system_path(system_path("/foo/bar")).as_internal() == "/foo/bar");
+  UNIT_TEST_CHECK(!working_root.used);
+  UNIT_TEST_CHECK(system_path(file_path_internal("foo/bar"), false).as_internal()
               == "/working/root/foo/bar");
-  BOOST_CHECK(!working_root.used);
-  BOOST_CHECK(system_path(file_path_internal("foo/bar")).as_internal()
+  UNIT_TEST_CHECK(!working_root.used);
+  UNIT_TEST_CHECK(system_path(file_path_internal("foo/bar")).as_internal()
               == "/working/root/foo/bar");
-  BOOST_CHECK(working_root.used);
-  BOOST_CHECK(system_path(file_path_external(utf8("foo/bar"))).as_external()
+  UNIT_TEST_CHECK(working_root.used);
+  UNIT_TEST_CHECK(system_path(file_path_external(utf8("foo/bar"))).as_external()
               == "/working/root/rel/initial/foo/bar");
   file_path a_file_path;
-  BOOST_CHECK(system_path(a_file_path).as_external()
+  UNIT_TEST_CHECK(system_path(a_file_path).as_external()
               == "/working/root");
-  BOOST_CHECK(system_path(bookkeeping_path("_MTN/foo/bar")).as_internal()
+  UNIT_TEST_CHECK(system_path(bookkeeping_path("_MTN/foo/bar")).as_internal()
               == "/working/root/_MTN/foo/bar");
-  BOOST_CHECK(system_path(bookkeeping_root).as_internal()
+  UNIT_TEST_CHECK(system_path(bookkeeping_root).as_internal()
               == "/working/root/_MTN");
   initial_abs_path.unset();
   working_root.unset();
@@ -1245,20 +1299,20 @@ UNIT_TEST(paths, system)
 UNIT_TEST(paths, access_tracker)
 {
   access_tracker<int> a;
-  BOOST_CHECK_THROW(a.get(), logic_error);
+  UNIT_TEST_CHECK_THROW(a.get(), logic_error);
   a.set(1, false);
-  BOOST_CHECK_THROW(a.set(2, false), logic_error);
+  UNIT_TEST_CHECK_THROW(a.set(2, false), logic_error);
   a.set(2, true);
-  BOOST_CHECK_THROW(a.set(3, false), logic_error);
-  BOOST_CHECK(a.get() == 2);
-  BOOST_CHECK_THROW(a.set(3, true), logic_error);
+  UNIT_TEST_CHECK_THROW(a.set(3, false), logic_error);
+  UNIT_TEST_CHECK(a.get() == 2);
+  UNIT_TEST_CHECK_THROW(a.set(3, true), logic_error);
   a.unset();
   a.may_not_initialize();
-  BOOST_CHECK_THROW(a.set(1, false), logic_error);
-  BOOST_CHECK_THROW(a.set(2, true), logic_error);
+  UNIT_TEST_CHECK_THROW(a.set(1, false), logic_error);
+  UNIT_TEST_CHECK_THROW(a.set(2, true), logic_error);
   a.unset();
   a.set(1, false);
-  BOOST_CHECK_THROW(a.may_not_initialize(), logic_error);
+  UNIT_TEST_CHECK_THROW(a.may_not_initialize(), logic_error);
 }
 
 static void test_a_path_ordering(string const & left, string const & right)
@@ -1308,10 +1362,10 @@ UNIT_TEST(paths, test_internal_string_is_bookkeeping_path)
                        "foo/bar",
                        0 };
   for (char const ** c = yes; *c; ++c)
-    BOOST_CHECK(bookkeeping_path
+    UNIT_TEST_CHECK(bookkeeping_path
                 ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
   for (char const ** c = no; *c; ++c)
-    BOOST_CHECK(!bookkeeping_path
+    UNIT_TEST_CHECK(!bookkeeping_path
                  ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
 
@@ -1330,10 +1384,10 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
                        "_MTN/..",
                        0 };
   for (char const ** c = yes; *c; ++c)
-    BOOST_CHECK(bookkeeping_path
+    UNIT_TEST_CHECK(bookkeeping_path
                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
   for (char const ** c = no; *c; ++c)
-    BOOST_CHECK(!bookkeeping_path
+    UNIT_TEST_CHECK(!bookkeeping_path
                  ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
 
@@ -1354,10 +1408,10 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
                        "../../foo/_MTN",
                        0 };
   for (char const ** c = yes; *c; ++c)
-    BOOST_CHECK(bookkeeping_path
+    UNIT_TEST_CHECK(bookkeeping_path
                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
   for (char const ** c = no; *c; ++c)
-    BOOST_CHECK(!bookkeeping_path
+    UNIT_TEST_CHECK(!bookkeeping_path
                  ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
 
@@ -1377,10 +1431,10 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
                        "../foo/_MTN",
                        0 };
   for (char const ** c = yes; *c; ++c)
-    BOOST_CHECK(bookkeeping_path
+    UNIT_TEST_CHECK(bookkeeping_path
                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
   for (char const ** c = no; *c; ++c)
-    BOOST_CHECK(!bookkeeping_path
+    UNIT_TEST_CHECK(!bookkeeping_path
                  ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
 

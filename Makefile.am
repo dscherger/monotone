@@ -289,7 +289,6 @@ WIN32_PLATFORM_SOURCES =						\
 # primaries
 
 bin_PROGRAMS = mtn
-check_PROGRAMS = unit_tests tester
 noinst_PROGRAMS = txt2c
 EXTRA_PROGRAMS = usher
 
@@ -363,7 +362,7 @@ unit_tests_LDFLAGS =
 unit_tests_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua \
 		      -I$(top_srcdir)/sqlite
 unit_tests_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
-unit_tests_LDADD = lib3rdparty.a $(BOOSTLIBS) $(BOOST_UNITTEST) \
+unit_tests_LDADD = lib3rdparty.a $(BOOSTLIBS) \
 		   libplatform.a $(LIBICONV) $(LIBINTL)
 
 tester_LDFLAGS = 
@@ -523,11 +522,10 @@ monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
 
 # testsuite stuff (could this possibly be more ugly?)
 
-if BUILD_UNIT_TESTS
+
+check_PROGRAMS = unit_tests tester
 TESTS = unit_tests run_tester_tests run_lua_tests
-else
-TESTS = run_tester_tests run_lua_tests
-endif
+
 
 TESTS_ENVIRONMENT=AUTOTEST_PATH="."
 
