@@ -1,0 +1,62 @@
+head	1.1;
+branch	1.1.1;
+access;
+symbols
+	VendorA_REL_2:1.1.1.2
+	VendorA_REL_1:1.1.1.1
+	VendorA:1.1.1;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.03.10.12.46.47;	author markus;	state Exp;
+branches
+	1.1.1.1;
+next	;
+commitid	Ato52FfvuyyuFx9s;
+
+1.1.1.1
+date	2007.03.10.12.46.47;	author markus;	state Exp;
+branches;
+next	1.1.1.2;
+commitid	Ato52FfvuyyuFx9s;
+
+1.1.1.2
+date	2007.03.10.12.46.48;	author markus;	state Exp;
+branches;
+next	;
+commitid	ugLDgLG0IeOuFx9s;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@fileA from VendorA
+@
+
+
+1.1.1.1
+log
+@Initial import from VendorA
+@
+text
+@@
+
+
+1.1.1.2
+log
+@Initial import from VendorA
+@
+text
+@d1 1
+a1 1
+fileA from VendorA - changed
+@
+
