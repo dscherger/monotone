@@ -70,11 +70,20 @@ public:
       }
     return have_cmd;
   }
-  inline void get_netcmd(netcmd & c)
+  inline void discard_netcmd()
+  {
+    I(have_cmd);
+    have_cmd = false;
+  }
+  inline void peek_netcmd(netcmd & c)
   {
     I(have_cmd);
     c = cmd;
-    have_cmd = false;
+  }
+  inline void get_netcmd(netcmd & c)
+  {
+    peek_netcmd(c);
+    discard_netcmd();
   }
   inline size_t size() const
   {
@@ -216,14 +225,16 @@ public:
     return state::NONE;
   }
 
+  Netxx::Probe::ready_type which_events();
+
   // This should be private.
   void set_session_key(netsync_session_key const & key)
   {
     input.set_hmac_key(key);
     output.set_hmac_key(key);
   }
-
-  Netxx::Probe::ready_type which_events();
+private:
+  state handle_ctrl_cmd(netcmd const & cmd);
 };
 
 
@@ -411,17 +422,58 @@ bool
 session::can_process()
 {
   if (input.have_netcmd())
-    return true;
+    return !srv || srv->can_receive();
   if (srv)
     return srv->can_process();
-  else
-    return false;
+  return false;
+}
+
+bool netcmd_is_ctrl(netcmd const & cmd)
+{
+  return cmd.get_cmd_code() == anonymous_cmd
+    || cmd.get_cmd_code() == auth_cmd;
+}
+
+state
+session::handle_ctrl_cmd(netcmd const & cmd)
+{
+  service *s = get_service_map()[service_numbers::netsync];
+  I(s);
+  if (srv)
+    {
+      srv->detach(false);
+    }
+  srv = s;
+  srv->attach(*this);
+  srv->begin_service();
+  return state::RUNNING;
 }
 
 state
 session::process(transaction_guard & guard)
 {
-  return srv->process(guard);
+  bool have = input.have_netcmd();
+  if (have)
+    {
+      netcmd cmd;
+      input.get_netcmd(cmd);
+      if (netcmd_is_ctrl(cmd))
+        {
+          return handle_ctrl_cmd(cmd);
+        }
+      else if (srv && srv->can_receive())
+        return srv->received(cmd, guard);
+      else if (!srv)
+        return state::RUNNING;
+      else
+        I(false);
+    }
+  else if (srv && srv->can_process())
+    {
+      return srv->process(guard);
+    }
+  else
+    I(false);
 }
 
 Netxx::Probe::ready_type
