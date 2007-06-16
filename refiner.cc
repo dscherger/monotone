@@ -151,8 +151,8 @@ refiner::note_subtree_shared_with_peer(merkle_node const & our_node, size_t slot
   collect_items_in_subtree(table, pref, our_node.level+1, peer_items);
 }
 
-refiner::refiner(netcmd_item_type type, protocol_voice voice, refiner_callbacks & cb)
-  : type(type), voice (voice), cb(cb),
+refiner::refiner(netcmd_item_type type, refiner_callbacks & cb)
+  : type(type), voice_is_set(false), cb(cb),
     sent_initial_query(false),
     queries_in_flight(0),
     calculated_items_to_send(false),
@@ -162,6 +162,14 @@ refiner::refiner(netcmd_item_type type, protocol_voice voice, refiner_callbacks 
   merkle_ptr root = merkle_ptr(new merkle_node());
   root->type = type;
   table.insert(make_pair(make_pair(prefix(""), 0), root));
+}
+
+void
+refiner::set_voice(protocol_voice new_voice)
+{
+  I(!voice_is_set);
+  voice = new_voice;
+  voice_is_set = true;
 }
 
 void
