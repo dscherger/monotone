@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <list>
 
 #include <unistd.h>
 
@@ -63,6 +64,7 @@ using std::stable_sort;
 using std::stack;
 using std::string;
 using std::vector;
+using std::list;
 
 using boost::scoped_ptr;
 using boost::shared_ptr;
@@ -1443,14 +1445,15 @@ add_blob_dependency_edges(cvs_history & cvs,
  * single blob split points: search only for intra-blob dependencies
  * and return split points to resolve these dependencies.
  */
-vector< pair<time_t, time_t> >
-get_split_points(cvs_history & cvs, cvs_blob_index bi)
+time_t
+get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 {
-  cvs_blob & blob = cvs.blobs[bi];
+  list< pair<time_t, time_t> > ib_deps;
 
-  vector< pair<time_t, time_t> > result_set;
-
-  for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+  // Collect the conflicting intra-blob dependencies, storing the
+  // timestamps of both events involved.
+  for (blob_event_iter i = cvs.blobs[bi].begin();
+       i != cvs.blobs[bi].end(); ++i)
     {
       cvs_event_ptr ev = *i;
 
@@ -1458,18 +1461,111 @@ get_split_points(cvs_history & cvs, cvs_blob_index bi)
         {
           cvs_event_ptr dep = *j;
 
-          if (dep->get_digest() == blob.get_digest())
+          if ((dep->get_digest() == cvs.blobs[bi].get_digest()) &&
+              (cvs.get_blob_of(dep) == bi))
             {
-              L(FL("event time: %d  - dep time: %d") % ev->time % dep->time);
-              if (ev->time >= dep->time)
-                result_set.push_back(make_pair(dep->time, ev->time));
+              I(ev->time != dep->time);
+              if (ev->time > dep->time)
+              {
+                L(FL("    added IBD range %d - %d") % dep->time % ev->time);
+                ib_deps.push_back(make_pair(dep->time, ev->time));
+              }
               else
-                result_set.push_back(make_pair(ev->time, dep->time));
+              {
+                L(FL("    added reverse IBD range %d - %d") % ev->time % dep->time);
+                ib_deps.push_back(make_pair(ev->time, dep->time));
+              }
             }
         }
     }
 
-  return result_set;
+  // What we have now, are durations, or multiple time ranges. We need to
+  // split the blob somewhere in that range. But because there are multiple
+  // files involved, these ranges can be overlapping, i.e.:
+  //
+  //           o    o   o       |
+  //     A ->  |    |   |       | t
+  //           o    |   |       | i
+  //     B ->  |    |   |       | m
+  //           |    o   |       | e
+  //     C ->  |    |   |       |
+  //           o    o   o       v
+  //
+  // From this example, it's clear that we should split at A and C, the
+  // first split will resolve three intra-blob dependencies, the second one
+  // two. By then, all intra-blob dependencies are resolved. There's no
+  // need to split at B.
+  //
+  // To figure that out, we recursively try to get the split point which
+  // resolves the most intra-blob dependencies, until no ones are left. For
+  // that, we simply count how many intra-blob deps a split between any two
+  // events would resolve.
+
+  typedef list< pair<time_t, time_t> >::iterator dep_ity;
+
+  vector< pair<time_t, time_t> > results;
+  set< time_t > event_times;
+  for (dep_ity i = ib_deps.begin(); i != ib_deps.end(); ++i)
+    {
+      if (event_times.find(i->first) == event_times.end())
+        event_times.insert(i->first);
+
+      if (event_times.find(i->second) == event_times.end())
+        event_times.insert(i->second);
+    }
+
+  I(event_times.size() > 1);
+  set<time_t>::const_iterator last, curr;
+  last = event_times.begin();
+  curr = last;
+  curr++;
+  pair<time_t, time_t> best_split_range = make_pair(0, 0);
+  vector<dep_ity> deps_resolved_by_best_split;
+  unsigned int best_score = 0;
+  for ( ; curr != event_times.end(); ++curr)
+    {
+      time_t curr_split_point = *last + (*curr - *last) / 2;
+
+      L(FL("  testing split point @%d") % curr_split_point);
+
+      // just to get everything right here...
+      I(*curr > *last);
+      I(curr_split_point < *curr);
+      I(curr_split_point >= *last);
+
+      unsigned int num_deps_resolved = 0;
+      for (dep_ity i = ib_deps.begin(); i != ib_deps.end(); ++i)
+        if ((curr_split_point >= i->first) &&
+            (curr_split_point < i->second))
+          num_deps_resolved++;
+
+      if (num_deps_resolved > best_score)
+        {
+          I(*curr > *last);
+          best_split_range = make_pair(*last, *curr);
+          best_score = num_deps_resolved;
+        }
+
+      last = curr;
+    }
+
+  I(best_score > 0);
+  vector<dep_ity>::const_iterator i;
+  for (i = deps_resolved_by_best_split.begin();
+       i != deps_resolved_by_best_split.end(); ++i)
+    ib_deps.erase(*i);
+
+  // FIXME: we should check if there are events in that range, which are
+  //        no involved in the dependency cycle, but for which we need to
+  //        decide where to put them.
+
+  time_t best_split_point = best_split_range.first +
+    (best_split_range.second - best_split_range.first) / 2;
+
+  L(FL("Best split range: %d - %d (@%d)")
+    % best_split_range.first % best_split_range.second % best_split_point);
+
+  return best_split_point;
 }
 
 void
@@ -1489,17 +1585,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
       L(FL("should split blob %d") % *cycle_members.begin());
       blob_to_split = *cycle_members.begin();
 
-      vector< pair< time_t, time_t > > split_points =
-        get_split_points(cvs, *cycle_members.begin());
+      time_t split_point = get_best_split_point(cvs, blob_to_split);
+      I(split_point > 0);
 
-      for (vector< pair< time_t, time_t > >::const_iterator i = split_points.begin();
-           i != split_points.end(); ++i)
-        {
-          time_t split_point = i->second - ((i->second - i->first) / 2);
-          L(FL("splitting blob between %d and %d (at %d)") % i->first % i->second % split_point);
-
-          split_blob_at(cvs, *cycle_members.begin(), split_point, g);
-        }
+      split_blob_at(cvs, blob_to_split, split_point, g);
     }
   else
     {
@@ -1610,11 +1699,13 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   I(cvs.blobs[new_bi].empty());
 
   for (blob_event_iter i = blob_events.begin(); i != blob_events.end(); ++i)
-    if ((*i)->time >= split_point)
-      cvs.blobs[new_bi].push_back(*i);
-    else
+    if ((*i)->time <= split_point)
       cvs.blobs[bi].push_back(*i);
+    else
+      cvs.blobs[new_bi].push_back(*i);
 
+  I(!cvs.blobs[bi].empty());
+  I(!cvs.blobs[new_bi].empty());
 
 
 #if 0
