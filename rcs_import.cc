@@ -1010,7 +1010,8 @@ process_rcs_branch(string const & begin_version,
           // Make the last commit depend on this branch, so that this
           // commit action certainly comes after the branch action. See
           // the comment above for tags.
-          add_dependencies(branch_event, last_events, reverse_import);
+          if (!is_vendor_branch)
+            add_dependencies(branch_event, last_events, reverse_import);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -2384,8 +2385,6 @@ blob_consumer::consume_blob(cvs_blob_index bi)
       shared_ptr<cvs_commit> ce =
         boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
 
-      if (ce->alive)
-        {
           revision_id parent_rid, child_rid;
           parent_rid = bstate.current_rid;
 
@@ -2409,7 +2408,6 @@ blob_consumer::consume_blob(cvs_blob_index bi)
           preps.push_back(prepared_revision(child_rid, rev, in_branch, blob));
 
           bstate.current_rid = child_rid;
-        }
     }
   else if (blob.get_digest().is_branch())
     {
