@@ -170,13 +170,6 @@ public:
       path(p)
     { };
 
-  cvs_event(const cvs_event_ptr dep)
-    : time(dep->time),
-      path(dep->path)
-    {
-      dependencies.push_back(dep);
-    };
-
   virtual ~cvs_event() { };
   virtual cvs_event_digest get_digest(void) const = 0;
 
@@ -241,9 +234,8 @@ public:
       branchname(bn)
     { };
 
-  cvs_event_branch(const cvs_event_ptr dep,
-                   const cvs_branchname bn)
-    : cvs_event(dep),
+  cvs_event_branch(const cvs_path p, const cvs_branchname bn, time_t ti)
+    : cvs_event(p, ti),
       branchname(bn)
     { };
 
@@ -261,9 +253,11 @@ public:
   cvs_tag tag;
 
   cvs_event_tag(const cvs_event_ptr dep, const cvs_tag t)
-    : cvs_event(dep),
+    : cvs_event(dep->path, dep->time),
       tag(t)
-    { };
+    {
+      dependencies.push_back(dep);
+    };
 
   virtual cvs_event_digest get_digest(void) const
     {
@@ -981,7 +975,10 @@ process_rcs_branch(string const & begin_version,
           cvs_event_ptr branch_event =
             boost::static_pointer_cast<cvs_event, cvs_event_branch>(
               shared_ptr<cvs_event_branch>(
-                new cvs_event_branch(curr_commit, bname)));
+                new cvs_event_branch(curr_commit->path, bname,
+                                     curr_commit->time)));
+          if (!is_vendor_branch)
+            branch_event->dependencies.push_back(curr_commit);
 
           curr_events.push_back(branch_event);
 
