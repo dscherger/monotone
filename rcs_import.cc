@@ -813,7 +813,7 @@ process_rcs_branch(string const & begin_version,
                bool dryrun,
                bool reverse_import)
 {
-  cvs_event_ptr curr_commit;
+  cvs_event_ptr curr_commit, first_commit;
   vector<cvs_event_ptr> curr_events, last_events;
   string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
@@ -866,6 +866,9 @@ process_rcs_branch(string const & begin_version,
           new cvs_commit(cvs.curr_file_interned,
                          commit_time, mv, rv,
                          ac, alive)));
+
+      if (!first_commit)
+        first_commit = curr_commit;
 
       // add the commit to the cvs history
       cvs.append_event(curr_commit);
@@ -1030,7 +1033,10 @@ process_rcs_branch(string const & begin_version,
       else break;
     }
 
-  return curr_commit;
+  if (reverse_import)
+    return curr_commit;
+  else
+    return first_commit;
 }
 
 
