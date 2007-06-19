@@ -447,7 +447,7 @@ struct parser
           {
             string tmp;
             num(tmp);
-            d.branches.push_back(tmp);
+            d.branches.insert(tmp);
           }
         semi();
         expect("next"); if (nump()) num(d.next); semi();

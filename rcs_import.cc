@@ -394,7 +394,7 @@ cvs_history
   void set_filename(string const & file,
                     file_id const & ident);
 
-  void index_branchpoint_symbols(rcs_file const & r);
+  void index_branchpoint_symbols(rcs_file & r);
 
   blob_index_iterator add_blob(const cvs_event_digest d)
   {
@@ -521,6 +521,9 @@ static bool
 is_sbr(shared_ptr<rcs_delta> dl,
        shared_ptr<rcs_deltatext> dt)
 {
+  I(dl);
+  I(!dl->state.empty());
+  I(dt);
 
   // CVS abuses the RCS format a bit (ha!) when storing a file which
   // was only added on a branch: on the root of the branch there'll be
@@ -776,6 +779,29 @@ parse_time(const char * dp)
   return time;
 }
 
+void
+add_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
+                 bool reverse_import)
+{
+  vector<cvs_event_ptr>::iterator i;
+
+  if (reverse_import)
+    {
+      // make the last commit (i.e. 1.3) depend on the current one
+      // (i.e. 1.2), as it which comes _before_ in the CVS history.
+      for (i = last_events.begin(); i != last_events.end(); ++i)
+        (*i)->add_dependency(ev);
+    }
+  else
+    {
+      // vendor branches are processed in historic order, i.e.
+      // older version first. Thus the last commit may be 1.1.1.1
+      // while the current one is 1.1.1.2.
+      for (i = last_events.begin(); i != last_events.end(); ++i)
+        ev->add_dependency(*i);
+    }      
+}
+
 static cvs_event_ptr
 process_rcs_branch(string const & begin_version,
                vector< piece > const & begin_lines,
@@ -784,10 +810,11 @@ process_rcs_branch(string const & begin_version,
                rcs_file const & r,
                database & db,
                cvs_history & cvs,
-               bool dryrun)
+               bool dryrun,
+               bool reverse_import)
 {
   cvs_event_ptr curr_commit;
-  cvs_event_ptr last_commit;
+  vector<cvs_event_ptr> curr_events, last_events;
   string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
@@ -798,6 +825,8 @@ process_rcs_branch(string const & begin_version,
 
   while(! (r.deltas.find(curr_version) == r.deltas.end()))
     {
+      curr_events.clear();
+
       L(FL("version %s has %d lines") % curr_version % curr_lines->size());
 
       // fetch the next deltas
@@ -842,10 +871,11 @@ process_rcs_branch(string const & begin_version,
       cvs.append_event(curr_commit);
       ++cvs.n_versions;
 
-      // make the last commit (i.e. 1.3) depend on the current one
-      // (i.e. 1.2), as it which comes _before_ in the CVS history.
-      if (last_commit)
-        last_commit->add_dependency(curr_commit);
+      curr_events.push_back(curr_commit);
+
+      // add proper dependencies, based on forward or reverse import
+      if (!last_events.empty())
+        add_dependencies(curr_commit, last_events, reverse_import);
 
       // create tag events for all tags on this commit
       typedef multimap<string,string>::const_iterator ity;
@@ -863,23 +893,23 @@ process_rcs_branch(string const & begin_version,
                     new cvs_event_tag(curr_commit, tag)));
 
               cvs_blob_index bi = cvs.append_event(tag_event);
+              curr_events.push_back(curr_commit);
 
-              // Append to the last_commit deps. While not quite obvious,
+              // Append to the last_event deps. While not quite obvious,
               // we absolutely need this dependency! Think of it as: the
-              // 'action of tagging must' come before the next commit.
+              // 'action of tagging' must come before the next commit.
               //
               // If we didn't add this dependency, the tag could be deferred
               // by the toposort to many revisions later. Instead, we want
               // to raise a conflict, if a commit interferes with a tagging
               // action.
-              if (last_commit)
-                last_commit->add_dependency(tag_event);
+              add_dependencies(tag_event, last_events, reverse_import);
             }
         }
 
       string next_version = r.deltas.find(curr_version)->second->next;
 
-      if (! next_version.empty())
+      if (!next_version.empty())
         {
           L(FL("following RCS edge %s -> %s") % curr_version % next_version);
 
@@ -893,7 +923,7 @@ process_rcs_branch(string const & begin_version,
 
       // recursively follow any branch commits coming from the branchpoint
       shared_ptr<rcs_delta> curr_delta = r.deltas.find(curr_version)->second;
-      for(vector<string>::const_iterator i = curr_delta->branches.begin();
+      for(set<string>::const_iterator i = curr_delta->branches.begin();
           i != curr_delta->branches.end(); ++i)
         {
           string branchname;
@@ -901,6 +931,8 @@ process_rcs_branch(string const & begin_version,
           hexenc<id> branch_id;
           vector< piece > branch_lines;
           bool priv = false;
+          bool is_vendor_branch = (r.vendor_branches.find(*i) !=
+            r.vendor_branches.end());
 
           map<string, string>::const_iterator be =
             cvs.branch_first_entries.find(*i);
@@ -934,7 +966,8 @@ process_rcs_branch(string const & begin_version,
           // recursively process child branches
           cvs_event_ptr first_event_in_branch =
             process_rcs_branch(*i, branch_lines, branch_data,
-                               branch_id, r, db, cvs, dryrun);
+                               branch_id, r, db, cvs, dryrun,
+                               !is_vendor_branch);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
@@ -946,6 +979,8 @@ process_rcs_branch(string const & begin_version,
             boost::static_pointer_cast<cvs_event, cvs_event_branch>(
               shared_ptr<cvs_event_branch>(
                 new cvs_event_branch(curr_commit, bname)));
+
+          curr_events.push_back(branch_event);
 
           if (first_event_in_branch)
             {
@@ -972,8 +1007,7 @@ process_rcs_branch(string const & begin_version,
           // Make the last commit depend on this branch, so that this
           // commit action certainly comes after the branch action. See
           // the comment above for tags.
-          if (last_commit)
-            last_commit->add_dependency(branch_event);
+          add_dependencies(branch_event, last_events, reverse_import);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -984,7 +1018,14 @@ process_rcs_branch(string const & begin_version,
           curr_version = next_version;
           swap(next_lines, curr_lines);
           next_lines->clear();
-          last_commit = curr_commit;
+
+          if (reverse_import)
+            {
+              last_events.clear();
+              last_events.push_back(curr_commit);
+            }
+          else
+            last_events = curr_events;
         }
       else break;
     }
@@ -1030,7 +1071,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     cvs_event_ptr first_event =
       process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
-                         app.opts.dryrun);
+                         app.opts.dryrun, true);
 
     // link the pseudo trunk branch to the first event in the branch
     first_event->dependencies.push_back(root_event);
@@ -1110,13 +1151,14 @@ cvs_history::set_filename(string const & file,
   curr_file_interned = path_interner.intern(ss);
 }
 
-void cvs_history::index_branchpoint_symbols(rcs_file const & r)
+void cvs_history::index_branchpoint_symbols(rcs_file & r)
 {
   branch_first_entries.clear();
 
   for (multimap<string, string>::const_iterator i =
          r.admin.symbols.begin(); i != r.admin.symbols.end(); ++i)
     {
+      bool is_vendor_branch = false;
       string const & num = i->first;
       string const & sym = i->second;
 
@@ -1126,6 +1168,11 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
       vector<string> first_entry_components;
       vector<string> branchpoint_components;
 
+      // require a valid RCS version
+      E(components.size() >= 2,
+        F("Invalid RCS version: %s")
+          % num);
+
       if (components.size() > 2 &&
           (components.size() % 2 == 1))
         {
@@ -1133,7 +1180,9 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
           //
           // such as "1.1.1", where "1.1" is the branchpoint and
           // "1.1.1.1" will be the first commit on it.
-          
+
+          is_vendor_branch = true;
+
           first_entry_components = components;
           first_entry_components.push_back("1");
 
@@ -1186,17 +1235,16 @@ void cvs_history::index_branchpoint_symbols(rcs_file const & r)
 
           shared_ptr<rcs_delta> curr_delta = di->second;
 
-          vector<string>::const_iterator j;
-          for(j = curr_delta->branches.begin();
-              j != curr_delta->branches.end(); ++j)
-            {
-              if (*j == first_entry_version)
-                break;
-            }
+          if (curr_delta->branches.find(first_entry_version) ==
+              curr_delta->branches.end())
+            curr_delta->branches.insert(first_entry_version);
 
-          // if the delta does not yet contain that branch, we add it
-          if (j == curr_delta->branches.end())
-            curr_delta->branches.push_back(first_entry_version);
+          if (is_vendor_branch)
+            {
+              if (r.vendor_branches.find(first_entry_version) ==
+                  r.vendor_branches.end())
+                r.vendor_branches.insert(first_entry_version);
+            }
         }
     }
 }
@@ -1695,8 +1743,6 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   // Reassign all events and split into the two blobs
   cvs.blobs[bi].get_events().clear();
   I(!blob_events.empty());
-  I(cvs.blobs[bi].empty());
-  I(cvs.blobs[new_bi].empty());
 
   for (blob_event_iter i = blob_events.begin(); i != blob_events.end(); ++i)
     if ((*i)->time <= split_point)
@@ -1706,6 +1752,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
 
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
+
 
 
 #if 0
@@ -1806,6 +1853,12 @@ class blob_label_writer
 
           label = (FL("blob %d: commit\\n") % v).str();
 
+          if (b.empty())
+            {
+              label += "empty blob!!!";
+            }
+          else
+            {
           string author, clog;
           const shared_ptr< cvs_commit > ce =
             boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
@@ -1822,6 +1875,7 @@ class blob_label_writer
                 clog[i] = '\'';
             }
           label += "\\\"" + clog + "\\\"\\n";
+            }
         }
       else if (b.get_digest().is_branch())
         {
@@ -1829,11 +1883,18 @@ class blob_label_writer
 
           label = (FL("blob %d: branch: ") % v).str();
 
+          if (b.empty())
+            {
+              label += "empty blob!!!";
+            }
+          else
+            {
           const shared_ptr< cvs_event_branch > cb =
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(*b.begin());
 
           label += cvs.branchname_interner.lookup(cb->branchname);
           label += "\\n";
+            }
         }
       else if (b.get_digest().is_tag())
         {
@@ -1841,23 +1902,31 @@ class blob_label_writer
 
           label = (FL("blob %d: tag: ") % v).str();
 
+          if (b.empty())
+            {
+              label += "empty blob!!!";
+            }
+          else
+            {
           const shared_ptr< cvs_event_tag > cb =
             boost::static_pointer_cast<cvs_event_tag, cvs_event>(*b.begin());
 
           label += cvs.tag_interner.lookup(cb->tag);
           label += "\\n";
+            }
         }
       else
         {
           label = (FL("blob %d: unknow type\\n") % v).str();
         }
 
+      if (!b.empty())
+        {
       // print the time of the blob
       label += (FL("time: %d\\n") % (*b.begin())->time).str();
       label += "\\n";
 
       // print the contents of the blob, i.e. the single files
-      if (b.begin() != b.end())
         for (blob_event_iter i = b.begin(); i != b.end(); i++)
           {
             label += cvs.path_interner.lookup((*i)->path);
@@ -1869,11 +1938,12 @@ class blob_label_writer
 
                 label += "@";
                 label += cvs.rcs_version_interner.lookup(ce->rcs_version);
+
+                label += (FL(":%d") % (ce->time)).str();
               }
             label += "\\n";
           }
-      else
-        label += "-- empty --";
+        }
 
       out << "[label=\"" << label << "\"]";
     }
