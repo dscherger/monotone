@@ -24,7 +24,7 @@ import os.path
 import monotone
 import sys
 
-ACTIONS = [ "pull", "push", "sync"]
+ACTIONS = [ "pull", "push", "sync", "clone" ]
 
     
 def readConfig(cfgfile):
@@ -210,7 +210,9 @@ def main():
         mtn.do_push(url, branch_pattern, **optdict)
     elif action=="sync":
         mtn.do_sync(url, branch_pattern, **optdict)
-                
+    elif action=="clone":
+	mtn.monotone.ensure_db()
+	mtn.do_pull(url, branch_pattern, **optdict)	
     saveConfig(options,config)
 
 if __name__ == "__main__":
