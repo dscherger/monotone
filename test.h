@@ -40,7 +40,8 @@ private:
 private slots:
     void execute();
     void finished(const MonotoneTask &);
-    void mtnerror(const QString &);
+    void threadAborted(const QString &);
+    void accept();
 };
 
 #endif

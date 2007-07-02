@@ -107,45 +107,43 @@ QByteArray MonotoneTask::getEncodedInput() const
 const int MonotoneThread::StdioBufferSize = 50 * 1024 * 1024;
 
 MonotoneThread::MonotoneThread(const QString & mtn, const QString & database, const QString & workspace)
-    : QThread(), doAbort(false)
+    : QThread(), doAbort(false), mtnBinary(mtn), databasePath(database), workspacePath(workspace)
 {
     qRegisterMetaType<MonotoneTask>("MonotoneTask");
-    
-    process = new QProcess();
-    
-    QStringList args;
-    args << "automate";
-    args << "stdio";
-    args << QString("--automate-stdio-size=%1").arg(StdioBufferSize);
-    args << "--db" << database;
-    
-    if (!workspace.isEmpty())
-    {
-        process->setWorkingDirectory(workspace);
-    }
-    
-    qDebug(QString("starting %1 %2").arg(mtn).arg(args.join(" ")).toLatin1());
-    process->start(mtn, args);
 }
 
-MonotoneThread::~MonotoneThread()
-{
-    cleanup();
-    delete process;
-}
+MonotoneThread::~MonotoneThread() {}
 
 void MonotoneThread::enqueueTask(const MonotoneTask & task)
 {
+    if (doAbort) return;
+    QMutexLocker locker(&lock);
     queue.enqueue(task);
 }
 
 void MonotoneThread::run()
 {
+    QObject threadParent;
+    QProcess * process = new QProcess(&threadParent);
+    
+    QStringList args;
+    args << "automate";
+    args << "stdio";
+    args << QString("--automate-stdio-size=%1").arg(StdioBufferSize);
+    args << "--db" << databasePath;
+    
+    if (!workspacePath.isEmpty())
+    {
+        process->setWorkingDirectory(workspacePath);
+    }
+    
+    qDebug(QString("starting %1 %2").arg(mtnBinary).arg(args.join(" ")).toLatin1());
+    process->start(mtnBinary, args);
+    
     if (!process->waitForStarted())
     {
-        qDebug("not started");
-        emit error(processErrorToString());
-        cleanup();
+        emit aborted(processErrorToString(process));
+        cleanup(process);
         return;
     }
     
@@ -164,14 +162,14 @@ void MonotoneThread::run()
             QString err;
             if (process->exitStatus() == QProcess::CrashExit)
             {
-                err = processErrorToString();
+                err = processErrorToString(process);
             }
             
             // read anything we get from stderr
             err.append(QString::fromUtf8(process->readAllStandardError()));
             
-            emit error(err);
-            cleanup();
+            emit aborted(err);
+            cleanup(process);
             return;
         }
         
@@ -193,10 +191,10 @@ void MonotoneThread::run()
         if (!process->waitForReadyRead(-1))
         {
             qDebug("timeout waiting for ready read");
-            QString err(processErrorToString());
+            QString err(processErrorToString(process));
             err.append(QString::fromUtf8(process->readAllStandardError()));
-            emit error(err);
-            cleanup();
+            emit aborted(err);
+            cleanup(process);
             return;
         }
         
@@ -232,13 +230,13 @@ void MonotoneThread::run()
         
         emit taskFinished(task);
     }
-    cleanup();
+    cleanup(process);
 }
 
-QString MonotoneThread::processErrorToString()
+QString MonotoneThread::processErrorToString(QProcess * proc)
 {
     QString desc;
-    switch (process->error())
+    switch (proc->error())
     {
         case QProcess::FailedToStart: desc = tr("failed to start");
         case QProcess::Crashed: desc = tr("crashed");
@@ -250,13 +248,12 @@ QString MonotoneThread::processErrorToString()
     return desc;
 }
 
-void MonotoneThread::abort()
+void MonotoneThread::cleanup(QProcess * proc)
 {
+    QMutexLocker locker(&lock);
+    
     doAbort = true;
-}
-
-void MonotoneThread::cleanup()
-{
+    
     if (queue.size() > 0)
     {
         foreach (MonotoneTask task, queue)
@@ -267,10 +264,16 @@ void MonotoneThread::cleanup()
     }
     
     // close the pipes
-    process->close();
+    proc->close();
     // send SIGTERM
-    process->terminate();
+    proc->terminate();
     // block until the process has really been finished
-    process->waitForFinished();
+    proc->waitForFinished();
+}
+
+void MonotoneThread::abort()
+{
+    QMutexLocker locker(&lock);
+    doAbort = true;
 }
 

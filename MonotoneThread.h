@@ -24,6 +24,7 @@
 #include <QThread>
 #include <QProcess>
 #include <QQueue>
+#include <QMutex>
 
 class MonotoneTask
 {
@@ -72,16 +73,19 @@ public slots:
 signals:
     void taskFinished(const MonotoneTask &);
     void taskAborted(const MonotoneTask &);
-    void error(const QString &);
+    void aborted(const QString &);
 
 private:
-    QString processErrorToString();
-    void cleanup();
+    QString processErrorToString(QProcess *);
+    void cleanup(QProcess *);
     
     static const int StdioBufferSize;
     bool doAbort;
-    QProcess * process;
+    QString mtnBinary;
+    QString databasePath;
+    QString workspacePath;
     QQueue<MonotoneTask> queue;
+    QMutex lock;
 };
 
 #endif

@@ -24,7 +24,7 @@ TestDlg::TestDlg() : QDialog(0)
 {
     setupUi(this);
 
-    mtn = new MonotoneThread("mtn", "~/Entwicklung/guitone.mtn", "~/Entwicklung/guitone");
+    mtn = new MonotoneThread("mtn", "../guitone.mtn", ".");
     mtn->start();
     
     connect(
@@ -38,8 +38,8 @@ TestDlg::TestDlg() : QDialog(0)
     );
     
     connect(
-        mtn, SIGNAL(error(const QString &)),
-        this, SLOT(mtnerror(const QString &))
+        mtn, SIGNAL(aborted(const QString &)),
+        this, SLOT(threadAborted(const QString &))
     );
 }
 
@@ -62,8 +62,15 @@ void TestDlg::finished(const MonotoneTask & task)
     output->setText(task.getOutputUtf8());
 }
 
-void TestDlg::mtnerror(const QString & err)
+void TestDlg::threadAborted(const QString & err)
 {
     error->setText(err);
+}
+
+void TestDlg::accept()
+{
+    mtn->abort();
+    mtn->wait();
+    QApplication::quit();
 }
 
