@@ -54,6 +54,13 @@ void MonotoneTask::init(const QList<QByteArray> & args, const QList<QByteArray> 
     arguments = args;
     options = opts;
     returnCode = -1;
+    
+    static bool initialized = false;
+    if (!initialized)
+    {
+        qRegisterMetaType<MonotoneTask>("MonotoneTask");
+        initialized = true;
+    }
 }
 
 QList<QByteArray> MonotoneTask::stringToByteArrayList(const QStringList & list)
@@ -108,9 +115,7 @@ const int MonotoneThread::StdioBufferSize = 50 * 1024 * 1024;
 
 MonotoneThread::MonotoneThread(const QString & mtn, const QString & database, const QString & workspace)
     : QThread(), doAbort(false), mtnBinary(mtn), databasePath(database), workspacePath(workspace)
-{
-    qRegisterMetaType<MonotoneTask>("MonotoneTask");
-}
+{}
 
 MonotoneThread::~MonotoneThread() {}
 

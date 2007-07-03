@@ -39,6 +39,23 @@
         <widget class="QLineEdit" name="input" />
        </item>
        <item>
+        <widget class="QCheckBox" name="outputasinput" >
+         <property name="text" >
+          <string>use output</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="splitoutput" >
+         <property name="enabled" >
+          <bool>false</bool>
+         </property>
+         <property name="text" >
+          <string>split</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="doExec" >
          <property name="text" >
           <string>exec</string>
@@ -51,10 +68,18 @@
       </layout>
      </item>
      <item>
-      <widget class="QTextEdit" name="output" />
+      <widget class="QTextEdit" name="output" >
+       <property name="acceptRichText" >
+        <bool>false</bool>
+       </property>
+      </widget>
      </item>
      <item>
-      <widget class="QTextEdit" name="error" />
+      <widget class="QTextEdit" name="error" >
+       <property name="acceptRichText" >
+        <bool>false</bool>
+       </property>
+      </widget>
      </item>
      <item>
       <layout class="QHBoxLayout" >
@@ -105,12 +130,28 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel" >
-     <x>436</x>
-     <y>394</y>
+     <x>522</x>
+     <y>442</y>
     </hint>
     <hint type="destinationlabel" >
      <x>301</x>
      <y>398</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>outputasinput</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>splitoutput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>289</x>
+     <y>26</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>377</x>
+     <y>35</y>
     </hint>
    </hints>
   </connection>

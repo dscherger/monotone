@@ -35,11 +35,12 @@ public:
     MonotoneTask(const QList<QByteArray> &);
     MonotoneTask(const QList<QByteArray> &, const QList<QByteArray> &);
     
-    QByteArray getEncodedInput() const;
-    
     void setOutput(const QByteArray & out) { output = out; }
     void setReturnCode(int code) { returnCode = code; }
     
+    QByteArray getEncodedInput() const;
+    QList<QByteArray> getArguments() const { return arguments; }
+    QList<QByteArray> getOptions() const { return options; }
     QByteArray getOutput() const { return output; }
     QString getOutputUtf8() const { return QString::fromUtf8(output); }
     bool getReturnCode() const { return returnCode; }

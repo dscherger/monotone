@@ -24,7 +24,7 @@ TestDlg::TestDlg() : QDialog(0)
 {
     setupUi(this);
 
-    mtn = new MonotoneThread("mtn", "../guitone.mtn", ".");
+    mtn = new MonotoneThread("mtn", "~/Entwicklung/guitone.mtn", ".");
     mtn->start();
     
     connect(
@@ -53,8 +53,21 @@ TestDlg::~TestDlg()
 void TestDlg::execute()
 {
     QStringList in = input->text().split(" ");
+    if (outputasinput->isChecked())
+    {
+        QString out = output->toPlainText();
+        if (splitoutput->isChecked())
+        {
+            in << out.split("\n");
+        }
+        else
+        {
+            in << out;
+        }
+    }
+    
     MonotoneTask task(in);
-    mtn->enqueueTask(in);
+    mtn->enqueueTask(task);
 }
 
 void TestDlg::finished(const MonotoneTask & task)
@@ -65,6 +78,7 @@ void TestDlg::finished(const MonotoneTask & task)
 void TestDlg::threadAborted(const QString & err)
 {
     error->setText(err);
+    mtn->start();
 }
 
 void TestDlg::accept()
