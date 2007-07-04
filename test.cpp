@@ -58,7 +58,7 @@ void TestDlg::execute()
         QString out = output->toPlainText();
         if (splitoutput->isChecked())
         {
-            in << out.split("\n");
+            in << out.split("\n", QString::SkipEmptyParts);
         }
         else
         {
