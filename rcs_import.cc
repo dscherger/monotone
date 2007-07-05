@@ -70,6 +70,11 @@ using boost::scoped_ptr;
 using boost::shared_ptr;
 using boost::lexical_cast;
 
+// additional debugging information
+// not defined: DEBUG_BRANCH_REDUCTION
+// not defined: DEBUG_BLOB_SPLITTER
+// not defined: DEBUG_GRAPHVIZ
+
 // cvs history recording stuff
 
 typedef unsigned long cvs_branchname;
@@ -1349,18 +1354,14 @@ public:
     { }
 
   template < class Edge, class Graph >
-  void tree_edge(Edge e, Graph & g)
-    {
-      L(FL("blob_splitter: tree edge: %s") % e);
-    }
-
-  template < class Edge, class Graph >
   void back_edge(Edge e, Graph & g)
     {
       if (!cycle_members.empty())
         return;
 
+#ifdef DEBUG_BLOB_SPLITTER
       L(FL("blob_splitter: back edge: %s") % e);
+#endif
 
       if (e.m_source == e.m_target)
         {
@@ -1838,6 +1839,8 @@ This is currently not needed, as we rebuild the graph from scratch anyway.
 #endif
 }
 
+#ifdef DEBUG_GRAPHVIZ
+
 class blob_label_writer
 {
   public:
@@ -1869,6 +1872,10 @@ class blob_label_writer
 
           cvs.split_authorclog(ce->authorclog, author, clog);
           label += author + "\\n";
+
+          // limit length of changelog we output
+          if (clog.length() > 20)
+            clog = clog.substr(20);
 
           // poor man's escape...
           for (unsigned int i = 0; i < clog.length(); ++i)
@@ -1952,6 +1959,7 @@ class blob_label_writer
       out << "[label=\"" << label << "\"]";
     }
 };
+#endif
 
 //
 // After stuffing all cvs_events into blobs of events with the same
@@ -1965,9 +1973,11 @@ resolve_blob_dependencies(cvs_history &cvs,
 {
   L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
+#ifdef DEBUG_GRAPHVIZ
   int step_no = 1;
   std::ofstream viz_file;
   blob_label_writer blw(cvs);
+#endif
 
   Graph g;
 
@@ -1988,6 +1998,7 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   blob_splitter< Edge, ColorMap > vis(cvs, cycle_members, colormap);
 
+#ifdef DEBUG_GRAPHVIZ
     if (global_sanity.debug)
       {
         viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
@@ -1995,6 +2006,7 @@ resolve_blob_dependencies(cvs_history &cvs,
         viz_file.close();
         step_no++;
       }
+#endif
 
     cycle_members.clear();
     depth_first_search(g, vis, colorpmap);
@@ -2282,6 +2294,7 @@ blob_consumer::consume_blob(cvs_blob_index bi)
     {
       set< cvs_blob_index >::const_iterator i;
 
+#ifdef DEBUG_BRANCH_REDUCTION
       // this is only for debug information
       L(FL("This blob depends on the following branches:"));
       if (blob.get_digest().is_commit())
@@ -2291,6 +2304,7 @@ blob_consumer::consume_blob(cvs_blob_index bi)
 
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
         L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_event_branch&>(**cvs.blobs[*i].begin()).branchname));
+#endif
 
       // eliminate direct parent branches
       bool set_modified;
@@ -2308,10 +2322,12 @@ blob_consumer::consume_blob(cvs_blob_index bi)
             my_bi = *i;
             while (cvs.blobs[my_bi].in_branch != invalid_branch)
               {
+#ifdef DEBUG_BRANCH_REDUCTION
                 L(FL("       checking branch %d: %s") % my_bi
                   % cvs.branchname_interner.lookup(
                     boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                       *cvs.blobs[my_bi].begin())->branchname));
+#endif
 
                 if (dep_branches.find(cvs.blobs[my_bi].in_branch) !=
                     dep_branches.end())
@@ -2343,10 +2359,12 @@ blob_consumer::consume_blob(cvs_blob_index bi)
 
       } while (set_modified);
 
+#ifdef DEBUG_BRANCH_REDUCTION
       // this is only for debug information
       L(FL("After elimination of parent branches, this blob depends on:"));
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
         L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_event_branch&>(**cvs.blobs[*i].begin()).branchname));
+#endif
 
       // FIXME: this invariant gets violated by tests
       I(dep_branches.size() <= 1);
