@@ -77,25 +77,53 @@ function push_to_other_servers(triggerkey, branches)
       return
    end
 
-   local pushto = {}
-
-   for i, item in pairs(data)
+   -- If a branch was received from a server that's in our distribution
+   -- list for that branch, don't forward it.
+   for local i, item in pairs(data)
    do
       if item.name == "server" then
 	 if item.values[2] == triggerkey
 	 then
-	    return
+	    local dropprefix = item.values[3]
+	    for local branch, _ in pairs(branches) do
+	       if branch_in_prefix(branch, dropprefix) then
+		  branches[branch] = false
+	       end
+	    end
 	 end
       end
    end
 
-
-   for i, item in pairs(data)
-   do
+   -- Build the list of what servers get what branches.
+   local pushto = {}
+   for i, item in pairs(data) do
       if item.name == "server" then
-	 server_request_sync("sync", item.values[1],
-			     include, exclude)
+	 local srvname = item.values[1]
+	 local prefix = item.values[3]
+	 for local branch, inc in pairs(branches) do
+	    if inc and branch_in_prefix(branch, prefix) then
+	       if pushto[srvname] == nil then
+		  pushto[srvname] = {}
+	       end
+	       pushto[srvname][branch] = true
+	    end
+	 end
       end
+   end
+
+   -- Send thing where they go.
+   for local server, what in pairs(data) do
+      local include = "{"
+      local first = true
+      for local b, _ in pairs(what) do
+	 include = include .. b
+	 if not first then
+	    include = include .. ","
+	 end
+	 first = false
+      end
+      include = include .. "}"
+      server_request_sync("sync", server, include, "")
    end
 end
 
@@ -126,7 +154,7 @@ end
 
 function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
    if ci > 0 or ri > 0 or ki > 0 then
-      server_maybe_request_sync(sessions[sid].key)
+      server_maybe_request_sync(sessions[sid].key, sessions[sid].branches)
    elseif sessions[sid].include == '' and
           sessions[sid].exclude == 'ctl-branch-updated' then
       log("resyncing after a config update...")
