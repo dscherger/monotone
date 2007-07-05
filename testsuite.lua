@@ -81,7 +81,7 @@ unset_env("SSH_AUTH_SOCK")
        
 
 function safe_mtn(...)
-  return {monotone_path, "--debug", "--norc", "--root=" .. test.root,
+  return {monotone_path, "--norc", "--root=" .. test.root,
           "--confdir="..test.root, unpack(arg)}
 end
 
