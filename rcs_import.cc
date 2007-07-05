@@ -7,6 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <algorithm>
 #include <ostream>
 #include <fstream>
@@ -17,7 +18,6 @@
 #include <sstream>
 #include <stack>
 #include <stdexcept>
-#include <string>
 #include <vector>
 #include <list>
 
@@ -1325,7 +1325,7 @@ blob_consumer
 
   void consume_blob(cvs_blob_index bi);
   void add_missing_parents(branch_state & bstate,
-                           split_path const & sp, cset & cs);
+                           file_path const & path, cset & cs);
   void build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
   void store_auxiliary_certs(prepared_revision const & p);
   void store_revisions();
@@ -2146,21 +2146,16 @@ blob_consumer::store_auxiliary_certs(prepared_revision const & p)
 
 void
 blob_consumer::add_missing_parents(branch_state & bstate,
-                                   split_path const & sp, cset & cs)
+                                   file_path const & path, cset & cs)
 {
-  split_path tmp(sp);
-  if (tmp.empty())
+  if (bstate.created_dirs.find(path) != bstate.created_dirs.end())
     return;
-  tmp.pop_back();
-  while (!tmp.empty())
-    {
-      if (bstate.created_dirs.find(tmp) == bstate.created_dirs.end())
-        {
-          safe_insert(bstate.created_dirs, tmp);
-          safe_insert(cs.dirs_added, tmp);
-        }
-      tmp.pop_back();
-    }
+
+  if (!path.empty())
+    add_missing_parents(bstate, path.dirname(), cs);
+
+  safe_insert(bstate.created_dirs, path);
+  safe_insert(cs.dirs_added, path);
 }
 
 void
@@ -2184,8 +2179,6 @@ blob_consumer::build_cset(const cvs_blob & blob,
 
       L(FL("blob_consumer::build_cset: file_path: %s") % pth);
 
-      split_path sp;
-      pth.split(sp);
 
       file_id fid(cvs.mtn_version_interner.lookup(ce->mtn_version));
 
@@ -2196,9 +2189,9 @@ blob_consumer::build_cset(const cvs_blob & blob,
 
           if (e == branch_live_files.end())
             {
-              add_missing_parents(bstate, sp, cs);
+              add_missing_parents(bstate, pth.dirname(), cs);
               L(FL("adding entry state '%s' on '%s'") % fid % pth);
-              safe_insert(cs.files_added, make_pair(sp, fid));
+              safe_insert(cs.files_added, make_pair(pth, fid));
               branch_live_files[ce->path] = ce->mtn_version;
             }
           else if (e->second != ce->mtn_version)
@@ -2207,7 +2200,7 @@ blob_consumer::build_cset(const cvs_blob & blob,
               L(FL("applying state delta on '%s' : '%s' -> '%s'")
                 % pth % old_fid % fid);
               safe_insert(cs.deltas_applied,
-                          make_pair(sp, make_pair(old_fid, fid)));
+                          make_pair(pth, make_pair(old_fid, fid)));
               branch_live_files[ce->path] = ce->mtn_version;
             }
         }
@@ -2219,7 +2212,7 @@ blob_consumer::build_cset(const cvs_blob & blob,
           if (e != branch_live_files.end())
             {
               L(FL("deleting entry state '%s' on '%s'") % fid % pth);
-              safe_insert(cs.nodes_deleted, sp);
+              safe_insert(cs.nodes_deleted, pth);
               branch_live_files.erase(ce->path);
             }
         }
