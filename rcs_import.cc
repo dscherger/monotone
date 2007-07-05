@@ -1404,49 +1404,6 @@ public:
     }
 };
 
-class revision_iterator
-{
-private:
-	cvs_blob_index current_blob;
-  cvs_history & cvs;
-  blob_consumer & cons;
-
-public:
-  revision_iterator(cvs_history & h, blob_consumer & c)
-    : current_blob(0),
-      cvs(h),
-      cons(c)
-    {}
-
-  revision_iterator(const revision_iterator & ri)
-    : current_blob(ri.current_blob),
-      cvs(ri.cvs),
-      cons(ri.cons)
-    {}
-
-	revision_iterator & operator * (void)
-    {
-      return *this;
-    };
-
-  revision_iterator & operator = (cvs_blob_index current_blob)
-    {
-      L(FL("next blob number from toposort: %d") % current_blob);
-      cons.consume_blob(current_blob);
-      return *this;
-    }
-
-	revision_iterator & operator ++ (void)
-    {
-      return *this;
-    }
-
-	revision_iterator & operator ++ (int i)
-    {
-      return *this;
-    };
-};
-
 typedef pair< cvs_blob_index, cvs_blob_index > Edge;
 typedef boost::adjacency_list< boost::vecS, boost::vecS,
                                boost::bidirectionalS > Graph;
@@ -1487,8 +1444,8 @@ add_blob_dependency_edges(cvs_history & cvs,
 
               // add the edge, if we found the dependency *and* if the
               // edge does not exist, yet.
-              if (found_dep && (!boost::edge(i, k->second, g).second))
-                add_edge(i, k->second, g);
+              if (found_dep && (!boost::edge(k->second, i, g).second))
+                add_edge(k->second, i, g);
             }
         }
     }
@@ -1609,7 +1566,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
     ib_deps.erase(*i);
 
   // FIXME: we should check if there are events in that range, which are
-  //        no involved in the dependency cycle, but for which we need to
+  //        not involved in the dependency cycle, but for which we need to
   //        decide where to put them.
 
   time_t best_split_point = best_split_range.first +
@@ -2021,10 +1978,17 @@ resolve_blob_dependencies(cvs_history &cvs,
 
   // start the topological sort, which calls our revision
   // iterator to insert the revisions into our database. 
-  blob_consumer cons(cvs, app, n_revs);
-  revision_iterator ri(cvs, cons);
+  vector<cvs_blob_index> import_order;
+  topological_sort(g, back_inserter(import_order));
 
-  topological_sort(g, ri);
+
+  blob_consumer cons(cvs, app, n_revs);
+  for (vector<cvs_blob_index>::const_reverse_iterator i = import_order.rbegin();
+       i != import_order.rend(); ++i)
+    {
+      L(FL("next blob number from toposort: %d") % *i);
+      cons.consume_blob(*i);
+    }
 
   // finally store the revisions
   // (ms) why is this an extra step? Is it faster?
