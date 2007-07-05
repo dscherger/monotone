@@ -909,20 +909,6 @@ process_rcs_branch(string const & begin_version,
             }
         }
 
-      string next_version = r.deltas.find(curr_version)->second->next;
-
-      if (!next_version.empty())
-        {
-          L(FL("following RCS edge %s -> %s") % curr_version % next_version);
-
-          construct_version(*curr_lines, next_version, *next_lines, r);
-          L(FL("constructed RCS version %s, inserting into database") %
-            next_version);
-
-          insert_into_db(curr_data, curr_id,
-                         *next_lines, next_data, next_id, db, dryrun);
-        }
-
       // recursively follow any branch commits coming from the branchpoint
       shared_ptr<rcs_delta> curr_delta = r.deltas.find(curr_version)->second;
       for(set<string>::const_iterator i = curr_delta->branches.begin();
@@ -1014,6 +1000,20 @@ process_rcs_branch(string const & begin_version,
           // the comment above for tags.
           if (!is_vendor_branch)
             add_dependencies(branch_event, last_events, reverse_import);
+        }
+
+      string next_version = r.deltas.find(curr_version)->second->next;
+
+      if (!next_version.empty())
+        {
+          L(FL("following RCS edge %s -> %s") % curr_version % next_version);
+
+          construct_version(*curr_lines, next_version, *next_lines, r);
+          L(FL("constructed RCS version %s, inserting into database") %
+            next_version);
+
+          insert_into_db(curr_data, curr_id,
+                         *next_lines, next_data, next_id, db, dryrun);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
