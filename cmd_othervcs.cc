@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "base.hh"
 #include "cmd.hh"
 #include "app_state.hh"
 #include "rcs_import.hh"
