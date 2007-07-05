@@ -1,0 +1,2 @@
+-- hooks used when updating the policy branches
+-- looks at the DELEGATIONS and PREFIX env vars
