@@ -1310,7 +1310,7 @@ blob_consumer
   {
     revision_id current_rid;
     roster_t ros;
-    set<split_path> created_dirs;
+    set<file_path> created_dirs;
     map<cvs_path, cvs_mtn_version> live_files;
   };
 
