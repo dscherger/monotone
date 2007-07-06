@@ -156,7 +156,7 @@ function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
    if ci > 0 or ri > 0 or ki > 0 then
       server_maybe_request_sync(sessions[sid].key, sessions[sid].branches)
    elseif sessions[sid].include == '' and
-          sessions[sid].exclude == 'ctl-branch-updated' then
+          sessions[sid].exclude == 'policy-branches-updated' then
       log("resyncing after a config update...")
       server_maybe_request_sync('')
    end
@@ -164,8 +164,7 @@ function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
    -- Do we update the control checkout?
    local ctlbranch = trim(read_conffile("serverctl-branch"))
    if ctlbranch and sessions[sid].branches[ctlbranch] then
-      log("updating configuration...")
-      execute(get_confdir() .. "/serverctl-update.sh", get_confdir())
+      execute(get_confdir() .. "/update-policy.sh", get_confdir())
    end
    sessions[sid] = nil
 end
