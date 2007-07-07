@@ -187,3 +187,69 @@ function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
 
    sessions[sid] = nil
 end
+
+do
+   -- First, look for an override-write-permissions, shortest prefix first.
+   -- Then, look for a write-permissions, longest prefix first.
+   -- If neither exists, try the old hook or default to open.
+
+   local function file_trusts_signers(file, signers)
+      local iter = conffile_iterator(file)
+      if iter == nil then return nil end
+      local retval = false
+      while iter:next() do
+	 for _,s in pairs(signers) do
+	    if s == iter.line then
+	       retval = true
+	    end
+	 end
+      end
+      iter:close()
+      return retval
+   end
+
+   local function next_prefix(policy_dir, branch)
+      local delegations = read_basic_io_conffile(policy_dir .. "/delegations")
+      if delegations == nil then return nil end
+      for local _,item in pairs(delegations) do
+	 if item.name = "delegate" then
+	    if branch_in_prefix(branch, item.values[1]) then
+	       return item.values[1]
+	    end
+	 end
+      end
+      return nil
+   end
+
+   local function policy_trusts_signers(policy_dir, branch, signers)
+      local subprefix = next_prefix(policy_dir, branch)
+      if subprefix ~= nil then
+	 local override_file = policy_dir .. '/delegations.d/overrides/' ..
+	    subprefix .. '/override-write-permissions'
+	 local override = file_trusts_signers(override_file, signers)
+	 if override ~= nil then return override end
+
+	 local subpolicy = policy_dir .. '/delegations.d/checkouts/' .. subprefix
+	 local sub = policy_trusts_signers(subpolicy, branch, signers)
+	 if sub ~= nil then return sub end
+      end
+
+      local here = file_trusts_signers(policy_dir .. '/write-permissions', signers)
+      return here
+   end
+
+   local old_trust_hook = get_revision_cert_trust
+   function get_revision_cert_trust(signers, id, name, value)
+      if name == 'branch' then
+	 local trusted = policy_trusts_signers('policy/policy', value, signers)
+	 if trusted ~= nil then
+	    return trusted
+	 end
+      end
+      if old_trust_hook then
+	 return old_trust_hook(signers, id, name, value)
+      else
+	 return true
+      end
+   end
+end
