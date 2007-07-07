@@ -3,20 +3,22 @@
 
 trusted_keys = {}
 do
-   local delegations = read_basic_io_conffile(os.getenv('DELEGATIONS'))
    local prefix = os.getenv('PREFIX')
+   if prefix then
+      local delegations = read_basic_io_conffile(os.getenv('DELEGATIONS'))
 
-   local myprefix = false
-   for local _, item in pairs(delegations) do
-      if item.name == 'delegate' then
-	 if item.values[1] == prefix then
-	    myprefix = true
-	 else
-	    myprefix = false
+      local myprefix = false
+      for local _, item in pairs(delegations) do
+	 if item.name == 'delegate' then
+	    if item.values[1] == prefix then
+	       myprefix = true
+	    else
+	       myprefix = false
+	    end
 	 end
-      end
-      if item.name = 'admin' and myprefix then
-	 table.insert(trusted_keys, item.values[1])
+	 if item.name = 'admin' and myprefix then
+	    table.insert(trusted_keys, item.values[1])
+	 end
       end
    end
 end

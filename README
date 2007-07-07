@@ -27,7 +27,7 @@ Other interesting files (all under policy/) are:
   cache/all-policy-branches
     This contains a list of all used policy branches.
 
-  self/
+  policy/
     A directory that looks exactly like a normal policy branch.
 
 
@@ -56,16 +56,16 @@ A policy branch contains the following files:
     with policy branch "policy.branch", and keys "key1", "key2" will be
     allowed to commit revisions to "policy.branch".
 
-  delegations.d/prefix/
-    There is one directory like this for each prefix delegated to another
-    policy branch.
-
-  delegations.d/prefix/self/
+  delegations.d/checkouts/prefix/
     This is a checkout of the policy branch to which the prefix is delegated.
     It is NOT present in the policy branch itself, but is created and
     maintained on disk by the policy scripts.
 
-  delegations.d/prefix/override-servers
-  delegations.d/prefix/override-write-permissions
+  delegations.d/overrides/prefix/
+    There is one directory like this for each prefix delegated to another
+    policy branch.
+
+  delegations.d/overrides/prefix/override-servers
+  delegations.d/overrides/prefix/override-write-permissions
     This files (if present) allow the policy branch to ignore parts of the
     policy of the branches it delegates to.

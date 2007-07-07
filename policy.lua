@@ -161,10 +161,29 @@ function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
       server_maybe_request_sync('')
    end
    
-   -- Do we update the control checkout?
-   local ctlbranch = trim(read_conffile("serverctl-branch"))
-   if ctlbranch and sessions[sid].branches[ctlbranch] then
-      execute(get_confdir() .. "/update-policy.sh", get_confdir())
+   -- Do we have policy branches to update?
+   local updated_a_policy = false
+   local updated_policies = '{'
+   local policies = conffile_iterator('policy/cache/all-policy-branches')
+   while policies ~= nil and policies:next() do
+      for local br, _ in pairs(sessions[sid].branches) do
+	 if policies.line == br then
+	    if updated_a_policy then
+	       updated_policies = updated_policies .. ','
+	    end
+	    updated_policies = updated_policies .. br
+	    updated_a_policy = true
+	 end
+      end
    end
+   if policies ~= nil then
+      policies:close()
+   end
+   updated_policies = updated_policies .. '}'
+
+   if updated_a_policy then
+      execute(get_confdir() .. "/update-policy.sh", get_confdir(), updated_policies)
+   end
+
    sessions[sid] = nil
 end
