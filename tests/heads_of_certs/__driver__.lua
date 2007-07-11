@@ -16,12 +16,12 @@ check(mtn("cert", first, "testcert", "value=with=equal=signs"))
 check(mtn("cert", second, "testcert", "value"))
 
 -- Check that a log without H: gives both the first and second commit...
-check(mtn("log", "--revision=c:testcert", "--last=1"), 0, true, false)
+check(mtn("log", "--from=c:testcert", "--last=1"), 0, true, false)
 check(qgrep("Revision: "..first, "stdout"))
 check(qgrep("Revision: "..second, "stdout"))
 
 -- Check that a log with H: gives only the second commit...
-check(mtn("log", "--revision=H:c:testcert", "--last=1"), 0, true, false)
+check(mtn("log", "--from=H:c:testcert", "--last=1"), 0, true, false)
 check(not qgrep("Revision: "..first, "stdout"))
 check(qgrep("Revision: "..second, "stdout"))
 -- Note that if the third revision is in the log, something else is wrong...
