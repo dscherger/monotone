@@ -7,14 +7,9 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <cstdlib>              // for strtoul()
-#include <string>
 #include <vector>
-
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/exception.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include "botan/pubkey.h"
 #include "botan/rsa.h"
@@ -37,8 +32,6 @@ using std::vector;
 app_state::app_state()
   : db(system_path()),
     keys(*this), work(db, lua),
-//    search_root(current_root_path()),
-//    diff_format(unified_diff),
     branch_is_sticky(false),
     project(*this)
 {
@@ -55,7 +48,6 @@ app_state::~app_state()
 void
 app_state::allow_workspace()
 {
-  L(FL("initializing from directory %s") % fs::initial_path().string());
   found_workspace = find_and_go_to_workspace(opts.root);
 
   if (found_workspace)
@@ -232,17 +224,6 @@ app_state::get_project()
   return project;
 }
 
-void
-app_state::set_root(system_path const & path)
-{
-  require_path_is_directory
-    (path,
-     F("search root '%s' does not exist") % path,
-     F("search root '%s' is not a directory") % path);
-  opts.root = path;
-  L(FL("set search root to %s") % opts.root);
-}
-
 // rc files are loaded after we've changed to the workspace so that
 // _MTN/monotonerc can be loaded between ~/.monotone/monotonerc and other
 // rcfiles.
@@ -270,7 +251,7 @@ app_state::load_rcfiles()
 
   // Command-line rcfiles override even that.
 
-  for (vector<utf8>::const_iterator i = opts.extra_rcfiles.begin();
+  for (args_vector::const_iterator i = opts.extra_rcfiles.begin();
        i != opts.extra_rcfiles.end(); ++i)
     {
       lua.load_rcfile(*i);

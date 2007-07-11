@@ -7,10 +7,10 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <algorithm>
 #include <iterator>
 #include <sstream>
-#include <string>
 #include <unistd.h>
 #include <vector>
 
@@ -61,7 +61,10 @@ using std::vector;
 //   newline. Revision ids are printed in alphabetically sorted order.
 // Error conditions: If the branch does not exist, prints nothing.  (There are
 //   no heads.)
-AUTOMATE(heads, N_("[BRANCH]"), options::opts::none)
+CMD_AUTOMATE(heads, N_("[BRANCH]"),
+             N_("Prints the heads of the given branch"),
+             "",
+             options::opts::none)
 {
   N(args.size() < 2,
     F("wrong argument count"));
@@ -85,14 +88,17 @@ AUTOMATE(heads, N_("[BRANCH]"), options::opts::none)
 //   newline. Revision ids are printed in alphabetically sorted order.
 // Error conditions: If any of the revisions do not exist, prints nothing to
 //   stdout, prints an error message to stderr, and exits with status 1.
-AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"), options::opts::none)
+CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
+             N_("Prints the ancestors of the given revisions"),
+             "",
+             options::opts::none)
 {
   N(args.size() > 0,
     F("wrong argument count"));
   
   set<revision_id> ancestors;
   vector<revision_id> frontier;
-  for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
@@ -132,14 +138,17 @@ AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"), options::opts::none)
 //   newline. Revision ids are printed in alphabetically sorted order.
 // Error conditions: If any of the revisions do not exist, prints nothing to
 //   stdout, prints an error message to stderr, and exits with status 1.
-AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"), options::opts::none)
+CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
+             N_("Prints the descendents of the given revisions"),
+             "",
+             options::opts::none)
 {
   N(args.size() > 0,
     F("wrong argument count"));
 
   set<revision_id> descendents;
   vector<revision_id> frontier;
-  for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
@@ -180,10 +189,13 @@ AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"), options::opts::none)
 //   newline.  Revision ids are printed in alphabetically sorted order.
 // Error conditions: If any of the revisions do not exist, prints nothing to
 //   stdout, prints an error message to stderr, and exits with status 1.
-AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"), options::opts::none)
+CMD_AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"),
+             N_("Erases the ancestors in a list of revisions"),
+             "",
+             options::opts::none)
 {
   set<revision_id> revs;
-  for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
@@ -192,128 +204,6 @@ AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"), options::opts::none)
   erase_ancestors(revs, app);
   for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
     output << (*i).inner()() << '\n';
-}
-
-// Name: attributes
-// Arguments:
-//   1: file name
-// Added in: 1.0
-// Purpose: Prints all attributes for a file
-// Output format: basic_io formatted output, each attribute has its own stanza:
-//
-// 'format_version'
-//         used in case this format ever needs to change.
-//         format: ('format_version', the string "1" currently)
-//         occurs: exactly once
-// 'attr'
-//         represents an attribute entry
-//         format: ('attr', name, value), ('state', [unchanged|changed|added|dropped])
-//         occurs: zero or more times
-//
-// Error conditions: If the file name has no attributes, prints only the 
-//                   format version, if the file is unknown, escalates
-AUTOMATE(attributes, N_("FILE"), options::opts::none)
-{
-  N(args.size() > 0,
-    F("wrong argument count"));
-
-  // this command requires a workspace to be run on
-  app.require_workspace();
-
-  // retrieve the path
-  split_path path;
-  file_path_external(idx(args,0)).split(path);
-
-  roster_t base, current;
-  parent_map parents;
-  temp_node_id_source nis;
-
-  // get the base and the current roster of this workspace
-  app.work.get_current_roster_shape(current, nis);
-  app.work.get_parent_rosters(parents);
-  N(parents.size() == 1,
-    F("this command can only be used in a single-parent workspace"));
-  base = parent_roster(parents.begin());
-
-  // escalate if the given path is unknown to the current roster
-  N(current.has_node(path),
-    F("file %s is unknown to the current workspace") % path);
-
-  // create the printer
-  basic_io::printer pr;
-  
-  // print the format version
-  basic_io::stanza st;
-  st.push_str_pair(basic_io::syms::format_version, "1");
-  pr.print_stanza(st);
-    
-  // the current node holds all current attributes (unchanged and new ones)
-  node_t n = current.get_node(path);
-  for (full_attr_map_t::const_iterator i = n->attrs.begin(); 
-       i != n->attrs.end(); ++i)
-  {
-    std::string value(i->second.second());
-    std::string state("unchanged");
-    
-    // if if the first value of the value pair is false this marks a
-    // dropped attribute
-    if (!i->second.first)
-      {
-        // if the attribute is dropped, we should have a base roster
-        // with that node. we need to check that for the attribute as well
-        // because if it is dropped there as well it was already deleted
-        // in any previous revision
-        I(base.has_node(path));
-        
-        node_t prev_node = base.get_node(path);
-        
-        // find the attribute in there
-        full_attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
-        I(j != prev_node->attrs.end());
-        
-        // was this dropped before? then ignore it
-        if (!j->second.first) { continue; }
-        
-        state = "dropped";
-        // output the previous (dropped) value later
-        value = j->second.second();
-      }
-    // this marks either a new or an existing attribute
-    else
-      {
-        if (base.has_node(path))
-          {
-            node_t prev_node = base.get_node(path);
-            full_attr_map_t::const_iterator j = 
-              prev_node->attrs.find(i->first);
-            // attribute not found? this is new
-            if (j == prev_node->attrs.end())
-              {
-                state = "added";
-              }
-            // check if this attribute has been changed 
-            // (dropped and set again)
-            else if (i->second.second() != j->second.second())
-              {
-                state = "changed";
-              }
-                
-          }
-        // its added since the whole node has been just added
-        else
-          {
-            state = "added";
-          }
-      }
-      
-    basic_io::stanza st;
-    st.push_str_triple(basic_io::syms::attr, i->first(), value);
-    st.push_str_pair(symbol("state"), state);
-    pr.print_stanza(st);
-  }
-  
-  // print the output  
-  output.write(pr.buf.data(), pr.buf.size());
 }
 
 // Name: toposort
@@ -326,10 +216,13 @@ AUTOMATE(attributes, N_("FILE"), options::opts::none)
 //   newline.  Revisions are printed in topologically sorted order.
 // Error conditions: If any of the revisions do not exist, prints nothing to
 //   stdout, prints an error message to stderr, and exits with status 1.
-AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"), options::opts::none)
+CMD_AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"),
+             N_("Topologically sorts a list of revisions"),
+             "",
+             options::opts::none)
 {
   set<revision_id> revs;
-  for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
@@ -358,14 +251,18 @@ AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"), options::opts::none)
 //   newline.  Revisions are printed in topologically sorted order.
 // Error conditions: If any of the revisions do not exist, prints nothing to
 //   stdout, prints an error message to stderr, and exits with status 1.
-AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"), options::opts::none)
+CMD_AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"),
+             N_("Lists the ancestors of the first revision given, not in "
+                "the others"),
+             "",
+             options::opts::none)
 {
   N(args.size() > 0,
     F("wrong argument count"));
     
   revision_id a;
   set<revision_id> bs;
-  vector<utf8>::const_iterator i = args.begin();
+  args_vector::const_iterator i = args.begin();
   a = revision_id((*i)());
   N(app.db.revision_exists(a), F("No such revision %s") % a);
   for (++i; i != args.end(); ++i)
@@ -397,7 +294,10 @@ AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"), options
 // Output format: A list of revision ids, in hexadecimal, each followed by a
 //   newline.  Revision ids are printed in alphabetically sorted order.
 // Error conditions: None.
-AUTOMATE(leaves, "", options::opts::none)
+CMD_AUTOMATE(leaves, "",
+             N_("Lists the leaves of the revision graph"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 0,
     F("no arguments needed"));
@@ -415,6 +315,33 @@ AUTOMATE(leaves, "", options::opts::none)
     output << (*i).inner()() << '\n';
 }
 
+// Name: roots
+// Arguments:
+//   None
+// Added in: 4.3
+// Purpose: Prints the roots of the revision graph, i.e. all revisions that
+//   have no parents.
+// Output format: A list of revision ids, in hexadecimal, each followed by a
+//   newline.  Revision ids are printed in alphabetically sorted order.
+// Error conditions: None.
+CMD_AUTOMATE(roots, "",
+             N_("Lists the roots of the revision graph"),
+             "",
+             options::opts::none)
+{
+  N(args.size() == 0,
+    F("no arguments needed"));
+
+  // the real root revisions are the children of one single imaginary root
+  // with an empty revision id
+  set<revision_id> roots;
+  revision_id nullid;
+  app.db.get_revision_children(nullid, roots);
+  for (set<revision_id>::const_iterator i = roots.begin();
+       i != roots.end(); ++i)
+      output << i->inner()() << '\n';
+}
+
 // Name: parents
 // Arguments:
 //   1: a revision id
@@ -425,7 +352,10 @@ AUTOMATE(leaves, "", options::opts::none)
 //   newline.  Revision ids are printed in alphabetically sorted order.
 // Error conditions: If the revision does not exist, prints nothing to stdout,
 //   prints an error message to stderr, and exits with status 1.
-AUTOMATE(parents, N_("REV"), options::opts::none)
+CMD_AUTOMATE(parents, N_("REV"),
+             N_("Prints the parents of a revision"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -450,7 +380,10 @@ AUTOMATE(parents, N_("REV"), options::opts::none)
 //   newline.  Revision ids are printed in alphabetically sorted order.
 // Error conditions: If the revision does not exist, prints nothing to stdout,
 //   prints an error message to stderr, and exits with status 1.
-AUTOMATE(children, N_("REV"), options::opts::none)
+CMD_AUTOMATE(children, N_("REV"),
+             N_("Prints the children of a revision"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -485,7 +418,10 @@ AUTOMATE(children, N_("REV"), options::opts::none)
 //   The output as a whole is alphabetically sorted; additionally, the parents
 //   within each line are alphabetically sorted.
 // Error conditions: None.
-AUTOMATE(graph, "", options::opts::none)
+CMD_AUTOMATE(graph, "",
+             N_("Prints the complete ancestry graph"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 0,
     F("no arguments needed"));
@@ -528,7 +464,10 @@ AUTOMATE(graph, "", options::opts::none)
 // Output format: A list of revision ids, in hexadecimal, each followed by a
 //   newline. Revision ids are printed in alphabetically sorted order.
 // Error conditions: None.
-AUTOMATE(select, N_("SELECTOR"), options::opts::none)
+CMD_AUTOMATE(select, N_("SELECTOR"),
+             N_("Lists the revisions that match a selector"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -593,19 +532,19 @@ struct inventory_item
     pre_id(0), post_id(0) {}
 };
 
-typedef map<split_path, inventory_item> inventory_map;
-typedef map<split_path, split_path> rename_map; // this might be good in cset.hh
-typedef map<split_path, file_id> addition_map;  // ditto
+typedef map<file_path, inventory_item> inventory_map;
+typedef map<file_path, file_path> rename_map; // this might be good in cset.hh
+typedef map<file_path, file_id> addition_map;  // ditto
 
 static void
 inventory_pre_state(inventory_map & inventory,
-                    path_set const & paths,
+                    set<file_path> const & paths,
                     inventory_item::pstate pre_state,
                     size_t rename_id)
 {
-  for (path_set::const_iterator i = paths.begin(); i != paths.end(); i++)
+  for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); i++)
     {
-      L(FL("%d %d %s") % inventory[*i].pre_state % pre_state % file_path(*i));
+      L(FL("%d %d %s") % inventory[*i].pre_state % pre_state % *i);
       I(inventory[*i].pre_state == inventory_item::UNCHANGED_PATH);
       inventory[*i].pre_state = pre_state;
       if (rename_id != 0)
@@ -618,14 +557,13 @@ inventory_pre_state(inventory_map & inventory,
 
 static void
 inventory_post_state(inventory_map & inventory,
-                     path_set const & paths,
+                     set<file_path> const & paths,
                      inventory_item::pstate post_state,
                      size_t rename_id)
 {
-  for (path_set::const_iterator i = paths.begin(); i != paths.end(); i++)
+  for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); i++)
     {
-      L(FL("%d %d %s") % inventory[*i].post_state
-        % post_state % file_path(*i));
+      L(FL("%d %d %s") % inventory[*i].post_state % post_state % *i);
       I(inventory[*i].post_state == inventory_item::UNCHANGED_PATH);
       inventory[*i].post_state = post_state;
       if (rename_id != 0)
@@ -638,13 +576,13 @@ inventory_post_state(inventory_map & inventory,
 
 static void
 inventory_node_state(inventory_map & inventory,
-                     path_set const & paths,
+                     set<file_path> const & paths,
                      inventory_item::nstate node_state)
 {
-  for (path_set::const_iterator i = paths.begin(); i != paths.end(); i++)
+  for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); i++)
     {
       L(FL("%d %d %s") % inventory[*i].node_state
-        % node_state % file_path(*i));
+        % node_state % *i);
       I(inventory[*i].node_state == inventory_item::UNCHANGED_NODE);
       inventory[*i].node_state = node_state;
     }
@@ -654,8 +592,8 @@ static void
 inventory_renames(inventory_map & inventory,
                   rename_map const & renames)
 {
-  path_set old_name;
-  path_set new_name;
+  set<file_path> old_name;
+  set<file_path> new_name;
 
   static size_t rename_id = 1;
 
@@ -678,7 +616,8 @@ inventory_renames(inventory_map & inventory,
 }
 
 static void
-extract_added_file_paths(addition_map const & additions, path_set & paths)
+extract_added_file_paths(addition_map const & additions,
+                         set<file_path> & paths)
 {
   for (addition_map::const_iterator i = additions.begin();
        i != additions.end(); ++i)
@@ -724,7 +663,10 @@ extract_added_file_paths(addition_map const & additions, path_set & paths)
 // Error conditions: If no workspace book keeping _MTN directory is found,
 //   prints an error message to stderr, and exits with status 1.
 
-AUTOMATE(inventory, "", options::opts::none)
+CMD_AUTOMATE(inventory, "",
+             N_("Prints a summary of files found in the workspace"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 0,
     F("no arguments needed"));
@@ -736,7 +678,7 @@ AUTOMATE(inventory, "", options::opts::none)
   revision_t rev;
   inventory_map inventory;
   cset cs; MM(cs);
-  path_set unchanged, changed, missing, unknown, ignored;
+  set<file_path> unchanged, changed, missing, unknown, ignored;
 
   app.work.get_current_roster_shape(curr, nis);
   app.work.get_work_rev(rev);
@@ -756,7 +698,7 @@ AUTOMATE(inventory, "", options::opts::none)
   // recorded on the filesystem (because get_..._shape was used to
   // build it).
 
-  path_set nodes_added(cs.dirs_added);
+  set<file_path> nodes_added(cs.dirs_added);
   extract_added_file_paths(cs.files_added, nodes_added);
 
   inventory_pre_state(inventory, cs.nodes_deleted,
@@ -792,7 +734,6 @@ AUTOMATE(inventory, "", options::opts::none)
   for (inventory_map::const_iterator i = inventory.begin();
        i != inventory.end(); ++i)
     {
-
       string path_suffix;
 
       // ensure that directory nodes always get a trailing slash even
@@ -810,7 +751,7 @@ AUTOMATE(inventory, "", options::opts::none)
           if (is_root_dir_t(n)) continue;
           if (is_dir_t(n)) path_suffix = "/";
         }
-      else if (directory_exists(file_path(i->first)))
+      else if (directory_exists(i->first))
         {
           path_suffix = "/";
         }
@@ -924,7 +865,10 @@ AUTOMATE(inventory, "", options::opts::none)
 //   the same type will be sorted by the filename they refer to.
 // Error conditions: If the revision specified is unknown or invalid
 // prints an error message to stderr and exits with status 1.
-AUTOMATE(get_revision, N_("[REVID]"), options::opts::none)
+CMD_AUTOMATE(get_revision, N_("[REVID]"),
+             N_("Shows change information for a revision"),
+             "",
+             options::opts::none)
 {
   N(args.size() < 2,
     F("wrong argument count"));
@@ -967,7 +911,10 @@ AUTOMATE(get_revision, N_("[REVID]"), options::opts::none)
 //   on. This is the value stored in _MTN/revision
 // Error conditions: If no workspace book keeping _MTN directory is found,
 //   prints an error message to stderr, and exits with status 1.
-AUTOMATE(get_base_revision_id, "", options::opts::none)
+CMD_AUTOMATE(get_base_revision_id, "",
+             N_("Shows the revision on which the workspace is based"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 0,
     F("no arguments needed"));
@@ -991,7 +938,10 @@ AUTOMATE(get_base_revision_id, "", options::opts::none)
 //   files in the workspace.
 // Error conditions: If no workspace book keeping _MTN directory is found,
 //   prints an error message to stderr, and exits with status 1.
-AUTOMATE(get_current_revision_id, "", options::opts::none)
+CMD_AUTOMATE(get_current_revision_id, "",
+             N_("Shows the revision of the current workspace"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 0,
     F("no arguments needed"));
@@ -1057,7 +1007,10 @@ AUTOMATE(get_current_revision_id, "", options::opts::none)
 //
 // Error conditions: If the revision ID specified is unknown or
 // invalid prints an error message to stderr and exits with status 1.
-AUTOMATE(get_manifest_of, N_("[REVID]"), options::opts::none)
+CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
+             N_("Shows the manifest associated with a revision"),
+             "",
+             options::opts::none)
 {
   N(args.size() < 2,
     F("wrong argument count"));
@@ -1100,7 +1053,10 @@ AUTOMATE(get_manifest_of, N_("[REVID]"), options::opts::none)
 //
 // Error conditions: If the revision id specified is unknown or
 // invalid prints an error message to stderr and exits with status 1.
-AUTOMATE(packet_for_rdata, N_("REVID"), options::opts::none)
+CMD_AUTOMATE(packet_for_rdata, N_("REVID"),
+             N_("Prints the revision data in packet format"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -1126,7 +1082,11 @@ AUTOMATE(packet_for_rdata, N_("REVID"), options::opts::none)
 //
 // Error conditions: If the revision id specified is unknown or
 // invalid prints an error message to stderr and exits with status 1.
-AUTOMATE(packets_for_certs, N_("REVID"), options::opts::none)
+CMD_AUTOMATE(packets_for_certs, N_("REVID"),
+             N_("Prints the certs associated with a revision in "
+                "packet format"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -1153,7 +1113,10 @@ AUTOMATE(packets_for_certs, N_("REVID"), options::opts::none)
 //
 // Error conditions: If the file id specified is unknown or invalid
 // prints an error message to stderr and exits with status 1.
-AUTOMATE(packet_for_fdata, N_("FILEID"), options::opts::none)
+CMD_AUTOMATE(packet_for_fdata, N_("FILEID"),
+             N_("Prints the file data in packet format"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -1180,7 +1143,10 @@ AUTOMATE(packet_for_fdata, N_("FILEID"), options::opts::none)
 //
 // Error conditions: If any of the file ids specified are unknown or
 // invalid prints an error message to stderr and exits with status 1.
-AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"), options::opts::none)
+CMD_AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"),
+             N_("Prints the file delta in packet format"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 2,
     F("wrong argument count"));
@@ -1214,14 +1180,18 @@ AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"), options::opts::none)
 // Error conditions: If any of the revisions do not exist, prints
 //   nothing to stdout, prints an error message to stderr, and exits
 //   with status 1.
-AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"), options::opts::none)
+CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
+             N_("Prints revisions that are common ancestors of a list "
+                "of revisions"),
+             "",
+             options::opts::none)
 {
   N(args.size() > 0,
     F("wrong argument count"));
 
   set<revision_id> ancestors, common_ancestors;
   vector<revision_id> frontier;
-  for (vector<utf8>::const_iterator i = args.begin(); i != args.end(); ++i)
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
@@ -1277,7 +1247,10 @@ AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"), options::opts::none)
 //   in alphabetically sorted order.
 // Error conditions:
 //   None.
-AUTOMATE(branches, "", options::opts::none)
+CMD_AUTOMATE(branches, "",
+             N_("Prints all branch certs in the revision graph"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 0,
     F("no arguments needed"));
@@ -1326,7 +1299,10 @@ AUTOMATE(branches, "", options::opts::none)
 //   Stanzas are printed in arbitrary order.
 // Error conditions:
 //   A run-time exception is thrown for illegal patterns.
-AUTOMATE(tags, N_("[BRANCH_PATTERN]"), options::opts::none)
+CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
+             N_("Prints all tags attached to a set of branches"),
+             "",
+             options::opts::none)
 {
   N(args.size() < 2,
     F("wrong argument count"));
@@ -1416,7 +1392,10 @@ namespace
 //
 // Error conditions: If the passphrase is empty or the key already exists,
 // prints an error message to stderr and exits with status 1.
-AUTOMATE(genkey, N_("KEYID PASSPHRASE"), options::opts::none)
+CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
+             N_("Generates a key"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 2,
     F("wrong argument count"));
@@ -1475,7 +1454,10 @@ AUTOMATE(genkey, N_("KEYID PASSPHRASE"), options::opts::none)
 // Sample output (for 'mtn automate get_option branch:
 //   net.venge.monotone
 //
-AUTOMATE(get_option, N_("OPTION"), options::opts::none)
+CMD_AUTOMATE(get_option, N_("OPTION"),
+             N_("Shows the value of an option"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -1524,7 +1506,11 @@ AUTOMATE(get_option, N_("OPTION"), options::opts::none)
 // Sample output (for 'mtn automate get_content_changed 3bccff99d08421df72519b61a4dded16d1139c33 ChangeLog):
 //   content_mark [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
 //
-AUTOMATE(get_content_changed, N_("REV FILE"), options::opts::none)
+CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
+             N_("Lists the revisions that changed the content relative "
+                "to another revision"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 2,
     F("wrong argument count"));
@@ -1538,8 +1524,7 @@ AUTOMATE(get_content_changed, N_("REV FILE"), options::opts::none)
     F("no revision %s found in database") % ident);
   app.db.get_roster(ident, new_roster, mm);
 
-  split_path path;
-  file_path_external(idx(args,1)).split(path);
+  file_path path = file_path_external(idx(args,1));
   N(new_roster.has_node(path),
     F("file %s is unknown for revision %s") % path % ident);
 
@@ -1583,7 +1568,11 @@ AUTOMATE(get_content_changed, N_("REV FILE"), options::opts::none)
 //
 // Sample output (for automate get_corresponding_path 91f25c8ee830b11b52dd356c925161848d4274d0 foo2 dae0d8e3f944c82a9688bcd6af99f5b837b41968; see automate_get_corresponding_path test)
 // file "foo"
-AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
+CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
+             N_("Prints the name of a file in a target revision relative "
+                "to a given revision"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 3,
     F("wrong argument count"));
@@ -1601,8 +1590,7 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
     F("no revision %s found in database") % old_ident);
   app.db.get_roster(old_ident, old_roster);
 
-  split_path path;
-  file_path_external(idx(args,1)).split(path);
+  file_path path = file_path_external(idx(args,1));
   N(new_roster.has_node(path),
     F("file %s is unknown for revision %s") % path % ident);
 
@@ -1610,11 +1598,10 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
   basic_io::printer prt;
   if (old_roster.has_node(node->self))
     {
-      split_path old_path;
+      file_path old_path;
       basic_io::stanza st;
       old_roster.get_name(node->self, old_path);
-      file_path fp = file_path(old_path);
-      st.push_file_pair(basic_io::syms::file, fp);  
+      st.push_file_pair(basic_io::syms::file, old_path);
       prt.print_stanza(st);
     }
   output.write(prt.buf.data(), prt.buf.size());
@@ -1632,7 +1619,10 @@ AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"), options::opts::none)
 //   The ID of the new file (40 digit hex string)
 // Error conditions:
 //   a runtime exception is thrown if base revision is not available
-AUTOMATE(put_file, N_("[FILEID] CONTENTS"), options::opts::none)
+CMD_AUTOMATE(put_file, N_("[FILEID] CONTENTS"),
+             N_("Stores a file in the database"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1 || args.size() == 2,
     F("wrong argument count"));
@@ -1682,7 +1672,10 @@ AUTOMATE(put_file, N_("[FILEID] CONTENTS"), options::opts::none)
 //   The ID of the new revision
 // Error conditions:
 //   none
-AUTOMATE(put_revision, N_("REVISION-DATA"), options::opts::none)
+CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
+             N_("Stores a revision into the database"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -1736,7 +1729,10 @@ AUTOMATE(put_revision, N_("REVISION-DATA"), options::opts::none)
 //   nothing
 // Error conditions:
 //   none
-AUTOMATE(cert, N_("REVISION-ID NAME VALUE"), options::opts::none)
+CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
+             N_("Adds a revision certificate"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 3,
     F("wrong argument count"));
@@ -1766,7 +1762,10 @@ AUTOMATE(cert, N_("REVISION-ID NAME VALUE"), options::opts::none)
 //   nothing
 // Error conditions:
 //   none
-AUTOMATE(db_set, N_("DOMAIN NAME VALUE"), options::opts::none)
+CMD_AUTOMATE(db_set, N_("DOMAIN NAME VALUE"),
+             N_("Sets a database variable"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 3,
     F("wrong argument count"));
@@ -1789,7 +1788,10 @@ AUTOMATE(db_set, N_("DOMAIN NAME VALUE"), options::opts::none)
 //   variable value
 // Error conditions:
 //   a runtime exception is thrown if the variable is not set
-AUTOMATE(db_get, N_("DOMAIN NAME"), options::opts::none)
+CMD_AUTOMATE(db_get, N_("DOMAIN NAME"),
+             N_("Gets a database variable"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 2,
     F("wrong argument count"));

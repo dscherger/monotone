@@ -106,6 +106,7 @@ Loop:
   Having found a layout that works, we draw lines connecting things!  Yay.
 */
 
+#include "base.hh"
 #include <algorithm>
 #include <iostream>
 #include <iterator>
@@ -365,8 +366,10 @@ asciik::print(revision_id const & rev,
     }
 }
 
-CMD(asciik, N_("debug"), N_("SELECTOR"),
-  N_("prints an ASCII representation of the graph"), options::opts::none)
+CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
+    N_("Prints an ASCII representation of the revisions' graph"),
+    "",
+    options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));

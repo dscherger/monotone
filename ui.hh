@@ -16,7 +16,6 @@
 
 #include <map>
 #include <set>
-#include <string>
 
 #include "paths.hh"
 #include "sanity.hh"
@@ -128,6 +127,11 @@ extern struct user_interface ui;
 // like platform.hh's "terminal_width", but always returns a sensible value
 // (even if there is no terminal)
 unsigned int guess_terminal_width();
+
+std::string format_text(std::string const & text,
+                        size_t const col = 0, size_t curcol = 0);
+std::string format_text(i18n_format const & text,
+                        size_t const col = 0, size_t curcol = 0);
 
 // Local Variables:
 // mode: C++

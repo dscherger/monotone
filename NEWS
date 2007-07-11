@@ -1,4 +1,68 @@
-??? ??? ?? ??:??:?? UTC 2007
+??? ??? ?? ??:??:?? ??? ????
+
+        0.36 release.
+
+        Changes
+
+        - The help command is now able to show documentation on subcommands
+          (such as 'attr set').
+
+        - The help command now shows a brief abstract of each command,
+          instead of only listing their names.
+
+        - The command `list changed` now outputs the new path of any
+          renamed item making it easier to copy and paste these paths
+          for external program usage.
+
+        - `automate attributes` has been renamed to `automate get_attributes`,
+          also a bug has been fixed there so resurrected attributes are now
+          properly outputted as "new" and not "changed".
+
+        New features
+
+        - Two new commands to set and drop attributes over automate:
+          `automate set_attribute` and `automate drop_attribute`
+
+        - There is a new function available to the lua hooks,
+          'server_request_sync(what, address, include, exclude)', which will
+          initate a netsync connection to the server at "address", with the
+          given include and exclude patterns, and will sync, push, or pull,
+          as given in the "what" argument. If called from a monotone instance
+          which is not acting as a server, this function will do nothing.
+
+        - There is a new hook available,
+          'get_netsync_key(server, include, exclude)', which is called to
+          determine which key to use for netsync operations. Note that the
+          server calls this once at startup with the address it is listening
+          on, "*", and "" as arguments, rather than for each connection.
+
+        Other
+
+        - Giving the --confdir argument will automatically set the key store
+          directory to keys/ under that directory, unless --keydir is also
+          given. This is a bugfix.
+
+        - Fixed a regression in 0.35 that resulted in some databases
+          becoming significantly larger when storing new revisions. Existing
+          databases with this problem can be fixed by pulling into a fresh
+          database using 0.36.
+
+        - Monotone can now be built successfully with Boost 1.34. Older
+          versions of monotone would sometimes seem to work depending on
+          the compiler used, but would have bugs in path normalization.
+
+        Internal
+
+        - Commands are now defined as a tree of commands instead of a
+          plain list, which allows the help system to look up information
+          of a command at an level in the tree.
+
+        - The command class, the automate class and all the associated
+          macros have been cleaned up.
+
+
+
+Mon May  7 14:08:44 UTC 2007
 
         0.35 release.
 
@@ -7,11 +71,26 @@
         - 'mkdir --no-respect-ignore PATH' now really skips any
           ignore directives from .mtn-ignore or Lua hooks
 
+        - Private keys are now stored more safely, using file
+          permissions.
+
+        - The editable log summary (what you get in an editor when
+          committing without -m) now includes information about which
+          branch the commit applies to.
+
+        - The status command and the editable log summary now show
+          the same details about the change.
+
         New features
 
         - 'automate identify', an automate version of 'mtn identify'.
 
+        - 'automate roots', prints the roots of the revision graph,
+          i.e. all revisions that have no parents.
+
         Other
+
+        - You can't drop the workspace root any more.
 
         Internal
 
@@ -19,7 +98,9 @@
 
         - Added build files for Mac OS X.
 
-        - Update the internal SQLite to version 3.3.16.
+        - Update the internal SQLite to version 3.3.17.
+
+        - Code cleanup of app_state.
 
 
 

@@ -6,7 +6,7 @@ addfile("testfile", "foo")
 commit("mainbranch")
 
 -- at first check for the version on the file w/o attributes
-check(mtn("automate", "attributes", "testfile"), 0, true, true)
+check(mtn("automate", "get_attributes", "testfile"), 0, true, true)
 check(fsize("stderr") == 0)
 parsed = parse_basic_io(readfile("stdout"))
 for _,l in pairs(parsed) do
@@ -28,7 +28,7 @@ check(mtn("attr", "set", "testfile", "key3", "has_been_changed"), 0, false, fals
 check(mtn("attr", "drop", "testfile", "key2"), 0, false, false)
 
 -- the actual check of the interface
-check(mtn("automate", "attributes", "testfile"), 0, true, true)
+check(mtn("automate", "get_attributes", "testfile"), 0, true, true)
 check(fsize("stderr") == 0)
 parsed = parse_basic_io(readfile("stdout"))
 -- make sure the output generated 9 stanzas
@@ -71,7 +71,7 @@ check(checked["key1"] and checked["key2"] and checked["key3"] and checked["key4"
 commit("mainbranch")
 
 -- check that dropped attributes do not popup in further revisions
-check(mtn("automate", "attributes", "testfile"), 0, true, true)
+check(mtn("automate", "get_attributes", "testfile"), 0, true, true)
 check(fsize("stderr") == 0)
 parsed = parse_basic_io(readfile("stdout"))
 
@@ -79,6 +79,25 @@ for _,l in pairs(parsed) do
     if l.name == "attr" then 
         curkey = l.values[1]
         check(curkey ~= "key2")
+    end
+end
+
+-- check that new attributes which resemble the name of previously
+-- dropped attributes are correctly listed as added, and not changed
+-- (bug in 0.35)
+check(mtn("attr", "set", "testfile", "key2", "new_value"), 0, false, false)
+check(mtn("automate", "get_attributes", "testfile"), 0, true, true)
+check(fsize("stderr") == 0)
+parsed = parse_basic_io(readfile("stdout"))
+
+curkey = ""
+for _,l in pairs(parsed) do
+    if l.name == "attr" then 
+        curkey = l.values[1]
+    end
+    if l.name == "state" and curkey == "key2" then
+        state = l.values[1]
+        check(state == "added")
     end
 end
 

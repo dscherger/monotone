@@ -11,13 +11,13 @@
 // PURPOSE.
 
 #include <set>
-#include <string>
 
 #include <boost/shared_ptr.hpp>
 
 #include "cset.hh"
 #include "vocab.hh"
 #include "database.hh"
+#include "commands.hh"
 
 class app_state;
 
@@ -216,7 +216,7 @@ make_restricted_revision(parent_map const & old_rosters,
                          node_restriction const & mask,
                          revision_t & rev,
                          cset & excluded,
-                         std::string const & cmd_name);
+                         commands::command_id const & cmd_name);
 
 void
 build_changesets_from_manifest_ancestry(app_state & app);
