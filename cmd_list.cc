@@ -266,7 +266,7 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
     {
-      if (match((*i)()) && !app.lua.hook_ignore_branch(*i))
+      if (match((*i)()) && !app.lua.hook_ignore_branch(app, *i))
         {
           cout << *i << '\n';
         }

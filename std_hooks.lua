@@ -93,6 +93,11 @@ function dir_matches(name, dir)
    return false
 end
 
+function ignore_branch(name)
+  headCount = get_branch_heads(name)
+  return (headCount == 0)
+end
+
 function ignore_file(name)
    -- project specific
    if (ignored_files == nil) then

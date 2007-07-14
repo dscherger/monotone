@@ -16,6 +16,7 @@
 #include <set>
 #include <map>
 #include <fstream>
+#include <sstream>
 
 #include "lua.hh"
 
@@ -304,10 +305,33 @@ lua_hooks::hook_ignore_file(file_path const & p)
   return exec_ok && ignore_it;
 }
 
+LUAEXT(get_branch_heads, )
+{
+  app_state *app_p = map_of_lua_to_app[L];
+  I(app_p);
+  const char *branch = luaL_checkstring(L, -1);
+  std::set<revision_id> heads;
+
+  app_p->get_project().get_branch_heads(branch_name(branch), heads);
+
+  lua_pushnumber(L, heads.size());
+
+  std::ostringstream o;
+
+  for (std::set<revision_id>::const_iterator it = heads.begin(); it != heads.end(); ++it)
+    o << *it << " ";
+  
+  lua_pushstring(L, o.str().c_str());
+  
+  return 2;
+}
+
 bool
-lua_hooks::hook_ignore_branch(branch_name const & branch)
+lua_hooks::hook_ignore_branch(app_state & app, branch_name const & branch)
 {
   bool ignore_it = false;
+  app.db.ensure_open();
+  I(map_of_lua_to_app[st] == &app);
   bool exec_ok = Lua(st)
     .func("ignore_branch")
     .push_str(branch())

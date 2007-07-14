@@ -28,16 +28,7 @@ project_t::get_branch_list(std::set<branch_name> & names)
       branches.clear();
       for (std::vector<std::string>::iterator i = got.begin();
            i != got.end(); ++i)
-        {
-          // check that the branch has at least one non-suspended head
-          const branch_name branch(*i);
-          std::set<revision_id> heads;
-
-          get_branch_heads(branch, heads);
-          
-          if (!heads.empty())
-            branches.insert(branch);
-        }
+        branches.insert(branch_name(*i));
     }
 
   names = branches;
@@ -52,16 +43,7 @@ project_t::get_branch_list(globish const & glob,
   names.clear();
   for (std::vector<std::string>::iterator i = got.begin();
        i != got.end(); ++i)
-    {
-      // check that the branch has at least one non-suspended head
-      const branch_name branch(*i);
-      std::set<revision_id> heads;
-
-      get_branch_heads(branch, heads);
-
-      if (!heads.empty())
-        names.insert(branch);
-    }
+    names.insert(branch_name(*i));
 }
 
 namespace

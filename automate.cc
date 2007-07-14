@@ -1248,7 +1248,7 @@ CMD_AUTOMATE(branches, "",
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
     {
-      if (!app.lua.hook_ignore_branch(*i))
+      if (!app.lua.hook_ignore_branch(app, *i))
         output << (*i) << '\n';
     }
 }
@@ -1322,7 +1322,7 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
       for (set<branch_name>::const_iterator branch = branches.begin();
            branch != branches.end(); ++branch)
         {
-          if (app.lua.hook_ignore_branch(*branch))
+          if (app.lua.hook_ignore_branch(app, *branch))
             continue;
       
           if (!show && match((*branch)()))

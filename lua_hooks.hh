@@ -85,7 +85,7 @@ public:
 
   // local repo hooks
   bool hook_ignore_file(file_path const & p);
-  bool hook_ignore_branch(branch_name const & branch);
+  bool hook_ignore_branch(app_state & app, branch_name const & branch);
   bool hook_merge3(file_path const & anc_path,
                    file_path const & left_path,
                    file_path const & right_path,
