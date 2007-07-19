@@ -73,7 +73,7 @@ check(samefile("file3-1.1.2.1.2.1", "branchD/file3"))
 check(samefile("changelog.D.5", "branchD/changelog"))
 
 -- check the log of branch A for correctness
-check(indir("branchA", mtn("log")), 0, true, false)
+check(indir("branchA", mtn("log", "--no-graph")), 0, true, false)
 check(grep("initial import", "stdout"), 0, false, false)
 check(grep("first commit", "stdout"), 0, false, false)
 check(grep("commit on branch A", "stdout"), 0, false, false)
@@ -82,7 +82,7 @@ check(grep("commit on branch C", "stdout"), 1, false, false)
 check(grep("commit on branch D", "stdout"), 1, false, false)
 
 -- check the log of branch C for correctness
-check(indir("branchC", mtn("log")), 0, true, false)
+check(indir("branchC", mtn("log", "--no-graph")), 0, true, false)
 check(grep("initial import", "stdout"), 0, false, false)
 check(grep("first commit", "stdout"), 0, false, false)
 check(grep("commit on branch A", "stdout"), 0, false, false)
@@ -91,7 +91,7 @@ check(grep("commit on branch C", "stdout"), 0, false, false)
 check(grep("commit on branch D", "stdout"), 1, false, false)
 
 -- check the log of branch D for correctness
-check(indir("branchD", mtn("log")), 0, true, false)
+check(indir("branchD", mtn("log", "--no-graph")), 0, true, false)
 check(grep("initial import", "stdout"), 0, false, false)
 check(grep("first commit", "stdout"), 0, false, false)
 check(grep("commit on branch A", "stdout"), 0, false, false)
