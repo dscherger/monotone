@@ -2261,11 +2261,6 @@ blob_consumer::consume_blob(cvs_blob_index bi)
 #ifdef DEBUG_BRANCH_REDUCTION
       // this is only for debug information
       L(FL("This blob depends on the following branches:"));
-      if (blob.get_digest().is_commit())
-        {
-          L(FL("    (commit: '%s')") % cvs.authorclog_interner.lookup(static_cast<cvs_commit&>(**blob.begin()).authorclog));
-        }
-
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
         L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_event_branch&>(**cvs.blobs[*i].begin()).branchname));
 #endif
@@ -2345,6 +2340,10 @@ blob_consumer::consume_blob(cvs_blob_index bi)
   I(branch_states.find(in_branch) != branch_states.end());
   branch_state & bstate = branch_states.find(in_branch)->second;
 
+#ifdef DEBUG_BRANCH_REDUCTION
+  L(FL("  branch %s is at revision: %s") % cvs.get_branchname(in_branch) % bstate.current_rid);
+#endif
+
   if (blob.get_digest().is_commit())
     {
       // we should never have an empty blob; it's *possible* to have
@@ -2359,6 +2358,9 @@ blob_consumer::consume_blob(cvs_blob_index bi)
 
           revision_id parent_rid, child_rid;
           parent_rid = bstate.current_rid;
+
+          if (null_id(parent_rid))
+            W(F("Warning: null parent_rid, should better be the root"));
 
           shared_ptr<revision_t> rev(new revision_t());
           shared_ptr<cset> cs(new cset());
@@ -2421,6 +2423,7 @@ blob_consumer::consume_blob(cvs_blob_index bi)
               I(cbe->branchname != cvs.base_branch);
               I(branch_states.find(cbe->branchname) == branch_states.end());
 
+              // copy the branch state
               branch_states.insert(make_pair(cbe->branchname,
                 branch_state(bstate)));
             }
