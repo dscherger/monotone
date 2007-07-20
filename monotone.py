@@ -98,7 +98,15 @@ class Monotone:
             revs.update(heads)
             revs.update(self.automate("ancestors", *heads).split())        
         return list(revs)
-                     
+
+    def graph(self):
+        output = self.automate("graph")
+        result = {}
+        for line in output.splitlines():
+            t = line.split(" ")
+            result[t[0]] = t[1:]
+        return result
+
     def toposort(self, revisions):
         output = self.automate("toposort", *revisions)
         sorted = output.split()
