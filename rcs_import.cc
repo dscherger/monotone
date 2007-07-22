@@ -1811,12 +1811,37 @@ class blob_label_writer
               }
             label += "\\n";
           }
+          }
       else
         label += "-- empty --";
 
-      out << "[label=\"" << label << "\"]";
+      out << label;
     }
 };
+
+void
+write_graphviz(std::ofstream & of, cvs_history & cvs,
+               set<cvs_blob_index> & cycle_members, blob_label_writer & blw)
+{
+  of << "digraph G {\n";
+
+  for (unsigned int i = 0; i < cvs.blobs.size(); ++i)
+    {
+      if (cycle_members.find(i) != cycle_members.end())
+        of << (FL("  blob%d [color=red,label=\"") % i);
+      else
+        of << (FL("  blob%d [label=\"") % i);
+      blw(of, i);
+      of << "\"]\n";
+
+      for (blob_index_iter j = cvs.blobs[i].get_dependents(cvs).begin();
+           j != cvs.blobs[i].get_dependents(cvs).end(); ++j)
+        of << (FL("  blob%d -> blob%d\n") % i % *j);
+    }
+
+  of << "};\n";
+}
+
 #endif
 
 
@@ -1938,17 +1963,17 @@ resolve_blob_dependencies(cvs_history & cvs,
 
     blob_splitter vis(cvs, cycle_members);
 
+    cvs.depth_first_search(vis, back_inserter(import_order));
+
 #ifdef DEBUG_GRAPHVIZ
     if (global_sanity.debug)
       {
         viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
-        boost::write_graphviz(viz_file, g, blw);
+        write_graphviz(viz_file, cvs, cycle_members, blw);
         viz_file.close();
         step_no++;
       }
 #endif
-
-    cvs.depth_first_search(vis, back_inserter(import_order));
 
     // If we have a cycle, go split it. Otherwise we don't have any
     // cycles left and can proceed.
@@ -2337,7 +2362,7 @@ blob_consumer::consume_blob(cvs_blob_index bi)
               ++n_revisions;
             }
           else
-            I(false);  // revision shouldn't exist already!
+            I(false);  // revision shouldn't exist!
         }
 
       bstate.current_rid = child_rid;
