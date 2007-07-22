@@ -1694,94 +1694,24 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   I(!blob_events.empty());
 
   for (blob_event_iter i = blob_events.begin(); i != blob_events.end(); ++i)
-    if ((*i)->time <= split_point)
-      cvs.blobs[bi].push_back(*i);
-    else
-      cvs.blobs[new_bi].push_back(*i);
+    {
+      // Reset the dependents cache of all dependencies.
+      for (dependency_iter j = (*i)->dependencies.begin();
+           j != (*i)->dependencies.end(); ++j)
+        {
+          cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+          cvs.blobs[dep_bi].reset_deps_cache();
+        }
+
+      // Assign the event to the existing or to the new blob
+      if ((*i)->time <= split_point)
+        cvs.blobs[bi].push_back(*i);
+      else
+        cvs.blobs[new_bi].push_back(*i);
+    }
 
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
-
-  // reset the caches where needed.
-
-
-#if 0
-This is currently not needed, as we rebuild the graph from scratch anyway. 
-
-
-  {
-    // in edges, blobs which depend on this one blob we should split
-    pair< boost::graph_traits<Graph>::in_edge_iterator,
-          boost::graph_traits<Graph>::in_edge_iterator > range;
-
-    range = in_edges(bi, g);
-
-    vector< cvs_blob_index > in_deps_from;
-
-    // get all blobs with dependencies to the blob which has been split
-    for (boost::graph_traits<Graph>::in_edge_iterator ity = range.first;
-         ity != range.second; ++ity)
-      {
-        L(FL("removing in edge %s") % *ity);
-        in_deps_from.push_back(ity->m_source);
-        I(ity->m_target == bi);
-      }
-
-    // remove all those edges
-    for (blob_index_iter ity = in_deps_from.begin();
-         ity != in_deps_from.end(); ++ity)
-          remove_edge(*ity, bi, const_cast<Graph &>(g));
-
-    // now check each in_deps_from blob and add proper edges to the
-    // newly splitted blobs
-    for (blob_index_iter ity = in_deps_from.begin();
-         ity != in_deps_from.end(); ++ity)
-      {
-        cvs_blob & other_blob = cvs.blobs[*ity];
-
-        for (vector< cvs_event_ptr >::const_iterator j = 
-              other_blob.get_events().begin();
-              j != other_blob.get_events().end(); ++j)
-          {
-            for (dependency_iter ob_dep = (*j)->dependencies.begin();
-                 ob_dep != (*j)->dependencies.end(); ++ob_dep)
-
-              if ((*ob_dep)->get_digest() == d)
-              {
-                if ((*ob_dep)->time >= split_point)
-                {
-                  // L(FL("adding new edge %d -> %d") % *ity % new_bi);
-                  if (!boost::edge(*ity, new_bi, g).second)
-                    add_edge(*ity, new_bi, const_cast<Graph &>(g));
-                }
-                else
-                {
-                  // L(FL("keeping edge %d -> %d") % *ity % new_bi);
-                  if (!boost::edge(*ity, bi, g).second)
-                    add_edge(*ity, bi, const_cast<Graph &>(g));
-                }
-              }
-          }
-      }
-  }
-
-  // adjust out edges of the new blob
-  {
-    // in edges, blobs which depend on this one blob which we are splitting
-    pair< boost::graph_traits<Graph>::out_edge_iterator,
-          boost::graph_traits<Graph>::out_edge_iterator > range;
-
-    range = out_edges(bi, g);
-
-    // remove all existing out edges
-    for (boost::graph_traits<Graph>::out_edge_iterator ity = range.first;
-         ity != range.second; ++ity)
-      {
-        L(FL("removing out edge %s") % *ity);
-        remove_edge(ity->m_source, ity->m_target, const_cast<Graph &>(g));
-      }
-  }
-#endif
 }
 
 #ifdef DEBUG_GRAPHVIZ
