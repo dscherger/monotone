@@ -26,7 +26,6 @@ building and installation process for monotone
            apt-get install automake
            apt-get install gettext
            apt-get install libboost-regex-dev
-           apt-get install libboost-graph-dev
            apt-get install libboost-dev
            apt-get install libz-dev
            apt-get install g++
