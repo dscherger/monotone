@@ -1348,7 +1348,7 @@ blob_consumer
   void consume_blob(cvs_blob_index bi);
   void add_missing_parents(branch_state & bstate,
                            file_path const & path, cset & cs);
-  void build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
+  int build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
 };
 
 struct blob_splitter
@@ -2062,11 +2062,12 @@ blob_consumer::add_missing_parents(branch_state & bstate,
   safe_insert(cs.dirs_added, path);
 }
 
-void
+int
 blob_consumer::build_cset(const cvs_blob & blob,
                           branch_state & bstate,
                           cset & cs)
 {
+  int changes = 0;
   I(blob.in_branch != invalid_blob);
 
   map<cvs_path, cvs_mtn_version> & branch_live_files =
@@ -2097,6 +2098,7 @@ blob_consumer::build_cset(const cvs_blob & blob,
               L(FL("adding entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.files_added, make_pair(pth, fid));
               branch_live_files[ce->path] = ce->mtn_version;
+              changes++;
             }
           else if (e->second != ce->mtn_version)
             {
@@ -2106,6 +2108,7 @@ blob_consumer::build_cset(const cvs_blob & blob,
               safe_insert(cs.deltas_applied,
                           make_pair(pth, make_pair(old_fid, fid)));
               branch_live_files[ce->path] = ce->mtn_version;
+              changes++;
             }
         }
       else
@@ -2118,9 +2121,12 @@ blob_consumer::build_cset(const cvs_blob & blob,
               L(FL("deleting entry state '%s' on '%s'") % fid % pth);
               safe_insert(cs.nodes_deleted, pth);
               branch_live_files.erase(ce->path);
+              changes++;
             }
         }
     }
+
+  return changes;
 }
 
 void
@@ -2294,7 +2300,11 @@ blob_consumer::consume_blob(cvs_blob_index bi)
       shared_ptr<revision_t> rev(new revision_t());
       shared_ptr<cset> cs(new cset());
 
-      build_cset(blob, bstate, *cs);
+      // build_cset() returns the number of files changed. In case of a
+      // 'dead blob', we don't commit anything. Such a dead blob can be
+      // created when files are added on a branch in CVS.
+      if (build_cset(blob, bstate, *cs) <= 0)
+        return;
 
       editable_roster_base editable_ros(bstate.ros, nis);
 
