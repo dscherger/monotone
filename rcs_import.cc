@@ -412,7 +412,8 @@ cvs_history
   cvs_path curr_file_interned;
 
   cvs_branchname base_branch;
-  cvs_blob_index root_event;
+  cvs_blob_index root_blob;
+  cvs_event_ptr root_event;
 
   ticker n_versions;
   ticker n_tree_branches;
@@ -1001,8 +1002,17 @@ process_rcs_branch(string const & begin_version,
               shared_ptr<cvs_event_branch>(
                 new cvs_event_branch(curr_commit->path, bname,
                                      curr_commit->time)));
+
+          // Normal branches depend on the current commit. But vendor
+          // branches - appearing in reversed order - don't depend on
+          // anything. They theoretically come before anything else
+          // (i.e. initial import). To make sure the DFS algorithm sees
+          // this event anyway, we make it dependent on the root_blob,
+          // which is artificial anyway.
           if (!is_vendor_branch)
             add_dependency(branch_event, curr_commit);
+          else
+            add_dependency(branch_event, cvs.root_event);
 
           curr_events.push_back(branch_event);
 
@@ -1105,20 +1115,20 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
                                   head_lines);
 
     // add a pseudo trunk branch event (at time 0)
-    cvs_event_ptr root_event =
+    cvs.root_event =
       boost::static_pointer_cast<cvs_event, cvs_event_branch>(
         shared_ptr<cvs_event_branch>(
           new cvs_event_branch(cvs.curr_file_interned, cvs.base_branch)));
-    cvs.root_event = cvs.append_event(root_event);
+    cvs.root_blob = cvs.append_event(cvs.root_event);
 
     cvs_event_ptr first_event =
       process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
                          app.opts.dryrun, true);
 
     // link the pseudo trunk branch to the first event in the branch
-    add_dependency(first_event, root_event);
+    add_dependency(first_event, cvs.root_event);
     boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-      root_event)->branch_contents.push_back(first_event);
+      cvs.root_event)->branch_contents.push_back(first_event);
 
     global_pieces.reset();
   }
@@ -2361,8 +2371,6 @@ blob_consumer::consume_blob(cvs_blob_index bi)
 
               ++n_revisions;
             }
-          else
-            I(false);  // revision shouldn't exist!
         }
 
       bstate.current_rid = child_rid;
