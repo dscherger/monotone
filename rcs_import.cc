@@ -1330,20 +1330,6 @@ blob_consumer
   app_state & app;
   ticker & n_revisions;
 
-  struct prepared_revision
-  {
-    prepared_revision(revision_id i,
-                      shared_ptr<revision_t> r,
-                      const cvs_branchname bn,
-                      const cvs_blob & blob);
-    revision_id rid;
-    shared_ptr<revision_t> rev;
-    cvs_branchname branchname;
-    time_t time;
-    cvs_authorclog authorclog;
-    vector<cvs_tag> tags;
-  };
-
   struct branch_state
   {
     revision_id current_rid;
@@ -1355,8 +1341,6 @@ blob_consumer
   temp_node_id_source nis;
   map<cvs_branchname, branch_state> branch_states;
 
-  vector<prepared_revision> preps;
-
   blob_consumer(cvs_history & cvs,
                    app_state & app,
                    ticker & n_revs);
@@ -1365,8 +1349,6 @@ blob_consumer
   void add_missing_parents(branch_state & bstate,
                            file_path const & path, cset & cs);
   void build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
-  void store_auxiliary_certs(prepared_revision const & p);
-  void store_revisions();
 };
 
 struct blob_splitter
@@ -1986,10 +1968,6 @@ resolve_blob_dependencies(cvs_history & cvs,
       L(FL("next blob number from toposort: %d") % *i);
       cons.consume_blob(*i);
     }
-
-  // finally store the revisions
-  // (ms) why is this an extra step? Is it faster?
-  cons.store_revisions();
 }
 
 void
@@ -2068,53 +2046,6 @@ blob_consumer::blob_consumer(cvs_history & cvs,
   // add an initial branch state for the trunk
   branch_states.insert(make_pair(
     cvs.base_branch, branch_state()));
-}
-
-blob_consumer::prepared_revision::prepared_revision(revision_id i, 
-                                                       shared_ptr<revision_t> r,
-                                                       const cvs_branchname bn,
-                                                       const cvs_blob & blob)
-  : rid(i),
-    rev(r),
-    branchname(bn)
-{
-  I(blob.get_digest().is_commit());
-
-  shared_ptr<cvs_commit> ce =
-    boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
-
-  authorclog = ce->authorclog;
-
-  // FIXME: calculate an avg time
-  time = ce->time;
-}
-
-
-void
-blob_consumer::store_revisions()
-{
-  if (! app.opts.dryrun)
-    for (vector<prepared_revision>::const_iterator i = preps.begin();
-         i != preps.end(); ++i)
-      if (app.db.put_revision(i->rid, *(i->rev)))
-        {
-          store_auxiliary_certs(*i);
-          ++n_revisions;
-        }
-}
-
-void
-blob_consumer::store_auxiliary_certs(prepared_revision const & p)
-{
-  string author, changelog;
-
-  cvs.split_authorclog(p.authorclog, author, changelog);
-  string bn = cvs.get_branchname(p.branchname);
-  app.get_project().put_standard_certs(p.rid,
-                                       branch_name(bn),
-                                       utf8(changelog),
-                                       date_t::from_unix_epoch(p.time),
-                                       utf8(author));
 }
 
 void
@@ -2376,7 +2307,27 @@ blob_consumer::consume_blob(cvs_blob_index bi)
 
           calculate_ident(*rev, child_rid);
 
-          preps.push_back(prepared_revision(child_rid, rev, in_branch, blob));
+          if (!app.opts.dryrun)
+            {
+              if (app.db.put_revision(child_rid, *rev))
+                {
+                  // FIXME: calculate an avg time
+                  time_t commit_time = ce->time;
+                  string author, changelog;
+
+                  cvs.split_authorclog(ce->authorclog, author, changelog);
+                  string bn = cvs.get_branchname(in_branch);
+                  app.get_project().put_standard_certs(child_rid,
+                    branch_name(bn),
+                    utf8(changelog),
+                    date_t::from_unix_epoch(commit_time),
+                    utf8(author));
+
+                  ++n_revisions;
+                }
+              else
+                I(false);  // revision shouldn't exist already!
+            }
 
           bstate.current_rid = child_rid;
     }
