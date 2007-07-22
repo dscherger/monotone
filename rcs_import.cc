@@ -2202,9 +2202,10 @@ blob_consumer::consume_blob(cvs_blob_index bi)
         shared_ptr< cvs_event_branch > cbe;
         for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
           {
-            // for each branch we somehow depend on, we check if that
-            // is parent of another branch we depend on, so we could remove
-            // the parent branch dependency.
+            // For each branch that this blob depends on, we check if that
+            // branch is a parent of another branch we depend on. In that
+            // case, we can remove the parent branch dependency and only
+            // keep the newest branch dependency.
             I(*i != invalid_blob);
             my_bi = *i;
             while (cvs.blobs[my_bi].in_branch != invalid_branch)
@@ -2284,52 +2285,52 @@ blob_consumer::consume_blob(cvs_blob_index bi)
       shared_ptr<cvs_commit> ce =
         boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
 
-          revision_id parent_rid, child_rid;
-          parent_rid = bstate.current_rid;
+      revision_id parent_rid, child_rid;
+      parent_rid = bstate.current_rid;
 
-          if (null_id(parent_rid))
-            W(F("Warning: null parent_rid, should better be the root"));
+      if (null_id(parent_rid))
+        W(F("Warning: null parent_rid, should better be the root"));
 
-          shared_ptr<revision_t> rev(new revision_t());
-          shared_ptr<cset> cs(new cset());
+      shared_ptr<revision_t> rev(new revision_t());
+      shared_ptr<cset> cs(new cset());
 
-          build_cset(blob, bstate, *cs);
+      build_cset(blob, bstate, *cs);
 
-          editable_roster_base editable_ros(bstate.ros, nis);
+      editable_roster_base editable_ros(bstate.ros, nis);
 
-          cs->apply_to(editable_ros);
-          manifest_id child_mid;
-          calculate_ident(bstate.ros, child_mid);
+      cs->apply_to(editable_ros);
+      manifest_id child_mid;
+      calculate_ident(bstate.ros, child_mid);
 
-          rev->made_for = made_for_database;
-          rev->new_manifest = child_mid;
-          rev->edges.insert(make_pair(parent_rid, cs));
+      rev->made_for = made_for_database;
+      rev->new_manifest = child_mid;
+      rev->edges.insert(make_pair(parent_rid, cs));
 
-          calculate_ident(*rev, child_rid);
+      calculate_ident(*rev, child_rid);
 
-          if (!app.opts.dryrun)
+      if (!app.opts.dryrun)
+        {
+          if (app.db.put_revision(child_rid, *rev))
             {
-              if (app.db.put_revision(child_rid, *rev))
-                {
-                  // FIXME: calculate an avg time
-                  time_t commit_time = ce->time;
-                  string author, changelog;
+              // FIXME: calculate an avg time
+              time_t commit_time = ce->time;
+              string author, changelog;
 
-                  cvs.split_authorclog(ce->authorclog, author, changelog);
-                  string bn = cvs.get_branchname(in_branch);
-                  app.get_project().put_standard_certs(child_rid,
-                    branch_name(bn),
-                    utf8(changelog),
-                    date_t::from_unix_epoch(commit_time),
-                    utf8(author));
+              cvs.split_authorclog(ce->authorclog, author, changelog);
+              string bn = cvs.get_branchname(in_branch);
+              app.get_project().put_standard_certs(child_rid,
+                branch_name(bn),
+                utf8(changelog),
+                date_t::from_unix_epoch(commit_time),
+                utf8(author));
 
-                  ++n_revisions;
-                }
-              else
-                I(false);  // revision shouldn't exist already!
+              ++n_revisions;
             }
+          else
+            I(false);  // revision shouldn't exist already!
+        }
 
-          bstate.current_rid = child_rid;
+      bstate.current_rid = child_rid;
     }
   else if (blob.get_digest().is_branch())
     {
