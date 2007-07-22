@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <vector>
 #include <list>
+#include <iterator>
 
 #include <unistd.h>
 
@@ -27,12 +28,6 @@
 #include <boost/scoped_ptr.hpp>
 #include "lexical_cast.hh"
 #include <boost/tokenizer.hpp>
-
-#include <boost/graph/depth_first_search.hpp>
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/topological_sort.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/graph/graphviz.hpp>
 
 #include "app_state.hh"
 #include "cert.hh"
@@ -65,6 +60,7 @@ using std::stack;
 using std::string;
 using std::vector;
 using std::list;
+using std::back_insert_iterator;
 
 using boost::scoped_ptr;
 using boost::shared_ptr;
@@ -169,6 +165,7 @@ public:
   time_t time;
   cvs_path path;
   vector< cvs_event_ptr > dependencies;
+  vector< cvs_event_ptr > dependents;
 
   cvs_event(const cvs_path p, const time_t ti)
     : time(ti),
@@ -178,16 +175,19 @@ public:
   virtual ~cvs_event() { };
   virtual cvs_event_digest get_digest(void) const = 0;
 
-  void add_dependency(const cvs_event_ptr dep)
-    {
-      dependencies.push_back(dep);
-    }
-
   const bool operator < (const cvs_event & e) const
     {
       return time < e.time;
     }
 };
+
+void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
+{
+  /* Adds dep as a dependency of ev. */
+  ev->dependencies.push_back(dep);
+  dep->dependents.push_back(ev);
+}
+  
 
 bool
 cvs_event_ptr::operator < (const cvs_event_ptr & c) const
@@ -276,10 +276,17 @@ typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
 typedef vector< cvs_event_ptr >::const_iterator dependency_iter;
 
 typedef vector<cvs_blob>::size_type cvs_blob_index;
+typedef vector<cvs_blob_index>::const_iterator blob_index_iter;
+
+// for the depth first search algo
+typedef pair< cvs_blob_index, cvs_blob_index > Edge;
+
 typedef multimap<cvs_event_digest, cvs_blob_index>::iterator
   blob_index_iterator;
 
 const cvs_blob_index invalid_blob = cvs_blob_index(-1);
+
+typedef enum { white, grey, black } dfs_color;
 
 class
 cvs_blob
@@ -288,8 +295,14 @@ private:
   cvs_event_digest digest;
   vector< cvs_event_ptr > events;
 
+  bool has_cached_deps;
+  vector<cvs_blob_index> dependency_cache;
+
 public:
   cvs_blob_index in_branch;
+
+  // helper fields for Depth First Search algorithms
+  dfs_color colors[2];
 
   // Used only for branches and tags: keeps track of the original blob from
   // which this got split. The original blob keeps a split counter.
@@ -302,6 +315,7 @@ public:
 
   cvs_blob(const cvs_event_digest d)
     : digest(d),
+      has_cached_deps(false),
       in_branch(invalid_blob),
       split_origin(invalid_blob),
       split_counter(0)
@@ -310,6 +324,7 @@ public:
   cvs_blob(const cvs_blob & b)
     : digest(b.digest),
       events(b.events),
+      has_cached_deps(false),
       in_branch(invalid_blob),
       split_origin(invalid_blob),
       split_counter(0)
@@ -350,7 +365,17 @@ public:
     {
       return digest;
     }
+
+  vector<cvs_blob_index> & get_dependencies(cvs_history & cvs);
 };
+
+typedef struct
+{
+  cvs_blob_index bi;
+  blob_index_iter ei;
+} dfs_context;
+
+struct blob_splitter;
 
 struct
 cvs_history
@@ -513,6 +538,9 @@ cvs_history
       return branchname_interner.lookup(base_branch) + "." +
         branchname_interner.lookup(bname);
   }
+
+  void depth_first_search(blob_splitter & vis,
+                          back_insert_iterator< vector<cvs_blob_index> > oi);
 };
 
 
@@ -789,7 +817,7 @@ add_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
       // make the last commit (i.e. 1.3) depend on the current one
       // (i.e. 1.2), as it which comes _before_ in the CVS history.
       for (i = last_events.begin(); i != last_events.end(); ++i)
-        (*i)->add_dependency(ev);
+        add_dependency(*i, ev);
     }
   else
     {
@@ -797,7 +825,7 @@ add_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
       // older version first. Thus the last commit may be 1.1.1.1
       // while the current one is 1.1.1.2.
       for (i = last_events.begin(); i != last_events.end(); ++i)
-        ev->add_dependency(*i);
+        add_dependency(ev, *i);
     }      
 }
 
@@ -978,7 +1006,7 @@ process_rcs_branch(string const & begin_version,
               // add correct dependencies and remember the first event in
               // the branch, to be able to differenciate between that and
               // other events which depend on this branch event, later on.
-              first_event_in_branch->add_dependency(branch_event);
+              add_dependency(first_event_in_branch, branch_event);
               boost::static_pointer_cast<cvs_event_branch, cvs_event>(
                 branch_event)->branch_contents.push_back(first_event_in_branch);
             }
@@ -1336,67 +1364,65 @@ blob_consumer
   void store_revisions();
 };
 
-template < class MyEdge, class MyColorMap >
-struct blob_splitter 
-  : public boost::dfs_visitor<>
+struct blob_splitter
 {
 protected:
   cvs_history & cvs;
   set< cvs_blob_index > & cycle_members;
-  MyColorMap & colormap;
 
 public:
-  blob_splitter(cvs_history & c, set< cvs_blob_index > & cm,
-                MyColorMap & cmap)
+  blob_splitter(cvs_history & c, set< cvs_blob_index > & cm)
     : cvs(c),
-      cycle_members(cm),
-      colormap(cmap)
+      cycle_members(cm)
     { }
 
-  template < class Edge, class Graph >
-  void back_edge(Edge e, Graph & g)
+  void back_edge(Edge e)
     {
       if (!cycle_members.empty())
         return;
 
 #ifdef DEBUG_BLOB_SPLITTER
-      L(FL("blob_splitter: back edge: %s") % e);
+      L(FL("blob_splitter: back edge: %d -> %d") % e.first % e.second);
 #endif
 
-      if (e.m_source == e.m_target)
+      if (e.first == e.second)
         {
           // The cycle consists of only one blob - we have to solve an
           // intra blob dependency.
-          cycle_members.insert(e.m_source);
+          cycle_members.insert(e.first);
         }
       else
         {
-          cycle_members.insert(e.m_source);
-          cycle_members.insert(e.m_target);
+          cycle_members.insert(e.first);
+          cycle_members.insert(e.second);
 
-          cvs_blob_index ci = target(e, g);
+          cvs_blob_index ci = e.second;
 
           int limit = 1000;
           while (limit > 0)
             {
+              I(false);
+
+              cvs_blob & blob = cvs.blobs[ci];
+
+              pair< blob_index_iter, blob_index_iter > d = make_pair(
+                blob.get_dependencies(cvs).begin(),
+                blob.get_dependencies(cvs).end());
+
               // try to find out what blobs belong to that cycle
-              pair< typename boost::graph_traits<Graph>::adjacency_iterator, typename boost::graph_traits<Graph>::adjacency_iterator > adj_vert_range = boost::adjacent_vertices(ci, g);
-
-              typename boost::graph_traits<Graph>::adjacency_iterator ity;
-              for (ity = adj_vert_range.first; ity != adj_vert_range.second; ++ity)
+              blob_index_iter first_grey_blob;
+              for (first_grey_blob = d.first; first_grey_blob != d.second;
+                   ++first_grey_blob)
                 {
-                  typedef typename MyColorMap::value_type ColorValue;
-                  typedef boost::color_traits< ColorValue > Color;
-
-                  if (colormap[*ity] == Color::gray())
+                  if (cvs.blobs[*first_grey_blob].colors[0] == grey)
                     break;
                 }
 
-              if (cycle_members.find(*ity) != cycle_members.end())
+              if (cycle_members.find(*first_grey_blob) != cycle_members.end())
                 break;
 
-              cycle_members.insert(*ity);
-              ci = *ity;
+              cycle_members.insert(*first_grey_blob);
+              ci = *first_grey_blob;
 
               limit--;
             }
@@ -1404,52 +1430,6 @@ public:
     }
 };
 
-typedef pair< cvs_blob_index, cvs_blob_index > Edge;
-typedef boost::adjacency_list< boost::vecS, boost::vecS,
-                               boost::bidirectionalS > Graph;
-
-typedef map< cvs_blob_index, boost::default_color_type > ColorMap;
-typedef boost::associative_property_map< map< cvs_blob_index, boost::default_color_type> > ColorPMap;
-
-
-void
-add_blob_dependency_edges(cvs_history & cvs,
-                          const cvs_blob_index i,
-                          Graph & g)
-{
-  const cvs_blob & blob = cvs.blobs[i];
-
-  for(blob_event_iter event = blob.begin(); event != blob.end(); ++event)
-    {
-      for(dependency_iter dep = (*event)->dependencies.begin();
-          dep != (*event)->dependencies.end(); ++dep)
-        {
-          pair< blob_index_iterator, blob_index_iterator > range(
-            cvs.get_blobs((*dep)->get_digest(), false));
-
-          for (blob_index_iterator k = range.first; k != range.second; ++k)
-            {
-              bool found_dep = false;
-
-              for (dependency_iter di =
-                     cvs.blobs[k->second].get_events().begin();
-                   di != cvs.blobs[k->second].get_events().end(); ++ di)
-                {
-                  if (*di == *dep)
-                    {
-                      found_dep = true;
-                      break;
-                    }
-                }
-
-              // add the edge, if we found the dependency *and* if the
-              // edge does not exist, yet.
-              if (found_dep && (!boost::edge(k->second, i, g).second))
-                add_edge(k->second, i, g);
-            }
-        }
-    }
-}
 
 /*
  * single blob split points: search only for intra-blob dependencies
@@ -1580,11 +1560,10 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 
 void
 split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
-              time_t split_point, Graph & g);
+              time_t split_point);
 
 void
-split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
-            Graph & g)
+split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 {
   cvs_blob_index blob_to_split;
 
@@ -1598,7 +1577,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
       time_t split_point = get_best_split_point(cvs, blob_to_split);
       I(split_point > 0);
 
-      split_blob_at(cvs, blob_to_split, split_point, g);
+      split_blob_at(cvs, blob_to_split, split_point);
     }
   else
     {
@@ -1670,13 +1649,13 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members,
 
       I(largest_gap_at != 0);
       I(largest_gap_blob >= 0);
-      split_blob_at(cvs, largest_gap_blob, largest_gap_at, g);
+      split_blob_at(cvs, largest_gap_blob, largest_gap_at);
     }
 }
 
 void
 split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
-              time_t split_point, Graph & g)
+              time_t split_point)
 {
   L(FL(" splitting blob %d at %d") % bi % split_point);
 
@@ -1687,6 +1666,9 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   // Add a blob
   cvs_event_digest d = cvs.blobs[bi].get_digest();
   cvs_blob_index new_bi = cvs.add_blob(d)->second;
+
+  // Reset the dependency cache of the origin blob.
+  cvs.blobs[bi].has_cached_deps = false;
 
   // For branches and tags, we need to keep track of the original blob and
   // increment its split counter.
@@ -1715,6 +1697,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
 
+  // reset the caches where needed.
 
 
 #if 0
@@ -1740,13 +1723,13 @@ This is currently not needed, as we rebuild the graph from scratch anyway.
       }
 
     // remove all those edges
-    for (vector< cvs_blob_index >::const_iterator ity = in_deps_from.begin();
+    for (blob_index_iter ity = in_deps_from.begin();
          ity != in_deps_from.end(); ++ity)
           remove_edge(*ity, bi, const_cast<Graph &>(g));
 
     // now check each in_deps_from blob and add proper edges to the
     // newly splitted blobs
-    for (vector< cvs_blob_index >::const_iterator ity = in_deps_from.begin();
+    for (blob_index_iter ity = in_deps_from.begin();
          ity != in_deps_from.end(); ++ity)
       {
         cvs_blob & other_blob = cvs.blobs[*ity];
@@ -1911,12 +1894,103 @@ class blob_label_writer
               }
             label += "\\n";
           }
-        }
+      else
+        label += "-- empty --";
 
       out << "[label=\"" << label << "\"]";
     }
 };
 #endif
+
+
+vector<cvs_blob_index> & cvs_blob::get_dependencies(cvs_history & cvs)
+{
+  if (has_cached_deps)
+    return dependency_cache;
+
+  // fill the dependency cache from the single event deps
+  for (blob_event_iter i = begin(); i != end(); ++i)
+    {
+      for (dependency_iter j = (*i)->dependencies.begin();
+           j != (*i)->dependencies.end(); ++j)
+        {
+          cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+          dependency_cache.push_back(dep_bi);
+        }
+    }
+
+  // eliminate duplicates
+  unique(dependency_cache.begin(), dependency_cache.end());
+
+  // sort by timestamp
+  sort(dependency_cache.begin(), dependency_cache.end());
+
+  has_cached_deps = true;
+  return dependency_cache;
+}
+
+
+void cvs_history::depth_first_search(blob_splitter & vis,
+                                     back_insert_iterator< vector<cvs_blob_index> > oi)
+  {
+    dfs_context ctx;
+
+    // start with blob 0
+    ctx.bi = 0;
+    // vis.discover_vertex(bi);
+    blobs[ctx.bi].colors[0] = grey;
+    ctx.ei = blobs[ctx.bi].get_dependencies(*this).begin();
+
+    stack< dfs_context > stack;
+
+    // possible optimization for vector based stack:
+    // stack.reserve()
+
+    stack.push(ctx);
+
+    while (!stack.empty())
+      {
+        dfs_context ctx = stack.top();
+        stack.pop();
+        while (ctx.ei != blobs[ctx.bi].get_dependencies(*this).end())
+          {
+            // vis.examine_edge(*ei, g);
+            if (blobs[ctx.bi].colors[0] == white)
+              {
+                // vis.tree_edge(bi -> *ei);
+
+                // push the current context to the stack and, but
+                // advance to the next edge, as we are processing this
+                // one just now.
+                stack.push(ctx);
+                stack.top().ei++;
+
+                // switch to that blob and follow its edges
+                ctx.bi = *ctx.ei;
+                blobs[ctx.bi].colors[0] = grey;
+                // vis.discover_vertex(bi, g);
+                ctx.ei = blobs[ctx.bi].get_dependencies(*this).begin();
+              }
+            else if (blobs[ctx.bi].colors[0] == grey)
+              {
+                // vis.back_edge(bi -> *ei);
+                ++ctx.ei;
+              }
+            else
+              {
+                // vis.forward_or_cross_edge(bi -> *ei);
+                ++ctx.ei;
+              }
+          }
+        blobs[ctx.bi].colors[0] = black;
+        // vis.finish_vertex(bi, g);
+
+        // output the blob index in postordering fashion (for later
+        // use as topologically sorted list)
+        *oi++ = ctx.bi;
+      }
+  }
+
 
 //
 // After stuffing all cvs_events into blobs of events with the same
@@ -1924,7 +1998,7 @@ class blob_label_writer
 // respected.
 //
 void
-resolve_blob_dependencies(cvs_history &cvs,
+resolve_blob_dependencies(cvs_history & cvs,
                           app_state & app,
                           ticker & n_revs)
 {
@@ -1936,24 +2010,14 @@ resolve_blob_dependencies(cvs_history &cvs,
   blob_label_writer blw(cvs);
 #endif
 
-  Graph g;
+  vector<cvs_blob_index> import_order;
 
   while (1)
   {
-  g = Graph(cvs.blobs.size());
+    // this set will be filled with the blobs in a cycle
+    set< cvs_blob_index > cycle_members;
 
-  // fill the graph with all blob dependencies as edges between
-  // the blobs (vertices).
-  for (cvs_blob_index i = 0; i < cvs.blobs.size(); ++i)
-    add_blob_dependency_edges(cvs, i, g);
-
-  ColorMap colormap;
-  ColorPMap colorpmap(colormap);
-
-  // check for cycles
-  set< cvs_blob_index > cycle_members;
-
-  blob_splitter< Edge, ColorMap > vis(cvs, cycle_members, colormap);
+    blob_splitter vis(cvs, cycle_members);
 
 #ifdef DEBUG_GRAPHVIZ
     if (global_sanity.debug)
@@ -1965,22 +2029,19 @@ resolve_blob_dependencies(cvs_history &cvs,
       }
 #endif
 
-    cycle_members.clear();
-    depth_first_search(g, vis, colorpmap);
+    cvs.depth_first_search(vis, back_inserter(import_order));
 
     // If we have a cycle, go split it. Otherwise we don't have any
     // cycles left and can proceed.
     if (!cycle_members.empty())
-      split_cycle(cvs, cycle_members, g);
+      split_cycle(cvs, cycle_members);
     else
       break;
   };
 
-  // start the topological sort, which calls our revision
-  // iterator to insert the revisions into our database. 
-  vector<cvs_blob_index> import_order;
-  topological_sort(g, back_inserter(import_order));
-
+  // After a depth first search run through without any cycles
+  // or illegal forward or cross edges, we have the blobs topologicaly
+  // ordered in the vector import_order.
 
   blob_consumer cons(cvs, app, n_revs);
   for (vector<cvs_blob_index>::const_reverse_iterator i = import_order.rbegin();
