@@ -257,12 +257,10 @@ cvs_event_tag
 public:
   cvs_tag tag;
 
-  cvs_event_tag(const cvs_event_ptr dep, const cvs_tag t)
-    : cvs_event(dep->path, dep->time),
-      tag(t)
-    {
-      dependencies.push_back(dep);
-    };
+  cvs_event_tag(const cvs_path p, const time_t ti, const cvs_tag ta)
+    : cvs_event(p, ti),
+      tag(ta)
+    { };
 
   virtual cvs_event_digest get_digest(void) const
     {
@@ -296,7 +294,7 @@ private:
   vector< cvs_event_ptr > events;
 
   bool has_cached_deps;
-  vector<cvs_blob_index> dependency_cache;
+  vector<cvs_blob_index> dependents_cache;
 
 public:
   cvs_blob_index in_branch;
@@ -366,7 +364,7 @@ public:
       return digest;
     }
 
-  vector<cvs_blob_index> & get_dependencies(cvs_history & cvs);
+  vector<cvs_blob_index> & get_dependents(cvs_history & cvs);
 
   void reset_deps_cache(void)
     {
@@ -925,7 +923,9 @@ process_rcs_branch(string const & begin_version,
               cvs_event_ptr tag_event = 
                 boost::static_pointer_cast<cvs_event, cvs_event_tag>(
                   shared_ptr<cvs_event_tag>(
-                    new cvs_event_tag(curr_commit, tag)));
+                    new cvs_event_tag(curr_commit->path, curr_commit->time,
+                                      tag)));
+              add_dependency(tag_event, curr_commit);
 
               cvs_blob_index bi = cvs.append_event(tag_event);
               curr_events.push_back(curr_commit);
@@ -1002,7 +1002,7 @@ process_rcs_branch(string const & begin_version,
                 new cvs_event_branch(curr_commit->path, bname,
                                      curr_commit->time)));
           if (!is_vendor_branch)
-            branch_event->dependencies.push_back(curr_commit);
+            add_dependency(branch_event, curr_commit);
 
           curr_events.push_back(branch_event);
 
@@ -1116,7 +1116,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
                          app.opts.dryrun, true);
 
     // link the pseudo trunk branch to the first event in the branch
-    first_event->dependencies.push_back(root_event);
+    add_dependency(first_event, root_event);
     boost::static_pointer_cast<cvs_event_branch, cvs_event>(
       root_event)->branch_contents.push_back(first_event);
 
@@ -1411,8 +1411,8 @@ public:
               cvs_blob & blob = cvs.blobs[ci];
 
               pair< blob_index_iter, blob_index_iter > d = make_pair(
-                blob.get_dependencies(cvs).begin(),
-                blob.get_dependencies(cvs).end());
+                blob.get_dependents(cvs).begin(),
+                blob.get_dependents(cvs).end());
 
               // try to find out what blobs belong to that cycle
               blob_index_iter first_grey_blob;
@@ -1908,43 +1908,45 @@ class blob_label_writer
 #endif
 
 
-vector<cvs_blob_index> & cvs_blob::get_dependencies(cvs_history & cvs)
+vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
 {
   if (has_cached_deps)
-    return dependency_cache;
+    return dependents_cache;
 
   // fill the dependency cache from the single event deps
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
-      for (dependency_iter j = (*i)->dependencies.begin();
-           j != (*i)->dependencies.end(); ++j)
+      for (dependency_iter j = (*i)->dependents.begin();
+           j != (*i)->dependents.end(); ++j)
         {
           cvs_blob_index dep_bi = cvs.get_blob_of(*j);
-          dependency_cache.push_back(dep_bi);
+          if (find(dependents_cache.begin(), dependents_cache.end(), dep_bi) == dependents_cache.end())
+            dependents_cache.push_back(dep_bi);
         }
     }
 
-  // eliminate duplicates
-  unique(dependency_cache.begin(), dependency_cache.end());
-
   // sort by timestamp
-  sort(dependency_cache.begin(), dependency_cache.end());
+  sort(dependents_cache.begin(), dependents_cache.end());
 
   has_cached_deps = true;
-  return dependency_cache;
+  return dependents_cache;
 }
 
 
 void cvs_history::depth_first_search(blob_splitter & vis,
-                                     back_insert_iterator< vector<cvs_blob_index> > oi)
+       back_insert_iterator< vector<cvs_blob_index> > oi)
   {
     dfs_context ctx;
+
+    for (vector<cvs_blob>::iterator ity = blobs.begin();
+         ity != blobs.end(); ++ity)
+      ity->colors[0] = white;
 
     // start with blob 0
     ctx.bi = 0;
     // vis.discover_vertex(bi);
     blobs[ctx.bi].colors[0] = grey;
-    ctx.ei = blobs[ctx.bi].get_dependencies(*this).begin();
+    ctx.ei = blobs[ctx.bi].get_dependents(*this).begin();
 
     stack< dfs_context > stack;
 
@@ -1957,10 +1959,10 @@ void cvs_history::depth_first_search(blob_splitter & vis,
       {
         dfs_context ctx = stack.top();
         stack.pop();
-        while (ctx.ei != blobs[ctx.bi].get_dependencies(*this).end())
+        while (ctx.ei != blobs[ctx.bi].get_dependents(*this).end())
           {
             // vis.examine_edge(*ei, g);
-            if (blobs[ctx.bi].colors[0] == white)
+            if (blobs[*ctx.ei].colors[0] == white)
               {
                 // vis.tree_edge(bi -> *ei);
 
@@ -1974,9 +1976,9 @@ void cvs_history::depth_first_search(blob_splitter & vis,
                 ctx.bi = *ctx.ei;
                 blobs[ctx.bi].colors[0] = grey;
                 // vis.discover_vertex(bi, g);
-                ctx.ei = blobs[ctx.bi].get_dependencies(*this).begin();
+                ctx.ei = blobs[ctx.bi].get_dependents(*this).begin();
               }
-            else if (blobs[ctx.bi].colors[0] == grey)
+            else if (blobs[*ctx.ei].colors[0] == grey)
               {
                 // vis.back_edge(bi -> *ei);
                 ++ctx.ei;
@@ -2044,10 +2046,9 @@ resolve_blob_dependencies(cvs_history & cvs,
       break;
   };
 
-  // After a depth first search run through without any cycles
-  // or illegal forward or cross edges, we have the blobs topologicaly
-  // ordered in the vector import_order.
-
+  // After a depth-first-search-run without any cycles or illegal forward
+  // or cross edges, we have a possible, but reverse order which satisfies
+  // all the dependencies (topologically sorted).
   blob_consumer cons(cvs, app, n_revs);
   for (vector<cvs_blob_index>::const_reverse_iterator i = import_order.rbegin();
        i != import_order.rend(); ++i)
