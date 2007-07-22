@@ -367,6 +367,11 @@ public:
     }
 
   vector<cvs_blob_index> & get_dependencies(cvs_history & cvs);
+
+  void reset_deps_cache(void)
+    {
+      has_cached_deps = false;
+    }
 };
 
 typedef struct
@@ -1668,7 +1673,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   cvs_blob_index new_bi = cvs.add_blob(d)->second;
 
   // Reset the dependency cache of the origin blob.
-  cvs.blobs[bi].has_cached_deps = false;
+  cvs.blobs[bi].reset_deps_cache();
 
   // For branches and tags, we need to keep track of the original blob and
   // increment its split counter.
