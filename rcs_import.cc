@@ -1373,11 +1373,22 @@ public:
       cycle_members(cm)
     { }
 
+  void tree_edge(Edge e)
+    {
+#ifdef DEBUG_BLOB_SPLITTER
+      L(FL("blob_splitter: tree edge: %d -> %d") % e.first % e.second);
+#endif
+    }
+
+  void forward_or_cross_edge(Edge e)
+    {
+#ifdef DEBUG_BLOB_SPLITTER
+      L(FL("blob_splitter: tree edge: %d -> %d") % e.first % e.second);
+#endif
+    }
+
   void back_edge(Edge e)
     {
-      if (!cycle_members.empty())
-        return;
-
 #ifdef DEBUG_BLOB_SPLITTER
       L(FL("blob_splitter: back edge: %d -> %d") % e.first % e.second);
 #endif
@@ -1398,8 +1409,6 @@ public:
           int limit = 1000;
           while (limit > 0)
             {
-              I(false);
-
               cvs_blob & blob = cvs.blobs[ci];
 
               pair< blob_index_iter, blob_index_iter > d = make_pair(
@@ -1423,6 +1432,7 @@ public:
 
               limit--;
             }
+          I(limit > 0);
         }
     }
 };
@@ -1837,16 +1847,19 @@ write_graphviz(std::ofstream & of, cvs_history & cvs,
 
   for (unsigned int i = 0; i < cvs.blobs.size(); ++i)
     {
-      if (cycle_members.find(i) != cycle_members.end())
-        of << (FL("  blob%d [color=red,label=\"") % i);
-      else
-        of << (FL("  blob%d [label=\"") % i);
+      of << (FL("  blob%d [label=\"") % i);
       blw(of, i);
       of << "\"]\n";
 
       for (blob_index_iter j = cvs.blobs[i].get_dependents(cvs).begin();
            j != cvs.blobs[i].get_dependents(cvs).end(); ++j)
-        of << (FL("  blob%d -> blob%d\n") % i % *j);
+        {
+          of << (FL("  blob%d -> blob%d\n") % i % *j);
+          if ((cycle_members.find(i) != cycle_members.end()) &&
+              (cycle_members.find(*j) != cycle_members.end()))
+            of << " [color=red]";
+          of << "\n";
+        }
     }
 
   of << "};\n";
@@ -1911,7 +1924,7 @@ void cvs_history::depth_first_search(blob_splitter & vis,
             // vis.examine_edge(*ei, g);
             if (blobs[*ctx.ei].colors[0] == white)
               {
-                // vis.tree_edge(bi -> *ei);
+                vis.tree_edge(make_pair(ctx.bi, *ctx.ei));
 
                 // push the current context to the stack and, but
                 // advance to the next edge, as we are processing this
@@ -1927,12 +1940,12 @@ void cvs_history::depth_first_search(blob_splitter & vis,
               }
             else if (blobs[*ctx.ei].colors[0] == grey)
               {
-                // vis.back_edge(bi -> *ei);
+                vis.back_edge(make_pair(ctx.bi, *ctx.ei));
                 ++ctx.ei;
               }
             else
               {
-                // vis.forward_or_cross_edge(bi -> *ei);
+                vis.forward_or_cross_edge(make_pair(ctx.bi, *ctx.ei));
                 ++ctx.ei;
               }
           }
