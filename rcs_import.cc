@@ -1373,6 +1373,11 @@ public:
       cycle_members(cm)
     { }
 
+  bool abort()
+    {
+      return !cycle_members.empty();
+    }
+
   void tree_edge(Edge e)
     {
 #ifdef DEBUG_BLOB_SPLITTER
@@ -1873,6 +1878,9 @@ vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
   if (has_cached_deps)
     return dependents_cache;
 
+  // clear the cache
+  dependents_cache.clear();
+
   // fill the dependency cache from the single event deps
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
@@ -1915,7 +1923,7 @@ void cvs_history::depth_first_search(blob_splitter & vis,
 
     stack.push(ctx);
 
-    while (!stack.empty())
+    while (!stack.empty() && !vis.abort())
       {
         dfs_context ctx = stack.top();
         stack.pop();
