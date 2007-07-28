@@ -1992,8 +1992,8 @@ resolve_blob_dependencies(cvs_history & cvs,
     // this set will be filled with the blobs in a cycle
     set< cvs_blob_index > cycle_members;
 
+    import_order.clear();
     blob_splitter vis(cvs, cycle_members);
-
     cvs.depth_first_search(vis, back_inserter(import_order));
 
 #ifdef DEBUG_GRAPHVIZ
