@@ -1459,6 +1459,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
     {
       cvs_event_ptr ev = *i;
 
+      // check for time gaps between this event and it's dependencies
       for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
         {
           cvs_event_ptr dep = *j;
@@ -1479,6 +1480,24 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
               }
             }
         }
+
+      // additionally, check for time gaps between this event and any other
+      // events on the same file.
+      for (blob_event_iter j = i + 1; j != cvs.blobs[bi].end(); ++j)
+        if ((*i)->path == (*j)->path)
+          {
+            I((*i)->time != (*j)->time);
+            if ((*i)->time > (*j)->time)
+              {
+                L(FL("    added IBP range %d - %d") % (*j)->time % (*i)->time);
+                ib_deps.push_back(make_pair((*j)->time, (*i)->time));
+              }
+            else
+              {
+                L(FL("    added IBP range %d - %d") % (*i)->time % (*j)->time);
+                ib_deps.push_back(make_pair((*i)->time, (*j)->time));
+              }
+          }
     }
 
   // What we have now, are durations, or multiple time ranges. We need to
@@ -1516,7 +1535,12 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
         event_times.insert(i->second);
     }
 
-  I(event_times.size() > 1);
+  if (event_times.size() <= 0)
+    {
+      W(F("unable to split blob %d") % bi);
+      return 0;
+    }
+
   set<time_t>::const_iterator last, curr;
   last = event_times.begin();
   curr = last;
@@ -1719,6 +1743,38 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
 
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
+}
+
+bool
+resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
+{
+  cvs_blob & blob = cvs.blobs[bi];
+  for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+    {
+      for (blob_event_iter j = i + 1; j != blob.end(); ++j)
+        if ((*i)->path == (*j)->path)
+          {
+            L(FL("Trying to split blob %d, because of multiple events for the same file") % bi);
+            time_t split_point = get_best_split_point(cvs, bi);
+            I(split_point > 0);
+            split_blob_at(cvs, bi, split_point);
+            return false;
+          }
+    }
+  return true;
+}
+
+// This is a somewhat rude approach to circumvent certain errors. It
+// simply makes sure that no blob contains multiple events for a single
+// path. Otherwise, the blob gets split.
+void
+resolve_intra_blob_conflicts(cvs_history & cvs)
+{
+  for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
+    {
+      while (!resolve_intra_blob_conflicts_for_blob(cvs, bi))
+        { };
+    }
 }
 
 #ifdef DEBUG_GRAPHVIZ
@@ -2070,6 +2126,7 @@ import_cvs_repo(system_path const & cvsroot,
 
   {
     transaction_guard guard(app.db);
+    resolve_intra_blob_conflicts(cvs);
     resolve_blob_dependencies(cvs, app, n_revs);
     guard.commit();
   }
