@@ -625,6 +625,13 @@ migrate_add_ccode(sqlite3 * db, app_state &)
   sql::exec(db, cmd.c_str());
 }
 
+char const migrate_add_sentinels[] = 
+  "CREATE TABLE sentinels"
+  "        ("
+  "        id primary key,      -- revision id of the last missing revision\n"
+  "        data not null        -- compressed, encoded contents of a sentinel\n"
+  "        );"
+  ;
 
 // these must be listed in order so that ones listed earlier override ones
 // listed later
@@ -703,10 +710,13 @@ const migration_event migration_events[] = {
     
   { "fe48b0804e0048b87b4cea51b3ab338ba187bdc2",
     migrate_add_heights_index, 0, upgrade_none },
+    
+  { "7ca81b45279403419581d7fde31ed888a80bd34e",
+    migrate_add_sentinels, 0, upgrade_none },
 
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "7ca81b45279403419581d7fde31ed888a80bd34e", 0, 0, upgrade_none }
+  { "707e132c66e0c5e56261ecb727fbf58a6a1c19fe", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
