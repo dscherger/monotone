@@ -291,13 +291,13 @@ class
 cvs_blob
 {
 private:
-  cvs_event_digest digest;
   vector< cvs_event_ptr > events;
 
   bool has_cached_deps;
   vector<cvs_blob_index> dependents_cache;
 
 public:
+  cvs_event_digest digest;
   cvs_blob_index in_branch;
 
   // helper fields for Depth First Search algorithms
@@ -313,17 +313,17 @@ public:
   };
 
   cvs_blob(const cvs_event_digest d)
-    : digest(d),
-      has_cached_deps(false),
+    : has_cached_deps(false),
+      digest(d),
       in_branch(invalid_blob),
       split_origin(invalid_blob),
       split_counter(0)
     { };
 
   cvs_blob(const cvs_blob & b)
-    : digest(b.digest),
-      events(b.events),
+    : events(b.events),
       has_cached_deps(false),
+      digest(b.digest),
       in_branch(invalid_blob),
       split_origin(invalid_blob),
       split_counter(0)
@@ -2069,6 +2069,51 @@ resolve_blob_dependencies(cvs_history & cvs)
 }
 
 void
+split_branchpoint_handler(cvs_history & cvs)
+{
+  int nr = 1;
+
+  for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
+    {
+      cvs_blob & blob = cvs.blobs[bi];
+      if (blob.get_digest().is_branch())
+        {
+          shared_ptr<cvs_event_branch> cbe =
+            boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+              *blob.begin());
+
+          // handle empty branchnames
+          string branchname = cvs.branchname_interner.lookup(cbe->branchname);
+          if (branchname.empty())
+            {
+              branchname = (FL("UNNAMED_BRANCH_%d") % nr).str();
+              nr++;
+
+              cbe->branchname = cvs.branchname_interner.intern(branchname);
+              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+                static_cast< cvs_event_branch & >(**i).branchname = cbe->branchname;
+              cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
+              blob.digest = cbe->get_digest();
+            }
+          else
+            N(blob.split_counter == 0,
+              F("Unable to represent splitted branch: %s")
+              % cvs.branchname_interner.lookup(cbe->branchname));
+        }
+      else if (blob.get_digest().is_tag())
+        {
+          shared_ptr<cvs_event_tag> cte =
+            boost::static_pointer_cast<cvs_event_tag, cvs_event>(
+              *blob.begin());
+
+          N(blob.split_counter == 0,
+            F("Unable to represent splitted tag: %s")
+            % cvs.tag_interner.lookup(cte->tag));
+        }
+    }
+}
+
+void
 import_cvs_repo(system_path const & cvsroot,
                 app_state & app)
 {
@@ -2110,6 +2155,7 @@ import_cvs_repo(system_path const & cvsroot,
 
   resolve_intra_blob_conflicts(cvs);
   resolve_blob_dependencies(cvs);
+  split_branchpoint_handler(cvs);
 
   ticker n_revs(_("revisions"), "r", 1);
 
@@ -2452,30 +2498,6 @@ blob_consumer::operator()(cvs_blob_index bi)
             boost::static_pointer_cast<cvs_event_branch, cvs_event>(
               *blob.begin());
 
-          if (blob.split_counter != 0)
-            {
-              int idx = (blob.split_origin == bi ? 0 : blob.split_index);
-
-              // As the get_blob_of handles invalid entries in the blob_index
-              // just well, we don't care to remove the old entry for that
-              // blob.
-
-              // cvs.blob_index.remove(make_pair(cte->tag->get_digest(), bi));
-
-              string branchname = cvs.branchname_interner.lookup(cbe->branchname);
-              if (branchname.empty())
-                branchname = (FL(";UNNAMED_BRANCH#%d") % idx).str();
-              else
-                branchname = (FL("%s#%d") % cbe->branchname % idx).str();
-
-              cbe->branchname = cvs.branchname_interner.intern(branchname);
-
-              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-                static_cast< cvs_event_branch & >(**i).branchname = cbe->branchname;
-
-              cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
-            }
-
           // Set the base revision of the branch to the branchpoint revision
           // and initialize the map of live files.
           // FIXME: this is certainly bogus:
@@ -2501,26 +2523,6 @@ blob_consumer::operator()(cvs_blob_index bi)
           shared_ptr<cvs_event_tag> cte =
             boost::static_pointer_cast<cvs_event_tag, cvs_event>(
               *blob.begin());
-
-          if (blob.split_counter > 0)
-            {
-              int idx = (blob.split_origin == bi ? 0 : blob.split_index);
-
-              // As the get_blob_of handles invalid entries in the blob_index
-              // just well, we don't care to remove the old entry for that
-              // blob.
-
-              // cvs.blob_index.remove(make_pair(cte->tag->get_digest(), bi));
-
-              string tagname = (FL("%s#%d") % cvs.tag_interner.lookup(cte->tag)
-                                           % idx).str();
-              cte->tag = cvs.tag_interner.intern(tagname);
-
-              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-                static_cast< cvs_event_tag & >(**i).tag = cte->tag;
-
-              cvs.blob_index.insert(make_pair(cte->get_digest(), bi));
-            }
 
           cvs.resolved_tags.insert(make_pair(cte->tag, bstate.current_rid));
         }
