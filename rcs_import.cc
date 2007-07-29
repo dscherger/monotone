@@ -2025,8 +2025,7 @@ void cvs_history::depth_first_search(blob_splitter & vis,
 // respected.
 //
 void
-resolve_blob_dependencies(cvs_history & cvs,
-                          app_state & app)
+resolve_blob_dependencies(cvs_history & cvs)
 {
   L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
@@ -2110,7 +2109,7 @@ import_cvs_repo(system_path const & cvsroot,
   }
 
   resolve_intra_blob_conflicts(cvs);
-  resolve_blob_dependencies(cvs, app);
+  resolve_blob_dependencies(cvs);
 
   ticker n_revs(_("revisions"), "r", 1);
 
