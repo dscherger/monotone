@@ -180,11 +180,6 @@ public:
 
   virtual ~cvs_event() { };
   virtual cvs_event_digest get_digest(void) const = 0;
-
-  const bool operator < (const cvs_event & e) const
-    {
-      return time < e.time;
-    }
 };
 
 void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
@@ -351,6 +346,16 @@ public:
     }
 
   blob_event_iter end() const
+    {
+      return events.end();
+    }
+
+  vector<cvs_event_ptr>::iterator begin()
+    {
+      return events.begin();
+    }
+
+  vector<cvs_event_ptr>::iterator end()
     {
       return events.end();
     }
@@ -537,6 +542,48 @@ cvs_history
                           back_insert_iterator< vector<cvs_blob_index> > oi);
 };
 
+class
+event_ptr_time_cmp
+{
+public:
+  bool operator() (const cvs_event_ptr & a, const cvs_event_ptr & b) const
+    {
+      return a->time < b->time; 
+    }
+};
+
+class
+event_ptr_path_strcmp
+{
+public:
+  cvs_history & cvs;
+
+  event_ptr_path_strcmp(cvs_history & c)
+    : cvs(c)
+  { };
+
+  bool operator() (const cvs_event_ptr & a, const cvs_event_ptr & b) const
+    {
+      return cvs.path_interner.lookup(a->path) <
+        cvs.path_interner.lookup(b->path); 
+    }
+};
+
+class
+blob_index_time_cmp
+{
+public:
+  cvs_history & cvs;
+
+  event_ptr_path_strcmp(cvs_history & c)
+    : cvs(c)
+  { };
+
+  bool operator() (const cvs_blob_index a, const cvs_blob_index b)
+    {
+      return cvs.blobs[a].time < cvs.blobs[b].time;
+    }
+};
 
 static bool
 is_sbr(shared_ptr<rcs_delta> dl,
@@ -1630,7 +1677,8 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
           // sort the blob events by timestamp
           vector< cvs_event_ptr > & blob_events = cvs.blobs[mymap[cc]].get_events();
-          sort(blob_events.begin(), blob_events.end());
+          event_ptr_time_cmp cmp;
+          sort(blob_events.begin(), blob_events.end(), cmp);
 
           blob_event_iter ity;
 
@@ -1686,8 +1734,9 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   L(FL(" splitting blob %d at %d") % bi % split_point);
 
   // Sort the blob events by timestamp
+  event_ptr_time_cmp cmp;
   vector< cvs_event_ptr > blob_events(cvs.blobs[bi].get_events());
-  sort(blob_events.begin(), blob_events.end());
+  sort(blob_events.begin(), blob_events.end(), cmp);
 
   // Add a blob
   cvs_event_digest d = cvs.blobs[bi].get_digest();
@@ -1946,7 +1995,8 @@ vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
     }
 
   // sort by timestamp
-  sort(dependents_cache.begin(), dependents_cache.end());
+  blob_index_time_cmp cmp(cvs);
+  sort(dependents_cache.begin(), dependents_cache.end(), cmp);
 
   has_cached_deps = true;
   return dependents_cache;
@@ -2459,6 +2509,8 @@ blob_consumer::operator()(cvs_blob_index bi)
       // add an attribute to the root node, which keeps track of what
       // files at what RCS versions have gone into this revision. 
       string fval = "cvs\n";
+      event_ptr_path_strcmp cmp(cvs);
+      sort(blob.begin(), blob.end(), cmp);
       for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
         {
           shared_ptr<cvs_commit> ce =
