@@ -61,6 +61,7 @@ using std::string;
 using std::vector;
 using std::list;
 using std::back_insert_iterator;
+using std::for_each;
 
 using boost::scoped_ptr;
 using boost::shared_ptr;
@@ -407,6 +408,9 @@ cvs_history
   // used to resolve the *last* revision which has a given tag
   // applied; this is the revision which wins the tag.
   map<cvs_tag, revision_id> resolved_tags;
+
+  // final ordering of the blobs for the import
+  vector<cvs_blob_index> import_order;
 
   file_path curr_file;
   cvs_path curr_file_interned;
@@ -1341,7 +1345,7 @@ blob_consumer
                    app_state & app,
                    ticker & n_revs);
 
-  void consume_blob(cvs_blob_index bi);
+  void operator() (cvs_blob_index bi);
   void add_missing_parents(branch_state & bstate,
                            file_path const & path, cset & cs);
   int build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
@@ -2022,8 +2026,7 @@ void cvs_history::depth_first_search(blob_splitter & vis,
 //
 void
 resolve_blob_dependencies(cvs_history & cvs,
-                          app_state & app,
-                          ticker & n_revs)
+                          app_state & app)
 {
   L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
@@ -2033,16 +2036,15 @@ resolve_blob_dependencies(cvs_history & cvs,
   blob_label_writer blw(cvs);
 #endif
 
-  vector<cvs_blob_index> import_order;
 
   while (1)
   {
     // this set will be filled with the blobs in a cycle
     set< cvs_blob_index > cycle_members;
 
-    import_order.clear();
+    cvs.import_order.clear();
     blob_splitter vis(cvs, cycle_members);
-    cvs.depth_first_search(vis, back_inserter(import_order));
+    cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
 #ifdef DEBUG_GRAPHVIZ
     if (global_sanity.debug)
@@ -2065,13 +2067,6 @@ resolve_blob_dependencies(cvs_history & cvs,
   // After a depth-first-search-run without any cycles or illegal forward
   // or cross edges, we have a possible, but reverse order which satisfies
   // all the dependencies (topologically sorted).
-  blob_consumer cons(cvs, app, n_revs);
-  for (vector<cvs_blob_index>::const_reverse_iterator i = import_order.rbegin();
-       i != import_order.rend(); ++i)
-    {
-      L(FL("next blob number from toposort: %d") % *i);
-      cons.consume_blob(*i);
-    }
 }
 
 void
@@ -2114,12 +2109,15 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
+  resolve_intra_blob_conflicts(cvs);
+  resolve_blob_dependencies(cvs, app);
+
   ticker n_revs(_("revisions"), "r", 1);
 
   {
     transaction_guard guard(app.db);
-    resolve_intra_blob_conflicts(cvs);
-    resolve_blob_dependencies(cvs, app, n_revs);
+    blob_consumer cons(cvs, app, n_revs);
+    for_each(cvs.import_order.rbegin(), cvs.import_order.rend(), cons);
     guard.commit();
   }
 
@@ -2235,10 +2233,12 @@ blob_consumer::build_cset(const cvs_blob & blob,
 }
 
 void
-blob_consumer::consume_blob(cvs_blob_index bi)
+blob_consumer::operator()(cvs_blob_index bi)
 {
   cvs_blob & blob = cvs.blobs[bi];
   I(bi == cvs.get_blob_of(*blob.begin()));
+
+  L(FL("consuming blob %d") % bi);
 
   // Search through all direct dependencies and check what branches
   // those are in.
