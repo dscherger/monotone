@@ -3,7 +3,7 @@ mtn_setup()
 
 check(get("cvs-repository"))
 
-check(mtn("--branch=foo.bar", "cvs_import", "cvs-repository"), 0, false, false)
+xfail(mtn("--branch=foo.bar", "cvs_import", "cvs-repository"), 0, false, false)
 check(mtn("--branch=foo.bar", "co"))
 
 check(indir("foo.bar", mtn("list", "known")), 0, true)
