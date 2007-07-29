@@ -2456,9 +2456,25 @@ blob_consumer::operator()(cvs_blob_index bi)
       if (build_cset(blob, bstate, *cs) <= 0)
         return;
 
-      editable_roster_base editable_ros(bstate.ros, nis);
+      // add an attribute to the root node, which keeps track of what
+      // files at what RCS versions have gone into this revision. 
+      string fval = "cvs\n";
+      for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+        {
+          shared_ptr<cvs_commit> ce =
+            boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
 
+          fval += cvs.path_interner.lookup(ce->path) + "@";
+          fval += cvs.rcs_version_interner.lookup(ce->rcs_version) + "\n";
+        }
+
+      attr_key k("mtn:origin_info");
+      attr_value v(fval);
+      cs->attrs_set[make_pair(file_path(), k)] = v;
+
+      editable_roster_base editable_ros(bstate.ros, nis);
       cs->apply_to(editable_ros);
+
       manifest_id child_mid;
       calculate_ident(bstate.ros, child_mid);
 
