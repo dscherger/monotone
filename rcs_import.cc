@@ -158,12 +158,17 @@ public:
   bool operator < (const cvs_event_ptr & c) const;
 };
 
+class cvs_blob;
+typedef vector<cvs_blob>::size_type cvs_blob_index;
+typedef vector<cvs_blob_index>::const_iterator blob_index_iter;
+
 class
 cvs_event
 {
 public:
   time_t time;
   cvs_path path;
+  cvs_blob_index bi;
   vector< cvs_event_ptr > dependencies;
   vector< cvs_event_ptr > dependents;
 
@@ -268,13 +273,8 @@ public:
     };
 };
 
-class cvs_blob;
-
 typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
 typedef vector< cvs_event_ptr >::const_iterator dependency_iter;
-
-typedef vector<cvs_blob>::size_type cvs_blob_index;
-typedef vector<cvs_blob_index>::const_iterator blob_index_iter;
 
 // for the depth first search algo
 typedef pair< cvs_blob_index, cvs_blob_index > Edge;
@@ -344,14 +344,14 @@ public:
       events.clear();
     }
 
-  blob_event_iter & begin() const
+  blob_event_iter begin() const
     {
-      return *(new blob_event_iter(events.begin()));
+      return events.begin();
     }
 
-  blob_event_iter & end() const
+  blob_event_iter end() const
     {
-      return *(new blob_event_iter(events.end()));
+      return events.end();
     }
 
   bool empty() const
@@ -466,25 +466,11 @@ cvs_history
   cvs_blob_index
   get_blob_of(const cvs_event_ptr ev)
   {
-    // We have to check all the blobs in the equal_range, if the event we
-    // are looking for is in that blob.
-    pair<blob_index_iterator, blob_index_iterator> range = 
-      get_blobs(ev->get_digest(), false);
-
-    I(range.first != range.second);
-    for ( ; range.first != range.second; range.first++)
-      {
-        cvs_blob_index bi = range.first->second;
-        cvs_blob & dep_blob = blobs[bi];
-
-        for (blob_event_iter k = dep_blob.begin(); k != dep_blob.end(); ++k)
-          {
-            if (*k == ev)
-              return bi;
-          }
-      }
-
-    I(false);
+    cvs_blob & blob = blobs[ev->bi];
+    vector<cvs_event_ptr> & events = blobs[ev->bi].get_events();
+    I(blobs[ev->bi].get_digest() == ev->get_digest());
+    I(find(events.begin(), events.end(), ev) != events.end());
+    return ev->bi;
   }
 
   cvs_blob_index
@@ -512,8 +498,8 @@ cvs_history
 
     blob_index_iterator b = get_blobs(c->get_digest(), true).first;
     blobs[b->second].push_back(c);
-
-    return b->second;
+    c->bi = b->second;
+    return c->bi;
   }
 
   void split_authorclog(const cvs_authorclog ac, string & author,
@@ -1736,9 +1722,15 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
 
       // Assign the event to the existing or to the new blob
       if ((*i)->time <= split_point)
-        cvs.blobs[bi].push_back(*i);
+        {
+          cvs.blobs[bi].push_back(*i);
+          (*i)->bi = bi;
+        }
       else
-        cvs.blobs[new_bi].push_back(*i);
+        {
+          cvs.blobs[new_bi].push_back(*i);
+          (*i)->bi = new_bi;
+        }
     }
 
   I(!cvs.blobs[bi].empty());
