@@ -376,6 +376,14 @@ public:
     {
       has_cached_deps = false;
     }
+
+  time_t get_avg_time(void) const
+    {
+      long long avg = 0;
+      for (blob_event_iter i = events.begin(); i != events.end(); ++i)
+        avg += (*i)->time;
+      return (time_t) avg / events.size();
+    }
 };
 
 typedef struct
@@ -575,13 +583,13 @@ blob_index_time_cmp
 public:
   cvs_history & cvs;
 
-  event_ptr_path_strcmp(cvs_history & c)
+  blob_index_time_cmp(cvs_history & c)
     : cvs(c)
   { };
 
   bool operator() (const cvs_blob_index a, const cvs_blob_index b)
     {
-      return cvs.blobs[a].time < cvs.blobs[b].time;
+      return cvs.blobs[a].get_avg_time() < cvs.blobs[b].get_avg_time();
     }
 };
 
@@ -2540,8 +2548,7 @@ blob_consumer::operator()(cvs_blob_index bi)
         {
           if (app.db.put_revision(child_rid, *rev))
             {
-              // FIXME: calculate an avg time
-              time_t commit_time = ce->time;
+              time_t commit_time = blob.get_avg_time();
               string author, changelog;
 
               cvs.split_authorclog(ce->authorclog, author, changelog);
