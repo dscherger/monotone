@@ -1743,8 +1743,8 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
 
   // Sort the blob events by timestamp
   event_ptr_time_cmp cmp;
-  vector< cvs_event_ptr > blob_events(cvs.blobs[bi].get_events());
-  sort(blob_events.begin(), blob_events.end(), cmp);
+  sort(cvs.blobs[bi].get_events().begin(),
+       cvs.blobs[bi].get_events().end(), cmp);
 
   // Add a blob
   cvs_event_digest d = cvs.blobs[bi].get_digest();
@@ -1767,31 +1767,27 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
     cvs.blobs[new_bi].split_index = cvs.blobs[origin].split_counter;
   }
 
-  // Reassign all events and split into the two blobs
-  cvs.blobs[bi].get_events().clear();
-  I(!blob_events.empty());
-
-  for (blob_event_iter i = blob_events.begin(); i != blob_events.end(); ++i)
+  // Reassign events to the new blob as necessary
+  for (vector< cvs_event_ptr >::iterator i = cvs.blobs[bi].get_events().begin();
+       i != cvs.blobs[bi].get_events().end(); )
     {
-      // Reset the dependents cache of all dependencies.
-      for (dependency_iter j = (*i)->dependencies.begin();
-           j != (*i)->dependencies.end(); ++j)
-        {
-          cvs_blob_index dep_bi = cvs.get_blob_of(*j);
-          cvs.blobs[dep_bi].reset_deps_cache();
-        }
-
       // Assign the event to the existing or to the new blob
-      if ((*i)->time <= split_point)
+      if ((*i)->time > split_point)
         {
-          cvs.blobs[bi].push_back(*i);
-          (*i)->bi = bi;
+          cvs.blobs[new_bi].get_events().push_back(*i);
+          (*i)->bi = new_bi;
+          i = cvs.blobs[bi].get_events().erase(i);
+
+          // Reset the dependents cache of all dependencies.
+          for (dependency_iter j = (*i)->dependencies.begin();
+               j != (*i)->dependencies.end(); ++j)
+            {
+              cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+              cvs.blobs[dep_bi].reset_deps_cache();
+            }
         }
       else
-        {
-          cvs.blobs[new_bi].push_back(*i);
-          (*i)->bi = new_bi;
-        }
+        i++;
     }
 
   I(!cvs.blobs[bi].empty());
