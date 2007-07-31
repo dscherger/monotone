@@ -189,7 +189,7 @@ class Monotone:
             self.process = subprocess.Popen([self.executable, "--db", self.db, "automate", "stdio"],
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
-                                   stderr=None)
+                                   stderr=subprocess.PIPE)
             if self.process.poll() is not None:
                 self.process.wait()
                 self.process = None
@@ -236,10 +236,14 @@ class Monotone:
         try:
             return parser(self.process.stdout)
         except MonotoneError, e:
+            error = strip_mtn_error_garbage(self.process.stderr.read())
             import time
             time.sleep(0)
             if self.process.poll() != None:
-                raise MonotoneError, "monotone process died unexpectedly (exit code %i)" % self.process.poll()
+                if error:
+                    raise MonotoneError, error
+                else:
+                    raise MonotoneError, "monotone process died unexpectedly (exit code %i)" % self.process.poll()
             else:
                 raise
 
@@ -334,3 +338,6 @@ def decode_cert_packet_info(cert_packet):
     if not m:
         raise Exception("bad cert packet: %s..." % repr(cert_packet))
     return (m.group(1), m.group(2), m.group(3))
+
+def strip_mtn_error_garbage(str):
+    return "".join( line.lstrip("mtn:") for line in str.splitlines(True) )

@@ -86,12 +86,23 @@ def getDefaultConfigFile():
             homeDir = "."
     return os.path.normpath(os.path.join(homeDir, ".mtndumb"))   
     
+def print_prefixed(where, prefix, message):
+    prefix_str = ""
+    if prefix:
+        prefix_str = prefix + ": "
+    
+    for line in [ line.strip() for line in message.splitlines() if line ]:
+        print >> where, "%s: %s%s" % ("mtndumb", prefix_str, line)
+        
 def informative(message):
-    print "mtndumb: %s" % message
+    print_prefixed(sys.stdout, None, message)
     
 def verbose(message):
-    print "mtndumb: %s" % message
+    print_prefixed(sys.stdout, None, message)
 
+def error(message):
+    print_prefixed(sys.stderr, "error", message)
+    
 def parseOpt():
     
     par = OptionParser(usage=
@@ -204,15 +215,18 @@ def main():
 
     mtn = Dumbtone(options.db, options.verbose)
     
-    if action=="pull":
-        mtn.do_pull(url, branch_pattern, **optdict)
-    elif action=="push":
-        mtn.do_push(url, branch_pattern, **optdict)
-    elif action=="sync":
-        mtn.do_sync(url, branch_pattern, **optdict)
-    elif action=="clone":
-	mtn.monotone.ensure_db()
-	mtn.do_pull(url, branch_pattern, **optdict)	
+    try:
+        if action=="pull":
+            mtn.do_pull(url, branch_pattern, **optdict)
+        elif action=="push":
+            mtn.do_push(url, branch_pattern, **optdict)
+        elif action=="sync":
+            mtn.do_sync(url, branch_pattern, **optdict)
+        elif action=="clone":
+            mtn.monotone.ensure_db()
+            mtn.do_pull(url, branch_pattern, **optdict)	
+    except monotone.MonotoneError,e:
+        error(str(e))
     saveConfig(options,config)
 
 if __name__ == "__main__":
