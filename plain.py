@@ -100,8 +100,12 @@ def informative(message):
 def verbose(message):
     print_prefixed(sys.stdout, None, message)
 
-def error(message):
+def warning(message):
+    print_prefixed(sys.stderr, "warning", message)
+
+def error_and_exit(message):
     print_prefixed(sys.stderr, "error", message)
+    sys.exit(1)
     
 def parseOpt():
     
@@ -202,8 +206,8 @@ def saveConfig(options,config):
     if not options.storeconfig: return
     try:        
         config.write(file(options.config, "w+"))
-    except IOError:
-        pass
+    except IOError,e:
+        warning("can't store configuration in %s: %s" % (options.config, e))
 
 def main():
     (options, config, action, url, branch_pattern) = parseOpt()    
@@ -226,7 +230,7 @@ def main():
             mtn.monotone.ensure_db()
             mtn.do_pull(url, branch_pattern, **optdict)	
     except monotone.MonotoneError,e:
-        error(str(e))
+        error_and_exit(str(e))
     saveConfig(options,config)
 
 if __name__ == "__main__":
