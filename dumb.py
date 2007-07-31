@@ -16,7 +16,13 @@ from merkle_dir import MerkleDir, MemoryMerkleDir, LockError
 from fs import readable_fs_for_url, writeable_fs_for_url
 from monotone import Monotone, find_stanza_entry, decode_cert_packet_info
 
-class partial:
+#
+# DelegateFunctor
+#
+#  used to create function-like object that
+#  calls arbitrary function with predefined parameters.
+#
+class DelegateFunctor:
     def __init__(self, fn, *args):
         self.__fn = fn
         self.__args = args[:]
@@ -24,8 +30,14 @@ class partial:
     def __call__(self, *args):
         finalArgs = self.__args + args
         return self.__fn(*finalArgs)
-        
-class returnthis:
+
+#
+# ConstantValueFunctor
+#
+#  used when function object should return always specified
+#  constant value
+#
+class ConstantValueFunctor:
     def __init__(self, value):
         self.__value = value
     def __call__(self):
@@ -111,7 +123,7 @@ class Dumbtone:
                 publicHash = find_stanza_entry(stanza, "public_hash")[0]
                 publicLocations = find_stanza_entry(stanza, "public_location")                
                 if "database" in publicLocations:
-                    kp = partial(self.monotone.get_pubkey_packet,keyid)
+                    kp = DelegateFunctor(self.monotone.get_pubkey_packet,keyid)
                     ids = "\n".join((keyid,publicHash))
                     id = sha.new(ids).hexdigest()
                     key_packets[keyid] = (id, kp) # keys are queued for export
@@ -124,7 +136,7 @@ class Dumbtone:
                 revision_list = self.monotone.revisions_list()
             for rid in self.monotone.toposort(revision_list):
                 if rid not in curr_ids:
-                    md.add(rid, partial(self.__make_revision_packet,rid))
+                    md.add(rid, DelegateFunctor(self.__make_revision_packet,rid))
                     if callback: callback(id, "", None)
                 certs = self.monotone.get_cert_packets(rid)
                 if self.verbosity > 0:
@@ -143,7 +155,7 @@ class Dumbtone:
                         exported_keys.add(key_name)
                     id = sha.new(cert).hexdigest()
                     if id not in curr_ids:
-                        md.add(id, returnthis(cert) )
+                        md.add(id, ConstantValueFunctor(cert) )
                         if callback: callback(id, "", None)
             md.commit()
             if callback:
