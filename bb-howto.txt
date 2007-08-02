@@ -1,3 +1,20 @@
+**********************************************************************
+*                                                                    *
+*                        THIS FILE IS DEPRECATED                     *
+*                                                                    *
+**********************************************************************
+
+Please look in http://www.venge.net/mtn-wiki/BuildBot for current
+instructions.
+
+
+
+
+
+
+
+
+
 Setting up a monotone buildbot
 ==============================
 
