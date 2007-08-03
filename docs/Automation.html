@@ -1275,13 +1275,16 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate attributes </span><var>file</var></samp><a name="index-mtn-automate-attributes-_0040var_007bfile_007d-163"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_attributes </span><var>path</var></samp><a name="index-mtn-automate-get_005fattributes-_0040var_007bpath_007d-163"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
-The argument <var>file</var> determines which file's attributes should be printed.
+The argument <var>path</var> determines which path's attributes should be printed.
 
           <br><dt><strong>Added in:</strong><dd>
 3.0
+
+          <br><dt><strong>Renamed from <samp></strong><span class="command">attributes</span><strong></samp> to <samp></strong><span class="command">get_attributes</span><strong></samp> in:</strong><dd>
+5.0
 
           <br><dt><strong>Purpose:</strong><dd>
 Prints all attributes of the given file and the attribute states.
@@ -1342,12 +1345,58 @@ recorded in the current workspace).
      </pre>
 
           <br><dt><strong>Error conditions:</strong><dd>
-If the file specified is unknown to the current workspace prints an error
+If the path specified is unknown in the new workspace revision, prints an error
 message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate content_diff [--revision=</span><var>id1</var><span class="command"> [--revision=</span><var>id2</var><span class="command">]] [</span><var>files</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-164"></a><dd>
+     <br><dt><samp><span class="command">mtn automate set_attribute </span><var>path</var> <var>key</var> <var>value</var></samp><a name="index-mtn-automate-set_005fattribute-_0040var_007bpath_007d-_0040var_007bkey_007d-_0040var_007bvalue_007d-164"></a><dd>
+          <dl>
+<dt><strong>Arguments:</strong><dd>
+A path, an attribute key and an attribute value.
+
+          <br><dt><strong>Added in:</strong><dd>
+5.0
+
+          <br><dt><strong>Purpose:</strong><dd>
+Edits the current workspace revision and inserts the given attribute key and
+value for the specified path. Note that this change is not committed and
+therefor behaves exactly like <samp><span class="command">mtn attr set </span><var>key</var> <var>value</var></samp>.
+
+          <br><dt><strong>Output format:</strong><dd>
+This command does not print out anything if successful.
+
+          <br><dt><strong>Error conditions:</strong><dd>
+If the path specified is unknown in the new workspace revision, prints an error
+message to stderr and exits with status 1.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate drop_attribute </span><var>path</var><span class="command"> [</span><var>key</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fattribute-_0040var_007bpath_007d-_005b_0040var_007bkey_007d_005d-165"></a><dd>
+          <dl>
+<dt><strong>Arguments:</strong><dd>
+A path and an attribute key (optional).
+
+          <br><dt><strong>Added in:</strong><dd>
+5.0
+
+          <br><dt><strong>Purpose:</strong><dd>
+Removes an attribute from the current workspace revision for the specified path. 
+If no attribute key is given, all attributes of this path are removed. Note that
+this change is not committed and therefor behaves exactly like
+<samp><span class="command">mtn attr drop </span><var>path</var><span class="command"> [</span><var>key</var><span class="command">]</span></samp>.
+
+          <br><dt><strong>Output format:</strong><dd>
+This command does not print out anything if successful.
+
+          <br><dt><strong>Error conditions:</strong><dd>
+If the path specified is unknown in the new workspace revision or the attribute
+key is not found for this path, prints an error message to stderr and exits with
+status 1.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate content_diff [--revision=</span><var>id1</var><span class="command"> [--revision=</span><var>id2</var><span class="command">]] [</span><var>files</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-166"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more <var>file</var> arguments restrict the diff output to these files,
@@ -1400,7 +1449,7 @@ restrictions can't be applied, the command prints to stderr and exits as well.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_file </span><var>id</var></samp><a name="index-mtn-automate-get_005ffile-_0040var_007bid_007d-165"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_file </span><var>id</var></samp><a name="index-mtn-automate-get_005ffile-_0040var_007bid_007d-167"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The  <var>id</var> argument specifies the file hash of the file to be output.
@@ -1429,7 +1478,7 @@ to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_file_of </span><var>filename</var><span class="command"> [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-166"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_file_of </span><var>filename</var><span class="command"> [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-168"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The  <var>filename</var> argument specifies the filename of the file to be output.
@@ -1462,7 +1511,7 @@ with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_option </span><var>option</var></samp><a name="index-mtn-automate-get_005foption-_0040var_007boption_007d-167"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_option </span><var>option</var></samp><a name="index-mtn-automate-get_005foption-_0040var_007boption_007d-169"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>option</var> argument specifies the option name of the option to be output.
@@ -1487,7 +1536,7 @@ with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate keys</span></samp><a name="index-mtn-automate-keys-168"></a><dd>
+     <br><dt><samp><span class="command">mtn automate keys</span></samp><a name="index-mtn-automate-keys-170"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -1529,7 +1578,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-169"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-171"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the revision to output an rdata packet for.
@@ -1561,7 +1610,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-170"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-172"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the revision to output cert packets for.
@@ -1619,7 +1668,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-171"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-173"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the file to output an fdata packet for.
@@ -1649,7 +1698,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>from-id</var> <var>to-id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-172"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>from-id</var> <var>to-id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-174"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>from-id</var> specifies the file to use as the base of the delta,
@@ -1681,7 +1730,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_content_changed </span><var>id</var> <var>file</var></samp><a name="index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-173"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_content_changed </span><var>id</var> <var>file</var></samp><a name="index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-175"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies a revision ID, from which content change calculations will be based. 
@@ -1713,7 +1762,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_corresponding_path </span><var>source_id</var> <var>file</var> <var>target_id</var></samp><a name="index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-174"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_corresponding_path </span><var>source_id</var> <var>file</var> <var>target_id</var></samp><a name="index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-176"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>source_id</var> specifies a revision ID in which <var>file</var> is current extant. 
@@ -1751,7 +1800,7 @@ revision <var>source_id</var> or is invalid, prints an error message to stderr a
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate db_get </span><var>domain</var> <var>name</var></samp><a name="index-mtn-automate-db_005fget-_0040var_007bdomain_007d-_0040var_007bname_007d-175"></a><dd>
+     <br><dt><samp><span class="command">mtn automate db_get </span><var>domain</var> <var>name</var></samp><a name="index-mtn-automate-db_005fget-_0040var_007bdomain_007d-_0040var_007bname_007d-177"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>domain</var> and <var>name</var> specify the database variable
@@ -1778,7 +1827,7 @@ status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate db_put </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-db_005fput-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-176"></a><dd>
+     <br><dt><samp><span class="command">mtn automate db_put </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-db_005fput-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-178"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>domain</var> and <var>name</var> specify the database variable
@@ -1803,7 +1852,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-177"></a><dd>
+     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-179"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The optional <var>base-id</var> specifies a file-id on which the contents are
@@ -1832,7 +1881,7 @@ exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-178"></a><dd>
+     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-180"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision-data</var> is the new revision. See example below.  Note that
@@ -1879,7 +1928,7 @@ this fact, but otherwise works as normal.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-179"></a><dd>
+     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-181"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision</var> is an existing revision, <var>name</var> is the certificate name
