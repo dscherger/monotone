@@ -1,6 +1,11 @@
 format_version "1"
 
-dir ""
+ dir ""
+attr "mtn:origin_info" "cvs
+src/objdump.c@1.1.2.1
+tests/asm-tst3.c@1.1.1.1.2.1
+tests/asm-tst4.c@1.2.2.1
+"
 
 dir "src"
 
