@@ -59,6 +59,7 @@ using std::stable_sort;
 using std::stack;
 using std::string;
 using std::vector;
+using std::deque;
 using std::list;
 using std::back_insert_iterator;
 using std::for_each;
@@ -72,6 +73,7 @@ using boost::lexical_cast;
 // not defined: DEBUG_BLOB_SPLITTER
 // not defined: DEBUG_GRAPHVIZ
 // not defined: DEBUG_GET_BLOB_OF
+// not defined: DEBUG_DIJKSTRA
 
 // cvs history recording stuff
 
@@ -1417,6 +1419,24 @@ blob_consumer
   int build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
 };
 
+struct dij_context
+{
+  int dist;
+  cvs_blob_index prev;
+
+  // My STL's map implementation insists on having this constructor, but
+  // we don't want it to be called ever!
+  dij_context()
+    {
+      I(false);
+    };
+
+  dij_context(int d, cvs_blob_index p)
+    : dist(d),
+      prev(p)
+    { };
+};
+
 struct blob_splitter
 {
 protected:
@@ -1462,38 +1482,65 @@ public:
         }
       else
         {
-          cycle_members.insert(e.first);
-          cycle_members.insert(e.second);
+          // We run Dijkstra's algorithm to find the shortest path from
+          // e.second to e.first. All vertices in that path are part of
+          // the smallest cycle which includes this back edge. To speed
+          // things up a bit, we do not take vertices into account, which
+          // have already been completely processed by the proceeding
+          // depth first search run (thus only considering blobs marked
+          // grey or white).
 
-          cvs_blob_index ci = e.second;
+          map< cvs_blob_index, dij_context > distances;
+          deque< cvs_blob_index > queue;
 
-          int limit = 1000;
-          while (limit > 0)
+          queue.push_back(e.second);
+          distances.insert(make_pair(e.second,
+                                     dij_context(0, invalid_blob)));
+
+          cvs_blob_index bi;
+          while (queue.size() > 0)
             {
-              cvs_blob & blob = cvs.blobs[ci];
+              bi = queue.front();
+              queue.pop_front();
 
-              pair< blob_index_iter, blob_index_iter > d = make_pair(
-                blob.get_dependents(cvs).begin(),
-                blob.get_dependents(cvs).end());
-
-              // try to find out what blobs belong to that cycle
-              blob_index_iter first_grey_blob;
-              for (first_grey_blob = d.first; first_grey_blob != d.second;
-                   ++first_grey_blob)
-                {
-                  if (cvs.blobs[*first_grey_blob].colors[0] == grey)
-                    break;
-                }
-
-              if (cycle_members.find(*first_grey_blob) != cycle_members.end())
+              if (bi == e.first)
                 break;
 
-              cycle_members.insert(*first_grey_blob);
-              ci = *first_grey_blob;
+              vector<cvs_blob_index> & deps =
+                cvs.blobs[bi].get_dependents(cvs);
 
-              limit--;
+              I(distances.count(bi) > 0);
+              int curr_dist = distances[bi].dist;
+              for (blob_index_iter i = deps.begin(); i != deps.end(); ++i)
+                if (cvs.blobs[*i].colors[0] != black)
+                  if (distances.count(*i) == 0)
+                    {
+                      distances.insert(make_pair(*i,
+                        dij_context(curr_dist + 1, bi)));
+                      queue.push_back(*i);
+                    }
             }
-          I(limit > 0);
+
+          // Trace back the shortest path and remember all vertices
+          // on the path. These are part of the cycle we want to
+          /// split.
+          I(bi == e.first);
+#ifdef DEBUG_DIJKSTRA
+          L(FL("dijkstra's algorithm, shortest path:"));
+#endif
+          while (bi != e.second)
+            {
+              cycle_members.insert(bi);
+#ifdef DEBUG_DIJKSTRA
+              L(FL("    blob %d.") % bi);
+#endif
+              I(distances.count(bi) > 0);
+              bi = distances[bi].prev;
+            }
+#ifdef DEBUG_DIJKSTRA
+          L(FL("    blob %d.") % e.second);
+#endif
+          cycle_members.insert(e.second);
         }
     }
 };
