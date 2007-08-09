@@ -1857,6 +1857,13 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
 
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
+
+  // FIXME: The above selection of which blob's caches to reset is
+  //        bogus. To be sure, we simply reset all blob's dependents
+  //        caches. This is quite an expensive fix!
+  for (vector<cvs_blob>::iterator i = cvs.blobs.begin();
+       i != cvs.blobs.end(); ++i)
+    i->reset_deps_cache();
 }
 
 bool
