@@ -2092,7 +2092,8 @@ void cvs_history::depth_first_search(blob_splitter & vis,
       {
         dfs_context ctx = stack.top();
         stack.pop();
-        while (ctx.ei != blobs[ctx.bi].get_dependents(*this).end())
+        while ((ctx.ei != blobs[ctx.bi].get_dependents(*this).end()) &&
+                !vis.abort())
           {
             // vis.examine_edge(*ei, g);
             if (blobs[*ctx.ei].colors[0] == white)
