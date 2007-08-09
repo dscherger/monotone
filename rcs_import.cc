@@ -71,6 +71,7 @@ using boost::lexical_cast;
 // not defined: DEBUG_BRANCH_REDUCTION
 // not defined: DEBUG_BLOB_SPLITTER
 // not defined: DEBUG_GRAPHVIZ
+// not defined: DEBUG_GET_BLOB_OF
 
 // cvs history recording stuff
 
@@ -486,6 +487,18 @@ cvs_history
     cvs_blob & blob = blobs[ev->bi];
     vector<cvs_event_ptr> & events = blobs[ev->bi].get_events();
     I(blobs[ev->bi].get_digest() == ev->get_digest());
+
+#ifdef DEBUG_GET_BLOB_OF
+    if (find(events.begin(), events.end(), ev) == events.end())
+    {
+      W(F("%s event on file '%s' with digest %d does not belong to blob %d (with digest %d)")
+        % (ev->get_digest().is_branch() ? "branch" :
+            (ev->get_digest().is_tag() ? "tag" : "commit"))
+        % path_interner.lookup(ev->path) % ev->get_digest()
+        % ev->bi % blob.get_digest());
+    }
+#endif
+
     I(find(events.begin(), events.end(), ev) != events.end());
     return ev->bi;
   }
