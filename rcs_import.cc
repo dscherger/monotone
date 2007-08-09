@@ -1660,28 +1660,18 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
   else
     {
       L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
-
-      // convert the set to a map
-      map< int, cvs_blob_index > mymap;
-      unsigned int cc = 0;
-      for (set< cvs_blob_index >::const_iterator i = cycle_members.begin();
-           i != cycle_members.end(); ++i)
-        {
-          mymap[cc] = *i;
-          cc++;
-        }
+      typedef set<cvs_blob_index>::const_iterator cm_ity;
 
       time_t largest_gap = 0;
       time_t largest_gap_at = 0;
       int largest_gap_blob = -1;
 
-      cc = 0;
-      for (cc = 0; cc < mymap.size(); ++cc)
+      for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
         {
-          L(FL("  testing blob %d") % mymap[cc]);
+          L(FL("  testing blob %d") % *cc);
 
           // sort the blob events by timestamp
-          vector< cvs_event_ptr > & blob_events = cvs.blobs[mymap[cc]].get_events();
+          vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
           event_ptr_time_cmp cmp;
           sort(blob_events.begin(), blob_events.end(), cmp);
 
@@ -1698,32 +1688,37 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
               this_ev = *ity;
 
               time_t time_diff = this_ev->time - last_ev->time;
-              L(FL("       time gap: %s") % time_diff);
-
               if (time_diff > largest_gap)
                 {
                   largest_gap = time_diff;
                   largest_gap_at = last_ev->time + time_diff / 2;
-                  largest_gap_blob = mymap[cc];
+                  largest_gap_blob = *cc;
                 }
             }
 
-          for (unsigned int dd = 0; dd < mymap.size(); ++dd)
+          int count_intra_cycle_deps = 0;
+          for (cm_ity dd = cycle_members.begin(); dd != cycle_members.end(); ++dd)
             {
-              for (blob_event_iter ii = cvs.blobs[mymap[cc]].begin(); ii != cvs.blobs[mymap[cc]].end(); ++ii)
+              for (blob_event_iter ii = cvs.blobs[*cc].begin(); ii != cvs.blobs[*cc].end(); ++ii)
                 {
                   cvs_event_ptr ev = *ii;
                   for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
                     {
                       cvs_event_ptr dep = *j;
 
-                      if (dep->get_digest() == cvs.blobs[mymap[dd]].get_digest())
+                      if (cvs.get_blob_of(dep) == *dd)
                         {
-                          L(FL("     depends on blob %d") % mymap[dd]);
+                          count_intra_cycle_deps++;
+                          L(FL("     depends on blob %d due to file %s")
+                            % *dd
+                            % cvs.path_interner.lookup(dep->path));
                         }
                     }
                 }
             }
+
+          if (count_intra_cycle_deps <= 0)
+            W(F("  warning: no intra cycle dependencies... why is it a cycle???"));
         }
 
       I(largest_gap_at != 0);
