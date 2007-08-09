@@ -1721,6 +1721,32 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
             W(F("  warning: no intra cycle dependencies... why is it a cycle???"));
         }
 
+      if (largest_gap_at == 0)
+        {
+          W(F("Unable to split the following cycle:"));
+          for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
+            {
+              cvs_blob & blob = cvs.blobs[*cc];
+              L(FL("  blob %d: %s") % *cc
+                % (blob.get_digest().is_branch() ? "branch"
+                  : (blob.get_digest().is_tag() ? "tag" : "commit")));
+
+              if (blob.get_digest().is_commit())
+                {
+                  for (blob_event_iter ii = blob.begin(); ii != blob.end(); ++ii)
+                    {
+                      const shared_ptr< cvs_commit > ce =
+                        boost::static_pointer_cast<cvs_commit, cvs_event>(*ii);
+
+                      L(FL("    path: %s @ %s, time: %d")
+                        % cvs.path_interner.lookup(ce->path)
+                        % cvs.rcs_version_interner.lookup(ce->rcs_version)
+                        % ce->time);
+                    }
+                }
+            }
+        }
+
       I(largest_gap_at != 0);
       I(largest_gap_blob >= 0);
       split_blob_at(cvs, largest_gap_blob, largest_gap_at);
