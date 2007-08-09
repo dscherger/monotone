@@ -941,8 +941,6 @@ process_rcs_branch(string const & begin_version,
       else
         ac_str = cvs.join_authorclog(delta->second->author,
                                      deltatext->second->log);
-
-      L(FL("author and changelog: %s") % ac_str);
       cvs_authorclog ac = cvs.authorclog_interner.intern(ac_str);
 
       cvs_mtn_version mv = cvs.mtn_version_interner.intern(
@@ -1527,15 +1525,9 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
             {
               I(ev->time != dep->time);
               if (ev->time > dep->time)
-              {
-                L(FL("    added IBD range %d - %d") % dep->time % ev->time);
                 ib_deps.push_back(make_pair(dep->time, ev->time));
-              }
               else
-              {
-                L(FL("    added reverse IBD range %d - %d") % ev->time % dep->time);
                 ib_deps.push_back(make_pair(ev->time, dep->time));
-              }
             }
         }
 
@@ -1546,15 +1538,9 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
           {
             I((*i)->time != (*j)->time);
             if ((*i)->time > (*j)->time)
-              {
-                L(FL("    added IBP range %d - %d") % (*j)->time % (*i)->time);
-                ib_deps.push_back(make_pair((*j)->time, (*i)->time));
-              }
+              ib_deps.push_back(make_pair((*j)->time, (*i)->time));
             else
-              {
-                L(FL("    added IBP range %d - %d") % (*i)->time % (*j)->time);
-                ib_deps.push_back(make_pair((*i)->time, (*j)->time));
-              }
+              ib_deps.push_back(make_pair((*i)->time, (*j)->time));
           }
     }
 
@@ -1609,8 +1595,6 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
   for ( ; curr != event_times.end(); ++curr)
     {
       time_t curr_split_point = *last + (*curr - *last) / 2;
-
-      L(FL("  testing split point @%d") % curr_split_point);
 
       // just to get everything right here...
       I(*curr > *last);
@@ -1856,8 +1840,6 @@ class blob_label_writer
 
       if (b.get_digest().is_commit())
         {
-          L(FL("blob %d: commit") % v);
-
           label = (FL("blob %d: commit\\n") % v).str();
 
           if (b.empty())
@@ -1890,8 +1872,6 @@ class blob_label_writer
         }
       else if (b.get_digest().is_branch())
         {
-          L(FL("blob %d: branch") % v);
-
           label = (FL("blob %d: branch: ") % v).str();
 
           if (b.empty())
@@ -1909,8 +1889,6 @@ class blob_label_writer
         }
       else if (b.get_digest().is_tag())
         {
-          L(FL("blob %d: tag") % v);
-
           label = (FL("blob %d: tag: ") % v).str();
 
           if (b.empty())
