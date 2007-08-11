@@ -2205,21 +2205,29 @@ split_branchpoint_handler(cvs_history & cvs)
 
           // handle empty branchnames
           string branchname = cvs.branchname_interner.lookup(cbe->branchname);
-          if (branchname.empty())
+          if (branchname.empty() || (blob.split_origin != invalid_blob))
             {
-              branchname = (FL("UNNAMED_BRANCH_%d") % nr).str();
-              nr++;
+              if (branchname.empty())
+                {
+                  branchname = (FL("UNNAMED_BRANCH_%d") % nr).str();
+                  nr++;
+                }
+              else
+                {
+                  W(F("unable to properly represent branch %s")
+                    % branchname);
+
+                  branchname = (FL("SPLITTED_BRANCHPOINT_%d_%s")
+                                % blob.split_index
+                                % branchname).str();
+                }
 
               cbe->branchname = cvs.branchname_interner.intern(branchname);
               for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
                 static_cast< cvs_event_branch & >(**i).branchname = cbe->branchname;
-              cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
               blob.digest = cbe->get_digest();
+              cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
             }
-          else
-            N(blob.split_counter == 0,
-              F("Unable to represent splitted branch: %s")
-              % cvs.branchname_interner.lookup(cbe->branchname));
         }
       else if (blob.get_digest().is_tag())
         {
@@ -2227,9 +2235,21 @@ split_branchpoint_handler(cvs_history & cvs)
             boost::static_pointer_cast<cvs_event_tag, cvs_event>(
               *blob.begin());
 
-          N(blob.split_counter == 0,
-            F("Unable to represent splitted tag: %s")
-            % cvs.tag_interner.lookup(cte->tag));
+          if (blob.split_origin != invalid_blob)
+            {
+              W(F("unable to properly represent tag %s")
+                % cvs.tag_interner.lookup(cte->tag));
+
+              string tag = (FL("SPLITTED_TAG_%d_%s")
+                            % blob.split_index
+                            % cvs.tag_interner.lookup(cte->tag)).str();
+
+              cte->tag = cvs.tag_interner.intern(tag);
+              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+                static_cast< cvs_event_tag & >(**i).tag = cte->tag;
+              blob.digest = cte->get_digest();
+              cvs.blob_index.insert(make_pair(cte->get_digest(), bi));
+            }
         }
     }
 }
