@@ -2278,10 +2278,9 @@ import_cvs_repo(system_path const & cvsroot,
   cvs.base_branch = cvs.branchname_interner.intern(bn);
 
 
-  //
   // first step of importing legacy VCS: collect all revisions
   // of all files we know. This already creates file deltas and
-  // hashes. We end up with a DAG of blobs,
+  // hashes. We end up with a DAG of blobs.
   {
     transaction_guard guard(app.db);
     cvs_tree_walker walker(cvs, app);
@@ -2294,12 +2293,15 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
+  // then we use algorithms from graph theory to get the blobs into
+  // a logically meaningful ordering.
   resolve_intra_blob_conflicts(cvs);
   resolve_blob_dependencies(cvs);
+
+  // deal with stuff that's hard to represent in monotone
   split_branchpoint_handler(cvs);
 
   ticker n_revs(_("revisions"), "r", 1);
-
   {
     transaction_guard guard(app.db);
     blob_consumer cons(cvs, app, n_revs);
@@ -2307,7 +2309,8 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
-  // add all the tags
+  // add all the tags (FIXME: this should better be done during
+  //                          blob consumption).
   {
     ticker n_tags(_("tags"), "t", 1);
     transaction_guard guard(app.db);
