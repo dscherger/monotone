@@ -221,8 +221,8 @@ adv(char i, size_t & line, size_t & col)
 static token_type
 get_token(file_source & ist,
           string & str,
-	  size_t & line,
-	  size_t & col)
+          size_t & line,
+          size_t & col)
 {
   bool saw_idchar = false;
   int i = ist.peek();
@@ -268,10 +268,10 @@ get_token(file_source & ist,
                 break;
             }
           else
-	    {
-	      adv(i, line, col);
-	      str += c;
-	    }
+            {
+              adv(i, line, col);
+              str += c;
+            }
         }
       return TOK_STRING;
       break;
@@ -283,7 +283,7 @@ get_token(file_source & ist,
              && !isspace(i))
         {
           ist.get(c);
-	  ++col;
+          ++col;
           if (! isdigit(c) && c != '.')
             saw_idchar = true;
           str += c;
@@ -351,7 +351,7 @@ struct parser
   {
     if (ttype != want)
       throw oops((F("parse failure %d:%d: expecting %s, got %s with value '%s'")
-		  % line % col % tt2str(want) % tt2str(ttype) % token).str());
+                  % line % col % tt2str(want) % tt2str(ttype) % token).str());
     advance();
   }
 
@@ -370,7 +370,7 @@ struct parser
     string tmp;
     if (!symp(expected))
       throw oops((F("parse failure %d:%d: expecting word '%s'")
-		  % line % col % expected).str());
+                  % line % col % expected).str());
     advance();
   }
 
@@ -385,7 +385,7 @@ struct parser
   {
     if (!wordp())
       throw oops((F("parse failure %d:%d: expecting word")
-		  % line % col).str());
+                  % line % col).str());
     advance();
   }
 
@@ -414,14 +414,14 @@ struct parser
     while(symp() || nump())
       {
         string stmp, ntmp;
-	if (symp())
-	  {
-	    sym(stmp); colon(); num(ntmp);
-	  }
-	else
-	  {
-	    num(stmp); colon(); num(ntmp);
-	  }
+        if (symp())
+          {
+            sym(stmp); colon(); num(ntmp);
+          }
+        else
+          {
+            num(stmp); colon(); num(ntmp);
+          }
         r.admin.symbols.insert(make_pair(ntmp, stmp));
       }
     semi();
@@ -446,7 +446,7 @@ struct parser
           {
             string tmp;
             num(tmp);
-            d.branches.push_back(tmp);
+            d.branches.insert(tmp);
           }
         semi();
         expect("next"); if (nump()) num(d.next); semi();
