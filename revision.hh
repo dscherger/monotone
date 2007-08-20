@@ -64,9 +64,10 @@ revision_t
   // trivial revisions are ones that have no effect -- e.g., commit should
   // refuse to commit them, saying that there are no changes to commit.
   bool is_nontrivial() const;
-  revision_t() : made_for(made_for_nobody) {}
+  revision_t() : is_sentinel(false), made_for(made_for_nobody) {}
   revision_t(revision_t const & other);
   revision_t const & operator=(revision_t const & other);
+  bool is_sentinel;
   manifest_id new_manifest;
   edge_map edges;
   // workspace::put_work_rev refuses to apply a rev that doesn't have this
@@ -109,6 +110,14 @@ read_revision(data const & dat,
 
 void
 read_revision(revision_data const & dat,
+              revision_t & rev);
+
+void
+read_sentinel(data const & dat,
+              revision_t & rev);
+
+void
+read_sentinel(sentinel_data const & dat,
               revision_t & rev);
 
 void
