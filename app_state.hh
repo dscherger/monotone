@@ -13,6 +13,8 @@
 class app_state;
 class lua_hooks;
 
+#include <syslog.h>
+
 #include <map>
 #include "vector.hh"
 
@@ -73,6 +75,8 @@ public:
   void process_options();
   void require_workspace(std::string const & explanation = "");
   void create_workspace(system_path const & dir);
+
+  void sys_log(std::string const & log_message, int priority = LOG_INFO);
 
   // Set the branch name. If you only invoke set_branch, the branch
   // name is not sticky (and won't be written to the workspace and

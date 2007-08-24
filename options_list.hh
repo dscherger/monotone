@@ -195,6 +195,14 @@ OPT(dryrun, "dry-run", bool, false,
 }
 #endif
 
+OPT(use_syslog, "use-syslog", bool, false,
+      gettext_noop("use the syslog facility to perform logging in addition to standard monotone logging"))
+#ifdef option_bodies
+{
+    use_syslog = true;
+}
+#endif
+
 OPTION(globals, dump, true, "dump",
         gettext_noop("file to dump debugging log to, on failure"))
 #ifdef option_bodies
