@@ -38,26 +38,12 @@ app_state::app_state()
   db.set_app(this);
   lua.set_app(this);
   keys.set_key_dir(opts.conf_dir / "keys");
-
-  //this is optional, but good form.  we'll default to DAEMON facility
-  //with INFO level.  we'll also ask syslog to push our pid into the
-  //log message as well for good measure (if running multiple mtn serve's
-  //this might be handy)
-  //FIXME: change LOG_USER to LOG_DAEMON is we are running under the serve
-  //command.
-  openlog((const char *) ui.prog_name.c_str(), LOG_PID, LOG_USER);
 }
 
 app_state::~app_state()
 {
 }
 
-void 
-app_state::sys_log(std::string const & log_message, int priority)
-{
-  //not much to do here, syslog is pretty simple (dumb?)
-  syslog(priority, "%s", log_message.c_str());
-}
 
 void
 app_state::allow_workspace()

@@ -474,8 +474,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  N_("Serves the database to connecting clients"),
                  "",
                  options::opts::bind | options::opts::pidfile |
-                 options::opts::use_syslog | options::opts::bind_stdio |
-                 options::opts::no_transport_auth )
+                 options::opts::bind_stdio | options::opts::no_transport_auth )
 {
   if (!args.empty())
     throw usage(execid);
