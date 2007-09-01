@@ -474,7 +474,8 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  N_("Serves the database to connecting clients"),
                  "",
                  options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth )
+                 options::opts::bind_stdio | options::opts::no_transport_auth |
+                 options::opts::daemon)
 {
   if (!args.empty())
     throw usage(execid);
@@ -496,6 +497,10 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
 
   app.db.ensure_open();
+
+  if (app.opts.daemon)
+      E(daemon(0, 0) == 0,
+        F("call to daemon failed!"));
 
   run_netsync_protocol(server_voice, source_and_sink_role, app.opts.bind_uris,
                        globish("*"), globish(""), app);

@@ -70,6 +70,14 @@ OPTION(branch, branch, true, "branch,b",
 }
 #endif
 
+OPT(daemon, "daemon", bool, false,
+      gettext_noop("detach from terminal and background to run as a system process"))
+#ifdef option_bodies
+{
+  daemon = true;
+}
+#endif
+
 OPT(brief, "brief", bool, false,
      gettext_noop("print a brief version of the normal output"))
 #ifdef option_bodies
