@@ -34,6 +34,8 @@
 
 #include "current_exception.hh"
 
+#include <syslog.h>
+
 using std::clog;
 using std::cout;
 using std::endl;
@@ -430,11 +432,12 @@ void tick_write_dot::clear_line()
 // global, and we don't want global constructors/destructors doing
 // any real work.  see monotone.cc for how this is handled.
 
-user_interface::user_interface() : prog_name("?"), imp(0) {}
+user_interface::user_interface() : prog_name("?"), imp(0), syslog(false) {}
 
 void user_interface::initialize()
 {
   imp = new user_interface::impl;
+  syslog = false;
   
   cout.exceptions(ios_base::badbit);
 #ifdef SYNC_WITH_STDIO_WORKS
@@ -455,6 +458,12 @@ void user_interface::deinitialize()
   I(imp);
   delete imp->t_writer;
   delete imp;
+}
+
+void user_interface::use_syslog()
+{
+  openlog(prog_name.c_str(), LOG_PID|LOG_NDELAY, LOG_LOCAL7);
+  syslog = true;
 }
 
 void

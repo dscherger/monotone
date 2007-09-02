@@ -63,6 +63,7 @@ public:
   void set_tick_write_nothing();
   void ensure_clean_line();
   void redirect_log_to(system_path const & filename);
+  void use_syslog();
 
   std::string output_prefix();
   std::string prog_name;
@@ -73,6 +74,7 @@ private:
 
   struct impl;
   impl * imp;
+  bool syslog;
 
   friend struct ticker;
   friend struct tick_write_count;

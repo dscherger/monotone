@@ -298,6 +298,15 @@ OPT(last, "last", long, -1,
 }
 #endif
 
+OPT(syslog, "syslog", bool, false,
+      gettext_noop("send log messages to syslog as LOCAL7/{info,warn,err}"))
+#ifdef option_bodies
+{
+  syslog = true;
+  ui.use_syslog();
+}
+#endif
+
 OPTION(globals, log, true, "log", gettext_noop("file to write the log to"))
 #ifdef option_bodies
 {
