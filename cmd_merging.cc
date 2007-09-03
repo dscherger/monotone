@@ -270,7 +270,7 @@ update(app_state & app, commands::command_id const & execid,
                           result, wca, app);
 
   // Make sure it worked...
-  I(result.is_clean());
+  I(result.conflicts.is_clean());
   merged_roster.check_sane(true);
 
   // Now finally modify the workspace
@@ -745,7 +745,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   resolve_merge_conflicts(*left.first, *right.first, merge_result, wca, app);
 
   // Make sure it worked...
-  I(merge_result.is_clean());
+  I(merge_result.conflicts.is_clean());
   merge_result.roster.check_sane(true);
 
   // Construct the workspace revision.
@@ -828,17 +828,17 @@ CMD(show_conflicts, "show_conflicts", "", CMD_REF(informative), N_("REV REV"),
                result);
 
   P(F("There are %s node_name_conflicts.") 
-    % result.node_name_conflicts.size());
+    % result.conflicts.node_name_conflicts.size());
   P(F("There are %s file_content_conflicts.") 
-    % result.file_content_conflicts.size());
+    % result.conflicts.file_content_conflicts.size());
   P(F("There are %s node_attr_conflicts.") 
-    % result.node_attr_conflicts.size());
+    % result.conflicts.node_attr_conflicts.size());
   P(F("There are %s orphaned_node_conflicts.") 
-    % result.orphaned_node_conflicts.size());
+    % result.conflicts.orphaned_node_conflicts.size());
   P(F("There are %s rename_target_conflicts.") 
-    % result.rename_target_conflicts.size());
+    % result.conflicts.rename_target_conflicts.size());
   P(F("There are %s directory_loop_conflicts.") 
-    % result.directory_loop_conflicts.size());
+    % result.conflicts.directory_loop_conflicts.size());
 }
 
 CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
@@ -965,7 +965,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   resolve_merge_conflicts(working_roster, to_roster,
                           result, wca, app);
 
-  I(result.is_clean());
+  I(result.conflicts.is_clean());
   // temporary node ids may appear
   merged_roster.check_sane(true);
 

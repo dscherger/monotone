@@ -50,29 +50,29 @@ resolve_merge_conflicts(roster_t const & left_roster,
   // cause an invariant to trip below.  Probably just a bunch of lua
   // hooks for remaining conflict types will be ok.
 
-  if (!result.is_clean())
-    result.log_conflicts();
+  if (!result.conflicts.is_clean())
+    result.conflicts.log_conflicts();
 
-  if (!result.is_clean_except_for_content())
+  if (!result.conflicts.is_clean_except_for_content())
     {
-      result.warn_non_content_conflicts();
+      result.conflicts.warn_non_content_conflicts();
       W(F("resolve non-content conflicts and then try again."));
     }
   else
     {
       // Attempt to auto-resolve any content conflicts using the line-merger.
       // To do this requires finding a merge ancestor.
-      if (!result.file_content_conflicts.empty())
+      if (!result.conflicts.file_content_conflicts.empty())
         {
 
           L(FL("examining content conflicts"));
 
           size_t cnt;
-          size_t total_conflicts = result.file_content_conflicts.size();
+          size_t total_conflicts = result.conflicts.file_content_conflicts.size();
           std::vector<file_content_conflict>::iterator it;
 
-          for (cnt = 1, it = result.file_content_conflicts.begin();
-               it != result.file_content_conflicts.end(); ++cnt)
+          for (cnt = 1, it = result.conflicts.file_content_conflicts.begin();
+               it != result.conflicts.file_content_conflicts.end(); ++cnt)
             {
               file_content_conflict const & conflict = *it;
 
@@ -103,7 +103,7 @@ resolve_merge_conflicts(roster_t const & left_roster,
                   file_t f = downcast_to_file_t(result.roster.get_node(conflict.nid));
                   f->content = merged_id;
 
-                  it = result.file_content_conflicts.erase(it);
+                  it = result.conflicts.file_content_conflicts.erase(it);
                 }
               else
                 {
@@ -119,7 +119,7 @@ resolve_merge_conflicts(roster_t const & left_roster,
         }
     }
 
-  E(result.is_clean(),
+  E(result.conflicts.is_clean(),
     F("merge failed due to unresolved conflicts"));
 }
 
@@ -171,7 +171,7 @@ store_roster_merge_result(roster_t const & left_roster,
                           revision_id & merged_rid,
                           app_state & app)
 {
-  I(result.is_clean());
+  I(result.conflicts.is_clean());
   roster_t & merged_roster = result.roster;
   merged_roster.check_sane();
 
