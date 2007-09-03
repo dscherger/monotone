@@ -119,10 +119,10 @@ dump(roster_merge_result const & result, string & out)
 }
 
 void
-roster_merge_result::log_conflicts() const
+conflicts_t::log_conflicts() const
 {
   string str;
-  debug_describe_conflicts(conflicts, str);
+  debug_describe_conflicts(*this, str);
   L(FL("%s") % str);
 }
 
