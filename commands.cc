@@ -734,6 +734,34 @@ namespace commands
     if (cmd->use_workspace_options())
       app.process_options();
 
+    // don't attempt to expand branches if the hook doesn't exist 
+    // to avoid the delay of getting the list of all branches
+    if (app.opts.branch_given &&
+        !app.opts.branchname().empty() && 
+        app.lua.hook_exists("expand_branch"))
+      {
+        branch_name const pattern = app.opts.branchname;
+
+        set<branch_name> all_branches;
+        set<branch_name> matched_branches;
+
+        // this needs to happen after the workspace options have been loaded
+        // to ensure that the database to look for the branch list in is known
+        app.get_project().get_branch_list(all_branches, app.opts.ignore_suspend_certs);
+
+        app.lua.hook_expand_branch(pattern,
+                                   all_branches,
+                                   matched_branches);
+
+        N(!matched_branches.empty(), 
+          F("unable to expand branch; '%s' does not match any branches") % pattern);
+
+        N(matched_branches.size() == 1, 
+          F("unable to expand branch; '%s' matched multiple branches") % pattern);
+
+        app.opts.branchname = *matched_branches.begin();
+      }
+
     cmd->exec(app, ident, args);
   }
 

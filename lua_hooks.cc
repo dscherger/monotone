@@ -334,6 +334,41 @@ lua_hooks::hook_ignore_branch(branch_name const & branch)
   return exec_ok && ignore_it;
 }
 
+bool
+lua_hooks::hook_expand_branch(branch_name const & pattern, 
+                              set<branch_name> const & all_branches,
+                              set<branch_name> & matched_branches)
+{
+  Lua ll(st);
+
+  ll.func("expand_branch")
+    .push_str(pattern());
+
+  ll.push_table();
+
+  int k = 1;
+  for (set<branch_name>::const_iterator 
+         i = all_branches.begin(); i != all_branches.end(); ++i)
+    {
+      ll.push_int(k++);
+      ll.push_str((*i)());
+      ll.set_table();
+    }
+
+  ll.call(2,1);
+  ll.begin();
+
+  matched_branches.clear();
+  while(ll.next())
+    {
+      string s;
+      ll.extract_str(s).pop();
+      matched_branches.insert(branch_name(s));
+    }
+
+  return ll.ok();
+}
+
 static inline bool
 shared_trust_function_body(Lua & ll,
                            set<rsa_keypair_id> const & signers,

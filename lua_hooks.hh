@@ -89,6 +89,10 @@ public:
   // local repo hooks
   bool hook_ignore_file(file_path const & p);
   bool hook_ignore_branch(branch_name const & branch);
+  bool hook_expand_branch(branch_name const & pattern, 
+                          std::set<branch_name> const & all_branches,
+                          std::set<branch_name> & matched_branches);
+
   bool hook_merge3(file_path const & anc_path,
                    file_path const & left_path,
                    file_path const & right_path,
