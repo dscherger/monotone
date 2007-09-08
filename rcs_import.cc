@@ -170,14 +170,16 @@ class
 cvs_event
 {
 public:
-  time_t time;
+  time_t given_time;
+  time_t adj_time;
   cvs_path path;
   cvs_blob_index bi;
   vector< cvs_event_ptr > dependencies;
   vector< cvs_event_ptr > dependents;
 
   cvs_event(const cvs_path p, const time_t ti)
-    : time(ti),
+    : given_time(ti),
+      adj_time(ti),
       path(p)
     { };
 
@@ -196,7 +198,7 @@ void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
 bool
 cvs_event_ptr::operator < (const cvs_event_ptr & c) const
 {
-  return ((*this)->time < c->time);
+  return ((*this)->adj_time < c->adj_time);
 };
 
 class
@@ -384,7 +386,7 @@ public:
     {
       long long avg = 0;
       for (blob_event_iter i = events.begin(); i != events.end(); ++i)
-        avg += (*i)->time;
+        avg += (*i)->adj_time;
       return (time_t) avg / events.size();
     }
 };
@@ -526,7 +528,10 @@ cvs_history
   cvs_blob_index append_event(cvs_event_ptr c) 
   {
     if (c->get_digest().is_commit())
-      I(c->time != 0);
+      {
+        I(c->given_time != 0);
+        I(c->adj_time != 0);
+      }
 
     blob_index_iterator b = get_blobs(c->get_digest(), true).first;
     blobs[b->second].push_back(c);
@@ -571,7 +576,7 @@ event_ptr_time_cmp
 public:
   bool operator() (const cvs_event_ptr & a, const cvs_event_ptr & b) const
     {
-      return a->time < b->time; 
+      return a->adj_time < b->adj_time; 
     }
 };
 
@@ -982,7 +987,7 @@ process_rcs_branch(string const & begin_version,
               cvs_event_ptr tag_event = 
                 boost::static_pointer_cast<cvs_event, cvs_event_tag>(
                   shared_ptr<cvs_event_tag>(
-                    new cvs_event_tag(curr_commit->path, curr_commit->time,
+                    new cvs_event_tag(curr_commit->path, curr_commit->adj_time,
                                       tag)));
               add_dependency(tag_event, curr_commit);
 
@@ -1059,7 +1064,7 @@ process_rcs_branch(string const & begin_version,
             boost::static_pointer_cast<cvs_event, cvs_event_branch>(
               shared_ptr<cvs_event_branch>(
                 new cvs_event_branch(curr_commit->path, bname,
-                                     curr_commit->time)));
+                                     curr_commit->adj_time)));
 
           // Normal branches depend on the current commit. But vendor
           // branches - appearing in reversed order - don't depend on
@@ -1570,11 +1575,11 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
           if ((dep->get_digest() == cvs.blobs[bi].get_digest()) &&
               (cvs.get_blob_of(dep) == bi))
             {
-              I(ev->time != dep->time);
-              if (ev->time > dep->time)
-                ib_deps.push_back(make_pair(dep->time, ev->time));
+              I(ev->adj_time != dep->adj_time);
+              if (ev->adj_time > dep->adj_time)
+                ib_deps.push_back(make_pair(dep->adj_time, ev->adj_time));
               else
-                ib_deps.push_back(make_pair(ev->time, dep->time));
+                ib_deps.push_back(make_pair(ev->adj_time, dep->adj_time));
             }
         }
 
@@ -1583,11 +1588,11 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
       for (blob_event_iter j = i + 1; j != cvs.blobs[bi].end(); ++j)
         if ((*i)->path == (*j)->path)
           {
-            I((*i)->time != (*j)->time);
-            if ((*i)->time > (*j)->time)
-              ib_deps.push_back(make_pair((*j)->time, (*i)->time));
+            I((*i)->adj_time != (*j)->adj_time);
+            if ((*i)->adj_time > (*j)->adj_time)
+              ib_deps.push_back(make_pair((*j)->adj_time, (*i)->adj_time));
             else
-              ib_deps.push_back(make_pair((*i)->time, (*j)->time));
+              ib_deps.push_back(make_pair((*i)->adj_time, (*j)->adj_time));
           }
     }
 
@@ -1734,11 +1739,11 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
               last_ev = this_ev;
               this_ev = *ity;
 
-              time_t time_diff = this_ev->time - last_ev->time;
+              time_t time_diff = this_ev->adj_time - last_ev->adj_time;
               if (time_diff > largest_gap)
                 {
                   largest_gap = time_diff;
-                  largest_gap_at = last_ev->time + time_diff / 2;
+                  largest_gap_at = last_ev->adj_time + time_diff / 2;
                   largest_gap_blob = *cc;
                 }
             }
@@ -1788,7 +1793,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                       L(FL("    path: %s @ %s, time: %d")
                         % cvs.path_interner.lookup(ce->path)
                         % cvs.rcs_version_interner.lookup(ce->rcs_version)
-                        % ce->time);
+                        % ce->adj_time);
                     }
                 }
             }
@@ -1837,7 +1842,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
        i != cvs.blobs[bi].get_events().end(); )
     {
       // Assign the event to the existing or to the new blob
-      if ((*i)->time > split_point)
+      if ((*i)->adj_time > split_point)
         {
           cvs.blobs[new_bi].get_events().push_back(*i);
           (*i)->bi = new_bi;
@@ -1987,7 +1992,7 @@ class blob_label_writer
       if (!b.empty())
         {
       // print the time of the blob
-      label += (FL("time: %d\\n") % (*b.begin())->time).str();
+      label += (FL("time: %d\\n") % (*b.begin())->adj_time).str();
       label += "\\n";
 
       // print the contents of the blob, i.e. the single files
@@ -2003,7 +2008,7 @@ class blob_label_writer
                 label += "@";
                 label += cvs.rcs_version_interner.lookup(ce->rcs_version);
 
-                label += (FL(":%d") % (ce->time)).str();
+                label += (FL(":%d") % (ce->adj_time)).str();
               }
             label += "\\n";
           }
