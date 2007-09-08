@@ -898,6 +898,185 @@ add_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
     }      
 }
 
+typedef pair< cvs_event_ptr, cvs_event_ptr> t_violation;
+typedef list<t_violation>::iterator violation_iter;
+typedef pair< violation_iter, int > t_solution;
+
+// returns the number of the violation which is cheapest to solve and
+// wether it should be solved downwards or upwards. The return value
+// consists of the index into the violations vector plus a direction
+// indicator. That one is zero for adjusting downwards (i.e. adjusting
+// the dependent) or one for adjusting upwards (i.e. adjusting the
+// dependency).
+static t_solution
+get_cheapest_violation_to_solve(list<t_violation> & violations)
+{
+  unsigned int best_solution_price = (unsigned int) -1;
+  t_solution best_solution;
+
+  for (violation_iter i = violations.begin(); i != violations.end(); ++i)
+    {
+      unsigned int price = 0;
+
+      stack< pair< cvs_event_ptr, time_t > > stack;
+      cvs_event_ptr dep = i->first;
+      cvs_event_ptr ev = i->second;
+
+      // property of violation: an event ev has a lower timestamp
+      // (i.e. is said to come before) than another event dep, on which
+      // ev depends.
+      I(ev->adj_time <= dep->adj_time);
+
+      // check price of downward adjustment, i.e. adjusting all dependents
+      // until we hit a dependent which has a timestamp higher that the
+      // event dep.
+      stack.push(make_pair(ev, dep->adj_time + 1));
+      while (!stack.empty())
+        {
+          cvs_event_ptr e = stack.top().first;
+          time_t time_goal = stack.top().second;
+          stack.pop();
+
+          if (e->adj_time <= time_goal)
+            {
+              price++;
+              for (dependency_iter j = e->dependents.begin();
+                   j != e->dependents.end(); ++j)
+                stack.push(make_pair(*j, time_goal + 1));
+            }
+        }
+
+      if (price < best_solution_price)
+        {
+          best_solution_price = price;
+          best_solution = make_pair(i, 0);
+        }
+
+      // check price of upward adjustment, i.e. adjusting all dependencies
+      // until we hit a dependency which has a timestamp lower that the
+      // event ev.
+      price = 0;
+      stack.push(make_pair(dep, ev->adj_time - 1));
+      while (!stack.empty())
+        {
+          cvs_event_ptr e = stack.top().first;
+          time_t time_goal = stack.top().second;
+          stack.pop();
+
+          if (e->adj_time >= time_goal)
+            {
+              price++;
+              for (dependency_iter j = e->dependencies.begin();
+                   j != e->dependencies.end(); ++j)
+                stack.push(make_pair(*j, time_goal - 1));
+            }
+        }
+
+      if (price < best_solution_price)
+        {
+          best_solution_price = price;
+          best_solution = make_pair(i, 1);
+        }
+
+    }
+
+  return best_solution;
+}
+
+static void
+solve_violation(cvs_history & cvs, t_solution & solution)
+{
+  stack< pair< cvs_event_ptr, time_t > > stack;
+  cvs_event_ptr dep = solution.first->first;
+  cvs_event_ptr ev = solution.first->second;
+  int direction = solution.second;
+
+  L(FL("Resolving conflicting timestamps of these events:"));
+
+  if (dep->get_digest().is_commit() && ev->get_digest().is_commit())
+    W(F("Resolving conflicting commit timestamps of file %s:")
+      % cvs.path_interner.lookup(ev->path));
+
+  if (direction == 0)
+    {
+      // downward adjustment, i.e. adjusting all dependents
+      stack.push(make_pair(ev, dep->adj_time + 1));
+      while (!stack.empty())
+        {
+          cvs_event_ptr e = stack.top().first;
+          time_t time_goal = stack.top().second;
+          stack.pop();
+
+          if (e->adj_time <= time_goal)
+            {
+              W(F("  adjusting event by %d seconds.")
+                % (time_goal - e->adj_time));
+              e->adj_time = time_goal;
+              for (dependency_iter j = e->dependents.begin();
+                   j != e->dependents.end(); ++j)
+                stack.push(make_pair(*j, time_goal + 1));
+            }
+        }
+    }
+  else
+    {
+      // upward adjustmest, i.e. adjusting all dependencies
+      stack.push(make_pair(dep, ev->adj_time - 1));
+      while (!stack.empty())
+        {
+          cvs_event_ptr e = stack.top().first;
+          time_t time_goal = stack.top().second;
+          stack.pop();
+
+          if (e->adj_time >= time_goal)
+            {
+              W(F("  adjusting event by %d seconds.")
+                % (e->adj_time - time_goal));
+              e->adj_time = time_goal;
+              for (dependency_iter j = e->dependencies.begin();
+                   j != e->dependencies.end(); ++j)
+                stack.push(make_pair(*j, time_goal - 1));
+            }
+        }
+    }
+}
+
+static void
+sanitize_rcs_file_timestamps(cvs_history & cvs)
+{
+  while (1)
+    {
+      // we start at the root event for the current file and scan for
+      // timestamp pairs which violate the corresponding dependency.
+      stack< cvs_event_ptr > stack;
+      stack.push(cvs.root_event);
+
+      list<t_violation> violations;
+
+      while (!stack.empty())
+        {
+          cvs_event_ptr ev = stack.top();
+          stack.pop();
+
+          for (dependency_iter i = ev->dependents.begin();
+              i != ev->dependents.end(); ++i)
+            {
+              stack.push(*i);
+              if (ev->adj_time >= (*i)->adj_time)
+                violations.push_back(make_pair(ev, *i));
+            }
+        }
+
+      if (violations.empty())
+        break;
+
+      W(F("%d timestamp <-> dependency violations.") % violations.size());
+
+      t_solution x = get_cheapest_violation_to_solve(violations);
+      solve_violation(cvs, x);
+    }
+}
+
 static cvs_event_ptr
 process_rcs_branch(string const & begin_version,
                vector< piece > const & begin_lines,
@@ -1192,6 +1371,10 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
     add_dependency(first_event, cvs.root_event);
     boost::static_pointer_cast<cvs_event_branch, cvs_event>(
       cvs.root_event)->branch_contents.push_back(first_event);
+
+    // try to sanitize the timestamps within this RCS file with
+    // respect to the dependencies given.
+    sanitize_rcs_file_timestamps(cvs);
 
     global_pieces.reset();
   }

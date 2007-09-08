@@ -23,7 +23,7 @@ mtn_setup()
 check(get("cvs-repository"))
 
 -- import into monotone
-xfail(mtn("--branch=testbranch", "cvs_import", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=testbranch", "cvs_import", "cvs-repository/test"), 0, false, false)
 
 -- check for correct ordering of the commits
 check(mtn("checkout", "--branch=testbranch", "mtcodir"), 0, false, false)
