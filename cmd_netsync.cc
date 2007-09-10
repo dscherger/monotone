@@ -488,8 +488,9 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
   //on having a pid file when spawning mtn --daemon, since working with
   //the pid of the original process wouldn't do much good.
   //i think it makes some amount of sense even outside of this...
-  N(app.opts.daemon && !app.opts.pidfile.empty(),
-    F("When using --daemon, you must supply --pid-file also"));
+  if (app.opts.daemon)
+    N(!app.opts.pidfile.empty(),
+      F("When using --daemon, you must supply --pid-file also"));
   
   //this ensures that the specified pid file will work and opens it...doing
   //this before daemonizing ensures better user warnings in case of failure.
