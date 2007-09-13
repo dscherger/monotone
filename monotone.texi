@@ -6643,10 +6643,6 @@ different types (one is a directory, the other a file).
    @end table
 @end table
 
-Full support for versioned directories is not yet complete and the
-inventory will only list entries for renamed or dropped
-directories. @c FIXME: is this true?
-
 @item Error conditions:
 
 When executed from outside of a workspace directory, prints an error
