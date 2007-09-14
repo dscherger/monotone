@@ -26,6 +26,9 @@ cvs commit -m "Initial import"
 # tag both files
 cvs tag FOO_AND_BAR
 
+# make sure the timestamps different enough
+sleep 5
+
 # delete file bar and tag again
 cvs remove -f bar
 cvs commit -m "removed bar"
