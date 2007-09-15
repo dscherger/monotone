@@ -49,12 +49,12 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
 }
 
 
-CMD(svn_import, N_("debug"), N_("[SVNDUMP]"),
-    N_("import subversion repositories"),
+CMD(svn_import, "svn_import", "", CMD_REF(rcs), N_("debug"),
+    N_("[SVNDUMP]"), N_("import a subversion repository dump"),
     options::opts::branch)
 {
   if (args.size() > 1)
-    throw usage(name);
+    throw usage(execid);
 
   if (args.empty())
     {
