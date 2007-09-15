@@ -1275,7 +1275,7 @@ process_rcs_branch(string const & begin_version,
           cvs_event_ptr first_event_in_branch =
             process_rcs_branch(*i, branch_lines, branch_data,
                                branch_id, r, db, cvs, dryrun,
-                               !is_vendor_branch);
+                               false);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
@@ -1291,11 +1291,12 @@ process_rcs_branch(string const & begin_version,
           branch_event->adj_time = curr_commit->adj_time + 1;
 
           // Normal branches depend on the current commit. But vendor
-          // branches - appearing in reversed order - don't depend on
-          // anything. They theoretically come before anything else
-          // (i.e. initial import). To make sure the DFS algorithm sees
-          // this event anyway, we make it dependent on the root_blob,
-          // which is artificial anyway.
+          // branches don't depend on anything. They theoretically come
+          // before anything else (i.e. initial import).
+          //
+          // To make sure the DFS algorithm sees this event anyway, we
+          // make it dependent on the root_blob, which is artificial
+          // anyway.
           if (!is_vendor_branch)
             add_dependency(branch_event, curr_commit);
           else
