@@ -6,4 +6,4 @@ mtn_setup()
 check(get("svn-repository.dump"))
 
 -- import into monotone
-check(mtn("--branch=test", "svn_import", "svn-repository.dump"), 0, false, false)
+xfail(mtn("--branch=test", "svn_import", "svn-repository.dump"), 0, false, false)

@@ -27,7 +27,7 @@ svn commit -m "a simple first commit"
 cd ..
 
 # create the dump
-svnadmin dump $REPOSITORY > svn-repository.dump
+svnadmin dump --deltas $REPOSITORY > svn-repository.dump
 
 # clean up
 rm -rf svn-co
