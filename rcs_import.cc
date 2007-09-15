@@ -613,6 +613,36 @@ public:
     }
 };
 
+string
+get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
+{
+  if (ev->get_digest().is_commit())
+    {
+      shared_ptr< cvs_commit > ce =
+        boost::static_pointer_cast<cvs_commit, cvs_event>(ev);
+      return (F("commit rev %s on file %s")
+                % cvs.rcs_version_interner.lookup(ce->rcs_version)
+                % cvs.path_interner.lookup(ev->path)).str();
+    }
+  else if (ev->get_digest().is_branch())
+    {
+      shared_ptr< cvs_event_branch > be =
+        boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
+      return (F("branch to %s on file %s")
+                % cvs.branchname_interner.lookup(be->branchname)
+                % cvs.path_interner.lookup(ev->path)).str();
+    }
+  else
+    {
+      I(ev->get_digest().is_tag());
+      shared_ptr< cvs_event_tag > te =
+        boost::static_pointer_cast<cvs_event_tag, cvs_event>(ev);
+      return (F("tag %s on file %s")
+              % cvs.tag_interner.lookup(te->tag)
+              % cvs.path_interner.lookup(ev->path)).str();
+    }
+}
+
 static bool
 is_sbr(shared_ptr<rcs_delta> dl,
        shared_ptr<rcs_deltatext> dt)
@@ -998,11 +1028,8 @@ solve_violation(cvs_history & cvs, t_solution & solution)
   cvs_event_ptr ev = solution.first->second;
   int direction = solution.second;
 
-  L(FL("Resolving conflicting timestamps of these events:"));
-
-  if (dep->get_digest().is_commit() && ev->get_digest().is_commit())
-    W(F("Resolving conflicting commit timestamps of file %s:")
-      % cvs.path_interner.lookup(ev->path));
+  W(F("Resolving conflicting timestamps of: %s and %s")
+    % get_event_repr(cvs, dep) % get_event_repr(cvs, ev));
 
   if (direction == 0)
     {
@@ -1017,7 +1044,8 @@ solve_violation(cvs_history & cvs, t_solution & solution)
 
           if (e->adj_time <= time_goal)
             {
-              W(F("  adjusting event by %d seconds.")
+              W(F("  adjusting event %s by %d seconds.")
+                % get_event_repr(cvs, e)
                 % (time_goal - e->adj_time));
               e->adj_time = time_goal;
               for (dependency_iter j = e->dependents.begin();
@@ -1040,7 +1068,8 @@ solve_violation(cvs_history & cvs, t_solution & solution)
 
           if (e->adj_time >= time_goal)
             {
-              W(F("  adjusting event by %d seconds.")
+              W(F("  adjusting event %s by %d seconds.")
+                % get_event_repr(cvs, e)
                 % (e->adj_time - time_goal));
               e->adj_time = time_goal;
               for (dependency_iter j = e->dependencies.begin();
@@ -1084,8 +1113,6 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
 
       if (violations.empty())
         break;
-
-      W(F("%d timestamp <-> dependency violations.") % violations.size());
 
       t_solution x = get_cheapest_violation_to_solve(violations);
       solve_violation(cvs, x);
