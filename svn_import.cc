@@ -260,7 +260,6 @@ struct svn_dump_parser
             num(key_len);
             newline();
             eat_raw_data(key, key_len);
-            L(FL("key length: %d key: '%s'") % key_len % key);
             newline();
             expect("V");
             num(value_len);
@@ -268,7 +267,7 @@ struct svn_dump_parser
             eat_raw_data(value, value_len);
             newline();
 
-            L(FL("key: '%s' value: '%s'") % key % value);
+            L(FL("    '%s': '%s'") % key % value);
   
             if (strp() && (token == "PROPS-END"))
               {
@@ -290,8 +289,8 @@ struct svn_dump_parser
 
       if (text_content_length > 0)
         {
-          string text;
-          eat_raw_data(text, text_content_length);
+          string file_contents;
+          eat_raw_data(file_contents, text_content_length);
         }
 
       while (newlinep())
@@ -338,17 +337,21 @@ struct svn_dump_parser
     charpos = 0;
 
     parse_int_field("Revision-number", rev_nr);
+    L(FL("subversion revision %d") % rev_nr);
     parse_properties();
 
     while (strp() && token == "Node-path")
       {
         string path, kind, action;
         parse_str_field("Node-path", path);
+        L(FL("  node path: %s") % path);
 
         parse_str_field("Node-kind", kind);
         I((kind == "dir") || (kind == "file"));
+        L(FL("  node kind: %s") % kind);
 
         parse_str_field("Node-action", action);
+        L(FL("  node action: %s") % action);
         parse_properties();
       }
   }
@@ -372,3 +375,4 @@ import_svn_repo(istream & ist, app_state & app)
       p.parse_revision();
     }
 };
+
