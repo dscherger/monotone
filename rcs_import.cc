@@ -1181,8 +1181,10 @@ process_rcs_branch(string const & begin_version,
               cvs_event_ptr tag_event = 
                 boost::static_pointer_cast<cvs_event, cvs_event_tag>(
                   shared_ptr<cvs_event_tag>(
-                    new cvs_event_tag(curr_commit->path, curr_commit->adj_time,
+                    new cvs_event_tag(curr_commit->path,
+                                      curr_commit->given_time,
                                       tag)));
+              tag_event->adj_time = curr_commit->adj_time + 1;
               add_dependency(tag_event, curr_commit);
 
               cvs_blob_index bi = cvs.append_event(tag_event);
@@ -1258,7 +1260,8 @@ process_rcs_branch(string const & begin_version,
             boost::static_pointer_cast<cvs_event, cvs_event_branch>(
               shared_ptr<cvs_event_branch>(
                 new cvs_event_branch(curr_commit->path, bname,
-                                     curr_commit->adj_time)));
+                                     curr_commit->given_time)));
+          branch_event->adj_time = curr_commit->adj_time + 1;
 
           // Normal branches depend on the current commit. But vendor
           // branches - appearing in reversed order - don't depend on
