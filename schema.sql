@@ -41,6 +41,12 @@ CREATE TABLE revisions
 	data not null        -- compressed, encoded contents of a revision
 	);
 
+CREATE TABLE sentinels
+	(
+	id primary key,      -- revision id of the last missing revision
+	data not null        -- compressed, encoded contents of a sentinel
+	);
+
 CREATE TABLE revision_ancestry
 	(
 	parent not null,     -- joins with revisions.id
