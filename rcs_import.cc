@@ -919,6 +919,7 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
       unsigned int price = 0;
 
       stack< pair< cvs_event_ptr, time_t > > stack;
+      set< cvs_event_ptr > done;
       cvs_event_ptr dep = i->first;
       cvs_event_ptr ev = i->second;
 
@@ -936,13 +937,15 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
           cvs_event_ptr e = stack.top().first;
           time_t time_goal = stack.top().second;
           stack.pop();
+          done.insert(e);
 
           if (e->adj_time <= time_goal)
             {
               price++;
               for (dependency_iter j = e->dependents.begin();
                    j != e->dependents.end(); ++j)
-                stack.push(make_pair(*j, time_goal + 1));
+                if (done.find(*j) == done.end())
+                  stack.push(make_pair(*j, time_goal + 1));
             }
         }
 
@@ -956,19 +959,22 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
       // until we hit a dependency which has a timestamp lower that the
       // event ev.
       price = 0;
+      done.clear();
       stack.push(make_pair(dep, ev->adj_time - 1));
       while (!stack.empty())
         {
           cvs_event_ptr e = stack.top().first;
           time_t time_goal = stack.top().second;
           stack.pop();
+          done.insert(e);
 
           if (e->adj_time >= time_goal)
             {
               price++;
               for (dependency_iter j = e->dependencies.begin();
                    j != e->dependencies.end(); ++j)
-                stack.push(make_pair(*j, time_goal - 1));
+                if (done.find(*j) == done.end())
+                  stack.push(make_pair(*j, time_goal - 1));
             }
         }
 
@@ -987,6 +993,7 @@ static void
 solve_violation(cvs_history & cvs, t_solution & solution)
 {
   stack< pair< cvs_event_ptr, time_t > > stack;
+  set< cvs_event_ptr > done;
   cvs_event_ptr dep = solution.first->first;
   cvs_event_ptr ev = solution.first->second;
   int direction = solution.second;
@@ -1006,6 +1013,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
           cvs_event_ptr e = stack.top().first;
           time_t time_goal = stack.top().second;
           stack.pop();
+          done.insert(e);
 
           if (e->adj_time <= time_goal)
             {
@@ -1014,7 +1022,8 @@ solve_violation(cvs_history & cvs, t_solution & solution)
               e->adj_time = time_goal;
               for (dependency_iter j = e->dependents.begin();
                    j != e->dependents.end(); ++j)
-                stack.push(make_pair(*j, time_goal + 1));
+                if (done.find(*j) == done.end())
+                  stack.push(make_pair(*j, time_goal + 1));
             }
         }
     }
@@ -1027,6 +1036,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
           cvs_event_ptr e = stack.top().first;
           time_t time_goal = stack.top().second;
           stack.pop();
+          done.insert(e);
 
           if (e->adj_time >= time_goal)
             {
@@ -1035,7 +1045,8 @@ solve_violation(cvs_history & cvs, t_solution & solution)
               e->adj_time = time_goal;
               for (dependency_iter j = e->dependencies.begin();
                    j != e->dependencies.end(); ++j)
-                stack.push(make_pair(*j, time_goal - 1));
+                if (done.find(*j) == done.end())
+                  stack.push(make_pair(*j, time_goal - 1));
             }
         }
     }
@@ -1049,6 +1060,7 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
       // we start at the root event for the current file and scan for
       // timestamp pairs which violate the corresponding dependency.
       stack< cvs_event_ptr > stack;
+      set< cvs_event_ptr > done;
       stack.push(cvs.root_event);
 
       list<t_violation> violations;
@@ -1057,13 +1069,16 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
         {
           cvs_event_ptr ev = stack.top();
           stack.pop();
+          done.insert(ev);
 
           for (dependency_iter i = ev->dependents.begin();
               i != ev->dependents.end(); ++i)
             {
-              stack.push(*i);
               if (ev->adj_time >= (*i)->adj_time)
                 violations.push_back(make_pair(ev, *i));
+
+              if (done.find(*i) == done.end())
+                stack.push(*i);
             }
         }
 
