@@ -8,6 +8,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include "cert.hh"
 #include "cmd.hh"
 #include "app_state.hh"
@@ -302,7 +303,19 @@ struct svn_dump_parser
     parse_int_field("SVN-fs-dump-format-version", svn_dump_version);
 
     L(FL("svn_dump_version: %d") % svn_dump_version);
-    if ((svn_dump_version < 2) or (svn_dump_version > 3))
+
+    // svn dump format version 3 uses a special binary delta format
+    // called svndelta. See subversion source code in file:
+    // subversion/libsvn_delta/svndiff.c
+    //
+    // I'm not eager to add support for that format, as svnadmin dump
+    // still supports both variants. And thanks to unix pipes, space
+    // is not much of an issue.
+    if (svn_dump_version == 3)
+      throw oops((F("unable to import delta dumps (i.e. format version 3"
+                    ).str()));
+
+    if (svn_dump_version != 2)
       throw oops((F("unable to parse dump format version %d")
           % svn_dump_version).str());
 
