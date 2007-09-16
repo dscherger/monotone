@@ -1,4 +1,4 @@
-
+skip_if(ostype == "Windows")
 include("/common/netsync.lua")
 mtn_setup()
 netsync.setup()
@@ -14,3 +14,4 @@ pid = string.gsub(readfile("./pid1"), "[\r\n]+$", "")
 --kill the process (if this fails, the pid wasn't
 --running in the background anyway)
 check({'kill', pid}, 0, false, false)
+runcmd({'rm', './pid1'})

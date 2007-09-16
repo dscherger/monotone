@@ -516,7 +516,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
   //has a chance to do manual/interactive entry of the passphrase if they
   //so desire.
   if (app.opts.daemon)
-      E(daemon(0, 0) == 0,
+      E(mtn_daemon(0, 0) == 0,
         F("call to daemon failed!"));
 
   //do this after the call to daemon (if the option is used) so that we
