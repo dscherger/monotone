@@ -15,22 +15,19 @@
 */
 
 #include <unistd.h>
-
-#ifdef HAVE_DAEMON
-int mtn_daemon(int nochdir, int noclose)
-{
-	return(daemon(nochdir, noclose));
-}
-#else
-
+#ifndef HAVE_DAEMON
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#endif
 
 int mtn_daemon(int nochdir, int noclose)
 {
+#ifdef HAVE_DAEMON
+	return(daemon(nochdir, noclose));
+#else
    int fd;
    int rc;
 
@@ -110,5 +107,5 @@ int mtn_daemon(int nochdir, int noclose)
    }
 
    return 0;
+#endif	//have_daemon
 }
-#endif
