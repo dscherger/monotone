@@ -4723,6 +4723,12 @@ In the server, different permissions can be applied to each branch; see
 the hooks @code{get_netsync_read_permitted} and
 @code{get_netsync_write_permitted} (see @ref{Hook Reference}).
 
+If a @option{--daemon} option is specified, the command @command{serve} will
+detach itself from the controlling terminal and run in the background.  This
+option requires the use of the @option{--pid-file} option.  This option is
+honoured on Windows, but will only have effect if there is support for the
+required calls in the target platform.
+
 If a @option{--pid-file} option is specified, the command
 @command{serve} will create the specified file and record the process
 identifier of the server in the file.  This file can then be read to

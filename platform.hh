@@ -150,9 +150,12 @@ std::string get_locale_dir();
 
 #ifdef WIN32_PLATFORM
 #include "win32/ssh_agent_platform.hh"
+#include "win32/daemon.hh"
 #else
 #include "unix/ssh_agent_platform.hh"
+#include "unix/daemon.hh"
 #endif
+
 
 // Local Variables:
 // mode: C++

@@ -417,8 +417,6 @@ struct pid_file
     require_path_is_nonexistent(path, F("pid file '%s' already exists") % path);
     file.open(path.as_external().c_str());
     E(file.is_open(), F("failed to create pid file '%s'") % path);
-    file << get_process_id() << '\n';
-    file.flush();
   }
 
   ~pid_file()
@@ -433,6 +431,12 @@ struct pid_file
     }
   }
 
+  void set_pid()
+    {
+	    file << get_process_id() << '\n';
+	    file.flush();
+    }
+
 private:
   ofstream file;
   system_path path;
@@ -442,11 +446,22 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  N_("Serves the database to connecting clients"),
                  "",
                  options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth )
+                 options::opts::bind_stdio | options::opts::no_transport_auth |
+                 options::opts::daemon)
 {
   if (!args.empty())
     throw usage(execid);
 
+  //this is only a requirement so that the testsuite can always depend
+  //on having a pid file when spawning mtn --daemon, since working with
+  //the pid of the original process wouldn't do much good.
+  //i think it makes some amount of sense even outside of this...
+  if (app.opts.daemon)
+    N(!app.opts.pidfile.empty(),
+      F("When using --daemon, you must supply --pid-file also"));
+  
+  //this ensures that the specified pid file will work and opens it...doing
+  //this before daemonizing ensures better user warnings in case of failure.
   pid_file pid(app.opts.pidfile);
 
   if (app.opts.use_transport_auth)
@@ -464,6 +479,18 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
 
   app.db.ensure_open();
+
+  //this must happen after the above require_password so that the user
+  //has a chance to do manual/interactive entry of the passphrase if they
+  //so desire.
+  if (app.opts.daemon)
+      E(mtn_daemon(0, 0) == 0,
+        F("call to daemon failed!"));
+
+  //do this after the call to daemon (if the option is used) so that we
+  //record the pid of the backgrounded/detached process instead of the
+  //pre-fork process.
+  pid.set_pid();
 
   run_netsync_protocol(server_voice, source_and_sink_role, app.opts.bind_uris,
                        globish("*"), globish(""), app);
