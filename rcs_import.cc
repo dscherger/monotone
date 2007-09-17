@@ -294,6 +294,7 @@ private:
   vector< cvs_event_ptr > events;
 
   bool has_cached_deps;
+  bool cached_deps_are_sorted;
   vector<cvs_blob_index> dependents_cache;
 
 public:
@@ -314,6 +315,7 @@ public:
 
   cvs_blob(const cvs_event_digest d)
     : has_cached_deps(false),
+      cached_deps_are_sorted(false),
       digest(d),
       in_branch(invalid_blob),
       split_origin(invalid_blob),
@@ -323,6 +325,7 @@ public:
   cvs_blob(const cvs_blob & b)
     : events(b.events),
       has_cached_deps(false),
+      cached_deps_are_sorted(false),
       digest(b.digest),
       in_branch(invalid_blob),
       split_origin(invalid_blob),
@@ -376,10 +379,16 @@ public:
     }
 
   vector<cvs_blob_index> & get_dependents(cvs_history & cvs);
+  void sort_deps_cache(cvs_history & cvs);
 
   void reset_deps_cache(void)
     {
       has_cached_deps = false;
+    }
+
+  void resort_deps_cache(void)
+    {
+      cached_deps_are_sorted = false;
     }
 
   time_t get_avg_time(void) const
@@ -2049,7 +2058,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   cvs_event_digest d = cvs.blobs[bi].get_digest();
   cvs_blob_index new_bi = cvs.add_blob(d)->second;
 
-  // Reset the dependency cache of the origin blob.
+  // Reset the dependents cache of the origin blob.
   cvs.blobs[bi].reset_deps_cache();
 
   // For branches and tags, we need to keep track of the original blob and
@@ -2075,29 +2084,37 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
         {
           cvs.blobs[new_bi].get_events().push_back(*i);
           (*i)->bi = new_bi;
-          i = cvs.blobs[bi].get_events().erase(i);
 
-          // Reset the dependents cache of all dependencies.
+          // Reset the dependents cache of all dependencies of this event
           for (dependency_iter j = (*i)->dependencies.begin();
                j != (*i)->dependencies.end(); ++j)
             {
               cvs_blob_index dep_bi = cvs.get_blob_of(*j);
               cvs.blobs[dep_bi].reset_deps_cache();
             }
+
+          // delete from old bolb and advance
+          i = cvs.blobs[bi].get_events().erase(i);
         }
       else
-        i++;
+        {
+          // Force a new sorting step to the dependents cache of all
+          // dependencies of this event, as it's avg time most probably
+          // changed. Thus the ordering must change.
+          for (dependency_iter j = (*i)->dependencies.begin();
+               j != (*i)->dependencies.end(); ++j)
+            {
+              cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+              cvs.blobs[dep_bi].resort_deps_cache();
+            }
+
+          // advance
+          i++;
+        }
     }
 
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
-
-  // FIXME: The above selection of which blob's caches to reset is
-  //        bogus. To be sure, we simply reset all blob's dependents
-  //        caches. This is quite an expensive fix!
-  for (vector<cvs_blob>::iterator i = cvs.blobs.begin();
-       i != cvs.blobs.end(); ++i)
-    i->reset_deps_cache();
 }
 
 bool
@@ -2281,7 +2298,12 @@ write_graphviz(std::ofstream & of, cvs_history & cvs,
 vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
 {
   if (has_cached_deps)
-    return dependents_cache;
+    {
+      if (!cached_deps_are_sorted)
+        sort_deps_cache(cvs);
+
+      return dependents_cache;
+    }
 
   // clear the cache
   dependents_cache.clear();
@@ -2298,14 +2320,20 @@ vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
         }
     }
 
-  // sort by timestamp
-  blob_index_time_cmp cmp(cvs);
-  sort(dependents_cache.begin(), dependents_cache.end(), cmp);
-
   has_cached_deps = true;
+  sort_deps_cache(cvs);
+
   return dependents_cache;
 }
 
+void cvs_blob::sort_deps_cache(cvs_history & cvs)
+{
+  // sort by timestamp
+  I(has_cached_deps);
+  blob_index_time_cmp cmp(cvs);
+  sort(dependents_cache.begin(), dependents_cache.end(), cmp);
+  cached_deps_are_sorted = true;
+}
 
 void cvs_history::depth_first_search(blob_splitter & vis,
        back_insert_iterator< vector<cvs_blob_index> > oi)
