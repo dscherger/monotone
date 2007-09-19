@@ -141,9 +141,10 @@ update(app_state & app, commands::command_id const & execid,
 
   app.require_workspace();
 
-  // Figure out where we are
+  // Figure out where we are, and what we look like.
   parent_map parents;
-  app.work.get_parent_rosters(parents);
+  roster_t working_roster; MM(working_roster);
+  app.work.get_current_roster_shape(parents, working_roster, nis);
 
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
@@ -244,21 +245,20 @@ update(app_state & app, commands::command_id const & execid,
   
   temp_node_id_source nis;
 
-  // Get the OLD and WORKING rosters
+  // Get the OLD roster, and finish getting the WORKING roster
   database::roster_t_cp old_roster
     = parent_cached_roster(parents.begin()).first;
   MM(*old_roster);
-  roster_t working_roster; MM(working_roster);
-  app.work.get_current_roster_shape(working_roster, nis);
   app.work.update_current_roster_from_filesystem(working_roster);
 
   // Get the CHOSEN roster
-  roster_t chosen_roster; MM(chosen_roster);
+  database::cached_roster chosen_roster;
   app.db.get_roster(chosen_rid, chosen_roster);
+  MM(*chosen_roster.first);
   
   // And finally do the merge
   roster_merge_result result;
-  three_way_merge(*old_roster, working_roster, chosen_roster, result);
+  three_way_merge(*old_roster, working_roster, *chosen_roster.first, result);
 
   roster_t & merged_roster = result.roster;
 
@@ -266,7 +266,7 @@ update(app_state & app, commands::command_id const & execid,
   get_content_paths(working_roster, paths);
 
   content_merge_workspace_adaptor wca(app, old_roster, paths);
-  resolve_merge_conflicts(working_roster, chosen_roster,
+  resolve_merge_conflicts(working_roster, *chosen_roster.first,
                           result, wca, app);
 
   // Make sure it worked...
@@ -278,12 +278,10 @@ update(app_state & app, commands::command_id const & execid,
   make_cset(working_roster, merged_roster, update);
   app.work.perform_content_update(update, wca);
 
-  revision_t remaining;
-  make_revision_for_workspace(chosen_rid, chosen_roster,
-                              merged_roster, remaining);
-
   // small race condition here...
-  app.work.put_work_rev(remaining);
+  parent_map new_parents;
+  safe_insert(new_parents, std::make_pair(chosen_rid, chosen_roster));
+  app.work.set_work_state(new_parents, merged_roster);
   app.work.update_any_attrs();
   app.work.maybe_update_inodeprints();
 
@@ -702,12 +700,12 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   // (revs can have no more than two parents).
   {
     parent_map parents;
-    app.work.get_parent_rosters(parents);
+    temp_node_id_source nis;
+    app.work.get_current_roster_shape(parents, working_roster, nis);
+
     N(parents.size() == 1,
       F("this command can only be used in a single-parent workspace"));
 
-    temp_node_id_source nis;
-    app.work.get_current_roster_shape(working_roster, nis);
     app.work.update_current_roster_from_filesystem(working_roster);
 
     N(parent_roster(parents.begin()) == working_roster,
@@ -748,22 +746,17 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   I(merge_result.is_clean());
   merge_result.roster.check_sane(true);
 
-  // Construct the workspace revision.
+  // Construct the new workspace state.
   parent_map parents;
   safe_insert(parents, std::make_pair(left_id, left));
   safe_insert(parents, std::make_pair(right_id, right));
 
-  revision_t merged_rev;
-  make_revision_for_workspace(parents, merge_result.roster, merged_rev);
-
-  // Note: the csets in merged_rev are _not_ suitable for submission to
-  // perform_content_update, because content changes have been dropped.
   cset update;
   make_cset(*left.first, merge_result.roster, update);
 
   // small race condition here...
   app.work.perform_content_update(update, wca);
-  app.work.put_work_rev(merged_rev);
+  app.work.set_work_state(parents, merge_result.roster);
   app.work.update_any_attrs();
   app.work.maybe_update_inodeprints();
 
@@ -923,8 +916,9 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   app.db.get_roster(from_rid, *from_roster);
 
   // Get the WORKING roster
+  parent_map parents;
   roster_t working_roster; MM(working_roster);
-  app.work.get_current_roster_shape(working_roster, nis);
+  app.work.get_current_roster_shape(parents, working_roster, nis);
 
   app.work.update_current_roster_from_filesystem(working_roster);
 
@@ -979,14 +973,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   P(F("applied changes to workspace"));
 
   // and record any remaining changes in _MTN/revision
-  parent_map parents;
-  revision_t remaining;
-  MM(remaining);
-  app.work.get_parent_rosters(parents);
-  make_revision_for_workspace(parents, merged_roster, remaining);
-
-  // small race condition here...
-  app.work.put_work_rev(remaining);
+  // (small race condition here...)
+  app.work.set_work_state(parents, merged_roster);
   app.work.update_any_attrs();
   
   // add a note to the user log file about what we did
@@ -1049,8 +1037,7 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
       revision_id rid(fake_id());
       
       app.require_workspace();
-      app.work.get_parent_rosters(parents);
-      app.work.get_current_roster_shape(roster, nis);
+      app.work.get_current_roster_shape(parents, roster, nis);
       app.work.update_current_roster_from_filesystem(roster);
 
       if (parents.size() == 0)
