@@ -134,8 +134,8 @@ struct workspace
   // this function.  Under almost all conditions, NIS should be a
   // temp_node_id_source.  (It also returns the parent rosters, because this
   // is free.)
-  void get_current_roster_shape(parent_map & parents,
-                                roster_t & ros, node_id_source & nis);
+  void get_work_state_shape_only(parent_map & parents,
+                                 roster_t & ros, node_id_source & nis);
 
   // Inspect the workspace and classify all the paths in it according to
   // what ROS thinks of them.

@@ -159,7 +159,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
 
   parent_map parents;
   temp_node_id_source nis;
-  app.work.get_current_roster_shape(parents, new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
@@ -417,7 +417,7 @@ CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
       temp_node_id_source nis;
       roster_t current_roster_shape;
       parent_map parents;
-      app.work.get_current_roster_shape(parents, current_roster_shape, nis);
+      app.work.get_work_state_shape_only(parents, current_roster_shape, nis);
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
@@ -498,7 +498,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(old_rosters, new_roster, nis);
+  app.work.get_work_state_shape_only(old_rosters, new_roster, nis);
 
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
@@ -642,7 +642,7 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(parents, new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args, 0));
 
@@ -686,7 +686,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   app.require_workspace();
   {
     parent_map parents;
-    app.work.get_current_roster_shape(parents, new_roster, nis);
+    app.work.get_work_state_shape_only(parents, new_roster, nis);
   }
 
   file_path path = file_path_external(idx(args, 0));
@@ -738,7 +738,7 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(parents, new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args, 0));
 
@@ -792,7 +792,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   temp_node_id_source nis;
 
   // get the base and the current roster of this workspace
-  app.work.get_current_roster_shape(parents, current, nis);
+  app.work.get_work_state_shape_only(parents, current, nis);
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
   base = parent_roster(parents.begin());
@@ -903,7 +903,7 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(parents, new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args,0));
 
@@ -943,7 +943,7 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(parents, new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args,0));
 
@@ -992,7 +992,7 @@ commit(app_state & app, commands::command_id const & execid,
   }
 
   app.make_branch_sticky();
-  app.work.get_current_roster_shape(old_rosters, new_roster, nis);
+  app.work.get_work_state_shape_only(old_rosters, new_roster, nis);
 
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),

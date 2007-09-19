@@ -677,7 +677,7 @@ CMD_AUTOMATE(inventory, "",
     // FIXME: this is totally gross, we load the parent roster(s) twice for
     // no reason, etc.
     parent_map parents;
-    app.work.get_current_roster_shape(parents, curr, nis);
+    app.work.get_work_state_shape_only(parents, curr, nis);
   }
   app.work.get_work_rev(rev);
   N(rev.edges.size() == 1,
@@ -882,7 +882,7 @@ CMD_AUTOMATE(get_revision, N_("[REVID]"),
       revision_t rev;
 
       app.require_workspace();
-      app.work.get_current_roster_shape(old_rosters, new_roster, nis);
+      app.work.get_work_state_shape_only(old_rosters, new_roster, nis);
       app.work.update_current_roster_from_filesystem(new_roster);
 
       make_revision(old_rosters, new_roster, rev);
@@ -949,7 +949,7 @@ CMD_AUTOMATE(get_current_revision_id, "",
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(parents, new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
   app.work.update_current_roster_from_filesystem(new_roster);
 
   app.work.get_parent_rosters(parents);
@@ -1019,7 +1019,7 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
 
       app.require_workspace();
       parent_map parents;
-      app.work.get_current_roster_shape(parents, new_roster, nis);
+      app.work.get_work_state_shape_only(parents, new_roster, nis);
       app.work.update_current_roster_from_filesystem(new_roster);
     }
   else

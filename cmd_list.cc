@@ -364,7 +364,7 @@ CMD(known, "known", "", CMD_REF(list), "",
   app.require_workspace();
   {
     parent_map parents;
-    app.work.get_current_roster_shape(parents, new_roster, nis);
+    app.work.get_work_state_shape_only(parents, new_roster, nis);
   }
 
   node_restriction mask(args_to_paths(args),
@@ -432,7 +432,7 @@ CMD(missing, "missing", "", CMD_REF(list), "",
 {
   temp_node_id_source nis;
   roster_t current_roster_shape;
-  app.work.get_current_roster_shape(current_roster_shape, nis);
+  app.work.get_work_state_shape_only(current_roster_shape, nis);
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
@@ -457,7 +457,7 @@ CMD(changed, "changed", "", CMD_REF(list), "",
 
   app.require_workspace();
 
-  app.work.get_current_roster_shape(parents, new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
   app.work.update_current_roster_from_filesystem(new_roster);
 
   node_restriction mask(args_to_paths(args),

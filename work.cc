@@ -162,8 +162,8 @@ workspace::get_parent_rosters(parent_map & parents)
 }
 
 void
-workspace::get_current_roster_shape(parent_map & parents,
-                                    roster_t & ros, node_id_source & nis)
+workspace::get_work_state_shape_only(parent_map & parents,
+                                     roster_t & ros, node_id_source & nis)
 {
   revision_t rev;
   get_work_rev(rev);
@@ -419,7 +419,7 @@ workspace::maybe_update_inodeprints()
 
   {
     parent_map parents;
-    get_current_roster_shape(parents, new_roster, nis);
+    get_work_state_shape_only(parents, new_roster, nis);
   }
   update_current_roster_from_filesystem(new_roster);
 
@@ -1244,7 +1244,7 @@ workspace::find_unknown_and_ignored(path_restriction const & mask,
 
   {
     parent_map parents;
-    get_current_roster_shape(parents, new_roster, nis);
+    get_work_state_shape_only(parents, new_roster, nis);
   }
   new_roster.extract_path_set(known);
 
@@ -1267,7 +1267,7 @@ workspace::perform_additions(set<file_path> const & paths,
   parent_map parents;
   roster_t new_roster;
   MM(new_roster);
-  get_current_roster_shape(parents, new_roster, nis);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   editable_roster_base er(new_roster, nis);
 
@@ -1334,7 +1334,7 @@ workspace::perform_deletions(set<file_path> const & paths,
   parent_map parents;
   roster_t new_roster;
   MM(new_roster);
-  get_current_roster_shape(parents, new_roster, nis);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   // we traverse the the paths backwards, so that we always hit deep paths
   // before shallow paths (because set<file_path> is lexicographically
@@ -1423,7 +1423,7 @@ workspace::perform_rename(set<file_path> const & srcs,
 
   I(!srcs.empty());
 
-  get_current_roster_shape(parents, new_roster, nis);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   // validation.  it's okay if the target exists as a file; we just won't
   // clobber it (in !--bookkeep-only mode).  similarly, it's okay if the
@@ -1536,7 +1536,7 @@ workspace::perform_pivot_root(file_path const & new_root,
   parent_map parents;
   roster_t new_roster;
   MM(new_roster);
-  get_current_roster_shape(parents, new_roster, nis);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   I(new_roster.has_root());
   N(new_roster.has_node(new_root),
@@ -1602,7 +1602,7 @@ workspace::perform_content_update(cset const & update,
 
   {
     parent_map parents;
-    get_current_roster_shape(parents, new_roster, nis);
+    get_work_state_shape_only(parents, new_roster, nis);
   }
   new_roster.extract_path_set(known);
 
@@ -1627,7 +1627,7 @@ workspace::update_any_attrs()
   roster_t new_roster;
   {
     parent_map parents;
-    get_current_roster_shape(parents, new_roster, nis);
+    get_work_state_shape_only(parents, new_roster, nis);
   }
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();

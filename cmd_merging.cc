@@ -144,7 +144,7 @@ update(app_state & app, commands::command_id const & execid,
   // Figure out where we are, and what we look like.
   parent_map parents;
   roster_t working_roster; MM(working_roster);
-  app.work.get_current_roster_shape(parents, working_roster, nis);
+  app.work.get_work_state_shape_only(parents, working_roster, nis);
 
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
@@ -701,7 +701,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   {
     parent_map parents;
     temp_node_id_source nis;
-    app.work.get_current_roster_shape(parents, working_roster, nis);
+    app.work.get_work_state_shape_only(parents, working_roster, nis);
 
     N(parents.size() == 1,
       F("this command can only be used in a single-parent workspace"));
@@ -918,7 +918,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   // Get the WORKING roster
   parent_map parents;
   roster_t working_roster; MM(working_roster);
-  app.work.get_current_roster_shape(parents, working_roster, nis);
+  app.work.get_work_state_shape_only(parents, working_roster, nis);
 
   app.work.update_current_roster_from_filesystem(working_roster);
 
@@ -1037,7 +1037,7 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
       revision_id rid(fake_id());
       
       app.require_workspace();
-      app.work.get_current_roster_shape(parents, roster, nis);
+      app.work.get_work_state_shape_only(parents, roster, nis);
       app.work.update_current_roster_from_filesystem(roster);
 
       if (parents.size() == 0)

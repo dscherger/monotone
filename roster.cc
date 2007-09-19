@@ -1841,7 +1841,7 @@ namespace {
 
       // Kluge: If both csets have no content changes, and the node_id_source
       // passed to this function is a temp_node_id_source, then we are being
-      // called from get_current_roster_shape, and we should not attempt to
+      // called from get_work_state_shape_only, and we should not attempt to
       // verify that these rosters match as far as content IDs.
       if (left_cs.deltas_applied.size() == 0
           && right_cs.deltas_applied.size() == 0
