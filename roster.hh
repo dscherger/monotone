@@ -471,13 +471,14 @@ make_roster_for_revision(revision_t const & rev,
                          app_state & app);
 
 // This is for revisions that are not necessarily going to be written to the
-// db; you can specify your own node_id_source.
+// db; you can specify your own node_id_source.  Note that it also requires
+// you give the parent_map -- it will not fetch things from the db.
 void
 make_roster_for_revision(revision_t const & rev,
+                         parent_map const & parents,
                          revision_id const & rid,
                          roster_t & result,
                          marking_map & marking,
-                         database & db,
                          node_id_source & nis);
 
 void

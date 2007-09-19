@@ -169,19 +169,14 @@ workspace::get_current_roster_shape(parent_map & parents,
   get_work_rev(rev);
   revision_id new_rid(fake_id());
 
-  // If there is just one parent, it might be the null ID, which
-  // make_roster_for_revision does not handle correctly.
-  if (rev.edges.size() == 1 && null_id(edge_old_revision(rev.edges.begin())))
-    {
-      I(ros.all_nodes().size() == 0);
-      editable_roster_base er(ros, nis);
-      edge_changes(rev.edges.begin()).apply_to(er);
-    }
-  else
-    {
-      marking_map dummy;
-      make_roster_for_revision(rev, new_rid, ros, dummy, db, nis);
-    }
+  parent_map parents;
+  db.get_parent_map(rev, parents);
+  
+  // FIXME: marking this roster is a big waste -- for merge rosters, for
+  // instance, it requires an extra bunch of disk activity to fetch uncommon
+  // ancestors, for no reason!
+  marking_map dummy;
+  make_roster_for_revision(rev, parents, new_rid, ros, dummy, nis);
 }
 
 // user log file
