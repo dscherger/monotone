@@ -104,7 +104,9 @@ struct workspace
   // changeset (representing tree rearrangements).
   void set_work_state(parent_map const & parents,
                       roster_t const & new_roster);
+  // For setup:
   void set_work_state_to_new_root();
+  // For checkout, import:
   void set_work_state_unchanged(revision_id const & parent_id);
 
   // read the (partial) revision describing the current workspace.
