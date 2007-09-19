@@ -295,12 +295,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
   if (app.opts.revision_selectors.size() == 0)
     {
       app.require_workspace();
-
-      parent_map parents;
-      app.work.get_parent_rosters(parents);
-      N(parents.size() == 1,
-        F("this command can only be used in a single-parent workspace"));
-      rid = parent_id(parents.begin());
+      app.work.get_unique_base_rid(rid);
     }
   else
       complete(app, idx(app.opts.revision_selectors, 0)(), rid);
@@ -357,11 +352,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
     {
       app.require_workspace();
 
-      parent_map parents;
-      app.work.get_parent_rosters(parents);
-      N(parents.size() == 1,
-        F("this command can only be used in a single-parent workspace"));
-      rid = parent_id(parents.begin());
+      app.work.get_unique_base_rid(rid);
     }
   else
       complete(app, idx(app.opts.revision_selectors, 0)(), rid);

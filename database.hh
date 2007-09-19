@@ -163,10 +163,6 @@ private:
   // --== Write-buffering -- tied into transaction  ==--
   // --== machinery and delta compression machinery ==--
   //
-public:
-  typedef boost::shared_ptr<roster_t const> roster_t_cp;
-  typedef boost::shared_ptr<marking_map const> marking_map_cp;
-  typedef std::pair<roster_t_cp, marking_map_cp> cached_roster;
 private:
   struct roster_size_estimator
   {
@@ -346,6 +342,12 @@ public:
 
   void get_roster(revision_id const & rid,
                   cached_roster & cr);
+
+  // Maybe this shouldn't be part of this class?  It is only a utility
+  // function.  It also has some smarts, e.g. get_roster on a null
+  // revision_id will crash, but get_parent_map on a root revision will put
+  // an empty roster into the parent_map it returns.
+  void get_parent_map(revision_t const & rev, parent_map & parents);
 
   // these are exposed for the use of database_check.cc
   bool roster_version_exists(revision_id const & ident);
@@ -593,56 +595,6 @@ public:
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
 };
-
-// Parent maps are used in a number of places to keep track of all the
-// parent rosters of a given revision.
-typedef std::map<revision_id, database::cached_roster>
-parent_map;
-
-typedef parent_map::value_type
-parent_entry;
-
-inline revision_id const & parent_id(parent_entry const & p)
-{
-  return p.first;
-}
-
-inline revision_id const & parent_id(parent_map::const_iterator i)
-{
-  return i->first;
-}
-
-inline database::cached_roster const &
-parent_cached_roster(parent_entry const & p)
-{
-  return p.second;
-}
-
-inline database::cached_roster const &
-parent_cached_roster(parent_map::const_iterator i)
-{
-  return i->second;
-}
-
-inline roster_t const & parent_roster(parent_entry const & p)
-{
-  return *(p.second.first);
-}
-
-inline roster_t const & parent_roster(parent_map::const_iterator i)
-{
-  return *(i->second.first);
-}
-
-inline marking_map const & parent_marking(parent_entry const & p)
-{
-  return *(p.second.second);
-}
-
-inline marking_map const & parent_marking(parent_map::const_iterator i)
-{
-  return *(i->second.second);
-}
 
 // Transaction guards nest. Acquire one in any scope you'd like
 // transaction-protected, and it'll make sure the db aborts a transaction

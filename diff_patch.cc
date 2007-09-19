@@ -538,7 +538,7 @@ load_and_cache_roster(revision_id const & rid,
     rout = i->second;
   else
     {
-      database::cached_roster cr;
+      cached_roster cr;
       app.db.get_roster(rid, cr);
       safe_insert(rmap, make_pair(rid, cr.first));
       rout = cr.first;
