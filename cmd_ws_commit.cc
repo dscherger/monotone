@@ -598,7 +598,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   app.create_workspace(dir);
 
   L(FL("checking out revision %s to directory %s") % revid % dir);
-  database::cached_roster current_roster;
+  cached_roster current_roster;
   app.db.get_roster(revid, current_roster);
   parent_map parents;
   safe_insert(parents, std::make_pair(revid, current_roster));
@@ -1178,7 +1178,7 @@ commit(app_state & app, commands::command_id const & execid,
   // the work roster is now whatever changes remain on top of the revision
   // we just checked in.
   {
-    database::cached_roster new_parent;
+    cached_roster new_parent;
     app.db.get_roster(restricted_rev_id, new_parent);
     parent_map new_parents;
     safe_insert(new_parents, std::make_pair(restricted_rev_id, new_parent));

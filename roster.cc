@@ -1876,7 +1876,7 @@ namespace {
     cset const & right_cs = edge_changes(i);
 
     I(!null_id(left_rid) && !null_id(right_rid));
-    database::cached_roster left_cached, right_cached;
+    cached_roster left_cached, right_cached;
     db.get_roster(left_rid, left_cached);
     db.get_roster(right_rid, right_cached);
 
@@ -4821,7 +4821,7 @@ create_random_unification_task(roster_t & left,
                                editable_roster_base & right_erb,
                                editable_roster_for_merge & left_erm,
                                editable_roster_for_merge & right_erm,
-			       randomizer & rng)
+                               randomizer & rng)
 {
   size_t n_nodes = 20 + rng.uniform(60);
   

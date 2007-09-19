@@ -246,13 +246,13 @@ update(app_state & app, commands::command_id const & execid,
   temp_node_id_source nis;
 
   // Get the OLD roster, and finish getting the WORKING roster
-  database::roster_t_cp old_roster
+  roster_t_cp old_roster
     = parent_cached_roster(parents.begin()).first;
   MM(*old_roster);
   app.work.update_current_roster_from_filesystem(working_roster);
 
   // Get the CHOSEN roster
-  database::cached_roster chosen_roster;
+  cached_roster chosen_roster;
   app.db.get_roster(chosen_rid, chosen_roster);
   MM(*chosen_roster.first);
   
@@ -686,7 +686,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
     options::opts::none)
 {
   revision_id left_id, right_id;
-  database::cached_roster left, right;
+  cached_roster left, right;
   roster_t working_roster;
 
   if (args.size() != 1)
@@ -732,7 +732,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
                merge_result);
 
   revision_id lca_id;
-  database::cached_roster lca;
+  cached_roster lca;
   find_common_ancestor_for_merge(left_id, right_id, lca_id, app);
   app.db.get_roster(lca_id, lca);
 

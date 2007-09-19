@@ -320,6 +320,61 @@ struct temp_node_id_source
 
 template <> void dump(roster_t const & val, std::string & out);
 
+// Const, shareable types for rosters (used in the db cache, for instance).
+typedef boost::shared_ptr<roster_t const> roster_t_cp;
+typedef boost::shared_ptr<marking_map const> marking_map_cp;
+typedef std::pair<roster_t_cp, marking_map_cp> cached_roster;
+
+// Parent maps are used in a number of places to keep track of all the
+// parent rosters of a given revision.
+typedef std::map<revision_id, cached_roster>
+parent_map;
+
+typedef parent_map::value_type
+parent_entry;
+
+inline revision_id const & parent_id(parent_entry const & p)
+{
+  return p.first;
+}
+
+inline revision_id const & parent_id(parent_map::const_iterator i)
+{
+  return i->first;
+}
+
+inline cached_roster const &
+parent_cached_roster(parent_entry const & p)
+{
+  return p.second;
+}
+
+inline cached_roster const &
+parent_cached_roster(parent_map::const_iterator i)
+{
+  return i->second;
+}
+
+inline roster_t const & parent_roster(parent_entry const & p)
+{
+  return *(p.second.first);
+}
+
+inline roster_t const & parent_roster(parent_map::const_iterator i)
+{
+  return *(i->second.first);
+}
+
+inline marking_map const & parent_marking(parent_entry const & p)
+{
+  return *(p.second.second);
+}
+
+inline marking_map const & parent_marking(parent_map::const_iterator i)
+{
+  return *(i->second.second);
+}
+
 class app_state;
 class database;
 struct revision_t;

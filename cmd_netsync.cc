@@ -414,7 +414,7 @@ CMD(clone, "clone", "", CMD_REF(network),
     }
 
   shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
-  database::cached_roster current_roster;
+  cached_roster current_roster;
 
   L(FL("checking out revision %s to directory %s") % ident % workspace_dir);
   app.db.get_roster(ident, current_roster);

@@ -155,7 +155,7 @@ workspace::set_work_state(parent_map const & parents,
 
 static void
 get_roster_for_rid(revision_id const & rid,
-                   database::cached_roster & cr,
+                   cached_roster & cr,
                    database & db)
 {
   // We may be asked for a roster corresponding to the null rid, which
@@ -184,7 +184,7 @@ workspace::get_parent_rosters(parent_map & parents)
   parents.clear();
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); i++)
     {
-      database::cached_roster cr;
+      cached_roster cr;
       get_roster_for_rid(edge_old_revision(i), cr, db);
       safe_insert(parents, make_pair(edge_old_revision(i), cr));
     }
