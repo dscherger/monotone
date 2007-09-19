@@ -153,41 +153,12 @@ workspace::set_work_state(parent_map const & parents,
 // structures derived from the work revision, the database, and possibly
 // the workspace
 
-static void
-get_roster_for_rid(revision_id const & rid,
-                   cached_roster & cr,
-                   database & db)
-{
-  // We may be asked for a roster corresponding to the null rid, which
-  // is not in the database.  In this situation, what is wanted is an empty
-  // roster (and marking map).
-  if (null_id(rid))
-    {
-      cr.first = boost::shared_ptr<roster_t const>(new roster_t);
-      cr.second = boost::shared_ptr<marking_map const>(new marking_map);
-    }
-  else
-    {
-      N(db.revision_exists(rid),
-        F("base revision %s does not exist in database") % rid);
-      db.get_roster(rid, cr);
-    }
-  L(FL("base roster has %d entries") % cr.first->all_nodes().size());
-}
-
 void
 workspace::get_parent_rosters(parent_map & parents)
 {
   revision_t rev;
   get_work_rev(rev);
-
-  parents.clear();
-  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); i++)
-    {
-      cached_roster cr;
-      get_roster_for_rid(edge_old_revision(i), cr, db);
-      safe_insert(parents, make_pair(edge_old_revision(i), cr));
-    }
+  db.get_parent_map(rev, parents);
 }
 
 void

@@ -343,6 +343,12 @@ public:
   void get_roster(revision_id const & rid,
                   cached_roster & cr);
 
+  // Maybe this shouldn't be part of this class?  It is only a utility
+  // function.  It also has some smarts, e.g. get_roster on a null
+  // revision_id will crash, but get_parent_map on a root revision will put
+  // an empty roster into the parent_map it returns.
+  void get_parent_map(revision_t const & rev, parent_map & parents);
+
   // these are exposed for the use of database_check.cc
   bool roster_version_exists(revision_id const & ident);
   void get_roster_ids(std::set<revision_id> & ids);
