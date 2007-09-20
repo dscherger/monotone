@@ -1,0 +1,27 @@
+head	1.1;
+access;
+symbols
+	FOO_ONLY:1.1
+	FOO_AND_BAR:1.1;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.03.10.13.08.06;	author markus;	state Exp;
+branches;
+next	;
+commitid	AOUtoJE3Y9YNMx9s;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial import
+@
+text
+@foo
+@
