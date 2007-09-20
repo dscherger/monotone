@@ -50,6 +50,7 @@ MOST_SOURCES = 								\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\
+	svn_import.cc svn_import.hh					\
 	revision.cc revision.hh						\
 	cset.cc cset.hh							\
 	roster.cc roster.hh 						\
