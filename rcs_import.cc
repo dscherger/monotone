@@ -1680,10 +1680,23 @@ struct dij_context
     { };
 };
 
+// This returns the shortest path from a blob following it's dependents,
+// i.e. downwards, from the root of the tree to the leaves *or* following
+// it's dependencies, i.e. upwards, from the leaves to the root. It can
+// ignore blobs depending on their color (painted by a previous depth
+// first search) to reduce the number of blobs it needs to touch. As if
+// that weren't enough flexibility already, it can also abort the search
+// as soon as it hits the first grey blob.
 template<typename Container> void
 dijkstra_shortest_path(cvs_history &cvs,
                        cvs_blob_index from, cvs_blob_index to,
-                       insert_iterator<Container> ity)
+                       insert_iterator<Container> ity,
+                       bool direction_downwards,
+                       bool follow_white,
+                       bool follow_grey,
+                       bool follow_black,
+                       bool break_on_grey,
+                       pair< cvs_blob_index, cvs_blob_index > edge_to_ignore)
 {
   map< cvs_blob_index, dij_context > distances;
   stack< cvs_blob_index > stack;
@@ -1691,32 +1704,62 @@ dijkstra_shortest_path(cvs_history &cvs,
   stack.push(from);
   distances.insert(make_pair(from, dij_context(0, invalid_blob)));
 
+  if (break_on_grey)
+    I(follow_grey);
+
   cvs_blob_index bi;
   while (stack.size() > 0)
     {
       bi = stack.top();
       stack.pop();
 
+      if (break_on_grey && cvs.blobs[bi].colors[0] == grey)
+        break;
+
       if (bi == to)
         break;
 
-      vector<cvs_blob_index> & deps = cvs.blobs[bi].get_dependents(cvs);
-
       I(distances.count(bi) > 0);
       int curr_dist = distances[bi].dist;
-      for (blob_index_iter i = deps.begin(); i != deps.end(); ++i)
-        if (cvs.blobs[*i].colors[0] != black)
-          if (distances.count(*i) == 0)
+
+      if (direction_downwards)
+        {
+          vector<cvs_blob_index> & deps = cvs.blobs[bi].get_dependents(cvs);
+          for (blob_index_iter i = deps.begin(); i != deps.end(); ++i)
+            if ((follow_white && cvs.blobs[*i].colors[0] == white) ||
+                (follow_grey && cvs.blobs[*i].colors[0] == grey) ||
+                (follow_black && cvs.blobs[*i].colors[0] == black))
+              if (distances.count(*i) == 0 &&
+                  make_pair(bi, *i) != edge_to_ignore)
+                {
+                  distances.insert(make_pair(*i, dij_context(curr_dist + 1, bi)));
+                  stack.push(*i);
+                }
+        }
+      else
+        for (blob_event_iter i = cvs.blobs[bi].begin();
+             i != cvs.blobs[bi].end(); ++i)
+          for (dependency_iter j = (*i)->dependencies.begin();
+               j != (*i)->dependencies.end(); ++j)
             {
-              distances.insert(make_pair(*i, dij_context(curr_dist + 1, bi)));
-              stack.push(*i);
+              cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+
+              if ((follow_white && cvs.blobs[dep_bi].colors[0] == white) ||
+                  (follow_grey && cvs.blobs[dep_bi].colors[0] == grey) ||
+                  (follow_black && cvs.blobs[dep_bi].colors[0] == black))
+                if (distances.count(dep_bi) == 0 &&
+                    make_pair(bi, dep_bi) != edge_to_ignore)
+                  {
+                    distances.insert(make_pair(dep_bi, dij_context(curr_dist + 1, bi)));
+                    stack.push(dep_bi);
+                  }
             }
     }
 
   // Trace back the shortest path and remember all vertices
   // on the path. These are part of the cycle we want to
   // split.
-  I(bi == to);
+  I(break_on_grey || bi == to);
 #ifdef DEBUG_DIJKSTRA
   L(FL("dijkstra's algorithm, shortest path:"));
 #endif
@@ -1765,6 +1808,56 @@ public:
 #ifdef DEBUG_BLOB_SPLITTER
       L(FL("blob_splitter: cross edge: %d -> %d") % e.first % e.second);
 #endif
+
+      // On a forward or cross edge, we first have to find the common
+      // ancestor of both blobs involved. For that we go upwards from
+      // the target (e.second) blob, until we reach the first grey
+      // blob. That must be the forking point.
+      vector< cvs_blob_index > path_a, path_b;
+      insert_iterator< vector< cvs_blob_index > >
+        ity_a(path_a, path_a.begin()),
+        ity_b(path_b, path_b.begin());
+
+      I(cvs.blobs[e.second].colors[0] == black);
+      dijkstra_shortest_path(cvs, e.second, cvs.root_blob, ity_a,
+                             false,               // upwards direction,
+                             false, true, true,   // follow grey and black, but
+                             true,                // break on first grey
+                             make_pair(e.second, e.first)); // ignore direct path
+      L(FL("  forked at blob: %d") % path_a[0]);
+
+      // From that forking point, we now follow the grey blobs downwards,
+      // until we find the source (e.first) blob of the cross edge.
+      I(cvs.blobs[e.first].colors[0] == grey);
+      I(cvs.blobs[path_a[0]].colors[0] == grey);
+      dijkstra_shortest_path(cvs, path_a[0], e.first, ity_b,
+                             true,               // downwards
+                             false, true, false, // follow only grey
+                             false,
+                             make_pair(invalid_blob, invalid_blob));
+      I(*path_a.begin() == *path_b.rbegin());
+
+      // At this point we have two different paths, both leading to the
+      // target of the cross edge (e.second). If any one of the two paths
+      // contains a branching event, we need to split e.second. Where?
+      bool has_branch = false;
+      for (vector<cvs_blob_index>::iterator i = path_a.begin();
+           i != path_a.end(); ++i)
+        if (cvs.blobs[*i].get_digest().is_branch())
+          {
+            has_branch = true;
+            W(F("path a contains a branch event: %d") % *i);
+          }
+
+      for (vector<cvs_blob_index>::reverse_iterator i = path_b.rbegin();
+           i != path_b.rend(); ++i)
+        if (cvs.blobs[*i].get_digest().is_branch())
+          {
+            has_branch = true;
+            W(F("path b contains a branch event: %d") % *i);
+          }
+
+      // I(!has_branch);
     }
 
   void back_edge(Edge e)
@@ -1790,7 +1883,11 @@ public:
           // grey or white).
           insert_iterator< set< cvs_blob_index > >
             ity(cycle_members, cycle_members.begin());
-          dijkstra_shortest_path(cvs, e.second, e.first, ity);
+          dijkstra_shortest_path(cvs, e.second, e.first, ity,
+                                 true,              // downwards
+                                 true, true, false, // follow white and grey
+                                 false,
+                                 make_pair(invalid_blob, invalid_blob));
         }
     }
 };
