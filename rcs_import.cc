@@ -20,7 +20,6 @@
 #include <stdexcept>
 #include "vector.hh"
 #include <list>
-#include <iterator>
 
 #include <unistd.h>
 
@@ -61,6 +60,7 @@ using std::string;
 using std::vector;
 using std::deque;
 using std::list;
+using std::insert_iterator;
 using std::back_insert_iterator;
 using std::for_each;
 
@@ -1680,6 +1680,62 @@ struct dij_context
     { };
 };
 
+template<typename Container> void
+dijkstra_shortest_path(cvs_history &cvs,
+                       cvs_blob_index from, cvs_blob_index to,
+                       insert_iterator<Container> ity)
+{
+  map< cvs_blob_index, dij_context > distances;
+  deque< cvs_blob_index > queue;
+
+  queue.push_back(from);
+  distances.insert(make_pair(from, dij_context(0, invalid_blob)));
+
+  cvs_blob_index bi;
+  while (queue.size() > 0)
+    {
+      bi = queue.front();
+      queue.pop_front();
+
+      if (bi == to)
+        break;
+
+      vector<cvs_blob_index> & deps = cvs.blobs[bi].get_dependents(cvs);
+
+      I(distances.count(bi) > 0);
+      int curr_dist = distances[bi].dist;
+      for (blob_index_iter i = deps.begin(); i != deps.end(); ++i)
+        if (cvs.blobs[*i].colors[0] != black)
+          if (distances.count(*i) == 0)
+            {
+              distances.insert(make_pair(*i, dij_context(curr_dist + 1, bi)));
+              queue.push_back(*i);
+            }
+    }
+
+  // Trace back the shortest path and remember all vertices
+  // on the path. These are part of the cycle we want to
+  // split.
+  I(bi == to);
+#ifdef DEBUG_DIJKSTRA
+  L(FL("dijkstra's algorithm, shortest path:"));
+#endif
+
+  while (true)
+    {
+      *ity++ = bi;
+#ifdef DEBUG_DIJKSTRA
+      L(FL("    blob %d.") % bi);
+#endif
+      I(distances.count(bi) > 0);
+
+      if (bi == from)
+        break;
+
+      bi = distances[bi].prev;
+    }
+}
+
 struct blob_splitter
 {
 protected:
@@ -1707,7 +1763,7 @@ public:
   void forward_or_cross_edge(Edge e)
     {
 #ifdef DEBUG_BLOB_SPLITTER
-      L(FL("blob_splitter: tree edge: %d -> %d") % e.first % e.second);
+      L(FL("blob_splitter: cross edge: %d -> %d") % e.first % e.second);
 #endif
     }
 
@@ -1732,58 +1788,9 @@ public:
           // have already been completely processed by the proceeding
           // depth first search run (thus only considering blobs marked
           // grey or white).
-
-          map< cvs_blob_index, dij_context > distances;
-          deque< cvs_blob_index > queue;
-
-          queue.push_back(e.second);
-          distances.insert(make_pair(e.second,
-                                     dij_context(0, invalid_blob)));
-
-          cvs_blob_index bi;
-          while (queue.size() > 0)
-            {
-              bi = queue.front();
-              queue.pop_front();
-
-              if (bi == e.first)
-                break;
-
-              vector<cvs_blob_index> & deps =
-                cvs.blobs[bi].get_dependents(cvs);
-
-              I(distances.count(bi) > 0);
-              int curr_dist = distances[bi].dist;
-              for (blob_index_iter i = deps.begin(); i != deps.end(); ++i)
-                if (cvs.blobs[*i].colors[0] != black)
-                  if (distances.count(*i) == 0)
-                    {
-                      distances.insert(make_pair(*i,
-                        dij_context(curr_dist + 1, bi)));
-                      queue.push_back(*i);
-                    }
-            }
-
-          // Trace back the shortest path and remember all vertices
-          // on the path. These are part of the cycle we want to
-          /// split.
-          I(bi == e.first);
-#ifdef DEBUG_DIJKSTRA
-          L(FL("dijkstra's algorithm, shortest path:"));
-#endif
-          while (bi != e.second)
-            {
-              cycle_members.insert(bi);
-#ifdef DEBUG_DIJKSTRA
-              L(FL("    blob %d.") % bi);
-#endif
-              I(distances.count(bi) > 0);
-              bi = distances[bi].prev;
-            }
-#ifdef DEBUG_DIJKSTRA
-          L(FL("    blob %d.") % e.second);
-#endif
-          cycle_members.insert(e.second);
+          insert_iterator< set< cvs_blob_index > >
+            ity(cycle_members, cycle_members.begin());
+          dijkstra_shortest_path(cvs, e.second, e.first, ity);
         }
     }
 };
