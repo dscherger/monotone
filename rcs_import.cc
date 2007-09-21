@@ -1686,16 +1686,16 @@ dijkstra_shortest_path(cvs_history &cvs,
                        insert_iterator<Container> ity)
 {
   map< cvs_blob_index, dij_context > distances;
-  deque< cvs_blob_index > queue;
+  stack< cvs_blob_index > stack;
 
-  queue.push_back(from);
+  stack.push(from);
   distances.insert(make_pair(from, dij_context(0, invalid_blob)));
 
   cvs_blob_index bi;
-  while (queue.size() > 0)
+  while (stack.size() > 0)
     {
-      bi = queue.front();
-      queue.pop_front();
+      bi = stack.top();
+      stack.pop();
 
       if (bi == to)
         break;
@@ -1709,7 +1709,7 @@ dijkstra_shortest_path(cvs_history &cvs,
           if (distances.count(*i) == 0)
             {
               distances.insert(make_pair(*i, dij_context(curr_dist + 1, bi)));
-              queue.push_back(*i);
+              stack.push(*i);
             }
     }
 
