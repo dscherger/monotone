@@ -130,7 +130,18 @@ workspace::put_work_rev(revision_t const & rev)
 void
 workspace::set_work_state_to_new_root()
 {
-  set_work_state_unchanged(revision_id());
+  // We have one parent, the rev [] with the empty roster
+  parent_map parents;
+  cached_roster empty;
+  empty.first = roster_t_cp(new roster_t);
+  empty.second = marking_map_cp(new marking_map);
+  safe_insert(parents, std::make_pair(revision_id(), empty));
+  // But our roster has a newly minted root node in it
+  roster_t root_only;
+  temp_node_id_source nis;
+  node_id root = root_only.create_dir_node(nis);
+  root_only.attach_node(root, file_path_internal(""));
+  set_work_state(parents, root_only);
 }
 
 void
