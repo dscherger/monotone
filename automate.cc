@@ -919,7 +919,7 @@ CMD_AUTOMATE(get_base_revision_id, "",
   app.require_workspace();
 
   revision_id base;
-  appt.work.get_unique_base_rid(base);
+  app.work.get_unique_base_rid(base);
   output << base << '\n';
 }
 

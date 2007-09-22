@@ -106,7 +106,7 @@ workspace::get_work_rev(revision_t & rev)
 void
 workspace::get_unique_base_rid(revision_id & rid)
 {
-  revision_t & rev;
+  revision_t rev;
   get_work_rev(rev);
   N(rev.edges.size() == 1,
     F("this command can only be used in a single-parent workspace"));
@@ -146,7 +146,7 @@ workspace::set_work_state(parent_map const & parents,
                           roster_t const & new_roster)
 {
   revision_t rev;
-  make_revision_for_workspace(parents, new_roster);
+  make_revision_for_workspace(parents, new_roster, rev);
   put_work_rev(rev);
 }
 
@@ -169,14 +169,13 @@ workspace::get_work_state_shape_only(parent_map & parents,
   get_work_rev(rev);
   revision_id new_rid(fake_id());
 
-  parent_map parents;
   db.get_parent_map(rev, parents);
   
   // FIXME: marking this roster is a big waste -- for merge rosters, for
   // instance, it requires an extra bunch of disk activity to fetch uncommon
   // ancestors, for no reason!
   marking_map dummy;
-  make_roster_for_revision(rev, parents, new_rid, ros, dummy, nis);
+  make_roster_for_revision(rev, parents, new_rid, ros, dummy, db, nis);
 }
 
 // user log file

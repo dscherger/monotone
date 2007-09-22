@@ -598,17 +598,15 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   app.create_workspace(dir);
 
   L(FL("checking out revision %s to directory %s") % revid % dir);
-  cached_roster current_roster;
-  app.db.get_roster(revid, current_roster);
-  parent_map parents;
-  safe_insert(parents, std::make_pair(revid, current_roster));
 
-  app.work.set_work_state_unchanged(parents, *current_roster.first);
+  app.work.set_work_state_unchanged(revid);
 
   {
     shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
+    cached_roster current_roster;
+    app.db.get_roster(revid, current_roster);
     cset checkout;
-    make_cset(*empty_roster, current_roster, checkout);
+    make_cset(*empty_roster, *current_roster.first, checkout);
     
     map<file_id, file_path> paths;
     get_content_paths(*empty_roster, paths);

@@ -479,7 +479,7 @@ make_roster_for_revision(revision_t const & rev,
                          revision_id const & rid,
                          roster_t & result,
                          marking_map & marking,
-                         node_id_source & nis);
+                         database & db, node_id_source & nis);
 
 void
 read_roster_and_marking(roster_data const & dat,

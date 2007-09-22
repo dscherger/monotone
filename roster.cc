@@ -1867,7 +1867,7 @@ namespace {
   make_roster_for_merge(revision_t const & rev, parent_map const & parents,
                         revision_id const & new_rid,
                         roster_t & new_roster, marking_map & new_markings,
-                        node_id_source & nis)
+                        database & db, node_id_source & nis)
   {
     edge_map::const_iterator i = rev.edges.begin();
     revision_id const & left_rid = edge_old_revision(i);
@@ -1918,7 +1918,7 @@ namespace {
                            parent_map const & parents,
                            revision_id const & new_rid,
                            roster_t & new_roster, marking_map & new_markings,
-                           database & db, node_id_source & nis)
+                           node_id_source & nis)
   {
     revision_id const & parent_rid = edge_old_revision(rev.edges.begin());
     cset const & parent_cs = edge_changes(rev.edges.begin());
@@ -1977,7 +1977,7 @@ void
 make_roster_for_revision(revision_t const & rev, parent_map const & parents,
                          revision_id const & new_rid,
                          roster_t & new_roster, marking_map & new_markings,
-                         node_id_source & nis)
+                         database & db, node_id_source & nis)
 {
   MM(rev);
   MM(new_rid);
@@ -1992,7 +1992,7 @@ make_roster_for_revision(revision_t const & rev, parent_map const & parents,
                              new_rid, new_roster, new_markings, nis);
   else if (rev.edges.size() == 2)
     make_roster_for_merge(rev, parents,
-                          new_rid, new_roster, new_markings, nis);
+                          new_rid, new_roster, new_markings, db, nis);
   else
     I(false);
 
@@ -2013,7 +2013,7 @@ make_roster_for_revision(revision_t const & rev, revision_id const & new_rid,
   app.db.get_parent_map(rev, parents);
   make_roster_for_revision(rev, parents, new_rid,
                            new_roster, new_markings,
-                           nis);
+                           app.db, nis);
 }
 
 

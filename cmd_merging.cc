@@ -144,6 +144,7 @@ update(app_state & app, commands::command_id const & execid,
   // Figure out where we are, and what we look like.
   parent_map parents;
   roster_t working_roster; MM(working_roster);
+  temp_node_id_source nis;
   app.work.get_work_state_shape_only(parents, working_roster, nis);
 
   N(parents.size() == 1,
@@ -243,8 +244,6 @@ update(app_state & app, commands::command_id const & execid,
   // we apply the working to merged cset to the workspace
   // and write the cset from chosen to merged changeset in _MTN/work
   
-  temp_node_id_source nis;
-
   // Get the OLD roster, and finish getting the WORKING roster
   roster_t_cp old_roster
     = parent_cached_roster(parents.begin()).first;

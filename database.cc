@@ -3267,7 +3267,7 @@ database::get_parent_map(revision_t const & rev, parent_map & parents)
         }
       else
         {
-          db.get_roster(rid, cr);
+          get_roster(rid, cr);
         }
       safe_insert(parents, make_pair(rid, cr));
     }
