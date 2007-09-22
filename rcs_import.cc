@@ -89,8 +89,9 @@ const cvs_branchname invalid_branch = cvs_branchname(-1);
 typedef enum
 {
   ET_COMMIT = 0,
-  ET_TAG = 2,
-  ET_BRANCH = 3
+  ET_TAG_POINT = 1,
+  ET_BRANCH_POINT = 2,
+  ET_BRANCH_START = 3
 } event_type;
 
 struct cvs_history;
@@ -124,17 +125,22 @@ struct cvs_event_digest
 
   bool is_commit() const
     {
-      return digest >> 30 <= 1;
+      return digest >> 30 == (u32) ET_COMMIT;
     }
 
-  bool is_tag() const
+  bool is_tag_point() const
     {
-      return digest >> 30 == 2;
+      return digest >> 30 == (u32) ET_TAG_POINT;
     }
 
-  bool is_branch() const
+  bool is_branch_point() const
     {
-      return digest >> 30 == 3;
+      return digest >> 30 == (u32) ET_BRANCH_POINT;
+    }
+
+  bool is_branch_start() const
+    {
+      return digest >> 30 == (u32) ET_BRANCH_START;
     }
 };
 
@@ -228,54 +234,71 @@ public:
 };
 
 class
-cvs_event_branch
+cvs_branch_point
   : public cvs_event
 {
 public:
   cvs_branchname branchname;
 
-  // The first event(s) in the branch. This is used in the blob_consumer, to
-  // distinguish between events which only depend on the branchpoint (i.e.
-  // have to come later) and events which have taken place in the branch
-  // and therefore depend on the branchpoint, too.
-  vector< cvs_event_ptr > branch_contents;
-
-  cvs_event_branch(const cvs_path p, const cvs_branchname bn)
+  cvs_branch_point(const cvs_path p, const cvs_branchname bn)
     : cvs_event(p, 0),
       branchname(bn)
     { };
 
-  cvs_event_branch(const cvs_path p, const cvs_branchname bn, time_t ti)
+  cvs_branch_point(const cvs_path p, const cvs_branchname bn, time_t ti)
     : cvs_event(p, ti),
       branchname(bn)
     { };
 
   virtual cvs_event_digest get_digest(void) const
     {
-      return cvs_event_digest(ET_BRANCH, branchname);
+      return cvs_event_digest(ET_BRANCH_POINT, branchname);
     };
 };
 
 class
-cvs_event_tag
+cvs_branch_start
+  : public cvs_event
+{
+public:
+  cvs_branchname branchname;
+
+  cvs_branch_start(const cvs_path p, const cvs_branchname bn)
+    : cvs_event(p, 0),
+      branchname(bn)
+    { };
+
+  cvs_branch_start(const cvs_path p, const cvs_branchname bn, time_t ti)
+    : cvs_event(p, ti),
+      branchname(bn)
+    { };
+
+  virtual cvs_event_digest get_digest(void) const
+    {
+      return cvs_event_digest(ET_BRANCH_START, branchname);
+    }
+};
+
+class
+cvs_tag_point
   : public cvs_event
 {
 public:
   cvs_tag tag;
 
-  cvs_event_tag(const cvs_path p, const time_t ti, const cvs_tag ta)
+  cvs_tag_point(const cvs_path p, const time_t ti, const cvs_tag ta)
     : cvs_event(p, ti),
       tag(ta)
     { };
 
   virtual cvs_event_digest get_digest(void) const
     {
-      return cvs_event_digest(ET_TAG, tag);
+      return cvs_event_digest(ET_TAG_POINT, tag);
     };
 };
 
 typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
-typedef vector< cvs_event_ptr >::const_iterator dependency_iter;
+typedef vector< cvs_event_ptr >::iterator dependency_iter;
 
 // for the depth first search algo
 typedef pair< cvs_blob_index, cvs_blob_index > Edge;
@@ -505,8 +528,9 @@ cvs_history
     if (find(events.begin(), events.end(), ev) == events.end())
     {
       W(F("%s event on file '%s' with digest %d does not belong to blob %d (with digest %d)")
-        % (ev->get_digest().is_branch() ? "branch" :
-            (ev->get_digest().is_tag() ? "tag" : "commit"))
+        % (ev->get_digest().is_branch_point() ? "branch point" :
+            (ev->get_digest().is_branch_start() ? "branch start" :
+              (ev->get_digest().is_tag_point() ? "tag" : "commit")))
         % path_interner.lookup(ev->path) % ev->get_digest()
         % ev->bi % blob.get_digest());
     }
@@ -522,7 +546,7 @@ cvs_history
     I(bn != invalid_branch);
 
     pair<blob_index_iterator, blob_index_iterator> range =
-      get_blobs(cvs_event_digest(ET_BRANCH, bn), false);
+      get_blobs(cvs_event_digest(ET_BRANCH_START, bn), false);
 
     I(range.first != range.second);
     cvs_blob_index result(range.first->second);
@@ -575,8 +599,85 @@ cvs_history
         branchname_interner.lookup(bname);
   }
 
-  void depth_first_search(blob_splitter & vis,
+  template<typename Visitor>
+  void depth_first_search(Visitor & vis,
                           back_insert_iterator< vector<cvs_blob_index> > oi);
+
+  // removes an edge between two blobs.
+  void remove_deps(cvs_blob_index const bi, cvs_blob_index const dep_bi)
+  {
+    L(FL("  removing dependency from blob %d to blob %d") % bi % dep_bi);
+
+    int cc = 0;
+    typedef vector<cvs_event_ptr>::iterator ev_iter;
+    for (blob_event_iter ev = blobs[bi].begin();
+          ev != blobs[bi].end(); ++ev)
+      for (dependency_iter dep = (*ev)->dependencies.begin();
+           dep != (*ev)->dependencies.end(); )
+        {
+          cvs_blob_index this_bi = get_blob_of(*dep);
+          if (this_bi == dep_bi)
+            {
+              L(FL("            path: %s") % path_interner.lookup((*dep)->path));
+              dep = (*ev)->dependencies.erase(dep);
+
+              // remove all occurances of this event in the other's dependents
+              ev_iter x = (*dep)->dependents.begin();
+              while (x != (*dep)->dependents.end())
+                {
+                  x = find(x, (*dep)->dependents.end(), *ev);
+                  if (x != (*dep)->dependents.end())
+                    {
+                      L(FL("  removed opposite dependents entry..."));
+                      x = (*dep)->dependents.erase(x);
+                    }
+                }
+
+              cc++;
+            }
+          else
+            ++dep;
+        }
+
+    for (blob_event_iter ev = blobs[dep_bi].begin();
+          ev != blobs[dep_bi].end(); ++ev)
+      {
+        vector<vector<cvs_event_ptr>::iterator> to_remove;
+
+      for (vector<cvs_event_ptr>::iterator dep = (*ev)->dependents.begin();
+            dep != (*ev)->dependents.end(); )
+        {
+          cvs_blob_index this_bi = get_blob_of(*dep);
+
+          if (this_bi == bi)
+            {
+              L(FL(" HUM! here's still a dependent... %s") % path_interner.lookup((*ev)->path));
+              to_remove.push_back(dep);
+              ++dep;
+            }
+          else
+            ++dep;
+        }
+        for (vector<vector<cvs_event_ptr>::iterator>::const_iterator z = to_remove.begin();
+              z != to_remove.end(); ++z)
+          (*ev)->dependents.erase(*z);
+      }
+
+    if (cc == 0)
+      L(FL("      nothing removed..."));
+    else
+      L(FL("      %d deps removed") % cc);
+
+    vector<cvs_blob_index> & deps = blobs[dep_bi].get_dependents(*this);
+    blob_index_iter y = find(deps.begin(), deps.end(), bi);
+    I(y != deps.end());
+
+    // blob 'bi' is no longer a dependent of 'dep_bi', so update it's cache
+    blobs[dep_bi].reset_deps_cache();
+    deps = blobs[dep_bi].get_dependents(*this);
+    y = find(deps.begin(), deps.end(), bi);
+    I(y == deps.end());
+  }
 };
 
 class
@@ -633,19 +734,27 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
                 % cvs.rcs_version_interner.lookup(ce->rcs_version)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
-  else if (ev->get_digest().is_branch())
+  else if (ev->get_digest().is_branch_point())
     {
-      shared_ptr< cvs_event_branch > be =
-        boost::static_pointer_cast<cvs_event_branch, cvs_event>(ev);
-      return (F("branch to %s on file %s")
+      shared_ptr< cvs_branch_point > be =
+        boost::static_pointer_cast<cvs_branch_point, cvs_event>(ev);
+      return (F("branch point for %s on file %s")
+                % cvs.branchname_interner.lookup(be->branchname)
+                % cvs.path_interner.lookup(ev->path)).str();
+    }
+  else if (ev->get_digest().is_branch_start())
+    {
+      shared_ptr< cvs_branch_start > be =
+        boost::static_pointer_cast<cvs_branch_start, cvs_event>(ev);
+      return (F("start of branch %s on file %s")
                 % cvs.branchname_interner.lookup(be->branchname)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else
     {
-      I(ev->get_digest().is_tag());
-      shared_ptr< cvs_event_tag > te =
-        boost::static_pointer_cast<cvs_event_tag, cvs_event>(ev);
+      I(ev->get_digest().is_tag_point());
+      shared_ptr< cvs_tag_point > te =
+        boost::static_pointer_cast<cvs_tag_point, cvs_event>(ev);
       return (F("tag %s on file %s")
               % cvs.tag_interner.lookup(te->tag)
               % cvs.path_interner.lookup(ev->path)).str();
@@ -1215,9 +1324,9 @@ process_rcs_branch(string const & begin_version,
 
               cvs_tag tag = cvs.tag_interner.intern(i->second);
               cvs_event_ptr tag_event = 
-                boost::static_pointer_cast<cvs_event, cvs_event_tag>(
-                  shared_ptr<cvs_event_tag>(
-                    new cvs_event_tag(curr_commit->path,
+                boost::static_pointer_cast<cvs_event, cvs_tag_point>(
+                  shared_ptr<cvs_tag_point>(
+                    new cvs_tag_point(curr_commit->path,
                                       curr_commit->given_time,
                                       tag)));
               tag_event->adj_time = curr_commit->adj_time + 1;
@@ -1292,12 +1401,12 @@ process_rcs_branch(string const & begin_version,
 
           cvs_branchname bname = cvs.branchname_interner.intern(branchname);
 
-          cvs_event_ptr branch_event =
-            boost::static_pointer_cast<cvs_event, cvs_event_branch>(
-              shared_ptr<cvs_event_branch>(
-                new cvs_event_branch(curr_commit->path, bname,
-                                     curr_commit->given_time)));
-          branch_event->adj_time = curr_commit->adj_time + 1;
+          cvs_event_ptr branch_point =
+            boost::static_pointer_cast<cvs_event, cvs_branch_point>(
+              shared_ptr<cvs_branch_point>(
+                new cvs_branch_point(curr_commit->path, bname,
+                                      curr_commit->given_time)));
+          branch_point->adj_time = curr_commit->adj_time + 1;
 
           // Normal branches depend on the current commit. But vendor
           // branches don't depend on anything. They theoretically come
@@ -1307,20 +1416,29 @@ process_rcs_branch(string const & begin_version,
           // make it dependent on the root_blob, which is artificial
           // anyway.
           if (!is_vendor_branch)
-            add_dependency(branch_event, curr_commit);
+            add_dependency(branch_point, curr_commit);
           else
-            add_dependency(branch_event, cvs.root_event);
+            add_dependency(branch_point, cvs.root_event);
 
-          curr_events.push_back(branch_event);
+          curr_events.push_back(branch_point);
 
           if (first_event_in_branch)
             {
-              // add correct dependencies and remember the first event in
-              // the branch, to be able to differenciate between that and
-              // other events which depend on this branch event, later on.
-              add_dependency(first_event_in_branch, branch_event);
-              boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-                branch_event)->branch_contents.push_back(first_event_in_branch);
+              L(FL("adding branch start event"));
+              // Add a branch start event, on which the first event in
+              // the branch depends. The other way around, this branch
+              // start only depends on the branch point. While this
+              // distinction may be confusing, it really helps later on
+              // when determining what branch a blob belongs to.
+              cvs_event_ptr branch_start =
+                boost::static_pointer_cast<cvs_event, cvs_branch_start>(
+                  shared_ptr<cvs_branch_start>(
+                    new cvs_branch_start(curr_commit->path, bname,
+                                         curr_commit->given_time)));
+              branch_start->adj_time = curr_commit->adj_time + 2;
+              cvs.append_event(branch_start);
+              add_dependency(first_event_in_branch, branch_start);
+              add_dependency(branch_start, branch_point);
             }
           else
             L(FL("branch %s remained empty for this file") % branchname);
@@ -1329,7 +1447,7 @@ process_rcs_branch(string const & begin_version,
           I(cvs.blob_exists(curr_commit->get_digest()));
 
           // add the blob to the bucket
-          cvs_blob_index bi = cvs.append_event(branch_event);
+          cvs.append_event(branch_point);
 
           L(FL("added branch event for file %s into branch %s")
             % cvs.path_interner.lookup(curr_commit->path)
@@ -1339,7 +1457,7 @@ process_rcs_branch(string const & begin_version,
           // commit action certainly comes after the branch action. See
           // the comment above for tags.
           if (!is_vendor_branch)
-            add_dependencies(branch_event, last_events, reverse_import);
+            add_dependencies(branch_point, last_events, reverse_import);
         }
 
       string next_version = r.deltas.find(curr_version)->second->next;
@@ -1413,9 +1531,9 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     // add a pseudo trunk branch event (at time 0)
     cvs.root_event =
-      boost::static_pointer_cast<cvs_event, cvs_event_branch>(
-        shared_ptr<cvs_event_branch>(
-          new cvs_event_branch(cvs.curr_file_interned, cvs.base_branch)));
+      boost::static_pointer_cast<cvs_event, cvs_branch_start>(
+        shared_ptr<cvs_branch_start>(
+          new cvs_branch_start(cvs.curr_file_interned, cvs.base_branch)));
     cvs.root_blob = cvs.append_event(cvs.root_event);
 
     cvs_event_ptr first_event =
@@ -1424,8 +1542,6 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     // link the pseudo trunk branch to the first event in the branch
     add_dependency(first_event, cvs.root_event);
-    boost::static_pointer_cast<cvs_event_branch, cvs_event>(
-      cvs.root_event)->branch_contents.push_back(first_event);
 
     // try to sanitize the timestamps within this RCS file with
     // respect to the dependencies given.
@@ -1687,6 +1803,8 @@ struct dij_context
 // first search) to reduce the number of blobs it needs to touch. As if
 // that weren't enough flexibility already, it can also abort the search
 // as soon as it hits the first grey blob.
+//
+// Attention: the path is returned in reversed order!
 template<typename Container> void
 dijkstra_shortest_path(cvs_history &cvs,
                        cvs_blob_index from, cvs_blob_index to,
@@ -1808,56 +1926,6 @@ public:
 #ifdef DEBUG_BLOB_SPLITTER
       L(FL("blob_splitter: cross edge: %d -> %d") % e.first % e.second);
 #endif
-
-      // On a forward or cross edge, we first have to find the common
-      // ancestor of both blobs involved. For that we go upwards from
-      // the target (e.second) blob, until we reach the first grey
-      // blob. That must be the forking point.
-      vector< cvs_blob_index > path_a, path_b;
-      insert_iterator< vector< cvs_blob_index > >
-        ity_a(path_a, path_a.begin()),
-        ity_b(path_b, path_b.begin());
-
-      I(cvs.blobs[e.second].colors[0] == black);
-      dijkstra_shortest_path(cvs, e.second, cvs.root_blob, ity_a,
-                             false,               // upwards direction,
-                             false, true, true,   // follow grey and black, but
-                             true,                // break on first grey
-                             make_pair(e.second, e.first)); // ignore direct path
-      L(FL("  forked at blob: %d") % path_a[0]);
-
-      // From that forking point, we now follow the grey blobs downwards,
-      // until we find the source (e.first) blob of the cross edge.
-      I(cvs.blobs[e.first].colors[0] == grey);
-      I(cvs.blobs[path_a[0]].colors[0] == grey);
-      dijkstra_shortest_path(cvs, path_a[0], e.first, ity_b,
-                             true,               // downwards
-                             false, true, false, // follow only grey
-                             false,
-                             make_pair(invalid_blob, invalid_blob));
-      I(*path_a.begin() == *path_b.rbegin());
-
-      // At this point we have two different paths, both leading to the
-      // target of the cross edge (e.second). If any one of the two paths
-      // contains a branching event, we need to split e.second. Where?
-      bool has_branch = false;
-      for (vector<cvs_blob_index>::iterator i = path_a.begin();
-           i != path_a.end(); ++i)
-        if (cvs.blobs[*i].get_digest().is_branch())
-          {
-            has_branch = true;
-            W(F("path a contains a branch event: %d") % *i);
-          }
-
-      for (vector<cvs_blob_index>::reverse_iterator i = path_b.rbegin();
-           i != path_b.rend(); ++i)
-        if (cvs.blobs[*i].get_digest().is_branch())
-          {
-            has_branch = true;
-            W(F("path b contains a branch event: %d") % *i);
-          }
-
-      // I(!has_branch);
     }
 
   void back_edge(Edge e)
@@ -1892,6 +1960,213 @@ public:
     }
 };
 
+struct branch_sanitizer
+{
+protected:
+  cvs_history & cvs;
+  int & edges_removed;
+
+public:
+  branch_sanitizer(cvs_history & c, int & edges_removed)
+    : cvs(c),
+      edges_removed(edges_removed)
+    { }
+
+  bool abort()
+    {
+      return edges_removed > 0;
+    }
+
+  void tree_edge(Edge e)
+    {
+#ifdef DEBUG_BLOB_SPLITTER
+      L(FL("branch_sanitizer: tree edge: %d -> %d") % e.first % e.second);
+#endif
+    }
+
+  void forward_or_cross_edge(Edge e)
+    {
+#ifdef DEBUG_BLOB_SPLITTER
+      L(FL("branch_sanitizer: cross edge: %d -> %d") % e.first % e.second);
+#endif
+
+      // On a forward or cross edge, we first have to find the common
+      // ancestor of both blobs involved. For that we go upwards from
+      // the target (e.second) blob, until we reach the first grey
+      // blob. That must be a common ancestor.
+      vector< cvs_blob_index > path_a, path_b;
+      insert_iterator< vector< cvs_blob_index > >
+        ity_a(path_a, path_a.end()),
+        ity_b(path_b, path_b.end());
+
+      I(cvs.blobs[e.second].colors[0] == black);
+      dijkstra_shortest_path(cvs, e.second, cvs.root_blob, ity_a,
+                             false,               // upwards direction,
+                             false, true, true,   // follow grey and black, but
+                             true,                // break on first grey
+                             make_pair(e.second, e.first)); // ignore direct path
+      L(FL("  forked at blob: %d") % path_a[0]);
+
+      // From that common ancestor, we now follow the grey blobs downwards,
+      // until we find the source (e.first) blob of the cross edge.
+      I(cvs.blobs[e.first].colors[0] == grey);
+      I(cvs.blobs[path_a[0]].colors[0] == grey);
+      dijkstra_shortest_path(cvs, path_a[0], e.first, ity_b,
+                             true,               // downwards
+                             false, true, false, // follow only grey
+                             false,
+                             make_pair(invalid_blob, invalid_blob));
+
+      {
+        vector< cvs_blob_index > tmp(path_b.size());
+        reverse_copy(path_b.begin(), path_b.end(), tmp.begin());
+        swap(tmp, path_b);
+      }
+      path_b.push_back(e.second);
+
+      // At this point we have two different paths, both going from the
+      // (grey) common ancestor we've found.
+      I(path_a[0] == path_b[0]);
+      // to the target of the cross edge (e.second).
+      I(*path_a.rbegin() == e.second);
+      I(*path_b.rbegin() == e.second);
+
+      // Unfortunately, that common ancestor isn't necessarily the least
+      // common ancestor. Because the (grey) path b might contain other
+      // forward edges to blobs in path a. An example (from the test
+      // importing_cvs_branches2):
+      //
+      //                        2
+      //              p       /   \       p
+      //              a     10.    12     a
+      //              t      | \    |     t
+      //              h      9  \  11     h
+      //                     |   \  |
+      //              a      5    '-3     b
+      //                      \    /
+      //                         8
+      //
+      // Here, the cross edge discovered was 3 -> 8. Here, path_a is:
+      // (2, 10, 9, 5, 8), while path_b is (2, 12, 11, 3, 8). The edge
+      // 3 -> 10 is another cross edge and will be discovered next, but
+      // hasn't been discovered so far.
+      //
+      // Thus to make sure we find the least common ancestor, we check
+      // if any blob in path_b depends on another blob in path_a. In
+      // such a case, that blob in path_a is the least common ancestor.
+
+      for (vector<cvs_blob_index>::iterator ib = ++path_b.begin();
+           ib != path_b.end(); ++ib)
+        {
+          I(ib != path_b.end());
+          if (*ib == e.second)
+            break;
+
+          vector< cvs_blob_index > & deps = cvs.blobs[*ib].get_dependents(cvs);
+          for (blob_index_iter j = deps.begin(); j != deps.end(); ++j)
+            {
+              if (*j == e.first)
+                continue;
+
+              if (*j == path_a[0])
+                continue;
+
+              if (*j == e.second)
+                continue;
+
+              I(path_a.size() > 1);
+              vector<cvs_blob_index>::iterator ia =
+                find(++path_a.begin(), path_a.end(), *j);
+              if (ia != path_a.end())
+                {
+                  cvs_blob_index lca = *j;
+
+                  L(FL("      better lca: %d") % lca);
+                  L(FL("             *ib is: %d") % *ib);
+
+                  ia = path_a.erase(path_a.begin(), ia);
+
+                  I(ib > path_b.begin());
+                  *path_b.begin() = lca;
+                  ib = path_b.erase(++path_b.begin(), ib);
+
+                  I(path_a[0] == path_b[0]);
+
+                  for (vector<cvs_blob_index>::iterator ja = path_a.begin(); ja != path_a.end(); ++ja)
+                    L(FL("             new path_a: %d") % *ja);
+
+                  for (vector<cvs_blob_index>::iterator jb = path_b.begin(); jb != path_b.end(); ++jb)
+                    L(FL("             new path_b: %d") % *jb);
+
+                  L(FL("             *ib is: %d") % *ib);
+                }
+            }
+        }
+
+      // If any one of the two paths contains a branch start, we either
+      // need to remove dependencies or split e.second somewhere.
+      bool a_has_branch = false;
+      bool b_has_branch = false;
+      for (vector<cvs_blob_index>::iterator i = ++path_a.begin();
+           i != path_a.end(); ++i)
+        if (cvs.blobs[*i].get_digest().is_branch_start())
+          {
+            W(F("path a contains a branch event: %d") % *i);
+            a_has_branch = true;
+          }
+
+      for (vector<cvs_blob_index>::iterator i = ++path_b.begin();
+           i != path_b.end(); ++i)
+        if (cvs.blobs[*i].get_digest().is_branch_start())
+          {
+            W(F("path a contains a branch event: %d") % *i);
+            b_has_branch = true;
+          }
+
+      // uh.. in that case we have to give up... FIXME!
+      I(!(a_has_branch && b_has_branch));
+
+      if (a_has_branch || b_has_branch)
+        {
+          cvs_blob_index bi_a = *(++path_a.rbegin());
+          cvs_blob_index bi_b = *(++path_b.rbegin());
+
+          if (cvs.blobs[e.second].get_digest().is_branch_point() ||
+              cvs.blobs[e.second].get_digest().is_tag_point())
+            {
+              if (a_has_branch)
+                {
+                  cvs.remove_deps(e.second, bi_b);
+                  edges_removed++;
+                }
+              else
+                {
+                  cvs.remove_deps(e.second, bi_a);
+                  edges_removed++;
+                }
+            }
+          else if (cvs.blobs[bi_a].get_digest().is_branch_point() ||
+                    cvs.blobs[bi_a].get_digest().is_tag_point())
+            {
+              cvs.remove_deps(e.second, bi_a);
+              edges_removed++;
+            }
+          else if (cvs.blobs[bi_b].get_digest().is_branch_point() ||
+                    cvs.blobs[bi_b].get_digest().is_tag_point())
+            {
+              cvs.remove_deps(e.second, bi_b);
+              edges_removed++;
+            }
+          else
+            I(false);
+        }
+    }
+
+  void back_edge(Edge e)
+    {
+      I(false);
+    }
+};
 
 /*
  * single blob split points: search only for intra-blob dependencies
@@ -2049,6 +2324,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       time_t split_point = get_best_split_point(cvs, blob_to_split);
       I(split_point > 0);
 
+      I(!cvs.blobs[blob_to_split].get_digest().is_branch_start());
       split_blob_at(cvs, blob_to_split, split_point);
     }
   else
@@ -2062,6 +2338,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
       for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
         {
+          // we never split branch starts
+          if (cvs.blobs[*cc].get_digest().is_branch_start())
+            continue;
+
           L(FL("  testing blob %d") % *cc);
 
           // sort the blob events by timestamp
@@ -2122,8 +2402,9 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
             {
               cvs_blob & blob = cvs.blobs[*cc];
               L(FL("  blob %d: %s") % *cc
-                % (blob.get_digest().is_branch() ? "branch"
-                  : (blob.get_digest().is_tag() ? "tag" : "commit")));
+                % (blob.get_digest().is_branch_point() ? "branch point"
+                  : (blob.get_digest().is_branch_start() ? "branch start"
+                    : (blob.get_digest().is_tag_point() ? "tag" : "commit"))));
 
               if (blob.get_digest().is_commit())
                 {
@@ -2143,6 +2424,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
       I(largest_gap_at != 0);
       I(largest_gap_blob >= 0);
+      I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
       split_blob_at(cvs, largest_gap_blob, largest_gap_at);
     }
 }
@@ -2165,9 +2447,9 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   // Reset the dependents cache of the origin blob.
   cvs.blobs[bi].reset_deps_cache();
 
-  // For branches and tags, we need to keep track of the original blob and
-  // increment its split counter.
-  if (d.is_branch() || d.is_tag())
+  // For branche and tag points, we need to keep track of the original blob
+  // and increment its split counter.
+  if (d.is_branch_point() || d.is_tag_point())
   {
     cvs_blob_index origin = cvs.blobs[bi].split_origin;
     if (origin == invalid_blob)
@@ -2300,9 +2582,9 @@ class blob_label_writer
           label += "\\\"" + clog + "\\\"\\n";
             }
         }
-      else if (b.get_digest().is_branch())
+      else if (b.get_digest().is_branch_point())
         {
-          label = (FL("blob %d: branch: ") % v).str();
+          label = (FL("blob %d: branch point for branch: ") % v).str();
 
           if (b.empty())
             {
@@ -2310,14 +2592,31 @@ class blob_label_writer
             }
           else
             {
-          const shared_ptr< cvs_event_branch > cb =
-            boost::static_pointer_cast<cvs_event_branch, cvs_event>(*b.begin());
+          const shared_ptr< cvs_branch_point > cb =
+            boost::static_pointer_cast<cvs_branch_point, cvs_event>(*b.begin());
 
           label += cvs.branchname_interner.lookup(cb->branchname);
           label += "\\n";
             }
         }
-      else if (b.get_digest().is_tag())
+      else if (b.get_digest().is_branch_start())
+        {
+          label = (FL("blob %d: start of branch: ") % v).str();
+
+          if (b.empty())
+            {
+              label += "empty blob!!!";
+            }
+          else
+            {
+          const shared_ptr< cvs_branch_start > cb =
+            boost::static_pointer_cast<cvs_branch_start, cvs_event>(*b.begin());
+
+          label += cvs.branchname_interner.lookup(cb->branchname);
+          label += "\\n";
+            }
+        }
+      else if (b.get_digest().is_tag_point())
         {
           label = (FL("blob %d: tag: ") % v).str();
 
@@ -2327,8 +2626,8 @@ class blob_label_writer
             }
           else
             {
-          const shared_ptr< cvs_event_tag > cb =
-            boost::static_pointer_cast<cvs_event_tag, cvs_event>(*b.begin());
+          const shared_ptr< cvs_tag_point > cb =
+            boost::static_pointer_cast<cvs_tag_point, cvs_event>(*b.begin());
 
           label += cvs.tag_interner.lookup(cb->tag);
           label += "\\n";
@@ -2439,7 +2738,8 @@ void cvs_blob::sort_deps_cache(cvs_history & cvs)
   cached_deps_are_sorted = true;
 }
 
-void cvs_history::depth_first_search(blob_splitter & vis,
+template<typename Visitor>
+void cvs_history::depth_first_search(Visitor & vis,
        back_insert_iterator< vector<cvs_blob_index> > oi)
   {
     dfs_context ctx;
@@ -2533,13 +2833,13 @@ resolve_blob_dependencies(cvs_history & cvs)
     cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
 #ifdef DEBUG_GRAPHVIZ
-    if (global_sanity.debug)
-      {
+//    if (global_sanity.debug)  FIXME
+//      {
         viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
         write_graphviz(viz_file, cvs, cycle_members, blw);
         viz_file.close();
         step_no++;
-      }
+//      }
 #endif
 
     // If we have a cycle, go split it. Otherwise we don't have any
@@ -2550,9 +2850,33 @@ resolve_blob_dependencies(cvs_history & cvs)
       break;
   };
 
-  // After a depth-first-search-run without any cycles or illegal forward
-  // or cross edges, we have a possible, but reverse order which satisfies
-  // all the dependencies (topologically sorted).
+  // After a depth-first-search-run without any cycles, we have a possible
+  // import order which satisfies all the dependencies (topologically
+  // sorted).
+  //
+  // Now we inspect forward or cross edges to make sure no blob ends up in
+  // two branches.
+  while (1)
+    {
+      int edges_removed = 0;
+      cvs.import_order.clear();
+      branch_sanitizer vis(cvs, edges_removed);
+      cvs.depth_first_search(vis, back_inserter(cvs.import_order));
+
+#ifdef DEBUG_GRAPHVIZ
+//    if (global_sanity.debug)   FIXME
+//      {
+        viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
+        set< cvs_blob_index> tmp;
+        write_graphviz(viz_file, cvs, tmp, blw);
+        viz_file.close();
+        step_no++;
+//      }
+#endif
+
+      if (edges_removed == 0)
+        break;
+    }
 }
 
 void
@@ -2563,10 +2887,10 @@ split_branchpoint_handler(cvs_history & cvs)
   for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
     {
       cvs_blob & blob = cvs.blobs[bi];
-      if (blob.get_digest().is_branch())
+      if (blob.get_digest().is_branch_point())
         {
-          shared_ptr<cvs_event_branch> cbe =
-            boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+          shared_ptr<cvs_branch_point> cbe =
+            boost::static_pointer_cast<cvs_branch_point, cvs_event>(
               *blob.begin());
 
           // handle empty branchnames
@@ -2590,15 +2914,15 @@ split_branchpoint_handler(cvs_history & cvs)
 
               cbe->branchname = cvs.branchname_interner.intern(branchname);
               for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-                static_cast< cvs_event_branch & >(**i).branchname = cbe->branchname;
+                static_cast< cvs_branch_point & >(**i).branchname = cbe->branchname;
               blob.digest = cbe->get_digest();
               cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
             }
         }
-      else if (blob.get_digest().is_tag())
+      else if (blob.get_digest().is_tag_point())
         {
-          shared_ptr<cvs_event_tag> cte =
-            boost::static_pointer_cast<cvs_event_tag, cvs_event>(
+          shared_ptr<cvs_tag_point> cte =
+            boost::static_pointer_cast<cvs_tag_point, cvs_event>(
               *blob.begin());
 
           if (blob.split_origin != invalid_blob)
@@ -2612,7 +2936,7 @@ split_branchpoint_handler(cvs_history & cvs)
 
               cte->tag = cvs.tag_interner.intern(tag);
               for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-                static_cast< cvs_event_tag & >(**i).tag = cte->tag;
+                static_cast< cvs_tag_point & >(**i).tag = cte->tag;
               blob.digest = cte->get_digest();
               cvs.blob_index.insert(make_pair(cte->get_digest(), bi));
             }
@@ -2814,37 +3138,16 @@ blob_consumer::operator()(cvs_blob_index bi)
           // must already be in a branch.
           I(dep_blob.in_branch != invalid_blob);
 
-          // If this blob depends on a branch event, we have to check if
-          // this blob is one of the first blobs in the branch, i.e. the
-          // start of the branch's contents. In that case, we add the
-          // branch to the dep_branches.
-          if (dep_blob.get_digest().is_branch())
-            {
-              for (blob_event_iter l = dep_blob.begin();
-                   l != dep_blob.end(); ++l)
-                {
-                  shared_ptr<cvs_event_branch> cbe =
-                    boost::static_pointer_cast<cvs_event_branch,
-                                               cvs_event>(*l);
+          // If this blob depends on a branch start, we add that new branch
+          // to the possible dep_branches, otherwise inherit from earlier
+          // blobs.
+          if (dep_blob.get_digest().is_branch_start())
+            if (dep_branches.find(dep_bi) == dep_branches.end())
+              dep_branches.insert(dep_bi);
 
-                  vector< cvs_event_ptr >::const_iterator k;
-                  for (k = cbe->branch_contents.begin();
-                       k != cbe->branch_contents.end(); ++k)
-                    {
-                      cvs_blob_index cont_bi = cvs.get_blob_of(*k);
-                      cvs_blob_index my_bi = cvs.get_blob_of(*blob.begin());
-                      if (my_bi == cont_bi)
-                        if (dep_branches.find(dep_bi) == dep_branches.end())
-                          dep_branches.insert(dep_bi);
-                    }
-                }
-            }
-          else
-            {
-              // For commits and tags, we add that blob's branch.
-              if (dep_branches.find(dep_blob.in_branch) == dep_branches.end())
-                dep_branches.insert(dep_blob.in_branch);
-            }
+          if (dep_blob.get_digest().is_commit())
+            if (dep_branches.find(dep_blob.in_branch) == dep_branches.end())
+              dep_branches.insert(dep_blob.in_branch);
         }
     }
 
@@ -2856,7 +3159,7 @@ blob_consumer::operator()(cvs_blob_index bi)
       // this is only for debug information
       L(FL("This blob depends on the following branches:"));
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
-        L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_event_branch&>(**cvs.blobs[*i].begin()).branchname));
+        L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_branch_start&>(**cvs.blobs[*i].begin()).branchname));
 #endif
 
       // eliminate direct parent branches
@@ -2865,7 +3168,7 @@ blob_consumer::operator()(cvs_blob_index bi)
       {
         set_modified = false;
         cvs_blob_index my_bi;
-        shared_ptr< cvs_event_branch > cbe;
+        shared_ptr< cvs_branch_start > cbe;
         for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
           {
             // For each branch that this blob depends on, we check if that
@@ -2879,7 +3182,7 @@ blob_consumer::operator()(cvs_blob_index bi)
 #ifdef DEBUG_BRANCH_REDUCTION
                 L(FL("       checking branch %d: %s") % my_bi
                   % cvs.branchname_interner.lookup(
-                    boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+                    boost::static_pointer_cast<cvs_branch_start, cvs_event>(
                       *cvs.blobs[my_bi].begin())->branchname));
 #endif
 
@@ -2899,9 +3202,9 @@ blob_consumer::operator()(cvs_blob_index bi)
                 if (my_bi == new_bi)
                   break;
 
-                I((boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+                I((boost::static_pointer_cast<cvs_branch_start, cvs_event>(
                     *(cvs.blobs[my_bi].begin()))->branchname !=
-                   boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+                   boost::static_pointer_cast<cvs_branch_start, cvs_event>(
                     *(cvs.blobs[new_bi].begin()))->branchname));
 
                 my_bi = new_bi;
@@ -2917,7 +3220,7 @@ blob_consumer::operator()(cvs_blob_index bi)
       // this is only for debug information
       L(FL("After elimination of parent branches, this blob depends on:"));
       for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
-        L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_event_branch&>(**cvs.blobs[*i].begin()).branchname));
+        L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_branch_start&>(**cvs.blobs[*i].begin()).branchname));
 #endif
 
       // FIXME: this invariant gets violated by tests
@@ -2927,9 +3230,9 @@ blob_consumer::operator()(cvs_blob_index bi)
   if (dep_branches.size() == 1)
     blob.in_branch = *dep_branches.begin();
   else
-    blob.in_branch = cvs.base_branch;
+    blob.in_branch = cvs.root_blob;
 
-  cvs_branchname in_branch = static_cast<cvs_event_branch &>(
+  cvs_branchname in_branch = static_cast<cvs_branch_start &>(
     **cvs.blobs[blob.in_branch].begin()).branchname;
 
   I(branch_states.find(in_branch) != branch_states.end());
@@ -3017,38 +3320,33 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       bstate.current_rid = child_rid;
     }
-  else if (blob.get_digest().is_branch())
+  else if (blob.get_digest().is_branch_point())
     {
       if (!blob.empty())
         {
-          shared_ptr<cvs_event_branch> cbe =
-            boost::static_pointer_cast<cvs_event_branch, cvs_event>(
+          shared_ptr<cvs_branch_start> cbe =
+            boost::static_pointer_cast<cvs_branch_start, cvs_event>(
               *blob.begin());
 
-          // Set the base revision of the branch to the branchpoint revision
-          // and initialize the map of live files.
-          // FIXME: this is certainly bogus:
-          if (cbe->branchname != in_branch)
-            {
-              I(cbe->branchname != cvs.base_branch);
-              I(branch_states.find(cbe->branchname) == branch_states.end());
+          I(cbe->branchname != cvs.base_branch);
+          I(cbe->branchname != in_branch);
+          I(branch_states.find(cbe->branchname) == branch_states.end());
 
-              // copy the branch state
-              branch_states.insert(make_pair(cbe->branchname,
-                branch_state(bstate)));
-            }
-          else
-            {
-              // this must be the trunk?
-            }
+          // copy the branch state
+          branch_states.insert(make_pair(cbe->branchname,
+          branch_state(bstate)));
         }
     }
-  else if (blob.get_digest().is_tag())
+  else if (blob.get_digest().is_branch_start())
+    {
+      // nothing to be done for branch starts
+    }
+  else if (blob.get_digest().is_tag_point())
     {
       if (!blob.empty())
         {
-          shared_ptr<cvs_event_tag> cte =
-            boost::static_pointer_cast<cvs_event_tag, cvs_event>(
+          shared_ptr<cvs_tag_point> cte =
+            boost::static_pointer_cast<cvs_tag_point, cvs_event>(
               *blob.begin());
 
           cvs.resolved_tags.insert(make_pair(cte->tag, bstate.current_rid));
