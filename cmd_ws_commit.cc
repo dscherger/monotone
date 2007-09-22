@@ -1283,7 +1283,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   options::opts::no_ignore | options::opts::exclude |
   options::opts::author | options::opts::date)
 {
-  revision_id ident;
+  revision_id ident; MM(ident);
   system_path dir;
 
   N(args.size() == 1,
@@ -1334,7 +1334,10 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 
   try
     {
-      app.work.set_work_state_unchanged(ident);
+      if (null_id(ident))
+        app.work.set_work_state_to_new_root();
+      else
+        app.work.set_work_state_unchanged(ident);
 
       // prepare stuff for 'add' and so on.
       app.found_workspace = true;       // Yup, this is cheating!

@@ -148,6 +148,7 @@ workspace::set_work_state_to_new_root()
 void
 workspace::set_work_state_unchanged(revision_id const & rid)
 {
+  I(!null_id(rid));
   revision_t rev;
   make_revision_for_workspace(rid, cset(), rev);
   put_work_rev(rev);
