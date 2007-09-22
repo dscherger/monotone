@@ -110,6 +110,7 @@ workspace::get_unique_base_rid(revision_id & rid)
   get_work_rev(rev);
   N(rev.edges.size() == 1,
     F("this command can only be used in a single-parent workspace"));
+  rid = edge_old_revision(rev.edges.begin());
 }
 
 void
