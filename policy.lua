@@ -79,13 +79,13 @@ function push_to_other_servers(triggerkey, branches)
 
    -- If a branch was received from a server that's in our distribution
    -- list for that branch, don't forward it.
-   for local i, item in pairs(data)
+   for i, item in pairs(data)
    do
       if item.name == "server" then
 	 if item.values[2] == triggerkey
 	 then
 	    local dropprefix = item.values[3]
-	    for local branch, _ in pairs(branches) do
+	    for branch, _ in pairs(branches) do
 	       if branch_in_prefix(branch, dropprefix) then
 		  branches[branch] = false
 	       end
@@ -100,7 +100,7 @@ function push_to_other_servers(triggerkey, branches)
       if item.name == "server" then
 	 local srvname = item.values[1]
 	 local prefix = item.values[3]
-	 for local branch, inc in pairs(branches) do
+	 for branch, inc in pairs(branches) do
 	    if inc and branch_in_prefix(branch, prefix) then
 	       if pushto[srvname] == nil then
 		  pushto[srvname] = {}
@@ -112,10 +112,10 @@ function push_to_other_servers(triggerkey, branches)
    end
 
    -- Send thing where they go.
-   for local server, what in pairs(data) do
+   for server, what in pairs(data) do
       local include = "{"
       local first = true
-      for local b, _ in pairs(what) do
+      for b, _ in pairs(what) do
 	 include = include .. b
 	 if not first then
 	    include = include .. ","
@@ -166,7 +166,7 @@ function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
    local updated_policies = '{'
    local policies = conffile_iterator('policy/cache/all-policy-branches')
    while policies ~= nil and policies:next() do
-      for local br, _ in pairs(sessions[sid].branches) do
+      for br, _ in pairs(sessions[sid].branches) do
 	 if policies.line == br then
 	    if updated_a_policy then
 	       updated_policies = updated_policies .. ','
@@ -197,7 +197,7 @@ do
       local iter = conffile_iterator(file)
       if iter == nil then return nil end
       local retval = false
-      while iter:next() do
+      while iter:get() do
 	 for _,s in pairs(signers) do
 	    if s == iter.line then
 	       retval = true
@@ -211,8 +211,8 @@ do
    local function next_prefix(policy_dir, branch)
       local delegations = read_basic_io_conffile(policy_dir .. "/delegations")
       if delegations == nil then return nil end
-      for local _,item in pairs(delegations) do
-	 if item.name = "delegate" then
+      for _,item in pairs(delegations) do
+	 if item.name == "delegate" then
 	    if branch_in_prefix(branch, item.values[1]) then
 	       return item.values[1]
 	    end
@@ -241,7 +241,7 @@ do
    local old_trust_hook = get_revision_cert_trust
    function get_revision_cert_trust(signers, id, name, value)
       if name == 'branch' then
-	 local trusted = policy_trusts_signers('policy/policy', value, signers)
+	 local trusted = policy_trusts_signers('policy', value, signers)
 	 if trusted ~= nil then
 	    return trusted
 	 end

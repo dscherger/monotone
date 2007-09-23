@@ -22,12 +22,14 @@ function run_netsync(what, client, server, result, ...)
 end
 
 function setup_confdir(dest)
-   copy(srcdir.."/policy.lua", dest.."/policy.lua")
-   copy(srcdir.."/update-policy.lua", dest.."/update-policy.lua")
-   copy(srcdir.."/update-policy.sh", dest.."/update-policy.sh")
-   copy(testdir.."/monotonerc", dest.."/monotonerc")
-   copy(testdir.."/read-permissions", dest.."/read-permissions")
-   copy(testdir.."/write-permissions", dest.."/write-permissions")
+   -- Remember, srcdir is where this file is, which is not the
+   -- project root directory.
+   check(copy(srcdir.."/../policy.lua", dest.."/policy.lua"))
+   check(copy(srcdir.."/../update-policy.lua", dest.."/update-policy.lua"))
+   check(copy(srcdir.."/../update-policy.sh", dest.."/update-policy.sh"))
+   check(copy(testdir.."/monotonerc", dest.."/monotonerc"))
+   check(copy(testdir.."/read-permissions", dest.."/read-permissions"))
+   check(copy(testdir.."/write-permissions", dest.."/write-permissions"))
 end
 
 function new_workspace(person, dir)

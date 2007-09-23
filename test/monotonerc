@@ -1,4 +1,4 @@
-include("policy.lua")
+include(get_confdir() .. "/policy.lua")
 
 function get_passphrase(key)
    return key
