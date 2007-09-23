@@ -1,0 +1,46 @@
+head	1.1;
+access;
+symbols
+	B:1.1.0.4
+	A:1.1.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.09.17.21.32.37;	author markus;	state Exp;
+branches
+	1.1.4.1;
+next	;
+commitid	4qUvShdIfsWer8ys;
+
+1.1.4.1
+date	2007.09.17.21.32.40;	author markus;	state Exp;
+branches;
+next	;
+commitid	WEhdF4x8tq3gr8ys;
+
+
+desc
+@@
+
+
+1.1
+log
+@initial import
+@
+text
+@version 1.1 of test file1
+@
+
+
+1.1.4.1
+log
+@conflicting commit
+@
+text
+@d1 1
+a1 1
+version 1.1.4.1 of test file1
+@
+
