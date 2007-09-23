@@ -1,0 +1,5 @@
+include("policy.lua")
+
+function get_passphrase(key)
+   return key
+end
