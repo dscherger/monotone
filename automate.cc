@@ -1028,8 +1028,7 @@ CMD_AUTOMATE(get_revision, N_("[REVID]"),
       revision_t rev;
 
       app.require_workspace();
-      app.work.get_parent_rosters(old_rosters);
-      app.work.get_current_roster_shape(new_roster, nis);
+      app.work.get_work_state_shape_only(old_rosters, new_roster, nis);
       app.work.update_current_roster_from_filesystem(new_roster);
 
       make_revision(old_rosters, new_roster, rev);
@@ -1065,12 +1064,9 @@ CMD_AUTOMATE(get_base_revision_id, "",
 
   app.require_workspace();
 
-  parent_map parents;
-  app.work.get_parent_rosters(parents);
-  N(parents.size() == 1,
-    F("this command can only be used in a single-parent workspace"));
-
-  output << parent_id(parents.begin()) << '\n';
+  revision_id base;
+  app.work.get_unique_base_rid(base);
+  output << base << '\n';
 }
 
 // Name: get_current_revision_id
@@ -1099,7 +1095,7 @@ CMD_AUTOMATE(get_current_revision_id, "",
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
   app.work.update_current_roster_from_filesystem(new_roster);
 
   app.work.get_parent_rosters(parents);
@@ -1168,7 +1164,8 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
       temp_node_id_source nis;
 
       app.require_workspace();
-      app.work.get_current_roster_shape(new_roster, nis);
+      parent_map parents;
+      app.work.get_work_state_shape_only(parents, new_roster, nis);
       app.work.update_current_roster_from_filesystem(new_roster);
     }
   else

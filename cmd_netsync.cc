@@ -382,17 +382,16 @@ CMD(clone, "clone", "", CMD_REF(network),
     }
 
   shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
-  roster_t current_roster;
+  cached_roster current_roster;
 
   L(FL("checking out revision %s to directory %s") % ident % workspace_dir);
   app.db.get_roster(ident, current_roster);
-
-  revision_t workrev;
-  make_revision_for_workspace(ident, cset(), workrev);
-  app.work.put_work_rev(workrev);
+  parent_map parents;
+  safe_insert(parents, std::make_pair(ident, current_roster));
+  app.work.set_work_state(parents, *current_roster.first);
 
   cset checkout;
-  make_cset(*empty_roster, current_roster, checkout);
+  make_cset(*empty_roster, *current_roster.first, checkout);
 
   map<file_id, file_path> paths;
   get_content_paths(*empty_roster, paths);
@@ -457,7 +456,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
         find_key(utf8(), globish("*"), globish(""), app);
 
       N(app.lua.hook_persist_phrase_ok(),
-	F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
+        F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
       require_password(app.opts.signing_key, app);
     }
   else if (!app.opts.bind_stdio)

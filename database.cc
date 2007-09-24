@@ -3260,6 +3260,30 @@ database::get_roster(revision_id const & rev_id,
 }
 
 void
+database::get_parent_map(revision_t const & rev, parent_map & parents)
+{
+  parents.clear();
+  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); i++)
+    {
+      cached_roster cr;
+      revision_id const & rid = edge_old_revision(i);
+      // We may be asked for a roster corresponding to the null rid, which
+      // is not in the database.  In this situation, what is wanted is an
+      // empty roster (and marking map).
+      if (null_id(rid))
+        {
+          cr.first = boost::shared_ptr<roster_t const>(new roster_t);
+          cr.second = boost::shared_ptr<marking_map const>(new marking_map);
+        }
+      else
+        {
+          get_roster(rid, cr);
+        }
+      safe_insert(parents, make_pair(rid, cr));
+    }
+}
+
+void
 database::put_roster(revision_id const & rev_id,
                      roster_t_cp const & roster,
                      marking_map_cp const & marking)

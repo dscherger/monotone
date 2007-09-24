@@ -108,7 +108,9 @@ clean()
 writefile("_MTN/revision", 
 	  "format_version \"1\"\n\n"..
 	  "new_manifest []\n\n"..
-	  "old_revision []\n")
+	  "old_revision []\n"..
+          "\n"..
+          "add_dir \"\"")
 
 addfile("testfile", "testfile", mtn2)
 commit("testbranch", "testfile")

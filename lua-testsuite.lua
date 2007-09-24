@@ -14,7 +14,7 @@ function safe_mtn(...)
 end
 
 -- function preexecute(x)
---   return {"valgrind", "--tool=memcheck", unpack(x)}
+--   return {"valgrind", "--tool=memcheck", "--log-file=memcheck-log", unpack(x)}
 -- end
 
 function raw_mtn(...)

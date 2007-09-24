@@ -362,7 +362,7 @@ prepare_diff(cset & included,
       revision_id old_rid;
       parent_map parents;
 
-      app.work.get_parent_rosters(parents);
+      app.work.get_work_state_shape_only(parents, new_roster, nis);
 
       // With no arguments, which parent should we diff against?
       N(parents.size() == 1,
@@ -371,7 +371,6 @@ prepare_diff(cset & included,
 
       old_rid = parent_id(parents.begin());
       old_roster = parent_roster(parents.begin());
-      app.work.get_current_roster_shape(new_roster, nis);
 
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
@@ -398,7 +397,10 @@ prepare_diff(cset & included,
         F("no such revision '%s'") % r_old_id);
 
       app.db.get_roster(r_old_id, old_roster);
-      app.work.get_current_roster_shape(new_roster, nis);
+      {
+        parent_map parents;
+        app.work.get_work_state_shape_only(parents, new_roster, nis);
+      }
 
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
@@ -678,8 +680,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           parent_map parents;
           temp_node_id_source nis;
 
-          app.work.get_parent_rosters(parents);
-          app.work.get_current_roster_shape(new_roster, nis);
+          app.work.get_work_state_shape_only(parents, new_roster, nis);
 
           mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude_patterns), 

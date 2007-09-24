@@ -190,15 +190,12 @@ make_revision(revision_id const & old_rev_id,
 // content-only changes from the cset.  They are only to be used to
 // construct a revision that will be written to the workspace.  Don't use
 // them for revisions written to the database or presented to the user.
+//
+// You probably want workspace::set_work_state instead; these are
+// lower-level primitives.
 void
 make_revision_for_workspace(revision_id const & old_rev_id,
                             cset const & changes,
-                            revision_t & rev);
-
-void
-make_revision_for_workspace(revision_id const & old_rev_id,
-                            roster_t const & old_roster,
-                            roster_t const & new_roster,
                             revision_t & rev);
 
 void
