@@ -862,17 +862,16 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
   app.require_workspace();
 
   parent_map parents;
-  app.work.get_parent_rosters(parents);
+  roster_t new_roster;
+  temp_node_id_source nis;
+
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
   // for now, until we've figured out what the format could look like
   // and what conceptional model we can implement
   // see: http://www.venge.net/mtn-wiki/MultiParentWorkspaceFallout
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
-
-  roster_t new_roster, old_roster = parent_roster(parents.begin());
-  temp_node_id_source nis;
-
-  app.work.get_current_roster_shape(new_roster, nis);
+  roster_t const & old_roster = parent_roster(parents.begin());
 
   inventory_map inventory;
   vector<file_path> includes = args_to_paths(args);
