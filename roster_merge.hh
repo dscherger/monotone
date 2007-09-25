@@ -38,6 +38,8 @@ struct file_content_conflict
   node_id nid;
   file_content_conflict(node_id nid) : nid(nid) {}
   file_id left, right;
+  // This is left empty by roster_merge, but filled in by other things.
+  file_id ancestor;
 };
 
 // nodes with attrs conflicts are left attached in the resulting tree (unless
@@ -61,7 +63,6 @@ struct node_attr_conflict
 //     'bar', and 'a' and 'b' both being renamed to 'bar'.  Only the former
 //     occurs; 'b' merges cleanly and will be named 'bar' in the resulting
 //     manifest.)
-//
 
 // orphaned nodes always merged their name cleanly, so we simply put that name
 // here.  the node in the resulting roster is detached.
@@ -85,6 +86,12 @@ struct orphaned_node_conflict
 // another, and the requirement here is that each node have a unique (parent,
 // basename) tuple, and since our requirement matches our *-merge scalar,
 // we're okay.
+// 
+// Note also that the parent node always exists in the merged roster,
+// because both parents wanted the child to have the given name, and thus
+// the given name had to exist in both parents, and thus the parent had to
+// merge cleanly to existing.  (It might be detached, of course, but it will
+// exist.)
 struct rename_target_conflict
 {
   node_id nid1, nid2;
@@ -110,7 +117,7 @@ struct illegal_name_conflict
   std::pair<node_id, path_component> parent_name;
 };
 
-struct roster_merge_result
+struct conflicts_t
 {
   std::vector<node_name_conflict> node_name_conflicts;
   std::vector<file_content_conflict> file_content_conflicts;
@@ -120,12 +127,18 @@ struct roster_merge_result
   std::vector<directory_loop_conflict> directory_loop_conflicts;
   std::vector<illegal_name_conflict> illegal_name_conflicts;
   bool missing_root_dir;
-  // this roster is sane if is_clean() returns true
-  roster_t roster;
   bool is_clean() const;
   bool is_clean_except_for_content() const;
   void log_conflicts() const;
   void warn_non_content_conflicts() const;
+  void clear();
+};
+
+struct roster_merge_result
+{
+  conflicts_t conflicts;
+  // this roster is sane if conflicts.is_clean() returns true
+  roster_t roster;
   void clear();
 };
 
