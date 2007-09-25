@@ -432,7 +432,10 @@ CMD(missing, "missing", "", CMD_REF(list), "",
 {
   temp_node_id_source nis;
   roster_t current_roster_shape;
-  app.work.get_work_state_shape_only(current_roster_shape, nis);
+  {
+    parent_map parents;
+    app.work.get_work_state_shape_only(parents, current_roster_shape, nis);
+  }
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,

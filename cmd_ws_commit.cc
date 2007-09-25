@@ -205,6 +205,8 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // excluded cset pending in MTN/work which must be valid against the
   // old roster.
 
+  MM(included);
+  MM(excluded);
   check_restricted_cset(old_roster, excluded);
   // The check passed, so the cset will actually apply.
   roster_t new_new_roster = old_roster;
@@ -598,17 +600,15 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   app.create_workspace(dir);
 
   L(FL("checking out revision %s to directory %s") % revid % dir);
-  cached_roster current_roster;
-  app.db.get_roster(revid, current_roster);
-  parent_map parents;
-  safe_insert(parents, std::make_pair(revid, current_roster));
 
-  app.work.set_work_state_unchanged(parents, *current_roster.first);
+  app.work.set_work_state_unchanged(revid);
 
   {
     shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
+    cached_roster current_roster;
+    app.db.get_roster(revid, current_roster);
     cset checkout;
-    make_cset(*empty_roster, current_roster, checkout);
+    make_cset(*empty_roster, *current_roster.first, checkout);
     
     map<file_id, file_path> paths;
     get_content_paths(*empty_roster, paths);
@@ -1285,7 +1285,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   options::opts::no_ignore | options::opts::exclude |
   options::opts::author | options::opts::date)
 {
-  revision_id ident;
+  revision_id ident; MM(ident);
   system_path dir;
 
   N(args.size() == 1,
@@ -1336,7 +1336,10 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 
   try
     {
-      app.work.set_work_state_unchanged(ident);
+      if (null_id(ident))
+        app.work.set_work_state_to_new_root();
+      else
+        app.work.set_work_state_unchanged(ident);
 
       // prepare stuff for 'add' and so on.
       app.found_workspace = true;       // Yup, this is cheating!

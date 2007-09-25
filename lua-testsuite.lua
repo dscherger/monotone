@@ -14,7 +14,7 @@ function safe_mtn(...)
 end
 
 -- function preexecute(x)
---   return {"valgrind", "--tool=memcheck", unpack(x)}
+--   return {"valgrind", "--tool=memcheck", "--log-file=memcheck-log", unpack(x)}
 -- end
 
 function raw_mtn(...)
@@ -114,6 +114,12 @@ function addfile(filename, contents, mt)
   if contents ~= nil then writefile(filename, contents) end
   if mt == nil then mt = mtn end
   check(mt("add", filename), 0, false, false)
+end
+
+function adddir(dirname, mt)
+  if not isdir(dirname) then mkdir(dirname) end
+  if mt == nil then mt = mtn end
+  check(mt("add", dirname), 0, false, false)
 end
 
 function revert_to(rev, branch, mt)

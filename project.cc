@@ -120,7 +120,8 @@ void
 project_t::get_branch_heads(branch_name const & name, std::set<revision_id> & heads,
                             multimap<revision_id, revision_id> *inverse_graph_cache_ptr)
 {
-  std::pair<outdated_indicator, std::set<revision_id> > & branch = branch_heads[name];
+  std::pair<branch_name, suspended_indicator> cache_index(name, app.opts.ignore_suspend_certs);
+  std::pair<outdated_indicator, std::set<revision_id> > & branch = branch_heads[cache_index];
   if (branch.first.outdated())
     {
       L(FL("getting heads of branch %s") % name);
@@ -138,9 +139,16 @@ project_t::get_branch_heads(branch_name const & name, std::set<revision_id> & he
       if (!app.opts.ignore_suspend_certs)
         {
           suspended_in_branch s(app, branch_encoded);
-          for(std::set<revision_id>::iterator it = branch.second.begin(); it != branch.second.end(); it++)
-            if (s(*it))
-              branch.second.erase(*it);
+          // Note that this 'for' construct does not itself increment the
+          // iterator.  This trick is necessary because .erase() invalidates
+          // the iterator that you use it on.
+          for(std::set<revision_id>::iterator it = branch.second.begin(); it != branch.second.end(); )
+            {
+              std::set<revision_id>::iterator tmp = it;
+              ++it;
+              if (s(*tmp))
+                branch.second.erase(tmp);
+            }
         }
       
       L(FL("found heads of branch %s (%s heads)")

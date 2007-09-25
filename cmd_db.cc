@@ -29,27 +29,6 @@ CMD_GROUP(db, "db", "", CMD_REF(database),
           N_("Deals with the database"),
           "");
 
-// Deletes a revision from the local database.  This can be used to
-// 'undo' a changed revision from a local database without leaving
-// (much of) a trace.
-
-static void
-kill_rev_locally(app_state& app, string const& id)
-{
-  revision_id ident;
-  complete(app, id, ident);
-  N(app.db.revision_exists(ident),
-    F("no such revision '%s'") % ident);
-
-  //check that the revision does not have any children
-  set<revision_id> children;
-  app.db.get_revision_children(ident, children);
-  N(!children.size(),
-    F("revision %s already has children. We cannot kill it.") % ident);
-
-  app.db.delete_existing_rev_and_certs(ident);
-}
-
 CMD(db_init, "init", "", CMD_REF(db), "",
     N_("Initializes a database"),
     N_("Creates a new database file and initializes it."),
@@ -141,7 +120,69 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
   if (args.size() != 1)
     throw usage(execid);
 
-  kill_rev_locally(app,idx(args, 0)());
+  revision_id revid;
+
+  complete(app, idx(args, 0)(), revid);
+  N(app.db.revision_exists(revid),
+    F("no such revision '%s'") % revid);
+
+  // Check that the revision does not have any children
+  std::set<revision_id> children;
+  app.db.get_revision_children(revid, children);
+  N(!children.size(),
+    F("revision %s already has children. We cannot kill it.") % revid);
+
+  // If we're executing this in a workspace, check if the workspace parent
+  // revision is the one to kill. If so, write out the changes made in this
+  // particular revision to _MTN/revision to allow the user redo his (fixed)
+  // commit afterwards. Of course we can't do this at all if
+  //
+  // a) the user is currently not inside a workspace, or is in some other
+  //    workspace
+  // b) the user has updated the current workspace to another revision already
+  //    thus the working revision is no longer based on the revision we're
+  //    trying to kill
+  app.allow_workspace();
+  if (app.found_workspace)
+    {
+      parent_map parents;
+      roster_t curr_roster;
+      temp_node_id_source nis;
+      app.work.get_work_state_shape_only(parents, curr_roster, nis);
+
+      if (parents.size() == 1)
+        {
+          if (parent_id(parents.begin()) == revid)
+            {
+              W(F("This workspace is a child of the revision you are killing.\n"
+                  "Pushing it back to be a child of its parents instead\n"
+                  "(all changes will be preserved)."));
+
+              revision_t oldrev;
+              app.db.get_revision(revid, oldrev);
+              parent_map new_parents;
+              app.db.get_parent_map(oldrev, new_parents);
+              app.work.set_work_state(new_parents, curr_roster);
+            }
+        }
+      else if (parents.size() == 2)
+        {
+          for (parent_map::const_iterator i = parents.begin();
+               i != parents.end(); ++i)
+            {
+              if (parent_id(i) == revid)
+                N(false,
+                  F("The current workspace is a merge of the revision you are\n"
+                    "killing and some other revision.  If I killed the\n"
+                    "revision, this workspace would become invalid, and I\n"
+                    "can't fix this automatically.  Aborting."));
+            }
+        }
+      else
+        I(false);
+    }
+
+  app.db.delete_existing_rev_and_certs(revid);
 }
 
 CMD(db_kill_branch_certs_locally, "kill_branch_certs_locally", "", CMD_REF(db),
