@@ -104,6 +104,16 @@ workspace::get_work_rev(revision_t & rev)
 }
 
 void
+workspace::get_unique_base_rid(revision_id & rid)
+{
+  revision_t rev;
+  get_work_rev(rev);
+  N(rev.edges.size() == 1,
+    F("this command can only be used in a single-parent workspace"));
+  rid = edge_old_revision(rev.edges.begin());
+}
+
+void
 workspace::put_work_rev(revision_t const & rev)
 {
   MM(rev);
@@ -118,86 +128,67 @@ workspace::put_work_rev(revision_t const & rev)
   write_data(rev_path, rev_data);
 }
 
+void
+workspace::set_work_state_to_new_root()
+{
+  // We have one parent, the rev [] with the empty roster
+  parent_map parents;
+  cached_roster empty;
+  empty.first = roster_t_cp(new roster_t);
+  empty.second = marking_map_cp(new marking_map);
+  safe_insert(parents, std::make_pair(revision_id(), empty));
+  // But our roster has a newly minted root node in it
+  roster_t root_only;
+  temp_node_id_source nis;
+  node_id root = root_only.create_dir_node(nis);
+  root_only.attach_node(root, file_path_internal(""));
+  set_work_state(parents, root_only);
+}
+
+void
+workspace::set_work_state_unchanged(revision_id const & rid)
+{
+  I(!null_id(rid));
+  revision_t rev;
+  make_revision_for_workspace(rid, cset(), rev);
+  put_work_rev(rev);
+}
+
+void
+workspace::set_work_state(parent_map const & parents,
+                          roster_t const & new_roster)
+{
+  revision_t rev;
+  make_revision_for_workspace(parents, new_roster, rev);
+  put_work_rev(rev);
+}
+
 // structures derived from the work revision, the database, and possibly
 // the workspace
-
-static void
-get_roster_for_rid(revision_id const & rid,
-                   database::cached_roster & cr,
-                   database & db)
-{
-  // We may be asked for a roster corresponding to the null rid, which
-  // is not in the database.  In this situation, what is wanted is an empty
-  // roster (and marking map).
-  if (null_id(rid))
-    {
-      cr.first = boost::shared_ptr<roster_t const>(new roster_t);
-      cr.second = boost::shared_ptr<marking_map const>(new marking_map);
-    }
-  else
-    {
-      N(db.revision_exists(rid),
-        F("base revision %s does not exist in database") % rid);
-      db.get_roster(rid, cr);
-    }
-  L(FL("base roster has %d entries") % cr.first->all_nodes().size());
-}
 
 void
 workspace::get_parent_rosters(parent_map & parents)
 {
   revision_t rev;
   get_work_rev(rev);
-
-  parents.clear();
-  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); i++)
-    {
-      database::cached_roster cr;
-      get_roster_for_rid(edge_old_revision(i), cr, db);
-      safe_insert(parents, make_pair(edge_old_revision(i), cr));
-    }
+  db.get_parent_map(rev, parents);
 }
 
 void
-workspace::get_current_roster_shape(roster_t & ros, node_id_source & nis)
+workspace::get_work_state_shape_only(parent_map & parents,
+                                     roster_t & ros, node_id_source & nis)
 {
   revision_t rev;
   get_work_rev(rev);
   revision_id new_rid(fake_id());
 
-  // If there is just one parent, it might be the null ID, which
-  // make_roster_for_revision does not handle correctly.
-  if (rev.edges.size() == 1 && null_id(edge_old_revision(rev.edges.begin())))
-    {
-      I(ros.all_nodes().size() == 0);
-      editable_roster_base er(ros, nis);
-      edge_changes(rev.edges.begin()).apply_to(er);
-    }
-  else
-    {
-      marking_map dummy;
-      make_roster_for_revision(rev, new_rid, ros, dummy, db, nis);
-    }
-}
-
-bool
-workspace::has_changes()
-{
-  parent_map parents;  
-  get_parent_rosters(parents);
+  db.get_parent_map(rev, parents);
   
-  // if we have more than one parent roster then this workspace contains
-  // a merge which means this is always a committable change
-  if (parents.size() > 1)
-    return true;
-
-  temp_node_id_source nis;
-  roster_t new_roster, old_roster = parent_roster(parents.begin());
-
-  get_current_roster_shape(new_roster, nis);
-  update_current_roster_from_filesystem(new_roster);
-
-  return !(old_roster == new_roster);
+  // FIXME: marking this roster is a big waste -- for merge rosters, for
+  // instance, it requires an extra bunch of disk activity to fetch uncommon
+  // ancestors, for no reason!
+  marking_map dummy;
+  make_roster_for_revision(rev, parents, new_rid, ros, dummy, db, nis);
 }
 
 // user log file
@@ -438,7 +429,10 @@ workspace::maybe_update_inodeprints()
   temp_node_id_source nis;
   roster_t new_roster;
 
-  get_current_roster_shape(new_roster, nis);
+  {
+    parent_map parents;
+    get_work_state_shape_only(parents, new_roster, nis);
+  }
   update_current_roster_from_filesystem(new_roster);
 
   parent_map parents;
@@ -1244,7 +1238,10 @@ workspace::find_unknown_and_ignored(path_restriction const & mask,
   roster_t new_roster;
   temp_node_id_source nis;
 
-  get_current_roster_shape(new_roster, nis);
+  {
+    parent_map parents;
+    get_work_state_shape_only(parents, new_roster, nis);
+  }
   new_roster.extract_path_set(known);
 
   file_itemizer u(db, lua, known, unknown, ignored, mask);
@@ -1263,9 +1260,10 @@ workspace::perform_additions(set<file_path> const & paths,
     return;
 
   temp_node_id_source nis;
+  parent_map parents;
   roster_t new_roster;
   MM(new_roster);
-  get_current_roster_shape(new_roster, nis);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   editable_roster_base er(new_roster, nis);
 
@@ -1303,12 +1301,7 @@ workspace::perform_additions(set<file_path> const & paths,
         }
     }
 
-  parent_map parents;
-  get_parent_rosters(parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  put_work_rev(new_work);
+  set_work_state(parents, new_roster);
   update_any_attrs();
 }
 
@@ -1334,12 +1327,10 @@ workspace::perform_deletions(set<file_path> const & paths,
     return;
 
   temp_node_id_source nis;
+  parent_map parents;
   roster_t new_roster;
   MM(new_roster);
-  get_current_roster_shape(new_roster, nis);
-
-  parent_map parents;
-  get_parent_rosters(parents);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   // we traverse the the paths backwards, so that we always hit deep paths
   // before shallow paths (because set<file_path> is lexicographically
@@ -1412,10 +1403,7 @@ workspace::perform_deletions(set<file_path> const & paths,
         }
     }
 
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  put_work_rev(new_work);
-  update_any_attrs();
+  set_work_state(parents, new_roster);
 }
 
 void
@@ -1424,13 +1412,14 @@ workspace::perform_rename(set<file_path> const & srcs,
                           bool bookkeep_only)
 {
   temp_node_id_source nis;
+  parent_map parents;
   roster_t new_roster;
   MM(new_roster);
   set< pair<file_path, file_path> > renames;
 
   I(!srcs.empty());
 
-  get_current_roster_shape(new_roster, nis);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   // validation.  it's okay if the target exists as a file; we just won't
   // clobber it (in !--bookkeep-only mode).  similarly, it's okay if the
@@ -1459,8 +1448,8 @@ workspace::perform_rename(set<file_path> const & srcs,
           // touch foo
           // mtn mv foo bar/foo where bar doesn't exist
           file_path parent = dst.dirname();
-	        N(get_path_status(parent) == path::directory,
-	          F("destination path's parent directory %s/ doesn't exist") % parent);
+                N(get_path_status(parent) == path::directory,
+                  F("destination path's parent directory %s/ doesn't exist") % parent);
         }
 
       renames.insert(make_pair(src, dpath));
@@ -1500,12 +1489,7 @@ workspace::perform_rename(set<file_path> const & srcs,
       P(F("renaming %s to %s in workspace manifest") % i->first % i->second);
     }
 
-  parent_map parents;
-  get_parent_rosters(parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  put_work_rev(new_work);
+  set_work_state(parents, new_roster);
 
   if (!bookkeep_only)
     for (set< pair<file_path, file_path> >::const_iterator i = renames.begin();
@@ -1545,9 +1529,10 @@ workspace::perform_pivot_root(file_path const & new_root,
                               bool bookkeep_only)
 {
   temp_node_id_source nis;
+  parent_map parents;
   roster_t new_roster;
   MM(new_roster);
-  get_current_roster_shape(new_roster, nis);
+  get_work_state_shape_only(parents, new_roster, nis);
 
   I(new_roster.has_root());
   N(new_roster.has_node(new_root),
@@ -1585,14 +1570,8 @@ workspace::perform_pivot_root(file_path const & new_root,
     cs.apply_to(e);
   }
 
-  {
-    parent_map parents;
-    get_parent_rosters(parents);
+  set_work_state(parents, new_roster);
 
-    revision_t new_work;
-    make_revision_for_workspace(parents, new_roster, new_work);
-    put_work_rev(new_work);
-  }
   if (!bookkeep_only)
     {
       content_merge_empty_adaptor cmea;
@@ -1617,7 +1596,10 @@ workspace::perform_content_update(cset const & update,
       "you must clean up and remove the %s directory")
     % detached);
 
-  get_current_roster_shape(new_roster, nis);
+  {
+    parent_map parents;
+    get_work_state_shape_only(parents, new_roster, nis);
+  }
   new_roster.extract_path_set(known);
 
   workspace_itemizer itemizer(roster, known, nis);
@@ -1639,7 +1621,10 @@ workspace::update_any_attrs()
 {
   temp_node_id_source nis;
   roster_t new_roster;
-  get_current_roster_shape(new_roster, nis);
+  {
+    parent_map parents;
+    get_work_state_shape_only(parents, new_roster, nis);
+  }
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)

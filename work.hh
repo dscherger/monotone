@@ -98,17 +98,32 @@ struct workspace
 
   void update_any_attrs();
 
-  bool has_changes();
-
   // write out a new (partial) revision describing the current workspace;
   // the important pieces of this are the base revision id and the "shape"
   // changeset (representing tree rearrangements).
-  void put_work_rev(revision_t const & rev);
+  void set_work_state(parent_map const & parents,
+                      roster_t const & new_roster);
+  // For setup:
+  void set_work_state_to_new_root();
+  // For checkout, import:
+  void set_work_state_unchanged(revision_id const & parent_id);
 
   // read the (partial) revision describing the current workspace.
   void get_work_rev(revision_t & rev);
 
+  // if this workspace has exactly one parent, give its revision id;
+  // otherwise, error out.
+  void get_unique_base_rid(revision_id & rid);
+
   // convenience wrappers around the above functions.
+
+  // This returns a map whose keys are revision_ids and whose values are
+  // rosters, there being one such pair for each parent of the current
+  // revision.
+  //
+  // Usually you will need both the parents and the current roster, in which
+  // case it is more efficient to use get_current_roster_shape (below).
+  void get_parent_rosters(parent_map & parents);
 
   // This returns the current roster, except it does not bother updating the
   // hashes in that roster -- the "shape" is correct, all files and dirs
@@ -116,13 +131,10 @@ struct workspace
   // hashes.  If you need the current roster with correct file content
   // hashes, call update_current_roster_from_filesystem on the result of
   // this function.  Under almost all conditions, NIS should be a
-  // temp_node_id_source.
-  void get_current_roster_shape(roster_t & ros, node_id_source & nis);
-
-  // This returns a map whose keys are revision_ids and whose values are
-  // rosters, there being one such pair for each parent of the current
-  // revision.
-  void get_parent_rosters(parent_map & parents);
+  // temp_node_id_source.  (It also returns the parent rosters, because this
+  // is free.)
+  void get_work_state_shape_only(parent_map & parents,
+                                 roster_t & ros, node_id_source & nis);
 
   // Inspect the workspace and classify all the paths in it according to
   // what ROS thinks of them.
@@ -206,6 +218,7 @@ struct workspace
   // lua hooks, we don't have to know about app_state.
   workspace(database & db, lua_hooks & lua) : db(db), lua(lua) {};
 private:
+  void put_work_rev(revision_t const & rev);
   database & db;
   lua_hooks & lua;
 };

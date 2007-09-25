@@ -1841,7 +1841,7 @@ namespace {
 
       // Kluge: If both csets have no content changes, and the node_id_source
       // passed to this function is a temp_node_id_source, then we are being
-      // called from get_current_roster_shape, and we should not attempt to
+      // called from get_work_state_shape_only, and we should not attempt to
       // verify that these rosters match as far as content IDs.
       if (left_cs.deltas_applied.size() == 0
           && right_cs.deltas_applied.size() == 0
@@ -1864,7 +1864,8 @@ namespace {
   // WARNING: this function is not tested directly (no unit tests).  Do not
   // put real logic in it.
   void
-  make_roster_for_merge(revision_t const & rev, revision_id const & new_rid,
+  make_roster_for_merge(revision_t const & rev, parent_map const & parents,
+                        revision_id const & new_rid,
                         roster_t & new_roster, marking_map & new_markings,
                         database & db, node_id_source & nis)
   {
@@ -1876,9 +1877,9 @@ namespace {
     cset const & right_cs = edge_changes(i);
 
     I(!null_id(left_rid) && !null_id(right_rid));
-    database::cached_roster left_cached, right_cached;
-    db.get_roster(left_rid, left_cached);
-    db.get_roster(right_rid, right_cached);
+    cached_roster left_cached, right_cached;
+    left_cached = safe_get(parents, left_rid);
+    right_cached = safe_get(parents, right_rid);
 
     set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
     db.get_uncommon_ancestors(left_rid, right_rid,
@@ -1914,13 +1915,15 @@ namespace {
   // put real logic in it.
   void
   make_roster_for_nonmerge(revision_t const & rev,
+                           parent_map const & parents,
                            revision_id const & new_rid,
                            roster_t & new_roster, marking_map & new_markings,
-                           database & db, node_id_source & nis)
+                           node_id_source & nis)
   {
     revision_id const & parent_rid = edge_old_revision(rev.edges.begin());
     cset const & parent_cs = edge_changes(rev.edges.begin());
-    db.get_roster(parent_rid, new_roster, new_markings);
+    new_roster = *safe_get(parents, parent_rid).first;
+    new_markings = *safe_get(parents, parent_rid).second;
     make_roster_for_nonmerge(parent_cs, new_rid, new_roster, new_markings, nis);
   }
 }
@@ -1971,7 +1974,8 @@ mark_roster_with_one_parent(roster_t const & parent,
 // WARNING: this function is not tested directly (no unit tests).  Do not put
 // real logic in it.
 void
-make_roster_for_revision(revision_t const & rev, revision_id const & new_rid,
+make_roster_for_revision(revision_t const & rev, parent_map const & parents,
+                         revision_id const & new_rid,
                          roster_t & new_roster, marking_map & new_markings,
                          database & db, node_id_source & nis)
 {
@@ -1979,10 +1983,16 @@ make_roster_for_revision(revision_t const & rev, revision_id const & new_rid,
   MM(new_rid);
   MM(new_roster);
   MM(new_markings);
+  // Make sure rev and parents match up
+  I(rev.edges.size() == parents.size());
+  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
+    I(parents.find(edge_old_revision(i)) != parents.end());
   if (rev.edges.size() == 1)
-    make_roster_for_nonmerge(rev, new_rid, new_roster, new_markings, db, nis);
+    make_roster_for_nonmerge(rev, parents,
+                             new_rid, new_roster, new_markings, nis);
   else if (rev.edges.size() == 2)
-    make_roster_for_merge(rev, new_rid, new_roster, new_markings, db, nis);
+    make_roster_for_merge(rev, parents,
+                          new_rid, new_roster, new_markings, db, nis);
   else
     I(false);
 
@@ -1999,7 +2009,11 @@ make_roster_for_revision(revision_t const & rev, revision_id const & new_rid,
                          app_state & app)
 {
   true_node_id_source nis(app);
-  make_roster_for_revision(rev, new_rid, new_roster, new_markings, app.db, nis);
+  parent_map parents;
+  app.db.get_parent_map(rev, parents);
+  make_roster_for_revision(rev, parents, new_rid,
+                           new_roster, new_markings,
+                           app.db, nis);
 }
 
 
@@ -4821,7 +4835,7 @@ create_random_unification_task(roster_t & left,
                                editable_roster_base & right_erb,
                                editable_roster_for_merge & left_erm,
                                editable_roster_for_merge & right_erm,
-			       randomizer & rng)
+                               randomizer & rng)
 {
   size_t n_nodes = 20 + rng.uniform(60);
   

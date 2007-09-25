@@ -158,15 +158,13 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   app.require_workspace();
 
   parent_map parents;
-  app.work.get_parent_rosters(parents);
+  temp_node_id_source nis;
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
+
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
   old_roster = parent_roster(parents.begin());
 
-  {
-    temp_node_id_source nis;
-    app.work.get_current_roster_shape(new_roster, nis);
-  }
     
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
@@ -210,6 +208,12 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   MM(included);
   MM(excluded);
   check_restricted_cset(old_roster, excluded);
+  // The check passed, so the cset will actually apply.
+  roster_t new_new_roster = old_roster;
+  {
+    editable_roster_base er(new_new_roster, nis);
+    excluded.apply_to(er);
+  }
 
   node_map const & nodes = old_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
@@ -267,11 +271,8 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // been rewritten above but this may leave rename targets laying
   // around.
 
-  revision_t remaining;
-  make_revision_for_workspace(parent_id(parents.begin()), excluded, remaining);
-
   // Race.
-  app.work.put_work_rev(remaining);
+  app.work.set_work_state(parents, new_new_roster);
   app.work.update_any_attrs();
   app.work.maybe_update_inodeprints();
 }
@@ -417,7 +418,8 @@ CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
     {
       temp_node_id_source nis;
       roster_t current_roster_shape;
-      app.work.get_current_roster_shape(current_roster_shape, nis);
+      parent_map parents;
+      app.work.get_work_state_shape_only(parents, current_roster_shape, nis);
       node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
@@ -461,8 +463,8 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   //cases for more than one source item.
   if (src_paths.size() == 1 && dstr()[dstr().size() -1] == '/')
     if (get_path_status(*src_paths.begin()) != path::directory)
-	    N(get_path_status(dst_path) == path::directory,
-	      F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
+            N(get_path_status(dst_path) == path::directory,
+              F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
 
   app.work.perform_rename(src_paths, dst_path, app.opts.bookkeep_only);
 }
@@ -498,8 +500,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_parent_rosters(old_rosters);
-  app.work.get_current_roster_shape(new_roster, nis);
+  app.work.get_work_state_shape_only(old_rosters, new_roster, nis);
 
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
@@ -598,26 +599,25 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
 
   app.create_workspace(dir);
 
-  shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
-  roster_t current_roster;
-
   L(FL("checking out revision %s to directory %s") % revid % dir);
-  app.db.get_roster(revid, current_roster);
 
-  revision_t workrev;
-  make_revision_for_workspace(revid, cset(), workrev);
-  app.work.put_work_rev(workrev);
+  app.work.set_work_state_unchanged(revid);
 
-  cset checkout;
-  make_cset(*empty_roster, current_roster, checkout);
-
-  map<file_id, file_path> paths;
-  get_content_paths(*empty_roster, paths);
-
-  content_merge_workspace_adaptor wca(app, empty_roster, paths);
-
-  app.work.perform_content_update(checkout, wca, false);
-
+  {
+    shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
+    cached_roster current_roster;
+    app.db.get_roster(revid, current_roster);
+    cset checkout;
+    make_cset(*empty_roster, *current_roster.first, checkout);
+    
+    map<file_id, file_path> paths;
+    get_content_paths(*empty_roster, paths);
+    
+    content_merge_workspace_adaptor wca(app, empty_roster, paths);
+    
+    app.work.perform_content_update(checkout, wca, false);
+  }
+  
   app.work.update_any_attrs();
   app.work.maybe_update_inodeprints();
   guard.commit();
@@ -637,11 +637,12 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
   N(args.size() > 0 && args.size() < 3,
     F("wrong argument count"));
 
+  parent_map parents;
   roster_t new_roster;
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args, 0));
 
@@ -665,12 +666,7 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
       node->attrs[a_key] = make_pair(false, "");
     }
 
-  parent_map parents;
-  app.work.get_parent_rosters(parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  app.work.put_work_rev(new_work);
+  app.work.set_work_state(parents, new_roster);
   app.work.update_any_attrs();
 }
 
@@ -688,7 +684,10 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(new_roster, nis);
+  {
+    parent_map parents;
+    app.work.get_work_state_shape_only(parents, new_roster, nis);
+  }
 
   file_path path = file_path_external(idx(args, 0));
 
@@ -734,11 +733,12 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
   N(args.size() == 3,
     F("wrong argument count"));
 
+  parent_map parents;
   roster_t new_roster;
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args, 0));
 
@@ -750,12 +750,7 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
 
   node->attrs[a_key] = make_pair(true, a_value);
 
-  parent_map parents;
-  app.work.get_parent_rosters(parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  app.work.put_work_rev(new_work);
+  app.work.set_work_state(parents, new_roster);
   app.work.update_any_attrs();
 }
 
@@ -797,8 +792,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   temp_node_id_source nis;
 
   // get the base and the current roster of this workspace
-  app.work.get_current_roster_shape(current, nis);
-  app.work.get_parent_rosters(parents);
+  app.work.get_work_state_shape_only(parents, current, nis);
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
   base = parent_roster(parents.begin());
@@ -904,11 +898,12 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
   N(args.size() == 3,
     F("wrong argument count"));
 
+  parent_map parents;
   roster_t new_roster;
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args,0));
 
@@ -920,12 +915,7 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
 
   node->attrs[a_key] = make_pair(true, a_value);
 
-  parent_map parents;
-  app.work.get_parent_rosters(parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  app.work.put_work_rev(new_work);
+  app.work.set_work_state(parents, new_roster);
   app.work.update_any_attrs();
 }
 
@@ -948,11 +938,12 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
   N(args.size() ==1 || args.size() == 2,
     F("wrong argument count"));
 
+  parent_map parents;
   roster_t new_roster;
   temp_node_id_source nis;
 
   app.require_workspace();
-  app.work.get_current_roster_shape(new_roster, nis);
+  app.work.get_work_state_shape_only(parents, new_roster, nis);
 
   file_path path = file_path_external(idx(args,0));
 
@@ -975,12 +966,7 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
       node->attrs[a_key] = make_pair(false, "");
     }
 
-  parent_map parents;
-  app.work.get_parent_rosters(parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  app.work.put_work_rev(new_work);
+  app.work.set_work_state(parents, new_roster);
   app.work.update_any_attrs();
 }
 
@@ -1006,8 +992,7 @@ commit(app_state & app, commands::command_id const & execid,
   }
 
   app.make_branch_sticky();
-  app.work.get_parent_rosters(old_rosters);
-  app.work.get_current_roster_shape(new_roster, nis);
+  app.work.get_work_state_shape_only(old_rosters, new_roster, nis);
 
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
@@ -1190,13 +1175,23 @@ commit(app_state & app, commands::command_id const & execid,
     guard.commit();
   }
 
-  // the work revision is now whatever changes remain on top of the revision
+  // the work roster is now whatever changes remain on top of the revision
   // we just checked in.
-  revision_t remaining;
-  make_revision_for_workspace(restricted_rev_id, excluded, remaining);
+  {
+    cached_roster new_parent;
+    app.db.get_roster(restricted_rev_id, new_parent);
+    parent_map new_parents;
+    safe_insert(new_parents, std::make_pair(restricted_rev_id, new_parent));
+    
+    roster_t new_work = *new_parent.first;
+    temp_node_id_source nis;
+    editable_roster_base er(new_work, nis);
+    excluded.apply_to(er);
 
-  // small race condition here...
-  app.work.put_work_rev(remaining);
+    // small race condition here...
+    app.work.set_work_state(new_parents, new_work);
+  }
+  
   if (automate)
     output << restricted_rev_id << "\n";
   else
@@ -1278,9 +1273,7 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 
   app.create_workspace(dir);
 
-  revision_t rev;
-  make_revision_for_workspace(revision_id(), cset(), rev);
-  app.work.put_work_rev(rev);
+  app.work.set_work_state_to_new_root();
 }
 
 CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
@@ -1292,7 +1285,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   options::opts::no_ignore | options::opts::exclude |
   options::opts::author | options::opts::date)
 {
-  revision_id ident;
+  revision_id ident; MM(ident);
   system_path dir;
 
   N(args.size() == 1,
@@ -1343,9 +1336,10 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 
   try
     {
-      revision_t rev;
-      make_revision_for_workspace(ident, cset(), rev);
-      app.work.put_work_rev(rev);
+      if (null_id(ident))
+        app.work.set_work_state_to_new_root();
+      else
+        app.work.set_work_state_unchanged(ident);
 
       // prepare stuff for 'add' and so on.
       app.found_workspace = true;       // Yup, this is cheating!

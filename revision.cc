@@ -784,21 +784,6 @@ make_revision_for_workspace(revision_id const & old_rev_id,
 }
 
 void
-make_revision_for_workspace(revision_id const & old_rev_id,
-                            roster_t const & old_roster,
-                            roster_t const & new_roster,
-                            revision_t & rev)
-{
-  MM(old_rev_id);
-  MM(old_roster);
-  MM(new_roster);
-  MM(rev);
-  cset changes;
-  make_cset(old_roster, new_roster, changes);
-  make_revision_for_workspace(old_rev_id, changes, rev);
-}
-
-void
 make_revision_for_workspace(parent_map const & old_rosters,
                             roster_t const & new_roster,
                             revision_t & rev)

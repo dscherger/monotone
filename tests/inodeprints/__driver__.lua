@@ -5,7 +5,7 @@ mtn_setup()
 writefile("_MTN/inodeprints")
 
 check(mtn("diff"), 0, true, false)
-check(qgrep("no changes", "stdout"))
+check(qgrep("add_dir \"\"", "stdout"))
 
 addfile("testfile", "blah blah")
 
