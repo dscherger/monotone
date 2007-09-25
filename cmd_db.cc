@@ -150,17 +150,20 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
       temp_node_id_source nis;
       app.work.get_work_state_shape_only(parents, curr_roster, nis);
 
-      if (parents.size() == 1 && parent_id(parents.begin()) == revid)
+      if (parents.size() == 1)
         {
-          W(F("This workspace is a child of the revision you are killing.\n"
-              "Pushing it back to be a child of its parents instead\n"
-              "(all changes will be preserved)."));
-      
-          revision_t oldrev;
-          app.db.get_revision(revid, oldrev);
-          parent_map new_parents;
-          app.db.get_parent_map(oldrev, new_parents);
-          app.work.set_work_state(new_parents, curr_roster);
+          if (parent_id(parents.begin()) == revid)
+            {
+              W(F("This workspace is a child of the revision you are killing.\n"
+                  "Pushing it back to be a child of its parents instead\n"
+                  "(all changes will be preserved)."));
+
+              revision_t oldrev;
+              app.db.get_revision(revid, oldrev);
+              parent_map new_parents;
+              app.db.get_parent_map(oldrev, new_parents);
+              app.work.set_work_state(new_parents, curr_roster);
+            }
         }
       else if (parents.size() == 2)
         {
