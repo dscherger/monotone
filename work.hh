@@ -98,8 +98,6 @@ struct workspace
 
   void update_any_attrs();
 
-  bool has_changes();
-
   // write out a new (partial) revision describing the current workspace;
   // the important pieces of this are the base revision id and the "shape"
   // changeset (representing tree rearrangements).

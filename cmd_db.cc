@@ -137,45 +137,46 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
   // particular revision to _MTN/revision to allow the user redo his (fixed)
   // commit afterwards. Of course we can't do this at all if
   //
-  // a) the user is currently not inside a workspace
+  // a) the user is currently not inside a workspace, or is in some other
+  //    workspace
   // b) the user has updated the current workspace to another revision already
   //    thus the working revision is no longer based on the revision we're
   //    trying to kill
-  // c) there are uncomitted changes in the working revision of this workspace.
-  //    this *eventually* could be handled with a workspace merge scenario, but
-  //    is left out for now
   app.allow_workspace();
   if (app.found_workspace)
     {
-      revision_t old_work_rev;
-      app.work.get_work_rev(old_work_rev);
+      parent_map parents;
+      roster_t curr_roster;
+      temp_node_id_source nis;
+      app.work.get_work_state_shape_only(parents, curr_roster, nis);
 
-      for (edge_map::const_iterator i = old_work_rev.edges.begin();
-           i != old_work_rev.edges.end(); i++)
+      if (parents.size() == 1 && parent_id(parents.begin()) == revid)
         {
-          if (edge_old_revision(i) != revid)
-            continue;
-
-          N(!app.work.has_changes(),
-            F("Cannot kill revision %s,\n"
-              "because it would leave the current workspace in an invalid\n"
-              "state, from which monotone cannot recover automatically since\n"
-              "the workspace contains uncommitted changes.\n"
-              "Consider updating your workspace to another revision first,\n"
-              "before you try to kill this revision again.") % revid);
-
-          P(F("applying changes from %s on the current workspace")
-            % revid);
-
-          revision_t new_work_rev;
-          app.db.get_revision(revid, new_work_rev);
-          new_work_rev.made_for = made_for_workspace;
-          app.work.put_work_rev(new_work_rev);
-          
-          // extra paranoia... we _should_ never run this section twice
-          // since a merged workspace would fail early with work.has_changes()
-          break;
+          W(F("This workspace is a child of the revision you are killing.\n"
+              "Pushing it back to be a child of its parents instead\n"
+              "(all changes will be preserved)."));
+      
+          revision_t oldrev;
+          app.db.get_revision(revid, oldrev);
+          parent_map new_parents;
+          app.db.get_parent_map(oldrev, new_parents);
+          app.work.set_work_state(new_parents, curr_roster);
         }
+      else if (parents.size() == 2)
+        {
+          for (parent_map::const_iterator i = parents.begin();
+               i != parents.end(); ++i)
+            {
+              if (parent_id(i) == revid)
+                N(false,
+                  F("The current workspace is a merge of the revision you are\n"
+                    "killing and some other revision.  If I killed the\n"
+                    "revision, this workspace would become invalid, and I\n"
+                    "can't fix this automatically.  Aborting."));
+            }
+        }
+      else
+        I(false);
     }
 
   app.db.delete_existing_rev_and_certs(revid);

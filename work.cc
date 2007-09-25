@@ -189,39 +189,6 @@ workspace::get_work_state_shape_only(parent_map & parents,
   // ancestors, for no reason!
   marking_map dummy;
   make_roster_for_revision(rev, parents, new_rid, ros, dummy, db, nis);
-  // If there is just one parent, it might be the null ID, which
-  // make_roster_for_revision does not handle correctly.
-  if (rev.edges.size() == 1 && null_id(edge_old_revision(rev.edges.begin())))
-    {
-      I(ros.all_nodes().size() == 0);
-      editable_roster_base er(ros, nis);
-      edge_changes(rev.edges.begin()).apply_to(er);
-    }
-  else
-    {
-      marking_map dummy;
-      make_roster_for_revision(rev, new_rid, ros, dummy, db, nis);
-    }
-}
-
-bool
-workspace::has_changes()
-{
-  parent_map parents;  
-  get_parent_rosters(parents);
-  
-  // if we have more than one parent roster then this workspace contains
-  // a merge which means this is always a committable change
-  if (parents.size() > 1)
-    return true;
-
-  temp_node_id_source nis;
-  roster_t new_roster, old_roster = parent_roster(parents.begin());
-
-  get_current_roster_shape(new_roster, nis);
-  update_current_roster_from_filesystem(new_roster);
-
-  return !(old_roster == new_roster);
 }
 
 // user log file
