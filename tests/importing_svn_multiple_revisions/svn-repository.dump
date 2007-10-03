@@ -1,0 +1,201 @@
+SVN-fs-dump-format-version: 2
+
+UUID: d8935726-c0cc-4afb-8688-1d593895ffe4
+
+Revision-number: 0
+Prop-content-length: 56
+Content-length: 56
+
+K 8
+svn:date
+V 27
+2007-09-15T13:06:23.813661Z
+PROPS-END
+
+Revision-number: 1
+Prop-content-length: 129
+Content-length: 129
+
+K 7
+svn:log
+V 28
+initial subversion structure
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-09-15T13:06:24.293644Z
+PROPS-END
+
+Node-path: branches
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: tags
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: trunk
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Revision-number: 2
+Prop-content-length: 122
+Content-length: 122
+
+K 7
+svn:log
+V 21
+a simple first commit
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-09-15T13:06:25.243780Z
+PROPS-END
+
+Node-path: trunk/fileA
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 27
+Text-content-md5: a98588561571b5b26cff17bfa37f815a
+Content-length: 37
+
+PROPS-END
+This is version 1 of fileA
+
+
+Revision-number: 3
+Prop-content-length: 116
+Content-length: 116
+
+K 7
+svn:log
+V 15
+a second commit
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-09-15T13:06:26.213473Z
+PROPS-END
+
+Node-path: trunk/fileA
+Node-kind: file
+Node-action: change
+Text-content-length: 27
+Text-content-md5: 6819ea6ef6f428f923a26a320ee6a033
+Content-length: 27
+
+This is version 2 of fileA
+
+
+Revision-number: 4
+Prop-content-length: 115
+Content-length: 115
+
+K 7
+svn:log
+V 14
+a third commit
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-09-15T13:06:27.233981Z
+PROPS-END
+
+Node-path: trunk/fileA
+Node-kind: file
+Node-action: change
+Text-content-length: 27
+Text-content-md5: 6e6ddd2d6a965a4585d0bdef2b7b2a3e
+Content-length: 27
+
+This is version 3 of fileA
+
+
+Revision-number: 5
+Prop-content-length: 116
+Content-length: 116
+
+K 7
+svn:log
+V 15
+a fourth commit
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-09-15T13:06:28.234046Z
+PROPS-END
+
+Node-path: trunk/fileA
+Node-kind: file
+Node-action: change
+Text-content-length: 27
+Text-content-md5: d1d460b55a4e200fc051aa8cb215c9a8
+Content-length: 27
+
+This is version 4 of fileA
+
+
+Revision-number: 6
+Prop-content-length: 115
+Content-length: 115
+
+K 7
+svn:log
+V 14
+a fifth commit
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-09-15T13:06:29.233935Z
+PROPS-END
+
+Node-path: trunk/fileA
+Node-kind: file
+Node-action: change
+Text-content-length: 27
+Text-content-md5: 23883592dfd41e6d7d8db2ac1380eb0e
+Content-length: 27
+
+This is version 5 of fileA
+
+
