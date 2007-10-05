@@ -8,7 +8,10 @@
 #
 
 # we need paramiko for sftp protocol support
-import paramiko
+try:
+    import paramiko
+except ImportError,e:
+    raise Exception("SFTP implementation can't be loaded (possibly missing pycrypto library). Cannot use SFTP transport")
 import getpass
 import fs
 import os.path
