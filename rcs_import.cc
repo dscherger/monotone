@@ -90,7 +90,8 @@ typedef enum
   ET_COMMIT = 0,
   ET_TAG_POINT = 1,
   ET_BRANCH_POINT = 2,
-  ET_BRANCH_START = 3
+  ET_BRANCH_START = 3,
+  ET_BRANCH_END = 4
 } event_type;
 
 struct cvs_history;
@@ -103,9 +104,9 @@ struct cvs_event_digest
     {
       I(sizeof(struct cvs_event_digest) == 4);
 
-      I(v < ((u32) 1 << 30));
-      I(t < 4);
-      digest = t << 30 | v;
+      I(v < ((u32) 1 << 29));
+      I(t < 8);
+      digest = t << 29 | v;
     }
 
   cvs_event_digest(const cvs_event_digest & d)
@@ -124,22 +125,27 @@ struct cvs_event_digest
 
   bool is_commit() const
     {
-      return digest >> 30 == (u32) ET_COMMIT;
+      return digest >> 29 == (u32) ET_COMMIT;
     }
 
   bool is_tag_point() const
     {
-      return digest >> 30 == (u32) ET_TAG_POINT;
+      return digest >> 29 == (u32) ET_TAG_POINT;
     }
 
   bool is_branch_point() const
     {
-      return digest >> 30 == (u32) ET_BRANCH_POINT;
+      return digest >> 29 == (u32) ET_BRANCH_POINT;
     }
 
   bool is_branch_start() const
     {
-      return digest >> 30 == (u32) ET_BRANCH_START;
+      return digest >> 29 == (u32) ET_BRANCH_START;
+    }
+
+  bool is_branch_end() const
+    {
+      return digest >> 29 == (u32) ET_BRANCH_END;
     }
 };
 
@@ -266,6 +272,21 @@ public:
   virtual cvs_event_digest get_digest(void) const
     {
       return cvs_event_digest(ET_BRANCH_START, branchname);
+    }
+};
+
+class
+cvs_branch_end
+  : public cvs_branch_start
+{
+public:
+  cvs_branch_end(const cvs_path p, const cvs_branchname bn, time_t ti)
+    : cvs_branch_start(p, bn, ti)
+    { };
+
+  virtual cvs_event_digest get_digest(void) const
+    {
+      return cvs_event_digest(ET_BRANCH_END, branchname);
     }
 };
 
@@ -427,6 +448,8 @@ typedef struct
 
 struct blob_splitter;
 
+string get_event_repr(cvs_history & cvs, cvs_event_ptr ev);
+
 struct
 cvs_history
 {
@@ -524,12 +547,8 @@ cvs_history
 #ifdef DEBUG_GET_BLOB_OF
     if (find(events.begin(), events.end(), ev) == events.end())
     {
-      W(F("%s event on file '%s' with digest %d does not belong to blob %d (with digest %d)")
-        % (ev->get_digest().is_branch_point() ? "branch point" :
-            (ev->get_digest().is_branch_start() ? "branch start" :
-              (ev->get_digest().is_tag_point() ? "tag" : "commit")))
-        % path_interner.lookup(ev->path) % ev->get_digest()
-        % ev->bi % blob.get_digest());
+      W(F("event %s does not belong to blob %d")
+        % get_event_repr(*this, ev) % ev->bi);
     }
 #endif
 
@@ -752,6 +771,14 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
       shared_ptr< cvs_branch_start > be =
         boost::static_pointer_cast<cvs_branch_start, cvs_event>(ev);
       return (F("start of branch %s on file %s")
+                % cvs.branchname_interner.lookup(be->branchname)
+                % cvs.path_interner.lookup(ev->path)).str();
+    }
+  else if (ev->get_digest().is_branch_end())
+    {
+      shared_ptr< cvs_branch_end > be =
+        boost::static_pointer_cast<cvs_branch_end, cvs_event>(ev);
+      return (F("end of branch %s on file %s")
                 % cvs.branchname_interner.lookup(be->branchname)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
@@ -1243,7 +1270,8 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
 }
 
 static cvs_event_ptr
-process_rcs_branch(string const & begin_version,
+process_rcs_branch(cvs_branchname const & current_branchname,
+                   string const & begin_version,
                vector< piece > const & begin_lines,
                data const & begin_data,
                hexenc<id> const & begin_id,
@@ -1394,17 +1422,17 @@ process_rcs_branch(string const & begin_version,
                              dryrun);
             }
 
+          cvs_branchname bname = cvs.branchname_interner.intern(branchname);
+
           // recursively process child branches
           cvs_event_ptr first_event_in_branch =
-            process_rcs_branch(*i, branch_lines, branch_data,
+            process_rcs_branch(bname, *i, branch_lines, branch_data,
                                branch_id, r, db, cvs, dryrun,
                                false);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
             L(FL("finished private RCS branch %s") % (*i));
-
-          cvs_branchname bname = cvs.branchname_interner.intern(branchname);
 
           cvs_event_ptr branch_point =
             boost::static_pointer_cast<cvs_event, cvs_branch_point>(
@@ -1500,9 +1528,39 @@ process_rcs_branch(string const & begin_version,
     }
 
   if (reverse_import)
-    return curr_commit;
+    {
+      if (curr_commit)
+        {
+          cvs_event_ptr branch_end_point =
+            boost::static_pointer_cast<cvs_event, cvs_branch_end>(
+              shared_ptr<cvs_branch_end>(
+                new cvs_branch_end(cvs.curr_file_interned,
+                                   current_branchname,
+                                   first_commit->given_time + 1)));
+
+          cvs.append_event(branch_end_point);
+          add_dependency(branch_end_point, first_commit);
+        }
+
+      return curr_commit;
+    }
   else
-    return first_commit;
+    {
+      if (first_commit)
+        {
+          cvs_event_ptr branch_end_point =
+            boost::static_pointer_cast<cvs_event, cvs_branch_end>(
+              shared_ptr<cvs_branch_end>(
+                new cvs_branch_end(cvs.curr_file_interned,
+                                   current_branchname,
+                                   curr_commit->given_time + 1)));
+
+          cvs.append_event(branch_end_point);
+          add_dependency(branch_end_point, curr_commit);
+        }
+
+      return first_commit;
+    }
 }
 
 
@@ -1542,8 +1600,8 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
     cvs.root_blob = cvs.append_event(cvs.root_event);
 
     cvs_event_ptr first_event =
-      process_rcs_branch(r.admin.head, head_lines, dat, id, r, app.db, cvs,
-                         app.opts.dryrun, true);
+      process_rcs_branch(cvs.base_branch, r.admin.head, head_lines,
+                         dat, id, r, app.db, cvs, app.opts.dryrun, true);
 
     // link the pseudo trunk branch to the first event in the branch
     add_dependency(first_event, cvs.root_event);
@@ -2707,6 +2765,23 @@ class blob_label_writer
               label += "\\n";
             }
         }
+      else if (b.get_digest().is_branch_end())
+        {
+          label = (FL("blob %d: end of branch: ") % v).str();
+
+          if (b.empty())
+            {
+              label += "empty blob!!!";
+            }
+          else
+            {
+              const shared_ptr< cvs_branch_end > cb =
+                boost::static_pointer_cast<cvs_branch_end, cvs_event>(*b.begin());
+
+              label += cvs.branchname_interner.lookup(cb->branchname);
+              label += "\\n";
+            }
+        }
       else if (b.get_digest().is_tag_point())
         {
           label = (FL("blob %d: tag: ") % v).str();
@@ -3158,7 +3233,7 @@ cvs_blob::build_cset(cvs_history & cvs,
         }
       else
         {
-          if (base_ros.has_node(ce->path))
+          if (base_ros.has_node(pth))
             {
               L(FL("  deleting file '%s'") % pth);
               cs.nodes_deleted.insert(pth);
@@ -3300,8 +3375,8 @@ blob_consumer::operator()(cvs_blob_index bi)
     {
       I(!blob.empty());
 
-      shared_ptr<cvs_branch_start> ev =
-        boost::static_pointer_cast<cvs_branch_start, cvs_event>(
+      shared_ptr<cvs_branch_point> ev =
+        boost::static_pointer_cast<cvs_branch_point, cvs_event>(
           *blob.begin());
 
       string branchname = cvs.get_branchname(ev->branchname);
@@ -3340,6 +3415,12 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       I(parent_blobs.size() <= 1);
 
+      blob.assigned_rid = parent_rid;
+    }
+  else if (blob.get_digest().is_branch_end())
+    {
+      // Nothing to be done at the end of a branch.
+      I(parent_blobs.size() <= 1);
       blob.assigned_rid = parent_rid;
     }
   else if (blob.get_digest().is_tag_point())
