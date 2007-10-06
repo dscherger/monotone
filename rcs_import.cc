@@ -163,8 +163,6 @@ public:
   cvs_event_ptr(const shared_ptr< cvs_event > & p)
     : shared_ptr< cvs_event >(p)
     { }
-
-  bool operator < (const cvs_event_ptr & c) const;
 };
 
 class cvs_blob;
@@ -198,13 +196,6 @@ void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
   ev->dependencies.push_back(dep);
   dep->dependents.push_back(ev);
 }
-  
-
-bool
-cvs_event_ptr::operator < (const cvs_event_ptr & c) const
-{
-  return ((*this)->adj_time < c->adj_time);
-};
 
 class
 cvs_commit
