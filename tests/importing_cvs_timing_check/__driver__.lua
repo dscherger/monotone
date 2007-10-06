@@ -28,6 +28,6 @@ check(mtn("--branch=testbranch", "cvs_import", "cvs-repository/test"), 0, false,
 check(mtn("checkout", "--branch=testbranch", "mtcodir"), 0, false, false)
 check(indir("mtcodir", mtn("log", "--no-graph", "--no-files")), 0, true, false)
 check(grep("blob", "stdout"), 0, true, false)
-xfail(samelines("stdout", {"blob F", "blob E", "blob D",
+check(samelines("stdout", {"blob F", "blob E", "blob D",
                            "blob C", "blob B", "blob A"}))
 

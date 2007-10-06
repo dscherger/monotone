@@ -69,7 +69,6 @@ using boost::shared_ptr;
 using boost::lexical_cast;
 
 // additional debugging information
-// not defined: DEBUG_BRANCH_REDUCTION
 // not defined: DEBUG_BLOB_SPLITTER
 // not defined: DEBUG_GRAPHVIZ
 // not defined: DEBUG_GET_BLOB_OF
@@ -322,7 +321,8 @@ private:
 
 public:
   cvs_event_digest digest;
-  cvs_blob_index in_branch;
+  cvs_branchname in_branch;
+  revision_id assigned_rid;
 
   // helper fields for Depth First Search algorithms
   dfs_color colors[2];
@@ -340,7 +340,6 @@ public:
     : has_cached_deps(false),
       cached_deps_are_sorted(false),
       digest(d),
-      in_branch(invalid_blob),
       split_origin(invalid_blob),
       split_counter(0)
     { };
@@ -350,7 +349,6 @@ public:
       has_cached_deps(false),
       cached_deps_are_sorted(false),
       digest(b.digest),
-      in_branch(invalid_blob),
       split_origin(invalid_blob),
       split_counter(0)
     { };
@@ -421,6 +419,13 @@ public:
         avg += (*i)->adj_time;
       return (time_t) avg / events.size();
     }
+
+  int build_cset(cvs_history & cvs,
+                 roster_t & base_ros,
+                 cset & cs);
+
+  void add_missing_parents(file_path const & path,
+                           roster_t & base_ros, cset & cs);
 };
 
 typedef struct
@@ -453,12 +458,6 @@ cvs_history
   // this map is cleared for every RCS file.
   map<string, string> branch_first_entries;
 
-  // tag -> revision
-  //
-  // used to resolve the *last* revision which has a given tag
-  // applied; this is the revision which wins the tag.
-  map<cvs_tag, revision_id> resolved_tags;
-
   // final ordering of the blobs for the import
   vector<cvs_blob_index> import_order;
 
@@ -472,7 +471,14 @@ cvs_history
   ticker n_versions;
   ticker n_tree_branches;
 
-  cvs_history();
+  int unnamed_branch_counter;
+
+  cvs_history(void)
+    : n_versions("versions", "v", 1),
+      n_tree_branches("branches", "b", 1),
+      unnamed_branch_counter(0)
+    { };
+
   void set_filename(string const & file,
                     file_id const & ident);
 
@@ -595,8 +601,14 @@ cvs_history
     if (bname == base_branch)
       return branchname_interner.lookup(base_branch);
     else
-      return branchname_interner.lookup(base_branch) + "." +
-        branchname_interner.lookup(bname);
+      {
+        string branchname(branchname_interner.lookup(bname));
+        if (branchname.empty())
+          return branchname;
+        else
+          return branchname_interner.lookup(base_branch) +
+            "." + branchname;
+      }
   }
 
   template<typename Visitor>
@@ -668,14 +680,16 @@ cvs_history
     else
       L(FL("      %d deps removed") % cc);
 
+#if 0
     vector<cvs_blob_index> & deps = blobs[dep_bi].get_dependents(*this);
     blob_index_iter y = find(deps.begin(), deps.end(), bi);
     I(y != deps.end());
+#endif
 
     // blob 'bi' is no longer a dependent of 'dep_bi', so update it's cache
     blobs[dep_bi].reset_deps_cache();
-    deps = blobs[dep_bi].get_dependents(*this);
-    y = find(deps.begin(), deps.end(), bi);
+    vector<cvs_blob_index> deps = blobs[dep_bi].get_dependents(*this);
+    blob_index_iter y = find(deps.begin(), deps.end(), bi);
     I(y == deps.end());
   }
 };
@@ -1595,12 +1609,6 @@ join_version(vector<string> const & vs, string & v)
     }
 }
 
-cvs_history::cvs_history() :
-  n_versions("versions", "v", 1),
-  n_tree_branches("branches", "b", 1)
-{
-}
-
 void
 cvs_history::set_filename(string const & file,
                           file_id const & ident)
@@ -1757,25 +1765,17 @@ blob_consumer
   app_state & app;
   ticker & n_revisions;
 
-  struct branch_state
-  {
-    revision_id current_rid;
-    roster_t ros;
-    set<file_path> created_dirs;
-    map<cvs_path, cvs_mtn_version> live_files;
-  };
-
   temp_node_id_source nis;
-  map<cvs_branchname, branch_state> branch_states;
 
   blob_consumer(cvs_history & cvs,
-                   app_state & app,
-                   ticker & n_revs);
+                app_state & app,
+                ticker & n_revs)
+  : cvs(cvs),
+    app(app),
+    n_revisions(n_revs)
+  { };
 
   void operator() (cvs_blob_index bi);
-  void add_missing_parents(branch_state & bstate,
-                           file_path const & path, cset & cs);
-  int build_cset(const cvs_blob & blob, branch_state & bstate, cset & cs);
 };
 
 struct dij_context
@@ -2103,8 +2103,7 @@ public:
             }
         }
 
-      // If any one of the two paths contains a branch start, we either
-      // need to remove dependencies or split e.second somewhere.
+      // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
       bool b_has_branch = false;
       for (vector<cvs_blob_index>::iterator i = ++path_a.begin();
@@ -2123,7 +2122,8 @@ public:
             b_has_branch = true;
           }
 
-      // uh.. in that case we have to give up... FIXME!
+      // FIXME: if both paths contain a branch start, we simply
+      // bail out. I'm unsure about what to do here.
       I(!(a_has_branch && b_has_branch));
 
       if (a_has_branch || b_has_branch)
@@ -2159,6 +2159,77 @@ public:
             }
           else
             I(false);
+        }
+      else
+        {
+          // If none of the two paths has a branch start, we can simply
+          // join them into one path, which satisfies all of the
+          // dependencies and is correct with regard to timestamps.
+          //
+          // At any position, we an ancestor and two choices: either the
+          // next blob from path a or from path b. We take the younger
+          // one first and adjust dependencies as follows:
+          //
+          //       ANC      (if PaA is younger)      ANC
+          //      /   \             -->             /
+          //    PaA   PaB                         PaA -> PaB
+          //
+          // PaA then becomes the ancestor of the next round. We repeat
+          // this until we reach the final blob which triggered the
+          // cross edge (e.second).
+
+          vector<cvs_blob_index>::iterator ity_anc = path_a.begin();
+          I(*ity_anc == *(path_b.begin()));
+
+          vector<cvs_blob_index>::iterator ity_a = ++path_a.begin();
+          vector<cvs_blob_index>::iterator ity_b = ++path_b.begin();
+
+          blob_index_time_cmp blob_time_cmp(cvs);
+
+          while ((*ity_a != e.second) || (*ity_b != e.second))
+            {
+              cvs.blobs[*ity_anc].reset_deps_cache();
+              cvs.blobs[*ity_b].reset_deps_cache();
+              cvs.blobs[*ity_a].reset_deps_cache();
+
+              I(ity_a != path_a.end());
+              I(ity_b != path_b.end());
+
+              if ((blob_time_cmp(*ity_a, *ity_b) ||
+                   (*ity_b == e.second)) &&
+                  (*ity_a != e.second))
+                {
+                  // ity_a comes before ity_b, so we drop the dependency
+                  // of ity_b to it's ancestor and add one to ity_a
+                  // instead.
+
+                  L(FL("  with common ancestor %d, blob %d wins over blob %d")
+                    % *ity_anc % *ity_a % *ity_b);
+
+                  cvs.remove_deps(*ity_b, *ity_anc);
+                  edges_removed++;
+
+                  add_dependency(*cvs.blobs[*ity_b].begin(), *cvs.blobs[*ity_a].begin());
+
+                  ity_anc = ity_a;
+                  ity_a++;
+                }
+              else
+                {
+                  // See above, vice verca.
+
+                  L(FL("  with common ancestor %d, blob %d wins over blob %d")
+                    % *ity_anc % *ity_b % *ity_a);
+
+                  cvs.remove_deps(*ity_a, *ity_anc);
+                  edges_removed++;
+
+                  add_dependency(*cvs.blobs[*ity_a].begin(), *cvs.blobs[*ity_b].begin());
+
+                  ity_anc = ity_b;
+                  ity_b++;
+                }
+            }
         }
     }
 
@@ -2338,7 +2409,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
       for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
         {
-          // we never split branch starts
+          // we never split branch starts, instead we split branchpoints.
           if (cvs.blobs[*cc].get_digest().is_branch_start())
             continue;
 
@@ -2893,9 +2964,9 @@ split_branchpoint_handler(cvs_history & cvs)
             boost::static_pointer_cast<cvs_branch_point, cvs_event>(
               *blob.begin());
 
-          // handle empty branchnames
+          // handle split branchpoints
           string branchname = cvs.branchname_interner.lookup(cbe->branchname);
-          if (branchname.empty() || (blob.split_origin != invalid_blob))
+          if (blob.split_origin != invalid_blob)
             {
               if (branchname.empty())
                 {
@@ -2999,63 +3070,38 @@ import_cvs_repo(system_path const & cvsroot,
     guard.commit();
   }
 
-  // add all the tags (FIXME: this should better be done during
-  //                          blob consumption).
-  {
-    ticker n_tags(_("tags"), "t", 1);
-    transaction_guard guard(app.db);
-    for (map<cvs_tag, revision_id>::const_iterator i = cvs.resolved_tags.begin();
-         i != cvs.resolved_tags.end(); ++i)
-      {
-        string tag = cvs.tag_interner.lookup(i->first);
-        ui.set_tick_trailer("marking tag " + tag);
-        app.get_project().put_tag(i->second, tag);
-        ++n_tags;
-      }
-    guard.commit();
-  }
-
   return;
 }
 
-blob_consumer::blob_consumer(cvs_history & cvs,
-                             app_state & app,
-                             ticker & n_revs)
-  : cvs(cvs),
-    app(app),
-    n_revisions(n_revs)
-{
-  // add an initial branch state for the trunk
-  branch_states.insert(make_pair(
-    cvs.base_branch, branch_state()));
-}
-
 void
-blob_consumer::add_missing_parents(branch_state & bstate,
-                                   file_path const & path, cset & cs)
+cvs_blob::add_missing_parents(file_path const & path,
+                              roster_t & base_ros,
+                              cset & cs)
 {
-  if (bstate.created_dirs.find(path) != bstate.created_dirs.end())
+  if (cs.dirs_added.find(path) != cs.dirs_added.end())
     return;
 
-  if (!path.empty())
-    add_missing_parents(bstate, path.dirname(), cs);
+  if (base_ros.has_node(path))
+    {
+      node_t n(base_ros.get_node(path));
+      I(is_dir_t(n));
+      return;
+    }
 
-  safe_insert(bstate.created_dirs, path);
+  if (!path.empty())
+    add_missing_parents(path.dirname(), base_ros, cs);
+
   safe_insert(cs.dirs_added, path);
 }
 
 int
-blob_consumer::build_cset(const cvs_blob & blob,
-                          branch_state & bstate,
-                          cset & cs)
+cvs_blob::build_cset(cvs_history & cvs,
+                     roster_t & base_ros,
+                     cset & cs)
 {
   int changes = 0;
-  I(blob.in_branch != invalid_blob);
 
-  map<cvs_path, cvs_mtn_version> & branch_live_files =
-    bstate.live_files;
-
-  for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
+  for (blob_event_iter i = begin(); i != end(); ++i)
     {
       I((*i)->get_digest().is_commit());
 
@@ -3063,50 +3109,62 @@ blob_consumer::build_cset(const cvs_blob & blob,
         boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
 
       file_path pth = file_path_internal(cvs.path_interner.lookup(ce->path));
-
-      L(FL("blob_consumer::build_cset: file_path: %s") % pth);
-
-
-      file_id fid(cvs.mtn_version_interner.lookup(ce->mtn_version));
+      file_id new_file_id(cvs.mtn_version_interner.lookup(ce->mtn_version));
 
       if (ce->alive)
         {
-          map<cvs_path, cvs_mtn_version>::const_iterator e =
-            branch_live_files.find(ce->path);
-
-          if (e == branch_live_files.end())
+          if (!base_ros.has_node(pth))
             {
-              add_missing_parents(bstate, pth.dirname(), cs);
-              L(FL("adding entry state '%s' on '%s'") % fid % pth);
-              safe_insert(cs.files_added, make_pair(pth, fid));
-              branch_live_files[ce->path] = ce->mtn_version;
+              add_missing_parents(pth.dirname(), base_ros, cs);
+              L(FL("  adding entry state for file '%s': '%s'") % pth % new_file_id);
+              safe_insert(cs.files_added, make_pair(pth, new_file_id));
               changes++;
             }
-          else if (e->second != ce->mtn_version)
+          else
             {
-              file_id old_fid(cvs.mtn_version_interner.lookup(e->second));
-              L(FL("applying state delta on '%s' : '%s' -> '%s'")
-                % pth % old_fid % fid);
-              safe_insert(cs.deltas_applied,
-                          make_pair(pth, make_pair(old_fid, fid)));
-              branch_live_files[ce->path] = ce->mtn_version;
-              changes++;
+              node_t n(base_ros.get_node(pth));
+              I(is_file_t(n));
+
+              file_t fn(downcast_to_file_t(n));
+              if (fn->content != new_file_id)
+                {
+                  L(FL("  applying state delta on file '%s' : '%s' -> '%s'")
+                    % pth % fn->content % new_file_id);
+                  safe_insert(cs.deltas_applied,
+                    make_pair(pth, make_pair(fn->content, new_file_id)));
+                  changes++;
+                }
             }
         }
       else
         {
-          map<cvs_path, cvs_mtn_version>::const_iterator e =
-            branch_live_files.find(ce->path);
-
-          if (e != branch_live_files.end())
+          if (base_ros.has_node(ce->path))
             {
-              L(FL("deleting entry state '%s' on '%s'") % fid % pth);
-              safe_insert(cs.nodes_deleted, pth);
-              branch_live_files.erase(ce->path);
+              L(FL("  deleting file '%s'") % pth);
+              cs.nodes_deleted.insert(pth);
               changes++;
             }
         }
     }
+
+  // add an attribute to the root node, which keeps track of what
+  // files at what RCS versions have gone into this revision. 
+  string fval = "cvs\n";
+  event_ptr_path_strcmp cmp(cvs);
+  sort(begin(), end(), cmp);
+  for (blob_event_iter i = begin(); i != end(); ++i)
+    {
+      shared_ptr<cvs_commit> ce =
+        boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+
+      fval += cvs.path_interner.lookup(ce->path) + "@";
+      fval += cvs.rcs_version_interner.lookup(ce->rcs_version) + "\n";
+    }
+
+  attr_key k("mtn:origin_info");
+  attr_value v(fval);
+
+  safe_insert(cs.attrs_set, make_pair(make_pair(file_path(), k), v));
 
   return changes;
 }
@@ -3115,132 +3173,40 @@ void
 blob_consumer::operator()(cvs_blob_index bi)
 {
   cvs_blob & blob = cvs.blobs[bi];
-  I(bi == cvs.get_blob_of(*blob.begin()));
 
-  L(FL("consuming blob %d") % bi);
-
-  // Search through all direct dependencies and check what branches
-  // those are in.
-  set< cvs_blob_index > dep_branches;
+  // Check what revision to use as a parent revision.
+  set< cvs_blob_index > parent_blobs;
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-    {
-      cvs_event_ptr ev = *i;
-
-      for (dependency_iter j = ev->dependencies.begin();
-           j != ev->dependencies.end(); ++j)
-        {
-          cvs_event_ptr dep = *j;
-
-          cvs_blob_index dep_bi = cvs.get_blob_of(dep);
-          cvs_blob & dep_blob = cvs.blobs[dep_bi];
-
-          // The blob we depend on must have been imported already, and thus
-          // must already be in a branch.
-          I(dep_blob.in_branch != invalid_blob);
-
-          // If this blob depends on a branch start, we add that new branch
-          // to the possible dep_branches, otherwise inherit from earlier
-          // blobs.
-          if (dep_blob.get_digest().is_branch_start())
-            if (dep_branches.find(dep_bi) == dep_branches.end())
-              dep_branches.insert(dep_bi);
-
-          if (dep_blob.get_digest().is_commit())
-            if (dep_branches.find(dep_blob.in_branch) == dep_branches.end())
-              dep_branches.insert(dep_blob.in_branch);
-        }
-    }
-
-  if (dep_branches.size() > 0)
-    {
-      set< cvs_blob_index >::const_iterator i;
-
-#ifdef DEBUG_BRANCH_REDUCTION
-      // this is only for debug information
-      L(FL("This blob depends on the following branches:"));
-      for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
-        L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_branch_start&>(**cvs.blobs[*i].begin()).branchname));
-#endif
-
-      // eliminate direct parent branches
-      bool set_modified;
-      do
+    for (dependency_iter j = (*i)->dependencies.begin();
+         j != (*i)->dependencies.end(); ++j)
       {
-        set_modified = false;
-        cvs_blob_index my_bi;
-        shared_ptr< cvs_branch_start > cbe;
-        for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
-          {
-            // For each branch that this blob depends on, we check if that
-            // branch is a parent of another branch we depend on. In that
-            // case, we can remove the parent branch dependency and only
-            // keep the newest branch dependency.
-            I(*i != invalid_blob);
-            my_bi = *i;
-            while (cvs.blobs[my_bi].in_branch != invalid_branch)
-              {
-#ifdef DEBUG_BRANCH_REDUCTION
-                L(FL("       checking branch %d: %s") % my_bi
-                  % cvs.branchname_interner.lookup(
-                    boost::static_pointer_cast<cvs_branch_start, cvs_event>(
-                      *cvs.blobs[my_bi].begin())->branchname));
-#endif
+        cvs_event_ptr dep = *j;
+        cvs_blob_index dep_bi = cvs.get_blob_of(dep);
 
-                if (dep_branches.find(cvs.blobs[my_bi].in_branch) !=
-                    dep_branches.end())
-                  {
-                    // remove that branch, since it's a parent of another
-                    // branch this blob depends on.
-                    dep_branches.erase(cvs.blobs[my_bi].in_branch);
-                    set_modified = true;
-                  }
+        if (parent_blobs.find(dep_bi) == parent_blobs.end())
+          parent_blobs.insert(dep_bi);
+      }
 
-                // continue to remove grand-parents
-                I(cvs.blobs[my_bi].in_branch != invalid_blob);
-                cvs_blob_index new_bi = cvs.blobs[my_bi].in_branch;
-
-                if (my_bi == new_bi)
-                  break;
-
-                I((boost::static_pointer_cast<cvs_branch_start, cvs_event>(
-                    *(cvs.blobs[my_bi].begin()))->branchname !=
-                   boost::static_pointer_cast<cvs_branch_start, cvs_event>(
-                    *(cvs.blobs[new_bi].begin()))->branchname));
-
-                my_bi = new_bi;
-              }
-
-            if (set_modified)
-              break;
-          }
-
-      } while (set_modified);
-
-#ifdef DEBUG_BRANCH_REDUCTION
-      // this is only for debug information
-      L(FL("After elimination of parent branches, this blob depends on:"));
-      for (i = dep_branches.begin(); i != dep_branches.end(); ++i)
-        L(FL("  branch %s") % cvs.get_branchname(static_cast<cvs_branch_start&>(**cvs.blobs[*i].begin()).branchname));
-#endif
-
-      // FIXME: this invariant gets violated by tests
-      I(dep_branches.size() <= 1);
-    }
-
-  if (dep_branches.size() == 1)
-    blob.in_branch = *dep_branches.begin();
+  revision_id parent_rid;
+  if (parent_blobs.empty())
+    blob.in_branch = cvs.base_branch;
   else
-    blob.in_branch = cvs.root_blob;
+    {
+      // if there are multiple parent blobs, make sure they all
+      // carry the same branchname.
+      if (parent_blobs.size() > 1)
+        {
+          cvs_branchname required_branch =
+            cvs.blobs[*parent_blobs.begin()].in_branch;
 
-  cvs_branchname in_branch = static_cast<cvs_branch_start &>(
-    **cvs.blobs[blob.in_branch].begin()).branchname;
+          for (set<cvs_blob_index>::iterator i = parent_blobs.begin();
+                i != parent_blobs.end(); ++i)
+            I(cvs.blobs[*i].in_branch == required_branch);
+        }
 
-  I(branch_states.find(in_branch) != branch_states.end());
-  branch_state & bstate = branch_states.find(in_branch)->second;
-
-#ifdef DEBUG_BRANCH_REDUCTION
-  L(FL("  branch %s is at revision: %s") % cvs.get_branchname(in_branch) % bstate.current_rid);
-#endif
+      blob.in_branch = cvs.blobs[*parent_blobs.begin()].in_branch;
+      parent_rid = cvs.blobs[*parent_blobs.begin()].assigned_rid;
+    }
 
   if (blob.get_digest().is_commit())
     {
@@ -3249,108 +3215,126 @@ blob_consumer::operator()(cvs_blob_index bi)
       // should have been created by at least one file commit, even
       // if the commit made no changes. it's a logical inconsistency if
       // you have an empty blob.
+      L(FL("consuming blob %d: commit") % bi);
       I(!blob.empty());
+
+      if (app.opts.dryrun)
+        {
+          ++n_revisions;
+          blob.assigned_rid = revision_id("deadbeef00000000000000000000000000000000");
+          return;
+        }
 
       shared_ptr<cvs_commit> ce =
         boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
 
-      revision_id parent_rid, child_rid;
-      parent_rid = bstate.current_rid;
-
-      if (null_id(parent_rid))
-        W(F("Warning: null parent_rid, should better be the root"));
-
-      shared_ptr<revision_t> rev(new revision_t());
+      revision_id new_rev_rid;
+      roster_t ros;
       shared_ptr<cset> cs(new cset());
 
-      // build_cset() returns the number of files changed. In case of a
-      // 'dead blob', we don't commit anything. Such a dead blob can be
-      // created when files are added on a branch in CVS.
-      if (build_cset(blob, bstate, *cs) <= 0)
+      // even when having a parent_blob, that blob might not
+      // have produced a revision id, yet.
+      if (!null_id(parent_rid))
+        app.db.get_roster(parent_rid, ros);
+
+      // applies the blob to the roster. Returns the number of
+      // nodes changed. In case of a 'dead' blob, we don't commit
+      // anything. Such a dead blob can be created when files are
+      // added on a branch in CVS.
+      if (blob.build_cset(cvs, ros, *cs) == 0)
         return;
 
-      // add an attribute to the root node, which keeps track of what
-      // files at what RCS versions have gone into this revision. 
-      string fval = "cvs\n";
-      event_ptr_path_strcmp cmp(cvs);
-      sort(blob.begin(), blob.end(), cmp);
-      for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-        {
-          shared_ptr<cvs_commit> ce =
-            boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
-
-          fval += cvs.path_interner.lookup(ce->path) + "@";
-          fval += cvs.rcs_version_interner.lookup(ce->rcs_version) + "\n";
-        }
-
-      attr_key k("mtn:origin_info");
-      attr_value v(fval);
-      cs->attrs_set[make_pair(file_path(), k)] = v;
-
-      editable_roster_base editable_ros(bstate.ros, nis);
+      editable_roster_base editable_ros(ros, nis);
       cs->apply_to(editable_ros);
 
       manifest_id child_mid;
-      calculate_ident(bstate.ros, child_mid);
+      calculate_ident(ros, child_mid);
 
-      rev->made_for = made_for_database;
-      rev->new_manifest = child_mid;
-      rev->edges.insert(make_pair(parent_rid, cs));
+      revision_t rev;
+      rev.made_for = made_for_database;
+      rev.new_manifest = child_mid;
+      rev.edges.insert(make_pair(parent_rid, cs));
 
-      calculate_ident(*rev, child_rid);
+      calculate_ident(rev, new_rev_rid);
 
-      if (!app.opts.dryrun)
+      if (app.db.put_revision(new_rev_rid, rev))
         {
-          if (app.db.put_revision(child_rid, *rev))
-            {
-              time_t commit_time = blob.get_avg_time();
-              string author, changelog;
+          time_t commit_time = blob.get_avg_time();
+          string author, changelog;
 
-              cvs.split_authorclog(ce->authorclog, author, changelog);
-              string bn = cvs.get_branchname(in_branch);
-              app.get_project().put_standard_certs(child_rid,
+          cvs.split_authorclog(ce->authorclog, author, changelog);
+          string bn = cvs.get_branchname(blob.in_branch);
+          I(!bn.empty());
+          app.get_project().put_standard_certs(new_rev_rid,
                 branch_name(bn),
                 utf8(changelog),
                 date_t::from_unix_epoch(commit_time),
                 utf8(author));
 
-              ++n_revisions;
-            }
+          ++n_revisions;
         }
 
-      bstate.current_rid = child_rid;
+      blob.assigned_rid = new_rev_rid;
     }
   else if (blob.get_digest().is_branch_point())
     {
-      if (!blob.empty())
-        {
-          shared_ptr<cvs_branch_start> cbe =
-            boost::static_pointer_cast<cvs_branch_start, cvs_event>(
-              *blob.begin());
+      I(!blob.empty());
 
-          I(cbe->branchname != cvs.base_branch);
-          I(cbe->branchname != in_branch);
-          I(branch_states.find(cbe->branchname) == branch_states.end());
+      shared_ptr<cvs_branch_start> ev =
+        boost::static_pointer_cast<cvs_branch_start, cvs_event>(
+          *blob.begin());
 
-          // copy the branch state
-          branch_states.insert(make_pair(cbe->branchname,
-          branch_state(bstate)));
-        }
+      string branchname = cvs.get_branchname(ev->branchname);
+
+      I(parent_blobs.size() <= 1);
+
+      if (branchname.empty())
+        L(FL("consuming blob %d: branchpoint for an unnamed branch")
+          % bi);
+      else
+        L(FL("consuming blob %d: branchpoint for branch %s")
+          % bi % branchname);
+
+      blob.assigned_rid = parent_rid;
     }
   else if (blob.get_digest().is_branch_start())
     {
-      // nothing to be done for branch starts
+      shared_ptr<cvs_branch_start> ev =
+        boost::static_pointer_cast<cvs_branch_start, cvs_event>(
+          *blob.begin());
+
+      string branchname = cvs.get_branchname(ev->branchname);
+
+      if (branchname.empty())
+        {
+          cvs.unnamed_branch_counter++;
+          branchname = (FL("UNNAMED_BRANCH_%d")
+                        % cvs.unnamed_branch_counter).str();
+          blob.in_branch = cvs.branchname_interner.intern(branchname);
+        }
+      else
+        blob.in_branch = ev->branchname;
+
+      L(FL("consuming blob %d: start of branch %s")
+        % bi % branchname);
+
+      I(parent_blobs.size() <= 1);
+
+      blob.assigned_rid = parent_rid;
     }
   else if (blob.get_digest().is_tag_point())
     {
-      if (!blob.empty())
-        {
-          shared_ptr<cvs_tag_point> cte =
-            boost::static_pointer_cast<cvs_tag_point, cvs_event>(
-              *blob.begin());
+      shared_ptr<cvs_tag_point> ev =
+        boost::static_pointer_cast<cvs_tag_point, cvs_event>(
+          *blob.begin());
 
-          cvs.resolved_tags.insert(make_pair(cte->tag, bstate.current_rid));
-        }
+      L(FL("consuming blob %d: tag %s")
+        % bi % cvs.tag_interner.lookup(ev->tag));
+
+      I(parent_blobs.size() <= 1);
+
+      if (!app.opts.dryrun)
+        app.get_project().put_tag(parent_rid, cvs.tag_interner.lookup(ev->tag));
     }
   else
     I(false);
