@@ -21,5 +21,5 @@ remove("mtnco")
 
 check(mtn("checkout", "--revision=FOO_ONLY", "mtnco"), 0, false, false)
 check(indir("mtnco", mtn("list", "known")), 0, true, false)
-check(samelines("stdout", {"foo"}))
+xfail(samelines("stdout", {"foo"}))
 
