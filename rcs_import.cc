@@ -54,7 +54,6 @@ using std::pair;
 using std::search;
 using std::set;
 using std::sscanf;
-using std::stable_sort;
 using std::stack;
 using std::string;
 using std::vector;
@@ -63,6 +62,7 @@ using std::list;
 using std::insert_iterator;
 using std::back_insert_iterator;
 using std::for_each;
+using std::swap;
 
 using boost::scoped_ptr;
 using boost::shared_ptr;
@@ -2113,46 +2113,74 @@ public:
             b_has_branch = true;
           }
 
-      // FIXME: if both paths contain a branch start, we simply
-      // bail out. I'm unsure about what to do here.
-      I(!(a_has_branch && b_has_branch));
-
-      if (a_has_branch || b_has_branch)
+      // Swap a and b, if only b has a branch, but not a. This reduces
+      // to three cases: no branches, only a has a branch and both
+      // paths contain branches.
+      if (b_has_branch && !a_has_branch)
         {
+          swap(path_a, path_b);
+          swap(a_has_branch, b_has_branch);
+        }
+
+      if (a_has_branch && b_has_branch)
+        {
+          // FIXME: if both paths contain a branch start, we simply
+          // bail out. I'm unsure about what to do here.
+          I(!(a_has_branch && b_has_branch));
+        }
+      else if (a_has_branch && !b_has_branch)
+        {
+          // Path A started into another branch, while all the
+          // blobs of path B are in the same branch as e.second.
+
           cvs_blob_index bi_a = *(++path_a.rbegin());
           cvs_blob_index bi_b = *(++path_b.rbegin());
 
           if (cvs.blobs[e.second].get_digest().is_branch_point() ||
               cvs.blobs[e.second].get_digest().is_tag_point())
             {
-              if (a_has_branch)
-                {
-                  cvs.remove_deps(e.second, bi_b);
-                  edges_removed++;
-                }
-              else
-                {
-                  cvs.remove_deps(e.second, bi_a);
-                  edges_removed++;
-                }
+              // Prevent splitting the branchpoint at e.second.
+              cvs.remove_deps(e.second, bi_b);
+              edges_removed++;
             }
           else if (cvs.blobs[bi_a].get_digest().is_branch_point() ||
                     cvs.blobs[bi_a].get_digest().is_tag_point())
             {
+              // Prevent splitting the branchpoint at bi_a.
               cvs.remove_deps(e.second, bi_a);
               edges_removed++;
             }
-          else if (cvs.blobs[bi_b].get_digest().is_branch_point() ||
-                    cvs.blobs[bi_b].get_digest().is_tag_point())
-            {
-              cvs.remove_deps(e.second, bi_b);
-              edges_removed++;
-            }
           else
-            I(false);
+            {
+              // Okay, it's getting tricky here: e.second is not a branch
+              // or tag point, neither are bi_a nor bi_b. So we have the
+              // following situation:
+              //
+              //                common
+              //               ancestor              (+) stands for one
+              //                /    \                   or more commit
+              //              (+)     |                  blobs.
+              //               |      |
+              //            branch   (+)
+              //            start     |
+              //               |      |
+              //              (+)     |    <----- from here on, there are
+              //               |      |           only commit blobs
+              //             bi_a    bi_b
+              //                \    /
+              //               e.second
+              //
+              // As e.second has a dependency on bi_a (which is not only
+              // a branchpoit), we have to split e.second into events
+              // which belong to path A and events which belong to path B.
+              I(false);
+            }
         }
       else
         {
+          I(!a_has_branch);
+          I(!b_has_branch);
+
           // If none of the two paths has a branch start, we can simply
           // join them into one path, which satisfies all of the
           // dependencies and is correct with regard to timestamps.
