@@ -2583,7 +2583,8 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
       for (blob_event_iter j = i + 1; j != blob.end(); ++j)
         if ((*i)->path == (*j)->path)
           {
-            L(FL("Trying to split blob %d, because of multiple events for the same file") % bi);
+            L(FL("Trying to split blob %d, because of multiple events for file %s")
+              % bi % cvs.path_interner.lookup((*i)->path));
             time_t split_point = get_best_split_point(cvs, bi);
             I(split_point > 0);
             split_blob_at(cvs, bi, split_point);
@@ -2712,7 +2713,7 @@ class blob_label_writer
       if (!b.empty())
         {
           // print the time of the blob
-          label += (FL("time: %d\\n") % (*b.begin())->adj_time).str();
+          label += (FL("time: %d\\n") % b.get_avg_time()).str();
           label += "\\n";
 
           // print the contents of the blob, i.e. the single files
