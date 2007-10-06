@@ -2631,26 +2631,26 @@ class blob_label_writer
             }
           else
             {
-          string author, clog;
-          const shared_ptr< cvs_commit > ce =
-            boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
+              string author, clog;
+              const shared_ptr< cvs_commit > ce =
+                boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
 
-          cvs.split_authorclog(ce->authorclog, author, clog);
-          label += author + "\\n";
+              cvs.split_authorclog(ce->authorclog, author, clog);
+              label += author + "\\n";
 
-          // limit length of changelog we output
-          if (clog.length() > 20)
-            clog = clog.substr(20);
+              // limit length of changelog we output
+              if (clog.length() > 20)
+                clog = clog.substr(20);
 
-          // poor man's escape...
-          for (unsigned int i = 0; i < clog.length(); ++i)
-            {
-              if (clog[i] < 32)
-                clog[i] = '?';
-              if (clog[i] == '\"')
-                clog[i] = '\'';
-            }
-          label += "\\\"" + clog + "\\\"\\n";
+              // poor man's escape...
+              for (unsigned int i = 0; i < clog.length(); ++i)
+                {
+                  if (clog[i] < 32)
+                    clog[i] = '?';
+                  if (clog[i] == '\"')
+                    clog[i] = '\'';
+                }
+              label += "\\\"" + clog + "\\\"\\n";
             }
         }
       else if (b.get_digest().is_branch_point())
@@ -2663,11 +2663,11 @@ class blob_label_writer
             }
           else
             {
-          const shared_ptr< cvs_branch_point > cb =
-            boost::static_pointer_cast<cvs_branch_point, cvs_event>(*b.begin());
+              const shared_ptr< cvs_branch_point > cb =
+                boost::static_pointer_cast<cvs_branch_point, cvs_event>(*b.begin());
 
-          label += cvs.branchname_interner.lookup(cb->branchname);
-          label += "\\n";
+              label += cvs.branchname_interner.lookup(cb->branchname);
+              label += "\\n";
             }
         }
       else if (b.get_digest().is_branch_start())
@@ -2680,11 +2680,11 @@ class blob_label_writer
             }
           else
             {
-          const shared_ptr< cvs_branch_start > cb =
-            boost::static_pointer_cast<cvs_branch_start, cvs_event>(*b.begin());
+              const shared_ptr< cvs_branch_start > cb =
+                boost::static_pointer_cast<cvs_branch_start, cvs_event>(*b.begin());
 
-          label += cvs.branchname_interner.lookup(cb->branchname);
-          label += "\\n";
+              label += cvs.branchname_interner.lookup(cb->branchname);
+              label += "\\n";
             }
         }
       else if (b.get_digest().is_tag_point())
@@ -2697,11 +2697,11 @@ class blob_label_writer
             }
           else
             {
-          const shared_ptr< cvs_tag_point > cb =
-            boost::static_pointer_cast<cvs_tag_point, cvs_event>(*b.begin());
+              const shared_ptr< cvs_tag_point > cb =
+                boost::static_pointer_cast<cvs_tag_point, cvs_event>(*b.begin());
 
-          label += cvs.tag_interner.lookup(cb->tag);
-          label += "\\n";
+              label += cvs.tag_interner.lookup(cb->tag);
+              label += "\\n";
             }
         }
       else
@@ -2711,28 +2711,28 @@ class blob_label_writer
 
       if (!b.empty())
         {
-      // print the time of the blob
-      label += (FL("time: %d\\n") % (*b.begin())->adj_time).str();
-      label += "\\n";
+          // print the time of the blob
+          label += (FL("time: %d\\n") % (*b.begin())->adj_time).str();
+          label += "\\n";
 
-      // print the contents of the blob, i.e. the single files
-        for (blob_event_iter i = b.begin(); i != b.end(); i++)
-          {
-            label += cvs.path_interner.lookup((*i)->path);
+          // print the contents of the blob, i.e. the single files
+          for (blob_event_iter i = b.begin(); i != b.end(); i++)
+            {
+              label += cvs.path_interner.lookup((*i)->path);
 
-            if (b.get_digest().is_commit())
-              {
-                const shared_ptr< cvs_commit > ce =
-                  boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+              if (b.get_digest().is_commit())
+                {
+                  const shared_ptr< cvs_commit > ce =
+                    boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
 
-                label += "@";
-                label += cvs.rcs_version_interner.lookup(ce->rcs_version);
+                  label += "@";
+                  label += cvs.rcs_version_interner.lookup(ce->rcs_version);
 
-                label += (FL(":%d") % (ce->adj_time)).str();
-              }
-            label += "\\n";
-          }
-          }
+                  label += (FL(":%d") % (ce->adj_time)).str();
+                }
+              label += "\\n";
+            }
+        }
       else
         label += "-- empty --";
 
