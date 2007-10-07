@@ -2009,6 +2009,117 @@ public:
     }
 };
 
+
+// Different functors for deciding where to split a blob
+class split_decider_func
+{
+public:
+  virtual bool operator () (cvs_event_ptr & ev) = 0;
+};
+
+// A simple functor which decides based on the event's timestamp.
+class split_by_time
+  : public split_decider_func
+{
+  time_t split_point;
+
+public:
+  split_by_time(time_t const ti)
+    : split_point(ti)
+    { };
+
+  virtual bool operator () (cvs_event_ptr & ev)
+    {
+      return ev->adj_time > split_point;
+    }
+};
+
+// A more clever functor which decides, based on the blob's dependencies:
+// if the event depends on one or more blobs in path_a, it's put in the
+// new blob, if it has one or more dependencies to blobs in path_b, it
+// remains in the old blob.
+//
+// Attention: the blob to split must have at least one dependency to
+// a blob in path A or path B. Additionally, if there are dependencies
+// to blobs in path A, there must not be any dependencies to path B and
+// vice verca.
+class split_by_paths
+  : public split_decider_func
+{
+  cvs_history & cvs;
+  vector<cvs_blob_index> path_a, path_b;
+
+public:
+  split_by_paths(cvs_history & cvs,
+                 vector<cvs_blob_index> & a,
+                 vector<cvs_blob_index> & b)
+    : cvs(cvs),
+      path_a(a),
+      path_b(b)
+    {
+      I(*path_a.begin() == *path_b.begin());
+    };
+
+  virtual bool operator () (cvs_event_ptr & ev)
+    {
+      int count_deps_in_path_a = 0,
+          count_deps_in_path_b = 0;
+
+      set<cvs_blob_index> done;
+      stack<cvs_blob_index> stack;
+
+      // start at that event and recursively check all its dependencies
+      // for blobs in path_a or path_b.
+      for (dependency_iter i = ev->dependencies.begin();
+           i != ev->dependencies.end(); ++i)
+        stack.push(cvs.get_blob_of(*i));
+
+      while (!stack.empty())
+        {
+          cvs_blob_index bi = stack.top();
+          stack.pop();
+          done.insert(bi);
+
+          if (bi == *path_a.begin())
+            continue;
+
+          if (find(++path_a.begin(), path_a.end(), bi) != path_a.end())
+            {
+              I(find(++path_b.begin(), path_b.end(), bi) == path_b.end());
+              count_deps_in_path_a++;
+            }
+          else if (find(++path_b.begin(), path_b.end(), bi) != path_b.end())
+            {
+              I(find(++path_a.begin(), path_a.end(), bi) == path_a.end());
+              count_deps_in_path_b++;
+            }
+          else
+            for (blob_event_iter i = cvs.blobs[bi].begin();
+                 i != cvs.blobs[bi].end(); ++i)
+              for (dependency_iter j = (*i)->dependencies.begin();
+                   j != (*i)->dependencies.end(); ++j)
+                {
+                  cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+                  if (done.find(dep_bi) == done.end())
+                    stack.push(dep_bi);
+                }
+        }
+
+      I((count_deps_in_path_a == 0) || (count_deps_in_path_b == 0));
+      I(count_deps_in_path_a + count_deps_in_path_b > 0);
+
+      if (count_deps_in_path_a > 0)
+        return true;
+      else
+        return false;
+    }
+};
+
+void
+split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
+              split_decider_func & split_decider);
+
+
 struct branch_sanitizer
 {
 protected:
@@ -2182,9 +2293,11 @@ public:
 
       if (a_has_branch && b_has_branch)
         {
-          // FIXME: if both paths contain a branch start, we simply
-          // bail out. I'm unsure about what to do here.
-          I(!(a_has_branch && b_has_branch));
+          // Blob e.second seems to be part of two (or even more)
+          // branches, thus we need to split that blob.
+          split_by_paths func(cvs, path_a, path_b);
+          split_blob_at(cvs, e.second, func);
+          edges_removed++;
         }
       else if (a_has_branch && !b_has_branch)
         {
@@ -2228,10 +2341,13 @@ public:
               //                \    /
               //               e.second
               //
-              // As e.second has a dependency on bi_a (which is not only
+              // As e.second has a dependency on bi_a (which is not
               // a branchpoit), we have to split e.second into events
               // which belong to path A and events which belong to path B.
-              I(false);
+              //
+              split_by_paths func(cvs, path_a, path_b);
+              split_blob_at(cvs, e.second, func);
+              edges_removed++;
             }
         }
       else
@@ -2315,33 +2431,6 @@ public:
       I(false);
     }
 };
-
-// Different functors for deciding where to split a blob
-class split_decider_func
-{
-public:
-  virtual bool operator () (cvs_event_ptr & ev) = 0;
-};
-
-class split_by_time
-  : public split_decider_func
-{
-  time_t split_point;
-
-public:
-  split_by_time(time_t const ti)
-    : split_point(ti)
-    { };
-
-  virtual bool operator () (cvs_event_ptr & ev)
-    {
-      return ev->adj_time > split_point;
-    }
-};
-
-void
-split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
-              split_decider_func & split_decider);
 
 // single blob split points: search only for intra-blob dependencies
 // and return split points to resolve these dependencies.
