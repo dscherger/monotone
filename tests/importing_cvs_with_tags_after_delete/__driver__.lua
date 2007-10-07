@@ -23,3 +23,8 @@ check(mtn("checkout", "--revision=FOO_ONLY", "mtnco"), 0, false, false)
 check(indir("mtnco", mtn("list", "known")), 0, true, false)
 xfail(samelines("stdout", {"foo"}))
 
+-- This one is hard to solve: file bar should not be included in the tagged
+-- revision, but that can only be figured out, if we look at what tags
+-- the RCS file has. This might be erroneous in other cases, where a file
+-- *should* be included in a revision, but somehow misses the tag.
+

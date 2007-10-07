@@ -25,6 +25,9 @@ writefile("file2-1.1.2.1", "version 1.1.2.1 of test file2\n")
 -- import into monotone and check presence of files
 xfail(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
 
+-- We currently don't handle blobs, which seem to belong to two different
+-- branches. See the branch_sanitizer.
+
 -- check if all non-empty branches were imported
 check(mtn("list", "branches"), 0, true, false)
 check(samelines("stdout", {"test", "test.A", "test.B"}))
