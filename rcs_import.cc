@@ -3304,6 +3304,7 @@ blob_consumer::operator()(cvs_blob_index bi)
     }
 
   L(FL("parent rid: %s") % parent_rid);
+  blob.assigned_rid = parent_rid;
 
   if (blob.get_digest().is_commit())
     {
@@ -3339,10 +3340,7 @@ blob_consumer::operator()(cvs_blob_index bi)
       // anything. Such a dead blob can be created when files are
       // added on a branch in CVS.
       if (blob.build_cset(cvs, ros, *cs) == 0)
-        {
-          blob.assigned_rid = parent_rid;
-          return;
-        }
+        return;
 
       editable_roster_base editable_ros(ros, nis);
       cs->apply_to(editable_ros);
@@ -3397,8 +3395,6 @@ blob_consumer::operator()(cvs_blob_index bi)
       else
         L(FL("consuming blob %d: branchpoint for branch %s")
           % bi % branchname);
-
-      blob.assigned_rid = parent_rid;
     }
   else if (blob.get_digest().is_branch_start())
     {
@@ -3422,14 +3418,11 @@ blob_consumer::operator()(cvs_blob_index bi)
         % bi % branchname);
 
       I(parent_blobs.size() <= 1);
-
-      blob.assigned_rid = parent_rid;
     }
   else if (blob.get_digest().is_branch_end())
     {
       // Nothing to be done at the end of a branch.
       I(parent_blobs.size() <= 1);
-      blob.assigned_rid = parent_rid;
     }
   else if (blob.get_digest().is_tag_point())
     {
