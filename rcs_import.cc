@@ -3303,6 +3303,8 @@ blob_consumer::operator()(cvs_blob_index bi)
       parent_rid = cvs.blobs[*parent_blobs.begin()].assigned_rid;
     }
 
+  L(FL("parent rid: %s") % parent_rid);
+
   if (blob.get_digest().is_commit())
     {
       // we should never have an empty blob; it's *possible* to have
@@ -3323,7 +3325,7 @@ blob_consumer::operator()(cvs_blob_index bi)
       shared_ptr<cvs_commit> ce =
         boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
 
-      revision_id new_rev_rid;
+      revision_id new_rid;
       roster_t ros;
       shared_ptr<cset> cs(new cset());
 
@@ -3337,7 +3339,10 @@ blob_consumer::operator()(cvs_blob_index bi)
       // anything. Such a dead blob can be created when files are
       // added on a branch in CVS.
       if (blob.build_cset(cvs, ros, *cs) == 0)
-        return;
+        {
+          blob.assigned_rid = parent_rid;
+          return;
+        }
 
       editable_roster_base editable_ros(ros, nis);
       cs->apply_to(editable_ros);
@@ -3350,9 +3355,12 @@ blob_consumer::operator()(cvs_blob_index bi)
       rev.new_manifest = child_mid;
       rev.edges.insert(make_pair(parent_rid, cs));
 
-      calculate_ident(rev, new_rev_rid);
+      calculate_ident(rev, new_rid);
 
-      if (app.db.put_revision(new_rev_rid, rev))
+      L(FL("creating new revision %s") % new_rid);
+
+      I(app.db.put_revision(new_rid, rev));
+
         {
           time_t commit_time = blob.get_avg_time();
           string author, changelog;
@@ -3360,7 +3368,7 @@ blob_consumer::operator()(cvs_blob_index bi)
           cvs.split_authorclog(ce->authorclog, author, changelog);
           string bn = cvs.get_branchname(blob.in_branch);
           I(!bn.empty());
-          app.get_project().put_standard_certs(new_rev_rid,
+          app.get_project().put_standard_certs(new_rid,
                 branch_name(bn),
                 utf8(changelog),
                 date_t::from_unix_epoch(commit_time),
@@ -3369,7 +3377,7 @@ blob_consumer::operator()(cvs_blob_index bi)
           ++n_revisions;
         }
 
-      blob.assigned_rid = new_rev_rid;
+      blob.assigned_rid = new_rid;
     }
   else if (blob.get_digest().is_branch_point())
     {
