@@ -2316,10 +2316,35 @@ public:
     }
 };
 
-/*
- * single blob split points: search only for intra-blob dependencies
- * and return split points to resolve these dependencies.
- */
+// Different functors for deciding where to split a blob
+class split_decider_func
+{
+public:
+  virtual bool operator () (cvs_event_ptr & ev) = 0;
+};
+
+class split_by_time
+  : public split_decider_func
+{
+  time_t split_point;
+
+public:
+  split_by_time(time_t const ti)
+    : split_point(ti)
+    { };
+
+  virtual bool operator () (cvs_event_ptr & ev)
+    {
+      return ev->adj_time > split_point;
+    }
+};
+
+void
+split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
+              split_decider_func & split_decider);
+
+// single blob split points: search only for intra-blob dependencies
+// and return split points to resolve these dependencies.
 time_t
 get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 {
@@ -2454,29 +2479,13 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 }
 
 void
-split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
-              time_t split_point);
-
-void
 split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 {
   cvs_blob_index blob_to_split;
 
   /* shortcut for intra blob dependencies */
-  I(cycle_members.size() > 0);
-  if (cycle_members.size() == 1)
-    {
-      L(FL("should split blob %d") % *cycle_members.begin());
-      blob_to_split = *cycle_members.begin();
+  I(cycle_members.size() > 1);
 
-      time_t split_point = get_best_split_point(cvs, blob_to_split);
-      I(split_point > 0);
-
-      I(!cvs.blobs[blob_to_split].get_digest().is_branch_start());
-      split_blob_at(cvs, blob_to_split, split_point);
-    }
-  else
-    {
       L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
       typedef set<cvs_blob_index>::const_iterator cm_ity;
 
@@ -2573,15 +2582,16 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       I(largest_gap_at != 0);
       I(largest_gap_blob >= 0);
       I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
-      split_blob_at(cvs, largest_gap_blob, largest_gap_at);
-    }
+
+      split_by_time func(largest_gap_at);
+      split_blob_at(cvs, largest_gap_blob, func);
 }
 
 void
 split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
-              time_t split_point)
+              split_decider_func & split_decider)
 {
-  L(FL(" splitting blob %d at %d") % bi % split_point);
+  L(FL("splitting blob %d") % bi);
 
   // Sort the blob events by timestamp
   event_ptr_time_cmp cmp;
@@ -2614,7 +2624,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
        i != cvs.blobs[bi].get_events().end(); )
     {
       // Assign the event to the existing or to the new blob
-      if ((*i)->adj_time > split_point)
+      if (split_decider(*i))
         {
           cvs.blobs[new_bi].get_events().push_back(*i);
           (*i)->bi = new_bi;
@@ -2662,9 +2672,8 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
           {
             L(FL("Trying to split blob %d, because of multiple events for file %s")
               % bi % cvs.path_interner.lookup((*i)->path));
-            time_t split_point = get_best_split_point(cvs, bi);
-            I(split_point > 0);
-            split_blob_at(cvs, bi, split_point);
+            split_by_time func(get_best_split_point(cvs, bi));
+            split_blob_at(cvs, bi, func);
             return false;
           }
     }
