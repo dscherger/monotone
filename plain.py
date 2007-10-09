@@ -22,6 +22,7 @@ from ConfigParser import SafeConfigParser
 from dumb import Dumbtone
 import os.path
 import monotone
+import merkle_dir
 import sys
 
 ACTIONS = [ "pull", "push", "sync", "clone" ]
@@ -103,9 +104,9 @@ def verbose(message):
 def warning(message):
     print_prefixed(sys.stderr, "warning", message)
 
-def error_and_exit(message):
+def error_and_exit(message, error_code=1):
     print_prefixed(sys.stderr, "error", message)
-    sys.exit(1)
+    sys.exit(error_code)
     
 def parseOpt():
     
@@ -231,6 +232,8 @@ def main():
             mtn.do_pull(url, branch_pattern, **optdict)	
     except monotone.MonotoneError,e:
         error_and_exit(str(e))
+    except merkle_dir.LockError:
+        error_and_exit("repository '%s' is locked, please try again later" % url, 2)
     saveConfig(options,config)
 
 if __name__ == "__main__":
