@@ -7,12 +7,18 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include <iostream>
+#include <fstream>
+
 #include "base.hh"
 #include "cmd.hh"
 #include "app_state.hh"
 #include "rcs_import.hh"
+#include "svn_import.hh"
 
 using std::vector;
+using std::cin;
+using std::ifstream;
 
 CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
     N_("Parses versions in RCS files"),
@@ -42,6 +48,29 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   import_cvs_repo(system_path(idx(args, 0)()), app);
 }
 
+
+CMD(svn_import, "svn_import", "", CMD_REF(rcs), N_("debug"),
+    N_("[SVNDUMP]"), N_("import a subversion repository dump"),
+    options::opts::branch)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  if (args.empty())
+    {
+      import_svn_repo(cin, app);
+    }
+  else
+    {
+      system_path in_file = system_path(idx(args, 0));
+
+      N(file_exists(in_file),
+        F("File %s does not exist.") % in_file);
+
+      ifstream ifs(in_file.as_external().c_str());
+      import_svn_repo(ifs, app);
+    }
+}
 
 // Local Variables:
 // mode: C++
