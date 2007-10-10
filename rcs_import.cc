@@ -1923,6 +1923,9 @@ dijkstra_shortest_path(cvs_history &cvs,
             }
     }
 
+  if (!break_on_grey && bi != to)
+    return;
+
   // Trace back the shortest path and remember all vertices
   // on the path. These are part of the cycle we want to
   // split.
@@ -2005,6 +2008,7 @@ public:
                                  true, true, false, // follow white and grey
                                  false,
                                  make_pair(invalid_blob, invalid_blob));
+          I(!cycle_members.empty());
         }
     }
 };
@@ -2153,7 +2157,8 @@ public:
       // On a forward or cross edge, we first have to find the common
       // ancestor of both blobs involved. For that we go upwards from
       // the target (e.second) blob, until we reach the first grey
-      // blob. That must be a common ancestor.
+      // blob. That must be a common ancestor (but not necessarily the
+      // lowest one).
       vector< cvs_blob_index > path_a, path_b;
       insert_iterator< vector< cvs_blob_index > >
         ity_a(path_a, path_a.end()),
@@ -2165,6 +2170,7 @@ public:
                              false, true, true,   // follow grey and black, but
                              true,                // break on first grey
                              make_pair(e.second, e.first)); // ignore direct path
+      I(!path_a.empty());
       L(FL("  forked at blob: %d") % path_a[0]);
 
       // From that common ancestor, we now follow the grey blobs downwards,
@@ -2176,6 +2182,7 @@ public:
                              false, true, false, // follow only grey
                              false,
                              make_pair(invalid_blob, invalid_blob));
+      I(!path_b.empty());
 
       {
         vector< cvs_blob_index > tmp(path_b.size());
@@ -2191,19 +2198,25 @@ public:
       I(*path_a.rbegin() == e.second);
       I(*path_b.rbegin() == e.second);
 
-      // Unfortunately, that common ancestor isn't necessarily the least
+      for (vector<cvs_blob_index>::iterator ii = path_a.begin(); ii != path_a.end(); ++ii)
+        L(FL("  path a: %d") % *ii);
+
+      for (vector<cvs_blob_index>::iterator ii = path_b.begin(); ii != path_b.end(); ++ii)
+        L(FL("  path b: %d") % *ii);
+
+      // Unfortunately, that common ancestor isn't necessarily the lowest
       // common ancestor. Because the (grey) path b might contain other
       // forward edges to blobs in path a. An example (from the test
       // importing_cvs_branches2):
       //
       //                        2
-      //              p       /   \       p
-      //              a     10.    12     a
-      //              t      | \    |     t
-      //              h      9  \  11     h
-      //                     |   \  |
-      //              a      5    '-3     b
-      //                      \    /
+      //              p       /    \       p
+      //              a     10 <-.  12     a
+      //              t      |   |   |     t
+      //              h      9   |  11     h
+      //                     |   |   |
+      //              a      5    '- 3     b
+      //                      \     /
       //                         8
       //
       // Here, the cross edge discovered was 3 -> 8. Here, path_a is:
@@ -2211,57 +2224,55 @@ public:
       // 3 -> 10 is another cross edge and will be discovered next, but
       // hasn't been discovered so far.
       //
-      // Thus to make sure we find the least common ancestor, we check
+      // Thus to make sure we find the lowest common ancestor, we check
       // if any blob in path_b depends on another blob in path_a. In
       // such a case, that blob in path_a is the least common ancestor.
+
+      set<cvs_blob_index> common_ancestors;
+      set<cvs_blob_index> done;
+      stack<cvs_blob_index> stack;
 
       for (vector<cvs_blob_index>::iterator ib = ++path_b.begin();
            ib != path_b.end(); ++ib)
         {
-          I(ib != path_b.end());
           if (*ib == e.second)
             break;
 
-          vector< cvs_blob_index > & deps = cvs.blobs[*ib].get_dependents(cvs);
-          for (blob_index_iter j = deps.begin(); j != deps.end(); ++j)
+          vector<cvs_blob_index> cross_path;
+          insert_iterator< vector< cvs_blob_index > >
+            ity_c(cross_path, cross_path.end());
+
+          // From the lowest common ancestor, we again try to find the
+          // shortest path to e.first to get a bette path_b.
+          L(FL("checking for cross path from %d to %d") % *ib % *(++path_a.rbegin()));
+          dijkstra_shortest_path(cvs, *ib, *(++path_a.rbegin()), ity_c,
+                                 true,               // downwards
+                                 true, false, true,  // follow black and white
+                                 false,
+                                 make_pair(invalid_blob, invalid_blob));
+
+          if (!cross_path.empty())
             {
-              if (*j == e.first)
-                continue;
+              vector< cvs_blob_index > tmp(cross_path.size());
+              reverse_copy(cross_path.begin(), cross_path.end(), tmp.begin());
+              swap(tmp, path_a);
+              path_a.push_back(e.second);
 
-              if (*j == path_a[0])
-                continue;
+              for (vector<cvs_blob_index>::iterator ii = path_a.begin(); ii != path_a.end(); ++ii)
+                L(FL("  new path a: %d") % *ii);
 
-              if (*j == e.second)
-                continue;
+              I(path_a[0] == *ib);
 
-              I(path_a.size() > 1);
-              vector<cvs_blob_index>::iterator ia =
-                find(++path_a.begin(), path_a.end(), *j);
-              if (ia != path_a.end())
-                {
-                  cvs_blob_index lca = *j;
+              ib = path_b.erase(path_b.begin(), ib);
+              for (vector<cvs_blob_index>::iterator ii = path_b.begin(); ii != path_b.end(); ++ii)
+                L(FL("  new path b: %d") % *ii);
 
-                  L(FL("      better lca: %d") % lca);
-                  L(FL("             *ib is: %d") % *ib);
-
-                  ia = path_a.erase(path_a.begin(), ia);
-
-                  I(ib > path_b.begin());
-                  *path_b.begin() = lca;
-                  ib = path_b.erase(++path_b.begin(), ib);
-
-                  I(path_a[0] == path_b[0]);
-
-                  for (vector<cvs_blob_index>::iterator ja = path_a.begin(); ja != path_a.end(); ++ja)
-                    L(FL("             new path_a: %d") % *ja);
-
-                  for (vector<cvs_blob_index>::iterator jb = path_b.begin(); jb != path_b.end(); ++jb)
-                    L(FL("             new path_b: %d") % *jb);
-
-                  L(FL("             *ib is: %d") % *ib);
-                }
+              I(path_a[0] == path_b[0]);
+              I(*path_a.rbegin() == e.second);
+              I(*path_b.rbegin() == e.second);
             }
         }
+
 
       // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
