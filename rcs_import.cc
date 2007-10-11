@@ -487,10 +487,14 @@ cvs_history
 
   int unnamed_branch_counter;
 
+  // step number of graphviz output, when enabled.
+  int step_no;
+
   cvs_history(void)
     : n_versions("versions", "v", 1),
       n_tree_branches("branches", "b", 1),
-      unnamed_branch_counter(0)
+      unnamed_branch_counter(0),
+      step_no(0)
     { };
 
   void set_filename(string const & file,
@@ -1949,6 +1953,13 @@ dijkstra_shortest_path(cvs_history &cvs,
     }
 }
 
+#ifdef DEBUG_GRAPHVIZ
+void
+write_graphviz_partial(cvs_history & cvs, string const & desc,
+                       set<cvs_blob_index> & blobs_to_mark,
+                       int add_depth);
+#endif
+
 struct blob_splitter
 {
 protected:
@@ -1991,6 +2002,10 @@ public:
           // The cycle consists of only one blob - we have to solve an
           // intra blob dependency.
           cycle_members.insert(e.first);
+
+#ifdef DEBUG_GRAPHVIZ
+          write_graphviz_partial(cvs, "splitter", cycle_members, 2);
+#endif
         }
       else
         {
@@ -2009,6 +2024,10 @@ public:
                                  false,
                                  make_pair(invalid_blob, invalid_blob));
           I(!cycle_members.empty());
+
+#ifdef DEBUG_GRAPHVIZ
+          write_graphviz_partial(cvs, "splitter", cycle_members, 2);
+#endif
         }
     }
 };
@@ -2284,6 +2303,20 @@ public:
             W(F("path a contains a branch event: %d") % *i);
             a_has_branch = true;
           }
+
+#ifdef DEBUG_GRAPHVIZ
+      {
+        set<cvs_blob_index> blobs_to_show;
+
+        for (vector<cvs_blob_index>::iterator i = path_a.begin(); i != path_a.end(); ++i)
+          blobs_to_show.insert(*i);
+
+        for (vector<cvs_blob_index>::iterator i = path_b.begin(); i != path_b.end(); ++i)
+          blobs_to_show.insert(*i);
+
+        write_graphviz_partial(cvs, "splitter", blobs_to_show, 2);
+      }
+#endif
 
       for (vector<cvs_blob_index>::iterator i = ++path_b.begin();
            i != path_b.end(); ++i)
@@ -2946,11 +2979,15 @@ class blob_label_writer
 
 void
 write_graphviz(std::ofstream & of, cvs_history & cvs,
-               set<cvs_blob_index> & cycle_members, blob_label_writer & blw)
+               blob_label_writer & blw,
+               set<cvs_blob_index> const & blobs_to_show,
+               set<cvs_blob_index> const & blobs_to_mark)
 {
   of << "digraph G {\n";
 
   for (unsigned int i = 0; i < cvs.blobs.size(); ++i)
+    if ((blobs_to_show.find(i) != blobs_to_show.end()) ||
+        blobs_to_show.empty())
     {
       of << (FL("  blob%d [label=\"") % i);
       blw(of, i);
@@ -2958,16 +2995,82 @@ write_graphviz(std::ofstream & of, cvs_history & cvs,
 
       for (blob_index_iter j = cvs.blobs[i].get_dependents(cvs).begin();
            j != cvs.blobs[i].get_dependents(cvs).end(); ++j)
+        if ((blobs_to_show.find(*j) != blobs_to_show.end()) ||
+            blobs_to_show.empty())
         {
           of << (FL("  blob%d -> blob%d\n") % i % *j);
-          if ((cycle_members.find(i) != cycle_members.end()) &&
-              (cycle_members.find(*j) != cycle_members.end()))
+          if ((blobs_to_mark.find(i) != blobs_to_mark.end()) &&
+              (blobs_to_mark.find(*j) != blobs_to_mark.end()))
             of << " [color=red]";
           of << "\n";
         }
     }
 
   of << "};\n";
+}
+
+void
+write_graphviz_complete(cvs_history & cvs, string const & desc)
+{
+  std::ofstream viz_file;
+  blob_label_writer blw(cvs);
+
+  set<cvs_blob_index> blobs_to_show;
+  set<cvs_blob_index> blobs_to_mark;
+
+  cvs.step_no++;
+  viz_file.open((FL("cvs_graph.%s.%d.viz") % desc % cvs.step_no).str().c_str());
+  write_graphviz(viz_file, cvs, blw, blobs_to_show, blobs_to_mark);
+  viz_file.close();
+}
+
+void
+write_graphviz_partial(cvs_history & cvs, string const & desc,
+                       set<cvs_blob_index> & blobs_to_mark,
+                       int add_depth)
+{
+  std::ofstream viz_file;
+  blob_label_writer blw(cvs);
+
+  stack< pair< cvs_blob_index, int > > stack;
+  set<cvs_blob_index> blobs_to_show;
+
+  for (set<cvs_blob_index>::iterator i = blobs_to_mark.begin();
+       i != blobs_to_mark.end(); ++i)
+    stack.push(make_pair(*i, 0));
+
+  while (!stack.empty())
+    {
+      cvs_blob_index bi = stack.top().first;
+      int depth = stack.top().second;
+      stack.pop();
+
+      blobs_to_show.insert(bi);
+
+      depth++;
+      if (depth < add_depth)
+        {
+          cvs_blob & blob = cvs.blobs[bi];
+          vector<cvs_blob_index> deps = blob.get_dependents(cvs);
+          for (blob_index_iter j = deps.begin(); j != deps.end(); ++j)
+            if (blobs_to_show.find(*j) == blobs_to_show.end())
+              stack.push(make_pair(*j, depth));
+
+          for (blob_event_iter j = blob.begin(); j != blob.end(); ++j)
+            for (dependency_iter k = (*j)->dependencies.begin();
+                 k != (*j)->dependencies.end(); ++k)
+              {
+                cvs_blob_index dep_bi = cvs.get_blob_of(*k);
+                if (blobs_to_show.find(dep_bi) == blobs_to_show.end())
+                  stack.push(make_pair(dep_bi, depth));
+              }
+        }
+    }
+
+  cvs.step_no++;
+  viz_file.open((FL("cvs_graph.%s.%d.viz") % desc % cvs.step_no).str().c_str());
+  write_graphviz(viz_file, cvs, blw, blobs_to_show, blobs_to_mark);
+  viz_file.close();
 }
 
 #endif
@@ -3092,11 +3195,8 @@ resolve_blob_dependencies(cvs_history & cvs)
   L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
 #ifdef DEBUG_GRAPHVIZ
-  int step_no = 1;
-  std::ofstream viz_file;
-  blob_label_writer blw(cvs);
+    write_graphviz_complete(cvs, "all");
 #endif
-
 
   while (1)
   {
@@ -3106,16 +3206,6 @@ resolve_blob_dependencies(cvs_history & cvs)
     cvs.import_order.clear();
     blob_splitter vis(cvs, cycle_members);
     cvs.depth_first_search(vis, back_inserter(cvs.import_order));
-
-#ifdef DEBUG_GRAPHVIZ
-//    if (global_sanity.debug)  FIXME
-//      {
-        viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
-        write_graphviz(viz_file, cvs, cycle_members, blw);
-        viz_file.close();
-        step_no++;
-//      }
-#endif
 
     // If we have a cycle, go split it. Otherwise we don't have any
     // cycles left and can proceed.
@@ -3138,20 +3228,13 @@ resolve_blob_dependencies(cvs_history & cvs)
       branch_sanitizer vis(cvs, edges_removed);
       cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
-#ifdef DEBUG_GRAPHVIZ
-//    if (global_sanity.debug)   FIXME
-//      {
-        viz_file.open((FL("cvs_graph.%d.viz") % step_no).str().c_str());
-        set< cvs_blob_index> tmp;
-        write_graphviz(viz_file, cvs, tmp, blw);
-        viz_file.close();
-        step_no++;
-//      }
-#endif
-
       if (edges_removed == 0)
         break;
     }
+
+#ifdef DEBUG_GRAPHVIZ
+    write_graphviz_complete(cvs, "all");
+#endif
 }
 
 void
