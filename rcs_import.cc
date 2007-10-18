@@ -962,7 +962,9 @@ construct_version(vector< piece > const & source_lines,
   I(r.deltas.find(dest_version) != r.deltas.end());
   shared_ptr<rcs_delta> delta = r.deltas.find(dest_version)->second;
 
-  I(r.deltatexts.find(dest_version) != r.deltatexts.end());
+  E(r.deltatexts.find(dest_version) != r.deltatexts.end(),
+    F("delta for revision %s is missing") % dest_version);
+
   shared_ptr<rcs_deltatext> deltatext = r.deltatexts.find(dest_version)->second;
 
   vector<piece> deltalines;
@@ -2096,6 +2098,8 @@ public:
       set<cvs_blob_index> done;
       stack<cvs_blob_index> stack;
 
+      vector<cvs_blob_index> deps_into_a, deps_into_b;
+
       // start at that event and recursively check all its dependencies
       // for blobs in path_a or path_b.
       for (dependency_iter i = ev->dependencies.begin();
@@ -2115,11 +2119,13 @@ public:
             {
               I(find(++path_b.begin(), path_b.end(), bi) == path_b.end());
               count_deps_in_path_a++;
+              deps_into_a.push_back(bi);
             }
           else if (find(++path_b.begin(), path_b.end(), bi) != path_b.end())
             {
               I(find(++path_a.begin(), path_a.end(), bi) == path_a.end());
               count_deps_in_path_b++;
+              deps_into_b.push_back(bi);
             }
           else
             for (blob_event_iter i = cvs.blobs[bi].begin();
@@ -2131,6 +2137,27 @@ public:
                   if (done.find(dep_bi) == done.end())
                     stack.push(dep_bi);
                 }
+        }
+
+      // FIXME: this is a quick fix for a problem I don't know how to
+      //         solve. We basically have to decide where to put this
+      //         given event, which depends (possibly via other blobs)
+      //         on blobs in *both* paths.
+      if ((count_deps_in_path_a > 0) && (count_deps_in_path_b > 0))
+        {
+          W(F("blob %d with event %s has dependencies into both paths!")
+            % ev-bi % get_event_repr(cvs, ev));
+
+          for (vector<cvs_blob_index>::iterator i = deps_into_a.begin();
+                i != deps_into_a.end(); ++i)
+            W(F("  dep into path a: blob %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+
+          for (vector<cvs_blob_index>::iterator i = deps_into_b.begin();
+                i != deps_into_b.end(); ++i)
+            W(F("  dep into path b: blob %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+
+          W(F("putting the event somewhere..."));
+          return true;
         }
 
       I((count_deps_in_path_a == 0) || (count_deps_in_path_b == 0));
@@ -2327,7 +2354,7 @@ public:
            i != path_b.end(); ++i)
         if (cvs.blobs[*i].get_digest().is_branch_start())
           {
-            W(F("path a contains a branch event: %d") % *i);
+            W(F("path b contains a branch event: %d") % *i);
             b_has_branch = true;
           }
 
