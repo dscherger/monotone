@@ -166,6 +166,23 @@ function readstdfile(filename)
   return readfile(testdir.."/"..filename)
 end
 
+-- Return all but the first N lines of FILENAME.
+-- Note that (unlike readfile()) the result will
+-- end with a \n whether or not the file did.
+function tailfile(filename, n)
+  L(locheader(), "tailfile ", filename, ", ", n, "\n")
+  local i = 1
+  local t = {}
+  for l in io.lines(filename) do
+    if i > n then
+      table.insert(t, l)
+    end
+    i = i + 1
+  end
+  table.insert(t, "")
+  return table.concat(t, "\n")
+end
+
 function writefile_q(filename, dat)
   local file,e
   if dat == nil then
@@ -385,18 +402,21 @@ function runcmd(cmd, prefix, bgnd)
   else
     L(locheader(), cmd_as_str(cmd), "\n")
   end
+
+  local oldexec = execute
+  if bgnd then
+     execute = spawn
+  end
   if type(cmd[1]) == "function" then
     result = {pcall(unpack(cmd))}
   elseif type(cmd[1]) == "string" then
-    if bgnd then
-      result = {pcall(spawn, unpack(cmd))}
-    else
-      result = {pcall(execute, unpack(cmd))}
-    end
+     result = {pcall(execute, unpack(cmd))}
   else
+     execute = oldexec
     err("runcmd called with bad command table " ..
 	"(first entry is a " .. type(cmd[1]) ..")")
-  end
+ end
+ execute = oldexec
   
   if local_redir then
     files.stdin:close()
@@ -682,7 +702,7 @@ function bg(torun, ret, stdout, stderr, stdin)
                 
                 test.bglist[obj.id] = nil
                 L(locheader(), "checking background command from ", out.locstr,
-                  table.concat(out.cmd, " "), "\n")
+		  cmd_as_str(out.cmd), "\n")
                 post_cmd(obj.retval, out.expret, out.expout, out.experr, obj.prefix)
                 return true
               end
