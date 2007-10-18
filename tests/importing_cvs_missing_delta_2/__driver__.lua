@@ -7,6 +7,6 @@ mtn_setup()
 check(get("cvs-repository"))
 
 -- try an import...
-check(mtn("--branch=testbranch", "cvs_import", "cvs-repository/test"), 1, false, true)
-check(samelines("stderr", {"mtn: error: delta for revision 1.2 is missing"}))
+check(mtn("--ticker", "none", "--branch=testbranch", "cvs_import", "cvs-repository/test"), 1, false, true)
+check(samelines("stderr", {"mtn: error: delta for revision 1.3 is missing"}))
 
