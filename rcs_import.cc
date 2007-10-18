@@ -199,6 +199,7 @@ public:
 void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
 {
   /* Adds dep as a dependency of ev. */
+  I(ev != dep);
   ev->dependencies.push_back(dep);
   dep->dependents.push_back(ev);
 }
@@ -1958,6 +1959,10 @@ void
 write_graphviz_partial(cvs_history & cvs, string const & desc,
                        set<cvs_blob_index> & blobs_to_mark,
                        int add_depth);
+
+void
+write_graphviz_complete(cvs_history & cvs, string const & desc);
+
 #endif
 
 struct blob_splitter
@@ -2407,9 +2412,9 @@ public:
           // next blob from path a or from path b. We take the younger
           // one first and adjust dependencies as follows:
           //
-          //       ANC      (if PaA is younger)      ANC
-          //      /   \             -->             /
-          //    PaA   PaB                         PaA -> PaB
+          //       ANC    (if A is younger than B)   ANC
+          //      /   \             -->              /
+          //     A     B                            A ->  B
           //
           // PaA then becomes the ancestor of the next round. We repeat
           // this until we reach the final blob which triggered the
@@ -2432,10 +2437,16 @@ public:
               I(ity_a != path_a.end());
               I(ity_b != path_b.end());
 
-              if ((blob_time_cmp(*ity_a, *ity_b) ||
-                   (*ity_b == e.second)) &&
-                  (*ity_a != e.second))
+              if ((!blob_time_cmp(*ity_a, *ity_b) || (*ity_a == e.second)) &&
+                  (*ity_b != e.second))
                 {
+                  // swap path a and path b, so that path a contains the
+                  // youngest blob, which needs to become the new common
+                  // ancestor.
+                  swap(path_a, path_b);
+                  swap(ity_a, ity_b);
+                }
+
                   // ity_a comes before ity_b, so we drop the dependency
                   // of ity_b to it's ancestor and add one to ity_a
                   // instead.
@@ -2450,28 +2461,22 @@ public:
 
                   ity_anc = ity_a;
                   ity_a++;
-                }
-              else
-                {
-                  // See above, vice verca.
-
-                  L(FL("  with common ancestor %d, blob %d wins over blob %d")
-                    % *ity_anc % *ity_b % *ity_a);
-
-                  cvs.remove_deps(*ity_a, *ity_anc);
-                  edges_removed++;
-
-                  add_dependency(*cvs.blobs[*ity_a].begin(), *cvs.blobs[*ity_b].begin());
-
-                  ity_anc = ity_b;
-                  ity_b++;
-                }
             }
         }
     }
 
   void back_edge(Edge e)
     {
+#ifdef DEBUG_GRAPHVIZ
+      set<cvs_blob_index> blobs_to_show;
+
+       blobs_to_show.insert(e.first);
+       blobs_to_show.insert(e.second);
+
+      write_graphviz_partial(cvs, "invalid_back_edge", blobs_to_show, 4);
+#endif
+
+      W(F("back edge from %d to %d") % e.first % e.second);
       I(false);
     }
 };
@@ -2632,8 +2637,6 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           if (cvs.blobs[*cc].get_digest().is_branch_start())
             continue;
 
-          L(FL("  testing blob %d") % *cc);
-
           // sort the blob events by timestamp
           vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
           event_ptr_time_cmp cmp;
@@ -2671,12 +2674,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                       cvs_event_ptr dep = *j;
 
                       if (cvs.get_blob_of(dep) == *dd)
-                        {
-                          count_intra_cycle_deps++;
-                          L(FL("     depends on blob %d due to file %s")
-                            % *dd
-                            % cvs.path_interner.lookup(dep->path));
-                        }
+                        count_intra_cycle_deps++;
                     }
                 }
             }
