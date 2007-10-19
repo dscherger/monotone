@@ -329,6 +329,7 @@ private:
   vector< cvs_event_ptr > events;
 
   bool has_cached_deps;
+  bool events_are_sorted;
   bool cached_deps_are_sorted;
   vector<cvs_blob_index> dependents_cache;
 
@@ -351,6 +352,7 @@ public:
 
   cvs_blob(const cvs_event_digest d)
     : has_cached_deps(false),
+      events_are_sorted(true),
       cached_deps_are_sorted(false),
       digest(d),
       split_origin(invalid_blob),
@@ -360,6 +362,7 @@ public:
   cvs_blob(const cvs_blob & b)
     : events(b.events),
       has_cached_deps(false),
+      events_are_sorted(false),
       cached_deps_are_sorted(false),
       digest(b.digest),
       split_origin(invalid_blob),
@@ -370,6 +373,7 @@ public:
     {
       I(digest == c->get_digest());
       events.push_back(c);
+      events_are_sorted = false;
     }
 
   vector< cvs_event_ptr > & get_events()
@@ -432,6 +436,8 @@ public:
         avg += (*i)->adj_time;
       return (time_t) avg / events.size();
     }
+
+  void sort_events(void);
 
   int build_cset(cvs_history & cvs,
                  roster_t & base_ros,
@@ -2666,10 +2672,9 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           if (cvs.blobs[*cc].get_digest().is_branch_start())
             continue;
 
-          // sort the blob events by timestamp
+          // make sure the blob's events are sorted by timestamp
+          cvs.blobs[*cc].sort_events();
           vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
-          event_ptr_time_cmp cmp;
-          sort(blob_events.begin(), blob_events.end(), cmp);
 
           blob_event_iter ity;
 
@@ -2753,10 +2758,8 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
 {
   L(FL("splitting blob %d") % bi);
 
-  // Sort the blob events by timestamp
-  event_ptr_time_cmp cmp;
-  sort(cvs.blobs[bi].get_events().begin(),
-       cvs.blobs[bi].get_events().end(), cmp);
+  // make sure the blob's events are sorted by timestamp
+  cvs.blobs[bi].sort_events();
 
   // Add a blob
   cvs_event_digest d = cvs.blobs[bi].get_digest();
@@ -3141,6 +3144,16 @@ void cvs_blob::sort_deps_cache(cvs_history & cvs)
   blob_index_time_cmp cmp(cvs);
   sort(dependents_cache.begin(), dependents_cache.end(), cmp);
   cached_deps_are_sorted = true;
+}
+
+void cvs_blob::sort_events(void)
+{
+  if (!events_are_sorted)
+    {
+      event_ptr_time_cmp cmp;
+      sort(events.begin(), events.end(), cmp);
+      events_are_sorted = true;
+    }
 }
 
 template<typename Visitor>
