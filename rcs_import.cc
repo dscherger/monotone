@@ -2146,15 +2146,17 @@ public:
       if ((count_deps_in_path_a > 0) && (count_deps_in_path_b > 0))
         {
           W(F("blob %d with event %s has dependencies into both paths!")
-            % ev-bi % get_event_repr(cvs, ev));
+            % ev->bi % get_event_repr(cvs, ev));
 
           for (vector<cvs_blob_index>::iterator i = deps_into_a.begin();
                 i != deps_into_a.end(); ++i)
-            W(F("  dep into path a: blob %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+            W(F("  dep into path a: blob %d (%s)")
+              % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
 
           for (vector<cvs_blob_index>::iterator i = deps_into_b.begin();
                 i != deps_into_b.end(); ++i)
-            W(F("  dep into path b: blob %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+            W(F("  dep into path b: blob %d (%s)")
+              % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
 
           W(F("putting the event somewhere..."));
           return true;
