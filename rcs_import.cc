@@ -651,20 +651,21 @@ cvs_history
           cvs_blob_index this_bi = get_blob_of(*dep);
           if (this_bi == dep_bi)
             {
-              L(FL("            path: %s") % path_interner.lookup((*dep)->path));
-              dep = (*ev)->dependencies.erase(dep);
+              L(FL("    event %s (of blob %d) depends on event %s (of blob %d), losing dependency")
+                % get_event_repr(*this, *ev) % get_blob_of(*ev)
+                % get_event_repr(*this, *dep) % get_blob_of(*dep));
 
               // remove all occurances of this event in the other's dependents
-              ev_iter x = (*dep)->dependents.begin();
-              while (x != (*dep)->dependents.end())
-                {
-                  x = find(x, (*dep)->dependents.end(), *ev);
-                  if (x != (*dep)->dependents.end())
-                    {
-                      L(FL("  removed opposite dependents entry..."));
-                      x = (*dep)->dependents.erase(x);
-                    }
-                }
+              vector<cvs_event_ptr> & rdeps = (*dep)->dependents;
+              dependency_iter i = rdeps.begin();
+              while (i != rdeps.end())
+                if (*i == *ev)
+                  i = rdeps.erase(i);
+                else
+                  ++i;
+
+              // remove the dependency and advance
+              dep = (*ev)->dependencies.erase(dep);
 
               cc++;
             }
@@ -672,40 +673,8 @@ cvs_history
             ++dep;
         }
 
-    for (blob_event_iter ev = blobs[dep_bi].begin();
-          ev != blobs[dep_bi].end(); ++ev)
-      {
-        vector<vector<cvs_event_ptr>::iterator> to_remove;
-
-      for (vector<cvs_event_ptr>::iterator dep = (*ev)->dependents.begin();
-            dep != (*ev)->dependents.end(); )
-        {
-          cvs_blob_index this_bi = get_blob_of(*dep);
-
-          if (this_bi == bi)
-            {
-              L(FL(" HUM! here's still a dependent... %s") % path_interner.lookup((*ev)->path));
-              to_remove.push_back(dep);
-              ++dep;
-            }
-          else
-            ++dep;
-        }
-        for (vector<vector<cvs_event_ptr>::iterator>::const_iterator z = to_remove.begin();
-              z != to_remove.end(); ++z)
-          (*ev)->dependents.erase(*z);
-      }
-
-    if (cc == 0)
-      L(FL("      nothing removed..."));
-    else
-      L(FL("      %d deps removed") % cc);
-
-#if 0
-    vector<cvs_blob_index> & deps = blobs[dep_bi].get_dependents(*this);
-    blob_index_iter y = find(deps.begin(), deps.end(), bi);
-    I(y != deps.end());
-#endif
+    // we expect to have removed at least one dependency.
+    I(cc > 0);
 
     // blob 'bi' is no longer a dependent of 'dep_bi', so update it's cache
     blobs[dep_bi].reset_deps_cache();
@@ -2302,7 +2271,7 @@ public:
             ity_c(cross_path, cross_path.end());
 
           // From the lowest common ancestor, we again try to find the
-          // shortest path to e.first to get a bette path_b.
+          // shortest path to e.first to get a better path_b.
           L(FL("checking for cross path from %d to %d") % *ib % *(++path_a.rbegin()));
           dijkstra_shortest_path(cvs, *ib, *(++path_a.rbegin()), ity_c,
                                  true,               // downwards
@@ -2465,6 +2434,9 @@ public:
 
           while ((*ity_a != e.second) || (*ity_b != e.second))
             {
+              // Just to be extra sure, we reset the dependents
+              // caches of all the tree blobs involved. This can
+              // certainly be optimized.
               cvs.blobs[*ity_anc].reset_deps_cache();
               cvs.blobs[*ity_b].reset_deps_cache();
               cvs.blobs[*ity_a].reset_deps_cache();
@@ -2482,20 +2454,26 @@ public:
                   swap(ity_a, ity_b);
                 }
 
-                  // ity_a comes before ity_b, so we drop the dependency
-                  // of ity_b to it's ancestor and add one to ity_a
-                  // instead.
+              // ity_a comes before ity_b, so we drop the dependency
+              // of ity_b to it's ancestor and add one to ity_a
+              // instead.
+              L(FL("  with common ancestor %d, blob %d wins over blob %d")
+                % *ity_anc % *ity_a % *ity_b);
 
-                  L(FL("  with common ancestor %d, blob %d wins over blob %d")
-                    % *ity_anc % *ity_a % *ity_b);
+              cvs.remove_deps(*ity_b, *ity_anc);
+              edges_removed++;
 
-                  cvs.remove_deps(*ity_b, *ity_anc);
-                  edges_removed++;
+              // If ity_b points to the last blob in path_b, the
+              // common blob e.second, then we can abort the loop, because
+              // e.second is also the end of path a.
+              if (*ity_b == e.second)
+                break;
 
-                  add_dependency(*cvs.blobs[*ity_b].begin(), *cvs.blobs[*ity_a].begin());
+              L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
+              add_dependency(*cvs.blobs[*ity_b].begin(), *cvs.blobs[*ity_a].begin());
 
-                  ity_anc = ity_a;
-                  ity_a++;
+              ity_anc = ity_a;
+              ity_a++;
             }
         }
     }
