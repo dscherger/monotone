@@ -1538,7 +1538,7 @@ process_rcs_branch(cvs_branchname const & current_branchname,
                                    curr_commit->given_time + 1)));
 
           cvs.append_event(branch_end_point);
-          add_dependency(branch_end_point, curr_commit);
+          add_dependencies(branch_end_point, curr_events, reverse_import);
         }
 
       return first_commit;
@@ -1986,7 +1986,7 @@ public:
           cycle_members.insert(e.first);
 
 #ifdef DEBUG_GRAPHVIZ
-          write_graphviz_partial(cvs, "splitter", cycle_members, 2);
+          write_graphviz_partial(cvs, "splitter", cycle_members, 5);
 #endif
         }
       else
@@ -2008,7 +2008,7 @@ public:
           I(!cycle_members.empty());
 
 #ifdef DEBUG_GRAPHVIZ
-          write_graphviz_partial(cvs, "splitter", cycle_members, 2);
+          write_graphviz_partial(cvs, "splitter", cycle_members, 5);
 #endif
         }
     }
@@ -2115,9 +2115,9 @@ public:
         }
 
       // FIXME: this is a quick fix for a problem I don't know how to
-      //         solve. We basically have to decide where to put this
-      //         given event, which depends (possibly via other blobs)
-      //         on blobs in *both* paths.
+      //        solve. We basically have to decide where to put this
+      //        given event, which depends (possibly via other blobs)
+      //        on blobs in *both* paths.
       if ((count_deps_in_path_a > 0) && (count_deps_in_path_b > 0))
         {
           W(F("blob %d with event %s has dependencies into both paths!")
@@ -2138,6 +2138,17 @@ public:
         }
 
       I((count_deps_in_path_a == 0) || (count_deps_in_path_b == 0));
+
+      // FIXME: another quick fix: if the event depends on none
+      //        of the two paths, we simply put it to path_b.
+      if (count_deps_in_path_a + count_deps_in_path_b == 0)
+        {
+          W(F("blob %d with event %s has no dependencies!")
+            % ev->bi % get_event_repr(cvs, ev));
+          W(F("putting the event somewhere..."));
+          return false;
+        }
+
       I(count_deps_in_path_a + count_deps_in_path_b > 0);
 
       if (count_deps_in_path_a > 0)
@@ -2323,7 +2334,7 @@ public:
         for (vector<cvs_blob_index>::iterator i = path_b.begin(); i != path_b.end(); ++i)
           blobs_to_show.insert(*i);
 
-        write_graphviz_partial(cvs, "splitter", blobs_to_show, 2);
+        write_graphviz_partial(cvs, "splitter", blobs_to_show, 5);
       }
 #endif
 
@@ -2481,16 +2492,22 @@ public:
   void back_edge(Edge e)
     {
 #ifdef DEBUG_GRAPHVIZ
-      set<cvs_blob_index> blobs_to_show;
+       set<cvs_blob_index> blobs_to_show;
 
        blobs_to_show.insert(e.first);
        blobs_to_show.insert(e.second);
 
-      write_graphviz_partial(cvs, "invalid_back_edge", blobs_to_show, 4);
+      write_graphviz_partial(cvs, "invalid_back_edge", blobs_to_show, 5);
 #endif
 
-      W(F("back edge from %d to %d") % e.first % e.second);
-      I(false);
+      W(F("back edge from blob %d (%s) to blob %d (%s) - REMOVING IT!")
+        % e.first % get_event_repr(cvs, *cvs.blobs[e.first].begin())
+        % e.second % get_event_repr(cvs, *cvs.blobs[e.second].begin()));
+
+      // I(false);
+
+      cvs.remove_deps(e.second, e.first);
+      edges_removed++;
     }
 };
 
@@ -3497,17 +3514,7 @@ blob_consumer::operator()(cvs_blob_index bi)
     blob.in_branch = cvs.base_branch;
   else
     {
-      // if there are multiple parent blobs, make sure they all
-      // carry the same branchname.
-      if (parent_blobs.size() > 1)
-        {
-          cvs_branchname required_branch =
-            cvs.blobs[*parent_blobs.begin()].in_branch;
-
-          for (set<cvs_blob_index>::iterator i = parent_blobs.begin();
-                i != parent_blobs.end(); ++i)
-            I(cvs.blobs[*i].in_branch == required_branch);
-        }
+      I(parent_blobs.size() == 1);
 
       blob.in_branch = cvs.blobs[*parent_blobs.begin()].in_branch;
       parent_rid = cvs.blobs[*parent_blobs.begin()].assigned_rid;
