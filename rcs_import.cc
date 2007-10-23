@@ -3278,38 +3278,87 @@ resolve_blob_dependencies(cvs_history & cvs)
 #endif
 }
 
+cvs_blob_index
+create_artificial_blob_for(cvs_history & cvs, cvs_blob_index bi, list<cvs_blob_index> blobs)
+{
+  L(FL("creating artificial blob for:"));
+  for (list<cvs_blob_index>::iterator i = blobs.begin();
+       i != blobs.end(); ++i)
+    {
+      L(FL("  %d") % *i);
+    }
+
+  int size = blobs.size();
+  I(size >= 2);
+
+  list<cvs_blob_index>::iterator i = blobs.begin();
+  size = size / 2;
+  while (size > 0)
+    {
+      i++;
+      size--;
+    }
+
+  list<cvs_blob_index> left, right;
+
+  left.splice(left.end(), blobs, blobs.begin(), i);
+  right.splice(right.end(), blobs, i);
+
+  L(FL("  size of left: %d") % left.size());
+  L(FL("  size of right: %d") % right.size());
+  I(!left.empty());
+  I(!right.empty());
+
+  cvs_blob_index left_bi, right_bi;
+
+  if (left.size() > 1)
+    left_bi = create_artificial_blob_for(cvs, bi, left);
+  else
+    left_bi = *left.begin();
+
+  if (right.size() > 1)
+    right_bi = create_artificial_blob_for(cvs, bi, right);
+  else
+    right_bi = *right.begin();
+
+  return invalid_blob;
+}
+
 void
 split_branchpoint_handler(cvs_history & cvs)
 {
   int nr = 1;
 
+  map< cvs_blob_index, list< cvs_blob_index > > split_symbols;
+
   for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
     {
       cvs_blob & blob = cvs.blobs[bi];
+
+      if (blob.get_digest().is_branch_point() ||
+          blob.get_digest().is_tag_point())
+        {
+          if (blob.split_origin != invalid_blob)
+            {
+              if (split_symbols.find(blob.split_origin) == split_symbols.end())
+                split_symbols.insert(make_pair(blob.split_origin, list<cvs_blob_index>()));
+
+              split_symbols[blob.split_origin].push_back(bi);
+            }
+        }
+
       if (blob.get_digest().is_branch_point())
         {
           shared_ptr<cvs_branch_point> cbe =
             boost::static_pointer_cast<cvs_branch_point, cvs_event>(
               *blob.begin());
 
-          // handle split branchpoints
+          // handle unnamed branches
           string branchname = cvs.branchname_interner.lookup(cbe->branchname);
-          if (blob.split_origin != invalid_blob)
+          if ((blob.split_origin == invalid_blob) && (branchname.empty()))
             {
-              if (branchname.empty())
-                {
-                  branchname = (FL("UNNAMED_BRANCH_%d") % nr).str();
-                  nr++;
-                }
-              else
-                {
-                  W(F("unable to properly represent branch %s")
-                    % branchname);
-
-                  branchname = (FL("SPLITTED_BRANCHPOINT_%d_%s")
-                                % blob.split_index
-                                % branchname).str();
-                }
+              branchname = (FL("UNNAMED_BRANCH_%d") % nr).str();
+              nr++;
 
               cbe->branchname = cvs.branchname_interner.intern(branchname);
               for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
@@ -3318,28 +3367,19 @@ split_branchpoint_handler(cvs_history & cvs)
               cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
             }
         }
-      else if (blob.get_digest().is_tag_point())
-        {
-          shared_ptr<cvs_tag_point> cte =
-            boost::static_pointer_cast<cvs_tag_point, cvs_event>(
-              *blob.begin());
+    }
 
-          if (blob.split_origin != invalid_blob)
-            {
-              W(F("unable to properly represent tag %s")
-                % cvs.tag_interner.lookup(cte->tag));
+  for (map<cvs_blob_index, list<cvs_blob_index> >::iterator i = split_symbols.begin();
+       i != split_symbols.end(); ++i)
+    {
+      cvs_blob_index main_bi = i->first;
+      list<cvs_blob_index> splitted_blobs = i->second;
 
-              string tag = (FL("SPLITTED_TAG_%d_%s")
-                            % blob.split_index
-                            % cvs.tag_interner.lookup(cte->tag)).str();
+      splitted_blobs.push_back(main_bi);
 
-              cte->tag = cvs.tag_interner.intern(tag);
-              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-                static_cast< cvs_tag_point & >(**i).tag = cte->tag;
-              blob.digest = cte->get_digest();
-              cvs.blob_index.insert(make_pair(cte->get_digest(), bi));
-            }
-        }
+      cvs_blob_index new_bi = create_artificial_blob_for(cvs, main_bi, splitted_blobs);
+
+      I(new_bi != invalid_blob);
     }
 }
 
