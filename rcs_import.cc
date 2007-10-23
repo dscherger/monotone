@@ -94,6 +94,8 @@ typedef enum
   ET_BRANCH_END = 4
 } event_type;
 
+typedef u64 time_i;
+
 struct cvs_history;
 
 struct cvs_event_digest
@@ -179,16 +181,16 @@ class
 cvs_event
 {
 public:
-  time_t given_time;
-  time_t adj_time;
+  time_i given_time;
+  time_i adj_time;
   cvs_path path;
   cvs_blob_index bi;
   vector< cvs_event_ptr > dependencies;
   vector< cvs_event_ptr > dependents;
 
-  cvs_event(const cvs_path p, const time_t ti)
+  cvs_event(const cvs_path p, const time_i ti)
     : given_time(ti),
-      adj_time(ti),
+      adj_time(ti * 100),
       path(p)
     { };
 
@@ -214,7 +216,7 @@ public:
   cvs_rcs_version rcs_version;
   bool alive;
 
-  cvs_commit(const cvs_path p, const time_t ti, const cvs_mtn_version v,
+  cvs_commit(const cvs_path p, const time_i ti, const cvs_mtn_version v,
              const cvs_rcs_version r, const cvs_authorclog ac,
              const bool al)
     : cvs_event(p, ti),
@@ -242,7 +244,7 @@ public:
       branchname(bn)
     { };
 
-  cvs_branch_point(const cvs_path p, const cvs_branchname bn, time_t ti)
+  cvs_branch_point(const cvs_path p, const cvs_branchname bn, time_i ti)
     : cvs_event(p, ti),
       branchname(bn)
     { };
@@ -265,7 +267,7 @@ public:
       branchname(bn)
     { };
 
-  cvs_branch_start(const cvs_path p, const cvs_branchname bn, time_t ti)
+  cvs_branch_start(const cvs_path p, const cvs_branchname bn, time_i ti)
     : cvs_event(p, ti),
       branchname(bn)
     { };
@@ -281,7 +283,7 @@ cvs_branch_end
   : public cvs_branch_start
 {
 public:
-  cvs_branch_end(const cvs_path p, const cvs_branchname bn, time_t ti)
+  cvs_branch_end(const cvs_path p, const cvs_branchname bn, time_i ti)
     : cvs_branch_start(p, bn, ti)
     { };
 
@@ -298,7 +300,7 @@ cvs_tag_point
 public:
   cvs_tag tag;
 
-  cvs_tag_point(const cvs_path p, const time_t ti, const cvs_tag ta)
+  cvs_tag_point(const cvs_path p, const time_i ti, const cvs_tag ta)
     : cvs_event(p, ti),
       tag(ta)
     { };
@@ -429,12 +431,13 @@ public:
       cached_deps_are_sorted = false;
     }
 
-  time_t get_avg_time(void) const
+  u64 get_avg_time(void) const
     {
-      long long avg = 0;
+      time_i avg = 0;
       for (blob_event_iter i = events.begin(); i != events.end(); ++i)
         avg += (*i)->adj_time;
-      return (time_t) avg / events.size();
+      avg /= events.size();
+      return avg;
     }
 
   void sort_events(void);
@@ -1080,7 +1083,7 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
     {
       unsigned int price = 0;
 
-      stack< pair< cvs_event_ptr, time_t > > stack;
+      stack< pair< cvs_event_ptr, time_i > > stack;
       set< cvs_event_ptr > done;
       cvs_event_ptr dep = i->first;
       cvs_event_ptr ev = i->second;
@@ -1097,7 +1100,7 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
       while (!stack.empty())
         {
           cvs_event_ptr e = stack.top().first;
-          time_t time_goal = stack.top().second;
+          time_i time_goal = stack.top().second;
           stack.pop();
           done.insert(e);
 
@@ -1126,7 +1129,7 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
       while (!stack.empty())
         {
           cvs_event_ptr e = stack.top().first;
-          time_t time_goal = stack.top().second;
+          time_i time_goal = stack.top().second;
           stack.pop();
           done.insert(e);
 
@@ -1154,7 +1157,7 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
 static void
 solve_violation(cvs_history & cvs, t_solution & solution)
 {
-  stack< pair< cvs_event_ptr, time_t > > stack;
+  stack< pair< cvs_event_ptr, time_i > > stack;
   set< cvs_event_ptr > done;
   cvs_event_ptr dep = solution.first->first;
   cvs_event_ptr ev = solution.first->second;
@@ -1170,7 +1173,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
       while (!stack.empty())
         {
           cvs_event_ptr e = stack.top().first;
-          time_t time_goal = stack.top().second;
+          time_i time_goal = stack.top().second;
           stack.pop();
           done.insert(e);
 
@@ -1194,7 +1197,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
       while (!stack.empty())
         {
           cvs_event_ptr e = stack.top().first;
-          time_t time_goal = stack.top().second;
+          time_i time_goal = stack.top().second;
           stack.pop();
           done.insert(e);
 
@@ -2026,10 +2029,10 @@ public:
 class split_by_time
   : public split_decider_func
 {
-  time_t split_point;
+  u64 split_point;
 
 public:
-  split_by_time(time_t const ti)
+  split_by_time(time_i const ti)
     : split_point(ti)
     { };
 
@@ -2513,10 +2516,11 @@ public:
 
 // single blob split points: search only for intra-blob dependencies
 // and return split points to resolve these dependencies.
-time_t
+time_i
 get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 {
-  list< pair<time_t, time_t> > ib_deps;
+  list< pair<time_i, time_i> > ib_deps;
+  list<time_i> simultaneous_deps;
 
   // Collect the conflicting intra-blob dependencies, storing the
   // timestamps of both events involved.
@@ -2546,8 +2550,9 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
       for (blob_event_iter j = i + 1; j != cvs.blobs[bi].end(); ++j)
         if ((*i)->path == (*j)->path)
           {
-            I((*i)->adj_time != (*j)->adj_time);
-            if ((*i)->adj_time > (*j)->adj_time)
+            if ((*i)->adj_time == (*j)->adj_time)
+              simultaneous_deps.push_back((*i)->adj_time);
+            else if ((*i)->adj_time > (*j)->adj_time)
               ib_deps.push_back(make_pair((*j)->adj_time, (*i)->adj_time));
             else
               ib_deps.push_back(make_pair((*i)->adj_time, (*j)->adj_time));
@@ -2576,10 +2581,9 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
   // that, we simply count how many intra-blob deps a split between any two
   // events would resolve.
 
-  typedef list< pair<time_t, time_t> >::iterator dep_ity;
+  typedef list< pair<time_i, time_i> >::iterator dep_ity;
 
-  vector< pair<time_t, time_t> > results;
-  set< time_t > event_times;
+  set< time_i > event_times;
   for (dep_ity i = ib_deps.begin(); i != ib_deps.end(); ++i)
     {
       if (event_times.find(i->first) == event_times.end())
@@ -2591,20 +2595,22 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 
   if (event_times.size() <= 0)
     {
+      I(simultaneous_deps.empty());
+
       W(F("unable to split blob %d") % bi);
       return 0;
     }
 
-  set<time_t>::const_iterator last, curr;
+  set<time_i>::const_iterator last, curr;
   last = event_times.begin();
   curr = last;
   curr++;
-  pair<time_t, time_t> best_split_range = make_pair(0, 0);
+  pair<time_i, time_i> best_split_range = make_pair(0, 0);
   vector<dep_ity> deps_resolved_by_best_split;
   unsigned int best_score = 0;
   for ( ; curr != event_times.end(); ++curr)
     {
-      time_t curr_split_point = *last + (*curr - *last) / 2;
+      time_i curr_split_point = *last + (*curr - *last) / 2;
 
       // just to get everything right here...
       I(*curr > *last);
@@ -2637,7 +2643,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
   //        not involved in the dependency cycle, but for which we need to
   //        decide where to put them.
 
-  time_t best_split_point = best_split_range.first +
+  time_i best_split_point = best_split_range.first +
     (best_split_range.second - best_split_range.first) / 2;
 
   L(FL("Best split range: %d - %d (@%d)")
@@ -2657,8 +2663,8 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
       typedef set<cvs_blob_index>::const_iterator cm_ity;
 
-      time_t largest_gap = 0;
-      time_t largest_gap_at = 0;
+      time_i largest_gap = 0;
+      time_i largest_gap_at = 0;
       int largest_gap_blob = -1;
 
       for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
@@ -2683,7 +2689,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
               last_ev = this_ev;
               this_ev = *ity;
 
-              time_t time_diff = this_ev->adj_time - last_ev->adj_time;
+              time_i time_diff = this_ev->adj_time - last_ev->adj_time;
               if (time_diff > largest_gap)
                 {
                   largest_gap = time_diff;
@@ -3577,7 +3583,8 @@ blob_consumer::operator()(cvs_blob_index bi)
       I(app.db.put_revision(new_rid, rev));
 
         {
-          time_t commit_time = blob.get_avg_time();
+          time_i avg_time = blob.get_avg_time();
+          time_t commit_time = avg_time / 100;
           string author, changelog;
 
           cvs.split_authorclog(ce->authorclog, author, changelog);

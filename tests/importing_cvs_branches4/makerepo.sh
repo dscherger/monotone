@@ -28,8 +28,8 @@ cvs tag -b A
 cvs update -r A
 
 # a commit which will later conflict with one in branch B
+echo "version 1.1.2.1 of test file1" > file1
 echo "version 1.1.2.1 of test file2" > file2
-echo "xxx" > file1
 cvs commit -m "conflicting commit" file1 file2
 
 # go back to the trunk and branch into B

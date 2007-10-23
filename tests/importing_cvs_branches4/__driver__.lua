@@ -17,13 +17,14 @@ check(get("cvs-repository"))
 -- author.
 
 writefile("file1-1.1", "version 1.1 of test file1\n")
+writefile("file1-1.1.2.1", "version 1.1.2.1 of test file1\n")
 writefile("file1-1.1.4.1", "version 1.1.4.1 of test file1\n")
 
 writefile("file2-1.1", "version 1.1 of test file2\n")
 writefile("file2-1.1.2.1", "version 1.1.2.1 of test file2\n")
 
 -- import into monotone and check presence of files
-xfail(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
 
 -- We currently don't handle blobs, which seem to belong to two different
 -- branches. See the branch_sanitizer.
@@ -42,7 +43,7 @@ check(samefile("file1-1.1", "maindir/file1"))
 check(samefile("file2-1.1", "maindir/file2"))
 
 -- check for correctness of the files in branch A
-check(samefile("file1-1.1", "branchA/file1"))
+check(samefile("file1-1.1.2.1", "branchA/file1"))
 check(samefile("file2-1.1.2.1", "branchA/file2"))
 
 -- check for correctness of the files in branch B
