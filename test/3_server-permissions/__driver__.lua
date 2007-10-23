@@ -40,5 +40,5 @@ evil_ws:commit()
 evilguy:push_to(server)
 
 user:pull_from(server)
-user_ws:run("update")
+check(user_ws:run("update"), 0, false, false)
 check(not exists(user_ws:fullpath("screensaver.sh")))
