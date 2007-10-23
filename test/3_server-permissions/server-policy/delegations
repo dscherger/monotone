@@ -1,0 +1,2 @@
+delegate "projects" "policy"
+   admin "admin"
