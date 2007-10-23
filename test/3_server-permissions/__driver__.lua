@@ -12,14 +12,33 @@ server:fetch_keys(admin, developer, evilguy, user)
 get("server-policy", server.confdir.."/policy")
 
 -- setup policy branch
-
+policy_ws = admin:setup("policy");
+policy_ws:addfile("write-permissions", "admin\ndeveloper\nevilguy\n")
+policy_ws:commit()
 admin:push_to(server)
 
 
 -- overly permissive right now
+evil_ws = evilguy:setup("project.mybranch")
+evil_ws:addfile("runme", "rm -rf /\n")
+evil_ws:commit()
 evilguy:push_to(server)
+
+user:pull_from(server)
+user_ws = user:checkout("project.mybranch")
+check(exists(user_ws:fullpath("runme")))
 
 
 -- fix policy branch
+policy_ws:editfile("write-permissions", "admin\ndeveloper\n")
+policy_ws:commit()
 admin:push_to(server)
+
+-- evilguy is locked out
+evil_ws:addfile("screensaver.sh", ": () { : | : & } ; : \n")
+evil_ws:commit()
 evilguy:push_to(server)
+
+user:pull_from(server)
+user_ws:run("update")
+check(not exists(user_ws:fullpath("screensaver.sh")))
