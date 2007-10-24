@@ -76,6 +76,8 @@ using boost::lexical_cast;
 
 // cvs history recording stuff
 
+#define DEBUG_GRAPHVIZ
+
 typedef unsigned long cvs_branchname;
 typedef unsigned long cvs_authorclog;
 typedef unsigned long cvs_mtn_version;   // the new file id in monotone
@@ -91,7 +93,8 @@ typedef enum
   ET_TAG_POINT = 1,
   ET_BRANCH_POINT = 2,
   ET_BRANCH_START = 3,
-  ET_BRANCH_END = 4
+  ET_BRANCH_END = 4,
+  ET_ARTIFICIAL = 5
 } event_type;
 
 typedef u64 time_i;
@@ -148,6 +151,11 @@ struct cvs_event_digest
   bool is_branch_end() const
     {
       return digest >> 29 == (u32) ET_BRANCH_END;
+    }
+
+  bool is_artificial() const
+    {
+      return digest >> 29 == (u32) ET_ARTIFICIAL;
     }
 };
 
@@ -311,6 +319,25 @@ public:
     };
 };
 
+class
+cvs_artificial
+  : public cvs_event
+{
+public:
+  int artificial_rev_no;
+
+  cvs_artificial(const cvs_path p, const time_i ti,
+                 const int no)
+    : cvs_event(p, ti),
+      artificial_rev_no(no)
+    { };
+
+  virtual cvs_event_digest get_digest(void) const
+    {
+      return cvs_event_digest(ET_ARTIFICIAL, artificial_rev_no);
+    };
+};
+
 typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
 typedef vector< cvs_event_ptr >::iterator dependency_iter;
 
@@ -343,22 +370,11 @@ public:
   // helper fields for Depth First Search algorithms
   dfs_color colors[2];
 
-  // Used only for branches and tags: keeps track of the original blob from
-  // which this got split. The original blob keeps a split counter.
-  cvs_blob_index split_origin;
-
-  union {
-    int split_counter;    // for the origin blob
-    int split_index;      // for all derived blobs
-  };
-
   cvs_blob(const cvs_event_digest d)
     : has_cached_deps(false),
       events_are_sorted(true),
       cached_deps_are_sorted(false),
-      digest(d),
-      split_origin(invalid_blob),
-      split_counter(0)
+      digest(d)
     { };
 
   cvs_blob(const cvs_blob & b)
@@ -366,9 +382,7 @@ public:
       has_cached_deps(false),
       events_are_sorted(false),
       cached_deps_are_sorted(false),
-      digest(b.digest),
-      split_origin(invalid_blob),
-      split_counter(0)
+      digest(b.digest)
     { };
 
   void push_back(cvs_event_ptr c)
@@ -496,6 +510,7 @@ cvs_history
   ticker n_tree_branches;
 
   int unnamed_branch_counter;
+  int artificial_rev_counter;
 
   // step number of graphviz output, when enabled.
   int step_no;
@@ -504,6 +519,7 @@ cvs_history
     : n_versions("versions", "v", 1),
       n_tree_branches("branches", "b", 1),
       unnamed_branch_counter(0),
+      artificial_rev_counter(0),
       step_no(0)
     { };
 
@@ -763,6 +779,14 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
         boost::static_pointer_cast<cvs_branch_end, cvs_event>(ev);
       return (F("end of branch %s on file %s")
                 % cvs.branchname_interner.lookup(be->branchname)
+                % cvs.path_interner.lookup(ev->path)).str();
+    }
+  else if (ev->get_digest().is_artificial())
+    {
+      shared_ptr< cvs_artificial > ae =
+        boost::static_pointer_cast<cvs_artificial, cvs_event>(ev);
+      return (F("artificial rev %d for file %s")
+                % ae->artificial_rev_no
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else
@@ -2163,7 +2187,8 @@ public:
 
 void
 split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
-              split_decider_func & split_decider);
+              split_decider_func & split_decider,
+              const bool add_art_blobs);
 
 
 struct branch_sanitizer
@@ -2195,6 +2220,11 @@ public:
 #ifdef DEBUG_BLOB_SPLITTER
       L(FL("branch_sanitizer: cross edge: %d -> %d") % e.first % e.second);
 #endif
+
+      // quick short circuit for artificial blobs, which may very well
+      // have multiple ancestors (i.e. cross or forward edges)
+      if (cvs.blobs[e.second].get_digest().is_artificial())
+        return;
 
       // On a forward or cross edge, we first have to find the common
       // ancestor of both blobs involved. For that we go upwards from
@@ -2363,7 +2393,7 @@ public:
           // Blob e.second seems to be part of two (or even more)
           // branches, thus we need to split that blob.
           split_by_paths func(cvs, path_a, path_b);
-          split_blob_at(cvs, e.second, func);
+          split_blob_at(cvs, e.second, func, true);
           edges_removed++;
         }
       else if (a_has_branch && !b_has_branch)
@@ -2413,7 +2443,7 @@ public:
               // which belong to path A and events which belong to path B.
               //
               split_by_paths func(cvs, path_a, path_b);
-              split_blob_at(cvs, e.second, func);
+              split_blob_at(cvs, e.second, func, true);
               edges_removed++;
             }
         }
@@ -2750,12 +2780,13 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
 
       split_by_time func(largest_gap_at);
-      split_blob_at(cvs, largest_gap_blob, func);
+      split_blob_at(cvs, largest_gap_blob, func, true);
 }
 
 void
 split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
-              split_decider_func & split_decider)
+              split_decider_func & split_decider,
+              const bool add_art_blobs)
 {
   L(FL("splitting blob %d") % bi);
 
@@ -2769,23 +2800,58 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
   // Reset the dependents cache of the origin blob.
   cvs.blobs[bi].reset_deps_cache();
 
-  // For branche and tag points, we need to keep track of the original blob
-  // and increment its split counter.
-  if (d.is_branch_point() || d.is_tag_point())
-  {
-    cvs_blob_index origin = cvs.blobs[bi].split_origin;
-    if (origin == invalid_blob)
-      origin = bi;
-    I(origin < new_bi);
+  vector<cvs_event_ptr> & origin_events = cvs.blobs[bi].get_events();
+  vector<cvs_event_ptr>::iterator i;
 
-    cvs.blobs[new_bi].split_origin = origin;
-    cvs.blobs[origin].split_counter++;
-    cvs.blobs[new_bi].split_index = cvs.blobs[origin].split_counter;
-  }
+  // When splitting a tag or branch point, we add *two* blobs: one
+  // containing a part we are splitting from the origin blob and
+  // an additional one for the needed artificial revision. The blob
+  // for the artificial revision needs to contain all events again.
+  //
+  // Artificial blobs can then be split just like tags or branch
+  // points.
+  if ((d.is_branch_point() || d.is_tag_point() || d.is_artificial()) &&
+      add_art_blobs)
+  {
+      cvs_blob_index art_bi;
+      int art_rev_no = cvs.artificial_rev_counter++;
+
+      for(i = origin_events.begin(); i != origin_events.end(); ++i)
+        {
+          cvs_event_ptr art_event =
+            boost::static_pointer_cast<cvs_event, cvs_artificial>(
+              shared_ptr<cvs_artificial>(
+                new cvs_artificial((*i)->path, (*i)->given_time,
+                                   art_rev_no)));
+
+          art_bi = cvs.append_event(art_event);
+
+          // move all branch_start dependents from the origin blob
+          // to the new artificial blob.
+          for (dependency_iter j = (*i)->dependents.begin();
+               j != (*i)->dependents.end(); )
+            if ((*j)->get_digest().is_branch_start())
+              {
+                dependency_iter ity = find((*j)->dependencies.begin(),
+                                           (*j)->dependencies.end(), *i);
+                I(ity != (*j)->dependencies.end());
+                *ity = art_event;
+
+                art_event->dependents.push_back(*j);
+                j = (*i)->dependents.erase(j);
+              }
+            else
+              ++j;
+
+          // the artificial blob needs to depend on its origin
+          add_dependency(art_event, *i);
+        }
+
+      L(FL("created artificial blob %d") % art_bi);
+    }
 
   // Reassign events to the new blob as necessary
-  for (vector< cvs_event_ptr >::iterator i = cvs.blobs[bi].get_events().begin();
-       i != cvs.blobs[bi].get_events().end(); )
+  for (i = origin_events.begin(); i != origin_events.end(); )
     {
       // Assign the event to the existing or to the new blob
       if (split_decider(*i))
@@ -2837,7 +2903,7 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
             L(FL("Trying to split blob %d, because of multiple events for file %s")
               % bi % cvs.path_interner.lookup((*i)->path));
             split_by_time func(get_best_split_point(cvs, bi));
-            split_blob_at(cvs, bi, func);
+            split_blob_at(cvs, bi, func, false);
             return false;
           }
     }
@@ -2890,14 +2956,14 @@ class blob_label_writer
               label += author + "\\n";
 
               // limit length of changelog we output
-              if (clog.length() > 20)
-                clog = clog.substr(20);
+              if (clog.length() > 40)
+                clog = clog.substr(0, 40);
 
               // poor man's escape...
               for (unsigned int i = 0; i < clog.length(); ++i)
                 {
                   if (clog[i] < 32)
-                    clog[i] = '?';
+                    clog[i] = '.';
                   if (clog[i] == '\"')
                     clog[i] = '\'';
                 }
@@ -2971,6 +3037,14 @@ class blob_label_writer
               label += cvs.tag_interner.lookup(cb->tag);
               label += "\\n";
             }
+        }
+      else if (b.get_digest().is_artificial())
+        {
+          const shared_ptr< cvs_artificial > ae =
+            boost::static_pointer_cast<cvs_artificial, cvs_event>(*b.begin());
+
+          label = (FL("blob %d: art rev %d\\n")
+                   % v % ae->artificial_rev_no).str();
         }
       else
         {
@@ -3325,27 +3399,13 @@ create_artificial_blob_for(cvs_history & cvs, cvs_blob_index bi, list<cvs_blob_i
 }
 
 void
-split_branchpoint_handler(cvs_history & cvs)
+number_unnamed_branches(cvs_history & cvs)
 {
   int nr = 1;
-
-  map< cvs_blob_index, list< cvs_blob_index > > split_symbols;
 
   for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
     {
       cvs_blob & blob = cvs.blobs[bi];
-
-      if (blob.get_digest().is_branch_point() ||
-          blob.get_digest().is_tag_point())
-        {
-          if (blob.split_origin != invalid_blob)
-            {
-              if (split_symbols.find(blob.split_origin) == split_symbols.end())
-                split_symbols.insert(make_pair(blob.split_origin, list<cvs_blob_index>()));
-
-              split_symbols[blob.split_origin].push_back(bi);
-            }
-        }
 
       if (blob.get_digest().is_branch_point())
         {
@@ -3355,11 +3415,9 @@ split_branchpoint_handler(cvs_history & cvs)
 
           // handle unnamed branches
           string branchname = cvs.branchname_interner.lookup(cbe->branchname);
-          if ((blob.split_origin == invalid_blob) && (branchname.empty()))
+          if (branchname.empty())
             {
-              branchname = (FL("UNNAMED_BRANCH_%d") % nr).str();
-              nr++;
-
+              branchname = (FL("UNNAMED_BRANCH_%d") % nr++).str();
               cbe->branchname = cvs.branchname_interner.intern(branchname);
               for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
                 static_cast< cvs_branch_point & >(**i).branchname = cbe->branchname;
@@ -3367,19 +3425,6 @@ split_branchpoint_handler(cvs_history & cvs)
               cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
             }
         }
-    }
-
-  for (map<cvs_blob_index, list<cvs_blob_index> >::iterator i = split_symbols.begin();
-       i != split_symbols.end(); ++i)
-    {
-      cvs_blob_index main_bi = i->first;
-      list<cvs_blob_index> splitted_blobs = i->second;
-
-      splitted_blobs.push_back(main_bi);
-
-      cvs_blob_index new_bi = create_artificial_blob_for(cvs, main_bi, splitted_blobs);
-
-      I(new_bi != invalid_blob);
     }
 }
 
@@ -3427,8 +3472,8 @@ import_cvs_repo(system_path const & cvsroot,
   resolve_intra_blob_conflicts(cvs);
   resolve_blob_dependencies(cvs);
 
-  // deal with stuff that's hard to represent in monotone
-  split_branchpoint_handler(cvs);
+  // number through all unnamed branches
+  number_unnamed_branches(cvs);
 
   ticker n_revs(_("revisions"), "r", 1);
   {
@@ -3560,10 +3605,14 @@ blob_consumer::operator()(cvs_blob_index bi)
     blob.in_branch = cvs.base_branch;
   else
     {
-      I(parent_blobs.size() == 1);
-
-      blob.in_branch = cvs.blobs[*parent_blobs.begin()].in_branch;
-      parent_rid = cvs.blobs[*parent_blobs.begin()].assigned_rid;
+      if (blob.get_digest().is_artificial())
+        I(parent_blobs.size() == 2);
+      else
+        {
+          I(parent_blobs.size() == 1);
+          blob.in_branch = cvs.blobs[*parent_blobs.begin()].in_branch;
+          parent_rid = cvs.blobs[*parent_blobs.begin()].assigned_rid;
+        }
     }
 
   L(FL("parent rid: %s") % parent_rid);
@@ -3651,8 +3700,6 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       string branchname = cvs.get_branchname(ev->branchname);
 
-      I(parent_blobs.size() <= 1);
-
       if (branchname.empty())
         L(FL("consuming blob %d: branchpoint for an unnamed branch")
           % bi);
@@ -3680,13 +3727,14 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       L(FL("consuming blob %d: start of branch %s")
         % bi % branchname);
-
-      I(parent_blobs.size() <= 1);
     }
   else if (blob.get_digest().is_branch_end())
     {
       // Nothing to be done at the end of a branch.
-      I(parent_blobs.size() <= 1);
+    }
+  else if (blob.get_digest().is_artificial())
+    {
+      L(FL("consuming blob %d: artificial blob") % bi);
     }
   else if (blob.get_digest().is_tag_point())
     {
@@ -3696,8 +3744,6 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       L(FL("consuming blob %d: tag %s")
         % bi % cvs.tag_interner.lookup(ev->tag));
-
-      I(parent_blobs.size() <= 1);
 
       if (!app.opts.dryrun)
         app.get_project().put_tag(parent_rid, cvs.tag_interner.lookup(ev->tag));
