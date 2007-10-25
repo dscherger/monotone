@@ -76,8 +76,6 @@ using boost::lexical_cast;
 
 // cvs history recording stuff
 
-#define DEBUG_GRAPHVIZ
-
 typedef unsigned long cvs_branchname;
 typedef unsigned long cvs_authorclog;
 typedef unsigned long cvs_mtn_version;   // the new file id in monotone
@@ -2186,7 +2184,7 @@ public:
 };
 
 void
-split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
+split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
               split_decider_func & split_decider,
               const bool add_art_blobs);
 
@@ -2221,9 +2219,16 @@ public:
       L(FL("branch_sanitizer: cross edge: %d -> %d") % e.first % e.second);
 #endif
 
-      // quick short circuit for artificial blobs, which may very well
+      // a short circuit for artificial blobs, which may very well
       // have multiple ancestors (i.e. cross or forward edges)
       if (cvs.blobs[e.second].get_digest().is_artificial())
+        return;
+
+      // FIXME: a quick hack, which simply skips forward edges even
+      //         if only one of the dependencies is an artificial blob
+      if ((cvs.blobs[e.second].get_digest().is_branch_point() ||
+             cvs.blobs[e.second].get_digest().is_tag_point()) &&
+          cvs.blobs[e.first].get_digest().is_artificial())
         return;
 
       // On a forward or cross edge, we first have to find the common
@@ -2784,39 +2789,66 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 }
 
 void
-split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
+split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
               split_decider_func & split_decider,
               const bool add_art_blobs)
 {
-  L(FL("splitting blob %d") % bi);
-
   // make sure the blob's events are sorted by timestamp
+  cvs_blob_index bi = blob_to_split;
   cvs.blobs[bi].sort_events();
-
-  // Add a blob
-  cvs_event_digest d = cvs.blobs[bi].get_digest();
-  cvs_blob_index new_bi = cvs.add_blob(d)->second;
 
   // Reset the dependents cache of the origin blob.
   cvs.blobs[bi].reset_deps_cache();
 
-  vector<cvs_event_ptr> & origin_events = cvs.blobs[bi].get_events();
+  // some short cuts
+  cvs_event_digest d = cvs.blobs[bi].get_digest();
   vector<cvs_event_ptr>::iterator i;
 
-  // When splitting a tag or branch point, we add *two* blobs: one
-  // containing a part we are splitting from the origin blob and
-  // an additional one for the needed artificial revision. The blob
-  // for the artificial revision needs to contain all events again.
+  // Instead of splitting a tag or branchpoint, we add a blob for
+  // an artificial revision. These artificial blobs are the only
+  // types of blobs which may have more than one parent, i.e. where
+  // the branch_sanitizer allows forward edges.
   //
-  // Artificial blobs can then be split just like tags or branch
-  // points.
-  if ((d.is_branch_point() || d.is_tag_point() || d.is_artificial()) &&
+  //       A  ->  B         A cycle, where B is the symbol
+  //       ^      |         (branch point) which should be split.
+  //       |      v
+  //       D  <-  C
+  //
+  // In a first step we add an artificial blob, so that we can
+  // later split that instead of splitting the symbol blob:
+  //
+  //       A  ->  X -> B    Still a cycle, but with the new
+  //       ^      |         artificial blob X.
+  //       |      v
+  //       D  <-  C
+  //
+  // In a next step, we also have to split the newly created
+  // artificial blob to really break the cycle. Finally, this
+  // will look as follows:
+  //
+  //       A  ->  X  --.              The cycle is resolved, and
+  //       ^            \             a topological ordering
+  //       |             :-> B        may be:
+  //       |            /
+  //       D  <-  Y --'               Y -> D -> A -> X -> B
+  //
+  // Note that the symbol blob B suddenly has two parents, which
+  // of course does not make sense. But the branch_sanitizer
+  // takes care of this by eliminating forward edges.
+  //
+  // Also note that during the intra-blob dependency resolving step
+  // we still split branch point blobs, but that's for a good reason,
+  // because those *were* seperate, now unnamed branches.
+  //
+  if ((d.is_branch_point() || d.is_tag_point()) &&
       add_art_blobs)
   {
-      cvs_blob_index art_bi;
       int art_rev_no = cvs.artificial_rev_counter++;
 
-      for(i = origin_events.begin(); i != origin_events.end(); ++i)
+      cvs_event_digest art_d(ET_ARTIFICIAL, art_rev_no);
+      cvs_blob_index art_bi = cvs.add_blob(art_d)->second;
+
+      for(i = cvs.blobs[bi].get_events().begin(); i != cvs.blobs[bi].get_events().end(); ++i)
         {
           cvs_event_ptr art_event =
             boost::static_pointer_cast<cvs_event, cvs_artificial>(
@@ -2824,34 +2856,61 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
                 new cvs_artificial((*i)->path, (*i)->given_time,
                                    art_rev_no)));
 
-          art_bi = cvs.append_event(art_event);
+          I(cvs.append_event(art_event) == art_bi);
+          I(cvs.get_blob_of(art_event) == art_bi);
 
-          // move all branch_start dependents from the origin blob
+          // to move all dependencies from the origin blob to the
+          // new artificial blob, we first rewrite the dependents
+          // entry back from those events...
+          for (dependency_iter j = (*i)->dependencies.begin();
+               j != (*i)->dependencies.end(); ++j)
+            {
+              dependency_iter ity = find((*j)->dependents.begin(),
+                                         (*j)->dependents.end(), *i);
+              I(ity != (*j)->dependents.end());
+              *ity = art_event;
+
+              cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+              cvs.blobs[dep_bi].reset_deps_cache();
+            }
+
+          // ...and then we swap the dependencies.
+          swap((*i)->dependencies, art_event->dependencies);
+
+          // additionally we move all dependents from the origin blob
           // to the new artificial blob.
           for (dependency_iter j = (*i)->dependents.begin();
-               j != (*i)->dependents.end(); )
-            if ((*j)->get_digest().is_branch_start())
-              {
-                dependency_iter ity = find((*j)->dependencies.begin(),
-                                           (*j)->dependencies.end(), *i);
-                I(ity != (*j)->dependencies.end());
-                *ity = art_event;
+               j != (*i)->dependents.end(); ++j)
+            {
+              dependency_iter ity = find((*j)->dependencies.begin(),
+                                         (*j)->dependencies.end(), *i);
+              I(ity != (*j)->dependencies.end());
+              *ity = art_event;
+            }
 
-                art_event->dependents.push_back(*j);
-                j = (*i)->dependents.erase(j);
-              }
-            else
-              ++j;
+          swap((*i)->dependents, art_event->dependents);
 
-          // the artificial blob needs to depend on its origin
-          add_dependency(art_event, *i);
+          // the symbol blob then needs a dependency on the new
+          // artificial one.
+          add_dependency(*i, art_event);
         }
 
-      L(FL("created artificial blob %d") % art_bi);
+      L(FL("created artificial blob %d, now splitting that") % art_bi);
+
+      // second step, split that newly created artificial blob
+      // to really break the cycle.
+      split_blob_at(cvs, art_bi, split_decider, true);
     }
+  else
+    {
+
+  L(FL("splitting blob %d") % bi);
+
+  // Add a blob
+  cvs_blob_index new_bi = cvs.add_blob(d)->second;
 
   // Reassign events to the new blob as necessary
-  for (i = origin_events.begin(); i != origin_events.end(); )
+  for (i = cvs.blobs[bi].get_events().begin(); i != cvs.blobs[bi].get_events().end(); )
     {
       // Assign the event to the existing or to the new blob
       if (split_decider(*i))
@@ -2889,6 +2948,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index bi,
 
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
+    }
 }
 
 bool
