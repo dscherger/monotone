@@ -69,7 +69,31 @@ key IDs, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
 
-     <br><dt><samp><span class="command">mtn ssh_agent_export </span><var>filename</var></samp><a name="index-mtn-ssh_005fagent_005fexport-_0040var_007bfilename_007d-107"></a><dd>
+     <br><dt><samp><span class="command">mtn ssh_agent_add</span></samp><a name="index-mtn-ssh_005fagent_005fadd-107"></a><dd>
+This command will add your monotone keys to your current ssh-agent session. 
+You will be asked for the passphrase for each of your monotone private keys
+and they will be added to the ssh-agent. Once this is done you should be able
+to type <em>ssh-add -l</em> and see your monotone key listed. When you
+subsequently use these keys through monotone it will use ssh-agent for signing
+without asking your for your passphrase.
+
+     <p>This command is mainly for use in a session script as monotone will automatically
+add your keys to ssh-agent on first use if it is available. For example the
+following two examples are equivalent:
+
+     <pre class="smallexample">          $ mtn ssh_agent_add
+          enter passphrase for key ID [user@example.com]:
+          $ mtn ci -m"Changed foo to bar"
+          $ mtn push -k user@example.com
+     </pre>
+     <pre class="smallexample">          $ mtn ci -m"Changed foo to bar"
+          enter passphrase for key ID [user@example.com]:
+          $ mtn push -k user@example.com
+     </pre>
+     <p>In the second example, monotone automatically added the key to ssh-agent, making
+entering the passphrase not needed during the push.
+
+     <br><dt><samp><span class="command">mtn ssh_agent_export </span><var>filename</var></samp><a name="index-mtn-ssh_005fagent_005fexport-_0040var_007bfilename_007d-108"></a><dd>
 This command will export your private key in a format that ssh-agent
 can read (PKCS8, PEM). You will be asked for your current key's password
 and a new password to encrypt the key with. The key will be printed to
@@ -87,7 +111,7 @@ will cache the key for you.
           Enter passphrase for /home/user/.ssh/id_monotone:
           Identity added: /home/user/.ssh/id_monotone (/home/user/.ssh/id_monotone)
           $ mtn ci -m"Changed foo to bar"
-          $ mtn push
+          $ mtn push -k user@example.com
      </pre>
      <p>You can also use the <samp><span class="option">--ssh-sign</span></samp> option to control whether ssh-agent will
 be used for signing. If set to <em>yes</em>, ssh-agent will be used to sign. If your

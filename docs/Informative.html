@@ -96,17 +96,16 @@ diff of the changes in each revision.
      <p>If one or more files are given, the command will only log the revisions
 where those files are changed.
 
-     <br><dt><samp><span class="command">mtn annotate </span><var>file</var></samp><a name="index-mtn-annotate-_0040var_007bfile_007d-55"></a><dt><samp><span class="command">mtn annotate [--revision=</span><var>id</var><span class="command">] [--brief] </span><var>file</var></samp><a name="index-mtn-annotate-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-_005b_002d_002dbrief_005d-_0040var_007bfile_007d-56"></a><dd>
-Dumps an annotated copy of the file to stdout.  In the absence of the
-<samp><span class="option">--brief</span></samp> flag, each line of the file
-is translated to &lt;revision id&gt;: &lt;line&gt; in the output, where &lt;revision id&gt;
-is the revision in which that line of the file was last edited.
+     <br><dt><samp><span class="command">mtn annotate </span><var>file</var></samp><a name="index-mtn-annotate-_0040var_007bfile_007d-55"></a><dt><samp><span class="command">mtn annotate [--revision=</span><var>id</var><span class="command">] [--revs-only] </span><var>file</var></samp><a name="index-mtn-annotate-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-_005b_002d_002drevs_002donly_005d-_0040var_007bfile_007d-56"></a><dd>
+Dumps an annotated copy of the file to stdout. The output is in the form
+&lt;short revision id&gt;.. by &lt;author&gt; &lt;date&gt;: &lt;line&gt; Only the first 8
+characters of the revision id are displayed, the author cert value is
+truncated at the first <code>@</code> or space character and the date field
+is truncated to remove the time of day.
 
-     <p>If <samp><span class="option">--brief</span></samp> is specified, the output is in the form
-&lt;short revision id&gt;.. by &lt;author&gt; &lt;date&gt;: &lt;line&gt;
-Only the first 8 characters of the revision id are displayed, the
-author cert value is truncated at the first <code>@</code> or space
-character and the date field is truncated to remove the time of day.
+     <p>If <samp><span class="option">--revs-only</span></samp> is specified, each line of the file is
+translated to &lt;revision id&gt;: &lt;line&gt; in the output, where &lt;revision id&gt;
+is the revision in which that line of the file was last edited.
 
      <br><dt><samp><span class="command">mtn complete file </span><var>partial-id</var></samp><a name="index-mtn-complete-file-_0040var_007bpartial_002did_007d-57"></a><dt><samp><span class="command">mtn complete [--brief] key </span><var>partial-id</var></samp><a name="index-mtn-complete-_005b_002d_002dbrief_005d-key-_0040var_007bpartial_002did_007d-58"></a><dt><samp><span class="command">mtn complete [--brief] revision </span><var>partial-id</var></samp><a name="index-mtn-complete-_005b_002d_002dbrief_005d-revision-_0040var_007bpartial_002did_007d-59"></a><dd>
 These commands print out all known completions of a partial <span class="sc">sha1</span>
@@ -182,7 +181,8 @@ construct by scanning backward from the first changed line in each
 hunk for a line that matches a regular expression.  The default
 regular expression is correct for many programming languages.  You can
 adjust the expression used with the Lua hook
-<code>get_encloser_pattern</code>; <a href="Hooks.html#Hooks">Hooks</a>.
+<code>get_encloser_pattern</code>; <a href="Hooks.html#Hooks">Hooks</a>.  For the regular expression
+syntax, See <a href="Regexps.html#Regexps">Regexps</a>.
 
      <p><samp><span class="option">--unified</span></samp> requests the &ldquo;unified diff&rdquo; format, the default. 
 <samp><span class="option">--context</span></samp> requests the &ldquo;context diff&rdquo; format (analogous to

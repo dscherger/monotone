@@ -1,0 +1,438 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Regexp Summary - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Regexps.html#Regexps" title="Regexps">
+<link rel="next" href="Regexp-Details.html#Regexp-Details" title="Regexp Details">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Regexp-Summary"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Regexp-Details.html#Regexp-Details">Regexp Details</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Regexps.html#Regexps">Regexps</a>
+<hr>
+</div>
+
+<h4 class="subsection">7.5.1 Regexp Syntax Summary</h4>
+
+<p>This is a quick-reference summary of the regular expression syntax
+used in Monotone.
+
+<h5 class="subsubheading">Quoting</h5>
+
+     <dl>
+<dt><code>\</code><var>x</var><dd>  where <var>x</var> is non-alphanumeric is a literal <var>x</var>
+<br><dt><code>\Q...\E</code><dd>  treat enclosed characters as literal
+</dl>
+
+<h5 class="subsubheading">Characters</h5>
+
+     <dl>
+<dt><code>\a</code><dd>  alarm, that is, the BEL character (hex 07)
+<br><dt><code>\c</code><var>x</var><dd>  &ldquo;control-<var>x</var>&rdquo;, where <var>x</var> is any character
+<br><dt><code>\e</code><dd>  escape (hex 1B)
+<br><dt><code>\f</code><dd>  formfeed (hex 0C)
+<br><dt><code>\n</code><dd>  newline (hex 0A)
+<br><dt><code>\r</code><dd>  carriage return (hex 0D)
+<br><dt><code>\t</code><dd>  tab (hex 09)
+<br><dt><code>\</code><var>ddd</var><dd>  character with octal code <var>ddd</var>, or backreference
+<br><dt><code>\x</code><var>hh</var><dd>  character with hex code <var>hh</var>
+<br><dt><code>\x{</code><var>hhh...</var><code>}</code><dd>  character with hex code <var>hhh...</var>
+</dl>
+
+<h5 class="subsubheading">Character Types</h5>
+
+     <dl>
+<dt><code>.</code><dd>  any character except newline;
+               in dotall mode, any character whatsoever
+<br><dt><code>\C</code><dd>  one byte, even in UTF-8 mode (best avoided)
+<br><dt><code>\d</code><dd>  a decimal digit
+<br><dt><code>\D</code><dd>  a character that is not a decimal digit
+<br><dt><code>\h</code><dd>  a horizontal whitespace character
+<br><dt><code>\H</code><dd>  a character that is not a horizontal whitespace character
+<br><dt><code>\p{</code><var>xx</var><code>}</code><dd>  a character with the <var>xx</var> property
+<br><dt><code>\P{</code><var>xx</var><code>}</code><dd>  a character without the <var>xx</var> property
+<br><dt><code>\R</code><dd>  a newline sequence
+<br><dt><code>\s</code><dd>  a whitespace character
+<br><dt><code>\S</code><dd>  a character that is not a whitespace character
+<br><dt><code>\v</code><dd>  a vertical whitespace character
+<br><dt><code>\V</code><dd>  a character that is not a vertical whitespace character
+<br><dt><code>\w</code><dd>  a &ldquo;word&rdquo; character
+<br><dt><code>\W</code><dd>  a &ldquo;non-word&rdquo; character
+<br><dt><code>\X</code><dd>  an extended Unicode sequence
+</dl>
+
+<p class="noindent">`<samp><span class="samp">\d</span></samp>', `<samp><span class="samp">\D</span></samp>', `<samp><span class="samp">\s</span></samp>', `<samp><span class="samp">\S</span></samp>', `<samp><span class="samp">\w</span></samp>', and `<samp><span class="samp">\W</span></samp>'
+recognize only ASCII characters.
+
+<h5 class="subsubheading">General category property codes for `<samp><span class="samp">\p</span></samp>' and `<samp><span class="samp">\P</span></samp>'</h5>
+
+     <dl>
+<dt><code>C</code><dd>  Other
+<br><dt><code>Cc</code><dd>  Control
+<br><dt><code>Cf</code><dd>  Format
+<br><dt><code>Cn</code><dd>  Unassigned
+<br><dt><code>Co</code><dd>  Private use
+<br><dt><code>Cs</code><dd>  Surrogate
+
+     <br><dt><code>L</code><dd>  Letter
+<br><dt><code>Ll</code><dd>  Lower case letter
+<br><dt><code>Lm</code><dd>  Modifier letter
+<br><dt><code>Lo</code><dd>  Other letter
+<br><dt><code>Lt</code><dd>  Title case letter
+<br><dt><code>Lu</code><dd>  Upper case letter
+<br><dt><code>L&amp;</code><dd>  Ll, Lu, or Lt
+
+     <br><dt><code>M</code><dd>  Mark
+<br><dt><code>Mc</code><dd>  Spacing mark
+<br><dt><code>Me</code><dd>  Enclosing mark
+<br><dt><code>Mn</code><dd>  Non-spacing mark
+
+     <br><dt><code>N</code><dd>  Number
+<br><dt><code>Nd</code><dd>  Decimal number
+<br><dt><code>Nl</code><dd>  Letter number
+<br><dt><code>No</code><dd>  Other number
+
+     <br><dt><code>P</code><dd>  Punctuation
+<br><dt><code>Pc</code><dd>  Connector punctuation
+<br><dt><code>Pd</code><dd>  Dash punctuation
+<br><dt><code>Pe</code><dd>  Close punctuation
+<br><dt><code>Pf</code><dd>  Final punctuation
+<br><dt><code>Pi</code><dd>  Initial punctuation
+<br><dt><code>Po</code><dd>  Other punctuation
+<br><dt><code>Ps</code><dd>  Open punctuation
+
+     <br><dt><code>S</code><dd>  Symbol
+<br><dt><code>Sc</code><dd>  Currency symbol
+<br><dt><code>Sk</code><dd>  Modifier symbol
+<br><dt><code>Sm</code><dd>  Mathematical symbol
+<br><dt><code>So</code><dd>  Other symbol
+
+     <br><dt><code>Z</code><dd>  Separator
+<br><dt><code>Zl</code><dd>  Line separator
+<br><dt><code>Zp</code><dd>  Paragraph separator
+<br><dt><code>Zs</code><dd>  Space separator
+</dl>
+
+<h5 class="subsubheading">Script names for `<samp><span class="samp">\p</span></samp>' and `<samp><span class="samp">\P</span></samp>'</h5>
+
+<p>Arabic,
+Armenian,
+Balinese,
+Bengali,
+Bopomofo,
+Braille,
+Buginese,
+Buhid,
+Canadian_Aboriginal,
+Cherokee,
+Common,
+Coptic,
+Cuneiform,
+Cypriot,
+Cyrillic,
+Deseret,
+Devanagari,
+Ethiopic,
+Georgian,
+Glagolitic,
+Gothic,
+Greek,
+Gujarati,
+Gurmukhi,
+Han,
+Hangul,
+Hanunoo,
+Hebrew,
+Hiragana,
+Inherited,
+Kannada,
+Katakana,
+Kharoshthi,
+Khmer,
+Lao,
+Latin,
+Limbu,
+Linear_B,
+Malayalam,
+Mongolian,
+Myanmar,
+New_Tai_Lue,
+Nko,
+Ogham,
+Old_Italic,
+Old_Persian,
+Oriya,
+Osmanya,
+Phags_Pa,
+Phoenician,
+Runic,
+Shavian,
+Sinhala,
+Syloti_Nagri,
+Syriac,
+Tagalog,
+Tagbanwa,
+Tai_Le,
+Tamil,
+Telugu,
+Thaana,
+Thai,
+Tibetan,
+Tifinagh,
+Ugaritic,
+Yi.
+
+<h5 class="subsubheading">Character Classes</h5>
+
+     <dl>
+<dt><code>[...]</code><dd>  positive character class
+<br><dt><code>[^...]</code><dd>  negative character class
+<br><dt><code>[</code><var>x</var><code>-</code><var>y</var><code>]</code><dd>  range (can be used for hex characters)
+<br><dt><code>[[:</code><var>xxx</var><code>:]]</code><dd>  positive POSIX named set
+<br><dt><code>[[^:</code><var>xxx</var><code>:]]</code><dd>  negative POSIX named set
+
+     <br><dt><code>alnum</code><dd>  alphanumeric
+<br><dt><code>alpha</code><dd>  alphabetic
+<br><dt><code>ascii</code><dd>  0-127
+<br><dt><code>blank</code><dd>  space or tab
+<br><dt><code>cntrl</code><dd>  control character
+<br><dt><code>digit</code><dd>  decimal digit
+<br><dt><code>graph</code><dd>  printing, excluding space
+<br><dt><code>lower</code><dd>  lower case letter
+<br><dt><code>print</code><dd>  printing, including space
+<br><dt><code>punct</code><dd>  printing, excluding alphanumeric
+<br><dt><code>space</code><dd>  whitespace
+<br><dt><code>upper</code><dd>  upper case letter
+<br><dt><code>word</code><dd>  same as `<samp><span class="samp">\w</span></samp>'
+<br><dt><code>xdigit</code><dd>  hexadecimal digit
+</dl>
+
+   <p>In PCRE, POSIX character set names recognize only ASCII
+characters. You can use `<samp><span class="samp">\Q...\E</span></samp>' inside a character class.
+
+<h5 class="subsubheading">Quantifiers</h5>
+
+     <dl>
+<dt><code>?</code><dd>  0 or 1, greedy
+<br><dt><code>?+</code><dd>  0 or 1, possessive
+<br><dt><code>??</code><dd>  0 or 1, lazy
+<br><dt><code>*</code><dd>  0 or more, greedy
+<br><dt><code>*+</code><dd>  0 or more, possessive
+<br><dt><code>*?</code><dd>  0 or more, lazy
+<br><dt><code>+</code><dd>  1 or more, greedy
+<br><dt><code>++</code><dd>  1 or more, possessive
+<br><dt><code>+?</code><dd>  1 or more, lazy
+<br><dt><code>{</code><var>n</var><code>}</code><dd>  exactly <var>n</var>
+<br><dt><code>{</code><var>n</var><code>,</code><var>m</var><code>}</code><dd>  at least <var>n</var>, no more than <var>m</var>, greedy
+<br><dt><code>{</code><var>n</var><code>,</code><var>m</var><code>}+</code><dd>  at least <var>n</var>, no more than <var>m</var>, possessive
+<br><dt><code>{</code><var>n</var><code>,</code><var>m</var><code>}?</code><dd>  at least <var>n</var>, no more than <var>m</var>, lazy
+<br><dt><code>{</code><var>n</var><code>,}</code><dd>  <var>n</var> or more, greedy
+<br><dt><code>{</code><var>n</var><code>,}+</code><dd>  <var>n</var> or more, possessive
+<br><dt><code>{</code><var>n</var><code>,}?</code><dd>  <var>n</var> or more, lazy
+</dl>
+
+<h5 class="subsubheading">Anchors and Simple Assertions</h5>
+
+     <dl>
+<dt><code>\b</code><dd>  word boundary
+<br><dt><code>\B</code><dd>  not a word boundary
+<br><dt><code>^</code><dd>  start of subject
+               also after internal newline in multiline mode
+<br><dt><code>\A</code><dd>  start of subject
+<br><dt><code>$</code><dd>  end of subject
+               also before newline at end of subject
+               also before internal newline in multiline mode
+<br><dt><code>\Z</code><dd>  end of subject
+               also before newline at end of subject
+<br><dt><code>\z</code><dd>  end of subject
+<br><dt><code>\G</code><dd>  first matching position in subject
+</dl>
+
+<h5 class="subsubheading">Match Point Reset</h5>
+
+     <dl>
+<dt><code>\K</code><dd>  reset start of match
+</dl>
+
+<h5 class="subsubheading">Alternation</h5>
+
+     <dl>
+<dt><var>expr</var><code>|</code><var>expr</var><code>|</code><var>expr</var><code>...</code><dd></dl>
+
+<h5 class="subsubheading">Capturing</h5>
+
+     <dl>
+<dt><code>(...)</code><dd>  capturing group
+<br><dt><code>(?&lt;</code><var>name</var><code>&gt;...)</code><dd>  named capturing group (like Perl)
+<br><dt><code>(?'</code><var>name</var><code>'...)</code><dd>  named capturing group (like Perl)
+<br><dt><code>(?P&lt;</code><var>name</var><code>&gt;...)</code><dd>  named capturing group (like Python)
+<br><dt><code>(?:...)</code><dd>  non-capturing group
+<br><dt><code>(?|...)</code><dd>  non-capturing group; reset group numbers for
+  capturing groups in each alternative
+</dl>
+
+<h5 class="subsubheading">Atomic Groups</h5>
+
+     <dl>
+<dt><code>(?&gt;...)</code><dd>  atomic, non-capturing group
+</dl>
+
+<h5 class="subsubheading">Comment</h5>
+
+     <dl>
+<dt><code>(?#....)</code><dd>  comment (not nestable)
+</dl>
+
+<h5 class="subsubheading">Option Setting</h5>
+
+     <dl>
+<dt><code>(?i)</code><dd>  caseless
+<br><dt><code>(?J)</code><dd>  allow duplicate names
+<br><dt><code>(?m)</code><dd>  multiline
+<br><dt><code>(?s)</code><dd>  single line (dotall)
+<br><dt><code>(?U)</code><dd>  default ungreedy (lazy)
+<br><dt><code>(?x)</code><dd>  extended (ignore white space)
+<br><dt><code>(?-...)</code><dd>  unset option(s)
+</dl>
+
+<h5 class="subsubheading">Lookahead and Lookbehind Assertions</h5>
+
+     <dl>
+<dt><code>(?=...)</code><dd>  positive look ahead
+<br><dt><code>(?!...)</code><dd>  negative look ahead
+<br><dt><code>(?&lt;=...)</code><dd>  positive look behind
+<br><dt><code>(?&lt;!...)</code><dd>  negative look behind
+</dl>
+
+   <p>Each top-level branch of a look behind must be of a fixed length.
+
+<h5 class="subsubheading">Backreferences</h5>
+
+     <dl>
+<dt><code>\</code><var>n</var><dd>  reference by number (can be ambiguous)
+<br><dt><code>\g</code><var>n</var><dd>  reference by number
+<br><dt><code>\g{</code><var>n</var><code>}</code><dd>  reference by number
+<br><dt><code>\g{-</code><var>n</var><code>}</code><dd>  relative reference by number
+<br><dt><code>\k&lt;</code><var>name</var><code>&gt;</code><dd>  reference by name (like Perl)
+<br><dt><code>\k'</code><var>name</var><code>'</code><dd>  reference by name (like Perl)
+<br><dt><code>\g{</code><var>name</var><code>}</code><dd>  reference by name (like Perl)
+<br><dt><code>\k{</code><var>name</var><code>}</code><dd>  reference by name (like .NET)
+<br><dt><code>(?P=</code><var>name</var><code>)</code><dd>  reference by name (like Python)
+</dl>
+
+<h5 class="subsubheading">Subroutine References (possibly recursive)</h5>
+
+     <dl>
+<dt><code>(?R)</code><dd>  recurse whole pattern
+<br><dt><code>(?</code><var>n</var><code>)</code><dd>  call subpattern by absolute number
+<br><dt><code>(?+</code><var>n</var><code>)</code><dd>  call subpattern by relative number
+<br><dt><code>(?-</code><var>n</var><code>)</code><dd>  call subpattern by relative number
+<br><dt><code>(?&amp;</code><var>name</var><code>)</code><dd>  call subpattern by name (like Perl)
+<br><dt><code>(?P&gt;</code><var>name</var><code>)</code><dd>  call subpattern by name (like Python)
+</dl>
+
+<h5 class="subsubheading">Conditional Patterns</h5>
+
+     <dl>
+<dt><code>(?(</code><var>condition</var><code>)</code><var>yes-pattern</var><code>)</code><br><dt><code>(?(</code><var>condition</var><code>)</code><var>yes-pattern</var><code>|</code><var>no-pattern</var><code>)</code>
+<br><dt><code>(?(</code><var>n</var><code>)...</code><dd>  absolute reference condition
+<br><dt><code>(?(+</code><var>n</var><code>)...</code><dd>  relative reference condition
+<br><dt><code>(?(-</code><var>n</var><code>)...</code><dd>  relative reference condition
+<br><dt><code>(?(&lt;</code><var>name</var><code>&gt;)...</code><dd>  named reference condition (like Perl)
+<br><dt><code>(?('</code><var>name</var><code>')...</code><dd>  named reference condition (like Perl)
+<br><dt><code>(?(</code><var>name</var><code>)...</code><dd>  named reference condition (PCRE only)
+<br><dt><code>(?(R)...</code><dd>  overall recursion condition
+<br><dt><code>(?(R</code><var>n</var><code>)...</code><dd>  specific group recursion condition
+<br><dt><code>(?(R&amp;</code><var>name</var><code>)...</code><dd>  specific recursion condition
+<br><dt><code>(?(DEFINE)...</code><dd>  define subpattern for reference
+<br><dt><code>(?(assert)...</code><dd>  assertion condition
+</dl>
+
+<h5 class="subsubheading">Backtracking Control</h5>
+
+<p>The following act immediately they are reached:
+
+     <dl>
+<dt><code>(*ACCEPT)</code><dd>  force successful match
+<br><dt><code>(*FAIL)</code><dd>  force backtrack; synonym `<samp><span class="samp">(*F)</span></samp>'
+</dl>
+
+   <p>The following act only when a subsequent match failure causes a backtrack to
+reach them. They all force a match failure, but they differ in what happens
+afterwards. Those that advance the start-of-match point do so only if the
+pattern is not anchored.
+
+     <dl>
+<dt><code>(*COMMIT)</code><dd>  overall failure, no advance of starting point
+<br><dt><code>(*PRUNE)</code><dd>  advance to next starting character
+<br><dt><code>(*SKIP)</code><dd>  advance start to current matching position
+<br><dt><code>(*THEN)</code><dd>  local failure, backtrack to next alternation
+</dl>
+
+<h5 class="subsubheading">Newline Conventions</h5>
+
+<p>These are recognized only at the very start of the pattern or after a
+`<samp><span class="samp">(*BSR_...)</span></samp>' option.
+
+     <dl>
+<dt><code>(*CR)</code><br><dt><code>(*LF)</code><br><dt><code>(*CRLF)</code><br><dt><code>(*ANYCRLF)</code><br><dt><code>(*ANY)</code><dd></dl>
+
+<h5 class="subsubheading">What `<samp><span class="samp">\R</span></samp>' Matches</h5>
+
+<p>These are recognized only at the very start of the pattern or after a
+`<samp><span class="samp">(*...)</span></samp>' option that sets the newline convention.
+
+     <dl>
+<dt><code>(*BSR_ANYCRLF)</code><br><dt><code>(*BSR_UNICODE)</code><dd></dl>
+
+<!-- This file was hand-translated to Texinfo from the upstream PCRE -->
+<!-- documentation file pcrepattern.3, whose copyright notice is: -->
+<!-- Author: Philip Hazel, University Computing Service -->
+<!-- Cambridge CB2 3QH, England -->
+<!-- Last updated: 17 September 2007 -->
+<!-- Copyright (c) 1997-2007 University of Cambridge. -->
+<!-- Redistribution and use in source and binary forms, with or without -->
+<!-- modification, are permitted provided that the following conditions are met: -->
+<!-- * Redistributions of source code must retain the above copyright notice, -->
+<!-- this list of conditions and the following disclaimer. -->
+<!-- * Redistributions in binary form must reproduce the above copyright -->
+<!-- notice, this list of conditions and the following disclaimer in the -->
+<!-- documentation and/or other materials provided with the distribution. -->
+<!-- * Neither the name of the University of Cambridge nor the names of its -->
+<!-- contributors may be used to endorse or promote products derived from -->
+<!-- this software without specific prior written permission. -->
+<!-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" -->
+<!-- AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE -->
+<!-- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE -->
+<!-- ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE -->
+<!-- LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR -->
+<!-- CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF -->
+<!-- SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS -->
+<!-- INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN -->
+<!-- CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) -->
+<!-- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE -->
+<!-- POSSIBILITY OF SUCH DAMAGE. -->
+<!-- Apart from markup translation, all mention of callouts has been -->
+<!-- removed, and confusing references to PCRE itself, its configuration -->
+<!-- options and library API, or to specific programming environments -->
+<!-- have been removed or clarified. -->
+</body></html>
+

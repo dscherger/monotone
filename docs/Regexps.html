@@ -1,0 +1,79 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Regexps - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Special-Topics.html#Special-Topics" title="Special Topics">
+<link rel="prev" href="Mark_002dMerge.html#Mark_002dMerge" title="Mark-Merge">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Regexps"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Mark_002dMerge.html#Mark_002dMerge">Mark-Merge</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Special-Topics.html#Special-Topics">Special Topics</a>
+<hr>
+</div>
+
+<h3 class="section">7.5 Regular Expression Syntax</h3>
+
+<p>Monotone expects user-provided regular expressions in
+<samp><span class="file">.mtn-ignore</span></samp> files and as the result of the
+<code>get_encloser_pattern</code> Lua hook (for the <samp><span class="option">--show-encloser</span></samp>
+option to <samp><span class="command">diff</span></samp>).  User-written Lua hooks may also use the
+function <code>regex.search</code> as they see fit.  All these regular
+expressions should be written with the same syntax, which is that
+expected by the Perl-Compatible Regular Expression library (PCRE).
+
+<ul class="menu">
+<li><a accesskey="1" href="Regexp-Summary.html#Regexp-Summary">Regexp Summary</a>:   Quick reference to regular expression syntax. 
+<li><a accesskey="2" href="Regexp-Details.html#Regexp-Details">Regexp Details</a>:   Details of regular expression syntax and semantics. 
+</ul>
+
+<!-- This file was hand-translated to Texinfo from the upstream PCRE -->
+<!-- documentation file pcresyntax.3, whose copyright notice is: -->
+<!-- Author: Philip Hazel, University Computing Service -->
+<!-- Cambridge CB2 3QH, England -->
+<!-- Last updated: 21 September 2007 -->
+<!-- Copyright (c) 1997-2007 University of Cambridge. -->
+<!-- Redistribution and use in source and binary forms, with or without -->
+<!-- modification, are permitted provided that the following conditions are met: -->
+<!-- * Redistributions of source code must retain the above copyright notice, -->
+<!-- this list of conditions and the following disclaimer. -->
+<!-- * Redistributions in binary form must reproduce the above copyright -->
+<!-- notice, this list of conditions and the following disclaimer in the -->
+<!-- documentation and/or other materials provided with the distribution. -->
+<!-- * Neither the name of the University of Cambridge nor the names of its -->
+<!-- contributors may be used to endorse or promote products derived from -->
+<!-- this software without specific prior written permission. -->
+<!-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" -->
+<!-- AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE -->
+<!-- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE -->
+<!-- ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE -->
+<!-- LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR -->
+<!-- CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF -->
+<!-- SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS -->
+<!-- INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN -->
+<!-- CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) -->
+<!-- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE -->
+<!-- POSSIBILITY OF SUCH DAMAGE. -->
+<!-- Apart from markup translation, all mention of callouts has been -->
+<!-- removed, and a few confusing references to PCRE itself or to -->
+<!-- specific programming environments have been removed or clarified. -->
+</body></html>
+

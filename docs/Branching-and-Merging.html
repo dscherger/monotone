@@ -110,5 +110,26 @@ graphs of arbitrary complexity &mdash; but you will have more trouble.
 Whatever arrangement of branches you come up with, though, monotone
 should be able to handle it.
 
+   <p>If you are unsure of the name of a branch, you can list all branches using
+the <samp><span class="command">ls branches</span></samp> command.  This is very useful, but if you create
+a lot of branches then the list can become very long and unwieldy.  To help
+this monotone has the <samp><span class="command">suspend</span></samp> command which partially hides
+revisions/branches you are no longer using.  Further commits on hidden branches
+will automatically unhide the branches.
+
+   <p>For example, if Beth is now finished with the muffins branch, she can stop
+it from cluttering the list of branches by suspending the last revision in
+that branch:
+
+<pre class="smallexample">     $ mtn ls branches
+     jp.co.juicebot.jb7
+     jp.co.juicebot.jb7.muffins
+     $ mtn heads
+     mtn: branch 'jp.co.juicebot.jb7.muffins' is currently merged:
+     4e48e2c9a3d2ca8a708cb0cc545700544efb5021 beth@juicebot.co.jp 2007-07-08T02:17:37
+     $ mtn suspend 4e48e2c9a3d2ca8a708cb0cc545700544efb5021
+     $ mtn ls branches
+     jp.co.juicebot.jb7
+</pre>
    </body></html>
 
