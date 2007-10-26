@@ -768,7 +768,7 @@ inventory_print_states(app_state & app, file_path const & fs_path,
     {
       if (!item.new_node.exists)
         {
-          if (app.lua.hook_ignore_file(fs_path))
+          if (app.work.ignore_file(fs_path))
             states.push_back("ignored");
           else
             states.push_back("unknown");

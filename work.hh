@@ -97,6 +97,7 @@ struct workspace
                               bool messages = true);
 
   void update_any_attrs();
+  void init_attributes(file_path const & path, editable_roster_base & er);
 
   bool has_changes();
 
@@ -195,12 +196,22 @@ struct workspace
   void enable_inodeprints();
   void maybe_update_inodeprints();
 
+  // the 'ignore file', .mtn-ignore in the root of the workspace, contains a
+  // set of regular expressions that match pathnames.  any file or directory
+  // that exists, is unknown, and matches one of these regexps is treated as
+  // if it did not exist, instead of being an unknown file.
+  bool ignore_file(file_path const & path);
+
   // constructor and locals.  by caching pointers to the database and the
   // lua hooks, we don't have to know about app_state.
-  workspace(database & db, lua_hooks & lua) : db(db), lua(lua) {};
+  workspace(database & db, lua_hooks & lua)
+    : db(db), lua(lua), have_ignore_hook(false), know_ignore_hook(false)
+  {};
 private:
   database & db;
   lua_hooks & lua;
+  bool have_ignore_hook;
+  bool know_ignore_hook;
 };
 
 // Local Variables:

@@ -353,7 +353,7 @@ CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
       // we'll treat this as a user (fatal) error.  it really wouldn't make
       // sense to add a dir to .mtn-ignore and then try to add it to the
       // project with a mkdir statement, but one never can tell...
-      N(app.opts.no_ignore || !app.lua.hook_ignore_file(fp),
+      N(app.opts.no_ignore || !app.work.ignore_file(fp),
         F("ignoring directory '%s' [see .mtn-ignore]") % fp);
 
       paths.insert(fp);

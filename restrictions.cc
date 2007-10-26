@@ -87,7 +87,7 @@ validate_roster_paths(set<file_path> const & included_paths,
       // rosters
       if (known_paths.find(*i) == known_paths.end())
         {
-          if (!app.lua.hook_ignore_file(*i))
+          if (!app.work.ignore_file(*i))
             {
               bad++;
               W(F("restriction includes unknown path '%s'") % *i);
@@ -124,7 +124,7 @@ validate_workspace_paths(set<file_path> const & included_paths,
       // ignored paths are allowed into the restriction but are not
       // considered invalid if they are found in none of the restriction's
       // rosters
-      if (!path_exists(*i) && !app.lua.hook_ignore_file(*i))
+      if (!path_exists(*i) && !app.work.ignore_file(*i))
         {
           bad++;
           W(F("restriction includes unknown path '%s'") % *i);

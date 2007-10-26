@@ -310,7 +310,16 @@ lua_hooks::hook_edit_comment(external const & commentary,
 }
 
 bool
-lua_hooks::hook_ignore_file(file_path const & p)
+lua_hooks::obsolete_hook_ignore_file_defined()
+{
+  bool have_ignore_file = Lua(st)
+    .func("ignore_file")
+    .ok();
+  return have_ignore_file;
+}
+
+bool
+lua_hooks::obsolete_hook_ignore_file(file_path const & p)
 {
   bool ignore_it = false;
   bool exec_ok = Lua(st)

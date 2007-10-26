@@ -486,22 +486,47 @@ workspace::maybe_update_inodeprints()
 }
 
 // objects and routines for manipulating the workspace itself
+
+bool
+workspace::ignore_file(file_path const & path)
+{
+  if (!know_ignore_hook)
+    {
+      have_ignore_hook = lua.obsolete_hook_ignore_file_defined();
+      know_ignore_hook = true;
+    }
+  if (have_ignore_hook)
+    return lua.obsolete_hook_ignore_file(path);
+  return false;
+}
+
+void
+workspace::init_attributes(file_path const & path, editable_roster_base & er)
+{
+  map<string, string> attrs;
+  lua.hook_init_attributes(path, attrs);
+  if (attrs.size() > 0)
+    for (map<string, string>::const_iterator i = attrs.begin();
+         i != attrs.end(); ++i)
+      er.set_attr(path, attr_key(i->first), attr_value(i->second));
+}
+
 namespace {
 
 struct file_itemizer : public tree_walker
 {
   database & db;
-  lua_hooks & lua;
+  workspace & work;
   set<file_path> & known;
   set<file_path> & unknown;
   set<file_path> & ignored;
   path_restriction const & mask;
-  file_itemizer(database & db, lua_hooks & lua,
+  file_itemizer(database & db, workspace & work,
                 set<file_path> & k,
                 set<file_path> & u,
                 set<file_path> & i,
                 path_restriction const & r)
-    : db(db), lua(lua), known(k), unknown(u), ignored(i), mask(r) {}
+    : db(db), work(work), known(k), unknown(u), ignored(i), mask(r) {}
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
 };
@@ -519,7 +544,7 @@ file_itemizer::visit_file(file_path const & path)
 {
   if (mask.includes(path) && known.find(path) == known.end())
     {
-      if (lua.hook_ignore_file(path) || db.is_dbfile(path))
+      if (work.ignore_file(path) || db.is_dbfile(path))
         ignored.insert(path);
       else
         unknown.insert(path);
@@ -570,15 +595,15 @@ addition_builder
   : public tree_walker
 {
   database & db;
-  lua_hooks & lua;
+  workspace & work;
   roster_t & ros;
   editable_roster_base & er;
   bool respect_ignore;
 public:
-  addition_builder(database & db, lua_hooks & lua,
+  addition_builder(database & db, workspace & work,
                    roster_t & r, editable_roster_base & e,
                    bool i = true)
-    : db(db), lua(lua), ros(r), er(e), respect_ignore(i)
+    : db(db), work(work), ros(r), er(e), respect_ignore(i)
   {}
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
@@ -622,14 +647,8 @@ addition_builder::add_nodes_for(file_path const & path,
   I(nid != the_null_node);
   er.attach_node(nid, path);
 
-  map<string, string> attrs;
-  lua.hook_init_attributes(path, attrs);
-  if (attrs.size() > 0)
-    for (map<string, string>::const_iterator i = attrs.begin();
-         i != attrs.end(); ++i)
-      er.set_attr(path, attr_key(i->first), attr_value(i->second));
+  work.init_attributes(path, er);
 }
-
 
 bool
 addition_builder::visit_dir(file_path const & path)
@@ -641,7 +660,7 @@ addition_builder::visit_dir(file_path const & path)
 void
 addition_builder::visit_file(file_path const & path)
 {
-  if ((respect_ignore && lua.hook_ignore_file(path)) || db.is_dbfile(path))
+  if ((respect_ignore && work.ignore_file(path)) || db.is_dbfile(path))
     {
       P(F("skipping ignorable file %s") % path);
       return;
@@ -1037,10 +1056,10 @@ simulated_working_tree::~simulated_working_tree()
 
 static void
 add_parent_dirs(file_path const & dst, roster_t & ros, node_id_source & nis,
-                database & db, lua_hooks & lua)
+                database & db, workspace & work)
 {
   editable_roster_base er(ros, nis);
-  addition_builder build(db, lua, ros, er);
+  addition_builder build(db, work, ros, er);
 
   // FIXME: this is a somewhat odd way to use the builder
   build.visit_dir(dst.dirname());
@@ -1174,7 +1193,7 @@ workspace::find_unknown_and_ignored(path_restriction const & mask,
   get_current_roster_shape(new_roster, nis);
   new_roster.extract_path_set(known);
 
-  file_itemizer u(db, lua, known, unknown, ignored, mask);
+  file_itemizer u(db, *this, known, unknown, ignored, mask);
   for (vector<file_path>::const_iterator
          i = roots.begin(); i != roots.end(); ++i)
     {
@@ -1202,7 +1221,7 @@ workspace::perform_additions(set<file_path> const & paths,
     }
 
   I(new_roster.has_root());
-  addition_builder build(db, lua, new_roster, er, respect_ignore);
+  addition_builder build(db, *this, new_roster, er, respect_ignore);
 
   for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); ++i)
     {
@@ -1391,7 +1410,7 @@ workspace::perform_rename(set<file_path> const & srcs,
         }
 
       renames.insert(make_pair(src, dpath));
-      add_parent_dirs(dpath, new_roster, nis, db, lua);
+      add_parent_dirs(dpath, new_roster, nis, db, *this);
     }
   else
     {
@@ -1414,7 +1433,7 @@ workspace::perform_rename(set<file_path> const & srcs,
 
           renames.insert(make_pair(*i, d));
 
-          add_parent_dirs(d, new_roster, nis, db, lua);
+          add_parent_dirs(d, new_roster, nis, db, *this);
         }
     }
 
