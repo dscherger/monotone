@@ -5,7 +5,7 @@
         <link>http://monotone.ca/releases.xml</link> 
         <description>monotone releases with links to the sources.</description> 
         <language>en</language> 
-        <pubDate>Wed, 25 Apr 2007 09:29:47 +0000</pubDate>
+        <pubDate>Fri, 25 Oct 2007 22:35:33 +0000</pubDate>
         
         <item> 
             <title>monotone 0.37 released</title> 
@@ -120,7 +120,7 @@ Lua hooks.)
 
 ]]>
             </description>
-            <pubDate>Wed, 25 Apr 2007 09:29:47 +0000</pubDate>
+            <pubDate>Fri, 25 Oct 2007 22:35:33 +0000</pubDate>
             <enclosure url="http://monotone.ca/downloads/0.37/monotone-0.37.tar.gz" length="5259352" type="application/octet-stream"/>
         </item>
     </channel>
