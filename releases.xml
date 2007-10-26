@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<rss version="2.0"> 
+    <channel> 
+        <title>monotone - distributed version control</title> 
+        <link>http://monotone.ca/releases.xml</link> 
+        <description>monotone releases with links to the sources.</description> 
+        <language>en</language> 
+        <pubDate>Wed, 25 Apr 2007 09:29:47 +0000</pubDate>
+        
+        <item> 
+            <title>monotone 0.37 released</title> 
+            <description>
+<![CDATA[
+<p>
+Time for a new, and currently not so regular release.  This is
+version 0.37, with quite a number of changes that I imagine would be
+interesting for quite a lot of people.
+</p>
+
+<h2>Changes</h2>
+
+<ul>
+<li>mtn db kill_rev_locally now checks for an existing workspace
+before the revision is killed and tries to apply the changes
+of this particular revision back to the workspace to allow
+easy re-committing afterwards
+
+<li>the "--brief" switch for mtn annotate has been renamed to
+"--revs-only" for clarity
+
+<li>mtn help now lists the commands (and their aliases) available
+within a group, so its easier to get an overview which commands
+are available at all
+
+<li>the "MTN_MERGE=diffutils" merger (provided by std_hooks.lua)
+was improved. It now accepts a MTN_MERGE_DIFFUTILS environment
+variable which can be used to control its behaviour
+through comma-separated "key[=value]" entries. Currently
+supported entries are "partial" for doing a partial
+batch/non-modal 3-way merge conflict "resolution" which uses
+embedded content conflict markers and "diff3opts=[...]" and
+"sdiffopts=[...]" for passing arbitrary options to the used
+"diff3" and "sdiff" tools. When used in combination with "mtn
+merge_into_workspace" this way one especially can achieve a
+CVS/SVN style non-modal workspace-based merging.
+
+<li>There is a new revision selector: "p:REV" selects the
+parent(s) of revision REV.  For example, if a revision has
+one parent,
+
+    <code>mtn diff -r p:REV -r REV</code>
+
+will show the changes made in that revision.
+
+<li>Monotone now uses the Perl-Compatible Regular Expression
+(PCRE) library for all regular expressions, instead of the
+boost::regex library.  This means that external Boost
+libraries are no longer required to build or use Monotone.
+If building from source, you will still need the Boost headers
+available somewhere.  See INSTALL for details.
+
+<li>PCRE's syntax for regular expressions is a superset of
+boost::regex's syntax; it is unlikely that any existing
+.mtn-ignore files or other user uses of regexps will break.
+The manual now contains detailed documentation of the regexp
+syntax, borrowed from PCRE itself.
+
+<li>the format of "mtn automate inventory" has changed to basic_io.
+This fixes a couple of corner cases where the old format
+returned wrong information and introduces new capabilities like
+restricted output, recognized attribute changes, and more.
+For a complete overview on the new format, please take a look
+in the appropriate manual section.
+</ul>
+
+<h2>Bugs fixed</h2>
+
+<ul>
+<li>mtn automate heads called without a branch argument now properly
+returns the head revisions of the workspace's branch if called
+over mtn automate stdio
+
+<li>mtn commit no longer crashes if it creates a revision whose
+roster already exists, i.e. was left behind by the command
+`mtn db kill_rev_locally REV` (savannah #18990)
+</ul>
+
+<h2>Documentation changes</h2>
+
+<ul>
+<li>the documentation of the "--revs-only" (formerly "--brief")
+switch for the annotate command didn't match its actual
+behavior, this has been fixed
+
+<li>documentation for the "ssh_agent_add" command was missing
+and has been added
+</ul>
+
+<h2>Other</h2>
+
+<ul>
+<li>contrib/usher.cc has been removed. Please use the
+net.venge.monotone.contrib.usher branch instead.
+</ul>
+
+<h2>Internal</h2>
+
+<ul>
+<li>Update SQLite to 3.4.1.
+
+<li>Update Lua to 5.1.2 plus latest bug fixes.
+
+<li>Update Botan to 1.5.10.
+
+<li>Internal use of regular expressions has been almost eliminated.
+(Regular expressions are still used for .mtn-ignore and the
+--show-encloser feature of mtn diff, and are still available to
+Lua hooks.)
+</ul>
+
+]]>
+            </description>
+            <pubDate>Wed, 25 Apr 2007 09:29:47 +0000</pubDate>
+            <enclosure url="http://monotone.ca/downloads/0.37/monotone-0.37.tar.gz" length="5259352" type="application/octet-stream"/>
+        </item>
+    </channel>
+</rss> 
