@@ -203,13 +203,20 @@ struct workspace
   bool ignore_file(file_path const & path);
 
   // constructor and locals.  by caching pointers to the database and the
-  // lua hooks, we don't have to know about app_state.
+  // lua hooks, we don't have to know about app_state. they are pointers
+  // for the sake of the unit-test constructor below.
   workspace(database & db, lua_hooks & lua)
-    : db(db), lua(lua), have_ignore_hook(false), know_ignore_hook(false)
+    : db(&db), lua(&lua), have_ignore_hook(false), know_ignore_hook(false)
   {};
+
+#ifdef BUILD_UNIT_TESTS // this is for restrictions.cc
+  workspace() : db(0), lua(0), have_ignore_hook(false), know_ignore_hook(true)
+  {};
+#endif
+  
 private:
-  database & db;
-  lua_hooks & lua;
+  database * db;
+  lua_hooks * lua;
   bool have_ignore_hook;
   bool know_ignore_hook;
 };
