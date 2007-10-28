@@ -1,0 +1,4 @@
+1) Implement structuring of data for the $mtn->attributes() and $mtn->revision()
+   methods.
+2) Sort out a test database for use with a mtn-tester
+3) Do CPAN stuff.

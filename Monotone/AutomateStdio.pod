@@ -1,0 +1,351 @@
+=pod
+
+=head1 NAME
+
+Monotone::automateStdio - Perl interface to Monotone via automate stdio
+
+=head1 VERSION
+
+0.1
+
+=head1 SYNOPSIS
+
+  use Monotone::AutomateStdio;
+  my $mtn = Monotone::AutomateStdio->new("/home/fred/venge.mtn");
+  my @manifest;
+  $mtn->get_manifest_of(\@manifest)
+      or die("mtn: " . $mtn->error_message());
+
+=head1 DESCRIPTION
+
+The Monotone::AutomateStdio class gives the Perl developer access to Monotone's
+automate stdio interface; internally dealing command, option and output
+formats. For most commands that return structured information, this class also
+breaks out the information into lists of records, as anonymous hashes, for ease
+of access (detailed below).
+
+The mtn automate subprocess is also controlled by this class. A new subprocess
+is started, if necessary, when anything that requires it is called. The
+subprocess is terminated on object destruction or when $mtn->closedown() is
+called.
+
+All automate commands have been implemented in this class except for the
+following:
+
+    genkey
+    packet_for_fdata
+    packet_for_fdelta
+    packet_for_rdata
+    packets_for_certs
+    put_file
+    put_revision
+    stdio
+
+The `genkey' command is typically done by the user when setting up their
+account and so is not likely to be of great use rest of the time, the `packet'
+style commands seem to be of little use to a scripting language, the `put'
+style commands just seem too scary for words and hopefully you do not have to
+ask about the `stdio' command:-).
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item new()
+
+Creates a new Monotone::AutomateStdio object, using the current workspace's
+database.
+
+=item new($db)
+
+Creates a new Monotone::AutomateStdio object, using the database named in $db.
+
+=back
+
+=head1 METHODS
+
+See http://monotone.ca/monotone.html for a complete description of the mtn
+automate commands.
+
+Methods that return data do so via the first argument, which is a reference to
+a buffer or list that is to hold the data. Methods that return lists of
+structured records also provide the option of returning the data as one raw
+string if the reference points to a scalar variable rather than a list or
+array. Therefore:
+
+    $mtn->get_manifest_of(\$buffer);
+
+would simply put the output from the `get_manifest_of' command into the
+variable named $buffer, whereas:
+
+    $mtn->get_manifest_of(\@list);
+
+would return the output as a list of structured records (actually anonymous
+hashes to be precise).
+
+The remaining arguments are dependent on the mtn command being used.
+
+The following methods are provided:
+
+=over 4
+
+=item $mtn->ancestors(\@list, @revision_ids)
+
+Get a list of ancestors for the specified revisions.
+
+=item $mtn->ancestry_difference(\@list, $new_revision_id
+[, $old_revision_id ...])
+
+Get a list of ancestors for the specified revision, that are not also
+ancestors for the specified old revisions.
+
+=item $mtn->attributes(\$buffer, $file_name)
+
+Get the attributes of the specified file.
+
+=item $mtn->branches(\@list)
+
+Get a list of branches.
+
+=item $mtn->cert($revision_id, $name, $value)
+
+Add the specified cert to the specified revision.
+
+=item $mtn->certs(\$buffer | \@list, $revision_id)
+
+Get all the certs for the specified revision. If \$buffer is passed then
+the output from the command is simply placed into the variable. However if
+\@list is passed then the output is returned as a list of anonymous hashes,
+each one containing the following fields:
+
+    key       - The signer of the cert.
+    signature - Signer status, i.e. "ok" or "unknown".
+    name      - The cert name.
+    value     - Its value.
+    trust     - Its trust status.
+
+=item $mtn->children(\@list, $revision_id)
+
+Get a list of children for the specified revision.
+
+=item $mtn->closedown()
+
+If started then stop the mtn subprocess.
+
+=item $mtn->common_ancestors(\@list, $revision_id ...)
+
+Get a list of revisions that are all ancestors of the specified revision(s).
+
+=item $mtn->content_diff(\$buffer, $revision_id1, $revision_id2
+[, $file_name ...])
+
+Get the difference between the two specified revisions, optionally limiting
+it to the specified list of files. If the second revision id is undefined
+then the workspace's revision is used. If both revision ids are undefined
+then the workspace's and base revisions are used. If no file names are
+listed then differences in all files are reported.
+
+=item $mtn->db_get(\$buffer, $domain, $name)
+
+Get the value of a database variable.
+
+=item $mtn->db_set($domain, $name, $value)
+
+Set the value of a database variable.
+
+=item $mtn->descendents(\@list, $revision_id ...)
+
+Get a list of descendants for the specified revision(s).
+
+=item $mtn->erase_ancestors(\@list, $revision_id ...)
+
+For a given list of revisions, weed out those that are ancestors to other
+revisions specified within the list.
+
+=item $mtn->error_message()
+
+Return the last error message received from the mtn subprocess.
+
+=item $mtn->get_base_revision_id(\$buffer)
+
+Get the revision upon which the workspace is based.
+
+=item $mtn->get_content_changed(\@list, $revision_id, $file_name)
+
+Get a list of revisions in which the content was most recently changed,
+relative to the specified revision.
+
+=item $mtn->get_corresponding_path(\$buffer, $source_revision_id, $file_name,
+$target_revision_id)
+
+For the specified file name in the specified source revision, return the
+corresponding file name for the specified target revision.
+
+=item $mtn->get_current_revision_id(\$buffer)
+
+Get the revision that would be created if an unrestricted commit was done
+in the workspace.
+
+=item $mtn->get_file(\$buffer, $file_id)
+
+Get the contents of the file referenced by the specified file id.
+
+=item $mtn->get_file_of(\$buffer, $file_name[, $revision_id])
+
+Get the contents of the specified file under the specified revision. If the
+revision id is undefined then the current workspace revision is used.
+
+=item $mtn->get_manifest_of(\$buffer | \@list, $revision_id)
+
+Get the manifest for the current or specified revision. If \$buffer is
+passed then the output from the command is simply placed into the
+variable. However if \@list is passed then the output is returned as a list
+of anonymous hashes, each one containing the following fields:
+
+    type    - The type of entry, either "d" or "f" for directory and
+              file respectively.
+    name    - The name of the directory or file.
+    file_id - The Monotone id for the file's contents. This field is
+              only present if type is set to "f".
+
+=item $mtn->get_option(\$buffer, $option_name)
+
+Get the value of an option stored in a workspace's _MTN directory.
+
+=item $mtn->get_revision(\$buffer, $revision_id)
+
+Get the revision information for the current or specified revision.
+
+=item $mtn->graph(\$buffer | \@list)
+
+Get a complete ancestry graph of the database. If \$buffer is passed then the
+output from the command is simply placed into the variable. However if \@list
+is passed then the output is returned as a list of anonymous hashes, each one
+containing the following fields:
+
+    revision_id - The id of a revision.
+    parent_ids  - A list of parent revision ids.
+
+=item $mtn->heads(\@list, $branch_name)
+
+Get a list of revision ids that are heads on the specified branch.
+
+=item $mtn->identify(\$buffer, $file_name)
+
+Get the file id, i.e. hash, of the specified file.
+
+=item $mtn->interface_version(\$buffer)
+
+Get the version of the mtn automate interface.
+
+=item $mtn->inventory(\$buffer | \@list)
+
+Get the inventory for the current workspace. If \$buffer is passed then the
+output from the command is simply placed into the variable. However if \@list
+is passed then the output is returned as a list of anonymous hashes, each one
+containing the following fields:
+
+    status       - The three inventory status characters for the file
+                   or directory.
+    crossref_one - The first cross-referencing number.
+    crossref_two - The second cross-referencing number.
+    name         - The name of the file or directory.
+
+=item $mtn->keys(\$buffer | \@list)
+
+Get a list of all the keys known to mtn. If \$buffer is passed then the output
+from the command is simply placed into the variable. However if \@list is
+passed then the output is returned as a list of anonymous hashes, each one
+containing the following fields:
+
+    name              - The name of the key.
+    public_hash       - The public hash code.
+    private_hash      - The private has code.
+    public_locations  - A list of locations for the public hash code.
+                        Values can be one of "database" or
+                        "keystore".
+    private_locations - A list of locations for the private hash
+                        code. Values can be one of "database" or
+                        "keystore".
+
+=item $mtn->leaves(\@list)
+
+Get a list of leaf revisions.
+
+=item $mtn->parents(\@list, $revision_id)
+
+Get a list of parents for the specified revision.
+
+=item $mtn->roots(\@list)
+
+Get a list of root revisions, i.e. revisions with no parents.
+
+=item $mtn->select(\@list, $selector)
+
+Get a list of revision ids that match the specified selector.
+
+=item $mtn->tags(\$buffer | \@list[, $branch_pattern])
+
+Get all the tags attached to revisions on branches that match the specified
+branch pattern. If no pattern is given then all branches are searched. If
+\$buffer is passed then the output from the command is simply placed into the
+variable. However if \@list is passed then the output is returned as a list of
+anonymous hashes, each one containing the following fields:
+
+    tag         - The name of the tag.
+    revision_id - The id of a revision that the tag is attached to.
+    signer      - The name of the key used to sign the tag cert.
+    branches    - A list of all branches that contain this revision.
+
+=item $mtn->toposort(\@list[, $revision_id ...])
+
+Sort the specified revisions such that the ancestors come out first.
+
+=back
+
+=head1 RETURN VALUE
+
+Except for the constructor and the $mtn->closedown() and $mtn->error_message()
+methods, all remaining methods return a boolean success indicator, true for
+success or false for failure. The constructor returns a newly created object,
+$mtn->error_message() returns a string and $mtn->closedown() does not return
+anything.
+
+=head1 NOTES
+
+The Monotone::AutomateStdio class, with the exception of the $mtn->db_set()
+method, provides a read-only interface to a Monotone database. This is a
+deliberate safety precaution.
+
+In order to reliably shutdown the mtn subprocess, the alarm() routine is used
+and will consequently reset any SIGALRM timers. In C I would obviously use
+setitimer() to set up any timeout timers and then restore their previous state,
+however to do this in Perl one has to use the Time::HiRes CPAN module. I felt
+that on balance it would be nicer not to introduce this dependency and use
+alarm(). Anyway if you want to do something periodically it is usually better
+to have a thread do that for you rather than use signals. If you have different
+opinions on this then please let me know.
+
+=head1 SEE ALSO
+
+http://monotone.ca
+
+=head1 BUGS
+
+The parsing of quoted basic stanza escaped output is done using a regular
+expression. This is not fool-proof but it is very unlikely that normal data
+would come close to exposing this flaw and it is a lot simpler and more
+efficient than the alternative.
+
+Whilst the object does know what version of mtn automate interface it is
+dealing with it currently does nothing with that knowledge. However, hopefully
+as usage of this library grows then it should not be too difficult to code in
+exceptions to cleanly deal with differences.
+
+No doubt other bugs will crawl out of the wood-work.
+
+=head1 HISTORY
+
+An original my Anthony Cooper <aecooper@coosoft.plus.com>.
+
+=cut

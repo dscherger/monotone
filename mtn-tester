@@ -1,0 +1,422 @@
+#!/usr/bin/perl -w
+
+use strict;
+use integer;
+use Carp;
+use File::Basename;
+use POSIX qw(strftime);
+use Storable;
+use Data::Dumper;
+use GDBM_File;
+use IO::Handle;
+use Monotone::AutomateStdio;
+use Data::Dumper;
+
+my($data,
+   @list,
+   $mtn);
+
+$mtn = Monotone::AutomateStdio->new("test.mtn");
+# $mtn = Monotone->new();
+if (0)
+{
+if (! $mtn->branches(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+if (! $mtn->certs(\@list, "ae65e53a3beca7841a87eb4525f39e3369107b82"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+if (! $mtn->cert("ae65e53a3beca7841a87eb4525f39e3369107b82", "status",
+		 "EXTERMINATE"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+if (! $mtn->children(\@list, "78bfd27c26a0c8ac249f30293e6ef6d5f44e6084"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+    printf("Largest valid index = %d\n", $#list);
+}
+if (! $mtn->children(\@list, "ae65e53a3beca7841a87eb4525f39e3369107b82"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+if (! $mtn->ancestry_difference(\@list,
+				"ed89ce366c3316f189f01229adc863b3285130e2",
+				"65e51cd2a00b4ee60b9fcc356e8e503d1e690414"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print "DIFF\n";
+    print Dumper(\@list);
+}
+if (! $mtn->common_ancestors(\@list,
+			     "ae65e53a3beca7841a87eb4525f39e3369107b82",
+			     "78bfd27c26a0c8ac249f30293e6ef6d5f44e6084",
+			     "ff7e085fab7385fbaabc57c1f53a9bbea59bf132"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+if (! $mtn->content_diff(\$data,
+			 "ae65e53a3beca7841a87eb4525f39e3369107b82",
+			 "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+if (! $mtn->content_diff(\$data,
+			 "ae65e53a3beca7841a87eb4525f39e3369107b82",
+			 "d612b1ed732ea565085eede32bb2a1fae2ca8804",
+			 "Makefile"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+if (! $mtn->descendents(\@list, "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+if (! $mtn->erase_ancestors(\@list,
+			    "ae65e53a3beca7841a87eb4525f39e3369107b82",
+			    "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+if (! $mtn->get_base_revision_id(\$data))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+if (! $mtn->get_content_changed(\@list,
+				"ae65e53a3beca7841a87eb4525f39e3369107b82",
+				"Makefile"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+if (! $mtn->get_corresponding_path
+    (\$data,
+     "ae65e53a3beca7841a87eb4525f39e3369107b82",
+     "Makefile",
+     "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+if (! $mtn->get_current_revision_id(\$data))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+if (! $mtn->get_file(\$data, "f7bec98218953adbb833865ccc52ea74d410b24e"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print $data;
+}
+if (! $mtn->get_file_of(\$data, "Makefile"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print $data;
+}
+if (! $mtn->get_option(\$data, "database"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print $data;
+}
+}
+
+if (! $mtn->attributes(\$data, "README"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print $data;
+}
+
+if (! $mtn->branches(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->get_option(\$data, "database"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print $data . "\n";
+}
+
+if (! $mtn->get_revision(\$data, "d83907887a2a35229ef361a74e98bd296d84e60c"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print $data;
+}
+
+if (! $mtn->get_revision(\$data,))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print $data;
+}
+
+if (! $mtn->get_manifest_of(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->get_manifest_of(\$data))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->certs(\@list, "d83907887a2a35229ef361a74e98bd296d84e60c"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->certs(\$data, "d83907887a2a35229ef361a74e98bd296d84e60c"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->db_set("database", "default-server", "www.test.com"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+
+if (! $mtn->db_get(\$data, "database", "default-server"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->graph(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->graph(\$data))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->heads(\@list, "net.venge.monotone.www"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->identify(\$data, "Makefile.am"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->interface_version(\$data))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->inventory(\$data))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->inventory(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->keys(\$data))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->keys(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->leaves(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->parents(\@list, "d83907887a2a35229ef361a74e98bd296d84e60c"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->roots(\@list))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->select(\@list, "l:2007-01-01/b:net.venge.monotone"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+if (! $mtn->tags(\$data, "net.venge.monotone"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->tags(\@list, "net.venge.monotone"))
+{
+    printf("OOPS: %s\n", $mtn->error_message());
+}
+else
+{
+    print Dumper(\@list);
+}
+
+printf("Last error message `%s'\n", $mtn->error_message());
+print Dumper (\$mtn);
+
+printf("Destroying object.\n");
+$mtn = undef;
+
+exit(0);
