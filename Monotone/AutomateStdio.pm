@@ -1838,10 +1838,6 @@ sub mtn_command_with_options($$$\@@)
     # mandatory argument is not passed by the caller).
 
     $in = $this->{mtn_in};
-if (0)
-{
-    $in = *STDOUT;
-}
     printf($in "o") unless ($#$options < 0);
     foreach $opt (@$options)
     {
@@ -1858,18 +1854,6 @@ if (0)
 	printf($in "%d:%s", length($param), $param) unless (! defined($param));
     }
     print($in "e\n");
-if (0)
-{
-    if(ref($ref) eq "SCALAR")
-    {
-	$$ref = "";
-    }
-    else
-    {
-	@$ref = ();
-    }
-    return 1;
-}
 
     # Depending upon what we have been given a reference to, either return the
     # data as one chunk or as an array of lines.
