@@ -44,23 +44,84 @@ function branch_in_prefix(branch, prefix)
    return false
 end
 
-do
+
+-- iterator for the prefixes delegated by the given policy
+-- returns idx, prefix, policy_branch
+function delegations(policy_dir)
+  local function fn(delegations, pos)
+    if delegations == nil then return nil end
+    local idx, val = next(delegations, pos)
+    if idx == nil then return nil end
+    if val.name == "delegate" then
+      return idx, val.values[1], val.values[2]
+    end
+    return fn(delegations, idx)
+  end
+  local delegations = read_basic_io_conffile(policy_dir .. "/delegations")
+  return fn, delegations, nil
+end
+
+do -- Do the policies trust a given key / set of keys
+  -- First, look for an override-write-permissions, shortest prefix first.
+  -- Then, look for a write-permissions, longest prefix first.
+  -- If neither exists, try the old hook or default to open.
+
+  -- Does a particular writers file include one of the given keys?
+  local function file_trusts_keys(file, signers)
+    local iter = conffile_iterator(file)
+    if iter == nil then
+      io.stderr:write("File <"..file.."> says: nil\n")
+      return nil
+    end
+    local retval = false
+    while iter:get() do
+       for _,s in pairs(signers) do
+          if s == iter.line or s == "*" then
+             retval = true
+          end
+       end
+    end
+    iter:close()
+    local retstr = "OK" if not retval then retstr = "DENY" end
+    io.stderr:write("File <"..file.."> says: "..retstr.."\n")
+    return retval
+  end
+
+  local function subpolicy_trusts_keys(policy_dir, branch, signers)
+    for _, subprefix, subpolicy in delegations(policy_dir) do
+      local overrides = policy_dir .. '/delegations.d/overrides/' .. subprefix
+      local checkout = policy_dir .. '/delegations.d/checkouts/' .. subprefix
+      if branch == nil or branch_in_prefix(branch, subprefix) then
+        local override_file = overrides .. '/override-write-permissions'
+        local override = file_trusts_keys(override_file, signers)
+        if override == true then return override end
+
+        if override == nil then
+          local sub = subpolicy_trusts_keys(checkout, branch, signers)
+          if sub ~= nil then return sub end
+        end
+      end
+    end
+
+    local here = file_trusts_keys(policy_dir .. '/write-permissions', signers)
+    return here
+  end
+
+  function policy_trusts_keys(branch, keys)
+    local override = file_trusts_keys("override-write-permissions", keys)
+    if override ~= nil then return override end
+    return subpolicy_trusts_keys('policy', branch, keys)
+  end
+  function policy_trusts_key(key)
+    return policy_trusts_keys(nil, {key})
+  end
+end
+
+do -- get_netsync_write_permitted
    local old_write_permitted = get_netsync_write_permitted
    function get_netsync_write_permitted(ident)
-      local committers, ok
-      committers, exists = conffile_iterator("policy/override-write-permissions")
-      if not exists then
-	 committers = conffile_iterator("policy/cache/write-permissions")
-      end
-      if committers ~= nil then
-	 while committers:get() do
-	    if globish_match(trim(committers.line), ident) then
-	       committers:close()
-	       return true
-	    end
-	 end
-	 committers:close()
-      end
+      local policy = policy_trusts_key(ident)
+      if policy == true then return true end
       return old_write_permitted(ident)
    end
 end
@@ -127,9 +188,10 @@ function push_to_other_servers(triggerkey, branches)
    end
 end
 
+sessions = {}
 
 function note_netsync_start(sid, role, what, rhost, rkey, include, exclude)
-   if sessions == nil then sessions = {} end
+   --if sessions == nil then sessions = {} end
    sessions[sid] = {
       key = rkey,
       branches = {},
@@ -154,20 +216,29 @@ end
 
 function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
    if ci > 0 or ri > 0 or ki > 0 then
-      server_maybe_request_sync(sessions[sid].key, sessions[sid].branches)
+      push_to_other_servers(sessions[sid].key, sessions[sid].branches)
    elseif sessions[sid].include == '' and
           sessions[sid].exclude == 'policy-branches-updated' then
-      log("resyncing after a config update...")
+      io.stderr:write("resyncing after a config update...")
       server_maybe_request_sync('')
    end
    
    -- Do we have policy branches to update?
    local updated_a_policy = false
    local updated_policies = '{'
-   local policies = conffile_iterator('policy/cache/all-policy-branches')
-   while policies ~= nil and policies:next() do
+
+  local policies = {}
+  local function note_delegated(policies, policy_dir)
+    for _, prefix, policy in delegations(policy_dir) do
+      table.insert(policies, policy)
+      note_delegated(policies, policy_dir .. '/delegations.d/checkouts/' .. prefix)
+    end
+  end
+  note_delegated(policies, "policy")
+
+   for _,policy in pairs(policies) do
       for br, _ in pairs(sessions[sid].branches) do
-	 if policies.line == br then
+	 if policy == br then
 	    if updated_a_policy then
 	       updated_policies = updated_policies .. ','
 	    end
@@ -175,9 +246,6 @@ function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
 	    updated_a_policy = true
 	 end
       end
-   end
-   if policies ~= nil then
-      policies:close()
    end
    updated_policies = updated_policies .. '}'
 
@@ -189,59 +257,10 @@ function note_netsync_end(sid, status, bi, bo, ci, co, ri, ro, ki, ko)
 end
 
 do
-   -- First, look for an override-write-permissions, shortest prefix first.
-   -- Then, look for a write-permissions, longest prefix first.
-   -- If neither exists, try the old hook or default to open.
-
-   local function file_trusts_signers(file, signers)
-      local iter = conffile_iterator(file)
-      if iter == nil then return nil end
-      local retval = false
-      while iter:get() do
-	 for _,s in pairs(signers) do
-	    if s == iter.line then
-	       retval = true
-	    end
-	 end
-      end
-      iter:close()
-      return retval
-   end
-
-   local function next_prefix(policy_dir, branch)
-      local delegations = read_basic_io_conffile(policy_dir .. "/delegations")
-      if delegations == nil then return nil end
-      for _,item in pairs(delegations) do
-	 if item.name == "delegate" then
-	    if branch_in_prefix(branch, item.values[1]) then
-	       return item.values[1]
-	    end
-	 end
-      end
-      return nil
-   end
-
-   local function policy_trusts_signers(policy_dir, branch, signers)
-      local subprefix = next_prefix(policy_dir, branch)
-      if subprefix ~= nil then
-	 local override_file = policy_dir .. '/delegations.d/overrides/' ..
-	    subprefix .. '/override-write-permissions'
-	 local override = file_trusts_signers(override_file, signers)
-	 if override ~= nil then return override end
-
-	 local subpolicy = policy_dir .. '/delegations.d/checkouts/' .. subprefix
-	 local sub = policy_trusts_signers(subpolicy, branch, signers)
-	 if sub ~= nil then return sub end
-      end
-
-      local here = file_trusts_signers(policy_dir .. '/write-permissions', signers)
-      return here
-   end
-
    local old_trust_hook = get_revision_cert_trust
    function get_revision_cert_trust(signers, id, name, value)
       if name == 'branch' then
-	 local trusted = policy_trusts_signers('policy', value, signers)
+	 local trusted = policy_trusts_keys(value, signers)
 	 if trusted ~= nil then
 	    return trusted
 	 end

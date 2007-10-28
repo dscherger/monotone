@@ -2,7 +2,7 @@ This is a policy branch implementation written with Lua hooks and scripts.
 To use it, check it out into your .monotone or copy the files there, and
 include policy.lua in your monotonerc.
 
-Other interesting files (all under policy/) are:
+There are also a few other interesting files to put in your .monotone/ :
   override-write-permissions
     If this file exists, it will be used in place of the allowed writers
     computed from the policy branches. It will be used in addition to the
@@ -12,20 +12,6 @@ Other interesting files (all under policy/) are:
     If this file exists, it will be used in place of the server list
     computed from the policy branches, to determine what servers to
     forward what branches to.
-
-  cache/write-permissions
-    A normal write-permissions file, constructed from the combined
-    write-permissions of all policy branches.
-
-  cache/all-servers
-    This contains lines of
-      server "address" "key" "prefix"
-    , and is used by the server to know which other servers to forward
-    received revisions to. Note that individual certs may not be forwarded
-    until a branch cert matching "prefix" is received.
-
-  cache/all-policy-branches
-    This contains a list of all used policy branches.
 
   policy/
     A directory that looks exactly like a normal policy branch.

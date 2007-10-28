@@ -2,7 +2,7 @@
 math.randomseed(get_pid())
 testdir = srcdir
 
-function run_netsync(what, client, server, result, ...)
+function start_server(server)
    local srv = bg(server:run("--bind="..server.address, "serve"),
 		  false, false, false)
 
@@ -10,15 +10,20 @@ function run_netsync(what, client, server, result, ...)
   while fsize(srv.prefix .. "stderr") == 0 do
     sleep(1)
     check(not srv:wait(0))
- end
-
- local t = arg
- if #t == 0 then
+  end
+  return srv
+end
+function run_netsync(what, client, server, result, ...)
+  set_env('MTN_SERVER_ADDR', server.address)
+  srv = start_server(server)
+  local t = arg
+  if #t == 0 then
     t = {"*"}
- end
+  end
 
- check(client:run(what, server.address, unpack(t)), result, false, false)
- srv:finish()
+  check(client:run(what, server.address, unpack(t)), result, false, false)
+  sleep(1)
+  srv:finish()
 end
 
 function setup_confdir(dest)
@@ -27,6 +32,7 @@ function setup_confdir(dest)
    check(copy(srcdir.."/../policy.lua", dest.."/policy.lua"))
    check(copy(srcdir.."/../update-policy.lua", dest.."/update-policy.lua"))
    check(copy(srcdir.."/../update-policy.sh", dest.."/update-policy.sh"))
+   check({"chmod", "+x", dest.."/update-policy.sh"})
    check(copy(testdir.."/monotonerc", dest.."/monotonerc"))
    check(copy(testdir.."/read-permissions", dest.."/read-permissions"))
    check(copy(testdir.."/write-permissions", dest.."/write-permissions"))
@@ -135,6 +141,13 @@ function new_person(name)
 			 obj:read(x:pubkey())
 		      end
 		   end
+  mt.update_policy = function(obj)
+                        local srv = start_server(obj)
+                        check({obj.confdir .. "/update-policy.sh",
+                               "-fg", obj.confdir,
+                               "-server", obj.address}, 0, false, false)
+                        srv:finish()
+                     end
 
    person = setmetatable(person, mt)
    check(person:run("db", "init"), 0, false, false)

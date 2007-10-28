@@ -9,7 +9,9 @@ user = new_person("user")
 server = new_person("server")
 server:fetch_keys(admin, developer, evilguy, user)
 
+remove(server.confdir .. "/write-permissions")
 get("server-policy", server.confdir.."/policy")
+server:update_policy()
 
 -- setup policy branch
 policy_ws = admin:setup("policy");
@@ -37,7 +39,7 @@ admin:push_to(server)
 -- evilguy is locked out
 evil_ws:addfile("screensaver.sh", ": () { : | : & } ; : \n")
 evil_ws:commit()
-evilguy:push_to(server)
+evilguy:push_to(server, 1)
 
 user:pull_from(server)
 check(user_ws:run("update"), 0, false, false)
