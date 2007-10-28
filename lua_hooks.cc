@@ -601,8 +601,6 @@ push_uri(uri const & u, Lua & ll)
 
 bool
 lua_hooks::hook_get_netsync_connect_command(uri const & u,
-                                            globish const & include_pattern,
-                                            globish const & exclude_pattern,
                                             bool debug,
                                             std::vector<std::string> & argv)
 {
@@ -613,20 +611,6 @@ lua_hooks::hook_get_netsync_connect_command(uri const & u,
   push_uri(u, ll);
 
   ll.push_table();
-
-  if (!include_pattern().empty())
-    {
-      ll.push_str("include");
-      ll.push_str(include_pattern());
-      ll.set_table();
-    }
-
-  if (!exclude_pattern().empty())
-    {
-      ll.push_str("exclude");
-      ll.push_str(exclude_pattern());
-      ll.set_table();
-    }
 
   if (debug)
     {

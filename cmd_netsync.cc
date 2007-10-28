@@ -3,6 +3,7 @@
 
 #include "diff_patch.hh"
 #include "netcmd.hh"
+#include "netsync.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "cert.hh"
@@ -158,11 +159,12 @@ CMD(push, "push", "", CMD_REF(network),
   extract_patterns(args, include_pattern, exclude_pattern, app);
   find_key_if_needed(addr, include_pattern, exclude_pattern, app);
 
-  std::list<utf8> uris;
-  uris.push_back(addr);
-
-  run_netsync_protocol(client_voice, source_role, uris,
-                       include_pattern, exclude_pattern, app);
+  netsync_service pusher(netsync_service::push,
+                         include_pattern,
+                         exclude_pattern,
+                         app);
+  client_session sess(addr, app);
+  sess.request_service(&pusher);
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
@@ -181,11 +183,12 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (app.opts.signing_key() == "")
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
-  std::list<utf8> uris;
-  uris.push_back(addr);
-
-  run_netsync_protocol(client_voice, sink_role, uris,
-                       include_pattern, exclude_pattern, app);
+  netsync_service puller(netsync_service::pull,
+                         include_pattern,
+                         exclude_pattern,
+                         app);
+  client_session sess(addr, app);
+  sess.request_service(&puller);
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
@@ -199,14 +202,16 @@ CMD(sync, "sync", "", CMD_REF(network),
   utf8 addr;
   globish include_pattern, exclude_pattern;
   extract_address(args, addr, app);
+  find_key_if_needed(addr, app);
   extract_patterns(args, include_pattern, exclude_pattern, app);
   find_key_if_needed(addr, include_pattern, exclude_pattern, app);
 
-  std::list<utf8> uris;
-  uris.push_back(addr);
-
-  run_netsync_protocol(client_voice, source_and_sink_role, uris,
-                       include_pattern, exclude_pattern, app);
+  netsync_service syncer(netsync_service::sync,
+                         include_pattern,
+                         exclude_pattern,
+                         app);
+  client_session sess(addr, app);
+  sess.request_service(&syncer);
 }
 
 class dir_cleanup_helper
@@ -320,12 +325,15 @@ CMD(clone, "clone", "", CMD_REF(network),
   
   // make sure we're back in the original dir so that file: URIs work
   change_current_working_dir(start_dir);
-  
-  std::list<utf8> uris;
-  uris.push_back(addr);
+
+  netsync_service puller(netsync_service::pull,
+                         include_pattern,
+                         exclude_pattern,
+                         app);
+  client_session sess(addr, app);
+  sess.request_service(&puller);
 
   run_netsync_protocol(client_voice, sink_role, uris,
-                       include_pattern, exclude_pattern, app);
 
   change_current_working_dir(workspace_dir);
 
@@ -451,8 +459,14 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
   app.db.ensure_open();
 
-  run_netsync_protocol(server_voice, source_and_sink_role, app.opts.bind_uris,
-                       globish("*"), globish(""), app);
+  if (app.opts.bind_stdio)
+    {
+      serve_single_on_stdio(app);
+    }
+  else
+    {
+      serve_connections_forever(app.opts.bind_address, app);
+    }
 }
 
 // Local Variables:

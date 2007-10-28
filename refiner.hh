@@ -15,6 +15,7 @@
 #include "vocab.hh"
 #include "merkle_tree.hh"
 #include "netcmd.hh"
+#include "network.hh"
 
 // This file defines the "refiner" class, which is a helper encapsulating
 // the main tricky part of the netsync algorithm. You must construct a
@@ -50,6 +51,7 @@ refiner
 {
   netcmd_item_type type;
   protocol_voice voice;
+  bool voice_is_set;
   refiner_callbacks & cb;
 
   bool sent_initial_query;
@@ -75,7 +77,8 @@ refiner
 
 public:
 
-  refiner(netcmd_item_type type, protocol_voice voice, refiner_callbacks & cb);
+  refiner(netcmd_item_type type, refiner_callbacks & cb);
+  void set_voice(protocol_voice voice);
   void note_local_item(id const & item);
   void reindex_local_items();
   void begin_refinement();
