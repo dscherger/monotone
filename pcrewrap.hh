@@ -18,6 +18,8 @@
 struct real_pcre;
 struct pcre_extra;
 
+#include <boost/shared_ptr.hpp>
+
 namespace pcre
 {
   enum flags
@@ -50,16 +52,9 @@ namespace pcre
   struct regex
   {
   private:
-    // disable the default and copy constructors - we never need to copy
-    // these, and this lets us use bare pointers below instead of
-    // boost::shared_ptr.
-    regex();
-    regex(regex const &);
-    regex & operator=(regex const &);
-
     // data
-    struct real_pcre const * basedat;
-    struct pcre_extra const * extradat;
+    boost::shared_ptr<real_pcre> basedat;
+    boost::shared_ptr<pcre_extra> extradat;
 
     // used by constructors
     void init(char const *, pcre::flags);
@@ -67,7 +62,6 @@ namespace pcre
   public:
     regex(char const * pattern, pcre::flags options = DEFAULT);
     regex(std::string const & pattern, pcre::flags options = DEFAULT);
-    ~regex();
 
     bool match(std::string const & subject,
                std::string::const_iterator startoffset 

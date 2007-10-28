@@ -51,17 +51,6 @@ flags_to_internal(pcre::flags f)
   return i;
 }
 
-inline unsigned int
-get_capturecount(void const * bd)
-{
-  unsigned int cc;
-  int err = pcre_fullinfo(static_cast<pcre_t const *>(bd), 0,
-                          PCRE_INFO_CAPTURECOUNT,
-                          static_cast<void *>(&cc));
-  I(err == 0);
-  return cc;
-}
-
 namespace pcre
 {
   void regex::init(char const * pattern, flags options)
@@ -69,14 +58,17 @@ namespace pcre
     int errcode;
     int erroff;
     char const * err;
-    basedat = pcre_compile2(pattern, flags_to_internal(options),
-                            &errcode, &err, &erroff, 0);
-    if (!basedat)
+    pcre_t * bd = pcre_compile2(pattern, flags_to_internal(options),
+                                &errcode, &err, &erroff, 0);
+    if (!bd)
       pcre_compile_error(errcode, err, erroff, pattern);
 
-    pcre_extra *ed = pcre_study(basedat, 0, &err);
+    pcre_extra *ed = pcre_study(bd, 0, &err);
     if (err)
-      pcre_study_error(err, pattern);
+      {
+        pcre_free(bd);
+        pcre_study_error(err, pattern);
+      }
     if (!ed)
       {
         // I resent that C++ requires this cast.
@@ -84,14 +76,16 @@ namespace pcre
         std::memset(ed, 0, sizeof(pcre_extra));
       }
 
-    // We set a fairly low recursion depth to avoid stack overflow.
+    // We set a fairly low recursion limit to avoid stack overflow.
     // Per pcrestack(3), one should assume 500 bytes per recursion;
     // it should be safe to let pcre have a megabyte of stack, so
     // that's a depth of 2000, give or take.  (For reference, the
     // default stack limit on Linux is 8MB.)
     ed->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
     ed->match_limit_recursion = 2000;
-    extradat = ed;
+
+    basedat = boost::shared_ptr<pcre_t>(bd, pcre_free);
+    extradat = boost::shared_ptr<pcre_extra>(ed, pcre_free);
   }
 
   regex::regex(char const * pattern, flags options)
@@ -104,14 +98,6 @@ namespace pcre
     this->init(pattern.c_str(), options);
   }
 
-  regex::~regex()
-  {
-    if (basedat)
-      pcre_free(const_cast<pcre_t *>(basedat));
-    if (extradat)
-      pcre_free(const_cast<pcre_extra *>(extradat));
-  }
-
   bool
   regex::match(string const & subject,
                string::const_iterator startptr,
@@ -121,7 +107,7 @@ namespace pcre
     if (startptr != string::const_iterator(0))
       startoffset = &*startptr - &*subject.data();
 
-    int rc = pcre_exec(basedat, extradat,
+    int rc = pcre_exec(basedat.get(), extradat.get(),
                        subject.data(), subject.size(),
                        startoffset, flags_to_internal(options), 0, 0);
     if (rc == 0)

@@ -17,6 +17,7 @@
 #include "paths.hh"
 #include "roster.hh"
 #include "database.hh"
+#include "ignore_set.hh"
 
 //
 // this file defines structures to deal with the "workspace" of a tree
@@ -206,19 +207,26 @@ struct workspace
   // lua hooks, we don't have to know about app_state. they are pointers
   // for the sake of the unit-test constructor below.
   workspace(database & db, lua_hooks & lua)
-    : db(&db), lua(&lua), have_ignore_hook(false), know_ignore_hook(false)
-  {};
+    : db(&db), lua(&lua), ignores(), suppress_ignores(false),
+      look_for_lua_ignore_hook(true), have_lua_ignore_hook(false)
+  {}
 
-#ifdef BUILD_UNIT_TESTS // this is for restrictions.cc
-  workspace() : db(0), lua(0), have_ignore_hook(false), know_ignore_hook(true)
-  {};
+  // this is for use from unit tests (e.g. restrictions.cc); it disables
+  // ignores altogether, and many methods will crash if called.
+#ifdef BUILD_UNIT_TESTS
+  workspace()
+    : db(0), lua(0), ignores(), suppress_ignores(true),
+      look_for_lua_ignore_hook(false), have_lua_ignore_hook(false)
+  {}
 #endif
-  
+
 private:
   database * db;
   lua_hooks * lua;
-  bool have_ignore_hook;
-  bool know_ignore_hook;
+  ignore_set ignores;
+  bool suppress_ignores;
+  bool look_for_lua_ignore_hook;
+  bool have_lua_ignore_hook;
 };
 
 // Local Variables:

@@ -30,6 +30,7 @@
 #include "ui.hh"
 #include "charset.hh"
 #include "lua_hooks.hh"
+#include "pcrewrap.hh"
 
 using std::deque;
 using std::exception;
@@ -490,14 +491,19 @@ workspace::maybe_update_inodeprints()
 bool
 workspace::ignore_file(file_path const & path)
 {
-  if (!know_ignore_hook)
+  if (suppress_ignores)
+    return false;
+
+  // check for and run the old hook, for backward compatibility
+  if (look_for_lua_ignore_hook)
     {
-      have_ignore_hook = lua->obsolete_hook_ignore_file_defined();
-      know_ignore_hook = true;
+      have_lua_ignore_hook = lua->obsolete_hook_ignore_file_defined();
+      look_for_lua_ignore_hook = false;
     }
-  if (have_ignore_hook)
+  if (have_lua_ignore_hook)
     return lua->obsolete_hook_ignore_file(path);
-  return false;
+
+  return ignores.included(path);
 }
 
 void
