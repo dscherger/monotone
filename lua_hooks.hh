@@ -88,7 +88,13 @@ public:
   bool hook_get_netsync_write_permitted(rsa_keypair_id const & identity);
 
   // local repo hooks
-  bool hook_ignore_file(file_path const & p);
+
+  // the ignore_file() hook is obsolete.  if it's not defined we
+  // use faster code in work.cc.  only work.cc should call either
+  // of these functions.
+  bool obsolete_hook_ignore_file_defined();
+  bool obsolete_hook_ignore_file(file_path const & p);
+
   bool hook_ignore_branch(branch_name const & branch);
   bool hook_merge3(file_path const & anc_path,
                    file_path const & left_path,

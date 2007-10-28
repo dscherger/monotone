@@ -31,6 +31,7 @@ MOST_SOURCES = 								\
 	transforms.cc transforms.hh					\
 	update.cc update.hh						\
 	work.cc work_migration.cc work.hh				\
+	ignore_set.cc ignore_set.hh					\
 	cert.cc cert.hh							\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
@@ -303,12 +304,12 @@ WIN32_PLATFORM_SOURCES =						\
 # these files contain unit tests
 UNIT_TEST_SOURCES =							\
 	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
-	dates.cc diff_patch.cc globish.cc graph.cc keys.cc netcmd.cc	\
-	netxx_pipe.cc numeric_vocab.cc option.cc outdated_indicator.cc	\
-	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
-	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
-	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
-	xdelta.cc
+	dates.cc diff_patch.cc ignore_set.cc globish.cc graph.cc	\
+	keys.cc netcmd.cc netxx_pipe.cc numeric_vocab.cc option.cc	\
+	outdated_indicator.cc packet.cc paths.cc refiner.cc		\
+	restrictions.cc rev_height.cc revision.cc roster.cc		\
+	roster_merge.cc simplestring_xform.cc string_queue.cc		\
+	transforms.cc unit_tests.cc uri.cc vocab.cc xdelta.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # and must be recompiled for that purpose

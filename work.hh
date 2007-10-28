@@ -17,6 +17,7 @@
 #include "paths.hh"
 #include "roster.hh"
 #include "database.hh"
+#include "ignore_set.hh"
 
 //
 // this file defines structures to deal with the "workspace" of a tree
@@ -97,6 +98,7 @@ struct workspace
                               bool messages = true);
 
   void update_any_attrs();
+  void init_attributes(file_path const & path, editable_roster_base & er);
 
   bool has_changes();
 
@@ -195,12 +197,36 @@ struct workspace
   void enable_inodeprints();
   void maybe_update_inodeprints();
 
+  // the 'ignore file', .mtn-ignore in the root of the workspace, contains a
+  // set of regular expressions that match pathnames.  any file or directory
+  // that exists, is unknown, and matches one of these regexps is treated as
+  // if it did not exist, instead of being an unknown file.
+  bool ignore_file(file_path const & path);
+
   // constructor and locals.  by caching pointers to the database and the
-  // lua hooks, we don't have to know about app_state.
-  workspace(database & db, lua_hooks & lua) : db(db), lua(lua) {};
+  // lua hooks, we don't have to know about app_state. they are pointers
+  // for the sake of the unit-test constructor below.
+  workspace(database & db, lua_hooks & lua)
+    : db(&db), lua(&lua), ignores(), suppress_ignores(false),
+      look_for_lua_ignore_hook(true), have_lua_ignore_hook(false)
+  {}
+
+  // this is for use from unit tests (e.g. restrictions.cc); it disables
+  // ignores altogether, and many methods will crash if called.
+#ifdef BUILD_UNIT_TESTS
+  workspace()
+    : db(0), lua(0), ignores(), suppress_ignores(true),
+      look_for_lua_ignore_hook(false), have_lua_ignore_hook(false)
+  {}
+#endif
+
 private:
-  database & db;
-  lua_hooks & lua;
+  database * db;
+  lua_hooks * lua;
+  ignore_set ignores;
+  bool suppress_ignores;
+  bool look_for_lua_ignore_hook;
+  bool have_lua_ignore_hook;
 };
 
 // Local Variables:
