@@ -300,7 +300,6 @@ public:
 
   virtual cvs_event_digest get_digest(void) const
     {
-      L(FL("digest of tag for symbol %d") % symbol);
       return cvs_event_digest(ET_TAG_POINT, symbol);
     };
 };
@@ -3513,18 +3512,20 @@ blob_consumer::operator()(cvs_blob_index bi)
     blob.in_branch = cvs.base_branch;
   else
     {
-      if (blob.get_digest().is_branch_start() || blob.get_digest().is_tag())
-        if (parent_blobs.size() > 1)
-          {
-            I(false);
-          }
-
+      if ((blob.get_digest().is_branch_start() || blob.get_digest().is_tag())
+          && (parent_blobs.size() > 1))
+        {
+          I(false);
+        }
+      else
+        {
           I(parent_blobs.size() == 1);
           blob.in_branch = cvs.blobs[*parent_blobs.begin()].in_branch;
           parent_rid = cvs.blobs[*parent_blobs.begin()].assigned_rid;
 
           L(FL("parent rid: %s") % parent_rid);
           blob.assigned_rid = parent_rid;
+        }
     }
 
   if (blob.get_digest().is_commit())
