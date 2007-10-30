@@ -1,0 +1,64 @@
+head	1.1;
+access;
+symbols
+	branchB:1.1.0.4
+	branchA:1.1.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.07.23.20.23.55;	author markus;	state Exp;
+branches
+	1.1.2.1
+	1.1.4.1;
+next	;
+commitid	WGmWJAfI7f3hRVqs;
+
+1.1.2.1
+date	2007.07.23.20.23.56;	author markus;	state Exp;
+branches;
+next	;
+commitid	Ub6f89VNTXghRVqs;
+
+1.1.4.1
+date	2007.07.23.20.23.58;	author markus;	state Exp;
+branches;
+next	;
+commitid	8aWBUV8V2r5iRVqs;
+
+
+desc
+@@
+
+
+1.1
+log
+@initial import
+@
+text
+@version 1.1 of test file foo
+@
+
+
+1.1.4.1
+log
+@an irritating commit message
+@
+text
+@d1 1
+a1 1
+version 1.1.4.1 of test file foo
+@
+
+
+1.1.2.1
+log
+@an irritating commit message
+@
+text
+@d1 1
+a1 1
+version 1.1.2.1 of test file foo
+@
+
