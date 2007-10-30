@@ -2017,7 +2017,7 @@ public:
 class split_decider_func
 {
 public:
-  virtual bool operator () (cvs_event_ptr & ev) = 0;
+  virtual bool operator () (const cvs_event_ptr & ev) = 0;
 };
 
 // A simple functor which decides based on the event's timestamp.
@@ -2031,7 +2031,7 @@ public:
     : split_point(ti)
     { };
 
-  virtual bool operator () (cvs_event_ptr & ev)
+  virtual bool operator () (const cvs_event_ptr & ev)
     {
       return ev->adj_time > split_point;
     }
@@ -2046,27 +2046,22 @@ public:
 // a blob in path A or path B. Additionally, if there are dependencies
 // to blobs in path A, there must not be any dependencies to path B and
 // vice verca.
-class split_by_paths
+class split_by_path
   : public split_decider_func
 {
   cvs_history & cvs;
-  vector<cvs_blob_index> path_a, path_b;
+  vector<cvs_blob_index> path;
 
 public:
-  split_by_paths(cvs_history & cvs,
-                 vector<cvs_blob_index> & a,
-                 vector<cvs_blob_index> & b)
+  split_by_path(cvs_history & cvs,
+                vector<cvs_blob_index> & path)
     : cvs(cvs),
-      path_a(a),
-      path_b(b)
-    {
-      I(*path_a.begin() == *path_b.begin());
-    };
+      path(path)
+    { };
 
-  virtual bool operator () (cvs_event_ptr & ev)
+  virtual bool operator () (const cvs_event_ptr & ev)
     {
-      int count_deps_in_path_a = 0,
-          count_deps_in_path_b = 0;
+      int count_deps_in_path = 0;
 
       set<cvs_blob_index> done;
       stack<cvs_blob_index> stack;
@@ -2074,7 +2069,7 @@ public:
       vector<cvs_blob_index> deps_into_a, deps_into_b;
 
       // start at that event and recursively check all its dependencies
-      // for blobs in path_a or path_b.
+      // for blobs in the path.
       for (dependency_iter i = ev->dependencies.begin();
            i != ev->dependencies.end(); ++i)
         stack.push(cvs.get_blob_of(*i));
@@ -2085,20 +2080,13 @@ public:
           stack.pop();
           done.insert(bi);
 
-          if (bi == *path_a.begin())
+          if (bi == *path.begin())
             continue;
 
-          if (find(++path_a.begin(), path_a.end(), bi) != path_a.end())
+          if (find(++path.begin(), path.end(), bi) != path.end())
             {
-              I(find(++path_b.begin(), path_b.end(), bi) == path_b.end());
-              count_deps_in_path_a++;
+              count_deps_in_path++;
               deps_into_a.push_back(bi);
-            }
-          else if (find(++path_b.begin(), path_b.end(), bi) != path_b.end())
-            {
-              I(find(++path_a.begin(), path_a.end(), bi) == path_a.end());
-              count_deps_in_path_b++;
-              deps_into_b.push_back(bi);
             }
           else
             for (blob_event_iter i = cvs.blobs[bi].begin();
@@ -2112,44 +2100,7 @@ public:
                 }
         }
 
-      // FIXME: this is a quick fix for a problem I don't know how to
-      //        solve. We basically have to decide where to put this
-      //        given event, which depends (possibly via other blobs)
-      //        on blobs in *both* paths.
-      if ((count_deps_in_path_a > 0) && (count_deps_in_path_b > 0))
-        {
-          W(F("blob %d with event %s has dependencies into both paths!")
-            % ev->bi % get_event_repr(cvs, ev));
-
-          for (vector<cvs_blob_index>::iterator i = deps_into_a.begin();
-                i != deps_into_a.end(); ++i)
-            W(F("  dep into path a: blob %d (%s)")
-              % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
-
-          for (vector<cvs_blob_index>::iterator i = deps_into_b.begin();
-                i != deps_into_b.end(); ++i)
-            W(F("  dep into path b: blob %d (%s)")
-              % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
-
-          W(F("putting the event somewhere..."));
-          return true;
-        }
-
-      I((count_deps_in_path_a == 0) || (count_deps_in_path_b == 0));
-
-      // FIXME: another quick fix: if the event depends on none
-      //        of the two paths, we simply put it to path_b.
-      if (count_deps_in_path_a + count_deps_in_path_b == 0)
-        {
-          W(F("blob %d with event %s has no dependencies!")
-            % ev->bi % get_event_repr(cvs, ev));
-          W(F("putting the event somewhere..."));
-          return false;
-        }
-
-      I(count_deps_in_path_a + count_deps_in_path_b > 0);
-
-      if (count_deps_in_path_a > 0)
+      if (count_deps_in_path > 0)
         return true;
       else
         return false;
@@ -2363,8 +2314,44 @@ public:
         {
           // Blob e.second seems to be part of two (or even more)
           // branches, thus we need to split that blob.
-          split_by_paths func(cvs, path_a, path_b);
-          split_blob_at(cvs, e.second, func);
+
+          split_by_path func_a(cvs, path_a),
+                        func_b(cvs, path_b);
+
+          // Count all events, and check where we can splitt
+          int pa_deps = 0,
+              pb_deps = 0,
+              total_events = 0;
+
+          for (blob_event_iter j = cvs.blobs[e.second].get_events().begin();
+               j != cvs.blobs[e.second].get_events().end(); ++j)
+            {
+              bool depends_on_path_a = func_a(*j);
+              bool depends_on_path_b = func_b(*j);
+
+              I(!(depends_on_path_a && depends_on_path_b));
+
+              if (depends_on_path_a)
+                pa_deps++;
+              else if (depends_on_path_b)
+                pb_deps++;
+
+              total_events++;
+            }
+
+          L(FL("of %d total events, %d depend on path a, %d on path b")
+            % total_events % pa_deps % pb_deps);
+
+          I(pa_deps > 0);
+          I(pb_deps > 0);
+
+          I((pa_deps < total_events) || (pb_deps < total_events));
+
+          if (pa_deps == total_events)
+            split_blob_at(cvs, e.second, func_b);
+          else
+            split_blob_at(cvs, e.second, func_a);
+
           edges_removed++;
         }
       else if (a_has_branch && !b_has_branch)
@@ -2411,7 +2398,7 @@ public:
               // a branchpoit), we have to split e.second into events
               // which belong to path A and events which belong to path B.
               //
-              split_by_paths func(cvs, path_a, path_b);
+              split_by_path func(cvs, path_a);
               split_blob_at(cvs, e.second, func);
               edges_removed++;
             }
