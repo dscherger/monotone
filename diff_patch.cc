@@ -930,13 +930,13 @@ struct unidiff_hunk_writer : public hunk_consumer
 void unidiff_hunk_writer::insert_at(size_t b_pos)
 {
   b_len++;
-  hunk.push_back(string(color::add) + string("+") + b[b_pos] + string(color::std));
+  hunk.push_back(string(color::diff_add) + string("+") + b[b_pos] + string(color::std));
 }
 
 void unidiff_hunk_writer::delete_at(size_t a_pos)
 {
   a_len++;
-  hunk.push_back(string(color::del) + string("-") + a[a_pos] + string(color::std));
+  hunk.push_back(string(color::diff_del) + string("-") + a[a_pos] + string(color::std));
 }
 
 void unidiff_hunk_writer::flush_hunk(size_t pos)
@@ -1154,11 +1154,11 @@ void cxtdiff_hunk_writer::flush_pending_mods()
   // if we have just insertions to flush, prefix them with "+"; if
   // just deletions, prefix with "-"; if both, prefix with "!"
   if (inserts.empty() && !deletes.empty())
-    prefix = string(color::del) + string("-");
+    prefix = string(color::diff_del) + string("-");
   else if (deletes.empty() && !inserts.empty())
-    prefix = string(color::add) + string("+");
+    prefix = string(color::diff_add) + string("+");
   else
-    prefix = string(color::conflict) + string("!");
+    prefix = string(color::diff_conflict) + string("!");
 
   for (vector<size_t>::const_iterator i = deletes.begin();
        i != deletes.end(); ++i)
@@ -1325,8 +1325,8 @@ make_diff(string const & filename1,
     {
       case unified_diff:
       {
-      	ost << color::del << "--- " << filename1 << '\t' << id1 << '\n';
-        ost << color::add << "+++ " << filename2 << '\t' << id2 << '\n';
+      	ost << color::diff_del << "--- " << filename1 << '\t' << id1 << '\n';
+        ost << color::diff_add << "+++ " << filename2 << '\t' << id2 << '\n';
         ost << color::std;
 
         unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
@@ -1335,8 +1335,8 @@ make_diff(string const & filename1,
       }
       case context_diff:
       {
-        ost << color::del << "*** " << filename1 << '\t' << id1 << '\n';
-        ost << color::add << "--- " << filename2 << '\t' << id2 << '\n';
+        ost << color::diff_del << "*** " << filename1 << '\t' << id1 << '\n';
+        ost << color::diff_add << "--- " << filename2 << '\t' << id2 << '\n';
         ost << color::std;
 
         cxtdiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
