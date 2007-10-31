@@ -2348,9 +2348,15 @@ public:
           I((pa_deps < total_events) || (pb_deps < total_events));
 
           if (pa_deps == total_events)
+          {
+            L(FL("  splitting dependencies from path b"));
             split_blob_at(cvs, e.second, func_b);
+          }
           else
+          {
+            L(FL("  splitting dependencies from path a"));
             split_blob_at(cvs, e.second, func_a);
+          }
 
           edges_removed++;
         }
@@ -2399,6 +2405,25 @@ public:
               // which belong to path A and events which belong to path B.
               //
               split_by_path func(cvs, path_a);
+
+              // Count all events, and check where we can splitt
+              int pa_deps = 0,
+                  total_events = 0;
+
+              for (blob_event_iter j = cvs.blobs[e.second].get_events().begin();
+                   j != cvs.blobs[e.second].get_events().end(); ++j)
+                {
+                  bool depends_on_path_a = func(*j);
+
+                  if (depends_on_path_a)
+                    pa_deps++;
+                  total_events++;
+                }
+
+              I(pa_deps > 0);
+              I(pa_deps < total_events);
+
+              L(FL("splitting at path a"));
               split_blob_at(cvs, e.second, func);
               edges_removed++;
             }
@@ -2738,6 +2763,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
 
       split_by_time func(largest_gap_at);
+      L(FL("splitting by time %d") % largest_gap_at);
       split_blob_at(cvs, largest_gap_blob, func);
 }
 
@@ -2814,6 +2840,7 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
             L(FL("Trying to split blob %d, because of multiple events for file %s")
               % bi % cvs.path_interner.lookup((*i)->path));
             split_by_time func(get_best_split_point(cvs, bi));
+            L(FL("  splitting intra blob by time"));
             split_blob_at(cvs, bi, func);
             return false;
           }
