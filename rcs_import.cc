@@ -2080,10 +2080,7 @@ public:
           stack.pop();
           done.insert(bi);
 
-          if (bi == *path.begin())
-            continue;
-
-          if (find(++path.begin(), path.end(), bi) != path.end())
+          if (find(path.begin(), path.end(), bi) != path.end())
             {
               count_deps_in_path++;
               deps_into_a.push_back(bi);
@@ -2270,13 +2267,17 @@ public:
 
       // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
+      vector<cvs_blob_index>::iterator first_branch_start_in_path_a;
       bool b_has_branch = false;
+      vector<cvs_blob_index>::iterator first_branch_start_in_path_b;
       for (vector<cvs_blob_index>::iterator i = ++path_a.begin();
            i != path_a.end(); ++i)
         if (cvs.blobs[*i].get_digest().is_branch_start())
           {
-            W(F("path a contains a branch event: %d") % *i);
+            L(FL("path b contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
             a_has_branch = true;
+            first_branch_start_in_path_a = i;
+            break;
           }
 
 #ifdef DEBUG_GRAPHVIZ
@@ -2297,8 +2298,10 @@ public:
            i != path_b.end(); ++i)
         if (cvs.blobs[*i].get_digest().is_branch_start())
           {
-            W(F("path b contains a branch event: %d") % *i);
+            L(FL("path b contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
             b_has_branch = true;
+            first_branch_start_in_path_b = i;
+            break;
           }
 
       // Swap a and b, if only b has a branch, but not a. This reduces
@@ -2306,8 +2309,10 @@ public:
       // paths contain branches.
       if (b_has_branch && !a_has_branch)
         {
+          L(FL("swapping paths a and b"));
           swap(path_a, path_b);
           swap(a_has_branch, b_has_branch);
+          swap(first_branch_start_in_path_a, first_branch_start_in_path_b);
         }
 
       if (a_has_branch && b_has_branch)
@@ -2315,8 +2320,20 @@ public:
           // Blob e.second seems to be part of two (or even more)
           // branches, thus we need to split that blob.
 
-          split_by_path func_a(cvs, path_a),
-                        func_b(cvs, path_b);
+          vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base() - first_branch_start_in_path_a);
+          copy(first_branch_start_in_path_a, (++path_a.rbegin()).base(), tmp_a.begin());
+
+          vector< cvs_blob_index > tmp_b((++path_b.rbegin()).base() - first_branch_start_in_path_b);
+          copy(first_branch_start_in_path_b, (++path_b.rbegin()).base(), tmp_b.begin());
+
+          for (vector<cvs_blob_index>::iterator ii = tmp_a.begin(); ii != tmp_a.end(); ++ii)
+            L(FL("  tmp path a: %d") % *ii);
+
+          for (vector<cvs_blob_index>::iterator ii = tmp_b.begin(); ii != tmp_b.end(); ++ii)
+            L(FL("  tmp path b: %d") % *ii);
+
+          split_by_path func_a(cvs, tmp_a),
+                        func_b(cvs, tmp_b);
 
           // Count all events, and check where we can splitt
           int pa_deps = 0,
@@ -2329,11 +2346,12 @@ public:
               bool depends_on_path_a = func_a(*j);
               bool depends_on_path_b = func_b(*j);
 
-              I(!(depends_on_path_a && depends_on_path_b));
+              if (depends_on_path_a && depends_on_path_b)
+                L(FL("event %s depends on both paths!") % get_event_repr(cvs, *j));
 
               if (depends_on_path_a)
                 pa_deps++;
-              else if (depends_on_path_b)
+              if (depends_on_path_b)
                 pb_deps++;
 
               total_events++;
@@ -2404,7 +2422,11 @@ public:
               // a branchpoit), we have to split e.second into events
               // which belong to path A and events which belong to path B.
               //
-              split_by_path func(cvs, path_a);
+
+              vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base() - first_branch_start_in_path_a);
+              copy(first_branch_start_in_path_a, (++path_a.rbegin()).base(), tmp_a.begin());
+
+              split_by_path func(cvs, tmp_a);
 
               // Count all events, and check where we can splitt
               int pa_deps = 0,
