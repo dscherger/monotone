@@ -16,6 +16,7 @@
 
 #include "asciik.hh"
 #include "charset.hh"
+#include "color.hh"
 #include "cmd.hh"
 #include "diff_patch.hh"
 #include "file_io.hh"
@@ -231,7 +232,7 @@ dump_diffs(cset const & cs,
            bool limit_paths = false)
 {
   // 60 is somewhat arbitrary, but less than 80
-  string patch_sep = string(60, '=');
+  string patch_sep = string(color::comment) + string(60, '=') + string(color::std);
 
   for (map<file_path, file_id>::const_iterator
          i = cs.files_added.begin();
@@ -501,7 +502,7 @@ CMD(diff, "diff", "", CMD_REF(informative), N_("[PATH]..."),
 
   vector<string> lines;
   split_into_lines(summary(), lines);
-  cout << "#\n";
+  cout << color::comment << "#\n";
   if (summary().size() > 0)
     {
       cout << revs << "#\n";
@@ -513,10 +514,11 @@ CMD(diff, "diff", "", CMD_REF(informative), N_("[PATH]..."),
     {
       cout << "# " << _("no changes") << '\n';
     }
-  cout << "#\n";
+  cout << "#\n" << color::std;
 
   if (app.opts.diff_format == external_diff)
     {
+      //TODO in this case color:: codes should probably not be used also up there
       do_external_diff(included, app, new_is_archived);
     }
   else

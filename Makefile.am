@@ -73,6 +73,7 @@ MOST_SOURCES = 								\
 	rev_height.cc rev_height.hh					\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
+	color.cc color.hh						\
 									\
 	lru_writeback_cache.hh hybrid_map.hh				\
 									\
