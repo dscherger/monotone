@@ -2388,13 +2388,13 @@ public:
 
           if (cvs.blobs[e.second].get_digest().is_symbol())
             {
-              // Prevent splitting the branchpoint at e.second.
+              // Prevent splitting the symbol at e.second.
               cvs.remove_deps(e.second, bi_b);
               edges_removed++;
             }
           else if (cvs.blobs[bi_a].get_digest().is_symbol())
             {
-              // Prevent splitting the branchpoint at bi_a.
+              // Prevent splitting the symbol at bi_a.
               cvs.remove_deps(e.second, bi_a);
               edges_removed++;
             }
@@ -2443,11 +2443,22 @@ public:
                 }
 
               I(pa_deps > 0);
-              I(pa_deps < total_events);
 
-              L(FL("splitting at path a"));
-              split_blob_at(cvs, e.second, func);
-              edges_removed++;
+              if (pa_deps == total_events)
+                {
+                  // all events in e.second depend in a way on path a, thus
+                  // we should better simply drop the dependency from
+                  // bi_b to e.second.
+                  cvs.remove_deps(e.second, bi_b);
+                  edges_removed++;
+                }
+              else
+                {
+                  I(pa_deps < total_events);
+                  L(FL("splitting at path a"));
+                  split_blob_at(cvs, e.second, func);
+                  edges_removed++;
+                }
             }
         }
       else
