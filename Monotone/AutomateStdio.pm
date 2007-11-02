@@ -196,6 +196,7 @@ sub new($;$)
     $this->{mtn_err_msg} = "";
 
     bless($this);
+    $this->SUPER::new() if $this->can("SUPER::new");
 
     return $this;
 
@@ -219,10 +220,7 @@ sub DESTROY
     my Monotone::AutomateStdio $this = shift();
 
     closedown($this);
-    if ($this->can("SUPER::DESTROY"))
-    {
-	$this->SUPER::DESTROY();
-    }
+    $this->SUPER::DESTROY() if $this->can("SUPER::DESTROY");
 
 }
 #

@@ -1,5 +1,4 @@
 1) Update to version from 0.35 to 0.37.
-2) Implement conditional chained constructor.
 2) Sort out a test database for use with a mtn-tester (use a script to generate
    the database rather than use a static db).
 3) Do CPAN stuff.
