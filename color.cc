@@ -1,19 +1,33 @@
-namespace color {
+#include "color.hh"
 
-const char * std    = "\033[0m";
-const char * strong = "\033[1m";
+color::color(const char * str): code(str) { }
+//{
+//  code = std::string("\033[") + std::string(str) + std::string("m");
+//}
 
-const char * blue   = "\033[31m";
-const char * green  = "\033[32m";
-const char * yellow = "\033[33m";
-const char * red    = "\033[34m";
-const char * purple = "\033[35m";
-const char * cyan   = "\033[36m";
-const char * gray   = "\033[37m";
+const color color::std   ("0");
+const color color::strong("1");
+const color color::blue  ("31");
+const color color::green ("32");
+const color color::yellow("33");
+const color color::red   ("34");
+const color color::purple("35");
+const color color::cyan  ("36");
+const color color::gray  ("37");
 
-const char * diff_add = blue;
-const char * diff_del = red;
-const char * diff_conflict = purple;
-const char * comment = gray;
+const color color::diff_add = blue;
+const color color::diff_del = red;
+const color color::diff_conflict = purple;
+const color color::comment = gray;
 
+std::string
+color::toString() const
+{
+  return std::string("\033[") + code + std::string("m");
+}
+
+std::ostream&
+operator <<(std::ostream & os, const color & col)
+{
+  return os << col.toString();
 }

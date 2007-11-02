@@ -930,13 +930,13 @@ struct unidiff_hunk_writer : public hunk_consumer
 void unidiff_hunk_writer::insert_at(size_t b_pos)
 {
   b_len++;
-  hunk.push_back(string(color::diff_add) + string("+") + b[b_pos] + string(color::std));
+  hunk.push_back(color::diff_add.toString() + string("+") + b[b_pos] + color::std.toString());
 }
 
 void unidiff_hunk_writer::delete_at(size_t a_pos)
 {
   a_len++;
-  hunk.push_back(string(color::diff_del) + string("-") + a[a_pos] + string(color::std));
+  hunk.push_back(color::diff_del.toString() + string("-") + a[a_pos] + color::std.toString());
 }
 
 void unidiff_hunk_writer::flush_hunk(size_t pos)
@@ -983,7 +983,7 @@ void unidiff_hunk_writer::flush_hunk(size_t pos)
             }
 
         find_encloser(a_begin + first_mod, encloser);
-        ost << " @@" << encloser << '\n' << color::std;
+        ost << " @@" << encloser << color::std << '\n';
       }
       copy(hunk.begin(), hunk.end(), ostream_iterator<string>(ost, "\n"));
     }
@@ -1154,22 +1154,22 @@ void cxtdiff_hunk_writer::flush_pending_mods()
   // if we have just insertions to flush, prefix them with "+"; if
   // just deletions, prefix with "-"; if both, prefix with "!"
   if (inserts.empty() && !deletes.empty())
-    prefix = string(color::diff_del) + string("-");
+    prefix = color::diff_del.toString() + string("-");
   else if (deletes.empty() && !inserts.empty())
-    prefix = string(color::diff_add) + string("+");
+    prefix = color::diff_add.toString() + string("+");
   else
-    prefix = string(color::diff_conflict) + string("!");
+    prefix = color::diff_conflict.toString() + string("!");
 
   for (vector<size_t>::const_iterator i = deletes.begin();
        i != deletes.end(); ++i)
     {
-      from_file.push_back(prefix + string(" ") + a[*i] + string(color::std));
+      from_file.push_back(prefix + string(" ") + a[*i] + color::std.toString());
       a_len++;
     }
   for (vector<size_t>::const_iterator i = inserts.begin();
        i != inserts.end(); ++i)
     {
-      to_file.push_back(prefix + string(" ") + b[*i] + string(color::std));
+      to_file.push_back(prefix + string(" ") + b[*i] + color::std.toString());
       b_len++;
     }
 

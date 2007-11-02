@@ -232,7 +232,7 @@ dump_diffs(cset const & cs,
            bool limit_paths = false)
 {
   // 60 is somewhat arbitrary, but less than 80
-  string patch_sep = string(color::comment) + string(60, '=') + string(color::std);
+  string patch_sep(60, '=');
 
   for (map<file_path, file_id>::const_iterator
          i = cs.files_added.begin();
@@ -241,7 +241,7 @@ dump_diffs(cset const & cs,
       if (limit_paths && paths.find(i->first) == paths.end())
         continue;
 
-      output << patch_sep << '\n';
+      output << color::comment << patch_sep << color::std << '\n';
       data unpacked;
       vector<string> lines;
 
@@ -287,7 +287,7 @@ dump_diffs(cset const & cs,
       file_data f_old;
       data data_old, data_new;
 
-      output << patch_sep << '\n';
+      output << color::comment << patch_sep << color::std << '\n';
 
       app.db.get_file_version(delta_entry_src(i), f_old);
       data_old = f_old.inner();
