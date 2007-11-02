@@ -1,4 +1,23 @@
-??? ???  ? ??:??:?? UTC 2007
+[ somewhen in the future ]
+
+        0.38 release.
+
+        Changes
+
+        - Added the scripts of the following Lua-based contributed
+          Monotone extension commands to contrib/command/:
+          "mtn base", "mtn fuse", "mtn revision", "mtn conflicts".
+
+        - mtn log now prints a single dot for a project's root
+          directory instead of an empty string.
+
+        Internal
+
+        - Update Botan to 1.7.2.
+
+
+
+Fri Oct 25 22:35:33 UTC 2007
 
         0.37 release.
 
@@ -72,6 +91,9 @@
           switch for the annotate command didn't match its actual
           behavior, this has been fixed
 
+        - documentation for the "ssh_agent_add" command was missing
+          and has been added
+
         Other
 
         - contrib/usher.cc has been removed. Please use the
@@ -83,10 +105,14 @@
 
         - Update Lua to 5.1.2 plus latest bug fixes.
 
+        - Update Botan to 1.5.10.
+
         - Internal use of regular expressions has been almost eliminated.
           (Regular expressions are still used for .mtn-ignore and the
           --show-encloser feature of mtn diff, and are still available to
           Lua hooks.)
+
+
 
 Fri Aug  3 06:08:36 UTC 2007
 
