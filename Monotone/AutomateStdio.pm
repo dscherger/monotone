@@ -112,7 +112,6 @@ use fields qw(db_name
 
 sub ancestors($\@@);
 sub ancestry_difference($\@$;@);
-sub attributes($\$$);
 sub branches($\@);
 sub cert($$$$);
 sub certs($$$);
@@ -125,6 +124,7 @@ sub db_set($$$$);
 sub descendents($\@@);
 sub erase_ancestors($\@@);
 sub error_message($);
+sub get_attributes($\$$);
 sub get_base_revision_id($\$);
 sub get_content_changed($\@$$);
 sub get_corresponding_path($\$$$$);
@@ -219,6 +219,10 @@ sub DESTROY
     my Monotone::AutomateStdio $this = shift();
 
     closedown($this);
+    if ($this->can("SUPER::DESTROY"))
+    {
+	$this->SUPER::DESTROY();
+    }
 
 }
 #
@@ -282,33 +286,6 @@ sub ancestry_difference($\@$;@)
 		       $list,
 		       $new_revision_id,
 		       @old_revision_ids);
-
-}
-#
-##############################################################################
-#
-#   Routine      - attributes
-#
-#   Description  - Get the attributes of the specified file.
-#
-#   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
-#                                 the output from this command.
-#                  $file_name   : The name of the file that is to be reported
-#                                 on.
-#                  Return Value : True on success, otherwise false on failure.
-#
-##############################################################################
-
-
-
-sub attributes($\$$)
-{
-
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $file_name) = @_;
-
-    return mtn_command($this, "attributes", $buffer, $file_name);
 
 }
 #
@@ -419,37 +396,36 @@ sub certs($$$)
 	{
 	    if ($lines[$i] =~ m/^ *key \"/o)
 	    {
-		($key) = ($lines[$i ++] =~ m/^ *key \"([^\"]+)\"$/o);
-		if ($lines[$i] =~ m/^ *signature \"/o)
+		get_quoted_value(@lines, $i, $key);
+		if ($lines[++ $i] =~ m/^ *signature \"/o)
 		{
 		    ($signature) =
-			($lines[$i ++] =~ m/^ *signature \"([^\"]+)\"$/o);
+			($lines[$i] =~ m/^ *signature \"([^\"]+)\"$/o);
 		}
 		else
 		{
 		    croak("Corrupt certs list, expected signature field but "
 			  . "didn't find it");
 		}
-		if ($lines[$i] =~ m/^ *name \"/o)
+		if ($lines[++ $i] =~ m/^ *name \"/o)
 		{
-		    ($name) = ($lines[$i ++] =~ m/^ *name \"([^\"]+)\"$/o);
+		    get_quoted_value(@lines, $i, $name);
 		}
 		else
 		{
 		    croak("Corrupt certs list, expected name field but didn't "
 			  . "find it");
 		}
-		if ($lines[$i] =~ m/^ *value \"/o)
+		if ($lines[++ $i] =~ m/^ *value \"/o)
 		{
 		    get_quoted_value(@lines, $i, $value);
-		    ++ $i;
 		}
 		else
 		{
 		    croak("Corrupt certs list, expected value field but "
 			  . "didn't find it");
 		}
-		if ($lines[$i] =~ m/^ *trust \"/o)
+		if ($lines[++ $i] =~ m/^ *trust \"/o)
 		{
 		    ($trust) = ($lines[$i] =~ m/^ *trust \"([^\"]+)\"$/o);
 		}
@@ -459,16 +435,16 @@ sub certs($$$)
 			  . "didn't find it");
 		}
 		$$ref[$j ++] = {key       => unescape($key),
-				signature => unescape($signature),
+				signature => $signature,
 				name      => unescape($name),
 				value     => unescape($value),
-				trust     => unescape($trust)};
+				trust     => $trust};
 	    }
 	}
 
-    }
+	return 1;
 
-    return 1;
+    }
 
 }
 #
@@ -684,6 +660,81 @@ sub erase_ancestors($\@@)
     my($list, @revision_ids) = @_;
 
     return mtn_command($this, "erase_ancestors", $list, @revision_ids);
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_attributes
+#
+#   Description  - Get the attributes of the specified file.
+#
+#   Data         - $this        : The object.
+#                  $ref         : A reference to a buffer or an array that is
+#                                 to contain the output from this command.
+#                  $file_name   : The name of the file that is to be reported
+#                                 on.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub get_attributes($\$$)
+{
+
+    my Monotone::AutomateStdio $this = shift();
+    my($ref, $file_name) = @_;
+
+    # Run the command and get the data, either as one lump or as a structured
+    # list.
+
+    if (ref($ref) eq "SCALAR")
+    {
+	return mtn_command($this, "attributes", $ref, $file_name);
+    }
+    else
+    {
+
+	my($i,
+	   $j,
+	   $key,
+	   @lines,
+	   $list,
+	   $state,
+	   $value);
+
+	if (! mtn_command($this, "attributes", \@lines, $file_name))
+	{
+	    return;
+	}
+
+	# Reformat the data into a structured array.
+
+	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	{
+	    if ($lines[$i] =~ m/^ *attr \"/o)
+	    {
+		($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/o);
+		($key, $value) = split(/\" \"/o, $list);
+		if ($lines[++ $i] =~ m/^ *state \"/o)
+		{
+		    ($state) = ($lines[$i] =~ m/^ *state \"([^\"]+)\"$/o);
+		}
+		else
+		{
+		    croak("Corrupt attributes list, expected state field but "
+			  . "didn't find it");
+		}
+		$$ref[$j ++] = {attribute => unescape($key),
+				value     => unescape($value),
+				state     => $state};
+	    }
+	}
+
+	return 1;
+
+    }
 
 }
 #
@@ -987,10 +1038,9 @@ sub get_manifest_of($$;$)
 	    $type = undef;
 	    if ($lines[$i] =~ m/^ *file \"/o)
 	    {
-		$type = "f";
+		$type = "file";
 		get_quoted_value(@lines, $i, $name);
-		++ $i;
-		if ($lines[$i] =~ m/^ *content \[[^\]]+\]$/o)
+		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/o)
 		{
 		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/o);
 		}
@@ -1002,12 +1052,12 @@ sub get_manifest_of($$;$)
 	    }
 	    if ($lines[$i] =~ m/^ *dir \"/o)
 	    {
-		$type = "d";
+		$type = "directory";
 		get_quoted_value(@lines, $i, $name);
 	    }
 	    if ($type)
 	    {
-		if ($type eq "f")
+		if ($type eq "file")
 		{
 		    $$ref[$j ++] = {type    => $type,
 				    name    => unescape($name),
@@ -1021,9 +1071,9 @@ sub get_manifest_of($$;$)
 	    }
 	}
 
-    }
+	return 1;
 
-    return 1;
+    }
 
 }
 #
@@ -1068,8 +1118,8 @@ sub get_option($\$$)
 #                  revision.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
-#                                 the output from this command.
+#                  $ref         : A reference to a buffer or an array that is
+#                                 to contain the output from this command.
 #                  $revision_id : The revision id which is to have its data
 #                                 returned.
 #                  Return Value : True on success, otherwise false on failure.
@@ -1082,9 +1132,168 @@ sub get_revision($\$$)
 {
 
     my Monotone::AutomateStdio $this = shift();
-    my($buffer, $revision_id) = @_;
+    my($ref, $revision_id) = @_;
 
-    return mtn_command($this, "get_revision", $buffer, $revision_id);
+    # Run the command and get the data, either as one lump or as a structured
+    # list.
+
+    if (ref($ref) eq "SCALAR")
+    {
+	return mtn_command($this, "get_revision", $ref, $revision_id);
+    }
+    else
+    {
+
+	my($attr,
+	   $from_id,
+	   $from_name,
+	   $i,
+	   $id,
+	   $j,
+	   @lines,
+	   $name,
+	   $to_id,
+	   $to_name,
+	   $value);
+
+	if (! mtn_command($this, "get_revision", \@lines, $revision_id))
+	{
+	    return;
+	}
+
+	# Reformat the data into a structured array.
+
+	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	{
+	    if ($lines[$i] =~ m/^ *add_dir \"/o)
+	    {
+		get_quoted_value(@lines, $i, $name);
+		$$ref[$j ++] = {type => "add_dir",
+				name => unescape($name)};
+	    }
+	    elsif ($lines[$i] =~ m/^ *add_file \"/o)
+	    {
+		get_quoted_value(@lines, $i, $name);
+		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/o)
+		{
+		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/o);
+		}
+		else
+		{
+		    croak("Corrupt revision, expected content field but "
+			  . "didn't find it");
+		}
+		$$ref[$j ++] = {type    => "add_file",
+				name    => unescape($name),
+				file_id => $id};
+	    }
+	    elsif ($lines[$i] =~ m/^ *clear \"/o)
+	    {
+		get_quoted_value(@lines, $i, $name);
+		if ($lines[++ $i] =~ m/^ *attr \"/o)
+		{
+		    get_quoted_value(@lines, $i, $attr);
+		}
+		else
+		{
+		    croak("Corrupt revision, expected attr field but didn't "
+			  . "find it");
+		}
+		$$ref[$j ++] = {type      => "clear",
+				name      => unescape($name),
+				attribute => unescape($attr)};
+	    }
+	    elsif ($lines[$i] =~ m/^ *delete \"/o)
+	    {
+		get_quoted_value(@lines, $i, $name);
+		$$ref[$j ++] = {type => "delete",
+				name => unescape($name)};
+	    }
+	    elsif ($lines[$i] =~ m/^ *new_manifest \[[^\]]+\]$/o)
+	    {
+		($id) = ($lines[$i] =~ m/^ *new_manifest \[([^\]]+)\]$/o);
+		$$ref[$j ++] = {type        => "new_manifest",
+				manifest_id => $id};
+	    }
+	    elsif ($lines[$i] =~ m/^ *old_revision \[[^\]]+\]$/o)
+	    {
+		($id) = ($lines[$i] =~ m/^ *old_revision \[([^\]]+)\]$/o);
+		$$ref[$j ++] = {type        => "old_revision",
+				revision_id => $id};
+	    }
+	    elsif ($lines[$i] =~ m/^ *patch \"/o)
+	    {
+		get_quoted_value(@lines, $i, $name);
+		if ($lines[++ $i] =~ m/^ *from \[[^\]]+\]$/o)
+		{
+		    ($from_id) = ($lines[$i] =~ m/^ *from \[([^\]]+)\]$/o);
+		}
+		else
+		{
+		    croak("Corrupt revision, expected from field but didn't "
+			  . "find it");
+		}
+		if ($lines[++ $i] =~ m/^ *to \[[^\]]+\]$/o)
+		{
+		    ($to_id) = ($lines[$i] =~ m/^ *to \[([^\]]+)\]$/o);
+		}
+		else
+		{
+		    croak("Corrupt revision, expected to field but didn't "
+			  . "find it");
+		}
+		$$ref[$j ++] = {type         => "patch",
+				name         => unescape($name),
+				from_file_id => $from_id,
+				to_file_id   => $to_id};
+	    }
+	    elsif ($lines[$i] =~ m/^ *rename \"/o)
+	    {
+		get_quoted_value(@lines, $i, $from_name);
+		if ($lines[++ $i] =~ m/^ *to \"/o)
+		{
+		    get_quoted_value(@lines, $i, $to_name);
+		}
+		else
+		{
+		    croak("Corrupt revision, expected to field but didn't "
+			  . "find it");
+		}
+		$$ref[$j ++] = {type      => "rename",
+				from_name => unescape($from_name),
+				to_name   => unescape($to_name)};
+	    }
+	    elsif ($lines[$i] =~ m/^ *set \"/o)
+	    {
+		get_quoted_value(@lines, $i, $name);
+		if ($lines[++ $i] =~ m/^ *attr \"/o)
+		{
+		    get_quoted_value(@lines, $i, $attr);
+		}
+		else
+		{
+		    croak("Corrupt revision, expected attr field but didn't "
+			  . "find it");
+		}
+		if ($lines[++ $i] =~ m/^ *value \"/o)
+		{
+		    get_quoted_value(@lines, $i, $value);
+		}
+		else
+		{
+		    croak("Corrupt revision, expected value field but didn't "
+			  . "find it");
+		}
+		$$ref[$j ++] = {type      => "set",
+				name      => unescape($name),
+				attribute => unescape($attr),
+				value     => unescape($value)};
+	    }
+	}
+
+	return 1;
+
+    }
 
 }
 #
@@ -1136,9 +1345,9 @@ sub graph($$)
 			 parent_ids  => [@parent_ids]};
 	}
 
-    }
+	return 1;
 
-    return 1;
+    }
 
 }
 #
@@ -1288,11 +1497,10 @@ sub inventory($$)
 
 	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	{
-	    $status = undef;
 	    if ($lines[$i] =~ m/^[A-Z ]{3} \d+ \d+ .+$/o)
 	    {
 		($status, $ref1, $ref2, $name) =
-		    ($lines[$i ++] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/o);
+		    ($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/o);
 		$$ref[$j ++] = {status       => $status,
 				crossref_one => $ref1,
 				crossref_two => $ref2,
@@ -1300,9 +1508,9 @@ sub inventory($$)
 	    }
 	}
 
-    }
+	return 1;
 
-    return 1;
+    }
 
 }
 #
@@ -1324,8 +1532,8 @@ sub inventory($$)
 sub keys($$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($ref, $revision_id) = @_;
+    my Monotone::AutomateStdio $this = $_[0];
+    my $ref = $_[1];
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -1341,6 +1549,7 @@ sub keys($$)
 	   $id,
 	   $j,
 	   @lines,
+	   $list,
 	   $priv_hash,
 	   @priv_loc,
 	   $pub_hash,
@@ -1380,15 +1589,8 @@ sub keys($$)
 		}
 		if ($lines[$i] =~ m/^ *public_location \"/o)
 		{
-		    if ($lines[$i] =~ m/^ *\S+ \"[^\"]+\" \"[^\"]+\"$/o)
-		    {
-			@pub_loc = ($lines[$i ++]
-				    =~ m/^ *\S+ \"([^\"]+)\" \"([^\"]+)\"$/o);
-		    }
-		    else
-		    {
-			@pub_loc = ($lines[$i ++] =~ m/^ *\S+ \"([^\"]+)\"$/o);
-		    }
+		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/o);
+		    @pub_loc = split(/\" \"/o, $list);
 		}
 		else
 		{
@@ -1397,21 +1599,13 @@ sub keys($$)
 		}
 		if ($i <= $#lines && $lines[$i] =~ m/^ *private_location \"/o)
 		{
-		    if ($lines[$i] =~ m/^ *\S+ \"[^\"]+\" \"[^\"]+\"$/o)
-		    {
-			@priv_loc = ($lines[$i ++]
-				    =~ m/^ *\S+ \"([^\"]+)\" \"([^\"]+)\"$/o);
-		    }
-		    else
-		    {
-			@priv_loc =
-			    ($lines[$i ++] =~ m/^ *\S+ \"([^\"]+)\"$/o);
-		    }
+		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/o);
+		    @priv_loc = split(/\" \"/o, $list);
 		}
-
 		if ($priv_hash)
 		{
-		    $$ref[$j ++] = {name              => unescape($name),
+		    $$ref[$j ++] = {type              => "public-private",
+				    name              => unescape($name),
 				    public_hash       => $pub_hash,
 				    private_hash      => $priv_hash,
 				    public_locations  => [@pub_loc],
@@ -1419,9 +1613,10 @@ sub keys($$)
 		}
 		else
 		{
-		    $$ref[$j ++] = {name              => unescape($name),
-				    public_hash       => $pub_hash,
-				    public_locations  => [@pub_loc]};
+		    $$ref[$j ++] = {type             => "public",
+				    name             => unescape($name),
+				    public_hash      => $pub_hash,
+				    public_locations => [@pub_loc]};
 		}
 	    }
 	    else
@@ -1430,9 +1625,9 @@ sub keys($$)
 	    }
 	}
 
-    }
+	return 1;
 
-    return 1;
+    }
 
 }
 #
@@ -1600,31 +1795,35 @@ sub tags($$;$)
 	    if ($lines[$i] =~ m/^ *tag \"/o)
 	    {
 		@branches = ();
-		($tag) = ($lines[$i ++] =~ m/^ *tag \"([^\"]+)\"$/o);
-		if ($lines[$i] =~ m/^ *revision \[[^\]]+\]$/o)
+		get_quoted_value(@lines, $i, $tag);
+		if ($lines[++ $i] =~ m/^ *revision \[[^\]]+\]$/o)
 		{
-		    ($rev) = ($lines[$i ++] =~ m/^ *revision \[([^\]]+)\]$/o);
+		    ($rev) = ($lines[$i] =~ m/^ *revision \[([^\]]+)\]$/o);
 		}
 		else
 		{
 		    croak("Corrupt tags list, expected revision field but "
 			  . "didn't find it");
 		}
-		if ($lines[$i] =~ m/^ *signer \"/o)
+		if ($lines[++ $i] =~ m/^ *signer \"/o)
 		{
-		    ($signer) = ($lines[$i ++] =~ m/^ *signer \"([^\"]+)\"$/o);
+		    get_quoted_value(@lines, $i, $signer);
 		}
 		else
 		{
 		    croak("Corrupt tags list, expected signer field but "
 			  . "didn't find it");
 		}
-		if ($lines[$i] =~ m/^ *branches/o)
+		if ($lines[++ $i] =~ m/^ *branches/o)
 		{
 		    if ($lines[$i] =~ m/^ *branches \".+\"$/o)
 		    {
 			($list) = ($lines[$i] =~ m/^ *branches \"(.+)\"$/o);
 			@branches = split(/\" \"/o, $list);
+			for ($k = 0; $k <= $#branches; ++ $k)
+			{
+			    $branches[$k] = unescape($branches[$k]);
+			}
 		    }
 		}
 		else
@@ -1639,9 +1838,9 @@ sub tags($$;$)
 	    }
 	}
 
-    }
+	return 1;
 
-    return 1;
+    }
 
 }
 #
@@ -2000,7 +2199,7 @@ sub mtn_read_output($\$)
     }
     while ($size > 0 || $last eq "m");
 
-    ++ 	$this->{cmd_cnt};
+    ++ $this->{cmd_cnt};
 
     # Deal with errors (message is in $$buffer).
 
@@ -2071,10 +2270,13 @@ sub startup($)
 #   Description  - Get the contents of a quoted value that may span several
 #                  lines and contain escaped quotes.
 #
-#   Data         - \@list       : The reference to the list that is to contain
-#                                 the manifest.
-#                  \$index      : The id of the revision of the manifest that
-#                                 is to be fetched.
+#   Data         - \@list       : The reference to the list that contains the
+#                                 quoted string.
+#                  \$index      : The index of the line in the array
+#                                 containing the opening quote (assumed to be
+#                                 the first quote encountered). It is updated
+#                                 with the index of the line containing the
+#                                 closing quote at the end of the line.
 #                  \$buffer     : A reference to a buffer that is to contain
 #                                 the contents of the quoted string.
 #

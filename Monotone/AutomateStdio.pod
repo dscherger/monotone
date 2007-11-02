@@ -6,7 +6,7 @@ Monotone::automateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.1
+0.2
 
 =head1 SYNOPSIS
 
@@ -99,10 +99,6 @@ Get a list of ancestors for the specified revisions.
 Get a list of ancestors for the specified revision, that are not also
 ancestors for the specified old revisions.
 
-=item $mtn->attributes(\$buffer, $file_name)
-
-Get the attributes of the specified file.
-
 =item $mtn->branches(\@list)
 
 Get a list of branches.
@@ -119,10 +115,12 @@ the output from the command is simply placed into the variable. However if
 each one containing the following fields:
 
     key       - The signer of the cert.
-    signature - Signer status, i.e. "ok" or "unknown".
+    signature - Signer status. Values can be one of "ok", "bad" or
+                "unknown".
     name      - The cert name.
     value     - Its value.
-    trust     - Its trust status.
+    trust     - Its trust status. Values can be one of "trusted" or
+                "untrusted".
 
 =item $mtn->children(\@list, $revision_id)
 
@@ -166,6 +164,18 @@ revisions specified within the list.
 
 Return the last error message received from the mtn subprocess.
 
+=item $mtn->get_attributes(\$buffer, $file_name)
+
+Get the attributes of the specified file. If \$buffer is passed then the output
+from the command is simply placed into the variable. However if \@list is
+passed then the output is returned as a list of anonymous hashes, each one
+containing the following fields:
+
+    attribute - The name of the attribute.
+    value     - The value of the attribute.
+    state     - The status of the attribute. Values can be one of
+                "added", "changed", "dropped" or "unchanged".
+
 =item $mtn->get_base_revision_id(\$buffer)
 
 Get the revision upon which the workspace is based.
@@ -202,19 +212,62 @@ passed then the output from the command is simply placed into the
 variable. However if \@list is passed then the output is returned as a list
 of anonymous hashes, each one containing the following fields:
 
-    type    - The type of entry, either "d" or "f" for directory and
-              file respectively.
+    type    - The type of entry. Values can be one of "file" or
+              "directory".
     name    - The name of the directory or file.
-    file_id - The Monotone id for the file's contents. This field is
-              only present if type is set to "f".
+    file_id - The id of the file. This field is only present if type
+              is set to "file".
 
 =item $mtn->get_option(\$buffer, $option_name)
 
 Get the value of an option stored in a workspace's _MTN directory.
 
-=item $mtn->get_revision(\$buffer, $revision_id)
+=item $mtn->get_revision(\$buffer | \@list, $revision_id)
 
-Get the revision information for the current or specified revision.
+Get the revision information for the current or specified revision. If \$buffer
+is passed then the output from the command is simply placed into the
+variable. However if \@list is passed then the output is returned as a list of
+anonymous hashes, each one containing a variety of fields depending upon the
+type of entry:
+
+    type - The type of entry. Values can be one of "add_dir",
+           "add_file", "clear", "delete", "new_manifest",
+           "old_revision", "patch", "rename" or "set".
+
+    add_dir:
+        name - The name of the directory that was added.
+
+    add_file:
+        name    - The name of the file that was added.
+        file_id - The id of the file.
+
+    clear:
+        name      - The name of the file to which the attribute
+                    applied.
+        attribute - The name of the attribute that was cleared.
+
+    delete:
+        name - The name of the directory or file that was deleted.
+
+    new_manifest:
+        manifest_id - The id of the revision's new manifest.
+
+    old_revision:
+        old_revision - The id of the parent revision.
+
+    patch:
+        name         - The name of the file that was changed.
+        from_file_id - The file's old id.
+        to_file_id   - The file's new id.
+
+    rename:
+        from_name - The name of the file before the rename.
+        to_name   - The name of the file after the rename.
+
+    set:
+        name      - The name of the file that had an attribute set.
+        attribute - The name of the attribute that was set.
+        value     - The value that the attribute was set to.
 
 =item $mtn->graph(\$buffer | \@list)
 
@@ -258,15 +311,19 @@ from the command is simply placed into the variable. However if \@list is
 passed then the output is returned as a list of anonymous hashes, each one
 containing the following fields:
 
+    type              - The type of entry. Values can be one of
+                        "public" or "public-private".
     name              - The name of the key.
     public_hash       - The public hash code.
-    private_hash      - The private has code.
+    private_hash      - The private hash code. This field is only
+                        present if type is set to "public-private".
     public_locations  - A list of locations for the public hash code.
                         Values can be one of "database" or
                         "keystore".
     private_locations - A list of locations for the private hash
                         code. Values can be one of "database" or
-                        "keystore".
+                        "keystore". This field is only present if
+                        type is set to "public-private".
 
 =item $mtn->leaves(\@list)
 
@@ -346,6 +403,6 @@ No doubt other bugs will crawl out of the wood-work.
 
 =head1 HISTORY
 
-An original my Anthony Cooper <aecooper@coosoft.plus.com>.
+An original by Anthony Cooper <aecooper@coosoft.plus.com>.
 
 =cut
