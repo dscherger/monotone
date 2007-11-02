@@ -7,6 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <map>
 #include <set>
 
@@ -903,6 +904,8 @@ check_db(app_state & app)
   size_t missing_heights = 0;
   size_t duplicate_heights = 0;
   size_t incorrect_heights = 0;
+
+  transaction_guard guard(app.db, false);
 
   check_db_integrity_check(app);
   check_files(app, checked_files);

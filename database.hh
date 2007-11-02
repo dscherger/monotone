@@ -15,10 +15,9 @@ struct sqlite3_stmt;
 struct cert;
 int sqlite3_finalize(sqlite3_stmt *);
 
-#include <vector>
+#include "vector.hh"
 #include <set>
 #include <map>
-#include <string>
 
 #include "numeric_vocab.hh"
 #include "vocab.hh"
@@ -26,6 +25,7 @@ int sqlite3_finalize(sqlite3_stmt *);
 #include "cleanup.hh"
 #include "roster.hh"
 #include "selectors.hh"
+#include "graph.hh"
 
 // FIXME: would be better not to include this everywhere
 #include "outdated_indicator.hh"
@@ -75,6 +75,7 @@ class app_state;
 struct revision_t;
 struct query;
 class rev_height;
+struct globish;
 
 class database
 {
@@ -97,6 +98,7 @@ private:
   void check_db_exists();
   void check_db_nonexistent();
   void open();
+  void close();
   void check_format();
 
 public:
@@ -185,6 +187,7 @@ private:
   bool have_delayed_file(file_id const & id);
   void load_delayed_file(file_id const & id, file_data & dat);
   void cancel_delayed_file(file_id const & id);
+  void drop_or_cancel_file(file_id const & id);
   void schedule_delayed_file(file_id const & id, file_data const & dat);
 
   std::map<file_id, file_data> delayed_files;
@@ -213,6 +216,10 @@ private:
   bool delta_exists(std::string const & ident,
                     std::string const & table);
 
+  bool delta_exists(std::string const & ident,
+                    std::string const & base,
+                    std::string const & table);
+
   void get_file_or_manifest_base_unchecked(hexenc<id> const & new_id,
                                            data & dat,
                                            std::string const & table);
@@ -225,8 +232,8 @@ private:
   void get_roster_delta(std::string const & ident,
                         std::string const & base,
                         roster_delta & del);
-  friend class file_and_manifest_reconstruction_graph;
-  friend class roster_reconstruction_graph;
+  friend struct file_and_manifest_reconstruction_graph;
+  friend struct roster_reconstruction_graph;
   void get_version(hexenc<id> const & ident,
                    data & dat,
                    std::string const & data_table,
@@ -286,7 +293,7 @@ public:
   // --== The ancestry graph ==--
   //
 public:
-  void get_revision_ancestry(std::multimap<revision_id, revision_id> & graph);
+  void get_revision_ancestry(rev_ancestry_map & graph);
 
   void get_revision_parents(revision_id const & ident,
                            std::set<revision_id> & parents);
@@ -316,10 +323,10 @@ public:
   void get_revision(revision_id const & ident,
                     revision_data & dat);
 
-  void put_revision(revision_id const & new_id,
+  bool put_revision(revision_id const & new_id,
                     revision_t const & rev);
 
-  void put_revision(revision_id const & new_id,
+  bool put_revision(revision_id const & new_id,
                     revision_data const & dat);
 
   //
@@ -345,13 +352,28 @@ public:
   bool roster_version_exists(revision_id const & ident);
   void get_roster_ids(std::set<revision_id> & ids);
 
+  // using roster deltas
+  void get_markings(revision_id const & id,
+                    node_id const & nid,
+                    marking_t & markings);
+
+  void get_file_content(revision_id const & id,
+                        node_id const & nid,
+                        file_id & content);
+private:
+  struct extractor;
+  struct file_content_extractor;
+  struct markings_extractor;
+  void extract_from_deltas(revision_id const & id, extractor & x);
+
   //
   // --== Keys ==--
   //
 private:
   void get_keys(std::string const & table, std::vector<rsa_keypair_id> & keys);
 public:
-  void get_key_ids(std::string const & pattern,
+  void get_key_ids(std::vector<rsa_keypair_id> & pubkeys);
+  void get_key_ids(globish const & pattern,
                    std::vector<rsa_keypair_id> & pubkeys);
 
   void get_public_keys(std::vector<rsa_keypair_id> & pubkeys);
@@ -366,7 +388,7 @@ public:
   void get_key(rsa_keypair_id const & ident,
                base64<rsa_pub_key> & pub_encoded);
 
-  void put_key(rsa_keypair_id const & ident,
+  bool put_key(rsa_keypair_id const & ident,
                base64<rsa_pub_key> const & pub_encoded);
 
   void delete_public_key(rsa_keypair_id const & pub_id);
@@ -415,7 +437,7 @@ public:
   bool revision_cert_exists(revision<cert> const & cert);
   bool revision_cert_exists(hexenc<id> const & hash);
 
-  void put_revision_cert(revision<cert> const & cert);
+  bool put_revision_cert(revision<cert> const & cert);
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<hexenc<id>,
@@ -469,15 +491,15 @@ public:
   // --== Epochs ==--
   //
 public:
-  void get_epochs(std::map<cert_value, epoch_data> & epochs);
+  void get_epochs(std::map<branch_name, epoch_data> & epochs);
 
-  void get_epoch(epoch_id const & eid, cert_value & branch, epoch_data & epo);
+  void get_epoch(epoch_id const & eid, branch_name & branch, epoch_data & epo);
 
   bool epoch_exists(epoch_id const & eid);
 
-  void set_epoch(cert_value const & branch, epoch_data const & epo);
+  void set_epoch(branch_name const & branch, epoch_data const & epo);
 
-  void clear_epoch(cert_value const & branch);
+  void clear_epoch(branch_name const & branch);
 
   //
   // --== Database 'vars' ==--
@@ -540,7 +562,7 @@ private:
 public:
     // branches
   outdated_indicator get_branches(std::vector<std::string> & names);
-  outdated_indicator get_branches(std::string const & glob,
+  outdated_indicator get_branches(globish const & glob,
                                   std::vector<std::string> & names);
 
   bool check_integrity();

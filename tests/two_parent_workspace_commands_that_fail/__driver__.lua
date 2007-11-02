@@ -1,6 +1,6 @@
 -- Create a simple two-parent workspace and then run a bunch of
 -- commands all of which should give errors (but not I()s).
--- see http://venge.net/monotone/wiki/MultiParentWorkspaceFallout
+-- see http://venge.net/mtn-wiki/MultiParentWorkspaceFallout
 -- for rationales for failures
 
 mtn_setup()
@@ -52,7 +52,7 @@ check(mtn("update"), 1, nil, diag)
 -- formats need updating to deal
 check(mtn("automate", "get_base_revision_id"), 1, nil, diag)
 check(mtn("automate", "inventory"), 1, nil, diag)
-check(mtn("automate", "attributes", "testfile"), 1, nil, diag)
+check(mtn("automate", "get_attributes", "testfile"), 1, nil, diag)
 
 -- commit cannot be restricted
 check(mtn("commit", "testfile", "--message", "blah-blah"),

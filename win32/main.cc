@@ -13,9 +13,6 @@
 // to look at monotone.cc for cpp_main(), where the real program logic
 // begins.  The purpose of this file is to hide all the nastiness involved
 // in trapping and responding to operating-system-level hard error reports.
-// It is also responsible for a last-ditch catch(...) clause (which is not
-// _that_ different from what std::terminate() would do, but does get our
-// bug-report message printed.)
 //
 // On Win32, hard error reports come via SEH ("structured exception
 // handling", which is, alas, not the same thing as C++ runtime exception
@@ -28,9 +25,9 @@
 // data structures, so we use the lowest-level API that appears to be
 // available (GetStdHandle()/WriteFile()).
 
-#include "config.h"
 
 #define WIN32_LEAN_AND_MEAN
+#include "base.hh"
 #include <windows.h>
 #include <string.h>
 

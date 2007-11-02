@@ -7,8 +7,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <map>
-#include <string>
 #include <cstdlib>
 #include <memory>
 #include <list>
@@ -17,23 +17,21 @@
 
 #include <time.h>
 
-#include <boost/lexical_cast.hpp>
+#include "lexical_cast.hh"
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
-#include <boost/regex.hpp>
 
 #include "app_state.hh"
 #include "cert.hh"
 #include "constants.hh"
 #include "enumerator.hh"
 #include "keys.hh"
+#include "lua.hh"
 #include "merkle_tree.hh"
 #include "netcmd.hh"
 #include "netio.hh"
-#include "netsync.hh"
 #include "numeric_vocab.hh"
-#include "packet.hh"
 #include "refiner.hh"
 #include "revision.hh"
 #include "sanity.hh"
@@ -251,6 +249,29 @@ using std::vector;
 using boost::shared_ptr;
 using boost::lexical_cast;
 
+struct server_initiated_sync_request
+{
+  string what;
+  string address;
+  string include;
+  string exclude;
+};
+deque<server_initiated_sync_request> server_initiated_sync_requests;
+LUAEXT(server_request_sync, )
+{
+  char const * w = luaL_checkstring(L, 1);
+  char const * a = luaL_checkstring(L, 2);
+  char const * i = luaL_checkstring(L, 3);
+  char const * e = luaL_checkstring(L, 4);
+  server_initiated_sync_request request;
+  request.what = string(w);
+  request.address = string(a);
+  request.include = string(i);
+  request.exclude = string(e);
+  server_initiated_sync_requests.push_back(request);
+  return 0;
+}
+
 static inline void
 require(bool check, string const & context)
 {
@@ -271,8 +292,8 @@ session:
 {
   protocol_role role;
   protocol_voice const voice;
-  utf8 const & our_include_pattern;
-  utf8 const & our_exclude_pattern;
+  globish our_include_pattern;
+  globish our_exclude_pattern;
   globish_matcher our_matcher;
   app_state & app;
 
@@ -320,7 +341,6 @@ session:
   vector<cert> written_certs;
 
   id saved_nonce;
-  packet_db_writer dbw;
 
   enum
     {
@@ -371,17 +391,14 @@ session:
 
   session(protocol_role role,
           protocol_voice voice,
-          utf8 const & our_include_pattern,
-          utf8 const & our_exclude_pattern,
+          globish const & our_include_pattern,
+          globish const & our_exclude_pattern,
           app_state & app,
           string const & peer,
-          shared_ptr<Netxx::StreamBase> sock);
+          shared_ptr<Netxx::StreamBase> sock,
+          bool initiated_by_server = false);
 
   virtual ~session();
-
-  void rev_written_callback(revision_id rid);
-  void key_written_callback(rsa_keypair_id kid);
-  void cert_written_callback(cert const & c);
 
   id mk_nonce();
   void mark_recent_io();
@@ -417,13 +434,13 @@ session:
                        base64<rsa_pub_key> const & pub_encoded,
                        id const & nonce);
   void queue_anonymous_cmd(protocol_role role,
-                           utf8 const & include_pattern,
-                           utf8 const & exclude_pattern,
+                           globish const & include_pattern,
+                           globish const & exclude_pattern,
                            id const & nonce2,
                            base64<rsa_pub_key> server_key_encoded);
   void queue_auth_cmd(protocol_role role,
-                      utf8 const & include_pattern,
-                      utf8 const & exclude_pattern,
+                      globish const & include_pattern,
+                      globish const & exclude_pattern,
                       id const & client,
                       id const & nonce1,
                       id const & nonce2,
@@ -446,11 +463,11 @@ session:
                          id const & nonce);
   bool process_bye_cmd(u8 phase, transaction_guard & guard);
   bool process_anonymous_cmd(protocol_role role,
-                             utf8 const & their_include_pattern,
-                             utf8 const & their_exclude_pattern);
+                             globish const & their_include_pattern,
+                             globish const & their_exclude_pattern);
   bool process_auth_cmd(protocol_role role,
-                        utf8 const & their_include_pattern,
-                        utf8 const & their_exclude_pattern,
+                        globish const & their_include_pattern,
+                        globish const & their_exclude_pattern,
                         id const & client,
                         id const & nonce1,
                         string const & signature);
@@ -479,21 +496,24 @@ session:
                  string & out);
 
   void rebuild_merkle_trees(app_state & app,
-                            set<utf8> const & branches);
+                            set<branch_name> const & branches);
 
   void send_all_data(netcmd_item_type ty, set<id> const & items);
   void begin_service();
   bool process(transaction_guard & guard);
+
+  bool initiated_by_server;
 };
 size_t session::session_count = 0;
 
 session::session(protocol_role role,
                  protocol_voice voice,
-                 utf8 const & our_include_pattern,
-                 utf8 const & our_exclude_pattern,
+                 globish const & our_include_pattern,
+                 globish const & our_exclude_pattern,
                  app_state & app,
                  string const & peer,
-                 shared_ptr<Netxx::StreamBase> sock) :
+                 shared_ptr<Netxx::StreamBase> sock,
+                 bool initiated_by_server) :
   role(role),
   voice(voice),
   our_include_pattern(our_include_pattern),
@@ -508,8 +528,10 @@ session::session(protocol_role role,
   remote_peer_key_hash(""),
   remote_peer_key_name(""),
   session_key(constants::netsync_key_initializer),
-  read_hmac(constants::netsync_key_initializer, app.opts.use_transport_auth),
-  write_hmac(constants::netsync_key_initializer, app.opts.use_transport_auth),
+  read_hmac(netsync_session_key(constants::netsync_key_initializer),
+            app.opts.use_transport_auth),
+  write_hmac(netsync_session_key(constants::netsync_key_initializer),
+             app.opts.use_transport_auth),
   authenticated(false),
   last_io_time(::time(NULL)),
   byte_in_ticker(NULL),
@@ -524,7 +546,6 @@ session::session(protocol_role role,
   keys_in(0), keys_out(0),
   session_id(++session_count),
   saved_nonce(""),
-  dbw(app),
   protocol_state(working_state),
   encountered_error(false),
   error_code(no_transfer),
@@ -533,15 +554,9 @@ session::session(protocol_role role,
   key_refiner(key_item, voice, *this),
   cert_refiner(cert_item, voice, *this),
   rev_refiner(revision_item, voice, *this),
-  rev_enumerator(*this, app)
-{
-  dbw.set_on_revision_written(boost::bind(&session::rev_written_callback,
-                                          this, _1));
-  dbw.set_on_cert_written(boost::bind(&session::cert_written_callback,
-                                      this, _1));
-  dbw.set_on_pubkey_written(boost::bind(&session::key_written_callback,
-                                        this, _1));
-}
+  rev_enumerator(*this, app),
+  initiated_by_server(initiated_by_server)
+{}
 
 session::~session()
 {
@@ -697,21 +712,6 @@ session::note_cert(hexenc<id> const & c)
   queue_data_cmd(cert_item, item, str);
 }
 
-
-void session::rev_written_callback(revision_id rid)
-{
-  written_revisions.push_back(rid);
-}
-
-void session::key_written_callback(rsa_keypair_id kid)
-{
-  written_keys.push_back(kid);
-}
-
-void session::cert_written_callback(cert const & c)
-{
-  written_certs.push_back(c);
-}
 
 id
 session::mk_nonce()
@@ -1119,8 +1119,8 @@ session::queue_hello_cmd(rsa_keypair_id const & key_name,
 
 void
 session::queue_anonymous_cmd(protocol_role role,
-                             utf8 const & include_pattern,
-                             utf8 const & exclude_pattern,
+                             globish const & include_pattern,
+                             globish const & exclude_pattern,
                              id const & nonce2,
                              base64<rsa_pub_key> server_key_encoded)
 {
@@ -1137,8 +1137,8 @@ session::queue_anonymous_cmd(protocol_role role,
 
 void
 session::queue_auth_cmd(protocol_role role,
-                        utf8 const & include_pattern,
-                        utf8 const & exclude_pattern,
+                        globish const & include_pattern,
+                        globish const & exclude_pattern,
                         id const & client,
                         id const & nonce1,
                         id const & nonce2,
@@ -1313,11 +1313,9 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
               "their key's fingerprint: %s") % peer_id % their_key_hash);
           app.db.set_var(their_key_key, var_value(their_key_hash()));
         }
-      if (!app.db.public_key_exists(their_key_hash))
-        {
-          W(F("saving public key for %s to database") % their_keyname);
-          app.db.put_key(their_keyname, their_key_encoded);
-        }
+      if (app.db.put_key(their_keyname, their_key_encoded))
+        W(F("saving public key for %s to database") % their_keyname);
+
       {
         hexenc<id> hnonce;
         encode_hexenc(nonce, hnonce);
@@ -1335,9 +1333,9 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
 
   // clients always include in the synchronization set, every branch that the
   // user requested
-  set<utf8> all_branches, ok_branches;
-  app.get_project().get_branch_list(all_branches);
-  for (set<utf8>::const_iterator i = all_branches.begin();
+  set<branch_name> all_branches, ok_branches;
+  app.get_project().get_branch_list(all_branches, false);
+  for (set<branch_name>::const_iterator i = all_branches.begin();
       i != all_branches.end(); i++)
     {
       if (our_matcher((*i)()))
@@ -1345,7 +1343,8 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
     }
   rebuild_merkle_trees(app, ok_branches);
 
-  setup_client_tickers();
+  if (!initiated_by_server)
+    setup_client_tickers();
 
   if (app.opts.use_transport_auth &&
       app.opts.signing_key() != "")
@@ -1386,8 +1385,8 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
 
 bool
 session::process_anonymous_cmd(protocol_role their_role,
-                               utf8 const & their_include_pattern,
-                               utf8 const & their_exclude_pattern)
+                               globish const & their_include_pattern,
+                               globish const & their_exclude_pattern)
 {
   // Internally netsync thinks in terms of sources and sinks. Users like
   // thinking of repositories as "readonly", "readwrite", or "writeonly".
@@ -1428,10 +1427,10 @@ session::process_anonymous_cmd(protocol_role their_role,
         }
     }
 
-  set<utf8> all_branches, ok_branches;
-  app.get_project().get_branch_list(all_branches);
+  set<branch_name> all_branches, ok_branches;
+  app.get_project().get_branch_list(all_branches, false);
   globish_matcher their_matcher(their_include_pattern, their_exclude_pattern);
-  for (set<utf8>::const_iterator i = all_branches.begin();
+  for (set<branch_name>::const_iterator i = all_branches.begin();
       i != all_branches.end(); i++)
     {
       if (their_matcher((*i)()))
@@ -1489,8 +1488,8 @@ session::assume_corresponding_role(protocol_role their_role)
 
 bool
 session::process_auth_cmd(protocol_role their_role,
-                          utf8 const & their_include_pattern,
-                          utf8 const & their_exclude_pattern,
+                          globish const & their_include_pattern,
+                          globish const & their_exclude_pattern,
                           id const & client,
                           id const & nonce1,
                           string const & signature)
@@ -1561,9 +1560,9 @@ session::process_auth_cmd(protocol_role their_role,
         }
     }
 
-  set<utf8> all_branches, ok_branches;
-  app.get_project().get_branch_list(all_branches);
-  for (set<utf8>::const_iterator i = all_branches.begin();
+  set<branch_name> all_branches, ok_branches;
+  app.get_project().get_branch_list(all_branches, false);
+  for (set<branch_name>::const_iterator i = all_branches.begin();
        i != all_branches.end(); i++)
     {
       if (their_matcher((*i)()))
@@ -1835,7 +1834,7 @@ session::load_data(netcmd_item_type type,
     {
     case epoch_item:
       {
-        cert_value branch;
+        branch_name branch;
         epoch_data epoch;
         app.db.get_epoch(epoch_id(hitem), branch, epoch);
         write_epoch(branch, epoch, out);
@@ -1904,13 +1903,13 @@ session::process_data_cmd(netcmd_item_type type,
     {
     case epoch_item:
       {
-        cert_value branch;
+        branch_name branch;
         epoch_data epoch;
         read_epoch(dat, branch, epoch);
         L(FL("received epoch %s for branch %s") % epoch % branch);
-        map<cert_value, epoch_data> epochs;
+        map<branch_name, epoch_data> epochs;
         app.db.get_epochs(epochs);
-        map<cert_value, epoch_data>::const_iterator i;
+        map<branch_name, epoch_data>::const_iterator i;
         i = epochs.find(branch);
         if (i == epochs.end())
           {
@@ -1953,7 +1952,8 @@ session::process_data_cmd(netcmd_item_type type,
           throw bad_decode(F("hash check failed for public key '%s' (%s);"
                              " wanted '%s' got '%s'")
                            % hitem % keyid % hitem % tmp);
-        this->dbw.consume_public_key(keyid, pub);
+        if (app.db.put_key(keyid, pub))
+          written_keys.push_back(keyid);
       }
       break;
 
@@ -1965,21 +1965,23 @@ session::process_data_cmd(netcmd_item_type type,
         cert_hash_code(c, tmp);
         if (! (tmp == hitem))
           throw bad_decode(F("hash check failed for revision cert '%s'")  % hitem);
-        this->dbw.consume_revision_cert(revision<cert>(c));
+        if (app.db.put_revision_cert(revision<cert>(c)))
+          written_certs.push_back(c);
       }
       break;
 
     case revision_item:
       {
         L(FL("received revision '%s'") % hitem);
-        this->dbw.consume_revision_data(revision_id(hitem), revision_data(dat));
+        if (app.db.put_revision(revision_id(hitem), revision_data(dat)))
+          written_revisions.push_back(revision_id(hitem));
       }
       break;
 
     case file_item:
       {
         L(FL("received file '%s'") % hitem);
-        this->dbw.consume_file_data(file_id(hitem), file_data(dat));
+        app.db.put_file(file_id(hitem), file_data(dat));
       }
       break;
     }
@@ -2007,9 +2009,7 @@ session::process_delta_cmd(netcmd_item_type type,
     case file_item:
       {
         file_id src_file(hbase), dst_file(hident);
-        this->dbw.consume_file_delta(src_file,
-                                     dst_file,
-                                     file_delta(del));
+        app.db.put_file_version(src_file, dst_file, file_delta(del));
       }
       break;
 
@@ -2107,7 +2107,7 @@ session::dispatch_payload(netcmd const & cmd,
               "anonymous netcmd received in source or source/sink role");
       {
         protocol_role role;
-        utf8 their_include_pattern, their_exclude_pattern;
+        globish their_include_pattern, their_exclude_pattern;
         rsa_oaep_sha_data hmac_key_encrypted;
         cmd.read_anonymous_cmd(role, their_include_pattern, their_exclude_pattern, hmac_key_encrypted);
         L(FL("received 'anonymous' netcmd from client for pattern '%s' excluding '%s' "
@@ -2130,7 +2130,7 @@ session::dispatch_payload(netcmd const & cmd,
       {
         protocol_role role;
         string signature;
-        utf8 their_include_pattern, their_exclude_pattern;
+        globish their_include_pattern, their_exclude_pattern;
         id client, nonce1, nonce2;
         rsa_oaep_sha_data hmac_key_encrypted;
         cmd.read_auth_cmd(role, their_include_pattern, their_exclude_pattern,
@@ -2329,8 +2329,8 @@ bool session::process(transaction_guard & guard)
 
 static shared_ptr<Netxx::StreamBase>
 build_stream_to_server(app_state & app,
-                       utf8 const & include_pattern,
-                       utf8 const & exclude_pattern,
+                       globish const & include_pattern,
+                       globish const & exclude_pattern,
                        utf8 const & address,
                        Netxx::port_type default_port,
                        Netxx::Timeout timeout)
@@ -2338,12 +2338,13 @@ build_stream_to_server(app_state & app,
   shared_ptr<Netxx::StreamBase> server;
   uri u;
   vector<string> argv;
-  if (parse_uri(address(), u)
-      && app.lua.hook_get_netsync_connect_command(u,
-                                                  include_pattern(),
-                                                  exclude_pattern(),
-                                                  global_sanity.debug,
-                                                  argv))
+
+  parse_uri(address(), u);
+  if (app.lua.hook_get_netsync_connect_command(u,
+                                               include_pattern,
+                                               exclude_pattern,
+                                               global_sanity.debug_p(),
+                                               argv))
     {
       I(argv.size() > 0);
       string cmd = argv[0];
@@ -2369,21 +2370,21 @@ build_stream_to_server(app_state & app,
 
 static void
 call_server(protocol_role role,
-            utf8 const & include_pattern,
-            utf8 const & exclude_pattern,
+            globish const & include_pattern,
+            globish const & exclude_pattern,
             app_state & app,
-            utf8 const & address,
+            std::list<utf8> const & addresses,
             Netxx::port_type default_port,
             unsigned long timeout_seconds)
 {
   Netxx::PipeCompatibleProbe probe;
   transaction_guard guard(app.db);
+  I(addresses.size() == 1);
+  utf8 address(*addresses.begin());
 
   Netxx::Timeout timeout(static_cast<long>(timeout_seconds)), instant(0,1);
 
-  // FIXME: split into labels and convert to ace here.
-
-  P(F("connecting to %s") % address());
+  P(F("connecting to %s") % address);
 
   shared_ptr<Netxx::StreamBase> server
     = build_stream_to_server(app,
@@ -2525,7 +2526,8 @@ drop_session_associated_with_fd(map<Netxx::socket_type, shared_ptr<session> > & 
 static void
 arm_sessions_and_calculate_probe(Netxx::PipeCompatibleProbe & probe,
                                  map<Netxx::socket_type, shared_ptr<session> > & sessions,
-                                 set<Netxx::socket_type> & armed_sessions)
+                                 set<Netxx::socket_type> & armed_sessions,
+                                 transaction_guard & guard)
 {
   set<Netxx::socket_type> arm_failed;
   for (map<Netxx::socket_type,
@@ -2533,6 +2535,7 @@ arm_sessions_and_calculate_probe(Netxx::PipeCompatibleProbe & probe,
        i != sessions.end(); ++i)
     {
       i->second->maybe_step();
+      i->second->maybe_say_goodbye(guard);
       try
         {
           if (i->second->arm())
@@ -2561,8 +2564,8 @@ handle_new_connection(Netxx::Address & addr,
                       Netxx::StreamServer & server,
                       Netxx::Timeout & timeout,
                       protocol_role role,
-                      utf8 const & include_pattern,
-                      utf8 const & exclude_pattern,
+                      globish const & include_pattern,
+                      globish const & exclude_pattern,
                       map<Netxx::socket_type, shared_ptr<session> > & sessions,
                       app_state & app)
 {
@@ -2730,10 +2733,10 @@ reap_dead_sessions(map<Netxx::socket_type, shared_ptr<session> > & sessions,
 
 static void
 serve_connections(protocol_role role,
-                  utf8 const & include_pattern,
-                  utf8 const & exclude_pattern,
+                  globish const & include_pattern,
+                  globish const & exclude_pattern,
                   app_state & app,
-                  utf8 const & address,
+                  std::list<utf8> const & addresses,
                   Netxx::port_type default_port,
                   unsigned long timeout_seconds,
                   unsigned long session_limit)
@@ -2745,8 +2748,6 @@ serve_connections(protocol_role role,
     timeout(static_cast<long>(timeout_seconds)),
     instant(0,1);
 
-  if (!app.opts.bind_port().empty())
-    default_port = std::atoi(app.opts.bind_port().c_str());
 #ifdef USE_IPV6
   bool use_ipv6=true;
 #else
@@ -2764,10 +2765,30 @@ serve_connections(protocol_role role,
 
           Netxx::Address addr(use_ipv6);
 
-          if (!app.opts.bind_address().empty())
-            addr.add_address(app.opts.bind_address().c_str(), default_port);
+          if (addresses.empty())
+            addr.add_all_addresses(default_port);
           else
-            addr.add_all_addresses (default_port);
+            {
+              for (std::list<utf8>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
+                {
+                  const utf8 & address = *it;
+                  if (!address().empty())
+                    {
+                      size_t l_colon = address().find(':');
+                      size_t r_colon = address().rfind(':');
+              
+                      if (l_colon == r_colon && l_colon == 0)
+                        {
+                          // can't be an IPv6 address as there is only one colon
+                          // must be a : followed by a port
+                          string port_str = address().substr(1);
+                          addr.add_all_addresses(std::atoi(port_str.c_str()));
+                        }
+                      else
+                        addr.add_address(address().c_str(), default_port);
+                    }
+                }
+            }
 
           // If se use IPv6 and the initialisation of server fails, we want
           // to try again with IPv4.  The reason is that someone may have
@@ -2804,7 +2825,55 @@ serve_connections(protocol_role role,
               else
                 probe.add(server);
 
-              arm_sessions_and_calculate_probe(probe, sessions, armed_sessions);
+              if (!guard)
+                guard = shared_ptr<transaction_guard>(new transaction_guard(app.db));
+
+              I(guard);
+
+              while (!server_initiated_sync_requests.empty())
+                {
+                  server_initiated_sync_request request
+                    = server_initiated_sync_requests.front();
+                  server_initiated_sync_requests.pop_front();
+
+                  utf8 addr(request.address);
+                  globish inc(request.include);
+                  globish exc(request.exclude);
+
+                  try
+                    {
+                      P(F("connecting to %s") % addr());
+                      shared_ptr<Netxx::StreamBase> server
+                        = build_stream_to_server(app, inc, exc,
+                                                 addr, default_port,
+                                                 timeout);
+
+                      // 'false' here means not to revert changes when
+                      // the SockOpt goes out of scope.
+                      Netxx::SockOpt socket_options(server->get_socketfd(), false);
+                      socket_options.set_non_blocking();
+
+                      protocol_role role = source_and_sink_role;
+                      if (request.what == "sync")
+                        role = source_and_sink_role;
+                      else if (request.what == "push")
+                        role = source_role;
+                      else if (request.what == "pull")
+                        role = sink_role;
+
+                      shared_ptr<session> sess(new session(role, client_voice,
+                                                           inc, exc,
+                                                           app, addr(), server, true));
+
+                      sessions.insert(make_pair(server->get_socketfd(), sess));
+                    }
+                  catch (Netxx::NetworkException & e)
+                    {
+                      P(F("Network error: %s") % e.what());
+                    }
+                }
+
+              arm_sessions_and_calculate_probe(probe, sessions, armed_sessions, *guard);
 
               L(FL("i/o probe with %d armed") % armed_sessions.size());
               Netxx::socket_type fd;
@@ -2821,11 +2890,6 @@ serve_connections(protocol_role role,
                   how_long = instant;
                   Netxx::Probe::ready_type event = res.second;
                   fd = res.first;
-
-                  if (!guard)
-                    guard = shared_ptr<transaction_guard>(new transaction_guard(app.db));
-
-                  I(guard);
 
                   if (fd == -1)
                     {
@@ -2958,7 +3022,7 @@ serve_single_connection(shared_ptr<session> sess,
       probe.clear();
       armed_sessions.clear();
 
-      arm_sessions_and_calculate_probe(probe, sessions, armed_sessions);
+      arm_sessions_and_calculate_probe(probe, sessions, armed_sessions, guard);
 
       L(FL("i/o probe with %d armed") % armed_sessions.size());
       Netxx::Probe::result_type res = probe.ready((armed_sessions.empty() ? timeout
@@ -3042,10 +3106,10 @@ insert_with_parents(revision_id rev,
 
 void
 session::rebuild_merkle_trees(app_state & app,
-                              set<utf8> const & branchnames)
+                              set<branch_name> const & branchnames)
 {
   P(F("finding items to synchronize:"));
-  for (set<utf8>::const_iterator i = branchnames.begin();
+  for (set<branch_name>::const_iterator i = branchnames.begin();
       i != branchnames.end(); ++i)
     L(FL("including branch %s") % *i);
 
@@ -3060,7 +3124,7 @@ session::rebuild_merkle_trees(app_state & app,
   set<rsa_keypair_id> inserted_keys;
 
   {
-    for (set<utf8>::const_iterator i = branchnames.begin();
+    for (set<branch_name>::const_iterator i = branchnames.begin();
          i != branchnames.end(); ++i)
       {
         // Get branch certs.
@@ -3089,15 +3153,15 @@ session::rebuild_merkle_trees(app_state & app,
   }
 
   {
-    map<cert_value, epoch_data> epochs;
+    map<branch_name, epoch_data> epochs;
     app.db.get_epochs(epochs);
 
     epoch_data epoch_zero(string(constants::epochlen, '0'));
-    for (set<utf8>::const_iterator i = branchnames.begin();
+    for (set<branch_name>::const_iterator i = branchnames.begin();
          i != branchnames.end(); ++i)
       {
-        cert_value branch((*i)());
-        map<cert_value, epoch_data>::const_iterator j;
+        branch_name const & branch(*i);
+        map<branch_name, epoch_data>::const_iterator j;
         j = epochs.find(branch);
 
         // Set to zero any epoch which is not yet set.
@@ -3194,9 +3258,9 @@ session::rebuild_merkle_trees(app_state & app,
 void
 run_netsync_protocol(protocol_voice voice,
                      protocol_role role,
-                     utf8 const & addr,
-                     utf8 const & include_pattern,
-                     utf8 const & exclude_pattern,
+                     std::list<utf8> const & addrs,
+                     globish const & include_pattern,
+                     globish const & exclude_pattern,
                      app_state & app)
 {
   if (include_pattern().find_first_of("'\"") != string::npos)
@@ -3228,7 +3292,7 @@ run_netsync_protocol(protocol_voice voice,
             }
           else
             serve_connections(role, include_pattern, exclude_pattern, app,
-                              addr, static_cast<Netxx::port_type>(constants::netsync_default_port),
+                              addrs, static_cast<Netxx::port_type>(constants::netsync_default_port),
                               static_cast<unsigned long>(constants::netsync_timeout_seconds),
                               static_cast<unsigned long>(constants::netsync_connection_limit));
         }
@@ -3236,7 +3300,7 @@ run_netsync_protocol(protocol_voice voice,
         {
           I(voice == client_voice);
           call_server(role, include_pattern, exclude_pattern, app,
-                      addr, static_cast<Netxx::port_type>(constants::netsync_default_port),
+                      addrs, static_cast<Netxx::port_type>(constants::netsync_default_port),
                       static_cast<unsigned long>(constants::netsync_timeout_seconds));
         }
     }

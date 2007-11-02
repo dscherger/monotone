@@ -7,10 +7,11 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <set>
 #include <map>
-#include <vector>
-#include <boost/lexical_cast.hpp>
+#include "vector.hh"
+#include "lexical_cast.hh"
 
 #include "app_state.hh"
 #include "database.hh"
@@ -34,8 +35,9 @@
 //     and add it to the candidate set if so
 //   - this gives a set containing every descendent that we might want to
 //     update to.
-//   - run erase_ancestors on that set, to get just the heads; this is our
-//     real candidate set.
+//   - run erase_ancestors on that set, to get just the heads
+//   - If there are any non-suspended revisions in the set, then remove the
+//     suspended revisions.
 // the idea is that this should be correct even in the presence of
 // discontinuous branches, test results that go from good to bad to good to
 // bad to good, etc.
@@ -74,7 +76,7 @@ get_test_results_for_revision(revision_id const & id,
 }
 
 static bool
-acceptable_descendent(cert_value const & branch,
+acceptable_descendent(branch_name const & branch,
                       revision_id const & base,
                       map<rsa_keypair_id, bool> & base_results,
                       revision_id const & target,
@@ -83,7 +85,7 @@ acceptable_descendent(cert_value const & branch,
   L(FL("Considering update target %s") % target);
 
   // step 1: check the branch
-  if (!app.get_project().revision_is_in_branch(target, utf8(branch())))
+  if (!app.get_project().revision_is_in_branch(target, branch))
     {
       L(FL("%s not in branch %s") % target % branch);
       return false;
@@ -104,10 +106,33 @@ acceptable_descendent(cert_value const & branch,
     }
 }
 
+namespace
+{
+  struct suspended_in_branch : public is_failure
+  {
+    app_state & app;
+    base64<cert_value > const & branch_encoded;
+    suspended_in_branch(app_state & app,
+                  base64<cert_value> const & branch_encoded)
+      : app(app), branch_encoded(branch_encoded)
+    {}
+    virtual bool operator()(revision_id const & rid)
+    {
+      vector< revision<cert> > certs;
+      app.db.get_revision_certs(rid,
+                                cert_name(suspend_cert_name),
+                                branch_encoded,
+                                certs);
+      erase_bogus_certs(certs, app);
+      return !certs.empty();
+    }
+  };
+}
+
 
 static void
 calculate_update_set(revision_id const & base,
-                     cert_value const & branch,
+                     branch_name const & branch,
                      app_state & app,
                      set<revision_id> & candidates)
 {
@@ -149,6 +174,27 @@ calculate_update_set(revision_id const & base,
     }
 
   erase_ancestors(candidates, app);
+  
+  bool have_non_suspended_rev = false;
+  
+  for (set<revision_id>::const_iterator it = candidates.begin(); it != candidates.end(); it++)
+    {
+      if (!app.get_project().revision_is_suspended_in_branch(*it, branch))
+        {
+          have_non_suspended_rev = true;
+          break;
+        }
+    }
+  if (!app.opts.ignore_suspend_certs && have_non_suspended_rev)
+    {
+      // remove all suspended revisions
+      base64<cert_value> branch_encoded;
+      encode_base64(cert_value(branch()), branch_encoded);
+      suspended_in_branch s(app, branch_encoded);
+      for(std::set<revision_id>::iterator it = candidates.begin(); it != candidates.end(); it++)
+        if (s(*it))
+          candidates.erase(*it);
+    }
 }
 
 
@@ -156,11 +202,11 @@ void pick_update_candidates(revision_id const & base_ident,
                             app_state & app,
                             set<revision_id> & candidates)
 {
-  N(app.opts.branch_name() != "",
+  N(app.opts.branchname() != "",
     F("cannot determine branch for update"));
   I(!null_id(base_ident));
 
-  calculate_update_set(base_ident, cert_value(app.opts.branch_name()),
+  calculate_update_set(base_ident, app.opts.branchname,
                        app, candidates);
 }
 

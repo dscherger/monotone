@@ -29,12 +29,26 @@ And something close (but not perfect) for VIM:
 
 vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
+The appropriate astyle options are:
+
+astyle --style=gnu -s2 -p 
+
 monotone's source includes a number of third party libraries.  These have
 been imported from upstream, and should retain the original coding style of
 the particular library in all cases.  This makes life easier when a
 developer needs to send our fixes upstream or wants to import new upstream
 versions into monotone.
 
+There is a special header file, base.hh, that should be the very first
+#include in every .cc file, without exception.  It makes a small
+number of inclusions and declarations that we want to be globally
+visible.  Do not include this header in any other header file;
+however, in header files, assume the contents of base.hh are already
+visible.  "make distcheck" will verify that these rules are followed.
+If you modify base.hh, make sure you keep the "audit-includes" script
+consistent with it.  Try not to add things to base.hh; it's intended
+to be a minimal set of declarations that really do need to be visible
+everywhere.
 
 Dialect issues
 --------------
@@ -79,9 +93,18 @@ continued to adhere to the dialect we write in. in particular:
   - if you have a const, put that _after_ the main type, but before
     any * or &.  Example: "set<revision_id> const & foo".
 
-  - put the name of a function in the first column of the line it
-    occurs on. the visibility and return type go on the preceeding
-    line.
+  - if you are declaring a static array, be aware of a quirk of the
+    language: "foo const * arrayname[]" declares a _non-constant_
+    array of pointers to constant foo.  if the array itself will never
+    be modified (true in most cases) you should put a second "const"
+    modifier _after_ the *.  this most often comes up with arrays of
+    string constants: write "char const * const arrayname[]" unless
+    you really mean the array to be modifiable.
+
+  - when defining a function, put a carriage return right before the
+    function name, so that the visibility and return type go on the
+    preceeding line. this makes it possible to grep for "^functionname"
+    to find the function definition without its uses.
 
   - use enums rather than magic constants, if you can.
 
@@ -124,12 +147,29 @@ continued to adhere to the dialect we write in. in particular:
     standard streams are initialized before their first use.
     therefore, do not include <iostream> unless you actually refer to
     one of the standard streams (cin, cout, cerr, clog).  use <iosfwd>,
-    <istream>, <ostream>, <fstream>, etc instead, as appropriate.
+    <istream>, <ostream>, <fstream>, etc instead, as appropriate.  do not,
+    under any circumstances, refer to the standard streams in a header file.
 
-  - return type and function qualifiers should be placed on the line above
-    the function name, so that the function name sits flush with the first
-    column.  this makes grepping for function definitions easier.
+  - it is almost always a mistake to use std::endl instead of '\n'.
+    std::endl writes a newline to the stream *and flushes it*.
+    in monotone this is basically only appropriate when one needs to
+    resynchronize clog and cout (ui.cc:clear_line()), or recover from
+    disabling terminal echo (read_password()).  note that it is never
+    necessary to use endl with cerr, as cerr is unbuffered.
 
+  - prefer character constants ('x') to single-character strings ("x") in
+    formatted output sequences.
+
+Interfacing with Lua
+--------------------
+
+monotone is extended with hooks written in the Lua language. Code that
+interfaces with Lua must obey the following rules:
+
+  - Lua arrays (tables with numeric indices) are 1-indexed. This is not
+    mandated by the language per se, but the standard libraries assume that
+    and using the arrays otherwise may break hooks that use standard
+    functions.
 
 Test suites, and writing test cases
 ----------------------------------
@@ -139,7 +179,7 @@ easily by initiating a 'make check'.  The test suite (or, at least, any
 tests potentially affected by your change) should be run before you
 distribute your changes.
 
-Automated build bots run the complete test suite on a regularly basis, so
+Automated build bots run the complete test suite on a regular basis, so
 any problems will be noticed quickly, but it is still faster to find and fix
 any problems locally rather than waiting for the build bots to alert the
 development team of a problem.
@@ -161,6 +201,15 @@ number in parentheses.  Or, if using gdb, try setting a breakpoint on
 theboost::unit_test::first_failed_assertion function (see
 results_collector.hpp).
 
+Documenting large, user visible or otherwise important changes
+--------------------------------------------------------------
+
+There are changes that are more than mere bug fixes.  Those should be
+documented briefly in the NEWS file.  Please follow the examples from
+earlier releases in that file.
+Please add the entries in NEWS as part of the change in question, or
+as soon after the change has been committed as possible.  That will
+save the release master a lot of hassle at the time of release.
 
 Single-character macros
 -----------------------

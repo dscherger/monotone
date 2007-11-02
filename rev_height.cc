@@ -7,7 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <cstring>
+#include "base.hh"
 #include <sstream>
 
 #include "sanity.hh"
@@ -16,7 +16,6 @@
 using std::ostream;
 using std::string;
 using std::ostringstream;
-using std::memcmp;
 
 /*
  * Implementation note: hv, holding the raw revision height, is
@@ -31,26 +30,6 @@ using std::memcmp;
  * every now and then, and additionally inhibit the use of memcmp().
  * 
  */
-
-// Comparisons
-bool rev_height::operator==(rev_height const & other) const
-{
-  if (d.size() != other.d.size())
-    return false;
-
-  // sizes are equal
-  return (memcmp(d.data(), other.d.data(), d.size()) == 0);
-}
-
-bool rev_height::operator<(rev_height const & other) const
-{
-  int o = memcmp(d.data(), other.d.data(),
-                 std::min(d.size(), other.d.size()));
-  if (o != 0)
-    return o < 0;
-  else
-    return d.size() < other.d.size();
-}
 
 // Internal manipulations
 size_t const width = sizeof(u32);
@@ -149,7 +128,7 @@ UNIT_TEST(rev_height, count_up)
   I(read_at(h(), 0) == 0);
   I(read_at(h(), 1) == 0);
   I(read_at(h(), 2) == 0);
-  BOOST_CHECK_THROW(read_at(h(), 3), std::out_of_range);
+  UNIT_TEST_CHECK_THROW(read_at(h(), 3), std::out_of_range);
 
   for (u32 n = 1; n < 10000; n++)
     {
@@ -215,6 +194,24 @@ UNIT_TEST(rev_height, children)
         }
       I(survivor.valid());
       h = survivor;
+    }
+}
+
+UNIT_TEST(rev_height, comparisons)
+{
+  rev_height root(rev_height::root_height());
+  rev_height left(root.child_height(0));
+  rev_height right(root.child_height(1));
+
+  I(root < left);
+  I(root < right);
+  I(right < left);
+  for (u32 i = 0; i < 1000; i++)
+    {
+      rev_height rchild(right.child_height(0));
+      I(right < rchild);
+      I(rchild < left);
+      right = rchild;
     }
 }
 

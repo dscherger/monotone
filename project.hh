@@ -6,17 +6,12 @@
 
 #include <map>
 #include <set>
-#include <string>
 
 #include "cert.hh"
 #include "outdated_indicator.hh"
 #include "vocab.hh"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-
-
 class app_state;
-class packet_consumer;
 
 class tag_t
 {
@@ -28,36 +23,36 @@ public:
 };
 bool operator < (tag_t const & a, tag_t const & b);
 
-inline boost::posix_time::ptime now()
-{
-  return boost::posix_time::second_clock::universal_time();
-}
-
-boost::posix_time::ptime time_from_time_t(time_t time);
+typedef bool suspended_indicator;
 
 class project_t
 {
   app_state & app;
-  std::map<utf8, std::pair<outdated_indicator, std::set<revision_id> > > branch_heads;
-  std::set<utf8> branches;
+  std::map<std::pair<branch_name, suspended_indicator>, std::pair<outdated_indicator, std::set<revision_id> > > branch_heads;
+  std::set<branch_name> branches;
   outdated_indicator indicator;
 
 public:
   project_t(app_state & app);
 
-  void get_branch_list(std::set<utf8> & names);
-  void get_branch_list(utf8 const & glob, std::set<utf8> & names);
-  void get_branch_heads(utf8 const & name, std::set<revision_id> & heads);
+  void get_branch_list(std::set<branch_name> & names, bool allow_suspend_certs = true);
+  void get_branch_list(globish const & glob, std::set<branch_name> & names,
+                        bool allow_suspend_certs = true);
+  void get_branch_heads(branch_name const & name, std::set<revision_id> & heads,
+                        std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
 
   outdated_indicator get_tags(std::set<tag_t> & tags);
-  void put_tag(revision_id const & id, std::string const & name, packet_consumer & pc);
+  void put_tag(revision_id const & id, std::string const & name);
 
-  bool revision_is_in_branch(revision_id const & id, utf8 const & branch);
+  bool revision_is_in_branch(revision_id const & id, branch_name const & branch);
   void put_revision_in_branch(revision_id const & id,
-                              utf8 const & branch,
-                              packet_consumer & pc);
+                              branch_name const & branch);
 
-  outdated_indicator get_revision_cert_hashes(revision_id const & id,
+  bool revision_is_suspended_in_branch(revision_id const & id, branch_name const & branch);
+  void suspend_revision_in_branch(revision_id const & id,
+                              branch_name const & branch);
+
+  outdated_indicator get_revision_cert_hashes(revision_id const & rid,
                                               std::vector<hexenc<id> > & hashes);
   outdated_indicator get_revision_certs(revision_id const & id,
                                         std::vector<revision<cert> > & certs);
@@ -65,25 +60,22 @@ public:
                                                 cert_name const & name,
                                                 std::vector<revision<cert> > & certs);
   outdated_indicator get_revision_branches(revision_id const & id,
-                                           std::set<utf8> & branches);
-  outdated_indicator get_branch_certs(utf8 const & branch,
+                                           std::set<branch_name> & branches);
+  outdated_indicator get_branch_certs(branch_name const & branch,
                                       std::vector<revision<cert> > & certs);
 
   void put_standard_certs(revision_id const & id,
-                          utf8 const & branch,
+                          branch_name const & branch,
                           utf8 const & changelog,
-                          boost::posix_time::ptime const & time,
-                          utf8 const & author,
-                          packet_consumer & pc);
+                          date_t const & time,
+                          utf8 const & author);
   void put_standard_certs_from_options(revision_id const & id,
-                                       utf8 const & branch,
-                                       utf8 const & changelog,
-                                       packet_consumer & pc);
+                                       branch_name const & branch,
+                                       utf8 const & changelog);
 
   void put_cert(revision_id const & id,
                 cert_name const & name,
-                cert_value const & value,
-                packet_consumer & pc);
+                cert_value const & value);
 };
 
 #endif

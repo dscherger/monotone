@@ -63,7 +63,7 @@ check(mtn("commit", "--branch=testbranch1", "--date=2001-01-01T12:00:00", "--mes
 check(mtn("propagate", "--date=2002-01-01T12:00:00", "testbranch2", "testbranch1"), 0, false, false)
 check(mtn("update"), 0, false, false)
 
-check(mtn("drop", "testfile1"), 0, false, false)
+check(mtn("drop", "--bookkeep-only", "testfile1"), 0, false, false)
 writefile("testfile4", "f4v2\n")
 check(mtn("commit", "--branch=testbranch3", "--date=2003-01-01T12:00:00", "--message-file=blah_blah.txt"), 0, false, false)
 
@@ -116,4 +116,5 @@ check_migrate_from("1db80c7cee8fa966913db1a463ed50bf1b0e5b0e", true)
 check_migrate_from("9d2b5d7b86df00c30ac34fe87a3c20f1195bb2df", true)
 check_migrate_from("ae196843d368d042f475e3dadfed11e9d7f9f01e", true)
 check_migrate_from("48fd5d84f1e5a949ca093e87e5ac558da6e5956d", false)
-check_migrate_from("2881277287f6ee9bfc5ee255a503a6dc20dd5994", false)
+check_migrate_from("fe48b0804e0048b87b4cea51b3ab338ba187bdc2", false)
+check_migrate_from("7ca81b45279403419581d7fde31ed888a80bd34e", false)

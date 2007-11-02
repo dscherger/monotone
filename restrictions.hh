@@ -27,10 +27,10 @@
 // (commit and revert) to be "tested" first with non-destructive commands
 // (ls unknown/ignored/missing/known, status, diff)
 
-#include "app_state.hh"
-#include "cset.hh"
-#include "roster.hh"
 #include "vocab.hh"
+#include "database.hh" // for parent_map
+
+class app_state;
 
 // between any two related revisions, A and B, there is a set of changes (a
 // cset) that describes the operations required to get from A to B. for example:
@@ -68,7 +68,7 @@ class restriction
               std::vector<file_path> const & excludes,
               long depth);
 
-  path_set included_paths, excluded_paths;
+  std::set<file_path> included_paths, excluded_paths;
   long depth;
 };
 
@@ -110,7 +110,7 @@ class node_restriction : public restriction
   }
 
  private:
-  path_set known_paths;
+  std::set<file_path> known_paths;
   std::map<node_id, restricted_path::status> node_map;
 };
 
@@ -124,10 +124,10 @@ class path_restriction : public restriction
                    long depth,
                    app_state & a);
 
-  bool includes(split_path const & sp) const;
+  bool includes(file_path const & sp) const;
 
  private:
-  std::map<split_path, restricted_path::status> path_map;
+  std::map<file_path, restricted_path::status> path_map;
 };
 
 // Local Variables:

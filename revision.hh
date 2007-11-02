@@ -11,13 +11,16 @@
 // PURPOSE.
 
 #include <set>
-#include <string>
+#include <map>
 
 #include <boost/shared_ptr.hpp>
 
-#include "app_state.hh"
 #include "cset.hh"
 #include "vocab.hh"
+#include "database.hh"
+#include "commands.hh"
+
+class app_state;
 
 // a revision is a text object. It has a precise, normalizable serial form
 // as UTF-8 text. it also has some sub-components. not all of these
@@ -148,7 +151,8 @@ struct is_failure
 void
 erase_ancestors_and_failures(std::set<revision_id> & revisions,
                              is_failure & p,
-                             app_state & app);
+                             app_state & app,
+                             std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
 
 void
 ancestry_difference(revision_id const & a, std::set<revision_id> const & bs,
@@ -214,7 +218,7 @@ make_restricted_revision(parent_map const & old_rosters,
                          node_restriction const & mask,
                          revision_t & rev,
                          cset & excluded,
-                         std::string const & cmd_name);
+                         commands::command_id const & cmd_name);
 
 void
 build_changesets_from_manifest_ancestry(app_state & app);

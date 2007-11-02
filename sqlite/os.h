@@ -21,6 +21,18 @@
 ** Figure out if we are dealing with Unix, Windows, or some other
 ** operating system.
 */
+#if defined(OS_OTHER)
+# if OS_OTHER==1
+#   undef OS_UNIX
+#   define OS_UNIX 0
+#   undef OS_WIN
+#   define OS_WIN 0
+#   undef OS_OS2
+#   define OS_OS2 0
+# else
+#   undef OS_OTHER
+# endif
+#endif
 #if !defined(OS_UNIX) && !defined(OS_OTHER)
 # define OS_OTHER 0
 # ifndef OS_WIN
@@ -28,7 +40,7 @@
 #     define OS_WIN 1
 #     define OS_UNIX 0
 #     define OS_OS2 0
-#   elif defined(_EMX_) || defined(_OS2) || defined(OS2) || defined(_OS2_) || defined(__OS2__)
+#   elif defined(__EMX__) || defined(_OS2) || defined(OS2) || defined(_OS2_) || defined(__OS2__)
 #     define OS_WIN 0
 #     define OS_UNIX 0
 #     define OS_OS2 1
@@ -55,11 +67,15 @@
 # include <windows.h>
 # define SQLITE_TEMPNAME_SIZE (MAX_PATH+50)
 #elif OS_OS2
+# if (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ >= 3) && defined(OS2_HIGH_MEMORY)
+#  include <os2safe.h> /* has to be included before os2.h for linking to work */
+# endif
 # define INCL_DOSDATETIME
 # define INCL_DOSFILEMGR
 # define INCL_DOSERRORS
 # define INCL_DOSMISC
 # define INCL_DOSPROCESS
+# define INCL_DOSMODULEMGR
 # include <os2.h>
 # define SQLITE_TEMPNAME_SIZE (CCHMAXPATHCOMP)
 #else
@@ -71,6 +87,13 @@
 */
 #ifndef SET_FULLSYNC
 # define SET_FULLSYNC(x,y)
+#endif
+
+/*
+** The default size of a disk sector
+*/
+#ifndef SQLITE_DEFAULT_SECTOR_SIZE
+# define SQLITE_DEFAULT_SECTOR_SIZE 512
 #endif
 
 /*
@@ -216,6 +239,7 @@ struct IoMethod {
   int (*xUnlock)(OsFile*, int);
   int (*xLockState)(OsFile *id);
   int (*xCheckReservedLock)(OsFile *id);
+  int (*xSectorSize)(OsFile *id);
 };
 
 /*
@@ -332,11 +356,9 @@ int sqlite3OsSeek(OsFile*, i64 offset);
 int sqlite3OsTruncate(OsFile*, i64 size);
 int sqlite3OsSync(OsFile*, int);
 void sqlite3OsSetFullSync(OsFile *id, int setting);
-int sqlite3OsFileHandle(OsFile *id);
 int sqlite3OsFileSize(OsFile*, i64 *pSize);
 int sqlite3OsLock(OsFile*, int);
 int sqlite3OsUnlock(OsFile*, int);
-int sqlite3OsLockState(OsFile *id);
 int sqlite3OsCheckReservedLock(OsFile *id);
 int sqlite3OsOpenReadWrite(const char*, OsFile**, int*);
 int sqlite3OsOpenExclusive(const char*, OsFile**, int);
@@ -346,6 +368,7 @@ int sqlite3OsFileExists(const char*);
 char *sqlite3OsFullPathname(const char*);
 int sqlite3OsIsDirWritable(char*);
 int sqlite3OsSyncDirectory(const char*);
+int sqlite3OsSectorSize(OsFile *id);
 int sqlite3OsTempFileName(char*);
 int sqlite3OsRandomSeed(char*);
 int sqlite3OsSleep(int ms);
@@ -361,6 +384,11 @@ int sqlite3OsAllocationSize(void *);
 void *sqlite3OsDlopen(const char*);
 void *sqlite3OsDlsym(void*, const char*);
 int sqlite3OsDlclose(void*);
+
+#if defined(SQLITE_TEST) || defined(SQLITE_DEBUG)
+  int sqlite3OsFileHandle(OsFile *id);
+  int sqlite3OsLockState(OsFile *id);
+#endif
 
 /*
 ** If the SQLITE_ENABLE_REDEF_IO macro is defined, then the OS-layer
@@ -426,9 +454,12 @@ struct sqlite3OsVtbl {
 #endif
 
 
-#ifdef _SQLITE_OS_C_
+#if defined(_SQLITE_OS_C_) || defined(SQLITE_AMALGAMATION)
   /*
   ** The os.c file implements the global virtual function table.
+  ** We have to put this file here because the initializers
+  ** (ex: sqlite3OsRandomSeed) are macros that are about to be
+  ** redefined.
   */
   struct sqlite3OsVtbl sqlite3Os = {
     IF_DISKIO( sqlite3OsOpenReadWrite ),

@@ -7,17 +7,18 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <set>
 
 #include <boost/shared_ptr.hpp>
 
 #include "diff_patch.hh"
 #include "merge.hh"
-#include "packet.hh"
 #include "revision.hh"
 #include "roster_merge.hh"
 #include "safe_map.hh"
 #include "transforms.hh"
+#include "app_state.hh"
 
 using std::make_pair;
 using std::map;
@@ -34,9 +35,7 @@ get_file_details(roster_t const & ros, node_id nid,
   I(ros.has_node(nid));
   file_t f = downcast_to_file_t(ros.get_node(nid));
   fid = f->content;
-  split_path sp;
-  ros.get_name(nid, sp);
-  pth = file_path(sp);
+  ros.get_name(nid, pth);
 }
 
 void

@@ -7,17 +7,19 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "config.h"
 
+#include "base.hh"
 #include <fstream>
-#include <string>
-#include <vector>
+#include "vector.hh"
 
 #ifdef WIN32
 #include <windows.h>
 #endif
 
 #ifdef HAVE_MMAP
+#ifdef sun
+#define _XPG4_2
+#endif
 #include <sys/mman.h>
 #endif
 
@@ -335,7 +337,7 @@ struct parser
   void advance()
   {
     ttype = get_token(ist, token, line, col);
-    // cerr << tt2str(ttype) << ": " << token << endl;
+    // cerr << tt2str(ttype) << ": " << token << '\n';
   }
 
   bool nump() { return ttype == TOK_NUM; }
