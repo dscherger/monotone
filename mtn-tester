@@ -24,7 +24,7 @@ if (0)
 {
     if (! $mtn->branches(\@list))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -32,7 +32,7 @@ if (0)
     }
     if (! $mtn->certs(\@list, "ae65e53a3beca7841a87eb4525f39e3369107b82"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -41,11 +41,11 @@ if (0)
     if (! $mtn->cert("ae65e53a3beca7841a87eb4525f39e3369107b82", "status",
 		     "EXTERMINATE"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     if (! $mtn->children(\@list, "78bfd27c26a0c8ac249f30293e6ef6d5f44e6084"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -54,7 +54,7 @@ if (0)
     }
     if (! $mtn->children(\@list, "ae65e53a3beca7841a87eb4525f39e3369107b82"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -64,7 +64,7 @@ if (0)
 				    "ed89ce366c3316f189f01229adc863b3285130e2",
 				    "65e51cd2a00b4ee60b9fcc356e8e503d1e690414"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -76,7 +76,7 @@ if (0)
 				 "78bfd27c26a0c8ac249f30293e6ef6d5f44e6084",
 				 "ff7e085fab7385fbaabc57c1f53a9bbea59bf132"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -86,7 +86,7 @@ if (0)
 			     "ae65e53a3beca7841a87eb4525f39e3369107b82",
 			     "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -97,7 +97,7 @@ if (0)
 			     "d612b1ed732ea565085eede32bb2a1fae2ca8804",
 			     "Makefile"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -105,7 +105,7 @@ if (0)
     }
     if (! $mtn->descendents(\@list, "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -115,7 +115,7 @@ if (0)
 				"ae65e53a3beca7841a87eb4525f39e3369107b82",
 				"d612b1ed732ea565085eede32bb2a1fae2ca8804"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -123,7 +123,7 @@ if (0)
     }
     if (! $mtn->get_base_revision_id(\$data))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -133,7 +133,7 @@ if (0)
 				    "ae65e53a3beca7841a87eb4525f39e3369107b82",
 				    "Makefile"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -145,7 +145,7 @@ if (0)
 	 "Makefile",
 	 "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -153,7 +153,7 @@ if (0)
     }
     if (! $mtn->get_current_revision_id(\$data))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -161,7 +161,7 @@ if (0)
     }
     if (! $mtn->get_file(\$data, "f7bec98218953adbb833865ccc52ea74d410b24e"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -169,7 +169,7 @@ if (0)
     }
     if (! $mtn->get_file_of(\$data, "Makefile"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -177,7 +177,7 @@ if (0)
     }
     if (! $mtn->get_option(\$data, "database"))
     {
-	printf("OOPS: %s\n", $mtn->error_message());
+	printf(STDERR "OOPS: %s\n", $mtn->error_message());
     }
     else
     {
@@ -187,7 +187,7 @@ if (0)
 
 if (! $mtn->get_attributes(\$data, "script2"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -196,7 +196,7 @@ else
 
 if (! $mtn->get_attributes(\@list, "script2"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -205,7 +205,7 @@ else
 
 if (! $mtn->branches(\@list))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -214,7 +214,7 @@ else
 
 if (! $mtn->get_option(\$data, "database"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -223,7 +223,7 @@ else
 
 if (! $mtn->get_revision(\$data, "d83907887a2a35229ef361a74e98bd296d84e60c"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -232,7 +232,7 @@ else
 
 if (! $mtn->get_revision(\$data,))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -241,7 +241,7 @@ else
 
 if (! $mtn->get_manifest_of(\@list))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -250,7 +250,7 @@ else
 
 if (! $mtn->get_manifest_of(\$data))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -259,7 +259,7 @@ else
 
 if (! $mtn->certs(\@list, "d83907887a2a35229ef361a74e98bd296d84e60c"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -268,7 +268,7 @@ else
 
 if (! $mtn->certs(\$data, "d83907887a2a35229ef361a74e98bd296d84e60c"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -277,12 +277,12 @@ else
 
 if (! $mtn->db_set("database", "default-server", "www.test.com"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 
 if (! $mtn->db_get(\$data, "database", "default-server"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -291,7 +291,7 @@ else
 
 if (! $mtn->graph(\@list))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -300,7 +300,7 @@ else
 
 if (! $mtn->graph(\$data))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -309,7 +309,7 @@ else
 
 if (! $mtn->heads(\@list, "net.venge.monotone.www"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -318,7 +318,7 @@ else
 
 if (! $mtn->identify(\$data, "Makefile.am"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -327,7 +327,7 @@ else
 
 if (! $mtn->interface_version(\$data))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -336,7 +336,7 @@ else
 
 if (! $mtn->inventory(\$data))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -345,7 +345,7 @@ else
 
 if (! $mtn->inventory(\@list))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -354,7 +354,7 @@ else
 
 if (! $mtn->keys(\$data))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -363,7 +363,7 @@ else
 
 if (! $mtn->keys(\@list))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -372,7 +372,7 @@ else
 
 if (! $mtn->leaves(\@list))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -381,7 +381,7 @@ else
 
 if (! $mtn->parents(\@list, "d83907887a2a35229ef361a74e98bd296d84e60c"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -390,7 +390,7 @@ else
 
 if (! $mtn->roots(\@list))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -399,7 +399,7 @@ else
 
 if (! $mtn->select(\@list, "l:2007-01-01/b:net.venge.monotone"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -408,7 +408,7 @@ else
 
 if (! $mtn->tags(\$data, "net.venge.monotone"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -417,7 +417,7 @@ else
 
 if (! $mtn->tags(\@list, "net.venge.monotone"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -426,7 +426,7 @@ else
 
 if (! $mtn->get_revision(\$data, "492d55d26d09e8358bc239eaf2bf422350bf2d13"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {
@@ -435,7 +435,7 @@ else
 
 if (! $mtn->get_revision(\@list, "492d55d26d09e8358bc239eaf2bf422350bf2d13"))
 {
-    printf("OOPS: %s\n", $mtn->error_message());
+    printf(STDERR "OOPS: %s\n", $mtn->error_message());
 }
 else
 {

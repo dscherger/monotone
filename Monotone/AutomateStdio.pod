@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Monotone::automateStdio - Perl interface to Monotone via automate stdio
+Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
@@ -279,9 +279,10 @@ containing the following fields:
     revision_id - The id of a revision.
     parent_ids  - A list of parent revision ids.
 
-=item $mtn->heads(\@list, $branch_name)
+=item $mtn->heads(\@list[, $branch_name])
 
-Get a list of revision ids that are heads on the specified branch.
+Get a list of revision ids that are heads on the specified branch. If no branch
+is given then the workspace's branch is used.
 
 =item $mtn->identify(\$buffer, $file_name)
 
@@ -298,11 +299,35 @@ output from the command is simply placed into the variable. However if \@list
 is passed then the output is returned as a list of anonymous hashes, each one
 containing the following fields:
 
-    status       - The three inventory status characters for the file
-                   or directory.
-    crossref_one - The first cross-referencing number.
-    crossref_two - The second cross-referencing number.
-    name         - The name of the file or directory.
+    Prior to version 0.37 of Monotone:
+        status       - The three inventory status characters for the
+                       file or directory.
+        crossref_one - The first cross-referencing number.
+        crossref_two - The second cross-referencing number.
+        name         - The name of the file or directory.
+
+    From version 0.37 of Monotone onwards:
+        path     - The name of the file or directory.
+        old_type - The type of the entry in the base manifest. Values
+                   can be one of "directory", "file" or "none".
+        new_type - The type of the entry in the revision manifest.
+                   Values can be one of "directory", "file" or
+                   "none".
+        fs_type  - The type of the entry on the file system. Values
+                   can be one of "directory", "file" or "none".
+        old_path - The old name of the file or directory if it has
+                   been renamed in the revision manifest.
+        new_path - The new name of the file or directory if it has
+                   been renamed in the revision manifest.
+        status   - A list of status flags. Values can be one of
+                   "added", "dropped", "ignored", "invalid", "known",
+                   "missing", "rename_source", "rename_target" or
+                   "unknown".
+        changes - A list of change flags. Values can be one of
+                  "attrs" or "content".
+
+        Please note that some fields are not used by all entries, in
+        which case they are set to undef.
 
 =item $mtn->keys(\$buffer | \@list)
 
@@ -383,6 +408,12 @@ alarm(). Anyway if you want to do something periodically it is usually better
 to have a thread do that for you rather than use signals. If you have different
 opinions on this then please let me know.
 
+When the output of a command from the automate stdio interface changes
+dramatically, it will probably not be possible to protect Perl applications
+from those changes. This library is a convenience wrapper rather than something
+that will totally divorce you from the automate stdio interface. Also the
+changes are you will want the new type of output anyway.
+
 =head1 SEE ALSO
 
 http://monotone.ca
@@ -394,10 +425,8 @@ expression. This is not fool-proof but it is very unlikely that normal data
 would come close to exposing this flaw and it is a lot simpler and more
 efficient than the alternative.
 
-Whilst the object does know what version of mtn automate interface it is
-dealing with it currently does nothing with that knowledge. However, hopefully
-as usage of this library grows then it should not be too difficult to code in
-exceptions to cleanly deal with differences.
+Your mileage may vary if this library is used with versions of Monotone older
+than 0.35 (automate stdio interface version 4.3).
 
 No doubt other bugs will crawl out of the wood-work.
 

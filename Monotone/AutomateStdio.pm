@@ -42,6 +42,10 @@
 
 package Monotone::AutomateStdio;
 
+# ***** REQUIRED VERSION OF PERL *****
+
+require 5.008;
+
 # ***** REQUIRED PACKAGES *****
 
 use strict;
@@ -135,7 +139,7 @@ sub get_manifest_of($$;$);
 sub get_option($\$$);
 sub get_revision($\$$);
 sub graph($$);
-sub heads($\@$);
+sub heads($\@;$);
 sub identify($\$$);
 sub interface_version($\$);
 sub inventory($$);
@@ -194,6 +198,11 @@ sub new($;$)
     $this->{mtn_pid} = 0;
     $this->{cmd_cnt} = 0;
     $this->{mtn_err_msg} = "";
+
+    if ($this->{mtn_pid} == 0)
+    {
+	startup($this);
+    }
 
     bless($this);
     $this->SUPER::new() if $this->can("SUPER::new");
@@ -684,12 +693,25 @@ sub get_attributes($\$$)
     my Monotone::AutomateStdio $this = shift();
     my($ref, $file_name) = @_;
 
+    my $cmd;
+
+    # This command was renamed in version 0.36 (i/f version 5.x).
+
+    if ($this->{mtn_aif_major} >= 5)
+    {
+	$cmd = "get_attributes";
+    }
+    else
+    {
+	$cmd = "attributes";
+    }
+
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return mtn_command($this, "attributes", $ref, $file_name);
+	return mtn_command($this, $cmd, $ref, $file_name);
     }
     else
     {
@@ -702,7 +724,7 @@ sub get_attributes($\$$)
 	   $state,
 	   $value);
 
-	if (! mtn_command($this, "attributes", \@lines, $file_name))
+	if (! mtn_command($this, $cmd, \@lines, $file_name))
 	{
 	    return;
 	}
@@ -1053,7 +1075,7 @@ sub get_manifest_of($$;$)
 		$type = "directory";
 		get_quoted_value(@lines, $i, $name);
 	    }
-	    if ($type)
+	    if (defined($type))
 	    {
 		if ($type eq "file")
 		{
@@ -1354,7 +1376,8 @@ sub graph($$)
 #   Routine      - heads
 #
 #   Description  - Get a list of revision ids that are heads on the specified
-#                  branch.
+#                  branch. If no branch is given then the workspace's branch
+#                  is used.
 #
 #   Data         - $this        : The object.
 #                  \@list       : A reference to a list that is to contain the
@@ -1367,7 +1390,7 @@ sub graph($$)
 
 
 
-sub heads($\@$)
+sub heads($\@;$)
 {
 
     my Monotone::AutomateStdio $this = shift();
@@ -1478,31 +1501,133 @@ sub inventory($$)
     else
     {
 
-	my($i,
-	   $j,
-	   @lines,
-	   $name,
-	   $ref1,
-	   $ref2,
-	   $status);
+	my @lines;
 
 	if (! mtn_command($this, "inventory", \@lines))
 	{
 	    return;
 	}
 
-	# Reformat the data into a structured array.
+	# The output format of this command was switched over to a basic_io
+	# stanza in 0.37 (i/f version 6.x).
 
-	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	if ($this->{mtn_aif_major} < 6)
 	{
-	    if ($lines[$i] =~ m/^[A-Z ]{3} \d+ \d+ .+$/o)
+
+	    my($i,
+	       $j,
+	       $name,
+	       $ref1,
+	       $ref2,
+	       $status);
+
+	    # Reformat the data into a structured array.
+
+	    for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	    {
-		($status, $ref1, $ref2, $name) =
-		    ($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/o);
-		$$ref[$j ++] = {status       => $status,
-				crossref_one => $ref1,
-				crossref_two => $ref2,
-				name         => $name};
+		if ($lines[$i] =~ m/^[A-Z ]{3} \d+ \d+ .+$/o)
+		{
+		    ($status, $ref1, $ref2, $name) =
+			($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/o);
+		    $$ref[$j ++] = {status       => $status,
+				    crossref_one => $ref1,
+				    crossref_two => $ref2,
+				    name         => $name};
+		}
+	    }
+
+	}
+	else
+	{
+
+	    my(@changes,
+	       $fs_type,
+	       $i,
+	       $j,
+	       $list,
+	       $new_path,
+	       $new_type,
+	       $old_path,
+	       $old_type,
+	       $path,
+	       @status);
+
+	    # Reformat the data into a structured array.
+
+	    for ($i = $j = 0, $path = undef, @$ref = (); $i <= $#lines; ++ $i)
+	    {
+
+		# The `path' element always starts a new entry, the remaining
+		# lines may be in any order.
+
+		if ($lines[$i] =~ m/^ *path \"/o)
+		{
+
+		    # Save any existing data to a new entry in the output list.
+
+		    if (defined($path))
+		    {
+			$$ref[$j ++] = {path     => unescape($path),
+					old_type => $old_type,
+					new_type => $new_type,
+					fs_type  => $fs_type,
+					old_path => unescape($old_path),
+					new_path => unescape($new_path),
+					status   => [@status],
+					changes  => [@changes]};
+		    }
+
+		    $fs_type = $new_path = $new_type = $old_path = $old_type =
+			$path = undef;
+		    @changes = @status = ();
+
+		    get_quoted_value(@lines, $i, $path);
+
+		}
+		elsif ($lines[$i] =~ m/^ *old_type \"/o)
+		{
+		    ($old_type) =
+			($lines[$i] =~ m/^ *old_type \"([^\"]+)\"$/o);
+		}
+		elsif ($lines[$i] =~ m/^ *new_type \"/o)
+		{
+		    ($new_type) =
+			($lines[$i] =~ m/^ *new_type \"([^\"]+)\"$/o);
+		}
+		elsif ($lines[$i] =~ m/^ *fs_type \"/o)
+		{
+		    ($fs_type) =
+			($lines[$i] =~ m/^ *fs_type \"([^\"]+)\"$/o);
+		}
+		elsif ($lines[$i] =~ m/^ *old_path \"/o)
+		{
+		    get_quoted_value(@lines, $i, $old_path);
+		}
+		elsif ($lines[$i] =~ m/^ *new_path \"/o)
+		{
+		    get_quoted_value(@lines, $i, $new_path);
+		}
+		elsif ($lines[$i] =~ m/^ *status \"/o)
+		{
+		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/o);
+		    @status = split(/\" \"/o, $list);
+		}
+		elsif ($lines[$i] =~ m/^ *changes \"/o)
+		{
+		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/o);
+		    @changes = split(/\" \"/o, $list);
+		}
+	    }
+	    if (defined($path))
+	    {
+		$$ref[$j ++] = {path     => unescape($path),
+				old_type => $old_type,
+				new_type => $new_type,
+				fs_type  => $fs_type,
+				old_path => unescape($old_path),
+				new_path => unescape($new_path),
+				status   => [@status],
+				changes  => [@changes]};
 	    }
 	}
 
@@ -1600,7 +1725,7 @@ sub keys($$)
 		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/o);
 		    @priv_loc = split(/\" \"/o, $list);
 		}
-		if ($priv_hash)
+		if (defined($priv_hash))
 		{
 		    $$ref[$j ++] = {type              => "public-private",
 				    name              => unescape($name),
@@ -2320,6 +2445,8 @@ sub unescape($)
 {
 
     my $data = $_[0];
+
+    return undef unless defined($data);
 
     $data =~ s/\\\\/\\/g;
     $data =~ s/\\\"/\"/g;
