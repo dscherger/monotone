@@ -395,9 +395,9 @@ anything.
 
 =head1 NOTES
 
-The Monotone::AutomateStdio class, with the exception of the $mtn->db_set()
-method, provides a read-only interface to a Monotone database. This is a
-deliberate safety precaution.
+The Monotone::AutomateStdio class, with the exception of the $mtn->cert() and
+$mtn->db_set() methods, provides a read-only interface to a Monotone
+database. This is a deliberate safety precaution for now.
 
 In order to reliably shutdown the mtn subprocess, the alarm() routine is used
 and will consequently reset any SIGALRM timers. In C I would obviously use
