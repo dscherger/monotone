@@ -101,9 +101,8 @@ print_indented_set(ostream & os,
   for (set<file_path>::const_iterator i = s.begin();
        i != s.end(); i++)
     {
-      string str = lexical_cast<string>(*i);
-      if (str.empty())
-        str = "."; // project root
+      string str = i->as_relative();
+
       if (cols > 8 && cols + str.size() + 1 >= max_cols)
         {
           cols = 8;
@@ -131,8 +130,8 @@ changes_summary::print(ostream & os, size_t max_cols) const
       for (map<file_path, file_path>::const_iterator
            i = cs.nodes_renamed.begin();
            i != cs.nodes_renamed.end(); i++)
-        os << "        " << i->first
-           << " to " << i->second << '\n';
+        os << "        " << i->first.as_relative()
+           << " to " << i->second.as_relative() << '\n';
     }
 
   if (! cs.files_added.empty())

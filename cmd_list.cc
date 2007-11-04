@@ -347,24 +347,22 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
 }
 
 static void
-print_paths(path_set const & paths)
+print_paths(set<file_path> const & paths)
 {
-  vector<split_path> relative_paths;
+  set<string> formatted;
 
-  for (path_set::const_iterator i = paths.begin(); i != paths.end(); ++i)
+  for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); ++i)
     {
-      relative_paths.push_back(make_relative(*i));
+      formatted.insert(i->as_relative());
     }
 
-  sort(relative_paths.begin(), relative_paths.end());
+  //sort(formatted.begin(), formatted.end());
 
-  for (vector<split_path>::const_iterator sp = relative_paths.begin();
-       sp != relative_paths.end(); sp++)
-    cout << file_path(*sp).as_external() << "\n";
+  copy(formatted.begin(), formatted.end(),
+       ostream_iterator<string>(cout, "\n"));
+
 }
 
-static void
-ls_known(app_state & app, vector<utf8> const & args)
 CMD(known, "known", "", CMD_REF(list), "",
     N_("Lists workspace files that belong to the current branch"),
     "",
@@ -382,7 +380,7 @@ CMD(known, "known", "", CMD_REF(list), "",
                         new_roster, app);
 
   // to be printed sorted
-  vector<file_path> print_paths;
+  set<file_path> known;
 
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
@@ -390,19 +388,15 @@ CMD(known, "known", "", CMD_REF(list), "",
     {
       node_id nid = i->first;
 
-      if (!new_roster.is_root(nid)
-          && mask.includes(new_roster, nid))
+      if (mask.includes(new_roster, nid))
         {
           file_path p;
           new_roster.get_name(nid, p);
-          print_paths.push_back(p);
+          known.insert(p);
         }
     }
     
-  sort(print_paths.begin(), print_paths.end());
-  copy(print_paths.begin(), print_paths.end(),
-       ostream_iterator<file_path>(cout, "\n"));
-  print_paths(paths);
+  print_paths(known);
 }
 
 CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
@@ -425,17 +419,12 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
 
   utf8 const & realname = execid[execid.size() - 1];
   if (realname() == "ignored")
-    copy(ignored.begin(), ignored.end(),
-         ostream_iterator<file_path>(cout, "\n"));
-  if (want_ignored)
     print_paths(ignored);
   else
     {
       I(realname() == "unknown");
-      copy(unknown.begin(), unknown.end(),
-           ostream_iterator<file_path>(cout, "\n"));
+      print_paths(unknown);
     }
-    print_paths(unknown);
 }
 
 CMD(missing, "missing", "", CMD_REF(list), "",
@@ -454,8 +443,6 @@ CMD(missing, "missing", "", CMD_REF(list), "",
   set<file_path> missing;
   app.work.find_missing(current_roster_shape, mask, missing);
 
-  copy(missing.begin(), missing.end(),
-       ostream_iterator<file_path>(cout, "\n"));
   print_paths(missing);
 }
 
@@ -485,7 +472,7 @@ CMD(changed, "changed", "", CMD_REF(list), "",
   make_restricted_revision(parents, new_roster, mask, rrev);
 
   // to be printed sorted, with duplicates removed
-  set<file_path> print_paths;
+  set<file_path> changed;
 
   for (edge_map::const_iterator i = rrev.edges.begin();
        i != rrev.edges.end(); i++)
@@ -504,13 +491,11 @@ CMD(changed, "changed", "", CMD_REF(list), "",
             new_roster.get_name(*i, p);
           else
             old_roster.get_name(*i, p);
-          print_paths.insert(p);
+          changed.insert(p);
         }
     }
 
-  copy(print_paths.begin(), print_paths.end(),
-       ostream_iterator<file_path>(cout, "\n"));
-  print_paths(paths);
+  print_paths(changed);
 }
 
 namespace

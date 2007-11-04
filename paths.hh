@@ -203,6 +203,8 @@ public:
   // does dirname() and basename() at the same time, for efficiency
   void dirname_basename(file_path &, path_component &) const;
   
+  std::string as_relative() const;
+
   // returns the number of /-separated components of the path.
   // The empty path has depth zero.
   unsigned int depth() const;

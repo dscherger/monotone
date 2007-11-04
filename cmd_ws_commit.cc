@@ -56,39 +56,45 @@ revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summ
 
       for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
             i != cs.nodes_deleted.end(); ++i)
-        out += (F("  dropped  %s") % *i).str() += '\n';
+        out += (F("  dropped  %s") 
+                % i->as_relative()).str() += '\n';
 
       for (map<file_path, file_path>::const_iterator
             i = cs.nodes_renamed.begin();
             i != cs.nodes_renamed.end(); ++i)
         out += (F("  renamed  %s\n"
-                   "       to  %s") % i->first % i->second).str() += '\n';
+                  "       to  %s") 
+                % i->first.as_relative() 
+                % i->second.as_relative()).str() += '\n';
 
       for (set<file_path>::const_iterator i = cs.dirs_added.begin();
             i != cs.dirs_added.end(); ++i)
-        out += (F("  added    %s") % *i).str() += '\n';
+        out += (F("  added    %s") % i->as_relative()).str() += '\n';
 
       for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
             i != cs.files_added.end(); ++i)
-        out += (F("  added    %s") % i->first).str() += '\n';
+        out += (F("  added    %s") 
+                % i->first.as_relative()).str() += '\n';
 
       for (map<file_path, pair<file_id, file_id> >::const_iterator
               i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
-        out += (F("  patched  %s") % (i->first)).str() += '\n';
+        out += (F("  patched  %s") 
+                % (i->first.as_relative())).str() += '\n';
 
       for (map<pair<file_path, attr_key>, attr_value >::const_iterator
              i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
         out += (F("  attr on  %s\n"
                    "    attr   %s\n"
                    "    value  %s")
-                 % (i->first.first) % (i->first.second) % (i->second)
-                 ).str() += "\n";
+                % (i->first.first.as_relative()) 
+                % (i->first.second) % (i->second)).str() += "\n";
 
       for (set<pair<file_path, attr_key> >::const_iterator
              i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
         out += (F("  unset on %s\n"
                    "      attr %s")
-                 % (i->first) % (i->second)).str() += "\n";
+                % (i->first.as_relative()) 
+                % (i->second)).str() += "\n";
     }
     summary = utf8(out);
 }

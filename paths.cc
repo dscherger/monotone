@@ -65,7 +65,7 @@ struct access_tracker
 
 // paths to use in interpreting paths from various sources,
 // conceptually:
-//    working_root / initial_rel_path == initial_abs_path
+//    workspace_root / initial_rel_path == initial_abs_path
 
 // initial_abs_path is for interpreting relative system_path's
 static access_tracker<system_path> initial_abs_path;
@@ -595,48 +595,6 @@ file_path::dirname_basename(file_path & dir, path_component & base) const
     }
 }
 
-split_path
-make_relative(split_path const & sp)
-{
-  I(initial_rel_path.initialized);
-  fs::path base = initial_rel_path.get_but_unused();
-  file_path fp = file_path_internal(base.string());
-  split_path bp;
-  fp.split(bp);
-
-  split_path relative;
-  static const path_component dot(".");
-  static const path_component dotdot("..");
-  
-  relative.push_back(the_null_component);
-
-  split_path::const_iterator i = sp.begin();
-  split_path::const_iterator j = bp.begin();
-
-  while (i != sp.end() && j != bp.end() && *i == *j)
-    {
-      i++;
-      j++;
-    }
-  while (j != bp.end())
-    {
-      relative.push_back(dotdot);
-      j++;
-    }
-
-  if (relative.size() == 1)
-    relative.push_back(dot);
-
-  while (i != sp.end())
-    {
-      relative.push_back(*i);
-      i++;
-    }
-
-  return relative;
-}
-
-
 // count the number of /-separated components of the path.
 unsigned int
 file_path::depth() const
@@ -673,6 +631,82 @@ any_path::as_external() const
   return out();
 #endif
 }
+
+string
+file_path::as_relative() const
+{
+  I(initial_rel_path.initialized);
+
+  string base = initial_rel_path.get_but_unused();
+  string::size_type prefix = 0;
+
+  while (prefix < data.length() && 
+         prefix < base.length() && 
+         data[prefix] == base[prefix])
+    ++prefix;
+
+  if (prefix < data.length() && prefix < base.length())
+    {
+      // possible match, back up to the last / character
+      while (prefix > 0 && (base[prefix] != '/' || data[prefix] != '/'))
+	--prefix;
+    }
+  else if (prefix >= data.length() && prefix < base.length())
+    {
+      // base path below this path
+      while (prefix > 0 && base[prefix] != '/')
+	--prefix;
+    }
+  else if (prefix < data.length() && prefix >= base.length())
+    {
+      // this path below base path
+      while (prefix > 0 && data[prefix] != '/')
+	--prefix;
+    }
+  // else exact match of entire string
+
+  string::size_type base_suffix, data_suffix;
+
+  // normalize suffixes so they never start with a / character
+
+  if (prefix < base.length() && base[prefix] == '/')
+    base_suffix = prefix+1;
+  else
+    base_suffix = prefix;
+
+  if (prefix < data.length() && data[prefix] == '/')
+    data_suffix = prefix+1;
+  else
+    data_suffix = prefix;
+
+  // up from the base path's directories
+
+  string relative;
+
+  if (base_suffix < base.length()) relative.append("..");
+
+  for (string::size_type i = base_suffix; i < base.length(); i++)
+    if (base[i] == '/') 
+      relative.append("/..");
+
+  // down into this path's directories
+
+  if (data_suffix < data.length())
+    {
+      if (!relative.empty()) 
+        relative.append("/");
+      relative.append(data.substr(data_suffix));
+    }
+
+  // special case for the root directory
+
+  if (relative.empty()) 
+    relative.append(".");
+
+  // FIXME: this should probably return a string in the user's charset
+  return relative;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // writing out paths
