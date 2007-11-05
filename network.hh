@@ -80,7 +80,7 @@ public:
   state request_service(service * newsrv);
 };
 
-void serve_connections_forever(utf8 const & addr, app_state & app);
+void serve_connections_forever(std::list<utf8> const & addrs, app_state & app);
 void serve_single_on_stdio(app_state & app);
 
 

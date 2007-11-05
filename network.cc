@@ -1,3 +1,5 @@
+#include "base.hh"
+
 #include "netio.hh"
 #include "network.hh"
 #include "sanity.hh"
@@ -56,7 +58,8 @@ class input_manager
 public:
   input_manager(bool use_transport_auth)
     : have_cmd(false),
-      read_hmac(constants::netsync_key_initializer, use_transport_auth)
+      read_hmac(netsync_session_key(constants::netsync_key_initializer),
+                use_transport_auth)
   {}
   inline bool full() const
   {
@@ -122,7 +125,8 @@ class output_manager
 public:
   output_manager(bool use_transport_auth)
     : buffer_size(0),
-      write_hmac(constants::netsync_key_initializer, use_transport_auth)
+      write_hmac(netsync_session_key(constants::netsync_key_initializer),
+                 use_transport_auth)
   {}
   inline bool full() const
   {
@@ -352,10 +356,10 @@ client_session::client_session(utf8 const & address, app_state & app)
   shared_ptr<Netxx::StreamBase> server;
   uri u;
   vector<string> argv;
-  if (parse_uri(address(), u)
-      && app.lua.hook_get_netsync_connect_command(u,
-                                                  global_sanity.debug,
-                                                  argv))
+  parse_uri(address(), u);
+  if (app.lua.hook_get_netsync_connect_command(u,
+                                               global_sanity.debug_p(),
+                                               argv))
     {
       I(argv.size() > 0);
       string cmd = argv[0];
@@ -888,13 +892,10 @@ run_network_loop(bool client,
 
 shared_ptr<Netxx::StreamServer>
 make_server(bool use_ipv6, app_state & app,
-            string & listenaddr)
+            std::list<utf8> const & addresses)
 {
-  Netxx::port_type port;
-  if (app.opts.bind_port().empty())
-    port = std::atoi(app.opts.bind_port().c_str());
-  else
-    port = static_cast<Netxx::port_type>(constants::netsync_default_port);
+  Netxx::port_type default_port
+    = static_cast<Netxx::port_type>(constants::netsync_default_port);
 
   Netxx::Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds));
 
@@ -906,19 +907,31 @@ make_server(bool use_ipv6, app_state & app,
         {
           Netxx::Address addr(use_ipv6);
 
-          if (!app.opts.bind_address().empty())
-            addr.add_address(app.opts.bind_address().c_str(), port);
+          if (addresses.empty())
+            addr.add_all_addresses(default_port);
           else
-            addr.add_all_addresses(port);
+            {
+              for (std::list<utf8>::const_iterator it = addresses.begin();
+                   it != addresses.end(); ++it)
+                {
+                  string const & address = (*it)();
+                  if (!address.empty())
+                    {
+                      size_t l_colon = address.find(':');
+                      size_t r_colon = address.rfind(':');
+
+                      if (l_colon == r_colon && l_colon == 0)
+                        addr.add_all_addresses(lexical_cast<int>(address.substr(1)));
+                      else
+                        addr.add_address(address.c_str(), default_port);
+                    }
+                }
+            }
 
           shared_ptr<Netxx::StreamServer> srv
             (new Netxx::StreamServer(addr, timeout));
 
-          const char * name = addr.get_name();
-          listenaddr = (FL("%s : %s")
-                        % (name != NULL ? name : _("<all interfaces>"))
-                        % lexical_cast<string>(addr.get_port())).str();
-          P(F("beginning service on %s") % listenaddr);
+          P(F("beginning service on %s") % addr.get_name());
 
           return srv;
         }
@@ -949,7 +962,8 @@ make_server(bool use_ipv6, app_state & app,
 }
 
 void
-serve_connections_forever(utf8 const & addr, app_state & app)
+serve_connections_forever(std::list<utf8> const & addrs,
+                          app_state & app)
 {
 #ifdef USE_IPV6
   bool use_ipv6 = true;
@@ -957,10 +971,9 @@ serve_connections_forever(utf8 const & addr, app_state & app)
   bool use_ipv6 = false;
 #endif
   ignore_sigpipe();
-  string listenaddr;
-  shared_ptr<Netxx::StreamServer> srv = make_server(use_ipv6, app, listenaddr);
+  shared_ptr<Netxx::StreamServer> srv = make_server(use_ipv6, app, addrs);
   map<Netxx::socket_type, shared_ptr<session> > sessions;
-  run_network_loop(false, srv, sessions, app, listenaddr);
+  run_network_loop(false, srv, sessions, app);
 }
 
 void

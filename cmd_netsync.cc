@@ -202,7 +202,6 @@ CMD(sync, "sync", "", CMD_REF(network),
   utf8 addr;
   globish include_pattern, exclude_pattern;
   extract_address(args, addr, app);
-  find_key_if_needed(addr, app);
   extract_patterns(args, include_pattern, exclude_pattern, app);
   find_key_if_needed(addr, include_pattern, exclude_pattern, app);
 
@@ -332,8 +331,6 @@ CMD(clone, "clone", "", CMD_REF(network),
                          app);
   client_session sess(addr, app);
   sess.request_service(&puller);
-
-  run_netsync_protocol(client_voice, sink_role, uris,
 
   change_current_working_dir(workspace_dir);
 
@@ -465,7 +462,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     }
   else
     {
-      serve_connections_forever(app.opts.bind_address, app);
+      serve_connections_forever(app.opts.bind_uris, app);
     }
 }
 

@@ -601,8 +601,6 @@ netsync::netsync(protocol_role role,
   app(app),
   remote_peer_key_hash(""),
   remote_peer_key_name(""),
-  write_hmac(netsync_session_key(constants::netsync_key_initializer),
-             app.opts.use_transport_auth),
   authenticated(false),
   byte_in_ticker(NULL),
   byte_out_ticker(NULL),
@@ -2299,80 +2297,6 @@ bool netsync::process(transaction_guard & guard)
     }
 }
 
-  if (app.lua.hook_get_netsync_connect_command(u,
-  I(addresses.size() == 1);
-  utf8 address(*addresses.begin());
-      i->second->maybe_say_goodbye(guard);
-          else
-            {
-              for (std::list<utf8>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
-                {
-                  const utf8 & address = *it;
-                  if (!address().empty())
-                    {
-                      size_t l_colon = address().find(':');
-                      size_t r_colon = address().rfind(':');
-              
-                      if (l_colon == r_colon && l_colon == 0)
-                        {
-                          // can't be an IPv6 address as there is only one colon
-                          // must be a : followed by a port
-                          string port_str = address().substr(1);
-                          addr.add_all_addresses(std::atoi(port_str.c_str()));
-                        }
-                      else
-                        addr.add_address(address().c_str(), default_port);
-                    }
-                }
-            }
-                guard = shared_ptr<transaction_guard>(new transaction_guard(app.db));
-
-              I(guard);
-
-              while (!server_initiated_sync_requests.empty())
-                {
-                  server_initiated_sync_request request
-                    = server_initiated_sync_requests.front();
-                  server_initiated_sync_requests.pop_front();
-
-                  utf8 addr(request.address);
-                  globish inc(request.include);
-                  globish exc(request.exclude);
-
-                  try
-                    {
-                      P(F("connecting to %s") % addr());
-                      shared_ptr<Netxx::StreamBase> server
-                        = build_stream_to_server(app, inc, exc,
-                                                 addr, default_port,
-                                                 timeout);
-
-                      // 'false' here means not to revert changes when
-                      // the SockOpt goes out of scope.
-                      Netxx::SockOpt socket_options(server->get_socketfd(), false);
-                      socket_options.set_non_blocking();
-
-                      protocol_role role = source_and_sink_role;
-                      if (request.what == "sync")
-                        role = source_and_sink_role;
-                      else if (request.what == "push")
-                        role = source_role;
-                      else if (request.what == "pull")
-                        role = sink_role;
-
-                      shared_ptr<session> sess(new session(role, client_voice,
-                                                           inc, exc,
-                                                           app, addr(), server, true));
-
-                      sessions.insert(make_pair(server->get_socketfd(), sess));
-                    }
-                  catch (Netxx::NetworkException & e)
-                    {
-                      P(F("Network error: %s") % e.what());
-                    }
-                }
-
-              arm_sessions_and_calculate_probe(probe, sessions, armed_sessions, *guard);
 void
 insert_with_parents(revision_id rev,
                     refiner & ref,
