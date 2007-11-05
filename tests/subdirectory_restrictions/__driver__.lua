@@ -30,30 +30,30 @@ check(qgrep("bar/bar", "stdout"))
 
 chdir("foo")
 check(mtn("--norc", "status"), 0, true)
-check(qgrep("foo/foo", "stdout"))
-check(qgrep("bar/bar", "stdout"))
+check(qgrep("foo", "stdout"))
+check(qgrep("../bar/bar", "stdout"))
 
 check(mtn("--norc", "status", "."), 0, true)
-check(qgrep("foo/foo", "stdout"))
+check(qgrep("foo", "stdout"))
 check(not qgrep("bar/bar", "stdout"))
 
 check(mtn("--norc", "status", ".."), 0, true)
-check(qgrep("foo/foo", "stdout"))
-check(qgrep("bar/bar", "stdout"))
+check(qgrep("foo", "stdout"))
+check(qgrep("../bar/bar", "stdout"))
 chdir("..")
 
 chdir("bar")
 check(mtn("--norc", "status"), 0, true)
-check(qgrep("foo/foo", "stdout"))
-check(qgrep("bar/bar", "stdout"))
+check(qgrep("../foo/foo", "stdout"))
+check(qgrep("bar", "stdout"))
 
 check(mtn("--norc", "status", "."), 0, true)
-check(not qgrep("foo/foo", "stdout"))
-check(qgrep("bar/bar", "stdout"))
+check(not qgrep("foo", "stdout"))
+check(qgrep("bar", "stdout"))
 
 check(mtn("--norc", "status", ".."), 0, true)
-check(qgrep("foo/foo", "stdout"))
-check(qgrep("bar/bar", "stdout"))
+check(qgrep("../foo/foo", "stdout"))
+check(qgrep("bar", "stdout"))
 chdir("..")
 
 -- TODO: test a.c a.h a/foo.c a/foo.h from inside and outside of a

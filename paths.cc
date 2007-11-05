@@ -151,7 +151,7 @@ has_bad_component_chars(string const & pc)
         return true;
     }
   return false;
-  
+
 }
 
 static bool
@@ -298,7 +298,7 @@ normalize_path(string const & in)
             }
         }
 #endif
-      
+
       I(!is_absolute_here(inT));
       if (inT.size() == 0)
         return leader;
@@ -587,7 +587,7 @@ file_path::dirname_basename(file_path & dir, path_component & base) const
       dir = file_path();
       base = path_component(s, 0);
     }
-  else 
+  else
     {
       I(sep < s.size() - 1); // last component must have at least one char
       dir = file_path(s, 0, sep);
@@ -635,13 +635,15 @@ any_path::as_external() const
 string
 file_path::as_relative() const
 {
-  I(initial_rel_path.initialized);
+  
+  if (!initial_rel_path.initialized)
+    return as_internal();
 
   string base = initial_rel_path.get_but_unused();
   string::size_type prefix = 0;
 
-  while (prefix < data.length() && 
-         prefix < base.length() && 
+  while (prefix < data.length() &&
+         prefix < base.length() &&
          data[prefix] == base[prefix])
     ++prefix;
 
@@ -649,19 +651,19 @@ file_path::as_relative() const
     {
       // possible match, back up to the last / character
       while (prefix > 0 && (base[prefix] != '/' || data[prefix] != '/'))
-	--prefix;
+        --prefix;
     }
   else if (prefix >= data.length() && prefix < base.length())
     {
       // base path below this path
       while (prefix > 0 && base[prefix] != '/')
-	--prefix;
+        --prefix;
     }
   else if (prefix < data.length() && prefix >= base.length())
     {
       // this path below base path
       while (prefix > 0 && data[prefix] != '/')
-	--prefix;
+        --prefix;
     }
   // else exact match of entire string
 
@@ -686,21 +688,21 @@ file_path::as_relative() const
   if (base_suffix < base.length()) relative.append("..");
 
   for (string::size_type i = base_suffix; i < base.length(); i++)
-    if (base[i] == '/') 
+    if (base[i] == '/')
       relative.append("/..");
 
   // down into this path's directories
 
   if (data_suffix < data.length())
     {
-      if (!relative.empty()) 
+      if (!relative.empty())
         relative.append("/");
       relative.append(data.substr(data_suffix));
     }
 
   // special case for the root directory
 
-  if (relative.empty()) 
+  if (relative.empty())
     relative.append(".");
 
   // FIXME: this should probably return a string in the user's charset
@@ -928,7 +930,7 @@ find_bookdir(system_path const & root, path_component const & bookdir,
       goto found;
     }
   return false;
-    
+
  found:
   // check for _MTN/. and _MTN/.. to see if mt dir is readable
   try
@@ -991,7 +993,7 @@ find_and_go_to_workspace(string const & search_root)
                                F("search root '%s' does not exist") % root,
                                F("search root '%s' is not a directory") % root);
     }
-  
+
   // first look for the current name of the bookkeeping directory.
   // if we don't find it, look for it under the old name, so that
   // migration has a chance to work.
@@ -1056,7 +1058,7 @@ UNIT_TEST(paths, path_component)
                             "_MTN",
                             0 };
 
-  
+
   for (char const * const * c = baddies; *c; ++c)
     {
       // the comparison prevents the compiler from eliminating the
@@ -1072,7 +1074,7 @@ UNIT_TEST(paths, path_component)
   UNIT_TEST_CHECK_THROW(file_path_internal("foo") / path_component(),
                         logic_error);
 }
-                            
+
 
 UNIT_TEST(paths, file_path_internal)
 {
@@ -1388,7 +1390,7 @@ UNIT_TEST(paths, basename)
                           FL("basename('%s') = '%s' (expect '%s')")
                           % p->in % pc % p->out);
     }
-  
+
   UNIT_TEST_CHECKPOINT("bookkeeping_path basenames");
   for (struct t const *p = bp_cases; p->in; p++)
     {
@@ -1404,7 +1406,7 @@ UNIT_TEST(paths, basename)
 
   initial_abs_path.unset();
   initial_abs_path.set(system_path("/a/b"), true);
-  
+
   for (struct t const *p = sp_cases; p->in; p++)
     {
       system_path fp(p->in);
@@ -1491,7 +1493,7 @@ UNIT_TEST(paths, dirname)
   };
 
   initial_abs_path.unset();
-  
+
   UNIT_TEST_CHECKPOINT("file_path dirnames");
   for (struct t const *p = fp_cases; p->in; p++)
     {
@@ -1838,7 +1840,7 @@ UNIT_TEST(paths, ordering_random)
 
       do b = rng.uniform(0x7f - 0x20) + 0x20;
       while (b == 0x5c || b == 0x2f || b == 0x2e); // '\\', '/', '.'
-      
+
       do c = rng.uniform(0x7f - 0x20) + 0x20;
       while (c == 0x5c || c == 0x2f || c == 0x2e); // '\\', '/', '.'
 
@@ -1871,7 +1873,7 @@ UNIT_TEST(paths, ordering_random)
 
       do d = rng.uniform(0x7f - 0x20) + 0x20;
       while (d == 0x5c || d == 0x2f || d == 0x2e); // '\\', '/', '.'
-      
+
 
       x[0] = a;
       x[1] = b;
@@ -1886,7 +1888,7 @@ UNIT_TEST(paths, ordering_random)
         test_path_less_than(y, x);
     }
 
-  
+
   UNIT_TEST_CHECKPOINT("a/b and c/d");
   x[1] = '/';
   for (i = 0; i < ntrials; i++)
@@ -1896,7 +1898,7 @@ UNIT_TEST(paths, ordering_random)
 
       do b = rng.uniform(0x7f - 0x20) + 0x20;
       while (b == 0x5c || b == 0x2f || b == 0x2e); // '\\', '/', '.'
-      
+
       do c = rng.uniform(0x7f - 0x20) + 0x20;
       while (c == 0x5c || c == 0x2f || c == 0x2e); // '\\', '/', '.'
 
@@ -2002,6 +2004,50 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
     UNIT_TEST_CHECK(!bookkeeping_path
                  ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
+
+static void
+check_relative_path(string const & path, string const & base, string const & expected)
+{
+  initial_rel_path.set(string(base), true);
+  file_path test = file_path_internal(path);
+  string actual = test.as_relative();
+
+  UNIT_TEST_CHECK_MSG(test.as_relative() == expected,
+                      FL("'%s' relative to '%s' was '%s' expected '%s'")
+                      % path
+                      % base
+                      % test.as_relative()
+                      % expected);
+
+}
+
+UNIT_TEST(paths, relative)
+{
+  // exact matches
+  check_relative_path("", "", ".");
+  check_relative_path("a", "a", ".");
+  check_relative_path("a/b", "a/b", ".");
+
+  // data below base
+  check_relative_path("a", "", "a");
+  check_relative_path("a/b/c", "a", "b/c");
+  check_relative_path("a/b/c", "a/b", "c");
+  check_relative_path("a/b/c", "a/b/c", ".");
+
+  // data above base
+  check_relative_path("", "a/b/c", "../../..");
+  check_relative_path("a", "a/b/c", "../..");
+  check_relative_path("a/b", "a/b/c", "..");
+  check_relative_path("a/b/c", "a/b/c", ".");
+
+  check_relative_path("hello", "goodbye", "../hello");
+  check_relative_path("foobarbaz", "foobar/baz", "../../foobarbaz");
+  check_relative_path("a/b/c/d/e/f", "a/b/c/d/e/x", "../f");
+  check_relative_path("a/b/c", "a/y/z", "../../b/c");
+  check_relative_path("a/b/c", "x/y/z", "../../../a/b/c");
+  check_relative_path("foo/bar/baz", "foo/bar/fud", "../baz");
+}
+
 
 #endif // BUILD_UNIT_TESTS
 

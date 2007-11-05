@@ -23,7 +23,7 @@ right = base_revision()
 check(mtn("merge_into_workspace", left), 0, false, false)
 
 check(mtn("ls", "changed"), 0, "file1\nfile2\nfile3\n", nil)
-check(mtn("ls", "known"), 0, "file1\nfile2\nfile3\nfile4\n", nil)
+check(mtn("ls", "known"), 0, ".\nfile1\nfile2\nfile3\nfile4\n", nil)
 
 -- these rely on the precise set of junk files that the test suite
 -- dumps into the current directory, and on the fact that it doesn't

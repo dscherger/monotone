@@ -11,7 +11,7 @@ check(not qgrep('foo/a$', "stdout"))
 check(not qgrep('foo/b$', "stdout"))
 
 check(indir("foo", mtn("ls", "unknown")), 0, true, false)
-check(qgrep('foo$', "stdout"))
-check(not qgrep('foo/a$', "stdout"))
-check(not qgrep('foo/b$', "stdout"))
+check(qgrep('^\.$', "stdout"))
+check(not qgrep('^a$', "stdout"))
+check(not qgrep('^b$', "stdout"))
 
