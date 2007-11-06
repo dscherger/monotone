@@ -347,16 +347,15 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
 }
 
 static void
-print_paths(set<file_path> const & paths)
+print_formatted_paths(set<file_path> const & paths)
 {
-  set<string> formatted;
+  // use a vector here to preserve the order of the input set
+  vector<string> formatted;
 
   for (set<file_path>::const_iterator i = paths.begin(); i != paths.end(); ++i)
     {
-      formatted.insert(i->as_relative());
+      formatted.push_back(i->as_relative());
     }
-
-  //sort(formatted.begin(), formatted.end());
 
   copy(formatted.begin(), formatted.end(),
        ostream_iterator<string>(cout, "\n"));
@@ -395,8 +394,8 @@ CMD(known, "known", "", CMD_REF(list), "",
           known.insert(p);
         }
     }
-    
-  print_paths(known);
+
+  print_formatted_paths(known);
 }
 
 CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
@@ -419,11 +418,11 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
 
   utf8 const & realname = execid[execid.size() - 1];
   if (realname() == "ignored")
-    print_paths(ignored);
+    print_formatted_paths(ignored);
   else
     {
       I(realname() == "unknown");
-      print_paths(unknown);
+      print_formatted_paths(unknown);
     }
 }
 
@@ -443,7 +442,7 @@ CMD(missing, "missing", "", CMD_REF(list), "",
   set<file_path> missing;
   app.work.find_missing(current_roster_shape, mask, missing);
 
-  print_paths(missing);
+  print_formatted_paths(missing);
 }
 
 
@@ -495,7 +494,7 @@ CMD(changed, "changed", "", CMD_REF(list), "",
         }
     }
 
-  print_paths(changed);
+  print_formatted_paths(changed);
 }
 
 namespace
@@ -557,7 +556,7 @@ CMD_AUTOMATE(keys, "",
 {
   N(args.size() == 0,
     F("no arguments needed"));
-  
+
   vector<rsa_keypair_id> dbkeys;
   vector<rsa_keypair_id> kskeys;
   // public_hash, private_hash, public_location, private_location
