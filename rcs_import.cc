@@ -1086,15 +1086,18 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
           cvs_event_ptr e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
-          done.insert(e);
+
+          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          if (ity != done.end())
+            continue;
+          done.insert(ity, e);
 
           if (e->adj_time <= time_goal)
             {
               price++;
               for (dependency_iter j = e->dependents.begin();
                    j != e->dependents.end(); ++j)
-                if (done.find(*j) == done.end())
-                  stack.push(make_pair(*j, time_goal + 1));
+                stack.push(make_pair(*j, time_goal + 1));
             }
         }
 
@@ -1115,15 +1118,18 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
           cvs_event_ptr e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
-          done.insert(e);
+
+          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          if (ity != done.end())
+            continue;
+          done.insert(ity, e);
 
           if (e->adj_time >= time_goal)
             {
               price++;
               for (dependency_iter j = e->dependencies.begin();
                    j != e->dependencies.end(); ++j)
-                if (done.find(*j) == done.end())
-                  stack.push(make_pair(*j, time_goal - 1));
+                stack.push(make_pair(*j, time_goal - 1));
             }
         }
 
@@ -1159,7 +1165,11 @@ solve_violation(cvs_history & cvs, t_solution & solution)
           cvs_event_ptr e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
-          done.insert(e);
+
+          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          if (ity != done.end())
+            continue;
+          done.insert(ity, e);
 
           if (e->adj_time <= time_goal)
             {
@@ -1169,8 +1179,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
               e->adj_time = time_goal;
               for (dependency_iter j = e->dependents.begin();
                    j != e->dependents.end(); ++j)
-                if (done.find(*j) == done.end())
-                  stack.push(make_pair(*j, time_goal + 1));
+                stack.push(make_pair(*j, time_goal + 1));
             }
         }
     }
@@ -1183,7 +1192,11 @@ solve_violation(cvs_history & cvs, t_solution & solution)
           cvs_event_ptr e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
-          done.insert(e);
+
+          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          if (ity != done.end())
+            continue;
+          done.insert(ity, e);
 
           if (e->adj_time >= time_goal)
             {
@@ -1193,8 +1206,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
               e->adj_time = time_goal;
               for (dependency_iter j = e->dependencies.begin();
                    j != e->dependencies.end(); ++j)
-                if (done.find(*j) == done.end())
-                  stack.push(make_pair(*j, time_goal - 1));
+                stack.push(make_pair(*j, time_goal - 1));
             }
         }
     }
@@ -1217,7 +1229,11 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
         {
           cvs_event_ptr ev = stack.top();
           stack.pop();
-          done.insert(ev);
+
+          set<cvs_event_ptr>::const_iterator ity = done.find(ev);
+          if (ity != done.end())
+            continue;
+          done.insert(ity, ev);
 
           for (dependency_iter i = ev->dependents.begin();
               i != ev->dependents.end(); ++i)
@@ -1225,8 +1241,7 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
               if (ev->adj_time >= (*i)->adj_time)
                 violations.push_back(make_pair(ev, *i));
 
-              if (done.find(*i) == done.end())
-                stack.push(*i);
+              stack.push(*i);
             }
         }
 
@@ -2061,30 +2076,40 @@ public:
 
   virtual bool operator () (const cvs_event_ptr & ev)
     {
-      int count_deps_in_path = 0;
-
       set<cvs_blob_index> done;
       stack<cvs_blob_index> stack;
 
-      vector<cvs_blob_index> deps_into_a, deps_into_b;
-
-      // start at that event and recursively check all its dependencies
-      // for blobs in the path.
+      // start at the event given and recursively check all its
+      // dependencies for blobs in the path.
       for (dependency_iter i = ev->dependencies.begin();
            i != ev->dependencies.end(); ++i)
         stack.push(cvs.get_blob_of(*i));
+
+      // Mark all dependencies of the first blob in the path as
+      // done. If we hit one of those, we don't have to go
+      // further.
+      cvs_blob & first_blob = cvs.blobs[*path.begin()];
+      for (blob_event_iter i = first_blob.begin(); i != first_blob.end(); ++i)
+        for (dependency_iter j = (*i)->dependencies.begin();
+             j != (*i)->dependencies.end(); ++j)
+          {
+            cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+            if (done.find(dep_bi) == done.end())
+              done.insert(dep_bi);
+          }
 
       while (!stack.empty())
         {
           cvs_blob_index bi = stack.top();
           stack.pop();
-          done.insert(bi);
+
+          set<cvs_blob_index>::const_iterator ity = done.find(bi);
+          if (ity != done.end())
+            continue;
+          done.insert(ity, bi);
 
           if (find(path.begin(), path.end(), bi) != path.end())
-            {
-              count_deps_in_path++;
-              deps_into_a.push_back(bi);
-            }
+            return true;
           else
             for (blob_event_iter i = cvs.blobs[bi].begin();
                  i != cvs.blobs[bi].end(); ++i)
@@ -2092,15 +2117,11 @@ public:
                    j != (*i)->dependencies.end(); ++j)
                 {
                   cvs_blob_index dep_bi = cvs.get_blob_of(*j);
-                  if (done.find(dep_bi) == done.end())
-                    stack.push(dep_bi);
+                  stack.push(dep_bi);
                 }
         }
 
-      if (count_deps_in_path > 0)
-        return true;
-      else
-        return false;
+      return false;
     }
 };
 
