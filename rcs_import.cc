@@ -1804,6 +1804,11 @@ blob_consumer
     n_revisions(n_revs)
   { };
 
+  void create_artificial_revisions(cvs_blob_index bi,
+                                   set<cvs_blob_index> & parent_blobs,
+                                   revision_id & parent_rid,
+                                   cvs_blob_index & in_branch);
+
   void operator() (cvs_blob_index bi);
 };
 
@@ -3306,52 +3311,6 @@ resolve_blob_dependencies(cvs_history & cvs)
 #endif
 }
 
-cvs_blob_index
-create_artificial_blob_for(cvs_history & cvs, cvs_blob_index bi, list<cvs_blob_index> blobs)
-{
-  L(FL("creating artificial blob for:"));
-  for (list<cvs_blob_index>::iterator i = blobs.begin();
-       i != blobs.end(); ++i)
-    {
-      L(FL("  %d") % *i);
-    }
-
-  int size = blobs.size();
-  I(size >= 2);
-
-  list<cvs_blob_index>::iterator i = blobs.begin();
-  size = size / 2;
-  while (size > 0)
-    {
-      i++;
-      size--;
-    }
-
-  list<cvs_blob_index> left, right;
-
-  left.splice(left.end(), blobs, blobs.begin(), i);
-  right.splice(right.end(), blobs, i);
-
-  L(FL("  size of left: %d") % left.size());
-  L(FL("  size of right: %d") % right.size());
-  I(!left.empty());
-  I(!right.empty());
-
-  cvs_blob_index left_bi, right_bi;
-
-  if (left.size() > 1)
-    left_bi = create_artificial_blob_for(cvs, bi, left);
-  else
-    left_bi = *left.begin();
-
-  if (right.size() > 1)
-    right_bi = create_artificial_blob_for(cvs, bi, right);
-  else
-    right_bi = *right.begin();
-
-  return invalid_blob;
-}
-
 void
 number_unnamed_branches(cvs_history & cvs)
 {
@@ -3537,6 +3496,130 @@ cvs_blob::build_cset(cvs_history & cvs,
 }
 
 void
+blob_consumer::create_artificial_revisions(cvs_blob_index bi,
+                                           set<cvs_blob_index> & parent_blobs,
+                                           revision_id & parent_rid,
+                                           cvs_blob_index & in_branch)
+{
+  L(FL("creating artificial revision for %d parents.")
+    % parent_blobs.size());
+
+  // erase ancestors
+  set<revision_id> parent_rids;
+  for (set<cvs_blob_index>::iterator i = parent_blobs.begin();
+       i != parent_blobs.end(); ++i)
+    parent_rids.insert(cvs.blobs[*i].assigned_rid);
+
+  erase_ancestors(parent_rids, app);
+
+  if (parent_rids.size() > 2)
+    I(false);
+
+  I(parent_rids.size() == 1);
+  parent_rid = *parent_rids.begin();
+
+  revision_id new_rid;
+  roster_t ros;
+  shared_ptr<cset> cs(new cset());
+
+  I(!null_id(parent_rid));
+  app.db.get_roster(parent_rid, ros);
+
+  int changes = 0;
+
+  // if only one parent revision id remains, we have to create
+  // an artificial revision based on that parent, but revert
+  // some files to other, older revisions.
+  for (blob_event_iter i = cvs.blobs[bi].begin();
+       i != cvs.blobs[bi].end(); ++i)
+    {
+      set<cvs_blob_index> event_parent_blobs;
+      for (dependency_iter j = (*i)->dependencies.begin();
+           j != (*i)->dependencies.end(); ++j)
+        {
+          cvs_event_ptr dep = *j;
+          cvs_blob_index dep_bi = cvs.get_blob_of(dep);
+          if (event_parent_blobs.find(dep_bi) == event_parent_blobs.end())
+            event_parent_blobs.insert(dep_bi);
+        }
+
+      I(event_parent_blobs.size() == 1);
+      cvs_blob & event_parent = cvs.blobs[*event_parent_blobs.begin()];
+
+      if (event_parent.assigned_rid != parent_rid)
+        {
+          // event needs reverting patch
+          roster_t e_ros;
+          I(!null_id(event_parent.assigned_rid));
+          app.db.get_roster(event_parent.assigned_rid, e_ros);
+
+          file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
+          I(ros.has_node(pth));
+          I(e_ros.has_node(pth));
+
+          node_t base_n(ros.get_node(pth)),
+                 reverted_n(e_ros.get_node(pth));
+
+          I(is_file_t(base_n));
+          I(is_file_t(reverted_n));
+
+          file_t base_fn(downcast_to_file_t(base_n)),
+                 reverted_fn(downcast_to_file_t(reverted_n));
+          if (base_fn->content != reverted_fn->content)
+            {
+              L(FL("  applying reverse delta on file '%s' : '%s' -> '%s'")
+                % pth % base_fn->content % reverted_fn->content);
+              safe_insert(cs->deltas_applied,
+                make_pair(pth, make_pair(base_fn->content, reverted_fn->content)));
+              changes++;
+            }
+        }
+      else
+        in_branch = event_parent.in_branch;
+    }
+
+  // only if at least one file has been changed (reverted), we need to
+  // add an artificial revision (otherwise we would get the same
+  // revision_id anyway).
+  if (changes > 0)
+    {
+      editable_roster_base editable_ros(ros, nis);
+      cs->apply_to(editable_ros);
+
+      manifest_id child_mid;
+      calculate_ident(ros, child_mid);
+
+      revision_t rev;
+      rev.made_for = made_for_database;
+      rev.new_manifest = child_mid;
+      rev.edges.insert(make_pair(parent_rid, cs));
+
+      calculate_ident(rev, new_rid);
+
+      L(FL("creating new revision %s") % new_rid);
+
+      I(app.db.put_revision(new_rid, rev));
+
+      {
+        time_i avg_time = cvs.blobs[bi].get_avg_time();
+        time_t commit_time = avg_time / 100;
+        string author("mtn:cvs_import"), changelog("artificial revision");
+        string bn = cvs.get_branchname(cvs.blobs[bi].in_branch);
+        I(!bn.empty());
+        app.get_project().put_standard_certs(new_rid,
+              branch_name(bn),
+              utf8(changelog),
+              date_t::from_unix_epoch(commit_time),
+              utf8(author));
+
+        ++n_revisions;
+      }
+
+      parent_rid = new_rid;
+    }
+}
+
+void
 blob_consumer::operator()(cvs_blob_index bi)
 {
   cvs_blob & blob = cvs.blobs[bi];
@@ -3562,18 +3645,19 @@ blob_consumer::operator()(cvs_blob_index bi)
       if ((blob.get_digest().is_branch_start() || blob.get_digest().is_tag())
           && (parent_blobs.size() > 1))
         {
-          I(false);
+          create_artificial_revisions(bi, parent_blobs,
+                                      parent_rid, blob.in_branch);
         }
       else
         {
           I(parent_blobs.size() == 1);
           blob.in_branch = cvs.blobs[*parent_blobs.begin()].in_branch;
           parent_rid = cvs.blobs[*parent_blobs.begin()].assigned_rid;
-
-          L(FL("parent rid: %s") % parent_rid);
-          blob.assigned_rid = parent_rid;
         }
     }
+
+  L(FL("parent rid: %s") % parent_rid);
+  blob.assigned_rid = parent_rid;
 
   if (blob.get_digest().is_commit())
     {
