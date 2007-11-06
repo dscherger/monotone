@@ -1822,7 +1822,7 @@ blob_consumer
   void create_artificial_revisions(cvs_blob_index bi,
                                    set<cvs_blob_index> & parent_blobs,
                                    revision_id & parent_rid,
-                                   cvs_blob_index & in_branch);
+                                   cvs_symbol_no & in_branch);
 
   void operator() (cvs_blob_index bi);
 };
@@ -3520,7 +3520,7 @@ void
 blob_consumer::create_artificial_revisions(cvs_blob_index bi,
                                            set<cvs_blob_index> & parent_blobs,
                                            revision_id & parent_rid,
-                                           cvs_blob_index & in_branch)
+                                           cvs_symbol_no & in_branch)
 {
   L(FL("creating artificial revision for %d parents.")
     % parent_blobs.size());
