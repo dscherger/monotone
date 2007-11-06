@@ -31,7 +31,7 @@ check(indir("foo.bar", mtn("update", "-r", "ANOTHER_TAG")), 0, false, false)
 check(indir("foo.bar", mtn("list", "known")), 0, true)
 check(samelines("stdout", {"testsrc", "testsrc/fileA", "testsrc/fileB"}))
 check(samelines("foo.bar/testsrc/fileA", {"Version 0 of fileA."}))
-xfail(samelines("foo.bar/testsrc/fileB", {"Version 1 of fileB."}))
+check(samelines("foo.bar/testsrc/fileB", {"Version 1 of fileB."}))
 
 -- Currently, ANOTHER_TAG gets split correctly, but then we simply override
 -- ANOTHER_TAG as soon as the second blob with the same tag is consumed.
