@@ -76,6 +76,8 @@ using boost::lexical_cast;
 
 // cvs history recording stuff
 
+#define DEBUG_GRAPHVIZ
+
 typedef unsigned long cvs_authorclog;
 typedef unsigned long cvs_mtn_version;   // the new file id in monotone
 typedef unsigned long cvs_rcs_version;   // the old RCS version number
@@ -3025,8 +3027,15 @@ class blob_label_writer
 
       if (!b.empty())
         {
+          struct tm * timeinfo;
+          char buffer [80];
+          time_t tt = b.get_avg_time() / 100;
+
+          timeinfo = localtime(&tt);
+          strftime (buffer, 80, "t: %Y-%m-%d %H:%M:%S\\n", timeinfo);
+
           // print the time of the blob
-          label += (FL("time: %d\\n") % b.get_avg_time()).str();
+          label += buffer;
           label += "\\n";
 
           // print the contents of the blob, i.e. the single files
@@ -3039,10 +3048,13 @@ class blob_label_writer
                   const shared_ptr< cvs_commit > ce =
                     boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
 
+                  tt = ce->adj_time / 100;
+                  timeinfo = localtime(&tt);
+                  strftime (buffer, 80, " %Y-%m-%d %H:%M:%S", timeinfo);
+
                   label += "@";
                   label += cvs.rcs_version_interner.lookup(ce->rcs_version);
-
-                  label += (FL(":%d") % (ce->adj_time)).str();
+                  label += buffer;
                 }
               label += "\\n";
             }
