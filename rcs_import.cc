@@ -428,6 +428,29 @@ public:
 
   void add_missing_parents(file_path const & path,
                            roster_t & base_ros, cset & cs);
+
+  void add_dependency_to(cvs_blob & other)
+    {
+      // try to add dependencies between events on the
+      // same files.
+      int deps_added = 0;
+      for (blob_event_iter i = begin(); i != end(); ++i)
+        {
+          cvs_event_ptr ev = *i;
+
+          for (blob_event_iter j = other.begin(); j != other.end(); ++j)
+            if (ev->path == (*j)->path)
+              {
+                add_dependency(ev, *j);
+                deps_added++;
+              }
+        }
+
+      // if there are no common files, we need to add at least
+      // one dependency, even if the event paths don't match.
+      if (deps_added == 0)
+        add_dependency(*begin(), *other.begin());
+    };
 };
 
 typedef struct
@@ -2528,7 +2551,7 @@ public:
                 break;
 
               L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
-              add_dependency(*cvs.blobs[*ity_b].begin(), *cvs.blobs[*ity_a].begin());
+              cvs.blobs[*ity_b].add_dependency_to(cvs.blobs[*ity_a]);
 
               ity_anc = ity_a;
               ity_a++;
