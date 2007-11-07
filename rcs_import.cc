@@ -538,14 +538,9 @@ cvs_history
     I(blobs[ev->bi].get_digest() == ev->get_digest());
 
 #ifdef DEBUG_GET_BLOB_OF
-    if (find(events.begin(), events.end(), ev) == events.end())
-    {
-      W(F("event %s does not belong to blob %d")
-        % get_event_repr(*this, ev) % ev->bi);
-    }
-#endif
-
+    // this check is quite expensive, thus normally not active.
     I(find(events.begin(), events.end(), ev) != events.end());
+#endif
     return ev->bi;
   }
 
@@ -1153,7 +1148,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
   cvs_event_ptr ev = solution.first->second;
   int direction = solution.second;
 
-  W(F("Resolving conflicting timestamps of: %s and %s")
+  L(FL("Resolving conflicting timestamps of: %s and %s")
     % get_event_repr(cvs, dep) % get_event_repr(cvs, ev));
 
   if (direction == 0)
@@ -1173,7 +1168,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
 
           if (e->adj_time <= time_goal)
             {
-              W(F("  adjusting event %s by %d seconds.")
+              L(FL("  adjusting event %s by %d seconds.")
                 % get_event_repr(cvs, e)
                 % (time_goal - e->adj_time));
               e->adj_time = time_goal;
@@ -1200,7 +1195,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
 
           if (e->adj_time >= time_goal)
             {
-              W(F("  adjusting event %s by %d seconds.")
+              L(FL("  adjusting event %s by %d seconds.")
                 % get_event_repr(cvs, e)
                 % (e->adj_time - time_goal));
               e->adj_time = time_goal;
@@ -2573,14 +2568,11 @@ public:
       write_graphviz_partial(cvs, "invalid_back_edge", blobs_to_show, 5);
 #endif
 
-      W(F("back edge from blob %d (%s) to blob %d (%s) - REMOVING IT!")
+      L(FL("back edge from blob %d (%s) to blob %d (%s) - ABORTING!")
         % e.first % get_event_repr(cvs, *cvs.blobs[e.first].begin())
         % e.second % get_event_repr(cvs, *cvs.blobs[e.second].begin()));
 
-      // I(false);
-
-      cvs.remove_deps(e.second, e.first);
-      edges_removed++;
+      I(false);
     }
 };
 
@@ -2665,9 +2657,9 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 
   if (event_times.size() <= 0)
     {
+      W(F("unable to split blob %d (%s)")
+        % bi % get_event_repr(cvs, *cvs.blobs[bi].begin()));
       I(simultaneous_deps.empty());
-
-      W(F("unable to split blob %d") % bi);
       return 0;
     }
 
