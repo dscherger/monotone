@@ -76,8 +76,6 @@ using boost::lexical_cast;
 
 // cvs history recording stuff
 
-#define DEBUG_GRAPHVIZ
-
 typedef unsigned long cvs_authorclog;
 typedef unsigned long cvs_mtn_version;   // the new file id in monotone
 typedef unsigned long cvs_rcs_version;   // the old RCS version number
@@ -3603,28 +3601,28 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
           if (!null_id(event_parent.assigned_rid))
             {
               // event needs reverting patch
-          app.db.get_roster(event_parent.assigned_rid, e_ros);
+              app.db.get_roster(event_parent.assigned_rid, e_ros);
 
-          file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
-          I(ros.has_node(pth));
-          I(e_ros.has_node(pth));
+              file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
+              I(ros.has_node(pth));
+              I(e_ros.has_node(pth));
 
-          node_t base_n(ros.get_node(pth)),
-                 reverted_n(e_ros.get_node(pth));
+              node_t base_n(ros.get_node(pth)),
+                     reverted_n(e_ros.get_node(pth));
 
-          I(is_file_t(base_n));
-          I(is_file_t(reverted_n));
+              I(is_file_t(base_n));
+              I(is_file_t(reverted_n));
 
-          file_t base_fn(downcast_to_file_t(base_n)),
-                 reverted_fn(downcast_to_file_t(reverted_n));
-          if (base_fn->content != reverted_fn->content)
-            {
-              L(FL("  applying reverse delta on file '%s' : '%s' -> '%s'")
-                % pth % base_fn->content % reverted_fn->content);
-              safe_insert(cs->deltas_applied,
-                make_pair(pth, make_pair(base_fn->content, reverted_fn->content)));
-              changes++;
-            }
+              file_t base_fn(downcast_to_file_t(base_n)),
+                     reverted_fn(downcast_to_file_t(reverted_n));
+              if (base_fn->content != reverted_fn->content)
+                {
+                  L(FL("  applying reverse delta on file '%s' : '%s' -> '%s'")
+                    % pth % base_fn->content % reverted_fn->content);
+                  safe_insert(cs->deltas_applied,
+                    make_pair(pth, make_pair(base_fn->content, reverted_fn->content)));
+                  changes++;
+                }
             }
           else
             {
