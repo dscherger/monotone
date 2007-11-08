@@ -1,0 +1,89 @@
+SVN-fs-dump-format-version: 2
+
+UUID: 5599baa1-b2be-4c8f-a43f-bc098b7a7d1d
+
+Revision-number: 0
+Prop-content-length: 56
+Content-length: 56
+
+K 8
+svn:date
+V 27
+2007-04-17T17:47:27.358210Z
+PROPS-END
+
+Revision-number: 1
+Prop-content-length: 129
+Content-length: 129
+
+K 7
+svn:log
+V 28
+initial subversion structure
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-04-17T17:47:28.310250Z
+PROPS-END
+
+Node-path: branches
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: tags
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: trunk
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Revision-number: 2
+Prop-content-length: 122
+Content-length: 122
+
+K 7
+svn:log
+V 21
+a simple first commit
+K 10
+svn:author
+V 6
+markus
+K 8
+svn:date
+V 27
+2007-04-17T17:47:29.190979Z
+PROPS-END
+
+Node-path: trunk/fileA
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 29
+Text-content-md5: aa467f1ca567e01e8d26df6f40cc4fd8
+Content-length: 39
+
+PROPS-END
+This is the content of fileA
+
+
