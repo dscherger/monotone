@@ -2363,6 +2363,8 @@ public:
 
       if (a_has_branch && b_has_branch)
         {
+          I(!cvs.blobs[e.second].get_digest().is_branch_end());
+
           // Blob e.second seems to be part of two (or even more)
           // branches, thus we need to split that blob.
 
@@ -2492,9 +2494,9 @@ public:
 
               if (pa_deps == total_events)
                 {
-                  // all events in e.second depend in a way on path a, thus
-                  // we should better simply drop the dependency from
-                  // bi_b to e.second.
+                  // all events in e.second depend in a way on the branch
+                  // start in path a, thus we should better simply drop
+                  // the dependency from bi_b to e.second.
                   cvs.remove_deps(e.second, bi_b);
                   edges_removed++;
                 }
@@ -2516,15 +2518,15 @@ public:
           // join them into one path, which satisfies all of the
           // dependencies and is correct with regard to timestamps.
           //
-          // At any position, we an ancestor and two choices: either the
-          // next blob from path a or from path b. We take the younger
+          // At any position, we have an ancestor and two dependents, one
+          // in each path. To streamline the graph, we take the younger
           // one first and adjust dependencies as follows:
           //
           //       ANC    (if A is younger than B)   ANC
           //      /   \             -->              /
           //     A     B                            A ->  B
           //
-          // PaA then becomes the ancestor of the next round. We repeat
+          // A then becomes the ancestor of the next round. We repeat
           // this until we reach the final blob which triggered the
           // cross edge (e.second).
 
@@ -3596,9 +3598,11 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
 
       if (event_parent.assigned_rid != parent_rid)
         {
-          // event needs reverting patch
           roster_t e_ros;
-          I(!null_id(event_parent.assigned_rid));
+
+          if (!null_id(event_parent.assigned_rid))
+            {
+              // event needs reverting patch
           app.db.get_roster(event_parent.assigned_rid, e_ros);
 
           file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
@@ -3620,6 +3624,13 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
               safe_insert(cs->deltas_applied,
                 make_pair(pth, make_pair(base_fn->content, reverted_fn->content)));
               changes++;
+            }
+            }
+          else
+            {
+              // path should not exist in this revision
+              L(FL("warning: should remove %s") % cvs.path_interner.lookup((*i)->path));
+              I(false);
             }
         }
       else
@@ -3690,7 +3701,8 @@ blob_consumer::operator()(cvs_blob_index bi)
     blob.in_branch = cvs.base_branch;
   else
     {
-      if ((blob.get_digest().is_branch_start() || blob.get_digest().is_tag())
+      cvs_event_digest d = blob.get_digest();
+      if ((d.is_branch_start() || d.is_branch_end() || d.is_tag())
           && (parent_blobs.size() > 1))
         {
           create_artificial_revisions(bi, parent_blobs,
