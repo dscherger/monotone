@@ -2403,8 +2403,6 @@ public:
 
       if (a_has_branch && b_has_branch)
         {
-          // I(!cvs.blobs[e.second].get_digest().is_branch_end());
-
           // Blob e.second seems to be part of two (or even more)
           // branches, thus we need to split that blob.
 
