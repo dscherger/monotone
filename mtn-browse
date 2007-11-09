@@ -1,0 +1,482 @@
+#!/usr/bin/perl -w
+##############################################################################
+#
+#   File Name    - mtn-browse
+#
+#   Description  - Perl GUI utility for browsing a Monotone database without a
+#                  workspace.
+#
+#   Author       - A.E.Cooper.
+#
+#   Legal Stuff  - Copyright (c) 2007 Anthony Edward Cooper
+#                  <aecooper@coosoft.plus.com>.
+#
+#                  This library is free software; you can redistribute it
+#                  and/or modify it under the terms of the GNU General Public
+#                  License as published by the Free Software Foundation;
+#                  either version 3 of the License, or (at your option) any
+#                  later version.
+#
+#                  This library is distributed in the hope that it will be
+#                  useful, but WITHOUT ANY WARRANTY; without even the implied
+#                  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+#                  PURPOSE.  See the GNU General Public License for more
+#                  details.
+#
+#                  You should have received a copy of the GNU General Public
+#                  License along with this library; if not, write to the Free
+#                  Software Foundation, Inc., 59 Temple Place - Suite 330,
+#                  Boston, MA  02111-1307  USA.
+#
+##############################################################################
+#
+##############################################################################
+#
+#   GLOBAL DATA FOR THIS MODULE
+#
+##############################################################################
+
+
+
+# ***** REQUIRED VERSION OF PERL *****
+
+require 5.008;
+
+# ***** REQUIRED PACKAGES *****
+
+use lib "/home/aecoope/perl";
+
+use strict;
+use integer;
+use IPC::Open3;
+use Glib qw(FALSE TRUE);
+use Gnome2;
+use Gtk2 -init;
+set_locale Gtk2;
+init Gtk2;
+use Gtk2::GladeXML;
+use Monotone::AutomateStdio;
+
+# Temporary debug stuff.
+
+use Data::Dumper;
+
+# ***** GLOBAL DATA DECLARATIONS *****
+
+# The Glade generated widgets object.
+
+# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+
+# Private routines.
+
+sub branch_combo_change_cb($$);
+sub branch_combo_key_release_event_cb($$$);
+sub delete_event_cb($$$);
+sub destroy_event_cb($$;$);
+sub get_completion($\@\$\$;\%);
+sub new_browser_instance();
+#
+##############################################################################
+#
+#   Routine      - Main Body Of Code
+#
+#   Description  - This is the main body of code for the mtn-browse script.
+#
+#   Data         - @_           : The command line arguments.
+#                  Return Value : Unix exit code.
+#
+##############################################################################
+
+
+
+{
+
+    my $instance;
+
+    # Initialise the GUI libraries and generate the interface.
+
+    Gnome2::Program->init("mtn-browse", 0.1);
+
+    # Create a browser instance.
+
+    $instance = new_browser_instance();
+
+    Gtk2->main();
+
+    exit 0;
+
+}
+#
+##############################################################################
+#
+#   Routine      - new_browser_instance
+#
+#   Description  - Construct a new browser instance record. This creates a new
+#                  main window, a new connection to Monotone and initialising
+#                  sensible defaults.
+#
+#   Data         - Return Value : A reference to the newly created browser
+#                                 instance record.
+#
+##############################################################################
+
+
+
+sub new_browser_instance()
+{
+
+    my(@branch_list,
+       $browser,
+       $div);
+
+    $browser = {};
+    $browser->{mtn} = Monotone::AutomateStdio->new();
+    $browser->{glade} = Gtk2::GladeXML->new("../mtn-browse.glade");
+
+    # Connect Glade registered signal handlers.
+
+    $browser->{glade}->signal_autoconnect
+	(sub
+	 {
+	     my($callback_name, $widget, $signal_name, $signal_data,
+		$connect_object, $after, $user_data) = @_;
+	     my $func = $after ? "signal_connect_after" : "signal_connect";
+	     $widget->$func($signal_name,
+			    $callback_name,
+			    $connect_object ? $connect_object : $user_data);
+	 },
+	 $browser);
+
+    # Get the widgets that we are interested in.
+
+    $browser->{main_window} = $browser->{glade}->get_widget("main_window");
+    $browser->{main_appbar} = $browser->{glade}->get_widget("main_appbar");
+    $browser->{branch_combo} =
+	$browser->{glade}->get_widget("branch_comboboxentry");
+    $browser->{revision_combo} =
+	$browser->{glade}->get_widget("revision_comboboxentry");
+    $browser->{tagged_tick} =
+	$browser->{glade}->get_widget("tagged_only_checkbutton");
+
+    # Initialise remaining fields.
+
+    $browser->{branch_completion_cache} = {};
+    $browser->{old_branch_value} = "";
+    $browser->{revision_completion_cache} = {};
+    $browser->{old_revision_value} = "";
+
+    # Move the pane separator to a sensible position.
+
+    $div = $browser->{glade}->get_widget("browser_hpaned");
+    $div->set_position(300);
+
+    # Populate the branch combobox with all the branch names.
+
+    $browser->{mtn}->branches(\@branch_list);
+    $browser->{branch_list} = \@branch_list;
+    $browser->{branch_combo}->set_model(Gtk2::ListStore->new("Glib::String"));
+    $browser->{branch_combo}->set_text_column(0);
+    $browser->{branch_combo}->set_wrap_width(2);
+    foreach (@branch_list)
+    {
+	$browser->{branch_combo}->append_text($_);
+    }
+    # $browser->{branch_combobox}->get_model()->clear();
+
+    return $browser;
+
+}
+#
+##############################################################################
+#
+#   Routine      - branch_combo_change_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the branch list ComboBoxEntry by selecting an entry from
+#                  the pulldown list.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub branch_combo_change_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    $browser->{old_branch_value} =
+	$browser->{branch_combo}->child()->get_text();
+    $browser->{main_appbar}->set_status("");
+
+}
+#
+##############################################################################
+#
+#   Routine      - branch_combo_key_release_event_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the branch list ComboBoxEntry by entering a character (key
+#                  release event).
+#
+#   Data         - $widget      : The widget object that received the signal.
+#                  $event       : A Gtk2::Gdk::Event object describing the
+#                                 event that has occurred.
+#                  $browser     : The browser instance that is associated with
+#                                 this widget.
+#                  Return Value : TRUE if the event has been handled and needs
+#                                 no further handling, otherwise false if the
+#                                 event should carry on through the remaining
+#                                 event handling.
+#
+##############################################################################
+
+
+
+sub branch_combo_key_release_event_cb($$$)
+{
+
+    my($widget, $event, $browser) = @_;
+
+    my ($branch,
+	$complete,
+	$completion,
+	$len,
+	$value);
+
+    # The user has typed something in then validate it and auto-complete it if
+    # necessary.
+
+    $value = $browser->{branch_combo}->child()->get_text();
+    if ($value ne $browser->{old_branch_value})
+    {
+	$len = length($value);
+	if ($value ne substr($browser->{old_branch_value}, 0, $len))
+	{
+
+	    # So that the spacebar triggers auto-complete.
+
+	    $value =~ s/\s+$//o;
+	    $len = length($value);
+
+	    if (get_completion($value,
+			       @{$browser->{branch_list}},
+			       $completion,
+			       $complete,
+			       %{$browser->{branch_completion_cache}}))
+	    {
+		$browser->{main_appbar}->set_status("");
+		$value = $completion;
+		$len = length($value);
+	    }
+	    else
+	    {
+		$browser->{main_appbar}->set_status
+		    ("Invalid branch name`" . $value . "'");
+		$value = $completion;
+		$len = length($value);
+	    }
+	    $browser->{branch_combo}->child()->set_text($value);
+	    $browser->{branch_combo}->child()->set_position(-1);
+	    $browser->{old_branch_value} = $value;
+
+	    # TODO TRIGGER REV REFRESH HERE.
+
+	    print "COMPLETE MATCH\n" unless (! $complete);
+
+	}
+
+	# Update the pulldown choices.
+
+	$browser->{branch_combo}->get_model()->clear();
+	foreach $branch (@{$browser->{branch_list}})
+	{
+	    $browser->{branch_combo}->append_text($branch)
+		if ($value eq substr($branch, 0, $len));
+	}
+
+    }
+
+    return FALSE;
+
+}
+#
+##############################################################################
+#
+#   Routine      - delete_event_cb
+#
+#   Description  - Callback routine called when the used has attempted to
+#                  close the main window.
+#
+#   Data         - $widget      : The widget object that received the signal.
+#                  $event       : A Gtk2::Gdk::Event object describing the
+#                                 event that has occurred.
+#                  $browser     : The browser instance that is associated with
+#                                 this widget.
+#                  Return Value : TRUE if the event has been handled and needs
+#                                 no further handling, otherwise false if the
+#                                 event should carry on through the remaining
+#                                 event handling.
+#
+##############################################################################
+
+
+
+sub delete_event_cb($$$)
+{
+
+    my($widget, $event, $browser) = @_;
+
+    return FALSE;
+
+}
+#
+##############################################################################
+#
+#   Routine      - destroy_event_cb
+#
+#   Description  - Callback routine called when the main window is about to be
+#                  destroyed.
+#
+#   Data         - $widget      : The widget object that received the signal.
+#                  $event       : A Gtk2::Gdk::Event object describing the
+#                                 event that has occurred.
+#                  $client_data : The client data associated with this widget.
+#                  Return Value : TRUE if the event has been handled and needs
+#                                 no further handling, otherwise false if the
+#                                 event should carry on through the remaining
+#                                 event handling.
+#
+##############################################################################
+
+
+
+sub destroy_event_cb($$;$)
+{
+
+    my($widget, $event, $client_data) = @_;
+
+    my $browser = defined($client_data) ? $client_data : $event;
+
+    Gtk2->main_quit();
+
+    return FALSE;
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_completion
+#
+#   Description  - Given a value and a list, work out the largest unique
+#                  match. Used for auto completion.
+#
+#   Data         - $value       : The value to be completed.
+#                  $list        : A reference to a list containing all
+#                                 possible completions.
+#                  $result      : A reference to a buffer that is to contain
+#                                 the result.
+#                  $complete    : A reference to a buffer that is to contain a
+#                                 boolean `result is complete' indicator.
+#                  $cache       : An optional reference to a hash that will be
+#                                 used to cache the hash tree (saved
+#                                 recomputation).
+#                  Return Value : True if $value was expanded, otherwise false
+#                                 if $value had to be truncated due to no
+#                                 match (the maximum valid completion is still
+#                                 returned in $result).
+#
+##############################################################################
+
+
+
+sub get_completion($\@\$\$;\%)
+{
+
+    my($value, $list, $result, $complete, $cache) = @_;
+
+    my($char,
+       $item,
+       $level,
+       %local_cache,
+       $tree);
+
+    # Work out what cache we are to use.
+
+    $tree = (defined($cache)) ? $cache : \%local_cache;
+
+    # Unless we are given an already built hash tree, build one up for the list
+    # of possible items.
+
+    if (scalar(keys(%$tree)) == 0)
+    {
+	foreach $item (@$list)
+	{
+
+	    # Build up nodes for an item.
+
+	    $level = $tree;
+	    foreach $char (split(//o, $item))
+	    {
+		if (! exists($level->{$char}))
+		{
+		    $level->{$char} = {};
+		}
+		$level = $level->{$char};
+	    }
+
+	    # By adding this dummy node here it stops the auto-complete moving
+	    # too far should another item extend beyond this point. I.e. auto
+	    # completion stops at `net.venge.monotone.contrib' and not
+	    # `net.venge.monotone.contrib.'. You could simply think of this
+	    # node as an `end of string' token if you prefer.
+
+	    $level->{""} = "";
+
+	}
+    }
+
+    # Lookup value, stopping when it becomes ambiguous or we get to the end of
+    # $value.
+
+    $level = $tree;
+    $$result = "";
+    foreach $char (split(//o, $value))
+    {
+	last unless exists($level->{$char});
+	$level = $level->{$char};
+	$$result .= $char;
+    }
+
+    # Detect truncations.
+
+    return if (length($value) > length($$result));
+
+    # Now try and expand it further.
+
+    while (defined(%$level) && keys(%$level) == 1)
+    {
+	($char) = keys(%$level);
+	$$result .= $char;
+	$level = $level->{$char};
+    }
+
+    # Detect complete completions (doesn't mean to say that it can't be
+    # extended, just that as it stands at the moment $$result does contain a
+    # valid unique value).
+
+    if (! defined(%$level) || exists($level->{""}))
+    {
+	$$complete = 1;
+    }
+    else
+    {
+	$$complete = 0;
+    }
+
+    return 1;
+
+}

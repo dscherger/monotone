@@ -21,6 +21,9 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="enable_layout_config">True</property>
+  <signal name="destroy_event" handler="destroy_event_cb" last_modification_time="Thu, 08 Nov 2007 14:46:50 GMT"/>
+  <signal name="delete_event" handler="delete_event_cb" last_modification_time="Thu, 08 Nov 2007 14:46:58 GMT"/>
+  <signal name="destroy" handler="destroy_event_cb" last_modification_time="Thu, 08 Nov 2007 14:47:05 GMT"/>
 
   <child internal-child="dock">
     <widget class="BonoboDock" id="bonobodock1">
@@ -335,8 +338,28 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkComboBoxEntry" id="branch_combobox">
+			<widget class="GtkTable" id="branch_table">
 			  <property name="visible">True</property>
+			  <property name="n_rows">1</property>
+			  <property name="n_columns">1</property>
+			  <property name="homogeneous">False</property>
+			  <property name="row_spacing">0</property>
+			  <property name="column_spacing">0</property>
+
+			  <child>
+			    <widget class="GtkComboBoxEntry" id="branch_comboboxentry">
+			      <property name="visible">True</property>
+			      <signal name="changed" handler="branch_combo_change_cb" last_modification_time="Thu, 08 Nov 2007 14:48:00 GMT"/>
+			      <signal name="key_release_event" handler="branch_combo_key_release_event_cb" last_modification_time="Thu, 08 Nov 2007 20:33:20 GMT"/>
+			    </widget>
+			    <packing>
+			      <property name="left_attach">0</property>
+			      <property name="right_attach">1</property>
+			      <property name="top_attach">0</property>
+			      <property name="bottom_attach">1</property>
+			      <property name="y_options">fill</property>
+			    </packing>
+			  </child>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -367,8 +390,27 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkComboBoxEntry" id="revision_combobox">
+			<widget class="GtkTable" id="revision_table">
 			  <property name="visible">True</property>
+			  <property name="n_rows">1</property>
+			  <property name="n_columns">1</property>
+			  <property name="homogeneous">False</property>
+			  <property name="row_spacing">0</property>
+			  <property name="column_spacing">0</property>
+
+			  <child>
+			    <widget class="GtkComboBoxEntry" id="revision_comboboxentry">
+			      <property name="visible">True</property>
+			      <signal name="changed" handler="revision_combo_changed_cb" last_modification_time="Thu, 08 Nov 2007 14:48:20 GMT"/>
+			    </widget>
+			    <packing>
+			      <property name="left_attach">0</property>
+			      <property name="right_attach">1</property>
+			      <property name="top_attach">0</property>
+			      <property name="bottom_attach">1</property>
+			      <property name="y_options">fill</property>
+			    </packing>
+			  </child>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -668,7 +710,7 @@ criteria for selecting a revision</property>
 					  <property name="tooltip" translatable="yes">Name of the file being displayed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 132 10 118.8 132</property>
+					  <property name="hadjustment">0 0 277 10 249.3 277</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -720,7 +762,7 @@ criteria for selecting a revision</property>
 					  <property name="tooltip" translatable="yes">Date of when file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 132 10 118.8 132</property>
+					  <property name="hadjustment">0 0 277 10 249.3 277</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -836,7 +878,7 @@ criteria for selecting a revision</property>
 					  <property name="tooltip" translatable="yes">File's unique id in database</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 137 10 123.3 137</property>
+					  <property name="hadjustment">0 0 283 10 254.7 283</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -889,7 +931,7 @@ criteria for selecting a revision</property>
 file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 137 10 123.3 137</property>
+					  <property name="hadjustment">0 0 283 10 254.7 283</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -1266,7 +1308,7 @@ of the current file</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 313 10 281.7 313</property>
+				  <property name="hadjustment">0 0 295 10 265.5 295</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
@@ -1316,7 +1358,7 @@ of the current file</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 313 10 281.7 313</property>
+				  <property name="hadjustment">0 0 295 10 265.5 295</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
@@ -1478,7 +1520,7 @@ of the current file</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 300 10 270 300</property>
+				  <property name="hadjustment">0 0 282 10 253.8 282</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
@@ -1528,7 +1570,7 @@ of the current file</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 300 10 270 300</property>
+				  <property name="hadjustment">0 0 282 10 253.8 282</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
