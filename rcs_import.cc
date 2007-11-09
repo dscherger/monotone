@@ -2474,16 +2474,31 @@ public:
           cvs_blob_index bi_a = *(++path_a.rbegin());
           cvs_blob_index bi_b = *(++path_b.rbegin());
 
-          if (cvs.blobs[e.second].get_digest().is_symbol())
+          if (cvs.blobs[path_a[1]].get_digest().is_symbol() &&
+              cvs.blobs[path_a[2]].get_digest().is_branch_start() &&
+              cvs.blobs[e.second].get_digest().is_symbol())
             {
-              // Prevent splitting the symbol at e.second.
+              // This is a special case, where none of the commits in path_a
+              // touch a certain file. A symbol then has a dependency on
+              // an RCS version which seems to belong to another branch. We
+              // simply drop that dependency to relocate the symbol and make
+              // it very clear what branch it belongs to.
+              //
+              //                common
+              //               ancestor
+              //                /    \
+              //            branch    |
+              //            symbol    |
+              //               |      |
+              //            branch    |
+              //            start     |
+              //               |      |
+              //              (+)     |
+              //                \    /
+              //               e.second
+              //               (symbol)
+              //
               cvs.remove_deps(e.second, bi_b);
-              edges_removed++;
-            }
-          else if (cvs.blobs[bi_a].get_digest().is_symbol())
-            {
-              // Prevent splitting the symbol at bi_a.
-              cvs.remove_deps(e.second, bi_a);
               edges_removed++;
             }
           else
