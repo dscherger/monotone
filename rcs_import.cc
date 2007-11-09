@@ -1395,7 +1395,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
                     new cvs_symbol(curr_commit->path, tag,
                                     curr_commit->given_time)));
               tag_symbol->adj_time = curr_commit->adj_time + 1;
-              add_dependency(tag_symbol, curr_commit);
+              if (alive)
+                add_dependency(tag_symbol, curr_commit);
+              else
+                add_weak_dependency(tag_symbol, curr_commit);
 
               cvs.append_event(tag_symbol);
               curr_events.push_back(tag_symbol);
@@ -1492,7 +1495,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           // make it dependent on the root_blob, which is artificial
           // anyway.
           if (!is_vendor_branch)
-            add_dependency(branch_point, curr_commit);
+            if (alive)
+              add_dependency(branch_point, curr_commit);
+            else
+              add_weak_dependency(branch_point, curr_commit);
           else
             add_dependency(branch_point, cvs.root_event);
 
