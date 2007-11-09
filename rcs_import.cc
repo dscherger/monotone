@@ -2403,7 +2403,7 @@ public:
 
       if (a_has_branch && b_has_branch)
         {
-          I(!cvs.blobs[e.second].get_digest().is_branch_end());
+          // I(!cvs.blobs[e.second].get_digest().is_branch_end());
 
           // Blob e.second seems to be part of two (or even more)
           // branches, thus we need to split that blob.
@@ -2476,7 +2476,8 @@ public:
 
           if (cvs.blobs[path_a[1]].get_digest().is_symbol() &&
               cvs.blobs[path_a[2]].get_digest().is_branch_start() &&
-              cvs.blobs[e.second].get_digest().is_symbol())
+              cvs.blobs[e.second].get_digest().is_symbol() &&
+              path_b.size() == 2)
             {
               // This is a special case, where none of the commits in path_a
               // touch a certain file. A symbol then has a dependency on
@@ -2486,11 +2487,12 @@ public:
               //
               //                common
               //               ancestor
-              //                /    \
-              //            branch    |
-              //            symbol    |
-              //               |      |
-              //            branch    |
+              //               (symbol)
+              //                /    \         path_b is pretty empty, i.e.
+              //            branch    |        there is a direct dependency
+              //            symbol    |        from the common ancestor (a
+              //               |      |        branch symbol) to e.second
+              //            branch    |        (also a symbol, but any kind)
               //            start     |
               //               |      |
               //              (+)     |
@@ -2499,6 +2501,38 @@ public:
               //               (symbol)
               //
               cvs.remove_deps(e.second, bi_b);
+              edges_removed++;
+            }
+          else if ((path_a[0] == cvs.root_blob) && (path_a.size() == 5) &&
+                   cvs.blobs[e.second].get_digest().is_symbol())
+            {
+              // another special case: with a vendor branch, 1.1.1.1 gets
+              // tagged, instead of 1.1. This poses a problem for further
+              // sub-branches, as those might have dependencies on the
+              // vendor branch as well as on the trunk.
+              //
+              // We simply remove the dependency to the vendor branch,
+              // which are imported independently.
+              //
+              //                root
+              //                blob
+              //                /    \
+              //           vendor     |
+              //           branch     |
+              //           symbol   initial
+              //               |     import
+              //           vendor    (1.1)
+              //           branch     |
+              //           start      |
+              //               |     (+)
+              //           initial    |
+              //           import     |
+              //          (1.1.1.1)   |
+              //                \    /
+              //               e.second
+              //               (symbol)
+              //
+              cvs.remove_deps(e.second, bi_a);
               edges_removed++;
             }
           else
