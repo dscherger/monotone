@@ -186,6 +186,7 @@ public:
   cvs_path path;
   cvs_blob_index bi;
   vector< cvs_event_ptr > dependencies;
+  vector< cvs_event_ptr > weak_dependencies;
   vector< cvs_event_ptr > dependents;
 
   cvs_event(const cvs_path p, const time_i ti)
@@ -204,6 +205,12 @@ void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
   I(ev != dep);
   ev->dependencies.push_back(dep);
   dep->dependents.push_back(ev);
+}
+
+void add_weak_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
+{
+  add_dependency(ev, dep);
+  ev->weak_dependencies.push_back(dep);
 }
 
 class
@@ -1065,6 +1072,29 @@ add_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
     }      
 }
 
+void
+add_weak_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
+                      bool reverse_import)
+{
+  vector<cvs_event_ptr>::iterator i;
+
+  if (reverse_import)
+    {
+      // make the last commit (i.e. 1.3) depend on the current one
+      // (i.e. 1.2), as it which comes _before_ in the CVS history.
+      for (i = last_events.begin(); i != last_events.end(); ++i)
+        add_weak_dependency(*i, ev);
+    }
+  else
+    {
+      // vendor branches are processed in historic order, i.e.
+      // older version first. Thus the last commit may be 1.1.1.1
+      // while the current one is 1.1.1.2.
+      for (i = last_events.begin(); i != last_events.end(); ++i)
+        add_weak_dependency(ev, *i);
+    }      
+}
+
 typedef pair< cvs_event_ptr, cvs_event_ptr> t_violation;
 typedef list<t_violation>::iterator violation_iter;
 typedef pair< violation_iter, int > t_solution;
@@ -1378,7 +1408,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               // by the toposort to many revisions later. Instead, we want
               // to raise a conflict, if a commit interferes with a tagging
               // action.
-              add_dependencies(tag_symbol, last_events, reverse_import);
+              add_weak_dependencies(tag_symbol, last_events, reverse_import);
 
               cvs_event_ptr tag_event = 
                 boost::static_pointer_cast<cvs_event, cvs_tag_point>(
@@ -1503,7 +1533,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           // commit action certainly comes after the branch action. See
           // the comment above for tags.
           if (!is_vendor_branch)
-            add_dependencies(branch_point, last_events, reverse_import);
+            add_weak_dependencies(branch_point, last_events, reverse_import);
         }
 
       string next_version = r.deltas.find(curr_version)->second->next;
@@ -1569,7 +1599,13 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
                                    curr_commit->given_time + 1)));
 
           cvs.append_event(branch_end_point);
-          add_dependencies(branch_end_point, curr_events, reverse_import);
+          add_dependency(branch_end_point, curr_commit);
+
+          // all others are weak dependencies
+          dependency_iter ity = find(curr_events.begin(), curr_events.end(), curr_commit);
+          I(ity != curr_events.end());
+          curr_events.erase(ity);
+          add_weak_dependencies(branch_end_point, curr_events, reverse_import);
         }
 
       return first_commit;
@@ -3559,6 +3595,36 @@ resolve_blob_dependencies(cvs_history & cvs)
     else
       break;
   };
+
+  // remove all weak dependencies
+  for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
+    {
+      cvs_blob & blob = cvs.blobs[bi];
+      blob.reset_deps_cache();
+
+      for (blob_event_iter ev = blob.begin(); ev != blob.end(); ++ev)
+        {
+          for (dependency_iter dep = (*ev)->weak_dependencies.begin();
+               dep != (*ev)->weak_dependencies.end(); ++dep)
+            {
+              dependency_iter ity = find((*ev)->dependencies.begin(),
+                                         (*ev)->dependencies.end(), *dep);
+              I(ity != (*ev)->dependencies.end());
+              (*ev)->dependencies.erase(ity);
+
+              ity = find((*dep)->dependents.begin(),
+                         (*dep)->dependents.end(), *ev);
+              I(ity != (*dep)->dependents.end());
+              (*dep)->dependents.erase(ity);
+            }
+
+          (*ev)->weak_dependencies.clear();
+        }
+    }
+
+#ifdef DEBUG_GRAPHVIZ
+  write_graphviz_complete(cvs, "no-weak");
+#endif
 
   // After a depth-first-search-run without any cycles, we have a possible
   // import order which satisfies all the dependencies (topologically
