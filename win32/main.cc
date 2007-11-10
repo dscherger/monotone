@@ -13,9 +13,6 @@
 // to look at monotone.cc for cpp_main(), where the real program logic
 // begins.  The purpose of this file is to hide all the nastiness involved
 // in trapping and responding to operating-system-level hard error reports.
-// It is also responsible for a last-ditch catch(...) clause (which is not
-// _that_ different from what std::terminate() would do, but does get our
-// bug-report message printed.)
 //
 // On Win32, hard error reports come via SEH ("structured exception
 // handling", which is, alas, not the same thing as C++ runtime exception
@@ -66,7 +63,7 @@ bug_report_message()
   write_str_to_stderr("\nthis is almost certainly a bug in monotone."
                       "\nplease send this error message, the output of '");
   write_str_to_stderr(argv0);
-  write_str_to_stderr(" --full-version',"
+  write_str_to_stderr(" version --full',"
                       "\nand a description of what you were doing to "
                       PACKAGE_BUGREPORT "\n");
 }

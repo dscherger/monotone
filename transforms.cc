@@ -13,15 +13,15 @@
 #include <functional>
 #include <iterator>
 #include <sstream>
-#include <vector>
+#include "vector.hh"
 
 
 #include <boost/tokenizer.hpp>
 #include <boost/scoped_array.hpp>
 
 #include "botan/botan.h"
-#include "botan/gzip.h"
 #include "botan/sha160.h"
+#include "gzip.hh"
 
 #include "cleanup.hh"
 #include "constants.hh"

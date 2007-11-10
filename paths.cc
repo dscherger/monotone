@@ -10,27 +10,15 @@
 #include "base.hh"
 #include <sstream>
 
-#include <boost/version.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/convenience.hpp>
-
-namespace fs = boost::filesystem;
-
-#include "constants.hh"
 #include "paths.hh"
-#include "platform-wrapped.hh"
-#include "sanity.hh"
-#include "interner.hh"
+#include "file_io.hh"
 #include "charset.hh"
-#include "simplestring_xform.hh"
 
 using std::exception;
 using std::ostream;
 using std::ostringstream;
 using std::string;
 using std::vector;
-
 
 // some structure to ensure we aren't doing anything broken when resolving
 // filenames.  the idea is to make sure
@@ -82,29 +70,19 @@ struct access_tracker
 // initial_abs_path is for interpreting relative system_path's
 static access_tracker<system_path> initial_abs_path;
 // initial_rel_path is for interpreting external file_path's
-// for now we just make it an fs::path for convenience; we used to make it a
-// file_path, but then you can't run monotone from inside the _MTN/ dir (even
-// when referring to files outside the _MTN/ dir).
-static access_tracker<fs::path> initial_rel_path;
+// we used to make it a file_path, but then you can't run monotone from
+// inside the _MTN/ dir (even when referring to files outside the _MTN/
+// dir).  use of a bare string requires some caution but does work.
+static access_tracker<string> initial_rel_path;
 // working_root is for converting file_path's and bookkeeping_path's to
 // system_path's.
 static access_tracker<system_path> working_root;
-
-bookkeeping_path const bookkeeping_root("_MTN");
-path_component const bookkeeping_root_component("_MTN");
-
-// this is a file_path because it does not conform to the invariant that
-// bookkeeping paths always start with the _current_ bookkeeping root.
-file_path const old_bookkeeping_root = file_path_internal("MT");
 
 void
 save_initial_path()
 {
   // FIXME: BUG: this only works if the current working dir is in utf8
   initial_abs_path.set(system_path(get_current_working_dir()), false);
-  // We still use boost::fs, so let's continue to initialize it properly.
-  fs::initial_path();
-  fs::path::default_name_check(fs::native);
   L(FL("initial abs path is: %s") % initial_abs_path.get_but_unused());
 }
 
@@ -129,6 +107,7 @@ save_initial_path()
 //  -- no doubled /'s
 //  -- no trailing /
 //  -- no "." or ".." path components
+
 static inline bool
 bad_component(string const & component)
 {
@@ -173,6 +152,36 @@ has_bad_component_chars(string const & pc)
     }
   return false;
   
+}
+
+static bool
+is_absolute_here(string const & path)
+{
+  if (path.empty())
+    return false;
+  if (path[0] == '/')
+    return true;
+#ifdef WIN32
+  if (path[0] == '\\')
+    return true;
+  if (path.size() > 1 && path[1] == ':')
+    return true;
+#endif
+  return false;
+}
+
+static inline bool
+is_absolute_somewhere(string const & path)
+{
+  if (path.empty())
+    return false;
+  if (path[0] == '/')
+    return true;
+  if (path[0] == '\\')
+    return true;
+  if (path.size() > 1 && path[1] == ':')
+    return true;
+  return false;
 }
 
 // fully_normalized_path verifies a complete pathname for validity and
@@ -240,39 +249,95 @@ is_valid_internal(string const & path)
           && !in_bookkeeping_dir(path));
 }
 
-// path::normalize() is deprecated in Boost 1.34, and also
-// doesn't remove leading or trailing dots any more.
-static fs::path
-normalize_path(fs::path const & in)
+static string
+normalize_path(string const & in)
 {
-#if BOOST_VERSION < 103400
-  return fs::path(in).normalize();
-#else
-  fs::path out;
-  vector<string> stack;
-  for (fs::path::iterator i = in.begin(); i != in.end(); ++i)
+  string inT = in;
+  string leader;
+  MM(inT);
+
+#ifdef WIN32
+  // the first thing we do is kill all the backslashes
+  for (string::iterator i = inT.begin(); i != inT.end(); i++)
+    if (*i == '\\')
+      *i = '/';
+#endif
+
+  if (is_absolute_here (inT))
     {
-      // remove . elements
-      if (*i == ".")
-        continue;
-      // remove foo/.. element pairs
-      if (*i == "..")
+      if (inT[0] == '/')
         {
-          if (!stack.empty())
+          leader = "/";
+          inT = inT.substr(1);
+
+          if (inT.size() > 0 && inT[0] == '/')
             {
-              stack.pop_back();
-              continue;
+              // if there are exactly two slashes at the beginning they
+              // are both preserved.  three or more are the same as one.
+              string::size_type f = inT.find_first_not_of("/");
+              if (f == string::npos)
+                f = inT.size();
+              if (f == 1)
+                leader = "//";
+              inT = inT.substr(f);
             }
         }
-      stack.push_back(*i);
-    }
-  for (vector<string>::const_iterator i = stack.begin();
-       i != stack.end(); ++i)
-    {
-      out /= *i;
-    }
-  return out;
+#ifdef WIN32
+      else
+        {
+          I(inT[1] == ':');
+          if (inT.size() > 2 && inT[2] == '/')
+            {
+              leader = inT.substr(0, 3);
+              inT = inT.substr(3);
+            }
+          else
+            {
+              leader = inT.substr(0, 2);
+              inT = inT.substr(2);
+            }
+        }
 #endif
+      
+      I(!is_absolute_here(inT));
+      if (inT.size() == 0)
+        return leader;
+    }
+
+  vector<string> stack;
+  string::const_iterator head, tail;
+  string::size_type size_estimate = leader.size();
+  for (head = inT.begin(); head != inT.end(); head = tail)
+    {
+      tail = head;
+      while (tail != inT.end() && *tail != '/')
+        tail++;
+
+      string elt(head, tail);
+      while (tail != inT.end() && *tail == '/')
+        tail++;
+
+      if (elt == ".")
+        continue;
+      // remove foo/.. element pairs; leave leading .. components alone
+      if (elt == ".." && !stack.empty() && stack.back() != "..")
+        {
+          stack.pop_back();
+          continue;
+        }
+
+      size_estimate += elt.size() + 1;
+      stack.push_back(elt);
+    }
+
+  leader.reserve(size_estimate);
+  for (vector<string>::const_iterator i = stack.begin(); i != stack.end(); i++)
+    {
+      if (i != stack.begin())
+        leader += "/";
+      leader += *i;
+    }
+  return leader;
 }
 
 static void
@@ -292,24 +357,24 @@ normalize_external_path(string const & path, string & normalized)
   else
     {
       N(!path.empty(), F("empty path '%s' is invalid") % path);
-      fs::path out, base, relative;
+      N(!is_absolute_here(path), F("absolute path '%s' is invalid") % path);
+      string base;
       try
         {
           base = initial_rel_path.get();
-          // the fs::native is needed to get it to accept paths like ".foo".
-          relative = fs::path(path, fs::native);
-          out = normalize_path(base / relative);
+          if (base == "")
+            normalized = normalize_path(path);
+          else
+            normalized = normalize_path(base + "/" + path);
         }
       catch (exception &)
         {
           N(false, F("path '%s' is invalid") % path);
         }
-      normalized = out.string();
       if (normalized == ".")
         normalized = string("");
-      N(!relative.has_root_path(),
-        F("absolute path '%s' is invalid") % relative.string());
-      N(fully_normalized_path(normalized), F("path '%s' is invalid") % normalized);
+      N(fully_normalized_path(normalized),
+        F("path '%s' is invalid") % normalized);
     }
 }
 
@@ -432,6 +497,10 @@ any_path::basename() const
 {
   string const & s = data;
   string::size_type sep = s.rfind('/');
+#ifdef WIN32
+  if (sep == string::npos && s.size()>= 2 && s[1] == ':')
+    sep = 1;
+#endif
   if (sep == string::npos)
     return path_component(s, 0);  // force use of short circuit
   if (sep == s.size())
@@ -446,19 +515,30 @@ any_path::dirname() const
 {
   string const & s = data;
   string::size_type sep = s.rfind('/');
+#ifdef WIN32
+  if (sep == string::npos && s.size()>= 2 && s[1] == ':')
+    sep = 1;
+#endif
   if (sep == string::npos)
     return any_path();
-  if (sep == s.size() - 1) // dirname() of the root directory is itself
+
+  // dirname() of the root directory is itself
+  if (sep == s.size() - 1)
     return *this;
+
+  // dirname() of a direct child of the root is the root
+  if (sep == 0 || (sep == 1 && s[1] == '/')
+#ifdef WIN32
+      || (sep == 1 || sep == 2 && s[1] == ':')
+#endif
+      )
+    return any_path(s, 0, sep+1);
 
   return any_path(s, 0, sep);
 }
 
-// this returns all but the last component of a file_path.  it is only
-// defined on file_paths because (a) that avoids problems at the root,
-// and (b) that's the only version that we use.
-// if there is only one component present, the dirname is the root
-// (i.e. the empty string).
+// these variations exist to get the return type right.  also,
+// file_path dirname() can be a little simpler.
 file_path
 file_path::dirname() const
 {
@@ -468,6 +548,33 @@ file_path::dirname() const
     return file_path();
   return file_path(s, 0, sep);
 }
+
+system_path
+system_path::dirname() const
+{
+  string const & s = data;
+  string::size_type sep = s.rfind('/');
+#ifdef WIN32
+  if (sep == string::npos && s.size()>= 2 && s[1] == ':')
+    sep = 1;
+#endif
+  I(sep != string::npos);
+
+  // dirname() of the root directory is itself
+  if (sep == s.size() - 1)
+    return *this;
+
+  // dirname() of a direct child of the root is the root
+  if (sep == 0 || (sep == 1 && s[1] == '/')
+#ifdef WIN32
+      || (sep == 1 || sep == 2 && s[1] == ':')
+#endif
+      )
+    return system_path(s, 0, sep+1);
+
+  return system_path(s, 0, sep);
+}
+
 
 // produce dirname and basename at the same time
 void
@@ -565,36 +672,6 @@ void dump(bookkeeping_path const & p, string & out)
 // this code's speed does not matter much
 ///////////////////////////////////////////////////////////////////////////
 
-static bool
-is_absolute_here(string const & path)
-{
-  if (path.empty())
-    return false;
-  if (path[0] == '/')
-    return true;
-#ifdef WIN32
-  if (path[0] == '\\')
-    return true;
-  if (path.size() > 1 && path[1] == ':')
-    return true;
-#endif
-  return false;
-}
-
-static inline bool
-is_absolute_somewhere(string const & path)
-{
-  if (path.empty())
-    return false;
-  if (path[0] == '/')
-    return true;
-  if (path[0] == '\\')
-    return true;
-  if (path.size() > 1 && path[1] == ':')
-    return true;
-  return false;
-}
-
 // relies on its arguments already being validated, except that you may not
 // append the empty path component, and if you are appending to the empty
 // path, you may not create an absolute path or a path into the bookkeeping
@@ -610,7 +687,8 @@ file_path::operator /(path_component const & to_append) const
       return file_path(s, 0, string::npos);
     }
   else
-    return file_path(data + "/" + to_append(), 0, string::npos);
+    return file_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                     + to_append(), 0, string::npos);
 }
 
 // similarly, but even less checking is needed.
@@ -620,7 +698,8 @@ file_path::operator /(file_path const & to_append) const
   I(!to_append.empty());
   if (empty())
     return to_append;
-  return file_path(data + "/" + to_append.as_internal(), 0, string::npos);
+  return file_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                   + to_append.as_internal(), 0, string::npos);
 }
 
 bookkeeping_path
@@ -628,7 +707,8 @@ bookkeeping_path::operator /(path_component const & to_append) const
 {
   I(!to_append.empty());
   I(!empty());
-  return bookkeeping_path(data + "/" + to_append(), 0, string::npos);
+  return bookkeeping_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                          + to_append(), 0, string::npos);
 }
 
 system_path
@@ -636,7 +716,8 @@ system_path::operator /(path_component const & to_append) const
 {
   I(!to_append.empty());
   I(!empty());
-  return system_path(data + "/" + to_append(), 0, string::npos);
+  return system_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                     + to_append(), 0, string::npos);
 }
 
 any_path
@@ -644,7 +725,8 @@ any_path::operator /(path_component const & to_append) const
 {
   I(!to_append.empty());
   I(!empty());
-  return any_path(data + "/" + to_append(), 0, string::npos);
+  return any_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                  + to_append(), 0, string::npos);
 }
 
 // these take strings and validate
@@ -653,7 +735,8 @@ bookkeeping_path::operator /(char const * to_append) const
 {
   I(!is_absolute_somewhere(to_append));
   I(!empty());
-  return bookkeeping_path(data + "/" + to_append);
+  return bookkeeping_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                          + to_append);
 }
 
 system_path
@@ -661,29 +744,20 @@ system_path::operator /(char const * to_append) const
 {
   I(!empty());
   I(!is_absolute_here(to_append));
-  return system_path(data + "/" + to_append);
+  return system_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                     + to_append);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 // system_path
 ///////////////////////////////////////////////////////////////////////////
 
-static string
-normalize_out_dots(string const & path)
-{
-#ifdef WIN32
-  return normalize_path(fs::path(path, fs::native)).string();
-#else
-  return normalize_path(fs::path(path, fs::native)).native_file_string();
-#endif
-}
-
 system_path::system_path(any_path const & other, bool in_true_workspace)
 {
   if (is_absolute_here(other.as_internal()))
     // another system_path.  the normalizing isn't really necessary, but it
     // makes me feel warm and fuzzy.
-    data = normalize_out_dots(other.as_internal());
+    data = normalize_path(other.as_internal());
   else
     {
       system_path wr;
@@ -691,7 +765,7 @@ system_path::system_path(any_path const & other, bool in_true_workspace)
         wr = working_root.get();
       else
         wr = working_root.get_but_unused();
-      data = normalize_out_dots(wr.as_internal() + "/" + other.as_internal());
+      data = normalize_path(wr.as_internal() + "/" + other.as_internal());
     }
 }
 
@@ -700,10 +774,10 @@ static inline string const_system_path(utf8 const & path)
   N(!path().empty(), F("invalid path ''"));
   string expanded = tilde_expand(path());
   if (is_absolute_here(expanded))
-    return normalize_out_dots(expanded);
+    return normalize_path(expanded);
   else
-    return normalize_out_dots(initial_abs_path.get().as_internal()
-                              + "/" + path());
+    return normalize_path(initial_abs_path.get().as_internal()
+                          + "/" + path());
 }
 
 system_path::system_path(string const & path)
@@ -721,76 +795,77 @@ system_path::system_path(utf8 const & path)
 ///////////////////////////////////////////////////////////////////////////
 
 static bool
-find_bookdir(fs::path const & root, fs::path const & bookdir, 
-             fs::path & current, fs::path & removed)
+find_bookdir(system_path const & root, path_component const & bookdir,
+             system_path & current, string & removed)
 {
-  current = fs::initial_path();
-  fs::path check = current / bookdir;
+  current = initial_abs_path.get();
+  removed.clear();
 
   // check that the current directory is below the specified search root
-
-  fs::path::iterator ri = root.begin();
-  fs::path::iterator ci = current.begin();
-
-  while (ri != root.end() && ci != current.end() && *ri == *ci)
+  if (current.as_internal().find(root.as_internal()) != 0)
     {
-      ++ri;
-      ++ci;
-    }
-
-  // if it's not then issue a warning and abort the search
-
-  if (ri != root.end())
-    {
-      W(F("current directory '%s' is not below root '%s'")
-        % current.string()
-        % root.string());
+      W(F("current directory '%s' is not below root '%s'") % current % root);
       return false;
     }
 
-  L(FL("searching for '%s' directory with root '%s'")
-    % bookdir.string()
-    % root.string());
+  L(FL("searching for '%s' directory with root '%s'") % bookdir % root);
 
-  while (current != root
-         && current.has_branch_path()
-         && current.has_leaf()
-         && !fs::exists(check))
+  system_path check;
+  while (!(current == root))
     {
-      L(FL("'%s' not found in '%s' with '%s' removed")
-        % bookdir.string() % current.string() % removed.string());
-      removed = fs::path(current.leaf(), fs::native) / removed;
-      current = current.branch_path();
       check = current / bookdir;
+      switch (get_path_status(check))
+        {
+        case path::nonexistent:
+          L(FL("'%s' not found in '%s' with '%s' removed")
+            % bookdir % current % removed);
+          if (removed.empty())
+            removed = current.basename()();
+          else
+            removed = current.basename()() + "/" + removed;
+          current = current.dirname();
+          continue;
+
+        case path::file:
+          L(FL("'%s' is not a directory") % check);
+          return false;
+
+        case path::directory:
+          goto found;
+        }
     }
 
-  L(FL("search for '%s' ended at '%s' with '%s' removed")
-    % bookdir.string() % current.string() % removed.string());
-
-  if (!fs::exists(check))
+  // if we get here, we have hit the root; try once more
+  check = current / bookdir;
+  switch (get_path_status(check))
     {
-      L(FL("'%s' does not exist") % check.string());
+    case path::nonexistent:
+      L(FL("'%s' not found in '%s' with '%s' removed")
+        % bookdir % current % removed);
       return false;
-    }
 
-  if (!fs::is_directory(check))
-    {
-      L(FL("'%s' is not a directory") % check.string());
+    case path::file:
+      L(FL("'%s' is not a directory") % check);
       return false;
-    }
 
+    case path::directory:
+      goto found;
+    }
+  return false;
+    
+ found:
   // check for _MTN/. and _MTN/.. to see if mt dir is readable
   try
     {
-      if (!fs::exists(check / ".") || !fs::exists(check / ".."))
+      if (!path_exists(check / ".") || !path_exists(check / ".."))
         {
-          L(FL("problems with '%s' (missing '.' or '..')") % check.string());
+          L(FL("problems with '%s' (missing '.' or '..')") % check);
           return false;
         }
     }
   catch(exception &)
     {
-      L(FL("problems with '%s' (cannot check for '.' or '..')") % check.string());
+      L(FL("problems with '%s' (cannot check for '.' or '..')") % check);
       return false;
     }
   return true;
@@ -798,38 +873,61 @@ find_bookdir(fs::path const & root, fs::path const & bookdir,
 
 
 bool
-find_and_go_to_workspace(std::string const & search_root)
+find_and_go_to_workspace(string const & search_root)
 {
-  fs::path bookdir(bookkeeping_root.as_external(), fs::native);
-  fs::path oldbookdir(old_bookkeeping_root.as_external(), fs::native);
-  fs::path root, current, removed;
+  system_path root, current;
+  string removed;
 
   if (search_root.empty())
-    root = fs::initial_path().root_path();
+    {
+#ifdef WIN32
+      std::string cur_str = get_current_working_dir();
+      current = cur_str;
+      if (cur_str[0] == '/' || cur_str[0] == '\\')
+        {
+          if (cur_str.size() > 1 && (cur_str[1] == '/' || cur_str[1] == '\\'))
+            {
+              // UNC name
+              string::size_type uncend = cur_str.find_first_of("\\/", 2);
+              if (uncend == string::npos)
+                root = system_path(cur_str + "/");
+              else
+                root = system_path(cur_str.substr(0, uncend));
+            }
+          else
+            root = system_path("/");
+        }
+      else if (cur_str.size() > 1 && cur_str[1] == ':')
+        {
+          root = system_path(cur_str.substr(0,2) + "/");
+        }
+      else I(false);
+#else
+      root = system_path("/");
+#endif
+    }
   else
     {
-      L(FL("limiting search for workspace to %s") % search_root);
-      // converting through system_path makes it absolute
-      root = fs::path(system_path(search_root).as_external(), fs::native);
+      root = system_path(search_root);
+      L(FL("limiting search for workspace to %s") % root);
 
-      N(fs::exists(root),
-        F("search root '%s' does not exist") % search_root);
-      N(fs::is_directory(root),
-         F("search root '%s' is not a directory") % search_root);
+      require_path_is_directory(root,
+                               F("search root '%s' does not exist") % root,
+                               F("search root '%s' is not a directory") % root);
     }
   
   // first look for the current name of the bookkeeping directory.
   // if we don't find it, look for it under the old name, so that
   // migration has a chance to work.
-  if (!find_bookdir(root, bookdir, current, removed))
-    if (!find_bookdir(root, oldbookdir, current, removed))
+  if (!find_bookdir(root, bookkeeping_root_component, current, removed))
+    if (!find_bookdir(root, old_bookkeeping_root_component, current, removed))
       return false;
 
-  working_root.set(current.native_file_string(), true);
+  working_root.set(current, true);
   initial_rel_path.set(removed, true);
 
   L(FL("working root is '%s'") % working_root.get_but_unused());
-  L(FL("initial relative path is '%s'") % initial_rel_path.get_but_unused().string());
+  L(FL("initial relative path is '%s'") % initial_rel_path.get_but_unused());
 
   change_current_working_dir(working_root.get_but_unused());
 
@@ -840,7 +938,7 @@ void
 go_to_workspace(system_path const & new_workspace)
 {
   working_root.set(new_workspace, true);
-  initial_rel_path.set(fs::path(), true);
+  initial_rel_path.set(string(), true);
   change_current_working_dir(new_workspace);
 }
 
@@ -863,7 +961,7 @@ using std::logic_error;
 
 UNIT_TEST(paths, path_component)
 {
-  char const * baddies[] = {".",
+  char const * const baddies[] = {".",
                             "..",
                             "/foo",
                             "\\foo",
@@ -872,7 +970,7 @@ UNIT_TEST(paths, path_component)
                             0 };
 
   // these would not be okay in a full file_path, but are okay here.
-  char const * goodies[] = {"c:foo",
+  char const * const goodies[] = {"c:foo",
                             "_mtn",
                             "_mtN",
                             "_mTn",
@@ -883,13 +981,13 @@ UNIT_TEST(paths, path_component)
                             0 };
 
   
-  for (char const ** c = baddies; *c; ++c)
+  for (char const * const * c = baddies; *c; ++c)
     {
       // the comparison prevents the compiler from eliminating the
       // expression.
-      UNIT_TEST_CHECK_THROW(path_component(*c)() == *c, logic_error);
+      UNIT_TEST_CHECK_THROW((path_component(*c)()) == *c, logic_error);
     }
-  for (char const **c = goodies; *c; ++c)
+  for (char const * const *c = goodies; *c; ++c)
     {
       path_component p(*c);
       UNIT_TEST_CHECK_THROW(file_path() / p, logic_error);
@@ -902,7 +1000,7 @@ UNIT_TEST(paths, path_component)
 
 UNIT_TEST(paths, file_path_internal)
 {
-  char const * baddies[] = {"/foo",
+  char const * const baddies[] = {"/foo",
                             "foo//bar",
                             "foo/../bar",
                             "../bar",
@@ -936,14 +1034,14 @@ UNIT_TEST(paths, file_path_internal)
                             "_mTN/foo",
                             0 };
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path(), true);
-  for (char const ** c = baddies; *c; ++c)
+  initial_rel_path.set(string(), true);
+  for (char const * const * c = baddies; *c; ++c)
     {
       UNIT_TEST_CHECK_THROW(file_path_internal(*c), logic_error);
     }
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path("blah/blah/blah", fs::native), true);
-  for (char const ** c = baddies; *c; ++c)
+  initial_rel_path.set("blah/blah/blah", true);
+  for (char const * const * c = baddies; *c; ++c)
     {
       UNIT_TEST_CHECK_THROW(file_path_internal(*c), logic_error);
     }
@@ -951,7 +1049,7 @@ UNIT_TEST(paths, file_path_internal)
   UNIT_TEST_CHECK(file_path().empty());
   UNIT_TEST_CHECK(file_path_internal("").empty());
 
-  char const * goodies[] = {"",
+  char const * const goodies[] = {"",
                             "a",
                             "foo",
                             "foo/bar/baz",
@@ -968,10 +1066,10 @@ UNIT_TEST(paths, file_path_internal)
   for (int i = 0; i < 2; ++i)
     {
       initial_rel_path.unset();
-      initial_rel_path.set(i ? fs::path()
-                             : fs::path("blah/blah/blah", fs::native),
+      initial_rel_path.set(i ? string()
+                             : string("blah/blah/blah"),
                            true);
-      for (char const ** c = goodies; *c; ++c)
+      for (char const * const * c = goodies; *c; ++c)
         {
           file_path fp = file_path_internal(*c);
           UNIT_TEST_CHECK(fp.as_internal() == *c);
@@ -982,7 +1080,7 @@ UNIT_TEST(paths, file_path_internal)
   initial_rel_path.unset();
 }
 
-static void check_fp_normalizes_to(char * before, char * after)
+static void check_fp_normalizes_to(char const * before, char const * after)
 {
   L(FL("check_fp_normalizes_to: '%s' -> '%s'") % before % after);
   file_path fp = file_path_external(utf8(before));
@@ -997,9 +1095,9 @@ static void check_fp_normalizes_to(char * before, char * after)
 UNIT_TEST(paths, file_path_external_null_prefix)
 {
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path(), true);
+  initial_rel_path.set(string(), true);
 
-  char const * baddies[] = {"/foo",
+  char const * const baddies[] = {"/foo",
                             "../bar",
                             "_MTN/blah",
                             "_MTN",
@@ -1027,7 +1125,7 @@ UNIT_TEST(paths, file_path_external_null_prefix)
                             "_MtN/foo",
                             "_mTN/foo",
                             0 };
-  for (char const ** c = baddies; *c; ++c)
+  for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_null_prefix: trying baddie: %s") % *c);
       UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
@@ -1066,7 +1164,7 @@ UNIT_TEST(paths, file_path_external_null_prefix)
 UNIT_TEST(paths, file_path_external_prefix__MTN)
 {
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path("_MTN"), true);
+  initial_rel_path.set(string("_MTN"), true);
 
   UNIT_TEST_CHECK_THROW(file_path_external(utf8("foo")), informative_failure);
   UNIT_TEST_CHECK_THROW(file_path_external(utf8(".")), informative_failure);
@@ -1078,9 +1176,9 @@ UNIT_TEST(paths, file_path_external_prefix__MTN)
 UNIT_TEST(paths, file_path_external_prefix_a_b)
 {
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path("a/b"), true);
+  initial_rel_path.set(string("a/b"), true);
 
-  char const * baddies[] = {"/foo",
+  char const * const baddies[] = {"/foo",
                             "../../../bar",
                             "../../..",
                             "../../_MTN",
@@ -1110,7 +1208,7 @@ UNIT_TEST(paths, file_path_external_prefix_a_b)
                             "../../_MtN/foo",
                             "../../_mTN/foo",
                             0 };
-  for (char const ** c = baddies; *c; ++c)
+  for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_prefix_a_b: trying baddie: %s") % *c);
       UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
@@ -1240,6 +1338,33 @@ UNIT_TEST(paths, basename)
                           % p->in % pc % p->out);
     }
 
+  // any_path::basename() should return exactly the same thing that
+  // the corresponding specialized basename() does, but with type any_path.
+  UNIT_TEST_CHECKPOINT("any_path basenames");
+  for (struct t const *p = fp_cases; p->in; p++)
+    {
+      any_path ap(file_path_internal(p->in));
+      path_component pc(ap.basename());
+      UNIT_TEST_CHECK_MSG(pc == path_component(p->out),
+                          FL("basename('%s') = '%s' (expect '%s')")
+                          % p->in % pc % p->out);
+    }
+  for (struct t const *p = bp_cases; p->in; p++)
+    {
+      any_path ap(bookkeeping_path(p->in));
+      path_component pc(ap.basename());
+      UNIT_TEST_CHECK_MSG(pc == path_component(p->out),
+                          FL("basename('%s') = '%s' (expect '%s')")
+                          % p->in % pc % p->out);
+    }
+  for (struct t const *p = sp_cases; p->in; p++)
+    {
+      any_path ap(system_path(p->in));
+      path_component pc(ap.basename());
+      UNIT_TEST_CHECK_MSG(pc == path_component(p->out),
+                          FL("basename('%s') = '%s' (expect '%s')")
+                          % p->in % pc % p->out);
+    }
 
   initial_abs_path.unset();
 }
@@ -1253,13 +1378,45 @@ UNIT_TEST(paths, dirname)
   };
   // file_paths cannot be absolute, but may be the empty string.
   struct t const fp_cases[] = {
-    { "",            ""    },
-    { "foo",         "" },
-    { "foo/bar",     "foo" },
+    { "",            ""        },
+    { "foo",         ""        },
+    { "foo/bar",     "foo"     },
     { "foo/bar/baz", "foo/bar" },
     { 0, 0 }
   };
 
+  // system_paths must be absolute.  this relies on the setting of
+  // initial_abs_path below.
+  struct t const sp_cases[] = {
+    { "/",          "/"           },
+    { "//",         "//"          },
+    { "foo",        "/a/b"        },
+    { "/foo",       "/"           },
+    { "//foo",      "//"          },
+    { "~/foo",      "~"           },
+    { "foo/bar",    "/a/b/foo"    },
+    { "/foo/bar",   "/foo"        },
+    { "//foo/bar",  "//foo"       },
+    { "~/foo/bar",  "~/foo"       },
+#ifdef WIN32
+    { "c:",         "c:"          },
+    { "c:foo",      "c:"          },
+    { "c:/",        "c:/"         },
+    { "c:/foo",     "c:/"         },
+    { "c:/foo/bar", "c:/foo"      },
+#else
+    { "c:",         "/a/b"        },
+    { "c:foo",      "/a/b"        },
+    { "c:/",        "/a/b"        },
+    { "c:/foo",     "/a/b/c:"     },
+    { "c:/foo/bar", "/a/b/c:/foo" },
+#endif
+    { 0, 0 }
+  };
+
+  initial_abs_path.unset();
+  
+  UNIT_TEST_CHECKPOINT("file_path dirnames");
   for (struct t const *p = fp_cases; p->in; p++)
     {
       file_path fp = file_path_internal(p->in);
@@ -1268,6 +1425,43 @@ UNIT_TEST(paths, dirname)
                           FL("dirname('%s') = '%s' (expect '%s')")
                           % p->in % dn % p->out);
     }
+
+
+  initial_abs_path.set(system_path("/a/b"), true);
+  UNIT_TEST_CHECKPOINT("system_path dirnames");
+  for (struct t const *p = sp_cases; p->in; p++)
+    {
+      system_path fp(p->in);
+      system_path dn(fp.dirname());
+
+      UNIT_TEST_CHECK_MSG(dn == system_path(p->out),
+                          FL("dirname('%s') = '%s' (expect '%s')")
+                          % p->in % dn % p->out);
+    }
+
+  // any_path::dirname() should return exactly the same thing that
+  // the corresponding specialized dirname() does, but with type any_path.
+  UNIT_TEST_CHECKPOINT("any_path dirnames");
+  for (struct t const *p = fp_cases; p->in; p++)
+    {
+      any_path ap(file_path_internal(p->in));
+      any_path dn(ap.dirname());
+      any_path rf(file_path_internal(p->out));
+      UNIT_TEST_CHECK_MSG(dn.as_internal() == rf.as_internal(),
+                          FL("dirname('%s') = '%s' (expect '%s')")
+                          % p->in % dn % rf);
+    }
+  for (struct t const *p = sp_cases; p->in; p++)
+    {
+      any_path ap(system_path(p->in));
+      any_path dn(ap.dirname());
+      any_path rf(system_path(p->out));
+      UNIT_TEST_CHECK_MSG(dn.as_internal() == rf.as_internal(),
+                          FL("dirname('%s') = '%s' (expect '%s')")
+                          % p->in % dn % rf);
+    }
+
+  initial_abs_path.unset();
 }
 
 UNIT_TEST(paths, depth)
@@ -1282,7 +1476,7 @@ UNIT_TEST(paths, depth)
     }
 }
 
-static void check_bk_normalizes_to(char * before, char * after)
+static void check_bk_normalizes_to(char const * before, char const * after)
 {
   bookkeeping_path bp(bookkeeping_root / before);
   L(FL("normalizing %s to %s (got %s)") % before % after % bp);
@@ -1292,7 +1486,7 @@ static void check_bk_normalizes_to(char * before, char * after)
 
 UNIT_TEST(paths, bookkeeping)
 {
-  char const * baddies[] = {"/foo",
+  char const * const baddies[] = {"/foo",
                             "foo//bar",
                             "foo/../bar",
                             "../bar",
@@ -1311,7 +1505,7 @@ UNIT_TEST(paths, bookkeeping)
                             0 };
   string tmp_path_string;
 
-  for (char const ** c = baddies; *c; ++c)
+  for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_bookkeeping_path baddie: trying '%s'") % *c);
             UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign(*c)),
@@ -1332,7 +1526,7 @@ UNIT_TEST(paths, bookkeeping)
   check_bk_normalizes_to("foo/bar/baz", "_MTN/foo/bar/baz");
 }
 
-static void check_system_normalizes_to(char * before, char * after)
+static void check_system_normalizes_to(char const * before, char const * after)
 {
   system_path sp(before);
   L(FL("normalizing '%s' to '%s' (got '%s')") % before % after % sp);
@@ -1389,7 +1583,7 @@ UNIT_TEST(paths, system)
 #ifdef WIN32
   UNIT_TEST_CHECK(system_path("~this_user_does_not_exist_anywhere")
                   .as_external()
-                  == "~this_user_does_not_exist_anywhere");
+                  == "/a/b/~this_user_does_not_exist_anywhere");
 #else
   UNIT_TEST_CHECK_THROW(system_path("~this_user_does_not_exist_anywhere"),
                         informative_failure);
@@ -1401,7 +1595,7 @@ UNIT_TEST(paths, system)
   working_root.unset();
   working_root.set(system_path("/working/root"), true);
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path("rel/initial"), true);
+  initial_rel_path.set(string("rel/initial"), true);
 
   UNIT_TEST_CHECK(system_path(system_path("foo/bar")).as_internal() == "/a/b/foo/bar");
   UNIT_TEST_CHECK(!working_root.used);
@@ -1649,17 +1843,17 @@ UNIT_TEST(paths, ordering_random)
 
 UNIT_TEST(paths, test_internal_string_is_bookkeeping_path)
 {
-  char const * yes[] = {"_MTN",
+  char const * const yes[] = {"_MTN",
                         "_MTN/foo",
                         "_mtn/Foo",
                         0 };
-  char const * no[] = {"foo/_MTN",
+  char const * const no[] = {"foo/_MTN",
                        "foo/bar",
                        0 };
-  for (char const ** c = yes; *c; ++c)
+  for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
                 ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
-  for (char const ** c = no; *c; ++c)
+  for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
                  ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
@@ -1667,21 +1861,21 @@ UNIT_TEST(paths, test_internal_string_is_bookkeeping_path)
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
 {
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path(), true);
+  initial_rel_path.set(string(), true);
 
-  char const * yes[] = {"_MTN",
+  char const * const yes[] = {"_MTN",
                         "_MTN/foo",
                         "_mtn/Foo",
                         "_MTN/foo/..",
                         0 };
-  char const * no[] = {"foo/_MTN",
+  char const * const no[] = {"foo/_MTN",
                        "foo/bar",
                        "_MTN/..",
                        0 };
-  for (char const ** c = yes; *c; ++c)
+  for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
-  for (char const ** c = no; *c; ++c)
+  for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
                  ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
@@ -1689,23 +1883,23 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
 {
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path("a/b"), true);
+  initial_rel_path.set(string("a/b"), true);
 
-  char const * yes[] = {"../../_MTN",
+  char const * const yes[] = {"../../_MTN",
                         "../../_MTN/foo",
                         "../../_mtn/Foo",
                         "../../_MTN/foo/..",
                         "../../foo/../_MTN/foo",
                         0 };
-  char const * no[] = {"foo/_MTN",
+  char const * const no[] = {"foo/_MTN",
                        "foo/bar",
                        "_MTN",
                        "../../foo/_MTN",
                        0 };
-  for (char const ** c = yes; *c; ++c)
+  for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
-  for (char const ** c = no; *c; ++c)
+  for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
                  ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
 }
@@ -1713,22 +1907,22 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
 {
   initial_rel_path.unset();
-  initial_rel_path.set(fs::path("_MTN"), true);
+  initial_rel_path.set(string("_MTN"), true);
 
-  char const * yes[] = {".",
+  char const * const yes[] = {".",
                         "foo",
                         "../_MTN/foo/..",
                         "../_mtn/foo",
                         "../foo/../_MTN/foo",
                         0 };
-  char const * no[] = {"../foo",
+  char const * const no[] = {"../foo",
                        "../foo/bar",
                        "../foo/_MTN",
                        0 };
-  for (char const ** c = yes; *c; ++c)
+  for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
-  for (char const ** c = no; *c; ++c)
+  for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
                  ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
 }

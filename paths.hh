@@ -220,7 +220,7 @@ public:
     std::string::const_iterator q = other.data.begin();
     std::string::const_iterator qlim = other.data.end();
 
-    while (*p == *q && p != plim && q != qlim)
+    while (p != plim && q != qlim && *p == *q)
       p++, q++;
 
     if (p == plim && q == qlim) // equal -> not less
@@ -315,10 +315,15 @@ private:
   }
 };
 
-extern bookkeeping_path const bookkeeping_root;
-extern path_component const bookkeeping_root_component;
+// these are #defines so that they will be constructed lazily, when
+// used.  this is necessary for correct behavior; the path constructors
+// use sanity.hh assertions and therefore must not run before
+// sanity::initialize is called.
+
+#define bookkeeping_root (bookkeeping_path("_MTN"))
+#define bookkeeping_root_component (path_component("_MTN"))
 // for migration
-extern file_path const old_bookkeeping_root;
+#define old_bookkeeping_root_component (path_component("MT"))
 
 // this will always be an absolute path
 class system_path : public any_path
@@ -326,6 +331,7 @@ class system_path : public any_path
 public:
   system_path() {};
   system_path(system_path const & other) : any_path(other) {};
+
   // the optional argument takes some explanation.  this constructor takes a
   // path relative to the workspace root.  the question is how to interpret
   // that path -- since it's possible to have multiple workspaces over the
@@ -344,8 +350,12 @@ public:
   system_path(std::string const & path);
   system_path(utf8 const & path);
 
+  bool operator ==(const system_path & other) const
+  { return data == other.data; }
+
   system_path operator /(path_component const & to_append) const;
   system_path operator /(char const * to_append) const;
+  system_path dirname() const;
 
 private:
   system_path(std::string const & path,
