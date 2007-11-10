@@ -1,4 +1,5 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -W
+##!/usr/bin/perl -w
 ##############################################################################
 #
 #   File Name    - mtn-browse
@@ -63,18 +64,38 @@ use Data::Dumper;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
+# Constants used to represent the different groups of widgets.
+
+use constant BRANCH          => 0x01;
+use constant DIRECTORY       => 0x02;
+use constant DISPLAY_OF_FILE => 0x04;
+use constant FILE            => 0x08;
+use constant REVISION        => 0x10;
+
+# Constants used to represent the different state changes. Read this as
+# `what has just been changed' => `what needs to be updated'.
+
+use constant BRANCH_CHANGED          => (REVISION | DIRECTORY | FILE
+					 | DISPLAY_OF_FILE);
+use constant DATABASE_CHANGED        => 0xff;
+use constant DIRECTORY_CHANGED       => (FILE | DISPLAY_OF_FILE);
+use constant DISPLAY_OF_FILE_CHANGED => 0x00;
+use constant FILE_CHANGED            => (DISPLAY_OF_FILE);
+use constant REVISION_CHANGED        => (DIRECTORY | FILE | DISPLAY_OF_FILE);
+
 # The Glade generated widgets object.
 
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Private routines.
 
-sub branch_combo_change_cb($$);
-sub branch_combo_key_release_event_cb($$$);
+sub combo_changed_cb($$);
+sub combo_key_release_event_cb($$$);
 sub delete_event_cb($$$);
 sub destroy_event_cb($$;$);
 sub get_completion($\@\$\$;\%);
 sub new_browser_instance();
+sub update_browser_state($$);
 #
 ##############################################################################
 #
@@ -153,35 +174,41 @@ sub new_browser_instance()
     $browser->{main_appbar} = $browser->{glade}->get_widget("main_appbar");
     $browser->{branch_combo} =
 	$browser->{glade}->get_widget("branch_comboboxentry");
+    $browser->{directory_combo} =
+	$browser->{glade}->get_widget("directory_comboboxentry");
     $browser->{revision_combo} =
 	$browser->{glade}->get_widget("revision_comboboxentry");
+    $browser->{revision_treeview} =
+	$browser->{glade}->get_widget("revision_browser_treeview");
     $browser->{tagged_tick} =
 	$browser->{glade}->get_widget("tagged_only_checkbutton");
-
-    # Initialise remaining fields.
-
-    $browser->{branch_completion_cache} = {};
-    $browser->{old_branch_value} = "";
-    $browser->{revision_completion_cache} = {};
-    $browser->{old_revision_value} = "";
 
     # Move the pane separator to a sensible position.
 
     $div = $browser->{glade}->get_widget("browser_hpaned");
     $div->set_position(300);
 
-    # Populate the branch combobox with all the branch names.
+    # Setup the comboboxes.
 
-    $browser->{mtn}->branches(\@branch_list);
-    $browser->{branch_list} = \@branch_list;
     $browser->{branch_combo}->set_model(Gtk2::ListStore->new("Glib::String"));
     $browser->{branch_combo}->set_text_column(0);
     $browser->{branch_combo}->set_wrap_width(2);
-    foreach (@branch_list)
-    {
-	$browser->{branch_combo}->append_text($_);
-    }
-    # $browser->{branch_combobox}->get_model()->clear();
+    $browser->{directory_combo}->
+	set_model(Gtk2::ListStore->new("Glib::String"));
+    $browser->{directory_combo}->set_text_column(0);
+    $browser->{directory_combo}->set_wrap_width(1);
+    $browser->{revision_combo}->
+	set_model(Gtk2::ListStore->new("Glib::String"));
+    $browser->{revision_combo}->set_text_column(0);
+    $browser->{revision_combo}->set_wrap_width(2);
+
+    # Setup the tree view file browser.
+
+    
+
+    # Update the browser'a internal state.
+
+    update_browser_state($browser, DATABASE_CHANGED);
 
     return $browser;
 
@@ -189,11 +216,11 @@ sub new_browser_instance()
 #
 ##############################################################################
 #
-#   Routine      - branch_combo_change_cb
+#   Routine      - combo_changed_cb
 #
 #   Description  - Callback routine called when the user changes the value of
-#                  the branch list ComboBoxEntry by selecting an entry from
-#                  the pulldown list.
+#                  a ComboBoxEntry by selecting an entry from its pulldown
+#                  list.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -203,24 +230,39 @@ sub new_browser_instance()
 
 
 
-sub branch_combo_change_cb($$)
+sub combo_changed_cb($$)
 {
 
     my($widget, $browser) = @_;
 
-    $browser->{old_branch_value} =
-	$browser->{branch_combo}->child()->get_text();
+    my ($change_state,
+	$combo_details);
+
+    if ($widget == $browser->{branch_combo})
+    {
+	$change_state = BRANCH_CHANGED;
+	$combo_details = $browser->{branch_combo_details};
+    }
+    elsif ($widget == $browser->{revision_combo})
+    {
+	$change_state = REVISION_CHANGED;
+	$combo_details = $browser->{revision_combo_details};
+    }
+
+    $combo_details->{value} = $widget->child()->get_text();
+    $combo_details->{completed} = 1;
     $browser->{main_appbar}->set_status("");
+    update_browser_state($browser, $change_state);
 
 }
 #
 ##############################################################################
 #
-#   Routine      - branch_combo_key_release_event_cb
+#   Routine      - combo_key_release_event_cb
 #
 #   Description  - Callback routine called when the user changes the value of
-#                  the branch list ComboBoxEntry by entering a character (key
-#                  release event).
+#                  a ComboBoxEntry by entering a character (key release
+#                  event).
 #
 #   Data         - $widget      : The widget object that received the signal.
 #                  $event       : A Gtk2::Gdk::Event object describing the
@@ -236,25 +278,49 @@ sub branch_combo_change_cb($$)
 
 
 
-sub branch_combo_key_release_event_cb($$$)
+sub combo_key_release_event_cb($$$)
 {
 
     my($widget, $event, $browser) = @_;
 
-    my ($branch,
-	$complete,
+    my ($change_state,
+	$combo_details,
+	$completed,
 	$completion,
+	$item,
 	$len,
+	$name,
+	$old_completed,
+	$old_value,
 	$value);
+
+    if ($widget == $browser->{branch_combo})
+    {
+	$change_state = BRANCH_CHANGED;
+	$combo_details = $browser->{branch_combo_details};
+	$name = "branch";
+    }
+    elsif ($widget == $browser->{revision_combo})
+    {
+	$change_state = REVISION_CHANGED;
+	$combo_details = $browser->{revision_combo_details};
+	$name = "revision";
+    }
 
     # The user has typed something in then validate it and auto-complete it if
     # necessary.
 
-    $value = $browser->{branch_combo}->child()->get_text();
-    if ($value ne $browser->{old_branch_value})
+    $completed = 0;
+    $old_completed = $combo_details->{completed};
+    $value = $old_value = $widget->child()->get_text();
+    if ($value ne $combo_details->{value})
     {
+
+	# Don't auto-complete if the user is simply deleting from the extreme
+	# right.
+
 	$len = length($value);
-	if ($value ne substr($browser->{old_branch_value}, 0, $len))
+	if ($value ne substr($combo_details->{value}, 0, $len))
 	{
 
 	    # So that the spacebar triggers auto-complete.
@@ -263,40 +329,42 @@ sub branch_combo_key_release_event_cb($$$)
 	    $len = length($value);
 
 	    if (get_completion($value,
-			       @{$browser->{branch_list}},
+			       @{$combo_details->{list}},
 			       $completion,
-			       $complete,
-			       %{$browser->{branch_completion_cache}}))
+			       $completed,
+			       %{$combo_details->{completion_cache}}))
 	    {
 		$browser->{main_appbar}->set_status("");
-		$value = $completion;
-		$len = length($value);
 	    }
 	    else
 	    {
 		$browser->{main_appbar}->set_status
-		    ("Invalid branch name`" . $value . "'");
-		$value = $completion;
-		$len = length($value);
+		    ("Invalid " . $name . " name`" . $value . "'");
 	    }
-	    $browser->{branch_combo}->child()->set_text($value);
-	    $browser->{branch_combo}->child()->set_position(-1);
-	    $browser->{old_branch_value} = $value;
-
-	    # TODO TRIGGER REV REFRESH HERE.
-
-	    print "COMPLETE MATCH\n" unless (! $complete);
+	    $value = $completion;
+	    $len = length($value);
+	    $widget->child()->set_text($value);
+	    $widget->child()->set_position(-1);
 
 	}
+	$combo_details->{value} = $value;
+	$combo_details->{completed} = $completed;
 
 	# Update the pulldown choices.
 
-	$browser->{branch_combo}->get_model()->clear();
-	foreach $branch (@{$browser->{branch_list}})
+	$widget->get_model()->clear();
+	foreach $item (@{$combo_details->{list}})
 	{
-	    $browser->{branch_combo}->append_text($branch)
-		if ($value eq substr($branch, 0, $len));
+	    $widget->append_text($item) if ($value eq substr($item, 0, $len));
+	    $combo_details->{completed} = 1
+		if (! $completed && $value eq $item);
 	}
+
+	# Update the browser state on a significant change.
+
+	update_browser_state($browser, $change_state)
+	    if ($combo_details->{completed} != $old_completed
+		|| $combo_details->{value} ne $old_value);
 
     }
 
@@ -364,6 +432,105 @@ sub destroy_event_cb($$;$)
     Gtk2->main_quit();
 
     return FALSE;
+
+}
+#
+##############################################################################
+#
+#   Routine      - update_browser_state
+#
+#   Description  - Given a value and a list, work out the largest unique
+#                  match. Used for auto completion.
+#
+#   Data         - $browser : The browser instance that is to have its state
+#                             updated.
+#                  $changed : What the user has changed.
+#
+##############################################################################
+
+
+
+sub update_browser_state($$)
+{
+
+    my($browser, $changed) = @_;
+
+    if ($changed & BRANCH)
+    {
+
+	my($branch,
+	   @branch_list);
+
+	# Reset the branch selection.
+
+	$browser->{branch_combo_details}->{completion_cache} = {};
+	$browser->{branch_combo_details}->{completed} = 0;
+	$browser->{branch_combo_details}->{value} = "";
+
+	# Get the new list of branches.
+
+	$browser->{mtn}->branches(\@branch_list) if (defined($browser->{mtn}));
+	$browser->{branch_combo_details}->{list} = \@branch_list;
+
+	# Update the branch list combobox.
+
+	$browser->{branch_combo}->child()->set_text("");
+	$browser->{branch_combo}->get_model()->clear();
+	foreach $branch (@branch_list)
+	{
+	    $browser->{branch_combo}->append_text($branch);
+	}
+
+    }
+
+    if ($changed & REVISION)
+    {
+
+	my($revision,
+	   @revision_list);
+
+	# Reset the revision selection.
+
+	$browser->{revision_combo_details}->{completion_cache} = {};
+	$browser->{revision_combo_details}->{completed} = 0;
+	$browser->{revision_combo_details}->{value} = "";
+
+	# Get the new list of revisions.
+
+	if ($browser->{branch_combo_details}->{completed})
+	{
+	    $browser->{mtn}->select(\@revision_list,
+				    "b:" .
+				    $browser->{branch_combo_details}->{value});
+	    $browser->{mtn}->toposort(\@revision_list, @revision_list);
+	    splice(@revision_list, 0, scalar(@revision_list) - 100);
+	    @revision_list = reverse(@revision_list);
+	}
+	$browser->{revision_combo_details}->{list} = \@revision_list;
+
+	# Update the revision list combobox.
+
+	$browser->{revision_combo}->child()->set_text("");
+	$browser->{revision_combo}->get_model()->clear();
+	foreach $revision (@revision_list)
+	{
+	    $revision = "i:" . $revision;
+	    $browser->{revision_combo}->append_text($revision);
+	}
+
+    }
+
+    if ($changed & DIRECTORY)
+    {
+    }
+
+    if ($changed & FILE)
+    {
+    }
+
+    if ($changed & DISPLAY_OF_FILE)
+    {
+    }
 
 }
 #
