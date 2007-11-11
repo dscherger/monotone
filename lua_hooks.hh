@@ -13,16 +13,19 @@
 // this file defines a typed C++ interface to the various hooks
 // we expose to the user as lua functions or variables
 
-#include <string>
 #include <set>
 #include <map>
 #include "file_io.hh"
+#include "option.hh"
 #include "vocab.hh"
 #include "paths.hh"
 
 struct uri;
 class app_state;
 struct lua_State;
+struct globish;
+
+extern app_state* get_app_state(lua_State *L);
 
 class lua_hooks
 {
@@ -35,11 +38,13 @@ public:
   void add_test_hooks();
 #endif
   void set_app(app_state *_app);
+  bool check_lua_state(lua_State * st) const;
   void add_std_hooks();
   void workspace_rcfilename(bookkeeping_path & file);
   void default_rcfilename(system_path & file);
   void load_rcfile(utf8 const & file);
   void load_rcfile(any_path const & file, bool required);
+  bool hook_exists(std::string const & func_name);
 
   // cert hooks
   bool hook_expand_selector(std::string const & sel, std::string & exp);
@@ -65,6 +70,10 @@ public:
                                      std::map<rsa_keypair_id, bool> const & new_results);
 
   // network hooks
+  bool hook_get_netsync_key(utf8 const & server_address,
+                            globish const & include,
+                            globish const & exclude,
+                            rsa_keypair_id & k);
   bool hook_get_netsync_connect_command(uri const & u,
                                         globish const & include_pattern,
                                         globish const & exclude_pattern,
@@ -149,7 +158,7 @@ public:
                              size_t certs_in, size_t certs_out,
                              size_t revs_in, size_t revs_out,
                              size_t keys_in, size_t keys_out);
-  bool hook_note_mtn_startup(std::vector<std::string> const & args);
+  bool hook_note_mtn_startup(args_vector const & args);
 };
 
 // Local Variables:

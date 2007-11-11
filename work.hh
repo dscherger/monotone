@@ -10,7 +10,6 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <string>
 #include <set>
 #include <map>
 
@@ -71,17 +70,18 @@ struct workspace
 {
   void find_missing(roster_t const & new_roster_shape,
                     node_restriction const & mask,
-                    path_set & missing);
+                    std::set<file_path> & missing);
 
   void find_unknown_and_ignored(path_restriction const & mask,
                                 std::vector<file_path> const & roots,
-                                path_set & unknown, path_set & ignored);
+                                std::set<file_path> & unknown,
+                                std::set<file_path> & ignored);
 
-  void perform_additions(path_set const & targets,
+  void perform_additions(std::set<file_path> const & targets,
                          bool recursive = false,
                          bool respect_ignore = true);
 
-  void perform_deletions(path_set const & targets, bool recursive, 
+  void perform_deletions(std::set<file_path> const & targets, bool recursive, 
                          bool bookkeep_only);
 
   void perform_rename(std::set<file_path> const & src_paths,
@@ -98,6 +98,7 @@ struct workspace
 
   void update_any_attrs();
 
+  bool has_changes();
 
   // write out a new (partial) revision describing the current workspace;
   // the important pieces of this are the base revision id and the "shape"
@@ -122,13 +123,6 @@ struct workspace
   // rosters, there being one such pair for each parent of the current
   // revision.
   void get_parent_rosters(parent_map & parents);
-
-  // Inspect the workspace and classify all the paths in it according to
-  // what ROS thinks of them.
-  void classify_roster_paths(roster_t const & ros,
-                             path_set & unchanged,
-                             path_set & changed,
-                             path_set & missing);
 
   // This updates the file-content hashes in ROSTER, which is assumed to be
   // the "current" roster returned by one of the above get_*_roster_shape
@@ -193,6 +187,10 @@ struct workspace
   void get_local_dump_path(bookkeeping_path & d_path);
 
   // the 'inodeprints file' contains inode fingerprints
+
+  bool in_inodeprints_mode();
+  void read_inodeprints(data & dat);
+  void write_inodeprints(data const & dat);
 
   void enable_inodeprints();
   void maybe_update_inodeprints();

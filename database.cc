@@ -7,6 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <algorithm>
 #include <deque>
 #include <fstream>
@@ -14,14 +15,14 @@
 #include <list>
 #include <set>
 #include <sstream>
-#include <vector>
+#include "vector.hh"
 
 #include <string.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/lexical_cast.hpp>
+#include "lexical_cast.hh"
 
-#include <sqlite3.h>
+#include "sqlite/sqlite3.h"
 
 #include "app_state.hh"
 #include "cert.hh"
@@ -44,6 +45,8 @@
 #include "graph.hh"
 #include "roster_delta.hh"
 #include "rev_height.hh"
+#include "vocab_hash.hh"
+#include "globish.hh"
 
 // defined in schema.c, generated from schema.sql:
 extern char const schema_constant[];
@@ -426,6 +429,7 @@ database::load(istream & in)
 
   // the page size can only be set before any other commands have been executed
   sqlite3_exec(__sql, "PRAGMA page_size=8192", NULL, NULL, NULL);
+  assert_sqlite3_ok(__sql);
 
   while(in)
     {
@@ -435,6 +439,7 @@ database::load(istream & in)
       if (sqlite3_complete(sql_stmt.c_str()))
         {
           sqlite3_exec(__sql, sql_stmt.c_str(), NULL, NULL, NULL);
+          assert_sqlite3_ok(__sql);
           sql_stmt.clear();
         }
     }
@@ -503,7 +508,7 @@ format_sqlite_error_for_info(informative_failure const & e)
 // string, provided that all four characters are graphic.  (On disk, it's
 // stored in the "user version" field of the database.)
 static string
-format_creator_code(uint32_t code)
+format_creator_code(u32 code)
 {
   char buf[5];
   string result;
@@ -542,12 +547,12 @@ database::info(ostream & out)
   sqlite3_exec(__sql, "SELECT 1 FROM sqlite_master LIMIT 0", 0, 0, 0);
   assert_sqlite3_ok(__sql);
 
-  uint32_t ccode;
+  u32 ccode;
   {
     results res;
     fetch(res, one_col, one_row, query("PRAGMA user_version"));
     I(res.size() == 1);
-    ccode = lexical_cast<uint32_t>(res[0][0]);
+    ccode = lexical_cast<u32>(res[0][0]);
   }
 
   vector<string> counts;
@@ -766,13 +771,13 @@ database::fetch(results & res,
   I(params == int(query.args.size()));
 
   // profiling finds this logging to be quite expensive
-  if (global_sanity.debug)
+  if (global_sanity.debug_p())
     L(FL("binding %d parameters for %s") % params % query.sql_cmd);
 
   for (int param = 1; param <= params; param++)
     {
       // profiling finds this logging to be quite expensive
-      if (global_sanity.debug)
+      if (global_sanity.debug_p())
         {
           string log;
           switch (query.args[param-1].type)
@@ -922,6 +927,15 @@ database::cancel_delayed_file(file_id const & an_id)
 }
 
 void
+database::drop_or_cancel_file(file_id const & id)
+{
+  if (have_delayed_file(id))
+    cancel_delayed_file(id);
+  else
+    drop(id.inner()(), "files");
+}
+
+void
 database::schedule_delayed_file(file_id const & an_id,
                                 file_data const & dat)
 {
@@ -1030,6 +1044,17 @@ database::delta_exists(string const & ident,
                        string const & table)
 {
   return table_has_entry(ident, "id", table);
+}
+
+bool
+database::delta_exists(string const & ident,
+                       string const & base,
+                       string const & table)
+{
+  results res;
+  query q("SELECT 1 FROM " + table + " WHERE id = ? and base = ? LIMIT 1");
+  fetch(res, one_col, any_rows, q % text(ident) % text(base));
+  return !res.empty();
 }
 
 string
@@ -1415,7 +1440,7 @@ public:
   
   void look_at_roster(roster_t const & roster, marking_map const & mm)
   {
-    map<node_id, marking_t>::const_iterator mmi =
+    marking_map::const_iterator mmi =
       mm.find(nid);
     I(mmi != mm.end());
     markings = mmi->second;
@@ -1692,14 +1717,9 @@ database::put_file_version(file_id const & old_id,
                            file_id const & new_id,
                            file_delta const & del)
 {
+  I(!(old_id == new_id));
   file_data old_data, new_data;
   file_delta reverse_delta;
-
-  if (file_version_exists(new_id))
-    {
-      L(FL("file version '%s' already exists in db") % new_id);
-      return;
-    }
 
   if (!file_version_exists(old_id))
     {
@@ -1714,30 +1734,37 @@ database::put_file_version(file_id const & old_id,
     patch(old_data.inner(), del.inner(), tmp);
     new_data = file_data(tmp);
   }
+
   {
     string tmp;
     invert_xdelta(old_data.inner()(), del.inner()(), tmp);
     reverse_delta = file_delta(tmp);
     data old_tmp;
-    hexenc<id> old_tmp_id;
     patch(new_data.inner(), reverse_delta.inner(), old_tmp);
-    calculate_ident(old_tmp, old_tmp_id);
-    I(file_id(old_tmp_id) == old_id);
+    // We already have the real old data, so compare the
+    // reconstruction to that directly instead of hashing
+    // the reconstruction and comparing hashes.
+    I(old_tmp == old_data.inner());
   }
-
-  transaction_guard guard(*this);
+  
+  transaction_guard guard(*this);  
   if (file_or_manifest_base_exists(old_id.inner(), "files"))
     {
       // descendent of a head version replaces the head, therefore old head
       // must be disposed of
-      if (have_delayed_file(old_id))
-        cancel_delayed_file(old_id);
-      else
-        drop(old_id.inner()(), "files");
+      drop_or_cancel_file(old_id);
     }
-  schedule_delayed_file(new_id, new_data);
-  put_file_delta(old_id, new_id, reverse_delta);
-  guard.commit();
+  if (!file_or_manifest_base_exists(new_id.inner(), "files"))
+    {
+      schedule_delayed_file(new_id, new_data);
+      drop(new_id.inner()(), "file_deltas");
+    }
+    
+  if (!delta_exists(old_id.inner()(), new_id.inner()(), "file_deltas"))
+    {
+      put_file_delta(old_id, new_id, reverse_delta);
+      guard.commit();
+    }
 }
 
 void
@@ -1793,6 +1820,9 @@ database::get_arbitrary_file_delta(file_id const & src_id,
 void
 database::get_revision_ancestry(rev_ancestry_map & graph)
 {
+  // share some storage
+  id::symtab id_syms;
+  
   results res;
   graph.clear();
   fetch(res, 2, any_rows,
@@ -1924,6 +1954,9 @@ database::get_revision(revision_id const & id,
   dat = revision_data(rdat);
 }
 
+typedef std::map<revision_id, rev_height> height_map;
+static height_map height_cache;
+
 void
 database::get_rev_height(revision_id const & id,
                          rev_height & height)
@@ -1934,14 +1967,24 @@ database::get_rev_height(revision_id const & id,
       return;
     }
 
-  results res;
-  fetch(res, one_col, one_row,
-        query("SELECT height FROM heights WHERE revision = ?")
-        % text(id.inner()()));
+  height_map::const_iterator i = height_cache.find(id);
+  if (i == height_cache.end())
+    {
+      results res;
+      fetch(res, one_col, one_row,
+            query("SELECT height FROM heights WHERE revision = ?")
+            % text(id.inner()()));
 
-  I(res.size() == 1);
-  
-  height = rev_height(res[0][0]);
+      I(res.size() == 1);
+
+      height = rev_height(res[0][0]);
+      height_cache.insert(make_pair(id, height));
+    }
+  else
+    {
+      height = i->second;
+    }
+
   I(height.valid());
 }
 
@@ -1952,6 +1995,8 @@ database::put_rev_height(revision_id const & id,
   I(!null_id(id));
   I(revision_exists(id));
   I(height.valid());
+  
+  height_cache.erase(id);
   
   execute(query("INSERT INTO heights VALUES(?, ?)")
           % text(id.inner()())
@@ -1983,7 +2028,7 @@ database::deltify_revision(revision_id const & rid)
     for (edge_map::const_iterator i = rev.edges.begin();
          i != rev.edges.end(); ++i)
       {
-        for (map<split_path, pair<file_id, file_id> >::const_iterator
+        for (map<file_path, pair<file_id, file_id> >::const_iterator
                j = edge_changes(i).deltas_applied.begin();
              j != edge_changes(i).deltas_applied.end(); ++j)
           {
@@ -1997,7 +2042,7 @@ database::deltify_revision(revision_id const & rid)
                 delta delt;
                 diff(old_data.inner(), new_data.inner(), delt);
                 file_delta del(delt);
-                drop(delta_entry_dst(j).inner()(), "files");
+                drop_or_cancel_file(delta_entry_dst(j));
                 drop(delta_entry_dst(j).inner()(), "file_deltas");
                 put_file_version(delta_entry_src(j), delta_entry_dst(j), del);
               }
@@ -2039,7 +2084,7 @@ database::put_revision(revision_id const & new_id,
           return false;
         }
 
-      for (map<split_path, file_id>::const_iterator a
+      for (map<file_path, file_id>::const_iterator a
              = edge_changes(i).files_added.begin();
            a != edge_changes(i).files_added.end(); ++a)
         {
@@ -2051,7 +2096,7 @@ database::put_revision(revision_id const & new_id,
             }
         }
 
-      for (map<split_path, pair<file_id, file_id> >::const_iterator d
+      for (map<file_path, pair<file_id, file_id> >::const_iterator d
              = edge_changes(i).deltas_applied.begin();
            d != edge_changes(i).deltas_applied.end(); ++d)
         {
@@ -2097,9 +2142,19 @@ database::put_revision(revision_id const & new_id,
     }
 
   // Phase 3: Construct and write the roster (which also checks the manifest
-  // id as it goes)
+  // id as it goes), but only if the roster does not already exist in the db
+  // (i.e. because it was left over by a kill_rev_locally)
+  // FIXME: there is no knowledge yet on speed implications for commands which
+  // put a lot of revisions in a row (i.e. tailor or cvs_import)!
 
-  put_roster_for_revision(new_id, rev);
+  if (!roster_version_exists(new_id))
+    {
+      put_roster_for_revision(new_id, rev);
+    }
+  else
+    {
+      L(FL("roster for revision '%s' already exists in db") % new_id);
+    }
 
   // Phase 4: rewrite any files that need deltas added
 
@@ -2266,22 +2321,29 @@ database::delete_tag_named(cert_value const & tag)
 // crypto key management
 
 void
-database::get_key_ids(string const & pattern,
+database::get_key_ids(vector<rsa_keypair_id> & pubkeys)
+{
+  pubkeys.clear();
+  results res;
+
+  fetch(res, one_col, any_rows, query("SELECT id FROM public_keys"));
+
+  for (size_t i = 0; i < res.size(); ++i)
+    pubkeys.push_back(rsa_keypair_id(res[i][0]));
+}
+
+void
+database::get_key_ids(globish const & pattern,
                       vector<rsa_keypair_id> & pubkeys)
 {
   pubkeys.clear();
   results res;
 
-  if (pattern != "")
-    fetch(res, one_col, any_rows,
-          query("SELECT id FROM public_keys WHERE id GLOB ?")
-          % text(pattern));
-  else
-    fetch(res, one_col, any_rows,
-          query("SELECT id FROM public_keys"));
+  fetch(res, one_col, any_rows, query("SELECT id FROM public_keys"));
 
   for (size_t i = 0; i < res.size(); ++i)
-    pubkeys.push_back(rsa_keypair_id(res[i][0]));
+    if (pattern.matches(res[i][0]))
+      pubkeys.push_back(rsa_keypair_id(res[i][0]));
 }
 
 void
@@ -2596,6 +2658,9 @@ outdated_indicator
 database::get_revision_cert_nobranch_index(vector< pair<hexenc<id>,
                                            pair<revision_id, rsa_keypair_id> > > & idx)
 {
+  // share some storage
+  id::symtab id_syms;
+  
   results res;
   fetch(res, 3, any_rows,
         query("SELECT hash, id, keypair "
@@ -2862,6 +2927,7 @@ static void selector_to_certname(selector_type ty,
     case selectors::sel_ident:
     case selectors::sel_cert:
     case selectors::sel_unknown:
+    case selectors::sel_parent:
       I(false); // don't do this.
       break;
     }
@@ -2901,6 +2967,11 @@ void database::complete(selector_type ty,
             {
               lim.sql_cmd += "SELECT id FROM revision_certs WHERE id GLOB ?";
               lim % text(i->second + "*");
+            }
+          else if (i->first == selectors::sel_parent)
+            {
+              lim.sql_cmd += "SELECT parent AS id FROM revision_ancestry WHERE child GLOB ?";
+              lim % text(i->second + "*"); 
             }
           else if (i->first == selectors::sel_cert)
             {
@@ -2947,6 +3018,8 @@ void database::complete(selector_type ty,
                 {
                   __app->get_project().get_branch_list(globish(i->second), branch_names);
                 }
+
+                L(FL("found %d matching branches") % branch_names.size());
 
               // for each branch name, get the branch heads
               set<revision_id> heads;
@@ -3019,7 +3092,7 @@ void database::complete(selector_type ty,
   // will complete either some idents, or cert values, or "unknown"
   // which generally means "author, tag or branch"
 
-  if (ty == selectors::sel_ident)
+  if (ty == selectors::sel_ident || ty == selectors::sel_parent)
     {
       lim.sql_cmd = "SELECT id FROM " + lim.sql_cmd;
     }
@@ -3204,16 +3277,17 @@ database::get_branches(vector<string> & names)
 }
 
 outdated_indicator
-database::get_branches(string const & glob,
+database::get_branches(globish const & glob,
                        vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ? AND CAST(value AS TEXT) glob ?");
+    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
     string cert_name = "branch";
-    fetch(res, one_col, any_rows, q % text(cert_name) % text(glob));
+    fetch(res, one_col, any_rows, q % text(cert_name));
     for (size_t i = 0; i < res.size(); ++i)
       {
-        names.push_back(res[i][0]);
+        if (glob.matches(res[i][0]))
+          names.push_back(res[i][0]);
       }
     return cert_stamper.get_indicator();
 }
@@ -3297,10 +3371,23 @@ database::put_roster(revision_id const & rev_id,
 // for get_uncommon_ancestors
 struct rev_height_graph : rev_graph
 {
+  typedef hashmap::hash_map<revision_id, set<revision_id> > parent_map;
+  typedef hashmap::hash_map<revision_id, rev_height> height_map;
+  static parent_map parent_cache;
+  static height_map height_cache;
   rev_height_graph(database & db) : db(db) {}
   virtual void get_parents(revision_id const & rev, set<revision_id> & parents) const
   {
-    db.get_revision_parents(rev, parents);
+    parent_map::iterator i = parent_cache.find(rev);
+    if (i == parent_cache.end())
+      {
+        db.get_revision_parents(rev, parents);
+        parent_cache.insert(make_pair(rev, parents));
+      }
+    else
+      {
+        parents = i->second;
+      }
   }
   virtual void get_children(revision_id const & rev, set<revision_id> & parents) const
   {
@@ -3309,11 +3396,22 @@ struct rev_height_graph : rev_graph
   }
   virtual void get_height(revision_id const & rev, rev_height & h) const
   {
-      db.get_rev_height(rev, h);
+    height_map::iterator i = height_cache.find(rev);
+    if (i == height_cache.end())
+      {
+        db.get_rev_height(rev, h);
+        height_cache.insert(make_pair(rev, h));
+      }
+    else
+      {
+        h = i->second;
+      }
   }
   
   database & db;
 };
+rev_height_graph::parent_map rev_height_graph::parent_cache;
+rev_height_graph::height_map rev_height_graph::height_cache;
 
 void
 database::get_uncommon_ancestors(revision_id const & a,

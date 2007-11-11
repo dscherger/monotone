@@ -7,6 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include "selectors.hh"
 #include "sanity.hh"
 #include "app_state.hh"
@@ -78,6 +79,9 @@ namespace selectors
           case 'e':
             type = sel_earlier;
             break;
+          case 'p':
+            type = sel_parent;
+            break;
           default:
             W(F("unknown selector type: %c") % sel[0]);
             break;
@@ -87,14 +91,29 @@ namespace selectors
         /* a selector date-related should be validated */	
         if (sel_date==type || sel_later==type || sel_earlier==type)
           {
-            N (app.lua.hook_expand_date(sel, tmp),
-            F ("selector '%s' is not a valid date\n") % sel);
+            if (app.lua.hook_exists("expand_date"))
+              { 
+                N(app.lua.hook_expand_date(sel, tmp),
+                  F("selector '%s' is not a valid date\n") % sel);
+              }
+            else
+              {
+                // if expand_date is not available, start with something
+                tmp = sel;
+              }
 
+            // if we still have a too short datetime string, expand it with
+            // default values, but only if the type is earlier or later;
+            // for searching a specific date cert this makes no sense
+            // FIXME: this is highly speculative if expand_date wasn't called
+            // beforehand - tmp could be _anything_ but a partial date string
             if (tmp.size()<8 && (sel_later==type || sel_earlier==type))
               tmp += "-01T00:00:00";
             else if (tmp.size()<11 && (sel_later==type || sel_earlier==type))
               tmp += "T00:00:00";
-            N(tmp.size()==19 || sel_date==type, F ("selector '%s' is not a valid date (%s)") % sel % tmp);
+            N(tmp.size()==19 || sel_date==type, 
+              F("selector '%s' is not a valid date (%s)") % sel % tmp);
+            
             if (sel != tmp)
               {
                 P (F ("expanded date '%s' -> '%s'\n") % sel % tmp);

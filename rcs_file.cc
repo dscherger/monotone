@@ -7,11 +7,10 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "config.h"
 
+#include "base.hh"
 #include <fstream>
-#include <string>
-#include <vector>
+#include "vector.hh"
 
 #ifdef WIN32
 #include <windows.h>

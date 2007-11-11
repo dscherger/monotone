@@ -7,6 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <iostream>
 #include <sstream>
 
@@ -19,12 +20,13 @@ using std::cout;
 using std::istringstream;
 using std::vector;
 
-CMD(pubkey, N_("packet i/o"), N_("ID"), 
-    N_("write public key packet to stdout"),
+CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"), 
+    N_("Prints a public key packet"),
+    "",
     options::opts::none)
 {
   if (args.size() != 1)
-    throw usage(name);
+    throw usage(execid);
 
   rsa_keypair_id ident(idx(args, 0)());
   bool exists(false);
@@ -48,12 +50,13 @@ CMD(pubkey, N_("packet i/o"), N_("ID"),
   pw.consume_public_key(ident, key);
 }
 
-CMD(privkey, N_("packet i/o"), N_("ID"), 
-    N_("write private key packet to stdout"),
+CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"), 
+    N_("Prints a private key packet"),
+    "",
     options::opts::none)
 {
   if (args.size() != 1)
-    throw usage(name);
+    throw usage(execid);
 
   rsa_keypair_id ident(idx(args, 0)());
   N(app.keys.key_pair_exists(ident),
@@ -128,8 +131,9 @@ namespace
 }
 
 
-CMD(read, N_("packet i/o"), "[FILE1 [FILE2 [...]]]",
-    N_("read packets from files or stdin"),
+CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
+    N_("Reads packets from files"),
+    N_("If no files are provided, the standard input is used."),
     options::opts::none)
 {
   packet_db_writer dbw(app);
@@ -141,7 +145,7 @@ CMD(read, N_("packet i/o"), "[FILE1 [FILE2 [...]]]",
     }
   else
     {
-      for (vector<utf8>::const_iterator i = args.begin(); 
+      for (args_vector::const_iterator i = args.begin(); 
            i != args.end(); ++i)
         {
           data dat;

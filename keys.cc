@@ -7,7 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <string>
+#include "base.hh"
 #include <map>
 #include <iostream>
 #include <unistd.h>
@@ -80,7 +80,7 @@ get_passphrase(lua_hooks & lua,
                utf8 & phrase,
                bool confirm_phrase,
                bool force_from_user,
-               string prompt_beginning)
+               bool generating_key)
 {
 
   // we permit the user to relax security here, by caching a passphrase (if
@@ -113,8 +113,12 @@ get_passphrase(lua_hooks & lua,
           memset(pass1, 0, constants::maxpasswd);
           memset(pass2, 0, constants::maxpasswd);
           ui.ensure_clean_line();
-          read_password(prompt_beginning + " for key ID [" + keyid() + "]: ",
-                        pass1, constants::maxpasswd);
+          string prompt1 = ((confirm_phrase && !generating_key
+                             ? F("enter new passphrase for key ID [%s]: ")
+                             : F("enter passphrase for key ID [%s]: "))
+                            % keyid()).str();
+
+          read_password(prompt1, pass1, constants::maxpasswd);
           if (confirm_phrase)
             {
               ui.ensure_clean_line();
@@ -163,7 +167,7 @@ generate_key_pair(lua_hooks & lua,              // to hook for phrase
                   keypair & kp_out)
 {
   utf8 phrase;
-  get_passphrase(lua, id, phrase, true, true);
+  get_passphrase(lua, id, phrase, true, true, true);
   generate_key_pair(kp_out, phrase);
 }
 
@@ -345,7 +349,7 @@ change_key_passphrase(lua_hooks & lua,
   shared_ptr<RSA_PrivateKey> priv = get_private_key(lua, id, encoded_key, true);
 
   utf8 new_phrase;
-  get_passphrase(lua, id, new_phrase, true, true, "enter new passphrase");
+  get_passphrase(lua, id, new_phrase, true, true);
 
   Pipe p;
   p.start_msg();
@@ -696,42 +700,43 @@ UNIT_TEST(key, arc4)
 
   SecureVector<Botan::byte> data(orig);
 
-  BOOST_CHECKPOINT("encrypting data");
+  UNIT_TEST_CHECKPOINT("encrypting data");
   do_arc4(phrase, data);
 
-  BOOST_CHECK(data != orig);
+  UNIT_TEST_CHECK(data != orig);
 
-  BOOST_CHECKPOINT("decrypting data");
+  UNIT_TEST_CHECKPOINT("decrypting data");
   do_arc4(phrase, data);
 
-  BOOST_CHECK(data == orig);
+  UNIT_TEST_CHECK(data == orig);
 
 }
 
 UNIT_TEST(key, signature_round_trip)
 {
   app_state app;
+  app.set_key_dir(system_path(get_current_working_dir()) / ".monotone_tmp" / "keys");
   app.lua.add_std_hooks();
   app.lua.add_test_hooks();
 
-  BOOST_CHECKPOINT("generating key pairs");
+  UNIT_TEST_CHECKPOINT("generating key pairs");
   keypair kp;
   utf8 passphrase("bob123@example.com");
   rsa_keypair_id key("bob123@example.com");
   generate_key_pair(kp, passphrase);
   app.keys.put_key_pair(key, kp);
 
-  BOOST_CHECKPOINT("signing plaintext");
+  UNIT_TEST_CHECKPOINT("signing plaintext");
   string plaintext("test string to sign");
   base64<rsa_sha1_signature> sig;
   make_signature(app, key, kp.priv, plaintext, sig);
 
-  BOOST_CHECKPOINT("checking signature");
-  BOOST_CHECK(check_signature(app, key, kp.pub, plaintext, sig));
+  UNIT_TEST_CHECKPOINT("checking signature");
+  UNIT_TEST_CHECK(check_signature(app, key, kp.pub, plaintext, sig));
 
   string broken_plaintext = plaintext + " ...with a lie";
-  BOOST_CHECKPOINT("checking non-signature");
-  BOOST_CHECK(!check_signature(app, key, kp.pub, broken_plaintext, sig));
+  UNIT_TEST_CHECKPOINT("checking non-signature");
+  UNIT_TEST_CHECK(!check_signature(app, key, kp.pub, broken_plaintext, sig));
   app.keys.delete_key(key);
 }
 

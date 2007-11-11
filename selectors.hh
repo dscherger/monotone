@@ -10,8 +10,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <string>
-#include <vector>
+#include "vector.hh"
 #include <algorithm>
 #include <set>
 
@@ -31,6 +30,7 @@ namespace selectors
       sel_cert,
       sel_earlier,
       sel_later,
+      sel_parent,
       sel_unknown
     }
   selector_type;

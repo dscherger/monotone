@@ -3,21 +3,17 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
+
 #define WIN32_LEAN_AND_MEAN
+#include "base.hh"
 #include <io.h>
 #include <errno.h>
 #include <windows.h>
 #include <shlobj.h>
 #include <direct.h>
 
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/convenience.hpp>
-
 #include "sanity.hh"
 #include "platform.hh"
-
-namespace fs = boost::filesystem;
 
 std::string
 get_current_working_dir()
@@ -106,35 +102,150 @@ tilde_expand(std::string const & in)
 {
   if (in.empty() || in[0] != '~')
     return in;
-  fs::path tmp(in, fs::native);
-  fs::path::iterator i = tmp.begin();
-  if (i != tmp.end())
-    {
-      fs::path res;
-      if (*i == "~" || i->size() > 1 && i->at(0) == '~')
-        {
-          fs::path restmp(get_homedir(), fs::native);
-          res /= restmp;
-          ++i;
-        }
-      while (i != tmp.end())
-        res /= *i++;
-      return res.string();
-    }
 
-  return tmp.string();
+  // just ~
+  if (in.size() == 1)
+    return get_homedir();
+
+  // ~/foo, ~\foo
+  if (in[1] == '/' || in[1] == '\\')
+    return get_homedir() + in.substr(1);
+
+  // We don't support ~name on Windows.
+  return in;
 }
 
 path::status
 get_path_status(std::string const & path)
 {
-  fs::path p(path, fs::native);
-  if (!fs::exists(p))
-    return path::nonexistent;
-  else if (fs::is_directory(p))
+  DWORD attrs = GetFileAttributesA(path.c_str());
+
+  if (attrs == INVALID_FILE_ATTRIBUTES)
+    {
+      DWORD err = GetLastError();
+      // this list of errors that mean the path doesn't exist borrowed from
+      // boost 1.33.1, with unnecessary parenthesis removal by zack
+      if(err == ERROR_FILE_NOT_FOUND
+         || err == ERROR_INVALID_PARAMETER
+         || err == ERROR_NOT_READY
+         || err == ERROR_PATH_NOT_FOUND
+         || err == ERROR_INVALID_NAME
+         || err == ERROR_BAD_NETPATH)
+        return path::nonexistent;
+
+      E(false, F("%s: GetFileAttributes error: %s") % path % os_strerror(err));
+    }
+  else if (attrs & FILE_ATTRIBUTE_DIRECTORY)
     return path::directory;
   else
     return path::file;
+}
+
+namespace
+{
+  // RAII wrapper for FindFirstFile/FindNextFile
+  struct dirhandle
+  {
+    dirhandle(std::string const & path) : first(true), last(false)
+    {
+      std::string p = path;
+      // Win98 requires this little dance
+      if (p.size() > 0 && p[p.size()-1] != '/' && p[p.size()-1] != '\\')
+        p += "/*";
+      else
+        p += "*";
+
+      h = FindFirstFile(p.c_str(), &firstdata);
+      if (h == INVALID_HANDLE_VALUE)
+        {
+          if (GetLastError() == ERROR_FILE_NOT_FOUND) // zero files in dir
+            last = true;
+          else
+            E(false, F("could not open directory '%s': %s")
+              % path % os_strerror(GetLastError()));
+        }
+    }
+    ~dirhandle()
+    {
+      if (h != INVALID_HANDLE_VALUE)
+        FindClose(h);
+    }
+    bool next(WIN32_FIND_DATA * data)
+    {
+      if (last)
+        return false;
+      if (first)
+        {
+          *data = firstdata;
+          first = false;
+          return true;
+        }
+      if (FindNextFile(h, data))
+        return true;
+      E(GetLastError() == ERROR_NO_MORE_FILES,
+        F("error while reading directory: %s") % os_strerror(errno));
+      last = true;
+      return false;
+    }
+
+  private:
+    bool first;
+    bool last;
+    HANDLE h;
+    WIN32_FIND_DATA firstdata;
+  };
+}
+
+void
+do_read_directory(std::string const & path,
+                  dirent_consumer & files,
+                  dirent_consumer & dirs,
+                  dirent_consumer & /* specials */)
+{
+  dirhandle dir(path);
+  WIN32_FIND_DATA d;
+
+  while (dir.next(&d))
+    {
+      if (!strcmp(d.cFileName, ".") || !strcmp(d.cFileName, ".."))
+        continue;
+
+      if (d.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        dirs.consume(d.cFileName);
+      else
+        files.consume(d.cFileName);
+    }
+}
+
+void
+do_remove(std::string const & path)
+{
+  switch (get_path_status(path))
+    {
+    case path::directory:
+      if (RemoveDirectoryA(path.c_str()))
+        return;
+      break;
+    case path::file:
+      if (DeleteFileA(path.c_str()))
+        return;
+      break;
+    case path::nonexistent:
+      // conveniently, GetLastError() will report the error code from
+      // the GetFileAttributes() call in get_path_status() that told us
+      // the path doesn't exist.
+      break;
+    }
+  E(false,
+    F("could not remove '%s': %s") % path % os_strerror(GetLastError()));
+}
+
+void
+do_mkdir(std::string const & path)
+{
+  E(CreateDirectoryA(path.c_str(), 0) != 0,
+    F("could not create directory '%s': %s")
+    % path % os_strerror(GetLastError()));
 }
 
 static bool
@@ -238,8 +349,6 @@ make_temp_file(std::string const & dir, std::string & name)
     {
       u64 v = value;
 
-      tmp.at(tmp.size() - 11) = letters[v % base];
-      v /= base;
       tmp.at(tmp.size() - 10) = letters[v % base];
       v /= base;
       tmp.at(tmp.size() -  9) = letters[v % base];
@@ -249,6 +358,8 @@ make_temp_file(std::string const & dir, std::string & name)
       tmp.at(tmp.size() -  7) = letters[v % base];
       v /= base;
       tmp.at(tmp.size() -  6) = letters[v % base];
+      v /= base;
+      tmp.at(tmp.size() -  5) = letters[v % base];
       v /= base;
     
       HANDLE h = CreateFile(tmp.c_str(), GENERIC_READ|GENERIC_WRITE,
@@ -350,6 +461,19 @@ write_data_worker(std::string const & fname,
 
   rename_clobberingly(tmp, fname);
 
+}
+
+std::string
+get_locale_dir()
+{
+  char buffer[4096];
+  DWORD result = GetModuleFileName(NULL, buffer, sizeof(buffer));
+  I(result != sizeof(buffer)); // ran out of buffer space
+  I(result != 0); // some other error
+  std::string module(buffer);
+  std::string::size_type pos = module.find_last_of('\\');
+  I(pos != std::string::npos);
+  return module.substr(0, pos) + "/locale";
 }
 
 // Local Variables:

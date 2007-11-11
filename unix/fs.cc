@@ -3,6 +3,12 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
+
+#ifndef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 64
+#endif
+
+#include "base.hh"
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -12,33 +18,43 @@
 #include <pwd.h>
 #include <stdio.h>
 #include <fcntl.h>
-
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/convenience.hpp>
+#include <dirent.h>
 
 #include "sanity.hh"
 #include "platform.hh"
 
-namespace fs = boost::filesystem;
+using std::string;
 
-std::string
+/* On Linux, AT_SYMLNK_NOFOLLOW is spellt AT_SYMLINK_NOFOLLOW.
+   Hoooray for compatibility! */
+#if defined AT_SYMLINK_NOFOLLOW && !defined AT_SYMLNK_NOFOLLOW
+#define AT_SYMLNK_NOFOLLOW AT_SYMLINK_NOFOLLOW
+#endif
+
+
+string
 get_current_working_dir()
 {
   char buffer[4096];
-  E(getcwd(buffer, 4096),
-    F("cannot get working directory: %s") % os_strerror(errno));
-  return std::string(buffer);
+  if (!getcwd(buffer, 4096))
+    {
+      const int err = errno;
+      E(false, F("cannot get working directory: %s") % os_strerror(err));
+    }
+  return string(buffer);
 }
 
 void
-change_current_working_dir(std::string const & to)
+change_current_working_dir(string const & to)
 {
-  E(!chdir(to.c_str()),
-    F("cannot change to directory %s: %s") % to % os_strerror(errno));
+  if (chdir(to.c_str()))
+    {
+      const int err = errno;
+      E(false, F("cannot change to directory %s: %s") % to % os_strerror(err));
+    }
 }
 
-std::string
+string
 get_default_confdir()
 {
   return get_homedir() + "/.monotone";
@@ -47,66 +63,65 @@ get_default_confdir()
 // FIXME: BUG: this probably mangles character sets
 // (as in, we're treating system-provided data as utf8, but it's probably in
 // the filesystem charset)
-std::string
+string
 get_homedir()
 {
   char * home = getenv("HOME");
   if (home != NULL)
-    return std::string(home);
+    return string(home);
 
   struct passwd * pw = getpwuid(getuid());
   N(pw != NULL, F("could not find home directory for uid %d") % getuid());
-  return std::string(pw->pw_dir);
+  return string(pw->pw_dir);
 }
 
-std::string
-tilde_expand(std::string const & in)
+string
+tilde_expand(string const & in)
 {
   if (in.empty() || in[0] != '~')
     return in;
-  fs::path tmp(in, fs::native);
-  fs::path::iterator i = tmp.begin();
-  if (i != tmp.end())
+  if (in.size() == 1) // just ~
+    return get_homedir();
+  if (in[1] == '/') // ~/...
+    return get_homedir() + in.substr(1);
+
+  string user, after;
+  string::size_type slashpos = in.find('/');
+  if (slashpos == string::npos)
     {
-      fs::path res;
-      if (*i == "~")
-        {
-          fs::path restmp(get_homedir(), fs::native);
-          res /= restmp;
-          ++i;
-        }
-      else if (i->size() > 1 && i->at(0) == '~')
-        {
-          struct passwd * pw;
-          // FIXME: BUG: this probably mangles character sets (as in, we're
-          // treating system-provided data as utf8, but it's probably in the
-          // filesystem charset)
-          pw = getpwnam(i->substr(1).c_str());
-          N(pw != NULL,
-            F("could not find home directory for user %s") % i->substr(1));
-          res /= std::string(pw->pw_dir);
-          ++i;
-        }
-      while (i != tmp.end())
-        res /= *i++;
-      return res.string();
+      user = in.substr(1);
+      after = "";
+    }
+  else
+    {
+      user = in.substr(1, slashpos-1);
+      after = in.substr(slashpos);
     }
 
-  return tmp.string();
+  struct passwd * pw;
+  // FIXME: BUG: this probably mangles character sets (as in, we're
+  // treating system-provided data as utf8, but it's probably in the
+  // filesystem charset)
+  pw = getpwnam(user.c_str());
+  N(pw != NULL,
+    F("could not find home directory for user %s") % user);
+
+  return string(pw->pw_dir) + after;
 }
 
 path::status
-get_path_status(std::string const & path)
+get_path_status(string const & path)
 {
   struct stat buf;
   int res;
   res = stat(path.c_str(), &buf);
   if (res < 0)
     {
-      if (errno == ENOENT)
+      const int err = errno;
+      if (err == ENOENT)
         return path::nonexistent;
       else
-        E(false, F("error accessing file %s: %s") % path % os_strerror(errno));
+        E(false, F("error accessing file %s: %s") % path % os_strerror(err));
     }
   if (S_ISREG(buf.st_mode))
     return path::file;
@@ -119,11 +134,156 @@ get_path_status(std::string const & path)
     }
 }
 
-void
-rename_clobberingly(std::string const & from, std::string const & to)
+namespace
 {
-  E(!rename(from.c_str(), to.c_str()),
-    F("renaming '%s' to '%s' failed: %s") % from % to % os_strerror(errno));
+  // RAII object for DIRs.
+  struct dirhandle
+  {
+    dirhandle(string const & path)
+    {
+      d = opendir(path.c_str());
+      if (!d)
+        {
+          const int err = errno;
+          E(false, F("could not open directory '%s': %s") % path % os_strerror(err));
+        }
+    }
+    // technically closedir can fail, but there's nothing we could do about it.
+    ~dirhandle() { closedir(d); }
+
+    // accessors
+    struct dirent * next() { return readdir(d); }
+#ifdef HAVE_DIRFD
+    int fd() { return dirfd(d); }
+#endif
+    private:
+    DIR *d;
+  };
+}
+
+void
+do_read_directory(string const & path,
+                  dirent_consumer & files,
+                  dirent_consumer & dirs,
+                  dirent_consumer & specials)
+{
+  string p(path);
+  if (p == "")
+    p = ".";
+  
+  dirhandle dir(p);
+  struct dirent *d;
+  struct stat st;
+  int st_result;
+
+  while ((d = dir.next()) != 0)
+    {
+      if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
+        continue;
+#if defined(_DIRENT_HAVE_D_TYPE) || defined(HAVE_STRUCT_DIRENT_D_TYPE)
+      switch (d->d_type)
+        {
+        case DT_REG: // regular file
+          files.consume(d->d_name);
+          continue;
+        case DT_DIR: // directory
+          dirs.consume(d->d_name);
+          continue;
+          
+        case DT_UNKNOWN: // unknown type
+        case DT_LNK:     // symlink - must find out what's at the other end
+        default:
+          break;
+        }          
+#endif
+
+      // the use of stat rather than lstat here is deliberate.
+#if defined HAVE_FSTATAT && defined HAVE_DIRFD
+      {
+        static bool fstatat_works = true;
+        if (fstatat_works)
+          {
+            st_result = fstatat(dir.fd(), d->d_name, &st, 0);
+            if (st_result == -1 && errno == ENOSYS)
+              fstatat_works = false;
+          }
+        if (!fstatat_works)
+          st_result = stat((p + "/" + d->d_name).c_str(), &st);
+      }
+#else
+      st_result = stat((p + "/" + d->d_name).c_str(), &st);
+#endif
+
+      // if we get no entry it might be a broken symlink
+      // try again with lstat
+      if (st_result < 0 && errno == ENOENT)
+        {
+#if defined HAVE_FSTATAT && defined HAVE_DIRFD && defined AT_SYMLNK_NOFOLLOW
+          static bool fstatat_works = true;
+          if (fstatat_works)
+            {
+              st_result = fstatat(dir.fd(), d->d_name, &st, AT_SYMLNK_NOFOLLOW);
+              if (st_result == -1 && errno == ENOSYS)
+                fstatat_works = false;
+            }
+          if (!fstatat_works)
+            st_result = lstat((p + "/" + d->d_name).c_str(), &st);
+#else
+          st_result = lstat((p + "/" + d->d_name).c_str(), &st);
+#endif
+        }
+
+      int err = errno;
+
+      E(st_result == 0,
+        F("error accessing '%s/%s': %s") % p % d->d_name % os_strerror(err));
+
+      if (S_ISREG(st.st_mode))
+        files.consume(d->d_name);
+      else if (S_ISDIR(st.st_mode))
+        dirs.consume(d->d_name);
+      else if (S_ISLNK(st.st_mode))
+        files.consume(d->d_name); // treat broken links as files
+      else
+        specials.consume(d->d_name);
+    }
+  return;
+}
+  
+                  
+
+void
+rename_clobberingly(string const & from, string const & to)
+{
+  if (rename(from.c_str(), to.c_str()))
+    {
+      const int err = errno;
+      E(false, F("renaming '%s' to '%s' failed: %s") % from % to % os_strerror(err));
+    }
+}
+
+// the C90 remove() function is guaranteed to work for both files and
+// directories
+void
+do_remove(string const & path)
+{
+  if (remove(path.c_str()))
+    {
+      const int err = errno;
+      E(false, F("could not remove '%s': %s") % path % os_strerror(err));
+    }
+}
+
+// Create the directory DIR.  It will be world-accessible modulo umask.
+// Caller is expected to check for the directory already existing.
+void
+do_mkdir(string const & path)
+{
+  if (mkdir(path.c_str(), 0777))
+    {
+      const int err = errno;
+      E(false, F("could not create directory '%s': %s") % path % os_strerror(err));
+    }
 }
 
 // Create a temporary file in directory DIR, writing its name to NAME and
@@ -139,7 +299,7 @@ rename_clobberingly(std::string const & from, std::string const & to)
 // files from 62**6 to 36**6, oh noes.
 
 static int
-make_temp_file(std::string const & dir, std::string & name, mode_t mode)
+make_temp_file(string const & dir, string & name, mode_t mode)
 {
   static const char letters[]
     = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -149,7 +309,7 @@ make_temp_file(std::string const & dir, std::string & name, mode_t mode)
 
   static u32 value;
   struct timeval tv;
-  std::string tmp = dir + "/mtxxxxxx.tmp";
+  string tmp = dir + "/mtxxxxxx.tmp";
 
   gettimeofday(&tv, 0);
   value += ((u32) tv.tv_usec << 16) ^ tv.tv_sec ^ getpid();
@@ -159,8 +319,6 @@ make_temp_file(std::string const & dir, std::string & name, mode_t mode)
     {
       u32 v = value;
 
-      tmp.at(tmp.size() - 11) = letters[v % base];
-      v /= base;
       tmp.at(tmp.size() - 10) = letters[v % base];
       v /= base;
       tmp.at(tmp.size() -  9) = letters[v % base];
@@ -171,8 +329,11 @@ make_temp_file(std::string const & dir, std::string & name, mode_t mode)
       v /= base;
       tmp.at(tmp.size() -  6) = letters[v % base];
       v /= base;
+      tmp.at(tmp.size() -  5) = letters[v % base];
+      v /= base;
     
       int fd = open(tmp.c_str(), O_RDWR|O_CREAT|O_EXCL, mode);
+      int err = errno;
 
       if (fd >= 0)
         {
@@ -186,8 +347,8 @@ make_temp_file(std::string const & dir, std::string & name, mode_t mode)
       // fact a directory to which we can write - but we get better
       // diagnostics from this E() than we would from an I().)
 
-      E(errno == EEXIST,
-        F("cannot create temp file %s: %s") % tmp % os_strerror(errno));
+      E(err == EEXIST,
+        F("cannot create temp file %s: %s") % tmp % os_strerror(err));
 
       // This increment is relatively prime to 'limit', therefore 'value'
       // will visit every number in its range.
@@ -208,9 +369,9 @@ make_temp_file(std::string const & dir, std::string & name, mode_t mode)
 // will be passed mode 0600 or 0666 -- the actual permissions are modified
 // by umask as usual).
 void
-write_data_worker(std::string const & fname,
-                  std::string const & dat,
-                  std::string const & tmpdir,
+write_data_worker(string const & fname,
+                  string const & dat,
+                  string const & tmpdir,
                   bool user_private)
 {
   struct auto_closer
@@ -220,7 +381,7 @@ write_data_worker(std::string const & fname,
     ~auto_closer() { close(fd); }
   };
 
-  std::string tmp;
+  string tmp;
   int fd = make_temp_file(tmpdir, tmp, user_private ? 0600 : 0666);
 
   {
@@ -235,8 +396,9 @@ write_data_worker(std::string const & fname,
     do
       {
         ssize_t written = write(fd, ptr, remaining);
+        const int err = errno;
         E(written >= 0,
-          F("error writing to temp file %s: %s") % tmp % os_strerror(errno));
+          F("error writing to temp file %s: %s") % tmp % os_strerror(err));
         if (written == 0)
           {
             deadcycles++;
@@ -258,6 +420,11 @@ write_data_worker(std::string const & fname,
   rename_clobberingly(tmp, fname);
 }
 
+string
+get_locale_dir()
+{
+  return string(LOCALEDIR);
+}
 
 // Local Variables:
 // mode: C++

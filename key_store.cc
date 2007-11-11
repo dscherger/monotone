@@ -1,3 +1,4 @@
+#include "base.hh"
 #include <sstream>
 
 #include "key_store.hh"
@@ -73,7 +74,7 @@ key_store::get_key_dir()
 void
 key_store::read_key_dir()
 {
-  vector<utf8> key_files, dirs;
+  vector<path_component> key_files, dirs;
   if (directory_exists(key_dir))
     {
       L(FL("reading key dir '%s'") % key_dir);
@@ -82,12 +83,12 @@ key_store::read_key_dir()
   else
     L(FL("key dir '%s' does not exist") % key_dir);
   keyreader kr(*this);
-  for (vector<utf8>::const_iterator i = key_files.begin();
+  for (vector<path_component>::const_iterator i = key_files.begin();
        i != key_files.end(); ++i)
     {
       L(FL("reading keys from file '%s'") % (*i));
       data dat;
-      read_data(key_dir / (*i)(), dat);
+      read_data(key_dir / *i, dat);
       istringstream is(dat());
       read_packets(is, kr, app);
     }
@@ -130,33 +131,25 @@ key_store::try_ensure_in_db(hexenc<id> const & hash)
 }
 
 void
-key_store::get_key_ids(string const & pattern,
-                   vector<rsa_keypair_id> & priv)
+key_store::get_key_ids(globish const & pattern,
+                       vector<rsa_keypair_id> & priv)
 {
   maybe_read_key_dir();
   priv.clear();
-  globish inc(pattern);
-  if (pattern.empty())
-    inc = globish("*");
-  globish_matcher gm(inc, globish(""));
   for (map<rsa_keypair_id, keypair>::const_iterator
          i = keys.begin(); i != keys.end(); ++i)
-    {
-      if (gm((i->first)()))
-        priv.push_back(i->first);
-    }
+    if (pattern.matches((i->first)()))
+      priv.push_back(i->first);
 }
 
 void
-key_store::get_keys(vector<rsa_keypair_id> & priv)
+key_store::get_key_ids(vector<rsa_keypair_id> & priv)
 {
   maybe_read_key_dir();
   priv.clear();
   for (map<rsa_keypair_id, keypair>::const_iterator
          i = keys.begin(); i != keys.end(); ++i)
-    {
-      priv.push_back(i->first);
-    }
+    priv.push_back(i->first);
 }
 
 bool
@@ -176,27 +169,18 @@ key_store::get_key_pair(rsa_keypair_id const & ident,
   kp = i->second;
 }
 
-namespace
-{
-  // filename is the keypair id, except that some characters can't be put in
-  // filenames (especially on windows).
-  void
-  get_filename(rsa_keypair_id const & ident, string & filename)
-  {
-    filename = ident();
-    for (unsigned int i = 0; i < filename.size(); ++i)
-      if (string("+").find(filename[i]) != string::npos)
-        filename.at(i) = '_';
-  }
-}
-
 void
 key_store::get_key_file(rsa_keypair_id const & ident,
                  system_path & file)
 {
-  string leaf;
-  get_filename(ident, leaf);
-  file = key_dir /  leaf;
+  // filename is the keypair id, except that some characters can't be put in
+  // filenames (especially on windows).
+  string leaf = ident();
+  for (unsigned int i = 0; i < leaf.size(); ++i)
+    if (leaf.at(i) == '+')
+      leaf.at(i) = '_';
+  
+  file = key_dir / path_component(leaf);
 }
 
 void
