@@ -1026,23 +1026,28 @@ CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
           }
     }
 
-  // if this is an existing branch, check if this branch's head revs and
-  // the current workspace parent share any common ancestors, if not warn
-  // the user about it
-  if (existing_branch)
-    {
-        set<revision_id> revs, common_ancestors;
-        app.get_project().get_branch_heads(branch, revs);
+  parent_map parents;
+  app.work.get_parent_rosters(parents);
 
-        // FIXME: is there an easier way to just get the revids of the parent(s)
-        // of the current workspace?
-        revision_t work_rev;
-        app.work.get_work_rev(work_rev);
-        for (edge_map::iterator i = work_rev.edges.begin();
-            i != work_rev.edges.end(); i++)
-          {
-              revs.insert(i->first);
-          }
+  set<revision_id> parent_revisions;
+  for (parent_map::iterator i = parents.begin();
+      i != parents.end(); i++)
+    {
+      if (!null_id(i->first))
+        parent_revisions.insert(i->first);
+    }
+
+  // if this is an existing branch (and we're not inside a freshly created
+  // workspace), check if this branch's head revs and the current workspace
+  // parent share any common ancestors, if not warn the user about it
+  if (existing_branch && parent_revisions.size() > 0)
+    {
+        set<revision_id> branch_heads, revs, common_ancestors;
+        app.get_project().get_branch_heads(branch, branch_heads);
+
+        set_union(parent_revisions.begin(), parent_revisions.end(),
+                  branch_heads.begin(), branch_heads.end(),
+                  inserter(revs, revs.begin()));
 
         app.db.get_common_ancestors(revs, common_ancestors);
 
