@@ -1848,7 +1848,9 @@ public:
       {
         try
           {
+            transaction_guard guard(app.db);
             import_rcs_file_with_cvs(file, app, cvs);
+            guard.commit();
           }
         catch (oops const & o)
           {
@@ -3536,7 +3538,6 @@ import_cvs_repo(system_path const & cvsroot,
   // of all files we know. This already creates file deltas and
   // hashes. We end up with a DAG of blobs.
   {
-    transaction_guard guard(app.db);
     cvs_tree_walker walker(cvs, app);
     require_path_is_directory(cvsroot,
                               F("path %s does not exist") % cvsroot,
@@ -3544,7 +3545,6 @@ import_cvs_repo(system_path const & cvsroot,
     app.db.ensure_open();
     change_current_working_dir(cvsroot);
     walk_tree(file_path(), walker);
-    guard.commit();
   }
 
   // then we use algorithms from graph theory to get the blobs into
