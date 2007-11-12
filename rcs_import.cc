@@ -76,11 +76,11 @@ using boost::lexical_cast;
 
 // cvs history recording stuff
 
-typedef unsigned long cvs_authorclog;
-typedef unsigned long cvs_mtn_version;   // the new file id in monotone
-typedef unsigned long cvs_rcs_version;   // the old RCS version number
-typedef unsigned long cvs_symbol_no;
-typedef unsigned long cvs_path;
+typedef u32 cvs_authorclog;
+typedef u32 cvs_mtn_version;   // the new file id in monotone
+typedef u32 cvs_rcs_version;   // the old RCS version number
+typedef u32 cvs_symbol_no;
+typedef u32 cvs_path;
 
 const cvs_symbol_no invalid_symbol = cvs_symbol_no(-1);
 
@@ -473,11 +473,11 @@ string get_event_repr(cvs_history & cvs, cvs_event_ptr ev);
 struct
 cvs_history
 {
-  interner<unsigned long> authorclog_interner;
-  interner<unsigned long> mtn_version_interner;
-  interner<unsigned long> rcs_version_interner;
-  interner<unsigned long> symbol_interner;
-  interner<unsigned long> path_interner;
+  interner<u32> authorclog_interner;
+  interner<u32> mtn_version_interner;
+  interner<u32> rcs_version_interner;
+  interner<u32> symbol_interner;
+  interner<u32> path_interner;
 
   // all the blobs of the whole repository
   vector<cvs_blob> blobs;
