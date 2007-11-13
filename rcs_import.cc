@@ -453,6 +453,36 @@ typedef struct
   blob_index_iter ei;
 } dfs_context;
 
+// okay, this is a little memory hackery...
+#define POOL_SIZE (1024 * 1024 * 4)
+struct event_pool
+{
+  char *pool_start, *pool_end;
+
+  event_pool(void)
+    : pool_start(NULL),
+      pool_end(NULL)
+    { };
+
+  template<typename T>
+  T *allocate(void)
+    {
+      u32 s = sizeof(T);
+
+      if ((pool_end - pool_start) <= s)
+        {
+          pool_start = (char*) malloc(POOL_SIZE);
+          pool_end = pool_start + POOL_SIZE;
+        }
+
+      I((pool_end - pool_start) > s);
+      T* res = (T*) pool_start;
+      memset(res, 0, sizeof(T));
+      pool_start += s;
+      return res;
+    }
+};
+
 struct blob_splitter;
 
 string get_event_repr(cvs_history & cvs, cvs_event_ptr ev);
@@ -460,6 +490,8 @@ string get_event_repr(cvs_history & cvs, cvs_event_ptr ev);
 struct
 cvs_history
 {
+  event_pool ev_pool;
+
   interner<u32> authorclog_interner;
   interner<u32> mtn_version_interner;
   interner<u32> rcs_version_interner;
@@ -1343,9 +1375,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
 
       curr_commit =
-          new cvs_commit(cvs.curr_file_interned,
-                         commit_time, mv, rv,
-                         ac, alive);
+          new (cvs.ev_pool.allocate<cvs_commit>())
+            cvs_commit(cvs.curr_file_interned, commit_time,
+                       mv, rv, ac, alive);
 
       if (!first_commit)
         first_commit = curr_commit;
@@ -1372,8 +1404,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               cvs_symbol_no tag = cvs.symbol_interner.intern(i->second);
 
               cvs_event_ptr tag_symbol = (cvs_event_ptr)
-                    new cvs_symbol(curr_commit->path, tag,
-                                    curr_commit->given_time);
+                    new (cvs.ev_pool.allocate<cvs_symbol>())
+                      cvs_symbol(curr_commit->path, tag,
+                                 curr_commit->given_time);
 
               tag_symbol->adj_time = curr_commit->adj_time + 1;
               if (alive)
@@ -1395,8 +1428,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               add_weak_dependencies(tag_symbol, last_events, reverse_import);
 
               cvs_event_ptr tag_event = (cvs_event_ptr)
-                    new cvs_tag_point(curr_commit->path, tag,
-                                      curr_commit->given_time);
+                    new (cvs.ev_pool.allocate<cvs_tag_point>())
+                      cvs_tag_point(curr_commit->path, tag,
+                                    curr_commit->given_time);
 
               tag_event->adj_time = curr_commit->adj_time + 2;
               add_dependency(tag_event, tag_symbol);
@@ -1460,8 +1494,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
             L(FL("finished private RCS branch %s") % (*i));
 
           cvs_event_ptr branch_point = (cvs_event_ptr)
-                new cvs_symbol(curr_commit->path, bname,
-                                curr_commit->given_time);
+                new (cvs.ev_pool.allocate<cvs_symbol>())
+                   cvs_symbol(curr_commit->path, bname,
+                              curr_commit->given_time);
           branch_point->adj_time = curr_commit->adj_time + 1;
 
           // Normal branches depend on the current commit. But vendor
@@ -1490,8 +1525,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               // distinction may be confusing, it really helps later on
               // when determining what branch a blob belongs to.
               cvs_event_ptr branch_start = (cvs_event_ptr)
-                    new cvs_branch_start(curr_commit->path, bname,
-                                         curr_commit->given_time);
+                    new (cvs.ev_pool.allocate<cvs_branch_start>())
+                      cvs_branch_start(curr_commit->path, bname,
+                                       curr_commit->given_time);
               branch_start->adj_time = curr_commit->adj_time + 2;
               cvs.append_event(branch_start);
               add_dependency(first_event_in_branch, branch_start);
@@ -1556,9 +1592,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       if (curr_commit)
         {
           cvs_event_ptr branch_end_point =
-                new cvs_branch_end(cvs.curr_file_interned,
-                                   current_branchname,
-                                   first_commit->given_time + 1);
+                new (cvs.ev_pool.allocate<cvs_branch_end>())
+                  cvs_branch_end(cvs.curr_file_interned,
+                                 current_branchname,
+                                 first_commit->given_time + 1);
 
           cvs.append_event(branch_end_point);
           add_dependency(branch_end_point, first_commit);
@@ -1571,9 +1608,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       if (first_commit)
         {
           cvs_event_ptr branch_end_point =
-                new cvs_branch_end(cvs.curr_file_interned,
-                                   current_branchname,
-                                   curr_commit->given_time + 1);
+                new (cvs.ev_pool.allocate<cvs_branch_end>())
+                  cvs_branch_end(cvs.curr_file_interned,
+                                 current_branchname,
+                                 curr_commit->given_time + 1);
 
           cvs.append_event(branch_end_point);
           add_dependency(branch_end_point, curr_commit);
