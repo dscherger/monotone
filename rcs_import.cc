@@ -520,8 +520,8 @@ cvs_history
   cvs_blob_index root_blob;
   cvs_event_ptr root_event;
 
-  ticker n_versions;
-  ticker n_tree_branches;
+  ticker n_rcs_revisions;
+  ticker n_rcs_symbols;
 
   int unnamed_branch_counter;
 
@@ -529,8 +529,8 @@ cvs_history
   int step_no;
 
   cvs_history(void)
-    : n_versions("versions", "v", 1),
-      n_tree_branches("branches", "b", 1),
+    : n_rcs_revisions(_("RCS revisions"), "r", 1),
+      n_rcs_symbols(_("RCS symbols"), "s", 1),
       unnamed_branch_counter(0),
       step_no(0)
     { };
@@ -1384,7 +1384,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
       // add the commit to the cvs history
       cvs.append_event(curr_commit);
-      ++cvs.n_versions;
+      ++cvs.n_rcs_revisions;
 
       curr_events.push_back(curr_commit);
 
@@ -1436,6 +1436,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               add_dependency(tag_event, tag_symbol);
 
               cvs.append_event(tag_event);
+              ++cvs.n_rcs_symbols;
             }
         }
 
@@ -1551,6 +1552,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           // the comment above for tags.
           if (!is_vendor_branch)
             add_weak_dependencies(branch_point, last_events, reverse_import);
+
+          ++cvs.n_rcs_symbols;
         }
 
       string next_version = r.deltas.find(curr_version)->second->next;
@@ -3025,12 +3028,12 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
 // simply makes sure that no blob contains multiple events for a single
 // path. Otherwise, the blob gets split.
 void
-resolve_intra_blob_conflicts(cvs_history & cvs)
+resolve_intra_blob_conflicts(cvs_history & cvs, ticker & n_splits)
 {
   for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
     {
       while (!resolve_intra_blob_conflicts_for_blob(cvs, bi))
-        { };
+        ++n_splits;
     }
 }
 
@@ -3403,7 +3406,7 @@ void cvs_history::depth_first_search(Visitor & vis,
 // respected.
 //
 void
-resolve_blob_dependencies(cvs_history & cvs)
+resolve_blob_dependencies(cvs_history & cvs, ticker & n_splits)
 {
   L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
@@ -3426,6 +3429,8 @@ resolve_blob_dependencies(cvs_history & cvs)
       split_cycle(cvs, cycle_members);
     else
       break;
+
+    ++n_splits;
   };
 
   // remove all weak dependencies
@@ -3547,12 +3552,14 @@ import_cvs_repo(system_path const & cvsroot,
 
   // then we use algorithms from graph theory to get the blobs into
   // a logically meaningful ordering.
-  resolve_intra_blob_conflicts(cvs);
-  resolve_blob_dependencies(cvs);
+  {
+    ticker n_splits(_("blob splits"), "p", 1);
+    resolve_intra_blob_conflicts(cvs, n_splits);
+    resolve_blob_dependencies(cvs, n_splits);
+  }
 
   // number through all unnamed branches
   number_unnamed_branches(cvs);
-
   ticker n_revs(_("revisions"), "r", 1);
   {
     transaction_guard guard(app.db);
