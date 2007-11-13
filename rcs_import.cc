@@ -158,20 +158,7 @@ std::ostream & operator<<(std::ostream & o, struct cvs_event_digest const & d)
 
 class cvs_event;
 
-class
-cvs_event_ptr
-  : public shared_ptr< cvs_event >
-{
-public:
-
-  cvs_event_ptr(void)
-    : shared_ptr< cvs_event >()
-    { }
-
-  cvs_event_ptr(const shared_ptr< cvs_event > & p)
-    : shared_ptr< cvs_event >(p)
-    { }
-};
+typedef cvs_event* cvs_event_ptr;
 
 class cvs_blob;
 typedef vector<cvs_blob>::size_type cvs_blob_index;
@@ -744,32 +731,28 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
 {
   if (ev->get_digest().is_commit())
     {
-      shared_ptr< cvs_commit > ce =
-        boost::static_pointer_cast<cvs_commit, cvs_event>(ev);
+      cvs_commit *ce = (cvs_commit*) ev;
       return (F("commit rev %s on file %s")
                 % cvs.rcs_version_interner.lookup(ce->rcs_version)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else if (ev->get_digest().is_symbol())
     {
-      shared_ptr< cvs_symbol > be =
-        boost::static_pointer_cast<cvs_symbol, cvs_event>(ev);
+      cvs_symbol *be = (cvs_symbol*) ev;
       return (F("symbol %s on file %s")
                 % cvs.symbol_interner.lookup(be->symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else if (ev->get_digest().is_branch_start())
     {
-      shared_ptr< cvs_branch_start > be =
-        boost::static_pointer_cast<cvs_branch_start, cvs_event>(ev);
+      cvs_branch_start *be = (cvs_branch_start*) ev;
       return (F("start of branch %s on file %s")
                 % cvs.symbol_interner.lookup(be->symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else if (ev->get_digest().is_branch_end())
     {
-      shared_ptr< cvs_branch_end > be =
-        boost::static_pointer_cast<cvs_branch_end, cvs_event>(ev);
+      cvs_branch_end *be = (cvs_branch_end*) ev;
       return (F("end of branch %s on file %s")
                 % cvs.symbol_interner.lookup(be->symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
@@ -777,8 +760,7 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
   else
     {
       I(ev->get_digest().is_tag());
-      shared_ptr< cvs_tag_point > te =
-        boost::static_pointer_cast<cvs_tag_point, cvs_event>(ev);
+      cvs_tag_point *te = (cvs_tag_point*) ev;
       return (F("tag %s on file %s")
               % cvs.symbol_interner.lookup(te->symbol)
               % cvs.path_interner.lookup(ev->path)).str();
@@ -1313,7 +1295,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
                bool dryrun,
                bool reverse_import)
 {
-  cvs_event_ptr curr_commit, first_commit;
+  cvs_event_ptr curr_commit = NULL,
+                first_commit = NULL;
   vector<cvs_event_ptr> curr_events, last_events;
   string curr_version = begin_version;
   scoped_ptr< vector< piece > > next_lines(new vector<piece>);
@@ -1359,11 +1342,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
       cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
 
-      curr_commit = boost::static_pointer_cast<cvs_event, cvs_commit>(
-        shared_ptr<cvs_commit>(
+      curr_commit =
           new cvs_commit(cvs.curr_file_interned,
                          commit_time, mv, rv,
-                         ac, alive)));
+                         ac, alive);
 
       if (!first_commit)
         first_commit = curr_commit;
@@ -1389,11 +1371,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
               cvs_symbol_no tag = cvs.symbol_interner.intern(i->second);
 
-              cvs_event_ptr tag_symbol =
-                boost::static_pointer_cast<cvs_event, cvs_symbol>(
-                  shared_ptr<cvs_symbol>(
+              cvs_event_ptr tag_symbol = (cvs_event_ptr)
                     new cvs_symbol(curr_commit->path, tag,
-                                    curr_commit->given_time)));
+                                    curr_commit->given_time);
+
               tag_symbol->adj_time = curr_commit->adj_time + 1;
               if (alive)
                 add_dependency(tag_symbol, curr_commit);
@@ -1413,11 +1394,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               // action.
               add_weak_dependencies(tag_symbol, last_events, reverse_import);
 
-              cvs_event_ptr tag_event = 
-                boost::static_pointer_cast<cvs_event, cvs_tag_point>(
-                  shared_ptr<cvs_tag_point>(
+              cvs_event_ptr tag_event = (cvs_event_ptr)
                     new cvs_tag_point(curr_commit->path, tag,
-                                      curr_commit->given_time)));
+                                      curr_commit->given_time);
 
               tag_event->adj_time = curr_commit->adj_time + 2;
               add_dependency(tag_event, tag_symbol);
@@ -1480,11 +1459,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           else
             L(FL("finished private RCS branch %s") % (*i));
 
-          cvs_event_ptr branch_point =
-            boost::static_pointer_cast<cvs_event, cvs_symbol>(
-              shared_ptr<cvs_symbol>(
+          cvs_event_ptr branch_point = (cvs_event_ptr)
                 new cvs_symbol(curr_commit->path, bname,
-                                curr_commit->given_time)));
+                                curr_commit->given_time);
           branch_point->adj_time = curr_commit->adj_time + 1;
 
           // Normal branches depend on the current commit. But vendor
@@ -1512,11 +1489,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               // start only depends on the branch point. While this
               // distinction may be confusing, it really helps later on
               // when determining what branch a blob belongs to.
-              cvs_event_ptr branch_start =
-                boost::static_pointer_cast<cvs_event, cvs_branch_start>(
-                  shared_ptr<cvs_branch_start>(
+              cvs_event_ptr branch_start = (cvs_event_ptr)
                     new cvs_branch_start(curr_commit->path, bname,
-                                         curr_commit->given_time)));
+                                         curr_commit->given_time);
               branch_start->adj_time = curr_commit->adj_time + 2;
               cvs.append_event(branch_start);
               add_dependency(first_event_in_branch, branch_start);
@@ -1581,11 +1556,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       if (curr_commit)
         {
           cvs_event_ptr branch_end_point =
-            boost::static_pointer_cast<cvs_event, cvs_branch_end>(
-              shared_ptr<cvs_branch_end>(
                 new cvs_branch_end(cvs.curr_file_interned,
                                    current_branchname,
-                                   first_commit->given_time + 1)));
+                                   first_commit->given_time + 1);
 
           cvs.append_event(branch_end_point);
           add_dependency(branch_end_point, first_commit);
@@ -1598,11 +1571,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       if (first_commit)
         {
           cvs_event_ptr branch_end_point =
-            boost::static_pointer_cast<cvs_event, cvs_branch_end>(
-              shared_ptr<cvs_branch_end>(
                 new cvs_branch_end(cvs.curr_file_interned,
                                    current_branchname,
-                                   curr_commit->given_time + 1)));
+                                   curr_commit->given_time + 1);
 
           cvs.append_event(branch_end_point);
           add_dependency(branch_end_point, curr_commit);
@@ -1649,9 +1620,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     // add a pseudo trunk branch event (at time 0)
     cvs.root_event =
-      boost::static_pointer_cast<cvs_event, cvs_branch_start>(
-        shared_ptr<cvs_branch_start>(
-          new cvs_branch_start(cvs.curr_file_interned, cvs.base_branch)));
+          new cvs_branch_start(cvs.curr_file_interned, cvs.base_branch);
     cvs.root_blob = cvs.append_event(cvs.root_event);
 
     cvs_event_ptr first_event =
@@ -2913,8 +2882,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                 {
                   for (blob_event_iter ii = blob.begin(); ii != blob.end(); ++ii)
                     {
-                      const shared_ptr< cvs_commit > ce =
-                        boost::static_pointer_cast<cvs_commit, cvs_event>(*ii);
+                      cvs_commit *ce = (cvs_commit*) *ii;
 
                       L(FL("    path: %s @ %s, time: %d")
                         % cvs.path_interner.lookup(ce->path)
@@ -3054,8 +3022,7 @@ class blob_label_writer
           else
             {
               string author, clog;
-              const shared_ptr< cvs_commit > ce =
-                boost::static_pointer_cast<cvs_commit, cvs_event>(*b.begin());
+              cvs_commit *ce = (cvs_commit*) *b.begin();
 
               cvs.split_authorclog(ce->authorclog, author, clog);
               label += author + "\\n";
@@ -3085,8 +3052,7 @@ class blob_label_writer
             }
           else
             {
-              const shared_ptr< cvs_branch_start > cb =
-                boost::static_pointer_cast<cvs_branch_start, cvs_event>(*b.begin());
+              cvs_branch_start *cb = (cvs_branch_start*) *b.begin();
 
               label += cvs.symbol_interner.lookup(cb->symbol);
               label += "\\n";
@@ -3102,8 +3068,7 @@ class blob_label_writer
             }
           else
             {
-              const shared_ptr< cvs_branch_end > cb =
-                boost::static_pointer_cast<cvs_branch_end, cvs_event>(*b.begin());
+              cvs_branch_end *cb = (cvs_branch_end*) *b.begin();
 
               label += cvs.symbol_interner.lookup(cb->symbol);
               label += "\\n";
@@ -3119,8 +3084,7 @@ class blob_label_writer
             }
           else
             {
-              const shared_ptr< cvs_tag_point > cb =
-                boost::static_pointer_cast<cvs_tag_point, cvs_event>(*b.begin());
+              cvs_tag_point *cb = (cvs_tag_point*) *b.begin();
 
               label += cvs.symbol_interner.lookup(cb->symbol);
               label += "\\n";
@@ -3128,8 +3092,7 @@ class blob_label_writer
         }
       else if (b.get_digest().is_symbol())
         {
-          const shared_ptr< cvs_symbol > ev =
-            boost::static_pointer_cast<cvs_symbol, cvs_event>(*b.begin());
+          cvs_symbol *ev = (cvs_symbol*) *b.begin();
 
           label = (FL("blob %d: symbol %s\\n")
                    % v % cvs.symbol_interner.lookup(ev->symbol)).str();
@@ -3159,8 +3122,7 @@ class blob_label_writer
 
               if (b.get_digest().is_commit())
                 {
-                  const shared_ptr< cvs_commit > ce =
-                    boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+                  cvs_commit *ce = (cvs_commit*) *i;
 
                   tt = ce->adj_time / 100;
                   timeinfo = localtime(&tt);
@@ -3491,9 +3453,7 @@ number_unnamed_branches(cvs_history & cvs)
 
       if (blob.get_digest().is_symbol())
         {
-          shared_ptr<cvs_symbol> cbe =
-            boost::static_pointer_cast<cvs_symbol, cvs_event>(
-              *blob.begin());
+          cvs_symbol *cbe = (cvs_symbol*) *blob.begin();
 
           // handle unnamed branches
           string sym_name = cvs.symbol_interner.lookup(cbe->symbol);
@@ -3598,8 +3558,7 @@ cvs_blob::build_cset(cvs_history & cvs,
     {
       I((*i)->get_digest().is_commit());
 
-      shared_ptr<cvs_commit> ce =
-        boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+      cvs_commit *ce = (cvs_commit*) *i;
 
       file_path pth = file_path_internal(cvs.path_interner.lookup(ce->path));
       file_id new_file_id(cvs.mtn_version_interner.lookup(ce->mtn_version));
@@ -3647,8 +3606,7 @@ cvs_blob::build_cset(cvs_history & cvs,
   sort(begin(), end(), cmp);
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
-      shared_ptr<cvs_commit> ce =
-        boost::static_pointer_cast<cvs_commit, cvs_event>(*i);
+      cvs_commit *ce = (cvs_commit*) *i;
 
       fval += cvs.path_interner.lookup(ce->path) + "@";
       fval += cvs.rcs_version_interner.lookup(ce->rcs_version) + "\n";
@@ -3853,8 +3811,7 @@ blob_consumer::operator()(cvs_blob_index bi)
           return;
         }
 
-      shared_ptr<cvs_commit> ce =
-        boost::static_pointer_cast<cvs_commit, cvs_event>(*blob.begin());
+      cvs_commit *ce = (cvs_commit*) *blob.begin();
 
       revision_id new_rid;
       roster_t ros;
@@ -3912,9 +3869,7 @@ blob_consumer::operator()(cvs_blob_index bi)
     {
       I(!blob.empty());
 
-      shared_ptr<cvs_symbol> ev =
-        boost::static_pointer_cast<cvs_symbol, cvs_event>(
-          *blob.begin());
+      cvs_symbol *ev = (cvs_symbol*) *blob.begin();
 
       string sym_name = cvs.get_branchname(ev->symbol);
 
@@ -3929,9 +3884,7 @@ blob_consumer::operator()(cvs_blob_index bi)
     }
   else if (blob.get_digest().is_branch_start())
     {
-      shared_ptr<cvs_branch_start> ev =
-        boost::static_pointer_cast<cvs_branch_start, cvs_event>(
-          *blob.begin());
+      cvs_branch_start *ev = (cvs_branch_start*) *blob.begin();
 
       string branchname = cvs.get_branchname(ev->symbol);
 
@@ -3954,9 +3907,7 @@ blob_consumer::operator()(cvs_blob_index bi)
     }
   else if (blob.get_digest().is_tag())
     {
-      shared_ptr<cvs_tag_point> ev =
-        boost::static_pointer_cast<cvs_tag_point, cvs_event>(
-          *blob.begin());
+      cvs_tag_point *ev = (cvs_tag_point*) *blob.begin();
 
       L(FL("consuming blob %d: tag %s")
         % bi % cvs.symbol_interner.lookup(ev->symbol));
