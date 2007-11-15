@@ -167,11 +167,13 @@ sub unescape($);
 #
 #   Description  - Class constructor.
 #
-#   Data         - $invocant : Either a reference to an object of the same
-#                              class or the name of the class to be created.
-#                  $db_name  : The full path of the Monotone database. If not
-#                              provided then the database associated with the
-#                              current workspace is used.
+#   Data         - $invocant    : Either a reference to an object of the same
+#                                 class or the name of the class to be
+#                                 created.
+#                  $db_name     : The full path of the Monotone database. If
+#                                 not provided then the database associated
+#                                 with the current workspace is used.
+#                  Return Value : A reference to the newly created object.
 #
 ##############################################################################
 
@@ -183,17 +185,8 @@ sub new($;$)
     my ($invocant, $db_name) = @_;
 
     my Monotone::AutomateStdio $this;
-    my %entries;
 
-    if (ref($invocant))
-    {
-	$this = fields::new(ref($invocant));
-    }
-    else
-    {
-	$this = fields::new($invocant);
-    }
-
+    $this = fields::new($invocant);
     $this->{db_name} = $db_name;
     $this->{mtn_pid} = 0;
     $this->{cmd_cnt} = 0;
@@ -204,7 +197,6 @@ sub new($;$)
 	startup($this);
     }
 
-    bless($this);
     $this->SUPER::new() if $this->can("SUPER::new");
 
     return $this;
