@@ -153,6 +153,7 @@ struct marking_t
   revision_id birth_revision;
   std::set<revision_id> parent_name;
   std::set<revision_id> file_content;
+  std::set<revision_id> existence;
   std::map<attr_key, std::set<revision_id> > attrs;
   marking_t() {};
   bool operator==(marking_t const & other) const
@@ -160,6 +161,7 @@ struct marking_t
     return birth_revision == other.birth_revision
       && parent_name == other.parent_name
       && file_content == other.file_content
+      && existence == other.existence
       && attrs == other.attrs;
   }
 };
