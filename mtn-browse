@@ -88,9 +88,10 @@ use constant REVISION_CHANGED        => (DIRECTORY | DIRECTORY_VIEW | FILE
 
 # Constants for the columns within the manifest ListStore widget.
 
-use constant RLS_ICON_COLUMN => 0;
-use constant RLS_NAME_COLUMN => 1;
-use constant RLS_DATE_COLUMN => 2;
+use constant RLS_ICON_COLUMN           => 0;
+use constant RLS_NAME_COLUMN           => 1;
+use constant RLS_DATE_COLUMN           => 2;
+use constant RLS_MANIFEST_ENTRY_COLUMN => 3;
 
 # The Glade generated widgets object.
 
@@ -239,8 +240,10 @@ sub new_browser_instance()
 
     # Setup the tree view file browser.
 
-    $browser->{manifest_liststore} =
-	Gtk2::ListStore->new("Glib::String", "Glib::String", "Glib::String");
+    $browser->{manifest_liststore} = Gtk2::ListStore->new("Glib::String",
+							  "Glib::String",
+							  "Glib::String",
+							  "Glib::Scalar");
     $browser->{manifest_treeview}->set_model($browser->{manifest_liststore});
 
     $tv_column = Gtk2::TreeViewColumn->new();
@@ -274,10 +277,7 @@ sub new_browser_instance()
     $tv_column->set_attributes($renderer, "markup" => RLS_DATE_COLUMN);
     $browser->{manifest_treeview}->append_column($tv_column);
 
-    # TODO $browser->{manifest_treeview}->set_enable_search(TRUE);
-    $browser->{manifest_treeview}->set_enable_search(FALSE);
-    $browser->{manifest_treeview}->set_search_equal_func
-	(sub { print "EQUAL\n"; });
+    $browser->{manifest_treeview}->set_search_column(RLS_NAME_COLUMN);
 
     # Update the browser'a internal state.
 
@@ -469,6 +469,7 @@ sub combo_key_release_event_cb($$$)
 
 	}
 	$combo_details->{value} = $value;
+	$combo_details->{last_typed_len} = length($value);
 	$combo_details->{completed} = $completed;
 
 	# Update the pulldown choices.
@@ -513,7 +514,8 @@ sub directory_up_button_clicked_cb
 
     my($widget, $browser) = @_;
 
-    my $value;
+    my($len,
+       $value);
 
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
@@ -526,7 +528,14 @@ sub directory_up_button_clicked_cb
     {
 	if ($value =~ m/^.+\/.+/o)
 	{
-	    ($value) = ($value =~ m/^(.+)\/[^\/]+$/o);
+	    if ($value =~ m/^(.+)\/[^\/]+$/o)
+	    {
+		($value) = ($value =~ m/^(.+)\/[^\/]+$/o);
+	    }
+	    else
+	    {
+		($value) = ($value =~ m/^(.+)\/$/o)
+	    }
 	}
 	else
 	{
@@ -534,6 +543,17 @@ sub directory_up_button_clicked_cb
 	}
 	$browser->{directory_combo_details}->{value} = $value;
 	$browser->{directory_combo_details}->{completed} = 1;
+	$len = length($value);
+	if ($len < $browser->{directory_combo_details}->{last_typed_len})
+	{
+	    $browser->{directory_combo}->get_model()->clear();
+	    foreach my $item (@{$browser->{directory_combo_details}->{list}})
+	    {
+		$browser->{directory_combo}->append_text($item)
+		    if ($value eq substr($item, 0, $len));
+	    }
+	    $browser->{directory_combo_details}->{last_typed_len} = $len;
+	}
 	$browser->{directory_combo}->child()->set_text($value);
 	$browser->{main_appbar}->set_status("");
 	update_browser_state($browser, DIRECTORY_CHANGED);
@@ -565,6 +585,8 @@ sub directory_up_button_clicked_cb
 
 sub manifest_treeview_cursor_changed_cb($$)
 {
+
+    return;
 
     my($widget, $browser) = @_;
 
@@ -615,10 +637,6 @@ sub manifest_treeview_cursor_changed_cb($$)
 #                                 event that has occurred.
 #                  $browser     : The browser instance that is associated with
 #                                 this widget.
-#                  Return Value : TRUE if the event has been handled and needs
-#                                 no further handling, otherwise false if the
-#                                 event should carry on through the remaining
-#                                 event handling.
 #
 ##############################################################################
 
@@ -629,24 +647,33 @@ sub manifest_treeview_row_activated_cb($$$$)
 
     my($widget, $tree_path, $tree_view_column, $browser) = @_;
 
-    my $iter;
+    my(@list,
+       $manifest_entry);
 
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    $browser->{manifest_liststore}->clear();
+    # Get the manifest entry details for the item that was double-clicked.
 
-    $iter = $browser->{manifest_liststore}->append();
-    $browser->{manifest_liststore}->set($iter,
-					RLS_ICON_COLUMN, "gtk-open",
-					RLS_NAME_COLUMN, "the-main-dir",
-					RLS_DATE_COLUMN, "2005-01-01");
-    $iter = $browser->{manifest_liststore}->append();
+    $widget->get_selection()->selected_foreach
+	(sub
+	 {
+	     my($model, $path, $iter) = @_;
+	     $manifest_entry = $model->get($iter, RLS_MANIFEST_ENTRY_COLUMN);
+	 });
 
-    print "RA " . scalar(@_) . "\n";
-    return FALSE;
-    print "RA : " . Dumper \@_;
-    return FALSE;
+    # If the item is a directory then change to it, if it is a file then
+    # display its contents.
+
+    if ($manifest_entry->{type} eq "directory")
+    {
+	$browser->{directory_combo_details}->{value} = $manifest_entry->{name};
+	$browser->{directory_combo_details}->{completed} = 1;
+	$browser->{directory_combo}->child()->
+	    set_text($manifest_entry->{name});
+	$browser->{main_appbar}->set_status("");
+	update_browser_state($browser, DIRECTORY_CHANGED);
+    }
 
 }
 #
@@ -816,6 +843,7 @@ sub update_browser_state($$)
 
 	$browser->{directory_combo_details}->{completion_cache} = {};
 	$browser->{directory_combo_details}->{completed} = 0;
+	$browser->{directory_combo_details}->{last_typed_len} = 0;
 	$browser->{directory_combo_details}->{value} = "";
 
 	# Get the new manifest.
@@ -888,8 +916,12 @@ sub update_browser_state($$)
 		        ($item->{manifest_entry}->{type} eq "directory")
 		        ? "gtk-open" : "gtk-file",
 		    RLS_NAME_COLUMN, $item->{name},
-		    RLS_DATE_COLUMN, "2005-01-01");
+		    RLS_DATE_COLUMN, "2005-01-01",
+		    RLS_MANIFEST_ENTRY_COLUMN, $item->{manifest_entry});
 	}
+
+	$browser->{manifest_treeview}->scroll_to_point(0, 0)
+	    if ($browser->{manifest_treeview}->realized());
 
     }
 
