@@ -2260,7 +2260,6 @@ public:
                              true,                // break on first grey
                              make_pair(e.second, e.first)); // ignore direct path
       I(!path_a.empty());
-      L(FL("  forked at blob: %d") % path_a[0]);
 
       // From that common ancestor, we now follow the grey blobs downwards,
       // until we find the source (e.first) blob of the cross edge.
@@ -2286,12 +2285,6 @@ public:
       // to the target of the cross edge (e.second).
       I(*path_a.rbegin() == e.second);
       I(*path_b.rbegin() == e.second);
-
-      for (vector<cvs_blob_index>::iterator ii = path_a.begin(); ii != path_a.end(); ++ii)
-        L(FL("  path a: %d") % *ii);
-
-      for (vector<cvs_blob_index>::iterator ii = path_b.begin(); ii != path_b.end(); ++ii)
-        L(FL("  path b: %d") % *ii);
 
       // Unfortunately, that common ancestor isn't necessarily the lowest
       // common ancestor. Because the (grey) path b might contain other
@@ -2333,7 +2326,6 @@ public:
 
           // From the lowest common ancestor, we again try to find the
           // shortest path to e.first to get a better path_b.
-          L(FL("checking for cross path from %d to %d") % *ib % *(++path_a.rbegin()));
           dijkstra_shortest_path(cvs, *ib, *(++path_a.rbegin()), ity_c,
                                  true,               // downwards
                                  true, false, true,  // follow black and white
@@ -2347,14 +2339,9 @@ public:
               swap(tmp, path_a);
               path_a.push_back(e.second);
 
-              for (vector<cvs_blob_index>::iterator ii = path_a.begin(); ii != path_a.end(); ++ii)
-                L(FL("  new path a: %d") % *ii);
-
               I(path_a[0] == *ib);
 
               ib = path_b.erase(path_b.begin(), ib);
-              for (vector<cvs_blob_index>::iterator ii = path_b.begin(); ii != path_b.end(); ++ii)
-                L(FL("  new path b: %d") % *ii);
 
               I(path_a[0] == path_b[0]);
               I(*path_a.rbegin() == e.second);
@@ -2423,12 +2410,6 @@ public:
 
           vector< cvs_blob_index > tmp_b((++path_b.rbegin()).base() - first_branch_start_in_path_b);
           copy(first_branch_start_in_path_b, (++path_b.rbegin()).base(), tmp_b.begin());
-
-          for (vector<cvs_blob_index>::iterator ii = tmp_a.begin(); ii != tmp_a.end(); ++ii)
-            L(FL("  tmp path a: %d") % *ii);
-
-          for (vector<cvs_blob_index>::iterator ii = tmp_b.begin(); ii != tmp_b.end(); ++ii)
-            L(FL("  tmp path b: %d") % *ii);
 
           split_by_path func_a(cvs, tmp_a),
                         func_b(cvs, tmp_b);
