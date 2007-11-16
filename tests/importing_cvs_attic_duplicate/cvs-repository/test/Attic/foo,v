@@ -1,0 +1,40 @@
+head	1.2;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.2
+date	2007.10.18.15.59.55;	author markus;	state dead;
+branches;
+next	1.1;
+commitid	Bk2TQE6FQ3fkB5Cs;
+
+1.1
+date	2007.10.18.15.59.54;	author markus;	state Exp;
+branches;
+next	;
+commitid	nRks6SXxBpKjB5Cs;
+
+
+desc
+@@
+
+
+1.2
+log
+@deleted test/foo
+@
+text
+@version 0 of test file foo
+@
+
+
+1.1
+log
+@commit 0
+@
+text
+@@
+
