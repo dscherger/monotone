@@ -2407,7 +2407,7 @@ sub get_quoted_value(\@\$\$)
     # Deal with multiple lines.
 
     $$buffer = substr($$list[$$index], index($$list[$$index], "\"") + 1);
-    if ($$list[$$index] !~ m/$closing_quote_re/)
+    if ($$buffer !~ m/$closing_quote_re/)
     {
 	do
 	{
