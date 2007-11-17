@@ -2655,6 +2655,25 @@ public:
               if (*ity_b == e.second)
                 break;
 
+              // check for existing dependencies, both directions...
+              vector< cvs_blob_index > back_path;
+              insert_iterator< vector< cvs_blob_index > >
+                back_ity(back_path, back_path.end());
+
+              dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
+                                     false,               // upwards,
+                                     true, true, true,   // follow all
+                                     false,
+                                     make_pair(invalid_blob, invalid_blob));
+              I(back_path.empty());
+
+              dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
+                                     true,               // downwards,
+                                     true, true, true,   // follow all
+                                     false,
+                                     make_pair(invalid_blob, invalid_blob));
+              I(back_path.empty());
+
               L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
               cvs.blobs[*ity_b].add_dependency_to(cvs.blobs[*ity_a]);
 
