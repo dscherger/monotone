@@ -444,6 +444,10 @@ public:
       // one dependency, even if the event paths don't match.
       if (deps_added == 0)
         add_dependency(*begin(), *other.begin());
+
+      // make sure the dependents cache of the other blob gets
+      // an update.
+      other.reset_deps_cache();
     };
 };
 
