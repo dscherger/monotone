@@ -1,0 +1,83 @@
+head	1.1;
+access;
+symbols
+	CONFLICTING_BRANCH:1.1.4.1.0.2
+	B:1.1.0.4
+	A:1.1.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.11.07.21.35.55;	author markus;	state Exp;
+branches
+	1.1.2.1
+	1.1.4.1;
+next	;
+commitid	YFBa72YEkWqJOGEs;
+
+1.1.2.1
+date	2007.11.07.21.35.56;	author markus;	state Exp;
+branches;
+next	;
+commitid	NSnlnVIqfRXJOGEs;
+
+1.1.4.1
+date	2007.11.07.21.35.58;	author markus;	state Exp;
+branches
+	1.1.4.1.2.1;
+next	;
+commitid	Q3ZGezl52YIKOGEs;
+
+1.1.4.1.2.1
+date	2007.11.07.21.36.00;	author markus;	state Exp;
+branches;
+next	;
+commitid	dEkFcPJggVdLOGEs;
+
+
+desc
+@@
+
+
+1.1
+log
+@initial import
+@
+text
+@version 1.1 of test file1
+@
+
+
+1.1.4.1
+log
+@commit in branch B
+@
+text
+@d1 1
+a1 1
+version 1.1.4.1 of test file1
+@
+
+
+1.1.4.1.2.1
+log
+@commit in CONFLICTING_BRANCH
+@
+text
+@d1 1
+a1 1
+version ? of test file1
+@
+
+
+1.1.2.1
+log
+@commit in branch A
+@
+text
+@d1 1
+a1 1
+version 1.1.2.1 of test file1
+@
+
