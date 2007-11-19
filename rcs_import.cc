@@ -2681,8 +2681,8 @@ public:
                                      make_pair(invalid_blob, invalid_blob));
               if (back_path.empty())
                 {
-              L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
-              cvs.blobs[*ity_b].add_dependency_to(cvs.blobs[*ity_a]);
+                  L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
+                  cvs.blobs[*ity_b].add_dependency_to(cvs.blobs[*ity_a]);
                 }
               else
                 L(F(L"  no need to add a dependency, there already exists one."));
