@@ -2685,7 +2685,7 @@ public:
                   cvs.blobs[*ity_b].add_dependency_to(cvs.blobs[*ity_a]);
                 }
               else
-                L(F(L"  no need to add a dependency, there already exists one."));
+                L(FL("  no need to add a dependency, there already exists one."));
 
               ity_anc = ity_a;
               ity_a++;
