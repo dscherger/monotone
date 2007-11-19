@@ -2659,7 +2659,7 @@ public:
               if (*ity_b == e.second)
                 break;
 
-              // check for existing dependencies, both directions...
+              // make very sure we don't introduce a back edge
               vector< cvs_blob_index > back_path;
               insert_iterator< vector< cvs_blob_index > >
                 back_ity(back_path, back_path.end());
@@ -2671,15 +2671,21 @@ public:
                                      make_pair(invalid_blob, invalid_blob));
               I(back_path.empty());
 
+
+              // We want a dependency from *ity_a to *ity_b. We only need
+              // to add one, if none exists.
               dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
                                      true,               // downwards,
                                      true, true, true,   // follow all
                                      false,
                                      make_pair(invalid_blob, invalid_blob));
-              I(back_path.empty());
-
+              if (back_path.empty())
+                {
               L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
               cvs.blobs[*ity_b].add_dependency_to(cvs.blobs[*ity_a]);
+                }
+              else
+                L(F(L"  no need to add a dependency, there already exists one."));
 
               ity_anc = ity_a;
               ity_a++;
