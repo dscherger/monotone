@@ -71,7 +71,6 @@ using boost::lexical_cast;
 // additional debugging information
 // not defined: DEBUG_BLOB_SPLITTER
 // not defined: DEBUG_GRAPHVIZ
-// not defined: DEBUG_GET_BLOB_OF
 // not defined: DEBUG_DIJKSTRA
 
 // cvs history recording stuff
@@ -583,20 +582,6 @@ cvs_history
     return range;
   }
 
-  cvs_blob_index
-  get_blob_of(const cvs_event_ptr ev)
-  {
-    cvs_blob & blob = blobs[ev->bi];
-    vector<cvs_event_ptr> & events = blobs[ev->bi].get_events();
-    I(blobs[ev->bi].get_digest() == ev->get_digest());
-
-#ifdef DEBUG_GET_BLOB_OF
-    // this check is quite expensive, thus normally not active.
-    I(find(events.begin(), events.end(), ev) != events.end());
-#endif
-    return ev->bi;
-  }
-
   cvs_blob_index append_event(cvs_event_ptr c) 
   {
     if (c->get_digest().is_commit())
@@ -665,12 +650,12 @@ cvs_history
       for (dependency_iter dep = (*ev)->dependencies.begin();
            dep != (*ev)->dependencies.end(); )
         {
-          cvs_blob_index this_bi = get_blob_of(*dep);
+          cvs_blob_index this_bi = (*dep)->bi;
           if (this_bi == dep_bi)
             {
               L(FL("    event %s (of blob %d) depends on event %s (of blob %d), losing dependency")
-                % get_event_repr(*this, *ev) % get_blob_of(*ev)
-                % get_event_repr(*this, *dep) % get_blob_of(*dep));
+                % get_event_repr(*this, *ev) % (*ev)->bi
+                % get_event_repr(*this, *dep) % (*dep)->bi);
 
               // remove all occurances of this event in the other's dependents
               vector<cvs_event_ptr> & rdeps = (*dep)->dependents;
@@ -1967,7 +1952,7 @@ dijkstra_shortest_path(cvs_history &cvs,
           for (dependency_iter j = (*i)->dependencies.begin();
                j != (*i)->dependencies.end(); ++j)
             {
-              cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+              cvs_blob_index dep_bi = (*j)->bi;
 
               if ((follow_white && cvs.blobs[dep_bi].color == white) ||
                   (follow_grey && cvs.blobs[dep_bi].color == grey) ||
@@ -2146,7 +2131,7 @@ public:
       // dependencies for blobs in the path.
       for (dependency_iter i = ev->dependencies.begin();
            i != ev->dependencies.end(); ++i)
-        stack.push(cvs.get_blob_of(*i));
+        stack.push((*i)->bi);
 
       // Mark all dependencies of the first blob in the path as
       // done. If we hit one of those, we don't have to go
@@ -2156,7 +2141,7 @@ public:
         for (dependency_iter j = (*i)->dependencies.begin();
              j != (*i)->dependencies.end(); ++j)
           {
-            cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+            cvs_blob_index dep_bi = (*j)->bi;
             if (done.find(dep_bi) == done.end())
               done.insert(dep_bi);
           }
@@ -2179,7 +2164,7 @@ public:
               for (dependency_iter j = (*i)->dependencies.begin();
                    j != (*i)->dependencies.end(); ++j)
                 {
-                  cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+                  cvs_blob_index dep_bi = (*j)->bi;
                   stack.push(dep_bi);
                 }
         }
@@ -2715,7 +2700,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
           cvs_event_ptr dep = *j;
 
           if ((dep->get_digest() == cvs.blobs[bi].get_digest()) &&
-              (cvs.get_blob_of(dep) == bi))
+              (dep->bi == bi))
             {
               I(ev->adj_time != dep->adj_time);
               if (ev->adj_time > dep->adj_time)
@@ -2890,7 +2875,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                     {
                       cvs_event_ptr dep = *j;
 
-                      if (cvs.get_blob_of(dep) == *dd)
+                      if (dep->bi == *dd)
                         count_intra_cycle_deps++;
                     }
                 }
@@ -2968,7 +2953,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
           for (dependency_iter j = (*i)->dependencies.begin();
                j != (*i)->dependencies.end(); ++j)
             {
-              cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+              cvs_blob_index dep_bi = (*j)->bi;
               cvs.blobs[dep_bi].reset_deps_cache();
             }
 
@@ -2983,7 +2968,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
           for (dependency_iter j = (*i)->dependencies.begin();
                j != (*i)->dependencies.end(); ++j)
             {
-              cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+              cvs_blob_index dep_bi = (*j)->bi;
               cvs.blobs[dep_bi].resort_deps_cache();
             }
 
@@ -3258,7 +3243,7 @@ write_graphviz_partial(cvs_history & cvs, string const & desc,
             for (dependency_iter k = (*j)->dependencies.begin();
                  k != (*j)->dependencies.end(); ++k)
               {
-                cvs_blob_index dep_bi = cvs.get_blob_of(*k);
+                cvs_blob_index dep_bi = (*k)->bi;
                 if (blobs_to_show.find(dep_bi) == blobs_to_show.end())
                   stack.push(make_pair(dep_bi, depth));
               }
@@ -3293,7 +3278,7 @@ vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
       for (dependency_iter j = (*i)->dependents.begin();
            j != (*i)->dependents.end(); ++j)
         {
-          cvs_blob_index dep_bi = cvs.get_blob_of(*j);
+          cvs_blob_index dep_bi = (*j)->bi;
           if (find(dependents_cache.begin(), dependents_cache.end(), dep_bi) == dependents_cache.end())
             dependents_cache.push_back(dep_bi);
         }
@@ -3700,7 +3685,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
            j != (*i)->dependencies.end(); ++j)
         {
           cvs_event_ptr dep = *j;
-          cvs_blob_index dep_bi = cvs.get_blob_of(dep);
+          cvs_blob_index dep_bi = dep->bi;
           if (event_parent_blobs.find(dep_bi) == event_parent_blobs.end())
             event_parent_blobs.insert(dep_bi);
         }
@@ -3802,7 +3787,7 @@ blob_consumer::operator()(cvs_blob_index bi)
          j != (*i)->dependencies.end(); ++j)
       {
         cvs_event_ptr dep = *j;
-        cvs_blob_index dep_bi = cvs.get_blob_of(dep);
+        cvs_blob_index dep_bi = dep->bi;
 
         if (parent_blobs.find(dep_bi) == parent_blobs.end())
           parent_blobs.insert(dep_bi);
