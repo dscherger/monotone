@@ -597,24 +597,6 @@ cvs_history
     return ev->bi;
   }
 
-  cvs_blob_index
-  get_branch_blob(const cvs_symbol_no bn)
-  {
-    I(bn != invalid_symbol);
-
-    pair<blob_index_iterator, blob_index_iterator> range =
-      get_blobs(cvs_event_digest(ET_BRANCH_START, bn), false);
-
-    I(range.first != range.second);
-    cvs_blob_index result(range.first->second);
-
-    // We are unable to handle split branches here, check for that.
-    range.first++;
-    I(range.first == range.second);
-
-    return result;
-  }
-
   cvs_blob_index append_event(cvs_event_ptr c) 
   {
     if (c->get_digest().is_commit())
