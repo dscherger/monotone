@@ -171,18 +171,33 @@ public:
   time_i adj_time;
   cvs_path path;
   cvs_blob_index bi;
+
   vector< cvs_event_ptr > dependencies;
   vector< cvs_event_ptr > weak_dependencies;
   vector< cvs_event_ptr > dependents;
 
+  // additional information for commits
+  cvs_mtn_version mtn_version;
+  cvs_rcs_version rcs_version;
+  bool alive;
+
+  // commit constructor
+  cvs_event(const cvs_path p, const time_i ti, const cvs_mtn_version v,
+             const cvs_rcs_version r, const bool al)
+    : given_time(ti),
+      adj_time(ti * 100),
+      path(p),
+      mtn_version(v),
+      rcs_version(r),
+      alive(al)
+    { }
+
+  // symbol constructor
   cvs_event(const cvs_path p, const time_i ti)
     : given_time(ti),
       adj_time(ti * 100),
       path(p)
     { };
-
-  virtual ~cvs_event() { };
-  virtual cvs_event_digest get_digest(void) const = 0;
 };
 
 void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
@@ -198,104 +213,6 @@ void add_weak_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
   add_dependency(ev, dep);
   ev->weak_dependencies.push_back(dep);
 }
-
-class
-cvs_commit
-  : public cvs_event
-{
-public:
-  cvs_authorclog authorclog;
-  cvs_mtn_version mtn_version;
-  cvs_rcs_version rcs_version;
-  bool alive;
-
-  cvs_commit(const cvs_path p, const time_i ti, const cvs_mtn_version v,
-             const cvs_rcs_version r, const cvs_authorclog ac,
-             const bool al)
-    : cvs_event(p, ti),
-      authorclog(ac),
-      mtn_version(v),
-      rcs_version(r),
-      alive(al)
-    { }
-
-  virtual cvs_event_digest get_digest(void) const
-    {
-      return cvs_event_digest(ET_COMMIT, authorclog);
-    };
-};
-
-class
-cvs_symbol
-  : public cvs_event
-{
-public:
-  cvs_symbol_no symbol;
-
-  cvs_symbol(const cvs_path p, const cvs_symbol_no s)
-    : cvs_event(p, 0),
-      symbol(s)
-    { };
-
-  cvs_symbol(const cvs_path p, const cvs_symbol_no s, const time_i ti)
-    : cvs_event(p, ti),
-      symbol(s)
-    { };
-
-  virtual cvs_event_digest get_digest(void) const
-    {
-      return cvs_event_digest(ET_SYMBOL, symbol);
-    };
-};
-
-class
-cvs_branch_start
-  : public cvs_symbol
-{
-public:
-  cvs_branch_start(const cvs_path p, const cvs_symbol_no s)
-    : cvs_symbol(p, s)
-    { };
-
-  cvs_branch_start(const cvs_path p, const cvs_symbol_no s, const time_i ti)
-    : cvs_symbol(p, s, ti)
-    { };
-
-  virtual cvs_event_digest get_digest(void) const
-    {
-      return cvs_event_digest(ET_BRANCH_START, symbol);
-    }
-};
-
-class
-cvs_branch_end
-  : public cvs_symbol
-{
-public:
-  cvs_branch_end(const cvs_path p, const cvs_symbol_no s, const time_i ti)
-    : cvs_symbol(p, s, ti)
-    { };
-
-  virtual cvs_event_digest get_digest(void) const
-    {
-      return cvs_event_digest(ET_BRANCH_END, symbol);
-    }
-};
-
-class
-cvs_tag_point
-  : public cvs_symbol
-{
-public:
-  cvs_tag_point(const cvs_path p, const cvs_symbol_no s, const time_i ti)
-    : cvs_symbol(p, s, ti)
-    { };
-
-  virtual cvs_event_digest get_digest(void) const
-    {
-      return cvs_event_digest(ET_TAG_POINT, symbol);
-    };
-};
 
 typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
 typedef vector< cvs_event_ptr >::iterator dependency_iter;
@@ -322,18 +239,24 @@ private:
   vector<cvs_blob_index> dependents_cache;
 
 public:
-  cvs_event_digest digest;
+  event_type etype;
+  union {
+    cvs_authorclog authorclog;    // for commit events
+    cvs_symbol_no symbol;         // for all symbol events
+  };
+
   cvs_symbol_no in_branch;
   revision_id assigned_rid;
 
   // helper field for Depth First Search algorithm
   dfs_color color;
 
-  cvs_blob(const cvs_event_digest d)
+  cvs_blob(const event_type t, const u32 no)
     : has_cached_deps(false),
       events_are_sorted(true),
       cached_deps_are_sorted(false),
-      digest(d)
+      etype(t),
+      symbol(no)
     { };
 
   cvs_blob(const cvs_blob & b)
@@ -341,12 +264,12 @@ public:
       has_cached_deps(false),
       events_are_sorted(false),
       cached_deps_are_sorted(false),
-      digest(b.digest)
+      etype(b.etype),
+      symbol(b.symbol)
     { };
 
   void push_back(cvs_event_ptr c)
     {
-      I(digest == c->get_digest());
       events.push_back(c);
       events_are_sorted = false;
     }
@@ -388,7 +311,7 @@ public:
 
   const cvs_event_digest get_digest() const
     {
-      return digest;
+      return cvs_event_digest(etype, symbol);
     }
 
   vector<cvs_blob_index> & get_dependents(cvs_history & cvs);
@@ -543,14 +466,14 @@ cvs_history
 
   void index_branchpoint_symbols(rcs_file & r);
 
-  blob_index_iterator add_blob(const cvs_event_digest d)
+  blob_index_iterator add_blob(const event_type t, const u32 no)
   {
     // add a blob..
     cvs_blob_index i = blobs.size();
-    blobs.push_back(cvs_blob(d));
+    blobs.push_back(cvs_blob(t, no));
 
     // ..and an index entry for the blob
-    blob_index_iterator j = blob_index.insert(make_pair(d, i));
+    blob_index_iterator j = blob_index.insert(make_pair(cvs_event_digest(t, no), i));
     return j;
   }
 
@@ -564,15 +487,15 @@ cvs_history
   }
 
   pair< blob_index_iterator, blob_index_iterator >
-  get_blobs(const cvs_event_digest d, bool create)
+  get_blobs(const event_type t, const u32 no, bool create)
   {
+    cvs_event_digest d(t, no);
     pair<blob_index_iterator, blob_index_iterator> range = 
       blob_index.equal_range(d);
 
     if ((range.first == range.second) && create)
       {
-        // TODO: is this correct?
-        range.first = add_blob(d);
+        range.first = add_blob(t, no);
         range.second = range.first;
         range.second++;
         return range;
@@ -582,20 +505,20 @@ cvs_history
     return range;
   }
 
-  cvs_blob_index append_event(cvs_event_ptr c) 
+  cvs_blob_index get_or_create_blob(const event_type t, const u32 no)
   {
-    if (c->get_digest().is_commit())
-      {
-        I(c->given_time != 0);
-        I(c->adj_time != 0);
-      }
+    pair<blob_index_iterator, blob_index_iterator> range =
+      get_blobs(t, no, true);
 
-    blob_index_iterator b = get_blobs(c->get_digest(), true).first;
-    append_event_to(c, b->second);
-    return b->second;
+    cvs_blob_index res = range.first->second;
+
+    // make sure we found only one such blob
+    I(++range.first == range.second);
+
+    return res;
   }
 
-  void append_event_to(cvs_event_ptr c, const cvs_blob_index bi)
+  void append_event_to(const cvs_blob_index bi, cvs_event_ptr c)
   {
     blobs[bi].push_back(c);
     c->bi = bi;
@@ -735,38 +658,33 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
   cvs_blob & blob(cvs.blobs[ev->bi]);
   if (blob.get_digest().is_commit())
     {
-      cvs_commit *ce = (cvs_commit*) ev;
       return (F("commit rev %s on file %s")
-                % cvs.rcs_version_interner.lookup(ce->rcs_version)
+                % cvs.rcs_version_interner.lookup(ev->rcs_version)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else if (blob.get_digest().is_symbol())
     {
-      cvs_symbol *be = (cvs_symbol*) ev;
       return (F("symbol %s on file %s")
-                % cvs.symbol_interner.lookup(be->symbol)
+                % cvs.symbol_interner.lookup(blob.symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else if (blob.get_digest().is_branch_start())
     {
-      cvs_branch_start *be = (cvs_branch_start*) ev;
       return (F("start of branch %s on file %s")
-                % cvs.symbol_interner.lookup(be->symbol)
+                % cvs.symbol_interner.lookup(blob.symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else if (blob.get_digest().is_branch_end())
     {
-      cvs_branch_end *be = (cvs_branch_end*) ev;
       return (F("end of branch %s on file %s")
-                % cvs.symbol_interner.lookup(be->symbol)
+                % cvs.symbol_interner.lookup(blob.symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else
     {
       I(blob.get_digest().is_tag());
-      cvs_tag_point *te = (cvs_tag_point*) ev;
       return (F("tag %s on file %s")
-              % cvs.symbol_interner.lookup(te->symbol)
+              % cvs.symbol_interner.lookup(blob.symbol)
               % cvs.path_interner.lookup(ev->path)).str();
     }
 }
@@ -1326,6 +1244,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       I(deltatext != r.deltatexts.end());
 
       time_t commit_time = parse_time(delta->second->date.c_str());
+      I(commit_time > 0);
 
       bool is_synthetic_branch_root = is_sbr(delta->second,
                                              deltatext->second);
@@ -1347,15 +1266,16 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
 
       curr_commit =
-          new (cvs.ev_pool.allocate<cvs_commit>())
-            cvs_commit(cvs.curr_file_interned, commit_time,
-                       mv, rv, ac, alive);
+          new (cvs.ev_pool.allocate<cvs_event>())
+            cvs_event(cvs.curr_file_interned, commit_time,
+                      mv, rv, alive);
 
       if (!first_commit)
         first_commit = curr_commit;
 
       // add the commit to the cvs history
-      cvs.append_event(curr_commit);
+      cvs_blob_index bi = cvs.get_or_create_blob(ET_COMMIT, ac);
+      cvs.append_event_to(bi, curr_commit);
       ++cvs.n_rcs_revisions;
 
       curr_events.push_back(curr_commit);
@@ -1376,9 +1296,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               cvs_symbol_no tag = cvs.symbol_interner.intern(i->second);
 
               cvs_event_ptr tag_symbol = (cvs_event_ptr)
-                    new (cvs.ev_pool.allocate<cvs_symbol>())
-                      cvs_symbol(curr_commit->path, tag,
-                                 curr_commit->given_time);
+                    new (cvs.ev_pool.allocate<cvs_event>())
+                      cvs_event(curr_commit->path,
+                                curr_commit->given_time);
 
               tag_symbol->adj_time = curr_commit->adj_time + 1;
               if (alive)
@@ -1386,7 +1306,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               else
                 add_weak_dependency(tag_symbol, curr_commit);
 
-              cvs.append_event(tag_symbol);
+              bi = cvs.get_or_create_blob(ET_SYMBOL, tag);
+              cvs.append_event_to(bi, tag_symbol);
               curr_events.push_back(tag_symbol);
 
               // Append to the last_event deps. While not quite obvious,
@@ -1400,14 +1321,15 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               add_weak_dependencies(tag_symbol, last_events, reverse_import);
 
               cvs_event_ptr tag_event = (cvs_event_ptr)
-                    new (cvs.ev_pool.allocate<cvs_tag_point>())
-                      cvs_tag_point(curr_commit->path, tag,
-                                    curr_commit->given_time);
+                    new (cvs.ev_pool.allocate<cvs_event>())
+                      cvs_event(curr_commit->path,
+                                curr_commit->given_time);
 
               tag_event->adj_time = curr_commit->adj_time + 2;
               add_dependency(tag_event, tag_symbol);
 
-              cvs.append_event(tag_event);
+              bi = cvs.get_or_create_blob(ET_TAG_POINT, tag);
+              cvs.append_event_to(bi, tag_event);
               ++cvs.n_rcs_symbols;
             }
         }
@@ -1467,9 +1389,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
             L(FL("finished private RCS branch %s") % (*i));
 
           cvs_event_ptr branch_point = (cvs_event_ptr)
-                new (cvs.ev_pool.allocate<cvs_symbol>())
-                   cvs_symbol(curr_commit->path, bname,
-                              curr_commit->given_time);
+                new (cvs.ev_pool.allocate<cvs_event>())
+                   cvs_event(curr_commit->path,
+                             curr_commit->given_time);
           branch_point->adj_time = curr_commit->adj_time + 1;
 
           // Normal branches depend on the current commit. But vendor
@@ -1498,11 +1420,13 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               // distinction may be confusing, it really helps later on
               // when determining what branch a blob belongs to.
               cvs_event_ptr branch_start = (cvs_event_ptr)
-                    new (cvs.ev_pool.allocate<cvs_branch_start>())
-                      cvs_branch_start(curr_commit->path, bname,
-                                       curr_commit->given_time);
+                    new (cvs.ev_pool.allocate<cvs_event>())
+                      cvs_event(curr_commit->path,
+                                curr_commit->given_time);
               branch_start->adj_time = curr_commit->adj_time + 2;
-              cvs.append_event(branch_start);
+
+              bi = cvs.get_or_create_blob(ET_BRANCH_START, bname);
+              cvs.append_event_to(bi, branch_start);
               add_dependency(first_event_in_branch, branch_start);
               add_dependency(branch_start, branch_point);
             }
@@ -1510,10 +1434,11 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
             L(FL("branch %s remained empty for this file") % branchname);
 
           // make sure curr_commit exists in the cvs history
-          I(cvs.blob_exists(curr_commit->get_digest()));
+          I(cvs.blob_exists(cvs.blobs[curr_commit->bi].get_digest()));
 
           // add the blob to the bucket
-          cvs.append_event(branch_point);
+          bi = cvs.get_or_create_blob(ET_SYMBOL, bname);
+          cvs.append_event_to(bi, branch_point);
 
           L(FL("added branch event for file %s into branch %s")
             % cvs.path_interner.lookup(curr_commit->path)
@@ -1567,12 +1492,13 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       if (curr_commit)
         {
           cvs_event_ptr branch_end_point =
-                new (cvs.ev_pool.allocate<cvs_branch_end>())
-                  cvs_branch_end(cvs.curr_file_interned,
-                                 current_branchname,
+                new (cvs.ev_pool.allocate<cvs_event>())
+                  cvs_event(cvs.curr_file_interned,
                                  first_commit->given_time + 1);
 
-          cvs.append_event(branch_end_point);
+          cvs_blob_index bi = cvs.get_or_create_blob(ET_BRANCH_END,
+                                                     current_branchname);
+          cvs.append_event_to(bi, branch_end_point);
           add_dependency(branch_end_point, first_commit);
         }
 
@@ -1583,12 +1509,13 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       if (first_commit)
         {
           cvs_event_ptr branch_end_point =
-                new (cvs.ev_pool.allocate<cvs_branch_end>())
-                  cvs_branch_end(cvs.curr_file_interned,
-                                 current_branchname,
-                                 curr_commit->given_time + 1);
+                new (cvs.ev_pool.allocate<cvs_event>())
+                  cvs_event(cvs.curr_file_interned,
+                            curr_commit->given_time + 1);
 
-          cvs.append_event(branch_end_point);
+          cvs_blob_index bi = cvs.get_or_create_blob(ET_BRANCH_END,
+                                                     current_branchname);
+          cvs.append_event_to(bi, branch_end_point);
           add_dependency(branch_end_point, curr_commit);
 
           // all others are weak dependencies
@@ -1633,8 +1560,9 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     // add a pseudo trunk branch event (at time 0)
     cvs.root_event =
-          new cvs_branch_start(cvs.curr_file_interned, cvs.base_branch);
-    cvs.root_blob = cvs.append_event(cvs.root_event);
+          new cvs_event(cvs.curr_file_interned, cvs.base_branch);
+    cvs.root_blob = cvs.get_or_create_blob(ET_BRANCH_START, cvs.base_branch);
+    cvs.append_event_to(cvs.root_blob, cvs.root_event);
 
     cvs_event_ptr first_event =
       process_rcs_branch(cvs.base_branch, r.admin.head, head_lines,
@@ -2901,12 +2829,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                 {
                   for (blob_event_iter ii = blob.begin(); ii != blob.end(); ++ii)
                     {
-                      cvs_commit *ce = (cvs_commit*) *ii;
-
                       L(FL("    path: %s @ %s, time: %d")
-                        % cvs.path_interner.lookup(ce->path)
-                        % cvs.rcs_version_interner.lookup(ce->rcs_version)
-                        % ce->adj_time);
+                        % cvs.path_interner.lookup((*ii)->path)
+                        % cvs.rcs_version_interner.lookup((*ii)->rcs_version)
+                        % (*ii)->adj_time);
                     }
                 }
             }
@@ -2939,7 +2865,8 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
   L(FL("splitting blob %d") % bi);
 
   // Add a blob
-  cvs_blob_index new_bi = cvs.add_blob(d)->second;
+  cvs_blob_index new_bi = cvs.add_blob(cvs.blobs[bi].etype,
+                                       cvs.blobs[bi].symbol)->second;
 
   // Reassign events to the new blob as necessary
   for (i = cvs.blobs[bi].get_events().begin(); i != cvs.blobs[bi].get_events().end(); )
@@ -3041,9 +2968,7 @@ class blob_label_writer
           else
             {
               string author, clog;
-              cvs_commit *ce = (cvs_commit*) *b.begin();
-
-              cvs.split_authorclog(ce->authorclog, author, clog);
+              cvs.split_authorclog(b.authorclog, author, clog);
               label += author + "\\n";
 
               // limit length of changelog we output
@@ -3071,9 +2996,7 @@ class blob_label_writer
             }
           else
             {
-              cvs_branch_start *cb = (cvs_branch_start*) *b.begin();
-
-              label += cvs.symbol_interner.lookup(cb->symbol);
+              label += cvs.symbol_interner.lookup(b.symbol);
               label += "\\n";
             }
         }
@@ -3087,9 +3010,7 @@ class blob_label_writer
             }
           else
             {
-              cvs_branch_end *cb = (cvs_branch_end*) *b.begin();
-
-              label += cvs.symbol_interner.lookup(cb->symbol);
+              label += cvs.symbol_interner.lookup(b.symbol);
               label += "\\n";
             }
         }
@@ -3103,18 +3024,14 @@ class blob_label_writer
             }
           else
             {
-              cvs_tag_point *cb = (cvs_tag_point*) *b.begin();
-
-              label += cvs.symbol_interner.lookup(cb->symbol);
+              label += cvs.symbol_interner.lookup(b.symbol);
               label += "\\n";
             }
         }
       else if (b.get_digest().is_symbol())
         {
-          cvs_symbol *ev = (cvs_symbol*) *b.begin();
-
           label = (FL("blob %d: symbol %s\\n")
-                   % v % cvs.symbol_interner.lookup(ev->symbol)).str();
+                   % v % cvs.symbol_interner.lookup(b.symbol)).str();
         }
       else
         {
@@ -3141,14 +3058,12 @@ class blob_label_writer
 
               if (b.get_digest().is_commit())
                 {
-                  cvs_commit *ce = (cvs_commit*) *i;
-
-                  tt = ce->adj_time / 100;
+                  tt = (*i)->adj_time / 100;
                   timeinfo = localtime(&tt);
                   strftime (buffer, 80, " %Y-%m-%d %H:%M:%S", timeinfo);
 
                   label += "@";
-                  label += cvs.rcs_version_interner.lookup(ce->rcs_version);
+                  label += cvs.rcs_version_interner.lookup((*i)->rcs_version);
                   label += buffer;
                 }
               label += "\\n";
@@ -3472,23 +3387,18 @@ number_unnamed_branches(cvs_history & cvs)
     {
       cvs_blob & blob = cvs.blobs[bi];
 
-      // FIXME: shouldn't we change branch_start and branch_end events, too?
       if (blob.get_digest().is_symbol())
         {
-          cvs_symbol *cbe = (cvs_symbol*) *blob.begin();
-
           // handle unnamed branches
-          string sym_name = cvs.symbol_interner.lookup(cbe->symbol);
+          string sym_name = cvs.symbol_interner.lookup(blob.symbol);
           if (sym_name.empty())
             {
               sym_name = (FL("UNNAMED_BRANCH_%d") % nr++).str();
-              cvs_symbol_no new_sym = cvs.symbol_interner.intern(sym_name);
+              blob.symbol = cvs.symbol_interner.intern(sym_name);
+              cvs.blob_index.insert(make_pair(blob.get_digest(), bi));
 
-              blob.digest = cvs_event_digest(ET_SYMBOL, new_sym);
-              cvs.blob_index.insert(make_pair(blob.digest, bi));
-
-              for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-                static_cast< cvs_symbol & >(**i).symbol = new_sym;
+              // FIXME: after renaming the symbol, we should rename the
+              //         dependent branch_start blob, no?
             }
         }
     }
@@ -3584,7 +3494,7 @@ cvs_blob::build_cset(cvs_history & cvs,
     {
       I(cvs.blobs[(*i)->bi].get_digest().is_commit());
 
-      cvs_commit *ce = (cvs_commit*) *i;
+      cvs_event_ptr ce = *i;
 
       file_path pth = file_path_internal(cvs.path_interner.lookup(ce->path));
       file_id new_file_id(cvs.mtn_version_interner.lookup(ce->mtn_version));
@@ -3632,10 +3542,8 @@ cvs_blob::build_cset(cvs_history & cvs,
   sort(begin(), end(), cmp);
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
-      cvs_commit *ce = (cvs_commit*) *i;
-
-      fval += cvs.path_interner.lookup(ce->path) + "@";
-      fval += cvs.rcs_version_interner.lookup(ce->rcs_version) + "\n";
+      fval += cvs.path_interner.lookup((*i)->path) + "@";
+      fval += cvs.rcs_version_interner.lookup((*i)->rcs_version) + "\n";
     }
 
   attr_key k("mtn:origin_info");
@@ -3837,7 +3745,7 @@ blob_consumer::operator()(cvs_blob_index bi)
           return;
         }
 
-      cvs_commit *ce = (cvs_commit*) *blob.begin();
+      cvs_event_ptr ce = *blob.begin();
 
       revision_id new_rid;
       roster_t ros;
@@ -3877,7 +3785,7 @@ blob_consumer::operator()(cvs_blob_index bi)
           time_t commit_time = avg_time / 100;
           string author, changelog;
 
-          cvs.split_authorclog(ce->authorclog, author, changelog);
+          cvs.split_authorclog(blob.authorclog, author, changelog);
           string bn = cvs.get_branchname(blob.in_branch);
           I(!bn.empty());
           app.get_project().put_standard_certs(new_rid,
@@ -3895,9 +3803,7 @@ blob_consumer::operator()(cvs_blob_index bi)
     {
       I(!blob.empty());
 
-      cvs_symbol *ev = (cvs_symbol*) *blob.begin();
-
-      string sym_name = cvs.get_branchname(ev->symbol);
+      string sym_name = cvs.get_branchname(blob.symbol);
 
       if (sym_name.empty())
         L(FL("consuming blob %d: symbol for an unnamed branch")
@@ -3910,9 +3816,7 @@ blob_consumer::operator()(cvs_blob_index bi)
     }
   else if (blob.get_digest().is_branch_start())
     {
-      cvs_branch_start *ev = (cvs_branch_start*) *blob.begin();
-
-      string branchname = cvs.get_branchname(ev->symbol);
+      string branchname = cvs.get_branchname(blob.symbol);
 
       if (branchname.empty())
         {
@@ -3922,7 +3826,7 @@ blob_consumer::operator()(cvs_blob_index bi)
           blob.in_branch = cvs.symbol_interner.intern(branchname);
         }
       else
-        blob.in_branch = ev->symbol;
+        blob.in_branch = blob.symbol;
 
       L(FL("consuming blob %d: start of branch %s")
         % bi % branchname);
@@ -3933,13 +3837,11 @@ blob_consumer::operator()(cvs_blob_index bi)
     }
   else if (blob.get_digest().is_tag())
     {
-      cvs_tag_point *ev = (cvs_tag_point*) *blob.begin();
-
       L(FL("consuming blob %d: tag %s")
-        % bi % cvs.symbol_interner.lookup(ev->symbol));
+        % bi % cvs.symbol_interner.lookup(blob.symbol));
 
       if (!app.opts.dryrun)
-        app.get_project().put_tag(parent_rid, cvs.symbol_interner.lookup(ev->symbol));
+        app.get_project().put_tag(parent_rid, cvs.symbol_interner.lookup(blob.symbol));
     }
   else
     I(false);
