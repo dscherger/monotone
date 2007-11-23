@@ -732,28 +732,29 @@ public:
 string
 get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
 {
-  if (ev->get_digest().is_commit())
+  cvs_blob & blob(cvs.blobs[ev->bi]);
+  if (blob.get_digest().is_commit())
     {
       cvs_commit *ce = (cvs_commit*) ev;
       return (F("commit rev %s on file %s")
                 % cvs.rcs_version_interner.lookup(ce->rcs_version)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
-  else if (ev->get_digest().is_symbol())
+  else if (blob.get_digest().is_symbol())
     {
       cvs_symbol *be = (cvs_symbol*) ev;
       return (F("symbol %s on file %s")
                 % cvs.symbol_interner.lookup(be->symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
-  else if (ev->get_digest().is_branch_start())
+  else if (blob.get_digest().is_branch_start())
     {
       cvs_branch_start *be = (cvs_branch_start*) ev;
       return (F("start of branch %s on file %s")
                 % cvs.symbol_interner.lookup(be->symbol)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
-  else if (ev->get_digest().is_branch_end())
+  else if (blob.get_digest().is_branch_end())
     {
       cvs_branch_end *be = (cvs_branch_end*) ev;
       return (F("end of branch %s on file %s")
@@ -762,7 +763,7 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
     }
   else
     {
-      I(ev->get_digest().is_tag());
+      I(blob.get_digest().is_tag());
       cvs_tag_point *te = (cvs_tag_point*) ev;
       return (F("tag %s on file %s")
               % cvs.symbol_interner.lookup(te->symbol)
@@ -2699,7 +2700,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
         {
           cvs_event_ptr dep = *j;
 
-          if ((dep->get_digest() == cvs.blobs[bi].get_digest()) &&
+          if ((cvs.blobs[dep->bi].get_digest() == cvs.blobs[bi].get_digest()) &&
               (dep->bi == bi))
             {
               I(ev->adj_time != dep->adj_time);
@@ -3471,6 +3472,7 @@ number_unnamed_branches(cvs_history & cvs)
     {
       cvs_blob & blob = cvs.blobs[bi];
 
+      // FIXME: shouldn't we change branch_start and branch_end events, too?
       if (blob.get_digest().is_symbol())
         {
           cvs_symbol *cbe = (cvs_symbol*) *blob.begin();
@@ -3480,11 +3482,13 @@ number_unnamed_branches(cvs_history & cvs)
           if (sym_name.empty())
             {
               sym_name = (FL("UNNAMED_BRANCH_%d") % nr++).str();
-              cbe->symbol = cvs.symbol_interner.intern(sym_name);
+              cvs_symbol_no new_sym = cvs.symbol_interner.intern(sym_name);
+
+              blob.digest = cvs_event_digest(ET_SYMBOL, new_sym);
+              cvs.blob_index.insert(make_pair(blob.digest, bi));
+
               for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-                static_cast< cvs_symbol & >(**i).symbol = cbe->symbol;
-              blob.digest = cbe->get_digest();
-              cvs.blob_index.insert(make_pair(cbe->get_digest(), bi));
+                static_cast< cvs_symbol & >(**i).symbol = new_sym;
             }
         }
     }
@@ -3578,7 +3582,7 @@ cvs_blob::build_cset(cvs_history & cvs,
 
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
-      I((*i)->get_digest().is_commit());
+      I(cvs.blobs[(*i)->bi].get_digest().is_commit());
 
       cvs_commit *ce = (cvs_commit*) *i;
 
