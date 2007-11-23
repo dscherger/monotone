@@ -51,10 +51,12 @@ use strict;
 use integer;
 use Glib qw(FALSE TRUE);
 use Gnome2;
+use Gnome2::VFS -init;
 use Gtk2 -init;
 set_locale Gtk2;
 init Gtk2;
 use Gtk2::GladeXML;
+use Gtk2::SourceView;
 use IPC::Open3;
 use Monotone::AutomateStdio;
 
@@ -91,9 +93,58 @@ use constant REVISION_CHANGED        => (DIRECTORY | DIRECTORY_VIEW | FILE
 use constant RLS_ICON_COLUMN           => 0;
 use constant RLS_NAME_COLUMN           => 1;
 use constant RLS_DATE_COLUMN           => 2;
-use constant RLS_MANIFEST_ENTRY_COLUMN => 3;
+use constant RLS_AUTHOR_COLUMN         => 3;
+use constant RLS_MANIFEST_ENTRY_COLUMN => 4;
 
-# The Glade generated widgets object.
+# Text viewable application mime types.
+
+my @text_viewable_app_mime_types =
+    qw(postscript
+       rtf
+       x-awk
+       x-cgi
+       x-csh
+       x-glade
+       x-java
+       x-javascript
+       x-jbuilder-project
+       x-perl
+       x-php
+       x-python
+       x-shellscript
+       x-troff-man
+       x-troff
+       xhtml+xml);
+
+# Supported text mime types (used for syntax highlighting.
+
+my @text_mime_types =
+    (
+     {
+	 pattern => qr/.*\.c$/o,
+	 type    => "text/x-csrc"
+     },
+     {
+	 pattern => qr/.*\.(C)|(cc)|(cp)|(cpp)|(CPP)|(cxx)|(c\+\+)$/o,
+	 type    => "text/x-c++src"
+     },
+     {
+	 pattern => qr/.*\.(h)|(hh)|(H)$/o,
+	 type    => "text/x-c++hdr"
+     },
+     {
+	 pattern => qr/.*\.h$/o,
+	 type    => "text/x-chdr"
+     },
+     {
+	 pattern => qr/(^[Mm]akefile(\.[^.]+)?)|(.*\.mk)$/o,
+	 type    => "text/x-makefile"
+     },
+     {
+	 pattern => qr/.*/o,
+	 type    => "text/plain"
+     }
+    );
 
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
@@ -137,6 +188,8 @@ sub update_browser_state($$);
 
     Gtk2->main();
 
+    Gnome2::VFS->shutdown();
+
     exit 0;
 
 }
@@ -161,6 +214,7 @@ sub new_browser_instance()
 
     my(@branch_list,
        $browser,
+       $font,
        $renderer,
        $tv_column,
        $div);
@@ -193,16 +247,18 @@ sub new_browser_instance()
     $browser->{main_appbar} = $browser->{glade}->get_widget("main_appbar");
     $browser->{branch_combo} =
 	$browser->{glade}->get_widget("branch_comboboxentry");
+    $browser->{revision_combo} =
+	$browser->{glade}->get_widget("revision_comboboxentry");
+    $browser->{tagged_tick} =
+	$browser->{glade}->get_widget("tagged_checkbutton");
     $browser->{directory_combo} =
 	$browser->{glade}->get_widget("directory_comboboxentry");
     $browser->{directory_up_button} =
 	$browser->{glade}->get_widget("directory_up_button");
-    $browser->{revision_combo} =
-	$browser->{glade}->get_widget("revision_comboboxentry");
     $browser->{manifest_treeview} =
 	$browser->{glade}->get_widget("manifest_browser_treeview");
-    $browser->{tagged_tick} =
-	$browser->{glade}->get_widget("tagged_only_checkbutton");
+    $browser->{file_view_scrolledwindow} =
+	$browser->{glade}->get_widget("file_view_scrolledwindow");
 
     # Setup the comboboxentry key release signal handlers.
 
@@ -243,6 +299,7 @@ sub new_browser_instance()
     $browser->{manifest_liststore} = Gtk2::ListStore->new("Glib::String",
 							  "Glib::String",
 							  "Glib::String",
+							  "Glib::String",
 							  "Glib::Scalar");
     $browser->{manifest_treeview}->set_model($browser->{manifest_liststore});
 
@@ -268,16 +325,46 @@ sub new_browser_instance()
     $browser->{manifest_treeview}->append_column($tv_column);
 
     $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("Last Modified");
+    $tv_column->set_title("Last Update");
     $tv_column->set_resizable(TRUE);
-    $tv_column->set_sizing("fixed");
+    $tv_column->set_sizing("grow-only");
     $tv_column->set_sort_column_id(RLS_DATE_COLUMN);
     $renderer = Gtk2::CellRendererText->new();
     $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "markup" => RLS_DATE_COLUMN);
+    $tv_column->set_attributes($renderer, "text" => RLS_DATE_COLUMN);
+    $browser->{manifest_treeview}->append_column($tv_column);
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_title("Author");
+    $tv_column->set_resizable(TRUE);
+    $tv_column->set_sizing("grow-only");
+    $tv_column->set_sort_column_id(RLS_AUTHOR_COLUMN);
+    $renderer = Gtk2::CellRendererText->new();
+    $tv_column->pack_start($renderer, FALSE);
+    $tv_column->set_attributes($renderer, "text" => RLS_AUTHOR_COLUMN);
     $browser->{manifest_treeview}->append_column($tv_column);
 
     $browser->{manifest_treeview}->set_search_column(RLS_NAME_COLUMN);
+
+    # $tv_column = $browser->{manifest_treeview}->get_column(RLS_DATE_COLUMN);
+    # $browser->{manifest_treeview}->remove_column($tv_column);
+
+    # Setup the file file viewer (with syntax highlighting).
+
+    $browser->{file_view_svbuffer} = Gtk2::SourceView::Buffer->new(undef);
+    $browser->{file_view_svbuffer}->set_max_undo_levels(0);
+    $browser->{file_view_svbuffer}->begin_not_undoable_action();
+    $browser->{file_view_svlangmgr} =
+	Gtk2::SourceView::LanguagesManager->new();
+    $browser->{file_view_sv} = Gtk2::SourceView::View->
+	new_with_buffer($browser->{file_view_svbuffer});
+    $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+    $browser->{file_view_sv}->modify_font($font) if (defined($font));
+    $browser->{file_view_sv}->set_cursor_visible(FALSE);
+    $browser->{file_view_sv}->set_editable(FALSE);
+    $browser->{glade}->get_widget("file_view_scrolledwindow")->
+	add($browser->{file_view_sv});
+    $browser->{file_view_sv}->show_all();
 
     # Update the browser'a internal state.
 
@@ -648,7 +735,8 @@ sub manifest_treeview_row_activated_cb($$$$)
     my($widget, $tree_path, $tree_view_column, $browser) = @_;
 
     my(@list,
-       $manifest_entry);
+       $manifest_entry,
+       $short_name);
 
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
@@ -659,6 +747,7 @@ sub manifest_treeview_row_activated_cb($$$$)
 	(sub
 	 {
 	     my($model, $path, $iter) = @_;
+	     $short_name = $model->get($iter, RLS_NAME_COLUMN);
 	     $manifest_entry = $model->get($iter, RLS_MANIFEST_ENTRY_COLUMN);
 	 });
 
@@ -673,6 +762,13 @@ sub manifest_treeview_row_activated_cb($$$$)
 	    set_text($manifest_entry->{name});
 	$browser->{main_appbar}->set_status("");
 	update_browser_state($browser, DIRECTORY_CHANGED);
+    }
+    else
+    {
+	$browser->{file_being_viewed} = {short_name     => $short_name,
+					 manifest_entry => $manifest_entry};
+	$browser->{main_appbar}->set_status("");
+	update_browser_state($browser, FILE_CHANGED);
     }
 
 }
@@ -765,8 +861,7 @@ sub update_browser_state($$)
     if ($changed & BRANCH)
     {
 
-	my($branch,
-	   @branch_list);
+	my @branch_list;
 
 	# Reset the branch selection.
 
@@ -782,7 +877,7 @@ sub update_browser_state($$)
 	# Update the branch list combobox.
 
 	$browser->{branch_combo}->get_model()->clear();
-	foreach $branch (@branch_list)
+	foreach my $branch (@branch_list)
 	{
 	    $browser->{branch_combo}->append_text($branch);
 	}
@@ -795,8 +890,7 @@ sub update_browser_state($$)
     if ($changed & REVISION)
     {
 
-	my($revision,
-	   @revision_list);
+	my @revision_list;
 
 	# Reset the revision selection.
 
@@ -820,7 +914,7 @@ sub update_browser_state($$)
 	# Update the revision list combobox.
 
 	$browser->{revision_combo}->get_model()->clear();
-	foreach $revision (@revision_list)
+	foreach my $revision (@revision_list)
 	{
 	    $revision = "i:" . $revision;
 	    $browser->{revision_combo}->append_text($revision);
@@ -835,7 +929,6 @@ sub update_browser_state($$)
     {
 
 	my(@directory_list,
-	   $item,
 	   @manifest_list,
 	   $revision);
 
@@ -845,6 +938,10 @@ sub update_browser_state($$)
 	$browser->{directory_combo_details}->{completed} = 0;
 	$browser->{directory_combo_details}->{last_typed_len} = 0;
 	$browser->{directory_combo_details}->{value} = "";
+
+	# Reset the name of the file being viewed.
+
+	$browser->{file_being_viewed} = {};
 
 	# Get the new manifest.
 
@@ -858,7 +955,7 @@ sub update_browser_state($$)
 
 	# Generate a simple list of directories for auto completion.
 
-	foreach $item (@manifest_list)
+	foreach my $item (@manifest_list)
 	{
 	    push(@directory_list, $item->{name})
 		if ($item->{type} eq "directory");
@@ -868,7 +965,7 @@ sub update_browser_state($$)
 	# Update the directory list combobox.
 
 	$browser->{directory_combo}->get_model()->clear();
-	foreach $item (@directory_list)
+	foreach my $item (@directory_list)
 	{
 	    $browser->{directory_combo}->append_text($item);
 	}
@@ -881,8 +978,12 @@ sub update_browser_state($$)
     if ($changed & DIRECTORY_VIEW)
     {
 
-	my(@directory_entry_list,
-	   $item);
+	my($author,
+	   @certs_list,
+	   @directory_entry_list,
+	   $last_update,
+	   @revision_list,
+	   $revision);
 
 	# Reset the manifest tree view.
 
@@ -897,7 +998,6 @@ sub update_browser_state($$)
 			     @{$browser->{manifest}},
 			     @directory_entry_list);
 	}
-	$browser->{directory_entry_list} = \@directory_entry_list;
 
 	# Disable the directory up button if we are already at the top level,
 	# otherwise make sure it is enabled.
@@ -908,16 +1008,66 @@ sub update_browser_state($$)
 
 	# Update the directory tree view.
 
-	foreach $item (@directory_entry_list)
+	$revision = $browser->{revision_combo_details}->{value};
+	$revision =~ s/^i://o;
+	foreach my $item (@directory_entry_list)
 	{
+
+	    # Get the latest modification time if the entry is a file (caching
+	    # the result in the manifest for future reference if we have to
+	    # work it out).
+
+	    if ($item->{manifest_entry}->{type} eq "file")
+	    {
+		if (! exists($item->{manifest_entry}->{author}))
+		{
+		    $browser->{mtn}->get_content_changed
+			(\@revision_list,
+			 $revision,
+			 $item->{manifest_entry}->{name});
+		    $browser->{mtn}->certs(\@certs_list, $revision_list[0]);
+		    $author = $last_update = "";
+		    foreach my $cert (@certs_list)
+		    {
+			if ($cert->{name} eq "author")
+			{
+			    $author = $cert->{value};
+			    $item->{manifest_entry}->{author} = $author;
+			}
+			if ($cert->{name} eq "date")
+			{
+			    $last_update = $cert->{value};
+			    $last_update =~ s/T/ /o;
+			    $item->{manifest_entry}->{last_update} =
+				$last_update;
+			}
+			last if ($author ne "" && $last_update ne "");
+		    }
+		}
+		else
+		{
+		    $author = $item->{manifest_entry}->{author};
+		    $last_update = $item->{manifest_entry}->{last_update};
+		}
+	    }
+	    else
+	    {
+		$author = "";
+		$last_update = "";
+	    }
+
+	    # Put the entry into the liststore.
+
 	    $browser->{manifest_liststore}->
 		set($browser->{manifest_liststore}->append(),
 		    RLS_ICON_COLUMN,
 		        ($item->{manifest_entry}->{type} eq "directory")
 		        ? "gtk-open" : "gtk-file",
 		    RLS_NAME_COLUMN, $item->{name},
-		    RLS_DATE_COLUMN, "2005-01-01",
+		    RLS_DATE_COLUMN, $last_update,
+		    RLS_AUTHOR_COLUMN, $author,
 		    RLS_MANIFEST_ENTRY_COLUMN, $item->{manifest_entry});
+
 	}
 
 	$browser->{manifest_treeview}->scroll_to_point(0, 0)
@@ -925,11 +1075,131 @@ sub update_browser_state($$)
 
     }
 
-    if ($changed & FILE)
-    {
-    }
+    # The displayed file contents has changed.
 
     if ($changed & DISPLAY_OF_FILE)
+    {
+
+	my($contents,
+	   $lang,
+	   $mime_type,
+	   $scrolled_window);
+
+	# Reset the file view buffer.
+
+	$browser->{file_view_svbuffer}->set_text("");
+	$browser->{file_view_svbuffer}->set("highlight", FALSE);
+
+	# Load up the selected file's contents into the file viewer.
+
+	if (exists($browser->{file_being_viewed}->{short_name}))
+	{
+
+	    # Get contents.
+
+	    $browser->{mtn}->get_file
+		(\$contents,
+		 $browser->{file_being_viewed}->{manifest_entry}->{file_id});
+
+	    # Try and work out the mime type, first based on contents and then
+	    # based on the file name extension.
+
+	    if (! defined($mime_type =
+			   Gnome2::VFS->get_mime_type_for_data($contents))
+		|| $mime_type eq "text/plain")
+	    {
+		my $name = $browser->{file_being_viewed}->{short_name};
+		foreach my $item (@text_mime_types)
+		{
+		    if ($name =~ m/$item->{pattern}/)
+		    {
+			$mime_type = $item->{type};
+			last;
+		    }
+		}
+	    }
+
+	    # Override some mis-identified types.
+
+	    $mime_type = "image/svg+xml"
+		if ($mime_type eq "text/xml"
+		    && $browser->{file_being_viewed}->{short_name}
+		        =~ m/.*\.svg$/o);
+
+	    # If it's image data then attempt to render it.
+
+	    if ($mime_type =~ m/^image\/.+$/o)
+	    {
+		eval
+		{
+		    my $loader = Gtk2::Gdk::PixbufLoader->new();
+		    $loader->write($contents);
+		    $loader->close();
+		    $browser->{file_view_svbuffer}->insert_pixbuf
+			($browser->{file_view_svbuffer}->get_start_iter(),
+			 $loader->get_pixbuf());
+		};
+		$browser->{file_view_svbuffer}->
+		    set_text("<" . $mime_type . ">\n") if ($@ ne "");
+	    }
+	    else
+	    {
+
+		my $ok_to_render = 0;
+
+		# Attempt to syntax highlight the file if it looks safe.
+
+		if ($mime_type =~ m/^application\/.+$/o)
+		{
+		    my $part;
+		    ($part) = ($mime_type =~ m/^application\/(.+)$/o);
+		    foreach my $item (@text_viewable_app_mime_types)
+		    {
+			if ($part eq $item)
+			{
+			    $ok_to_render = 1;
+			    last;
+			}
+		    }
+		}
+
+		if ($mime_type =~ m/^text\/.+$/o || $ok_to_render)
+		{
+		    if (defined($lang = $browser->{file_view_svlangmgr}->
+				get_language_from_mime_type($mime_type)))
+		    {
+			$browser->{file_view_svbuffer}->set("highlight", TRUE);
+			$browser->{file_view_svbuffer}->set_language($lang);
+		    }
+
+		    # Load in the contents.
+
+		    $browser->{file_view_svbuffer}->set_text($contents);
+		}
+		else
+		{
+		    $browser->{file_view_svbuffer}->set("highlight", FALSE);
+		    $browser->{file_view_svbuffer}->
+			set_text("<" . $mime_type . ">\n");
+		}
+
+	    }
+
+	    # Scroll back up to the top left.
+
+	    if ($browser->{file_view_scrolledwindow}->realized())
+	    {
+		$browser->{file_view_scrolledwindow}->
+		    get_vadjustment()->set_value(0);
+		$browser->{file_view_scrolledwindow}->
+		    get_hadjustment()->set_value(0);
+	    }
+
+	}
+
+    }
+
+    if ($changed & FILE)
     {
     }
 
@@ -1014,7 +1284,7 @@ sub get_completion($\@\$\$;\%)
     $$result = "";
     foreach $char (split(//o, $value))
     {
-	last unless exists($level->{$char});
+	last unless (exists($level->{$char}));
 	$level = $level->{$char};
 	$$result .= $char;
     }
