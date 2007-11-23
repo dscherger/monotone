@@ -327,8 +327,8 @@ public:
   cvs_symbol_no in_branch;
   revision_id assigned_rid;
 
-  // helper fields for Depth First Search algorithms
-  dfs_color colors[2];
+  // helper field for Depth First Search algorithm
+  dfs_color color;
 
   cvs_blob(const cvs_event_digest d)
     : has_cached_deps(false),
@@ -1956,7 +1956,7 @@ dijkstra_shortest_path(cvs_history &cvs,
       bi = stack.top();
       stack.pop();
 
-      if (break_on_grey && cvs.blobs[bi].colors[0] == grey)
+      if (break_on_grey && cvs.blobs[bi].color == grey)
         break;
 
       if (bi == to)
@@ -1969,9 +1969,9 @@ dijkstra_shortest_path(cvs_history &cvs,
         {
           vector<cvs_blob_index> & deps = cvs.blobs[bi].get_dependents(cvs);
           for (blob_index_iter i = deps.begin(); i != deps.end(); ++i)
-            if ((follow_white && cvs.blobs[*i].colors[0] == white) ||
-                (follow_grey && cvs.blobs[*i].colors[0] == grey) ||
-                (follow_black && cvs.blobs[*i].colors[0] == black))
+            if ((follow_white && cvs.blobs[*i].color == white) ||
+                (follow_grey && cvs.blobs[*i].color == grey) ||
+                (follow_black && cvs.blobs[*i].color == black))
               if (distances.count(*i) == 0 &&
                   make_pair(bi, *i) != edge_to_ignore)
                 {
@@ -1987,9 +1987,9 @@ dijkstra_shortest_path(cvs_history &cvs,
             {
               cvs_blob_index dep_bi = cvs.get_blob_of(*j);
 
-              if ((follow_white && cvs.blobs[dep_bi].colors[0] == white) ||
-                  (follow_grey && cvs.blobs[dep_bi].colors[0] == grey) ||
-                  (follow_black && cvs.blobs[dep_bi].colors[0] == black))
+              if ((follow_white && cvs.blobs[dep_bi].color == white) ||
+                  (follow_grey && cvs.blobs[dep_bi].color == grey) ||
+                  (follow_black && cvs.blobs[dep_bi].color == black))
                 if (distances.count(dep_bi) == 0 &&
                     make_pair(bi, dep_bi) != edge_to_ignore)
                   {
@@ -2257,7 +2257,7 @@ public:
         ity_a(path_a, path_a.end()),
         ity_b(path_b, path_b.end());
 
-      I(cvs.blobs[e.second].colors[0] == black);
+      I(cvs.blobs[e.second].color == black);
       dijkstra_shortest_path(cvs, e.second, cvs.root_blob, ity_a,
                              false,               // upwards direction,
                              false, true, true,   // follow grey and black, but
@@ -2267,8 +2267,8 @@ public:
 
       // From that common ancestor, we now follow the grey blobs downwards,
       // until we find the source (e.first) blob of the cross edge.
-      I(cvs.blobs[e.first].colors[0] == grey);
-      I(cvs.blobs[path_a[0]].colors[0] == grey);
+      I(cvs.blobs[e.first].color == grey);
+      I(cvs.blobs[path_a[0]].color == grey);
       dijkstra_shortest_path(cvs, path_a[0], e.first, ity_b,
                              true,               // downwards
                              false, true, false, // follow only grey
@@ -2511,7 +2511,7 @@ public:
               //
               //                root
               //                blob
-              //                /    \
+              //                /    \.
               //           vendor     |
               //           branch     |
               //           symbol   initial
@@ -3350,12 +3350,12 @@ void cvs_history::depth_first_search(Visitor & vis,
 
     for (vector<cvs_blob>::iterator ity = blobs.begin();
          ity != blobs.end(); ++ity)
-      ity->colors[0] = white;
+      ity->color = white;
 
     // start with blob 0
     ctx.bi = 0;
     // vis.discover_vertex(bi);
-    blobs[ctx.bi].colors[0] = grey;
+    blobs[ctx.bi].color = grey;
     ctx.ei = blobs[ctx.bi].get_dependents(*this).begin();
 
     stack< dfs_context > stack;
@@ -3373,7 +3373,7 @@ void cvs_history::depth_first_search(Visitor & vis,
                 !vis.abort())
           {
             // vis.examine_edge(*ei, g);
-            if (blobs[*ctx.ei].colors[0] == white)
+            if (blobs[*ctx.ei].color == white)
               {
                 vis.tree_edge(make_pair(ctx.bi, *ctx.ei));
 
@@ -3385,11 +3385,11 @@ void cvs_history::depth_first_search(Visitor & vis,
 
                 // switch to that blob and follow its edges
                 ctx.bi = *ctx.ei;
-                blobs[ctx.bi].colors[0] = grey;
+                blobs[ctx.bi].color = grey;
                 // vis.discover_vertex(bi, g);
                 ctx.ei = blobs[ctx.bi].get_dependents(*this).begin();
               }
-            else if (blobs[*ctx.ei].colors[0] == grey)
+            else if (blobs[*ctx.ei].color == grey)
               {
                 vis.back_edge(make_pair(ctx.bi, *ctx.ei));
                 ++ctx.ei;
@@ -3400,7 +3400,7 @@ void cvs_history::depth_first_search(Visitor & vis,
                 ++ctx.ei;
               }
           }
-        blobs[ctx.bi].colors[0] = black;
+        blobs[ctx.bi].color = black;
         // vis.finish_vertex(bi, g);
 
         // output the blob index in postordering fashion (for later
