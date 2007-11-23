@@ -2754,97 +2754,97 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
   /* shortcut for intra blob dependencies */
   I(cycle_members.size() > 1);
 
-      L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
-      typedef set<cvs_blob_index>::const_iterator cm_ity;
+  L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
+  typedef set<cvs_blob_index>::const_iterator cm_ity;
 
-      time_i largest_gap = 0;
-      time_i largest_gap_at = 0;
-      int largest_gap_blob = -1;
+  time_i largest_gap = 0;
+  time_i largest_gap_at = 0;
+  int largest_gap_blob = -1;
 
+  for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
+    {
+      // we never split branch starts or tags, instead we split the
+      // underlying symbol.
+      if (cvs.blobs[*cc].get_digest().is_branch_start() ||
+          cvs.blobs[*cc].get_digest().is_tag())
+        continue;
+
+      // make sure the blob's events are sorted by timestamp
+      cvs.blobs[*cc].sort_events();
+      vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
+
+      blob_event_iter ity;
+
+      cvs_event_ptr this_ev, last_ev;
+
+      ity = blob_events.begin();
+      this_ev = *ity;
+      ++ity;
+      for ( ; ity != blob_events.end(); ++ity)
+        {
+          last_ev = this_ev;
+          this_ev = *ity;
+
+          time_i time_diff = this_ev->adj_time - last_ev->adj_time;
+          if (time_diff > largest_gap)
+            {
+              largest_gap = time_diff;
+              largest_gap_at = last_ev->adj_time + time_diff / 2;
+              largest_gap_blob = *cc;
+            }
+        }
+
+      int count_intra_cycle_deps = 0;
+      for (cm_ity dd = cycle_members.begin(); dd != cycle_members.end(); ++dd)
+        {
+          for (blob_event_iter ii = cvs.blobs[*cc].begin(); ii != cvs.blobs[*cc].end(); ++ii)
+            {
+              cvs_event_ptr ev = *ii;
+              for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+                {
+                  cvs_event_ptr dep = *j;
+
+                  if (dep->bi == *dd)
+                    count_intra_cycle_deps++;
+                }
+            }
+        }
+
+      if (count_intra_cycle_deps <= 0)
+        W(F("  warning: no intra cycle dependencies... why is it a cycle???"));
+    }
+
+  if (largest_gap_at == 0)
+    {
+      W(F("Unable to split the following cycle:"));
       for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
         {
-          // we never split branch starts or tags, instead we split the
-          // underlying symbol.
-          if (cvs.blobs[*cc].get_digest().is_branch_start() ||
-              cvs.blobs[*cc].get_digest().is_tag())
-            continue;
+          cvs_blob & blob = cvs.blobs[*cc];
+          L(FL("  blob %d: %s") % *cc
+            % (blob.get_digest().is_symbol() ? "symbol"
+              : (blob.get_digest().is_branch_start() ? "branch start"
+                : (blob.get_digest().is_tag() ? "tag" : "commit"))));
 
-          // make sure the blob's events are sorted by timestamp
-          cvs.blobs[*cc].sort_events();
-          vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
-
-          blob_event_iter ity;
-
-          cvs_event_ptr this_ev, last_ev;
-
-          ity = blob_events.begin();
-          this_ev = *ity;
-          ++ity;
-          for ( ; ity != blob_events.end(); ++ity)
+          if (blob.get_digest().is_commit())
             {
-              last_ev = this_ev;
-              this_ev = *ity;
-
-              time_i time_diff = this_ev->adj_time - last_ev->adj_time;
-              if (time_diff > largest_gap)
+              for (blob_event_iter ii = blob.begin(); ii != blob.end(); ++ii)
                 {
-                  largest_gap = time_diff;
-                  largest_gap_at = last_ev->adj_time + time_diff / 2;
-                  largest_gap_blob = *cc;
-                }
-            }
-
-          int count_intra_cycle_deps = 0;
-          for (cm_ity dd = cycle_members.begin(); dd != cycle_members.end(); ++dd)
-            {
-              for (blob_event_iter ii = cvs.blobs[*cc].begin(); ii != cvs.blobs[*cc].end(); ++ii)
-                {
-                  cvs_event_ptr ev = *ii;
-                  for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
-                    {
-                      cvs_event_ptr dep = *j;
-
-                      if (dep->bi == *dd)
-                        count_intra_cycle_deps++;
-                    }
-                }
-            }
-
-          if (count_intra_cycle_deps <= 0)
-            W(F("  warning: no intra cycle dependencies... why is it a cycle???"));
-        }
-
-      if (largest_gap_at == 0)
-        {
-          W(F("Unable to split the following cycle:"));
-          for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
-            {
-              cvs_blob & blob = cvs.blobs[*cc];
-              L(FL("  blob %d: %s") % *cc
-                % (blob.get_digest().is_symbol() ? "symbol"
-                  : (blob.get_digest().is_branch_start() ? "branch start"
-                    : (blob.get_digest().is_tag() ? "tag" : "commit"))));
-
-              if (blob.get_digest().is_commit())
-                {
-                  for (blob_event_iter ii = blob.begin(); ii != blob.end(); ++ii)
-                    {
-                      L(FL("    path: %s @ %s, time: %d")
-                        % cvs.path_interner.lookup((*ii)->path)
-                        % cvs.rcs_version_interner.lookup((*ii)->rcs_version)
-                        % (*ii)->adj_time);
-                    }
+                  L(FL("    path: %s @ %s, time: %d")
+                    % cvs.path_interner.lookup((*ii)->path)
+                    % cvs.rcs_version_interner.lookup((*ii)->rcs_version)
+                    % (*ii)->adj_time);
                 }
             }
         }
+    }
 
-      I(largest_gap_at != 0);
-      I(largest_gap_blob >= 0);
-      I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
+  I(largest_gap_at != 0);
+  I(largest_gap_blob >= 0);
+  I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
 
-      split_by_time func(largest_gap_at);
-      L(FL("splitting by time %d") % largest_gap_at);
-      split_blob_at(cvs, largest_gap_blob, func);
+  split_by_time func(largest_gap_at);
+  L(FL("splitting by time %d") % largest_gap_at);
+  split_blob_at(cvs, largest_gap_blob, func);
 }
 
 void
