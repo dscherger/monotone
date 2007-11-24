@@ -12,22 +12,22 @@
 #   Legal Stuff  - Copyright (c) 2007 Anthony Edward Cooper
 #                  <aecooper@coosoft.plus.com>.
 #
-#                  This library is free software; you can redistribute it
+#                  This program is free software; you can redistribute it
 #                  and/or modify it under the terms of the GNU General Public
 #                  License as published by the Free Software Foundation;
 #                  either version 3 of the License, or (at your option) any
 #                  later version.
 #
-#                  This library is distributed in the hope that it will be
+#                  This program is distributed in the hope that it will be
 #                  useful, but WITHOUT ANY WARRANTY; without even the implied
 #                  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-#                  PURPOSE.  See the GNU General Public License for more
+#                  PURPOSE. See the GNU General Public License for more
 #                  details.
 #
 #                  You should have received a copy of the GNU General Public
-#                  License along with this library; if not, write to the Free
+#                  License along with this software; if not, write to the Free
 #                  Software Foundation, Inc., 59 Temple Place - Suite 330,
-#                  Boston, MA  02111-1307  USA.
+#                  Boston, MA 02111-1307 USA.
 #
 ##############################################################################
 #
@@ -56,9 +56,11 @@ use Gtk2 -init;
 set_locale Gtk2;
 init Gtk2;
 use Gtk2::GladeXML;
+use Gtk2::Helper;
 use Gtk2::SourceView;
 use IPC::Open3;
 use Monotone::AutomateStdio;
+use POSIX qw(:errno_h :sys_wait_h);
 
 # Temporary debug stuff.
 
@@ -146,6 +148,13 @@ my @text_mime_types =
      }
     );
 
+# A boolean to signal whether this process has received a SIGCHLD signal or
+# not.
+
+# List of browser instances.
+
+my @browsers;
+
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Private routines.
@@ -158,7 +167,10 @@ sub get_completion($\@\$\$;\%);
 sub get_dir_contents($\@\@);
 sub manifest_treeview_cursor_changed_cb($$);
 sub manifest_treeview_row_activated_cb($$$$);
+sub mtn_error_handler($$);
 sub new_browser_instance();
+sub setup_sigchld_handler($);
+sub sigchld_handler();
 sub update_browser_state($$);
 #
 ##############################################################################
@@ -176,21 +188,25 @@ sub update_browser_state($$);
 
 {
 
-    my $instance;
-
-    # Initialise the GUI libraries and generate the interface.
+    # Initialise the libraries and generate the interface.
 
     Gnome2::Program->init("mtn-browse", 0.1);
+    Monotone::AutomateStdio->register_error_handler("both",
+						    \&mtn_error_handler);
+    setup_sigchld_handler(\&sigchld_handler);
+    push(@browsers, new_browser_instance());
 
-    # Create a browser instance.
-
-    $instance = new_browser_instance();
+    # Hand control over to Gtk2.
 
     Gtk2->main();
 
-    Gnome2::VFS->shutdown();
+    # Cleanup.
 
-    exit 0;
+    Gnome2::VFS->shutdown();
+    $SIG{CHLD} = "IGNORE";
+    @browsers = ();
+
+    exit(0);
 
 }
 #
@@ -1371,5 +1387,160 @@ sub get_dir_contents($\@\@)
 			       name           => $name};
 	}
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - mtn_error_handler
+#
+#   Description  - This routine is called when ever there is a problem with
+#                  Monotone.
+#
+#   Data         - $severity : The severity of the error.
+#                  $message  : The error message.
+#
+##############################################################################
+
+
+
+sub mtn_error_handler($$)
+{
+
+    my($severity, $message) = @_;
+
+    my $dialog;
+
+    if ($severity eq "warning")
+    {
+	$dialog = Gtk2::MessageDialog->new_with_markup
+	    (undef,
+	     ["modal"],
+	     "warning",
+	     "close",
+	     sprintf("Problem with monotone request, got:\n<b><i>%s</i></b>\n"
+		         . "This should not be happening!",
+		     Glib::Markup::escape_text($message)));
+	$dialog->run();
+	$dialog->destroy();
+	die($message);
+    }
+    else
+    {
+	$dialog = Gtk2::MessageDialog->new_with_markup
+	    (undef,
+	     ["modal"],
+	     "error",
+	     "close",
+	     sprintf("Monotone process unexpectedly exiting with:\n"
+		         . "<b><i>%s</i></b>\n"
+		         . "This is fatal, I am going to exit.",
+		     Glib::Markup::escape_text($message)));
+	$dialog->run();
+	$dialog->destroy();
+	Gtk2->main_quit();
+	die($message);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - sigchld_handler
+#
+#   Description  - This routine is called when ever a subprocess exits.
+#
+#   Data         - None.
+#
+##############################################################################
+
+
+
+sub sigchld_handler()
+{
+
+    my($pid,
+       $status);
+
+    while (($pid = waitpid(-1, WNOHANG)) > 0)
+    {
+	$status = $?;
+	if (WIFEXITED($status) || WIFSIGNALED($status))
+	{
+
+	    # If it is an mtn process then close down the relevant object so
+	    # that it will automatically restart.
+
+	    foreach my $browser (@browsers)
+	    {
+		if (exists($browser->{mtn})
+		    && $browser->{mtn}->get_pid() == $pid)
+
+		{
+		    $browser->{mtn}->closedown();
+		    my $dialog = Gtk2::MessageDialog->new
+			(undef,
+			 ["modal"],
+			 "warning",
+			 "close",
+			 sprintf("The mtn subprocess just unexpectedly\n"
+				     . "exited (%s).\n"
+				     . "This shouldn't happen.\n"
+				     . "It will be restarted when needed.",
+				 WIFSIGNALED($status) ?
+				     sprintf("terminated by signal %d",
+					     WTERMSIG($status)) :
+				     sprintf("exited with status %d",
+					     WEXITSTATUS($status))));
+		    $dialog->run();
+		    $dialog->destroy();
+		    last;
+		}
+	    }
+
+	    if (WIFSIGNALED($status))
+	    {
+	    }
+	}
+    }
+    warn("waitpid failed: $!") if ($pid < 0 && $! != ECHILD);
+
+}
+#
+##############################################################################
+#
+#   Routine      - setup_sigchld_handler
+#
+#   Description  - This routine sets up the handler for SIGCHLD signals.
+#
+#   Data         - $handler - A reference to the SIGCHLD handler routine.
+#
+##############################################################################
+
+
+
+sub setup_sigchld_handler($)
+{
+
+    my $handler = $_[0];
+
+    my($reader,
+       $writer);
+
+    # Basically set up a SIGCHLD handler that simply writes a character down an
+    # anonymous pipe in order to wake up the actual handler that is registered
+    # with Gtk2 as a file activity handler. This is efficient and safer than
+    # some alternatives.
+
+    pipe($reader, $writer) or die("pipe failed: $!");
+    $SIG{CHLD} = sub { syswrite($writer, "\n", 1); };
+    Gtk2::Helper->add_watch(fileno($reader), "in",
+			    sub
+			    {
+				my $buffer;
+				sysread($reader, $buffer, 1);
+				&$handler();
+				return 1;
+			    });
 
 }
