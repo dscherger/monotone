@@ -14,7 +14,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
   my $mtn = Monotone::AutomateStdio->new("/home/fred/venge.mtn");
   my @manifest;
   $mtn->get_manifest_of(\@manifest)
-      or die("mtn: " . $mtn->error_message());
+      or die("mtn: " . $mtn->get_error_message());
 
 =head1 DESCRIPTION
 
@@ -26,7 +26,7 @@ of access (detailed below).
 
 The mtn automate subprocess is also controlled by this class. A new subprocess
 is started, if necessary, when anything that requires it is called. The
-subprocess is terminated on object destruction or when $mtn->closedown() is
+subprocess is terminated on object destruction or when $mtn-E<gt>closedown() is
 called.
 
 All automate commands have been implemented in this class except for the
@@ -47,22 +47,46 @@ style commands seem to be of little use to a scripting language, the `put'
 style commands just seem too scary for words and hopefully you do not have to
 ask about the `stdio' command:-).
 
-=head1 CONSTRUCTOR
+=head1 CONSTRUCTORS
 
 =over 4
 
-=item new()
+=item B<$mtn = Monotone::AutomateStdio-E<gt>new()>
 
 Creates a new Monotone::AutomateStdio object, using the current workspace's
 database.
 
-=item new($db)
+=item B<$mtn = Monotone::AutomateStdio-E<gt>new($db)>
 
 Creates a new Monotone::AutomateStdio object, using the database named in $db.
 
 =back
 
-=head1 METHODS
+=head1 CLASS METHODS
+
+=over 4
+
+=item B<Monotone::AutomateStdio-E<gt>register_error_handler($severity,
+$handler)>
+
+Registers the handler specified as a subroutine reference in $handler for
+errors of a certain severity as specified by $severity. $severity can be one of
+"warning", "error" or "both". This is a class method rather than an object one
+as errors can be raised when calling a constructor. If undef is passed in
+$handler then error handling is reset to the default behaviour for that
+severity level.
+
+The handler subroutine is given two arguments, the first one is a severity
+string that indicates the severity of the error being handled, either "warning"
+or "error", and the error message. Please note that if the severity is "error"
+then it is expected that croak or die will be called by the handler, if this is
+not the case then the library will do it anyway upon return. If you really need
+to trap errors and prevent program exit then use an eval block to protect
+yourself in the calling code.
+
+=back
+
+=head1 OBJECT METHODS
 
 See http://monotone.ca/monotone.html for a complete description of the mtn
 automate commands.
@@ -89,25 +113,25 @@ The following methods are provided:
 
 =over 4
 
-=item $mtn->ancestors(\@list, @revision_ids)
+=item B<$mtn-E<gt>ancestors(\@list, @revision_ids)>
 
 Get a list of ancestors for the specified revisions.
 
-=item $mtn->ancestry_difference(\@list, $new_revision_id
-[, $old_revision_id ...])
+=item B<$mtn-E<gt>ancestry_difference(\@list, $new_revision_id
+[, $old_revision_id ...])>
 
 Get a list of ancestors for the specified revision, that are not also
 ancestors for the specified old revisions.
 
-=item $mtn->branches(\@list)
+=item B<$mtn-E<gt>branches(\@list)>
 
 Get a list of branches.
 
-=item $mtn->cert($revision_id, $name, $value)
+=item B<$mtn-E<gt>cert($revision_id, $name, $value)>
 
 Add the specified cert to the specified revision.
 
-=item $mtn->certs(\$buffer | \@list, $revision_id)
+=item B<$mtn-E<gt>certs(\$buffer | \@list, $revision_id)>
 
 Get all the certs for the specified revision. If \$buffer is passed then
 the output from the command is simply placed into the variable. However if
@@ -122,20 +146,20 @@ each one containing the following fields:
     trust     - Its trust status. Values can be one of "trusted" or
                 "untrusted".
 
-=item $mtn->children(\@list, $revision_id)
+=item B<$mtn-E<gt>children(\@list, $revision_id)>
 
 Get a list of children for the specified revision.
 
-=item $mtn->closedown()
+=item B<$mtn-E<gt>closedown()>
 
 If started then stop the mtn subprocess.
 
-=item $mtn->common_ancestors(\@list, $revision_id ...)
+=item B<$mtn-E<gt>common_ancestors(\@list, $revision_id ...)>
 
 Get a list of revisions that are all ancestors of the specified revision(s).
 
-=item $mtn->content_diff(\$buffer, $revision_id1, $revision_id2
-[, $file_name ...])
+=item B<$mtn-E<gt>content_diff(\$buffer, $revision_id1, $revision_id2
+[, $file_name ...])>
 
 Get the difference between the two specified revisions, optionally limiting
 it to the specified list of files. If the second revision id is undefined
@@ -143,28 +167,24 @@ then the workspace's revision is used. If both revision ids are undefined
 then the workspace's and base revisions are used. If no file names are
 listed then differences in all files are reported.
 
-=item $mtn->db_get(\$buffer, $domain, $name)
+=item B<$mtn-E<gt>db_get(\$buffer, $domain, $name)>
 
 Get the value of a database variable.
 
-=item $mtn->db_set($domain, $name, $value)
+=item B<$mtn-E<gt>db_set($domain, $name, $value)>
 
 Set the value of a database variable.
 
-=item $mtn->descendents(\@list, $revision_id ...)
+=item B<$mtn-E<gt>descendents(\@list, $revision_id ...)>
 
 Get a list of descendants for the specified revision(s).
 
-=item $mtn->erase_ancestors(\@list, $revision_id ...)
+=item B<$mtn-E<gt>erase_ancestors(\@list, $revision_id ...)>
 
 For a given list of revisions, weed out those that are ancestors to other
 revisions specified within the list.
 
-=item $mtn->error_message()
-
-Return the last error message received from the mtn subprocess.
-
-=item $mtn->get_attributes(\$buffer, $file_name)
+=item B<$mtn-E<gt>get_attributes(\$buffer, $file_name)>
 
 Get the attributes of the specified file. If \$buffer is passed then the output
 from the command is simply placed into the variable. However if \@list is
@@ -176,36 +196,41 @@ containing the following fields:
     state     - The status of the attribute. Values can be one of
                 "added", "changed", "dropped" or "unchanged".
 
-=item $mtn->get_base_revision_id(\$buffer)
+=item B<$mtn-E<gt>get_base_revision_id(\$buffer)>
 
 Get the revision upon which the workspace is based.
 
-=item $mtn->get_content_changed(\@list, $revision_id, $file_name)
+=item B<$mtn-E<gt>get_content_changed(\@list, $revision_id, $file_name)>
 
 Get a list of revisions in which the content was most recently changed,
 relative to the specified revision.
 
-=item $mtn->get_corresponding_path(\$buffer, $source_revision_id, $file_name,
-$target_revision_id)
+=item B<$mtn-E<gt>get_corresponding_path(\$buffer, $source_revision_id,
+$file_name, $target_revision_id)>
 
 For the specified file name in the specified source revision, return the
 corresponding file name for the specified target revision.
 
-=item $mtn->get_current_revision_id(\$buffer)
+=item B<$mtn-E<gt>get_current_revision_id(\$buffer)>
 
 Get the revision that would be created if an unrestricted commit was done
 in the workspace.
 
-=item $mtn->get_file(\$buffer, $file_id)
+=item B<$mtn-E<gt>get_error_message()>
+
+Return the last error message received from the mtn subprocess. An empty string
+is returned if there is nothing to report.
+
+=item B<$mtn-E<gt>get_file(\$buffer, $file_id)>
 
 Get the contents of the file referenced by the specified file id.
 
-=item $mtn->get_file_of(\$buffer, $file_name[, $revision_id])
+=item B<$mtn-E<gt>get_file_of(\$buffer, $file_name[, $revision_id])>
 
 Get the contents of the specified file under the specified revision. If the
 revision id is undefined then the current workspace revision is used.
 
-=item $mtn->get_manifest_of(\$buffer | \@list, $revision_id)
+=item B<$mtn-E<gt>get_manifest_of(\$buffer | \@list, $revision_id)>
 
 Get the manifest for the current or specified revision. If \$buffer is
 passed then the output from the command is simply placed into the
@@ -218,11 +243,18 @@ of anonymous hashes, each one containing the following fields:
     file_id - The id of the file. This field is only present if type
               is set to "file".
 
-=item $mtn->get_option(\$buffer, $option_name)
+=item B<$mtn-E<gt>get_option(\$buffer, $option_name)>
 
 Get the value of an option stored in a workspace's _MTN directory.
 
-=item $mtn->get_revision(\$buffer | \@list, $revision_id)
+=item B<$mtn-E<gt>get_pid()>
+
+Return the process id of the mtn subprocess spawned by this library. Zero is
+returned if no subprocess is thought to exist. Also if the subprocess should
+exit unexpectedly then this method will carry on returning its process id until
+the $mtn-E<gt>closedown() method is called.
+
+=item B<$mtn-E<gt>get_revision(\$buffer | \@list, $revision_id)>
 
 Get the revision information for the current or specified revision. If \$buffer
 is passed then the output from the command is simply placed into the
@@ -269,7 +301,7 @@ type of entry:
         attribute - The name of the attribute that was set.
         value     - The value that the attribute was set to.
 
-=item $mtn->graph(\$buffer | \@list)
+=item B<$mtn-E<gt>graph(\$buffer | \@list)>
 
 Get a complete ancestry graph of the database. If \$buffer is passed then the
 output from the command is simply placed into the variable. However if \@list
@@ -279,20 +311,20 @@ containing the following fields:
     revision_id - The id of a revision.
     parent_ids  - A list of parent revision ids.
 
-=item $mtn->heads(\@list[, $branch_name])
+=item B<$mtn-E<gt>heads(\@list[, $branch_name])>
 
 Get a list of revision ids that are heads on the specified branch. If no branch
 is given then the workspace's branch is used.
 
-=item $mtn->identify(\$buffer, $file_name)
+=item B<$mtn-E<gt>identify(\$buffer, $file_name)>
 
 Get the file id, i.e. hash, of the specified file.
 
-=item $mtn->interface_version(\$buffer)
+=item B<$mtn-E<gt>interface_version(\$buffer)>
 
 Get the version of the mtn automate interface.
 
-=item $mtn->inventory(\$buffer | \@list)
+=item B<$mtn-E<gt>inventory(\$buffer | \@list)>
 
 Get the inventory for the current workspace. If \$buffer is passed then the
 output from the command is simply placed into the variable. However if \@list
@@ -329,7 +361,7 @@ containing the following fields:
         Please note that some fields are not used by all entries, in
         which case they are set to undef.
 
-=item $mtn->keys(\$buffer | \@list)
+=item B<$mtn-E<gt>keys(\$buffer | \@list)>
 
 Get a list of all the keys known to mtn. If \$buffer is passed then the output
 from the command is simply placed into the variable. However if \@list is
@@ -350,23 +382,23 @@ containing the following fields:
                         "keystore". This field is only present if
                         type is set to "public-private".
 
-=item $mtn->leaves(\@list)
+=item B<$mtn-E<gt>leaves(\@list)>
 
 Get a list of leaf revisions.
 
-=item $mtn->parents(\@list, $revision_id)
+=item B<$mtn-E<gt>parents(\@list, $revision_id)>
 
 Get a list of parents for the specified revision.
 
-=item $mtn->roots(\@list)
+=item B<$mtn-E<gt>roots(\@list)>
 
 Get a list of root revisions, i.e. revisions with no parents.
 
-=item $mtn->select(\@list, $selector)
+=item B<$mtn-E<gt>select(\@list, $selector)>
 
 Get a list of revision ids that match the specified selector.
 
-=item $mtn->tags(\$buffer | \@list[, $branch_pattern])
+=item B<$mtn-E<gt>tags(\$buffer | \@list[, $branch_pattern])>
 
 Get all the tags attached to revisions on branches that match the specified
 branch pattern. If no pattern is given then all branches are searched. If
@@ -379,7 +411,7 @@ anonymous hashes, each one containing the following fields:
     signer      - The name of the key used to sign the tag cert.
     branches    - A list of all branches that contain this revision.
 
-=item $mtn->toposort(\@list[, $revision_id ...])
+=item B<$mtn-E<gt>toposort(\@list[, $revision_id ...])>
 
 Sort the specified revisions such that the ancestors come out first.
 
@@ -387,16 +419,20 @@ Sort the specified revisions such that the ancestors come out first.
 
 =head1 RETURN VALUE
 
-Except for the constructor and the $mtn->closedown() and $mtn->error_message()
-methods, all remaining methods return a boolean success indicator, true for
-success or false for failure. The constructor returns a newly created object,
-$mtn->error_message() returns a string and $mtn->closedown() does not return
-anything.
+Except for the constructor and the
+Monotone::AutomateStdio-E<gt>register_error_handler(), $mtn-E<gt>closedown(),
+$mtn-E<gt>get_error_message() and $mtn-E<gt>get_pid() methods, all remaining
+methods return a boolean success indicator, true for success or false for
+failure (where true is 1 and false is undef). The constructor returns a newly
+created object, $mtn-E<gt>get_error_message() returns a string,
+$mtn-E<gt>get_pid() returns an integer and
+Monotone::AutomateStdio-E<gt>register_error_handler() and $mtn-E<gt>closedown()
+do not return anything.
 
 =head1 NOTES
 
-The Monotone::AutomateStdio class, with the exception of the $mtn->cert() and
-$mtn->db_set() methods, provides a read-only interface to a Monotone
+The Monotone::AutomateStdio class, with the exception of the $mtn-E<gt>cert()
+and $mtn-E<gt>db_set() methods, provides a read-only interface to a Monotone
 database. This is a deliberate safety precaution for now.
 
 In order to reliably shutdown the mtn subprocess, the alarm() routine is used

@@ -20,13 +20,13 @@
 #                  This library is distributed in the hope that it will be
 #                  useful, but WITHOUT ANY WARRANTY; without even the implied
 #                  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-#                  PURPOSE.  See the GNU Library General Public License for
+#                  PURPOSE. See the GNU Lesser General Public License for
 #                  more details.
 #
-#                  You should have received a copy of the GNU Library General
+#                  You should have received a copy of the GNU Lesser General
 #                  Public License along with this library; if not, write to
 #                  the Free Software Foundation, Inc., 59 Temple Place - Suite
-#                  330, Boston, MA  02111-1307  USA.
+#                  330, Boston, MA 02111-1307 USA.
 #
 ##############################################################################
 #
@@ -52,6 +52,7 @@ use strict;
 use integer;
 use Carp;
 use IPC::Open3;
+use POSIX qw(:errno_h);
 use Symbol qw(gensym);
 
 # ***** GLOBAL DATA DECLARATIONS *****
@@ -74,6 +75,13 @@ my $closing_quote_re = qr/(((^.*[^\\])|^)\"$)
 			  |(((^.*[^\\])|^)\\{16}\"$)
 			  |(((^.*[^\\])|^)\\{18}\"$)
 			  |(((^.*[^\\])|^)\\{20}\"$)/ox;
+
+# Global error callback routine references.
+
+my $croaker = \&croak;
+my $carper = undef;
+my($error_handler,
+   $warning_handler);
 
 # ***** CLASS DEFINITIONS *****
 
@@ -127,16 +135,17 @@ sub db_get($\$$$);
 sub db_set($$$$);
 sub descendents($\@@);
 sub erase_ancestors($\@@);
-sub error_message($);
 sub get_attributes($\$$);
 sub get_base_revision_id($\$);
 sub get_content_changed($\@$$);
 sub get_corresponding_path($\$$$$);
 sub get_current_revision_id($\$);
+sub get_error_message($);
 sub get_file($\$$);
 sub get_file_of($\$$;$);
 sub get_manifest_of($$;$);
 sub get_option($\$$);
+sub get_pid($);
 sub get_revision($\$$);
 sub graph($$);
 sub heads($\@;$);
@@ -145,21 +154,24 @@ sub interface_version($\$);
 sub inventory($$);
 sub keys($$);
 sub leaves($\@);
+sub new($;$);
 sub parents($\@$);
+sub register_error_handler($$);
 sub roots($\@);
 sub select($\@$);
 sub tags($$;$);
 sub toposort($\@@);
-sub new($;$);
 
 # Private routines.
 
+sub error_handler_wrapper($);
 sub get_quoted_value(\@\$\$);
 sub mtn_command($$$@);
 sub mtn_command_with_options($$$\@@);
 sub mtn_read_output($\$);
 sub startup($);
 sub unescape($);
+sub warning_handler_wrapper($);
 #
 ##############################################################################
 #
@@ -403,8 +415,8 @@ sub certs($$$)
 		}
 		else
 		{
-		    croak("Corrupt certs list, expected signature field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt certs list, expected signature field "
+			      . "but didn't find it");
 		}
 		if ($lines[++ $i] =~ m/^ *name \"/o)
 		{
@@ -412,8 +424,8 @@ sub certs($$$)
 		}
 		else
 		{
-		    croak("Corrupt certs list, expected name field but didn't "
-			  . "find it");
+		    &$croaker("Corrupt certs list, expected name field but "
+			      . "didn't find it");
 		}
 		if ($lines[++ $i] =~ m/^ *value \"/o)
 		{
@@ -421,8 +433,8 @@ sub certs($$$)
 		}
 		else
 		{
-		    croak("Corrupt certs list, expected value field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt certs list, expected value field but "
+			      . "didn't find it");
 		}
 		if ($lines[++ $i] =~ m/^ *trust \"/o)
 		{
@@ -430,8 +442,8 @@ sub certs($$$)
 		}
 		else
 		{
-		    croak("Corrupt certs list, expected trust field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt certs list, expected trust field but "
+			      . "didn't find it");
 		}
 		$$ref[$j ++] = {key       => unescape($key),
 				signature => $signature,
@@ -735,8 +747,8 @@ sub get_attributes($\$$)
 		}
 		else
 		{
-		    croak("Corrupt attributes list, expected state field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt attributes list, expected state field "
+			      . "but didn't find it");
 		}
 		$$ref[$j ++] = {attribute => unescape($key),
 				value     => unescape($value),
@@ -1058,8 +1070,8 @@ sub get_manifest_of($$;$)
 		}
 		else
 		{
-		    croak("Corrupt manifest, expected content field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt manifest, expected content field but "
+			      . "didn't find it");
 		}
 	    }
 	    if ($lines[$i] =~ m/^ *dir \"/o)
@@ -1192,8 +1204,8 @@ sub get_revision($\$$)
 		}
 		else
 		{
-		    croak("Corrupt revision, expected content field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt revision, expected content field but "
+			      . "didn't find it");
 		}
 		$$ref[$j ++] = {type    => "add_file",
 				name    => unescape($name),
@@ -1208,8 +1220,8 @@ sub get_revision($\$$)
 		}
 		else
 		{
-		    croak("Corrupt revision, expected attr field but didn't "
-			  . "find it");
+		    &$croaker("Corrupt revision, expected attr field but "
+			      . "didn't find it");
 		}
 		$$ref[$j ++] = {type      => "clear",
 				name      => unescape($name),
@@ -1242,8 +1254,8 @@ sub get_revision($\$$)
 		}
 		else
 		{
-		    croak("Corrupt revision, expected from field but didn't "
-			  . "find it");
+		    &$croaker("Corrupt revision, expected from field but "
+			      . "didn't find it");
 		}
 		if ($lines[++ $i] =~ m/^ *to \[[^\]]+\]$/o)
 		{
@@ -1251,8 +1263,8 @@ sub get_revision($\$$)
 		}
 		else
 		{
-		    croak("Corrupt revision, expected to field but didn't "
-			  . "find it");
+		    &$croaker("Corrupt revision, expected to field but didn't "
+			      . "find it");
 		}
 		$$ref[$j ++] = {type         => "patch",
 				name         => unescape($name),
@@ -1268,8 +1280,8 @@ sub get_revision($\$$)
 		}
 		else
 		{
-		    croak("Corrupt revision, expected to field but didn't "
-			  . "find it");
+		    &$croaker("Corrupt revision, expected to field but didn't "
+			      . "find it");
 		}
 		$$ref[$j ++] = {type      => "rename",
 				from_name => unescape($from_name),
@@ -1284,8 +1296,8 @@ sub get_revision($\$$)
 		}
 		else
 		{
-		    croak("Corrupt revision, expected attr field but didn't "
-			  . "find it");
+		    &$croaker("Corrupt revision, expected attr field but "
+			      . "didn't find it");
 		}
 		if ($lines[++ $i] =~ m/^ *value \"/o)
 		{
@@ -1293,8 +1305,8 @@ sub get_revision($\$$)
 		}
 		else
 		{
-		    croak("Corrupt revision, expected value field but didn't "
-			  . "find it");
+		    &$croaker("Corrupt revision, expected value field but "
+			      . "didn't find it");
 		}
 		$$ref[$j ++] = {type      => "set",
 				name      => unescape($name),
@@ -1694,8 +1706,8 @@ sub keys($$)
 		}
 		else
 		{
-		    croak("Corrupt keys, expected public_hash field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt keys, expected public_hash field but "
+			      . "didn't find it");
 		}
 		if ($lines[$i] =~ m/^ *private_hash \[[^\]]+\]$/o)
 		{
@@ -1709,8 +1721,8 @@ sub keys($$)
 		}
 		else
 		{
-		    croak("Corrupt keys, expected public_location field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt keys, expected public_location field "
+			      . "but didn't find it");
 		}
 		if ($i <= $#lines && $lines[$i] =~ m/^ *private_location \"/o)
 		{
@@ -1917,8 +1929,8 @@ sub tags($$;$)
 		}
 		else
 		{
-		    croak("Corrupt tags list, expected revision field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt tags list, expected revision field but "
+			      . "didn't find it");
 		}
 		if ($lines[++ $i] =~ m/^ *signer \"/o)
 		{
@@ -1926,8 +1938,8 @@ sub tags($$;$)
 		}
 		else
 		{
-		    croak("Corrupt tags list, expected signer field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt tags list, expected signer field but "
+			      . "didn't find it");
 		}
 		if ($lines[++ $i] =~ m/^ *branches/o)
 		{
@@ -1943,8 +1955,8 @@ sub tags($$;$)
 		}
 		else
 		{
-		    croak("Corrupt tags list, expected branches field but "
-			  . "didn't find it");
+		    &$croaker("Corrupt tags list, expected branches field but "
+			      . "didn't find it");
 		}
 		$$ref[$j ++] = {tag         => unescape($tag),
 				revision_id => $rev,
@@ -1990,12 +2002,87 @@ sub toposort($\@@)
 #
 ##############################################################################
 #
-#   Routine      - error_message
+#   Routine      - register_error_handler
+#
+#   Description  - Register the specified routine as an error handler for this
+#                  library. This is a class method rather than an object one
+#                  as errors can be raised when calling the constructor.
+#
+#   Data         - $this     : The object. This may not be present depending
+#                              upon how this method is called and is ignored
+#                              if it is present anyway.
+#                  $severity : The level of error that the handler is being
+#                              registered for. One of "error", "warning" or
+#                              "both".
+#                  $callback : A reference to the error handler routine. If
+#                              this is undef then the existing error handler
+#                              routine is unregistered and errors are raised
+#                              in the default way.
+#
+##############################################################################
+
+
+
+sub register_error_handler($$)
+{
+
+    shift() if ($#_ > 1);
+    my($severity, $handler) = @_;
+
+    if ($severity eq "error")
+    {
+	if (defined($handler))
+	{
+	    $error_handler = $handler;
+	    $croaker = \&error_handler_wrapper;
+	}
+	else
+	{
+	    $croaker = \&croak;
+	    $error_handler = undef;
+	}
+    }
+    elsif ($severity eq "warning")
+    {
+	if (defined($handler))
+	{
+	    $warning_handler = $handler;
+	    $carper = \&warning_handler_wrapper;
+	}
+	else
+	{
+	    $carper = $warning_handler = undef;
+	}
+    }
+    elsif ($severity eq "both")
+    {
+	if (defined($handler))
+	{
+	    $error_handler = $warning_handler = $handler;
+	    $carper = \&warning_handler_wrapper;
+	    $croaker = \&error_handler_wrapper;
+	}
+	else
+	{
+	    $carper = $error_handler = $warning_handler = undef;
+	    $croaker = \&croak;
+	}
+    }
+    else
+    {
+	croak("Unknown error handler severity `" . $severity . "'");
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_error_message
 #
 #   Description  - Return the last error message received from the mtn
 #                  subprocess.
 #
-#   Data         - $this : The object.
+#   Data         - $this        : The object.
 #                  Return Value : The last error message received, or an empty
 #                                 string if nothing has gone wrong yet.
 #
@@ -2003,12 +2090,36 @@ sub toposort($\@@)
 
 
 
-sub error_message($)
+sub get_error_message($)
 {
 
     my Monotone::AutomateStdio $this = $_[0];
 
     return $this->{mtn_err_msg};
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_pid
+#
+#   Description  - Return the process id of the mtn automate stdio process.
+#
+#   Data         - $this        : The object.
+#                  Return Value : The process id of the mtn automate stdio
+#                                 process, or zero if no process is thought to
+#                                 be running.
+#
+##############################################################################
+
+
+
+sub get_pid($)
+{
+
+    my Monotone::AutomateStdio $this = $_[0];
+
+    return $this->{mtn_pid};
 
 }
 #
@@ -2065,9 +2176,12 @@ sub closedown($)
 	    }
 	    else
 	    {
-		$err_msg = $!;
-		kill("KILL", $this->{mtn_pid});
-		croak("waitpid failed: $err_msg");
+		if ($! != ECHILD)
+		{
+		    $err_msg = $!;
+		    kill("KILL", $this->{mtn_pid});
+		    &$croaker("waitpid failed: $err_msg");
+		}
 	    }
 	}
 	$this->{mtn_pid} = 0;
@@ -2256,14 +2370,14 @@ sub mtn_read_output($\$)
 		{
 		    if ($char ne "m" && $char ne "l")
 		    {
-			croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-			      . join("", <$err>));
+			&$croaker("Corrupt/missing mtn chunk header, mtn "
+				  . "gave:\n" . join("", <$err>));
 		    }
 		}
 		elsif ($char =~ m/\D$/o)
 		{
-		    croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-			  . join("", <$err>));
+		    &$croaker("Corrupt/missing mtn chunk header, mtn gave:\n"
+			      . join("", <$err>));
 		}
 	    }
 
@@ -2275,7 +2389,7 @@ sub mtn_read_output($\$)
 		    ($header =~ m/^(\d+):(\d+):([lm]):(\d+):$/o);
 		if ($cmd_nr != $this->{cmd_cnt})
 		{
-		    croak("Mtn command count is out of sequence");
+		    &$croaker("Mtn command count is out of sequence");
 		}
 		if ($err_code != 0)
 		{
@@ -2284,8 +2398,8 @@ sub mtn_read_output($\$)
 	    }
 	    else
 	    {
-		croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-		      . join("", <$err>));
+		&$croaker("Corrupt/missing mtn chunk header, mtn gave:\n"
+			  . join("", <$err>));
 	    }
 
 	    $chunk_start = 0;
@@ -2301,7 +2415,7 @@ sub mtn_read_output($\$)
 					     $size,
 					     $offset)))
 	    {
-		croak("read failed: $!");
+		&$croaker("read failed: $!");
 	    }
 	    $size -= $bytes_read;
 	    $offset += $bytes_read;
@@ -2322,6 +2436,7 @@ sub mtn_read_output($\$)
     {
 	$this->{mtn_err_msg} = $$buffer;
 	$$buffer = "";
+	&$carper($this->{mtn_err_msg}) if (defined($carper));
 	return;
     }
 
@@ -2438,12 +2553,59 @@ sub unescape($)
 
     my $data = $_[0];
 
-    return undef unless defined($data);
+    return undef unless (defined($data));
 
     $data =~ s/\\\\/\\/g;
     $data =~ s/\\\"/\"/g;
 
     return $data;
+
+}
+#
+##############################################################################
+#
+#   Routine      - error_handler_wrapper
+#
+#   Description  - Error handler routine that wraps the user's error handler.
+#                  Essentially this routine simply prepends the severity
+#                  parameter.
+#
+#   Data         - $message : The error message.
+#
+##############################################################################
+
+
+
+sub error_handler_wrapper($)
+{
+
+    my $message = $_[0];
+
+    &$error_handler("error", $message);
+    die();
+
+}
+#
+##############################################################################
+#
+#   Routine      - warning_handler_wrapper
+#
+#   Description  - Warning handler routine that wraps the user's warning
+#                  handler. Essentially this routine simply prepends the
+#                  severity parameter.
+#
+#   Data         - $message : The error message.
+#
+##############################################################################
+
+
+
+sub warning_handler_wrapper($)
+{
+
+    my $message = $_[0];
+
+    &$warning_handler("warning", $message);
 
 }
 
