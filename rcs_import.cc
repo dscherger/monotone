@@ -172,10 +172,6 @@ public:
   cvs_path path;
   cvs_blob_index bi;
 
-  vector< cvs_event_ptr > dependencies;
-  vector< cvs_event_ptr > weak_dependencies;
-  vector< cvs_event_ptr > dependents;
-
   // additional information for commits
   cvs_mtn_version mtn_version;
   cvs_rcs_version rcs_version;
@@ -200,22 +196,7 @@ public:
     { };
 };
 
-void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
-{
-  /* Adds dep as a dependency of ev. */
-  I(ev != dep);
-  ev->dependencies.push_back(dep);
-  dep->dependents.push_back(ev);
-}
-
-void add_weak_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
-{
-  add_dependency(ev, dep);
-  ev->weak_dependencies.push_back(dep);
-}
-
 typedef vector< cvs_event_ptr >::const_iterator blob_event_iter;
-typedef vector< cvs_event_ptr >::iterator dependency_iter;
 
 // for the depth first search algo
 typedef pair< cvs_blob_index, cvs_blob_index > Edge;
@@ -344,33 +325,6 @@ public:
 
   void add_missing_parents(file_path const & path,
                            roster_t & base_ros, cset & cs);
-
-  void add_dependency_to(cvs_blob & other)
-    {
-      // try to add dependencies between events on the
-      // same files.
-      int deps_added = 0;
-      for (blob_event_iter i = begin(); i != end(); ++i)
-        {
-          cvs_event_ptr ev = *i;
-
-          for (blob_event_iter j = other.begin(); j != other.end(); ++j)
-            if (ev->path == (*j)->path)
-              {
-                add_dependency(ev, *j);
-                deps_added++;
-              }
-        }
-
-      // if there are no common files, we need to add at least
-      // one dependency, even if the event paths don't match.
-      if (deps_added == 0)
-        add_dependency(*begin(), *other.begin());
-
-      // make sure the dependents cache of the other blob gets
-      // an update.
-      other.reset_deps_cache();
-    };
 };
 
 typedef struct
@@ -413,6 +367,69 @@ struct blob_splitter;
 
 string get_event_repr(cvs_history & cvs, cvs_event_ptr ev);
 
+typedef pair<cvs_event_ptr, cvs_event_ptr> event_dep;
+typedef vector<event_dep>::iterator event_dep_iter;
+
+class
+dep_loop
+{
+private:
+  event_dep_iter pos, end;
+
+public:
+  dep_loop(event_dep_iter p, event_dep_iter e)
+    : pos(p),
+      end(e)
+    { };
+
+  bool
+  ended(void) const
+    {
+      return (pos == end);
+    }
+
+  event_dep_iter
+  get_pos(void) const
+    {
+      return pos;
+    }
+
+  cvs_event_ptr
+  operator *(void) const
+    {
+      return pos->second;
+    };
+
+  void
+  operator ++(void)
+    {
+      ++pos;
+
+      // skip erased dependencies
+      while (!ended() && !pos->first && !pos->second)
+        ++pos;
+    };
+};
+
+class
+dep_checker
+{
+private:
+  cvs_blob_index bi, dep_bi;
+
+public:
+  dep_checker(const cvs_blob_index bi, const cvs_blob_index dep_bi)
+    : bi(bi),
+      dep_bi(dep_bi)
+    { };
+
+  bool
+  operator () (const event_dep & e)
+    {
+      return (e.first->bi == bi) && (e.second->bi == dep_bi);
+    }
+};
+
 struct
 cvs_history
 {
@@ -436,6 +453,11 @@ cvs_history
   // this map is cleared for every RCS file.
   map<string, string> branch_first_entries;
 
+  // event dependency tracking vectors
+  vector<event_dep> dependencies;
+  vector<event_dep> weak_dependencies;
+  vector<event_dep> dependents;
+
   // final ordering of the blobs for the import
   vector<cvs_blob_index> import_order;
 
@@ -454,11 +476,14 @@ cvs_history
   // step number of graphviz output, when enabled.
   int step_no;
 
+  bool deps_sorted;
+
   cvs_history(void)
     : n_rcs_revisions(_("RCS revisions"), "r", 1),
       n_rcs_symbols(_("RCS symbols"), "s", 1),
       unnamed_branch_counter(0),
-      step_no(0)
+      step_no(0),
+      deps_sorted(false)
     { };
 
   void set_filename(string const & file,
@@ -561,52 +586,159 @@ cvs_history
   void depth_first_search(Visitor & vis,
                           back_insert_iterator< vector<cvs_blob_index> > oi);
 
+  void sort_dependencies(void)
+  {
+    sort(dependencies.begin(), dependencies.end());
+    sort(dependents.begin(), dependents.end());
+    deps_sorted = true;
+  }
+
+  void add_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
+  {
+    /* Adds dep as a dependency of ev. */
+    I(ev != dep);
+    dependencies.push_back(make_pair(ev, dep));
+    dependents.push_back(make_pair(dep, ev));
+    deps_sorted = false;
+  }
+
+  void add_weak_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
+  {
+    add_dependency(ev, dep);
+    weak_dependencies.push_back(make_pair(ev, dep));
+  }
+
+  void add_dependency(cvs_blob_index & bi, cvs_blob_index & dep_bi)
+  {
+    // try to add dependencies between events on the
+    // same files.
+    int deps_added = 0;
+    for (blob_event_iter i = blobs[bi].begin(); i != blobs[bi].end(); ++i)
+      {
+        cvs_event_ptr ev = *i;
+
+        for (blob_event_iter j = blobs[dep_bi].begin(); j != blobs[dep_bi].end(); ++j)
+          if (ev->path == (*j)->path)
+            {
+              add_dependency(ev, *j);
+              deps_added++;
+            }
+      }
+
+    // if there are no common files, we need to add at least
+    // one dependency, even if the event paths don't match.
+    if (deps_added == 0)
+      add_dependency(*blobs[bi].begin(), *blobs[dep_bi].begin());
+
+    // make sure the dependents cache of the other blob gets
+    // an update.
+    blobs[dep_bi].reset_deps_cache();
+  };
+
+  void
+  add_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
+                   bool reverse_import)
+  {
+    vector<cvs_event_ptr>::iterator i;
+
+    if (reverse_import)
+      {
+        // make the last commit (i.e. 1.3) depend on the current one
+        // (i.e. 1.2), as it which comes _before_ in the CVS history.
+        for (i = last_events.begin(); i != last_events.end(); ++i)
+          add_dependency(*i, ev);
+      }
+    else
+      {
+        // vendor branches are processed in historic order, i.e.
+        // older version first. Thus the last commit may be 1.1.1.1
+        // while the current one is 1.1.1.2.
+        for (i = last_events.begin(); i != last_events.end(); ++i)
+          add_dependency(ev, *i);
+      }      
+  };
+
+  void
+  add_weak_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
+                        bool reverse_import)
+  {
+    vector<cvs_event_ptr>::iterator i;
+
+    if (reverse_import)
+      {
+        // make the last commit (i.e. 1.3) depend on the current one
+        // (i.e. 1.2), as it which comes _before_ in the CVS history.
+        for (i = last_events.begin(); i != last_events.end(); ++i)
+          add_weak_dependency(*i, ev);
+      }
+    else
+      {
+        // vendor branches are processed in historic order, i.e.
+        // older version first. Thus the last commit may be 1.1.1.1
+        // while the current one is 1.1.1.2.
+        for (i = last_events.begin(); i != last_events.end(); ++i)
+          add_weak_dependency(ev, *i);
+      }      
+  };
+
   // removes an edge between two blobs.
   void remove_deps(cvs_blob_index const bi, cvs_blob_index const dep_bi)
   {
     L(FL("  removing dependency from blob %d to blob %d") % bi % dep_bi);
 
-    int cc = 0;
-    typedef vector<cvs_event_ptr>::iterator ev_iter;
-    for (blob_event_iter ev = blobs[bi].begin();
-          ev != blobs[bi].end(); ++ev)
-      for (dependency_iter dep = (*ev)->dependencies.begin();
-           dep != (*ev)->dependencies.end(); )
-        {
-          cvs_blob_index this_bi = (*dep)->bi;
-          if (this_bi == dep_bi)
-            {
-              L(FL("    event %s (of blob %d) depends on event %s (of blob %d), losing dependency")
-                % get_event_repr(*this, *ev) % (*ev)->bi
-                % get_event_repr(*this, *dep) % (*dep)->bi);
+    if (!deps_sorted)
+      sort_dependencies();
 
-              // remove all occurances of this event in the other's dependents
-              vector<cvs_event_ptr> & rdeps = (*dep)->dependents;
-              dependency_iter i = rdeps.begin();
-              while (i != rdeps.end())
-                if (*i == *ev)
-                  i = rdeps.erase(i);
-                else
-                  ++i;
+    dependencies.erase(remove_if(dependencies.begin(),
+                                 dependencies.end(),
+                                 dep_checker(bi, dep_bi)),
+                       dependencies.end());
 
-              // remove the dependency and advance
-              dep = (*ev)->dependencies.erase(dep);
-
-              cc++;
-            }
-          else
-            ++dep;
-        }
-
-    // we expect to have removed at least one dependency.
-    I(cc > 0);
+    dependents.erase(remove_if(dependents.begin(),
+                               dependents.end(),
+                               dep_checker(dep_bi, bi)),
+                     dependents.end());
 
     // blob 'bi' is no longer a dependent of 'dep_bi', so update it's cache
     blobs[dep_bi].reset_deps_cache();
     vector<cvs_blob_index> deps = blobs[dep_bi].get_dependents(*this);
     blob_index_iter y = find(deps.begin(), deps.end(), bi);
     I(y == deps.end());
-  }
+  };
+
+  dep_loop
+  get_dependencies(const cvs_event_ptr e)
+  {
+    if (!deps_sorted)
+      sort_dependencies();
+
+    event_dep_iter lower = lower_bound(dependencies.begin(),
+                                       dependencies.end(),
+                                       make_pair(e, (cvs_event_ptr) NULL));
+    event_dep_iter upper = upper_bound(dependencies.begin(),
+                                       dependencies.end(),
+                                       make_pair(e + 1, (cvs_event_ptr) NULL));
+
+    dep_loop i(lower, upper);
+    return i;
+  };
+
+  dep_loop
+  get_dependents(const cvs_event_ptr e)
+  {
+    if (!deps_sorted)
+      sort_dependencies();
+
+    event_dep_iter lower = lower_bound(dependents.begin(),
+                                       dependents.end(),
+                                       make_pair(e, (cvs_event_ptr) NULL));
+    event_dep_iter upper = upper_bound(dependents.begin(),
+                                       dependents.end(),
+                                       make_pair(e, (cvs_event_ptr) -1));
+
+    dep_loop i(lower, upper);
+    return i;
+  };
 };
 
 class
@@ -953,52 +1085,6 @@ parse_time(const char * dp)
   return time;
 }
 
-void
-add_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
-                 bool reverse_import)
-{
-  vector<cvs_event_ptr>::iterator i;
-
-  if (reverse_import)
-    {
-      // make the last commit (i.e. 1.3) depend on the current one
-      // (i.e. 1.2), as it which comes _before_ in the CVS history.
-      for (i = last_events.begin(); i != last_events.end(); ++i)
-        add_dependency(*i, ev);
-    }
-  else
-    {
-      // vendor branches are processed in historic order, i.e.
-      // older version first. Thus the last commit may be 1.1.1.1
-      // while the current one is 1.1.1.2.
-      for (i = last_events.begin(); i != last_events.end(); ++i)
-        add_dependency(ev, *i);
-    }      
-}
-
-void
-add_weak_dependencies(cvs_event_ptr ev, vector<cvs_event_ptr> last_events,
-                      bool reverse_import)
-{
-  vector<cvs_event_ptr>::iterator i;
-
-  if (reverse_import)
-    {
-      // make the last commit (i.e. 1.3) depend on the current one
-      // (i.e. 1.2), as it which comes _before_ in the CVS history.
-      for (i = last_events.begin(); i != last_events.end(); ++i)
-        add_weak_dependency(*i, ev);
-    }
-  else
-    {
-      // vendor branches are processed in historic order, i.e.
-      // older version first. Thus the last commit may be 1.1.1.1
-      // while the current one is 1.1.1.2.
-      for (i = last_events.begin(); i != last_events.end(); ++i)
-        add_weak_dependency(ev, *i);
-    }      
-}
-
 typedef pair< cvs_event_ptr, cvs_event_ptr> t_violation;
 typedef list<t_violation>::iterator violation_iter;
 typedef pair< violation_iter, int > t_solution;
@@ -1010,7 +1096,7 @@ typedef pair< violation_iter, int > t_solution;
 // the dependent) or one for adjusting upwards (i.e. adjusting the
 // dependency).
 static t_solution
-get_cheapest_violation_to_solve(list<t_violation> & violations)
+get_cheapest_violation_to_solve(cvs_history & cvs, list<t_violation> & violations)
 {
   unsigned int best_solution_price = (unsigned int) -1;
   t_solution best_solution;
@@ -1047,8 +1133,7 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
           if (e->adj_time <= time_goal)
             {
               price++;
-              for (dependency_iter j = e->dependents.begin();
-                   j != e->dependents.end(); ++j)
+              for (dep_loop j = cvs.get_dependents(e); !j.ended(); ++j)
                 stack.push(make_pair(*j, time_goal + 1));
             }
         }
@@ -1079,8 +1164,7 @@ get_cheapest_violation_to_solve(list<t_violation> & violations)
           if (e->adj_time >= time_goal)
             {
               price++;
-              for (dependency_iter j = e->dependencies.begin();
-                   j != e->dependencies.end(); ++j)
+              for (dep_loop j = cvs.get_dependencies(e); !j.ended(); ++j)
                 stack.push(make_pair(*j, time_goal - 1));
             }
         }
@@ -1129,8 +1213,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
                 % get_event_repr(cvs, e)
                 % (time_goal - e->adj_time));
               e->adj_time = time_goal;
-              for (dependency_iter j = e->dependents.begin();
-                   j != e->dependents.end(); ++j)
+              for (dep_loop j = cvs.get_dependents(e); !j.ended(); ++j)
                 stack.push(make_pair(*j, time_goal + 1));
             }
         }
@@ -1156,8 +1239,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
                 % get_event_repr(cvs, e)
                 % (e->adj_time - time_goal));
               e->adj_time = time_goal;
-              for (dependency_iter j = e->dependencies.begin();
-                   j != e->dependencies.end(); ++j)
+              for (dep_loop j = cvs.get_dependencies(e); !j.ended(); ++j)
                 stack.push(make_pair(*j, time_goal - 1));
             }
         }
@@ -1187,8 +1269,7 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
             continue;
           done.insert(ity, ev);
 
-          for (dependency_iter i = ev->dependents.begin();
-              i != ev->dependents.end(); ++i)
+          for (dep_loop i = cvs.get_dependents(ev); !i.ended(); ++i)
             {
               if (ev->adj_time >= (*i)->adj_time)
                 violations.push_back(make_pair(ev, *i));
@@ -1200,7 +1281,7 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
       if (violations.empty())
         break;
 
-      t_solution x = get_cheapest_violation_to_solve(violations);
+      t_solution x = get_cheapest_violation_to_solve(cvs, violations);
       solve_violation(cvs, x);
     }
 }
@@ -1282,7 +1363,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
       // add proper dependencies, based on forward or reverse import
       if (!last_events.empty())
-        add_dependencies(curr_commit, last_events, reverse_import);
+        cvs.add_dependencies(curr_commit, last_events, reverse_import);
 
       // create tag events for all tags on this commit
       typedef multimap<string,string>::const_iterator ity;
@@ -1302,9 +1383,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
               tag_symbol->adj_time = curr_commit->adj_time + 1;
               if (alive)
-                add_dependency(tag_symbol, curr_commit);
+                cvs.add_dependency(tag_symbol, curr_commit);
               else
-                add_weak_dependency(tag_symbol, curr_commit);
+                cvs.add_weak_dependency(tag_symbol, curr_commit);
 
               bi = cvs.get_or_create_blob(ET_SYMBOL, tag);
               cvs.append_event_to(bi, tag_symbol);
@@ -1318,7 +1399,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               // by the toposort to many revisions later. Instead, we want
               // to raise a conflict, if a commit interferes with a tagging
               // action.
-              add_weak_dependencies(tag_symbol, last_events, reverse_import);
+              cvs.add_weak_dependencies(tag_symbol, last_events, reverse_import);
 
               cvs_event_ptr tag_event = (cvs_event_ptr)
                     new (cvs.ev_pool.allocate<cvs_event>())
@@ -1326,7 +1407,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
                                 curr_commit->given_time);
 
               tag_event->adj_time = curr_commit->adj_time + 2;
-              add_dependency(tag_event, tag_symbol);
+              cvs.add_dependency(tag_event, tag_symbol);
 
               bi = cvs.get_or_create_blob(ET_TAG_POINT, tag);
               cvs.append_event_to(bi, tag_event);
@@ -1403,11 +1484,11 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           // anyway.
           if (!is_vendor_branch)
             if (alive)
-              add_dependency(branch_point, curr_commit);
+              cvs.add_dependency(branch_point, curr_commit);
             else
-              add_weak_dependency(branch_point, curr_commit);
+              cvs.add_weak_dependency(branch_point, curr_commit);
           else
-            add_dependency(branch_point, cvs.root_event);
+            cvs.add_dependency(branch_point, cvs.root_event);
 
           curr_events.push_back(branch_point);
 
@@ -1427,8 +1508,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
               bi = cvs.get_or_create_blob(ET_BRANCH_START, bname);
               cvs.append_event_to(bi, branch_start);
-              add_dependency(first_event_in_branch, branch_start);
-              add_dependency(branch_start, branch_point);
+              cvs.add_dependency(first_event_in_branch, branch_start);
+              cvs.add_dependency(branch_start, branch_point);
             }
           else
             L(FL("branch %s remained empty for this file") % branchname);
@@ -1448,7 +1529,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           // commit action certainly comes after the branch action. See
           // the comment above for tags.
           if (!is_vendor_branch)
-            add_weak_dependencies(branch_point, last_events, reverse_import);
+            cvs.add_weak_dependencies(branch_point, last_events, reverse_import);
 
           ++cvs.n_rcs_symbols;
         }
@@ -1499,7 +1580,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           cvs_blob_index bi = cvs.get_or_create_blob(ET_BRANCH_END,
                                                      current_branchname);
           cvs.append_event_to(bi, branch_end_point);
-          add_dependency(branch_end_point, first_commit);
+          cvs.add_dependency(branch_end_point, first_commit);
         }
 
       return curr_commit;
@@ -1516,13 +1597,16 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           cvs_blob_index bi = cvs.get_or_create_blob(ET_BRANCH_END,
                                                      current_branchname);
           cvs.append_event_to(bi, branch_end_point);
-          add_dependency(branch_end_point, curr_commit);
+
+          // add a hard dependency on first_commit
+          cvs.add_dependency(branch_end_point, curr_commit);
 
           // all others are weak dependencies
-          dependency_iter ity = find(curr_events.begin(), curr_events.end(), curr_commit);
+          vector<cvs_event_ptr>::iterator ity(
+            find(curr_events.begin(), curr_events.end(), curr_commit));
           I(ity != curr_events.end());
           curr_events.erase(ity);
-          add_weak_dependencies(branch_end_point, curr_events, reverse_import);
+          cvs.add_weak_dependencies(branch_end_point, curr_events, reverse_import);
         }
 
       return first_commit;
@@ -1569,7 +1653,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
                          dat, id, r, app.db, cvs, app.opts.dryrun, true);
 
     // link the pseudo trunk branch to the first event in the branch
-    add_dependency(first_event, cvs.root_event);
+    cvs.add_dependency(first_event, cvs.root_event);
 
     // try to sanitize the timestamps within this RCS file with
     // respect to the dependencies given.
@@ -1878,8 +1962,7 @@ dijkstra_shortest_path(cvs_history &cvs,
       else
         for (blob_event_iter i = cvs.blobs[bi].begin();
              i != cvs.blobs[bi].end(); ++i)
-          for (dependency_iter j = (*i)->dependencies.begin();
-               j != (*i)->dependencies.end(); ++j)
+          for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
             {
               cvs_blob_index dep_bi = (*j)->bi;
 
@@ -2058,8 +2141,7 @@ public:
 
       // start at the event given and recursively check all its
       // dependencies for blobs in the path.
-      for (dependency_iter i = ev->dependencies.begin();
-           i != ev->dependencies.end(); ++i)
+      for (dep_loop i = cvs.get_dependencies(ev); !i.ended(); ++i)
         stack.push((*i)->bi);
 
       // Mark all dependencies of the first blob in the path as
@@ -2067,8 +2149,7 @@ public:
       // further.
       cvs_blob & first_blob = cvs.blobs[*path.begin()];
       for (blob_event_iter i = first_blob.begin(); i != first_blob.end(); ++i)
-        for (dependency_iter j = (*i)->dependencies.begin();
-             j != (*i)->dependencies.end(); ++j)
+        for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
           {
             cvs_blob_index dep_bi = (*j)->bi;
             if (done.find(dep_bi) == done.end())
@@ -2090,8 +2171,7 @@ public:
           else
             for (blob_event_iter i = cvs.blobs[bi].begin();
                  i != cvs.blobs[bi].end(); ++i)
-              for (dependency_iter j = (*i)->dependencies.begin();
-                   j != (*i)->dependencies.end(); ++j)
+              for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
                 {
                   cvs_blob_index dep_bi = (*j)->bi;
                   stack.push(dep_bi);
@@ -2578,7 +2658,7 @@ public:
               if (back_path.empty())
                 {
                   L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
-                  cvs.blobs[*ity_b].add_dependency_to(cvs.blobs[*ity_a]);
+                  cvs.add_dependency(*ity_b, *ity_a);
                 }
               else
                 L(FL("  no need to add a dependency, there already exists one."));
@@ -2624,7 +2704,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
       cvs_event_ptr ev = *i;
 
       // check for time gaps between this event and it's dependencies
-      for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+      for (dep_loop j = cvs.get_dependencies(ev); !j.ended(); ++j)
         {
           cvs_event_ptr dep = *j;
 
@@ -2800,7 +2880,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           for (blob_event_iter ii = cvs.blobs[*cc].begin(); ii != cvs.blobs[*cc].end(); ++ii)
             {
               cvs_event_ptr ev = *ii;
-              for (dependency_iter j = ev->dependencies.begin(); j != ev->dependencies.end(); ++j)
+              for (dep_loop j = cvs.get_dependencies(ev); !j.ended(); ++j)
                 {
                   cvs_event_ptr dep = *j;
 
@@ -2878,8 +2958,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
           (*i)->bi = new_bi;
 
           // Reset the dependents cache of all dependencies of this event
-          for (dependency_iter j = (*i)->dependencies.begin();
-               j != (*i)->dependencies.end(); ++j)
+          for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
             {
               cvs_blob_index dep_bi = (*j)->bi;
               cvs.blobs[dep_bi].reset_deps_cache();
@@ -2893,8 +2972,7 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
           // Force a new sorting step to the dependents cache of all
           // dependencies of this event, as it's avg time most probably
           // changed. Thus the ordering must change.
-          for (dependency_iter j = (*i)->dependencies.begin();
-               j != (*i)->dependencies.end(); ++j)
+          for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
             {
               cvs_blob_index dep_bi = (*j)->bi;
               cvs.blobs[dep_bi].resort_deps_cache();
@@ -3156,8 +3234,7 @@ write_graphviz_partial(cvs_history & cvs, string const & desc,
               stack.push(make_pair(*j, depth));
 
           for (blob_event_iter j = blob.begin(); j != blob.end(); ++j)
-            for (dependency_iter k = (*j)->dependencies.begin();
-                 k != (*j)->dependencies.end(); ++k)
+            for (dep_loop k = cvs.get_dependencies(*j); !k.ended(); ++k)
               {
                 cvs_blob_index dep_bi = (*k)->bi;
                 if (blobs_to_show.find(dep_bi) == blobs_to_show.end())
@@ -3191,8 +3268,7 @@ vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
   // fill the dependency cache from the single event deps
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
-      for (dependency_iter j = (*i)->dependents.begin();
-           j != (*i)->dependents.end(); ++j)
+      for (dep_loop j = cvs.get_dependents(*i); !j.ended(); ++j)
         {
           cvs_blob_index dep_bi = (*j)->bi;
           if (find(dependents_cache.begin(), dependents_cache.end(), dep_bi) == dependents_cache.end())
@@ -3328,29 +3404,23 @@ resolve_blob_dependencies(cvs_history & cvs, ticker & n_splits)
 
   // remove all weak dependencies
   for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
+    cvs.blobs[bi].reset_deps_cache();
+
+  if (!cvs.deps_sorted)
+    cvs.sort_dependencies();
+
+  for (event_dep_iter i = cvs.weak_dependencies.begin();
+        i != cvs.weak_dependencies.end(); ++i)
     {
-      cvs_blob & blob = cvs.blobs[bi];
-      blob.reset_deps_cache();
-
-      for (blob_event_iter ev = blob.begin(); ev != blob.end(); ++ev)
-        {
-          for (dependency_iter dep = (*ev)->weak_dependencies.begin();
-               dep != (*ev)->weak_dependencies.end(); ++dep)
-            {
-              dependency_iter ity = find((*ev)->dependencies.begin(),
-                                         (*ev)->dependencies.end(), *dep);
-              I(ity != (*ev)->dependencies.end());
-              (*ev)->dependencies.erase(ity);
-
-              ity = find((*dep)->dependents.begin(),
-                         (*dep)->dependents.end(), *ev);
-              I(ity != (*dep)->dependents.end());
-              (*dep)->dependents.erase(ity);
-            }
-
-          (*ev)->weak_dependencies.clear();
-        }
+      cvs.dependencies.erase(lower_bound(cvs.dependencies.begin(),
+                                         cvs.dependencies.end(),
+                                         *i));
+      cvs.dependents.erase(lower_bound(cvs.dependents.begin(),
+                                       cvs.dependents.end(),
+                                       make_pair(i->second, i->first)));
     }
+
+  cvs.weak_dependencies.clear();
 
 #ifdef DEBUG_GRAPHVIZ
   write_graphviz_complete(cvs, "no-weak");
@@ -3593,8 +3663,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
        i != cvs.blobs[bi].end(); ++i)
     {
       set<cvs_blob_index> event_parent_blobs;
-      for (dependency_iter j = (*i)->dependencies.begin();
-           j != (*i)->dependencies.end(); ++j)
+      for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
         {
           cvs_event_ptr dep = *j;
           cvs_blob_index dep_bi = dep->bi;
@@ -3695,8 +3764,7 @@ blob_consumer::operator()(cvs_blob_index bi)
   // Check what revision to use as a parent revision.
   set< cvs_blob_index > parent_blobs;
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
-    for (dependency_iter j = (*i)->dependencies.begin();
-         j != (*i)->dependencies.end(); ++j)
+    for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
       {
         cvs_event_ptr dep = *j;
         cvs_blob_index dep_bi = dep->bi;
