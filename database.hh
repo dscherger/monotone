@@ -303,6 +303,10 @@ public:
 
   void get_revision_manifest(revision_id const & cid,
                              manifest_id & mid);
+
+  void get_common_ancestors(std::set<revision_id> const & revs,
+                            std::set<revision_id> & common_ancestors);
+
 private:
   // helper
   void get_ids(std::string const & table, std::set< hexenc<id> > & ids);

@@ -2244,12 +2244,13 @@ mainline.
 She decides that since main development is in branch
 @code{jp.co.juicebot.jb7}, she will use branch
 @code{jp.co.juicebot.jb7.muffins}.  So, she makes the first few edits to
-the new muffins code, and commits it on a new branch by simply passing
-@option{--branch} to commit:
+the new muffins code, changes the branch of the workspace and commits it 
+the changes to the new branch:
 
 @smallexample
 @group
-$ mtn commit --branch=jp.co.juicebot.jb7.muffins --message='autobake framework'
+$ mtn branch jp.co.juicebot.jb7.muffins
+$ mtn commit --message='autobake framework'
 mtn: beginning commit on branch 'jp.co.juicebot.jb7.muffins'
 mtn: committed revision d33caefd61823ecbb605c39ffb84705dec449857
 @end group
@@ -4407,6 +4408,21 @@ physically in the filesystem as a directory or is specified as a
 directory by convention (a trailing /), it will be automatically added
 to the workspace if it is not already versioned.
 
+@item mtn branch [@var{branchname}]
+
+This command displays the branch name of the current workspace or changes the 
+branch name of your current workspace. It does the latter by overwriting any 
+previous branch setting in @file{_MTN/options} so that its guaranteed that the 
+next commit gets this new branch as cert attached.
+
+Please note that you can't set a branch name which already exists in your
+database. To rebase your workspace to a different branch, please use the 
+@command{update} command:
+
+@smallexample
+$ mtn update --revision h:other-branch
+@end smallexample
+
 @item mtn commit
 @item mtn ci
 @itemx mtn commit --message=@var{logmsg} [--message=@var{logmsg}...]
@@ -4467,10 +4483,6 @@ removed to confirm the commit.  This allows the user to easily cancel a
 commit, without emptying the entire log message.  If the commit is
 successful, the @file{_MTN/log} file is cleared of all content making it
 ready for another edit/commit cycle.
-
-If a @option{--branch} option is specified, the @command{commit} command
-commits to this branch (creating it if necessary).  The branch becomes
-the new default branch of the workspace.
 
 The @command{commit} command also synthesizes a number of
 certificates, which it attaches to the new manifest version and copies

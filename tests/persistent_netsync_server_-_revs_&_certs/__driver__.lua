@@ -7,14 +7,14 @@ revs = {}
 
 writefile("testfile", "foo bar")
 check(mtn2("add", "testfile"), 0, false, false)
-check(mtn2("commit", "--branch=testbranch", "--message=foo"), 0, false, false)
+check(mtn2("commit", "--message=foo"), 0, false, false)
 revs[1] = base_revision()
 
 remove("_MTN")
 check(mtn3("setup", "--branch=testbranch", "."), 0, false, false)
 writefile("otherfile", "baz quux")
 check(mtn3("add", "otherfile"), 0, false, false)
-check(mtn3("commit", "--branch=testbranch", "--message=foo"), 0, false, false)
+check(mtn3("commit", "--message=foo"), 0, false, false)
 revs[2] = base_revision()
 
 srv = netsync.start()
@@ -39,14 +39,14 @@ chksy(2, mtn2)
 -- And now make sure it works for children, where there are diffs and all
 
 writefile("otherfile", "foo bar, baz, also quux (on off days)")
-check(mtn3("commit", "--branch=testbranch", "--message=foo"), 0, false, false)
+check(mtn3("commit", "--message=foo"), 0, false, false)
 revs[3] = base_revision()
 
 remove("_MTN")
 remove("testfile")
 check(mtn2("checkout", "--revision", revs[1], "."), 0, false, false)
 writefile("testfile", "ptang")
-check(mtn2("commit", "--branch=testbranch", "--message=foo"), 0, false, false)
+check(mtn2("commit", "--message=foo"), 0, false, false)
 revs[4] = base_revision()
 
 -- And add a cert on an old revision

@@ -19,7 +19,8 @@ check(mtn("tag", R2, "bar"), 0, false, false)
 check(mtn("tag", R3, "foobarbaz"), 0, false, false)
 
 writefile("testfile", "blub blub")
-check(mtn("commit", "-m", "foo", "-b", "bar", "--author", "joe@user.com"), 0, false, false)
+check(mtn("branch", "bar"), 0, false, false)
+check(mtn("commit", "-m", "foo", "--author", "joe@user.com"), 0, false, false)
 R4=base_revision()
 
 selmap("b:testbranch", {R1})

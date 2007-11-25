@@ -102,7 +102,7 @@ get_log_message_interactively(revision_t const & cs,
   revision_summary(cs, app.opts.branchname, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
-  
+
   utf8 branch_comment = utf8((F("branch \"%s\"\n\n") % app.opts.branchname).str());
   external branch_external;
   utf8_to_system_best_effort(branch_comment, branch_external);
@@ -167,7 +167,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
     temp_node_id_source nis;
     app.work.get_current_roster_shape(new_roster, nis);
   }
-    
+
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
@@ -205,15 +205,15 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // from the new roster *back* to the restricted roster
 
   roster_t restricted_roster;
-  make_restricted_roster(new_roster, old_roster, restricted_roster, 
+  make_restricted_roster(new_roster, old_roster, restricted_roster,
                          mask);
- 
+
   make_cset(old_roster, restricted_roster, preserved);
-  
-  // The preserved cset will be left pending in MTN/revision 
+
+  // The preserved cset will be left pending in MTN/revision
 
   // if/when reverting through the editable_tree interface use
-  // make_cset(new_roster, restricted_roster, reverted); 
+  // make_cset(new_roster, restricted_roster, reverted);
   // to get a cset that gets us back to the restricted roster
   // from the current workspace roster
 
@@ -467,8 +467,8 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   //cases for more than one source item.
   if (src_paths.size() == 1 && dstr()[dstr().size() -1] == '/')
     if (get_path_status(*src_paths.begin()) != path::directory)
-	    N(get_path_status(dst_path) == path::directory,
-	      F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
+        N(get_path_status(dst_path) == path::directory,
+          F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
 
   app.work.perform_rename(src_paths, dst_path, app.opts.bookkeep_only);
 }
@@ -782,7 +782,7 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
 //         format: ('attr', name, value), ('state', [unchanged|changed|added|dropped])
 //         occurs: zero or more times
 //
-// Error conditions: If the path has no attributes, prints only the 
+// Error conditions: If the path has no attributes, prints only the
 //                   format version, if the file is unknown, escalates
 CMD_AUTOMATE(get_attributes, N_("PATH"),
              N_("Prints all attributes for the specified path"),
@@ -813,20 +813,20 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
 
   // create the printer
   basic_io::printer pr;
-  
+
   // print the format version
   basic_io::stanza st;
   st.push_str_pair(basic_io::syms::format_version, "1");
   pr.print_stanza(st);
-    
+
   // the current node holds all current attributes (unchanged and new ones)
   node_t n = current.get_node(path);
-  for (full_attr_map_t::const_iterator i = n->attrs.begin(); 
+  for (full_attr_map_t::const_iterator i = n->attrs.begin();
        i != n->attrs.end(); ++i)
   {
     std::string value(i->second.second());
     std::string state;
-    
+
     // if if the first value of the value pair is false this marks a
     // dropped attribute
     if (!i->second.first)
@@ -836,16 +836,16 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         // because if it is dropped there as well it was already deleted
         // in any previous revision
         I(base.has_node(path));
-        
+
         node_t prev_node = base.get_node(path);
-        
+
         // find the attribute in there
         full_attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
         I(j != prev_node->attrs.end());
-        
+
         // was this dropped before? then ignore it
         if (!j->second.first) { continue; }
-        
+
         state = "dropped";
         // output the previous (dropped) value later
         value = j->second.second();
@@ -856,16 +856,16 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         if (base.has_node(path))
           {
             node_t prev_node = base.get_node(path);
-            full_attr_map_t::const_iterator j = 
+            full_attr_map_t::const_iterator j =
               prev_node->attrs.find(i->first);
-            
+
             // the attribute is new if it either hasn't been found
             // in the previous roster or has been deleted there
             if (j == prev_node->attrs.end() || !j->second.first)
               {
                 state = "added";
               }
-            // check if the attribute's value has been changed 
+            // check if the attribute's value has been changed
             else if (i->second.second() != j->second.second())
               {
                 state = "changed";
@@ -881,14 +881,14 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
             state = "added";
           }
       }
-      
+
     basic_io::stanza st;
     st.push_str_triple(basic_io::syms::attr, i->first(), value);
     st.push_str_pair(symbol("state"), state);
     pr.print_stanza(st);
   }
-  
-  // print the output  
+
+  // print the output
   output.write(pr.buf.data(), pr.buf.size());
 }
 
@@ -940,7 +940,7 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
 //   1: file / directory name
 //   2: attribute key (optional)
 // Added in: 5.0
-// Purpose: Edits the workspace revision and drops an attribute or all 
+// Purpose: Edits the workspace revision and drops an attribute or all
 //          attributes of the specified path
 //
 // Error conditions: If PATH is unknown in the new roster or the specified
@@ -990,10 +990,91 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
   app.work.update_any_attrs();
 }
 
+CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
+    N_("changes the branch of the current workspace or "
+       "displays the current branch"),
+    "",
+    options::opts::none)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  app.require_workspace();
+
+  if (args.size() == 0)
+    {
+      cout << app.opts.branchname << '\n';
+      return;
+    }
+
+  branch_name branch(idx(args, 0)());
+
+  E(branch != app.opts.branchname,
+    F("branch of the current workspace is already set to %s") % branch);
+
+  std::set<branch_name> branches;
+  app.get_project().get_branch_list(branches);
+
+  bool existing_branch = false;
+  for (set<branch_name>::const_iterator i = branches.begin();
+    i != branches.end(); ++i)
+    {
+        if (branch == *i)
+          {
+              existing_branch = true;
+              break;
+          }
+    }
+
+  parent_map parents;
+  app.work.get_parent_rosters(parents);
+
+  set<revision_id> parent_revisions;
+  for (parent_map::iterator i = parents.begin();
+      i != parents.end(); i++)
+    {
+      if (!null_id(i->first))
+        parent_revisions.insert(i->first);
+    }
+
+  // if this is an existing branch (and we're not inside a freshly created
+  // workspace), check if this branch's head revs and the current workspace
+  // parent share any common ancestors, if not warn the user about it
+  if (existing_branch && parent_revisions.size() > 0)
+    {
+        set<revision_id> branch_heads, revs, common_ancestors;
+        app.get_project().get_branch_heads(branch, branch_heads);
+
+        set_union(parent_revisions.begin(), parent_revisions.end(),
+                  branch_heads.begin(), branch_heads.end(),
+                  inserter(revs, revs.begin()));
+
+        app.db.get_common_ancestors(revs, common_ancestors);
+
+        if (common_ancestors.size() == 0)
+          {
+            W(F("the new branch has no common ancestors with the current branch;\n"
+                "any next commit could therefor create two unmergable heads in\n"
+                "%s") % branch);
+          }
+    }
+
+  // leave the other parameters empty so they won't get changed
+  system_path path;
+  rsa_keypair_id key;
+
+  app.work.set_ws_options(path, branch, key, path);
+
+  if (existing_branch)
+    P(F("next commit will use the existing branch %s") % branch);
+  else
+    P(F("next commit will use the new branch %s") % branch);
+}
+
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     N_("Commits workspace changes to the database"),
     "",
-    options::opts::branch | options::opts::message | options::opts::msgfile
+    options::opts::message | options::opts::msgfile
     | options::opts::date | options::opts::author | options::opts::depth
     | options::opts::exclude)
 {
@@ -1013,7 +1094,6 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     get_user_key(key, app);
   }
 
-  app.make_branch_sticky();
   app.work.get_parent_rosters(old_rosters);
   app.work.get_current_roster_shape(new_roster, nis);
 
@@ -1031,10 +1111,25 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   revision_id restricted_rev_id;
   calculate_ident(restricted_rev, restricted_rev_id);
 
-  // We need the 'if' because guess_branch will try to override any branch
-  // picked up from _MTN/options.
+  //
+  // FIXME: Obviously this command no longer accepts a --branch option,
+  // app.opts.branchname is set to _MTN/options branchname by default in
+  // app_state::process_options (which is called before the command is executed).
+  //
+  // While it would certainly be cleaner here to read app.work.get_ws_options()
+  // I hesistate to do that _again_ because it has already been done. Also
+  // referencing the branchname via app.opts.branchname is a bit backwards
+  // since it was never an option for this command actually. Still, I'm open
+  // for ideas how to clean up this mess =)
+  //
+  // So in the end only if no branch is set in _MTN/options we try to detect a
+  // valid one here by looking at the ancestor revisions of the workspace.
+  //
   if (app.opts.branchname().empty())
     {
+      W(F("workspace has no branch name set; trying to detect one "
+          "by looking at the parent revisions"));
+
       branch_name branchname, bn_candidate;
       for (edge_map::iterator i = restricted_rev.edges.begin();
            i != restricted_rev.edges.end();
@@ -1043,14 +1138,16 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
           // this will prefer --branch if it was set
           guess_branch(edge_old_revision(i), app, bn_candidate);
           N(branchname() == "" || branchname == bn_candidate,
-            F("parent revisions of this commit are in different branches:\n"
+            F("parent revisions of this workspace are in different branches:\n"
               "'%s' and '%s'.\n"
-              "please specify a branch name for the commit, with --branch.")
-            % branchname % bn_candidate);
+              "please specify a branch name with '%s branch BRANCHNAME'.")
+            % branchname % bn_candidate % ui.prog_name);
           branchname = bn_candidate;
         }
 
       app.opts.branchname = branchname;
+      // write out the new branch name
+      app.make_branch_sticky();
     }
 
   P(F("beginning commit on branch '%s'") % app.opts.branchname);
@@ -1106,7 +1203,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   set<revision_id> heads;
   app.get_project().get_branch_heads(app.opts.branchname, heads);
   unsigned int old_head_size = heads.size();
-  
+
   {
     transaction_guard guard(app.db);
 
@@ -1115,7 +1212,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     else
       {
         L(FL("inserting new revision %s") % restricted_rev_id);
-  
+
         for (edge_map::const_iterator edge = restricted_rev.edges.begin();
              edge != restricted_rev.edges.end();
              edge++)
