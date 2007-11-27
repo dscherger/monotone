@@ -84,7 +84,7 @@ private:
 public:
   netcmd();
   netcmd_code get_cmd_code() const {return cmd_code;}
-  size_t encoded_size();
+  size_t encoded_size() const;
   bool operator==(netcmd const & other) const;
 
 
