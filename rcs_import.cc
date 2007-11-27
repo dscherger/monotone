@@ -739,6 +739,29 @@ cvs_history
     dep_loop i(lower, upper);
     return i;
   };
+
+  void
+  remove_weak_dependencies(void)
+  {
+    for (cvs_blob_index bi = 0; bi < blobs.size(); ++bi)
+      blobs[bi].reset_deps_cache();
+
+    if (!deps_sorted)
+      sort_dependencies();
+
+    for (event_dep_iter i = weak_dependencies.begin();
+          i != weak_dependencies.end(); ++i)
+      {
+        dependencies.erase(lower_bound(dependencies.begin(),
+                                       dependencies.end(),
+                                       *i));
+        dependents.erase(lower_bound(dependents.begin(),
+                                     dependents.end(),
+                                     make_pair(i->second, i->first)));
+      }
+
+    weak_dependencies.clear();
+  };
 };
 
 class
@@ -3403,24 +3426,7 @@ resolve_blob_dependencies(cvs_history & cvs, ticker & n_splits)
   };
 
   // remove all weak dependencies
-  for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
-    cvs.blobs[bi].reset_deps_cache();
-
-  if (!cvs.deps_sorted)
-    cvs.sort_dependencies();
-
-  for (event_dep_iter i = cvs.weak_dependencies.begin();
-        i != cvs.weak_dependencies.end(); ++i)
-    {
-      cvs.dependencies.erase(lower_bound(cvs.dependencies.begin(),
-                                         cvs.dependencies.end(),
-                                         *i));
-      cvs.dependents.erase(lower_bound(cvs.dependents.begin(),
-                                       cvs.dependents.end(),
-                                       make_pair(i->second, i->first)));
-    }
-
-  cvs.weak_dependencies.clear();
+  cvs.remove_weak_dependencies();
 
 #ifdef DEBUG_GRAPHVIZ
   write_graphviz_complete(cvs, "no-weak");
