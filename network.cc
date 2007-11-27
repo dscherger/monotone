@@ -246,8 +246,7 @@ state
 run_network_loop(bool client,
                  shared_ptr<Netxx::StreamServer> server,
                  map<Netxx::socket_type, shared_ptr<session> > & sessions,
-                 app_state & app,
-                 string const & listenaddr = "???");
+                 app_state & app);
 
 state
 run_network_loop(shared_ptr<session> sess)
@@ -569,15 +568,12 @@ arm_sessions_and_calculate_probe(Netxx::PipeCompatibleProbe & probe,
 }
 
 static void
-handle_new_connection(string const & addr,
-                      Netxx::StreamServer & server,
+handle_new_connection(Netxx::StreamServer & server,
                       Netxx::Timeout & timeout,
                       map<Netxx::socket_type, shared_ptr<session> > & sessions,
-                      app_state & app,
-                      string const & listenaddr)
+                      app_state & app)
 {
-  L(FL("accepting new connection on %s")
-    % listenaddr);
+  L(FL("accepting new connection"));
   Netxx::Peer client = server.accept_connection();
 
   if (!client)
@@ -755,8 +751,7 @@ state
 run_network_loop(bool client,
                  shared_ptr<Netxx::StreamServer> server,
                  map<Netxx::socket_type, shared_ptr<session> > & sessions,
-                 app_state & app,
-                 string const & listenaddr)
+                 app_state & app)
 {
   I(!client || sessions.size() == 1);
 
@@ -817,14 +812,13 @@ run_network_loop(bool client,
           if (fd == -1)
             {
               if (armed_sessions.empty())
-                L(FL("timed out waiting for I/O (listening on %s)")
-                  % listenaddr);
+                L(FL("timed out waiting for I/O"));
             }
           // we either got a new connection
           else if (server && fd == *server)
             {
-              handle_new_connection(listenaddr, *server, timeout,
-                                    sessions, app, listenaddr);
+              handle_new_connection(*server, timeout,
+                                    sessions, app);
             }
           // or an existing session woke up
           else
