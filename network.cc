@@ -199,6 +199,7 @@ public:
           app_state & app)
     : my_voice(voice), input(true), output(true),
       app(app), peer_id(addr()), str(str),
+      srv(0),
       last_io_time(::time(NULL))
   {
   }
