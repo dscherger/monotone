@@ -519,15 +519,33 @@ netsync_service::netsync_service(netsync_op what,
                   app_state & app)
   : service(0)
 {
+  protocol_role role;
+  switch (what)
+    {
+    case pull:
+      role = sink_role;
+      break;
+    case push:
+      role = source_role;
+      break;
+    case sync:
+      role = source_and_sink_role;
+      break;
+    default:
+      I(false);
+      role = source_and_sink_role;
+    }
+  impl.reset(new netsync(role, include, exclude, *this, app));
 }
 
 netsync_service::~netsync_service()
 {
 }
 
-netsync_service::netsync_service(netsync_service const & other)
+netsync_service::netsync_service(netsync_service const & other, app_state & app)
   : service(0)
 {
+  impl.reset(new netsync(source_and_sink_role, "*", "*", *this, app));
 }
 
 netsync_service const &
@@ -549,9 +567,9 @@ netsync_service::send(netcmd const & cmd)
 }
 
 service *
-netsync_service::copy()
+netsync_service::copy(app_state & app)
 {
-  return new netsync_service(*this);
+  return new netsync_service(*this, app);
 }
 
 void

@@ -34,8 +34,7 @@ public:
 
   service(int num);
   virtual ~service();
-  virtual service * copy() = 0;
-  static shared_ptr<service> get(int num);
+  virtual service * copy(app_state & app) = 0;
 
   void attach(session & s);
   void detach(bool received_error);

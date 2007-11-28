@@ -287,15 +287,6 @@ service::~service()
 {
 }
 
-shared_ptr<service>
-service::get(int num)
-{
-  service_map & m(get_service_map());
-  service_map::const_iterator i = m.find(num);
-  I(i != m.end());
-  return shared_ptr<service>(i->second->copy());
-}
-
 void
 service::attach(session & s)
 {
@@ -446,7 +437,7 @@ session::handle_ctrl_cmd(netcmd const & cmd)
     {
       srv->detach(false);
     }
-  srv = s;
+  srv = s->copy(app);
   srv->attach(*this);
   srv->begin_service();
   return state::RUNNING;

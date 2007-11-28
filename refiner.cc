@@ -500,10 +500,13 @@ refiner_pair
     client_cb(*this, true),
     server_cb(*this, false),
     // The item type here really doesn't matter.
-    client(file_item, client_voice, client_cb),
-    server(file_item, server_voice, server_cb),
+    client(file_item, client_cb),
+    server(file_item, server_cb),
     n_msgs(0)
   {
+    client.set_voice(client_voice);
+    server.set_voice(server_voice);
+
     for (set<id>::const_iterator i = client_items.begin();
          i != client_items.end(); ++i)
       client.note_local_item(*i);
