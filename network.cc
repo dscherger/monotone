@@ -198,7 +198,8 @@ public:
           utf8 const & addr,
           app_state & app)
     : my_voice(voice), input(true), output(true),
-      app(app), peer_id(addr()), str(str)
+      app(app), peer_id(addr()), str(str),
+      last_io_time(::time(NULL))
   {
   }
 
@@ -220,12 +221,14 @@ public:
   state read_some()
   {
     input.read_some_from(str);
+    last_io_time = ::time(NULL);
     return state::NONE;
   }
 
   state write_some()
   {
     output.write_some_to(str);
+    last_io_time = ::time(NULL);
     return state::NONE;
   }
 
