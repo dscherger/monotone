@@ -2368,6 +2368,16 @@ public:
             break;
           }
 
+      for (vector<cvs_blob_index>::iterator i = ++path_b.begin();
+           i != path_b.end(); ++i)
+        if (cvs.blobs[*i].get_digest().is_branch_start())
+          {
+            L(FL("path b contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+            b_has_branch = true;
+            first_branch_start_in_path_b = i;
+            break;
+          }
+
 #ifdef DEBUG_GRAPHVIZ
       {
         set<cvs_blob_index> blobs_to_show;
@@ -2381,16 +2391,6 @@ public:
         write_graphviz_partial(cvs, "splitter", blobs_to_show, 5);
       }
 #endif
-
-      for (vector<cvs_blob_index>::iterator i = ++path_b.begin();
-           i != path_b.end(); ++i)
-        if (cvs.blobs[*i].get_digest().is_branch_start())
-          {
-            L(FL("path b contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
-            b_has_branch = true;
-            first_branch_start_in_path_b = i;
-            break;
-          }
 
       // Swap a and b, if only b has a branch, but not a. This reduces
       // to three cases: no branches, only a has a branch and both
