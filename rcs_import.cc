@@ -1270,7 +1270,8 @@ solve_violation(cvs_history & cvs, t_solution & solution)
 }
 
 static void
-sanitize_rcs_file_timestamps(cvs_history & cvs)
+sanitize_rcs_file_timestamps(cvs_history & cvs,
+                             const cvs_event_ptr root_event)
 {
   while (1)
     {
@@ -1278,7 +1279,7 @@ sanitize_rcs_file_timestamps(cvs_history & cvs)
       // timestamp pairs which violate the corresponding dependency.
       stack< cvs_event_ptr > stack;
       set< cvs_event_ptr > done;
-      stack.push(cvs.root_event);
+      stack.push(root_event);
 
       list<t_violation> violations;
 
@@ -1677,10 +1678,6 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     // link the pseudo trunk branch to the first event in the branch
     cvs.add_dependency(first_event, cvs.root_event);
-
-    // try to sanitize the timestamps within this RCS file with
-    // respect to the dependencies given.
-    sanitize_rcs_file_timestamps(cvs);
 
     global_pieces.reset();
   }
@@ -3515,6 +3512,14 @@ import_cvs_repo(system_path const & cvsroot,
     app.db.ensure_open();
     change_current_working_dir(cvsroot);
     walk_tree(file_path(), walker);
+  }
+
+  // try to sanitize the timestamps within all RCS files with
+  // respect to the dependencies given.
+  {
+    for (blob_event_iter i = cvs.blobs[cvs.root_blob].begin();
+         i != cvs.blobs[cvs.root_blob].end(); ++i)
+      sanitize_rcs_file_timestamps(cvs, *i);
   }
 
   // then we use algorithms from graph theory to get the blobs into
