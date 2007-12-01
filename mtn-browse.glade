@@ -393,7 +393,7 @@
 			      <property name="wrap">False</property>
 			      <property name="selectable">False</property>
 			      <property name="xalign">0.5</property>
-			      <property name="yalign">0.5</property>
+			      <property name="yalign">0.25</property>
 			      <property name="xpad">0</property>
 			      <property name="ypad">0</property>
 			    </widget>
@@ -453,7 +453,7 @@
 			      <property name="wrap">False</property>
 			      <property name="selectable">False</property>
 			      <property name="xalign">0.5</property>
-			      <property name="yalign">0.5</property>
+			      <property name="yalign">0.25</property>
 			      <property name="xpad">0</property>
 			      <property name="ypad">0</property>
 			    </widget>
@@ -687,7 +687,7 @@ with another revision</property>
 				      <property name="wrap">False</property>
 				      <property name="selectable">False</property>
 				      <property name="xalign">0.5</property>
-				      <property name="yalign">0.5</property>
+				      <property name="yalign">0.25</property>
 				      <property name="xpad">0</property>
 				      <property name="ypad">0</property>
 				    </widget>
@@ -882,7 +882,7 @@ with another revision</property>
 					  <property name="tooltip" translatable="yes">Name of the file being displayed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 96 10 86.4 96</property>
+					  <property name="hadjustment">0 0 79 10 71.1 79</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -934,7 +934,7 @@ with another revision</property>
 					  <property name="tooltip" translatable="yes">Date of when file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 96 10 86.4 96</property>
+					  <property name="hadjustment">0 0 79 10 71.1 79</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -1069,7 +1069,7 @@ updated with respect to this revision</property>
 					  <property name="tooltip" translatable="yes">File's unique id in database</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 101 10 90.9 101</property>
+					  <property name="hadjustment">0 0 84 10 75.6 84</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -1122,7 +1122,7 @@ updated with respect to this revision</property>
 file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 101 10 90.9 101</property>
+					  <property name="hadjustment">0 0 84 10 75.6 84</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -1330,7 +1330,7 @@ last updated with respect to this revision</property>
 				    <widget class="GtkButton" id="view_button">
 				      <property name="visible">True</property>
 				      <property name="tooltip" translatable="yes">Load file contents
-into an editor</property>
+into a viewer</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NORMAL</property>
 				      <property name="focus_on_click">True</property>
@@ -1544,12 +1544,13 @@ with another version
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
+				      <property name="can_focus">True</property>
 				      <property name="label" translatable="yes"></property>
 				      <property name="use_underline">False</property>
 				      <property name="use_markup">False</property>
 				      <property name="justify">GTK_JUSTIFY_LEFT</property>
 				      <property name="wrap">False</property>
-				      <property name="selectable">False</property>
+				      <property name="selectable">True</property>
 				      <property name="xalign">0</property>
 				      <property name="yalign">0.5</property>
 				      <property name="xpad">0</property>
@@ -1594,12 +1595,13 @@ with another version
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
+				      <property name="can_focus">True</property>
 				      <property name="label" translatable="yes"></property>
 				      <property name="use_underline">False</property>
 				      <property name="use_markup">False</property>
 				      <property name="justify">GTK_JUSTIFY_LEFT</property>
 				      <property name="wrap">False</property>
-				      <property name="selectable">False</property>
+				      <property name="selectable">True</property>
 				      <property name="xalign">0</property>
 				      <property name="yalign">0.5</property>
 				      <property name="xpad">0</property>
@@ -1726,12 +1728,13 @@ with another version
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
+				      <property name="can_focus">True</property>
 				      <property name="label" translatable="yes"></property>
 				      <property name="use_underline">False</property>
 				      <property name="use_markup">False</property>
 				      <property name="justify">GTK_JUSTIFY_LEFT</property>
 				      <property name="wrap">False</property>
-				      <property name="selectable">False</property>
+				      <property name="selectable">True</property>
 				      <property name="xalign">0</property>
 				      <property name="yalign">0.5</property>
 				      <property name="xpad">0</property>
@@ -1776,12 +1779,13 @@ with another version
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
+				      <property name="can_focus">True</property>
 				      <property name="label" translatable="yes"></property>
 				      <property name="use_underline">False</property>
 				      <property name="use_markup">False</property>
 				      <property name="justify">GTK_JUSTIFY_LEFT</property>
 				      <property name="wrap">False</property>
-				      <property name="selectable">False</property>
+				      <property name="selectable">True</property>
 				      <property name="xalign">0</property>
 				      <property name="yalign">0.5</property>
 				      <property name="xpad">0</property>

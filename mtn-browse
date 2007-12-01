@@ -277,6 +277,39 @@ sub new_browser_instance()
 	$browser->{glade}->get_widget("manifest_browser_treeview");
     $browser->{file_view_scrolledwindow} =
 	$browser->{glade}->get_widget("file_view_scrolledwindow");
+    $browser->{file_name_label} =
+	$browser->{glade}->get_widget("file_name_value_label");
+    $browser->{file_id_label} =
+	$browser->{glade}->get_widget("file_id_value_label");
+    $browser->{last_update_label} =
+	$browser->{glade}->get_widget("last_update_value_label");
+    $browser->{file_revision_id_label} =
+	$browser->{glade}->get_widget("file_revision_id_value_label");
+    $browser->{file_button_vbox} =
+	$browser->{glade}->get_widget("file_button_vbox");
+    $browser->{database_name_label} =
+	$browser->{glade}->get_widget("database_name_value_label");
+    $browser->{revision_id_label} =
+	$browser->{glade}->get_widget("revision_id_value_label");
+    $browser->{author_label} =
+	$browser->{glade}->get_widget("author_value_label");
+    $browser->{change_log_label} =
+	$browser->{glade}->get_widget("change_log_value_label");
+
+    # Setup button sensitive groups.
+
+    $browser->{text_file_sensitive_group} = ();
+    foreach my $item ("search_text", "annotate", "file_compare")
+    {
+	push(@{$browser->{text_file_sensitive_group}}, 
+	     $browser->{glade}->get_widget($item . "_button"));
+    }
+    $browser->{revision_sensitive_group} = ();
+    foreach my $item ("revision_information", "revision_compare")
+    {
+	push(@{$browser->{revision_sensitive_group}}, 
+	     $browser->{glade}->get_widget($item . "_button"));
+    }
 
     # Setup the comboboxentry key release signal handlers.
 
@@ -878,6 +911,7 @@ sub update_browser_state($$)
 	$browser->{branch_combo_details}->{completion_cache} = {};
 	$browser->{branch_combo_details}->{completed} = 0;
 	$browser->{branch_combo_details}->{value} = "";
+	$browser->{database_name_label}->set_text("<WorkSpace>");
 
 	# Get the new list of branches.
 
@@ -937,7 +971,7 @@ sub update_browser_state($$)
 		    tags(\@list, $browser->{branch_combo_details}->{value});
 		$browser->{main_appbar}->set_progress_percentage(0.5);
 		gtk2_update();
-		for my $item (@list)
+		foreach my $item (@list)
 		{
 		    if (! exists($dup_list{$item->{tag}}))
 		    {
@@ -999,6 +1033,9 @@ sub update_browser_state($$)
 	$browser->{directory_combo_details}->{completed} = 0;
 	$browser->{directory_combo_details}->{last_typed_len} = 0;
 	$browser->{directory_combo_details}->{value} = "";
+	$browser->{revision_id_label}->set_text("");
+	$browser->{author_label}->set_text("");
+	$browser->{change_log_label}->set_text("");
 
 	# Reset the name of the file being viewed.
 
@@ -1022,7 +1059,7 @@ sub update_browser_state($$)
 			        . "or use the <i>Advanced Find</i> feature.\n"
 			        . "The matching revision ids are:",
 			    $browser->{revision_combo_details}->{value});
-		for my $item (@revision_ids)
+		foreach my $item (@revision_ids)
 		{
 		    $message .= "\n" . Glib::Markup::escape_text($item);
 		}
@@ -1040,8 +1077,23 @@ sub update_browser_state($$)
 	    }
 	    else
 	    {
+		my($author,
+		   @certs_list,
+		   $change_log);
 		$browser->{mtn}->get_manifest_of(\@manifest_list,
 						 $revision_ids[0]);
+		$browser->{mtn}->certs(\@certs_list, $revision_ids[0]);
+		$author = $change_log = "";
+		foreach my $cert (@certs_list)
+		{
+		    $author = $cert->{value}
+		        if ($cert->{name} eq "author");
+		    $change_log = $cert->{value}
+		        if ($cert->{name} eq "changelog");
+		}
+		$browser->{revision_id_label}->set_text($revision_ids[0]);
+		$browser->{author_label}->set_text($author);
+		$browser->{change_log_label}->set_text($change_log);
 	    }
 	}
 	$browser->{manifest} = \@manifest_list;
@@ -1076,6 +1128,11 @@ sub update_browser_state($$)
 	$browser->{directory_combo}->child()->set_text("");
 	$browser->{main_appbar}->set_progress_percentage(0);
 	$browser->{main_appbar}->set_status("");
+	foreach my $widget (@{$browser->{revision_sensitive_group}})
+	{
+	    $widget->
+		set_sensitive($browser->{revision_combo_details}->{completed});
+	}
 	gtk2_update();
 
     }
@@ -1124,9 +1181,9 @@ sub update_browser_state($$)
 	foreach my $item (@directory_entry_list)
 	{
 
-	    # Get the latest modification time if the entry is a file (caching
-	    # the result in the manifest for future reference if we have to
-	    # work it out).
+	    # Get the latest modification time and the author if the entry is a
+	    # file (caching the result in the manifest for future reference if
+	    # we have to work it out).
 
 	    if ($item->{manifest_entry}->{type} eq "file")
 	    {
@@ -1137,6 +1194,8 @@ sub update_browser_state($$)
 			(\@revision_list,
 			 $revision_ids[0],
 			 $item->{manifest_entry}->{name});
+		    $item->{manifest_entry}->{last_changed_revision} =
+			$revision_list[0];
 		    $browser->{mtn}->certs(\@certs_list, $revision_list[0]);
 		    $author = $last_update = "";
 		    foreach my $cert (@certs_list)
@@ -1183,9 +1242,10 @@ sub update_browser_state($$)
 	    if ($taking_our_time)
 	    {
 		$browser->{main_appbar}->set_progress_percentage
-		    ($counter ++ / scalar(@directory_entry_list));
+		    ($counter / scalar(@directory_entry_list));
 		gtk2_update();
 	    }
+	    ++ $counter;
 
 	}
 
@@ -1203,120 +1263,189 @@ sub update_browser_state($$)
     if ($changed & DISPLAY_OF_FILE)
     {
 
-	my($contents,
-	   $lang,
-	   $mime_type,
-	   $scrolled_window);
-
-	# Reset the file view buffer.
-
-	$browser->{file_view_svbuffer}->set_text("");
-	$browser->{file_view_svbuffer}->set("highlight", FALSE);
-
 	# Load up the selected file's contents into the file viewer.
 
-	if (exists($browser->{file_being_viewed}->{short_name}))
+	if (exists($browser->{file_being_viewed}->{manifest_entry}))
 	{
-
-	    # Get contents.
-
-	    $browser->{mtn}->get_file
-		(\$contents,
-		 $browser->{file_being_viewed}->{manifest_entry}->{file_id});
-
-	    # Try and work out the mime type, first based on contents and then
-	    # based on the file name extension.
-
-	    if (! defined($mime_type =
-			   Gnome2::VFS->get_mime_type_for_data($contents))
-		|| $mime_type eq "text/plain")
+	    my $manifest_entry;
+	    $manifest_entry =
+		$browser->{file_being_viewed}->{manifest_entry};
+	    if ($browser->{file_id_label}->get_text()
+		ne $manifest_entry->{file_id})
 	    {
-		my $name = $browser->{file_being_viewed}->{short_name};
-		foreach my $item (@text_mime_types)
+
+		my($contents,
+		   $lang,
+		   $mime_type,
+		   $scrolled_window);
+
+		# Reset the file view buffer.
+
+		$browser->{file_button_vbox}->set_sensitive(TRUE);
+		foreach my $widget (@{$browser->{text_file_sensitive_group}})
 		{
-		    if ($name =~ m/$item->{pattern}/)
-		    {
-			$mime_type = $item->{type};
-			last;
-		    }
+		    $widget->set_sensitive(FALSE);
 		}
-	    }
+		$browser->{file_view_svbuffer}->set_text("");
+		$browser->{file_view_svbuffer}->set("highlight", FALSE);
 
-	    # Override some mis-identified types.
+		# Get contents.
 
-	    $mime_type = "image/svg+xml"
-		if ($mime_type eq "text/xml"
-		    && $browser->{file_being_viewed}->{short_name}
-		        =~ m/.*\.svg$/o);
+		$manifest_entry =
+		    $browser->{file_being_viewed}->{manifest_entry};
+		$browser->{mtn}->get_file(\$contents,
+					  $manifest_entry->{file_id});
 
-	    # If it's image data then attempt to render it.
+		# Try and work out the mime type, first based on contents and
+		# then based on the file name extension.
 
-	    if ($mime_type =~ m/^image\/.+$/o)
-	    {
-		eval
+		if (! defined($mime_type =
+			       Gnome2::VFS->get_mime_type_for_data($contents))
+		    || $mime_type eq "text/plain")
 		{
-		    my $loader = Gtk2::Gdk::PixbufLoader->new();
-		    $loader->write($contents);
-		    $loader->close();
-		    $browser->{file_view_svbuffer}->insert_pixbuf
-			($browser->{file_view_svbuffer}->get_start_iter(),
-			 $loader->get_pixbuf());
-		};
-		$browser->{file_view_svbuffer}->
-		    set_text("<" . $mime_type . ">\n") if ($@ ne "");
-	    }
-	    else
-	    {
-
-		my $ok_to_render = 0;
-
-		# Attempt to syntax highlight the file if it looks safe.
-
-		if ($mime_type =~ m/^application\/.+$/o)
-		{
-		    my $part;
-		    ($part) = ($mime_type =~ m/^application\/(.+)$/o);
-		    foreach my $item (@text_viewable_app_mime_types)
+		    my $name = $browser->{file_being_viewed}->{short_name};
+		    foreach my $item (@text_mime_types)
 		    {
-			if ($part eq $item)
+			if ($name =~ m/$item->{pattern}/)
 			{
-			    $ok_to_render = 1;
+			    $mime_type = $item->{type};
 			    last;
 			}
 		    }
 		}
 
-		if ($mime_type =~ m/^text\/.+$/o || $ok_to_render)
+		# Override some mis-identified types.
+
+		$mime_type = "image/svg+xml"
+		    if ($mime_type eq "text/xml"
+			&& $browser->{file_being_viewed}->{short_name}
+			    =~ m/.*\.svg$/o);
+
+		# If it's image data then attempt to render it.
+
+		if ($mime_type =~ m/^image\/.+$/o)
 		{
-		    if (defined($lang = $browser->{file_view_svlangmgr}->
-				get_language_from_mime_type($mime_type)))
+		    eval
 		    {
-			$browser->{file_view_svbuffer}->set("highlight", TRUE);
-			$browser->{file_view_svbuffer}->set_language($lang);
-		    }
-
-		    # Load in the contents.
-
-		    $browser->{file_view_svbuffer}->set_text($contents);
+			my $loader = Gtk2::Gdk::PixbufLoader->new();
+			$loader->write($contents);
+			$loader->close();
+			$browser->{file_view_svbuffer}->insert_pixbuf
+			    ($browser->{file_view_svbuffer}->get_start_iter(),
+			     $loader->get_pixbuf());
+		    };
+		    $browser->{file_view_svbuffer}->
+			set_text("<" . $mime_type . ">\n") if ($@ ne "");
 		}
 		else
 		{
-		    $browser->{file_view_svbuffer}->set("highlight", FALSE);
-		    $browser->{file_view_svbuffer}->
-			set_text("<" . $mime_type . ">\n");
+
+		    my $ok_to_render = 0;
+
+		    # Attempt to syntax highlight the file if it looks safe.
+
+		    if ($mime_type =~ m/^application\/.+$/o)
+		    {
+			my $part;
+			($part) = ($mime_type =~ m/^application\/(.+)$/o);
+			foreach my $item (@text_viewable_app_mime_types)
+			{
+			    if ($part eq $item)
+			    {
+				$ok_to_render = 1;
+				last;
+			    }
+			}
+		    }
+
+		    if ($mime_type =~ m/^text\/.+$/o || $ok_to_render)
+		    {
+			if (defined($lang = $browser->{file_view_svlangmgr}->
+				    get_language_from_mime_type($mime_type)))
+			{
+			    $browser->{file_view_svbuffer}->
+				set("highlight", TRUE);
+			    $browser->{file_view_svbuffer}->
+				set_language($lang);
+			}
+
+			# Load in the contents.
+
+			$browser->{file_view_svbuffer}->set_text($contents);
+			foreach my $widget
+			    (@{$browser->{text_file_sensitive_group}})
+			{
+			    $widget->set_sensitive(TRUE);
+			}
+		    }
+		    else
+		    {
+			$browser->{file_view_svbuffer}->
+			    set("highlight", FALSE);
+			$browser->{file_view_svbuffer}->
+			    set_text("<" . $mime_type . ">\n");
+		    }
+
 		}
 
-	    }
+		# Scroll back up to the top left.
 
-	    # Scroll back up to the top left.
+		if ($browser->{file_view_scrolledwindow}->realized())
+		{
+		    $browser->{file_view_scrolledwindow}->
+			get_vadjustment()->set_value(0);
+		    $browser->{file_view_scrolledwindow}->
+			get_hadjustment()->set_value(0);
+		}
 
-	    if ($browser->{file_view_scrolledwindow}->realized())
-	    {
-		$browser->{file_view_scrolledwindow}->
-		    get_vadjustment()->set_value(0);
-		$browser->{file_view_scrolledwindow}->
-		    get_hadjustment()->set_value(0);
+		# Update the file details labels.
+
+		if (! exists($manifest_entry->{last_changed_revision}))
+		{
+		    my(@certs_list,
+		       @revision_ids,
+		       @revision_list);
+		    get_revision_ids($browser, \@revision_ids);
+		    $browser->{mtn}->
+			get_content_changed(\@revision_list,
+					    $revision_ids[0],
+					    $manifest_entry->{name});
+		    $manifest_entry->{last_changed_revision} =
+			$revision_list[0];
+		    $browser->{mtn}->certs(\@certs_list, $revision_list[0]);
+		    foreach my $cert (@certs_list)
+		    {
+			if ($cert->{name} eq "date")
+			{
+			    my $last_update;
+			    $last_update = $cert->{value};
+			    $last_update =~ s/T/ /o;
+			    $manifest_entry->{last_update} = $last_update;
+			    last;
+			}
+		    }
+		}
+		$browser->{file_name_label}->set_text($manifest_entry->{name});
+		$browser->{file_id_label}->
+		    set_text($manifest_entry->{file_id});
+		$browser->{last_update_label}->
+		    set_text($manifest_entry->{last_update});
+		$browser->{file_revision_id_label}->
+		    set_text($manifest_entry->{last_changed_revision});
 	    }
+	}
+	else
+	{
+
+	    # Reset the file view buffer.
+
+	    $browser->{file_button_vbox}->set_sensitive(FALSE);
+	    $browser->{file_view_svbuffer}->set_text("");
+	    $browser->{file_view_svbuffer}->set("highlight", FALSE);
+	    $browser->{file_name_label}->set_text("");
+	    $browser->{file_id_label}->set_text("");
+	    $browser->{last_update_label}->set_text("");
+	    $browser->{file_revision_id_label}->set_text("");
 
 	}
 
