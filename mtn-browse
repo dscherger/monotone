@@ -162,8 +162,9 @@ sub combo_changed_cb($$);
 sub combo_key_release_event_cb($$$);
 sub delete_event_cb($$$);
 sub destroy_event_cb($$;$);
-sub get_completion($\@\$\$;\%);
-sub get_dir_contents($\@\@);
+sub get_completion($$$$;$);
+sub get_dir_contents($$$);
+sub get_revision_ids($$);
 sub gtk2_update();
 sub make_busy($$);
 sub manifest_treeview_cursor_changed_cb($$);
@@ -454,7 +455,7 @@ sub combo_changed_cb($$)
 	{
 	    $combo_details->{value} = $value;
 	    $combo_details->{completed} = 1;
-	    $browser->{main_appbar}->set_status("");
+	    $browser->{main_appbar}->clear_stack();
 	    update_browser_state($browser, $change_state);
 	    last;
 	}
@@ -537,34 +538,33 @@ sub combo_key_release_event_cb($$$)
     $old_completed = $combo_details->{completed};
     $old_value = $combo_details->{value};
     $value = $widget->get_text();
-    if ($value ne $combo_details->{value})
+    if ($value ne $old_value)
     {
 
 	# Don't auto-complete if the user is simply deleting from the extreme
 	# right.
 
 	$len = length($value);
-	if ($value ne substr($combo_details->{value}, 0, $len))
+	if ($value ne substr($old_value, 0, $len))
 	{
 
 	    # So that the spacebar triggers auto-complete.
 
 	    $value =~ s/\s+$//o;
-	    $old_value = $value;
 	    $len = length($value);
 
 	    if (get_completion($value,
-			       @{$combo_details->{list}},
-			       $completion,
-			       $completed,
-			       %{$combo_details->{completion_cache}}))
+			       $combo_details->{list},
+			       \$completion,
+			       \$completed,
+			       $combo_details->{completion_cache}))
 	    {
-		$browser->{main_appbar}->set_status("");
+		$browser->{main_appbar}->clear_stack();
 	    }
 	    else
 	    {
-		$browser->{main_appbar}->set_status
-		    ("Invalid " . $name . " name`" . $value . "'");
+		$browser->{main_appbar}->
+		    push("Invalid " . $name . " name`" . $value . "'");
 	    }
 	    $value = $completion;
 	    $len = length($value);
@@ -595,6 +595,35 @@ sub combo_key_release_event_cb($$$)
     }
 
     return FALSE;
+
+}
+#
+##############################################################################
+#
+#   Routine      - tagged_checkbutton_toggled_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the tagged_checkbutton.
+#                  list.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub tagged_checkbutton_toggled_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    $browser->{main_appbar}->clear_stack();
+    update_browser_state($browser, BRANCH_CHANGED);
 
 }
 #
@@ -659,7 +688,7 @@ sub directory_up_button_clicked_cb
 	    $browser->{directory_combo_details}->{last_typed_len} = $len;
 	}
 	$browser->{directory_combo}->child()->set_text($value);
-	$browser->{main_appbar}->set_status("");
+	$browser->{main_appbar}->clear_stack();
 	update_browser_state($browser, DIRECTORY_CHANGED);
     }
 
@@ -737,14 +766,14 @@ sub manifest_treeview_row_activated_cb($$$$)
 	$browser->{directory_combo_details}->{completed} = 1;
 	$browser->{directory_combo}->child()->
 	    set_text($manifest_entry->{name});
-	$browser->{main_appbar}->set_status("");
+	$browser->{main_appbar}->clear_stack();
 	update_browser_state($browser, DIRECTORY_CHANGED);
     }
     else
     {
 	$browser->{file_being_viewed} = {short_name     => $short_name,
 					 manifest_entry => $manifest_entry};
-	$browser->{main_appbar}->set_status("");
+	$browser->{main_appbar}->clear_stack();
 	update_browser_state($browser, FILE_CHANGED);
     }
 
@@ -834,6 +863,7 @@ sub update_browser_state($$)
     my($browser, $changed) = @_;
 
     make_busy($browser, 1);
+    $browser->{main_appbar}->push("");
     gtk2_update();
 
     # The list of available branches has changed.
@@ -895,16 +925,40 @@ sub update_browser_state($$)
 	{
 	    $browser->{main_appbar}->set_status("Fetching revision list");
 	    gtk2_update();
-	    $browser->{mtn}->select(\@revision_list,
-				    "b:" .
-				    $browser->{branch_combo_details}->{value});
-	    $browser->{main_appbar}->set_progress_percentage(0.33);
-	    gtk2_update();
-	    $browser->{mtn}->toposort(\@revision_list, @revision_list);
-	    $browser->{main_appbar}->set_progress_percentage(0.66);
-	    gtk2_update();
-	    splice(@revision_list, 0, scalar(@revision_list) - 100);
-	    @revision_list = reverse(@revision_list);
+
+	    # Get either a list of tags or revision ids depending upon what the
+	    # user has chosen.
+
+	    if ($browser->{tagged_tick}->get_active())
+	    {
+		my(%dup_list,
+		   @list);
+		$browser->{mtn}->
+		    tags(\@list, $browser->{branch_combo_details}->{value});
+		$browser->{main_appbar}->set_progress_percentage(0.5);
+		gtk2_update();
+		for my $item (@list)
+		{
+		    if (! exists($dup_list{$item->{tag}}))
+		    {
+			push(@revision_list, $item->{tag});
+			$dup_list{$item->{tag}} = 1;
+		    }
+		}
+	    }
+	    else
+	    {
+		$browser->{mtn}->
+		    select(\@revision_list,
+			   "b:" . $browser->{branch_combo_details}->{value});
+		$browser->{main_appbar}->set_progress_percentage(0.33);
+		gtk2_update();
+		$browser->{mtn}->toposort(\@revision_list, @revision_list);
+		$browser->{main_appbar}->set_progress_percentage(0.66);
+		gtk2_update();
+		splice(@revision_list, 0, scalar(@revision_list) - 100);
+		@revision_list = reverse(@revision_list);
+	    }
 	    $browser->{main_appbar}->set_progress_percentage(1);
 	    gtk2_update();
 	}
@@ -919,7 +973,6 @@ sub update_browser_state($$)
 	$browser->{revision_combo}->get_model()->clear();
 	foreach my $revision (@revision_list)
 	{
-	    $revision = "i:" . $revision;
 	    $browser->{revision_combo}->append_text($revision);
 	    $browser->{main_appbar}->set_progress_percentage
 		($counter ++ / scalar(@revision_list));
@@ -938,8 +991,7 @@ sub update_browser_state($$)
     {
 
 	my(@directory_list,
-	   @manifest_list,
-	   $revision);
+	   @manifest_list);
 
 	# Reset the directory combo.
 
@@ -958,9 +1010,39 @@ sub update_browser_state($$)
 	gtk2_update();
 	if ($browser->{revision_combo_details}->{completed})
 	{
-	    $revision = $browser->{revision_combo_details}->{value};
-	    $revision =~ s/^i://o;
-	    $browser->{mtn}->get_manifest_of(\@manifest_list, $revision);
+	    my @revision_ids;
+	    get_revision_ids($browser, \@revision_ids);
+	    if (scalar(@revision_ids) > 1)
+	    {
+		my $message;
+		$message =
+		    sprintf("The `%s' tag is not unique on this branch.\n"
+			        . "Please either select the revision by its "
+			            . "id\n"
+			        . "or use the <i>Advanced Find</i> feature.\n"
+			        . "The matching revision ids are:",
+			    $browser->{revision_combo_details}->{value});
+		for my $item (@revision_ids)
+		{
+		    $message .= "\n" . Glib::Markup::escape_text($item);
+		}
+		my $dialog = Gtk2::MessageDialog->new_with_markup
+		    ($browser->{main_window},
+		     ["modal"],
+		     "info",
+		     "close",
+		     $message);
+		$dialog->run();
+		$dialog->destroy();
+		$browser->{revision_combo_details}->{completed} = 0;
+		$browser->{revision_combo_details}->{value} = "";
+		$browser->{revision_combo}->child()->set_text("");
+	    }
+	    else
+	    {
+		$browser->{mtn}->get_manifest_of(\@manifest_list,
+						 $revision_ids[0]);
+	    }
 	}
 	$browser->{manifest} = \@manifest_list;
 
@@ -1008,8 +1090,8 @@ sub update_browser_state($$)
 	   $counter,
 	   @directory_entry_list,
 	   $last_update,
+	   @revision_ids,
 	   @revision_list,
-	   $revision,
 	   $taking_our_time);
 
 	# Reset the manifest tree view.
@@ -1022,8 +1104,8 @@ sub update_browser_state($$)
 	    || $browser->{directory_combo_details}->{value} eq "")
 	{
 	    get_dir_contents($browser->{directory_combo_details}->{value},
-			     @{$browser->{manifest}},
-			     @directory_entry_list);
+			     $browser->{manifest},
+			     \@directory_entry_list);
 	}
 
 	# Disable the directory up button if we are already at the top level,
@@ -1038,8 +1120,7 @@ sub update_browser_state($$)
 	$browser->{main_appbar}->set_status("Populating file details");
 	$counter = 1;
 	$taking_our_time = 0;
-	$revision = $browser->{revision_combo_details}->{value};
-	$revision =~ s/^i://o;
+	get_revision_ids($browser, \@revision_ids);
 	foreach my $item (@directory_entry_list)
 	{
 
@@ -1054,7 +1135,7 @@ sub update_browser_state($$)
 		    $taking_our_time = 1;
 		    $browser->{mtn}->get_content_changed
 			(\@revision_list,
-			 $revision,
+			 $revision_ids[0],
 			 $item->{manifest_entry}->{name});
 		    $browser->{mtn}->certs(\@certs_list, $revision_list[0]);
 		    $author = $last_update = "";
@@ -1245,6 +1326,7 @@ sub update_browser_state($$)
     {
     }
 
+    $browser->{main_appbar}->pop();
     make_busy($browser, 0);
 
 }
@@ -1261,8 +1343,8 @@ sub update_browser_state($$)
 #                                 possible completions.
 #                  $result      : A reference to a buffer that is to contain
 #                                 the result.
-#                  $complete    : A reference to a buffer that is to contain a
-#                                 boolean `result is complete' indicator.
+#                  $complete    : A reference to a boolean that is to contain
+#                                 a `result is complete' indicator.
 #                  $cache       : An optional reference to a hash that will be
 #                                 used to cache the hash tree (saved
 #                                 recomputation).
@@ -1275,7 +1357,7 @@ sub update_browser_state($$)
 
 
 
-sub get_completion($\@\$\$;\%)
+sub get_completion($$$$;$)
 {
 
     my($value, $list, $result, $complete, $cache) = @_;
@@ -1383,7 +1465,7 @@ sub get_completion($\@\$\$;\%)
 
 
 
-sub get_dir_contents($\@\@)
+sub get_dir_contents($$$)
 {
 
     my($path, $manifest, $result) = @_;
@@ -1570,6 +1652,43 @@ sub setup_sigchld_handler($)
 				&$handler();
 				return 1;
 			    });
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_revision_ids
+#
+#   Description  - This routine returns the currently selected revision id,
+#                  whether this is specified via a tag or as a revision id.
+#
+#   Data         - $browser      : The browser instance.
+#                  $revision_ids : The list of selected revision ids. Normally
+#                                  the list will have at most one element but
+#                                  may contain more if the tag isn't unique on
+#                                  the current branch.
+#
+##############################################################################
+
+
+
+sub get_revision_ids($$)
+{
+
+    my($browser, $revision_ids) = @_;
+
+    @$revision_ids=();
+    return unless ($browser->{revision_combo_details}->{completed});
+    if ($browser->{tagged_tick}->get_active())
+    {
+	$browser->{mtn}->
+	    select($revision_ids,
+		   "t:" . $browser->{revision_combo_details}->{value});
+    }
+    else
+    {
+	push(@$revision_ids, $browser->{revision_combo_details}->{value});
+    }
 
 }
 #

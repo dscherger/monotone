@@ -510,6 +510,7 @@ current branch are to be listed</property>
 			  <property name="active">False</property>
 			  <property name="inconsistent">False</property>
 			  <property name="draw_indicator">True</property>
+			  <signal name="toggled" handler="tagged_checkbutton_toggled_cb" last_modification_time="Mon, 26 Nov 2007 19:01:49 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -881,7 +882,7 @@ with another revision</property>
 					  <property name="tooltip" translatable="yes">Name of the file being displayed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 277 10 249.3 277</property>
+					  <property name="hadjustment">0 0 96 10 86.4 96</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -933,7 +934,7 @@ with another revision</property>
 					  <property name="tooltip" translatable="yes">Date of when file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 277 10 249.3 277</property>
+					  <property name="hadjustment">0 0 96 10 86.4 96</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -1068,7 +1069,7 @@ updated with respect to this revision</property>
 					  <property name="tooltip" translatable="yes">File's unique id in database</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 283 10 254.7 283</property>
+					  <property name="hadjustment">0 0 101 10 90.9 101</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
@@ -1121,7 +1122,7 @@ updated with respect to this revision</property>
 file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 283 10 254.7 283</property>
+					  <property name="hadjustment">0 0 101 10 90.9 101</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
