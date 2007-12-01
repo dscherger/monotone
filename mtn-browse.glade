@@ -882,25 +882,35 @@ with another revision</property>
 					  <property name="tooltip" translatable="yes">Name of the file being displayed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 79 10 71.1 79</property>
+					  <property name="hadjustment">0 0 277 10 249.3 277</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkLabel" id="file_name_value_label">
+					    <widget class="GtkEventBox" id="file_name_value_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
-					      <property name="can_focus">True</property>
-					      <property name="label" translatable="yes"></property>
-					      <property name="use_underline">False</property>
-					      <property name="use_markup">False</property>
-					      <property name="justify">GTK_JUSTIFY_LEFT</property>
-					      <property name="wrap">False</property>
-					      <property name="selectable">True</property>
-					      <property name="xalign">0</property>
-					      <property name="yalign">0.5</property>
-					      <property name="xpad">0</property>
-					      <property name="ypad">0</property>
+					      <property name="visible_window">True</property>
+					      <property name="above_child">False</property>
+
+					      <child>
+						<widget class="GtkLabel" id="file_name_value_label">
+						  <property name="width_request">0</property>
+						  <property name="height_request">0</property>
+						  <property name="visible">True</property>
+						  <property name="can_focus">True</property>
+						  <property name="label" translatable="yes"></property>
+						  <property name="use_underline">False</property>
+						  <property name="use_markup">False</property>
+						  <property name="justify">GTK_JUSTIFY_LEFT</property>
+						  <property name="wrap">False</property>
+						  <property name="selectable">True</property>
+						  <property name="xalign">0</property>
+						  <property name="yalign">0.5</property>
+						  <property name="xpad">0</property>
+						  <property name="ypad">0</property>
+						</widget>
+					      </child>
 					    </widget>
 					    <packing>
 					      <property name="x">0</property>
@@ -934,25 +944,35 @@ with another revision</property>
 					  <property name="tooltip" translatable="yes">Date of when file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 79 10 71.1 79</property>
+					  <property name="hadjustment">0 0 277 10 249.3 277</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkLabel" id="last_update_value_label">
+					    <widget class="GtkEventBox" id="last_update_value_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
-					      <property name="can_focus">True</property>
-					      <property name="label" translatable="yes"></property>
-					      <property name="use_underline">False</property>
-					      <property name="use_markup">False</property>
-					      <property name="justify">GTK_JUSTIFY_LEFT</property>
-					      <property name="wrap">False</property>
-					      <property name="selectable">True</property>
-					      <property name="xalign">0</property>
-					      <property name="yalign">0.5</property>
-					      <property name="xpad">0</property>
-					      <property name="ypad">0</property>
+					      <property name="visible_window">True</property>
+					      <property name="above_child">False</property>
+
+					      <child>
+						<widget class="GtkLabel" id="last_update_value_label">
+						  <property name="width_request">0</property>
+						  <property name="height_request">0</property>
+						  <property name="visible">True</property>
+						  <property name="can_focus">True</property>
+						  <property name="label" translatable="yes"></property>
+						  <property name="use_underline">False</property>
+						  <property name="use_markup">False</property>
+						  <property name="justify">GTK_JUSTIFY_LEFT</property>
+						  <property name="wrap">False</property>
+						  <property name="selectable">True</property>
+						  <property name="xalign">0</property>
+						  <property name="yalign">0.5</property>
+						  <property name="xpad">0</property>
+						  <property name="ypad">0</property>
+						</widget>
+					      </child>
 					    </widget>
 					    <packing>
 					      <property name="x">0</property>
@@ -1069,25 +1089,35 @@ updated with respect to this revision</property>
 					  <property name="tooltip" translatable="yes">File's unique id in database</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 84 10 75.6 84</property>
+					  <property name="hadjustment">0 0 283 10 254.7 283</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkLabel" id="file_id_value_label">
+					    <widget class="GtkEventBox" id="file_id_value_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
-					      <property name="can_focus">True</property>
-					      <property name="label" translatable="yes"></property>
-					      <property name="use_underline">False</property>
-					      <property name="use_markup">False</property>
-					      <property name="justify">GTK_JUSTIFY_LEFT</property>
-					      <property name="wrap">False</property>
-					      <property name="selectable">True</property>
-					      <property name="xalign">0</property>
-					      <property name="yalign">0.5</property>
-					      <property name="xpad">0</property>
-					      <property name="ypad">0</property>
+					      <property name="visible_window">True</property>
+					      <property name="above_child">False</property>
+
+					      <child>
+						<widget class="GtkLabel" id="file_id_value_label">
+						  <property name="width_request">0</property>
+						  <property name="height_request">0</property>
+						  <property name="visible">True</property>
+						  <property name="can_focus">True</property>
+						  <property name="label" translatable="yes"></property>
+						  <property name="use_underline">False</property>
+						  <property name="use_markup">False</property>
+						  <property name="justify">GTK_JUSTIFY_LEFT</property>
+						  <property name="wrap">False</property>
+						  <property name="selectable">True</property>
+						  <property name="xalign">0</property>
+						  <property name="yalign">0.5</property>
+						  <property name="xpad">0</property>
+						  <property name="ypad">0</property>
+						</widget>
+					      </child>
 					    </widget>
 					    <packing>
 					      <property name="x">0</property>
@@ -1122,25 +1152,35 @@ updated with respect to this revision</property>
 file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 84 10 75.6 84</property>
+					  <property name="hadjustment">0 0 283 10 254.7 283</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkLabel" id="file_revision_id_value_label">
+					    <widget class="GtkEventBox" id="file_revision_id_value_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
-					      <property name="can_focus">True</property>
-					      <property name="label" translatable="yes"></property>
-					      <property name="use_underline">False</property>
-					      <property name="use_markup">False</property>
-					      <property name="justify">GTK_JUSTIFY_LEFT</property>
-					      <property name="wrap">False</property>
-					      <property name="selectable">True</property>
-					      <property name="xalign">0</property>
-					      <property name="yalign">0.5</property>
-					      <property name="xpad">0</property>
-					      <property name="ypad">0</property>
+					      <property name="visible_window">True</property>
+					      <property name="above_child">False</property>
+
+					      <child>
+						<widget class="GtkLabel" id="file_revision_id_value_label">
+						  <property name="width_request">0</property>
+						  <property name="height_request">0</property>
+						  <property name="visible">True</property>
+						  <property name="can_focus">True</property>
+						  <property name="label" translatable="yes"></property>
+						  <property name="use_underline">False</property>
+						  <property name="use_markup">False</property>
+						  <property name="justify">GTK_JUSTIFY_LEFT</property>
+						  <property name="wrap">False</property>
+						  <property name="selectable">True</property>
+						  <property name="xalign">0</property>
+						  <property name="yalign">0.5</property>
+						  <property name="xpad">0</property>
+						  <property name="ypad">0</property>
+						</widget>
+					      </child>
 					    </widget>
 					    <packing>
 					      <property name="x">0</property>
@@ -1540,21 +1580,31 @@ with another version
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkLabel" id="database_name_value_label">
+				    <widget class="GtkEventBox" id="database_name_value_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
-				      <property name="can_focus">True</property>
-				      <property name="label" translatable="yes"></property>
-				      <property name="use_underline">False</property>
-				      <property name="use_markup">False</property>
-				      <property name="justify">GTK_JUSTIFY_LEFT</property>
-				      <property name="wrap">False</property>
-				      <property name="selectable">True</property>
-				      <property name="xalign">0</property>
-				      <property name="yalign">0.5</property>
-				      <property name="xpad">0</property>
-				      <property name="ypad">0</property>
+				      <property name="visible_window">True</property>
+				      <property name="above_child">False</property>
+
+				      <child>
+					<widget class="GtkLabel" id="database_name_value_label">
+					  <property name="width_request">0</property>
+					  <property name="height_request">0</property>
+					  <property name="visible">True</property>
+					  <property name="can_focus">True</property>
+					  <property name="label" translatable="yes"></property>
+					  <property name="use_underline">False</property>
+					  <property name="use_markup">False</property>
+					  <property name="justify">GTK_JUSTIFY_LEFT</property>
+					  <property name="wrap">False</property>
+					  <property name="selectable">True</property>
+					  <property name="xalign">0</property>
+					  <property name="yalign">0.5</property>
+					  <property name="xpad">0</property>
+					  <property name="ypad">0</property>
+					</widget>
+				      </child>
 				    </widget>
 				    <packing>
 				      <property name="x">0</property>
@@ -1591,21 +1641,31 @@ with another version
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkLabel" id="author_value_label">
+				    <widget class="GtkEventBox" id="author_value_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
-				      <property name="can_focus">True</property>
-				      <property name="label" translatable="yes"></property>
-				      <property name="use_underline">False</property>
-				      <property name="use_markup">False</property>
-				      <property name="justify">GTK_JUSTIFY_LEFT</property>
-				      <property name="wrap">False</property>
-				      <property name="selectable">True</property>
-				      <property name="xalign">0</property>
-				      <property name="yalign">0.5</property>
-				      <property name="xpad">0</property>
-				      <property name="ypad">0</property>
+				      <property name="visible_window">True</property>
+				      <property name="above_child">False</property>
+
+				      <child>
+					<widget class="GtkLabel" id="author_value_label">
+					  <property name="width_request">0</property>
+					  <property name="height_request">0</property>
+					  <property name="visible">True</property>
+					  <property name="can_focus">True</property>
+					  <property name="label" translatable="yes"></property>
+					  <property name="use_underline">False</property>
+					  <property name="use_markup">False</property>
+					  <property name="justify">GTK_JUSTIFY_LEFT</property>
+					  <property name="wrap">False</property>
+					  <property name="selectable">True</property>
+					  <property name="xalign">0</property>
+					  <property name="yalign">0.5</property>
+					  <property name="xpad">0</property>
+					  <property name="ypad">0</property>
+					</widget>
+				      </child>
 				    </widget>
 				    <packing>
 				      <property name="x">0</property>
@@ -1724,21 +1784,31 @@ with another version
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkLabel" id="revision_id_value_label">
+				    <widget class="GtkEventBox" id="revision_id_value_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
-				      <property name="can_focus">True</property>
-				      <property name="label" translatable="yes"></property>
-				      <property name="use_underline">False</property>
-				      <property name="use_markup">False</property>
-				      <property name="justify">GTK_JUSTIFY_LEFT</property>
-				      <property name="wrap">False</property>
-				      <property name="selectable">True</property>
-				      <property name="xalign">0</property>
-				      <property name="yalign">0.5</property>
-				      <property name="xpad">0</property>
-				      <property name="ypad">0</property>
+				      <property name="visible_window">True</property>
+				      <property name="above_child">False</property>
+
+				      <child>
+					<widget class="GtkLabel" id="revision_id_value_label">
+					  <property name="width_request">0</property>
+					  <property name="height_request">0</property>
+					  <property name="visible">True</property>
+					  <property name="can_focus">True</property>
+					  <property name="label" translatable="yes"></property>
+					  <property name="use_underline">False</property>
+					  <property name="use_markup">False</property>
+					  <property name="justify">GTK_JUSTIFY_LEFT</property>
+					  <property name="wrap">False</property>
+					  <property name="selectable">True</property>
+					  <property name="xalign">0</property>
+					  <property name="yalign">0.5</property>
+					  <property name="xpad">0</property>
+					  <property name="ypad">0</property>
+					</widget>
+				      </child>
 				    </widget>
 				    <packing>
 				      <property name="x">0</property>
@@ -1775,21 +1845,31 @@ with another version
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkLabel" id="change_log_value_label">
+				    <widget class="GtkEventBox" id="change_log_value_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
-				      <property name="can_focus">True</property>
-				      <property name="label" translatable="yes"></property>
-				      <property name="use_underline">False</property>
-				      <property name="use_markup">False</property>
-				      <property name="justify">GTK_JUSTIFY_LEFT</property>
-				      <property name="wrap">False</property>
-				      <property name="selectable">True</property>
-				      <property name="xalign">0</property>
-				      <property name="yalign">0.5</property>
-				      <property name="xpad">0</property>
-				      <property name="ypad">0</property>
+				      <property name="visible_window">True</property>
+				      <property name="above_child">False</property>
+
+				      <child>
+					<widget class="GtkLabel" id="change_log_value_label">
+					  <property name="width_request">0</property>
+					  <property name="height_request">0</property>
+					  <property name="visible">True</property>
+					  <property name="can_focus">True</property>
+					  <property name="label" translatable="yes"></property>
+					  <property name="use_underline">False</property>
+					  <property name="use_markup">False</property>
+					  <property name="justify">GTK_JUSTIFY_LEFT</property>
+					  <property name="wrap">False</property>
+					  <property name="selectable">True</property>
+					  <property name="xalign">0</property>
+					  <property name="yalign">0.5</property>
+					  <property name="xpad">0</property>
+					  <property name="ypad">0</property>
+					</widget>
+				      </child>
 				    </widget>
 				    <packing>
 				      <property name="x">0</property>

@@ -154,6 +154,10 @@ my @text_mime_types =
 
 my @browsers;
 
+# The tooltips widget.
+
+my $tooltips;
+
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Private routines.
@@ -171,6 +175,7 @@ sub manifest_treeview_cursor_changed_cb($$);
 sub manifest_treeview_row_activated_cb($$$$);
 sub mtn_error_handler($$);
 sub new_browser_instance();
+sub set_label_value($$);
 sub setup_sigchld_handler($);
 sub sigchld_handler();
 sub update_browser_state($$);
@@ -258,6 +263,10 @@ sub new_browser_instance()
 			    $connect_object ? $connect_object : $user_data);
 	 },
 	 $browser);
+
+    # Initialise tooltips.
+
+    $tooltips = Gtk2::Tooltips->new();
 
     # Get the widgets that we are interested in.
 
@@ -911,7 +920,7 @@ sub update_browser_state($$)
 	$browser->{branch_combo_details}->{completion_cache} = {};
 	$browser->{branch_combo_details}->{completed} = 0;
 	$browser->{branch_combo_details}->{value} = "";
-	$browser->{database_name_label}->set_text("<WorkSpace>");
+	set_label_value($browser->{database_name_label}, "<WorkSpace>");
 
 	# Get the new list of branches.
 
@@ -1033,9 +1042,9 @@ sub update_browser_state($$)
 	$browser->{directory_combo_details}->{completed} = 0;
 	$browser->{directory_combo_details}->{last_typed_len} = 0;
 	$browser->{directory_combo_details}->{value} = "";
-	$browser->{revision_id_label}->set_text("");
-	$browser->{author_label}->set_text("");
-	$browser->{change_log_label}->set_text("");
+	set_label_value($browser->{revision_id_label}, "");
+	set_label_value($browser->{author_label}, "");
+	set_label_value($browser->{change_log_label}, "");
 
 	# Reset the name of the file being viewed.
 
@@ -1091,9 +1100,10 @@ sub update_browser_state($$)
 		    $change_log = $cert->{value}
 		        if ($cert->{name} eq "changelog");
 		}
-		$browser->{revision_id_label}->set_text($revision_ids[0]);
-		$browser->{author_label}->set_text($author);
-		$browser->{change_log_label}->set_text($change_log);
+		set_label_value($browser->{revision_id_label},
+				$revision_ids[0]);
+		set_label_value($browser->{author_label}, $author);
+		set_label_value($browser->{change_log_label}, $change_log);
 	    }
 	}
 	$browser->{manifest} = \@manifest_list;
@@ -1425,13 +1435,14 @@ sub update_browser_state($$)
 			}
 		    }
 		}
-		$browser->{file_name_label}->set_text($manifest_entry->{name});
-		$browser->{file_id_label}->
-		    set_text($manifest_entry->{file_id});
-		$browser->{last_update_label}->
-		    set_text($manifest_entry->{last_update});
-		$browser->{file_revision_id_label}->
-		    set_text($manifest_entry->{last_changed_revision});
+		set_label_value($browser->{file_name_label},
+				$manifest_entry->{name});
+		set_label_value($browser->{file_id_label},
+				$manifest_entry->{file_id});
+		set_label_value($browser->{last_update_label},
+				$manifest_entry->{last_update});
+		set_label_value($browser->{file_revision_id_label},
+				$manifest_entry->{last_changed_revision});
 	    }
 	}
 	else
@@ -1442,10 +1453,10 @@ sub update_browser_state($$)
 	    $browser->{file_button_vbox}->set_sensitive(FALSE);
 	    $browser->{file_view_svbuffer}->set_text("");
 	    $browser->{file_view_svbuffer}->set("highlight", FALSE);
-	    $browser->{file_name_label}->set_text("");
-	    $browser->{file_id_label}->set_text("");
-	    $browser->{last_update_label}->set_text("");
-	    $browser->{file_revision_id_label}->set_text("");
+	    set_label_value($browser->{file_name_label}, "");
+	    set_label_value($browser->{file_id_label}, "");
+	    set_label_value($browser->{last_update_label}, "");
+	    set_label_value($browser->{file_revision_id_label}, "");
 
 	}
 
@@ -1885,10 +1896,36 @@ sub gtk2_update()
 {
 
     return if (Gtk2->main_level() == 0);
-
     while (Gtk2->events_pending())
     {
 	Gtk2->main_iteration();
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - set_label_value
+#
+#   Description  - This routine simply sets the text for the given label and
+#                  the tooltip for the parent widget, assumed to be an event
+#                  box, to the specified text.
+#
+#   Data         - $widget : The label widget that has an event box as its
+#                            parent.
+#                  $value  : The text that the label and tooltip are to be set
+#                            to.
+#
+##############################################################################
+
+
+
+sub set_label_value($$)
+{
+
+    my($widget, $value) = @_;
+
+    $widget->set_text($value);
+    $tooltips->set_tip($widget->parent(), $value);
 
 }
