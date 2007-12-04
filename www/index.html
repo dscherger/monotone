@@ -1,0 +1,179 @@
+<html>
+<!-- authored with SciTe -->
+<head>
+    <title>Monotone Dumb</title>
+    <style type="text/css"><!--
+#head {
+    text-align: center;
+    background-color: #e0e0ff;
+    /* border: solid 4px blue; */
+    width: 90%;
+    #height: 168px;
+    margin: 1em;
+    padding: 1em;    
+}
+.border-deco {
+    /*border-left: solid 6px #b0b0ff; */
+}
+
+h2 {
+    background-color: #b0b0ff;
+    padding: 0.2em;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    font-size: large;
+}
+h3 {
+    font-size: 100%;
+}
+h4 {
+    font-size: 100%;
+}
+#title {
+    font-size: 200%;
+    text-align: center;
+    margin: 1em;
+    font-weight: bold;
+    font-family: Times New Roman, serif;
+}
+#synopsis {
+    text-align: center;
+    font-style: italic;
+    margin: 1em;
+}
+#mtn-logo {
+    margin: 1em;
+}
+#content {
+    width: 90%;
+    margin: 1em;
+    padding: 1em;
+    background-color: #e0e0ff;
+    /* border: solid 4px blue; */
+}
+
+#news, #main, #links {    
+    width: 30%;
+    padding: 0.5em;    
+}
+-->
+</style>
+</head>
+<body>
+<div align="center">    
+    <div id="head">
+        <div class="border-deco">
+        <a id="mtn-logo" href="http://monotone.ca">
+            <img src="http://monotone.ca/monotone-logo.png" height="168" border="0" align="right"/>
+        </a>
+        <div id="title">
+            Monotone Dumb Protocol
+        </div>
+        <div id="synopsis">
+            The Monotone Dumb (or "plain") protocol allows two-way synchronization of monotone databases via sftp or plain 
+            files, and one-way (pull) via http(s) and ftp.
+        </div>
+        </div>
+    </div>
+    <div id="content">
+    <table width="100%">
+    <tr>
+    <td id="news" valign="top" class="border-deco">
+        <h2>news</h2>
+        <ul>
+            <li>2007-12-05 mtndumb 0.0.5 released<br/>
+                Bla bla bla</li>
+            <li>2007-12-05 webbage created</li>
+        </ul>
+    </td>
+    <td id="main" valign="top" class="border-deco">
+<h2>about</h2>
+<p>
+In general its small answer to common requirement for proxy and firewall synchronization method for monotone.
+Features and highlights:
+<ul>
+    <li>transports: <ul>
+        <li>SFTP transport (two way)</li>
+        <li>HTTP/FTP transport (read-only)
+        <li>filesystem transport (two way)
+        <li>DWS<b>*</b>transport (two way)</li></ul>
+    <li>supported platforms: linux, win32(mingw32)</li>
+    <li>not much slower than netsync (no official timings yet)</li>
+</ul>
+
+<p>Unfortunately it's not perfect:
+<ul>
+    <li>it's separate from monotone. Python and other packages are supported</li>
+    <li>it doesn't work with 0.37 (due to monotone bug, which is already fixed in HEAD), please use with 0.36
+    <li>push and sync requires exclusive access to whole repository, possible problems in multi-user usage scenario
+    <li>unreliable locking and transaction support
+    <li>it's very beta</li>
+</ul>
+
+<small><p><b>*</b> DWS (Dumb Web Storage) is a small file server implemented in PHP that mtndumb is able to talk via HTTP. 
+ Not published yet. Ask maintainer.
+    </p></small>
+<h2>installation</h2>
+<p>Just invoke
+
+<pre>  python setup.py install</pre>
+
+as root/administrator so python will install it for you.</p>
+
+<p>If you want to install as generic user you can try:
+
+<pre>  python setup.py install --home $HOME</pre>
+  
+and ensure that you have <code>$HOME/bin</code> in PATH and <code>$HOME/lib/python</code> in PYTHONPATH.</p>
+
+<h2>usage</h2>
+
+Pull/sync. Currently you can pull/sync only whole database:
+<pre>  mtndumb pull [repository]
+  mtndumb sync [repository]</pre>
+  
+Push permits to use branch pattern, so revision on specific branches (and their 
+ancestors) are pushed:
+
+<pre>  mtndumb push &lt;repository&gt; [branch_pattern]?</pre>
+  
+Repository can be anything like this:
+
+<pre>  sftp://user@somewhere/somedirectory
+  http://somesite/repo/mtndumb/
+  file:d:/repo/mtndumb</pre>
+    </td>
+    <td id="links" valign="top" class="border-deco">        
+        <h2>links</h2>
+        <h3>mailing-list</h3>
+        <p>Currently no dedicated. Use <a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">monotone-devel</a>.
+        <h3>download latest release</h3>
+        <p>
+            mtndumb-0.0.5 (<a href="mtndumb-0.0.5.zip">zip</a>) (<a href="mtndumb-0.0.5.tar.gz">tar.gz</a>).<br>
+            <a href="http://viewmtn.angrygoats.net/branch/changes/net.venge.monotone.dumb">browse source</a>
+        </p>
+        
+        <h3>requirements</h3>
+        <h4><a href="http://www.python.org">Python 2.5</a></h4>
+        
+        <h4><a href="http://www.amk.ca/python/code/crypto">pycrypto</a> - <small>only for SFTP transport</small></h4>
+        <p>
+            download pycrypto for win32 from <a href="http://www.voidspace.org.uk/python/modules.shtml#pycrypto">voidspace</a>.</p>
+        <p>
+            install on debian-like system <code>sudo apt-get install python2.5-crypto</code>.</p>
+                
+        <h4>contact</h4>
+        <p>
+        Currently the only one maintainer is <code>Zbigniew Zagórski</code> (z.zagorski <small><i>account at</i></small> gmail.com).
+        
+        <h2>Credits</h2>
+        <p>Dumb protocol idea and initial implementation is work of Nathaniel Smith. 
+        Later some people from monotone community contributed lot of making almost quite usable software.
+        I (Zbigniew Zagórski) it made usable (i think) as separate downloadable and public package and maintain program and site currently.
+    </td>
+    </tr></table>
+    </div> <!-- content -->
+</div>
+</body>
+</html>
