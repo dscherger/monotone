@@ -53,7 +53,7 @@ h4 {
     /* border: solid 4px blue; */
 }
 
-#news, #main, #links {    
+#left, #main, #right {
     width: 30%;
     padding: 0.5em;    
 }
@@ -71,7 +71,7 @@ h4 {
             Monotone Dumb Protocol
         </div>
         <div id="synopsis">
-            The Monotone Dumb (or "plain") protocol allows two-way synchronization of monotone databases via sftp or plain 
+            The Monotone Dumb protocol allows two-way synchronization of monotone databases via sftp or plain 
             files, and one-way (pull) via http(s) and ftp.
         </div>
         </div>
@@ -79,7 +79,7 @@ h4 {
     <div id="content">
     <table width="100%">
     <tr>
-    <td id="news" valign="top" class="border-deco">
+    <td id="left" valign="top" class="border-deco">
         <h2>news</h2>
         <ul>
             <li>2007-12-05 mtndumb 0.0.5 released<br/>
@@ -88,6 +88,31 @@ h4 {
         </ul>
     </td>
     <td id="main" valign="top" class="border-deco">
+<h2>links</h2>
+<h3>mailing-list</h3>
+<p>Currently no dedicated. Use <a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">monotone-devel</a>.
+<h3>download latest release</h3>
+<p>
+    mtndumb-0.0.5 (<a href="mtndumb-0.0.5.zip">zip</a>) (<a href="mtndumb-0.0.5.tar.gz">tar.gz</a>).<br>
+    <a href="http://viewmtn.angrygoats.net/branch/changes/net.venge.monotone.dumb">browse source</a>
+</p>
+
+<h3>requirements</h3>
+<h4><a href="http://www.python.org">Python 2.5</a></h4>
+
+<h4><a href="http://www.amk.ca/python/code/crypto">pycrypto</a> - <small>only for SFTP transport</small></h4>
+<p>
+    download pycrypto for win32 from <a href="http://www.voidspace.org.uk/python/modules.shtml#pycrypto">voidspace</a>.</p>
+<p>
+    install on debian-like system <code>sudo apt-get install python2.5-crypto</code>.</p>
+        
+<h4>contact</h4>
+<p>
+Currently the only one maintainer is <code>Zbigniew Zagórski</code> (z.zagorski <small><i>account at</i></small> gmail.com).
+
+    </td>
+    <td id="right" valign="top" class="border-deco">
+        
 <h2>about</h2>
 <p>
 In general its small answer to common requirement for proxy and firewall synchronization method for monotone.
@@ -114,6 +139,22 @@ Features and highlights:
 <small><p><b>*</b> DWS (Dumb Web Storage) is a small file server implemented in PHP that mtndumb is able to talk via HTTP. 
  Not published yet. Ask maintainer.
     </p></small>
+    </td>
+    </tr></table>
+    
+    <table width="100%">
+    <tr>
+    <td id="left" valign="top" class="border-deco">
+    
+<h2>Credits</h2>
+<p>Dumb protocol idea and initial implementation is work of Nathaniel Smith. 
+        Later some people from monotone community contributed lot of making almost quite usable software.
+        I (Zbigniew Zagórski) it made usable (i think) as separate downloadable and public package and maintain program and site currently.
+</p>
+
+    </td>
+    <td id="main" valign="top" class="border-deco">
+
 <h2>installation</h2>
 <p>Just invoke
 
@@ -127,8 +168,11 @@ as root/administrator so python will install it for you.</p>
   
 and ensure that you have <code>$HOME/bin</code> in PATH and <code>$HOME/lib/python</code> in PYTHONPATH.</p>
 
-<h2>usage</h2>
 
+    </td>
+    <td id="right" valign="top" class="border-deco">
+
+<h2>usage</h2>
 Pull/sync. Currently you can pull/sync only whole database:
 <pre>  mtndumb pull [repository]
   mtndumb sync [repository]</pre>
@@ -143,34 +187,6 @@ Repository can be anything like this:
 <pre>  sftp://user@somewhere/somedirectory
   http://somesite/repo/mtndumb/
   file:d:/repo/mtndumb</pre>
-    </td>
-    <td id="links" valign="top" class="border-deco">        
-        <h2>links</h2>
-        <h3>mailing-list</h3>
-        <p>Currently no dedicated. Use <a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">monotone-devel</a>.
-        <h3>download latest release</h3>
-        <p>
-            mtndumb-0.0.5 (<a href="mtndumb-0.0.5.zip">zip</a>) (<a href="mtndumb-0.0.5.tar.gz">tar.gz</a>).<br>
-            <a href="http://viewmtn.angrygoats.net/branch/changes/net.venge.monotone.dumb">browse source</a>
-        </p>
-        
-        <h3>requirements</h3>
-        <h4><a href="http://www.python.org">Python 2.5</a></h4>
-        
-        <h4><a href="http://www.amk.ca/python/code/crypto">pycrypto</a> - <small>only for SFTP transport</small></h4>
-        <p>
-            download pycrypto for win32 from <a href="http://www.voidspace.org.uk/python/modules.shtml#pycrypto">voidspace</a>.</p>
-        <p>
-            install on debian-like system <code>sudo apt-get install python2.5-crypto</code>.</p>
-                
-        <h4>contact</h4>
-        <p>
-        Currently the only one maintainer is <code>Zbigniew Zagórski</code> (z.zagorski <small><i>account at</i></small> gmail.com).
-        
-        <h2>Credits</h2>
-        <p>Dumb protocol idea and initial implementation is work of Nathaniel Smith. 
-        Later some people from monotone community contributed lot of making almost quite usable software.
-        I (Zbigniew Zagórski) it made usable (i think) as separate downloadable and public package and maintain program and site currently.
     </td>
     </tr></table>
     </div> <!-- content -->
