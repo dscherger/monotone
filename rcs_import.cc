@@ -163,14 +163,25 @@ class cvs_blob;
 typedef vector<cvs_blob>::size_type cvs_blob_index;
 typedef vector<cvs_blob_index>::const_iterator blob_index_iter;
 
-class
+struct
 cvs_event
 {
 public:
-  time_i given_time;
   time_i adj_time;
   cvs_path path;
   cvs_blob_index bi;
+
+  // symbol constructor
+  cvs_event(const cvs_path p, const time_i ti)
+    : adj_time(ti * 100),
+      path(p)
+    { };
+};
+
+struct
+cvs_commit : cvs_event
+{
+  time_i given_time;
 
   // additional information for commits
   cvs_mtn_version mtn_version;
@@ -178,21 +189,13 @@ public:
   bool alive;
 
   // commit constructor
-  cvs_event(const cvs_path p, const time_i ti, const cvs_mtn_version v,
+  cvs_commit(const cvs_path p, const time_i ti, const cvs_mtn_version v,
              const cvs_rcs_version r, const bool al)
-    : given_time(ti),
-      adj_time(ti * 100),
-      path(p),
+    : cvs_event(p, ti),
+      given_time(ti),
       mtn_version(v),
       rcs_version(r),
       alive(al)
-    { }
-
-  // symbol constructor
-  cvs_event(const cvs_path p, const time_i ti)
-    : given_time(ti),
-      adj_time(ti * 100),
-      path(p)
     { };
 };
 
@@ -813,8 +816,9 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
   cvs_blob & blob(cvs.blobs[ev->bi]);
   if (blob.get_digest().is_commit())
     {
+      cvs_commit *ce = (cvs_commit*) ev;
       return (F("commit rev %s on file %s")
-                % cvs.rcs_version_interner.lookup(ev->rcs_version)
+                % cvs.rcs_version_interner.lookup(ce->rcs_version)
                 % cvs.path_interner.lookup(ev->path)).str();
     }
   else if (blob.get_digest().is_symbol())
@@ -1370,10 +1374,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
       cvs_rcs_version rv = cvs.rcs_version_interner.intern(curr_version);
 
-      curr_commit =
-          new (cvs.ev_pool.allocate<cvs_event>())
-            cvs_event(cvs.curr_file_interned, commit_time,
-                      mv, rv, alive);
+      curr_commit = (cvs_event*)
+          new (cvs.ev_pool.allocate<cvs_commit>())
+            cvs_commit(cvs.curr_file_interned, commit_time,
+                       mv, rv, alive);
 
       if (!first_commit)
         first_commit = curr_commit;
@@ -1403,7 +1407,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               cvs_event_ptr tag_symbol = (cvs_event_ptr)
                     new (cvs.ev_pool.allocate<cvs_event>())
                       cvs_event(curr_commit->path,
-                                curr_commit->given_time);
+                                commit_time);
 
               tag_symbol->adj_time = curr_commit->adj_time + 1;
               if (alive)
@@ -1428,7 +1432,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               cvs_event_ptr tag_event = (cvs_event_ptr)
                     new (cvs.ev_pool.allocate<cvs_event>())
                       cvs_event(curr_commit->path,
-                                curr_commit->given_time);
+                                commit_time);
 
               tag_event->adj_time = curr_commit->adj_time + 2;
               cvs.add_dependency(tag_event, tag_symbol);
@@ -1496,7 +1500,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           cvs_event_ptr branch_point = (cvs_event_ptr)
                 new (cvs.ev_pool.allocate<cvs_event>())
                    cvs_event(curr_commit->path,
-                             curr_commit->given_time);
+                             commit_time);
           branch_point->adj_time = curr_commit->adj_time + 1;
 
           // Normal branches depend on the current commit. But vendor
@@ -1527,7 +1531,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               cvs_event_ptr branch_start = (cvs_event_ptr)
                     new (cvs.ev_pool.allocate<cvs_event>())
                       cvs_event(curr_commit->path,
-                                curr_commit->given_time);
+                                commit_time);
               branch_start->adj_time = curr_commit->adj_time + 2;
 
               bi = cvs.get_or_create_blob(ET_BRANCH_START, bname);
@@ -1599,7 +1603,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           cvs_event_ptr branch_end_point =
                 new (cvs.ev_pool.allocate<cvs_event>())
                   cvs_event(cvs.curr_file_interned,
-                                 first_commit->given_time + 1);
+                            first_commit->adj_time + 1);
 
           cvs_blob_index bi = cvs.get_or_create_blob(ET_BRANCH_END,
                                                      current_branchname);
@@ -1616,7 +1620,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           cvs_event_ptr branch_end_point =
                 new (cvs.ev_pool.allocate<cvs_event>())
                   cvs_event(cvs.curr_file_interned,
-                            curr_commit->given_time + 1);
+                            curr_commit->adj_time + 1);
 
           cvs_blob_index bi = cvs.get_or_create_blob(ET_BRANCH_END,
                                                      current_branchname);
@@ -2929,10 +2933,11 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
             {
               for (blob_event_iter ii = blob.begin(); ii != blob.end(); ++ii)
                 {
+                  cvs_commit *ce = (cvs_commit*) *ii;
                   L(FL("    path: %s @ %s, time: %d")
-                    % cvs.path_interner.lookup((*ii)->path)
-                    % cvs.rcs_version_interner.lookup((*ii)->rcs_version)
-                    % (*ii)->adj_time);
+                    % cvs.path_interner.lookup(ce->path)
+                    % cvs.rcs_version_interner.lookup(ce->rcs_version)
+                    % ce->adj_time);
                 }
             }
         }
@@ -3575,7 +3580,7 @@ cvs_blob::build_cset(cvs_history & cvs,
     {
       I(cvs.blobs[(*i)->bi].get_digest().is_commit());
 
-      cvs_event_ptr ce = *i;
+      cvs_commit *ce = (cvs_commit*) *i;
 
       file_path pth = file_path_internal(cvs.path_interner.lookup(ce->path));
       file_id new_file_id(cvs.mtn_version_interner.lookup(ce->mtn_version));
@@ -3623,8 +3628,9 @@ cvs_blob::build_cset(cvs_history & cvs,
   sort(begin(), end(), cmp);
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
-      fval += cvs.path_interner.lookup((*i)->path) + "@";
-      fval += cvs.rcs_version_interner.lookup((*i)->rcs_version) + "\n";
+      cvs_commit *ce = (cvs_commit*) *i;
+      fval += cvs.path_interner.lookup(ce->path) + "@";
+      fval += cvs.rcs_version_interner.lookup(ce->rcs_version) + "\n";
     }
 
   attr_key k("mtn:origin_info");
