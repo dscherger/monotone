@@ -83,3 +83,33 @@ try:
   t.commit()
 finally:
   t.rollback()
+
+
+-----------------------------------------
+
+idea for MDS (Monotone Dumb Storage)
+
+cert   ::= id, packet
+fdelta ::= p(id,id), packet
+fdata  ::=  id, packet
+revision ::= id, packet
+merkle_trie(p)::= merkle_trie(with key -> p.first, data -> p.second)
+deltas ::= merkle_trie(fdelta)
+files ::= mmrkle_trie(file)
+revisions ::= merkle_trie(revisions)
+certs ::= merkle_trie(cert)
+
+push:
+   R = calc_ineteresting_revisions(local)   # default yields all revisions
+   diff = difference(R, dest.revisions)
+   P = diff.added
+   items = []
+   for rev in pushed_revisions:
+      ritems = local.revisions.get_items(rev)
+      for ri ritems:
+         if ri is fdata  and ri not in dest.files: items << ri
+         if ri is fdelta and ri not in dest.fdelta: itema << ri
+      items << rev.position
+      CERTS
+      
+   
