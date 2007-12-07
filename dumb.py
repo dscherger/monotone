@@ -231,7 +231,7 @@ class Dumbtone:
             callback = Dumbtone.CounterCallback("pushing packets")
             memory_md.push(target_md, callback)
         finally:
-            callback.close()
+            callback.finish()
         
         print "Pushed %s packets to %s" % (callback.added, target_url)        
     
@@ -248,7 +248,7 @@ class Dumbtone:
             memory_md.pull(source_md, fc)
         finally:
             fc.finish()
-            feeder.close()
+	    feeder.close()
         print "Pulled and imported %s packets from %s" % (fc.added, source_url)            
     
     def do_sync(self, other_url, branch_pattern, **kwargs):                        

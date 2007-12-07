@@ -1,5 +1,13 @@
 Mini-mantis (tm) ;)
 
+  3. Sometimes bad packets are returned by monotone. Examples:
+  
+       error: sqlite error: database is locked
+       
+       error: sqlite error: library routine called out of sequence
+       
+     looks like in sync 'mtn au' and 'mtn read' are racing for db lock.
+     
 RESOLVED
   2. When monotone asks for db migration script goes into infinite loop.
      Seen on pre-0.33 database used with mtn 0.33
