@@ -30,7 +30,7 @@ class Feeder:
     # this is technically broken; we might deadlock.
     # subprocess.Popen.communicate uses threads to do this; that'd be
     # better.
-    def _write(self, data):
+    def _write(self, data):        
         if self.process is None:
             self.process = subprocess.Popen(self.args,
                                             stdin=subprocess.PIPE,
@@ -40,16 +40,20 @@ class Feeder:
         if self.verbosity>1:
             # processing every single call with a new process
             # to give immediate error reporting
-            stdout, stderr = self.process.communicate()
-            print "writing: >>>",data,"<<<\n",stdout,stderr
+            print "writing: >>>\n",data,"\n<<<\n"
+            stdout = self.process.communicate()
+            
             if self.process.returncode:
-                raise MonotoneError, stderr
+                raise MonotoneError, "monotone rejected packets"
             self.process = None
 
     # uncompresses and writes the data 
-    def write(self, data):
+    def write(self, uncdata):
         # first, uncompress data
-        uncdata = zlib.decompress(data)
+        # feeder mustn't care about mtndumb communication details
+        # compression is done at dumb/merkle_dir level
+        # uncdata = zlib.decompress(data)
+        
 
         if self.verbosity > 1:
             # verbose op, splits the chunk in the individual packets,
@@ -117,16 +121,16 @@ class Monotone:
         return self.automate("get_revision", rid)
 
     def get_pubkey_packet(self, keyid):
-        return self.run_monotone(["pubkey", keyid])
+        return check_packet("pubkey", self.run_monotone(["pubkey", keyid]) )
         
     def get_revision_packet(self, rid):
-        return self.automate("packet_for_rdata", rid)
+        return check_packet("rdata", self.automate("packet_for_rdata", rid))
 
     def get_file_packet(self, fid):
-        return self.automate("packet_for_fdata", fid)
+        return check_packet("fdata", self.automate("packet_for_fdata", fid) )
 
     def get_file_delta_packet(self, old_fid, new_fid):
-        return self.automate("packet_for_fdelta", old_fid, new_fid)
+        return check_packet("fdelta", self.automate("packet_for_fdelta", old_fid, new_fid))
 
     def get_cert_packets(self, rid):
         output = self.automate("packets_for_certs", rid)
@@ -135,7 +139,7 @@ class Monotone:
         for line in output.strip().split("\n"):
             curr_packet += line + "\n"
             if line == "[end]":
-                packets.append(curr_packet)
+                packets.append(check_packet("rcert",curr_packet))
                 curr_packet = ""
         assert not curr_packet
         return packets
@@ -332,6 +336,27 @@ def find_stanza_entry(stanza, name):
     
         
 cert_packet_info_re = re.compile(r'^\[rcert ([0-9a-f]+)\r?\n\s+(\S+)\s*\r?\n\s+(.*)\r?\n')
+
+def check_packet(type, data):
+    validate_packet(data, type)
+    return data
+    
+valid_packet_end = re.compile(r'\[end\](\r\n )+$')
+
+def validate_packet(data, type = None): 
+    valid = True
+    if data.startswith("error: "):
+        valid = False
+    if valid_packet_end.match(data):
+        valid = False
+    if valid and type is not None and not data.startswith("[%s " % type):
+        valid = False    
+    if not valid:
+        firstline = data.splitlines()[0]
+        if type is not None:
+            raise MonotoneError("unexpected or bad packet (wanted %s), got: %s" % (type, firstline))
+        else:
+            raise MonotoneError("unknown packet starting with: %s" % firstline)    
 
 def decode_cert_packet_info(cert_packet):
     m = cert_packet_info_re.match(cert_packet)

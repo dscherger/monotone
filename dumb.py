@@ -11,10 +11,12 @@ from sets import Set
 import os
 import sys
 import os.path
+import zlib
+
 from cStringIO import StringIO
 from merkle_dir import MerkleDir, MemoryMerkleDir, LockError
 from fs import readable_fs_for_url, writeable_fs_for_url
-from monotone import Monotone, find_stanza_entry, decode_cert_packet_info
+from monotone import Monotone, MonotoneError, find_stanza_entry, decode_cert_packet_info, validate_packet
 
 #
 # DelegateFunctor
@@ -207,8 +209,13 @@ class Dumbtone:
             self.added = 0
             self.feeder = feeder
         def callback(self, id, data, total):
-            self.added += 1
-            self.feeder.write(data)
+            uncdata = zlib.decompress(data)
+            self.added += 1            
+            try:
+                validate_packet(uncdata)
+            except MonotoneError,e:
+                raise MonotoneError(str(e) + "\npacket %s is broken, you must fix destination repository" % id)
+            self.feeder.write(uncdata)
 
     def __prepare_local_md(self, branch_pattern):
         callback = Dumbtone.PushCallback("finding items to synchronize")
@@ -220,8 +227,11 @@ class Dumbtone:
         memory_md = self.__prepare_local_md(branch_pattern)
         
         target_md = MerkleDir(writeable_fs_for_url(target_url, **kwargs))
-        callback = Dumbtone.CounterCallback("pushing packets")
-        memory_md.push(target_md, callback)
+        try:
+            callback = Dumbtone.CounterCallback("pushing packets")
+            memory_md.push(target_md, callback)
+        finally:
+            callback.close()
         
         print "Pushed %s packets to %s" % (callback.added, target_url)        
     
@@ -230,23 +240,30 @@ class Dumbtone:
         memory_md = self.__prepare_local_md(branch_pattern)
         source_md = MerkleDir(readable_fs_for_url(source_url, **kwargs))
         
-        self.monotone.ensure_db()        
-        feeder = self.monotone.feeder(self.verbosity)
+        self.monotone.ensure_db()
+        try:        
+            feeder = self.monotone.feeder(self.verbosity)
         
-        fc = Dumbtone.FeederCallback(feeder, "pulling packets")
-        memory_md.pull(source_md, fc)
-        feeder.close()
+            fc = Dumbtone.FeederCallback(feeder, "pulling packets")
+            memory_md.pull(source_md, fc)
+        finally:
+            fc.finish()
+            feeder.close()
         print "Pulled and imported %s packets from %s" % (fc.added, source_url)            
     
     def do_sync(self, other_url, branch_pattern, **kwargs):                        
         print "Synchronizing database and %s" % (other_url,)        
         memory_md = self.__prepare_local_md(branch_pattern)
         other_md = MerkleDir(writeable_fs_for_url(other_url, **kwargs))
-        feeder = self.monotone.feeder(self.verbosity)
-        pull_fc = Dumbtone.FeederCallback(feeder, "pulling packets")
-        push_c = Dumbtone.CounterCallback("pushing packets")
-        memory_md.sync(other_md, pull_fc, push_c)
-        feeder.close()
+        try:
+            feeder = self.monotone.feeder(self.verbosity)
+            pull_fc = Dumbtone.FeederCallback(feeder, "pulling packets")
+            push_c = Dumbtone.CounterCallback("pushing packets")
+            memory_md.sync(other_md, pull_fc, push_c)
+        finally:
+            pull_fc.finish()
+            push_c.finish()
+            feeder.close()
         print "Pulled and imported %s packets from %s" % (pull_fc.added, other_url)
         print "Pushed %s packets to %s" % (push_c.added, other_url)
    
