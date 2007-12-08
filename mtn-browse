@@ -75,6 +75,7 @@ use constant DIRECTORY_VIEW  => 0x04;
 use constant DISPLAY_OF_FILE => 0x08;
 use constant FILE            => 0x10;
 use constant REVISION        => 0x20;
+use constant REVISION_LIST   => 0x02;
 
 # Constants used to represent the different state changes. Read this as
 # `what has just been changed' => `what needs to be updated'.
@@ -86,16 +87,23 @@ use constant DIRECTORY_CHANGED       => (DIRECTORY_VIEW | FILE
 					 | DISPLAY_OF_FILE);
 use constant DISPLAY_OF_FILE_CHANGED => 0x00;
 use constant FILE_CHANGED            => (DISPLAY_OF_FILE);
+use constant NEW_FIND                => 0xff;
 use constant REVISION_CHANGED        => (DIRECTORY | DIRECTORY_VIEW | FILE
 					 | DISPLAY_OF_FILE);
 
 # Constants for the columns within the manifest ListStore widget.
 
-use constant RLS_ICON_COLUMN           => 0;
-use constant RLS_NAME_COLUMN           => 1;
-use constant RLS_DATE_COLUMN           => 2;
-use constant RLS_AUTHOR_COLUMN         => 3;
-use constant RLS_MANIFEST_ENTRY_COLUMN => 4;
+use constant MLS_ICON_COLUMN           => 0;
+use constant MLS_NAME_COLUMN           => 1;
+use constant MLS_DATE_COLUMN           => 2;
+use constant MLS_AUTHOR_COLUMN         => 3;
+use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
+
+# Constants for the columns within the details ListStore widget.
+
+use constant DLS_ICON_COLUMN  => 0;
+use constant DLS_NAME_COLUMN  => 1;
+use constant DLS_VALUE_COLUMN => 2;
 
 # Text viewable application mime types.
 
@@ -154,6 +162,10 @@ my @text_mime_types =
 
 my @browsers;
 
+# The advanced find management record.
+
+my $advanced_find;
+
 # The tooltips widget.
 
 my $tooltips;
@@ -162,10 +174,14 @@ my $tooltips;
 
 # Private routines.
 
+sub advanced_find($);
+sub advanced_find_button_clicked_cb($$);
 sub combo_changed_cb($$);
 sub combo_key_release_event_cb($$$);
+sub create_advanced_find_window();
 sub delete_event_cb($$$);
 sub destroy_event_cb($$;$);
+sub directory_up_button_clicked_cb($$);
 sub get_completion($$$$;$);
 sub get_dir_contents($$$);
 sub get_revision_ids($$);
@@ -178,6 +194,7 @@ sub new_browser_instance();
 sub set_label_value($$);
 sub setup_sigchld_handler($);
 sub sigchld_handler();
+sub update_advanced_find_state($$);
 sub update_browser_state($$);
 #
 ##############################################################################
@@ -201,6 +218,7 @@ sub update_browser_state($$);
     Monotone::AutomateStdio->register_error_handler("both",
 						    \&mtn_error_handler);
     setup_sigchld_handler(\&sigchld_handler);
+    $tooltips = Gtk2::Tooltips->new();
     push(@browsers, new_browser_instance());
 
     # Hand control over to Gtk2.
@@ -235,8 +253,7 @@ sub update_browser_state($$);
 sub new_browser_instance()
 {
 
-    my(@branch_list,
-       $browser,
+    my($browser,
        $font,
        $renderer,
        $tv_column,
@@ -244,7 +261,9 @@ sub new_browser_instance()
 
     $browser = {};
     $browser->{mtn} = Monotone::AutomateStdio->new();
-    $browser->{glade} = Gtk2::GladeXML->new("../mtn-browse.glade");
+    # $browser->{glade} = Gtk2::GladeXML->new("../mtn-browse.glade");
+    $browser->{glade} =
+	Gtk2::GladeXML->new("../mtn-browse.glade", "main_window");
 
     # Flag to stop recursive calling of callbacks.
 
@@ -264,14 +283,14 @@ sub new_browser_instance()
 	 },
 	 $browser);
 
-    # Initialise tooltips.
+    # Link in the update handler for the browser.
 
-    $tooltips = Gtk2::Tooltips->new();
+    $browser->{update_handler} = \&update_browser_state;
 
     # Get the widgets that we are interested in.
 
-    $browser->{main_window} = $browser->{glade}->get_widget("main_window");
-    $browser->{main_appbar} = $browser->{glade}->get_widget("main_appbar");
+    $browser->{window} = $browser->{glade}->get_widget("main_window");
+    $browser->{appbar} = $browser->{glade}->get_widget("appbar");
     $browser->{branch_combo} =
 	$browser->{glade}->get_widget("branch_comboboxentry");
     $browser->{revision_combo} =
@@ -337,8 +356,8 @@ sub new_browser_instance()
 
     # Move the pane separator to a sensible position.
 
-    $div = $browser->{glade}->get_widget("browser_hpaned");
-    $div->set_position(300);
+    # $div = $browser->{glade}->get_widget("browser_hpaned");
+    # $div->set_position(300);
 
     # Setup the comboboxes.
 
@@ -354,7 +373,7 @@ sub new_browser_instance()
     $browser->{revision_combo}->set_text_column(0);
     $browser->{revision_combo}->set_wrap_width(2);
 
-    # Setup the tree view file browser.
+    # Setup the tree view manifest file browser.
 
     $browser->{manifest_liststore} = Gtk2::ListStore->new("Glib::String",
 							  "Glib::String",
@@ -367,10 +386,10 @@ sub new_browser_instance()
     $tv_column->set_resizable(FALSE);
     $tv_column->set_sizing("fixed");
     $tv_column->set_fixed_width(25);
-    $tv_column->set_sort_column_id(RLS_ICON_COLUMN);
+    $tv_column->set_sort_column_id(MLS_ICON_COLUMN);
     $renderer = Gtk2::CellRendererPixbuf->new();
     $tv_column->pack_start($renderer, TRUE);
-    $tv_column->set_attributes($renderer, "stock-id" => RLS_ICON_COLUMN);
+    $tv_column->set_attributes($renderer, "stock-id" => MLS_ICON_COLUMN);
     $browser->{manifest_treeview}->append_column($tv_column);
 
     $tv_column = Gtk2::TreeViewColumn->new();
@@ -378,35 +397,35 @@ sub new_browser_instance()
     $tv_column->set_resizable(TRUE);
     $tv_column->set_sizing("fixed");
     $tv_column->set_fixed_width(180);
-    $tv_column->set_sort_column_id(RLS_NAME_COLUMN);
+    $tv_column->set_sort_column_id(MLS_NAME_COLUMN);
     $renderer = Gtk2::CellRendererText->new();
     $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => RLS_NAME_COLUMN);
+    $tv_column->set_attributes($renderer, "text" => MLS_NAME_COLUMN);
     $browser->{manifest_treeview}->append_column($tv_column);
 
     $tv_column = Gtk2::TreeViewColumn->new();
     $tv_column->set_title("Last Update");
     $tv_column->set_resizable(TRUE);
     $tv_column->set_sizing("grow-only");
-    $tv_column->set_sort_column_id(RLS_DATE_COLUMN);
+    $tv_column->set_sort_column_id(MLS_DATE_COLUMN);
     $renderer = Gtk2::CellRendererText->new();
     $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => RLS_DATE_COLUMN);
+    $tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
     $browser->{manifest_treeview}->append_column($tv_column);
 
     $tv_column = Gtk2::TreeViewColumn->new();
     $tv_column->set_title("Author");
     $tv_column->set_resizable(TRUE);
     $tv_column->set_sizing("grow-only");
-    $tv_column->set_sort_column_id(RLS_AUTHOR_COLUMN);
+    $tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
     $renderer = Gtk2::CellRendererText->new();
     $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => RLS_AUTHOR_COLUMN);
+    $tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
     $browser->{manifest_treeview}->append_column($tv_column);
 
-    $browser->{manifest_treeview}->set_search_column(RLS_NAME_COLUMN);
+    $browser->{manifest_treeview}->set_search_column(MLS_NAME_COLUMN);
 
-    # $tv_column = $browser->{manifest_treeview}->get_column(RLS_DATE_COLUMN);
+    # $tv_column = $browser->{manifest_treeview}->get_column(MLS_DATE_COLUMN);
     # $browser->{manifest_treeview}->remove_column($tv_column);
 
     # Setup the file file viewer (with syntax highlighting).
@@ -426,9 +445,9 @@ sub new_browser_instance()
 	add($browser->{file_view_sv});
     $browser->{file_view_sv}->show_all();
 
-    # Update the browser'a internal state.
+    # Update the browser's internal state.
 
-    update_browser_state($browser, DATABASE_CHANGED);
+    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
 
     return $browser;
 
@@ -442,9 +461,9 @@ sub new_browser_instance()
 #                  a ComboBoxEntry by selecting an entry from its pulldown
 #                  list.
 #
-#   Data         - $widget  : The widget object that received the signal.
-#                  $browser : The browser instance that is associated with
-#                             this widget.
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
 #
 ##############################################################################
 
@@ -453,30 +472,30 @@ sub new_browser_instance()
 sub combo_changed_cb($$)
 {
 
-    my($widget, $browser) = @_;
+    my($widget, $instance) = @_;
 
     my ($change_state,
 	$combo_details,
 	$item,
 	$value);
 
-    return if ($browser->{in_cb});
-    local $browser->{in_cb} = 1;
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
 
-    if ($widget == $browser->{branch_combo})
+    if ($widget == $instance->{branch_combo})
     {
 	$change_state = BRANCH_CHANGED;
-	$combo_details = $browser->{branch_combo_details};
+	$combo_details = $instance->{branch_combo_details};
     }
-    elsif ($widget == $browser->{revision_combo})
+    elsif ($widget == $instance->{revision_combo})
     {
 	$change_state = REVISION_CHANGED;
-	$combo_details = $browser->{revision_combo_details};
+	$combo_details = $instance->{revision_combo_details};
     }
-    elsif ($widget == $browser->{directory_combo})
+    elsif ($widget == $instance->{directory_combo})
     {
 	$change_state = DIRECTORY_CHANGED;
-	$combo_details = $browser->{directory_combo_details};
+	$combo_details = $instance->{directory_combo_details};
     }
     else
     {
@@ -497,8 +516,8 @@ sub combo_changed_cb($$)
 	{
 	    $combo_details->{value} = $value;
 	    $combo_details->{completed} = 1;
-	    $browser->{main_appbar}->clear_stack();
-	    update_browser_state($browser, $change_state);
+	    $instance->{appbar}->clear_stack();
+	    &{$instance->{update_handler}}($instance, $change_state);
 	    last;
 	}
     }
@@ -516,7 +535,7 @@ sub combo_changed_cb($$)
 #   Data         - $widget      : The widget object that received the signal.
 #                  $event       : A Gtk2::Gdk::Event object describing the
 #                                 event that has occurred.
-#                  $browser     : The browser instance that is associated with
+#                  $instance    : The window instance that is associated with
 #                                 this widget.
 #                  Return Value : TRUE if the event has been handled and needs
 #                                 no further handling, otherwise false if the
@@ -530,7 +549,7 @@ sub combo_changed_cb($$)
 sub combo_key_release_event_cb($$$)
 {
 
-    my($widget, $event, $browser) = @_;
+    my($widget, $event, $instance) = @_;
 
     my ($change_state,
 	$combo,
@@ -544,28 +563,28 @@ sub combo_key_release_event_cb($$$)
 	$old_value,
 	$value);
 
-    return FALSE if ($browser->{in_cb});
-    local $browser->{in_cb} = 1;
+    return FALSE if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
 
-    if ($widget == $browser->{branch_combo}->child())
+    if ($widget == $instance->{branch_combo}->child())
     {
-	$combo = $browser->{branch_combo};
+	$combo = $instance->{branch_combo};
 	$change_state = BRANCH_CHANGED;
-	$combo_details = $browser->{branch_combo_details};
+	$combo_details = $instance->{branch_combo_details};
 	$name = "branch";
     }
-    elsif ($widget == $browser->{revision_combo}->child())
+    elsif ($widget == $instance->{revision_combo}->child())
     {
-	$combo = $browser->{revision_combo};
+	$combo = $instance->{revision_combo};
 	$change_state = REVISION_CHANGED;
-	$combo_details = $browser->{revision_combo_details};
+	$combo_details = $instance->{revision_combo_details};
 	$name = "revision";
     }
-    elsif ($widget == $browser->{directory_combo}->child())
+    elsif ($widget == $instance->{directory_combo}->child())
     {
-	$combo = $browser->{directory_combo};
+	$combo = $instance->{directory_combo};
 	$change_state = DIRECTORY_CHANGED;
-	$combo_details = $browser->{directory_combo_details};
+	$combo_details = $instance->{directory_combo_details};
 	$name = "directory";
     }
     else
@@ -601,11 +620,11 @@ sub combo_key_release_event_cb($$$)
 			       \$completed,
 			       $combo_details->{completion_cache}))
 	    {
-		$browser->{main_appbar}->clear_stack();
+		$instance->{appbar}->clear_stack();
 	    }
 	    else
 	    {
-		$browser->{main_appbar}->
+		$instance->{appbar}->
 		    push("Invalid " . $name . " name`" . $value . "'");
 	    }
 	    $value = $completion;
@@ -630,7 +649,7 @@ sub combo_key_release_event_cb($$$)
 
 	# Update the browser state on a significant change.
 
-	update_browser_state($browser, $change_state)
+	&{$instance->{update_handler}}($instance, $change_state)
 	    if ($combo_details->{completed} != $old_completed
 		|| $combo_details->{value} ne $old_value);
 
@@ -648,9 +667,9 @@ sub combo_key_release_event_cb($$$)
 #                  the tagged_checkbutton.
 #                  list.
 #
-#   Data         - $widget  : The widget object that received the signal.
-#                  $browser : The browser instance that is associated with
-#                             this widget.
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
 #
 ##############################################################################
 
@@ -659,13 +678,43 @@ sub combo_key_release_event_cb($$$)
 sub tagged_checkbutton_toggled_cb($$)
 {
 
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    $instance->{appbar}->clear_stack();
+    &{$instance->{update_handler}}($instance, BRANCH_CHANGED);
+
+}
+#
+##############################################################################
+#
+#   Routine      - advanced_find_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the up
+#                  directory button.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub advanced_find_button_clicked_cb($$)
+{
+
     my($widget, $browser) = @_;
+
+    my($len,
+       $value);
 
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    $browser->{main_appbar}->clear_stack();
-    update_browser_state($browser, BRANCH_CHANGED);
+    advanced_find($browser);
 
 }
 #
@@ -684,7 +733,7 @@ sub tagged_checkbutton_toggled_cb($$)
 
 
 
-sub directory_up_button_clicked_cb
+sub directory_up_button_clicked_cb($$)
 {
 
     my($widget, $browser) = @_;
@@ -730,8 +779,8 @@ sub directory_up_button_clicked_cb
 	    $browser->{directory_combo_details}->{last_typed_len} = $len;
 	}
 	$browser->{directory_combo}->child()->set_text($value);
-	$browser->{main_appbar}->clear_stack();
-	update_browser_state($browser, DIRECTORY_CHANGED);
+	$browser->{appbar}->clear_stack();
+	&{$browser->{update_handler}}($browser, DIRECTORY_CHANGED);
     }
 
 }
@@ -740,13 +789,12 @@ sub directory_up_button_clicked_cb
 #
 #   Routine      - manifest_treeview_cursor_changed_cb
 #
-#   Description  - Callback routine called when the user changes the value of
-#                  a ComboBoxEntry by entering a character (key release
-#                  event).
+#   Description  - Callback routine called when the user selects an entry in
+#                  the manifest treeview.
 #
-#   Data         - $widget      : The widget object that received the signal.
-#                  $browser     : The browser instance that is associated with
-#                                 this widget.
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
 #
 ##############################################################################
 
@@ -757,21 +805,50 @@ sub manifest_treeview_cursor_changed_cb($$)
 
     my($widget, $browser) = @_;
 
+    my($manifest_entry,
+       $short_name);
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    # Get the manifest entry details for the item that was selected.
+
+    $widget->get_selection()->selected_foreach
+	(sub
+	 {
+	     my($model, $path, $iter) = @_;
+	     $short_name = $model->get($iter, MLS_NAME_COLUMN);
+	     $manifest_entry = $model->get($iter, MLS_MANIFEST_ENTRY_COLUMN);
+	 });
+
+    # If the item is a file then display its contents, otherwise if it is a
+    # directory then just ignore it.
+
+    if ($manifest_entry->{type} eq "file")
+    {
+	$browser->{file_being_viewed} = {short_name     => $short_name,
+					 manifest_entry => $manifest_entry};
+	$browser->{appbar}->clear_stack();
+	&{$browser->{update_handler}}($browser, FILE_CHANGED);
+    }
+
 }
 #
 ##############################################################################
 #
 #   Routine      - manifest_treeview_row_activated_cb
 #
-#   Description  - Callback routine called when the user changes the value of
-#                  a ComboBoxEntry by entering a character (key release
-#                  event).
+#   Description  - Callback routine called when the user double clicks on an
+#                  entry in the manifest treeview.
 #
-#   Data         - $widget      : The widget object that received the signal.
-#                  $event       : A Gtk2::Gdk::Event object describing the
-#                                 event that has occurred.
-#                  $browser     : The browser instance that is associated with
-#                                 this widget.
+#   Data         - $widget           : The widget object that received the
+#                                      signal.
+#                  $tree_path        : A Gtk2::TreePath object for the
+#                                      selected item.
+#                  $tree_view_column : A Gtk2::TreeViewColumn object for the
+#                                      selected item.
+#                  $browser          : The browser instance that is associated
+#                                      with this widget.
 #
 ##############################################################################
 
@@ -782,8 +859,7 @@ sub manifest_treeview_row_activated_cb($$$$)
 
     my($widget, $tree_path, $tree_view_column, $browser) = @_;
 
-    my(@list,
-       $manifest_entry,
+    my($manifest_entry,
        $short_name);
 
     return if ($browser->{in_cb});
@@ -795,12 +871,12 @@ sub manifest_treeview_row_activated_cb($$$$)
 	(sub
 	 {
 	     my($model, $path, $iter) = @_;
-	     $short_name = $model->get($iter, RLS_NAME_COLUMN);
-	     $manifest_entry = $model->get($iter, RLS_MANIFEST_ENTRY_COLUMN);
+	     $short_name = $model->get($iter, MLS_NAME_COLUMN);
+	     $manifest_entry = $model->get($iter, MLS_MANIFEST_ENTRY_COLUMN);
 	 });
 
-    # If the item is a directory then change to it, if it is a file then
-    # display its contents.
+    # If the item is a directory then change to it, otherwise if it is a file
+    # then just ignore it.
 
     if ($manifest_entry->{type} eq "directory")
     {
@@ -808,15 +884,8 @@ sub manifest_treeview_row_activated_cb($$$$)
 	$browser->{directory_combo_details}->{completed} = 1;
 	$browser->{directory_combo}->child()->
 	    set_text($manifest_entry->{name});
-	$browser->{main_appbar}->clear_stack();
-	update_browser_state($browser, DIRECTORY_CHANGED);
-    }
-    else
-    {
-	$browser->{file_being_viewed} = {short_name     => $short_name,
-					 manifest_entry => $manifest_entry};
-	$browser->{main_appbar}->clear_stack();
-	update_browser_state($browser, FILE_CHANGED);
+	$browser->{appbar}->clear_stack();
+	&{$browser->{update_handler}}($browser, DIRECTORY_CHANGED);
     }
 
 }
@@ -886,6 +955,237 @@ sub destroy_event_cb($$;$)
 #
 ##############################################################################
 #
+#   Routine      - advanced_find
+#
+#   Description  - This routine, if necessary, contructs  the advanced find
+#                  dialog window and then gets the user to select the revision
+#                  they want.
+#
+#   Data         - $browser     : The browser instance that started the
+#                                 advanced find.
+#                  Return Value : A reference to the newly created browser
+#                                 instance record.
+#
+##############################################################################
+
+
+
+sub advanced_find($)
+{
+
+    my($browser) = @_;
+
+    $advanced_find = create_advanced_find_window()
+	unless (defined($advanced_find));
+
+    $advanced_find->{mtn} = $browser->{mtn};
+
+    # Update the window's internal state.
+
+    {
+	local $advanced_find->{in_cb} = 1;
+	$advanced_find->{branch_combo_details}->{preset} = 1;
+	$advanced_find->{branch_combo_details}->{completed} =
+	    $browser->{branch_combo_details}->{completed};
+	$advanced_find->{branch_combo_details}->{value} =
+	    $browser->{branch_combo_details}->{value};
+	$advanced_find->{revision_combo_details}->{preset} = 1;
+	$advanced_find->{revision_combo_details}->{completed} =
+	    $browser->{revision_combo_details}->{completed};
+	$advanced_find->{revision_combo_details}->{value} =
+	    $browser->{revision_combo_details}->{value};
+	$advanced_find->{tagged_tick}->
+	    set_active($browser->{tagged_tick}->get_active());
+	$advanced_find->{window}->set_transient_for($browser->{window});
+	$advanced_find->{simple_query_radiobutton}->set_active(TRUE);
+	$advanced_find->{simple_frame}->set_sensitive(TRUE);
+	$advanced_find->{advanced_frame}->set_sensitive(FALSE);
+	$advanced_find->{ok_button}->set_sensitive(FALSE);
+	$advanced_find->{window}->show();
+	&{$advanced_find->{update_handler}}($advanced_find, NEW_FIND);
+    }
+
+    # Handle all events until the dialog is dismissed.
+
+    $advanced_find->{done} = 0;
+    while (! $advanced_find->{done})
+    {
+	Gtk2->main_iteration();
+    }
+
+    # Deal with the result.
+
+    $advanced_find->{window}->hide();
+
+}
+#
+##############################################################################
+#
+#   Routine      - create_advanced_find_window
+#
+#   Description  - This routine simply creates an advanced find dialog window.
+#
+#   Data         - Return Value : A reference to the newly created advanced
+#                                 find instance record.
+#
+##############################################################################
+
+
+
+sub create_advanced_find_window()
+{
+
+    my(@branch_list,
+       $instance,
+       $renderer,
+       $tv_column);
+
+    $instance = {};
+    $instance->{glade} =
+	Gtk2::GladeXML->new("../mtn-browse.glade", "advanced_find_window");
+
+    # Flag to stop recursive calling of callbacks.
+
+    $instance->{in_cb} = 0;
+
+    # Connect Glade registered signal handlers.
+
+    $instance->{glade}->signal_autoconnect
+	(sub
+	 {
+	     my($callback_name, $widget, $signal_name, $signal_data,
+		$connect_object, $after, $user_data) = @_;
+	     my $func = $after ? "signal_connect_after" : "signal_connect";
+	     $widget->$func($signal_name,
+			    $callback_name,
+			    $connect_object ? $connect_object : $user_data);
+	 },
+	 $instance);
+
+    # Link in the update handler for the browser.
+
+    $instance->{update_handler} = \&update_advanced_find_state;
+
+    # Get the widgets that we are interested in.
+
+    $instance->{window} =
+	$instance->{glade}->get_widget("advanced_find_window");
+    $instance->{appbar} = $instance->{glade}->get_widget("appbar");
+    $instance->{simple_query_radiobutton} =
+	$instance->{glade}->get_widget("simple_query_radiobutton");
+    $instance->{simple_frame} = $instance->{glade}->get_widget("simple_frame");
+    $instance->{advanced_frame} =
+	$instance->{glade}->get_widget("advanced_frame");
+    $instance->{branch_combo} =
+	$instance->{glade}->get_widget("branch_comboboxentry");
+    $instance->{revision_combo} =
+	$instance->{glade}->get_widget("revision_comboboxentry");
+    $instance->{tagged_tick} =
+	$instance->{glade}->get_widget("tagged_checkbutton");
+    $instance->{term_combo} = $instance->{glade}->get_widget("term_combobox");
+    $instance->{date_dateedit} =
+	$instance->{glade}->get_widget("date_dateedit");
+    $instance->{revisions_treeview} =
+	$instance->{glade}->get_widget("revisions_treeview");
+    $instance->{details_treeview} =
+	$instance->{glade}->get_widget("details_treeview");
+    $instance->{details_scrolledwindow} =
+	$instance->{glade}->get_widget("details_scrolledwindow");
+    $instance->{selected_branch_label} =
+	$instance->{glade}->get_widget("selected_branch_value_label");
+    $instance->{selected_revision_label} =
+	$instance->{glade}->get_widget("selected_revision_value_label");
+    $instance->{ok_button} = $instance->{glade}->get_widget("ok_button");
+
+    # Setup the advanced find window deletion handlers.
+
+    $instance->{window}->signal_connect
+	("delete_event", sub { $_[2]->{done} = 1; return TRUE; }, $instance);
+    $instance->{glade}->get_widget("cancel_button")->signal_connect
+	("clicked", sub { $_[1]->{done} = 1; }, $instance);
+
+    # Setup the comboboxentry key release signal handlers.
+
+    $instance->{branch_combo}->child()->
+	signal_connect("key_release_event",
+		       \&combo_key_release_event_cb,
+		       $instance);
+    $instance->{revision_combo}->child()->
+	signal_connect("key_release_event",
+		       \&combo_key_release_event_cb,
+		       $instance);
+
+    # Setup the comboboxes.
+
+    $instance->{branch_combo}->set_model(Gtk2::ListStore->new("Glib::String"));
+    $instance->{branch_combo}->set_text_column(0);
+    $instance->{branch_combo}->set_wrap_width(2);
+    $instance->{revision_combo}->
+	set_model(Gtk2::ListStore->new("Glib::String"));
+    $instance->{revision_combo}->set_text_column(0);
+    $instance->{revision_combo}->set_wrap_width(2);
+    $instance->{term_combo}->set_active(0);
+
+    # Setup the revisions list browser.
+
+    $instance->{revisions_liststore} = Gtk2::ListStore->new("Glib::String");
+    $instance->{revisions_treeview}->
+	set_model($instance->{revisions_liststore});
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_resizable(TRUE);
+    $tv_column->set_sizing("grow-only");
+    $tv_column->set_sort_column_id(0);
+    $renderer = Gtk2::CellRendererText->new();
+    $tv_column->pack_start($renderer, FALSE);
+    $tv_column->set_attributes($renderer, "text" => 0);
+    $instance->{revisions_treeview}->append_column($tv_column);
+    $instance->{revisions_treeview}->set_search_column(0);
+
+    # Setup the revision details viewer.
+
+    $instance->{details_liststore} = Gtk2::ListStore->new("Glib::String",
+							   "Glib::String",
+							   "Glib::String");
+    $instance->{details_treeview}->set_model($instance->{details_liststore});
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_resizable(FALSE);
+    $tv_column->set_sizing("fixed");
+    $tv_column->set_fixed_width(30);
+    $tv_column->set_sort_column_id(DLS_ICON_COLUMN);
+    $renderer = Gtk2::CellRendererPixbuf->new();
+    $tv_column->pack_start($renderer, TRUE);
+    $tv_column->set_attributes($renderer, "stock-id" => DLS_ICON_COLUMN);
+    $instance->{details_treeview}->append_column($tv_column);
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_title("Cert Name");
+    $tv_column->set_resizable(TRUE);
+    $tv_column->set_sizing("grow-only");
+    $tv_column->set_sort_column_id(DLS_NAME_COLUMN);
+    $renderer = Gtk2::CellRendererText->new();
+    $tv_column->pack_start($renderer, FALSE);
+    $tv_column->set_attributes($renderer, "text" => DLS_NAME_COLUMN);
+    $instance->{details_treeview}->append_column($tv_column);
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_title("Value");
+    $tv_column->set_resizable(TRUE);
+    $tv_column->set_sizing("grow-only");
+    $tv_column->set_sort_column_id(DLS_VALUE_COLUMN);
+    $renderer = Gtk2::CellRendererText->new();
+    $tv_column->pack_start($renderer, FALSE);
+    $tv_column->set_attributes($renderer, "text" => DLS_VALUE_COLUMN);
+    $instance->{details_treeview}->append_column($tv_column);
+
+    $instance->{details_treeview}->set_search_column(DLS_VALUE_COLUMN);
+
+    return $instance;
+
+}
+#
+##############################################################################
+#
 #   Routine      - update_browser_state
 #
 #   Description  - Given a value and a list, work out the largest unique
@@ -905,7 +1205,7 @@ sub update_browser_state($$)
     my($browser, $changed) = @_;
 
     make_busy($browser, 1);
-    $browser->{main_appbar}->push("");
+    $browser->{appbar}->push("");
     gtk2_update();
 
     # The list of available branches has changed.
@@ -924,27 +1224,27 @@ sub update_browser_state($$)
 
 	# Get the new list of branches.
 
-	$browser->{main_appbar}->set_status("Fetching branch list");
+	$browser->{appbar}->set_status("Fetching branch list");
 	gtk2_update();
 	$browser->{mtn}->branches(\@branch_list) if (defined($browser->{mtn}));
 	$browser->{branch_combo_details}->{list} = \@branch_list;
 
 	# Update the branch list combobox.
 
-	$browser->{main_appbar}->set_status("Populating branch list");
+	$browser->{appbar}->set_status("Populating branch list");
 	gtk2_update();
 	my $counter = 1;
 	$browser->{branch_combo}->get_model()->clear();
 	foreach my $branch (@branch_list)
 	{
 	    $browser->{branch_combo}->append_text($branch);
-	    $browser->{main_appbar}->set_progress_percentage
+	    $browser->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@branch_list));
 	    gtk2_update();
 	}
 	$browser->{branch_combo}->child()->set_text("");
-	$browser->{main_appbar}->set_progress_percentage(0);
-	$browser->{main_appbar}->set_status("");
+	$browser->{appbar}->set_progress_percentage(0);
+	$browser->{appbar}->set_status("");
 	gtk2_update();
 
     }
@@ -966,7 +1266,7 @@ sub update_browser_state($$)
 
 	if ($browser->{branch_combo_details}->{completed})
 	{
-	    $browser->{main_appbar}->set_status("Fetching revision list");
+	    $browser->{appbar}->set_status("Fetching revision list");
 	    gtk2_update();
 
 	    # Get either a list of tags or revision ids depending upon what the
@@ -978,7 +1278,7 @@ sub update_browser_state($$)
 		   @list);
 		$browser->{mtn}->
 		    tags(\@list, $browser->{branch_combo_details}->{value});
-		$browser->{main_appbar}->set_progress_percentage(0.5);
+		$browser->{appbar}->set_progress_percentage(0.5);
 		gtk2_update();
 		foreach my $item (@list)
 		{
@@ -994,36 +1294,36 @@ sub update_browser_state($$)
 		$browser->{mtn}->
 		    select(\@revision_list,
 			   "b:" . $browser->{branch_combo_details}->{value});
-		$browser->{main_appbar}->set_progress_percentage(0.33);
+		$browser->{appbar}->set_progress_percentage(0.33);
 		gtk2_update();
 		$browser->{mtn}->toposort(\@revision_list, @revision_list);
-		$browser->{main_appbar}->set_progress_percentage(0.66);
+		$browser->{appbar}->set_progress_percentage(0.66);
 		gtk2_update();
 		splice(@revision_list, 0, scalar(@revision_list) - 100);
 		@revision_list = reverse(@revision_list);
 	    }
-	    $browser->{main_appbar}->set_progress_percentage(1);
+	    $browser->{appbar}->set_progress_percentage(1);
 	    gtk2_update();
 	}
 	$browser->{revision_combo_details}->{list} = \@revision_list;
 
 	# Update the revision list combobox.
 
-	$browser->{main_appbar}->set_progress_percentage(0);
-	$browser->{main_appbar}->set_status("Populating revision list");
+	$browser->{appbar}->set_progress_percentage(0);
+	$browser->{appbar}->set_status("Populating revision list");
 	gtk2_update();
 	my $counter = 1;
 	$browser->{revision_combo}->get_model()->clear();
 	foreach my $revision (@revision_list)
 	{
 	    $browser->{revision_combo}->append_text($revision);
-	    $browser->{main_appbar}->set_progress_percentage
+	    $browser->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@revision_list));
 	    gtk2_update();
 	}
 	$browser->{revision_combo}->child()->set_text("");
-	$browser->{main_appbar}->set_progress_percentage(0);
-	$browser->{main_appbar}->set_status("");
+	$browser->{appbar}->set_progress_percentage(0);
+	$browser->{appbar}->set_status("");
 	gtk2_update();
 
     }
@@ -1052,7 +1352,7 @@ sub update_browser_state($$)
 
 	# Get the new manifest.
 
-	$browser->{main_appbar}->set_status("Fetching manifest");
+	$browser->{appbar}->set_status("Fetching manifest");
 	gtk2_update();
 	if ($browser->{revision_combo_details}->{completed})
 	{
@@ -1073,11 +1373,7 @@ sub update_browser_state($$)
 		    $message .= "\n" . Glib::Markup::escape_text($item);
 		}
 		my $dialog = Gtk2::MessageDialog->new_with_markup
-		    ($browser->{main_window},
-		     ["modal"],
-		     "info",
-		     "close",
-		     $message);
+		    ($browser->{window}, ["modal"], "info", "close", $message);
 		$dialog->run();
 		$dialog->destroy();
 		$browser->{revision_combo_details}->{completed} = 0;
@@ -1110,7 +1406,7 @@ sub update_browser_state($$)
 
 	# Generate a simple list of directories for auto completion.
 
-	$browser->{main_appbar}->set_progress_percentage(0.5);
+	$browser->{appbar}->set_progress_percentage(0.5);
 	gtk2_update();
 	foreach my $item (@manifest_list)
 	{
@@ -1118,26 +1414,26 @@ sub update_browser_state($$)
 		if ($item->{type} eq "directory");
 	}
 	$browser->{directory_combo_details}->{list} = \@directory_list;
-	$browser->{main_appbar}->set_progress_percentage(1);
+	$browser->{appbar}->set_progress_percentage(1);
 	gtk2_update();
 
 	# Update the directory list combobox.
 
-	$browser->{main_appbar}->set_progress_percentage(0);
-	$browser->{main_appbar}->set_status("Populating directory list");
+	$browser->{appbar}->set_progress_percentage(0);
+	$browser->{appbar}->set_status("Populating directory list");
 	gtk2_update();
 	my $counter = 1;
 	$browser->{directory_combo}->get_model()->clear();
 	foreach my $item (@directory_list)
 	{
 	    $browser->{directory_combo}->append_text($item);
-	    $browser->{main_appbar}->set_progress_percentage
+	    $browser->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@directory_list));
 	    gtk2_update();
 	}
 	$browser->{directory_combo}->child()->set_text("");
-	$browser->{main_appbar}->set_progress_percentage(0);
-	$browser->{main_appbar}->set_status("");
+	$browser->{appbar}->set_progress_percentage(0);
+	$browser->{appbar}->set_status("");
 	foreach my $widget (@{$browser->{revision_sensitive_group}})
 	{
 	    $widget->
@@ -1184,7 +1480,7 @@ sub update_browser_state($$)
 
 	# Update the directory tree view.
 
-	$browser->{main_appbar}->set_status("Populating file details");
+	$browser->{appbar}->set_status("Populating file details");
 	$counter = 1;
 	$taking_our_time = 0;
 	get_revision_ids($browser, \@revision_ids);
@@ -1241,17 +1537,17 @@ sub update_browser_state($$)
 
 	    $browser->{manifest_liststore}->
 		set($browser->{manifest_liststore}->append(),
-		    RLS_ICON_COLUMN,
+		    MLS_ICON_COLUMN,
 		        ($item->{manifest_entry}->{type} eq "directory")
 		        ? "gtk-open" : "gtk-file",
-		    RLS_NAME_COLUMN, $item->{name},
-		    RLS_DATE_COLUMN, $last_update,
-		    RLS_AUTHOR_COLUMN, $author,
-		    RLS_MANIFEST_ENTRY_COLUMN, $item->{manifest_entry});
+		    MLS_NAME_COLUMN, $item->{name},
+		    MLS_DATE_COLUMN, $last_update,
+		    MLS_AUTHOR_COLUMN, $author,
+		    MLS_MANIFEST_ENTRY_COLUMN, $item->{manifest_entry});
 
 	    if ($taking_our_time)
 	    {
-		$browser->{main_appbar}->set_progress_percentage
+		$browser->{appbar}->set_progress_percentage
 		    ($counter / scalar(@directory_entry_list));
 		gtk2_update();
 	    }
@@ -1262,8 +1558,8 @@ sub update_browser_state($$)
 	$browser->{manifest_treeview}->scroll_to_point(0, 0)
 	    if ($browser->{manifest_treeview}->realized());
 
-	$browser->{main_appbar}->set_progress_percentage(0);
-	$browser->{main_appbar}->set_status("");
+	$browser->{appbar}->set_progress_percentage(0);
+	$browser->{appbar}->set_status("");
 	gtk2_update();
 
     }
@@ -1466,8 +1762,531 @@ sub update_browser_state($$)
     {
     }
 
-    $browser->{main_appbar}->pop();
+    $browser->{appbar}->pop();
     make_busy($browser, 0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - update_advanced_find_state
+#
+#   Description  - Given a value and a list, work out the largest unique
+#                  match. Used for auto completion.
+#
+#   Data         - $advanced_find : The advanced find dialog window instance
+#                                   that is to have its state updated.
+#                  $changed       : What the user has changed.
+#
+##############################################################################
+
+
+
+sub update_advanced_find_state($$)
+{
+
+    my($advanced_find, $changed) = @_;
+
+    make_busy($advanced_find, 1);
+    $advanced_find->{appbar}->push("");
+    gtk2_update();
+
+    # The list of available branches has changed.
+
+    if ($changed & BRANCH)
+    {
+
+	my @branch_list;
+
+	# Reset the branch selection.
+
+	$advanced_find->{branch_combo_details}->{completion_cache} = {};
+	if (! $advanced_find->{branch_combo_details}->{preset})
+	{
+	    $advanced_find->{branch_combo_details}->{completed} = 0;
+	    $advanced_find->{branch_combo_details}->{value} = "";
+	}
+	$advanced_find->{branch_combo_details}->{preset} = 0;
+
+	# Get the new list of branches.
+
+	$advanced_find->{appbar}->set_status("Fetching branch list");
+	gtk2_update();
+	$advanced_find->{mtn}->branches(\@branch_list)
+	    if (defined($advanced_find->{mtn}));
+	$advanced_find->{branch_combo_details}->{list} = \@branch_list;
+
+	# Update the branch list combobox.
+
+	$advanced_find->{appbar}->set_status("Populating branch list");
+	gtk2_update();
+	my $counter = 1;
+	$advanced_find->{branch_combo}->get_model()->clear();
+	foreach my $branch (@branch_list)
+	{
+	    $advanced_find->{branch_combo}->append_text($branch);
+	    $advanced_find->{appbar}->set_progress_percentage
+		($counter ++ / scalar(@branch_list));
+	    gtk2_update();
+	}
+	$advanced_find->{branch_combo}->child()->
+	    set_text($advanced_find->{branch_combo_details}->{value});
+	$advanced_find->{appbar}->set_progress_percentage(0);
+	$advanced_find->{appbar}->set_status("");
+	gtk2_update();
+
+    }
+
+    # The list of available revisions has changed.
+
+    if ($changed & REVISION)
+    {
+
+	my @revision_list;
+
+	# Reset the revision selection.
+
+	$advanced_find->{revision_combo_details}->{completion_cache} = {};
+	if (! $advanced_find->{revision_combo_details}->{preset})
+	{
+	    $advanced_find->{revision_combo_details}->{completed} = 0;
+	    $advanced_find->{revision_combo_details}->{value} = "";
+	}
+	$advanced_find->{revision_combo_details}->{preset} = 0;
+	set_label_value($advanced_find->{selected_branch_label}, "");
+
+	# Get the new list of revisions.
+
+	if ($advanced_find->{branch_combo_details}->{completed})
+	{
+	    $advanced_find->{appbar}->set_status("Fetching revision list");
+	    gtk2_update();
+
+	    # Get either a list of tags or revision ids depending upon what the
+	    # user has chosen.
+
+	    if ($advanced_find->{tagged_tick}->get_active())
+	    {
+		my(%dup_list,
+		   @list);
+		$advanced_find->{mtn}->
+		    tags(\@list,
+			 $advanced_find->{branch_combo_details}->{value});
+		$advanced_find->{appbar}->set_progress_percentage(0.5);
+		gtk2_update();
+		foreach my $item (@list)
+		{
+		    if (! exists($dup_list{$item->{tag}}))
+		    {
+			push(@revision_list, $item->{tag});
+			$dup_list{$item->{tag}} = 1;
+		    }
+		}
+	    }
+	    else
+	    {
+		$advanced_find->{mtn}->
+		    select(\@revision_list,
+			   "b:" . $advanced_find->{branch_combo_details}->
+			       {value});
+		$advanced_find->{appbar}->set_progress_percentage(0.33);
+		gtk2_update();
+		$advanced_find->{mtn}->toposort(\@revision_list,
+						@revision_list);
+		$advanced_find->{appbar}->set_progress_percentage(0.66);
+		gtk2_update();
+		splice(@revision_list, 0, scalar(@revision_list) - 100);
+		@revision_list = reverse(@revision_list);
+	    }
+	    set_label_value($advanced_find->{selected_branch_label},
+			    $advanced_find->{branch_combo_details}->{value});
+	    $advanced_find->{appbar}->set_progress_percentage(1);
+	    gtk2_update();
+	}
+	$advanced_find->{revision_combo_details}->{list} = \@revision_list;
+
+	# Update the revision list combobox.
+
+	$advanced_find->{appbar}->set_progress_percentage(0);
+	$advanced_find->{appbar}->set_status("Populating revision list");
+	gtk2_update();
+	my $counter = 1;
+	$advanced_find->{revision_combo}->get_model()->clear();
+	foreach my $revision (@revision_list)
+	{
+	    $advanced_find->{revision_combo}->append_text($revision);
+	    $advanced_find->{appbar}->set_progress_percentage
+		($counter ++ / scalar(@revision_list));
+	    gtk2_update();
+	}
+	$advanced_find->{revision_combo}->child()->
+	    set_text($advanced_find->{revision_combo_details}->{value});
+	$advanced_find->{appbar}->set_progress_percentage(0);
+	$advanced_find->{appbar}->set_status("");
+	gtk2_update();
+
+    }
+
+    # The list of displayed revisions has changed.
+
+    if ($changed & REVISION_LIST)
+    {
+
+	my($counter,
+	   @revision_ids);
+
+	# Reset the revisions tree view.
+
+	$advanced_find->{revisions_liststore}->clear();
+
+	# Get the list of matching revisions.
+
+	$advanced_find->{appbar}->set_status("Finding revisions");
+	gtk2_update();
+	if ($advanced_find->{revision_combo_details}->{completed})
+	{
+	    get_revision_ids($advanced_find, \@revision_ids);
+	}
+
+	# Update the revisions tree view.
+
+	$advanced_find->{appbar}->set_status("Populating revision details");
+	$counter = 1;
+	foreach my $item (@revision_ids)
+	{
+	    $advanced_find->{revisions_liststore}->
+		set($advanced_find->{revisions_liststore}->append(),
+		    0, $item);
+	    $advanced_find->{appbar}->set_progress_percentage
+		($counter ++ / scalar(@revision_ids));
+	    gtk2_update();
+	}
+	$advanced_find->{revisions_treeview}->scroll_to_point(0, 0)
+	    if ($advanced_find->{revisions_treeview}->realized());
+
+	$advanced_find->{appbar}->set_progress_percentage(0);
+	$advanced_find->{appbar}->set_status("");
+	gtk2_update();
+
+    }
+
+    # The list of displayed revisions has changed.
+
+    if ($changed && 1 == 0)
+    {
+
+	my($author,
+	   @certs_list,
+	   $counter,
+	   @directory_entry_list,
+	   $last_update,
+	   @revision_ids,
+	   @revision_list,
+	   $taking_our_time);
+
+	# Reset the manifest tree view.
+
+	$advanced_find->{revisions_liststore}->clear();
+
+	# Get the contents of the new directory.
+
+	if ($advanced_find->{directory_combo_details}->{completed}
+	    || $advanced_find->{directory_combo_details}->{value} eq "")
+	{
+	    get_dir_contents($advanced_find->{directory_combo_details}->{value},
+			     $advanced_find->{manifest},
+			     \@directory_entry_list);
+	}
+
+	# Disable the directory up button if we are already at the top level,
+	# otherwise make sure it is enabled.
+
+	$advanced_find->{directory_up_button}->set_sensitive
+	    (($advanced_find->{directory_combo_details}->{value} eq "")
+	     ? FALSE : TRUE);
+
+	# Update the directory tree view.
+
+	$advanced_find->{appbar}->set_status("Populating file details");
+	$counter = 1;
+	$taking_our_time = 0;
+	get_revision_ids($advanced_find, \@revision_ids);
+	foreach my $item (@directory_entry_list)
+	{
+
+	    # Get the latest modification time and the author if the entry is a
+	    # file (caching the result in the manifest for future reference if
+	    # we have to work it out).
+
+	    if ($item->{manifest_entry}->{type} eq "file")
+	    {
+		if (! exists($item->{manifest_entry}->{author}))
+		{
+		    $taking_our_time = 1;
+		    $advanced_find->{mtn}->get_content_changed
+			(\@revision_list,
+			 $revision_ids[0],
+			 $item->{manifest_entry}->{name});
+		    $item->{manifest_entry}->{last_changed_revision} =
+			$revision_list[0];
+		    $advanced_find->{mtn}->certs(\@certs_list, $revision_list[0]);
+		    $author = $last_update = "";
+		    foreach my $cert (@certs_list)
+		    {
+			if ($cert->{name} eq "author")
+			{
+			    $author = $cert->{value};
+			    $item->{manifest_entry}->{author} = $author;
+			}
+			if ($cert->{name} eq "date")
+			{
+			    $last_update = $cert->{value};
+			    $last_update =~ s/T/ /o;
+			    $item->{manifest_entry}->{last_update} =
+				$last_update;
+			}
+			last if ($author ne "" && $last_update ne "");
+		    }
+		}
+		else
+		{
+		    $author = $item->{manifest_entry}->{author};
+		    $last_update = $item->{manifest_entry}->{last_update};
+		}
+	    }
+	    else
+	    {
+		$author = "";
+		$last_update = "";
+	    }
+
+	    # Put the entry into the liststore.
+
+	    $advanced_find->{manifest_liststore}->
+		set($advanced_find->{manifest_liststore}->append(),
+		    MLS_ICON_COLUMN,
+		        ($item->{manifest_entry}->{type} eq "directory")
+		        ? "gtk-open" : "gtk-file",
+		    MLS_NAME_COLUMN, $item->{name},
+		    MLS_DATE_COLUMN, $last_update,
+		    MLS_AUTHOR_COLUMN, $author,
+		    MLS_MANIFEST_ENTRY_COLUMN, $item->{manifest_entry});
+
+	    if ($taking_our_time)
+	    {
+		$advanced_find->{appbar}->set_progress_percentage
+		    ($counter / scalar(@directory_entry_list));
+		gtk2_update();
+	    }
+	    ++ $counter;
+
+	}
+
+	$advanced_find->{manifest_treeview}->scroll_to_point(0, 0)
+	    if ($advanced_find->{manifest_treeview}->realized());
+
+	$advanced_find->{appbar}->set_progress_percentage(0);
+	$advanced_find->{appbar}->set_status("");
+	gtk2_update();
+
+    }
+
+    # The displayed file contents has changed.
+
+    if ($changed & DISPLAY_OF_FILE && 1 == 0)
+    {
+
+	# Load up the selected file's contents into the file viewer.
+
+	if (exists($advanced_find->{file_being_viewed}->{manifest_entry}))
+	{
+	    my $manifest_entry;
+	    $manifest_entry =
+		$advanced_find->{file_being_viewed}->{manifest_entry};
+	    if ($advanced_find->{file_id_label}->get_text()
+		ne $manifest_entry->{file_id})
+	    {
+
+		my($contents,
+		   $lang,
+		   $mime_type,
+		   $scrolled_window);
+
+		# Reset the file view buffer.
+
+		$advanced_find->{file_button_vbox}->set_sensitive(TRUE);
+		foreach my $widget (@{$advanced_find->{text_file_sensitive_group}})
+		{
+		    $widget->set_sensitive(FALSE);
+		}
+		$advanced_find->{file_view_svbuffer}->set_text("");
+		$advanced_find->{file_view_svbuffer}->set("highlight", FALSE);
+
+		# Get contents.
+
+		$manifest_entry =
+		    $advanced_find->{file_being_viewed}->{manifest_entry};
+		$advanced_find->{mtn}->get_file(\$contents,
+					  $manifest_entry->{file_id});
+
+		# Try and work out the mime type, first based on contents and
+		# then based on the file name extension.
+
+		if (! defined($mime_type =
+			       Gnome2::VFS->get_mime_type_for_data($contents))
+		    || $mime_type eq "text/plain")
+		{
+		    my $name = $advanced_find->{file_being_viewed}->{short_name};
+		    foreach my $item (@text_mime_types)
+		    {
+			if ($name =~ m/$item->{pattern}/)
+			{
+			    $mime_type = $item->{type};
+			    last;
+			}
+		    }
+		}
+
+		# Override some mis-identified types.
+
+		$mime_type = "image/svg+xml"
+		    if ($mime_type eq "text/xml"
+			&& $advanced_find->{file_being_viewed}->{short_name}
+			    =~ m/.*\.svg$/o);
+
+		# If it's image data then attempt to render it.
+
+		if ($mime_type =~ m/^image\/.+$/o)
+		{
+		    eval
+		    {
+			my $loader = Gtk2::Gdk::PixbufLoader->new();
+			$loader->write($contents);
+			$loader->close();
+			$advanced_find->{file_view_svbuffer}->insert_pixbuf
+			    ($advanced_find->{file_view_svbuffer}->get_start_iter(),
+			     $loader->get_pixbuf());
+		    };
+		    $advanced_find->{file_view_svbuffer}->
+			set_text("<" . $mime_type . ">\n") if ($@ ne "");
+		}
+		else
+		{
+
+		    my $ok_to_render = 0;
+
+		    # Attempt to syntax highlight the file if it looks safe.
+
+		    if ($mime_type =~ m/^application\/.+$/o)
+		    {
+			my $part;
+			($part) = ($mime_type =~ m/^application\/(.+)$/o);
+			foreach my $item (@text_viewable_app_mime_types)
+			{
+			    if ($part eq $item)
+			    {
+				$ok_to_render = 1;
+				last;
+			    }
+			}
+		    }
+
+		    if ($mime_type =~ m/^text\/.+$/o || $ok_to_render)
+		    {
+			if (defined($lang = $advanced_find->{file_view_svlangmgr}->
+				    get_language_from_mime_type($mime_type)))
+			{
+			    $advanced_find->{file_view_svbuffer}->
+				set("highlight", TRUE);
+			    $advanced_find->{file_view_svbuffer}->
+				set_language($lang);
+			}
+
+			# Load in the contents.
+
+			$advanced_find->{file_view_svbuffer}->set_text($contents);
+			foreach my $widget
+			    (@{$advanced_find->{text_file_sensitive_group}})
+			{
+			    $widget->set_sensitive(TRUE);
+			}
+		    }
+		    else
+		    {
+			$advanced_find->{file_view_svbuffer}->
+			    set("highlight", FALSE);
+			$advanced_find->{file_view_svbuffer}->
+			    set_text("<" . $mime_type . ">\n");
+		    }
+
+		}
+
+		# Scroll back up to the top left.
+
+		if ($advanced_find->{file_view_scrolledwindow}->realized())
+		{
+		    $advanced_find->{file_view_scrolledwindow}->
+			get_vadjustment()->set_value(0);
+		    $advanced_find->{file_view_scrolledwindow}->
+			get_hadjustment()->set_value(0);
+		}
+
+		# Update the file details labels.
+
+		if (! exists($manifest_entry->{last_changed_revision}))
+		{
+		    my(@certs_list,
+		       @revision_ids,
+		       @revision_list);
+		    get_revision_ids($advanced_find, \@revision_ids);
+		    $advanced_find->{mtn}->
+			get_content_changed(\@revision_list,
+					    $revision_ids[0],
+					    $manifest_entry->{name});
+		    $manifest_entry->{last_changed_revision} =
+			$revision_list[0];
+		    $advanced_find->{mtn}->certs(\@certs_list, $revision_list[0]);
+		    foreach my $cert (@certs_list)
+		    {
+			if ($cert->{name} eq "date")
+			{
+			    my $last_update;
+			    $last_update = $cert->{value};
+			    $last_update =~ s/T/ /o;
+			    $manifest_entry->{last_update} = $last_update;
+			    last;
+			}
+		    }
+		}
+		set_label_value($advanced_find->{file_name_label},
+				$manifest_entry->{name});
+		set_label_value($advanced_find->{file_id_label},
+				$manifest_entry->{file_id});
+		set_label_value($advanced_find->{last_update_label},
+				$manifest_entry->{last_update});
+		set_label_value($advanced_find->{file_revision_id_label},
+				$manifest_entry->{last_changed_revision});
+	    }
+	}
+	else
+	{
+
+	    # Reset the file view buffer.
+
+	    $advanced_find->{file_button_vbox}->set_sensitive(FALSE);
+	    $advanced_find->{file_view_svbuffer}->set_text("");
+	    $advanced_find->{file_view_svbuffer}->set("highlight", FALSE);
+	    set_label_value($advanced_find->{file_name_label}, "");
+	    set_label_value($advanced_find->{file_id_label}, "");
+	    set_label_value($advanced_find->{last_update_label}, "");
+	    set_label_value($advanced_find->{file_revision_id_label}, "");
+
+	}
+
+    }
+
+    $advanced_find->{appbar}->pop();
+    make_busy($advanced_find, 0);
 
 }
 #
@@ -1802,7 +2621,7 @@ sub setup_sigchld_handler($)
 #   Description  - This routine returns the currently selected revision id,
 #                  whether this is specified via a tag or as a revision id.
 #
-#   Data         - $browser      : The browser instance.
+#   Data         - $instance     : The window instance.
 #                  $revision_ids : The list of selected revision ids. Normally
 #                                  the list will have at most one element but
 #                                  may contain more if the tag isn't unique on
@@ -1815,19 +2634,19 @@ sub setup_sigchld_handler($)
 sub get_revision_ids($$)
 {
 
-    my($browser, $revision_ids) = @_;
+    my($instance, $revision_ids) = @_;
 
     @$revision_ids=();
-    return unless ($browser->{revision_combo_details}->{completed});
-    if ($browser->{tagged_tick}->get_active())
+    return unless ($instance->{revision_combo_details}->{completed});
+    if ($instance->{tagged_tick}->get_active())
     {
-	$browser->{mtn}->
+	$instance->{mtn}->
 	    select($revision_ids,
-		   "t:" . $browser->{revision_combo_details}->{value});
+		   "t:" . $instance->{revision_combo_details}->{value});
     }
     else
     {
-	push(@$revision_ids, $browser->{revision_combo_details}->{value});
+	push(@$revision_ids, $instance->{revision_combo_details}->{value});
     }
 
 }
@@ -1838,10 +2657,10 @@ sub get_revision_ids($$)
 #
 #   Description  - This routine simply makes the main window busy or active.
 #
-#   Data         - $browser : The browser instance.
-#                  $busy    : True if the browser is to be made busy,
-#                             otherwise false if the browser is to be made
-#                             active.
+#   Data         - $instance : The window instance.
+#                  $busy     : True if the window is to be made busy,
+#                              otherwise false if the window is to be made
+#                              active.
 #
 ##############################################################################
 
@@ -1850,14 +2669,14 @@ sub get_revision_ids($$)
 sub make_busy($$)
 {
 
-    my($browser, $busy) = @_;
+    my($instance, $busy) = @_;
 
     # Create and store the cursors if we haven't done so already.
 
-    if (! exists($browser->{busy_cursor}))
+    if (! exists($instance->{busy_cursor}))
     {
-	$browser->{normal_cursor} = Gtk2::Gdk::Cursor->new("left-ptr");
-	$browser->{busy_cursor} = Gtk2::Gdk::Cursor->new("watch");
+	$instance->{normal_cursor} = Gtk2::Gdk::Cursor->new("left-ptr");
+	$instance->{busy_cursor} = Gtk2::Gdk::Cursor->new("watch");
     }
 
     # Do it. Make the application bar grab the input when the window is busy,
@@ -1866,14 +2685,14 @@ sub make_busy($$)
 
     if ($busy)
     {
-	$browser->{main_window}->window()->set_cursor($browser->{busy_cursor});
-	Gtk2->grab_add($browser->{main_appbar});
+	$instance->{window}->window()->set_cursor($instance->{busy_cursor});
+	Gtk2->grab_add($instance->{appbar});
     }
     else
     {
-	$browser->{main_window}->window()->
-	    set_cursor($browser->{normal_cursor});
-	Gtk2->grab_remove($browser->{main_appbar});
+	$instance->{window}->window()->
+	    set_cursor($instance->{normal_cursor});
+	Gtk2->grab_remove($instance->{appbar});
     }
 
 }
