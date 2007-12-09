@@ -129,13 +129,10 @@ pick_branch_for_update(revision_id chosen_rid, app_state & app)
   return switched_branch;
 }
 
-CMD(update, "update", "", CMD_REF(workspace), "",
-    N_("Updates the workspace"),
-    N_("This command modifies your workspace to be based off of a "
-       "different revision, preserving uncommitted changes as it does so.  "
-       "If a revision is given, update the workspace to that revision.  "
-       "If not, update the workspace to the head of the branch."),
-    options::opts::branch | options::opts::revision)
+static void
+update(app_state & app, commands::command_id const & execid,
+          args_vector const & args, std::ostream & output,
+          bool automate)
 {
   if (args.size() > 0)
     throw usage(execid);
@@ -156,12 +153,16 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   N(!null_id(old_rid),
     F("this workspace is a new project; cannot update"));
 
+  if (automate)
+    output << app.opts.branchname() << "\n";
+
   // Figure out where we're going
 
   revision_id chosen_rid;
   if (app.opts.revision_selectors.size() == 0)
     {
-      P(F("updating along branch '%s'") % app.opts.branchname);
+      if (!automate)
+        P(F("updating along branch '%s'") % app.opts.branchname);
       set<revision_id> candidates;
       pick_update_candidates(old_rid, app, candidates);
       N(!candidates.empty(),
@@ -175,7 +176,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
           for (set<revision_id>::const_iterator i = candidates.begin();
                i != candidates.end(); ++i)
             P(i18n_format("  %s") % describe_revision(app, *i));
-          P(F("choose one with '%s update -r<id>'") % ui.prog_name);
+          if (!automate)
+            P(F("choose one with '%s update -r<id>'") % ui.prog_name);
           E(false, F("multiple update candidates remain after selection"));
         }
       chosen_rid = *(candidates.begin());
@@ -195,7 +197,13 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   if (old_rid == chosen_rid)
     {
-      P(F("already up to date at %s") % old_rid);
+      if (automate)
+        {
+          output << chosen_rid << "\n";
+          output << app.opts.branchname() << "\n";
+        }
+      else
+        P(F("already up to date at %s") % old_rid);
       // do still switch the workspace branch, in case they have used
       // update to switch branches.
       if (!app.opts.branchname().empty())
@@ -203,13 +211,19 @@ CMD(update, "update", "", CMD_REF(workspace), "",
       return;
     }
 
-  P(F("selected update target %s") % chosen_rid);
+  if (automate)
+    output << chosen_rid << "\n";
+  else
+    P(F("selected update target %s") % chosen_rid);
 
   // Fiddle around with branches, in an attempt to guess what the user
   // wants.
   bool switched_branch = pick_branch_for_update(chosen_rid, app);
   if (switched_branch)
     P(F("switching to branch %s") % app.opts.branchname());
+
+  if (automate)
+    output << app.opts.branchname() << "\n";
 
   // Okay, we have a target, we have a branch, let's do this merge!
 
@@ -276,9 +290,38 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   if (!app.opts.branchname().empty())
     app.make_branch_sticky();
-  if (switched_branch)
-    P(F("switched branch; next commit will use branch %s") % app.opts.branchname());
-  P(F("updated to base revision %s") % chosen_rid);
+  if (!automate)
+    {
+      if (switched_branch)
+        P(F("switched branch; next commit will use branch %s") % app.opts.branchname());
+      P(F("updated to base revision %s") % chosen_rid);
+    }
+}
+
+CMD(update, "update", "", CMD_REF(workspace), "",
+    N_("Updates the workspace"),
+    N_("This command modifies your workspace to be based off of a "
+       "different revision, preserving uncommitted changes as it does so.  "
+       "If a revision is given, update the workspace to that revision.  "
+       "If not, update the workspace to the head of the branch."),
+    options::opts::branch | options::opts::revision)
+{
+  update(app, execid, args, std::cout, false);
+}
+
+// output:
+// <old branch>\n
+// <new revision-id>\n
+// <new branch>\n
+CMD_AUTOMATE(update, "",
+    N_("Updates the workspace"),
+    N_("This command modifies your workspace to be based off of a "
+       "different revision, preserving uncommitted changes as it does so.  "
+       "If a revision is given, update the workspace to that revision.  "
+       "If not, update the workspace to the head of the branch."),
+    options::opts::branch | options::opts::revision)
+{
+  update(app, execid, args, output, true);
 }
 
 // Subroutine of CMD(merge) and CMD(explicit_merge).  Merge LEFT with RIGHT,
@@ -349,10 +392,10 @@ merge_two(revision_id const & left, revision_id const & right,
 // since a single 'merge' command may perform arbitrarily many actual merges.
 // (Possibility: append the --message/--message-file text to the synthetic
 // log message constructed in merge_two().)
-CMD(merge, "merge", "", CMD_REF(tree), "",
-    N_("Merges unmerged heads of a branch"),
-    "",
-    options::opts::branch | options::opts::date | options::opts::author)
+static void
+merge(app_state & app, commands::command_id const & execid,
+          args_vector const & args, std::ostream & output,
+          bool automate)
 {
   typedef std::pair<revision_id, revision_id> revpair;
   typedef set<revision_id>::const_iterator rid_set_iter;
@@ -369,11 +412,13 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   N(heads.size() != 0, F("branch '%s' is empty") % app.opts.branchname);
   if (heads.size() == 1)
     {
-      P(F("branch '%s' is already merged") % app.opts.branchname);
+      if (!automate)
+        P(F("branch '%s' is already merged") % app.opts.branchname);
       return;
     }
 
-  P(FP("%d head on branch '%s'", "%d heads on branch '%s'", heads.size())
+  if (!automate)
+    P(FP("%d head on branch '%s'", "%d heads on branch '%s'", heads.size())
       % heads.size() % app.opts.branchname);
 
   map<revision_id, revpair> heads_for_ancestor;
@@ -394,8 +439,11 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   // A and B will be merged first, and then the result will be merged with C.
   while (heads.size() > 2)
     {
-      P(F("merge %d / %d:") % pass % todo);
-      P(F("calculating best pair of heads to merge next"));
+      if (!automate)
+        {
+          P(F("merge %d / %d:") % pass % todo);
+          P(F("calculating best pair of heads to merge next"));
+        }
 
       // For every pair of heads, determine their merge ancestor, and
       // remember the ancestor->head mapping. 
@@ -428,7 +476,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       // corresponding pair of heads.
       revpair p = heads_for_ancestor[*ancestors.begin()];
       
-      merge_two(p.first, p.second, app.opts.branchname, string("merge"), app, std::cout, false);
+      merge_two(p.first, p.second, app.opts.branchname, string("merge"), app, output, automate);
 
       ancestors.clear();
       heads_for_ancestor.clear();
@@ -438,7 +486,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
 
   // Last one.
   I(pass == todo);
-  if (todo > 1)
+  if (todo > 1 && !automate)
     P(F("merge %d / %d:") % pass % todo);
 
   rid_set_iter i = heads.begin();
@@ -446,8 +494,24 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   revision_id right = *i++;
   I(i == heads.end());
   
-  merge_two(left, right, app.opts.branchname, string("merge"), app, std::cout, false);
-  P(F("note: your workspaces have not been updated"));
+  merge_two(left, right, app.opts.branchname, string("merge"), app, output, automate);
+  if (!automate)
+    P(F("note: your workspaces have not been updated"));
+}
+
+CMD(merge, "merge", "", CMD_REF(tree), "",
+    N_("Merges unmerged heads of a branch"),
+    "",
+    options::opts::branch | options::opts::date | options::opts::author)
+{
+  merge(app, execid, args, std::cout, false);
+}
+
+CMD_AUTOMATE(merge, "",
+    N_("Merges unmerged heads of a branch"), "",
+    options::opts::branch | options::opts::date | options::opts::author)
+{
+  merge(app, execid, args, output, true);
 }
 
 CMD(propagate, "propagate", "", CMD_REF(tree),

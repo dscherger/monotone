@@ -165,6 +165,17 @@ CMD(push, "push", "", CMD_REF(network),
                        include_pattern, exclude_pattern, app);
 }
 
+CMD_AUTOMATE(push,
+     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+     N_("Pushes branches to a netsync server"),
+     N_("This will push all branches that match the pattern given in PATTERN "
+        "to the netsync server at the address ADDRESS."),
+    options::opts::set_default | options::opts::exclude |
+    options::opts::key_to_push)
+{
+  commands::push_cmd.exec(app, execid, args);
+}
+
 CMD(pull, "pull", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pulls branches from a netsync server"),
@@ -188,6 +199,16 @@ CMD(pull, "pull", "", CMD_REF(network),
                        include_pattern, exclude_pattern, app);
 }
 
+CMD_AUTOMATE(pull,
+    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("Pulls branches from a netsync server"),
+    N_("This pulls all branches that match the pattern given in PATTERN "
+       "from the netsync server at the address ADDRESS."),
+    options::opts::set_default | options::opts::exclude)
+{
+  commands::pull_cmd.exec(app, execid, args);
+}
+
 CMD(sync, "sync", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Synchronizes branches with a netsync server"),
@@ -207,6 +228,17 @@ CMD(sync, "sync", "", CMD_REF(network),
 
   run_netsync_protocol(client_voice, source_and_sink_role, uris,
                        include_pattern, exclude_pattern, app);
+}
+
+CMD_AUTOMATE(sync,
+    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("Synchronizes branches with a netsync server"),
+    N_("This synchronizes branches that match the pattern given in PATTERN "
+       "with the netsync server at the address ADDRESS."),
+    options::opts::set_default | options::opts::exclude |
+    options::opts::key_to_push)
+{
+  commands::sync_cmd.exec(app, execid, args);
 }
 
 class dir_cleanup_helper
