@@ -291,14 +291,16 @@ UNIX_PLATFORM_SOURCES =							\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
 	unix/fs.cc unix/make_io_binary.cc unix/os_strerror.cc           \
 	unix/cputime.cc unix/ssh_agent_platform.cc			\
-	unix/ssh_agent_platform.hh unix/tester-plaf.cc
+	unix/ssh_agent_platform.hh unix/tester-plaf.cc			\
+	unix/socketpair.c
 
 WIN32_PLATFORM_SOURCES =						\
 	win32/read_password.cc win32/get_system_flavour.cc		\
 	win32/process.cc win32/terminal.cc win32/inodeprint.cc		\
 	win32/fs.cc win32/make_io_binary.cc win32/os_strerror.cc	\
 	win32/cputime.cc win32/ssh_agent_platform.cc			\
-	win32/ssh_agent_platform.hh win32/tester-plaf.cc
+	win32/ssh_agent_platform.hh win32/tester-plaf.cc		\
+	win32/socketpair.c
 
 # these files contain unit tests
 UNIT_TEST_SOURCES =							\
