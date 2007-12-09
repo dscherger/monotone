@@ -4,6 +4,8 @@
 -- few dozen lines, and then quits the pager).
 
 skip_if(ostype=="Windows")
+-- This test fails randomly on Linux, so disable it until it's fixed.
+skip_if(ostype=="Linux")
 SIGPIPE = 13 -- what it is on traditional Unixy systems
 
 mtn_setup()
