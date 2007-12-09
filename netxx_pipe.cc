@@ -23,6 +23,7 @@
 #else
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <errno.h>
 #endif
@@ -187,17 +188,17 @@ Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & 
   if (child < 0)
     {
       // fork failed
-      socket(socks[0]);
-      socket(socks[1]);
+      ::close (socks[0]);
+      ::close (socks[1]);
 
-      E(started, F("fork failed %s") % strerror(errno));
+      E(0, F("fork failed %s") % strerror(errno));
     }
 
   if (!child)
     {
       // We are in the child process; run the command, then exit.
 
-      socket_type old_stdio[2];
+      int old_stdio[2];
 
       // Set the child socket as stdin and stdout. dup2 clobbers its first
       // arg, so copy it first.
@@ -214,8 +215,8 @@ Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & 
         }
 
       // old_stdio now holds the file descriptors for our old stdin, stdout, so close them
-      close (old_stdio[0]);
-      close (old_stdio[1]);
+      ::close (old_stdio[0]);
+      ::close (old_stdio[1]);
 
       execvp(newargv[0], const_cast<char * const *>(newargv));
       perror(newargv[0]);
@@ -353,3 +354,5 @@ catch (informative_failure &e)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+
+* netxx_pipe.cc (SpawnedStream::SpawnedStream):

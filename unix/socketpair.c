@@ -22,8 +22,8 @@
 
 #include <string.h>
 
-include <sys/types.h>
-include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 int dumb_socketpair(int socks[2], int dummy)
 {
