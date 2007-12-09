@@ -1,6 +1,7 @@
 #ifndef __NETXX_PIPE_HH__
 #define __NETXX_PIPE_HH__
 
+// Copyright (C) 2007 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Christof Petig <christof@petig-baender.de>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -18,118 +19,98 @@
 #endif
 
 /*
-   What is this all for?
+  Here we provide children of Netxx::StreamBase that work with stdin/stdout
+  in two different ways.
 
-   If you want to transparently handle a pipe and a socket on unix and
-   windows you have to abstract some difficulties:
+  The use cases are 'mtn sync file:...', 'mtn sync ssh:...', and 'mtn serve
+  --stdio'.
 
- - sockets have a single filedescriptor for reading and writing
-   pipes usually come in pairs (one for reading and one for writing)
+  The netsync code uses StreamBase objects to perform all communications
+  between the local and server mtns.
 
- - process creation is different on unix and windows
+  In 'mtn sync file:...', the local mtn spawns the server directly as 'mtn
+  serve --stdio'. Thus the local mtn needs a StreamBase object that can
+  serve as the stdin/stdout of a spawned process; SpawnedStream. The server
+  mtn needs to construct a StreamBase object from the existing stdin/stdout;
+  StdioStream.
 
- => so Netxx::PipeStream is a Netxx::StreamBase which abstracts two pipes to
-   and from an external command
+  In 'mtn sync ssh:...' the local mtn spawns ssh, connecting to it via
+  SpawnedStream. On the server, ssh spawns 'mtn serve stdio', which uses
+  StdioStream.
 
- - windows can select on a socket but not on a pipe
+  We also need StdioProbe objects that work with StdioStream objects, since
+  Netxx::Probe doesn't. Netxx does not provide for child classes of Probe.
+  We handle this by having the netsync code create the appropriate Probe
+  object whenever it creates a StreamBase object.
 
- => so Netxx::PipeCompatibleProbe is a Netxx::Probe like class which
-   _can_ handle pipes on windows (emulating select is difficult at best!)
-   (on unix Probe and PipeCompatibleProbe are nearly identical: with pipes
-   you should not select for both read and write on the same descriptor)
+  We use socket pairs to implement these objects. On Unix and Win32, a
+  socket can serve as stdin and stdout for a spawned process.
 
+  The sockets in the pair must be connected to each other; socketpair() does
+  that nicely.
+
+  An earlier implementation (a single class named PipeStream) tried to use
+  Win32 overlapped IO via named pipes on Win32, and Unix select with Unix
+  pipes on unix, but we couldn't make it work, because the semantics of the
+  two implementations are too different. Now we always use socket select on
+  sockets.
 */
 
 namespace Netxx
   {
-  class PipeCompatibleProbe;
-  class StreamServer;
 
-  class PipeStream : public StreamBase
+  class SpawnedStream : public StreamBase
     {
+      Socket    Parent_Socket;
+      Socket    Child_Socket;
+      ProbeInfo probe_info;
 #ifdef WIN32
-      HANDLE named_pipe;
-      HANDLE child;
-      char readbuf[1024];
-      DWORD bytes_available;
-      bool read_in_progress;
-      OVERLAPPED overlap;
-      friend class PipeCompatibleProbe;
+      HANDLE    child;
 #else
-      int readfd, writefd;
-      int child;
+      pid_t     child;
 #endif
 
-
     public:
-      // do we need Timeout for symmetry with Stream?
-      explicit PipeStream (int readfd, int writefd);
-      explicit PipeStream (const std::string &cmd, const std::vector<std::string> &args);
-      virtual ~PipeStream() { close(); }
+      explicit SpawnedStream (const std::string &cmd, const std::vector<std::string> &args);
+      // Spawn a child process to run 'cmd args', connect its stdout and
+      // stdin to this object.
+
+      virtual ~SpawnedStream() { close(); }
       virtual signed_size_type read (void *buffer, size_type length);
       virtual signed_size_type write (const void *buffer, size_type length);
       virtual void close (void);
       virtual socket_type get_socketfd (void) const;
       virtual const ProbeInfo* get_probe_info (void) const;
-      int get_readfd(void) const
-        {
-#ifdef WIN32
-          return -1;
-#else
-          return readfd;
-#endif
-        }
-      int get_writefd(void) const
-        {
-#ifdef WIN32
-          return -1;
-#else
-          return writefd;
-#endif
-        }
     };
 
-#ifdef WIN32
+    class StdioProbe;
 
-  // This probe can either handle _one_ PipeStream or several network
-  // Streams so if !is_pipe this acts like a Probe.
-  class PipeCompatibleProbe : public Probe
+    class StdioStream : public StreamBase
     {
-      bool is_pipe;
-      // only meaningful if is_pipe is true
-      PipeStream *pipe;
-      ready_type ready_t;
+      friend class StdioProbe;
+      int          readfd;
+      int          writefd;
+      ProbeInfo    probe_info;
+
     public:
-      PipeCompatibleProbe() : is_pipe(), pipe(), ready_t()
-      {}
-      void clear()
-      {
-        if (is_pipe)
-          {
-            pipe=0;
-            is_pipe=false;
-          }
-        else
-          Probe::clear();
-      }
-      // This function does all the hard work (emulating a select).
-      result_type ready(const Timeout &timeout=Timeout(), ready_type rt=ready_none);
-      void add(PipeStream &ps, ready_type rt=ready_none);
-      void add(const StreamBase &sb, ready_type rt=ready_none);
-      void add(const StreamServer &ss, ready_type rt=ready_none);
-    };
-#else
+      explicit StdioStream (int readfd, int writefd);
+      // Construct a Stream object from existing files; typically stdout
+      // and stdin of the current process.
 
-  // We only act specially if a PipeStream is added (directly or via
-  // the StreamBase parent reference).
-  struct PipeCompatibleProbe : Probe
+      virtual ~StdioStream() { close(); }
+      virtual signed_size_type read (void *buffer, size_type length);
+      virtual signed_size_type write (const void *buffer, size_type length);
+      virtual void close (void);
+      virtual socket_type get_socketfd (void) const;
+      virtual const ProbeInfo* get_probe_info (void) const;
+    };
+
+    struct StdioProbe : Probe
     {
-      void add(PipeStream &ps, ready_type rt=ready_none);
+    public:
+      void add(const StdioStream &ps, ready_type rt=ready_none);
       void add(const StreamBase &sb, ready_type rt=ready_none);
-      void add(const StreamServer &ss, ready_type rt=ready_none);
     };
-#endif
-
 }
 
 // Local Variables:
@@ -141,4 +122,3 @@ namespace Netxx
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif // __NETXX_PIPE_HH__
-

@@ -1,11 +1,11 @@
 /*
  * Copyright (C) 2001-2004 Peter J Jones (pjones@pmade.org)
  * All Rights Reserved
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
@@ -15,7 +15,7 @@
  * 3. Neither the name of the Author nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS''
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -57,11 +57,11 @@ class PipeCompatibleProbe;
  * kqueue(2) or /dev/poll.
 **/
 class Probe {
-   /* 
-    * Probe has no public way to select read only and write only sockets 
-    * needed for probing pipes, so grant PipeCompatibleProbe to use add_socket
+   /*
+    * Probe has no public way to probe stdio/stdin, so grant
+    * StdioProbe to use add_socket
     */
-    friend class PipeCompatibleProbe;
+    friend class StdioProbe;
 public:
     /*
      * Bitmask for telling Probe exactly what you want and for testing the
@@ -81,7 +81,7 @@ public:
     typedef std::pair<socket_type, ready_type> result_type;
 
     //####################################################################
-    /** 
+    /**
      * Construct a new Netxx::Probe object.
      *
      * @author Peter Jones
@@ -90,7 +90,7 @@ public:
     Probe (void);
 
     //####################################################################
-    /** 
+    /**
      * Netxx::Probe copy constructor.
      *
      * @param other The other Probe object to copy from.
@@ -100,7 +100,7 @@ public:
     Probe (const Probe &other);
 
     //####################################################################
-    /** 
+    /**
      * Netxx::Probe assignment operator.
      *
      * @param other The other Probe object to copy from.
@@ -111,7 +111,7 @@ public:
     Probe& operator= (const Probe &other);
 
     //####################################################################
-    /** 
+    /**
      * Swap this Probe and another one. Similar to std::swap().
      *
      * @param other The other Probe to swap with.
@@ -121,7 +121,7 @@ public:
     void swap(Probe &other);
 
     //####################################################################
-    /** 
+    /**
      * Netxx::Probe destructor.
      *
      * @author Peter Jones
@@ -130,7 +130,7 @@ public:
     ~Probe (void);
 
     //####################################################################
-    /** 
+    /**
      * Clear the Probe. All objects will be removed from the Probe and it
      * will be in a brand-new like state.
      *
@@ -140,7 +140,7 @@ public:
     void clear (void);
 
     //####################################################################
-    /** 
+    /**
      * Preform the probe. This function will block until either some data is
      * ready or the given timeout expires. You may also supply a bitmask for
      * the type of data you want in this probe.
@@ -155,7 +155,7 @@ public:
     result_type ready (const Timeout &timeout=Timeout(), ready_type rt=ready_none);
 
     //####################################################################
-    /** 
+    /**
      * Add an object to the Probe. The object must support the
      * Netxx::ProbeInfo class. All Netxx classes such as Stream and Datagram
      * support the ProbeInfo class.
@@ -169,7 +169,7 @@ public:
      * @author Peter Jones
     **/
     //####################################################################
-    template <typename T> void add (const T &t, ready_type rt=ready_none) 
+    template <typename T> void add (const T &t, ready_type rt=ready_none)
     {
 	// implemented inline to work around bug in MSVC
 	const ProbeInfo *pi = t.get_probe_info();
@@ -178,14 +178,14 @@ public:
     }
 
     //####################################################################
-    /** 
+    /**
      * Remove the given object from the Probe.
      *
      * @param t The object to remove from the Probe.
      * @author Peter Jones
     **/
     //####################################################################
-    template <typename T> void remove (const T &t) 
+    template <typename T> void remove (const T &t)
     {
 	// implemented inline to work around bug in MSVC
 	const ProbeInfo *pi = t.get_probe_info();

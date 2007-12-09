@@ -1,4 +1,4 @@
-// Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2004, 2007 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -2354,7 +2354,7 @@ build_stream_to_server(app_state & app,
       argv.erase(argv.begin());
       app.opts.use_transport_auth = app.lua.hook_use_transport_auth(u);
       return shared_ptr<Netxx::StreamBase>
-        (new Netxx::PipeStream(cmd, argv));
+        (new Netxx::SpawnedStream(cmd, argv));
 
     }
   else
@@ -2380,7 +2380,7 @@ call_server(protocol_role role,
             Netxx::port_type default_port,
             unsigned long timeout_seconds)
 {
-  Netxx::PipeCompatibleProbe probe;
+  Netxx::Probe probe;
   transaction_guard guard(app.db);
   I(addresses.size() == 1);
   utf8 address(*addresses.begin());
@@ -2493,41 +2493,15 @@ static void
 drop_session_associated_with_fd(map<Netxx::socket_type, shared_ptr<session> > & sessions,
                                 Netxx::socket_type fd)
 {
-  // This is a bit of a hack. Initially all "file descriptors" in
-  // netsync were full duplex, so we could get away with indexing
-  // sessions by their file descriptor.
-  //
-  // When using pipes in unix, it's no longer true: a session gets
-  // entered in the session map under its read pipe fd *and* its write
-  // pipe fd. When we're in such a situation the socket fd is "-1" and
-  // we downcast to a PipeStream and use its read+write fds.
-  //
-  // When using pipes in windows, we use a full duplex pipe (named
-  // pipe) so the socket-like abstraction holds.
-
-  I(fd != -1);
   map<Netxx::socket_type, shared_ptr<session> >::const_iterator i = sessions.find(fd);
   I(i != sessions.end());
   shared_ptr<session> sess = i->second;
   fd = sess->str->get_socketfd();
-  if (fd != -1)
-    {
-      sessions.erase(fd);
-    }
-  else
-    {
-      shared_ptr<Netxx::PipeStream> pipe =
-        boost::dynamic_pointer_cast<Netxx::PipeStream, Netxx::StreamBase>(sess->str);
-      I(static_cast<bool>(pipe));
-      I(pipe->get_writefd() != -1);
-      I(pipe->get_readfd() != -1);
-      sessions.erase(pipe->get_readfd());
-      sessions.erase(pipe->get_writefd());
-    }
+  sessions.erase(fd);
 }
 
 static void
-arm_sessions_and_calculate_probe(Netxx::PipeCompatibleProbe & probe,
+arm_sessions_and_calculate_probe(Netxx::Probe & probe,
                                  map<Netxx::socket_type, shared_ptr<session> > & sessions,
                                  set<Netxx::socket_type> & armed_sessions,
                                  transaction_guard & guard)
@@ -2744,7 +2718,7 @@ serve_connections(protocol_role role,
                   unsigned long timeout_seconds,
                   unsigned long session_limit)
 {
-  Netxx::PipeCompatibleProbe probe;
+  Netxx::Probe probe;
 
   Netxx::Timeout
     forever,
@@ -2779,7 +2753,7 @@ serve_connections(protocol_role role,
                     {
                       size_t l_colon = address().find(':');
                       size_t r_colon = address().rfind(':');
-              
+
                       if (l_colon == r_colon && l_colon == 0)
                         {
                           // can't be an IPv6 address as there is only one colon
@@ -2846,14 +2820,15 @@ serve_connections(protocol_role role,
                   try
                     {
                       P(F("connecting to %s") % addr());
-                      shared_ptr<Netxx::StreamBase> server
+                      shared_ptr<Netxx::StreamBase> other_server
                         = build_stream_to_server(app, inc, exc,
                                                  addr, default_port,
                                                  timeout);
 
+
                       // 'false' here means not to revert changes when
                       // the SockOpt goes out of scope.
-                      Netxx::SockOpt socket_options(server->get_socketfd(), false);
+                      Netxx::SockOpt socket_options(other_server->get_socketfd(), false);
                       socket_options.set_non_blocking();
 
                       protocol_role role = source_and_sink_role;
@@ -2866,9 +2841,9 @@ serve_connections(protocol_role role,
 
                       shared_ptr<session> sess(new session(role, client_voice,
                                                            inc, exc,
-                                                           app, addr(), server, true));
+                                                           app, addr(), other_server, true));
 
-                      sessions.insert(make_pair(server->get_socketfd(), sess));
+                      sessions.insert(make_pair(other_server->get_socketfd(), sess));
                     }
                   catch (Netxx::NetworkException & e)
                     {
@@ -2989,10 +2964,17 @@ serve_connections(protocol_role role,
   }
 
 static void
-serve_single_connection(shared_ptr<session> sess,
+serve_single_connection(protocol_role role,
+                        globish const & include_pattern,
+                        globish const & exclude_pattern,
+                        app_state & app,
                         unsigned long timeout_seconds)
 {
-  Netxx::PipeCompatibleProbe probe;
+  shared_ptr<Netxx::StreamBase> str(new Netxx::StdioStream(0,1));
+  shared_ptr<session> sess (new session (role, server_voice,
+                                         include_pattern, exclude_pattern,
+                                         app, "stdio", str));
+  Netxx::StdioProbe probe;
 
   Netxx::Timeout
     forever,
@@ -3008,17 +2990,7 @@ serve_single_connection(shared_ptr<session> sess,
   map<Netxx::socket_type, shared_ptr<session> > sessions;
   set<Netxx::socket_type> armed_sessions;
 
-  if (sess->str->get_socketfd() == -1)
-    {
-      // Unix pipes are non-duplex, have two filedescriptors
-      shared_ptr<Netxx::PipeStream> pipe =
-        boost::dynamic_pointer_cast<Netxx::PipeStream, Netxx::StreamBase>(sess->str);
-      I(pipe);
-      sessions[pipe->get_writefd()]=sess;
-      sessions[pipe->get_readfd()]=sess;
-    }
-  else
-    sessions[sess->str->get_socketfd()]=sess;
+  sessions[sess->str->get_socketfd()]=sess;
 
   while (!sessions.empty())
     {
@@ -3287,11 +3259,7 @@ run_netsync_protocol(protocol_voice voice,
         {
           if (app.opts.bind_stdio)
             {
-              shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
-              shared_ptr<session> sess(new session(role, server_voice,
-                                                   include_pattern, exclude_pattern,
-                                                   app, "stdio", str));
-              serve_single_connection(sess,constants::netsync_timeout_seconds);
+              serve_single_connection(role, include_pattern, exclude_pattern, app, constants::netsync_timeout_seconds);
             }
           else
             serve_connections(role, include_pattern, exclude_pattern, app,

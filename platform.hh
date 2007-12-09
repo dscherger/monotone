@@ -1,7 +1,7 @@
 #ifndef __PLATFORM_HH__
 #define __PLATFORM_HH__
 
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2002, 2007 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -35,6 +35,9 @@ int process_sleep(unsigned int seconds);
 
 // stop "\n"->"\r\n" from breaking automate on Windows
 void make_io_binary();
+
+// returns 0 for success, non-zero for error
+extern "C" int dumb_socketpair(int socks[2], int make_overlapped);
 
 #ifdef WIN32
 std::string munge_argv_into_cmdline(const char* const argv[]);
@@ -80,7 +83,7 @@ public:
   //      this time in the future?" bit in the hashed information.  This bit
   //      will change when we pass the future point, and trigger a re-check of
   //      the file's contents.
-  // 
+  //
   // This is, of course, still not perfect.  There is no way to make our stat
   // atomic with the actual read of the file, so there's always a race condition
   // there.  Additionally, this handling means that checkout will never actually

@@ -1,11 +1,20 @@
 testsuite\.dir
 tester_dir
+^testlib\.c$
+^tester_tests\.status$
+^test_hooks\.c$
+^std_hooks\.c$
+^schema\.c$
+^.*\.exe$
 ^build$
 ^build/
 \.dirstamp
 ^txt2c$
-^unit_tests$
-^unit_tests\.log$
+^lua_tests\.status$
+^unit-tests$
+^unit-tests/
+^unit-tests\.log$
+^unit_tests\.status$
 ^mtn$
 ^testsuite$
 ^testsuite\.log$
@@ -13,6 +22,7 @@ tester_dir
 ^tester\.h$
 ^run_lua_tests$
 ^run_tester_tests$
+^run_unit_tests$
 ^package_full_revision(\.c|\.txt|_dist\.txt|_raw\.txt)$
 ^package_revision_raw.txt$
 ^config\.
@@ -66,3 +76,5 @@ tester_dir
 ^m4/stdint_h\.m4$
 ^m4/uintmax_t\.m4$
 ^m4/ulonglong\.m4$
+^STATUS$
+^tester\.log$
