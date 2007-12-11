@@ -1,3 +1,11 @@
+monotone (0.38-1) UNRELEASED; urgency=low
+
+  * The log_quits_on_SIGPIPE test malfunctions on Linux.  Add a temporary
+    patch disabling it on Debian, giving upstream a chance to fix the
+    problem while being able to build the Debian package without trouble.
+
+ -- Richard Levitte <richard@levitte.org>  Tue, 11 Dec 2007 13:26:33 +0100
+
 monotone (0.37-4) unstable; urgency=low
 
   * debian/rules: Turn compiler optimization back on by default.  Doh!
