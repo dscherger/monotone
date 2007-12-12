@@ -3,7 +3,7 @@
 <title>Hooks - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.11">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Hook-Reference.html#Hook-Reference" title="Hook Reference">
 <link rel="next" href="Additional-Lua-Functions.html#Additional-Lua-Functions" title="Additional Lua Functions">
@@ -185,7 +185,7 @@ variable as in this example:
               end
               print("Ending note_mtn_startup")
           end
-     </pre>
+</pre>
      </dl>
 
 <h4 class="subsection">6.1.2 User Defaults</h4>
@@ -241,7 +241,7 @@ definitions might be:
                   if ((user == nil) or (host == nil)) then return nil end
                   return string.format("%s@%s", user, host)
           end
-     </pre>
+</pre>
      <pre class="smallexample">          function get_author(branchname, keypair_id)
                   -- Branch name ignored.
                   if (keypair_id == "joe@example.com") then
@@ -249,7 +249,7 @@ definitions might be:
                   end
                   return keypair_id
           end
-     </pre>
+</pre>
      <br><dt><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code><a name="index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-197"></a><dd>
 Returns a log entry for a given set of changes, described in
 <var>commentary</var>.  The commentary is identical to the output of
@@ -279,7 +279,7 @@ probably want this hook to return <code>true</code>.
      <pre class="smallexample">          function persist_phrase_ok()
                   return true
           end
-     </pre>
+</pre>
      <br><dt><code>use_inodeprints ()</code><a name="index-use_005finodeprints-_0028_0029-199"></a><dd>
 Returns <code>true</code> if you want monotone to automatically enable
 <a href="Inodeprints.html#Inodeprints">Inodeprints</a> support in all workspaces.  Only affects working
@@ -289,7 +289,7 @@ copies created after you modify the hook.
      <pre class="smallexample">          function use_inodeprints()
                   return false
           end
-     </pre>
+</pre>
      <br><dt><code>ignore_file (</code><var>filename</var><code>)</code><a name="index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-200"></a><dd>
 Returns <code>true</code> if <var>filename</var> should be ignored while adding,
 dropping, or moving files. Otherwise returns <code>false</code>. This is
@@ -333,7 +333,7 @@ the configuration directory. This file looks like
           comment "everyone can read these branches"
           pattern "net.example.{public,project}*"
           allow "*"
-     </pre>
+</pre>
      <p>This example allows everyone access to branches <code>net.example.project</code> and
 <code>net.example.public</code> and their sub-branches, except for the branches in
 <code>net.example.project.security</code> and <code>net.example.project.private</code>,
@@ -479,7 +479,7 @@ components:
                   end
                   return argv
           end
-     </pre>
+</pre>
      <br><dt><code>use_transport_auth (</code><var>uri</var><code>)</code><a name="index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-205"></a><dd>
 Returns a boolean indicating whether monotone should use transport
 authentication mechanisms when communicating with <var>uri</var>. If this
@@ -505,7 +505,7 @@ authentication assumptions.
                           return true
                   end
           end
-     </pre>
+</pre>
      <br><dt><code>get_mtn_command(</code><var>host</var><code>)</code><a name="index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-206"></a><dd>
 Returns a string containing the monotone command to be executed on
 <var>host</var> when communicating over <samp><span class="command">ssh</span></samp>.  The <var>host</var>
@@ -517,7 +517,7 @@ monotone binary is not in the default path.
      <pre class="smallexample">          function get_mtn_command(host)
           	return "mtn"
           end
-     </pre>
+</pre>
      </dl>
 
    <p><a name="Trust-Evaluation-Hooks"></a>
@@ -576,7 +576,7 @@ the intersection of tables) is the following:
                 return false
              end
           end
-     </pre>
+</pre>
      <p>In this example, any revision certificate is trusted if it is signed
 by at least one of three &ldquo;trusted&rdquo; keys, unless it is an
 <code>branch</code> certificate, in which case it must be signed by
@@ -606,7 +606,7 @@ version carrying the <var>old_results</var> to the version carrying the
              end
              return true
           end
-     </pre>
+</pre>
      <p>This definition accepts only those updates which preserve the set of
 <code>true</code> test results from update source to target. If no test
 results exist, this hook has no affect; but once a <code>true</code> test
@@ -672,8 +672,7 @@ can override or extend these hooks if you have a preferred tool, or if
 you have a tool specific to certain file types.
 
      <dl>
-<a name="merge3"></a>
-<dt><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code><a name="index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-211"></a><dd>
+<a name="merge3"></a><dt><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code><a name="index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-211"></a><dd>
 This hook is called to resolve merges that monotone could not resolve
 automatically.  The actual ancestor, left, and right contents of the
 file are passed in the <var>ancestor_text</var>, <var>left_text</var>, and
@@ -695,8 +694,7 @@ of <a href="get_005fpreferred_005fmerge3_005fcommand.html#get_005fpreferred_005f
 and if not, then simply searches for whatever is installed on the
 local system.  For details, see the code in <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 
-     <p><a name="get_005fpreferred_005fmerge3_005fcommand"></a>
-<br><dt><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code><a name="index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-212"></a><dd>
+     <p><a name="get_005fpreferred_005fmerge3_005fcommand"></a><br><dt><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code><a name="index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-212"></a><dd>
 Returns the results of running an external merge on three strings. 
 <var>tbl</var> wraps up the various arguments for each merge command and
 is always provided by <a href="merge3.html#merge3">merge3</a>. If there is a particular editor
@@ -769,7 +767,7 @@ attribute. Its definition is:
                    make_executable(filename)
                 end
              end
-     </pre>
+</pre>
      <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-216"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_init_functions</code>, at
@@ -798,7 +796,7 @@ definition is:
                   return nil
                 end
              end
-     </pre>
+</pre>
      <p>The <code>binary_file</code> function is also defined as a Lua hook. See
 <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 

@@ -3,7 +3,7 @@
 <title>Network - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.11">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Workspace.html#Workspace" title="Workspace">
@@ -80,11 +80,11 @@ branches. Supposing Alice's computer has hostname
 <code>alice.someisp.com</code>, then Alice might run:
 
      <pre class="smallexample">          $ mtn --bind=alice.someisp.com serve
-     </pre>
+</pre>
      <p>And Bob might run
 
      <pre class="smallexample">          $ mtn sync alice.someisp.com "net.venge.monotone*"
-     </pre>
+</pre>
      <p>When the operation completes, all branches matching
 <code>net.venge.monotone*</code> will be synchronized between Alice and Bob's
 databases.
@@ -96,7 +96,7 @@ the same server and glob.  For instance, if Bob wants to <samp><span class="comm
 with Alice again, he can simply run:
 
      <pre class="smallexample">          $ mtn sync
-     </pre>
+</pre>
      <p>Of course, he can still <samp><span class="command">sync</span></samp> with other people and other
 branches by passing an address or address plus globs on the command
 line; this will not affect his default affinity for Alice.  If you ever

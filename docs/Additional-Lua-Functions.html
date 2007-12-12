@@ -3,7 +3,7 @@
 <title>Additional Lua Functions - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.11">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Hook-Reference.html#Hook-Reference" title="Hook Reference">
 <link rel="prev" href="Hooks.html#Hooks" title="Hooks">
@@ -63,7 +63,7 @@ more of the following characters:
      <pre class="smallexample">          0x00 thru 0x06
           0x0E thru 0x1a
           0x1c thru 0x1f
-     </pre>
+</pre>
      <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-223"></a><dd>
 This function tries to load and execute the script contained into
 scriptfile.  It returns true for success and false if there is an
@@ -143,7 +143,7 @@ the arguments.
           thingy "baz"
           spork
           frob "oops"
-     </pre>
+</pre>
      <p>The output table will be:
      <pre class="smallexample">          {
              1 = { name = "thingy", values = { 1 = "foo", 2 = "bar" } },
@@ -151,7 +151,7 @@ the arguments.
              3 = { name = "spork", values = { } },
              4 = { name = "frob", values = { 1 = "oops" } }
           }
-     </pre>
+</pre>
      <br><dt><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code><a name="index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-233"></a><dd>
 Returns true if a match for <var>regexp</var> is found in <var>str</var>, return
 false otherwise.  See <a href="Regexps.html#Regexps">Regexps</a>, for the syntax of <var>regexp</var>.

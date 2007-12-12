@@ -3,7 +3,7 @@
 <title>Key and Cert Trust - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.11">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Informative.html#Informative" title="Informative">
@@ -85,11 +85,11 @@ following two examples are equivalent:
           enter passphrase for key ID [user@example.com]:
           $ mtn ci -m"Changed foo to bar"
           $ mtn push -k user@example.com
-     </pre>
+</pre>
      <pre class="smallexample">          $ mtn ci -m"Changed foo to bar"
           enter passphrase for key ID [user@example.com]:
           $ mtn push -k user@example.com
-     </pre>
+</pre>
      <p>In the second example, monotone automatically added the key to ssh-agent, making
 entering the passphrase not needed during the push.
 
@@ -112,7 +112,7 @@ will cache the key for you.
           Identity added: /home/user/.ssh/id_monotone (/home/user/.ssh/id_monotone)
           $ mtn ci -m"Changed foo to bar"
           $ mtn push -k user@example.com
-     </pre>
+</pre>
      <p>You can also use the <samp><span class="option">--ssh-sign</span></samp> option to control whether ssh-agent will
 be used for signing. If set to <em>yes</em>, ssh-agent will be used to sign. If your
 key has not been added to ssh-agent monotone will fall back to its internal signing

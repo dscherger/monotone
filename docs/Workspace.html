@@ -3,7 +3,7 @@
 <title>Workspace - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.11">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Tree.html#Tree" title="Tree">
@@ -236,8 +236,8 @@ specify an explicit <samp><span class="option">--revision</span></samp> argument
      <br><dt><samp><span class="command">mtn pluck --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bto_007d-42"></a><dt><samp><span class="command">mtn pluck --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-43"></a><dd>
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
-identical to running <samp><span class="command">mtn diff <samp>-r</samp> </span><var>from</var><span class="command">
-<samp>-r</samp> </span><var>to</var><span class="command"> | patch <samp>-p0</samp></span></samp>, except that this command
+identical to running <samp><span class="command">mtn diff </span><samp><span class="option">-r</span></samp> <var>from</var>
+<samp><span class="option">-r</span></samp> <var>to</var><span class="command"> | patch </span><samp><span class="option">-p0</span></samp></samp>, except that this command
 uses monotone's merger, and thus intelligently handles renames,
 conflicts, and so on.
 
@@ -287,7 +287,7 @@ workspace:
 
      <pre class="smallexample">          $ mtn rename . <var>new_root</var>/<var>put_old</var>
           $ mtn rename <var>new_root</var> .
-     </pre>
+</pre>
      <p>Except, of course, that these <samp><span class="command">rename</span></samp> commands are illegal,
 because after the first command the tree has no root at all, and there
 is a directory loop.  This illegality is the only reason for
