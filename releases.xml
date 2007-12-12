@@ -5,8 +5,69 @@
         <link>http://monotone.ca/releases.xml</link> 
         <description>monotone releases with links to the sources.</description> 
         <language>en</language> 
-        <pubDate>Fri, 25 Oct 2007 22:35:33 +0000</pubDate>
+        <pubDate>Wed, 12 Dec 2007 21:21:15 +0000</pubDate>
         
+	<item>
+            <title>monotone 0.38 released</title> 
+            <description>
+<![CDATA[
+<h2>Changes</h2>
+
+<ul>
+<li>mtn log now prints a single dot for a project's root
+directory instead of an empty string.</li>
+
+<li>mtn now warns if changes to a file will be ignored because
+the file has been deleted on one side of a merge.</li>
+
+<li>mtn now errors if your chosen private key doesn't match the public
+key of the same name in your database.</li>
+
+<li>mtn now checks for your key before a merge action takes place to
+ensure that any manually merged file isn't lost in an error case</li>
+</ul>
+  
+<h2>Bugs fixed</h2>
+
+<ul>
+<li>a bug introduced in 0.37 prevented an external merger from being
+executed unless the MTN_MERGE environment variable was set</li>
+
+<li>mtn read successfully reads revision data, and cert packets again</li>
+
+<li>mtn consistently supports certs with empty values 
+(fixed 'ls certs' and 'read') </li>
+</ul>
+
+<h2>Internal</h2>
+
+<ul>
+<li>Update Botan to 1.7.2.</li>
+
+<li>Moved the gzip implementation out of the Botan directory.</li>
+</ul>
+
+<h2>Other</h2>
+
+<ul>
+<li>Added the scripts of the following Lua-based contributed
+Monotone extension commands to contrib/command/:
+"mtn base", "mtn fuse", "mtn revision", "mtn conflicts".</li>
+
+<li>Added a hooks version of the contributed ciabot script,
+contrib/ciabot_monotone_hookversion.lua</li>
+
+<li>The monotone manual is now licensed under the GPL rather than
+the GFDL.</li>
+</ul>
+
+]]>
+            </description>
+            <pubDate>Wed, 12 Dec 2007 21:21:15 +0000</pubDate>
+            <enclosure url="http://monotone.ca/downloads/0.38/monotone-0.38.tar.gz" length="5264665" type="application/octet-stream"/>
+
+	</item>
+
         <item> 
             <title>monotone 0.37 released</title> 
             <description>
