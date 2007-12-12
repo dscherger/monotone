@@ -2501,7 +2501,7 @@ drop_session_associated_with_fd(map<Netxx::socket_type, shared_ptr<session> > & 
 }
 
 static void
-arm_sessions_and_calculate_probe(Netxx::Probe & probe,
+arm_sessions_and_calculate_probe(Netxx::StdioProbe & probe,
                                  map<Netxx::socket_type, shared_ptr<session> > & sessions,
                                  set<Netxx::socket_type> & armed_sessions,
                                  transaction_guard & guard)
@@ -2718,7 +2718,7 @@ serve_connections(protocol_role role,
                   unsigned long timeout_seconds,
                   unsigned long session_limit)
 {
-  Netxx::Probe probe;
+  Netxx::StdioProbe probe;
 
   Netxx::Timeout
     forever,
