@@ -17,6 +17,7 @@
 #include "netxx_pipe.hh"
 
 #include <stdio.h>
+#include <io.h>
 
 struct tester_sanity : public sanity
 {
@@ -32,49 +33,67 @@ struct tester_sanity : public sanity
 tester_sanity real_sanity;
 sanity & global_sanity = real_sanity;
 
-int main (int argc, char *argv[])
+int main (int argc, const char *argv[])
 {
+  int fid = STDIN_FILENO;
 
-  Netxx::StdioStream        stream (STDIN_FILENO, STDOUT_FILENO);
-  Netxx::StdioProbe         probe;
-  Netxx::Probe::result_type probe_result;
-  Netxx::Timeout            short_time(0,1000);
-
-  char buffer[256];
-  Netxx::signed_size_type bytes_read;
-  int i;
-
-  probe.add (stream, Netxx::Probe::ready_read);
-
-  // if no argument specified, continue forever; else exit after 100 loops
-  for (i = 0; (argc == 1) || (i < 100); i++)
+  // If an argument is given, it is a file to read instead of stdin, for debugging
+  if (argc == 2)
     {
-      probe_result = probe.ready(short_time);
-      fprintf (stderr, "probe_result => %d\n", probe_result.second);
-
-      switch (probe_result.second)
-        {
-        case Netxx::Probe::ready_none:
-          break;
-
-        case Netxx::Probe::ready_read:
-          bytes_read = stream.read (buffer, sizeof (buffer));
-          fprintf (stderr, "bytes read => %d\n", bytes_read);
-          stream.write (buffer, bytes_read);
-
-          break;
-
-        case Netxx::Probe::ready_write:
-          break;
-
-	case Netxx::Probe::ready_oobd:
-          continue;
-          break;
-        }
+      fprintf (stderr, "opening %s\n", argv[1]);
+      fid = _open (argv[1], 0);
     }
 
-  stream.close();
+  {
+    Netxx::StdioStream        stream (fid, STDOUT_FILENO);
+    Netxx::StdioProbe         probe;
+    Netxx::Probe::result_type probe_result;
+    Netxx::Timeout            short_time(0,1000);
 
+    char buffer[256];
+    Netxx::signed_size_type bytes_read;
+    int i;
+
+    probe.add (stream, Netxx::Probe::ready_read);
+
+    // if no argument specified, continue forever; else exit after 100 loops
+    for (i = 0; (argc == 1) || (i < 100); i++)
+      try
+      {
+        probe_result = probe.ready(short_time);
+        fprintf (stderr, "probe_result => %d\n", probe_result.second);
+
+        switch (probe_result.second)
+          {
+          case Netxx::Probe::ready_none:
+            break;
+
+          case Netxx::Probe::ready_read:
+            bytes_read = stream.read (buffer, sizeof (buffer));
+            fprintf (stderr, "bytes read => %d\n", bytes_read);
+            stream.write (buffer, bytes_read);
+
+            break;
+
+          case Netxx::Probe::ready_write:
+            break;
+
+          case Netxx::Probe::ready_oobd:
+            break;
+          }
+      }
+    catch (std::runtime_error &e)
+      {
+        fprintf (stderr, "exception: %s\n", e.what());
+        break;
+      }
+
+    stream.close();
+
+    if (fid != STDIN_FILENO)
+      _close (fid);
+
+  }
   return 1;
 } // end main
 // end of file
