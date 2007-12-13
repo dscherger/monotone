@@ -59,12 +59,6 @@ Netxx::StdioStream::StdioStream(int _readfd, int _writefd)
   if (_setmode(_writefd, _O_BINARY) == -1)
     L(FL("failed to set output file descriptor to binary"));
 
-#else
-  // FIXME: do we need to set these non-blocking?
-  int flags = fcntl(readfd, F_GETFL, 0);
-  I(fcntl(readfd, F_SETFL, flags | O_NONBLOCK) != -1);
-  flags = fcntl(writefd, F_GETFL, 0);
-  I(fcntl(writefd, F_SETFL, flags | O_NONBLOCK) != -1);
 #endif
 }
 
@@ -351,7 +345,7 @@ UNIT_TEST(pipe, spawn_cat)
 
 UNIT_TEST(pipe, spawn_stdio)
 {
-  unit_test_spawn ("netxx_pipe_stdio_main");
+  unit_test_spawn ("./netxx_pipe_stdio_main");
 }
 
 #endif

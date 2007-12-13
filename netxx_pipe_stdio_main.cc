@@ -17,7 +17,12 @@
 #include "netxx_pipe.hh"
 
 #include <stdio.h>
+
+#ifdef WIN32
 #include <io.h>
+#else
+#include <fcntl.h>
+#endif
 
 struct tester_sanity : public sanity
 {
@@ -33,15 +38,17 @@ struct tester_sanity : public sanity
 tester_sanity real_sanity;
 sanity & global_sanity = real_sanity;
 
-int main (int argc, const char *argv[])
+int main (int argc, char *argv[])
 {
   int fid = STDIN_FILENO;
+
+  global_sanity.initialize(argc, argv, 0);
 
   // If an argument is given, it is a file to read instead of stdin, for debugging
   if (argc == 2)
     {
       fprintf (stderr, "opening %s\n", argv[1]);
-      fid = _open (argv[1], 0);
+      fid = open (argv[1], 0);
     }
 
   {
@@ -50,29 +57,29 @@ int main (int argc, const char *argv[])
     Netxx::Probe::result_type probe_result;
     Netxx::Timeout            short_time(0,1000);
 
-    char buffer[256];
+    char                    buffer[256];
     Netxx::signed_size_type bytes_read;
-    int i;
+    int                     i;
+    int                     quit = 0;
 
     probe.add (stream, Netxx::Probe::ready_read);
 
-    // if no argument specified, continue forever; else exit after 100 loops
-    for (i = 0; (argc == 1) || (i < 100); i++)
+    // Exit when ready returns none
+    // But that never happens when reading a file, so exit on a count in that case
+    for (i = 0; (!quit) && ((argc == 1) || (i < 100)); i++)
       try
       {
         probe_result = probe.ready(short_time);
-        fprintf (stderr, "probe_result => %d\n", probe_result.second);
 
         switch (probe_result.second)
           {
           case Netxx::Probe::ready_none:
+            quit = 1;
             break;
 
           case Netxx::Probe::ready_read:
             bytes_read = stream.read (buffer, sizeof (buffer));
-            fprintf (stderr, "bytes read => %d\n", bytes_read);
             stream.write (buffer, bytes_read);
-
             break;
 
           case Netxx::Probe::ready_write:
@@ -91,7 +98,7 @@ int main (int argc, const char *argv[])
     stream.close();
 
     if (fid != STDIN_FILENO)
-      _close (fid);
+      close (fid);
 
   }
   return 1;
