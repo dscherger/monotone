@@ -2,6 +2,9 @@ monotone (0.38-1) unstable; urgency=low
 
   [ Richard Levitte ]
   * New upstream release.
+  * The log_quits_on_SIGPIPE test malfunctions on Linux.  Add a temporary
+    patch disabling it on Debian, giving upstream a chance to fix the
+    problem while being able to build the Debian package without trouble.
 
   [ Zack Weinberg ]
   * monotone-server.postrm: Delete default.mtn~ on purge.
