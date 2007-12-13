@@ -1,17 +1,14 @@
 #! /bin/sh /usr/share/dpatch/dpatch-run
-## 01_disable_SIGPIPE_test.dpatch by  <levitte@lapdog.home.levitte.org>
+## 01_disable_SIGPIPE_test.dpatch by  <richard@levitte.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
 ## DP: A patch to disable the log_quits_on_SIGPIPE test temporarly
 
 @DPATCH@
 
---- tests/log_quits_on_SIGPIPE/__driver__.lua	516da7ffcbf62fcbe923784a6a1d11bedbb553e2
-+++ tests/log_quits_on_SIGPIPE/__driver__.lua	7bed3257834b7cb2be5450f617f20e2a4dbb8f86
-@@ -1,9 +1,11 @@ skip_if(ostype=="Windows")
- -- user interaction commands that produce a lot of output, like 'mtn
- -- log', should die immediately on SIGPIPE (which they'll get if, for
- -- instance, the user pipes the command to a pager, reads the first
+--- monotone-0.38-1/tests/log_quits_on_SIGPIPE/__driver__.lua~	2007-12-11 13:46:36.000000000 +0100
++++ monotone-0.38-1/tests/log_quits_on_SIGPIPE/__driver__.lua	2007-12-11 13:48:20.000000000 +0100
+@@ -4,6 +4,8 @@
  -- few dozen lines, and then quits the pager).
  
  skip_if(ostype=="Windows")

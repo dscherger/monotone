@@ -51,6 +51,8 @@ endif
 
 CFLAGS ?= $(DEFAULT_CFLAGS)
 
+include /usr/share/dpatch/dpatch.make
+
 # put this up top so it's the default rule.
 #
 # Policy (section 4.9) says that build should depend on build-indep.
@@ -69,7 +71,7 @@ CFLAGS ?= $(DEFAULT_CFLAGS)
 # binary-indep phase rather than the build phase, which works fine (as
 # long as you are being sensible and using fakeroot, anyway; I haven't
 # tried it with actual root privileges and don't propose to).
-build: build-arch
+build: patch-stamp build-arch
 
 config.status: configure
 	dh_testdir
@@ -105,7 +107,8 @@ build-indep-stamp: config.status
 	make -j$(CPUS) info html monotone.pdf
 	touch $@
 
-clean:
+clean: clean1 unpatch
+clean1:
 	dh_testdir
 	dh_testroot
 	[ ! -f Makefile ] || $(MAKE) distclean
