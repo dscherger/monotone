@@ -284,10 +284,11 @@ Netxx::StdioProbe::add(const StreamBase &sb, ready_type rt)
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
-UNIT_TEST(pipe, spawned)
+void unit_test_spawn (char *cmd)
 { try
   {
-  Netxx::SpawnedStream spawned("cat",vector<string>());
+  // netxx_pipe_stdio_main uses StdioStream, StdioProbe
+  Netxx::SpawnedStream spawned (cmd, vector<string>());
 
   string result;
   Netxx::Probe probe;
@@ -343,7 +344,15 @@ catch (informative_failure &e)
   }
 }
 
-// FIXME: test StdioStream
+UNIT_TEST(pipe, spawn_cat)
+{
+  unit_test_spawn ("cat");
+}
+
+UNIT_TEST(pipe, spawn_stdio)
+{
+  unit_test_spawn ("netxx_pipe_stdio_main");
+}
 
 #endif
 
@@ -354,5 +363,3 @@ catch (informative_failure &e)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-* netxx_pipe.cc (SpawnedStream::SpawnedStream):

@@ -357,6 +357,10 @@ tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
 		 $(filter %.cc, $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) \
 		 	  	pcrewrap.cc)))
 
+netxx_pipe_stdio_main_SOURCES = netxx_pipe_stdio_main.cc netxx_pipe.cc
+netxx_pipe_stdio_main_CPPFLAGS = -I$(top_srcdir)/lua
+netxx_pipe_stdio_main_LDADD = $(tester_LDADD)
+
 txt2c_SOURCES = txt2c.cc
 
 noinst_LIBRARIES = libplatform.a lib3rdparty.a
@@ -450,6 +454,7 @@ if WIN32_PLATFORM
   mtn_SOURCES += win32/main.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
+  netxx_pipe_stdio_main_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   lib3rdparty_a_CPPFLAGS += -DWIN32 -DBOTAN_EXT_ENTROPY_SRC_CAPI -DBOTAN_EXT_ENTROPY_SRC_WIN32
   lib3rdparty_a_SOURCES += botan/es_capi.cpp botan/es_win32.cpp
 else
@@ -645,7 +650,7 @@ run_%_tests: Makefile
 
 unit_tests.status : unit_tester
 lua_tests.status : mtn
-check_PROGRAMS = unit_tester tester
+check_PROGRAMS = unit_tester tester netxx_pipe_stdio_main
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
@@ -835,3 +840,5 @@ html: monotone.texi version.texi std_hooks.lua texinfo.css
 		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
 		rm -f $$f.bak; \
 	done
+
+* Makefile.am (check_PROGRAMS):
