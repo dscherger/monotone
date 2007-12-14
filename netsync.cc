@@ -2970,7 +2970,7 @@ serve_single_connection(protocol_role role,
                         app_state & app,
                         unsigned long timeout_seconds)
 {
-  shared_ptr<Netxx::StreamBase> str(new Netxx::StdioStream(0,1));
+  shared_ptr<Netxx::StreamBase> str(new Netxx::StdioStream);
   shared_ptr<session> sess (new session (role, server_voice,
                                          include_pattern, exclude_pattern,
                                          app, "stdio", str));
