@@ -58,6 +58,8 @@
 
 namespace Netxx
   {
+  class StdioProbe;
+  class StreamServer;
 
   class SpawnedStream : public StreamBase
     {
@@ -83,19 +85,18 @@ namespace Netxx
       virtual const ProbeInfo* get_probe_info (void) const;
     };
 
-    class StdioProbe;
-
     class StdioStream : public StreamBase
     {
       friend class StdioProbe;
-      int          readfd;
-      int          writefd;
-      ProbeInfo    probe_info;
+
+      int       readfd;
+      int       writefd;
+      ProbeInfo probe_info;
 
     public:
-      explicit StdioStream (int readfd, int writefd);
-      // Construct a Stream object from existing files; typically stdout
-      // and stdin of the current process.
+      explicit StdioStream (void);
+      // Construct a Stream object from stdout and stdin of the current
+      // process.
 
       virtual ~StdioStream() { close(); }
       virtual signed_size_type read (void *buffer, size_type length);
@@ -108,8 +109,11 @@ namespace Netxx
     struct StdioProbe : Probe
     {
     public:
+      // Note that Netxx::Probe::add is a template, not virtual; we provide
+      // the versions needed by netsync code.
       void add(const StdioStream &ps, ready_type rt=ready_none);
       void add(const StreamBase &sb, ready_type rt=ready_none);
+      void add(const StreamServer &ss, ready_type rt=ready_none);
     };
 }
 

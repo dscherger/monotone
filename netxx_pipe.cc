@@ -35,14 +35,19 @@ using std::exit;
 using std::perror;
 using std::strerror;
 
-Netxx::StdioStream::StdioStream(int _readfd, int _writefd)
+Netxx::StdioStream::StdioStream(void)
     :
-  readfd(_readfd),
-  writefd(_writefd)
+#ifdef WIN32
+  readfd ((int)GetStdHandle(STD_INPUT_HANDLE)),
+  writefd ((int)GetStdHandle(STD_OUTPUT_HANDLE))
+#else
+  readfd (stdin),
+  writefd (stdout)
+#endif
 {
   // This allows netxx to call select() on these file descriptors. Unless
   // they are actually a socket (ie, we are spawned from 'mtn sync
-  // file:...'), this will fail (at least on Win32).
+  // file:...'), this will fail on Win32.
   probe_info.add_socket (readfd);
   probe_info.add_socket (writefd);
 
@@ -53,10 +58,10 @@ Netxx::StdioStream::StdioStream(int _readfd, int _writefd)
       L(FL("failed to load WinSock"));
   }
 
-  if (_setmode(_readfd, _O_BINARY) == -1)
+  if (_setmode(readfd, _O_BINARY) == -1)
     L(FL("failed to set input file descriptor to binary"));
 
-  if (_setmode(_writefd, _O_BINARY) == -1)
+  if (_setmode(writefd, _O_BINARY) == -1)
     L(FL("failed to set output file descriptor to binary"));
 
 #endif
@@ -272,6 +277,19 @@ Netxx::StdioProbe::add(const StreamBase &sb, ready_type rt)
   catch (...)
     {
       Probe::add(sb,rt);
+    }
+}
+
+void
+Netxx::StdioProbe::add(const StreamServer &ss, ready_type rt)
+{
+  try
+    {
+      Probe::add(ss,rt);
+    }
+  catch (...)
+    {
+      I(0); // Should not be a StdioStream here
     }
 }
 
