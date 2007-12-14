@@ -2269,18 +2269,12 @@ public:
       // until we find the source (e.first) blob of the cross edge.
       I(cvs.blobs[e.first].color == grey);
       I(cvs.blobs[path_a[0]].color == grey);
-      dijkstra_shortest_path(cvs, path_a[0], e.first, ity_b,
-                             true,               // downwards
-                             false, true, false, // follow only grey
+      dijkstra_shortest_path(cvs, e.first, path_a[0], ity_b,
+                             false,               // upwards
+                             false, true, false,  // follow only grey
                              false,
                              make_pair(invalid_blob, invalid_blob));
       I(!path_b.empty());
-
-      {
-        vector< cvs_blob_index > tmp(path_b.size());
-        reverse_copy(path_b.begin(), path_b.end(), tmp.begin());
-        swap(tmp, path_b);
-      }
       path_b.push_back(e.second);
 
       // At this point we have two different paths, both going from the
