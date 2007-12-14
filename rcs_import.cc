@@ -3157,6 +3157,7 @@ class blob_label_writer
           // print the contents of the blob, i.e. the single files
           for (blob_event_iter i = b.begin(); i != b.end(); i++)
             {
+              cvs_commit *ce = (cvs_commit*) *i;
               label += cvs.path_interner.lookup((*i)->path);
 
               if (b.get_digest().is_commit())
@@ -3166,7 +3167,7 @@ class blob_label_writer
                   strftime (buffer, 80, " %Y-%m-%d %H:%M:%S", timeinfo);
 
                   label += "@";
-                  label += cvs.rcs_version_interner.lookup((*i)->rcs_version);
+                  label += cvs.rcs_version_interner.lookup(ce->rcs_version);
                   label += buffer;
                 }
               label += "\\n";
