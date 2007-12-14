@@ -12,6 +12,9 @@ monotone (0.38-1) unstable; urgency=low
   * Add Homepage: and Vcs-Browser: fields to debian/control.
   * Standards-Version: 3.7.3 (no changes required).
 
+  [Ludovic Brenta]
+  * Build-depend on dpatch.
+
  -- Richard Levitte <richard@levitte.org>  Wed, 12 Dec 2007 20:52:32 +0100
 
 monotone (0.37-4) unstable; urgency=low
