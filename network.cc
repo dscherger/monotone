@@ -202,6 +202,21 @@ public:
       srv(0),
       last_io_time(::time(NULL))
   {
+    // FIXME: does this really go here?
+    if (voice == server_voice)
+      {
+        // netsync::begin_service
+        rsa_pub_key pub;
+        if (app.opts.use_transport_auth)
+          {
+            keypair kp;
+            app.keys.get_key_pair(app.opts.signing_key, kp);
+            decode_base64(kp.pub, pub);
+          }
+        netcmd cmd;
+        cmd.write_hello_cmd(app.opts.signing_key, pub, mk_nonce());
+        queue(cmd);
+      }
   }
 
 
