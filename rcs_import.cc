@@ -2756,8 +2756,8 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
   // files involved, these ranges can be overlapping, i.e.:
   //
   //           o    o   o       |
-  //     A ->  |    |   |       | t
-  //           o    |   |       | i
+  //     A ->  |    |   |       | t       -o-      commits
+  //           o    |   |       | i       A, B, C  possible split points
   //     B ->  |    |   |       | m
   //           |    o   |       | e
   //     C ->  |    |   |       |
