@@ -729,11 +729,13 @@ netsync::request_service()
 void
 netsync::begin_service()
 {
+  /*
   //FIXME: this should move to network.hh
   keypair kp;
   if (app.opts.use_transport_auth)
     app.keys.get_key_pair(app.opts.signing_key, kp);
   queue_hello_cmd(app.opts.signing_key, kp.pub, mk_nonce());
+  */
 }
 
 
