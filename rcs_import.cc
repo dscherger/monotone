@@ -2722,7 +2722,6 @@ time_i
 get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 {
   list< pair<time_i, time_i> > ib_deps;
-  list<time_i> simultaneous_deps;
 
   // Collect the conflicting intra-blob dependencies, storing the
   // timestamps of both events involved.
@@ -2752,9 +2751,8 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
       for (blob_event_iter j = i + 1; j != cvs.blobs[bi].end(); ++j)
         if ((*i)->path == (*j)->path)
           {
-            if ((*i)->adj_time == (*j)->adj_time)
-              simultaneous_deps.push_back((*i)->adj_time);
-            else if ((*i)->adj_time > (*j)->adj_time)
+            I((*i)->adj_time != (*j)->adj_time);
+            if ((*i)->adj_time > (*j)->adj_time)
               ib_deps.push_back(make_pair((*j)->adj_time, (*i)->adj_time));
             else
               ib_deps.push_back(make_pair((*i)->adj_time, (*j)->adj_time));
@@ -2795,13 +2793,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
         event_times.insert(i->second);
     }
 
-  if (event_times.size() <= 0)
-    {
-      W(F("unable to split blob %d (%s)")
-        % bi % get_event_repr(cvs, *cvs.blobs[bi].begin()));
-      I(simultaneous_deps.empty());
-      return 0;
-    }
+  I(event_times.size() > 0);
 
   set<time_i>::const_iterator last, curr;
   last = event_times.begin();
@@ -3020,15 +3012,68 @@ bool
 resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
 {
   cvs_blob & blob = cvs.blobs[bi];
+  for (vector<cvs_event_ptr>::iterator i = blob.begin(); i != blob.end(); ++i)
+    {
+      for (vector<cvs_event_ptr>::iterator j = i + 1; j != blob.end(); )
+        if (((*i)->path == (*j)->path) &&
+             ((*i)->adj_time == (*j)->adj_time))
+          {
+            // For events in the *same* blob, with the *same* changelog
+            // and author or same symbol name, we simply merge the
+            // events. They were not even important enough to get
+            // different changelog texts. Most probably they originate
+            // from duplicate RCS files in Attic and alive.
+
+            L(FL("merging events %s and %s") % get_event_repr(cvs, *i) % get_event_repr(cvs, *j));
+
+            if (blob.etype == ET_COMMIT)
+              {
+                cvs_commit *ci = (cvs_commit*) (*i);
+                cvs_commit *cj = (cvs_commit*) (*j);
+                I(ci->rcs_version == cj->rcs_version);
+              }
+
+            // let the first take over its dependencies...
+            for (dep_loop k = cvs.get_dependencies(*j); !k.ended(); ++k)
+              {
+                event_dep_iter ep(k.get_pos());
+                I(ep->first == *j);
+                ep->first = *i;
+              }
+            cvs.blobs[(*i)->bi].reset_deps_cache();
+
+            // ..and correct dependents
+            for (dep_loop k = cvs.get_dependents(*j); !k.ended(); ++k)
+              {
+                event_dep_iter ep(k.get_pos());
+                I(ep->first == *j);
+                ep->first = *i;
+                cvs.blobs[ep->second->bi].reset_deps_cache();
+              }
+
+            cvs.sort_dependencies();
+
+            // remove second event from the blob
+            j = blob.get_events().erase(j);
+          }
+        else
+          ++j;
+    }
+
+  // We don't need to split because of end of branch events, which
+  // might have different timestamps even if they conflict, thus they
+  // won't be merged above.
+  if (blob.etype == ET_BRANCH_END)
+    return true;
+
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
       for (blob_event_iter j = i + 1; j != blob.end(); ++j)
         if ((*i)->path == (*j)->path)
           {
-            L(FL("Trying to split blob %d, because of multiple events for file %s")
-              % bi % cvs.path_interner.lookup((*i)->path));
+            L(FL("Trying to split blob %d, because of events %s and %s")
+              % bi % get_event_repr(cvs, *i) % get_event_repr(cvs, *j));
             split_by_time func(get_best_split_point(cvs, bi));
-            L(FL("  splitting intra blob by time"));
             split_blob_at(cvs, bi, func);
             return false;
           }
