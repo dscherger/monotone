@@ -1661,7 +1661,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
     calculate_ident(dat, id);
     file_id fid(id);
 
-    cvs.set_filename (filename, fid);
+    cvs.set_filename(filename, fid);
     cvs.index_branchpoint_symbols (r);
     if (!app.opts.dryrun)
       app.db.put_file(fid, file_data(dat));
@@ -1740,12 +1740,22 @@ cvs_history::set_filename(string const & file,
   I(file.substr(file.size() - 2) == string(",v"));
   string ss = file;
   ui.set_tick_trailer(ss);
-  ss.resize(ss.size() - 2);
+
   // remove Attic/ if present
-  string::size_type last_slash=ss.rfind('/');
-  if (last_slash!=string::npos && last_slash>=5
-        && ss.substr(last_slash-5,6)=="Attic/")
-     ss.erase(last_slash-5,6);
+  string::size_type last_slash = ss.rfind('/');
+  if (last_slash != string::npos && last_slash >= 5
+        && ss.substr(last_slash - 5, 6)=="Attic/")
+    {
+      ss.erase(last_slash - 5, 6);
+
+      if (file_exists(file_path_internal(ss)))
+        W(F("File %s exists alive as well as in the Attic! "
+            "Merging contents.") % ss);
+    }
+
+  // strip the extension
+  ss.resize(ss.size() - 2);
+
   curr_file = file_path_internal(ss);
   curr_file_interned = path_interner.intern(ss);
 }
