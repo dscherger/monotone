@@ -350,7 +350,7 @@ struct event_pool
   template<typename T>
   T *allocate(void)
     {
-      u32 s = sizeof(T);
+      int s = sizeof(T);
 
       if ((pool_end - pool_start) <= s)
         {
