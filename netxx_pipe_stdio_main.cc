@@ -15,6 +15,7 @@
 
 #include "base.hh"
 #include "netxx_pipe.hh"
+#include "platform.hh"
 
 #include <stdio.h>
 
@@ -40,22 +41,13 @@ sanity & global_sanity = real_sanity;
 
 int main (int argc, char *argv[])
 {
-  int fid = STDIN_FILENO;
-
   global_sanity.initialize(argc, argv, 0);
 
-  // If an argument is given, it is a file to read instead of stdin, for debugging
-  if (argc == 2)
-    {
-      fprintf (stderr, "opening %s\n", argv[1]);
-      fid = open (argv[1], 0);
-    }
-
   {
-    Netxx::StdioStream        stream (fid, STDOUT_FILENO);
+    Netxx::StdioStream        stream;
     Netxx::StdioProbe         probe;
     Netxx::Probe::result_type probe_result;
-    Netxx::Timeout            short_time(0,1000);
+    Netxx::Timeout            timeout(0, 1000);
 
     char                    buffer[256];
     Netxx::signed_size_type bytes_read;
@@ -63,13 +55,26 @@ int main (int argc, char *argv[])
     int                     quit = 0;
 
     probe.add (stream, Netxx::Probe::ready_read);
+    stream.set_timeout (timeout);
 
-    // Exit when ready returns none
-    // But that never happens when reading a file, so exit on a count in that case
-    for (i = 0; (!quit) && ((argc == 1) || (i < 100)); i++)
+    // Exit when ready times out; socket has been closed
+    for (;!quit;)
       try
       {
-        probe_result = probe.ready(short_time);
+        probe_result = probe.ready(timeout, Netxx::Probe::ready_read);
+
+        if (-1 == probe_result.first)
+          {
+            // timeout; assume we're running the probe:spawn_stdio unit test, and it's done (the socket closed)
+            quit = 1;
+            continue;
+          }
+        else if (stream.get_socketfd() != probe_result.first)
+          {
+            fprintf (stderr, "ready returned other socket\n");
+            quit = 1;
+            continue;
+          }
 
         switch (probe_result.second)
           {
@@ -79,13 +84,30 @@ int main (int argc, char *argv[])
 
           case Netxx::Probe::ready_read:
             bytes_read = stream.read (buffer, sizeof (buffer));
-            stream.write (buffer, bytes_read);
+            if (-1 == bytes_read)
+              {
+                fprintf (stderr, "read timed out\n");
+                quit = 1;
+              }
+            else if (0 == bytes_read)
+              {
+                fprintf (stderr, "socket closed\n");
+                quit = 1;
+              }
+            else
+              {
+                stream.write (buffer, bytes_read);
+              }
             break;
 
           case Netxx::Probe::ready_write:
+            fprintf (stderr, "ready write\n", bytes_read);
+            quit = 1;
             break;
 
           case Netxx::Probe::ready_oobd:
+            fprintf (stderr, "ready oobd\n", bytes_read);
+            quit = 1;
             break;
           }
       }
@@ -96,9 +118,6 @@ int main (int argc, char *argv[])
       }
 
     stream.close();
-
-    if (fid != STDIN_FILENO)
-      close (fid);
 
   }
   return 1;

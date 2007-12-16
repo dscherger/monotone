@@ -35,19 +35,26 @@
   StdioStream.
 
   In 'mtn sync ssh:...' the local mtn spawns ssh, connecting to it via
-  SpawnedStream. On the server, ssh spawns 'mtn serve stdio', which uses
+  SpawnedStream. On the server, ssh spawns 'mtn serve --stdio', which uses
   StdioStream.
 
   We also need StdioProbe objects that work with StdioStream objects, since
-  Netxx::Probe doesn't. Netxx does not provide for child classes of Probe.
-  We handle this by having the netsync code create the appropriate Probe
-  object whenever it creates a StreamBase object.
+  Netxx::Probe doesn't. Netxx does not provide for child classes of Probe,
+  nor of ProbeInfo; none of the methods are virtual. We handle this by
+  having the netsync code always use a StdioProbe object when the StreamBase
+  object might be a StdioStream. StdioProbe acts like Probe unless the
+  stream is StdioStream. IMPROVEME: we only need a StdioProbe in
+  serve_single_connection; should fix Netxx to allow for derived classes.
 
-  We use socket pairs to implement these objects. On Unix and Win32, a
+  We use socket pairs to implement SpawnedStream. On Unix and Win32, a
   socket can serve as stdin and stdout for a spawned process.
 
   The sockets in the pair must be connected to each other; socketpair() does
   that nicely.
+
+  On Win32, select works on stdin only if it is actually a socket. We just
+  live with that restriction. It may mean Win32 can't be an ssh server for
+  mtn.
 
   An earlier implementation (a single class named PipeStream) tried to use
   Win32 overlapped IO via named pipes on Win32, and Unix select with Unix
@@ -60,6 +67,7 @@ namespace Netxx
   {
   class StdioProbe;
   class StreamServer;
+  class StdioStreamTest;
 
   class SpawnedStream : public StreamBase
     {
@@ -104,6 +112,16 @@ namespace Netxx
       virtual void close (void);
       virtual socket_type get_socketfd (void) const;
       virtual const ProbeInfo* get_probe_info (void) const;
+
+    private:
+      friend class StdioStreamTest;
+      // Unit test facilities
+
+      // noop constructor
+      explicit StdioStream (int test) {};
+
+      // Set socket for unit testing
+      void set_socketfd (socket_type sock);
     };
 
     struct StdioProbe : Probe

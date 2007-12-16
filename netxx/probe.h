@@ -48,8 +48,6 @@
 
 namespace Netxx {
 
-class PipeCompatibleProbe;
-
 /**
  * The Netxx::Probe class is a wrapper around one of the Netxx probe
  * classes. The reason that we have a wrapper is because most operating
@@ -58,7 +56,7 @@ class PipeCompatibleProbe;
 **/
 class Probe {
    /*
-    * Probe has no public way to probe stdio/stdin, so grant
+    * Probe has no public way to probe stdio/stdin, so allow
     * StdioProbe to use add_socket
     */
     friend class StdioProbe;

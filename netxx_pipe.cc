@@ -12,6 +12,7 @@
 #include <netxx_pipe.hh>
 #include "sanity.hh"
 #include "platform.hh"
+#include <netxx/osutil.h>
 #include <netxx/streamserver.h>
 #include <ostream> // for operator<<
 
@@ -45,9 +46,10 @@ Netxx::StdioStream::StdioStream(void)
   writefd (stdout)
 #endif
 {
-  // This allows netxx to call select() on these file descriptors. Unless
-  // they are actually a socket (ie, we are spawned from 'mtn sync
-  // file:...'), this will fail on Win32.
+  // This allows netxx to call select() on these file descriptors. On Win32,
+  // this will fail unless they are actually a socket (ie, we are spawned
+  // from 'mtn sync file:...', or some other program that sets stdin, stdout
+  // to a socket).
   probe_info.add_socket (readfd);
   probe_info.add_socket (writefd);
 
@@ -58,25 +60,125 @@ Netxx::StdioStream::StdioStream(void)
       L(FL("failed to load WinSock"));
   }
 
-  if (_setmode(readfd, _O_BINARY) == -1)
-    L(FL("failed to set input file descriptor to binary"));
-
-  if (_setmode(writefd, _O_BINARY) == -1)
-    L(FL("failed to set output file descriptor to binary"));
-
 #endif
 }
 
 Netxx::signed_size_type
 Netxx::StdioStream::read (void *buffer, size_type length)
 {
-  return ::read(readfd, buffer, length);
+  // based on netxx/socket.cxx read
+  signed_size_type  rc;
+  char             *buffer_ptr = static_cast<char*>(buffer);
+
+  for (;;)
+    {
+#ifdef WIN32
+      // readfd must be a socket, and 'read' doesn't work on sockets
+      rc = recv(readfd, buffer_ptr, length, 0);
+#else
+      // On Unix, this works for sockets as well as files and pipes.
+      rc = ::read(readfd, buffer, length);
+#endif
+      if (rc < 0)
+        {
+          error_type error_code = get_last_error();
+          if (error_code == EWOULDBLOCK) error_code = EAGAIN;
+
+          switch (error_code) {
+          case ECONNRESET:
+            return 0;
+
+          case EINTR:
+            continue;
+
+          case EAGAIN:
+            return -1;
+
+#ifdef WIN32
+
+          case WSAEMSGSIZE:
+            return length;
+
+          case WSAENETRESET:
+          case WSAESHUTDOWN:
+          case WSAECONNABORTED:
+          case WSAETIMEDOUT: // timed out shouldn't happen
+            return 0;
+
+#endif
+
+          default:
+            {
+              std::string error("recv failure: ");
+              error += str_error(error_code);
+              throw Exception(error);
+            }
+          }
+	}
+
+      break;
+    }
+
+    return rc;
 }
 
 Netxx::signed_size_type
 Netxx::StdioStream::write (const void *buffer, size_type length)
 {
-  return ::write(writefd, buffer, length);
+  // based on netxx/socket.cxx write
+  const char *buffer_ptr = static_cast<const char*>(buffer);
+  signed_size_type rc, bytes_written=0;
+
+  while (length)
+    {
+
+#ifdef WIN32
+      // writefd must be a socket, and 'write' doesn't work on sockets
+      rc = send(writefd, buffer_ptr, length, 0);
+#else
+      // On Unix, this works for sockets as well as files and pipes.
+      rc = ::write(writefd, buffer, length);
+#endif
+      if (rc < 0)
+        {
+          Netxx::error_type error_code = get_last_error();
+          if (error_code == EWOULDBLOCK) error_code = EAGAIN;
+
+          switch (error_code) {
+          case EPIPE:
+          case ECONNRESET:
+            return 0;
+
+          case EINTR:
+            continue;
+
+          case EAGAIN:
+            return -1;
+
+#if defined(WIN32)
+          case WSAENETRESET:
+          case WSAESHUTDOWN:
+          case WSAEHOSTUNREACH:
+          case WSAECONNABORTED:
+          case WSAETIMEDOUT:
+            return 0;
+#endif
+
+          default:
+            {
+              std::string error("send failed: ");
+              error += str_error(error_code);
+              throw Exception(error);
+            }
+          }
+        }
+
+      buffer_ptr    += rc;
+      bytes_written += rc;
+      length        -= rc;
+    }
+
+  return bytes_written;
 }
 
 void
@@ -88,7 +190,7 @@ Netxx::StdioStream::close (void)
 Netxx::socket_type
 Netxx::StdioStream::get_socketfd (void) const
 {
-  return writefd; // only used to register session
+  return writefd; // only used to register session in netsync
 }
 
 const Netxx::ProbeInfo*
@@ -97,17 +199,19 @@ Netxx::StdioStream::get_probe_info (void) const
   return &probe_info;
 }
 
-#ifdef WIN32
-static string
-err_msg()
+void
+Netxx::StdioStream::set_socketfd (socket_type sock)
 {
-  char buf[1024];
-  I(FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
-                  NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                  (LPSTR) &buf, sizeof(buf) / sizeof(TCHAR), NULL) != 0);
-  return string(buf);
+  readfd = sock;
+  writefd = sock;
+
+  probe_info.clear();
+  probe_info.add_socket (readfd);
+  probe_info.add_socket (writefd);
+
+  // We don't set binary on WIN32, because it is not necessary for send/recv
+  // on a socket.
 }
-#endif
 
 Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & args)
   :
@@ -176,7 +280,7 @@ Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & 
 
   E(started,
     F("CreateProcess(%s,...) call failed: %s")
-    % cmdline % err_msg());
+    % cmdline % win32_last_err_msg());
 
   child = piProcInfo.hProcess;
 
@@ -283,18 +387,99 @@ Netxx::StdioProbe::add(const StreamBase &sb, ready_type rt)
 void
 Netxx::StdioProbe::add(const StreamServer &ss, ready_type rt)
 {
-  try
-    {
-      Probe::add(ss,rt);
-    }
-  catch (...)
-    {
-      I(0); // Should not be a StdioStream here
-    }
+  // Should not be a StdioStream here
+  Probe::add(ss,rt);
 }
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
+
+namespace Netxx
+{
+  class StdioStreamTest : public StdioStream
+  {
+  public:
+    StdioStreamTest (void) : StdioStream (1) {};
+    void set_socket (socket_type sock);
+  };
+}
+
+void
+Netxx::StdioStreamTest::set_socket (socket_type sock)
+{
+  this->set_socketfd (sock);
+}
+
+UNIT_TEST(pipe, stdio_stream)
+{
+  Netxx::StdioStreamTest    stream;
+  Netxx::StdioProbe         probe;
+  Netxx::Probe::result_type probe_result;
+  Netxx::Timeout            short_time(0,1000);
+  Netxx::Timeout            timeout(2L);
+
+  char                    write_buffer[2];
+  char                    stream_read_buffer[2];
+  char                    parent_read_buffer[2];
+  Netxx::signed_size_type bytes_read;
+  Netxx::signed_size_type bytes_written;
+
+  Netxx::socket_type socks[2];
+
+#ifdef WIN32
+  {
+    WSADATA wsdata;
+    if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0)
+      L(FL("failed to load WinSock"));
+  }
+#endif
+
+  E(0 == dumb_socketpair (socks, 0), F("socketpair failed"));
+
+  // Test StdioStream read and write
+  stream.set_socket (socks[0]);
+
+  // test read time out
+  probe.clear();
+  probe.add(stream, Netxx::Probe::ready_read);
+  probe_result = probe.ready(short_time);
+  I(probe_result.first == -1); // timeout
+  I(probe_result.second == Netxx::Probe::ready_none);
+
+  // test StdioStream read
+  write_buffer[0] = 42;
+  write_buffer[1] = 43;
+
+  bytes_written = ::send (socks[1], write_buffer, 2, 0);
+  I(bytes_written == 2);
+
+  probe.clear();
+  probe.add(stream, Netxx::Probe::ready_read);
+  probe_result = probe.ready(short_time);
+  I(probe_result.second == Netxx::Probe::ready_read);
+  I(probe_result.first == stream.get_socketfd());
+
+  bytes_read = stream.read (stream_read_buffer, sizeof(stream_read_buffer));
+  I(bytes_read == 2);
+  I(stream_read_buffer[0] == 42);
+  I(stream_read_buffer[1] == 43);
+
+  // test StdioStream write
+  probe.clear();
+  probe.add(stream, Netxx::Probe::ready_write);
+  probe_result = probe.ready(short_time);
+  I(probe_result.second & Netxx::Probe::ready_write);
+  I(probe_result.first == stream.get_socketfd());
+
+  bytes_written = stream.write (write_buffer, 2);
+  I(bytes_written == 2);
+
+  bytes_read = ::recv (socks[1], parent_read_buffer, sizeof(parent_read_buffer), 0);
+
+  I(bytes_read == 2);
+  I(parent_read_buffer[0] == 42);
+  I(parent_read_buffer[1] == 43);
+}
 
 void unit_test_spawn (char *cmd)
 { try
@@ -319,13 +504,14 @@ void unit_test_spawn (char *cmd)
   I(res.second & Netxx::Probe::ready_write);
   I(res.first==spawned.get_socketfd());
 
-  // try binary transparency
+  // test binary transparency, lots of cycles
   for (int c = 0; c < 256; ++c)
     {
-      char buf[1024];
-      buf[0] = c;
-      buf[1] = 255 - c;
-      spawned.write(buf, 2);
+      char write_buf[1024];
+      char read_buf[1024];
+      write_buf[0] = c;
+      write_buf[1] = 255 - c;
+      spawned.write(write_buf, 2);
 
       string result;
       while (result.size() < 2)
@@ -336,8 +522,8 @@ void unit_test_spawn (char *cmd)
           E(res.second & Netxx::Probe::ready_read, F("timeout reading data %d") % c);
           I(res.first == spawned.get_socketfd());
 
-          int bytes = spawned.read(buf, sizeof(buf));
-          result += string(buf, bytes);
+          int bytes = spawned.read(read_buf, sizeof(read_buf));
+          result += string(read_buf, bytes);
         }
       I(result.size() == 2);
       I(static_cast<unsigned char>(result[0]) == c);
@@ -347,9 +533,7 @@ void unit_test_spawn (char *cmd)
   spawned.close();
 
   }
-catch (informative_failure &e)
-  // for some reason boost does not provide
-  // enough information
+  catch (informative_failure &e)
   {
     W(F("Failure %s") % e.what());
     throw;

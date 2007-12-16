@@ -92,6 +92,15 @@ std::string munge_argv_into_cmdline(const char* const argv[])
   return cmdline;
 }
 
+std::string win32_last_err_msg(void)
+{
+  char buf[1024];
+  I(FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
+                  NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                  (LPSTR) &buf, sizeof(buf) / sizeof(TCHAR), NULL) != 0);
+  return std::string(buf);
+} // last_err_msg
+
 int existsonpath(const char *exe)
 {
   if (SearchPath(NULL, exe, ".exe", 0, NULL, NULL)==0)
@@ -170,7 +179,7 @@ redir::redir(int which, char const * filename)
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
   sa.lpSecurityDescriptor = 0;
   sa.bInheritHandle = true;
-  
+
   file = CreateFile(filename,
                     (which==0?GENERIC_READ:GENERIC_WRITE),
                     FILE_SHARE_READ,

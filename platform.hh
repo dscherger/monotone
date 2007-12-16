@@ -41,7 +41,10 @@ extern "C" int dumb_socketpair(int socks[2], int make_overlapped);
 
 #ifdef WIN32
 std::string munge_argv_into_cmdline(const char* const argv[]);
+
+std::string win32_last_err_msg(void);
 #endif
+
 // for term selection
 bool have_smart_terminal();
 // this function cannot call W/P/L, because it is called by the tick printing
