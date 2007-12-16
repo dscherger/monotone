@@ -101,12 +101,12 @@ int main (int argc, char *argv[])
             break;
 
           case Netxx::Probe::ready_write:
-            fprintf (stderr, "ready write\n", bytes_read);
+            fprintf (stderr, "ready write\n");
             quit = 1;
             break;
 
           case Netxx::Probe::ready_oobd:
-            fprintf (stderr, "ready oobd\n", bytes_read);
+            fprintf (stderr, "ready oobd\n");
             quit = 1;
             break;
           }

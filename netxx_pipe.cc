@@ -42,8 +42,8 @@ Netxx::StdioStream::StdioStream(void)
   readfd ((int)GetStdHandle(STD_INPUT_HANDLE)),
   writefd ((int)GetStdHandle(STD_OUTPUT_HANDLE))
 #else
-  readfd (stdin),
-  writefd (stdout)
+  readfd (STDIN_FILENO),
+  writefd (STDOUT_FILENO)
 #endif
 {
   // This allows netxx to call select() on these file descriptors. On Win32,
@@ -190,7 +190,10 @@ Netxx::StdioStream::close (void)
 Netxx::socket_type
 Netxx::StdioStream::get_socketfd (void) const
 {
-  return writefd; // only used to register session in netsync
+  // This is used netsync only to register the session for deletion, so it
+  // doesn't matter whether we return readfd or writefd. The unit test needs
+  // readfd in netxx_pipe_stdio_main.cc
+  return readfd;
 }
 
 const Netxx::ProbeInfo*
