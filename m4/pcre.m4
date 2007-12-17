@@ -5,16 +5,17 @@ AC_DEFUN([MTN_LIB_PCRE],
      [use a system-provided copy of libpcre instead of the default bundled
       copy. (To use a specific installed version, use the environment
       variables PCRE_CFLAGS and/or PCRE_LIBS.)]),
-   [case "$withval" in 
-      (""|yes) with_system_pcre=yes ;;
-      (no)     with_system_pcre=no  ;;
-      (*)      AC_MSG_ERROR([--with(out)-system-pcre takes no argument]) ;;
+   [case "$withval" in
+      ""|yes) with_system_pcre=yes ;;
+      no)     with_system_pcre=no  ;;
+      *)      AC_MSG_ERROR([--with(out)-system-pcre takes no argument]) ;;
     esac],
    [with_system_pcre=no])
  if test "$with_system_pcre" = yes; then
    MTN_FIND_PCRE
  fi
  if test $with_system_pcre = no; then
+   AC_DEFINE([PCRE_STATIC],[1],[Define if using bundled pcre])
    AC_MSG_NOTICE([using the bundled copy of PCRE])
  fi
  AM_CONDITIONAL([INCLUDED_PCRE], [test $with_system_pcre = no])

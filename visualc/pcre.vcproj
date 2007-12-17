@@ -2,9 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="stringprep"
-	ProjectGUID="{FF042D9E-E5DC-4C89-AB5B-6CD03990A595}"
-	RootNamespace="stringprep"
+	Name="pcre"
+	ProjectGUID="{36249158-B5C6-46BD-9FAF-15454CBE722F}"
 	>
 	<Platforms>
 		<Platform
@@ -17,7 +16,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
-			IntermediateDirectory="stringprepDebug"
+			IntermediateDirectory="pcreDebug"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			CharacterSet="2"
@@ -39,10 +38,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Zm200"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\visualc&quot;;&quot;$(ProjectDir)\..&quot;;&quot;$(ProjectDir)&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;HAVE_CONFIG_H;HAVE_ICONV;ICONV_CONST="
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\visualc&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -50,6 +48,7 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -83,7 +82,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
-			IntermediateDirectory="stringprepRelease"
+			IntermediateDirectory="pcreRelease"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			CharacterSet="2"
@@ -111,8 +110,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\visualc&quot;;&quot;$(ProjectDir)\..&quot;;&quot;$(ProjectDir)&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_MBCS;_CONSOLE;HAVE_CONFIG_H;HAVE_ICONV;ICONV_CONST="
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\visualc&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_MBCS;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="false"
@@ -160,35 +159,83 @@
 			Filter="cpp;c;cxx;rc;def;odl;idl;hpj;bat;asm"
 			>
 			<File
-				RelativePath="..\idna\idna.c"
+				RelativePath="..\pcre\pcre_chartables.c"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\nfkc.c"
+				RelativePath="..\pcre\pcre_compile.c"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\profiles.c"
+				RelativePath="..\pcre\pcre_config.c"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\punycode.c"
+				RelativePath="..\pcre\pcre_dfa_exec.c"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\rfc3454.c"
+				RelativePath="..\pcre\pcre_exec.c"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\stringprep.c"
+				RelativePath="..\pcre\pcre_fullinfo.c"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\toutf8.c"
+				RelativePath="..\pcre\pcre_get.c"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\version.c"
+				RelativePath="..\pcre\pcre_globals.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_info.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_maketables.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_newline.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_ord2utf8.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_refcount.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_study.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_tables.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_try_flipped.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_ucp_searchfuncs.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_valid_utf8.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_version.c"
+				>
+			</File>
+			<File
+				RelativePath="..\pcre\pcre_xclass.c"
 				>
 			</File>
 		</Filter>
@@ -197,31 +244,27 @@
 			Filter="h;hpp;hxx;hm;inl;inc"
 			>
 			<File
-				RelativePath="..\idna\gunibreak.h"
+				RelativePath="..\pcre\pcre_config.h"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\gunicomp.h"
+				RelativePath="..\pcre\pcre.h"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\gunidecomp.h"
+				RelativePath="..\pcre\pcre_internal.h"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\idn-int.h"
+				RelativePath="..\pcre\ucp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\idna.h"
+				RelativePath="..\pcre\ucpinternal.h"
 				>
 			</File>
 			<File
-				RelativePath="..\idna\punycode.h"
-				>
-			</File>
-			<File
-				RelativePath="..\idna\stringprep.h"
+				RelativePath="..\pcre\ucptable.h"
 				>
 			</File>
 		</Filter>

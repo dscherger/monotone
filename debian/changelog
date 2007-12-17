@@ -1,3 +1,67 @@
+monotone (0.38-1) unstable; urgency=low
+
+  [ Richard Levitte ]
+  * New upstream release.
+
+  [ Zack Weinberg ]
+  * monotone-server.postrm: Delete default.mtn~ on purge.
+    (Closes: #455058)
+  * Add Homepage: and Vcs-Browser: fields to debian/control.
+  * Standards-Version: 3.7.3 (no changes required).
+
+ -- Richard Levitte <richard@levitte.org>  Wed, 12 Dec 2007 20:52:32 +0100
+
+monotone (0.37-4) unstable; urgency=low
+
+  * debian/rules: Turn compiler optimization back on by default.  Doh!
+    Hopefully this shrinks hppa builds to the point where we don't need
+    -mlong-calls.  Since the accidental use of -O0 in 0.37-[23] seems to
+    have been responsible for the unexpected successful builds on Alpha,
+    try -O1 on that architecture.  Implement DEB_BUILD_OPTIONS=noopt while
+    we're at it.
+  * Backport upstream's relicensing of the manual under the GPL, since
+    we (and upstream) may technically have been violating the GFDL by
+    not including its text in the manual proper.  Source and binary
+    packages now contain no content not distributable under GPLv2 or a
+    more permissive license.
+  * debian/copyright: Point specifically to GPLv2 (upstream specifies
+    GPLv2-or-later, let's not be exercising the 'or later' part unless
+    and until they do).  Fix typo.
+
+ -- Zack Weinberg <zackw@panix.com>  Mon, 26 Nov 2007 17:01:18 -0800
+
+monotone (0.37-3) unstable; urgency=low
+
+  * debian/rules: Cross-compilation and lintian fixes.
+  * Clean up usage of "-" in debian/mtn.1.
+
+ -- Zack Weinberg <zackw@panix.com>  Mon, 12 Nov 2007 07:16:05 +0000
+
+monotone (0.37-2) unstable; urgency=low
+
+  * Do not error out if $HOME exists but is inaccessible.  Should fix
+    mips(el) FTBFS.
+  * Fix bashisms in monotone-server scripts.  Thanks to Glen Ditchfield
+    for finding this problem and providing part of the fix.
+  * In monotone-server.postinst, set permissions and ownership of
+    just-created directories whether or not we created the monotone
+    user.  Thanks to Michael Berg for doing almost all the work on
+    this bug.  (Closes: #437978)
+  * Reincorporate debian/changelog entries for versions 0.27-1 and
+    0.27-1.1.  These versions were once uploaded to Debian but their
+    entries got lost from the official changelog somehow.
+  * Switch from cdbs to a handwritten rules file based on debhelper
+    examples.  Restore Build-Depends/Build-Depends-Indep distinction
+    and monkey with the rules so that dpkg-buildpackage -B doesn't
+    build the documentation.  This gets us out from under the present
+    nonavailability of some of the B-D-Is on some of the buildds.
+  * Info files moved to monotone-doc.  Other cleanups to that package.
+  * Do not install the boilerplate ABOUT-NLS file in any of the
+    packages' documentation directories.
+  * Improve short descriptions.
+
+ -- Zack Weinberg <zackw@panix.com>  Sun, 04 Nov 2007 11:53:17 -0800
+
 monotone (0.37-1) unstable; urgency=low
 
   * New upstream release.
@@ -260,6 +324,21 @@ monotone (0.28-0.1) unstable; urgency=low
   * New upstream release.
 
  -- Nathaniel Smith <njs@pobox.com>  Fri, 21 Jul 2006 23:02:59 -0700
+
+monotone (0.27-1.1) unstable; urgency=low
+
+  * NMU to fix Failure to Build From Source.  Fixed debian/rules applying the
+    patch suggested by Adeodato, fixed debian/control by not specifying a
+    special compiler for any arches. (Closes: #377781)
+
+ -- Margarita Manterola <marga@debian.org>  Thu, 20 Jul 2006 16:22:18 -0300
+
+monotone (0.27-1) unstable; urgency=low
+
+  * Built (with pdebuild) for upload to debian archive.
+  * Closes: #374659: New upstream version (0.27)
+
+ -- Tomas Fasth <tomfa@debian.org>  Mon, 10 Jul 2006 12:32:00 +0000
 
 monotone (0.27-0.1) unstable; urgency=low
 
