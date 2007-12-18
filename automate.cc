@@ -2026,6 +2026,13 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
     }
 }
 
+CMD_AUTOMATE(test, "", N_("Test"), "",options::opts::none)
+{
+    P(F("normal printing"));
+    W(F("a warning"));
+    E(false, F("a user error"));
+}
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
