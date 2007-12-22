@@ -2366,6 +2366,7 @@ build_stream_to_server(app_state & app,
 #endif
       Netxx::Address addr(address().c_str(),
                           default_port, use_ipv6);
+      app.opts.use_transport_auth = app.lua.hook_use_transport_auth(u);
       return shared_ptr<Netxx::StreamBase>
         (new Netxx::Stream(addr, timeout));
     }

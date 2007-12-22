@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
     probe.add (stream, Netxx::Probe::ready_read);
     stream.set_timeout (timeout);
 
-    // Exit when ready times out; socket has been closed
+    // Normally exit when told to, so we test client detection of closed socket
     for (;!quit;)
       try
       {
@@ -65,7 +65,7 @@ int main (int argc, char *argv[])
 
         if (-1 == probe_result.first)
           {
-            // timeout; assume we're running the probe:spawn_stdio unit test, and it's done (the socket closed)
+            fprintf (stderr, "ready timed out; socket closed\n");
             quit = 1;
             continue;
           }
@@ -97,6 +97,15 @@ int main (int argc, char *argv[])
             else
               {
                 stream.write (buffer, bytes_read);
+
+                if (4 == bytes_read  &&
+                    'q' == buffer[0] &&
+                    'u' == buffer[1] &&
+                    'i' == buffer[2] &&
+                    't' == buffer[3])
+                  {
+                    quit = 1;
+                  }
               }
             break;
 

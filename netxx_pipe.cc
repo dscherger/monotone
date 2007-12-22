@@ -184,7 +184,15 @@ Netxx::StdioStream::write (const void *buffer, size_type length)
 void
 Netxx::StdioStream::close (void)
 {
-  // nothing to do here
+  // close socket so client knows we disconnected
+#ifdef WIN32
+  // readfd, writefd are the same socket; only close it once
+  closesocket (readfd);
+#else
+  // On Unix, they might be separate pipes; close both
+  close (readfd);
+  close (writefd);
+#endif
 }
 
 Netxx::socket_type
@@ -490,8 +498,10 @@ void unit_test_spawn (char *cmd)
   // netxx_pipe_stdio_main uses StdioStream, StdioProbe
   Netxx::SpawnedStream spawned (cmd, vector<string>());
 
-  string result;
-  Netxx::Probe probe;
+  char           write_buf[1024];
+  char           read_buf[1024];
+  int            bytes;
+  Netxx::Probe   probe;
   Netxx::Timeout timeout(2L), short_time(0,1000);
 
   // time out because no data is available
@@ -499,6 +509,7 @@ void unit_test_spawn (char *cmd)
   probe.add(spawned, Netxx::Probe::ready_read);
   Netxx::Probe::result_type res = probe.ready(short_time);
   I(res.second==Netxx::Probe::ready_none);
+  I(res.first == -1);
 
   // write should be possible
   probe.clear();
@@ -510,13 +521,11 @@ void unit_test_spawn (char *cmd)
   // test binary transparency, lots of cycles
   for (int c = 0; c < 256; ++c)
     {
-      char write_buf[1024];
-      char read_buf[1024];
+      string result;
       write_buf[0] = c;
       write_buf[1] = 255 - c;
       spawned.write(write_buf, 2);
 
-      string result;
       while (result.size() < 2)
         { // wait for data to arrive
           probe.clear();
@@ -525,13 +534,46 @@ void unit_test_spawn (char *cmd)
           E(res.second & Netxx::Probe::ready_read, F("timeout reading data %d") % c);
           I(res.first == spawned.get_socketfd());
 
-          int bytes = spawned.read(read_buf, sizeof(read_buf));
+          bytes = spawned.read(read_buf, sizeof(read_buf));
           result += string(read_buf, bytes);
         }
       I(result.size() == 2);
       I(static_cast<unsigned char>(result[0]) == c);
       I(static_cast<unsigned char>(result[1]) == 255 - c);
     }
+
+  // Tell netxx_pipe_stdio_main to quit, closing its socket
+  write_buf[0] = 'q';
+  write_buf[1] = 'u';
+  write_buf[2] = 'i';
+  write_buf[3] = 't';
+  spawned.write(write_buf, 4);
+
+  // Read ' quit'
+  {
+    string result;
+
+    while (result.size() < 4)
+      { // wait for data to arrive
+        probe.clear();
+        probe.add(spawned, Netxx::Probe::ready_read);
+        res = probe.ready(timeout);
+        E(res.second & Netxx::Probe::ready_read, F("timeout reading quit"));
+        I(res.first == spawned.get_socketfd());
+
+        bytes = spawned.read(read_buf, sizeof(read_buf));
+        result += string(read_buf, bytes);
+      }
+    I(result.size() == 4);
+    I(result == "quit");
+  }
+
+  // Wait for socket to close; reported as timeout
+  probe.clear();
+  probe.add(spawned, Netxx::Probe::ready_read);
+  res = probe.ready(timeout);
+  I(res.second==Netxx::Probe::ready_none);
+  I(res.first == -1);
 
   spawned.close();
 
