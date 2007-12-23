@@ -69,9 +69,9 @@ int main (int argc, char *argv[])
             quit = 1;
             continue;
           }
-        else if (stream.get_socketfd() != probe_result.first)
+        else if (stream.get_readfd() != probe_result.first)
           {
-            fprintf (stderr, "ready returned other socket\n");
+            fprintf (stderr, "ready returned unknown socket\n");
             quit = 1;
             continue;
           }

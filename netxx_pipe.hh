@@ -110,9 +110,14 @@ namespace Netxx
       virtual signed_size_type read (void *buffer, size_type length);
       virtual signed_size_type write (const void *buffer, size_type length);
       virtual void close (void);
-      virtual socket_type get_socketfd (void) const;
       virtual const ProbeInfo* get_probe_info (void) const;
 
+      // In general, we have two file descriptors that netsync needs to know
+      // about. Netsync should never call get_socketfd to identify this
+      // stream; it will throw an error.
+      virtual socket_type get_socketfd (void) const;
+      virtual socket_type get_writefd (void) const;
+      virtual socket_type get_readfd (void) const;
     private:
       friend class StdioStreamTest;
       // Unit test facilities

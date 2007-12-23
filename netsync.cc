@@ -2287,6 +2287,9 @@ session::arm()
   return armed;
 }
 
+// Return values:
+// 'false' - Session encountered an error or is completed, and should be disconnected
+// 'true' - Session is healthy and has more to do
 bool session::process(transaction_guard & guard)
 {
   if (encountered_error)
@@ -2487,6 +2490,19 @@ call_server(protocol_role role,
                         "peer %s, disconnecting")
                       % sess.peer_id));
         }
+
+      // When the server connection is file:, we don't detect the server
+      // closing its socket. So check for protocol done here.
+      if (sess.protocol_state == session::confirmed_state)
+        {
+          // write last message
+          sess.write_some();
+
+          guard.commit();
+
+          P(F("successful exchange with %s") % sess.peer_id);
+          return;
+        }
     }
 }
 
@@ -2498,6 +2514,7 @@ drop_session_associated_with_fd(map<Netxx::socket_type, shared_ptr<session> > & 
   I(i != sessions.end());
   shared_ptr<session> sess = i->second;
   fd = sess->str->get_socketfd();
+  L(FL("disconnecting from fd %d (peer %s)") % fd % sess->peer_id);
   sessions.erase(fd);
 }
 
@@ -2687,8 +2704,7 @@ static void
 reap_dead_sessions(map<Netxx::socket_type, shared_ptr<session> > & sessions,
                    unsigned long timeout_seconds)
 {
-  // Kill any clients which haven't done any i/o inside the timeout period
-  // or who have exchanged all items and flushed their output buffers.
+  // Kill any clients which haven't done any i/o inside the timeout period.
   set<Netxx::socket_type> dead_clients;
   time_t now = ::time(NULL);
   for (map<Netxx::socket_type, shared_ptr<session> >::const_iterator
@@ -2971,10 +2987,11 @@ serve_single_connection(protocol_role role,
                         app_state & app,
                         unsigned long timeout_seconds)
 {
-  shared_ptr<Netxx::StreamBase> str(new Netxx::StdioStream);
+  shared_ptr<Netxx::StdioStream> str(new Netxx::StdioStream);
   shared_ptr<session> sess (new session (role, server_voice,
                                          include_pattern, exclude_pattern,
                                          app, "stdio", str));
+  bool single_fd;
   Netxx::StdioProbe probe;
 
   Netxx::Timeout
@@ -2982,7 +2999,7 @@ serve_single_connection(protocol_role role,
     timeout(static_cast<long>(timeout_seconds)),
     instant(0,1);
 
-  P(F("beginning service on %s") % sess->peer_id);
+  P(F("beginning service on %s (fd %d)") % sess->peer_id % str->get_readfd());
 
   sess->begin_service();
 
@@ -2991,9 +3008,20 @@ serve_single_connection(protocol_role role,
   map<Netxx::socket_type, shared_ptr<session> > sessions;
   set<Netxx::socket_type> armed_sessions;
 
-  sessions[sess->str->get_socketfd()]=sess;
+  // StdioStream has two file descriptors, although they may be the same. We
+  // need to register both, because probe.ready will return events on both.
+  // Therefore, we are careful to never use str->get_socketfd() except in
+  // informative messages. In particular, we don't call other functions that
+  // might use str->get_socketfd().
 
-  while (!sessions.empty())
+  sessions[str->get_readfd()] = sess;
+
+  single_fd = str->get_readfd() == str->get_writefd();
+
+  if (!single_fd)
+    sessions[str->get_writefd()] = sess;
+
+  while (true)
     {
       probe.clear();
       armed_sessions.clear();
@@ -3009,8 +3037,13 @@ serve_single_connection(protocol_role role,
       if (fd == -1)
         {
           if (armed_sessions.empty())
-            L(FL("timed out waiting for I/O (listening on %s)")
-              % sess->peer_id);
+            {
+              L(FL("timed out waiting for I/O (listening on %s)") % sess->peer_id);
+
+              drop_session_associated_with_fd(sessions, fd);
+              // No need to drope the other entry in sessions, if any.
+              break;
+            }
         }
 
       // an existing session woke up
@@ -3038,12 +3071,36 @@ serve_single_connection(protocol_role role,
                   P(F("got some OOB data on fd %d (peer %s), disconnecting")
                     % fd % sess->peer_id);
                   drop_session_associated_with_fd(sessions, fd);
+                  break;
                 }
             }
         }
-      process_armed_sessions(sessions, armed_sessions, guard);
-      reap_dead_sessions(sessions, timeout_seconds);
-    }
+
+      {
+        Netxx::socket_type fd  = str->get_readfd();
+
+        // This is the same logic as process_armed_sessions, but we have only
+        // one session, and we need to terminate when it is done.
+        if (!sess->process(guard))
+          {
+            P(F("peer %s processing finished, disconnecting")
+              % sess->peer_id);
+            drop_session_associated_with_fd(sessions, fd);
+            break;
+          }
+
+        // This is the same logic as 'reap_dead_sessions', but we only have
+        // one session to check, and we terminate if it's timed out.
+        if (static_cast<unsigned long>(sess->last_io_time + timeout_seconds)
+            < static_cast<unsigned long>(::time(NULL)))
+          {
+            P(F("fd %d (peer %s) has been idle too long, disconnecting")
+              % fd % sess->peer_id);
+            drop_session_associated_with_fd(sessions, fd);
+            break;
+          }
+      }
+    } // end while
 }
 
 
