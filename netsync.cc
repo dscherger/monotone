@@ -15,6 +15,8 @@
 #include <deque>
 #include <stack>
 
+#include <errno.h>
+#include <string.h>
 #include <time.h>
 
 #include "lexical_cast.hh"
@@ -1030,8 +1032,16 @@ session::read_some()
       bytes_in += count;
       return true;
     }
+  else if (count == 0)
+    {
+      L(FL("read encountered end of file from fd %d (peer %s)") % str->get_socketfd() % peer_id);
+      return false;
+    }
   else
-    return false;
+    {
+      L(FL("read encountered error %s from fd %d (peer %s)") % strerror(errno) % str->get_socketfd() % peer_id);
+      return false;
+    }
 }
 
 bool
@@ -2999,7 +3009,7 @@ serve_single_connection(protocol_role role,
     timeout(static_cast<long>(timeout_seconds)),
     instant(0,1);
 
-  P(F("beginning service on %s (fd %d)") % sess->peer_id % str->get_readfd());
+  P(F("beginning service on %s (readfd %d, writefd %d)") % sess->peer_id % str->get_readfd() % str->get_writefd());
 
   sess->begin_service();
 
@@ -3041,7 +3051,7 @@ serve_single_connection(protocol_role role,
               L(FL("timed out waiting for I/O (listening on %s)") % sess->peer_id);
 
               drop_session_associated_with_fd(sessions, fd);
-              // No need to drope the other entry in sessions, if any.
+              // No need to drop the other entry in sessions, if any.
               break;
             }
         }
@@ -3054,6 +3064,7 @@ serve_single_connection(protocol_role role,
           if (i == sessions.end())
             {
               L(FL("got woken up for action on unknown fd %d") % fd);
+              break;
             }
           else
             {
@@ -3061,12 +3072,26 @@ serve_single_connection(protocol_role role,
               bool live_p = true;
 
               if (event & Netxx::Probe::ready_read)
-                handle_read_available(fd, sess, sessions, armed_sessions, live_p);
+                {
+                  handle_read_available(fd, sess, sessions, armed_sessions, live_p);
+                  if (!live_p)
+                    {
+                      // read encountered an error, dropped sess
+                      break;
+                    }
+                }
 
-              if (live_p && (event & Netxx::Probe::ready_write))
-                handle_write_available(fd, sess, sessions, live_p);
+              if (event & Netxx::Probe::ready_write)
+                {
+                  handle_write_available(fd, sess, sessions, live_p);
+                  if (!live_p)
+                    {
+                      // write encountered an error, dropped sess
+                      break;
+                    }
+                }
 
-              if (live_p && (event & Netxx::Probe::ready_oobd))
+              if (event & Netxx::Probe::ready_oobd)
                 {
                   P(F("got some OOB data on fd %d (peer %s), disconnecting")
                     % fd % sess->peer_id);
