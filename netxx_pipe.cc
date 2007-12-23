@@ -187,11 +187,24 @@ Netxx::StdioStream::close (void)
   // close socket so client knows we disconnected
 #ifdef WIN32
   // readfd, writefd are the same socket; only close it once
-  closesocket (readfd);
+  if (readfd != -1)
+    {
+      closesocket (readfd);
+      readfd = -1;
+    }
 #else
   // On Unix, they might be separate pipes; close both
-  close (readfd);
-  close (writefd);
+  if (readfd != -1)
+    {
+      ::close (readfd);
+      readfd = -1;
+    }
+
+  if (writefd != -1)
+    {
+      ::close (writefd);
+      writefd = -1;
+    }
 #endif
 }
 
@@ -263,10 +276,18 @@ Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & 
   memset(&piProcInfo, 0, sizeof(piProcInfo));
   memset(&siStartInfo, 0, sizeof(siStartInfo));
 
+  // Dup handles before using for child in/out/err so child can legally
+  // close one without losing the others
+  HANDLE hin, hout, herr;
+  assert(DuplicateHandle(GetCurrentProcess(), (HANDLE) socks[0], GetCurrentProcess(), &hin, 0, TRUE, DUPLICATE_SAME_ACCESS) != 0);
+  assert(DuplicateHandle(GetCurrentProcess(), (HANDLE) socks[0], GetCurrentProcess(), &hout, 0, TRUE, DUPLICATE_SAME_ACCESS) != 0);
+  assert(DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_ERROR_HANDLE), GetCurrentProcess(), &herr, 0, TRUE, DUPLICATE_SAME_ACCESS) != 0);
+  CloseHandle((HANDLE) socks[0]);
+
   siStartInfo.cb          = sizeof(siStartInfo);
-  siStartInfo.hStdError   = (HANDLE)(_get_osfhandle(2));
-  siStartInfo.hStdOutput  = (HANDLE)socks[0];
-  siStartInfo.hStdInput   = (HANDLE)socks[0];
+  siStartInfo.hStdError   = herr;
+  siStartInfo.hStdOutput  = hout;
+  siStartInfo.hStdInput   = hin;
   siStartInfo.dwFlags    |= STARTF_USESTDHANDLES;
 
   string cmdline = munge_argv_into_cmdline(newargv);
@@ -356,7 +377,7 @@ Netxx::SpawnedStream::write (const void *buffer, size_type length)
 void
 Netxx::SpawnedStream::close (void)
 {
-  // We assume the child process has exited
+  // We assume the child process has exited; there's no point in waiting for it.
   Child_Socket.close();
   Parent_Socket.close();
 }
@@ -490,9 +511,16 @@ UNIT_TEST(pipe, stdio_stream)
   I(bytes_read == 2);
   I(parent_read_buffer[0] == 42);
   I(parent_read_buffer[1] == 43);
+
+  // test StdioStream close; recv on parent should detect disconnect, not block
+  stream.close();
+  bytes_read = ::recv (socks[1], parent_read_buffer, sizeof(parent_read_buffer), 0);
+
+  I(bytes_read == 0);
+
 }
 
-void unit_test_spawn (char *cmd)
+void unit_test_spawn (char *cmd, int will_disconnect)
 { try
   {
   // netxx_pipe_stdio_main uses StdioStream, StdioProbe
@@ -542,38 +570,26 @@ void unit_test_spawn (char *cmd)
       I(static_cast<unsigned char>(result[1]) == 255 - c);
     }
 
-  // Tell netxx_pipe_stdio_main to quit, closing its socket
-  write_buf[0] = 'q';
-  write_buf[1] = 'u';
-  write_buf[2] = 'i';
-  write_buf[3] = 't';
-  spawned.write(write_buf, 4);
+  if (will_disconnect)
+    {
+      // Tell netxx_pipe_stdio_main to quit, closing its socket
+      write_buf[0] = 'q';
+      write_buf[1] = 'u';
+      write_buf[2] = 'i';
+      write_buf[3] = 't';
+      spawned.write(write_buf, 4);
 
-  // Read ' quit'
-  {
-    string result;
+      // Wait for socket to close; should be reported as ready_read, _not_ as timeout
+      probe.clear();
+      probe.add(spawned, Netxx::Probe::ready_read);
+      res = probe.ready(timeout);
+      I(res.second==Netxx::Probe::ready_read);
+      I(res.first == spawned.get_socketfd());
 
-    while (result.size() < 4)
-      { // wait for data to arrive
-        probe.clear();
-        probe.add(spawned, Netxx::Probe::ready_read);
-        res = probe.ready(timeout);
-        E(res.second & Netxx::Probe::ready_read, F("timeout reading quit"));
-        I(res.first == spawned.get_socketfd());
-
-        bytes = spawned.read(read_buf, sizeof(read_buf));
-        result += string(read_buf, bytes);
-      }
-    I(result.size() == 4);
-    I(result == "quit");
-  }
-
-  // Wait for socket to close; reported as timeout
-  probe.clear();
-  probe.add(spawned, Netxx::Probe::ready_read);
-  res = probe.ready(timeout);
-  I(res.second==Netxx::Probe::ready_none);
-  I(res.first == -1);
+      // now read should return 0 bytes
+      bytes = spawned.read(read_buf, sizeof(read_buf));
+      I(bytes == 0);
+    }
 
   spawned.close();
 
@@ -587,12 +603,12 @@ void unit_test_spawn (char *cmd)
 
 UNIT_TEST(pipe, spawn_cat)
 {
-  unit_test_spawn ("cat");
+  unit_test_spawn ("cat", 0);
 }
 
 UNIT_TEST(pipe, spawn_stdio)
 {
-  unit_test_spawn ("./netxx_pipe_stdio_main");
+  unit_test_spawn ("./netxx_pipe_stdio_main", 1);
 }
 
 #endif

@@ -96,8 +96,6 @@ int main (int argc, char *argv[])
               }
             else
               {
-                stream.write (buffer, bytes_read);
-
                 if (4 == bytes_read  &&
                     'q' == buffer[0] &&
                     'u' == buffer[1] &&
@@ -106,6 +104,8 @@ int main (int argc, char *argv[])
                   {
                     quit = 1;
                   }
+                else
+                  stream.write (buffer, bytes_read);
               }
             break;
 
@@ -127,6 +127,7 @@ int main (int argc, char *argv[])
       }
 
     stream.close();
+    fprintf (stderr, "StdioStream closed socket\n");
 
   }
   return 1;
