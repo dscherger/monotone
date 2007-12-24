@@ -36,49 +36,58 @@ using std::exit;
 using std::perror;
 using std::strerror;
 
-Netxx::StdioStream::StdioStream(void)
+#ifdef WIN32
+
+signed_size_type PipeStream::read (void *buffer, size_type length)
+{
+
+} // read
+
+signed_size_type PipeStream::write (const void *buffer, size_type length)
+{
+
+} // write
+
+void PipeStream::close (void)
+{
+
+} // close
+
+#endif
+
+Netxx::StdioStream::StdioStream (int const readfd; int const writefd)
     :
 #ifdef WIN32
-  readfd ((int)GetStdHandle(STD_INPUT_HANDLE)),
-  writefd ((int)GetStdHandle(STD_OUTPUT_HANDLE))
+  named_pipe (readfd),
+  writefd (writefd)
 #else
-  readfd (STDIN_FILENO),
-  writefd (STDOUT_FILENO)
+  readfd (readfd),
+  writefd (writefd)
 #endif
 {
-  // This allows netxx to call select() on these file descriptors. On Win32,
-  // this will fail unless they are actually a socket (ie, we are spawned
-  // from 'mtn sync file:...', or some other program that sets stdin, stdout
-  // to a socket).
+#ifndef WIN32
+  // This allows Netxx::Probe::ready to call 'select' on these file
+  // descriptors. On Win32, 'select' would fail.
   probe_info.add_socket (readfd);
   probe_info.add_socket (writefd);
-
-#ifdef WIN32
-  {
-    WSADATA wsdata;
-    if (WSAStartup(MAKEWORD(2,2), &wsdata) != 0)
-      L(FL("failed to load WinSock"));
-  }
-
 #endif
 }
 
 Netxx::signed_size_type
 Netxx::StdioStream::read (void *buffer, size_type length)
 {
+#ifdef WIN32
+  return named_pipe.read (buffer, length);
+
+#else
   // based on netxx/socket.cxx read
   signed_size_type  rc;
   char             *buffer_ptr = static_cast<char*>(buffer);
 
   for (;;)
     {
-#ifdef WIN32
-      // readfd must be a socket, and 'read' doesn't work on sockets
-      rc = recv(readfd, buffer_ptr, length, 0);
-#else
-      // On Unix, this works for sockets as well as files and pipes.
       rc = ::read(readfd, buffer, length);
-#endif
+
       if (rc < 0)
         {
           error_type error_code = get_last_error();
@@ -93,19 +102,6 @@ Netxx::StdioStream::read (void *buffer, size_type length)
 
           case EAGAIN:
             return -1;
-
-#ifdef WIN32
-
-          case WSAEMSGSIZE:
-            return length;
-
-          case WSAENETRESET:
-          case WSAESHUTDOWN:
-          case WSAECONNABORTED:
-          case WSAETIMEDOUT: // timed out shouldn't happen
-            return 0;
-
-#endif
 
           default:
             {
@@ -132,13 +128,8 @@ Netxx::StdioStream::write (const void *buffer, size_type length)
   while (length)
     {
 
-#ifdef WIN32
-      // writefd must be a socket, and 'write' doesn't work on sockets
-      rc = send(writefd, buffer_ptr, length, 0);
-#else
-      // On Unix, this works for sockets as well as files and pipes.
       rc = ::write(writefd, buffer, length);
-#endif
+
       if (rc < 0)
         {
           Netxx::error_type error_code = get_last_error();
@@ -184,35 +175,29 @@ Netxx::StdioStream::write (const void *buffer, size_type length)
 void
 Netxx::StdioStream::close (void)
 {
-  // close socket so client knows we disconnected
+  // close stdio so client knows we disconnected
   L(FL("closing StdioStream"));
 #ifdef WIN32
-  // readfd, writefd are the same socket; only close it once
-  if (readfd != -1)
-    {
-      closesocket (readfd);
-      readfd = -1;
-    }
+  named_pipe.close();
 #else
-  // On Unix, they might be separate pipes; close both
   if (readfd != -1)
     {
       ::close (readfd);
       readfd = -1;
     }
+#endif
 
   if (writefd != -1)
     {
       ::close (writefd);
       writefd = -1;
     }
-#endif
 }
 
 Netxx::socket_type
 Netxx::StdioStream::get_socketfd (void) const
 {
-  return readfd; // only used for informative messages
+  return -1;
 }
 
 Netxx::socket_type
@@ -230,21 +215,11 @@ Netxx::StdioStream::get_writefd (void) const
 const Netxx::ProbeInfo*
 Netxx::StdioStream::get_probe_info (void) const
 {
+#ifdef Win32
+  I(0); // FIXME: not clear what to do here yet
+#else
   return &probe_info;
-}
-
-void
-Netxx::StdioStream::set_socketfd (socket_type sock)
-{
-  readfd = sock;
-  writefd = sock;
-
-  probe_info.clear();
-  probe_info.add_socket (readfd);
-  probe_info.add_socket (writefd);
-
-  // We don't set binary on WIN32, because it is not necessary for send/recv
-  // on a socket.
+#endif
 }
 
 Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & args)
@@ -255,8 +230,6 @@ Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & 
   child(-1)
 #endif
 {
-  socket_type socks[2]; // 0 is for child, 1 is for parent
-
   // Unfortunately neither munge_argv_into_cmdline nor execvp take
   // a vector<string> as argument.
 
@@ -271,70 +244,119 @@ Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & 
     newargv[newargc++] = i->c_str();
   newargv[newargc] = 0;
 
-  E(0 == dumb_socketpair (socks, 0), F("socketpair failed"));
-
-  Child_Socket.set_socketfd (socks[0]);
-  Parent_Socket.set_socketfd (socks[1]);
-
-  probe_info.add_socket (socks[1]);
-
 #ifdef WIN32
 
+  // Create a named pipe to serve as the child process stdio; it must have a
+  // unique name.
+
+  static unsigned long serial = 0;
+  string pipename = (F("\\\\.\\pipe\\netxx_pipe_%ld_%d")
+                     % GetCurrentProcessId()
+                     % (++serial)).str();
+
+  HANDLE named_pipe =
+    CreateNamedPipe (pipename.c_str(),
+                    PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, // dwOpenMode
+                    PIPE_TYPE_BYTE | PIPE_WAIT,                // dwPipeMode
+                    1,                                         // nMaxInstances
+                    readfd.buffer_size(),                      // nOutBufferSize
+                    readfd.buffer_size(),                      //nInBufferSize
+                    1000,                                      //nDefaultTimeout, milliseconds
+                    0);                                        // lpSecurityAttributes
+
+  E(named_pipe != INVALID_HANDLE_VALUE,
+    F("CreateNamedPipe(%s,...) call failed: %s")
+    % pipename % win32_last_err_msg());
+
+  // Open the child's handle to the named pipe.
+
+  SECURITY_ATTRIBUTES      inherit;
+  memset (&inherit,0,sizeof inherit);
+  inherit.nLength        = sizeof inherit;
+  inherit.bInheritHandle = TRUE;
+
+  HANDLE child_pipe =
+    CreateFile(pipename.c_str(),
+               GENERIC_READ|GENERIC_WRITE, 0,
+               &inherit,
+               OPEN_EXISTING,
+               FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,0);
+
+  E(hpipe != INVALID_HANDLE_VALUE,
+    F("CreateFile(%s,...) call failed: %s")
+    % pipename % win32_last_err_msg());
+
+  // Spawn the child process
   PROCESS_INFORMATION piProcInfo;
-  STARTUPINFO siStartInfo;
+  STARTUPINFO         siStartInfo;
 
   memset(&piProcInfo, 0, sizeof(piProcInfo));
   memset(&siStartInfo, 0, sizeof(siStartInfo));
 
-  // Dup handles before using for child in/out/err so child can legally
-  // close one without losing the others
-  HANDLE hin, hout, herr;
-  assert(DuplicateHandle(GetCurrentProcess(), (HANDLE) socks[0], GetCurrentProcess(), &hin, 0, TRUE, DUPLICATE_SAME_ACCESS) != 0);
-  assert(DuplicateHandle(GetCurrentProcess(), (HANDLE) socks[0], GetCurrentProcess(), &hout, 0, TRUE, DUPLICATE_SAME_ACCESS) != 0);
-  assert(DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_ERROR_HANDLE), GetCurrentProcess(), &herr, 0, TRUE, DUPLICATE_SAME_ACCESS) != 0);
-  CloseHandle((HANDLE) socks[0]);
-
   siStartInfo.cb          = sizeof(siStartInfo);
-  siStartInfo.hStdError   = herr;
-  siStartInfo.hStdOutput  = hout;
-  siStartInfo.hStdInput   = hin;
+  siStartInfo.hStdError   = (HANDLE)(_get_osfhandle(STDERR_FILENO)); // parent stderr
+  siStartInfo.hStdOutput  = child_pipe;
+  siStartInfo.hStdInput   = child_pipe;
   siStartInfo.dwFlags    |= STARTF_USESTDHANDLES;
 
   string cmdline = munge_argv_into_cmdline(newargv);
   L(FL("Subprocess command line: '%s'") % cmdline);
 
-  BOOL started = CreateProcess(NULL, // Application name
-                               const_cast<CHAR*>(cmdline.c_str()),
-                               NULL, // Process attributes
-                               NULL, // Thread attributes
-                               TRUE, // Inherit handles
-                               0,    // Creation flags
-                               NULL, // Environment
-                               NULL, // Current directory
-                               &siStartInfo,
-                               &piProcInfo);
+  BOOL started =
+    CreateProcess(NULL, // Application name
+                  const_cast<CHAR*>(cmdline.c_str()),
+                  NULL, // Process attributes
+                  NULL, // Thread attributes
+                  TRUE, // Inherit handles
+                  0,    // Creation flags
+                  NULL, // Environment
+                  NULL, // Current directory
+                  &siStartInfo,
+                  &piProcInfo);
 
   if (!started)
     {
-      closesocket(socks[0]);
-      closesocket(socks[1]);
+      ::close (named_pipe);
+      ::close (childe_pipe);
     }
 
   E(started,
     F("CreateProcess(%s,...) call failed: %s")
     % cmdline % win32_last_err_msg());
 
-  child = piProcInfo.hProcess;
+  readfd.set_named_pipe (named_pipe);
+  writefd = named_pipe;
+  child   = piProcInfo.hProcess;
 
 #else // !WIN32
+
+  // Create pipes to serve as stdio for child process
+
+  // These are unidirectional pipes; child_*[0] accepts read, child_*[1] accepts write.
+  int child_stdin[2];
+  int child_stdout[2];
+
+  E(!pipe(child_stdin),
+    F("pipe call failed: %s") % strerror (errno));
+
+  if (pipe(child_stdout))
+    {
+      ::close(child_stdin[0]);
+      ::close(child_stdin[1]);
+      E(0, F("pipe call failed: %s") % strerror (errno));
+    }
+
+  //  Create the child process
 
   child = fork();
 
   if (child < 0)
     {
       // fork failed
-      ::close (socks[0]);
-      ::close (socks[1]);
+      ::close (child_stdin[0]);
+      ::close (child_stdin[1]);
+      ::close (child_stdout[0]);
+      ::close (child_stdout[1]);
 
       E(0, F("fork failed %s") % strerror(errno));
     }
@@ -343,45 +365,56 @@ Netxx::SpawnedStream::SpawnedStream (const string & cmd, const vector<string> & 
     {
       // We are in the child process; run the command, then exit.
 
-      int old_stdio[2];
+      // Close the end of the pipes not used in the child
+      ::close (child_stdin[1]);
+      ::close (child_stdout[0]);
 
-      // Set the child socket as stdin and stdout. dup2 clobbers its first
-      // arg, so copy it first.
-
-      old_stdio[0] = socks[0];
-      old_stdio[1] = socks[0];
-
-      if (dup2(old_stdio[0], 0) != 0 ||
-          dup2(old_stdio[1], 1) != 1)
+      // Replace our stdin, stdout with the pipes
+      if (dup2 (child_stdin[0], STDIN_FILENO) != STDIN_FILENO ||
+          dup2(child_stdout[1], STDOUT_FILENO) != STDOUT_FILENO)
         {
-          // We don't have the mtn error handling infrastructure here.
+          // We don't have the mtn error handling infrastructure yet.
           perror("dup2 failed");
           exit(-1);
         }
 
-      // old_stdio now holds the file descriptors for our old stdin, stdout, so close them
-      ::close (old_stdio[0]);
-      ::close (old_stdio[1]);
+      // close our old stdin, stdout
+      ::close (child_stdin[0]);
+      ::close (child_stdout[1]);
 
+      // Run the command
       execvp(newargv[0], const_cast<char * const *>(newargv));
       perror(newargv[0]);
       exit(errno);
     }
-  // else we are in the parent process; continue.
 
+  else
+    {
+      // we are in the parent process
+      readfd  = child_stdout[0];
+      writefd = child_stdin[1];
+    }
 #endif
 }
 
 Netxx::signed_size_type
 Netxx::SpawnedStream::read (void *buffer, size_type length)
 {
-  return Parent_Socket.read (buffer, length, get_timeout());
+#ifdef WIN32
+  return readfd.read (buffer, length);
+#else
+  return ::read (readfd, buffer, length);
+#endif
 }
 
 Netxx::signed_size_type
 Netxx::SpawnedStream::write (const void *buffer, size_type length)
 {
-  return Parent_Socket.write (buffer, length, get_timeout());
+#ifdef WIN32
+  return writefd.write (buffer, length);
+#else
+  return ::write (writefd, buffer, length);
+#endif
 }
 
 void
@@ -390,33 +423,83 @@ Netxx::SpawnedStream::close (void)
   // We need to wait for the child to exit, so it reads our last message,
   // releases the database, closes redirected output files etc. before we do
   // whatever is next.
-  L(FL("waiting for spawned child"));
+  L(FL("waiting for spawned child ..."));
 #ifdef WIN32
   if (child != INVALID_HANDLE_VALUE)
     WaitForSingleObject(child, INFINITE);
   child = INVALID_HANDLE_VALUE;
+
+  readfd.close();
+  writefd = -1;
 #else
   if (child != -1)
     while (waitpid(child,0,0) == -1 && errno == EINTR);
   child = -1;
+
+  if (readfd != -1)
+    ::close(readfd);
+  readfd = -1;
+
+  if (writefd != -1)
+    ::close(writefd);
+  writefd = -1;
 #endif
-  L(FL("...done"));
-
-  Child_Socket.close();
-  Parent_Socket.close();
-
+  L(FL("waiting for spawned child ... done"));
 }
 
 Netxx::socket_type
 Netxx::SpawnedStream::get_socketfd (void) const
 {
-  return Parent_Socket.get_socketfd ();
+#ifdef WIN32
+  return pipe.get_pipefd ();
+#else
+  return -1;
+#endif;
+}
+
+Netxx::socket_type
+Netxx::SpawnedStream::get_readfd (void) const
+{
+#ifdef WIN32
+  return -1;
+#else
+  return readfd;
+#endif;
+}
+
+Netxx::socket_type
+Netxx::SpawnedStream::get_writefd (void) const
+{
+#ifdef WIN32
+  return -1;
+#else
+  return writefd;
+#endif;
 }
 
 const Netxx::ProbeInfo*
 Netxx::SpawnedStream::get_probe_info (void) const
 {
+#ifdef WIN32
+  I(0);
+#else
   return &probe_info;
+#endif
+}
+
+void
+Netxx::StdioProbe::ready(const StreamBase &sb, ready_type rt)
+{
+  try
+    {
+      // See if it's a StdioStream
+      add(const_cast<StdioStream&>(dynamic_cast<const StdioStream&>(sb)),rt);
+    }
+  catch (...)
+    {
+      // Not a StdioStream; see if it's a SpawnedStream. YUCK! fix Netxx::Probe to be dispatching.
+      Probe::add(sb,rt);
+    }
 }
 
 void
@@ -545,12 +628,11 @@ UNIT_TEST(pipe, stdio_stream)
 
 }
 
-UNIT_TEST(pipe, spawn_stdio)
+void unit_test_spawn (char *cmd, int will_disconnect)
 {
   try
     {
-      // netxx_pipe_stdio_main uses StdioStream, StdioProbe
-      Netxx::SpawnedStream spawned ("./netxx_pipe_stdio_main", vector<string>());
+      Netxx::SpawnedStream spawned (cmd, vector<string>());
 
       char           write_buf[1024];
       char           read_buf[1024];
@@ -596,19 +678,26 @@ UNIT_TEST(pipe, spawn_stdio)
           I(static_cast<unsigned char>(result[1]) == 255 - c);
         }
 
-      // Tell netxx_pipe_stdio_main to quit, closing its socket
-      write_buf[0] = 'q';
-      write_buf[1] = 'u';
-      write_buf[2] = 'i';
-      write_buf[3] = 't';
-      spawned.write(write_buf, 4);
+      if (will_disconnect)
+        {
+          // Tell netxx_pipe_stdio_main to quit, closing its stdin
+          write_buf[0] = 'q';
+          write_buf[1] = 'u';
+          write_buf[2] = 'i';
+          write_buf[3] = 't';
+          spawned.write(write_buf, 4);
 
-      // Note that probe.ready here returns timeout, _not_ ready_read.
-      probe.clear();
-      probe.add(spawned, Netxx::Probe::ready_read);
-      res = probe.ready(timeout);
-      I(res.second==Netxx::Probe::ready_none);
-      I(res.first == -1);
+          // Wait for stdin to close; should be reported as ready_read, _not_ as timeout
+          probe.clear();
+          probe.add(spawned, Netxx::Probe::ready_read);
+          res = probe.ready(timeout);
+          I(res.second==Netxx::Probe::ready_read);
+          I(res.first == spawned.get_socketfd());
+
+          // now read should return 0 bytes
+          bytes = spawned.read(read_buf, sizeof(read_buf));
+          I(bytes == 0);
+        }
 
       // This waits for the child to exit
       spawned.close();
@@ -618,6 +707,20 @@ UNIT_TEST(pipe, spawn_stdio)
       W(F("Failure %s") % e.what());
       throw;
     }
+}
+
+UNIT_TEST(pipe, spawn_cat)
+{
+  // We must be able to spawn a "normal" program, that uses 'read' and
+  // 'write' on stdio; the real use case is 'mtn sync ssh:...'.
+  unit_test_spawn ("cat", 0);
+}
+
+UNIT_TEST(pipe, spawn_stdio)
+{
+  // We must also be able to spawn a program that uses StdioStream; this
+  // also tests StdioStream.
+  unit_test_spawn ("./netxx_pipe_stdio_main", 1);
 }
 
 #endif

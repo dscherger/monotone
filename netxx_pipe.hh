@@ -23,61 +23,140 @@
   in two different ways.
 
   The use cases are 'mtn sync file:...', 'mtn sync ssh:...', and 'mtn serve
-  --stdio'.
+  --stdio'. These are simple on Unix, but pose challenges on Win32.
 
   The netsync code uses StreamBase objects to perform all communications
   between the local and server mtns.
 
-  In 'mtn sync file:...', the local mtn spawns the server directly as 'mtn
-  serve --stdio'. Thus the local mtn needs a StreamBase object that can
-  serve as the stdin/stdout of a spawned process; SpawnedStream. The server
-  mtn needs to construct a StreamBase object from the existing stdin/stdout;
-  StdioStream.
+  In 'mtn sync file:...', the client mtn spawns the server as 'mtn serve
+  --stdio'. Thus the client mtn needs a StreamBase object that can serve as
+  the stdin/stdout of a spawned process; that is provided by SpawnedStream
+  (which also performs the spawn operation). The server mtn needs to
+  construct a StreamBase object from the existing stdin/stdout; that is
+  provided by StdioStream.
 
-  In 'mtn sync ssh:...' the local mtn spawns ssh, connecting to it via
-  SpawnedStream. On the server, ssh spawns 'mtn serve --stdio', which uses
-  StdioStream.
+  In 'mtn sync ssh:...' the client mtn spawns ssh, connecting to it via
+  SpawnedStream. On the server machine, ssh spawns 'mtn serve --stdio',
+  which uses StdioStream.
 
-  We also need StdioProbe objects that work with StdioStream objects, since
-  Netxx::Probe doesn't. Netxx does not provide for child classes of Probe,
-  nor of ProbeInfo; none of the methods are virtual. We handle this by
-  having the netsync code always use a StdioProbe object when the StreamBase
-  object might be a StdioStream. StdioProbe acts like Probe unless the
-  stream is StdioStream. IMPROVEME: we only need a StdioProbe in
-  serve_single_connection; should fix Netxx to allow for derived classes.
+  The original netsync code performed five operations on streams; read
+  available with timeout, write available with timeout, detecting a closed
+  connection with timeout, immediate read, and immediate write. For normal
+  client-server connections (not via stdio), Netxx::Sockets provides the
+  connection and the immediate read/write on both Win32 and Unix (via
+  'recv', 'send'), and Netxx::Probe supports read/write available with
+  timeout and detect closed connection with timeout on both Win32 and Unix
+  (via 'select').
 
-  We use socket pairs to implement SpawnedStream. On Unix and Win32, a
-  socket can serve as stdin and stdout for a spawned process.
+  For stdio connections using SpawnedStream, there are two problem cases
+  with sockets. First, closing a server stdio file descriptor that is
+  actually a socket does not cause the client 'select' to return with a
+  'socket closed' indication on either Unix or Win32. Second, in 'mtn sync
+  ssh:...', the spawned ssh process uses the 'read' and 'write' functions on
+  stdio; these do not work with sockets on Win32, so the stdio file
+  descriptors cannot actually be sockets.
 
-  The sockets in the pair must be connected to each other; socketpair() does
-  that nicely.
+  The first problem can be worked around by changing the netsync protocol
+  slightly to not require detecting closed connections; thus 'mtn sync
+  file:...' can be provided on Win32 and Unix using a SpawnedStream
+  implemented with a socket. However, there are then failure situations
+  where the client does not terminate. See the
+  'net.venge.monotone.experimental.win32_pipes' branch for an example of
+  this.
 
-  On Win32, select works on stdin only if it is actually a socket. We just
-  live with that restriction. It may mean Win32 can't be an ssh server for
-  mtn.
+  However, to support 'mtn sync ssh:...' on Win32 clients, we must use named
+  pipes to implement SpawnedStream; they support the 'read' and 'write'
+  functions. They do not directly support 'select', but the essential
+  operation of a Probe can be supported via overlapped operations.
 
-  An earlier implementation (a single class named PipeStream) tried to use
-  Win32 overlapped IO via named pipes on Win32, and Unix select with Unix
-  pipes on unix, but we couldn't make it work, because the semantics of the
-  two implementations are too different. Now we always use socket select on
-  sockets.
+  We also use pipes on Unix for SpawnedStream, to allow detecting closed
+  stdio connections. The original netsync code generally assumes there is
+  only one file descriptor for a connection; we modify it where necessary to
+  allow for two file descriptors. Note that Win32 named pipes need only one
+  file descriptor.
+
+  A Probe object provides three operations; read available, write available,
+  and closed connection detection - all with optional timeout. 'select'
+  performs all three operations on stdio or sockets Unix, but only on
+  sockets on Win32. If a Probe object reports either read or write is
+  available within the specified timeout, netsync then performs a read or
+  write which is expected to complete immediately. In order to implement the
+  timeout without a busy wait, we must use Win32 overlapped operations.
+
+  Overlapped operations can provide a read available with timeout. There is
+  no corresponding operation for write; we must simply assume write is
+  always available. Since pipes are only used in a SpawnedStream, there are
+  two cases where write would not actually be available, and the write call
+  would block.
+
+  The first case is when the client is on Win32, and the server (either
+  local via 'mtn sync file:...' or remote via 'mtn sync ssh:...') falls far
+  behind in reading, so that the pipe buffer fills up. In this case, it is
+  safe for the client to block on a write until the server catches up. If
+  the connection to the server terminates due to error, the write will
+  terminate with an error.
+
+  The second case is a local or remote server on Win32, when the client
+  falls far behind in reading. In that case, it is safe for the server to
+  block on write until the client catches up, since the server is not
+  serving other connections.
+
+  Note that we are assuming it is not possible for both the server and the
+  client to fall far enough behind in reading for write to block on both
+  sides simultaneously.
+
+  This implementation does not support the case of an ssh server on Win32;
+  ssh will spawn mtn with stdio being normal pipes, and PeekNamedPipe will
+  fail. In that case, the Cygwin implementation of mtn is recommended.
+
+  Netxx does not provide for child classes of Probe, nor of ProbeInfo; none
+  of the methods are virtual. We handle this by having the netsync code
+  always use a StdioProbe object; it behaves identically to Probe when the
+  connection is a socket. IMPROVEME: should fix Netxx to allow for derived
+  classes.
+
 */
 
 namespace Netxx
   {
   class StdioProbe;
   class StreamServer;
-  class StdioStreamTest;
+
+#ifdef WIN32
+  class PipeStream
+    {
+      HANDLE     named_pipe;
+      char       readbuf[1024];
+      DWORD      bytes_available;
+      bool       read_in_progress;
+      OVERLAPPED overlap;
+
+    public:
+      // Nothing is constructed
+      PipeStream (void);
+
+      // Get the named pipe from the existing file descriptor
+      explicit PipeStream (int readfd);
+
+      // Use an existing named pipe
+      void set_named_pipe (HANDLE named_pipe);
+
+      Netxx::socket_type get_pipefd();
+      signed_size_type read (void *buffer, size_type length);
+      void close (void);
+    };
+#endif
 
   class SpawnedStream : public StreamBase
     {
-      Socket    Parent_Socket;
-      Socket    Child_Socket;
-      ProbeInfo probe_info;
 #ifdef WIN32
-      HANDLE    child;
+      PipeStream pipe;
+      HANDLE     child;
 #else
-      pid_t     child;
+      int        readfd;
+      int        writefd;
+      ProbeInfo  probe_info;
+      pid_t      child;
 #endif
 
     public:
@@ -89,22 +168,30 @@ namespace Netxx
       virtual signed_size_type read (void *buffer, size_type length);
       virtual signed_size_type write (const void *buffer, size_type length);
       virtual void close (void);
-      virtual socket_type get_socketfd (void) const;
       virtual const ProbeInfo* get_probe_info (void) const;
+
+      // get_socketfd will return -1 on Unix
+      virtual socket_type get_socketfd (void) const;
+      virtual socket_type get_writefd (void) const;
+      virtual socket_type get_readfd (void) const;
     };
 
     class StdioStream : public StreamBase
     {
       friend class StdioProbe;
 
-      int       readfd;
-      int       writefd;
-      ProbeInfo probe_info;
+#ifdef WIN32
+      PipeStream readfd;
+      int        writefd;
+#else
+      int        readfd;
+      int        writefd;
+      ProbeInfo  probe_info;
+#endif
 
     public:
-      explicit StdioStream (void);
-      // Construct a Stream object from stdout and stdin of the current
-      // process.
+      explicit StdioStream (int const readfd; int const writefd);
+      // Construct a Stream object from the given file descriptors
 
       virtual ~StdioStream() { close(); }
       virtual signed_size_type read (void *buffer, size_type length);
@@ -112,28 +199,20 @@ namespace Netxx
       virtual void close (void);
       virtual const ProbeInfo* get_probe_info (void) const;
 
-      // In general, we have two file descriptors that netsync needs to know
-      // about. Netsync should never call get_socketfd to identify this
-      // stream; it will throw an error.
+      // get_socketfd will return -1
       virtual socket_type get_socketfd (void) const;
       virtual socket_type get_writefd (void) const;
       virtual socket_type get_readfd (void) const;
-    private:
-      friend class StdioStreamTest;
-      // Unit test facilities
-
-      // noop constructor
-      explicit StdioStream (int test) {};
-
-      // Set socket for unit testing
-      void set_socketfd (socket_type sock);
     };
 
     struct StdioProbe : Probe
     {
     public:
+      result_type ready (const Timeout &timeout=Timeout(), ready_type rt=ready_none);
+
       // Note that Netxx::Probe::add is a template, not virtual; we provide
       // the versions needed by netsync code.
+      void add(const SpawnedStream &ps, ready_type rt=ready_none);
       void add(const StdioStream &ps, ready_type rt=ready_none);
       void add(const StreamBase &sb, ready_type rt=ready_none);
       void add(const StreamServer &ss, ready_type rt=ready_none);
