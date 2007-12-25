@@ -329,20 +329,6 @@ struct automate_ostream : public std::ostream
   { _M_autobuf.end_cmd(); }
 };
 
-
-struct user_interface_stdio : public user_interface
-{
-public:
-  user_interface_stdio(automate_ostream * ostr)
-    : user_interface(), ostream(ostr)
-  { initialize(); }
-  ~user_interface_stdio() {}
-  void inform(std::string const & line)
-  { *ostream << "[" << line << "]"; }
-private:
-  automate_ostream * ostream;
-};
-
 CMD_AUTOMATE(stdio, "",
              N_("Automates several commands in one run"),
              "",
@@ -358,8 +344,7 @@ CMD_AUTOMATE(stdio, "",
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
 
-  user_interface old_ui = ui;
-  ui = user_interface_stdio(&os);
+  ui.set_print_impl(new user_interface::print_impl(&os));
 
   vector<pair<string, string> > params;
   vector<string> cmdline;
@@ -426,8 +411,6 @@ CMD_AUTOMATE(stdio, "",
         }
       os.end_cmd();
     }
-
-    ui = old_ui;
 }
 
 LUAEXT(mtn_automate, )

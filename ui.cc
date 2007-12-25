@@ -50,7 +50,7 @@ using boost::lexical_cast;
 
 struct user_interface ui;
 
-struct user_interface::impl
+struct user_interface::ticker_impl
 {
   std::set<string> issued_warnings;
 
@@ -60,8 +60,23 @@ struct user_interface::impl
   tick_writer * t_writer;
   string tick_trailer;
 
-  impl() : some_tick_is_dirty(false), last_write_was_a_tick(false),
+  ticker_impl() : some_tick_is_dirty(false), last_write_was_a_tick(false),
            t_writer(0) {}
+};
+
+struct user_interface::print_impl
+{
+    std::ostream ostr;
+    void flush() { ostr.flush(); }
+    print_impl & operator<<(print_impl & pimpl, char const ch)
+    {
+        return (pimpl.ostr << ch);
+    }
+    print_impl & operator<<(print_impl & pimpl, std::string const & str)
+    {
+        return (pimpl.ostr << str);
+    }
+    print_impl() : ostr(clog) {}
 };
 
 ticker::ticker(string const & tickname, string const & s, size_t mod,
@@ -77,16 +92,16 @@ ticker::ticker(string const & tickname, string const & s, size_t mod,
   shortname(s),
   count_size(0)
 {
-  I(ui.imp);
-  safe_insert(ui.imp->tickers, make_pair(keyname, this));
+  I(ui.ticker_imp);
+  safe_insert(ui.ticker_imp->tickers, make_pair(keyname, this));
 }
 
 ticker::~ticker()
 {
-  I(ui.imp);
-  safe_erase(ui.imp->tickers, keyname);
+  I(ui.ticker_imp);
+  safe_erase(ui.ticker_imp->tickers, keyname);
 
-  if (ui.imp->some_tick_is_dirty)
+  if (ui.ticker_imp->some_tick_is_dirty)
     ui.write_ticks();
   ui.finish_ticking();
 }
@@ -94,10 +109,10 @@ ticker::~ticker()
 void
 ticker::operator++()
 {
-  I(ui.imp);
-  I(ui.imp->tickers.find(keyname) != ui.imp->tickers.end());
+  I(ui.ticker_imp);
+  I(ui.ticker_imp->tickers.find(keyname) != ui.ticker_imp->tickers.end());
   ticks++;
-  ui.imp->some_tick_is_dirty = true;
+  ui.ticker_imp->some_tick_is_dirty = true;
   if (ticks % mod == 0)
     ui.write_ticks();
 }
@@ -105,14 +120,14 @@ ticker::operator++()
 void
 ticker::operator+=(size_t t)
 {
-  I(ui.imp);
-  I(ui.imp->tickers.find(keyname) != ui.imp->tickers.end());
+  I(ui.ticker_imp);
+  I(ui.ticker_imp->tickers.find(keyname) != ui.ticker_imp->tickers.end());
   size_t old = ticks;
 
   ticks += t;
   if (t != 0)
     {
-      ui.imp->some_tick_is_dirty = true;
+      ui.ticker_imp->some_tick_is_dirty = true;
       if (ticks % mod == 0 || (ticks / mod) > (old / mod))
         ui.write_ticks();
     }
@@ -229,9 +244,11 @@ void tick_write_count::write_ticks()
   vector<string> tick_title_strings;
   vector<string> tick_count_strings;
 
-  I(ui.imp);
-  for (map<string,ticker *>::const_iterator i = ui.imp->tickers.begin();
-       i != ui.imp->tickers.end(); ++i)
+  I(ui.ticker_imp);
+  I(ui.print_imp);
+
+  for (map<string,ticker *>::const_iterator i = ui.ticker_imp->tickers.begin();
+       i != ui.ticker_imp->tickers.end(); ++i)
     {
       ticker * tick = i->second;
 
@@ -288,7 +305,7 @@ void tick_write_count::write_ticks()
     }
 
   string tickline1;
-  bool write_tickline1 = !(ui.imp->last_write_was_a_tick
+  bool write_tickline1 = !(ui.ticker_imp->last_write_was_a_tick
                            && (tick_widths == last_tick_widths));
   if (write_tickline1)
     {
@@ -313,10 +330,10 @@ void tick_write_count::write_ticks()
       tickline2.append(idx(tick_count_strings, i));
     }
 
-  if (!ui.imp->tick_trailer.empty())
+  if (!ui.ticker_imp->tick_trailer.empty())
     {
       tickline2 += " ";
-      tickline2 += ui.imp->tick_trailer;
+      tickline2 += ui.ticker_imp->tick_trailer;
     }
 
   size_t curr_sz = display_width(utf8(tickline2));
@@ -327,8 +344,8 @@ void tick_write_count::write_ticks()
   unsigned int tw = terminal_width();
   if(write_tickline1)
     {
-      if (ui.imp->last_write_was_a_tick)
-        clog << '\n';
+      if (ui.ticker_imp->last_write_was_a_tick)
+        ui.print_imp << '\n';
 
       if (tw && display_width(utf8(tickline1)) > tw)
         {
@@ -336,7 +353,7 @@ void tick_write_count::write_ticks()
           // bytes, not by characters)
           tickline1.resize(tw);
         }
-      clog << tickline1 << '\n';
+      ui.print_imp << tickline1 << '\n';
     }
   if (tw && display_width(utf8(tickline2)) > tw)
     {
@@ -344,13 +361,14 @@ void tick_write_count::write_ticks()
       // bytes, not by characters)
       tickline2.resize(tw);
     }
-  clog << '\r' << tickline2;
-  clog.flush();
+  ui.print_imp << '\r' << tickline2;
+  ui.print_imp.flush();
 }
 
 void tick_write_count::clear_line()
 {
-  clog << endl;
+  I(ui.print_imp);
+  ui.print_imp << endl;
 }
 
 
@@ -364,12 +382,14 @@ tick_write_dot::~tick_write_dot()
 
 void tick_write_dot::write_ticks()
 {
-  I(ui.imp);
+  I(ui.ticker_imp);
+  I(ui.print_imp);
+
   static const string tickline_prefix = ui.output_prefix();
   string tickline1, tickline2;
   bool first_tick = true;
 
-  if (ui.imp->last_write_was_a_tick)
+  if (ui.ticker_imp->last_write_was_a_tick)
     {
       tickline1 = "";
       tickline2 = "";
@@ -381,12 +401,12 @@ void tick_write_dot::write_ticks()
       chars_on_line = tickline_prefix.size();
     }
 
-  for (map<string,ticker *>::const_iterator i = ui.imp->tickers.begin();
-       i != ui.imp->tickers.end(); ++i)
+  for (map<string,ticker *>::const_iterator i = ui.ticker_imp->tickers.begin();
+       i != ui.ticker_imp->tickers.end(); ++i)
     {
       map<string,size_t>::const_iterator old = last_ticks.find(i->first);
 
-      if (!ui.imp->last_write_was_a_tick)
+      if (!ui.ticker_imp->last_write_was_a_tick)
         {
           if (!first_tick)
             tickline1 += ", ";
@@ -416,13 +436,14 @@ void tick_write_dot::write_ticks()
         }
     }
 
-  clog << tickline1 << tickline2;
-  clog.flush();
+  ui.print_imp << tickline1 << tickline2;
+  ui.print_imp.flush();
 }
 
 void tick_write_dot::clear_line()
 {
-  clog << endl;
+  I(ui.print_imp);
+  ui.print_imp << endl;
 }
 
 // user_interface has both constructor/destructor and initialize/
@@ -430,17 +451,20 @@ void tick_write_dot::clear_line()
 // global, and we don't want global constructors/destructors doing
 // any real work.  see monotone.cc for how this is handled.
 
-user_interface::user_interface() : prog_name("?"), imp(0) {}
+user_interface::user_interface() : prog_name("?"), ticker_imp(0), print_imp(0) {}
 
 void user_interface::initialize()
 {
-  imp = new user_interface::impl;
-  
+  ticker_imp = new user_interface::ticker_impl;
+
   cout.exceptions(ios_base::badbit);
 #ifdef SYNC_WITH_STDIO_WORKS
   clog.sync_with_stdio(false);
 #endif
   clog.unsetf(ios_base::unitbuf);
+
+  print_imp = new user_interface::print_impl(clog);
+
   if (have_smart_terminal())
     set_tick_write_count();
   else
@@ -452,78 +476,80 @@ user_interface::~user_interface()
 
 void user_interface::deinitialize()
 {
-  I(imp);
-  delete imp->t_writer;
-  delete imp;
+  I(ticker_imp);
+  delete ticker_imp->t_writer;
+  delete ticker_imp;
+  I(print_imp);
+  delete print_imp;
 }
 
 void
 user_interface::finish_ticking()
 {
-  I(imp);
-  if (imp->tickers.size() == 0 && imp->last_write_was_a_tick)
+  I(ticker_imp);
+  if (ticker_imp->tickers.size() == 0 && ticker_imp->last_write_was_a_tick)
     {
-      imp->tick_trailer = "";
-      imp->t_writer->clear_line();
-      imp->last_write_was_a_tick = false;
+      ticker_imp->tick_trailer = "";
+      ticker_imp->t_writer->clear_line();
+      ticker_imp->last_write_was_a_tick = false;
     }
 }
 
 void
 user_interface::set_tick_trailer(string const & t)
 {
-  I(imp);
-  imp->tick_trailer = t;
+  I(ticker_imp);
+  ticker_imp->tick_trailer = t;
 }
 
 void
 user_interface::set_tick_write_dot()
 {
-  I(imp);
-  if (imp->t_writer != 0)
-    delete imp->t_writer;
-  imp->t_writer = new tick_write_dot;
+  I(ticker_imp);
+  if (ticker_imp->t_writer != 0)
+    delete ticker_imp->t_writer;
+  ticker_imp->t_writer = new tick_write_dot;
 }
 
 void
 user_interface::set_tick_write_count()
 {
-  I(imp);
-  if (imp->t_writer != 0)
-    delete imp->t_writer;
-  imp->t_writer = new tick_write_count;
+  I(ticker_imp);
+  if (ticker_imp->t_writer != 0)
+    delete ticker_imp->t_writer;
+  ticker_imp->t_writer = new tick_write_count;
 }
 
 void
 user_interface::set_tick_write_nothing()
 {
-  I(imp);
-  if (imp->t_writer != 0)
-    delete imp->t_writer;
-  imp->t_writer = new tick_write_nothing;
+  I(ticker_imp);
+  if (ticker_imp->t_writer != 0)
+    delete ticker_imp->t_writer;
+  ticker_imp->t_writer = new tick_write_nothing;
 }
 
 
 void
 user_interface::write_ticks()
 {
-  I(imp);
-  imp->t_writer->write_ticks();
-  imp->last_write_was_a_tick = true;
-  imp->some_tick_is_dirty = false;
+  I(ticker_imp);
+  ticker_imp->t_writer->write_ticks();
+  ticker_imp->last_write_was_a_tick = true;
+  ticker_imp->some_tick_is_dirty = false;
 }
 
 void
 user_interface::warn(string const & warning)
 {
-  I(imp);
-  if (imp->issued_warnings.find(warning) == imp->issued_warnings.end())
+  I(ticker_imp);
+  if (ticker_imp->issued_warnings.find(warning) == ticker_imp->issued_warnings.end())
     {
       string message;
       prefix_lines_with(_("warning: "), warning, message);
       inform(message);
     }
-  imp->issued_warnings.insert(warning);
+  ticker_imp->issued_warnings.insert(warning);
 }
 
 // this message should be kept consistent with unix/main.cc and
@@ -620,13 +646,13 @@ sanitize(string const & line)
 void
 user_interface::ensure_clean_line()
 {
-  I(imp);
-  if (imp->last_write_was_a_tick)
+  I(ticker_imp);
+  if (ticker_imp->last_write_was_a_tick)
     {
       write_ticks();
-      imp->t_writer->clear_line();
+      ticker_imp->t_writer->clear_line();
     }
-  imp->last_write_was_a_tick = false;
+  ticker_imp->last_write_was_a_tick = false;
 }
 
 void
@@ -641,12 +667,22 @@ user_interface::redirect_log_to(system_path const & filename)
 }
 
 void
+user_interface::set_print_impl(print_impl * pimpl)
+{
+  I(pimpl);
+  if (print_imp)
+    delete print_imp;
+  print_imp = pimpl;
+}
+
+void
 user_interface::inform(string const & line)
 {
+  I(ui.print_imp);
   string prefixedLine;
   prefix_lines_with(output_prefix(), line, prefixedLine);
   ensure_clean_line();
-  clog << sanitize(prefixedLine) << endl; // flushes
+  ui.print_imp << sanitize(prefixedLine) << endl; // flushes
 }
 
 unsigned int

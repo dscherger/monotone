@@ -45,15 +45,18 @@ struct tick_write_dot;
 struct user_interface
 {
 public:
+  struct ticker_impl;
+  struct print_impl;
+
   user_interface();
-  virtual ~user_interface();
+  ~user_interface();
   void initialize();
   void deinitialize();
   void warn(std::string const & warning);
   void warn(format_base const & fmt) { warn(fmt.str()); }
   void fatal(std::string const & fatal);
   void fatal(format_base const & fmt) { fatal(fmt.str()); }
-  virtual void inform(std::string const & line);
+  void inform(std::string const & line);
   void inform(format_base const & fmt) { inform(fmt.str()); }
   void fatal_exception(std::exception const & ex);
   void fatal_exception();
@@ -63,6 +66,7 @@ public:
   void set_tick_write_nothing();
   void ensure_clean_line();
   void redirect_log_to(system_path const & filename);
+  void set_print_impl(print_impl * pimpl);
 
   std::string output_prefix();
   std::string prog_name;
@@ -71,8 +75,8 @@ private:
   void finish_ticking();
   void write_ticks();
 
-  struct impl;
-  impl * imp;
+  ticker_impl * ticker_imp;
+  print_impl * print_imp;
 
   friend struct ticker;
   friend struct tick_write_count;
