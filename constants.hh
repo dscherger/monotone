@@ -98,6 +98,12 @@ namespace constants
   // all the ASCII characters (bytes) which can occur in key names
   extern char const legal_key_name_bytes[];
 
+  // maximum number nodes in a randomized gsync probe set
+  std::size_t const gsync_max_probe_set_size = 128;
+
+  // standard HTTP port number
+  std::size_t const default_http_port = 80;
+
   // remaining constants are related to netsync protocol
 
   // number of bytes in the hash used in netsync
