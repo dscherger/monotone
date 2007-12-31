@@ -1188,12 +1188,10 @@ database::get_roster_base(string const & ident_str,
   query q("SELECT checksum, data FROM rosters WHERE id = ?");
   fetch(res, 2, one_row, q % text(ident_str));
 
-  /*
-    hexenc<id> checksum(res[0][0]);
-    hexenc<id> calculated;
-    calculate_ident(data(res[0][1]), calculated);
-    I(calculated == checksum);
-  */
+  hexenc<id> checksum(res[0][0]);
+  hexenc<id> calculated;
+  calculate_ident(data(res[0][1]), calculated);
+  I(calculated == checksum);
 
   gzip<data> dat_packed(res[0][1]);
   data dat;
@@ -1210,12 +1208,10 @@ database::get_roster_delta(string const & ident,
   query q("SELECT checksum, delta FROM roster_deltas WHERE id = ? AND base = ?");
   fetch(res, 2, one_row, q % text(ident) % text(base));
 
-  /*
-    hexenc<id> checksum(res[0][0]);
-    hexenc<id> calculated;
-    calculate_ident(data(res[0][1]), calculated);
-    I(calculated == checksum);
-  */
+  hexenc<id> checksum(res[0][0]);
+  hexenc<id> calculated;
+  calculate_ident(data(res[0][1]), calculated);
+  I(calculated == checksum);
 
   gzip<delta> del_packed(res[0][1]);
   delta tmp;
@@ -1231,14 +1227,12 @@ database::write_delayed_file(file_id const & ident,
   encode_gzip(dat.inner(), dat_packed);
 
   // ident is a hash, which we should check
-  /*
-    I(!null_id(ident));
-    file_id tid;
-    calculate_ident(dat, tid);
-    MM(ident);
-    MM(tid);
-    I(tid == ident);
-  */
+  I(!null_id(ident));
+  file_id tid;
+  calculate_ident(dat, tid);
+  MM(ident);
+  MM(tid);
+  I(tid == ident);
   // and then write things to the db
   query q("INSERT INTO files (id, data) VALUES (?, ?)");
   execute(q % text(ident.inner()()) % blob(dat_packed()));
@@ -1395,11 +1389,9 @@ database::get_version(hexenc<id> const & ident,
   appl->finish(tmp);
   dat = data(tmp);
 
-  /*
-    hexenc<id> final;
-    calculate_ident(dat, final);
-    I(final == ident);
-  */
+  hexenc<id> final;
+  calculate_ident(dat, final);
+  I(final == ident);
 
   if (!vcache.exists(ident()))
     vcache.insert_clean(ident(), dat);
@@ -1611,14 +1603,11 @@ database::get_roster_version(revision_id const & id,
   // delta reconstruction code; if there is a bug where we put something
   // into the database and then later get something different back out, then
   // this is the only thing that can catch it.
-
-  /*
   roster->check_sane_against(*marking);
   manifest_id expected_mid, actual_mid;
   get_revision_manifest(id, expected_mid);
   calculate_ident(*roster, actual_mid);
   I(expected_mid == actual_mid);
-  */
 
   // const'ify the objects, to save them and pass them out
   cr.first = roster;
@@ -1918,13 +1907,11 @@ database::get_revision(revision_id const & id,
   decode_gzip(gzdata,rdat);
 
   // verify that we got a revision with the right id
-  /*
   {
     revision_id tmp;
     calculate_ident(revision_data(rdat), tmp);
     I(id == tmp);
   }
-  */
 
   dat = revision_data(rdat);
 }
@@ -2191,10 +2178,8 @@ database::put_roster_for_revision(revision_id const & new_id,
   manifest_id roster_manifest_id;
   MM(roster_manifest_id);
   make_roster_for_revision(rev, new_id, *ros_writeable, *mm_writeable, *__app);
-  /*
-    calculate_ident(*ros_writeable, roster_manifest_id);
-    I(rev.new_manifest == roster_manifest_id);
-  */
+  calculate_ident(*ros_writeable, roster_manifest_id);
+  I(rev.new_manifest == roster_manifest_id);
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;
