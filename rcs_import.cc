@@ -2131,6 +2131,8 @@ public:
 class split_decider_func
 {
 public:
+  virtual ~split_decider_func ()
+    { };  // a no-op, just here to make the compiler happy.
   virtual bool operator () (const cvs_event_ptr & ev) = 0;
 };
 
