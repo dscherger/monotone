@@ -3722,7 +3722,16 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
   L(FL("creating artificial revision for %d parents.")
     % parent_blobs.size());
 
-  // erase ancestors
+  // While a blob in our graph can have multiple ancestors, which depend on
+  // each other, monotone cannot represent that. Instead, we have to remove
+  // all ancestors from the set. I.e.:
+  //
+  //        A ___,                    A
+  //        |     \                   |
+  //        |      |          =>      |
+  //        v      v                  v
+  //        B -> blob                 B -> blob
+
   set<revision_id> parent_rids;
   for (set<cvs_blob_index>::iterator i = parent_blobs.begin();
        i != parent_blobs.end(); ++i)
