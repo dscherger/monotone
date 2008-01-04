@@ -2226,11 +2226,13 @@ struct branch_sanitizer
 protected:
   cvs_history & cvs;
   int & edges_removed;
+  int & edges_deferred;
 
 public:
-  branch_sanitizer(cvs_history & c, int & edges_removed)
+  branch_sanitizer(cvs_history & c, int & edges_removed, int & edges_deferred)
     : cvs(c),
-      edges_removed(edges_removed)
+      edges_removed(edges_removed),
+      edges_deferred(edges_deferred)
     { }
 
   bool abort()
@@ -2288,16 +2290,24 @@ public:
       path_b.push_back(e.second);
 
       // At this point we have two different paths, both going from the
-      // (grey) common ancestor we've found.
+      // (grey) common ancestor we've found...
       I(path_a[0] == path_b[0]);
-      // to the target of the cross edge (e.second).
+
+      // ..to the target of the cross edge (e.second).
       I(*path_a.rbegin() == e.second);
       I(*path_b.rbegin() == e.second);
 
       // Unfortunately, that common ancestor isn't necessarily the lowest
-      // common ancestor. Because the (grey) path b might contain other
-      // forward edges to blobs in path a. An example (from the test
-      // importing_cvs_branches2):
+      // common ancestor. However, it doesn't need to be. The only thing
+      // we need to make sure is, that there are no dependencies between
+      // blobs of path_a and path_b.
+      //
+      // As path_a is all colored black from the depth first search run,
+      // we already know there are no cross or forward edges from it to
+      // any blob of path_b.
+      //
+      // But blobs of path_b can very well have dependencies to blobs of
+      // path_a. An example (from the test importing_cvs_branches2):
       //
       //                        2
       //              p       /    \       p
@@ -2309,54 +2319,55 @@ public:
       //                      \     /
       //                         8
       //
-      // Here, the cross edge discovered was 3 -> 8. Here, path_a is:
+      // Here, the cross edge discovered was 3 -> 8. And path_a is:
       // (2, 10, 9, 5, 8), while path_b is (2, 12, 11, 3, 8). The edge
-      // 3 -> 10 is another cross edge and will be discovered next, but
-      // hasn't been discovered so far.
+      // 3 -> 10 is another cross edge (and will be discovered next by
+      // the depth first search, but hasn't been discovered so far).
       //
-      // Thus to make sure we find the lowest common ancestor, we check
-      // if any blob in path_b depends on another blob in path_a. In
-      // such a case, that blob in path_a is the least common ancestor.
+      // We don't want to buy into the trouble of finding the
+      // lowest common ancestor here, and simply bail out in such
+      // cases, remembering that there are cross edges left. The
+      // continued DFS will eventually discover the lower cross edge
+      // and be able to resolve that. As soon as that's resolved, we
+      // will be able to resolve the first one we have deferred
+      // before.
 
-      set<cvs_blob_index> common_ancestors;
-      set<cvs_blob_index> done;
-      stack<cvs_blob_index> stack;
+      {
+        vector<cvs_blob_index> cross_path;
+        insert_iterator< vector< cvs_blob_index > >
+          ity_c(cross_path, cross_path.end());
 
-      for (vector<cvs_blob_index>::iterator ib = ++path_b.begin();
-           ib != path_b.end(); ++ib)
-        {
-          if (*ib == e.second)
-            break;
+        dijkstra_shortest_path(cvs, *(++path_b.begin()), *(++path_a.rbegin()),
+                               ity_c,
+                               true,                // downwards
+                               true, true, true,    // follow all colors
+                               false,
+                               make_pair(invalid_blob, invalid_blob));
 
-          vector<cvs_blob_index> cross_path;
-          insert_iterator< vector< cvs_blob_index > >
-            ity_c(cross_path, cross_path.end());
+        if (!cross_path.empty())
+          {
+            L(FL("deferred resolving cross edge to later."));
 
-          // From the lowest common ancestor, we again try to find the
-          // shortest path to e.first to get a better path_b.
-          dijkstra_shortest_path(cvs, *ib, *(++path_a.rbegin()), ity_c,
-                                 true,               // downwards
-                                 true, false, true,  // follow black and white
-                                 false,
-                                 make_pair(invalid_blob, invalid_blob));
+            /*
+             * Well, we didn't really remove anything, but this
+             * makes sure another complete depth first search is
+             * run, so that this cross edge will be handled
+             * eventually.
+             */ 
+            edges_deferred++;
+            return;
+          }
 
-          if (!cross_path.empty())
-            {
-              vector< cvs_blob_index > tmp(cross_path.size());
-              reverse_copy(cross_path.begin(), cross_path.end(), tmp.begin());
-              swap(tmp, path_a);
-              path_a.push_back(e.second);
-
-              I(path_a[0] == *ib);
-
-              ib = path_b.erase(path_b.begin(), ib);
-
-              I(path_a[0] == path_b[0]);
-              I(*path_a.rbegin() == e.second);
-              I(*path_b.rbegin() == e.second);
-            }
-        }
-
+        // extra check the other way around, can theoretically be
+        // skipped, as DFS guarantees that already. 
+        dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
+                               ity_c,
+                               true,                // downwards
+                               true, true, true,    // follow all colors
+                               false,
+                               make_pair(invalid_blob, invalid_blob));
+        I(cross_path.empty());
+      }
 
       // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
@@ -3493,12 +3504,16 @@ resolve_blob_dependencies(cvs_history & cvs, ticker & n_splits)
   while (1)
     {
       int edges_removed = 0;
+      int edges_deferred = 0;
       cvs.import_order.clear();
-      branch_sanitizer vis(cvs, edges_removed);
+      branch_sanitizer vis(cvs, edges_removed, edges_deferred);
       cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
-      if (edges_removed == 0)
+      if ((edges_removed == 0) && (edges_deferred == 0))
         break;
+
+      if (edges_deferred > 0)
+        I(edges_removed > 0);
     }
 
 #ifdef DEBUG_GRAPHVIZ
