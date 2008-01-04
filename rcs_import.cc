@@ -1323,7 +1323,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
                rcs_file const & r,
                database & db,
                cvs_history & cvs,
-               bool dryrun,
+               app_state & app,
                bool reverse_import)
 {
   cvs_event_ptr curr_commit = NULL,
@@ -1401,6 +1401,11 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           if (i->first == curr_version)
            {
               L(FL("version %s -> tag %s") % curr_version % i->second);
+
+              // allow the user to ignore tag symbols depending on their
+              // name.
+              if (app.lua.hook_ignore_cvs_symbol(i->second))
+                continue;
 
               cvs_symbol_no tag = cvs.symbol_interner.intern(i->second);
 
@@ -1482,7 +1487,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
               construct_version(*curr_lines, *i, branch_lines, r);
               insert_into_db(curr_data, curr_id, 
                              branch_lines, branch_data, branch_id, db,
-                             dryrun);
+                             app.opts.dryrun);
             }
 
           cvs_symbol_no bname = cvs.symbol_interner.intern(branchname);
@@ -1490,8 +1495,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           // recursively process child branches
           cvs_event_ptr first_event_in_branch =
             process_rcs_branch(bname, *i, branch_lines, branch_data,
-                               branch_id, r, db, cvs, dryrun,
-                               false);
+                               branch_id, r, db, cvs, app, false);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
@@ -1573,7 +1577,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
             next_version);
 
           insert_into_db(curr_data, curr_id,
-                         *next_lines, next_data, next_id, db, dryrun);
+                         *next_lines, next_data, next_id, db,
+                         app.opts.dryrun);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -1678,7 +1683,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     cvs_event_ptr first_event =
       process_rcs_branch(cvs.base_branch, r.admin.head, head_lines,
-                         dat, id, r, app.db, cvs, app.opts.dryrun, true);
+                         dat, id, r, app.db, cvs, app, true);
 
     // link the pseudo trunk branch to the first event in the branch
     cvs.add_dependency(first_event, cvs.root_event);
