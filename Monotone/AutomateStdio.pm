@@ -1239,9 +1239,9 @@ sub get_revision($\$$)
 		$$ref[$j ++] = {type        => "new_manifest",
 				manifest_id => $id};
 	    }
-	    elsif ($lines[$i] =~ m/^ *old_revision \[[^\]]+\]$/o)
+	    elsif ($lines[$i] =~ m/^ *old_revision \[[^\]]*\]$/o)
 	    {
-		($id) = ($lines[$i] =~ m/^ *old_revision \[([^\]]+)\]$/o);
+		($id) = ($lines[$i] =~ m/^ *old_revision \[([^\]]*)\]$/o);
 		$$ref[$j ++] = {type        => "old_revision",
 				revision_id => $id};
 	    }

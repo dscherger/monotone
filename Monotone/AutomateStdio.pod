@@ -285,7 +285,7 @@ type of entry:
         manifest_id - The id of the revision's new manifest.
 
     old_revision:
-        old_revision - The id of the parent revision.
+        revision_id - The id of the parent revision.
 
     patch:
         name         - The name of the file that was changed.
@@ -448,7 +448,7 @@ When the output of a command from the automate stdio interface changes
 dramatically, it will probably not be possible to protect Perl applications
 from those changes. This library is a convenience wrapper rather than something
 that will totally divorce you from the automate stdio interface. Also the
-changes are you will want the new type of output anyway.
+chances are you will want the new type of output anyway.
 
 =head1 SEE ALSO
 
