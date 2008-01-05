@@ -3937,22 +3937,22 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       I(app.db.put_revision(new_rid, rev));
 
-        {
-          time_i avg_time = blob.get_avg_time();
-          time_t commit_time = avg_time / 100;
-          string author, changelog;
+      {
+        time_i avg_time = blob.get_avg_time();
+        time_t commit_time = avg_time / 100;
+        string author, changelog;
 
-          cvs.split_authorclog(blob.authorclog, author, changelog);
-          string bn = cvs.get_branchname(blob.in_branch);
-          I(!bn.empty());
-          app.get_project().put_standard_certs(new_rid,
+        cvs.split_authorclog(blob.authorclog, author, changelog);
+        string bn = cvs.get_branchname(blob.in_branch);
+        I(!bn.empty());
+        app.get_project().put_standard_certs(new_rid,
                 branch_name(bn),
                 utf8(changelog),
                 date_t::from_unix_epoch(commit_time),
                 utf8(author));
 
-          ++n_revisions;
-        }
+        ++n_revisions;
+      }
 
       blob.assigned_rid = new_rid;
     }
