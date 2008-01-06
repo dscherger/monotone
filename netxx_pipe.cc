@@ -178,7 +178,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
   // pipes and overlapped i/o. There is no other way, alas.
 
   static unsigned long serial = 0;
-  string pipename = (F("\\\\.\\pipe\\netxx_pipe_%ld_%d")
+  string pipename = (FL("\\\\.\\pipe\\netxx_pipe_%ld_%d")
                           % GetCurrentProcessId()
                           % (++serial)).str();
 
@@ -258,7 +258,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 
   int fd1[2], fd2[2];
   child = pipe_and_fork(fd1, fd2);
-  E(child >= 0, F("pipe/fork failed %s") % strerror(errno));
+  E(child >= 0, F("pipe/fork failed: %s") % strerror(errno));
   if (!child)
     {
       execvp(newargv[0], const_cast<char * const *>(newargv));
