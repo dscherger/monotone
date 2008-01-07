@@ -1922,7 +1922,8 @@ blob_consumer
                                    cvs_symbol_no & in_branch);
 
   void merge_parents_for_artificial_rev(cvs_blob_index bi,
-                                        set<revision_id> & parent_rids);
+                                        set<revision_id> & parent_rids,
+                                        map<cvs_event_ptr, revision_id> & event_parent_rids);
 
   void operator() (cvs_blob_index bi);
 };
@@ -3719,9 +3720,31 @@ cvs_blob::build_cset(cvs_history & cvs,
 }
 
 void
+add_missing_parents(roster_t & src_roster, node_t & n, roster_t & dest_roster)
+{
+  if (null_node(n->parent))
+    return;
+
+  if (!dest_roster.has_node(n->parent))
+    {
+      node_t parent_node = src_roster.get_node(n->parent);
+      add_missing_parents(src_roster, parent_node, dest_roster);
+
+      I(!dest_roster.has_node(parent_node->self));
+      dest_roster.create_dir_node(parent_node->self);
+
+      node_t dest_parent_node = dest_roster.get_node(parent_node->self);
+      dir_t dest_parent_dir(downcast_to_dir_t(dest_parent_node));
+      I(parent_node->self == dest_parent_node->self);
+      dest_roster.attach_node(dest_parent_node->self, parent_node->parent, parent_node->name);
+    }
+}
+
+void
 blob_consumer::merge_parents_for_artificial_rev(
   cvs_blob_index bi,
-  set<revision_id> & parent_rids)
+  set<revision_id> & parent_rids,
+  map<cvs_event_ptr, revision_id> & event_parent_rids)
 {
   revision_id left_rid, right_rid, merged_rid;
 
@@ -3730,62 +3753,156 @@ blob_consumer::merge_parents_for_artificial_rev(
   else
     {
       left_rid = *parent_rids.begin();
-      right_rid = *(parent_rids.begin()++);
+      right_rid = *(++parent_rids.begin());
     }
 
-  // This is largely taken from merge.cc: interactive_merge_and_store()
+  I(left_rid != right_rid);
 
-  roster_t left_roster, right_roster;
-  marking_map left_marking_map, right_marking_map;
-  set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+  // We start from the left roster, and "copy" over files from
+  // the right one, where necessary.
+  roster_t left_roster, right_roster, merged_roster;
 
-  app.db.get_roster(left_rid, left_roster, left_marking_map);
-  app.db.get_roster(right_rid, right_roster, right_marking_map);
-  app.db.get_uncommon_ancestors(left_rid, right_rid,
-                                left_uncommon_ancestors,
-                                right_uncommon_ancestors);
+  app.db.get_roster(left_rid, left_roster);
+  app.db.get_roster(right_rid, right_roster);
 
-  roster_merge_result result;
+  // copy the left roster, we start from that one and apply changes
+  // from the right roster where necessary.
+  merged_roster = left_roster;
 
-  roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
-               right_roster, right_marking_map, right_uncommon_ancestors,
-               result);
+  L(FL("  merging %s") % left_rid);
+  L(FL("      and %s") % right_rid);
 
-  content_merge_database_adaptor dba(app, left_rid, right_rid,
-                                     left_marking_map, right_marking_map);
-
-  if (!result.is_clean())
-    result.log_conflicts();
-
-  // For now, we don't want to fiddle with non-content conflicts...
-  // FIXME: but maybe we should!
-  I(!result.has_non_content_conflicts());
-
-  if (result.has_content_conflicts())
+  for (map<cvs_event_ptr, revision_id>::iterator i = event_parent_rids.begin();
+       i != event_parent_rids.end(); ++i)
     {
-      // Attempt to auto-resolve any content conflicts using the line-merger.
-      // To do this requires finding a merge ancestor.
+      cvs_event_ptr ev = i->first;
+      revision_id wanted_rid = i->second;
 
-      L(FL("examining content conflicts"));
+      file_path pth = file_path_internal(cvs.path_interner.lookup(ev->path));
 
-      // FIXME: implement a content merge adaptor
-      try_to_merge_files(app, left_roster, right_roster,
-                         result, adaptor, auto_merge);
+      if (wanted_rid == right_rid)
+        {
+          I(right_roster.has_node(pth));
 
-      // that must have resolved all conflicts
-      I(result.file_content_conflicts.empty());
+          node_t right_node(right_roster.get_node(pth));
+          I(is_file_t(right_node));
+
+          file_t right_fn(downcast_to_file_t(right_node));
+
+          if (merged_roster.has_node(pth))
+            {
+              node_t merged_node(merged_roster.get_node(pth));
+              I(is_file_t(merged_node));
+              file_t merged_fn(downcast_to_file_t(merged_node));
+
+              // FIXME: if there were renames, this could be false, but
+              //         as we never rename for CVS imports, it should
+              //         always hold true
+
+              I(!null_node(merged_fn->self));
+              I(merged_fn->self == right_fn->self);
+
+              if (merged_fn->content != right_fn->content)
+                {
+                  merged_fn->content = right_fn->content;
+
+                  L(FL("    using right revision for file '%s' at '%s'")
+                    % pth % right_fn->content);
+                }
+            }
+          else
+            {
+              // FIXME: again, same renaming issue applies 
+              I(!merged_roster.has_node(right_fn->self));
+
+              add_missing_parents(right_roster, right_node, merged_roster);
+
+              merged_roster.create_file_node(right_fn->content, right_fn->self);
+              node_t merged_node = merged_roster.get_node(right_fn->self);
+              I(merged_node->self == right_fn->self);
+              merged_roster.attach_node(merged_node->self, right_fn->parent, right_fn->name);
+
+              L(FL("    using right revision for file '%s' at '%s'")
+                % pth % right_fn->content);
+            }
+        }
+      else if (wanted_rid == left_rid)
+        {
+          L(FL("    using left revision for file '%s'") % pth);
+          I(merged_roster.has_node(pth));
+        }
+      else
+        {
+          L(FL("    none, using left revision for file '%s'") % pth);
+        }
     }
 
-  E(result.is_clean(),
-    F("merge failed due to unresolved conflicts"));
+  {
+    // write new files into the db, this is mostly taken from
+    // store_roster_merge_result(), but with some tweaks.
+    merged_roster.check_sane();
 
-  // write new files into the db
-  store_roster_merge_result(left_roster, right_roster, result,
-                            left_rid, right_rid, merged_rid,
-                            app);
+    revision_t merged_rev;
+    merged_rev.made_for = made_for_database;
 
-  parent_rids.clear();
-  parent_rids.insert(merged_rid);
+    calculate_ident(merged_roster, merged_rev.new_manifest);
+
+    // Check if the new_manifest is really new, perhaps we
+    // don't even need to add an artificial revision for these
+    // two parents.
+    revision_t left_rev, right_rev;
+    app.db.get_revision(left_rid, left_rev);
+    app.db.get_revision(right_rid, right_rev);
+
+    if (merged_rev.new_manifest == left_rev.new_manifest)
+      merged_rid = left_rid;
+    else if (merged_rev.new_manifest == right_rev.new_manifest)
+      merged_rid = right_rid;
+    else
+      {
+        shared_ptr<cset> left_to_merged(new cset);
+        make_cset(left_roster, merged_roster, *left_to_merged);
+        safe_insert(merged_rev.edges, make_pair(left_rid, left_to_merged));
+
+        shared_ptr<cset> right_to_merged(new cset);
+        make_cset(right_roster, merged_roster, *right_to_merged);
+        safe_insert(merged_rev.edges, make_pair(right_rid, right_to_merged));
+
+        revision_data merged_data;
+        write_revision(merged_rev, merged_data);
+        calculate_ident(merged_data, merged_rid);
+        {
+          transaction_guard guard(app.db);
+
+          app.db.put_revision(merged_rid, merged_rev);
+
+          guard.commit();
+        }
+
+        L(FL("  created merged revision %s") % merged_rid);
+      }
+    }
+
+  // loop over the event_parent_rids again to set the new merged_rid
+  // where necessary.
+  for (map<cvs_event_ptr, revision_id>::iterator i = event_parent_rids.begin();
+       i != event_parent_rids.end(); ++i)
+    {
+      cvs_event_ptr ev = i->first;
+      revision_id & wanted_rid = i->second;
+
+      if ((wanted_rid == right_rid) || (wanted_rid == left_rid))
+        wanted_rid = merged_rid;
+    }
+
+  // Remove the left and right revision_id, and add the merged one
+  // instead.
+  parent_rids.erase(left_rid);
+  parent_rids.erase(right_rid);
+
+  safe_insert(parent_rids, merged_rid);
+
+  L(FL("  reduced number of parent rids to: %d") % parent_rids.size());
 }
 
 void
@@ -3797,6 +3914,9 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
   L(FL("creating artificial revision for %d parents.")
     % parent_blobs.size());
 
+  set<revision_id> parent_rids;
+  map<cvs_event_ptr, revision_id> event_parent_rids;
+
   // While a blob in our graph can have multiple ancestors, which depend on
   // each other, monotone cannot represent that. Instead, we have to remove
   // all ancestors from the set. I.e.:
@@ -3807,17 +3927,57 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
   //        v      v                  v
   //        B -> blob                 B -> blob
 
-  set<revision_id> parent_rids;
+  // get all parent revision ids
   for (set<cvs_blob_index>::iterator i = parent_blobs.begin();
        i != parent_blobs.end(); ++i)
-    parent_rids.insert(cvs.blobs[*i].assigned_rid);
+    safe_insert(parent_rids, cvs.blobs[*i].assigned_rid);
 
+  // then erase the ancestors, because we cannot merge with a
+  // descendent.
+  I(parent_rids.size() >= 2);
   erase_ancestors(parent_rids, app);
 
-  I(!parent_rids.empty());
-  if (parent_rids.size() > 1)
-    merge_parents_for_artificial_rev(bi, parent_rids);
+  // loop over all events in the blob, to find the most recent ancestor,
+  // from which we inherit - and possibly back patch.
+  for (vector<cvs_event_ptr>::iterator i = cvs.blobs[bi].begin();
+       i != cvs.blobs[bi].end(); ++i)
+    {
+      set<cvs_blob_index> event_parent_blobs;
+      for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
+        {
+          cvs_event_ptr dep = *j;
+          cvs_blob_index dep_bi = dep->bi;
+          if (event_parent_blobs.find(dep_bi) == event_parent_blobs.end())
+            event_parent_blobs.insert(dep_bi);
+        }
 
+      I(event_parent_blobs.size() == 1);
+      cvs_blob & event_parent = cvs.blobs[*event_parent_blobs.begin()];
+
+      if (parent_rids.find(event_parent.assigned_rid) != parent_rids.end())
+        {
+          // this parent has no descendents in parent_rids, so we can use
+          // that to inherit from.
+          event_parent_rids.insert(make_pair(*i, event_parent.assigned_rid));
+        }
+      else
+        {
+          // this parent already has a descendent in parent_rids, so we need
+          // to find that and inherit from that, but back patch.
+          set<revision_id>::iterator j;
+          for (j = parent_rids.begin(); j != parent_rids.end(); ++j)
+            if (is_ancestor(event_parent.assigned_rid, *j, app))
+              break;
+          I(j != parent_rids.end());
+
+          event_parent_rids.insert(make_pair(*i, *j));
+        }
+    }
+
+  if (parent_rids.size() > 1)
+    merge_parents_for_artificial_rev(bi, parent_rids, event_parent_rids);
+
+  L(FL("remaining parent rids: %d") % parent_rids.size());
   I(parent_rids.size() == 1);
   parent_rid = *parent_rids.begin();
 
@@ -3830,9 +3990,9 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
 
   int changes = 0;
 
-  // if only one parent revision id remains, we have to create
-  // an artificial revision based on that parent, but revert
-  // some files to other, older revisions.
+  // Here, we have exactly one parent revision id remaining. Possibly,
+  // we still need to create an artificial revision based on that
+  // parent but with back patches for some files to older revisions.
   for (blob_event_iter i = cvs.blobs[bi].begin();
        i != cvs.blobs[bi].end(); ++i)
     {
@@ -3858,23 +4018,28 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
               app.db.get_roster(event_parent.assigned_rid, e_ros);
 
               file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
+
               I(ros.has_node(pth));
               I(e_ros.has_node(pth));
 
-              node_t base_n(ros.get_node(pth)),
-                     reverted_n(e_ros.get_node(pth));
+              node_t base_node(ros.get_node(pth)),
+                     target_node(e_ros.get_node(pth));
 
-              I(is_file_t(base_n));
-              I(is_file_t(reverted_n));
+              I(is_file_t(base_node));
+              I(is_file_t(target_node));
 
-              file_t base_fn(downcast_to_file_t(base_n)),
-                     reverted_fn(downcast_to_file_t(reverted_n));
-              if (base_fn->content != reverted_fn->content)
+              file_t base_fn(downcast_to_file_t(base_node)),
+                     target_fn(downcast_to_file_t(target_node));
+
+              // FIXME: renaming issue!
+              I(base_node->self == target_node->self);
+
+              if (base_fn->content != target_fn->content)
                 {
                   L(FL("  applying reverse delta on file '%s' : '%s' -> '%s'")
-                    % pth % base_fn->content % reverted_fn->content);
+                    % pth % base_fn->content % target_fn->content);
                   safe_insert(cs->deltas_applied,
-                    make_pair(pth, make_pair(base_fn->content, reverted_fn->content)));
+                    make_pair(pth, make_pair(base_fn->content, target_fn->content)));
                   changes++;
                 }
             }
@@ -3909,8 +4074,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
 
       L(FL("creating new revision %s") % new_rid);
 
-      I(app.db.put_revision(new_rid, rev));
-
+      if (app.db.put_revision(new_rid, rev))
       {
         time_i avg_time = cvs.blobs[bi].get_avg_time();
         time_t commit_time = avg_time / 100;

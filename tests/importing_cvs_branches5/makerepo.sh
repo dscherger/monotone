@@ -27,10 +27,10 @@ cvs commit -m "initial import" file1 file2
 cvs tag -b A
 cvs update -r A
 
-# a commit which will later conflict with one in branch B
+# a commit, from which we well later branch into the
+# conflicting branch
 echo "version 1.1.2.1 of test file1" > file1
-echo "version 1.1.2.1 of test file2" > file2
-cvs commit -m "commit in branch A" file1 file2
+cvs commit -m "commit in branch A" file1
 
 # go back to the trunk and branch into B
 cvs update -A
@@ -38,14 +38,17 @@ cvs tag -b B
 cvs update -r B
 
 # a conflicting commit with (file2 of) branch A
-echo "version 1.1.4.1 of test file1" > file1
-cvs commit -m "commit in branch B" file1
+echo "version 1.1.4.1 of test file2" > file2
+cvs commit -m "commit in branch B" file2
 
-cvs update -r A file2
+# update only file1 to branch A
+cvs update -r A file1
+
+# start a branch from this conflicting posititon
 cvs tag -b CONFLICTING_BRANCH
 cvs update -r CONFLICTING_BRANCH
-echo "version ? of test file1" > file1
-echo "version ? of test file2" > file2
+echo "version 1.1.2.1.2.1 of test file1" > file1
+echo "version 1.1.4.1.2.1 of test file2" > file2
 cvs commit -m "commit in CONFLICTING_BRANCH" file1 file2
 
 cd ../..
