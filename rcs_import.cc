@@ -36,11 +36,13 @@
 #include "file_io.hh"
 #include "interner.hh"
 #include "keys.hh"
+#include "merge.hh"
 #include "paths.hh"
 #include "platform-wrapped.hh"
 #include "project.hh"
 #include "rcs_file.hh"
 #include "revision.hh"
+#include "roster_merge.hh"
 #include "safe_map.hh"
 #include "sanity.hh"
 #include "transforms.hh"
@@ -1919,6 +1921,9 @@ blob_consumer
                                    revision_id & parent_rid,
                                    cvs_symbol_no & in_branch);
 
+  void merge_parents_for_artificial_rev(cvs_blob_index bi,
+                                        set<revision_id> & parent_rids);
+
   void operator() (cvs_blob_index bi);
 };
 
@@ -3714,6 +3719,76 @@ cvs_blob::build_cset(cvs_history & cvs,
 }
 
 void
+blob_consumer::merge_parents_for_artificial_rev(
+  cvs_blob_index bi,
+  set<revision_id> & parent_rids)
+{
+  revision_id left_rid, right_rid, merged_rid;
+
+  if (parent_rids.size() > 2)
+    I(false);  // should recursively call itself...
+  else
+    {
+      left_rid = *parent_rids.begin();
+      right_rid = *(parent_rids.begin()++);
+    }
+
+  // This is largely taken from merge.cc: interactive_merge_and_store()
+
+  roster_t left_roster, right_roster;
+  marking_map left_marking_map, right_marking_map;
+  set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+
+  app.db.get_roster(left_rid, left_roster, left_marking_map);
+  app.db.get_roster(right_rid, right_roster, right_marking_map);
+  app.db.get_uncommon_ancestors(left_rid, right_rid,
+                                left_uncommon_ancestors,
+                                right_uncommon_ancestors);
+
+  roster_merge_result result;
+
+  roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
+               right_roster, right_marking_map, right_uncommon_ancestors,
+               result);
+
+  content_merge_database_adaptor dba(app, left_rid, right_rid,
+                                     left_marking_map, right_marking_map);
+
+  if (!result.is_clean())
+    result.log_conflicts();
+
+  // For now, we don't want to fiddle with non-content conflicts...
+  // FIXME: but maybe we should!
+  I(!result.has_non_content_conflicts());
+
+  if (result.has_content_conflicts())
+    {
+      // Attempt to auto-resolve any content conflicts using the line-merger.
+      // To do this requires finding a merge ancestor.
+
+      L(FL("examining content conflicts"));
+
+      // FIXME: implement a content merge adaptor
+      try_to_merge_files(app, left_roster, right_roster,
+                         result, adaptor, auto_merge);
+
+      // that must have resolved all conflicts
+      I(result.file_content_conflicts.empty());
+    }
+
+  E(result.is_clean(),
+    F("merge failed due to unresolved conflicts"));
+
+  // write new files into the db
+  store_roster_merge_result(left_roster, right_roster, result,
+                            left_rid, right_rid, merged_rid,
+                            app);
+
+  parent_rids.clear();
+  parent_rids.insert(merged_rid);
+}
+
+void
 blob_consumer::create_artificial_revisions(cvs_blob_index bi,
                                            set<cvs_blob_index> & parent_blobs,
                                            revision_id & parent_rid,
@@ -3739,8 +3814,9 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
 
   erase_ancestors(parent_rids, app);
 
-  if (parent_rids.size() > 2)
-    I(false);
+  I(!parent_rids.empty());
+  if (parent_rids.size() > 1)
+    merge_parents_for_artificial_rev(bi, parent_rids);
 
   I(parent_rids.size() == 1);
   parent_rid = *parent_rids.begin();
@@ -3946,22 +4022,22 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       I(app.db.put_revision(new_rid, rev));
 
-        {
-          time_i avg_time = blob.get_avg_time();
-          time_t commit_time = avg_time / 100;
-          string author, changelog;
+      {
+        time_i avg_time = blob.get_avg_time();
+        time_t commit_time = avg_time / 100;
+        string author, changelog;
 
-          cvs.split_authorclog(blob.authorclog, author, changelog);
-          string bn = cvs.get_branchname(blob.in_branch);
-          I(!bn.empty());
-          app.get_project().put_standard_certs(new_rid,
+        cvs.split_authorclog(blob.authorclog, author, changelog);
+        string bn = cvs.get_branchname(blob.in_branch);
+        I(!bn.empty());
+        app.get_project().put_standard_certs(new_rid,
                 branch_name(bn),
                 utf8(changelog),
                 date_t::from_unix_epoch(commit_time),
                 utf8(author));
 
-          ++n_revisions;
-        }
+        ++n_revisions;
+      }
 
       blob.assigned_rid = new_rid;
     }
