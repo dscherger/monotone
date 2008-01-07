@@ -44,7 +44,7 @@ MOST_SOURCES = 								\
 	schema_migration.cc schema_migration.hh				\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
-	netsync.cc            						\
+	netsync.cc netsync.hh network.cc network.hh			\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\

@@ -50,7 +50,7 @@ netcmd::netcmd() : version(constants::netcmd_current_protocol_version),
                    cmd_code(error_cmd)
 {}
 
-size_t netcmd::encoded_size()
+size_t netcmd::encoded_size() const
 {
   string tmp;
   insert_datum_uleb128<size_t>(payload.size(), tmp);
