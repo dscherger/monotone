@@ -3783,8 +3783,8 @@ blob_consumer::merge_parents_for_artificial_rev(
 
       if (wanted_rid == right_rid)
         {
-          I(right_roster.has_node(pth));
-
+          if (right_roster.has_node(pth))
+            {
           node_t right_node(right_roster.get_node(pth));
           I(is_file_t(right_node));
 
@@ -3810,6 +3810,9 @@ blob_consumer::merge_parents_for_artificial_rev(
                   L(FL("    using right revision for file '%s' at '%s'")
                     % pth % right_fn->content);
                 }
+              else
+                L(FL("    using right revision for file '%s', unchanged.")
+                  % pth);
             }
           else
             {
@@ -3825,6 +3828,18 @@ blob_consumer::merge_parents_for_artificial_rev(
 
               L(FL("    using right revision for file '%s' at '%s'")
                 % pth % right_fn->content);
+            }
+            }
+          else
+            {
+              // The right node does not have that node, but we are asked to
+              // inherit from it, so should remove the node.
+              node_id nid = merged_roster.detach_node(pth);
+              merged_roster.drop_detached_node(nid);
+
+              // FIXME: possibly delete empty directories here...
+
+              L(FL("    using right revision for file '%s' (deleted)") % pth);
             }
         }
       else if (wanted_rid == left_rid)
@@ -4031,30 +4046,30 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
         }
 
       I(event_parent_blobs.size() == 1);
-      cvs_blob & event_parent = cvs.blobs[*event_parent_blobs.begin()];
+      revision_id & ev_parent_rid = 
+        cvs.blobs[*event_parent_blobs.begin()].assigned_rid;
 
-      if (event_parent.assigned_rid != parent_rid)
+      if (ev_parent_rid != parent_rid)
         {
           roster_t e_ros;
 
-          if (!null_id(event_parent.assigned_rid))
+          if (!null_id(ev_parent_rid))
             {
               // event needs reverting patch
-              app.db.get_roster(event_parent.assigned_rid, e_ros);
+              app.db.get_roster(ev_parent_rid, e_ros);
 
               file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
 
-              I(ros.has_node(pth));
-              I(e_ros.has_node(pth));
+              L(FL("  checking file '%s'") % pth);
 
-              node_t base_node(ros.get_node(pth)),
-                     target_node(e_ros.get_node(pth));
-
-              I(is_file_t(base_node));
-              I(is_file_t(target_node));
-
-              file_t base_fn(downcast_to_file_t(base_node)),
-                     target_fn(downcast_to_file_t(target_node));
+              if (e_ros.has_node(pth) && ros.has_node(pth))
+                {
+                  node_t base_node(ros.get_node(pth)),
+                         target_node(e_ros.get_node(pth));
+                  I(is_file_t(base_node));
+                  I(is_file_t(target_node));
+                  file_t base_fn(downcast_to_file_t(base_node)),
+                         target_fn(downcast_to_file_t(target_node));
 
               // FIXME: renaming issue!
               I(base_node->self == target_node->self);
@@ -4065,6 +4080,28 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
                     % pth % base_fn->content % target_fn->content);
                   safe_insert(cs->deltas_applied,
                     make_pair(pth, make_pair(base_fn->content, target_fn->content)));
+                  changes++;
+                }
+                }
+              else if (!e_ros.has_node(pth) && ros.has_node(pth))
+                {
+                  L(FL("  dropping file '%s'") % pth);
+                  safe_insert(cs->nodes_deleted, pth);
+                  changes++;
+                }
+              else if (e_ros.has_node(pth) && !ros.has_node(pth))
+                {
+                  node_t target_node(e_ros.get_node(pth));
+                  I(is_file_t(target_node));
+                  file_t target_fn(downcast_to_file_t(target_node));
+
+                  // Hm.. that's going to create a newish node id, which
+                  // might not be what we want. OTOH, we don't have
+                  // resurrection, yet.
+                  L(FL("  re-adding file '%s' at '%s'")
+                    % pth % target_fn->content);
+                  safe_insert(cs->files_added,
+                    make_pair(pth, target_fn->content));
                   changes++;
                 }
             }
