@@ -2345,42 +2345,6 @@ public:
       // will be able to resolve the first one we have deferred
       // before.
 
-      {
-        vector<cvs_blob_index> cross_path;
-        insert_iterator< vector< cvs_blob_index > >
-          ity_c(cross_path, cross_path.end());
-
-        dijkstra_shortest_path(cvs, *(++path_b.begin()), *(++path_a.rbegin()),
-                               ity_c,
-                               true,                // downwards
-                               true, true, true,    // follow all colors
-                               false,
-                               make_pair(invalid_blob, invalid_blob));
-
-        if (!cross_path.empty())
-          {
-            L(FL("deferred resolving cross edge to later."));
-
-            /*
-             * Well, we didn't really remove anything, but this
-             * makes sure another complete depth first search is
-             * run, so that this cross edge will be handled
-             * eventually.
-             */ 
-            edges_deferred++;
-            return;
-          }
-
-        // extra check the other way around, can theoretically be
-        // skipped, as DFS guarantees that already. 
-        dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
-                               ity_c,
-                               true,                // downwards
-                               true, true, true,    // follow all colors
-                               false,
-                               make_pair(invalid_blob, invalid_blob));
-        I(cross_path.empty());
-      }
 
       // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
@@ -2625,6 +2589,43 @@ public:
         {
           I(!a_has_branch);
           I(!b_has_branch);
+
+      {
+        vector<cvs_blob_index> cross_path;
+        insert_iterator< vector< cvs_blob_index > >
+          ity_c(cross_path, cross_path.end());
+
+        dijkstra_shortest_path(cvs, *(++path_b.begin()), *(++path_a.rbegin()),
+                               ity_c,
+                               true,                // downwards
+                               true, true, true,    // follow all colors
+                               false,
+                               make_pair(invalid_blob, invalid_blob));
+
+        if (!cross_path.empty())
+          {
+            L(FL("deferred resolving cross edge to later."));
+
+            /*
+             * Well, we didn't really remove anything, but this
+             * makes sure another complete depth first search is
+             * run, so that this cross edge will be handled
+             * eventually.
+             */ 
+            edges_deferred++;
+            return;
+          }
+
+        // extra check the other way around, can theoretically be
+        // skipped, as DFS guarantees that already. 
+        dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
+                               ity_c,
+                               true,                // downwards
+                               true, true, true,    // follow all colors
+                               false,
+                               make_pair(invalid_blob, invalid_blob));
+        I(cross_path.empty());
+      }
 
           // If none of the two paths has a branch start, we can simply
           // join them into one path, which satisfies all of the
