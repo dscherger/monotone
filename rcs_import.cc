@@ -3785,50 +3785,54 @@ blob_consumer::merge_parents_for_artificial_rev(
         {
           if (right_roster.has_node(pth))
             {
-          node_t right_node(right_roster.get_node(pth));
-          I(is_file_t(right_node));
+              node_t right_node(right_roster.get_node(pth));
+              I(is_file_t(right_node));
 
-          file_t right_fn(downcast_to_file_t(right_node));
+              file_t right_fn(downcast_to_file_t(right_node));
 
-          if (merged_roster.has_node(pth))
-            {
-              node_t merged_node(merged_roster.get_node(pth));
-              I(is_file_t(merged_node));
-              file_t merged_fn(downcast_to_file_t(merged_node));
-
-              // FIXME: if there were renames, this could be false, but
-              //         as we never rename for CVS imports, it should
-              //         always hold true
-
-              I(!null_node(merged_fn->self));
-              I(merged_fn->self == right_fn->self);
-
-              if (merged_fn->content != right_fn->content)
+              if (merged_roster.has_node(pth))
                 {
-                  merged_fn->content = right_fn->content;
+                  node_t merged_node(merged_roster.get_node(pth));
+                  I(is_file_t(merged_node));
+                  file_t merged_fn(downcast_to_file_t(merged_node));
+
+                  // FIXME: if there were renames, this could be false, but
+                  //         as we never rename for CVS imports, it should
+                  //         always hold true
+
+                  I(!null_node(merged_fn->self));
+                  I(merged_fn->self == right_fn->self);
+
+                  if (merged_fn->content != right_fn->content)
+                    {
+                      merged_fn->content = right_fn->content;
+
+                      L(FL("    using right revision for file '%s' at '%s'")
+                        % pth % right_fn->content);
+                    }
+                  else
+                    L(FL("    using right revision for file '%s' as is.")
+                      % pth);
+                }
+              else
+                {
+                  // FIXME: again, same renaming issue applies 
+                  I(!merged_roster.has_node(right_fn->self));
+
+                  add_missing_parents(right_roster, right_node,
+                                      merged_roster);
+
+                  merged_roster.create_file_node(right_fn->content,
+                                                 right_fn->self);
+                  node_t merged_node(
+                    merged_roster.get_node(right_fn->self));
+                  I(merged_node->self == right_fn->self);
+                  merged_roster.attach_node(merged_node->self,
+                                            right_fn->parent, right_fn->name);
 
                   L(FL("    using right revision for file '%s' at '%s'")
                     % pth % right_fn->content);
                 }
-              else
-                L(FL("    using right revision for file '%s', unchanged.")
-                  % pth);
-            }
-          else
-            {
-              // FIXME: again, same renaming issue applies 
-              I(!merged_roster.has_node(right_fn->self));
-
-              add_missing_parents(right_roster, right_node, merged_roster);
-
-              merged_roster.create_file_node(right_fn->content, right_fn->self);
-              node_t merged_node = merged_roster.get_node(right_fn->self);
-              I(merged_node->self == right_fn->self);
-              merged_roster.attach_node(merged_node->self, right_fn->parent, right_fn->name);
-
-              L(FL("    using right revision for file '%s' at '%s'")
-                % pth % right_fn->content);
-            }
             }
           else
             {
@@ -4071,17 +4075,17 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
                   file_t base_fn(downcast_to_file_t(base_node)),
                          target_fn(downcast_to_file_t(target_node));
 
-              // FIXME: renaming issue!
-              I(base_node->self == target_node->self);
+                  // FIXME: renaming issue!
+                  I(base_node->self == target_node->self);
 
-              if (base_fn->content != target_fn->content)
-                {
-                  L(FL("  applying reverse delta on file '%s' : '%s' -> '%s'")
-                    % pth % base_fn->content % target_fn->content);
-                  safe_insert(cs->deltas_applied,
-                    make_pair(pth, make_pair(base_fn->content, target_fn->content)));
-                  changes++;
-                }
+                  if (base_fn->content != target_fn->content)
+                    {
+                      L(FL("  applying reverse delta on file '%s' : '%s' -> '%s'")
+                        % pth % base_fn->content % target_fn->content);
+                      safe_insert(cs->deltas_applied,
+                        make_pair(pth, make_pair(base_fn->content, target_fn->content)));
+                      changes++;
+                    }
                 }
               else if (!e_ros.has_node(pth) && ros.has_node(pth))
                 {
