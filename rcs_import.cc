@@ -3916,6 +3916,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
     % parent_blobs.size());
 
   set<revision_id> parent_rids;
+  map<cvs_symbol_no, int> parent_branches;
   map<cvs_event_ptr, revision_id> event_parent_rids;
 
   // While a blob in our graph can have multiple ancestors, which depend on
@@ -3960,6 +3961,12 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
           // this parent has no descendents in parent_rids, so we can use
           // that to inherit from.
           event_parent_rids.insert(make_pair(*i, event_parent.assigned_rid));
+
+          if (parent_branches.find(event_parent.in_branch) == 
+                                                      parent_branches.end())
+            parent_branches.insert(make_pair(event_parent.in_branch, 1));
+          else
+            parent_branches.find(event_parent.in_branch)->second++;
         }
       else
         {
@@ -3974,6 +3981,23 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
           event_parent_rids.insert(make_pair(*i, *j));
         }
     }
+
+  I(!parent_branches.empty());
+  if (parent_branches.size() > 1)
+    {
+      // Uh... decide for the branch which the highest counter, i.e.
+      // from which most files inherit.
+      int max = 0;
+      for (map<cvs_symbol_no, int>::iterator i = parent_branches.begin();
+           i != parent_branches.end(); ++i)
+        if (i->second > max)
+          {
+            in_branch = i->first;
+            max = i->second;
+          }
+    }
+  else
+    in_branch = parent_branches.begin()->first;
 
   if (parent_rids.size() > 1)
     merge_parents_for_artificial_rev(bi, parent_rids, event_parent_rids);
@@ -4051,8 +4075,6 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
               I(false);
             }
         }
-      else
-        in_branch = event_parent.in_branch;
     }
 
   // only if at least one file has been changed (reverted), we need to
