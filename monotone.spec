@@ -1,7 +1,7 @@
 Summary: monotone is a distributed version control tool
 Name: monotone
-Version: 0.37
-Release: 0.mtn.1%{?dist}
+Version: 0.38
+Release: 0.mtn.2%{?dist}
 License: GPL
 Group: Development/Tools
 URL: http://www.monotone.ca/
@@ -24,10 +24,12 @@ functions to client-side RSA certificates.
 %build
 %configure
 make %{?_smp_mflags}
+make check
 
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
+rm -f $RPM_BUILD_ROOT%{_infodir}/dir
 # remove x permission in contrib to avoid messing the dependencies
 chmod -x contrib/*
 # clean up contrib
@@ -57,6 +59,15 @@ fi
 
 
 %changelog
+* Thu Dec 13 2007 Thomas Keller <me@thomaskeller.biz>
+- Added `make check` to the build
+
+* Wed Dec 12 2007 Richard Levitte <richard@levitte.org>
+- 0.38 release.
+
+* Mon Nov  5 2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
+- Fixed build of RPM package in Fedora by discarding info/dir.
+
 * Fri Oct 26 2007 Richard Levitte <richard@levitte.org>
 - 0.37 release.
 

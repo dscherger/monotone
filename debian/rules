@@ -8,11 +8,48 @@ export DH_VERBOSE=1
 
 # These are used for cross-compiling and for saving the configure script
 # from having to guess our platform (since we know it already)
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+export DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+export DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+ifeq "$(DEB_HOST_GNU_TYPE)" "$(DEB_BUILD_GNU_TYPE)"
+# not cross-compiling; don't specify --host, which will confuse configure
+BUILD_AND_HOST := --build=$(DEB_BUILD_GNU_TYPE)
+else
+# cross-compiling: need both switches.  Also, turn off the testsuite
+# (the cross-compile environment should have done this anyway, but
+# let's make sure).
+BUILD_AND_HOST := --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE)
+DEB_BUILD_OPTIONS += nocheck
+endif
 
 # This enables parallelism.
 CPUS ?= $(shell getconf _NPROCESSORS_ONLN)
+
+# DEB_BUILD_OPTIONS=noopt handling (Policy 10.1) and arch-specific
+# compiler options.  Allow total override of CFLAGS from the
+# make command line (make -f debian/rules build-arch CFLAGS=whatever).
+# Warning options are activated by upstream configure.
+DEFAULT_CFLAGS = -g
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+DEFAULT_CFLAGS += -O0
+# HPPA needs -mlong-calls when built with -O0 because the code is so
+# huge.  Might be addressed by more use of shared libraries - revisit
+# if we ever do anything about bug #318509.
+ifneq (,$(findstring hppa,$(DEB_HOST_GNU_TYPE)))
+DEFAULT_CFLAGS += -mlong-calls
+endif
+else # optimization enabled
+# Back Alpha down to -O1 to avoid apparent compiler bugs
+# (0.37-1 did not build on alpha with random crashes, 0.37-2 did,
+# only plausible difference was the accidental -O0 in all 0.37-2 builds).
+ifneq (,$(findstring alpha,$(DEB_HOST_GNU_TYPE)))
+DEFAULT_CFLAGS += -O1
+else
+DEFAULT_CFLAGS += -O2
+endif
+endif
+
+CFLAGS ?= $(DEFAULT_CFLAGS)
 
 # put this up top so it's the default rule.
 #
@@ -42,7 +79,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
+	./configure $(BUILD_AND_HOST) \
 		    --prefix=/usr --mandir='$${prefix}/share/man' \
 		    --infodir='$${prefix}/share/info' CFLAGS="$(CFLAGS)" \
 		    CXXFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs"
@@ -54,8 +91,11 @@ build-arch-stamp: config.status
 # we have to bypass the 'all' target.  (Revisit after automake-ectomy.)
 # The testsuite is still not entirely reliable in parallel mode.
 	make -j$(CPUS) -C po all
-	make -j$(CPUS) mtn unit_tester tester
+	make -j$(CPUS) mtn
+ifeq "$(findstring nocheck, $(DEB_BUILD_OPTIONS))" ""
+	make -j$(CPUS) unit_tester tester
 	make check-local
+endif
 	touch $@
 
 build-indep: build-indep-stamp
@@ -114,6 +154,8 @@ binary-arch: build-arch
 # install-exec target for the top level makefile and the install-data
 # target for the po directory.  (using the recursive install-exec
 # target would work too, but there's no point.)
+#
+# N.B. DEB_BUILD_OPTIONS=nostrip is handled entirely within dh_strip.
 	$(MAKE) DESTDIR=$(shell pwd)/debian/monotone install-exec-am
 	$(MAKE) DESTDIR=$(shell pwd)/debian/monotone -C po install-data
 

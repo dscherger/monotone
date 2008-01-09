@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="unit_tests"
+	Name="unit_tester"
 	ProjectGUID="{8F951705-66C4-4B67-A585-C8CF75EA2644}"
 	RootNamespace="monotone"
 	>
@@ -17,7 +17,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
-			IntermediateDirectory="unit-testsDebug"
+			IntermediateDirectory="unit-testerDebug"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			CharacterSet="2"
@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\..\lua&quot;;;&quot;$(ProjectDir)\..&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\..\lua&quot;;&quot;$(ProjectDir)\..\pcre&quot;;;&quot;$(ProjectDir)\..&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BOOST_MSVC_STD_ITERATOR;_CRT_SECURE_NO_DEPRECATE;min=min;max=max;BUILD_UNIT_TESTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -66,8 +66,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/NODEFAULTLIB:LIBCMTD.lib /VERBOSE:lib"
-				AdditionalDependencies="botan.lib sqlite3.lib netxx.lib stringprep.lib lua.lib iconvD.lib ws2_32.lib shell32.lib advapi32.lib zlibd.lib"
-				OutputFile="$(outdir)\unit_tests.exe"
+				AdditionalDependencies="botan.lib sqlite3.lib netxx.lib stringprep.lib lua.lib pcre.lib iconvD.lib ws2_32.lib shell32.lib advapi32.lib zlibd.lib"
+				OutputFile="$(outdir)\unit_tester.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;"
 				IgnoreDefaultLibraryNames=""
@@ -84,7 +84,7 @@
 				OutputManifestFile="$(IntDir)\$(TargetFileName).embed.manifest"
 				ManifestResourceFile="$(IntDir)\$(TargetFileName).embed.manifest.res"
 				UseFAT32Workaround="true"
-				AdditionalOptions="/outputresource:&quot;.\Debug\unit_tests.exe;#1&quot;"
+				AdditionalOptions="/outputresource:&quot;.\Debug\unit_tester.exe;#1&quot;"
 				VerboseOutput="false"
 			/>
 			<Tool
@@ -109,7 +109,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
-			IntermediateDirectory="unit-testsRelease"
+			IntermediateDirectory="unit-testerRelease"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			CharacterSet="2"
@@ -138,7 +138,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\..\lua&quot;;&quot;$(ProjectDir)\..&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\..\lua&quot;;&quot;$(ProjectDir)\..\pcre&quot;;;&quot;$(ProjectDir)\..&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_MBCS;_CONSOLE;BOOST_MSVC_STD_ITERATOR;_CRT_SECURE_NO_DEPRECATE;min=min;max=max;;BUILD_UNIT_TESTS"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -164,8 +164,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/NODEFAULTLIB:LIBCMT.lib"
-				AdditionalDependencies="botan.lib sqlite3.lib netxx.lib stringprep.lib lua.lib iconv.lib ws2_32.lib shell32.lib advapi32.lib zlib.lib"
-				OutputFile="$(outdir)/unit_tests.exe"
+				AdditionalDependencies="botan.lib sqlite3.lib netxx.lib stringprep.lib lua.lib pcre.lib iconv.lib ws2_32.lib shell32.lib advapi32.lib zlib.lib"
+				OutputFile="$(outdir)/unit_tester.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;"
 				GenerateDebugInformation="true"
@@ -347,7 +347,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gzip.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\hmac.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\inodeprint.cc"
 				>
 			</File>
 			<File
@@ -371,10 +379,6 @@
 						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\inodeprint.cc"
-				>
 			</File>
 			<File
 				RelativePath="..\key_store.cc"
@@ -535,6 +539,10 @@
 			</File>
 			<File
 				RelativePath="..\paths.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\pcrewrap.cc"
 				>
 			</File>
 			<File
@@ -827,6 +835,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gzip.hh"
+				>
+			</File>
+			<File
 				RelativePath="..\hash_map.hh"
 				>
 			</File>
@@ -952,6 +964,10 @@
 			</File>
 			<File
 				RelativePath="..\pch.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\pcrewrap.hh"
 				>
 			</File>
 			<File

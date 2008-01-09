@@ -6,9 +6,9 @@ AC_DEFUN([MTN_LIB_PCRE],
       copy. (To use a specific installed version, use the environment
       variables PCRE_CFLAGS and/or PCRE_LIBS.)]),
    [case "$withval" in
-      (""|yes) with_system_pcre=yes ;;
-      (no)     with_system_pcre=no  ;;
-      (*)      AC_MSG_ERROR([--with(out)-system-pcre takes no argument]) ;;
+      ""|yes) with_system_pcre=yes ;;
+      no)     with_system_pcre=no  ;;
+      *)      AC_MSG_ERROR([--with(out)-system-pcre takes no argument]) ;;
     esac],
    [with_system_pcre=no])
  if test "$with_system_pcre" = yes; then
@@ -34,7 +34,7 @@ AC_DEFUN([MTN_FIND_PCRE],
    if test -n "${PCRE_CFLAGS+set}" || test -n "${PCRE_LIBS+set}"; then
      found_libpcre=yes
    else
-     PKG_CHECK_MODULES([PCRE], [libpcre],
+     PKG_CHECK_MODULES([PCRE], [libpcre >= 6.7],
                        [found_libpcre=yes], [found_libpcre=no])
    fi
    if test $found_libpcre = no; then
@@ -75,7 +75,11 @@ AC_DEFUN([MTN_FIND_PCRE],
      AC_LINK_IFELSE([AC_LANG_PROGRAM(
       [#include <pcre.h>],
       [const char *e;
+       int dummy;
        int o;
+       /* Make sure some definitions are present. */
+       dummy = PCRE_NEWLINE_CR;
+       dummy = PCRE_DUPNAMES;
        pcre *re = pcre_compile("foo", 0, &e, &o, 0);])],
       [ac_cv_lib_pcre_works=yes], [ac_cv_lib_pcre_works=no])
      LIBS="$save_LIBS"

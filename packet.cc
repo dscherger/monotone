@@ -126,6 +126,11 @@ feed_packet_consumer
       && s.find_first_not_of(constants::legal_base64_bytes) == string::npos,
       F("malformed packet: invalid base64 block"));
   }
+  void validate_arg_base64(string const & s) const
+  {
+    E(s.find_first_not_of(constants::legal_base64_bytes) == string::npos,
+      F("malformed packet: invalid base64 block"));
+  }
   void validate_key(string const & k) const
   {
     E(k.size() > 0
@@ -178,7 +183,17 @@ feed_packet_consumer
                             file_id(hexenc<id>(dst_id)),
                             file_delta(contents));
   }
-
+  static void read_rest(istream& in, string& dest)
+  {
+    
+    while( true )
+    {
+      string t;
+      in >> t;
+      if( t.size() == 0 ) break;
+      dest += t;
+    }
+  }
   void rcert_packet(string const & args, string const & body) const
   {
     L(FL("read cert packet"));
@@ -186,8 +201,8 @@ feed_packet_consumer
     string certid; iss >> certid; validate_id(certid);
     string name;   iss >> name;   validate_certname(name);
     string keyid;  iss >> keyid;  validate_key(keyid);
-    string val;    iss >> val;    validate_base64(val);
-    validate_no_more_args(iss);
+    string val;    
+    read_rest(iss,val);           validate_arg_base64(val);    
     validate_base64(body);
     // canonicalize the base64 encodings to permit searches
     cert t = cert(hexenc<id>(certid),
@@ -242,7 +257,7 @@ feed_packet_consumer
   {
     if (type == "rdata")
       data_packet(args, body, true);
-    if (type == "fdata")
+    else if (type == "fdata")
       data_packet(args, body, false);
     else if (type == "fdelta")
       fdelta_packet(args, body);
