@@ -19,6 +19,7 @@
 #include "safe_map.hh"
 #include "transforms.hh"
 #include "app_state.hh"
+#include "sanity.hh"
 
 using std::make_pair;
 using std::map;
@@ -178,6 +179,17 @@ resolve_merge_conflicts(roster_t const & left_roster,
 }
 
 void
+print_sentinels_and_abort(set<revision_id> const & sentinels)
+{
+  P(F("Missing the following revisions:"));
+  for (set<revision_id>::const_iterator i = sentinels.begin();
+      i != sentinels.end(); ++i)
+    P(F("\t%s") % *i);
+
+  E(false, F("no action taken"));
+}
+
+void
 interactive_merge_and_store(revision_id const & left_rid,
                             revision_id const & right_rid,
                             revision_id & merged_rid,
@@ -185,12 +197,20 @@ interactive_merge_and_store(revision_id const & left_rid,
 {
   roster_t left_roster, right_roster;
   marking_map left_marking_map, right_marking_map;
-  set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+  set<revision_id> left_uncommon_ancestors,
+                   right_uncommon_ancestors,
+                   sentinels;
 
   app.db.get_roster(left_rid, left_roster, left_marking_map);
   app.db.get_roster(right_rid, right_roster, right_marking_map);
   app.db.get_uncommon_ancestors(left_rid, right_rid,
                                 left_uncommon_ancestors, right_uncommon_ancestors);
+
+  app.db.get_sentinels_of(left_uncommon_ancestors, sentinels);
+  app.db.get_sentinels_of(right_uncommon_ancestors, sentinels);
+
+  if (sentinels.size() > 0)
+    print_sentinels_and_abort(sentinels);
 
   roster_merge_result result;
 

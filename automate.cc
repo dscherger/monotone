@@ -111,6 +111,7 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
+      E(!app.db.sentinel_exists(rid), F("missing revision %s") % rid);
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
       frontier.push_back(rid);
     }
@@ -135,7 +136,10 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
   for (set<revision_id>::const_iterator i = ancestors.begin();
        i != ancestors.end(); ++i)
     if (!null_id(*i))
-      output << (*i).inner()() << '\n';
+      if (!app.db.sentinel_exists(*i))
+        output << (*i).inner()() << '\n';
+      else
+        output << "sentinel:" << (*i).inner()() << '\n';
 }
 
 
@@ -161,6 +165,7 @@ CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
+      E(!app.db.sentinel_exists(rid), F("missing revision %s") % rid);
       N(app.db.revision_exists(rid), F("No such revision %s") % rid);
       frontier.push_back(rid);
     }
@@ -182,7 +187,10 @@ CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
     }
   for (set<revision_id>::const_iterator i = descendents.begin();
        i != descendents.end(); ++i)
-    output << (*i).inner()() << '\n';
+    if (!app.db.sentinel_exists(*i))
+      output << (*i).inner()() << '\n';
+    else
+      output << "sentinel:" << (*i).inner()() << '\n';
 }
 
 
@@ -208,7 +216,7 @@ CMD_AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"),
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
-      N(app.db.revision_exists(rid), F("No such revision %s") % rid);
+      N(app.db.revision_or_sentinel_exists(rid), F("No such revision %s") % rid);
       revs.insert(rid);
     }
   erase_ancestors(revs, app);
@@ -235,7 +243,7 @@ CMD_AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"),
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
-      N(app.db.revision_exists(rid), F("No such revision %s") % rid);
+      N(app.db.revision_or_sentinel_exists(rid), F("No such revision %s") % rid);
       revs.insert(rid);
     }
   vector<revision_id> sorted;
@@ -278,6 +286,7 @@ CMD_AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"),
   for (++i; i != args.end(); ++i)
     {
       revision_id b((*i)());
+      E(!app.db.sentinel_exists(b), F("missing revision %s") % b);
       N(app.db.revision_exists(b), F("No such revision %s") % b);
       bs.insert(b);
     }
@@ -365,12 +374,16 @@ CMD_AUTOMATE(parents, N_("REV"),
     F("wrong argument count"));
 
   revision_id rid(idx(args, 0)());
+  E(!app.db.sentinel_exists(rid), F("missing revision %s") % rid);
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   set<revision_id> parents;
   app.db.get_revision_parents(rid, parents);
   for (set<revision_id>::const_iterator i = parents.begin();
        i != parents.end(); ++i)
       if (!null_id(*i))
+        if (app.db.sentinel_exists(*i))
+          output << "sentinel:" << (*i).inner()() << '\n';
+        else
           output << (*i).inner()() << '\n';
 }
 
@@ -393,12 +406,16 @@ CMD_AUTOMATE(children, N_("REV"),
     F("wrong argument count"));
 
   revision_id rid(idx(args, 0)());
+  E(!app.db.sentinel_exists(rid), F("missing revision %s") % rid);
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   set<revision_id> children;
   app.db.get_revision_children(rid, children);
   for (set<revision_id>::const_iterator i = children.begin();
        i != children.end(); ++i)
       if (!null_id(*i))
+        if (app.db.sentinel_exists(*i))
+          output << "sentinel:" << (*i).inner()() << '\n';
+        else
           output << (*i).inner()() << '\n';
 }
 
@@ -1024,6 +1041,7 @@ CMD_AUTOMATE(get_revision, N_("[REVID]"),
   else
     {
       ident = revision_id(idx(args, 0)());
+      E(!app.db.sentinel_exists(ident), F("missing revision %s") % ident);
       N(app.db.revision_exists(ident),
         F("no revision %s found in database") % ident);
       app.db.get_revision(ident, dat);
@@ -1032,6 +1050,36 @@ CMD_AUTOMATE(get_revision, N_("[REVID]"),
   L(FL("dumping revision %s") % ident);
   output.write(dat.inner()().data(), dat.inner()().size());
 }
+
+
+// Name: get_sentinel
+// Arguments:
+//   1: a revision id
+// Added in: 2.0
+// Purpose: Prints change information for the gap which starts at
+//   the specified revision id.
+CMD_AUTOMATE(get_sentinel, N_("[REVID]"),
+             N_("Shows change information for a sentinel"),
+             "",
+             options::opts::none)
+{
+  N(args.size() == 1,
+    F("wrong argument count"));
+
+  temp_node_id_source nis;
+  sentinel_data dat;
+  revision_id ident;
+
+  ident = revision_id(idx(args, 0)());
+  N(!app.db.revision_exists(ident),
+    F("This is not a sentinel, but a real revision") % ident);
+  N(app.db.sentinel_exists(ident), F("No such sentinel %s") % ident);
+  app.db.get_sentinel(ident, dat);
+
+  L(FL("dumping sentinel %s") % ident);
+  output.write(dat.inner()().data(), dat.inner()().size());
+}
+
 
 // Name: get_base_revision_id
 // Arguments: none
@@ -1159,7 +1207,7 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
   else
     {
       revision_id rid = revision_id(idx(args, 0)());
-      N(app.db.revision_exists(rid),
+      N(app.db.revision_or_sentinel_exists(rid),
         F("no revision %s found in database") % rid);
       app.db.get_roster(rid, new_roster);
     }
@@ -1195,6 +1243,7 @@ CMD_AUTOMATE(packet_for_rdata, N_("REVID"),
   revision_id r_id(idx(args, 0)());
   revision_data r_data;
 
+  E(!app.db.sentinel_exists(r_id), F("missing revision %s") % r_id);
   N(app.db.revision_exists(r_id),
     F("no such revision '%s'") % r_id);
   app.db.get_revision(r_id, r_data);
@@ -1225,6 +1274,7 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
   revision_id r_id(idx(args, 0)());
   vector< revision<cert> > certs;
 
+  E(!app.db.sentinel_exists(r_id), F("missing revision %s") % r_id);
   N(app.db.revision_exists(r_id),
     F("no such revision '%s'") % r_id);
   app.get_project().get_revision_certs(r_id, certs);
@@ -1361,7 +1411,10 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
   for (set<revision_id>::const_iterator i = common_ancestors.begin();
        i != common_ancestors.end(); ++i)
     if (!null_id(*i))
-      output << (*i).inner()() << '\n';
+      if (app.db.sentinel_exists(*i))
+        output << "sentinel:" << (*i).inner()() << '\n';
+      else
+        output << (*i).inner()() << '\n';
 }
 
 // Name: branches
@@ -1843,6 +1896,32 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
     F("missing prerequisite for revision %s") % id);
 
   output << id << '\n';
+}
+
+// Name: put_sentinel
+// Arguments:
+//   1: revision id
+//   2: sentinel-data
+// Added in: 4.1
+// Purpose:
+//   Store a sentinel into the database.
+// Error conditions:
+//   none
+CMD_AUTOMATE(put_sentinel, N_("REV SENTINEL-DATA"),
+             N_("Stores a sentinel into the database"),
+             "",
+             options::opts::none)
+{
+  N(args.size() == 2,
+    F("wrong argument count"));
+
+  revision_id id(idx(args, 0)());
+
+  revision_t rev;
+  read_sentinel(sentinel_data(idx(args, 1)()), rev);
+
+  E(app.db.put_revision(id, rev),
+    F("missing prerequisite for sentinel %s") % id);
 }
 
 // Name: cert

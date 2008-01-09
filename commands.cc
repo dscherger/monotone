@@ -904,7 +904,7 @@ complete(app_state & app,
     {
       completion.insert(revision_id(hexenc<id>(id(str))));
       if (must_exist)
-        N(app.db.revision_exists(*completion.begin()),
+        N(app.db.revision_or_sentinel_exists(*completion.begin()),
           F("no such revision '%s'") % *completion.begin());
       return;
     }
