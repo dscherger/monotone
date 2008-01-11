@@ -44,7 +44,7 @@ ul {
 
 #header p {
     font-size: 0.9em;
-    line-height: 1.5em;
+    line-height: 1.45em;
     margin-top: 0;
     margin-right: 2em;
 }
@@ -118,8 +118,7 @@ ul {
 
 
 #footer {
-    border-top: 0.1em dotted #CCCCCC;
-    margin-top: 1em;
+    border-top: 0.0625em dotted #CCCCCC;
     padding-top: 1em;
     font-size: 0.7em;
     text-align: center;
