@@ -68,16 +68,20 @@ struct user_interface::print_impl
 {
     std::ostream ostr;
     void flush() { ostr.flush(); }
-    print_impl & operator<<(print_impl & pimpl, char const ch)
-    {
-        return (pimpl.ostr << ch);
-    }
-    print_impl & operator<<(print_impl & pimpl, std::string const & str)
-    {
-        return (pimpl.ostr << str);
-    }
-    print_impl() : ostr(clog) {}
+    print_impl(std::ostream & stream) : ostr(stream) {}
 };
+
+user_interface::print_impl * operator<<(user_interface::print_impl * impl, char const ch)
+{
+    impl->ostr << ch;
+    return impl;
+}
+
+user_interface::print_impl * operator<<(user_interface::print_impl * impl, std::string const & str)
+{
+    impl->ostr << str;
+    return impl;
+}
 
 ticker::ticker(string const & tickname, string const & s, size_t mod,
     bool kilocount) :
@@ -368,7 +372,7 @@ void tick_write_count::write_ticks()
 void tick_write_count::clear_line()
 {
   I(ui.print_imp);
-  ui.print_imp << endl;
+  ui.print_imp << std::endl;
 }
 
 
@@ -443,7 +447,7 @@ void tick_write_dot::write_ticks()
 void tick_write_dot::clear_line()
 {
   I(ui.print_imp);
-  ui.print_imp << endl;
+  ui.print_imp << std::endl;
 }
 
 // user_interface has both constructor/destructor and initialize/
@@ -682,7 +686,7 @@ user_interface::inform(string const & line)
   string prefixedLine;
   prefix_lines_with(output_prefix(), line, prefixedLine);
   ensure_clean_line();
-  ui.print_imp << sanitize(prefixedLine) << endl; // flushes
+  ui.print_imp << sanitize(prefixedLine) << std::endl; // flushes
 }
 
 unsigned int
