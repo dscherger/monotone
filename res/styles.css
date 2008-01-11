@@ -1,0 +1,126 @@
+body {
+    margin: 0;
+    background: url(bg.png);
+    font-size: 1em;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+a {
+    color: #4627B4;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul {
+    list-style-type: square;
+    font-size: 0.9em;
+    margin-top: 0.5em;
+    margin-bottom: 0;
+    padding-left: 1em;
+}
+
+.clearfloat {
+    clear: both;
+}
+
+#header, #body {
+    width: 46em;
+    margin-left: auto;
+    margin-right: auto;
+    background: white;
+    border-left: 0.0625em solid #474747;
+    border-right: 0.0625em solid #474747;
+    padding: 1em;
+}
+
+#header {
+    margin-bottom: 0.5em;
+    border-bottom: 0.0625em solid #474747;
+    text-align: justify;
+}
+
+#header p {
+    font-size: 0.9em;
+    line-height: 1.5em;
+    margin-top: 0;
+    margin-right: 2em;
+}
+
+#header p img {
+    float: left;
+    margin-right: 1em;
+}
+
+#body {
+    border: 0.0625em solid #474747;
+}
+
+.entry {
+    border-bottom: 0.0625em dotted #CCCCCC;
+    margin-bottom: 1em;
+    padding-bottom: 1em;
+    margin-top: 1em;
+}
+
+.important {
+    padding-left: 2.5em;
+    padding-top: 0.3em;
+    background: url(important.png) no-repeat;
+}
+
+.newversion {
+    padding-left: 2.5em;
+    padding-top: 0.4em;
+    background: url(newversion.png) no-repeat;
+}
+
+.box {
+    float: left;
+    margin-top: -1em;
+    padding-right: 0.5em;
+    margin-right: 0.5em;
+    border-right: 0.0625em dotted #CCCCCC;
+    width: 14.5em;
+}
+
+.box + .box + .box {
+    margin-right: 0;
+    border-right: 0;
+    padding-right: 0;
+}
+
+.box h1 {
+    font-size: 1em;
+    padding-top: 0.7em;
+    padding-left: 2.5em;
+    height: 2em;
+}
+
+.box ul {
+    padding-left: 3em;
+    margin-bottom: 1em;
+}
+
+.getit h1 {
+    background: url(getit.png) no-repeat;
+}
+
+.useit h1 {
+    background: url(useit.png) no-repeat;
+}
+
+.improveit h1 {
+    background: url(improveit.png) no-repeat;
+}
+
+
+#footer {
+    border-top: 0.1em dotted #CCCCCC;
+    margin-top: 1em;
+    padding-top: 1em;
+    font-size: 0.7em;
+    text-align: center;
+}

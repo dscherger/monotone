@@ -1,118 +1,129 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html lang="en">
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html lang="de" xml:lang="de"  xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <title>monotone: distributed version control</title>
-  <link type="text/css" rel="stylesheet" href="monotone.css" />
+  <link type="text/css" rel="stylesheet" href="res/styles.css" />
   <link rel="alternate" type="application/rss+xml" title="monotone releases"
                          href="http://monotone.ca/releases.xml">
 
 </head>
 <body>
-<div align="center">
-<img src="monotone-logo.png" />
-<hr noshade width="70%" />
-<table width="70%" cellspacing="10">
-<tr>
-<td colspan="3">
-<p>
-monotone is a free distributed version control system. it provides a
-simple, single-file transactional version store, with fully
-disconnected operation and an efficient peer-to-peer synchronization
-protocol. it understands history-sensitive merging, lightweight
-branches, integrated code review and 3rd party testing. it uses
-cryptographic version naming and client-side RSA certificates. it has
-good internationalization support, has no external dependencies, runs
-on linux, solaris, OSX, windows, and other unixes, and is licensed
-under the GNU GPL.
-</p>
-</td>
-</tr>
-<tr>
-<td colspan="3">
-<center><a href="NEWS"><b>NEWS: Wed Dec 12 2007, 0.38 release</b></a></center>
-<center>see <b><a href="NEWS">NEWS</a></b> for release notes, <b><a href="UPGRADE">UPGRADE</a></b> for upgrading</center>
-<center>(<a class="lesser" href="README.changesets">still on 0.14? README.changesets</a>)</center>
-<center><div class="lesser">older versions are still <a href="downloads/">available</a></div></center>
-</td>
-</tr>
-<tr><td colspan="3">
-<p>
-want to help?  <a href="irc://irc.oftc.net/monotone">join irc</a>, <a href="http://www.venge.net/mtn-wiki/QuickieTasks">pick a quickie</a> or <a href="https://savannah.nongnu.org/bugs/?group=monotone">claim a bug, write a missing test case</a>... we're friendly
-</p>
-</td></tr>
-<tr><th width="33%"><center>Get it</center></th><th width="33%"><center>Use it</center></th><th width="33%"><center>Improve it</center></th></tr>
-<tr>
-   <td valign=top><ul>
-	<li><a href="downloads/0.38/monotone-0.38.tar.gz">Source</a></li>
-	<li><a href="downloads/0.38/mtn-0.38-linux-x86.bz2">Linux x86/glibc 2.3</a></li>
-	<!-- <li><a href="downloads/0.38/mtn-0.38-linux_2.6-static.bz2">static, linux 2.6/glibc</a>(read the <a href="downloads/0.38/mtn-0.38-linux_2.6-static.README1ST">README</a>!) (<a href="downloads/0.38/mtn-0.38-linux_2.6-static.bz2.sig">PGP sig</a>)</li> --> 
-	<li>Windows
-		<a href="downloads/0.38/monotone-0.38-setup.exe">native</a>
-		<a href="http://cygwin.com/">cygwin</a>
-		</li>
-	<li>Mac OS X <a href="downloads/0.38/mtn-0.38-osx-univ.bz2">standalone</a>,
-	<a href="downloads/0.38/monotone-0.38.dmg">packaged</a></li>
-	<li>Fedora 7 <a href="downloads/0.38/monotone-0.38-0.mtn.1fc7.i386.rpm">x86</a><!--
-        <a href="downloads/0.38/monotone-0.38-0.mtn.1.x86_64.rpm">x86-64</a>
-		(<a class="lesser" href="downloads/0.38/monotone-0.38-0.mtn.1.fc5.src.rpm">srpm</a>)--></li>
-    <li>SuSE / openSUSE
-        <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=SUSE%3ASLE-10">SLE 10.0</a>,
-        <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=openSUSE%3A10.2">openSUSE 10.2</a> and 
-        <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=openSUSE%3A10.3">openSUSE 10.3</a>
-        for i586 and x86_64
-    </li>
-	<!-- <li>deb <a href="downloads/0.38/monotone_0.38-0.1_i386.deb">x86 sid</a>,
-		<a href="downloads/0.38/monotone_0.38-0.1_amd64.deb">amd64 sid</a>,
-		(<a class="lesser" href="downloads/0.38/monotone-server_0.38-0.1_all.deb">server setup sid</a>),
-		<a href="downloads/0.38/monotone_0.38-etch0.1_i386.deb">x86 etch</a>
-		<a href="downloads/0.38/monotone_0.38-etch0.1_amd64.deb">amd64 etch</a>
-		(<a class="lesser" href="downloads/0.38/monotone-server_0.38-etch0.1_all.deb">server setup etch</a>)
-		<a href="downloads/0.38/monotone_0.38-sarge0.1_i386.deb">x86 sarge</a>
-		(<a class="lesser" href="downloads/0.38/monotone-server_0.38-sarge0.1_all.deb">server setup sarge</a>),
-		<a href="downloads/0.38/monotone_0.38-dapper0.1_i386.deb">x86 dapper</a>
-		(<a class="lesser" href="downloads/0.38/monotone-server_0.38-dapper0.1_all.deb">server setup dapper</a>),
-		<a href="downloads/0.38/monotone-doc_0.38-etch0.1_all.deb">docs all</a>
-	(<a class="lesser" href="downloads/0.38/monotone_0.38-0.1.dsc">dsc</a>, 
-	     <a class="lesser" href="downloads/0.38/monotone_0.38-0.1.tar.gz">orig</a>, 
-	     <a class="lesser" href="downloads/0.38/monotone_0.38-0.1_i386.changes">changes</a>)
-     </li> -->
-	<!-- <li>sol10 <a href="downloads/0.38/PMmonotone-0.38.i386.pkg">x86</a>, <a href="downloads/0.38/PMmonotone-0.38.sparc.pkg">sparc</a></li> -->
-	<li><i class="lesser">(more 0.38 packages coming soon, or try <a href="downloads/0.37/">0.37 binaries</a>)</i></li>
-	<!-- <li><i class="lesser"><a href="downloads/">older downloads...</a></i></li> -->
- 	<!-- <li><a class="lesser" href="downloads.html">less common downloads...</a></li> -->
-   </ul></td>
 
-   <td valign=top><ul>
-	<li><a href="docs/index.html"><b>manual</b> (with tutorial)</a> (<a class=lesser href="monotone.html">one page</a>, <a class=lesser href="monotone.pdf">PDF</a>)</li>
-	<li><a href="INSTALL">INSTALL</a></li>
-	<li><a href="http://www.venge.net/mtn-wiki/FAQ">FAQ</a></li>
-	<li><a href="http://www.venge.net/mtn-wiki/InterfacesFrontendsAndTools">GUIs/other tools</a></li>
-	<li><a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">mailing list</a></li>
-	<li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.de/irclogger/irclogger_logs/monotone">logs</a>)</li>
-	<li><a href="http://www.venge.net/mtn-wiki/">wiki</a></li>
-	<li><a href="others.html">other systems</a></li>
-	<li><a href="http://www.cafepress.com/monotone_vcs">swag</a></li>
-	<li><a href="http://www.frappr.com/monotone">frappr</a></li>
-    </ul></td>
-
-    <td valign=top><ul>
-	<li><a href="https://savannah.nongnu.org/bugs/?group=monotone">bugs / todo list</a></li>	
-	<li><a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">mailing list</a></li>
-	<li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.de/irclogger/irclogger_logs/monotone">logs</a>)</li>
-	<li><a href="http://www.venge.net/mtn-wiki/">wiki</a></li>
-	<li><a href="http://www.venge.net/mtn-wiki/SelfHostingInfo">self-hosting info</a></li>
-	<li><a href="http://savannah.nongnu.org/projects/monotone">savannah</a></li>
-	<li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="https://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
-	<li><a href="http://viewmtn.angrygoats.net/branch/changes/net.venge.monotone">browse source</a></li>
-	<li><a href="buildbot/">build status</a></li>	
-	<li><a href="http://frances.vorpus.org/~monotone-cov/net.venge.monotone">test coverage</a></li>
-    </ul></td>
-
-</tr>
-</table>
-<hr noshade width="70%" />
-<p>
-<a href="_analog.html">stats</a>
-</p>
+<div id="header">
+    <p>
+        <img src="res/logo.png" alt="monotone logo"/>
+        <strong>monotone</strong> is a free distributed version control system. it provides a
+        simple, single-file transactional version store, with fully
+        disconnected operation and an efficient peer-to-peer synchronization
+        protocol. it understands history-sensitive merging, lightweight
+        branches, integrated code review and 3rd party testing. it uses
+        cryptographic version naming and client-side RSA certificates. it has
+        good internationalization support, has no external dependencies, runs
+        on linux, solaris, OSX, windows, and other unixes, and is licensed
+        under the GNU GPL.
+        <div class="clearfloat"></div>
+    </p>
 </div>
+
+<div id="body">
+    <div class="entry newversion">
+        <a href="NEWS"><b>NEWS: Wed Dec 12 2007, 0.38 release</b></a>
+        <ul>
+            <li>see <b><a href="NEWS">NEWS</a></b> for release notes, <b><a href="UPGRADE">UPGRADE</a></b> for upgrading <small>(<a href="README.changesets">still on 0.14? README.changesets</a>)</small></li>
+            <li>older versions are still <a href="downloads/">available</a></li>
+        </ul>
+    </div>
+
+    <div class="entry important">
+        <a href="http://venge.net/mtn-wiki/MtnSummit2008"><b>Attend the European monotone summit from April 28th to May 4th 2008 in Germany!</b></a>
+    </div>
+
+    <div class="entry">
+        Want to help?  <a href="irc://irc.oftc.net/monotone">join irc</a>, <a href="http://www.venge.net/mtn-wiki/QuickieTasks">pick a quickie</a> or <a href="https://savannah.nongnu.org/bugs/?group=monotone">claim a bug, write a missing test case</a>... we're friendly
+    </div>
+
+    <div class="box getit">
+        <h1>Get it</h1>
+        <ul>
+            <li><a href="downloads/0.38/monotone-0.38.tar.gz">Source</a></li>
+            <li><a href="downloads/0.38/mtn-0.38-linux-x86.bz2">Linux x86/glibc 2.3</a></li>
+            <!-- <li><a href="downloads/0.38/mtn-0.38-linux_2.6-static.bz2">static, linux 2.6/glibc</a>(read the <a href="downloads/0.38/mtn-0.38-linux_2.6-static.README1ST">README</a>!) (<a href="downloads/0.38/mtn-0.38-linux_2.6-static.bz2.sig">PGP sig</a>)</li> --> 
+            <li>Windows
+                <a href="downloads/0.38/monotone-0.38-setup.exe">native</a>
+                <a href="http://cygwin.com/">cygwin</a>
+                </li>
+            <li>Mac OS X <a href="downloads/0.38/mtn-0.38-osx-univ.bz2">standalone</a>,
+            <a href="downloads/0.38/monotone-0.38.dmg">packaged</a></li>
+            <li>Fedora 7 <a href="downloads/0.38/monotone-0.38-0.mtn.1fc7.i386.rpm">x86</a><!--
+                <a href="downloads/0.38/monotone-0.38-0.mtn.1.x86_64.rpm">x86-64</a>
+                (<a class="lesser" href="downloads/0.38/monotone-0.38-0.mtn.1.fc5.src.rpm">srpm</a>)--></li>
+            <li>SuSE / openSUSE
+                <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=SUSE%3ASLE-10">SLE 10.0</a>,
+                <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=openSUSE%3A10.2">openSUSE 10.2</a> and 
+                <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=openSUSE%3A10.3">openSUSE 10.3</a>
+                for i586 and x86_64
+            </li>
+            <!-- <li>deb <a href="downloads/0.38/monotone_0.38-0.1_i386.deb">x86 sid</a>,
+                <a href="downloads/0.38/monotone_0.38-0.1_amd64.deb">amd64 sid</a>,
+                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-0.1_all.deb">server setup sid</a>),
+                <a href="downloads/0.38/monotone_0.38-etch0.1_i386.deb">x86 etch</a>
+                <a href="downloads/0.38/monotone_0.38-etch0.1_amd64.deb">amd64 etch</a>
+                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-etch0.1_all.deb">server setup etch</a>)
+                <a href="downloads/0.38/monotone_0.38-sarge0.1_i386.deb">x86 sarge</a>
+                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-sarge0.1_all.deb">server setup sarge</a>),
+                <a href="downloads/0.38/monotone_0.38-dapper0.1_i386.deb">x86 dapper</a>
+                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-dapper0.1_all.deb">server setup dapper</a>),
+                <a href="downloads/0.38/monotone-doc_0.38-etch0.1_all.deb">docs all</a>
+            (<a class="lesser" href="downloads/0.38/monotone_0.38-0.1.dsc">dsc</a>, 
+                <a class="lesser" href="downloads/0.38/monotone_0.38-0.1.tar.gz">orig</a>, 
+                <a class="lesser" href="downloads/0.38/monotone_0.38-0.1_i386.changes">changes</a>)
+            </li> -->
+            <!-- <li>sol10 <a href="downloads/0.38/PMmonotone-0.38.i386.pkg">x86</a>, <a href="downloads/0.38/PMmonotone-0.38.sparc.pkg">sparc</a></li> -->
+            <li><i class="lesser">(more 0.38 packages coming soon, or try <a href="downloads/0.37/">0.37 binaries</a>)</i></li>
+            <!-- <li><i class="lesser"><a href="downloads/">older downloads...</a></i></li> -->
+            <!-- <li><a class="lesser" href="downloads.html">less common downloads...</a></li> -->
+        </ul>
+    </div>
+
+    <div class="box useit">
+        <h1>Use it</h1>
+        <ul>
+            <li><a href="docs/index.html"><b>manual</b> (with tutorial)</a><br/>(<a class=lesser href="monotone.html">one page</a>, <a class=lesser href="monotone.pdf">PDF</a>)</li>
+            <li><a href="INSTALL">INSTALL</a></li>
+            <li><a href="http://www.venge.net/mtn-wiki/FAQ">FAQ</a></li>
+            <li><a href="http://www.venge.net/mtn-wiki/InterfacesFrontendsAndTools">GUIs/other tools</a></li>
+            <li><a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">mailing list</a></li>
+            <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.de/irclogger/irclogger_logs/monotone">logs</a>)</li>
+            <li><a href="http://www.venge.net/mtn-wiki/">wiki</a></li>
+            <li><a href="others.html">other systems</a></li>
+            <li><a href="http://www.cafepress.com/monotone_vcs">swag</a></li>
+            <li><a href="http://www.frappr.com/monotone">frappr</a></li>
+        </ul>
+    </div>
+
+    <div class="box improveit">
+        <h1>Improve it</h1>
+        <ul>
+            <li><a href="https://savannah.nongnu.org/bugs/?group=monotone">bugs / todo list</a></li>    
+            <li><a href="http://mail.nongnu.org/mailman/listinfo/monotone-devel">mailing list</a></li>
+            <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.de/irclogger/irclogger_logs/monotone">logs</a>)</li>
+            <li><a href="http://www.venge.net/mtn-wiki/">wiki</a></li>
+            <li><a href="http://www.venge.net/mtn-wiki/SelfHostingInfo">self-hosting info</a></li>
+            <li><a href="http://savannah.nongnu.org/projects/monotone">savannah</a></li>
+            <li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="https://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
+            <li><a href="http://viewmtn.angrygoats.net/branch/changes/net.venge.monotone">browse source</a></li>
+            <li><a href="buildbot/">build status</a></li>   
+            <li><a href="http://frances.vorpus.org/~monotone-cov/net.venge.monotone">test coverage</a></li>
+        </ul>
+    </div>
+
+    <div class="clearfloat"></div>
+
+    <div id="footer">
+        <a href="_analog.html">website statistics</a> | <a href="http://tango.freedesktop.org/Tango_Icon_Library">icons stolen from the Tango Project</a>
+    </div> 
+</div>
+
+</body>
 </html>
