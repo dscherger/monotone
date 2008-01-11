@@ -14,6 +14,7 @@
 #include "globish.hh"
 #include "http_client.hh"
 #include "json_io.hh"
+#include "net_common.hh"
 #include "sanity.hh"
 #include "lexical_cast.hh"
 #include "constants.hh"
@@ -45,42 +46,6 @@ using Netxx::Stream;
 using Netxx::PipeStream;
 
 
-
-static shared_ptr<StreamBase>
-build_stream(app_state & app,
-	     uri const & u,
-	     globish const & include_pattern,
-	     globish const & exclude_pattern,	     
-	     Netxx::port_type default_port)
-{
-  Timeout timeout(static_cast<long>(constants::netsync_timeout_seconds)), 
-    instant(0,1);
-  vector<string> argv;    
-  if (app.lua.hook_get_netsync_connect_command(u,
-					       include_pattern,
-					       exclude_pattern,
-					       global_sanity.debug_p(),
-					       argv))
-    {
-      I(argv.size() > 0);
-      string cmd = argv[0];
-      argv.erase(argv.begin());
-      app.opts.use_transport_auth = app.lua.hook_use_transport_auth(u);
-      return shared_ptr<StreamBase>(new PipeStream(cmd, argv));
-    }
-  else
-    {
-#ifdef USE_IPV6
-      bool use_ipv6=true;
-#else
-      bool use_ipv6=false;
-#endif
-      Netxx::Address addr(u.host.c_str(), default_port, use_ipv6);
-      return shared_ptr<StreamBase>(new Stream(addr, timeout));
-    }   
-}
-
-
 http_client::http_client(app_state & app,
 			 uri const & u, 	      
 			 globish const & include_pattern,
@@ -89,8 +54,9 @@ http_client::http_client(app_state & app,
     u(u), 
     include_pattern(include_pattern), 
     exclude_pattern(exclude_pattern), 
-    stream(build_stream(app, u, include_pattern, exclude_pattern, 
-			constants::default_http_port)), 
+    stream(build_stream_to_server(app, u, include_pattern, exclude_pattern, 
+                                  constants::default_http_port,
+                                  Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)))), 
     nb(new Netbuf<constants::bufsz>(*stream)), 
     io(new iostream(&(*nb))),
     open(true)
@@ -102,8 +68,9 @@ http_client::transact_json(json_value_t v)
   if (!open)
     {
       L(FL("reopening connection"));
-      stream = build_stream(app, u, include_pattern, exclude_pattern, 
-			    constants::default_http_port);
+      stream = build_stream_to_server(app, u, include_pattern, exclude_pattern, 
+                                      constants::default_http_port,
+                                      Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)));
       nb = shared_ptr< Netbuf<constants::bufsz> >(new Netbuf<constants::bufsz>(*stream));
       io = shared_ptr<iostream>(new iostream(&(*nb)));
       open = true;
@@ -131,11 +98,12 @@ http_client::transact_json(json_value_t v)
   L(FL("http_client: sending request [[POST %s HTTP/1.0]]") 
     % (u.path.empty() ? "/" : u.path));
   L(FL("http_client: to [[Host: %s]]") % u.host);
+  L(FL("http_client: sending %d-byte body") % out.buf.size());
   io->write(header.data(), header.size());
   io->write(out.buf.data(), out.buf.length());
   io->flush();
+  L(FL("http_client: sent %d-byte body") % out.buf.size());
 
-  L(FL("http_client: sending %d-byte body") % out.buf.size());
 
   // Now read back the result
   string data;
@@ -147,14 +115,14 @@ http_client::transact_json(json_value_t v)
 }
 
 
-
 void 
 http_client::parse_http_status_line()
 {
   // We're only interested in 200-series responses
   string tmp;
   string pat("HTTP/1.0 200");
-  while (tmp.empty())
+  L(FL("http_client: reading response..."));
+  while (io->good() && tmp.empty())
     std::getline(*io, tmp);
   L(FL("http_client: response: [[%s]]") % tmp);
   E(tmp.substr(0,pat.size()) == pat, F("HTTP status line: %s") % tmp);
@@ -180,12 +148,14 @@ http_client::parse_http_header_line(size_t & content_length,
 		 || v == "keep-alive");
 }
 
+
 void 
 http_client::crlf()
 {
   E(io->get() == '\r', F("expected CR in HTTP response"));
   E(io->get() == '\n', F("expected LF in HTTP response"));
 }
+
 
 void 
 http_client::parse_http_response(std::string & data)
@@ -194,7 +164,7 @@ http_client::parse_http_response(std::string & data)
   bool keepalive = false;
   data.clear();
   parse_http_status_line();
-  while (io->peek() != '\r')
+  while (io->good() && io->peek() != '\r')
     parse_http_header_line(content_length, keepalive);
   crlf();
 

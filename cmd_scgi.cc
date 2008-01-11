@@ -12,13 +12,24 @@
 #include <sstream>
 #include <map>
 
-#include "cmd.hh"
 #include "app_state.hh"
-#include "ui.hh"
+#include "cmd.hh"
+#include "constants.hh"
+#include "globish.hh"
+#include "json_io.hh"
+#include "keys.hh"
 #include "lexical_cast.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
-#include "json_io.hh"
+#include "net_common.hh"
+#include "ui.hh"
+
+#include "netxx/address.h"
+#include "netxx/peer.h"
+#include "netxx/netbuf.h"
+#include "netxx/socket.h"
+#include "netxx/stream.h"
+#include "netxx/streamserver.h"
 
 using std::istream;
 using std::make_pair;
@@ -216,27 +227,15 @@ do_cmd(app_state & app, json_io::json_object_t cmd_obj)
 }
 
 
-CMD_NO_WORKSPACE(scgi,             // C
-                 "scgi",           // name
-                 "",               // aliases
-                 CMD_REF(network), // parent
-                 N_(""),                              // params
-                 N_("Serves SCGI+JSON connections"),  // abstract
-                 "",                                  // desc
-                 options::opts::none                  // options
-                 )
+void
+process_scgi_transaction(app_state & app, 
+                         std::istream & in,
+                         std::ostream & out)
 {
-  // FIXME: expand this function to take a pathname for a win32 named pipe
-  // or unix domain socket, for accept/read/dispatch loop.
-
-  N(args.size() == 0,
-    F("no arguments needed"));
-
   string data;
-
-  if (parse_scgi(std::cin, data))
+  if (parse_scgi(in, data))
     {
-      L(FL("read SCGI request: [[%s]]") % data);
+      L(FL("read %d-byte SCGI request") % data.size());
       
       json_io::input_source in(data, "scgi");
       json_io::tokenizer tok(in);
@@ -245,30 +244,138 @@ CMD_NO_WORKSPACE(scgi,             // C
       
       if (static_cast<bool>(obj)) 
         {
+          transaction_guard guard(app.db);
           L(FL("read JSON object"));
           
           json_io::json_object_t res = do_cmd(app, obj);
           if (static_cast<bool>(res))
             {
-              L(FL("sending JSON response"));
-              json_io::printer out;
-              res->write(out);
+              json_io::printer out_data;
+              res->write(out_data);
+              L(FL("sending JSON %d-byte response") % (out_data.buf.size() + 1));
               
-              std::cout << "Status: 200 OK\r\n"
-                        << "Content-Length: " << (out.buf.size() + 1) << "\r\n"
-                        << "Content-Type: application/jsonrequest\r\n"
-                        << "\r\n";
+              out << "Status: 200 OK\r\n"
+                  << "Content-Length: " << (out_data.buf.size() + 1) << "\r\n"
+                  << "Content-Type: application/jsonrequest\r\n"
+                  << "\r\n";
               
-              std::cout.write(out.buf.data(), out.buf.size());  
-              std::cout << "\n";
+              out.write(out_data.buf.data(), out_data.buf.size());
+              out << "\n";
+              out.flush();
               return;
             }
         }
+      
     }
+  out << "Status: 400 Bad request\r\n"
+      << "Content-Type: application/jsonrequest\r\n"
+      << "\r\n";
+  out.flush();
+}
+
+
+CMD_NO_WORKSPACE(scgi,             // C
+                 "scgi",           // name
+                 "",               // aliases
+                 CMD_REF(network), // parent
+                 N_(""),                              // params
+                 N_("Serves SCGI+JSON connections"),  // abstract
+                 "",                                  // desc
+                 options::opts::bind | 
+                 options::opts::pidfile |
+                 options::opts::bind_stdio | 
+                 options::opts::no_transport_auth
+                 )
+{
+  if (!args.empty())
+    throw usage(execid);
+
+  if (app.opts.signing_key() == "")
+    {
+      rsa_keypair_id key;
+      get_user_key(key, app);
+      app.opts.signing_key = key;
+    }
+
+  if (app.opts.use_transport_auth)
+    {
+      N(app.lua.hook_persist_phrase_ok(),
+	F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
+      require_password(app.opts.signing_key, app);
+    }
+  else if (!app.opts.bind_stdio)
+    W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
   
-  std::cout << "Status: 400 Bad request\r\n"
-            << "Content-Type: application/jsonrequest\r\n"
-            << "\r\n";
+  if (app.opts.bind_stdio)
+    process_scgi_transaction(app, std::cin, std::cout);
+  else
+    {    
+
+#ifdef USE_IPV6
+      bool use_ipv6=true;
+#else
+      bool use_ipv6=false;
+#endif
+      // This will be true when we try to bind while using IPv6.  See comments
+      // further down.
+      bool try_again=false;
+      
+      do
+        {  
+          try 
+            {
+              try_again = false;
+
+              Netxx::Address addr(use_ipv6);
+
+              add_address_names(addr, app.opts.bind_uris, constants::default_scgi_port);
+              
+              // If we use IPv6 and the initialisation of server fails, we want
+              // to try again with IPv4.  The reason is that someone may have
+              // downloaded a IPv6-enabled monotone on a system that doesn't
+              // have IPv6, and which might fail therefore.
+              // On failure, Netxx::NetworkException is thrown, and we catch
+              // it further down.
+              try_again=use_ipv6;
+              
+              Netxx::StreamServer server(addr);
+          
+              // If we came this far, whatever we used (IPv6 or IPv4) was
+              // accepted, so we don't need to try again any more.
+              try_again=false;
+              
+              while (true)
+                {
+                  Netxx::Peer peer = server.accept_connection();
+                  if (peer)
+                    {
+                      Netxx::Stream stream(peer.get_socketfd());
+                      Netxx::Netbuf<constants::bufsz>  buf(stream);
+                      std::iostream io(&buf);
+                      process_scgi_transaction(app, io, io);
+                    }
+                  else
+                    break;
+                } 
+            }
+          // Possibly loop around if we get exceptions from Netxx and we're 
+          // attempting to use ipv6, or have some other reason to try again. 
+          catch (Netxx::NetworkException &)
+            {
+              if (try_again)
+                use_ipv6 = false;
+              else
+                throw;
+            }
+          catch (Netxx::Exception &)
+            {
+              if (try_again)
+                use_ipv6 = false;
+              else
+                throw;
+            }
+        } while (try_again);      
+    }
 }
 
 // Local Variables:
