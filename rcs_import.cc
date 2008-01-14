@@ -3863,6 +3863,7 @@ blob_consumer::merge_parents_for_artificial_rev(
       revision_id wanted_rid = i->second;
 
       file_path pth = file_path_internal(cvs.path_interner.lookup(ev->path));
+      L(FL("    handling file %s") % pth);
 
       if (wanted_rid == right_rid)
         {
@@ -3932,7 +3933,6 @@ blob_consumer::merge_parents_for_artificial_rev(
       else if (wanted_rid == left_rid)
         {
           L(FL("    using left revision for file '%s'") % pth);
-          I(merged_roster.has_node(pth));
         }
       else
         {
