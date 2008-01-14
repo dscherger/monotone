@@ -2311,6 +2311,79 @@ public:
       I(*path_b.rbegin() == e.second);
 
 
+      // Unfortunately, the common ancestor we've found isn't
+      // necessarily the lowest common ancestor. However, it doesn't
+      // need to be, we just need to make sure, that there are no
+      // dependencies between blobs of path_a and path_b.
+      //
+      // As path_a is all colored black from the depth first search
+      // run, we already know there are no cross or forward edges from
+      // it to any blob of path_b.
+      //
+      // But blobs of path_b can very well have dependencies to blobs
+      // of path_a. An example (from the test importing_cvs_branches2):
+      //
+      //                        2
+      //              p       /    \       p
+      //              a     10 <-.  12     a
+      //              t      |   |   |     t
+      //              h      9   |  11     h
+      //                     |   |   |
+      //              a      5    '- 3     b
+      //                      \     /
+      //                         8
+      //
+      // Here, the cross edge discovered was 3 -> 8. And path_a is:
+      // (2, 10, 9, 5, 8), while path_b is (2, 12, 11, 3, 8). The edge
+      // 3 -> 10 is another cross edge (and will be discovered next by
+      // the depth first search, but hasn't been discovered so far).
+      //
+      // We don't want to buy into the trouble of finding the
+      // lowest common ancestor here, and simply bail out in such
+      // cases, remembering that there are cross edges left. The
+      // continued DFS will eventually discover the lower cross edge
+      // and be able to resolve that. As soon as that's resolved, we
+      // will be able to resolve the first one we have deferred
+      // before.
+
+      {
+        vector<cvs_blob_index> cross_path;
+        insert_iterator< vector< cvs_blob_index > >
+          ity_c(cross_path, cross_path.end());
+
+        dijkstra_shortest_path(cvs, *(++path_b.begin()), *(++path_a.rbegin()),
+                               ity_c,
+                               true,                // downwards
+                               true, true, true,    // follow all colors
+                               false,
+                               make_pair(invalid_blob, invalid_blob));
+
+        if (!cross_path.empty())
+          {
+            L(FL("deferred resolving cross edge to later."));
+
+            /*
+             * Well, we didn't really remove anything, but this
+             * makes sure another complete depth first search is
+             * run, so that this cross edge will be handled
+             * eventually.
+             */ 
+            edges_deferred++;
+            return;
+          }
+
+        // extra check the other way around, can theoretically be
+        // skipped, as DFS guarantees that already. 
+        dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
+                               ity_c,
+                               true,                // downwards
+                               true, true, true,    // follow all colors
+                               false,
+                               make_pair(invalid_blob, invalid_blob));
+        I(cross_path.empty());
+      }
+
+
       // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
       vector<cvs_blob_index>::iterator first_branch_start_in_path_a;
@@ -2560,78 +2633,6 @@ public:
         {
           I(!a_has_branch);
           I(!b_has_branch);
-
-          // Unfortunately, the common ancestor we've found isn't
-          // necessarily the lowest common ancestor. However, it doesn't
-          // need to be, we just need to make sure, that there are no
-          // dependencies between blobs of path_a and path_b.
-          //
-          // As path_a is all colored black from the depth first search
-          // run, we already know there are no cross or forward edges from
-          // it to any blob of path_b.
-          //
-          // But blobs of path_b can very well have dependencies to blobs
-          // of path_a. An example (from the test importing_cvs_branches2):
-          //
-          //                        2
-          //              p       /    \       p
-          //              a     10 <-.  12     a
-          //              t      |   |   |     t
-          //              h      9   |  11     h
-          //                     |   |   |
-          //              a      5    '- 3     b
-          //                      \     /
-          //                         8
-          //
-          // Here, the cross edge discovered was 3 -> 8. And path_a is:
-          // (2, 10, 9, 5, 8), while path_b is (2, 12, 11, 3, 8). The edge
-          // 3 -> 10 is another cross edge (and will be discovered next by
-          // the depth first search, but hasn't been discovered so far).
-          //
-          // We don't want to buy into the trouble of finding the
-          // lowest common ancestor here, and simply bail out in such
-          // cases, remembering that there are cross edges left. The
-          // continued DFS will eventually discover the lower cross edge
-          // and be able to resolve that. As soon as that's resolved, we
-          // will be able to resolve the first one we have deferred
-          // before.
-
-          {
-            vector<cvs_blob_index> cross_path;
-            insert_iterator< vector< cvs_blob_index > >
-              ity_c(cross_path, cross_path.end());
-
-            dijkstra_shortest_path(cvs, *(++path_b.begin()), *(++path_a.rbegin()),
-                                   ity_c,
-                                   true,                // downwards
-                                   true, true, true,    // follow all colors
-                                   false,
-                                   make_pair(invalid_blob, invalid_blob));
-
-            if (!cross_path.empty())
-              {
-                L(FL("deferred resolving cross edge to later."));
-
-                /*
-                 * Well, we didn't really remove anything, but this
-                 * makes sure another complete depth first search is
-                 * run, so that this cross edge will be handled
-                 * eventually.
-                 */ 
-                edges_deferred++;
-                return;
-              }
-
-            // extra check the other way around, can theoretically be
-            // skipped, as DFS guarantees that already. 
-            dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
-                                   ity_c,
-                                   true,                // downwards
-                                   true, true, true,    // follow all colors
-                                   false,
-                                   make_pair(invalid_blob, invalid_blob));
-            I(cross_path.empty());
-          }
 
           // If none of the two paths has a branch start, we can simply
           // join them into one path, which satisfies all of the
