@@ -2197,7 +2197,6 @@ public:
       // done. If we hit one of those, we don't have to go
       // further.
       cvs_blob & first_blob = cvs.blobs[*path.begin()];
-      I(first_blob.get_events().size() > 1);
       for (blob_event_iter i = first_blob.begin(); i != first_blob.end(); ++i)
         for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
           {
@@ -2388,13 +2387,40 @@ public:
               {
                 pa_i = find(path_a.begin(), path_a.end(), *cp_i);
                 if (pa_i != path_a.end())
-                  {
-                    e.second = *pa_i;
-                    break;
-                  }
+                  break;
               }
             I(cp_i != cross_path.end());
             I(pa_i != path_a.end());
+
+            // In case the new e.second is a branch start or tag,
+            // which may very well have multiple ancestors, we don't
+            // try to split that, instead, we concentrate on the
+            // lower edge, i.e. the current e.second, but from the
+            // lower common ancestor in path_b.
+            if (cvs.blobs[*cp_i].get_digest().is_branch_start() ||
+              cvs.blobs[*cp_i].get_digest().is_tag())
+              {
+                // get the lowest common ancestor, which must be
+                // part of path_b
+                vector<cvs_blob_index>::iterator ib = ++path_b.begin();
+                vector<cvs_blob_index>::iterator ic = cross_path.begin();
+
+                I(*ib == *ic);
+                while (*(ib + 1) == *(ic + 1))
+                  {
+                    ib++;
+                    ic++;
+                  }
+
+                path_b.erase(path_b.begin(), ib);
+                cross_path.erase(cross_path.begin(), ic);
+
+                swap(path_a, cross_path);
+                path_a.push_back(e.second);
+              }
+            else
+              {
+                e.second = *cp_i;
 
             // strip all the remaining elements  from cross_path.
             cross_path.erase(++cp_i, cross_path.end());
@@ -2404,6 +2430,7 @@ public:
             // and strip all remaining elements from the new e.second to
             // the old e.second from path_a.
             path_a.erase(++pa_i, path_a.end());
+              }
 
 #ifdef DEBUG_BLOB_SPLITTER
             log_path(path_a, "new path a:");
@@ -2487,6 +2514,9 @@ public:
 
           vector< cvs_blob_index > tmp_b((++path_b.rbegin()).base() - first_branch_start_in_path_b);
           copy(first_branch_start_in_path_b, (++path_b.rbegin()).base(), tmp_b.begin());
+
+          I(!tmp_a.empty());
+          I(!tmp_b.empty());
 
           split_by_path func_a(cvs, tmp_a),
                         func_b(cvs, tmp_b);
