@@ -2230,6 +2230,14 @@ public:
 };
 
 void
+log_path(vector<cvs_blob_index> const & path, string const & str)
+{
+  L(FL("%s") % str);
+  for (vector<cvs_blob_index>::const_iterator i = path.begin(); i != path.end(); ++i)
+    L(FL("  blob: %d") % *i);
+}
+
+void
 split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
               split_decider_func & split_decider);
 
@@ -2335,45 +2343,77 @@ public:
       //
       // Here, the cross edge discovered was 3 -> 8. And path_a is:
       // (2, 10, 9, 5, 8), while path_b is (2, 12, 11, 3, 8). The edge
-      // 3 -> 10 is another cross edge (and will be discovered next by
-      // the depth first search, but hasn't been discovered so far).
+      // 3 -> 10 is another cross edge, but just  hasn't been discovered
+      // so far.
       //
-      // We don't want to buy into the trouble of finding the
-      // lowest common ancestor here, and simply bail out in such
-      // cases, remembering that there are cross edges left. The
-      // continued DFS will eventually discover the lower cross edge
-      // and be able to resolve that. As soon as that's resolved, we
-      // will be able to resolve the first one we have deferred
-      // before.
+      // However, we better handle the higher cross path first, since it
+      // may have an effect on how the later cross path needs to be
+      // handled. Thus in the above case, be decide to handle the cross
+      // path 3 -> 10, with the a path_a (2, 10) and a new
+      // path_b (2, 12, 11, 3, 10).
 
       {
+        while (1)
+          {
         vector<cvs_blob_index> cross_path;
         insert_iterator< vector< cvs_blob_index > >
           ity_c(cross_path, cross_path.end());
 
-        dijkstra_shortest_path(cvs, *(++path_b.begin()), *(++path_a.rbegin()),
+        dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
                                ity_c,
-                               true,                // downwards
+                               false,                // upwards
                                true, true, true,    // follow all colors
                                false,
                                make_pair(invalid_blob, invalid_blob));
 
-        if (!cross_path.empty())
-          {
-            L(FL("deferred resolving cross edge to later."));
+        if (cross_path.empty())
+          break;
 
-            /*
-             * Well, we didn't really remove anything, but this
-             * makes sure another complete depth first search is
-             * run, so that this cross edge will be handled
-             * eventually.
-             */ 
-            edges_deferred++;
-            return;
+#ifdef DEBUG_BLOB_SPLITTER
+            L(FL("    found cross path:")); 
+            log_path(path_a, "old path a:");
+            log_path(path_b, "old path b:");
+            log_path(cross_path, "cross path:");
+#endif
+
+            // Find the first element in the cross path, which is also
+            // part of the existing path_a. That will be our new target,
+            // i.e. becomes the new e.second.
+            vector<cvs_blob_index>::iterator pa_i, cp_i;
+            for (cp_i = cross_path.begin();
+                 cp_i != cross_path.end(); ++cp_i)
+              {
+                pa_i = find(path_a.begin(), path_a.end(), *cp_i);
+                if (pa_i != path_a.end())
+                  {
+                    e.second = *pa_i;
+                    break;
+                  }
+              }
+            I(cp_i != cross_path.end());
+            I(pa_i != path_a.end());
+
+            // strip all the remaining elements  from cross_path.
+            cross_path.erase(++cp_i, cross_path.end());
+            path_b.erase(++path_b.begin(), path_b.end());
+            copy(cross_path.begin(), cross_path.end(), back_inserter(path_b));
+
+            // and strip all remaining elements from the new e.second to
+            // the old e.second from path_a.
+            path_a.erase(++pa_i, path_a.end());
+
+#ifdef DEBUG_BLOB_SPLITTER
+            log_path(path_a, "new path a:");
+            log_path(path_b, "new path b:");
+#endif
           }
 
         // extra check the other way around, can theoretically be
-        // skipped, as DFS guarantees that already. 
+        // skipped, as DFS guarantees that already.
+        vector<cvs_blob_index> cross_path;
+        insert_iterator< vector< cvs_blob_index > >
+          ity_c(cross_path, cross_path.end());
+
         dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
                                ity_c,
                                true,                // downwards
@@ -2393,7 +2433,7 @@ public:
            i != path_a.end(); ++i)
         if (cvs.blobs[*i].get_digest().is_branch_start())
           {
-            L(FL("path b contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+            L(FL("path a contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
             a_has_branch = true;
             first_branch_start_in_path_a = i;
             break;
