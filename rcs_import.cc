@@ -2186,6 +2186,8 @@ public:
       set<cvs_blob_index> done;
       stack<cvs_blob_index> stack;
 
+      I(!path.empty());
+
       // start at the event given and recursively check all its
       // dependencies for blobs in the path.
       for (dep_loop i = cvs.get_dependencies(ev); !i.ended(); ++i)
@@ -2195,6 +2197,7 @@ public:
       // done. If we hit one of those, we don't have to go
       // further.
       cvs_blob & first_blob = cvs.blobs[*path.begin()];
+      I(first_blob.get_events().size() > 1);
       for (blob_event_iter i = first_blob.begin(); i != first_blob.end(); ++i)
         for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
           {
@@ -3036,6 +3039,9 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
   vector<cvs_event_ptr>::iterator i;
 
   L(FL("splitting blob %d") % bi);
+
+  // make sure we can split the blob
+  I(cvs.blobs[bi].get_events().size() > 1);
 
   // Add a blob
   cvs_blob_index new_bi = cvs.add_blob(cvs.blobs[bi].etype,
