@@ -2516,15 +2516,15 @@ public:
           I(pa_deps > 0);
           I(pb_deps > 0);
 
-          // FIXME: Hm.. this invariant gets violated, but often with
-          //         total_events == 1. We can't split blobs which
-          //         consist on a single event...
-          //
-          //         For now, just deactivate the invariant.
-
-          // I((pa_deps < total_events) || (pb_deps < total_events));
-
-          if (pa_deps == total_events)
+          if ((pa_deps == total_events) && (pb_deps == total_events))
+            {
+              // if all events depend on both paths, we can't really
+              // split. Thas mostly happens if total_events == 1, which
+              // is a strange thing per se. (Requesting to split a
+              // blob of size 1 is the strange thing).
+              I(false);
+            }
+          else if (pa_deps >= pb_deps)
           {
             L(FL("  splitting dependencies from path b"));
             split_blob_at(cvs, e.second, func_b);
