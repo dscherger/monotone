@@ -2422,14 +2422,14 @@ public:
               {
                 e.second = *cp_i;
 
-            // strip all the remaining elements  from cross_path.
-            cross_path.erase(++cp_i, cross_path.end());
-            path_b.erase(++path_b.begin(), path_b.end());
-            copy(cross_path.begin(), cross_path.end(), back_inserter(path_b));
+                // strip all the remaining elements  from cross_path.
+                cross_path.erase(++cp_i, cross_path.end());
+                path_b.erase(++path_b.begin(), path_b.end());
+                copy(cross_path.begin(), cross_path.end(), back_inserter(path_b));
 
-            // and strip all remaining elements from the new e.second to
-            // the old e.second from path_a.
-            path_a.erase(++pa_i, path_a.end());
+                // and strip all remaining elements from the new e.second to
+                // the old e.second from path_a.
+                path_a.erase(++pa_i, path_a.end());
               }
 
 #ifdef DEBUG_BLOB_SPLITTER
