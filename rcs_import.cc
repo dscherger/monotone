@@ -2355,19 +2355,19 @@ public:
       {
         while (1)
           {
-        vector<cvs_blob_index> cross_path;
-        insert_iterator< vector< cvs_blob_index > >
-          ity_c(cross_path, cross_path.end());
+            vector<cvs_blob_index> cross_path;
+            insert_iterator< vector< cvs_blob_index > >
+              ity_c(cross_path, cross_path.end());
 
-        dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
-                               ity_c,
-                               false,                // upwards
-                               true, true, true,    // follow all colors
-                               false,
-                               make_pair(invalid_blob, invalid_blob));
+            dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
+                                   ity_c,
+                                   false,                // upwards
+                                   true, true, true,    // follow all colors
+                                   false,
+                                   make_pair(invalid_blob, invalid_blob));
 
-        if (cross_path.empty())
-          break;
+            if (cross_path.empty())
+              break;
 
 #ifdef DEBUG_BLOB_SPLITTER
             L(FL("    found cross path:")); 
