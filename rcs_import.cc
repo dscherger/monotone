@@ -2348,10 +2348,18 @@ public:
       //
       // However, we better handle the higher cross path first, since it
       // may have an effect on how the later cross path needs to be
-      // handled. Thus in the above case, be decide to handle the cross
-      // path 3 -> 10, with the a path_a (2, 10) and a new
-      // path_b (2, 12, 11, 3, 10).
+      // handled. Thus in the above case, we decide to handle the parallel
+      // paths (2, 10) and (2, 12, 11, 3, 10) first. Only after having
+      // resolved those, we handle the lower parallel paths
+      // (3, 10, 9, 5, 8) and (3, 8).
 
+      check_for_cross_path(path_a, path_b, false);
+    }
+
+  void check_for_cross_path(vector<cvs_blob_index> & path_a,
+                            vector<cvs_blob_index> & path_b,
+                            bool switch_needed)
+    {
       {
         while (1)
           {
@@ -2414,19 +2422,19 @@ public:
                 cross_path.erase(cross_path.begin(), ic);
 
                 swap(path_a, cross_path);
-                path_a.push_back(e.second);
+                path_a.push_back(*path_b.rbegin());
               }
             else
               {
-                e.second = *cp_i;
+                cvs_blob_index target_bi = *cp_i;
 
                 // strip all the remaining elements  from cross_path.
                 cross_path.erase(++cp_i, cross_path.end());
                 path_b.erase(++path_b.begin(), path_b.end());
                 copy(cross_path.begin(), cross_path.end(), back_inserter(path_b));
 
-                // and strip all remaining elements from the new e.second to
-                // the old e.second from path_a.
+                // and strip all remaining elements from the new target blob to
+                // the old target blob from path_a.
                 path_a.erase(++pa_i, path_a.end());
               }
 
