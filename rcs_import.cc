@@ -2371,96 +2371,96 @@ public:
       log_path(path_b, "         path b:");
 #endif
 
-            vector<cvs_blob_index> cross_path;
-            insert_iterator< vector< cvs_blob_index > >
-              ity_c(cross_path, cross_path.end());
+      vector<cvs_blob_index> cross_path;
+      insert_iterator< vector< cvs_blob_index > >
+        ity_c(cross_path, cross_path.end());
 
-            dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
-                                   ity_c,
-                                   false,                // upwards
-                                   true, true, true,    // follow all colors
-                                   false,
-                                   make_pair(invalid_blob, invalid_blob));
+      dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
+                             ity_c,
+                             false,                // upwards
+                             true, true, true,    // follow all colors
+                             false,
+                             make_pair(invalid_blob, invalid_blob));
 
       if (!cross_path.empty())
         {
 #ifdef DEBUG_BLOB_SPLITTER
-            L(FL("    found cross path:")); 
-            log_path(cross_path, "         cross path:");
+          L(FL("    found cross path:")); 
+          log_path(cross_path, "         cross path:");
 #endif
 
-            // Find the first element in the cross path, which is also
-            // part of the existing path_a. That will be our new target,
-            // i.e. becomes the new target blob.
-            vector<cvs_blob_index>::iterator pa_i, cp_i;
-            for (cp_i = cross_path.begin();
-                 cp_i != cross_path.end(); ++cp_i)
+          // Find the first element in the cross path, which is also
+          // part of the existing path_a. That will be our new target,
+          // i.e. becomes the new target blob.
+          vector<cvs_blob_index>::iterator pa_i, cp_i;
+          for (cp_i = cross_path.begin();
+               cp_i != cross_path.end(); ++cp_i)
+            {
+              pa_i = find(path_a.begin(), path_a.end(), *cp_i);
+              if (pa_i != path_a.end())
+                break;
+            }
+          I(cp_i != cross_path.end());
+          I(pa_i != path_a.end());
+
+          // handle the upper parallel paths
+          {
+            vector<cvs_blob_index> new_path_a;
+            vector<cvs_blob_index> new_path_b;
+
+            cvs_blob_index target_bi = *cp_i;
+
+            // copy all elements from the cross_path until
+            // cp_i (the first element in the cross path, which is
+            // also part of existing path_a).
+            new_path_b.push_back(*path_b.begin());
+            copy(cross_path.begin(), ++cp_i, back_inserter(new_path_b));
+
+            // copy all elements from the beginning of path a until
+            // that same element.
+            copy(path_a.begin(), ++pa_i, back_inserter(new_path_a));
+
+            // Recursive call, where we can inherit the 'switch_needed'
+            // as well as the 'path_a_is_all_black' property.
+            check_for_cross_path(new_path_a, new_path_b,
+                                 switch_needed, path_a_is_all_black);
+          }
+
+          // Short circuit if one of the above cross path resolution
+          // steps already require a DFS restart.
+          if (dfs_restart_needed)
+            return;
+
+          // then handle the lower parallel paths
+          {
+            vector<cvs_blob_index> new_path_a;
+            vector<cvs_blob_index> new_path_b;
+
+            // get the lowest common ancestor, which must be
+            // part of path_b
+            vector<cvs_blob_index>::iterator ib = ++path_b.begin();
+            vector<cvs_blob_index>::iterator ic = cross_path.begin();
+
+            I(*ib == *ic);
+            while (*(ib + 1) == *(ic + 1))
               {
-                pa_i = find(path_a.begin(), path_a.end(), *cp_i);
-                if (pa_i != path_a.end())
-                  break;
+                ib++;
+                ic++;
               }
-            I(cp_i != cross_path.end());
-            I(pa_i != path_a.end());
 
-            // handle the upper parallel paths
-            {
-              vector<cvs_blob_index> new_path_a;
-              vector<cvs_blob_index> new_path_b;
+            copy(ic, cross_path.end(), back_inserter(new_path_a));
+            new_path_a.push_back(*path_b.rbegin());
 
-              cvs_blob_index target_bi = *cp_i;
+            copy(ib, path_b.end(), back_inserter(new_path_b));
 
-              // copy all elements from the cross_path until
-              // cp_i (the first element in the cross path, which is
-              // also part of existing path_a).
-              new_path_b.push_back(*path_b.begin());
-              copy(cross_path.begin(), ++cp_i, back_inserter(new_path_b));
-
-              // copy all elements from the beginning of path a until
-              // that same element.
-              copy(path_a.begin(), ++pa_i, back_inserter(new_path_a));
-
-              // Recursive call, where we can inherit the 'switch_needed'
-              // as well as the 'path_a_is_all_black' property.
-              check_for_cross_path(new_path_a, new_path_b,
-                                   switch_needed, path_a_is_all_black);
-            }
-
-            // Short circuit if one of the above cross path resolution
-            // steps already require a DFS restart.
-            if (dfs_restart_needed)
-              return;
-
-            // then handle the lower parallel paths
-            {
-              vector<cvs_blob_index> new_path_a;
-              vector<cvs_blob_index> new_path_b;
-
-              // get the lowest common ancestor, which must be
-              // part of path_b
-              vector<cvs_blob_index>::iterator ib = ++path_b.begin();
-              vector<cvs_blob_index>::iterator ic = cross_path.begin();
-
-              I(*ib == *ic);
-              while (*(ib + 1) == *(ic + 1))
-                {
-                  ib++;
-                  ic++;
-                }
-
-              copy(ic, cross_path.end(), back_inserter(new_path_a));
-              new_path_a.push_back(*path_b.rbegin());
-
-              copy(ib, path_b.end(), back_inserter(new_path_b));
-
-              // Recursive call, where we require the paths to be
-              // switched and checked for reverse cross paths, as we
-              // cannot be sure that all elements in new_path_a are
-              // black already. Thus, there might also be a cross
-              // path from new_path_a to new_path_b.
-              check_for_cross_path(new_path_a, new_path_b, true, false);
-            }
-        }
+            // Recursive call, where we require the paths to be
+            // switched and checked for reverse cross paths, as we
+            // cannot be sure that all elements in new_path_a are
+            // black already. Thus, there might also be a cross
+            // path from new_path_a to new_path_b.
+            check_for_cross_path(new_path_a, new_path_b, true, false);
+          }
+      }
 
       // Short circuit if one of the above cross path resolution
       // steps already require a DFS restart.
@@ -2478,22 +2478,22 @@ public:
         }
       else
         {
-        // Extra check the other way around. Since either a DFS or
-        // our cross checks already guarantee that there are no more
-        // reverse cross paths, this should always succeed.
-        vector<cvs_blob_index> cross_path;
-        insert_iterator< vector< cvs_blob_index > >
-          ity_c(cross_path, cross_path.end());
+          // Extra check the other way around. Since either a DFS or
+          // our cross checks already guarantee that there are no more
+          // reverse cross paths, this should always succeed.
+          vector<cvs_blob_index> cross_path;
+          insert_iterator< vector< cvs_blob_index > >
+            ity_c(cross_path, cross_path.end());
 
-        dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
-                               ity_c,
-                               true,                // downwards
-                               true, true, true,    // follow all colors
-                               false,
-                               make_pair(invalid_blob, invalid_blob));
-        I(cross_path.empty());
+          dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
+                                 ity_c,
+                                 true,                // downwards
+                                 true, true, true,    // follow all colors
+                                 false,
+                                 make_pair(invalid_blob, invalid_blob));
+          I(cross_path.empty());
 
-        handle_paths_of_cross_edge(path_a, path_b);
+          handle_paths_of_cross_edge(path_a, path_b);
         }
     };
 
