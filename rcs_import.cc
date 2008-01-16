@@ -2353,16 +2353,24 @@ public:
       // resolved those, we handle the lower parallel paths
       // (3, 10, 9, 5, 8) and (3, 8).
 
-      check_for_cross_path(path_a, path_b, false);
+      check_for_cross_path(path_a, path_b, false, true);
     }
 
   void check_for_cross_path(vector<cvs_blob_index> & path_a,
                             vector<cvs_blob_index> & path_b,
-                            bool switch_needed)
+                            bool switch_needed, bool path_a_is_all_black)
     {
-      {
-        while (1)
-          {
+      // Branch starts and tag blobs can have multiple ancestors (which
+      // should all be symbol blobs), so we never want to split those.
+      if (cvs.blobs[*path_a.rbegin()].get_digest().is_branch_start() ||
+          cvs.blobs[*path_a.rbegin()].get_digest().is_tag())
+        return;
+
+#ifdef DEBUG_BLOB_SPLITTER
+      log_path(path_a, "handling path a:");
+      log_path(path_b, "         path b:");
+#endif
+
             vector<cvs_blob_index> cross_path;
             insert_iterator< vector< cvs_blob_index > >
               ity_c(cross_path, cross_path.end());
@@ -2374,19 +2382,16 @@ public:
                                    false,
                                    make_pair(invalid_blob, invalid_blob));
 
-            if (cross_path.empty())
-              break;
-
+      if (!cross_path.empty())
+        {
 #ifdef DEBUG_BLOB_SPLITTER
             L(FL("    found cross path:")); 
-            log_path(path_a, "old path a:");
-            log_path(path_b, "old path b:");
-            log_path(cross_path, "cross path:");
+            log_path(cross_path, "         cross path:");
 #endif
 
             // Find the first element in the cross path, which is also
             // part of the existing path_a. That will be our new target,
-            // i.e. becomes the new e.second.
+            // i.e. becomes the new target blob.
             vector<cvs_blob_index>::iterator pa_i, cp_i;
             for (cp_i = cross_path.begin();
                  cp_i != cross_path.end(); ++cp_i)
@@ -2398,54 +2403,84 @@ public:
             I(cp_i != cross_path.end());
             I(pa_i != path_a.end());
 
-            // In case the new e.second is a branch start or tag,
-            // which may very well have multiple ancestors, we don't
-            // try to split that, instead, we concentrate on the
-            // lower edge, i.e. the current e.second, but from the
-            // lower common ancestor in path_b.
-            if (cvs.blobs[*cp_i].get_digest().is_branch_start() ||
-              cvs.blobs[*cp_i].get_digest().is_tag())
-              {
-                // get the lowest common ancestor, which must be
-                // part of path_b
-                vector<cvs_blob_index>::iterator ib = ++path_b.begin();
-                vector<cvs_blob_index>::iterator ic = cross_path.begin();
+            // handle the upper parallel paths
+            {
+              vector<cvs_blob_index> new_path_a;
+              vector<cvs_blob_index> new_path_b;
 
-                I(*ib == *ic);
-                while (*(ib + 1) == *(ic + 1))
-                  {
-                    ib++;
-                    ic++;
-                  }
+              cvs_blob_index target_bi = *cp_i;
 
-                path_b.erase(path_b.begin(), ib);
-                cross_path.erase(cross_path.begin(), ic);
+              // copy all elements from the cross_path until
+              // cp_i (the first element in the cross path, which is
+              // also part of existing path_a).
+              new_path_b.push_back(*path_b.begin());
+              copy(cross_path.begin(), ++cp_i, back_inserter(new_path_b));
 
-                swap(path_a, cross_path);
-                path_a.push_back(*path_b.rbegin());
-              }
-            else
-              {
-                cvs_blob_index target_bi = *cp_i;
+              // copy all elements from the beginning of path a until
+              // that same element.
+              copy(path_a.begin(), ++pa_i, back_inserter(new_path_a));
 
-                // strip all the remaining elements  from cross_path.
-                cross_path.erase(++cp_i, cross_path.end());
-                path_b.erase(++path_b.begin(), path_b.end());
-                copy(cross_path.begin(), cross_path.end(), back_inserter(path_b));
+              // Recursive call, where we can inherit the 'switch_needed'
+              // as well as the 'path_a_is_all_black' property.
+              check_for_cross_path(new_path_a, new_path_b,
+                                   switch_needed, path_a_is_all_black);
+            }
 
-                // and strip all remaining elements from the new target blob to
-                // the old target blob from path_a.
-                path_a.erase(++pa_i, path_a.end());
-              }
+            // Short circuit if one of the above cross path resolution
+            // steps already require a DFS restart.
+            if (dfs_restart_needed)
+              return;
 
-#ifdef DEBUG_BLOB_SPLITTER
-            log_path(path_a, "new path a:");
-            log_path(path_b, "new path b:");
-#endif
-          }
+            // then handle the lower parallel paths
+            {
+              vector<cvs_blob_index> new_path_a;
+              vector<cvs_blob_index> new_path_b;
 
-        // extra check the other way around, can theoretically be
-        // skipped, as DFS guarantees that already.
+              // get the lowest common ancestor, which must be
+              // part of path_b
+              vector<cvs_blob_index>::iterator ib = ++path_b.begin();
+              vector<cvs_blob_index>::iterator ic = cross_path.begin();
+
+              I(*ib == *ic);
+              while (*(ib + 1) == *(ic + 1))
+                {
+                  ib++;
+                  ic++;
+                }
+
+              copy(ic, cross_path.end(), back_inserter(new_path_a));
+              new_path_a.push_back(*path_b.rbegin());
+
+              copy(ib, path_b.end(), back_inserter(new_path_b));
+
+              // Recursive call, where we require the paths to be
+              // switched and checked for reverse cross paths, as we
+              // cannot be sure that all elements in new_path_a are
+              // black already. Thus, there might also be a cross
+              // path from new_path_a to new_path_b.
+              check_for_cross_path(new_path_a, new_path_b, true, false);
+            }
+        }
+
+      // Short circuit if one of the above cross path resolution
+      // steps already require a DFS restart.
+      if (dfs_restart_needed)
+        return;
+
+      if (switch_needed)
+        {
+          // If we still need a switch, do the reversed cross path
+          // check, but 'path_a_is_all_black' is certainly no longer
+          // true.
+          vector<cvs_blob_index> new_path_a(path_b);
+          vector<cvs_blob_index> new_path_b(path_a);
+          check_for_cross_path(new_path_a, new_path_b, false, false);
+        }
+      else
+        {
+        // Extra check the other way around. Since either a DFS or
+        // our cross checks already guarantee that there are no more
+        // reverse cross paths, this should always succeed.
         vector<cvs_blob_index> cross_path;
         insert_iterator< vector< cvs_blob_index > >
           ity_c(cross_path, cross_path.end());
@@ -2457,9 +2492,9 @@ public:
                                false,
                                make_pair(invalid_blob, invalid_blob));
         I(cross_path.empty());
-      }
 
-      handle_paths_of_cross_edge(path_a, path_b);
+        handle_paths_of_cross_edge(path_a, path_b);
+        }
     };
 
   void handle_paths_of_cross_edge(vector<cvs_blob_index> & path_a,
