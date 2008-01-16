@@ -2453,6 +2453,18 @@ public:
         I(cross_path.empty());
       }
 
+      handle_paths_of_cross_edge(path_a, path_b);
+    };
+
+  void handle_paths_of_cross_edge(vector<cvs_blob_index> & path_a,
+                                   vector<cvs_blob_index> & path_b)
+    {
+#ifdef DEBUG_BLOB_SPLITTER
+      L(FL("branch_sanitizer: handle paths"));
+#endif
+
+      cvs_blob_index target_bi = *path_a.rbegin();
+      I(target_bi == *path_b.rbegin());
 
       // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
@@ -2506,7 +2518,7 @@ public:
 
       if (a_has_branch && b_has_branch)
         {
-          // Blob e.second seems to be part of two (or even more)
+          // The target blob seems to be part of two (or even more)
           // branches, thus we need to split that blob.
 
           vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base() - first_branch_start_in_path_a);
@@ -2526,8 +2538,8 @@ public:
               pb_deps = 0,
               total_events = 0;
 
-          for (blob_event_iter j = cvs.blobs[e.second].get_events().begin();
-               j != cvs.blobs[e.second].get_events().end(); ++j)
+          for (blob_event_iter j = cvs.blobs[target_bi].get_events().begin();
+               j != cvs.blobs[target_bi].get_events().end(); ++j)
             {
               bool depends_on_path_a = func_a(*j);
               bool depends_on_path_b = func_b(*j);
@@ -2560,12 +2572,12 @@ public:
           else if (pa_deps >= pb_deps)
           {
             L(FL("  splitting dependencies from path b"));
-            split_blob_at(cvs, e.second, func_b);
+            split_blob_at(cvs, target_bi, func_b);
           }
           else
           {
             L(FL("  splitting dependencies from path a"));
-            split_blob_at(cvs, e.second, func_a);
+            split_blob_at(cvs, target_bi, func_a);
           }
 
           edges_removed++;
@@ -2573,14 +2585,15 @@ public:
       else if (a_has_branch && !b_has_branch)
         {
           // Path A started into another branch, while all the
-          // blobs of path B are in the same branch as e.second.
+          // blobs of path B are in the same branch as the target
+          // blob.
 
           cvs_blob_index bi_a = *(++path_a.rbegin());
           cvs_blob_index bi_b = *(++path_b.rbegin());
 
           if (cvs.blobs[path_a[1]].get_digest().is_symbol() &&
               cvs.blobs[path_a[2]].get_digest().is_branch_start() &&
-              cvs.blobs[e.second].get_digest().is_symbol() &&
+              cvs.blobs[target_bi].get_digest().is_symbol() &&
               path_b.size() == 2)
             {
               // This is a special case, where none of the commits in path_a
@@ -2595,20 +2608,20 @@ public:
               //                /    \         path_b is pretty empty, i.e.
               //            branch    |        there is a direct dependency
               //            symbol    |        from the common ancestor (a
-              //               |      |        branch symbol) to e.second
+              //               |      |        branch symbol) to target_bi
               //            branch    |        (also a symbol, but any kind)
               //            start     |
               //               |      |
               //              (+)     |
               //                \    /
-              //               e.second
+              //              target_bi
               //               (symbol)
               //
-              cvs.remove_deps(e.second, bi_b);
+              cvs.remove_deps(target_bi, bi_b);
               edges_removed++;
             }
           else if ((path_a[0] == cvs.root_blob) && (path_a.size() == 5) &&
-                   cvs.blobs[e.second].get_digest().is_symbol())
+                   cvs.blobs[target_bi].get_digest().is_symbol())
             {
               // another special case: with a vendor branch, 1.1.1.1 gets
               // tagged, instead of 1.1. This poses a problem for further
@@ -2633,17 +2646,17 @@ public:
               //           import     |
               //          (1.1.1.1)   |
               //                \    /
-              //               e.second
+              //              target_bi
               //               (symbol)
               //
-              cvs.remove_deps(e.second, bi_a);
+              cvs.remove_deps(target_bi, bi_a);
               edges_removed++;
             }
           else
             {
-              // Okay, it's getting tricky here: e.second is not a branch
-              // or tag point, neither are bi_a nor bi_b. So we have the
-              // following situation:
+              // Okay, it's getting tricky here: the target blob is not a
+              // branch or tag point, neither are bi_a nor bi_b. So we
+              // have the following situation:
               //
               //                common
               //               ancestor              (+) stands for one
@@ -2657,12 +2670,12 @@ public:
               //               |      |           only commit blobs
               //             bi_a    bi_b
               //                \    /
-              //               e.second
+              //              target_bi
               //
-              // As e.second has a dependency on bi_a (which is not
-              // a branchpoint), we have to split e.second into events
-              // which belong to path A and events which belong to path B.
-              //
+              // As the target blob has a dependency on bi_a (which is not
+              // a branchpoint), we have to split the target blob into
+              // events which belong to path A and events which belong to
+              // path B.
 
               vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base() - first_branch_start_in_path_a);
               copy(first_branch_start_in_path_a, (++path_a.rbegin()).base(), tmp_a.begin());
@@ -2673,8 +2686,8 @@ public:
               int pa_deps = 0,
                   total_events = 0;
 
-              for (blob_event_iter j = cvs.blobs[e.second].get_events().begin();
-                   j != cvs.blobs[e.second].get_events().end(); ++j)
+              for (blob_event_iter j = cvs.blobs[target_bi].get_events().begin();
+                   j != cvs.blobs[target_bi].get_events().end(); ++j)
                 {
                   bool depends_on_path_a = func(*j);
 
@@ -2687,17 +2700,17 @@ public:
 
               if (pa_deps == total_events)
                 {
-                  // all events in e.second depend in a way on the branch
-                  // start in path a, thus we should better simply drop
-                  // the dependency from bi_b to e.second.
-                  cvs.remove_deps(e.second, bi_b);
+                  // all events in the target blob depend in a way on the
+                  // branch start in path a, thus we should better simply
+                  // drop the dependency from bi_b to the target blob.
+                  cvs.remove_deps(target_bi, bi_b);
                   edges_removed++;
                 }
               else
                 {
                   I(pa_deps < total_events);
                   L(FL("splitting at path a"));
-                  split_blob_at(cvs, e.second, func);
+                  split_blob_at(cvs, target_bi, func);
                   edges_removed++;
                 }
             }
@@ -2721,7 +2734,7 @@ public:
           //
           // A then becomes the ancestor of the next round. We repeat
           // this until we reach the final blob which triggered the
-          // cross edge (e.second).
+          // cross edge (the target blob).
 
           vector<cvs_blob_index>::iterator ity_anc = path_a.begin();
           I(*ity_anc == *(path_b.begin()));
@@ -2731,7 +2744,7 @@ public:
 
           blob_index_time_cmp blob_time_cmp(cvs);
 
-          while ((*ity_a != e.second) || (*ity_b != e.second))
+          while ((*ity_a != target_bi) || (*ity_b != target_bi))
             {
               // Just to be extra sure, we reset the dependents
               // caches of all the tree blobs involved. This can
@@ -2743,8 +2756,8 @@ public:
               I(ity_a != path_a.end());
               I(ity_b != path_b.end());
 
-              if ((!blob_time_cmp(*ity_a, *ity_b) || (*ity_a == e.second)) &&
-                  (*ity_b != e.second))
+              if ((!blob_time_cmp(*ity_a, *ity_b) || (*ity_a == target_bi)) &&
+                  (*ity_b != target_bi))
                 {
                   // swap path a and path b, so that path a contains the
                   // youngest blob, which needs to become the new common
@@ -2763,9 +2776,9 @@ public:
               edges_removed++;
 
               // If ity_b points to the last blob in path_b, the
-              // common blob e.second, then we can abort the loop, because
-              // e.second is also the end of path a.
-              if (*ity_b == e.second)
+              // common target blob, then we can abort the loop, because
+              // it is also the end of path a.
+              if (*ity_b == target_bi)
                 break;
 
               // make very sure we don't introduce a back edge
