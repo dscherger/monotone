@@ -2248,19 +2248,17 @@ struct branch_sanitizer
 {
 protected:
   cvs_history & cvs;
-  int & edges_removed;
-  int & edges_deferred;
+  bool & dfs_restart_needed;
 
 public:
-  branch_sanitizer(cvs_history & c, int & edges_removed, int & edges_deferred)
+  branch_sanitizer(cvs_history & c, bool & r)
     : cvs(c),
-      edges_removed(edges_removed),
-      edges_deferred(edges_deferred)
+      dfs_restart_needed(r)
     { }
 
   bool abort()
     {
-      return edges_removed > 0;
+      return dfs_restart_needed;
     }
 
   void tree_edge(Edge e)
@@ -2580,7 +2578,7 @@ public:
             split_blob_at(cvs, target_bi, func_a);
           }
 
-          edges_removed++;
+          dfs_restart_needed = true;
         }
       else if (a_has_branch && !b_has_branch)
         {
@@ -2618,7 +2616,8 @@ public:
               //               (symbol)
               //
               cvs.remove_deps(target_bi, bi_b);
-              edges_removed++;
+
+              dfs_restart_needed = true;
             }
           else if ((path_a[0] == cvs.root_blob) && (path_a.size() == 5) &&
                    cvs.blobs[target_bi].get_digest().is_symbol())
@@ -2650,7 +2649,8 @@ public:
               //               (symbol)
               //
               cvs.remove_deps(target_bi, bi_a);
-              edges_removed++;
+
+              dfs_restart_needed = true;
             }
           else
             {
@@ -2704,14 +2704,16 @@ public:
                   // branch start in path a, thus we should better simply
                   // drop the dependency from bi_b to the target blob.
                   cvs.remove_deps(target_bi, bi_b);
-                  edges_removed++;
+
+                  dfs_restart_needed = true;
                 }
               else
                 {
                   I(pa_deps < total_events);
                   L(FL("splitting at path a"));
                   split_blob_at(cvs, target_bi, func);
-                  edges_removed++;
+
+                  dfs_restart_needed = true;
                 }
             }
         }
@@ -2773,7 +2775,7 @@ public:
                 % *ity_anc % *ity_a % *ity_b);
 
               cvs.remove_deps(*ity_b, *ity_anc);
-              edges_removed++;
+              dfs_restart_needed = true;
 
               // If ity_b points to the last blob in path_b, the
               // common target blob, then we can abort the loop, because
@@ -3613,17 +3615,13 @@ resolve_blob_dependencies(cvs_history & cvs, ticker & n_splits)
   // two branches.
   while (1)
     {
-      int edges_removed = 0;
-      int edges_deferred = 0;
+      bool dfs_restart_needed = false;
       cvs.import_order.clear();
-      branch_sanitizer vis(cvs, edges_removed, edges_deferred);
+      branch_sanitizer vis(cvs, dfs_restart_needed);
       cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
-      if ((edges_removed == 0) && (edges_deferred == 0))
+      if (!dfs_restart_needed)
         break;
-
-      if (edges_deferred > 0)
-        I(edges_removed > 0);
     }
 
 #ifdef DEBUG_GRAPHVIZ
