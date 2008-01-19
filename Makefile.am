@@ -20,7 +20,7 @@ LUAEXT_SOURCES = 							\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
 	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
 	globish.cc globish.hh basic_io.cc basic_io.hh json_io.cc        \
-        json_io.hh
+        json_io.hh json_msgs.cc json_msgs.hh
 
 MOST_SOURCES = 								\
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) platform-wrapped.hh	\

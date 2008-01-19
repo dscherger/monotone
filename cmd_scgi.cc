@@ -17,6 +17,7 @@
 #include "constants.hh"
 #include "globish.hh"
 #include "json_io.hh"
+#include "json_msgs.hh"
 #include "keys.hh"
 #include "lexical_cast.hh"
 #include "lua.hh"
@@ -145,85 +146,25 @@ parse_scgi(istream & in, string & data)
   return (content_length == 0);
 }
 
-namespace syms
-{
-  symbol const status("status");
-  symbol const vers("vers");
-  symbol const cmd("cmd");
-  symbol const args("args");
-  symbol const inquire("inquire");
-  symbol const confirm("confirm");
-  symbol const revs("revs");
-  symbol const type("type");
-};
-
-static json_io::json_object_t
-bad_req()
-{
-  json_io::builder b;
-
-  b[syms::status].str("bad");
-
-  return b.as_obj();
-}
-
-static json_io::json_object_t
+static json_io::json_value_t
 do_cmd(app_state & app, json_io::json_object_t cmd_obj)
 {
+  set<revision_id> revs;
 
-  string type, vers;
-  json_io::query q(cmd_obj);
-
-  if (! q[syms::type].get(type))
-    return bad_req();
-
-  L(FL("read JSON command type: %s") % type);
-
-  if (type == "ping" && 
-      q[syms::vers].get(vers) && 
-      vers == "1")
+  if (decode_msg_inquire(cmd_obj, revs))
     {
-      json_io::builder b;
-      json_io::builder args = b[syms::args].arr();
-      
-      size_t nargs = 0;
-      if (q[syms::args].len(nargs)) 
-        {
-          for (size_t i = 0; i < nargs; ++i)
-            args.add(q[syms::args][i].get());
-        }
-      return b.as_obj();
-    }
-  else if (type == syms::inquire() && 
-           q[syms::vers].get(vers) && 
-           vers == "1")
-    {
-      json_io::builder b;
-      b[syms::type].str(syms::confirm());
-      b[syms::vers].str("1");
-      json_io::builder revs = b[syms::revs].arr();
-      
-      size_t nargs = 0;
-      if (q[syms::revs].len(nargs)) 
-        {
-          app.db.ensure_open();
-          std::string s;
-          for (size_t i = 0; i < nargs; ++i)
-            {
-              if (q[syms::revs][i].get(s)) 
-                {
-                  if (app.db.revision_exists(revision_id(s)))
-                    revs.add_str(s);
-                }
-            }
-        }
-      return b.as_obj();
+      app.db.ensure_open();
+      set<revision_id> confirmed;
+      for (set<revision_id>::const_iterator i = revs.begin();
+           i != revs.end(); ++i)
+        if (app.db.revision_exists(*i))
+          confirmed.insert(*i);
+      return encode_msg_confirm(confirmed);
     }
   else
     {
-      return bad_req();
+      return encode_msg_error("request not understood");
     }
-  return cmd_obj;
 }
 
 
@@ -247,7 +188,7 @@ process_scgi_transaction(app_state & app,
           transaction_guard guard(app.db);
           L(FL("read JSON object"));
           
-          json_io::json_object_t res = do_cmd(app, obj);
+          json_io::json_value_t res = do_cmd(app, obj);
           if (static_cast<bool>(res))
             {
               json_io::printer out_data;
@@ -259,7 +200,7 @@ process_scgi_transaction(app_state & app,
                   << "Content-Type: application/jsonrequest\r\n"
                   << "\r\n";
               
-              out.write(out_data.buf.data(), out_data.buf.size());
+              out.write(out_data.buf.data(), out_data.buf.size());              
               out << "\n";
               out.flush();
               return;

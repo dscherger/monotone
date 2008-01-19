@@ -19,6 +19,7 @@
 #include "globish.hh"
 #include "http_client.hh"
 #include "json_io.hh"
+#include "json_msgs.hh"
 #include "revision.hh"
 #include "sanity.hh"
 #include "lexical_cast.hh"
@@ -84,121 +85,6 @@ using json_io::json_value_t;
 using boost::lexical_cast;
 
 /////////////////////////////////////////////////////////////////////
-// monotone <-> json conversions
-/////////////////////////////////////////////////////////////////////
-
-
-namespace
-{
-  namespace syms
-  {
-    // cset symbols
-    symbol const delete_node("delete");
-    symbol const rename("rename");
-    symbol const content("content");
-    symbol const add_file("add_file");
-    symbol const add_dir("add_dir");
-    symbol const patch("patch");
-    symbol const from("from");
-    symbol const to("to");
-    symbol const clear("clear");
-    symbol const set("set");
-    symbol const attr("attr");
-    symbol const value("value");
-
-    // revision symbols
-    symbol const old_revision("old_revision");
-    symbol const new_manifest("new_manifest");
-    symbol const edges("edges");
-
-    // command symbols
-    symbol const type("type");
-    symbol const vers("vers");
-    symbol const revision("revision");
-    symbol const inquire("inquire");
-    symbol const confirm("confirm");
-    symbol const revs("revs");
-
-  }
-}
-
-static void
-cset_to_json(json_io::builder b, cset const & cs)
-{
-    for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
-       i != cs.nodes_deleted.end(); ++i)
-    {
-      b.add_obj()[syms::delete_node].str(i->as_internal());
-    }
-
-  for (map<file_path, file_path>::const_iterator i = cs.nodes_renamed.begin();
-       i != cs.nodes_renamed.end(); ++i)
-    {
-      json_io::builder tmp = b.add_obj();
-      tmp[syms::rename].str(i->first.as_internal());
-      tmp[syms::to].str(i->second.as_internal());
-    }
-
-  for (set<file_path>::const_iterator i = cs.dirs_added.begin();
-       i != cs.dirs_added.end(); ++i)
-    {
-      b.add_obj()[syms::add_dir].str(i->as_internal());
-    }
-
-  for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
-       i != cs.files_added.end(); ++i)
-    {
-      json_io::builder tmp = b.add_obj();
-      tmp[syms::add_file].str(i->first.as_internal());
-      tmp[syms::content].str(i->second.inner()());
-    }
-
-  for (map<file_path, pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
-       i != cs.deltas_applied.end(); ++i)
-    {
-      json_io::builder tmp = b.add_obj();
-      tmp[syms::patch].str(i->first.as_internal());
-      tmp[syms::from].str(i->second.first.inner()());
-      tmp[syms::to].str(i->second.second.inner()());
-    }
-
-  for (set<pair<file_path, attr_key> >::const_iterator i = cs.attrs_cleared.begin();
-       i != cs.attrs_cleared.end(); ++i)
-    {
-      json_io::builder tmp = b.add_obj();
-      tmp[syms::clear].str(i->first.as_internal());
-      tmp[syms::attr].str(i->second());
-    }
-
-  for (map<pair<file_path, attr_key>, attr_value>::const_iterator i = cs.attrs_set.begin();
-       i != cs.attrs_set.end(); ++i)
-    {
-      json_io::builder tmp = b.add_obj();
-      tmp[syms::set].str(i->first.first.as_internal());
-      tmp[syms::attr].str(i->first.second());
-      tmp[syms::value].str(i->second());
-    }
-}
-
-static json_value_t
-revision_to_json(revision_t const & rev)
-{
-  json_io::builder b;
-  b[syms::type].str(syms::revision());
-  b[syms::vers].str("1");
-  b[syms::new_manifest].str(rev.new_manifest.inner()());
-  json_io::builder edges = b[syms::edges].arr();
-  for (edge_map::const_iterator e = rev.edges.begin(); 
-       e != rev.edges.end(); ++e)
-    {
-      json_io::builder edge = edges.add_obj();
-      edge[syms::old_revision].str(edge_old_revision(e).inner()());
-      cset_to_json(edge, edge_changes(e));
-    }
-  return b.v;
-}
-
-/////////////////////////////////////////////////////////////////////
 // core logic of gsync algorithm
 /////////////////////////////////////////////////////////////////////
 
@@ -226,34 +112,11 @@ inquire_about_revs(http_client & h,
 		   set<revision_id> const & query_set,
 		   set<revision_id> & theirs)
 {
-  theirs.clear();
-
-  json_io::builder b;
-  b[syms::type].str(syms::inquire());
-  b[syms::vers].str("1");
-  json_io::builder revs = b[syms::revs].arr();
-  for (set<revision_id>::const_iterator i = query_set.begin();
-       i != query_set.end(); ++i)
-    revs.add_str(i->inner()());
-  
-  json_value_t response = h.transact_json(b.v);
-  
-  string type, vers;
-  json_io::query q(response);
-
-  if (q[syms::type].get(type) &&
-      type == syms::confirm() &&
-      q[syms::vers].get(vers) &&
-      vers == "1")
-    {
-      size_t nrevs = 0;
-      string tmp;
-      json_io::query revs = q[syms::revs];
-      if (revs.len(nrevs))
-	for (size_t i = 0; i < nrevs; ++i) 
-	  if (revs[i].get(tmp))
-	    theirs.insert(revision_id(tmp));
-    }
+  theirs.clear();  
+  json_value_t query = encode_msg_inquire(query_set);  
+  json_value_t response = h.transact_json(query);
+  E(decode_msg_confirm(response, theirs),
+    F("received unexpected reply to 'inquire' message"));
 }
 
 static void

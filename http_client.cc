@@ -172,7 +172,7 @@ http_client::parse_http_response(std::string & data)
 
   while (io->good() && content_length > 0)
     {
-      data += static_cast<char>(io->get());
+      data += static_cast<char>(io->get());;
       content_length--;
     }
 
