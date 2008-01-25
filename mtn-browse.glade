@@ -2373,7 +2373,7 @@ current branch are to be listed</property>
 			  <property name="spacing">5</property>
 
 			  <child>
-			    <widget class="GtkHBox" id="advaned_hbox1">
+			    <widget class="GtkHBox" id="advanced_hbox1">
 			      <property name="visible">True</property>
 			      <property name="homogeneous">False</property>
 			      <property name="spacing">5</property>
@@ -2446,6 +2446,7 @@ entry field if you cannot remember the syntax</property>
 				  <property name="can_focus">True</property>
 				  <property name="relief">GTK_RELIEF_NORMAL</property>
 				  <property name="focus_on_click">True</property>
+				  <signal name="clicked" handler="execute_button_clicked_cb" last_modification_time="Sat, 05 Jan 2008 17:29:35 GMT"/>
 
 				  <child>
 				    <widget class="GtkImage" id="image28">
@@ -2474,7 +2475,7 @@ entry field if you cannot remember the syntax</property>
 			  </child>
 
 			  <child>
-			    <widget class="GtkHBox" id="advaned_hbox2">
+			    <widget class="GtkHBox" id="advanced_hbox2">
 			      <property name="visible">True</property>
 			      <property name="homogeneous">False</property>
 			      <property name="spacing">5</property>
@@ -2486,6 +2487,7 @@ entry field if you cannot remember the syntax</property>
 				  <property name="can_focus">True</property>
 				  <property name="relief">GTK_RELIEF_NORMAL</property>
 				  <property name="focus_on_click">True</property>
+				  <signal name="clicked" handler="populate_button_clicked_cb" last_modification_time="Sat, 05 Jan 2008 17:29:10 GMT"/>
 
 				  <child>
 				    <widget class="GtkImage" id="image29">
@@ -2525,14 +2527,35 @@ Date (&gt;)
 Head Revision
 Identifier
 Parent
-Tag
-Separator</property>
+Separator
+Tag</property>
+				      <signal name="changed" handler="term_combobox_changed_cb" last_modification_time="Sat, 19 Jan 2008 16:11:23 GMT"/>
 				    </widget>
 				  </child>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
 				  <property name="expand">False</property>
+				  <property name="fill">True</property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkEntry" id="argument_entry">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">Enter any arguments here</property>
+				  <property name="can_focus">True</property>
+				  <property name="editable">True</property>
+				  <property name="visibility">True</property>
+				  <property name="max_length">0</property>
+				  <property name="text" translatable="yes"></property>
+				  <property name="has_frame">True</property>
+				  <property name="invisible_char">*</property>
+				  <property name="activates_default">False</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">True</property>
 				  <property name="fill">True</property>
 				</packing>
 			      </child>
@@ -2654,9 +2677,9 @@ Separator</property>
 				<widget class="GtkTreeView" id="revisions_treeview">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
-				  <property name="headers_visible">False</property>
+				  <property name="headers_visible">True</property>
 				  <property name="rules_hint">False</property>
-				  <property name="reorderable">False</property>
+				  <property name="reorderable">True</property>
 				  <property name="enable_search">True</property>
 				  <signal name="cursor_changed" handler="revisions_treeview_cursor_changed_cb" last_modification_time="Sat, 15 Dec 2007 14:21:33 GMT"/>
 				  <signal name="row_activated" handler="revisions_treeview_row_activated_cb" last_modification_time="Sat, 15 Dec 2007 14:21:51 GMT"/>
@@ -2858,7 +2881,7 @@ Separator</property>
 				      <property name="visible">True</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 225 10 202.5 225</property>
+				      <property name="hadjustment">0 0 310 10 279 310</property>
 				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
@@ -2960,7 +2983,7 @@ Separator</property>
 				      <property name="visible">True</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 200 10 180 200</property>
+				      <property name="hadjustment">0 0 286 10 257.4 286</property>
 				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
