@@ -2390,8 +2390,6 @@ public:
       log_path(path_b, "         path b:");
       L(FL("         %s") % (switch_needed ? "switch needed"
                                            : "no switch needed"));
-      L(FL("         %s") % (path_a_is_all_black ? "path_a is all black"
-                                                 : "path_a is colored"));
 #endif
 
       vector<cvs_blob_index> cross_path;
@@ -2493,8 +2491,7 @@ public:
       if (switch_needed)
         {
           // If we still need a switch, do the reversed cross path
-          // check, but 'path_a_is_all_black' is certainly no longer
-          // true.
+          // check.
           vector<cvs_blob_index> new_path_a(path_b);
           vector<cvs_blob_index> new_path_b(path_a);
           check_for_cross_path(new_path_a, new_path_b, false);
