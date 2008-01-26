@@ -561,6 +561,7 @@ database::info(ostream & out)
   counts.push_back(count("files"));
   counts.push_back(count("file_deltas"));
   counts.push_back(count("revisions"));
+  counts.push_back(count("sentinels"));
   counts.push_back(count("revision_ancestry"));
   counts.push_back(count("revision_certs"));
 
@@ -598,6 +599,7 @@ database::info(ostream & out)
     bytes.push_back(space("file_deltas",
                           "length(id) + length(base) + length(delta)", total));
     bytes.push_back(space("revisions", "length(id) + length(data)", total));
+    bytes.push_back(space("sentinels", "length(id) + length(data)", total));
     bytes.push_back(space("revision_ancestry",
                           "length(parent) + length(child)", total));
     bytes.push_back(space("revision_certs",
@@ -633,6 +635,7 @@ database::info(ostream & out)
       "  full files      : %s\n"
       "  file deltas     : %s\n"
       "  revisions       : %s\n"
+      "  sentinels       : %s\n"
       "  ancestry edges  : %s\n"
       "  certs           : %s\n"
       "  logical files   : %s\n"
@@ -642,6 +645,7 @@ database::info(ostream & out)
       "  full files      : %s\n"
       "  file deltas     : %s\n"
       "  revisions       : %s\n"
+      "  sentinels       : %s\n"
       "  cached ancestry : %s\n"
       "  certs           : %s\n"
       "  heights         : %s\n"
@@ -1654,6 +1658,27 @@ database::revision_exists(revision_id const & id)
   return res.size() == 1;
 }
 
+bool
+database::sentinel_exists(revision_id const & id)
+{
+  results res;
+  query q("SELECT id FROM sentinels WHERE id = ?");
+  fetch(res, one_col, any_rows, q % text(id.inner()()));
+  I(res.size() <= 1);
+  return res.size() == 1;
+}
+
+bool
+database::revision_or_sentinel_exists(revision_id const & id)
+{
+  results res;
+  query q("SELECT id FROM revisions WHERE id = ? "
+    "UNION SELECT id FROM sentinels WHERE id = ?");
+  fetch(res, one_col, any_rows, q % text(id.inner()()) % text(id.inner()()));
+  I(res.size() <= 1);
+  return res.size() == 1;
+}
+
 void
 database::get_file_ids(set<file_id> & ids)
 {
@@ -1670,6 +1695,16 @@ database::get_revision_ids(set<revision_id> & ids)
   ids.clear();
   set< hexenc<id> > tmp;
   get_ids("revisions", tmp);
+  add_decoration_to_container(tmp, ids);
+}
+
+void
+database::get_revision_and_sentinel_ids(set<revision_id> & ids)
+{
+  ids.clear();
+  set< hexenc<id> > tmp;
+  get_ids("revisions", tmp);
+  get_ids("sentinels", tmp);
   add_decoration_to_container(tmp, ids);
 }
 
@@ -1816,7 +1851,6 @@ database::get_arbitrary_file_delta(file_id const & src_id,
   del = file_delta(dtmp);
 }
 
-
 void
 database::get_revision_ancestry(rev_ancestry_map & graph)
 {
@@ -1860,6 +1894,15 @@ database::get_revision_children(revision_id const & id,
 }
 
 void
+database::get_sentinels_of(set<revision_id> const & revs, set<revision_id> & sentinels)
+{
+  for (set<revision_id>::const_iterator i = revs.begin();
+       i != revs.end(); ++i)
+    if (sentinel_exists(*i) && (sentinels.find(*i) == sentinels.end()))
+      sentinels.insert(*i);
+}
+
+void
 database::get_leaves(set<revision_id> & leaves)
 {
   results res;
@@ -1876,20 +1919,31 @@ database::get_leaves(set<revision_id> & leaves)
 
 void
 database::get_revision_manifest(revision_id const & rid,
-                               manifest_id & mid)
+                                manifest_id & mid)
 {
   revision_t rev;
-  get_revision(rid, rev);
+  get_revision_or_sentinel(rid, rev);
   mid = rev.new_manifest;
 }
 
 void
-database::get_revision(revision_id const & id,
-                       revision_t & rev)
+database::get_revision_or_sentinel(revision_id const & id,
+                                   revision_t & rev)
 {
-  revision_data d;
-  get_revision(id, d);
-  read_revision(d, rev);
+  if (sentinel_exists(id))
+    {
+      sentinel_data d;
+      get_sentinel(id, d);
+      read_sentinel(d, rev);
+      I(rev.is_sentinel);
+    }
+  else
+    {
+      revision_data d;
+      get_revision(id, d);
+      read_revision(d, rev);
+      I(!rev.is_sentinel);
+    }
 }
 
 void
@@ -1914,6 +1968,22 @@ database::get_revision(revision_id const & id,
   }
 
   dat = revision_data(rdat);
+}
+
+void
+database::get_sentinel(revision_id const & id,
+                       sentinel_data & dat)
+{
+  I(!null_id(id));
+  results res;
+  fetch(res, one_col, one_row,
+        query("SELECT data FROM sentinels WHERE id = ?")
+        % text(id.inner()()));
+
+  gzip<data> gzdata(res[0][0]);
+  data rdat;
+  decode_gzip(gzdata,rdat);
+  dat = sentinel_data(rdat);
 }
 
 typedef std::map<revision_id, rev_height> height_map;
@@ -1955,7 +2025,7 @@ database::put_rev_height(revision_id const & id,
                          rev_height const & height)
 {
   I(!null_id(id));
-  I(revision_exists(id));
+  I(revision_or_sentinel_exists(id));
   I(height.valid());
   
   height_cache.erase(id);
@@ -1983,7 +2053,8 @@ database::deltify_revision(revision_id const & rid)
   revision_t rev;
   MM(rev);
   MM(rid);
-  get_revision(rid, rev);
+  get_revision_or_sentinel(rid, rev);
+  I(!rev.is_sentinel);
   // Make sure that all parent revs have their files replaced with deltas
   // from this rev's files.
   {
@@ -2024,7 +2095,7 @@ database::put_revision(revision_id const & new_id,
 
   I(!null_id(new_id));
 
-  if (revision_exists(new_id))
+  if (revision_or_sentinel_exists(new_id))
     {
       L(FL("revision '%s' already exists in db") % new_id);
       return false;
@@ -2038,7 +2109,10 @@ database::put_revision(revision_id const & new_id,
   for (edge_map::const_iterator i = rev.edges.begin();
        i != rev.edges.end(); ++i)
     {
+      bool edge_is_sentinel = sentinel_exists(edge_old_revision(i));
+
       if (!edge_old_revision(i).inner()().empty()
+          && !edge_is_sentinel
           && !revision_exists(edge_old_revision(i)))
         {
           W(F("missing prerequisite revision '%s'") % edge_old_revision(i));
@@ -2046,6 +2120,7 @@ database::put_revision(revision_id const & new_id,
           return false;
         }
 
+      if (!rev.is_sentinel)
       for (map<file_path, file_id>::const_iterator a
              = edge_changes(i).files_added.begin();
            a != edge_changes(i).files_added.end(); ++a)
@@ -2065,7 +2140,8 @@ database::put_revision(revision_id const & new_id,
           I(!delta_entry_src(d).inner()().empty());
           I(!delta_entry_dst(d).inner()().empty());
 
-          if (! file_version_exists(delta_entry_src(d)))
+          if (!edge_is_sentinel
+              && !file_version_exists(delta_entry_src(d)))
             {
               W(F("missing prerequisite file pre-delta '%s'")
                 % delta_entry_src(d));
@@ -2073,7 +2149,8 @@ database::put_revision(revision_id const & new_id,
               return false;
             }
 
-          if (! file_version_exists(delta_entry_dst(d)))
+          if (!rev.is_sentinel &&
+              !file_version_exists(delta_entry_dst(d)))
             {
               W(F("missing prerequisite file post-delta '%s'")
                 % delta_entry_dst(d));
@@ -2091,7 +2168,12 @@ database::put_revision(revision_id const & new_id,
   write_revision(rev, d);
   gzip<data> d_packed;
   encode_gzip(d.inner(), d_packed);
-  execute(query("INSERT INTO revisions VALUES(?, ?)")
+  string qstr;
+  if (rev.is_sentinel)
+    qstr = "INSERT INTO sentinels VALUES (?, ?)";
+  else
+    qstr = "INSERT INTO revisions VALUES (?, ?)";
+  execute(query(qstr)
           % text(new_id.inner()())
           % blob(d_packed()));
 
@@ -2120,7 +2202,8 @@ database::put_revision(revision_id const & new_id,
 
   // Phase 4: rewrite any files that need deltas added
 
-  deltify_revision(new_id);
+  if (!rev.is_sentinel)
+    deltify_revision(new_id);
 
   // Phase 5: determine the revision height
 
@@ -2199,6 +2282,7 @@ database::put_revision(revision_id const & new_id,
 void
 database::delete_existing_revs_and_certs()
 {
+  execute(query("DELETE FROM sentinels"));
   execute(query("DELETE FROM revisions"));
   execute(query("DELETE FROM revision_ancestry"));
   execute(query("DELETE FROM revision_certs"));
