@@ -483,12 +483,16 @@ cvs_history
 
   bool deps_sorted;
 
+  // the upper limit of what to import
+  time_t upper_time_limit;
+
   cvs_history(void)
     : n_rcs_revisions(_("RCS revisions"), "r", 1),
       n_rcs_symbols(_("RCS symbols"), "s", 1),
       unnamed_branch_counter(0),
       step_no(0),
-      deps_sorted(false)
+      deps_sorted(false),
+      upper_time_limit(0)
     { };
 
   void set_filename(string const & file,
@@ -1339,6 +1343,10 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
   data curr_data(begin_data), next_data;
   hexenc<id> curr_id(begin_id), next_id;
 
+  // a counter for commits which are above our limit. We abort
+  // only after consecutive violations of the limit.
+  int commits_over_time = 0;
+
   while(! (r.deltas.find(curr_version) == r.deltas.end()))
     {
       curr_events.clear();
@@ -1356,6 +1364,17 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
       time_t commit_time = parse_time(delta->second->date.c_str());
       I(commit_time > 0);
+
+      // Check if we are still within our time limit, if there is one.
+      // Note that we add six months worth of events, for which we do
+      // additional processing, but don't use the data afterwards.
+      if ((cvs.upper_time_limit > 0) &&
+          (commit_time >= cvs.upper_time_limit + (60 * 60 * 24 * 30 * 6)))
+        {
+          commits_over_time++;
+          if (commits_over_time > 1)
+            break;
+        }
 
       bool is_synthetic_branch_root = is_sbr(delta->second,
                                              deltatext->second);
@@ -3720,6 +3739,9 @@ import_cvs_repo(system_path const & cvsroot,
 
   cvs_history cvs;
   N(app.opts.branchname() != "", F("need base --branch argument for importing"));
+
+  if (app.opts.until_given)
+    cvs.upper_time_limit = app.opts.until.as_unix_epoch();
 
   // add the trunk branch name
   string bn = app.opts.branchname();

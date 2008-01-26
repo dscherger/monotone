@@ -24,16 +24,26 @@
         - for changes near the beginning of a file, mtn's unified diff
           output sometimes contained too many leading context lines.
 
+        - the path handling of 'mtn revert' was improved and fixed two bugs:
+          now a restricted revert on a node "dir1/file1" reverts only the
+          content changes in "file1", but leaves renames of any of its
+          ancestor nodes untouched; furthermore, if "dir0/" was renamed to 
+          "dir1" and "dir1/file1" was dropped, mtn now re-creates file1 at the
+          proper place ("dir1/") and leaves no missing files around because
+          of the non-existing "dir0/".
+     
         New features
 
         - 'automate drop_db_variables' which drops one database variable
           (like the 'unset' command) or all variables within a given domain.
 
-        - 'automate inventory' now accepts options '--no-ignored',
-          '--no-unknown', '--no-unchanged'. In addition, it no longer
-          recurses into ignored directories. The typical case of
-          listing files that need attention now runs at least four
-          times faster.
+        - 'automate inventory' now accepts the options '--no-ignored',
+          '--no-unknown', '--no-unchanged' and '--no-corresponding-renames'.
+          Please consult the monotone documentation for more information about
+          these new options.
+          In addition, 'automate inventory' no longer recurses into ignored
+          directories. The typical case of listing files that need attention
+          now runs at least four times faster.
 
 Wed Dec 12 21:21:15 UTC 2007
 

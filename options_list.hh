@@ -111,6 +111,21 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
+OPT(until, "until", date_t, ,
+     gettext_noop("maximum date for commits to import"))
+#ifdef option_bodies
+{
+  try
+    {
+      date = date_t::from_string(arg);
+    }
+  catch (std::exception &e)
+    {
+      throw bad_arg_internal(e.what());
+    }
+}
+#endif
+
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
@@ -529,10 +544,10 @@ OPTION(globals, xargs, true, "xargs,@",
 #endif
 
 OPTSET(automate_inventory_opts)
-// These options take arguments, so they can be used with automate stdio.
 OPTVAR(automate_inventory_opts, bool, no_ignored, false)
 OPTVAR(automate_inventory_opts, bool, no_unknown, false)
 OPTVAR(automate_inventory_opts, bool, no_unchanged, false)
+OPTVAR(automate_inventory_opts, bool, no_corresponding_renames, false)
 
 OPTION(automate_inventory_opts, no_ignored, false, "no-ignored",
        gettext_noop("don't output ignored files"))
@@ -555,6 +570,14 @@ OPTION(automate_inventory_opts, no_unchanged, false, "no-unchanged",
 #ifdef option_bodies
 {
   no_unchanged = true;
+}
+#endif
+
+OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-corresponding-renames",
+       gettext_noop("don't output corresponding renames if restricted on such nodes"))
+#ifdef option_bodies
+{
+  no_corresponding_renames = true;
 }
 #endif
 
