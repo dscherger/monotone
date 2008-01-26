@@ -1422,28 +1422,35 @@ sub advanced_find($$$)
     if ($advanced_find->{selected})
     {
 	my($branch_list,
-	   @certs_list);
+	   @certs_list,
+	   $found);
 
 	$$revision_id = $advanced_find->{revisions_treeview_details}->{value};
 
-	# If the find mode is simple then the branch is simply what ever is
-	# selected in the branch combo box. Otherwise build up a list of
-	# branches that the selected revision is on.
+	# Build up a list of branches that the selected revision is on, putting
+	# the branch named in the branch combo box at the head if it is still
+	# applicable.
 
-	if ($advanced_find->{simple_query_radiobutton}->get_active())
+	$advanced_find->{mtn}->certs(\@certs_list, $$revision_id);
+	$found = 0;
+	foreach my $cert (@certs_list)
 	{
-	    push(@$branches, $advanced_find->{branch_combo_details}->{value});
-	}
-	else
-	{
-	    $advanced_find->{mtn}->certs(\@certs_list, $$revision_id);
-	    foreach my $cert (@certs_list)
+	    if ($cert->{name} eq "branch")
 	    {
-		push(@$branches, $cert->{value})
-		    if ($cert->{name} eq "branch");
+		if ($cert->{value}
+		    ne $advanced_find->{branch_combo_details}->{value})
+		{
+		    push(@$branches, $cert->{value});
+		}
+		else
+		{
+		    $found = 1;
+		}
 	    }
-	    push(@$branches, "") if (scalar(@$branches) == 0);
 	}
+	unshift(@$branches, $advanced_find->{branch_combo_details}->{value})
+	    if ($found);
+	push(@$branches, "") if (scalar(@$branches) == 0);
 
 	return 1;
     }
@@ -2297,7 +2304,6 @@ sub update_advanced_find_state($$)
 	    $advanced_find->{revision_combo_details}->{value} = "";
 	}
 	$advanced_find->{revision_combo_details}->{preset} = 0;
-	set_label_value($advanced_find->{selected_branch_label}, "");
 
 	# Get the new list of revisions.
 
@@ -2342,8 +2348,6 @@ sub update_advanced_find_state($$)
 		splice(@revision_list, 0, scalar(@revision_list) - 100);
 		@revision_list = reverse(@revision_list);
 	    }
-	    set_label_value($advanced_find->{selected_branch_label},
-			    $advanced_find->{branch_combo_details}->{value});
 	    $advanced_find->{appbar}->set_progress_percentage(1);
 	    gtk2_update();
 	}
@@ -2502,7 +2506,8 @@ sub update_advanced_find_state($$)
 	    if ($advanced_find->{selected_revision_label}->get_text()
 		ne $advanced_find->{revisions_treeview_details}->{value})
 	    {
-		my (@certs_list,
+		my ($branch,
+		    @certs_list,
 		    @revision_details);
 		$advanced_find->{mtn}->certs
 		    (\@certs_list,
@@ -2525,23 +2530,19 @@ sub update_advanced_find_state($$)
 			get_hadjustment()->set_value(0);
 		}
 
-		# If we are in advanced query mode then don't forget to update
-		# the selected branch label as well as the revision one.
+		# Update the selected branch and revision labels.
 
-		if (! $advanced_find->{simple_query_radiobutton}->get_active())
+		$branch = "";
+		foreach my $cert (@certs_list)
 		{
-		    my $branch = "";
-		    foreach my $cert (@certs_list)
+		    if ($cert->{name} eq "branch")
 		    {
-			if ($cert->{name} eq "branch")
-			{
-			    $branch = $cert->{value};
-			    last;
-			}
+			$branch = $cert->{value};
+			last;
 		    }
-		    set_label_value($advanced_find->{selected_branch_label},
-				    $branch);
 		}
+		set_label_value($advanced_find->{selected_branch_label},
+				$branch);
 		set_label_value($advanced_find->{selected_revision_label},
 				$advanced_find->{revisions_treeview_details}->
 				    {value});
@@ -2553,6 +2554,7 @@ sub update_advanced_find_state($$)
 	{
 	    $advanced_find->{ok_button}->set_sensitive(FALSE);
 	    $advanced_find->{details_buffer}->set_text("");
+	    set_label_value($advanced_find->{selected_branch_label}, "");
 	    set_label_value($advanced_find->{selected_revision_label}, "");
 	}
 
