@@ -2624,11 +2624,18 @@ public:
 
           if ((pa_deps == total_events) && (pb_deps == total_events))
             {
-              // if all events depend on both paths, we can't really
+              // If all events depend on both paths, we can't really
               // split. Thas mostly happens if total_events == 1, which
               // is a strange thing per se. (Requesting to split a
               // blob of size 1 is the strange thing).
-              I(false);
+              //
+              // For now, we simply drop the dependencies to the longer
+              // and most probably more complex path (which might be a
+              // pretty arbitrary choice here).
+              if (path_a.size() > path_b.size())
+                cvs.remove_deps(target_bi, *(++path_a.rbegin()));
+              else
+                cvs.remove_deps(target_bi, *(++path_b.rbegin()));
             }
           else if (pa_deps >= pb_deps)
           {
