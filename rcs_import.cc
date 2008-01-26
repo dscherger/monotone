@@ -2353,12 +2353,12 @@ public:
       // resolved those, we handle the lower parallel paths
       // (3, 10, 9, 5, 8) and (3, 8).
 
-      check_for_cross_path(path_a, path_b, false, true);
+      check_for_cross_path(path_a, path_b, false);
     }
 
   void check_for_cross_path(vector<cvs_blob_index> & path_a,
                             vector<cvs_blob_index> & path_b,
-                            bool switch_needed, bool path_a_is_all_black)
+                            bool switch_needed)
     {
       // Branch starts and tag blobs can have multiple ancestors (which
       // should all be symbol blobs), so we never want to split those.
@@ -2369,6 +2369,10 @@ public:
 #ifdef DEBUG_BLOB_SPLITTER
       log_path(path_a, "handling path a:");
       log_path(path_b, "         path b:");
+      L(FL("         %s") % (switch_needed ? "switch needed"
+                                           : "no switch needed"));
+      L(FL("         %s") % (path_a_is_all_black ? "path_a is all black"
+                                                 : "path_a is colored"));
 #endif
 
       vector<cvs_blob_index> cross_path;
@@ -2420,10 +2424,10 @@ public:
             // that same element.
             copy(path_a.begin(), ++pa_i, back_inserter(new_path_a));
 
-            // Recursive call, where we can inherit the 'switch_needed'
-            // as well as the 'path_a_is_all_black' property.
-            check_for_cross_path(new_path_a, new_path_b,
-                                 switch_needed, path_a_is_all_black);
+            // Recursive call. If we don't need to switch anymore *and*
+            // path_a is still all black, we don't need to switch for
+            // that sub-path.
+            check_for_cross_path(new_path_a, new_path_b, true);
           }
 
           // Short circuit if one of the above cross path resolution
@@ -2458,7 +2462,7 @@ public:
             // cannot be sure that all elements in new_path_a are
             // black already. Thus, there might also be a cross
             // path from new_path_a to new_path_b.
-            check_for_cross_path(new_path_a, new_path_b, true, false);
+            check_for_cross_path(new_path_a, new_path_b, true);
           }
       }
 
@@ -2474,7 +2478,7 @@ public:
           // true.
           vector<cvs_blob_index> new_path_a(path_b);
           vector<cvs_blob_index> new_path_b(path_a);
-          check_for_cross_path(new_path_a, new_path_b, false, false);
+          check_for_cross_path(new_path_a, new_path_b, false);
         }
       else
         {
