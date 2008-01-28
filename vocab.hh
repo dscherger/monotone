@@ -75,6 +75,11 @@ inline bool is_alnum(char x)
           || (x >= 'A' && x <= 'Z'));
 }
 
+inline bool is_num(char x)
+{
+  return (x >= '0' && x <= '9');
+}
+
 inline bool is_space(char x)
 {
   return (x == ' ')
