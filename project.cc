@@ -3,9 +3,13 @@
 
 #include "base.hh"
 #include "vector.hh"
+#include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
 
 #include "app_state.hh"
+#include "basic_io.hh"
 #include "cert.hh"
+#include "globish.hh"
 #include "project.hh"
 #include "revision.hh"
 #include "transforms.hh"
@@ -13,16 +17,333 @@
 using std::string;
 using std::set;
 using std::vector;
+using std::map;
 using std::multimap;
 using std::make_pair;
+using boost::shared_ptr;
+
+namespace basic_io
+{
+  namespace syms
+  {
+    symbol const branch_id("branch_id");
+    symbol const committer("committer");
+    symbol const policy("policy_branch_id");
+    symbol const administrator("administrator");
+  }
+}
+
+struct branch_policy
+{
+  branch_name const visible_name;
+  branch_name const branch_cert_value;
+  set<rsa_keypair_id> const committers;
+
+  branch_policy(branch_name const & name,
+                branch_name const & value,
+                set<rsa_keypair_id> const & keys)
+    : visible_name(name),
+      branch_cert_value(value),
+      committers(keys)
+  { }
+};
+
+class policy_revision;
+
+class policy_branch
+{
+  branch_name prefix;
+  branch_name my_branch_cert_value;
+  set<rsa_keypair_id> my_committers;
+
+  app_state & app;
+  shared_ptr<policy_revision> rev;
+  void init(data const & spec)
+  {
+    basic_io::input_source src(spec(), "policy spec");
+    basic_io::tokenizer tok(src);
+    basic_io::parser pa(tok);
+
+    while (pa.symp())
+      {
+        if(pa.symp(basic_io::syms::policy))
+          {
+            pa.sym();
+            string branch;
+            pa.str(branch);
+            my_branch_cert_value = branch_name(branch);
+          }
+        else if (pa.symp(basic_io::syms::administrator))
+          {
+            pa.sym();
+            string key;
+            pa.str(key);
+            my_committers.insert(rsa_keypair_id(key));
+          }
+        else
+          {
+            N(false, F("Unable to understand policy spec file"));
+          }
+      }
+
+    I(src.lookahead == EOF);
+  }
+public:
+  policy_branch(data const & spec,
+                branch_name const & prefix,
+                app_state & app)
+    : prefix(prefix), app(app)
+  {
+    init(spec);
+  }
+  policy_branch(system_path const & spec_file,
+                branch_name const & prefix,
+                app_state & app)
+    : prefix(prefix), app(app)
+  {
+    require_path_is_file(spec_file,
+                         F("policy spec file %s does not exist") % spec_file,
+                         F("policy spec file %s is a directory") % spec_file);
+    data spec;
+    read_data(spec_file, spec);
+    init(spec);
+  }
+  shared_ptr<policy_revision> get_policy();
+  map<branch_name, branch_policy> branches();
+};
+
+class policy_revision
+{
+  map<branch_name, branch_policy> branches;
+  map<branch_name, policy_branch> delegations;
+public:
+  policy_revision(app_state & app,
+                  revision_id const & rev,
+                  branch_name const & prefix)
+  {
+    roster_t roster;
+    app.db.get_roster(rev, roster);
+
+    file_path branch_dir = file_path_internal("branches");
+    file_path delegation_dir = file_path_internal("delegations");
+
+    if (roster.has_node(branch_dir))
+      {
+        dir_t branch_node = downcast_to_dir_t(roster.get_node(branch_dir));
+        for (dir_map::const_iterator i = branch_node->children.begin();
+             i != branch_node->children.end(); ++i)
+          {
+            branch_name branch;
+            if (i->first() != "__main__")
+              {
+                branch = branch_name(prefix() + "." + i->first());
+              }
+            else
+              {
+                branch = prefix;
+              }
+            file_id ident = downcast_to_file_t(i->second)->content;
+            file_data spec;
+            app.db.get_file_version(ident, spec);
+
+            branch_name branch_cert_value;
+            set<rsa_keypair_id> committers;
+
+            basic_io::input_source src(spec.inner()(), "branch spec");
+            basic_io::tokenizer tok(src);
+            basic_io::parser pa(tok);
+
+            while (pa.symp())
+              {
+                if (pa.symp(basic_io::syms::branch_id))
+                  {
+                    pa.sym();
+                    string branch;
+                    pa.str(branch);
+                    branch_cert_value = branch_name(branch);
+                  }
+                else if (pa.symp(basic_io::syms::committer))
+                  {
+                    pa.sym();
+                    string key;
+                    pa.str(key);
+                    committers.insert(rsa_keypair_id(key));
+                  }
+                else
+                  {
+                    N(false,
+                      F("Unable to understand branch spec file for %s in revision %s")
+                      % i->first() % rev);
+                  }
+              }                
+
+            branches.insert(make_pair(branch,
+                                      branch_policy(branch,
+                                                    branch_cert_value,
+                                                    committers)));
+          }
+      }
+    if (roster.has_node(delegation_dir))
+      {
+        dir_t delegation_node = downcast_to_dir_t(roster.get_node(delegation_dir));
+        for (dir_map::const_iterator i = delegation_node->children.begin();
+             i != delegation_node->children.end(); ++i)
+          {
+            branch_name subprefix(prefix() + "." + i->first());
+            file_id ident = downcast_to_file_t(i->second)->content;
+            file_data spec;
+            app.db.get_file_version(ident, spec);
+
+            delegations.insert(make_pair(subprefix,
+                                         policy_branch(spec.inner(),
+                                                       subprefix,
+                                                       app)));
+          }
+      }
+  }
+  map<branch_name, branch_policy> all_branches()
+  {
+    typedef map<branch_name, branch_policy> branch_policies;
+    typedef map<branch_name, policy_branch> policy_branches;
+    branch_policies out = branches;
+    for (policy_branches::iterator i = delegations.begin();
+         i != delegations.end(); ++i)
+      {
+        branch_policies del = i->second.branches();
+        for (branch_policies::const_iterator i = del.begin();
+             i != del.end(); ++i)
+          {
+            out.insert(*i);
+          }
+      }
+    return out;
+  }
+};
+
+namespace
+{
+  struct not_in_policy_branch : public is_failure
+  {
+    app_state & app;
+    base64<cert_value > const & branch_encoded;
+    set<rsa_keypair_id> const & trusted_signers;
+    bool is_trusted(set<rsa_keypair_id> const & signers,
+                    hexenc<id> const & rid,
+                    cert_name const & name,
+                    cert_value const & value)
+    {
+      for (set<rsa_keypair_id>::const_iterator i = signers.begin();
+           i != signers.end(); ++i)
+        {
+          set<rsa_keypair_id>::const_iterator t = trusted_signers.find(*i);
+          if (t != trusted_signers.end())
+            return true;
+        }
+      return false;
+    }
+    not_in_policy_branch(app_state & app,
+                         base64<cert_value> const & branch_encoded,
+                         set<rsa_keypair_id> const & trusted)
+      : app(app), branch_encoded(branch_encoded), trusted_signers(trusted)
+    {}
+    virtual bool operator()(revision_id const & rid)
+    {
+      vector< revision<cert> > certs;
+      app.db.get_revision_certs(rid,
+                                cert_name(branch_cert_name),
+                                branch_encoded,
+                                certs);
+      erase_bogus_certs(certs,
+                        boost::bind(&not_in_policy_branch::is_trusted,
+                                    this, _1, _2, _3, _4),
+                        app);
+      return certs.empty();
+    }
+  };
+
+  revision_id policy_branch_head(branch_name const & name,
+                                 set<rsa_keypair_id> const & trusted_signers,
+                                 app_state & app)
+  {
+     L(FL("getting heads of policy branch %s") % name);
+     base64<cert_value> branch_encoded;
+     encode_base64(cert_value(name()), branch_encoded);
+     set<revision_id> heads;
+
+     app.db.get_revisions_with_cert(cert_name(branch_cert_name),
+                                    branch_encoded,
+                                    heads);
+
+     not_in_policy_branch p(app, branch_encoded, trusted_signers);
+     erase_ancestors_and_failures(heads, p, app, NULL);
+
+     E(heads.size() == 1,
+       F("policy branch %s has %d heads, should have 1 head")
+       % name % heads.size());
+
+     return *heads.begin();
+  }
+}
+
+
+shared_ptr<policy_revision> policy_branch::get_policy()
+{
+  if (!rev)
+    {
+      revision_id rid;
+      rid = policy_branch_head(my_branch_cert_value, my_committers, app);
+      rev.reset(new policy_revision(app, rid, prefix));
+    }
+  return rev;
+}
+map<branch_name, branch_policy> policy_branch::branches()
+{
+  shared_ptr<policy_revision> policy = get_policy();
+  return policy->all_branches();
+}
+
+////////////////////////////////////////////////////////////////////////
+
+class policy_info
+{
+public:
+  policy_branch policy;
+  bool passthru;
+  policy_info(system_path const & spec_file,
+              branch_name const & prefix,
+              app_state & app)
+    : policy(spec_file, prefix, app), passthru(false)
+  {
+  }
+  explicit policy_info(app_state & app)
+    : policy(data(""), branch_name(""), app), passthru(true)
+  {
+  }
+};
+
+project_t::project_t(string const & project_name,
+                     system_path const & spec_file,
+                     app_state & app)
+  : project_policy(new policy_info(spec_file, branch_name(project_name), app)), app(app)
+{}
 
 project_t::project_t(app_state & app)
-  : app(app)
+  : project_policy(new policy_info(app)), app(app)
 {}
 
 void
 project_t::get_branch_list(std::set<branch_name> & names, bool allow_suspend_certs)
 {
+  if (!project_policy->passthru)
+    {
+      map<branch_name, branch_policy> branches = project_policy->policy.branches();
+      for (map<branch_name, branch_policy>::const_iterator i = branches.begin();
+           i != branches.end(); ++i)
+        {
+          names.insert(i->first);
+        }
+      return;
+    }
   if (indicator.outdated())
     {
       std::vector<std::string> got;
@@ -53,6 +374,18 @@ project_t::get_branch_list(globish const & glob,
                            std::set<branch_name> & names,
                            bool allow_suspend_certs)
 {
+  if (!project_policy->passthru)
+    {
+      map<branch_name, branch_policy> branches = project_policy->policy.branches();
+      for (map<branch_name, branch_policy>::const_iterator i = branches.begin();
+           i != branches.end(); ++i)
+        {
+          if (glob.matches(i->first()))
+            names.insert(i->first);
+        }
+      return;
+    }
+
   std::vector<std::string> got;
   app.db.get_branches(glob, got);
   names.clear();
@@ -100,7 +433,7 @@ namespace
     app_state & app;
     base64<cert_value > const & branch_encoded;
     suspended_in_branch(app_state & app,
-                  base64<cert_value> const & branch_encoded)
+                        base64<cert_value> const & branch_encoded)
       : app(app), branch_encoded(branch_encoded)
     {}
     virtual bool operator()(revision_id const & rid)

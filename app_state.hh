@@ -84,7 +84,7 @@ public:
   void make_branch_sticky();
 
 private:
-  project_t project;
+  std::map<std::string, project_t> projects;
 public:
   //project_t & get_project(string const & name);
   project_t & get_project(); // get_project(opts.project) or I()

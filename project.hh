@@ -25,15 +25,21 @@ bool operator < (tag_t const & a, tag_t const & b);
 
 typedef bool suspended_indicator;
 
+class policy_info;
+
 class project_t
 {
+  boost::shared_ptr<policy_info> project_policy;
   app_state & app;
   std::map<std::pair<branch_name, suspended_indicator>, std::pair<outdated_indicator, std::set<revision_id> > > branch_heads;
   std::set<branch_name> branches;
   outdated_indicator indicator;
 
 public:
-  project_t(app_state & app);
+  project_t(std::string const & project_name,
+            system_path const & spec_file,
+            app_state & app);
+  explicit project_t(app_state & app);
 
   void get_branch_list(std::set<branch_name> & names, bool allow_suspend_certs = true);
   void get_branch_list(globish const & glob, std::set<branch_name> & names,
