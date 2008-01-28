@@ -94,7 +94,7 @@ typedef boost::function<bool (std::set<rsa_keypair_id> const &,
 
 void erase_bogus_certs(std::vector< revision<cert> > & certs,
                        trust_function trust_fn,
-                       app_state & app);
+                       database & db);
 
 void erase_bogus_certs(std::vector< revision<cert> > & certs,
                        database & db);

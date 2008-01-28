@@ -226,11 +226,11 @@ app_state::get_project()
           projects.insert(make_pair(i->first,
                                     project_t(i->first,
                                               i->second,
-                                              *this)));
+                                              db)));
         }
       if (projects.empty())
         {
-          projects.insert(std::make_pair("default", project_t(*this)));
+          projects.insert(std::make_pair("default", project_t(db)));
         }
       N(projects.size() == 1, F("multiple projects not supported yet"));
     }

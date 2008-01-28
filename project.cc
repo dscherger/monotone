@@ -9,6 +9,7 @@
 #include "basic_io.hh"
 #include "cert.hh"
 #include "database.hh"
+#include "file_io.hh"
 #include "globish.hh"
 #include "project.hh"
 #include "revision.hh"
@@ -56,7 +57,7 @@ class policy_branch
   branch_name my_branch_cert_value;
   set<rsa_keypair_id> my_committers;
 
-  app_state & app;
+  database & db;
   shared_ptr<policy_revision> rev;
   void init(data const & spec)
   {
@@ -91,15 +92,15 @@ class policy_branch
 public:
   policy_branch(data const & spec,
                 branch_name const & prefix,
-                app_state & app)
-    : prefix(prefix), app(app)
+                database & db)
+    : prefix(prefix), db(db)
   {
     init(spec);
   }
   policy_branch(system_path const & spec_file,
                 branch_name const & prefix,
-                app_state & app)
-    : prefix(prefix), app(app)
+                database & db)
+    : prefix(prefix), db(db)
   {
     require_path_is_file(spec_file,
                          F("policy spec file %s does not exist") % spec_file,
@@ -117,12 +118,12 @@ class policy_revision
   map<branch_name, branch_policy> branches;
   map<branch_name, policy_branch> delegations;
 public:
-  policy_revision(app_state & app,
+  policy_revision(database & db,
                   revision_id const & rev,
                   branch_name const & prefix)
   {
     roster_t roster;
-    app.db.get_roster(rev, roster);
+    db.get_roster(rev, roster);
 
     file_path branch_dir = file_path_internal("branches");
     file_path delegation_dir = file_path_internal("delegations");
@@ -144,7 +145,7 @@ public:
               }
             file_id ident = downcast_to_file_t(i->second)->content;
             file_data spec;
-            app.db.get_file_version(ident, spec);
+            db.get_file_version(ident, spec);
 
             branch_name branch_cert_value;
             set<rsa_keypair_id> committers;
@@ -192,12 +193,12 @@ public:
             branch_name subprefix(prefix() + "." + i->first());
             file_id ident = downcast_to_file_t(i->second)->content;
             file_data spec;
-            app.db.get_file_version(ident, spec);
+            db.get_file_version(ident, spec);
 
             delegations.insert(make_pair(subprefix,
                                          policy_branch(spec.inner(),
                                                        subprefix,
-                                                       app)));
+                                                       db)));
           }
       }
   }
@@ -224,7 +225,7 @@ namespace
 {
   struct not_in_policy_branch : public is_failure
   {
-    app_state & app;
+    database & db;
     base64<cert_value > const & branch_encoded;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
@@ -241,41 +242,41 @@ namespace
         }
       return false;
     }
-    not_in_policy_branch(app_state & app,
+    not_in_policy_branch(database & db,
                          base64<cert_value> const & branch_encoded,
                          set<rsa_keypair_id> const & trusted)
-      : app(app), branch_encoded(branch_encoded), trusted_signers(trusted)
+      : db(db), branch_encoded(branch_encoded), trusted_signers(trusted)
     {}
     virtual bool operator()(revision_id const & rid)
     {
       vector< revision<cert> > certs;
-      app.db.get_revision_certs(rid,
-                                cert_name(branch_cert_name),
-                                branch_encoded,
-                                certs);
+      db.get_revision_certs(rid,
+                            cert_name(branch_cert_name),
+                            branch_encoded,
+                            certs);
       erase_bogus_certs(certs,
                         boost::bind(&not_in_policy_branch::is_trusted,
                                     this, _1, _2, _3, _4),
-                        app);
+                        db);
       return certs.empty();
     }
   };
 
   revision_id policy_branch_head(branch_name const & name,
                                  set<rsa_keypair_id> const & trusted_signers,
-                                 app_state & app)
+                                 database & db)
   {
      L(FL("getting heads of policy branch %s") % name);
      base64<cert_value> branch_encoded;
      encode_base64(cert_value(name()), branch_encoded);
      set<revision_id> heads;
 
-     app.db.get_revisions_with_cert(cert_name(branch_cert_name),
-                                    branch_encoded,
-                                    heads);
+     db.get_revisions_with_cert(cert_name(branch_cert_name),
+                                branch_encoded,
+                                heads);
 
-     not_in_policy_branch p(app, branch_encoded, trusted_signers);
-     erase_ancestors_and_failures(heads, p, app, NULL);
+     not_in_policy_branch p(db, branch_encoded, trusted_signers);
+     erase_ancestors_and_failures(heads, p, db, NULL);
 
      E(heads.size() == 1,
        F("policy branch %s has %d heads, should have 1 head")
@@ -291,8 +292,8 @@ shared_ptr<policy_revision> policy_branch::get_policy()
   if (!rev)
     {
       revision_id rid;
-      rid = policy_branch_head(my_branch_cert_value, my_committers, app);
-      rev.reset(new policy_revision(app, rid, prefix));
+      rid = policy_branch_head(my_branch_cert_value, my_committers, db);
+      rev.reset(new policy_revision(db, rid, prefix));
     }
   return rev;
 }
@@ -311,24 +312,24 @@ public:
   bool passthru;
   policy_info(system_path const & spec_file,
               branch_name const & prefix,
-              app_state & app)
-    : policy(spec_file, prefix, app), passthru(false)
+              database & db)
+    : policy(spec_file, prefix, db), passthru(false)
   {
   }
-  explicit policy_info(app_state & app)
-    : policy(data(""), branch_name(""), app), passthru(true)
+  explicit policy_info(database & db)
+    : policy(data(""), branch_name(""), db), passthru(true)
   {
   }
 };
 
 project_t::project_t(string const & project_name,
                      system_path const & spec_file,
-                     app_state & app)
-  : project_policy(new policy_info(spec_file, branch_name(project_name), app)), app(app)
+                     database & db)
+  : project_policy(new policy_info(spec_file, branch_name(project_name), db)), db(db)
 {}
 
 project_t::project_t(database & db)
-  : project_policy(new policy_info(app)), db(db)
+  : project_policy(new policy_info(db)), db(db)
 {}
 
 void

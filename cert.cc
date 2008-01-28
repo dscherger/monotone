@@ -161,12 +161,12 @@ erase_bogus_certs(vector< manifest<cert> > & certs,
 }
 
 void erase_bogus_certs(std::vector< revision<cert> > & certs,
-                       app_state & app)
+                       database & db)
 {
   erase_bogus_certs(certs,
-                    boost::bind(&lua_hooks::hook_get_revision_cert_trust,
-                                &app.lua, _1, _2, _3, _4),
-                    app);
+                    boost::bind(&database::hook_get_revision_cert_trust,
+                                &db, _1, _2, _3, _4),
+                    db);
 }
 void
 erase_bogus_certs(vector< revision<cert> > & certs,
