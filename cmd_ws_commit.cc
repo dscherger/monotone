@@ -342,7 +342,8 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
   revision_t rev, rev_inverse;
   shared_ptr<cset> cs_inverse(new cset());
   complete(app, idx(args, 0)(), r);
-  app.db.get_revision(r, rev);
+  app.db.get_revision_or_sentinel(r, rev);
+  I(!rev.is_sentinel);
 
   N(rev.edges.size() == 1,
     F("revision %s has %d changesets, cannot invert") % r % rev.edges.size());
