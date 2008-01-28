@@ -160,8 +160,17 @@ erase_bogus_certs(vector< manifest<cert> > & certs,
   certs = tmp_certs;
 }
 
+void erase_bogus_certs(std::vector< revision<cert> > & certs,
+                       app_state & app)
+{
+  erase_bogus_certs(certs,
+                    boost::bind(&lua_hooks::hook_get_revision_cert_trust,
+                                &app.lua, _1, _2, _3, _4),
+                    app);
+}
 void
 erase_bogus_certs(vector< revision<cert> > & certs,
+                  trust_function trust_fn,
                   database & db)
 {
   typedef vector< revision<cert> >::iterator it;
@@ -199,10 +208,10 @@ erase_bogus_certs(vector< revision<cert> > & certs,
     {
       cert_value decoded_value;
       decode_base64(get<2>(i->first), decoded_value);
-      if (db.hook_get_revision_cert_trust(*(i->second.first),
-                                          get<0>(i->first),
-                                          get<1>(i->first),
-                                          decoded_value))
+      if (trust_fn(*(i->second.first),
+                   get<0>(i->first),
+                   get<1>(i->first),
+                   decoded_value))
         {
           L(FL("trust function liked %d signers of %s cert on revision %s")
             % i->second.first->size() % get<1>(i->first) % get<0>(i->first));
