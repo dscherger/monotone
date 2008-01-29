@@ -34,8 +34,7 @@ app_state::app_state()
 //    search_root(current_root_path()),
 //    diff_format(unified_diff),
     branch_is_sticky(false),
-    mtn_automate_allowed(false),
-    project(db)
+    mtn_automate_allowed(false)
 {
   db.set_app(this);
   lua.set_app(this);
@@ -217,7 +216,26 @@ app_state::make_branch_sticky()
 project_t &
 app_state::get_project()
 {
-  return project;
+  if (projects.empty())
+    {
+      map<string, system_path> project_definitions;
+      lua.hook_get_projects(project_definitions);
+      for (map<string, system_path>::const_iterator i = project_definitions.begin();
+           i != project_definitions.end(); ++i)
+        {
+          projects.insert(make_pair(i->first,
+                                    project_t(i->first,
+                                              i->second,
+                                              db)));
+        }
+      if (projects.empty())
+        {
+          projects.insert(std::make_pair("default", project_t(db)));
+        }
+      N(projects.size() == 1, F("multiple projects not supported yet"));
+    }
+  I(projects.size() == 1);
+  return projects.begin()->second;
 }
 
 // rc files are loaded after we've changed to the workspace so that
