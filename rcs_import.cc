@@ -2008,22 +2008,22 @@ dijkstra_shortest_path(cvs_history &cvs,
       I(distances.count(bi) > 0);
       int curr_dist = distances[bi].dist;
 
-        for (blob_event_iter i = cvs.blobs[bi].begin();
-             i != cvs.blobs[bi].end(); ++i)
-          for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
-            {
-              cvs_blob_index dep_bi = (*j)->bi;
+      for (blob_event_iter i = cvs.blobs[bi].begin();
+           i != cvs.blobs[bi].end(); ++i)
+        for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
+          {
+            cvs_blob_index dep_bi = (*j)->bi;
 
-              if ((follow_white && cvs.blobs[dep_bi].color == white) ||
-                  (follow_grey && cvs.blobs[dep_bi].color == grey) ||
-                  (follow_black && cvs.blobs[dep_bi].color == black))
-                if (distances.count(dep_bi) == 0 &&
-                    make_pair(bi, dep_bi) != edge_to_ignore)
-                  {
-                    distances.insert(make_pair(dep_bi, dij_context(curr_dist + 1, bi)));
-                    stack.push(dep_bi);
-                  }
-            }
+            if ((follow_white && cvs.blobs[dep_bi].color == white) ||
+                (follow_grey && cvs.blobs[dep_bi].color == grey) ||
+                (follow_black && cvs.blobs[dep_bi].color == black))
+              if (distances.count(dep_bi) == 0 &&
+                  make_pair(bi, dep_bi) != edge_to_ignore)
+                {
+                  distances.insert(make_pair(dep_bi, dij_context(curr_dist + 1, bi)));
+                  stack.push(dep_bi);
+                }
+          }
     }
 
   if (!break_on_grey && bi != to)
