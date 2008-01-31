@@ -313,7 +313,7 @@ public:
       cached_deps_are_sorted = false;
     }
 
-  u64 get_avg_time(void) const
+  time_i get_avg_time(void) const
     {
       time_i avg = 0;
       for (blob_event_iter i = events.begin(); i != events.end(); ++i)
@@ -330,6 +330,25 @@ public:
 
   void add_missing_parents(file_path const & path,
                            roster_t & base_ros, cset & cs);
+
+  time_i get_youngest_event_time(void)
+    {
+      time_i youngest_event_in_blob = 0;
+      for (blob_event_iter ity = begin(); ity != end(); ++ity)
+        if ((*ity)->adj_time < youngest_event_in_blob)
+          youngest_event_in_blob = (*ity)->adj_time;
+      return youngest_event_in_blob;
+    }
+
+  time_i get_oldest_event_time(void)
+    {
+      time_i oldest_event_in_blob = 0;
+      for (blob_event_iter ity = begin(); ity != end(); ++ity)
+        if ((oldest_event_in_blob == 0) ||
+            ((*ity)->adj_time < oldest_event_in_blob))
+          oldest_event_in_blob = (*ity)->adj_time;
+      return oldest_event_in_blob;
+    }
 };
 
 typedef struct
@@ -3016,13 +3035,12 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
   // find the oldest event in the cycle
   time_i oldest_event_in_cycle = 0;
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
-    for (blob_event_iter ity = cvs.blobs[*cc].begin();
-         ity != cvs.blobs[*cc].end(); ++ity)
+    {
+      time_i bt(cvs.blobs[*cc].get_oldest_event_time());
       if ((oldest_event_in_cycle == 0) ||
-          ((*ity)->adj_time < oldest_event_in_cycle))
-        {
-          oldest_event_in_cycle = (*ity)->adj_time;
-        }
+          (bt < oldest_event_in_cycle))
+        oldest_event_in_cycle = bt;
+    }
 
   time_i largest_gap = 0;
   time_i largest_gap_at = 0;
