@@ -2116,18 +2116,8 @@ public:
       L(FL("blob_splitter: back edge: %d -> %d") % e.first % e.second);
 #endif
 
-      if (e.first == e.second)
-        {
-          // The cycle consists of only one blob - we have to solve an
-          // intra blob dependency.
-          cycle_members.insert(e.first);
+      I(e.first != e.second);
 
-#ifdef DEBUG_GRAPHVIZ
-          write_graphviz_partial(cvs, "splitter", cycle_members, 5);
-#endif
-        }
-      else
-        {
           // We run Dijkstra's algorithm to find the shortest path from
           // e.second to e.first. All vertices in that path are part of
           // the smallest cycle which includes this back edge. To speed
@@ -2147,7 +2137,6 @@ public:
 #ifdef DEBUG_GRAPHVIZ
           write_graphviz_partial(cvs, "splitter", cycle_members, 5);
 #endif
-        }
     }
 };
 
