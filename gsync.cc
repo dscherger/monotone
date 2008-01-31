@@ -78,6 +78,7 @@ using std::make_pair;
 using std::map;
 using std::min;
 using std::set;
+using std::vector;
 using std::string;
 using std::pair;
 
@@ -197,11 +198,54 @@ invert_ancestry(rev_ancestry_map const & in,
 static void
 do_missing_playback(http_client & h,
 		    app_state & app, 
-		    set<revision_id> const & core_frontier, 
-		    rev_ancestry_map const & child_to_parent_map)
+		    set<revision_id> & core_frontier, 
+		    set<revision_id> & revs_to_push,
+		    rev_ancestry_map const & parent_to_child_map)
 {
-  rev_ancestry_map parent_to_child_map;
-  invert_ancestry(child_to_parent_map, parent_to_child_map);
+  // add the root revision to the frontier, so we also push
+  // initial revisions.
+  core_frontier.insert(revision_id(""));
+  while (1)
+    {
+      // collect a set of revisions we can push immediately, i.e. for
+      // which the other peer has the necessary ancestor revision(s).
+      vector< pair<revision_id, revision_id> > pushable_revs;
+      for (set<revision_id>::const_iterator i = core_frontier.begin();
+           i != core_frontier.end(); ++i)
+        {
+          typedef rev_ancestry_map::const_iterator ci;
+          pair<ci,ci> range = parent_to_child_map.equal_range(*i);
+
+          for (ci j = range.first; j != range.second; ++j)
+            if ((!j->second.inner()().empty())
+                && (revs_to_push.find(j->second) != revs_to_push.end()))
+              pushable_revs.push_back(*j);
+        }
+
+      // abort condition and some invariants
+      if (revs_to_push.empty())
+        {
+          I(pushable_revs.empty());
+          break;
+        }
+      else
+        I(!pushable_revs.empty());
+
+      // push that set of revisions and advance the frontier.
+      for (vector< pair<revision_id, revision_id> >::const_iterator i = pushable_revs.begin();
+           i != pushable_revs.end(); ++i)
+        {
+          L(FL("  pushing revision %s (child of rev %s)")
+            % i->second % i->first);
+
+          revs_to_push.erase(i->second);
+          core_frontier.erase(i->first);
+          core_frontier.insert(i->second);
+        }
+    }
+
+  // remove that root revision again.
+  core_frontier.erase(revision_id(""));
 }
 
 
@@ -247,10 +291,11 @@ run_gsync_protocol(utf8 const & addr,
   P(F("revs to send: %d") % ours_alone.size());
 
   set<revision_id> core_frontier = common_core;
-  erase_ancestors(common_core, app);
+  erase_ancestors(core_frontier, app);
 
   if (pushing)
-    do_missing_playback(h, app, core_frontier, child_to_parent_map);
+    do_missing_playback(h, app, core_frontier, ours_alone,
+                        parent_to_child_map);
 
   if (pulling)
     request_missing_playback(h, app, core_frontier);
