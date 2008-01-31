@@ -2118,24 +2118,23 @@ public:
 
       I(e.first != e.second);
 
-          // We run Dijkstra's algorithm to find the shortest path from
-          // e.second to e.first. All vertices in that path are part of
-          // the smallest cycle which includes this back edge. To speed
-          // things up a bit, we do not take vertices into account, which
-          // have already been completely processed by the proceeding
-          // depth first search run (thus only considering blobs marked
-          // grey or white).
-          insert_iterator< set< cvs_blob_index > >
-            ity(cycle_members, cycle_members.begin());
-          dijkstra_shortest_path(cvs, e.second, e.first, ity,
-                                 true,              // downwards
-                                 true, true, false, // follow white and grey
-                                 false,
-                                 make_pair(invalid_blob, invalid_blob));
-          I(!cycle_members.empty());
+      // We run Dijkstra's algorithm to find the shortest path from e.second
+      // to e.first. All vertices in that path are part of the smallest
+      // cycle which includes this back edge. To speed things up a bit, we
+      // do not take blobs into account, which have already been completely
+      // processed by the proceeding depth first search run (thus only
+      // considering blobs marked grey or white).
+      insert_iterator< set< cvs_blob_index > >
+        ity(cycle_members, cycle_members.begin());
+      dijkstra_shortest_path(cvs, e.second, e.first, ity,
+                             true,              // downwards
+                             true, true, false, // follow white and grey
+                             false,
+                             make_pair(invalid_blob, invalid_blob));
+      I(!cycle_members.empty());
 
 #ifdef DEBUG_GRAPHVIZ
-          write_graphviz_partial(cvs, "splitter", cycle_members, 5);
+      write_graphviz_partial(cvs, "splitter", cycle_members, 5);
 #endif
     }
 };
