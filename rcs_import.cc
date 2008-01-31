@@ -1253,7 +1253,7 @@ solve_violation(cvs_history & cvs, t_solution & solution)
     }
   else
     {
-      // upward adjustmest, i.e. adjusting all dependencies
+      // adjustmest, i.e. adjusting all dependencies
       stack.push(make_pair(dep, ev->adj_time - 1));
       while (!stack.empty())
         {
@@ -1978,7 +1978,6 @@ template<typename Container> void
 dijkstra_shortest_path(cvs_history &cvs,
                        cvs_blob_index from, cvs_blob_index to,
                        insert_iterator<Container> ity,
-                       bool direction_downwards,
                        bool follow_white,
                        bool follow_grey,
                        bool follow_black,
@@ -2009,21 +2008,6 @@ dijkstra_shortest_path(cvs_history &cvs,
       I(distances.count(bi) > 0);
       int curr_dist = distances[bi].dist;
 
-      if (direction_downwards)
-        {
-          vector<cvs_blob_index> & deps = cvs.blobs[bi].get_dependents(cvs);
-          for (blob_index_iter i = deps.begin(); i != deps.end(); ++i)
-            if ((follow_white && cvs.blobs[*i].color == white) ||
-                (follow_grey && cvs.blobs[*i].color == grey) ||
-                (follow_black && cvs.blobs[*i].color == black))
-              if (distances.count(*i) == 0 &&
-                  make_pair(bi, *i) != edge_to_ignore)
-                {
-                  distances.insert(make_pair(*i, dij_context(curr_dist + 1, bi)));
-                  stack.push(*i);
-                }
-        }
-      else
         for (blob_event_iter i = cvs.blobs[bi].begin();
              i != cvs.blobs[bi].end(); ++i)
           for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
@@ -2126,8 +2110,7 @@ public:
       // considering blobs marked grey or white).
       insert_iterator< set< cvs_blob_index > >
         ity(cycle_members, cycle_members.begin());
-      dijkstra_shortest_path(cvs, e.second, e.first, ity,
-                             true,              // downwards
+      dijkstra_shortest_path(cvs, e.first, e.second, ity,
                              true, true, false, // follow white and grey
                              false,
                              make_pair(invalid_blob, invalid_blob));
@@ -2299,7 +2282,6 @@ public:
 
       I(cvs.blobs[e.second].color == black);
       dijkstra_shortest_path(cvs, e.second, cvs.root_blob, ity_a,
-                             false,               // upwards direction,
                              false, true, true,   // follow grey and black, but
                              true,                // break on first grey
                              make_pair(e.second, e.first)); // ignore direct path
@@ -2310,7 +2292,6 @@ public:
       I(cvs.blobs[e.first].color == grey);
       I(cvs.blobs[path_a[0]].color == grey);
       dijkstra_shortest_path(cvs, e.first, path_a[0], ity_b,
-                             false,               // upwards
                              false, true, false,  // follow only grey
                              false,
                              make_pair(invalid_blob, invalid_blob));
@@ -2386,7 +2367,6 @@ public:
 
       dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
                              ity_c,
-                             false,                // upwards
                              true, true, true,    // follow all colors
                              false,
                              make_pair(invalid_blob, invalid_blob));
@@ -2493,9 +2473,8 @@ public:
           insert_iterator< vector< cvs_blob_index > >
             ity_c(cross_path, cross_path.end());
 
-          dijkstra_shortest_path(cvs, *(++path_a.begin()), *(++path_b.rbegin()),
+          dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
                                  ity_c,
-                                 true,                // downwards
                                  true, true, true,    // follow all colors
                                  false,
                                  make_pair(invalid_blob, invalid_blob));
@@ -2847,7 +2826,6 @@ public:
                 back_ity(back_path, back_path.end());
 
               dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
-                                     false,               // upwards,
                                      true, true, true,   // follow all
                                      false,
                                      make_pair(invalid_blob, invalid_blob));
@@ -2856,8 +2834,7 @@ public:
 
               // We want a dependency from *ity_a to *ity_b. We only need
               // to add one, if none exists.
-              dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
-                                     true,               // downwards,
+              dijkstra_shortest_path(cvs, *ity_b, *ity_a, back_ity,
                                      true, true, true,   // follow all
                                      false,
                                      make_pair(invalid_blob, invalid_blob));
