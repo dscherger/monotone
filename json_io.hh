@@ -50,7 +50,7 @@ namespace json_io
   };
 
   typedef boost::shared_ptr<json_object> json_object_t;
-  
+
   struct json_array 
     : public json_value
   {
@@ -77,7 +77,7 @@ namespace json_io
   ///////////////////////////////////////////////////////////
   // lexing
   ///////////////////////////////////////////////////////////
-    
+
   typedef enum
     {
       TOK_SYMBOL,
@@ -102,7 +102,7 @@ namespace json_io
     char c;
     input_source(std::string const & in, std::string const & nm)
       : line(1), col(1), in(in), curr(in.begin()),
-	name(nm), lookahead(0), c('\0')
+        name(nm), lookahead(0), c('\0')
     {}
 
     inline void peek()
@@ -110,9 +110,9 @@ namespace json_io
       if (LIKELY(curr != in.end()))
         // we do want to distinguish between EOF and '\xff', 
         // so we translate '\xff' to 255u
-	lookahead = widen<unsigned int,char>(*curr);
+        lookahead = widen<unsigned int,char>(*curr);
       else
-	lookahead = EOF;
+        lookahead = EOF;
     }
 
     inline void advance()
@@ -205,24 +205,24 @@ namespace json_io
         }
 
       if (is_alpha(in.lookahead))
-	{
-	  mark();
-	  while (is_alnum(in.lookahead) || in.lookahead == '_')
-	    advance();
-	  store(val);
-	  return json_io::TOK_SYMBOL;
-	}
+        {
+          mark();
+          while (is_alnum(in.lookahead) || in.lookahead == '_')
+            advance();
+          store(val);
+          return json_io::TOK_SYMBOL;
+        }
 
       else if (in.lookahead == '"')
-	{
-	  in.advance();
-	  mark();
-	  while (static_cast<char>(in.lookahead) != '"')
-	    {
-	      if (UNLIKELY(in.lookahead == EOF))
-		in.err("input stream ended in string");
-	      if (UNLIKELY(static_cast<char>(in.lookahead) == '\\'))
-		{
+        {
+          in.advance();
+          mark();
+          while (static_cast<char>(in.lookahead) != '"')
+            {
+              if (UNLIKELY(in.lookahead == EOF))
+                in.err("input stream ended in string");
+              if (UNLIKELY(static_cast<char>(in.lookahead) == '\\'))
+                {
                   // When we hit an escape, we switch from doing mark/store
                   // to a slower per-character append loop, until the end
                   // of the token.
@@ -231,7 +231,7 @@ namespace json_io
                   store(val);
 
                   // Then skip over the escape backslash.
-		  in.advance();
+                  in.advance();
 
                   // Handle the escaped char.
                   read_escape(val, static_cast<char>(in.lookahead));
@@ -262,50 +262,50 @@ namespace json_io
                   in.advance();
 
                   return json_io::TOK_STRING;
-		}
-	      advance();
-	    }
-	
-	  store(val);
+                }
+              advance();
+            }
 
-	  if (UNLIKELY(static_cast<char>(in.lookahead) != '"'))
-	    in.err("string did not end with '\"'");
-	  in.advance();
-	
-	  return json_io::TOK_STRING;
-	}
+          store(val);
+
+          if (UNLIKELY(static_cast<char>(in.lookahead) != '"'))
+            in.err("string did not end with '\"'");
+          in.advance();
+
+          return json_io::TOK_STRING;
+        }
       else if (in.lookahead == '[')
-	{
-	  in.advance();
+        {
+          in.advance();
           return json_io::TOK_LBRACKET;
         }
       else if (in.lookahead == ']')
         {
-	  in.advance();
+          in.advance();
           return json_io::TOK_RBRACKET;
         }
       else if (in.lookahead == '{')
         {
-	  in.advance();
+          in.advance();
           return json_io::TOK_LBRACE;
         }
       else if (in.lookahead == '}')
         {
-	  in.advance();
+          in.advance();
           return json_io::TOK_RBRACE;
         }
       else if (in.lookahead == ':')
         {
-	  in.advance();
+          in.advance();
           return json_io::TOK_COLON;
         }
       else if (in.lookahead == ',')
         {
-	  in.advance();
+          in.advance();
           return json_io::TOK_COMMA;
         }
       else
-	return json_io::TOK_NONE;
+        return json_io::TOK_NONE;
     }
    void err(std::string const & s);
   };
@@ -314,7 +314,7 @@ namespace json_io
   ///////////////////////////////////////////////////////////
   // parsing
   ///////////////////////////////////////////////////////////
-  
+
   struct
   parser
   {
@@ -409,7 +409,7 @@ namespace json_io
       else 
         return json_value_t();
     }
-    
+
     inline void str() { eat(json_io::TOK_STRING); }
     inline void sym() { eat(json_io::TOK_SYMBOL); }
     inline void colon() { eat(json_io::TOK_COLON); }
@@ -456,7 +456,7 @@ namespace json_io
   ///////////////////////////////////////////////////////////
   /////////////////////// building //////////////////////////
   ///////////////////////////////////////////////////////////
-  
+
   struct builder
   {
     json_value_t v;

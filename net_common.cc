@@ -35,38 +35,38 @@ using boost::shared_ptr;
 
 void 
 add_address_names(Netxx::Address & addr,
-		  std::list<utf8> const & addresses,
-		  Netxx::port_type default_port)
+                  std::list<utf8> const & addresses,
+                  Netxx::port_type default_port)
 {
   if (addresses.empty())
     addr.add_all_addresses(default_port);
   else
     {
       for (std::list<utf8>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
-	{
-	  const utf8 & address = *it;
-	  if (!address().empty())
-	    {
-	      size_t l_colon = address().find(':');
-	      size_t r_colon = address().rfind(':');
-	      
-	      if (l_colon == r_colon && l_colon == 0)
-		{
-		  // can't be an IPv6 address as there is only one colon
-		  // must be a : followed by a port
-		  string port_str = address().substr(1);
-		  addr.add_all_addresses(std::atoi(port_str.c_str()));
-		}
-	      else
-		addr.add_address(address().c_str(), default_port);
-	    }
-	}
+        {
+          const utf8 & address = *it;
+          if (!address().empty())
+            {
+              size_t l_colon = address().find(':');
+              size_t r_colon = address().rfind(':');
+
+              if (l_colon == r_colon && l_colon == 0)
+                {
+                  // can't be an IPv6 address as there is only one colon
+                  // must be a : followed by a port
+                  string port_str = address().substr(1);
+                  addr.add_all_addresses(std::atoi(port_str.c_str()));
+                }
+              else
+                addr.add_address(address().c_str(), default_port);
+            }
+        }
     }
 }
 
 shared_ptr<Netxx::StreamBase>
 build_stream_to_server(app_state & app,
-		       uri const & u,
+                       uri const & u,
                        globish const & include_pattern,
                        globish const & exclude_pattern,                       
                        Netxx::port_type default_port,

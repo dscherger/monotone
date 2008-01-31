@@ -440,7 +440,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
         find_key(utf8(), globish("*"), globish(""), app);
 
       N(app.lua.hook_persist_phrase_ok(),
-	F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
+        F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
       require_password(app.opts.signing_key, app);
     }
   else if (!app.opts.bind_stdio)
@@ -454,9 +454,9 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
 void 
 run_gsync_protocol(utf8 const & addr,
-		   globish const & include_pattern,
-		   globish const & exclude_pattern,
-		   app_state & app);
+                   globish const & include_pattern,
+                   globish const & exclude_pattern,
+                   app_state & app);
 
 CMD(gsync, "gsync", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),

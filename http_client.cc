@@ -47,9 +47,9 @@ using Netxx::PipeStream;
 
 
 http_client::http_client(app_state & app,
-			 uri const & u, 	      
-			 globish const & include_pattern,
-			 globish const & exclude_pattern)
+                         uri const & u,               
+                         globish const & include_pattern,
+                         globish const & exclude_pattern)
   : app(app), 
     u(u), 
     include_pattern(include_pattern), 
@@ -85,17 +85,17 @@ http_client::transact_json(json_value_t v)
   json_io::printer out;
   v->write(out);
   string header = (F("POST %s HTTP/1.0\r\n"
-		     "Host: %s\r\n"
-		     "Content-Length: %s\r\n"
-		     "Content-Type: application/jsonrequest\r\n"
-		     "Accept: application/jsonrequest\r\n"
-		     "Accept-Encoding: identity\r\n"
-		     "Connection: Keep-Alive\r\n"
-		     "\r\n") 
-		   % (u.path.empty() ? "/" : u.path)
-		   % u.host 
-		   % lexical_cast<string>(out.buf.size())).str();
-  
+                     "Host: %s\r\n"
+                     "Content-Length: %s\r\n"
+                     "Content-Type: application/jsonrequest\r\n"
+                     "Accept: application/jsonrequest\r\n"
+                     "Accept-Encoding: identity\r\n"
+                     "Connection: Keep-Alive\r\n"
+                     "\r\n") 
+                   % (u.path.empty() ? "/" : u.path)
+                   % u.host 
+                   % lexical_cast<string>(out.buf.size())).str();
+
   L(FL("http_client: sending request [[POST %s HTTP/1.0]]") 
     % (u.path.empty() ? "/" : u.path));
   L(FL("http_client: to [[Host: %s]]") % u.host);
@@ -131,22 +131,22 @@ http_client::parse_http_status_line()
 
 void 
 http_client::parse_http_header_line(size_t & content_length, 
-				    bool & keepalive)
+                                    bool & keepalive)
 {
   string k, v, rest;
   (*io) >> k >> v;
   L(FL("http_client: header: [[%s %s]]") % k % v);
   std::getline(*io, rest);
-  
+
   if (k == "Content-Length:" 
       || k == "Content-length:"
       || k == "content-length:")
     content_length = lexical_cast<size_t>(v);
   else if (k == "Connection:" 
-	   || k == "connection:")
+           || k == "connection:")
     keepalive = (v == "Keep-Alive" 
-		 || v == "Keep-alive" 
-		 || v == "keep-alive");
+                 || v == "Keep-alive" 
+                 || v == "keep-alive");
 }
 
 

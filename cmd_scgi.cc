@@ -105,16 +105,16 @@ eat(istream & in, char c)
 static bool 
 parse_scgi(istream & in, string & data)
 {
-  
+
   if (!in.good()) return false;
-  
+
   size_t netstring_len;
   in >> netstring_len;
   if (!in.good()) return false;
 
   L(FL("scgi: netstring length: %d") % netstring_len);
   if (!eat(in, ':')) return false;
-  
+
   size_t content_length = 0;
   while (netstring_len > 0)
     {
@@ -136,7 +136,7 @@ parse_scgi(istream & in, string & data)
     }
 
   if(!eat(in, ',')) return false;
-  
+
   data.clear();
   data.reserve(content_length);
   L(FL("reading %d bytes") % content_length);
@@ -193,24 +193,24 @@ process_scgi_transaction(app_state & app,
       json_io::tokenizer tok(in);
       json_io::parser p(tok);
       json_io::json_object_t obj = p.parse_object();
-      
+
       if (static_cast<bool>(obj)) 
         {
           transaction_guard guard(app.db);
           L(FL("read JSON object"));
-          
+
           json_io::json_value_t res = do_cmd(app, obj);
           if (static_cast<bool>(res))
             {
               json_io::printer out_data;
               res->write(out_data);
               L(FL("sending JSON %d-byte response") % (out_data.buf.size() + 1));
-              
+
               out << "Status: 200 OK\r\n"
                   << "Content-Length: " << (out_data.buf.size() + 1) << "\r\n"
                   << "Content-Type: application/jsonrequest\r\n"
                   << "\r\n";
-              
+
               out.write(out_data.buf.data(), out_data.buf.size());              
               out << "\n";
               out.flush();
@@ -261,12 +261,12 @@ CMD_NO_WORKSPACE(scgi,             // C
   if (app.opts.use_transport_auth)
     {
       N(app.lua.hook_persist_phrase_ok(),
-	F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
+        F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
       require_password(app.opts.signing_key, app);
     }
   else if (!app.opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
-  
+
   if (app.opts.bind_stdio)
     process_scgi_transaction(app, std::cin, std::cout);
   else
@@ -280,7 +280,7 @@ CMD_NO_WORKSPACE(scgi,             // C
       // This will be true when we try to bind while using IPv6.  See comments
       // further down.
       bool try_again=false;
-      
+
       do
         {  
           try 
@@ -290,7 +290,7 @@ CMD_NO_WORKSPACE(scgi,             // C
               Netxx::Address addr(use_ipv6);
 
               add_address_names(addr, app.opts.bind_uris, constants::default_scgi_port);
-              
+
               // If we use IPv6 and the initialisation of server fails, we want
               // to try again with IPv4.  The reason is that someone may have
               // downloaded a IPv6-enabled monotone on a system that doesn't
@@ -298,13 +298,13 @@ CMD_NO_WORKSPACE(scgi,             // C
               // On failure, Netxx::NetworkException is thrown, and we catch
               // it further down.
               try_again=use_ipv6;
-              
+
               Netxx::StreamServer server(addr);
-          
+
               // If we came this far, whatever we used (IPv6 or IPv4) was
               // accepted, so we don't need to try again any more.
               try_again=false;
-              
+
               while (true)
                 {
                   Netxx::Peer peer = server.accept_connection();

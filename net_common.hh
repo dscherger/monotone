@@ -34,13 +34,13 @@ struct app_state;
 
 void 
 add_address_names(Netxx::Address & addr,
-		  std::list<utf8> const & addresses,
-		  Netxx::port_type default_port);
+                  std::list<utf8> const & addresses,
+                  Netxx::port_type default_port);
 
 boost::shared_ptr<Netxx::StreamBase>
 build_stream_to_server(app_state & app,
-		       uri const & u,
-		       globish const & include_pattern,
+                       uri const & u,
+                       globish const & include_pattern,
                        globish const & exclude_pattern,
                        Netxx::port_type default_port,
                        Netxx::Timeout timeout);

@@ -40,14 +40,14 @@ http_client
   bool open;
 
   http_client(app_state & app,
-	      uri const & u, 	      
-	      globish const & include_pattern,
-	      globish const & exclude_pattern); 
+              uri const & u,          
+              globish const & include_pattern,
+              globish const & exclude_pattern); 
 
   json_io::json_value_t transact_json(json_io::json_value_t v);
   void parse_http_status_line();
   void parse_http_header_line(size_t & content_length,
-			      bool & keepalive);
+                              bool & keepalive);
   void parse_http_response(std::string & data);
   void crlf();  
 };

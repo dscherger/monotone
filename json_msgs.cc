@@ -94,7 +94,7 @@ encode_msg_error(string const & note)
 
 bool 
 decode_msg_error(json_value_t val, 
-		 std::string & note)
+                 std::string & note)
 {
   json_io::query q(val);
   note.clear();
@@ -120,7 +120,7 @@ encode_msg_inquire(set<revision_id> const & revs)
 
 bool 
 decode_msg_inquire(json_value_t val, 
-		   set<revision_id> & revs)
+                   set<revision_id> & revs)
 {
   string type, vers;
   json_io::query q(val);  
@@ -134,9 +134,9 @@ decode_msg_inquire(json_value_t val,
         {
           std::string s;
           for (size_t i = 0; i < nargs; ++i)
-	    if (q[syms::revs][i].get(s)) 
-	      revs.insert(revision_id(s));
-	  return true;
+            if (q[syms::revs][i].get(s)) 
+              revs.insert(revision_id(s));
+          return true;
         }
     }
   return false;
@@ -164,7 +164,7 @@ encode_msg_confirm(set<revision_id> const & revs)
 
 bool 
 decode_msg_confirm(json_value_t val, 
-		   set<revision_id> & revs)
+                   set<revision_id> & revs)
 {
   string type, vers;
   json_io::query q(val);  
@@ -177,9 +177,9 @@ decode_msg_confirm(json_value_t val,
       string tmp;
       json_io::query r = q[syms::revs];
       if (r.len(nrevs))
-	for (size_t i = 0; i < nrevs; ++i) 
-	  if (r[i].get(tmp))
-	    revs.insert(revision_id(tmp));
+        for (size_t i = 0; i < nrevs; ++i) 
+          if (r[i].get(tmp))
+            revs.insert(revision_id(tmp));
       return true;
     }
   return false;
@@ -193,7 +193,7 @@ json_value_t
 encode_msg_get_descendants(set<revision_id> const & revs);
 bool 
 decode_msg_get_descendants(json_value_t val, 
-			   set<revision_id> & revs);
+                           set<revision_id> & revs);
 
 
 /////////////////////////////////////////////////////////////////////
@@ -204,7 +204,7 @@ json_value_t
 encode_msg_descendants(rev_ancestry_map const & parent_to_child_map);
 bool 
 decode_msg_descendants(json_value_t val, 
-		       rev_ancestry_map & parent_to_child_map);
+                       rev_ancestry_map & parent_to_child_map);
 
 
 /////////////////////////////////////////////////////////////////////
@@ -293,9 +293,9 @@ encode_msg_rev(revision_t const & rev)
 
 json_value_t 
 encode_msg_full_rev(revision_id const & rid,
-		    revision_t const & rev,
-		    set<file_delta_record> const & deltas,
-		    set<file_data_record> const & datas)
+                    revision_t const & rev,
+                    set<file_delta_record> const & deltas,
+                    set<file_data_record> const & datas)
 {
   json_io::builder b;  
   b[syms::type].str(syms::full_rev());
@@ -306,10 +306,10 @@ encode_msg_full_rev(revision_id const & rid,
 
 bool 
 decode_msg_full_rev(json_value_t val, 
-		    revision_id & rid,
-		    revision_t & rev,
-		    set<file_delta_record> & deltas,
-		    set<file_data_record> & datas)
+                    revision_id & rid,
+                    revision_t & rev,
+                    set<file_delta_record> & deltas,
+                    set<file_data_record> & datas)
 {
   json_io::builder b;
   b[syms::type].str(syms::full_rev());

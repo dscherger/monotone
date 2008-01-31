@@ -91,8 +91,8 @@ using boost::lexical_cast;
 
 static inline void
 do_set_union(set<revision_id> const & a,
-	     set<revision_id> const & b,
-	     set<revision_id> & c)
+             set<revision_id> const & b,
+             set<revision_id> & c)
 {
   c.clear();
   set_union(a.begin(), a.end(), b.begin(), b.end(), inserter(c, c.begin()));
@@ -100,8 +100,8 @@ do_set_union(set<revision_id> const & a,
 
 static inline void
 do_set_difference(set<revision_id> const & a,
-		  set<revision_id> const & b,
-		  set<revision_id> & c)
+                  set<revision_id> const & b,
+                  set<revision_id> & c)
 {
   c.clear();
   set_difference(a.begin(), a.end(), b.begin(), b.end(), inserter(c, c.begin()));
@@ -110,8 +110,8 @@ do_set_difference(set<revision_id> const & a,
 
 static void 
 inquire_about_revs(http_client & h,
-		   set<revision_id> const & query_set,
-		   set<revision_id> & theirs)
+                   set<revision_id> const & query_set,
+                   set<revision_id> & theirs)
 {
   theirs.clear();  
   json_value_t query = encode_msg_inquire(query_set);  
@@ -122,10 +122,10 @@ inquire_about_revs(http_client & h,
 
 static void
 determine_common_core(http_client & h,
-		      set<revision_id> const & our_revs,
-		      rev_ancestry_map const & child_to_parent_map,
-		      rev_ancestry_map const & parent_to_child_map,
-		      set<revision_id> & common_core)
+                      set<revision_id> const & our_revs,
+                      rev_ancestry_map const & child_to_parent_map,
+                      rev_ancestry_map const & parent_to_child_map,
+                      set<revision_id> & common_core)
 {
   common_core.clear();
   set<revision_id> unknown_revs = our_revs;
@@ -135,15 +135,15 @@ determine_common_core(http_client & h,
     {
       ++pass;
       set<revision_id> query_revs;
-      
+
       // Bite off a chunk of the remaining unknowns to ask about.
       set<revision_id>::const_iterator r = unknown_revs.begin();
       for (size_t i = 0; 
-	   i < constants::gsync_max_probe_set_size && r != unknown_revs.end(); 
-	   ++i, ++r)
-	{
-	  query_revs.insert(*r);
-	}
+           i < constants::gsync_max_probe_set_size && r != unknown_revs.end(); 
+           ++i, ++r)
+        {
+          query_revs.insert(*r);
+        }
 
       // Ask what they have of that chunk, form closures of the
       // positive and negative sets on our side.
@@ -154,10 +154,10 @@ determine_common_core(http_client & h,
       do_set_difference(query_revs, revs_present, revs_absent);
 
       L(FL("pass #%d: inquired about %d revs, they have %d of them, missing %d of them") 
-	% pass
-	% query_revs.size() 
-	% revs_present.size()
-	% revs_absent.size());
+        % pass
+        % query_revs.size() 
+        % revs_present.size()
+        % revs_absent.size());
 
       get_all_ancestors(revs_present, child_to_parent_map, present_ancs);
       do_set_union(revs_present, present_ancs, present_closure);
@@ -173,12 +173,12 @@ determine_common_core(http_client & h,
       do_set_difference(unknown_revs, present_closure, new_unknown);
       unknown_revs = new_unknown;
       L(FL("pass #%d: unknown set after removing %d-entry present closure: %d nodes") 
-	% pass % present_closure.size() % unknown_revs.size());
+        % pass % present_closure.size() % unknown_revs.size());
 
       do_set_difference(unknown_revs, absent_closure, new_unknown);
       unknown_revs = new_unknown;
       L(FL("pass #%d: unknown set after removing %d-entry absent closure: %d nodes") 
-	% pass % absent_closure.size() % unknown_revs.size());
+        % pass % absent_closure.size() % unknown_revs.size());
 
       // Update our total knowledge about them.
       common_core.insert(present_closure.begin(), present_closure.end());
@@ -187,7 +187,7 @@ determine_common_core(http_client & h,
 
 static void
 invert_ancestry(rev_ancestry_map const & in,
-		rev_ancestry_map & out)
+                rev_ancestry_map & out)
 {
   out.clear();
   for (rev_ancestry_map::const_iterator i = in.begin();
@@ -197,10 +197,10 @@ invert_ancestry(rev_ancestry_map const & in,
 
 static void
 do_missing_playback(http_client & h,
-		    app_state & app, 
-		    set<revision_id> & core_frontier, 
-		    set<revision_id> & revs_to_push,
-		    rev_ancestry_map const & parent_to_child_map)
+                    app_state & app, 
+                    set<revision_id> & core_frontier, 
+                    set<revision_id> & revs_to_push,
+                    rev_ancestry_map const & parent_to_child_map)
 {
   // add the root revision to the frontier, so we also push
   // initial revisions.
@@ -251,22 +251,22 @@ do_missing_playback(http_client & h,
 
 static void 
 request_missing_playback(http_client & h,
-			 app_state & app,
-			 set<revision_id> const & core_frontier)
+                         app_state & app,
+                         set<revision_id> const & core_frontier)
 {
-  
+
 }
 
 void
 run_gsync_protocol(utf8 const & addr,
-		   globish const & include_pattern,
-		   globish const & exclude_pattern,
-		   app_state & app)
+                   globish const & include_pattern,
+                   globish const & exclude_pattern,
+                   app_state & app)
 {
   uri u;
   parse_uri(addr(), u);
   http_client h(app, u, include_pattern, exclude_pattern);
-  
+
   bool pushing = true, pulling = true;
 
   rev_ancestry_map parent_to_child_map, child_to_parent_map;
@@ -278,9 +278,9 @@ run_gsync_protocol(utf8 const & addr,
        i != child_to_parent_map.end(); ++i)
     {
       if (!i->first.inner()().empty())
-	our_revs.insert(i->first);
+        our_revs.insert(i->first);
       if (!i->second.inner()().empty())
-	our_revs.insert(i->second);
+        our_revs.insert(i->second);
     }
 
   set<revision_id> common_core;
