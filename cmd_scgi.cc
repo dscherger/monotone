@@ -222,7 +222,7 @@ CMD_NO_WORKSPACE(scgi,             // C
                  N_(""),                              // params
                  N_("Serves SCGI+JSON connections"),  // abstract
                  "",                                  // desc
-                 options::opts::bind | 
+                 options::opts::scgi_bind | 
                  options::opts::pidfile |
                  options::opts::bind_stdio | 
                  options::opts::no_transport_auth
