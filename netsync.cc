@@ -1863,7 +1863,7 @@ session::load_data(netcmd_item_type type,
     {
     case epoch_item:
       {
-        branch_name branch;
+        branch_uid branch;
         epoch_data epoch;
         db.get_epoch(epoch_id(hitem), branch, epoch);
         write_epoch(branch, epoch, out);
@@ -1932,13 +1932,13 @@ session::process_data_cmd(netcmd_item_type type,
     {
     case epoch_item:
       {
-        branch_name branch;
+        branch_uid branch;
         epoch_data epoch;
         read_epoch(dat, branch, epoch);
         L(FL("received epoch %s for branch %s") % epoch % branch);
-        map<branch_name, epoch_data> epochs;
+        map<branch_uid, epoch_data> epochs;
         db.get_epochs(epochs);
-        map<branch_name, epoch_data>::const_iterator i;
+        map<branch_uid, epoch_data>::const_iterator i;
         i = epochs.find(branch);
         if (i == epochs.end())
           {
@@ -3196,15 +3196,15 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
   }
 
   {
-    map<branch_name, epoch_data> epochs;
+    map<branch_uid, epoch_data> epochs;
     db.get_epochs(epochs);
 
     epoch_data epoch_zero(string(constants::epochlen, '0'));
     for (set<branch_name>::const_iterator i = branchnames.begin();
          i != branchnames.end(); ++i)
       {
-        branch_name const & branch(*i);
-        map<branch_name, epoch_data>::const_iterator j;
+        branch_uid branch = project.translate_branch(*i);
+        map<branch_uid, epoch_data>::const_iterator j;
         j = epochs.find(branch);
 
         // Set to zero any epoch which is not yet set.

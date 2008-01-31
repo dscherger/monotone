@@ -27,7 +27,7 @@ namespace basic_io
 {
   namespace syms
   {
-    symbol const branch_id("branch_id");
+    symbol const branch_uid("branch_uid");
     symbol const committer("committer");
     symbol const policy("policy_branch_id");
     symbol const administrator("administrator");
@@ -37,11 +37,11 @@ namespace basic_io
 struct branch_policy
 {
   branch_name const visible_name;
-  branch_name const branch_cert_value;
+  branch_uid const branch_cert_value;
   set<rsa_keypair_id> const committers;
 
   branch_policy(branch_name const & name,
-                branch_name const & value,
+                branch_uid const & value,
                 set<rsa_keypair_id> const & keys)
     : visible_name(name),
       branch_cert_value(value),
@@ -53,8 +53,8 @@ class policy_revision;
 
 class policy_branch
 {
-  branch_name prefix;
-  branch_name my_branch_cert_value;
+  branch_prefix prefix;
+  branch_uid my_branch_cert_value;
   set<rsa_keypair_id> my_committers;
 
   database & db;
@@ -72,7 +72,7 @@ class policy_branch
             pa.sym();
             string branch;
             pa.str(branch);
-            my_branch_cert_value = branch_name(branch);
+            my_branch_cert_value = branch_uid(branch);
           }
         else if (pa.symp(basic_io::syms::administrator))
           {
@@ -91,14 +91,14 @@ class policy_branch
   }
 public:
   policy_branch(data const & spec,
-                branch_name const & prefix,
+                branch_prefix const & prefix,
                 database & db)
     : prefix(prefix), db(db)
   {
     init(spec);
   }
   policy_branch(system_path const & spec_file,
-                branch_name const & prefix,
+                branch_prefix const & prefix,
                 database & db)
     : prefix(prefix), db(db)
   {
@@ -116,11 +116,11 @@ public:
 class policy_revision
 {
   map<branch_name, branch_policy> branches;
-  map<branch_name, policy_branch> delegations;
+  map<branch_prefix, policy_branch> delegations;
 public:
   policy_revision(database & db,
                   revision_id const & rev,
-                  branch_name const & prefix)
+                  branch_prefix const & prefix)
   {
     roster_t roster;
     db.get_roster(rev, roster);
@@ -141,13 +141,13 @@ public:
               }
             else
               {
-                branch = prefix;
+                branch = branch_name(prefix());
               }
             file_id ident = downcast_to_file_t(i->second)->content;
             file_data spec;
             db.get_file_version(ident, spec);
 
-            branch_name branch_cert_value;
+            branch_uid branch_cert_value;
             set<rsa_keypair_id> committers;
 
             basic_io::input_source src(spec.inner()(), "branch spec");
@@ -156,12 +156,12 @@ public:
 
             while (pa.symp())
               {
-                if (pa.symp(basic_io::syms::branch_id))
+                if (pa.symp(basic_io::syms::branch_uid))
                   {
                     pa.sym();
                     string branch;
                     pa.str(branch);
-                    branch_cert_value = branch_name(branch);
+                    branch_cert_value = branch_uid(branch);
                   }
                 else if (pa.symp(basic_io::syms::committer))
                   {
@@ -190,7 +190,7 @@ public:
         for (dir_map::const_iterator i = delegation_node->children.begin();
              i != delegation_node->children.end(); ++i)
           {
-            branch_name subprefix(prefix() + "." + i->first());
+            branch_prefix subprefix(prefix() + "." + i->first());
             file_id ident = downcast_to_file_t(i->second)->content;
             file_data spec;
             db.get_file_version(ident, spec);
@@ -205,7 +205,7 @@ public:
   map<branch_name, branch_policy> all_branches()
   {
     typedef map<branch_name, branch_policy> branch_policies;
-    typedef map<branch_name, policy_branch> policy_branches;
+    typedef map<branch_prefix, policy_branch> policy_branches;
     branch_policies out = branches;
     for (policy_branches::iterator i = delegations.begin();
          i != delegations.end(); ++i)
@@ -262,7 +262,7 @@ namespace
     }
   };
 
-  revision_id policy_branch_head(branch_name const & name,
+  revision_id policy_branch_head(branch_uid const & name,
                                  set<rsa_keypair_id> const & trusted_signers,
                                  database & db)
   {
@@ -311,21 +311,21 @@ public:
   policy_branch policy;
   bool passthru;
   policy_info(system_path const & spec_file,
-              branch_name const & prefix,
+              branch_prefix const & prefix,
               database & db)
     : policy(spec_file, prefix, db), passthru(false)
   {
   }
   explicit policy_info(database & db)
-    : policy(data(""), branch_name(""), db), passthru(true)
+    : policy(data(""), branch_prefix(""), db), passthru(true)
   {
   }
 };
 
-project_t::project_t(string const & project_name,
+project_t::project_t(branch_prefix const & project_name,
                      system_path const & spec_file,
                      database & db)
-  : project_policy(new policy_info(spec_file, branch_name(project_name), db)), db(db)
+  : project_policy(new policy_info(spec_file, project_name, db)), db(db)
 {}
 
 project_t::project_t(database & db)
@@ -405,6 +405,58 @@ project_t::get_branch_list(globish const & glob,
       if (!check_certs_valid || !heads.empty())
         names.insert(branch);
     }
+}
+
+void
+project_t::get_branch_list(std::set<branch_uid> & branch_ids)
+{
+  branch_ids.clear();
+  if (project_policy->passthru)
+    {
+      std::set<branch_name> names;
+      get_branch_list(names, false);
+      for (std::set<branch_name>::const_iterator i = names.begin();
+           i != names.end(); ++i)
+        {
+          branch_ids.insert(branch_uid((*i)()));
+        }
+      return;
+    }
+  typedef map<branch_name, branch_policy> branchlist;
+  branchlist branches = project_policy->policy.branches();
+  for (branchlist::const_iterator i = branches.begin();
+       i != branches.end(); ++i)
+    {
+      branch_ids.insert(i->second.branch_cert_value);
+    }
+}
+
+branch_uid
+project_t::translate_branch(branch_name const & name)
+{
+  if (project_policy->passthru)
+    return branch_uid(name());
+  typedef map<branch_name, branch_policy> branchlist;
+  branchlist branches = project_policy->policy.branches();
+  branchlist::iterator i = branches.find(name);
+  I(i != branches.end());
+  return i->second.branch_cert_value;
+}
+
+branch_name
+project_t::translate_branch(branch_uid const & uid)
+{
+  if (project_policy->passthru)
+    return branch_name(uid());
+  typedef map<branch_name, branch_policy> branchlist;
+  branchlist branches = project_policy->policy.branches();
+  for (branchlist::const_iterator i = branches.begin();
+       i != branches.end(); ++i)
+    {
+      if (i->second.branch_cert_value == uid)
+        return i->first;
+    }
+  I(false);
 }
 
 namespace

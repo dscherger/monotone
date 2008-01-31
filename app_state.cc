@@ -224,7 +224,7 @@ app_state::get_project()
            i != project_definitions.end(); ++i)
         {
           projects.insert(make_pair(i->first,
-                                    project_t(i->first,
+                                    project_t(branch_prefix(i->first),
                                               i->second,
                                               db)));
         }
