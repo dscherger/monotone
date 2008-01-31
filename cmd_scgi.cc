@@ -72,6 +72,12 @@ using boost::lexical_cast;
 //
 
 
+struct scgi_error
+{
+  string msg;
+  scgi_error(string const & s): msg(s) {}
+};
+
 // Consume string until null or EOF. Consumes trailing null.
 static string 
 parse_str(istream & in)
@@ -153,6 +159,7 @@ do_cmd(app_state & app, json_io::json_object_t cmd_obj)
 
   if (decode_msg_inquire(cmd_obj, revs))
     {
+      L(FL("inquiring %d revisions") % revs.size());
       app.db.ensure_open();
       set<revision_id> confirmed;
       for (set<revision_id>::const_iterator i = revs.begin();
@@ -174,10 +181,14 @@ process_scgi_transaction(app_state & app,
                          std::ostream & out)
 {
   string data;
-  if (parse_scgi(in, data))
+
+  try
     {
+      if (!parse_scgi(in, data))
+        throw scgi_error("unable to parse SCGI request");
+
       L(FL("read %d-byte SCGI request") % data.size());
-      
+
       json_io::input_source in(data, "scgi");
       json_io::tokenizer tok(in);
       json_io::parser p(tok);
@@ -206,12 +217,21 @@ process_scgi_transaction(app_state & app,
               return;
             }
         }
-      
     }
-  out << "Status: 400 Bad request\r\n"
-      << "Content-Type: application/jsonrequest\r\n"
-      << "\r\n";
-  out.flush();
+  catch (scgi_error & e)
+    {
+      out << "Status: 400 Bad request\r\n"
+          << "Content-Type: application/jsonrequest\r\n"
+          << "\r\n";
+      out.flush();
+    }
+  catch (informative_failure & e)
+    {
+      out << "Status: 400 Bad request\r\n"
+          << "Content-Type: application/jsonrequest\r\n"
+          << "\r\n";
+      out.flush();
+    }
 }
 
 
