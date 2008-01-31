@@ -1984,15 +1984,18 @@ struct dij_context
     { };
 };
 
-// This returns the shortest path from a blob following it's dependents,
-// i.e. downwards, from the root of the tree to the leaves *or* following
-// it's dependencies, i.e. upwards, from the leaves to the root. It can
-// ignore blobs depending on their color (painted by a previous depth
-// first search) to reduce the number of blobs it needs to touch. As if
-// that weren't enough flexibility already, it can also abort the search
-// as soon as it hits the first grey blob.
+// This returns the shortest path from a blob following it's dependencies,
+// i.e. upwards, from the leaves to the root.
+//
+// It can ignore blobs depending on their color (painted by a previous depth
+// first search) or abort the search as soon as a lower age limit of the
+// blobs is reached. Both serves reducing the number of blobs it needs to
+// touch. As if that weren't enough flexibility already, it can also abort
+// the search as soon as it hits the first grey blob, which is another nice
+// optimization in one case.
 //
 // Attention: the path is returned in reversed order!
+//
 template<typename Container> void
 dijkstra_shortest_path(cvs_history &cvs,
                        cvs_blob_index from, cvs_blob_index to,
@@ -2001,8 +2004,11 @@ dijkstra_shortest_path(cvs_history &cvs,
                        bool follow_grey,
                        bool follow_black,
                        bool break_on_grey,
-                       pair< cvs_blob_index, cvs_blob_index > edge_to_ignore)
+                       pair< cvs_blob_index, cvs_blob_index > edge_to_ignore,
+                       time_i age_limit)
 {
+  int age_limit_violations = 0;
+
   map< cvs_blob_index, dij_context > distances;
   stack< cvs_blob_index > stack;
 
@@ -2026,6 +2032,16 @@ dijkstra_shortest_path(cvs_history &cvs,
 
       I(distances.count(bi) > 0);
       int curr_dist = distances[bi].dist;
+
+      // check the age limit, but abort only after the 10th violation,
+      // just to be extra sure.
+      time_i t(cvs.blobs[bi].get_youngest_event_time());
+      if (t < age_limit)
+        {
+          age_limit_violations++;
+          if (age_limit_violations >= 10)
+            break;
+        }
 
       for (blob_event_iter i = cvs.blobs[bi].begin();
            i != cvs.blobs[bi].end(); ++i)
@@ -2132,7 +2148,8 @@ public:
       dijkstra_shortest_path(cvs, e.first, e.second, ity,
                              true, true, false, // follow white and grey
                              false,
-                             make_pair(invalid_blob, invalid_blob));
+                             make_pair(invalid_blob, invalid_blob),
+                             0);
       I(!cycle_members.empty());
 
 #ifdef DEBUG_GRAPHVIZ
@@ -2303,7 +2320,8 @@ public:
       dijkstra_shortest_path(cvs, e.second, cvs.root_blob, ity_a,
                              false, true, true,   // follow grey and black, but
                              true,                // break on first grey
-                             make_pair(e.second, e.first)); // ignore direct path
+                             make_pair(e.second, e.first), // igndirect path
+                             0);                  // no age limit
       I(!path_a.empty());
 
       // From that common ancestor, we now follow the grey blobs downwards,
@@ -2313,7 +2331,8 @@ public:
       dijkstra_shortest_path(cvs, e.first, path_a[0], ity_b,
                              false, true, false,  // follow only grey
                              false,
-                             make_pair(invalid_blob, invalid_blob));
+                             make_pair(invalid_blob, invalid_blob),
+                             0);
       I(!path_b.empty());
       path_b.push_back(e.second);
 
@@ -2384,11 +2403,15 @@ public:
       insert_iterator< vector< cvs_blob_index > >
         ity_c(cross_path, cross_path.end());
 
+      // this search can be aborted as soon as we hit blobs older than
+      // the first blob in path_a and path_b.
+      time_i age_limit(cvs.blobs[*path_a.begin()].get_oldest_event_time());
       dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
                              ity_c,
                              true, true, true,    // follow all colors
                              false,
-                             make_pair(invalid_blob, invalid_blob));
+                             make_pair(invalid_blob, invalid_blob),
+                             age_limit);
 
       if (!cross_path.empty())
         {
@@ -2492,11 +2515,15 @@ public:
           insert_iterator< vector< cvs_blob_index > >
             ity_c(cross_path, cross_path.end());
 
+          // this search can be aborted as soon as we hit blobs older than
+          // the first blob in both paths.
+          time_i age_limit(cvs.blobs[*path_a.begin()].get_oldest_event_time());
           dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
                                  ity_c,
                                  true, true, true,    // follow all colors
                                  false,
-                                 make_pair(invalid_blob, invalid_blob));
+                                 make_pair(invalid_blob, invalid_blob),
+                                 age_limit);
           I(cross_path.empty());
 
           handle_paths_of_cross_edge(path_a, path_b);
@@ -2844,10 +2871,12 @@ public:
               insert_iterator< vector< cvs_blob_index > >
                 back_ity(back_path, back_path.end());
 
+              time_i age_limit(cvs.blobs[*ity_anc].get_oldest_event_time());
               dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
                                      true, true, true,   // follow all
                                      false,
-                                     make_pair(invalid_blob, invalid_blob));
+                                     make_pair(invalid_blob, invalid_blob),
+                                     age_limit);
               I(back_path.empty());
 
 
@@ -2856,7 +2885,8 @@ public:
               dijkstra_shortest_path(cvs, *ity_b, *ity_a, back_ity,
                                      true, true, true,   // follow all
                                      false,
-                                     make_pair(invalid_blob, invalid_blob));
+                                     make_pair(invalid_blob, invalid_blob),
+                                     age_limit);
               if (back_path.empty())
                 {
                   L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
