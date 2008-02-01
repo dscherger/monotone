@@ -3101,6 +3101,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
       ity = blob_events.begin();
       this_ev = *ity;
+
       for ( ; ity != blob_events.end(); ++ity)
         {
           last_ev = this_ev;
@@ -3123,14 +3124,16 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           stack<cvs_blob_index> blobs_to_track;
           set<cvs_blob_index> blobs_done;
           for (dep_loop j = cvs.get_dependencies(this_ev); !j.ended(); ++j)
-            blobs_to_track.push((*j)->bi);
+            {
+              blobs_to_track.push((*j)->bi);
+              safe_insert(blobs_done, (*j)->bi);
+            }
 
           bool depends_on_a_cycle_member = false;
           while (!blobs_to_track.empty())
             {
               cvs_blob_index bi = blobs_to_track.top();
               blobs_to_track.pop();
-              blobs_done.insert(bi);
 
               if (cycle_members.find(bi) != cycle_members.end())
                 {
@@ -3147,7 +3150,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                     cvs_blob_index dep_bi = (*jj)->bi;
                     if ((*jj)->adj_time > oldest_event_in_cycle)
                       if (blobs_done.find(dep_bi) == blobs_done.end())
-                        blobs_to_track.push(dep_bi);
+                        {
+                          blobs_to_track.push(dep_bi);
+                          safe_insert(blobs_done, dep_bi);
+                        }
                   }
             }
 
