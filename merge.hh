@@ -10,6 +10,9 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include <vector>
+#include <set>
+
 #include "vocab.hh"
 
 class app_state;
@@ -29,6 +32,9 @@ resolve_merge_conflicts(roster_t const & left_roster,
                         roster_merge_result & result,
                         content_merge_adaptor & adaptor,
                         app_state & app);
+
+void
+print_sentinels_and_abort(std::set<revision_id> const & sentinels);
 
 // traditional resolve-all-conflicts-as-you-go style merging with 3-way merge
 //   for file texts

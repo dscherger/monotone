@@ -397,6 +397,8 @@ prepare_diff(cset & included,
       revision_id r_old_id;
 
       complete(app, idx(app.opts.revision_selectors, 0)(), r_old_id);
+      E(!app.db.sentinel_exists(r_old_id),
+        F("missing revision '%s'") % r_old_id);
       N(app.db.revision_exists(r_old_id),
         F("no such revision '%s'") % r_old_id);
 
@@ -427,8 +429,12 @@ prepare_diff(cset & included,
       complete(app, idx(app.opts.revision_selectors, 0)(), r_old_id);
       complete(app, idx(app.opts.revision_selectors, 1)(), r_new_id);
 
+      E(!app.db.sentinel_exists(r_old_id),
+        F("missing revision '%s'") % r_old_id);
       N(app.db.revision_exists(r_old_id),
         F("no such revision '%s'") % r_old_id);
+      E(!app.db.sentinel_exists(r_old_id),
+        F("missing revision '%s'") % r_new_id);
       N(app.db.revision_exists(r_new_id),
         F("no such revision '%s'") % r_new_id);
 
@@ -787,7 +793,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         }
 
       seen.insert(rid);
-      app.db.get_revision(rid, rev);
+      app.db.get_revision_or_sentinel(rid, rev);
 
       set<revision_id> marked_revs;
 
@@ -866,6 +872,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           ostringstream out;
           if (app.opts.brief)
             {
+              if (!rev.is_sentinel)
+                {
               out << rid;
               log_certs(out, app, rid, author_name);
               if (app.opts.no_graph)
@@ -877,15 +885,24 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                 }
               log_certs(out, app, rid, branch_name);
               out << '\n';
+                }
+              else
+                {
+                  out << "Missing revisions starting from " << rid;
+                  out << '\n';
+                }
             }
           else
             {
               out << string(65, '-') << '\n';
+
+              if (!rev.is_sentinel)
+                {
               out << "Revision: " << rid << '\n';
 
               changes_summary csum;
 
-              set<revision_id> ancestors;
+              set<revision_id> ancestors, sentinel_ancestors;
 
               for (edge_map::const_iterator e = rev.edges.begin();
                    e != rev.edges.end(); ++e)
@@ -912,14 +929,25 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
 
               log_certs(out, app, rid, changelog_name, "ChangeLog: ", true);
               log_certs(out, app, rid, comment_name,   "Comments: ",  true);
+                }
+              else
+                {
+                  out << "Missing revisions starting from " << rid;
+                  out << '\n';
+                }
             }
 
-          if (app.opts.diffs)
+          if (app.opts.diffs && !rev.is_sentinel)
             {
               for (edge_map::const_iterator e = rev.edges.begin();
                    e != rev.edges.end(); ++e)
-                dump_diffs(edge_changes(e), app, true, out,
-                           diff_paths, !mask.empty());
+                if (!app.db.sentinel_exists(edge_old_revision(e)))
+                  dump_diffs(edge_changes(e), app, true, out,
+                             diff_paths, !mask.empty());
+                else
+                  out << string(60, '=') << '\n'
+                      << "# Unable to diff against sentinel "
+                      << edge_old_revision(e) << '\n';
             }
 
           if (next > 0)

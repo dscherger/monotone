@@ -124,6 +124,7 @@ revision_t::revision_t(revision_t const & other)
   made_for = made_for_nobody;
   if (null_id(other.new_manifest) && other.edges.empty()) return;
   other.check_sane();
+  is_sentinel = other.is_sentinel;
   new_manifest = other.new_manifest;
   edges = other.edges;
   made_for = other.made_for;
@@ -133,6 +134,7 @@ revision_t const &
 revision_t::operator=(revision_t const & other)
 {
   other.check_sane();
+  is_sentinel = other.is_sentinel;
   new_manifest = other.new_manifest;
   edges = other.edges;
   made_for = other.made_for;
@@ -1769,7 +1771,8 @@ regenerate_caches(app_state & app)
     {
       revision_t rev;
       revision_id const & rev_id = *i;
-      app.db.get_revision(rev_id, rev);
+      app.db.get_revision_or_sentinel(rev_id, rev);
+      I(!rev.is_sentinel);
       app.db.put_roster_for_revision(rev_id, rev);
       app.db.put_height_for_revision(rev_id, rev);
       ++done;
@@ -1887,6 +1890,30 @@ parse_revision(basic_io::parser & parser,
 }
 
 void
+parse_sentinel(basic_io::parser & parser,
+               revision_t & rev)
+{
+  MM(rev);
+  rev.is_sentinel = true;
+  rev.edges.clear();
+  rev.made_for = made_for_database;
+  string tmp;
+  parser.esym(syms::format_version);
+  parser.str(tmp);
+  E(tmp == "1",
+    F("encountered a sentinel with unknown format, version '%s'\n"
+      "I only know how to understand the version '1' format\n"
+      "a newer version of monotone is required to complete this operation")
+    % tmp);
+  parser.esym(syms::new_manifest);
+  parser.hex(tmp);
+  rev.new_manifest = manifest_id(tmp);
+  while (parser.symp(syms::old_revision))
+    parse_edge(parser, rev.edges);
+  rev.check_sane();
+}
+
+void
 read_revision(data const & dat,
               revision_t & rev)
 {
@@ -1904,6 +1931,27 @@ read_revision(revision_data const & dat,
               revision_t & rev)
 {
   read_revision(dat.inner(), rev);
+  rev.check_sane();
+}
+
+void
+read_sentinel(data const & dat,
+              revision_t & rev)
+{
+  MM(rev);
+  basic_io::input_source src(dat(), "sentinel");
+  basic_io::tokenizer tok(src);
+  basic_io::parser pars(tok);
+  parse_sentinel(pars, rev);
+  I(src.lookahead == EOF);
+  rev.check_sane();
+}
+
+void
+read_sentinel(sentinel_data const & dat,
+              revision_t & rev)
+{
+  read_sentinel(dat.inner(), rev);
   rev.check_sane();
 }
 

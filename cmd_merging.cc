@@ -568,13 +568,20 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
         marking_map left_marking_map, right_marking_map;
         set<revision_id>
           left_uncommon_ancestors,
-          right_uncommon_ancestors;
+          right_uncommon_ancestors,
+          sentinels;
 
         app.db.get_roster(left_rid, left_roster, left_marking_map);
         app.db.get_roster(right_rid, right_roster, right_marking_map);
         app.db.get_uncommon_ancestors(left_rid, right_rid,
                                       left_uncommon_ancestors,
                                       right_uncommon_ancestors);
+
+        app.db.get_sentinels_of(left_uncommon_ancestors, sentinels);
+        app.db.get_sentinels_of(right_uncommon_ancestors, sentinels);
+
+        if (sentinels.size() > 0)
+          print_sentinels_and_abort(sentinels);
 
         if (!idx(args,2)().empty())
           {
@@ -700,10 +707,19 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   P(F("[left]  %s") % left_id);
   P(F("[right] %s") % right_id);
 
-  set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+  set<revision_id> left_uncommon_ancestors,
+                   right_uncommon_ancestors,
+                   sentinels;
+
   app.db.get_uncommon_ancestors(left_id, right_id,
                                 left_uncommon_ancestors,
                                 right_uncommon_ancestors);
+
+  app.db.get_sentinels_of(left_uncommon_ancestors, sentinels);
+  app.db.get_sentinels_of(right_uncommon_ancestors, sentinels);
+
+  if (sentinels.size() > 0)
+    print_sentinels_and_abort(sentinels);
 
   roster_merge_result merge_result;
   MM(merge_result);
@@ -798,10 +814,17 @@ CMD(show_conflicts, "show_conflicts", "", CMD_REF(informative), N_("REV REV"),
   marking_map l_marking, r_marking;
   app.db.get_roster(l_id, l_roster, l_marking);
   app.db.get_roster(r_id, r_roster, r_marking);
-  set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
+  set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors, sentinels;
   app.db.get_uncommon_ancestors(l_id, r_id,
                                 l_uncommon_ancestors,
                                 r_uncommon_ancestors);
+
+  app.db.get_sentinels_of(l_uncommon_ancestors, sentinels);
+  app.db.get_sentinels_of(r_uncommon_ancestors, sentinels);
+
+  if (sentinels.size() > 0)
+    print_sentinels_and_abort(sentinels);
+
   roster_merge_result result;
   roster_merge(l_roster, l_marking, l_uncommon_ancestors,
                r_roster, r_marking, r_uncommon_ancestors,
@@ -1095,10 +1118,18 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
 
           i++; I(i == parents.end());
 
-          set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
+          set<revision_id> left_uncommon_ancestors,
+                           right_uncommon_ancestors,
+                           sentinels;
           app.db.get_uncommon_ancestors(left_id, right_id,
                                         left_uncommon_ancestors,
                                         right_uncommon_ancestors);
+
+          app.db.get_sentinels_of(left_uncommon_ancestors, sentinels);
+          app.db.get_sentinels_of(right_uncommon_ancestors, sentinels);
+
+          if (sentinels.size() > 0)
+            print_sentinels_and_abort(sentinels);
 
           mark_merge_roster(left_roster, left_markings,
                             left_uncommon_ancestors,
