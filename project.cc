@@ -544,8 +544,13 @@ bool
 project_t::revision_is_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
   base64<cert_value> branch_encoded;
-  encode_base64(cert_value(branch()), branch_encoded);
+  encode_base64(cert_value(bid()), branch_encoded);
 
   vector<revision<cert> > certs;
   db.get_revision_certs(id, branch_cert_name, branch_encoded, certs);
@@ -568,15 +573,25 @@ project_t::put_revision_in_branch(key_store & keys,
                                   revision_id const & id,
                                   branch_name const & branch)
 {
-  cert_revision_in_branch(id, branch, db, keys);
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
+  cert_revision_in_branch(id, bid, db, keys);
 }
 
 bool
 project_t::revision_is_suspended_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
   base64<cert_value> branch_encoded;
-  encode_base64(cert_value(branch()), branch_encoded);
+  encode_base64(cert_value(bid()), branch_encoded);
 
   vector<revision<cert> > certs;
   db.get_revision_certs(id, suspend_cert_name, branch_encoded, certs);
@@ -599,7 +614,12 @@ project_t::suspend_revision_in_branch(key_store & keys,
                                       revision_id const & id,
                                       branch_name const & branch)
 {
-  cert_revision_suspended_in_branch(id, branch, db, keys);
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
+  cert_revision_suspended_in_branch(id, bid, db, keys);
 }
 
 
@@ -639,7 +659,17 @@ project_t::get_revision_branches(revision_id const & id,
     {
       cert_value b;
       decode_base64(i->inner().value, b);
-      branches.insert(branch_name(b()));
+      if (project_policy->passthru)
+        branches.insert(branch_name(b()));
+      else
+        {
+          std::set<branch_uid> branchids;
+          get_branch_list(branchids);
+          if (branchids.find(branch_uid(b())) != branchids.end())
+            branches.insert(translate_branch(branch_uid(b())));
+          else
+            branches.insert(branch_name(b()));
+        }
     }
   return i;
 }
@@ -648,8 +678,13 @@ outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
                             std::vector<revision<cert> > & certs)
 {
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
   base64<cert_value> branch_encoded;
-  encode_base64(cert_value(branch()), branch_encoded);
+  encode_base64(cert_value(bid()), branch_encoded);
 
   return db.get_revision_certs(branch_cert_name, branch_encoded, certs);
 }
@@ -712,7 +747,12 @@ project_t::put_standard_certs(key_store & keys,
                               date_t const & time,
                               utf8 const & author)
 {
-  cert_revision_in_branch(id, branch, db, keys);
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
+  cert_revision_in_branch(id, bid, db, keys);
   cert_revision_changelog(id, changelog, db, keys);
   cert_revision_date_time(id, time, db, keys);
   if (!author().empty())

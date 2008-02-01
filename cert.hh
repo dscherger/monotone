@@ -108,7 +108,7 @@ void erase_bogus_certs(std::vector< manifest<cert> > & certs,
 
 void
 cert_revision_in_branch(revision_id const & ctx,
-                        branch_name const & branchname,
+                        branch_uid const & branch,
                         database & db, key_store & keys);
 
 
@@ -136,7 +136,7 @@ guess_branch(revision_id const & id, database & db, project_t & project);
 
 void
 cert_revision_suspended_in_branch(revision_id const & ctx,
-                        branch_name const & branchname,
+                        branch_uid const & branch,
                         database & db, key_store & keys);
 
 void

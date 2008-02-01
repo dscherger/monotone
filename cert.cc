@@ -513,7 +513,7 @@ put_simple_revision_cert(revision_id const & id,
 
 void
 cert_revision_in_branch(revision_id const & rev,
-                        branch_name const & branch,
+                        branch_uid const & branch,
                         database & db,
                         key_store & keys)
 {
@@ -523,7 +523,7 @@ cert_revision_in_branch(revision_id const & rev,
 
 void
 cert_revision_suspended_in_branch(revision_id const & rev,
-                                  branch_name const & branch,
+                                  branch_uid const & branch,
                                   database & db,
                                   key_store & keys)
 {
