@@ -326,11 +326,11 @@ public:
 project_t::project_t(branch_prefix const & project_name,
                      system_path const & spec_file,
                      database & db)
-  : project_policy(new policy_info(spec_file, project_name, db)), db(db)
+  : db(db), project_policy(new policy_info(spec_file, project_name, db))
 {}
 
 project_t::project_t(database & db)
-  : project_policy(new policy_info(db)), db(db)
+  : db(db), project_policy(new policy_info(db))
 {}
 
 void

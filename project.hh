@@ -42,6 +42,7 @@ public:
   database & db;
 
 private:
+  boost::shared_ptr<policy_info> project_policy;
   std::map<std::pair<branch_name, suspended_indicator>,
            std::pair<outdated_indicator, std::set<revision_id> >
            > branch_heads;
