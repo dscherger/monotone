@@ -295,25 +295,41 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     "",
     options::opts::depth | options::opts::exclude)
 {
-  map<branch_name, epoch_data> epochs;
+  map<branch_uid, epoch_data> epochs;
   app.db.get_epochs(epochs);
 
   if (args.size() == 0)
     {
-      for (map<branch_name, epoch_data>::const_iterator
+      std::set<branch_uid> branches;
+      app.get_project().get_branch_list(branches);
+      for (map<branch_uid, epoch_data>::const_iterator
              i = epochs.begin();
            i != epochs.end(); ++i)
         {
-          cout << i->second << ' ' << i->first << '\n';
+          if (branches.find(i->first) == branches.end())
+            {
+              cout << i->second << ' ' << i->first << '\n';
+            }
+          else
+            {
+              branch_name branch = app.get_project().translate_branch(i->first);
+              cout << i->second << ' ' << branch << '\n';
+            }
         }
     }
   else
     {
+      std::set<branch_name> branches;
+      app.get_project().get_branch_list(branches, false);
       for (args_vector::const_iterator i = args.begin();
            i != args.end();
            ++i)
         {
-          map<branch_name, epoch_data>::const_iterator j = epochs.find(branch_name((*i)()));
+          branch_name branch((*i)());
+          N(branches.find(branch) != branches.end(),
+            F("Unknown branch %s") % branch);
+          branch_uid b = app.get_project().translate_branch(branch);
+          map<branch_uid, epoch_data>::const_iterator j = epochs.find(b);
           N(j != epochs.end(), F("no epoch for branch %s") % *i);
           cout << j->second << ' ' << j->first << '\n';
         }

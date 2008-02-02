@@ -272,7 +272,9 @@ CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
   if (args.size() != 1)
     throw usage(execid);
 
-  app.db.clear_epoch(branch_name(idx(args, 0)()));
+  branch_name name(idx(args, 0)());
+  branch_uid branch = app.get_project().translate_branch(name);
+  app.db.clear_epoch(branch);
 }
 
 CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
@@ -286,7 +288,9 @@ CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
   epoch_data ed(idx(args, 1)());
   N(ed.inner()().size() == constants::epochlen,
     F("The epoch must be %s characters") % constants::epochlen);
-  app.db.set_epoch(branch_name(idx(args, 0)()), ed);
+  branch_name name(idx(args, 0)());
+  branch_uid branch = app.get_project().translate_branch(name);
+  app.db.set_epoch(branch, ed);
 }
 
 CMD(set, "set", "", CMD_REF(variables), N_("DOMAIN NAME VALUE"),
