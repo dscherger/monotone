@@ -189,10 +189,12 @@ sub advanced_find_button_clicked_cb($$);
 sub combo_changed_cb($$);
 sub combo_key_release_event_cb($$$);
 sub create_advanced_find_window();
+sub create_format_tags($);
 sub delete_event_cb($$$);
 sub destroy_event_cb($$;$);
 sub directory_up_button_clicked_cb($$);
-sub generate_revision_report($$$);
+sub display_change_log($);
+sub generate_revision_report($$$$);
 sub get_completion($$$$;$);
 sub get_dir_contents($$$);
 sub get_revision_ids($$);
@@ -209,6 +211,7 @@ sub set_label_value($$);
 sub setup_sigchld_handler($);
 sub sigchld_handler();
 sub simple_query_radiobutton_toggled_cb($$);
+sub revision_information_button_clicked_cb($$);
 sub term_combobox_changed_cb($$);
 sub update_advanced_find_state($$);
 sub update_browser_state($$);
@@ -281,13 +284,13 @@ sub new_browser_instance()
 
     my($browser,
        $font,
+       $image,
        $renderer,
        $tv_column,
        $div);
 
     $browser = {};
     $browser->{mtn} = Monotone::AutomateStdio->new();
-    # $browser->{glade} = Gtk2::GladeXML->new("../mtn-browse.glade");
     $browser->{glade} =
 	Gtk2::GladeXML->new("../mtn-browse.glade", "main_window");
 
@@ -349,7 +352,7 @@ sub new_browser_instance()
     $browser->{change_log_label} =
 	$browser->{glade}->get_widget("change_log_value_label");
 
-    # Setup button sensitive groups.
+    # Setup button sensitivity groups.
 
     $browser->{text_file_sensitive_group} = ();
     foreach my $item ("search_text", "annotate", "file_compare")
@@ -408,6 +411,9 @@ sub new_browser_instance()
     $browser->{manifest_treeview}->set_model($browser->{manifest_liststore});
 
     $tv_column = Gtk2::TreeViewColumn->new();
+    $image = Gtk2::Image->new_from_stock("gtk-file", "menu");
+    $image->show_all();
+    $tv_column->set_widget($image);
     $tv_column->set_resizable(FALSE);
     $tv_column->set_sizing("fixed");
     $tv_column->set_fixed_width(25);
@@ -719,8 +725,8 @@ sub tagged_checkbutton_toggled_cb($$)
 #
 #   Routine      - advanced_find_button_clicked_cb
 #
-#   Description  - Callback routine called when the user clicks on the up
-#                  directory button.
+#   Description  - Callback routine called when the user clicks on the
+#                  advanced find button.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -784,6 +790,33 @@ sub advanced_find_button_clicked_cb($$)
 	&{$browser->{update_handler}}($browser, $state);
 
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - revision_information_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  revision information button.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub revision_information_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    display_change_log($browser);
 
 }
 #
@@ -1597,16 +1630,99 @@ sub create_advanced_find_window()
     # Setup the revision details viewer.
 
     $instance->{details_buffer} = $instance->{details_textview}->get_buffer();
-    $instance->{details_buffer}->create_tag("bold",
-					    weight => PANGO_WEIGHT_BOLD);
-    $instance->{details_buffer}->create_tag("italics", style => "italic");
-    $instance->{details_buffer}->create_tag("bold-italics",
-					    weight => PANGO_WEIGHT_BOLD,
-					    style => "italic");
+    create_format_tags($instance->{details_textview}->get_buffer());
     $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
     $instance->{details_textview}->modify_font($font) if (defined($font));
 
     return $instance;
+
+}
+#
+##############################################################################
+#
+#   Routine      - display_change_log
+#
+#   Description  - Displays the change log dialog window for the specified
+#                  revision.
+#
+#   Data         - $browser     : The browser instance that started the
+#                                 advanced find.
+#
+##############################################################################
+
+
+
+sub display_change_log($)
+{
+
+    my($browser) = @_;
+
+    my (@certs_list,
+	$font,
+	$instance,
+	@revision_details,
+	@revision_ids);
+
+    $instance = {};
+    $instance->{glade} =
+	Gtk2::GladeXML->new("../mtn-browse.glade", "changelog_window");
+
+    # Connect Glade registered signal handlers.
+
+    $instance->{glade}->signal_autoconnect
+	(sub {
+	     my($callback_name, $widget, $signal_name, $signal_data,
+		$connect_object, $after, $user_data) = @_;
+	     my $func = $after ? "signal_connect_after" : "signal_connect";
+	     $widget->$func($signal_name,
+			    $callback_name,
+			    $connect_object ? $connect_object : $user_data); },
+	 $instance);
+
+    # Get the widgets that we are interested in.
+
+    $instance->{window} =
+	$instance->{glade}->get_widget("changelog_window");
+    $instance->{window}->set_icon($app_icon);
+    $instance->{window}->set_title
+	("Revision " . $browser->{revision_combo_details}->{value});
+    $instance->{changelog_textview} =
+	$instance->{glade}->get_widget("changelog_textview");
+    $instance->{changelog_scrolledwindow} =
+	$instance->{glade}->get_widget("changelog_scrolledwindow");
+
+    # Setup the changelog window deletion handler.
+
+    $instance->{window}->signal_connect
+	("delete_event", sub { $_[0]->destroy(); return TRUE; });
+
+    # Setup the revision changelog viewer.
+
+    $instance->{changelog_buffer} =
+	$instance->{changelog_textview}->get_buffer();
+    create_format_tags($instance->{changelog_buffer});
+    $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+    $instance->{changelog_textview}->modify_font($font) if (defined($font));
+
+    # Get the currently selected revision id.
+
+    get_revision_ids($browser, \@revision_ids);
+
+    # Put the details into the text view and display it.
+
+    $instance->{changelog_buffer}->set_text("");
+    $browser->{mtn}->certs(\@certs_list, $revision_ids[0]);
+    $browser->{mtn}->get_revision(\@revision_details, $revision_ids[0]);
+    generate_revision_report($instance->{changelog_buffer},
+			     $revision_ids[0],
+			     \@certs_list,
+			     \@revision_details);
+    if ($instance->{changelog_scrolledwindow}->realized())
+    {
+	$instance->{changelog_scrolledwindow}->get_vadjustment()->set_value(0);
+	$instance->{changelog_scrolledwindow}->get_hadjustment()->set_value(0);
+    }
+    $instance->{window}->show_all();
 
 }
 #
@@ -2509,6 +2625,8 @@ sub update_advanced_find_state($$)
 		my ($branch,
 		    @certs_list,
 		    @revision_details);
+
+		$advanced_find->{details_buffer}->set_text("");
 		$advanced_find->{mtn}->certs
 		    (\@certs_list,
 		     $advanced_find->{revisions_treeview_details}->{value});
@@ -2517,6 +2635,7 @@ sub update_advanced_find_state($$)
 		     $advanced_find->{revisions_treeview_details}->{value});
 		generate_revision_report
 		    ($advanced_find->{details_buffer},
+		     $advanced_find->{revisions_treeview_details}->{value},
 		     \@certs_list,
 		     \@revision_details);
 
@@ -2574,6 +2693,8 @@ sub update_advanced_find_state($$)
 #
 #   Data         - $text_buffer      : The Gtk2::TextBuffer that is to be
 #                                      populated.
+#                  $revision_id      : The id of the revision being reported
+#                                      on.
 #                  $certs_list       : A reference to a certs list as returned
 #                                      by $mtn->certs().
 #                  $revision_details : A reference to a revision details list
@@ -2583,10 +2704,10 @@ sub update_advanced_find_state($$)
 
 
 
-sub generate_revision_report($$$)
+sub generate_revision_report($$$$)
 {
 
-    my($text_buffer, $certs_list, $revision_details) = @_;
+    my($text_buffer, $revision_id, $certs_list, $revision_details) = @_;
 
     my($change_log,
        $manifest_id,
@@ -2597,9 +2718,16 @@ sub generate_revision_report($$$)
     my @types =
 	("Added", "Removed", "Changed", "Renamed", "Attributes");
 
-    # Pretty print it into the text buffer.
+    # Revision id.
 
-    $text_buffer->set_text("");
+    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					   "Revision id: ",
+					   "bold");
+    $text_buffer->insert($text_buffer->get_end_iter(),
+			 $revision_id . "\n\n");
+
+    # Certs.
+
     foreach my $cert (@$certs_list)
     {
 	if ($cert->{name} eq "changelog")
@@ -2618,10 +2746,16 @@ sub generate_revision_report($$$)
 				 sprintf("%s\n", $cert->{value}));
 	}
     }
+
+    # Change log.
+
     $text_buffer->insert_with_tags_by_name
 	($text_buffer->get_end_iter(), "\nChange Log:\n", "bold");
     $text_buffer->insert($text_buffer->get_end_iter(),
 			 sprintf("%s\n", $change_log));
+
+    # Revision details.
+
     $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
 					   "\nChanges Made:\n", "bold");
     foreach my $type (@types)
@@ -2692,6 +2826,9 @@ sub generate_revision_report($$$)
 	    }
 	}
     }
+
+    # Parent revision and manifest ids.
+
     $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
 					   "\nParent revision id(s):\t",
 					   "bold");
@@ -3086,7 +3223,6 @@ sub make_busy($$)
 
     if (! exists($instance->{busy_cursor}))
     {
-	$instance->{normal_cursor} = Gtk2::Gdk::Cursor->new("left-ptr");
 	$instance->{busy_cursor} = Gtk2::Gdk::Cursor->new("watch");
     }
 
@@ -3101,8 +3237,7 @@ sub make_busy($$)
     }
     else
     {
-	$instance->{window}->window()->
-	    set_cursor($instance->{normal_cursor});
+	$instance->{window}->window()->set_cursor(undef);
 	Gtk2->grab_remove($instance->{appbar});
     }
 
@@ -3130,6 +3265,33 @@ sub gtk2_update()
     {
 	Gtk2->main_iteration();
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - create_format_tags
+#
+#   Description  - Creates the Gtk2::TextBuffer tags that are used to pretty
+#                  print stuff.
+#
+#   Data         - $text_view : The GTK2::TextBuffer widget that is to have
+#                               its tags created.
+#
+##############################################################################
+
+
+
+sub create_format_tags($)
+{
+
+    my ($text_buffer) = @_;
+
+    $text_buffer->create_tag("bold", weight => PANGO_WEIGHT_BOLD);
+    $text_buffer->create_tag("italics", style => "italic");
+    $text_buffer->create_tag("bold-italics",
+			     weight => PANGO_WEIGHT_BOLD,
+			     style => "italic");
 
 }
 #
