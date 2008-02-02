@@ -17,6 +17,9 @@
 #include "vocab.hh"
 #include "dates.hh"
 
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+
 // Certs associate an opaque name/value pair with a revision ID, and
 // are accompanied by an RSA public-key signature attesting to the
 // association. Users can write as much extra meta-data as they like
@@ -89,6 +92,15 @@ void put_simple_revision_cert(revision_id const & id,
                               database & db,
                               key_store & keys);
 
+typedef boost::function<bool (std::set<rsa_keypair_id> const &,
+                              hexenc<id> const &,
+                              cert_name const &,
+                              cert_value const &)> trust_function;
+
+void erase_bogus_certs(std::vector< revision<cert> > & certs,
+                       trust_function trust_fn,
+                       database & db);
+
 void erase_bogus_certs(std::vector< revision<cert> > & certs,
                        database & db);
 
@@ -101,7 +113,7 @@ void erase_bogus_certs(std::vector< manifest<cert> > & certs,
 
 void
 cert_revision_in_branch(revision_id const & ctx,
-                        branch_name const & branchname,
+                        branch_uid const & branch,
                         database & db, key_store & keys);
 
 
@@ -129,7 +141,7 @@ guess_branch(revision_id const & id, options & opts, project_t & project);
 
 void
 cert_revision_suspended_in_branch(revision_id const & ctx,
-                        branch_name const & branchname,
+                        branch_uid const & branch,
                         database & db, key_store & keys);
 
 void

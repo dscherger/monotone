@@ -28,20 +28,32 @@ bool operator < (tag_t const & a, tag_t const & b);
 
 typedef bool suspended_indicator;
 
+class policy_info;
+
 class project_t
 {
+  boost::shared_ptr<policy_info> project_policy;
   database & db;
   std::map<std::pair<branch_name, suspended_indicator>, std::pair<outdated_indicator, std::set<revision_id> > > branch_heads;
   std::set<branch_name> branches;
   outdated_indicator indicator;
 
 public:
-  project_t(database & db);
+  project_t(branch_prefix const & project_name,
+            system_path const & spec_file,
+            database & db);
+  explicit project_t(database & db);
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);
   void get_branch_list(globish const & glob, std::set<branch_name> & names,
                        bool check_heads = false);
+
+  // used by 'ls epochs'
+  void get_branch_list(std::set<branch_uid> & ids);
+  branch_uid translate_branch(branch_name const & branch);
+  branch_name translate_branch(branch_uid const & branch);
+
   void get_branch_heads(branch_name const & name, std::set<revision_id> & heads,
                         bool ignore_suspend_certs,
                         std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
