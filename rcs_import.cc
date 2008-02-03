@@ -1968,7 +1968,6 @@ blob_consumer
 
 struct dij_context
 {
-  int dist;
   int age_violations;
   cvs_blob_index prev;
 
@@ -1979,9 +1978,8 @@ struct dij_context
       I(false);
     };
 
-  dij_context(int d, int av, cvs_blob_index p)
-    : dist(d),
-      age_violations(av),
+  dij_context(int av, cvs_blob_index p)
+    : age_violations(av),
       prev(p)
     { };
 };
@@ -2015,7 +2013,7 @@ dijkstra_shortest_path(cvs_history &cvs,
   stack< cvs_blob_index > stack;
 
   stack.push(from);
-  distances.insert(make_pair(from, dij_context(0, 0, invalid_blob)));
+  distances.insert(make_pair(from, dij_context(0, invalid_blob)));
 
   if (break_on_grey)
     I(follow_grey);
@@ -2033,7 +2031,6 @@ dijkstra_shortest_path(cvs_history &cvs,
         break;
 
       I(distances.count(bi) > 0);
-      int curr_dist = distances[bi].dist;
       int curr_age_violations = distances[bi].age_violations;
 
       // check the age limit, but abort only after the 10th violation,
@@ -2060,8 +2057,7 @@ dijkstra_shortest_path(cvs_history &cvs,
               if (distances.count(dep_bi) == 0 &&
                   make_pair(bi, dep_bi) != edge_to_ignore)
                 {
-                  distances.insert(make_pair(dep_bi, dij_context(curr_dist + 1,
-                                                                 curr_age_violations,
+                  distances.insert(make_pair(dep_bi, dij_context(curr_age_violations,
                                                                  bi)));
                   stack.push(dep_bi);
                 }
