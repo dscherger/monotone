@@ -66,7 +66,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
   vector< revision<cert> > ts;
   // FIXME_PROJECTS: after projects are implemented,
   // use the app.db version instead if no project is specified.
-  app.get_project().get_revision_certs(ident, ts);
+  app.get_projects().get_revision_certs(ident, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
     certs.push_back(idx(ts, i).inner());
@@ -281,8 +281,8 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
 
   globish exc(app.opts.exclude_patterns);
   set<branch_name> names;
-  app.get_project().get_branch_list(inc, names,
-                                    !app.opts.ignore_suspend_certs);
+  app.get_projects().get_branch_list(inc, names,
+                                     !app.opts.ignore_suspend_certs);
 
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
@@ -301,7 +301,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
   if (args.size() == 0)
     {
       std::set<branch_uid> branches;
-      app.get_project().get_branch_list(branches);
+      app.get_projects().get_branch_uids(branches);
       for (map<branch_uid, epoch_data>::const_iterator
              i = epochs.begin();
            i != epochs.end(); ++i)
@@ -312,7 +312,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
             }
           else
             {
-              branch_name branch = app.get_project().translate_branch(i->first);
+              branch_name branch = app.get_projects().translate_branch(i->first);
               cout << i->second << ' ' << branch << '\n';
             }
         }
@@ -320,7 +320,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
   else
     {
       std::set<branch_name> branches;
-      app.get_project().get_branch_list(branches, false);
+      app.get_projects().get_branch_list(branches, false);
       for (args_vector::const_iterator i = args.begin();
            i != args.end();
            ++i)
@@ -328,7 +328,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
           branch_name branch((*i)());
           N(branches.find(branch) != branches.end(),
             F("Unknown branch %s") % branch);
-          branch_uid b = app.get_project().translate_branch(branch);
+          branch_uid b = app.get_projects().translate_branch(branch);
           map<branch_uid, epoch_data>::const_iterator j = epochs.find(b);
           N(j != epochs.end(), F("no epoch for branch %s") % *i);
           cout << j->second << ' ' << j->first << '\n';
@@ -342,7 +342,7 @@ CMD(tags, "tags", "", CMD_REF(list), "",
     options::opts::depth | options::opts::exclude)
 {
   set<tag_t> tags;
-  app.get_project().get_tags(tags);
+  app.get_projects().get_tags(tags);
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
     {
@@ -699,7 +699,7 @@ CMD_AUTOMATE(certs, N_("REV"),
   vector< revision<cert> > ts;
   // FIXME_PROJECTS: after projects are implemented,
   // use the db version instead if no project is specified.
-  app.get_project().get_revision_certs(rid, ts);
+  app.get_projects().get_revision_certs(rid, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
     certs.push_back(idx(ts, i).inner());

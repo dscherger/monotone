@@ -673,12 +673,11 @@ project_t::get_revision_branches(revision_id const & id,
           get_branch_list(branchids);
           if (branchids.find(branch_uid(b())) != branchids.end())
             branches.insert(translate_branch(branch_uid(b())));
-          else
-            branches.insert(branch_name(b()));
         }
     }
   return i;
 }
+
 
 outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
@@ -803,6 +802,188 @@ project_t::put_cert(key_store & keys,
                     cert_value const & value)
 {
   put_simple_revision_cert(id, name, value, db, keys);
+}
+
+////////////////////////////////////////////////////////////////////////
+
+project_set::project_set(database & db, lua_hooks & lua)
+  : db(db)
+{
+  map<string, system_path> project_definitions;
+  lua.hook_get_projects(project_definitions);
+  for (map<string, system_path>::const_iterator i = project_definitions.begin();
+       i != project_definitions.end(); ++i)
+    {
+      projects.insert(make_pair(branch_prefix(i->first),
+                                project_t(branch_prefix(i->first),
+                                          i->second,
+                                          db)));
+    }
+  if (projects.empty())
+    {
+      projects.insert(std::make_pair("", project_t(db)));
+    }
+}
+
+project_t &
+project_set::get_project(branch_prefix const & name)
+{
+  project_t * const project = maybe_get_project(name);
+  I(project != NULL);
+  return *project;
+}
+
+project_t * const
+project_set::maybe_get_project(branch_prefix const & name)
+{
+  map<branch_prefix, project_t>::iterator i = projects.find(name);
+  if (i != projects.end())
+    return &i->second;
+  else
+    return NULL;
+}
+
+project_t &
+project_set::get_project_of_branch(branch_name const & branch)
+{
+  project_t * const project = maybe_get_project_of_branch(branch);
+  I(project != NULL);
+  return *project;
+}
+
+project_t * const
+project_set::maybe_get_project_of_branch(branch_name const & branch)
+{
+  for (map<branch_prefix, project_t>::iterator i = projects.begin();
+       i != projects.end(); ++i)
+    {
+      if (i->first() == "")
+        return &i->second;
+      std::string pre = i->first() + ".";
+      if (branch().substr(0, pre.size()) == pre)
+        return &i->second;
+    }
+  return NULL;
+}
+
+void
+project_set::get_branch_list(std::set<branch_name> & names,
+                             bool check_heads)
+{
+  names.clear();
+  for (project_map::iterator i = projects.begin();
+       i != projects.end(); ++i)
+    {
+      std::set<branch_name> some_names;
+      i->second.get_branch_list(some_names, check_heads);
+      std::copy(some_names.begin(), some_names.end(),
+                std::inserter(names, names.end()));
+    }
+}
+
+void
+project_set::get_branch_list(globish const & glob,
+                             std::set<branch_name> & names,
+                             bool check_heads)
+{
+  names.clear();
+  for (project_map::iterator i = projects.begin();
+       i != projects.end(); ++i)
+    {
+      std::set<branch_name> some_names;
+      i->second.get_branch_list(glob, some_names, check_heads);
+      std::copy(some_names.begin(), some_names.end(),
+                std::inserter(names, names.end()));
+    }
+}
+
+void
+project_set::get_branch_uids(std::set<branch_uid> & uids)
+{
+  uids.clear();
+  for (project_map::iterator i = projects.begin();
+       i != projects.end(); ++i)
+    {
+      std::set<branch_uid> some_uids;
+      i->second.get_branch_list(some_uids);
+      std::copy(some_uids.begin(), some_uids.end(),
+                std::inserter(uids, uids.end()));
+    }
+}
+
+branch_uid
+project_set::translate_branch(branch_name const & branch)
+{
+  return get_project_of_branch(branch).translate_branch(branch);
+}
+
+branch_name
+project_set::translate_branch(branch_uid const & branch)
+{
+  for (project_map::iterator i = projects.begin();
+       i != projects.end(); ++i)
+    {
+      std::set<branch_uid> uids;
+      i->second.get_branch_list(uids);
+      if (uids.find(branch) != uids.end())
+        {
+          return i->second.translate_branch(branch);
+        }
+    }
+  E(false, F("Cannot find a name for the branch with uid '%s'") % branch);
+}
+
+outdated_indicator
+project_set::get_tags(std::set<tag_t> & tags)
+{
+  I(!projects.empty());
+  return projects.begin()->second.get_tags(tags);
+}
+
+outdated_indicator
+project_set::get_revision_branches(revision_id const & id,
+                                   std::set<branch_name> & branches)
+{
+  std::vector<revision<cert> > certs;
+  outdated_indicator i = get_revision_certs_by_name(id, branch_cert_name, certs);
+  branches.clear();
+  for (std::vector<revision<cert> >::const_iterator i = certs.begin();
+       i != certs.end(); ++i)
+    {
+      cert_value b;
+      decode_base64(i->inner().value, b);
+      branch_uid uid(b());
+
+      for (project_map::iterator i = projects.begin();
+           i != projects.end(); ++i)
+        {
+          std::set<branch_uid> branchids;
+          i->second.get_branch_list(branchids);
+          if (branchids.find(uid) != branchids.end())
+            {
+              branches.insert(i->second.translate_branch(uid));
+              break;
+            }
+        }
+    }
+  return i;
+}
+
+outdated_indicator
+project_set::get_revision_certs_by_name(revision_id const & id,
+                                        cert_name const & name,
+                                        std::vector<revision<cert> > & certs)
+{
+  outdated_indicator i = db.get_revision_certs(id, name, certs);
+  erase_bogus_certs(certs, db);
+  return i;
+}
+
+outdated_indicator
+project_set::get_revision_certs(revision_id const & id,
+                                std::vector<revision<cert> > & certs)
+{
+  return db.get_revision_certs(id, certs);
 }
 
 

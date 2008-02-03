@@ -853,7 +853,7 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
 }
 
 string
-describe_revision(project_t & project, revision_id const & id)
+describe_revision(project_set & projects, revision_id const & id)
 {
   cert_name author_name(author_cert_name);
   cert_name date_name(date_cert_name);
@@ -864,7 +864,7 @@ describe_revision(project_t & project, revision_id const & id)
 
   // append authors and date of this revision
   vector< revision<cert> > tmp;
-  project.get_revision_certs_by_name(id, author_name, tmp);
+  projects.get_revision_certs_by_name(id, author_name, tmp);
   for (vector< revision<cert> >::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
     {
@@ -873,7 +873,7 @@ describe_revision(project_t & project, revision_id const & id)
       description += " ";
       description += tv();
     }
-  project.get_revision_certs_by_name(id, date_name, tmp);
+  projects.get_revision_certs_by_name(id, date_name, tmp);
   for (vector< revision<cert> >::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
     {

@@ -87,8 +87,10 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
     branch_option = branch_name(idx(args, 0)());
   }
   set<revision_id> heads;
-  app.get_project().get_branch_heads(branch_option, heads,
-                                     app.opts.ignore_suspend_certs);
+  app.get_projects()
+    .get_project_of_branch(branch_option)
+    .get_branch_heads(branch_option, heads,
+                      app.opts.ignore_suspend_certs);
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
     output << (*i).inner()() << '\n';
@@ -1421,7 +1423,7 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
 
   N(db.revision_exists(r_id),
     F("no such revision '%s'") % r_id);
-  app.get_project().get_revision_certs(r_id, certs);
+  app.get_projects().get_revision_certs(r_id, certs);
   for (size_t i = 0; i < certs.size(); ++i)
     pw.consume_revision_cert(idx(certs,i));
 }
@@ -1588,8 +1590,8 @@ CMD_AUTOMATE(branches, "",
 
   set<branch_name> names;
 
-  app.get_project().get_branch_list(names,
-                                    !app.opts.ignore_suspend_certs);
+  app.get_projects().get_branch_list(names,
+                                     !app.opts.ignore_suspend_certs);
 
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
@@ -1656,13 +1658,13 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
   prt.print_stanza(stz);
 
   set<tag_t> tags;
-  app.get_project().get_tags(tags);
+  app.get_projects().get_tags(tags);
 
   for (set<tag_t>::const_iterator tag = tags.begin();
        tag != tags.end(); ++tag)
     {
       set<branch_name> branches;
-      app.get_project().get_revision_branches(tag->ident, branches);
+      app.get_projects().get_revision_branches(tag->ident, branches);
 
       bool show(!filtering);
       vector<string> branch_names;

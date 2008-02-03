@@ -447,7 +447,7 @@ get_user_key(rsa_keypair_id & key, key_store & keys, database & db)
 // Does not modify branch state in OPTS.
 void
 guess_branch(revision_id const & ident, options & opts,
-             project_t & project, branch_name & branchname)
+             project_set & projects, branch_name & branchname)
 {
   if (opts.branch_given && !opts.branchname().empty())
     branchname = opts.branchname;
@@ -458,7 +458,7 @@ guess_branch(revision_id const & ident, options & opts,
           "please provide a branch name"));
 
       set<branch_name> branches;
-      project.get_revision_branches(ident, branches);
+      projects.get_revision_branches(ident, branches);
 
       N(branches.size() != 0,
         F("no branch certs found for revision %s, "
@@ -477,10 +477,10 @@ guess_branch(revision_id const & ident, options & opts,
 // As above, but set the branch name in the options
 // if it wasn't already set.
 void
-guess_branch(revision_id const & ident, options & opts, project_t & project)
+guess_branch(revision_id const & ident, options & opts, project_set & projects)
 {
   branch_name branchname;
-  guess_branch(ident, opts, project, branchname);
+  guess_branch(ident, opts, projects, branchname);
   opts.branchname = branchname;
 }
 

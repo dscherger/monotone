@@ -209,29 +209,17 @@ app_state::make_branch_sticky()
     }
 }
 
-project_t &
-app_state::get_project()
+project_set &
+app_state::get_projects()
 {
-  if (projects.empty())
+  // You can't use this until system_path is available,
+  // which means we need to have the workspace already.
+  // Need to teach our lua to read directories...
+  if (!projects)
     {
-      map<string, system_path> project_definitions;
-      lua.hook_get_projects(project_definitions);
-      for (map<string, system_path>::const_iterator i = project_definitions.begin();
-           i != project_definitions.end(); ++i)
-        {
-          projects.insert(make_pair(i->first,
-                                    project_t(branch_prefix(i->first),
-                                              i->second,
-                                              db)));
-        }
-      if (projects.empty())
-        {
-          projects.insert(std::make_pair("default", project_t(db)));
-        }
-      N(projects.size() == 1, F("multiple projects not supported yet"));
+      projects.reset(new project_set(db, lua));
     }
-  I(projects.size() == 1);
-  return projects.begin()->second;
+  return *projects;
 }
 
 // rc files are loaded after we've changed to the workspace so that

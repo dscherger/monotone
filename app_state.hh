@@ -60,10 +60,9 @@ public:
   void make_branch_sticky();
 
 private:
-  std::map<std::string, project_t> projects;
+  boost::shared_ptr<project_set> projects;
 public:
-  //project_t & get_project(string const & name);
-  project_t & get_project(); // get_project(opts.project) or I()
+  project_set & get_projects();
 
   void set_database(system_path const & filename);
   void set_key_dir(system_path const & filename);
