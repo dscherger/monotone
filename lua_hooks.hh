@@ -67,7 +67,7 @@ public:
                                      std::map<rsa_keypair_id, bool> const & new_results);
 
 
-  bool hook_get_projects(std::map<std::string, system_path> & project_definitions);
+  bool hook_get_projects(std::map<std::string, data> & project_definitions);
 
 
   // network hooks

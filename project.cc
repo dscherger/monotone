@@ -98,18 +98,6 @@ public:
   {
     init(spec);
   }
-  policy_branch(system_path const & spec_file,
-                branch_prefix const & prefix,
-                database & db)
-    : prefix(prefix), db(db)
-  {
-    require_path_is_file(spec_file,
-                         F("policy spec file %s does not exist") % spec_file,
-                         F("policy spec file %s is a directory") % spec_file);
-    data spec;
-    read_data(spec_file, spec);
-    init(spec);
-  }
   shared_ptr<policy_revision> get_policy();
   map<branch_name, branch_policy> branches();
 };
@@ -311,10 +299,10 @@ class policy_info
 public:
   policy_branch policy;
   bool passthru;
-  policy_info(system_path const & spec_file,
+  policy_info(data const & spec,
               branch_prefix const & prefix,
               database & db)
-    : policy(spec_file, prefix, db), passthru(false)
+    : policy(spec, prefix, db), passthru(false)
   {
   }
   explicit policy_info(database & db)
@@ -324,9 +312,9 @@ public:
 };
 
 project_t::project_t(branch_prefix const & project_name,
-                     system_path const & spec_file,
+                     data const & project_spec,
                      database & db)
-  : db(db), project_policy(new policy_info(spec_file, project_name, db))
+  : db(db), project_policy(new policy_info(project_spec, project_name, db))
 {}
 
 project_t::project_t(database & db)
@@ -806,12 +794,17 @@ project_t::put_cert(key_store & keys,
 
 ////////////////////////////////////////////////////////////////////////
 
-project_set::project_set(database & db, lua_hooks & lua)
+project_set::project_set(database & db)
   : db(db)
 {
-  map<string, system_path> project_definitions;
+}
+
+void
+project_set::initialize(lua_hooks & lua)
+{
+  map<string, data> project_definitions;
   lua.hook_get_projects(project_definitions);
-  for (map<string, system_path>::const_iterator i = project_definitions.begin();
+  for (map<string, data>::const_iterator i = project_definitions.begin();
        i != project_definitions.end(); ++i)
     {
       projects.insert(make_pair(branch_prefix(i->first),

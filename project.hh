@@ -51,7 +51,7 @@ private:
 
 public:
   project_t(branch_prefix const & project_name,
-            system_path const & spec_file,
+            data const & project_spec,
             database & db);
   explicit project_t(database & db);
 
@@ -128,7 +128,8 @@ private:
   project_map projects;
 
 public:
-  explicit project_set(database & db, lua_hooks & lua);
+  explicit project_set(database & db);
+  void initialize(lua_hooks & lua);
 
   // Get a named project.
   project_t & get_project(branch_prefix const & name);

@@ -30,6 +30,7 @@ using std::vector;
 
 app_state::app_state()
   : db(lua), keys(*this), work(lua),
+    projects(db),
     branch_is_sticky(false),
     mtn_automate_allowed(false)
 {
@@ -58,6 +59,8 @@ app_state::allow_workspace()
       global_sanity.set_dump_path(system_path(dump_path, false).as_external());
     }
   load_rcfiles();
+
+  projects.initialize(lua);
 }
 
 void
@@ -207,19 +210,6 @@ app_state::make_branch_sticky()
       // write_options when it finds one.
       write_options();
     }
-}
-
-project_set &
-app_state::get_projects()
-{
-  // You can't use this until system_path is available,
-  // which means we need to have the workspace already.
-  // Need to teach our lua to read directories...
-  if (!projects)
-    {
-      projects.reset(new project_set(db, lua));
-    }
-  return *projects;
 }
 
 // rc files are loaded after we've changed to the workspace so that

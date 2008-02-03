@@ -173,7 +173,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
       P(F("updating along branch '%s'") % app.opts.branchname);
       set<revision_id> candidates;
       pick_update_candidates(candidates, old_rid, app.opts.branchname,
-                             app.get_projects()
+                             app.projects
                              .get_project_of_branch(app.opts.branchname),
                              app.opts.ignore_suspend_certs, app.lua);
       N(!candidates.empty(),
@@ -187,7 +187,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
           for (set<revision_id>::const_iterator i = candidates.begin();
                i != candidates.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(app.get_projects(), *i));
+              % describe_revision(app.projects, *i));
           P(F("choose one with '%s update -r<id>'") % ui.prog_name);
           E(false, F("multiple update candidates remain after selection"));
         }
@@ -202,7 +202,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // do this notification before checking to see if we can bail out early,
   // because when you are at one of several heads, and you hit update, you
   // want to know that merging would let you update further.
-  notify_if_multiple_heads(app.get_projects().get_project_of_branch(app.opts.branchname),
+  notify_if_multiple_heads(app.projects.get_project_of_branch(app.opts.branchname),
                            app.opts.branchname, app.opts.ignore_suspend_certs);
 
   if (old_rid == chosen_rid)
@@ -361,7 +361,7 @@ merge_two(revision_id const & left, revision_id const & right,
   transaction_guard guard(app.db);
   interactive_merge_and_store(left, right, merged, app.db, app.lua);
 
-  app.get_projects()
+  app.projects
     .get_project_of_branch(branch)
     .put_standard_certs_from_options(app.opts, app.lua,
                                      app.keys,
@@ -394,7 +394,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     F("please specify a branch, with --branch=BRANCH"));
 
   set<revision_id> heads;
-  app.get_projects()
+  app.projects
     .get_project_of_branch(app.opts.branchname)
     .get_branch_heads(app.opts.branchname, heads,
                       app.opts.ignore_suspend_certs);
@@ -465,7 +465,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
 
       ancestors.clear();
       heads_for_ancestor.clear();
-      app.get_projects()
+      app.projects
         .get_project_of_branch(app.opts.branchname)
         .get_branch_heads(app.opts.branchname, heads,
                           app.opts.ignore_suspend_certs);
@@ -539,8 +539,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
 
   branch_name src_branch(idx(args, 0)());
   branch_name dst_branch(idx(args, 1)());
-  project_t & src_project = app.get_projects().get_project_of_branch(src_branch);
-  project_t & dst_project = app.get_projects().get_project_of_branch(dst_branch);
+  project_t & src_project = app.projects.get_project_of_branch(src_branch);
+  project_t & dst_project = app.projects.get_project_of_branch(dst_branch);
   src_project.get_branch_heads(src_branch, src_heads,
                              app.opts.ignore_suspend_certs);
   dst_project.get_branch_heads(dst_branch, dst_heads,
@@ -1053,7 +1053,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
   N(app.opts.branchname() != "",
     F("please specify a branch, with --branch=BRANCH"));
 
-  app.get_projects()
+  app.projects
     .get_project_of_branch(app.opts.branchname)
     .get_branch_heads(app.opts.branchname, heads,
                       app.opts.ignore_suspend_certs);
@@ -1067,7 +1067,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
 
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
-    cout << describe_revision(app.get_projects(), *i) << '\n';
+    cout << describe_revision(app.projects, *i) << '\n';
 }
 
 CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),

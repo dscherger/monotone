@@ -56,7 +56,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   require_password(key, app.keys, app.db);
 
   import_cvs_repo(cvsroot, app.keys,
-                  app.get_projects().get_project_of_branch(app.opts.branchname),
+                  app.projects.get_project_of_branch(app.opts.branchname),
                   app.opts.branchname);
 }
 

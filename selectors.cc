@@ -362,7 +362,7 @@ complete(app_state & app,
     }
 
   P(F("expanding selection '%s'") % str);
-  complete_selector(sels, completions, app.get_projects());
+  complete_selector(sels, completions, app.projects);
 
   N(completions.size() != 0,
     F("no match for selection '%s'") % str);
@@ -412,7 +412,7 @@ expand_selector(app_state & app,
       return;
     }
 
-  complete_selector(sels, completions, app.get_projects());
+  complete_selector(sels, completions, app.projects);
 }
 
 void
@@ -427,7 +427,7 @@ diagnose_ambiguous_expansion(app_state & app,
                 % str).str();
   for (set<revision_id>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
-    err += ("\n" + describe_revision(app.get_projects(), *i));
+    err += ("\n" + describe_revision(app.projects, *i));
 
   N(false, i18n_format(err));
 }

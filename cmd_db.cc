@@ -273,7 +273,7 @@ CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
     throw usage(execid);
 
   branch_name name(idx(args, 0)());
-  branch_uid branch = app.get_projects().translate_branch(name);
+  branch_uid branch = app.projects.translate_branch(name);
   app.db.clear_epoch(branch);
 }
 
@@ -289,7 +289,7 @@ CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
   N(ed.inner()().size() == constants::epochlen,
     F("The epoch must be %s characters") % constants::epochlen);
   branch_name name(idx(args, 0)());
-  branch_uid branch = app.get_projects().translate_branch(name);
+  branch_uid branch = app.projects.translate_branch(name);
   app.db.set_epoch(branch, ed);
 }
 
@@ -353,7 +353,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
            i != completions.end(); ++i)
         {
           if (!verbose) cout << i->inner()() << '\n';
-          else cout << describe_revision(app.get_projects(), *i) << '\n';
+          else cout << describe_revision(app.projects, *i) << '\n';
         }
     }
   else if (idx(args, 0)() == "file")

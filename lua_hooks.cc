@@ -429,7 +429,7 @@ lua_hooks::hook_accept_testresult_change(map<rsa_keypair_id, bool> const & old_r
 }
 
 bool
-lua_hooks::hook_get_projects(std::map<std::string, system_path> & project_definitions)
+lua_hooks::hook_get_projects(std::map<std::string, data> & project_definitions)
 {
   project_definitions.clear();
 
@@ -445,7 +445,7 @@ lua_hooks::hook_get_projects(std::map<std::string, system_path> & project_defini
       string value;
       ll.extract_str(value).pop().extract_str(key);
       if (ll.ok())
-        project_definitions.insert(make_pair(key, system_path(value)));
+        project_definitions.insert(make_pair(key, data(value)));
     }
 
   return ll.ok();

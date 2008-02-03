@@ -308,9 +308,9 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 
   revision_id r;
   complete(app, idx(args, 0)(), r);
-  guess_branch(r, app.opts, app.get_projects());
+  guess_branch(r, app.opts, app.projects);
   N(app.opts.branchname() != "", F("need --branch argument for approval"));
-  app.get_projects()
+  app.projects
     .get_project_of_branch(app.opts.branchname)
     .put_revision_in_branch(app.keys, r, app.opts.branchname);
 }
@@ -325,9 +325,9 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
 
   revision_id r;
   complete(app, idx(args, 0)(), r);
-  guess_branch(r, app.opts, app.get_projects());
+  guess_branch(r, app.opts, app.projects);
   N(app.opts.branchname() != "", F("need --branch argument to suspend"));
-  app.get_projects()
+  app.projects
     .get_project_of_branch(app.opts.branchname)
     .suspend_revision_in_branch(app.keys, r, app.opts.branchname);
 }

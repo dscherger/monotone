@@ -38,6 +38,7 @@ public:
   key_store keys;
   workspace work;
   ssh_agent agent;
+  project_set projects;
 
   options opts;
 
@@ -58,11 +59,6 @@ public:
   // function updates the workspace).
 
   void make_branch_sticky();
-
-private:
-  boost::shared_ptr<project_set> projects;
-public:
-  project_set & get_projects();
 
   void set_database(system_path const & filename);
   void set_key_dir(system_path const & filename);
