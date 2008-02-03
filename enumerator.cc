@@ -28,13 +28,13 @@ using std::set;
 using std::vector;
 
 revision_enumerator::revision_enumerator(enumerator_callbacks & cb,
-                                         project_set & projects)
-  : cb(cb), projects(projects)
+                                         database & db)
+  : cb(cb), db(db)
 {
   revision_id root;
   revs.push_back(root);
 
-  projects.db.get_revision_ancestry(graph);
+  db.get_revision_ancestry(graph);
   for (multimap<revision_id, revision_id>::const_iterator i = graph.begin();
        i != graph.end(); ++i)
     {
@@ -101,7 +101,7 @@ revision_enumerator::files_for_revision(revision_id const & r,
 
   revision_t rs;
   MM(rs);
-  projects.db.get_revision(r, rs);
+  db.get_revision(r, rs);
 
   for (edge_map::const_iterator i = rs.edges.begin();
        i != rs.edges.end(); ++i)
@@ -186,7 +186,7 @@ revision_enumerator::get_revision_certs(revision_id const & rid,
 	hashes.push_back(i->second);
     }
   if (!found_one)
-    projects.db.get_revision_certs(rid, hashes);
+    db.get_revision_certs(rid, hashes);
 }
 
 void
