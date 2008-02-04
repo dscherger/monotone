@@ -428,6 +428,29 @@ lua_hooks::hook_accept_testresult_change(map<rsa_keypair_id, bool> const & old_r
   return exec_ok && ok;
 }
 
+bool
+lua_hooks::hook_get_projects(std::map<std::string, data> & project_definitions)
+{
+  project_definitions.clear();
+
+  bool x;
+  Lua ll(st);
+  ll.func("get_projects")
+    .call(0,1);
+
+  ll.begin();
+  while(ll.next())
+    {
+      string key;
+      string value;
+      ll.extract_str(value).pop().extract_str(key);
+      if (ll.ok())
+        project_definitions.insert(make_pair(key, data(value)));
+    }
+
+  return ll.ok();
+}
+
 
 
 bool
