@@ -276,7 +276,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   complete(app, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, app.keys, app.db);
-  app.get_project().put_tag(app.keys, r, idx(args, 1)());
+  app.projects.put_tag(app.keys, r, idx(args, 1)());
 }
 
 
@@ -332,7 +332,6 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   app.projects
     .get_project_of_branch(app.opts.branchname)
     .suspend_revision_in_branch(app.keys, r, app.opts.branchname);
-                                               app.opts.branchname);
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),

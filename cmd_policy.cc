@@ -10,6 +10,7 @@
 #include "cmd.hh"
 #include "dates.hh"
 #include "file_io.hh"
+#include "keys.hh"
 #include "revision.hh"
 #include "roster.hh"
 #include "transforms.hh"
@@ -73,8 +74,7 @@ namespace {
 		       std::set<rsa_keypair_id> const & administrators,
 		       std::string & policy_uid, data & spec)
   {
-    rsa_keypair_id key;
-    get_user_key(key, keys, db);
+    cache_user_key(opts, lua, keys, db);
 
     policy_uid = generate_uid();
     transaction_guard guard(db);
@@ -121,8 +121,8 @@ namespace {
     if (author.empty())
       {
 	if (!lua.hook_get_author(branch_name(policy_name() + ".__policy__"),
-				 key, author))
-	  author = key();
+				 keys.signing_key, author))
+	  author = keys.signing_key();
       }
     utf8 changelog(N_("Create new policy branch."));
 
@@ -156,10 +156,9 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 			      F("You already have a project with that name."));
   mkdir_p(project_dir);
 
-  rsa_keypair_id key;
-  get_user_key(key, app.keys, app.db);
+  cache_user_key(app.opts, app.lua, app.keys, app.db);
   std::set<rsa_keypair_id> admin_keys;
-  admin_keys.insert(key);
+  admin_keys.insert(app.keys.signing_key);
 
   std::string policy_uid;
   data policy_spec;

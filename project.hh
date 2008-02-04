@@ -154,6 +154,8 @@ public:
 
   // What tags exist across all projects?
   outdated_indicator get_tags(std::set<tag_t> & tags);
+  // Because tags aren't yet per-project.
+  void put_tag(key_store & keys, revision_id const & id, std::string const & name);
 
   // What branches in *any* project does the given revision belong to?
   outdated_indicator get_revision_branches(revision_id const & id,

@@ -949,6 +949,14 @@ project_set::get_tags(std::set<tag_t> & tags)
   return projects.begin()->second.get_tags(tags);
 }
 
+void
+project_set::put_tag(key_store & keys,
+                     revision_id const & id,
+                     string const & name)
+{
+  cert_revision_tag(id, name, db, keys);
+}
+
 outdated_indicator
 project_set::get_revision_branches(revision_id const & id,
                                    std::set<branch_name> & branches)
