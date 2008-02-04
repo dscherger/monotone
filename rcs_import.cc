@@ -2406,9 +2406,8 @@ public:
       insert_iterator< vector< cvs_blob_index > >
         ity_c(cross_path, cross_path.end());
 
-      // this search can be aborted as soon as we hit blobs older than
-      // the first blob in path_a and path_b.
       time_i age_limit(cvs.blobs[*path_a.begin()].get_oldest_event_time());
+      age_limit -= 60 * 60 * 24 * 30 * 3;   // plus three months back
       dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
                              ity_c,
                              true, true, true,    // follow all colors
@@ -2518,9 +2517,8 @@ public:
           insert_iterator< vector< cvs_blob_index > >
             ity_c(cross_path, cross_path.end());
 
-          // this search can be aborted as soon as we hit blobs older than
-          // the first blob in both paths.
           time_i age_limit(cvs.blobs[*path_a.begin()].get_oldest_event_time());
+          age_limit -= 60 * 60 * 24 * 30;   // plus one month back
           dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
                                  ity_c,
                                  true, true, true,    // follow all colors
@@ -2875,6 +2873,7 @@ public:
                 back_ity(back_path, back_path.end());
 
               time_i age_limit(cvs.blobs[*ity_anc].get_oldest_event_time());
+              age_limit -= 60 * 60 * 24 * 30;   // plus one month back
               dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
                                      true, true, true,   // follow all
                                      false,
