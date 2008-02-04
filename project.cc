@@ -519,13 +519,14 @@ project_t::get_branch_heads(branch_name const & name,
   if (branch.first.outdated())
     {
       L(FL("getting heads of branch %s") % name);
+      branch_uid uid = translate_branch(name);
       base64<cert_value> branch_encoded;
-      encode_base64(cert_value(name()), branch_encoded);
+      encode_base64(cert_value(uid()), branch_encoded);
 
       outdated_indicator stamp;
       branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
-                                                    branch_encoded,
-                                                    branch.second);
+                                                branch_encoded,
+                                                branch.second);
 
       not_in_branch p(db, branch_encoded);
       erase_ancestors_and_failures(branch.second, p, db,
