@@ -30,8 +30,6 @@ namespace basic_io
   {
     symbol const branch_uid("branch_uid");
     symbol const committer("committer");
-    symbol const policy("policy_branch_id");
-    symbol const administrator("administrator");
   }
 }
 
@@ -68,14 +66,14 @@ class policy_branch
 
     while (pa.symp())
       {
-        if(pa.symp(basic_io::syms::policy))
+        if(pa.symp(basic_io::syms::branch_uid))
           {
             pa.sym();
             string branch;
             pa.str(branch);
             my_branch_cert_value = branch_uid(branch);
           }
-        else if (pa.symp(basic_io::syms::administrator))
+        else if (pa.symp(basic_io::syms::committer))
           {
             pa.sym();
             string key;
@@ -251,9 +249,10 @@ namespace
     }
   };
 
-  revision_id policy_branch_head(branch_uid const & name,
-                                 set<rsa_keypair_id> const & trusted_signers,
-                                 database & db)
+  bool maybe_get_policy_branch_head(branch_uid const & name,
+                                    set<rsa_keypair_id> const & trusted_signers,
+                                    database & db,
+                                    revision_id & rid)
   {
      L(FL("getting heads of policy branch %s") % name);
      base64<cert_value> branch_encoded;
@@ -267,11 +266,18 @@ namespace
      not_in_policy_branch p(db, branch_encoded, trusted_signers);
      erase_ancestors_and_failures(heads, p, db, NULL);
 
-     E(heads.size() == 1,
-       F("policy branch %s has %d heads, should have 1 head")
-       % name % heads.size());
-
-     return *heads.begin();
+     if (heads.size() != 1)
+       {
+         W(F("Policy branch %s has %d heads, should have 1 head.")
+           % name % heads.size());
+         W(F("Some branches may not be available."));
+         return false;
+       }
+     else
+       {
+         rid = *heads.begin();
+         return true;
+       }
   }
 }
 
@@ -281,15 +287,23 @@ shared_ptr<policy_revision> policy_branch::get_policy()
   if (!rev)
     {
       revision_id rid;
-      rid = policy_branch_head(my_branch_cert_value, my_committers, db);
-      rev.reset(new policy_revision(db, rid, prefix));
+      if (maybe_get_policy_branch_head(my_branch_cert_value,
+                                       my_committers, db, rid))
+        {
+          rev.reset(new policy_revision(db, rid, prefix));
+        }
     }
   return rev;
 }
 map<branch_name, branch_policy> policy_branch::branches()
 {
   shared_ptr<policy_revision> policy = get_policy();
-  return policy->all_branches();
+  if (policy)
+    {
+      return policy->all_branches();
+    }
+  else
+    return map<branch_name, branch_policy>();
 }
 
 ////////////////////////////////////////////////////////////////////////
