@@ -1,0 +1,63 @@
+head	1.1;
+access;
+symbols
+	D:1.1.2.1.0.2
+	C:1.1.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.03.10.12.10.03;	author markus;	state dead;
+branches
+	1.1.2.1;
+next	;
+commitid	LQlRD0MAMXhTsx9s;
+
+1.1.2.1
+date	2007.03.10.12.10.03;	author markus;	state Exp;
+branches
+	1.1.2.1.2.1;
+next	;
+commitid	LQlRD0MAMXhTsx9s;
+
+1.1.2.1.2.1
+date	2007.03.10.12.10.04;	author markus;	state Exp;
+branches;
+next	;
+commitid	JwFdTHp8EAzTsx9s;
+
+
+desc
+@@
+
+
+1.1
+log
+@file file3 was initially added on branch C.
+@
+text
+@@
+
+
+1.1.2.1
+log
+@commit on branch C
+@
+text
+@a0 1
+version 1.1.2.1 of test file3
+@
+
+
+1.1.2.1.2.1
+log
+@commit on branch D
+@
+text
+@d1 1
+a1 1
+version 1.1.2.1.2.1 of test file3
+@
+
+
