@@ -89,18 +89,8 @@ pick_branch_for_update(revision_id chosen_rid, app_state & app)
   bool switched_branch = false;
 
   // figure out which branches the target is in
-  vector< revision<cert> > certs;
-  app.db.get_revision_certs(chosen_rid, branch_cert_name, certs);
-  erase_bogus_certs(certs, app.db);
-
   set< branch_name > branches;
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
-       i != certs.end(); i++)
-    {
-      cert_value b;
-      decode_base64(i->inner().value, b);
-      branches.insert(branch_name(b()));
-    }
+  app.projects.get_revision_branches(chosen_rid, branches);
 
   if (branches.find(app.opts.branchname) != branches.end())
     {

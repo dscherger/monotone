@@ -99,6 +99,17 @@ public:
   }
   shared_ptr<policy_revision> get_policy();
   map<branch_name, branch_policy> branches();
+
+  shared_ptr<branch_policy>
+  maybe_get_branch_policy(branch_name const & name)
+  {
+    map<branch_name, branch_policy> bm = branches();
+    map<branch_name, branch_policy>::const_iterator i = bm.find(name);
+    if (i != bm.end())
+      return shared_ptr<branch_policy>(new branch_policy(i->second));
+    else
+      return shared_ptr<branch_policy>();
+  }
 };
 
 class policy_revision
@@ -211,7 +222,7 @@ public:
 
 namespace
 {
-  struct not_in_policy_branch : public is_failure
+  struct not_in_managed_branch : public is_failure
   {
     database & db;
     base64<cert_value > const & branch_encoded;
@@ -230,9 +241,9 @@ namespace
         }
       return false;
     }
-    not_in_policy_branch(database & db,
-                         base64<cert_value> const & branch_encoded,
-                         set<rsa_keypair_id> const & trusted)
+    not_in_managed_branch(database & db,
+                          base64<cert_value> const & branch_encoded,
+                          set<rsa_keypair_id> const & trusted)
       : db(db), branch_encoded(branch_encoded), trusted_signers(trusted)
     {}
     virtual bool operator()(revision_id const & rid)
@@ -243,12 +254,52 @@ namespace
                             branch_encoded,
                             certs);
       erase_bogus_certs(certs,
-                        boost::bind(&not_in_policy_branch::is_trusted,
+                        boost::bind(&not_in_managed_branch::is_trusted,
                                     this, _1, _2, _3, _4),
                         db);
       return certs.empty();
     }
   };
+
+  struct suspended_in_managed_branch : public is_failure
+  {
+    database & db;
+    base64<cert_value > const & branch_encoded;
+    set<rsa_keypair_id> const & trusted_signers;
+    bool is_trusted(set<rsa_keypair_id> const & signers,
+                    hexenc<id> const & rid,
+                    cert_name const & name,
+                    cert_value const & value)
+    {
+      for (set<rsa_keypair_id>::const_iterator i = signers.begin();
+           i != signers.end(); ++i)
+        {
+          set<rsa_keypair_id>::const_iterator t = trusted_signers.find(*i);
+          if (t != trusted_signers.end())
+            return true;
+        }
+      return false;
+    }
+    suspended_in_managed_branch(database & db,
+                                base64<cert_value> const & branch_encoded,
+                                set<rsa_keypair_id> const & trusted)
+      : db(db), branch_encoded(branch_encoded), trusted_signers(trusted)
+    {}
+    virtual bool operator()(revision_id const & rid)
+    {
+      vector< revision<cert> > certs;
+      db.get_revision_certs(rid,
+                            cert_name(suspend_cert_name),
+                            branch_encoded,
+                            certs);
+      erase_bogus_certs(certs,
+                        boost::bind(&suspended_in_managed_branch::is_trusted,
+                                    this, _1, _2, _3, _4),
+                        db);
+      return !certs.empty();
+    }
+  };
+
 
   bool maybe_get_policy_branch_head(branch_uid const & name,
                                     set<rsa_keypair_id> const & trusted_signers,
@@ -264,7 +315,7 @@ namespace
                                 branch_encoded,
                                 heads);
 
-     not_in_policy_branch p(db, branch_encoded, trusted_signers);
+     not_in_managed_branch p(db, branch_encoded, trusted_signers);
      erase_ancestors_and_failures(heads, p, db, NULL);
 
      if (heads.size() != 1)
@@ -520,7 +571,19 @@ project_t::get_branch_heads(branch_name const & name,
   if (branch.first.outdated())
     {
       L(FL("getting heads of branch %s") % name);
-      branch_uid uid = translate_branch(name);
+      shared_ptr<branch_policy> bp;
+      if (!project_policy->passthru)
+        {
+          bp  = project_policy->policy.maybe_get_branch_policy(name);
+          E(bp, F("Cannot find policy for branch %s.") % name);
+        }
+
+      branch_uid uid;
+      if (project_policy->passthru)
+        uid = branch_uid(name());
+      else
+        uid = bp->branch_cert_value;
+
       base64<cert_value> branch_encoded;
       encode_base64(cert_value(uid()), branch_encoded);
 
@@ -529,19 +592,41 @@ project_t::get_branch_heads(branch_name const & name,
                                                 branch_encoded,
                                                 branch.second);
 
-      not_in_branch p(db, branch_encoded);
-      erase_ancestors_and_failures(branch.second, p, db,
-                                   inverse_graph_cache_ptr);
+      if (project_policy->passthru)
+        {
+          not_in_branch p(db, branch_encoded);
+          erase_ancestors_and_failures(branch.second, p, db,
+                                       inverse_graph_cache_ptr);
+        }
+      else
+        {
+          not_in_managed_branch p(db, branch_encoded, bp->committers);
+          erase_ancestors_and_failures(branch.second, p, db,
+                                       inverse_graph_cache_ptr);
+        }
 
       if (!ignore_suspend_certs)
         {
-          suspended_in_branch s(db, branch_encoded);
-          std::set<revision_id>::iterator it = branch.second.begin();
-          while (it != branch.second.end())
-            if (s(*it))
-              branch.second.erase(it++);
-            else
-              it++;
+          if (project_policy->passthru)
+            {
+              suspended_in_branch s(db, branch_encoded);
+              std::set<revision_id>::iterator it = branch.second.begin();
+              while (it != branch.second.end())
+                if (s(*it))
+                  branch.second.erase(it++);
+                else
+                  it++;
+            }
+          else
+            {
+              suspended_in_managed_branch s(db, branch_encoded, bp->committers);
+              std::set<revision_id>::iterator it = branch.second.begin();
+              while (it != branch.second.end())
+                if (s(*it))
+                  branch.second.erase(it++);
+                else
+                  it++;
+            }
         }
       
       L(FL("found heads of branch %s (%s heads)")
