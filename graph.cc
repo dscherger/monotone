@@ -388,21 +388,13 @@ get_uncommon_ancestors(revision_id const & a,
   }  
 }
 
-#ifdef BUILD_UNIT_TESTS
-
-#include <map>
-#include "unit_tests.hh"
-#include "randomizer.hh"
-#include "roster.hh"
-
-
-static void
-get_all_ancestors(revision_id const & start, rev_ancestry_map const & child_to_parent_map,
+void
+get_all_ancestors(set<revision_id> const & start, 
+                  rev_ancestry_map const & child_to_parent_map,
                   set<revision_id> & ancestors)
 {
   ancestors.clear();
-  vector<revision_id> frontier;
-  frontier.push_back(start);
+  vector<revision_id> frontier(start.begin(), start.end());
   while (!frontier.empty())
     {
       revision_id rid = frontier.back();
@@ -415,6 +407,23 @@ get_all_ancestors(revision_id const & start, rev_ancestry_map const & child_to_p
       for (ci i = range.first; i != range.second; ++i)
         frontier.push_back(i->second);
     }
+}
+
+#ifdef BUILD_UNIT_TESTS
+
+#include <map>
+#include "unit_tests.hh"
+#include "randomizer.hh"
+#include "roster.hh"
+
+
+static void
+get_all_ancestors(revision_id const & start, rev_ancestry_map const & child_to_parent_map,
+                  set<revision_id> & ancestors)
+{
+  set<revision_id> start_set;
+  start_set.insert(start);
+  get_all_ancestors(start, child_to_parent_map, ancestors);
 }
 
 struct mock_rev_graph : rev_graph
