@@ -1163,7 +1163,7 @@ session::queue_anonymous_cmd(protocol_role role,
   netcmd cmd;
   rsa_oaep_sha_data hmac_key_encrypted;
   if (use_transport_auth)
-    project.db.encrypt_rsa(remote_peer_key_name, nonce2(), hmac_key_encrypted);
+    projects.db.encrypt_rsa(remote_peer_key_name, nonce2(), hmac_key_encrypted);
   cmd.write_anonymous_cmd(role, include_pattern, exclude_pattern,
                           hmac_key_encrypted);
   write_netcmd_and_try_flush(cmd);
@@ -1182,7 +1182,7 @@ session::queue_auth_cmd(protocol_role role,
   netcmd cmd;
   rsa_oaep_sha_data hmac_key_encrypted;
   I(use_transport_auth);
-  project.db.encrypt_rsa(remote_peer_key_name, nonce2(), hmac_key_encrypted);
+  projects.db.encrypt_rsa(remote_peer_key_name, nonce2(), hmac_key_encrypted);
   cmd.write_auth_cmd(role, include_pattern, exclude_pattern, client,
                      nonce1, hmac_key_encrypted, signature);
   write_netcmd_and_try_flush(cmd);
