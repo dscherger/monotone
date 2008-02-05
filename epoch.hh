@@ -16,10 +16,10 @@
 // epochs are pairs (branch name, random data)
 
 void read_epoch(std::string const & in,
-                branch_name & branch, epoch_data & epoch);
-void write_epoch(branch_name const & branch, epoch_data const & epoch,
+                branch_uid & branch, epoch_data & epoch);
+void write_epoch(branch_uid const & branch, epoch_data const & epoch,
                  std::string & out);
-void epoch_hash_code(branch_name const & branch, epoch_data const & epoch,
+void epoch_hash_code(branch_uid const & branch, epoch_data const & epoch,
                      epoch_id & eid);
 
 // Local Variables:

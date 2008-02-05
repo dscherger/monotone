@@ -33,6 +33,7 @@ public:
   key_store keys;
   database db;
   workspace work;
+  project_set projects;
 
   bool found_workspace;
   bool branch_is_sticky;
@@ -51,12 +52,6 @@ public:
   // function updates the workspace).
 
   void make_branch_sticky();
-
-private:
-  project_t project;
-public:
-  //project_t & get_project(string const & name);
-  project_t & get_project(); // get_project(opts.project) or I()
 
   void set_database(system_path const & filename);
 
