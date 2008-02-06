@@ -2007,8 +2007,6 @@ dijkstra_shortest_path(cvs_history &cvs,
                        pair< cvs_blob_index, cvs_blob_index > edge_to_ignore,
                        time_i age_limit)
 {
-  int age_limit_violations = 0;
-
   map< cvs_blob_index, dij_context > distances;
   stack< cvs_blob_index > stack;
 
@@ -2033,17 +2031,20 @@ dijkstra_shortest_path(cvs_history &cvs,
       I(distances.count(bi) > 0);
       int curr_age_violations = distances[bi].age_violations;
 
+      if (age_limit)
+        {
       // check the age limit, but abort only after the 10th violation,
       // just to be extra sure.
       time_i t(cvs.blobs[bi].get_youngest_event_time());
       if (t < age_limit)
         {
           curr_age_violations++;
-          if (curr_age_violations >= 10)
+          if (curr_age_violations > 10)
             continue;
         }
       else
         curr_age_violations = 0;
+        }
 
       for (blob_event_iter i = cvs.blobs[bi].begin();
            i != cvs.blobs[bi].end(); ++i)
