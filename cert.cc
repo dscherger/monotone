@@ -219,7 +219,7 @@ erase_bogus_certs(vector< revision<cert> > & certs,
         }
       else
         {
-          W(F("trust function disliked %d signers of %s cert on revision %s")
+          L(FL("trust function disliked %d signers of %s cert on revision %s")
             % i->second.first->size() % get<1>(i->first) % get<0>(i->first));
         }
     }
