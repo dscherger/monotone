@@ -334,7 +334,7 @@ public:
     {
       time_i youngest_event_in_blob = 0;
       for (blob_event_iter ity = begin(); ity != end(); ++ity)
-        if ((*ity)->adj_time < youngest_event_in_blob)
+        if ((*ity)->adj_time > youngest_event_in_blob)
           youngest_event_in_blob = (*ity)->adj_time;
       return youngest_event_in_blob;
     }
@@ -627,6 +627,13 @@ cvs_history
     dependencies.push_back(make_pair(ev, dep));
     dependents.push_back(make_pair(dep, ev));
     deps_sorted = false;
+
+#ifdef DEBUG_BLOB_SPLITTER
+    if (dep->adj_time > ev->adj_time)           // log if there is more than
+      if ((dep->adj_time - ev->adj_time) > 60)  // one minute difference?
+        L(FL("ATTENTION: adding dependency with huge time gap: %d")
+          % (dep->adj_time - ev->adj_time));
+#endif
   }
 
   void add_weak_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
@@ -878,8 +885,10 @@ log_path(cvs_history & cvs, const string & msg,
 {
   L(FL("%s") % msg);
   for (T i = begin; i != end; ++i)
-    L(FL("  blob: %d:\t%s")
+    L(FL("  blob: %d\n        %s\n        %s\n        %s")
       % *i
+      % date_t::from_unix_epoch(cvs.blobs[*i].get_oldest_event_time() / 100)
+      % date_t::from_unix_epoch(cvs.blobs[*i].get_youngest_event_time() / 100)
       % get_event_repr(cvs, *cvs.blobs[*i].begin()));
 }
 
@@ -2095,6 +2104,26 @@ dijkstra_shortest_path(cvs_history &cvs,
     }
 }
 
+void
+calculate_age_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
+                    cvs_history & cvs, time_i age_limit,
+                    const time_i safety_margin)
+{
+    time_i ala(cvs.blobs[bi_a].get_oldest_event_time()),
+           alb(cvs.blobs[bi_b].get_oldest_event_time());
+
+    age_limit = (ala < alb ? ala : alb);
+
+    // subtract a safety margin, if necessary
+    if (age_limit > safety_margin)
+      age_limit -= safety_margin;
+    else
+      age_limit = 0;
+
+    L(FL("age limit: %s")
+      % date_t::from_unix_epoch(age_limit / 100));
+}
+
 #ifdef DEBUG_GRAPHVIZ
 void
 write_graphviz_partial(cvs_history & cvs, string const & desc,
@@ -2403,8 +2432,9 @@ public:
       insert_iterator< vector< cvs_blob_index > >
         ity_c(cross_path, cross_path.end());
 
-      time_i age_limit(cvs.blobs[*path_a.begin()].get_oldest_event_time());
-      age_limit -= 60 * 60 * 24 * 30 * 3;   // plus three months back
+      time_i age_limit;
+      calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
+                          cvs, age_limit, 0);
       dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
                              ity_c,
                              true, true, true,    // follow all colors
@@ -2514,8 +2544,9 @@ public:
           insert_iterator< vector< cvs_blob_index > >
             ity_c(cross_path, cross_path.end());
 
-          time_i age_limit(cvs.blobs[*path_a.begin()].get_oldest_event_time());
-          age_limit -= 60 * 60 * 24 * 30;   // plus one month back
+          time_i age_limit;
+          calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
+                              cvs, age_limit, 0);
           dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
                                  ity_c,
                                  true, true, true,    // follow all colors
@@ -2864,23 +2895,15 @@ public:
               if (*ity_b == target_bi)
                 break;
 
-              // make very sure we don't introduce a back edge
+              // We want a dependency from *ity_a to *ity_b, but we only
+              // need to add one, if none exists.
               vector< cvs_blob_index > back_path;
               insert_iterator< vector< cvs_blob_index > >
                 back_ity(back_path, back_path.end());
 
-              time_i age_limit(cvs.blobs[*ity_anc].get_oldest_event_time());
-              age_limit -= 60 * 60 * 24 * 30;   // plus one month back
-              dijkstra_shortest_path(cvs, *ity_a, *ity_b, back_ity,
-                                     true, true, true,   // follow all
-                                     false,
-                                     make_pair(invalid_blob, invalid_blob),
-                                     age_limit);
-              I(back_path.empty());
-
-
-              // We want a dependency from *ity_a to *ity_b. We only need
-              // to add one, if none exists.
+              time_i age_limit;
+              calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
+                                  cvs, age_limit, 0);
               dijkstra_shortest_path(cvs, *ity_b, *ity_a, back_ity,
                                      true, true, true,   // follow all
                                      false,
