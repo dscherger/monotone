@@ -2033,17 +2033,17 @@ dijkstra_shortest_path(cvs_history &cvs,
 
       if (age_limit)
         {
-      // check the age limit, but abort only after the 10th violation,
-      // just to be extra sure.
-      time_i t(cvs.blobs[bi].get_youngest_event_time());
-      if (t < age_limit)
-        {
-          curr_age_violations++;
-          if (curr_age_violations > 10)
-            continue;
-        }
-      else
-        curr_age_violations = 0;
+          // check the age limit, but abort only after the 10th violation,
+          // just to be extra sure.
+          time_i t(cvs.blobs[bi].get_youngest_event_time());
+          if (t < age_limit)
+            {
+              curr_age_violations++;
+              if (curr_age_violations > 10)
+                continue;
+            }
+          else
+            curr_age_violations = 0;
         }
 
       for (blob_event_iter i = cvs.blobs[bi].begin();
