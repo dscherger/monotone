@@ -53,7 +53,9 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   // amount of work
   cache_user_key(app.opts, app.lua, app.keys, app.db);
 
-  import_cvs_repo(cvsroot, app.keys, app.get_project(), app.opts.branchname);
+  import_cvs_repo(cvsroot, app.keys,
+                  app.projects.get_project_of_branch(app.opts.branchname),
+                  app.opts.branchname);
 }
 
 

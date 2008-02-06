@@ -160,8 +160,17 @@ erase_bogus_certs(vector< manifest<cert> > & certs,
   certs = tmp_certs;
 }
 
+void erase_bogus_certs(std::vector< revision<cert> > & certs,
+                       database & db)
+{
+  erase_bogus_certs(certs,
+                    boost::bind(&database::hook_get_revision_cert_trust,
+                                &db, _1, _2, _3, _4),
+                    db);
+}
 void
 erase_bogus_certs(vector< revision<cert> > & certs,
+                  trust_function trust_fn,
                   database & db)
 {
   typedef vector< revision<cert> >::iterator it;
@@ -199,10 +208,10 @@ erase_bogus_certs(vector< revision<cert> > & certs,
     {
       cert_value decoded_value;
       decode_base64(get<2>(i->first), decoded_value);
-      if (db.hook_get_revision_cert_trust(*(i->second.first),
-                                          get<0>(i->first),
-                                          get<1>(i->first),
-                                          decoded_value))
+      if (trust_fn(*(i->second.first),
+                   get<0>(i->first),
+                   get<1>(i->first),
+                   decoded_value))
         {
           L(FL("trust function liked %d signers of %s cert on revision %s")
             % i->second.first->size() % get<1>(i->first) % get<0>(i->first));
@@ -210,7 +219,7 @@ erase_bogus_certs(vector< revision<cert> > & certs,
         }
       else
         {
-          W(F("trust function disliked %d signers of %s cert on revision %s")
+          L(FL("trust function disliked %d signers of %s cert on revision %s")
             % i->second.first->size() % get<1>(i->first) % get<0>(i->first));
         }
     }
@@ -398,7 +407,7 @@ put_simple_revision_cert(revision_id const & id,
 // Does not modify branch state in OPTS.
 void
 guess_branch(revision_id const & ident, options & opts,
-             project_t & project, branch_name & branchname)
+             project_set & projects, branch_name & branchname)
 {
   if (opts.branch_given && !opts.branchname().empty())
     branchname = opts.branchname;
@@ -409,7 +418,7 @@ guess_branch(revision_id const & ident, options & opts,
           "please provide a branch name"));
 
       set<branch_name> branches;
-      project.get_revision_branches(ident, branches);
+      projects.get_revision_branches(ident, branches);
 
       N(branches.size() != 0,
         F("no branch certs found for revision %s, "
@@ -428,16 +437,16 @@ guess_branch(revision_id const & ident, options & opts,
 // As above, but set the branch name in the options
 // if it wasn't already set.
 void
-guess_branch(revision_id const & ident, options & opts, project_t & project)
+guess_branch(revision_id const & ident, options & opts, project_set & projects)
 {
   branch_name branchname;
-  guess_branch(ident, opts, project, branchname);
+  guess_branch(ident, opts, projects, branchname);
   opts.branchname = branchname;
 }
 
 void
 cert_revision_in_branch(revision_id const & rev,
-                        branch_name const & branch,
+                        branch_uid const & branch,
                         database & db,
                         key_store & keys)
 {
@@ -447,7 +456,7 @@ cert_revision_in_branch(revision_id const & rev,
 
 void
 cert_revision_suspended_in_branch(revision_id const & rev,
-                                  branch_name const & branch,
+                                  branch_uid const & branch,
                                   database & db,
                                   key_store & keys)
 {
