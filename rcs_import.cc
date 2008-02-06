@@ -73,7 +73,6 @@ using boost::lexical_cast;
 // additional debugging information
 // not defined: DEBUG_BLOB_SPLITTER
 // not defined: DEBUG_GRAPHVIZ
-// not defined: DEBUG_DIJKSTRA
 
 // cvs history recording stuff
 
@@ -871,6 +870,17 @@ get_event_repr(cvs_history & cvs, cvs_event_ptr ev)
               % cvs.symbol_interner.lookup(blob.symbol)
               % cvs.path_interner.lookup(ev->path)).str();
     }
+}
+
+template <typename T> void
+log_path(cvs_history & cvs, const string & msg,
+         const T & begin, const T & end)
+{
+  L(FL("%s") % msg);
+  for (T i = begin; i != end; ++i)
+    L(FL("  blob: %d:\t%s")
+      % *i
+      % get_event_repr(cvs, *cvs.blobs[*i].begin()));
 }
 
 static bool
@@ -2072,16 +2082,10 @@ dijkstra_shortest_path(cvs_history &cvs,
   // on the path. These are part of the cycle we want to
   // split.
   I(break_on_grey || bi == to);
-#ifdef DEBUG_DIJKSTRA
-  L(FL("dijkstra's algorithm, shortest path:"));
-#endif
 
   while (true)
     {
       *ity++ = bi;
-#ifdef DEBUG_DIJKSTRA
-      L(FL("    blob %d.") % bi);
-#endif
       I(distances.count(bi) > 0);
 
       if (bi == from)
@@ -2262,14 +2266,6 @@ public:
 };
 
 void
-log_path(vector<cvs_blob_index> const & path, string const & str)
-{
-  L(FL("%s") % str);
-  for (vector<cvs_blob_index>::const_iterator i = path.begin(); i != path.end(); ++i)
-    L(FL("  blob: %d") % *i);
-}
-
-void
 split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
               split_decider_func & split_decider);
 
@@ -2397,8 +2393,8 @@ public:
         return;
 
 #ifdef DEBUG_BLOB_SPLITTER
-      log_path(path_a, "handling path a:");
-      log_path(path_b, "         path b:");
+      log_path(cvs, "handling path a:", path_a.begin(), path_a.end());
+      log_path(cvs, "         path b:", path_b.begin(), path_b.end());
       L(FL("         %s") % (switch_needed ? "switch needed"
                                            : "no switch needed"));
 #endif
@@ -2419,8 +2415,8 @@ public:
       if (!cross_path.empty())
         {
 #ifdef DEBUG_BLOB_SPLITTER
-          L(FL("    found cross path:")); 
-          log_path(cross_path, "         cross path:");
+          log_path(cvs, "   found cross path:",
+                   cross_path.begin(), cross_path.end());
 #endif
 
           // Find the first element in the cross path, which is also
