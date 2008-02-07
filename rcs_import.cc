@@ -504,13 +504,17 @@ cvs_history
   // the upper limit of what to import
   time_t upper_time_limit;
 
+  // max dependency
+  time_i max_neg_dependency_time_diff;
+
   cvs_history(void)
     : n_rcs_revisions(_("RCS revisions"), "r", 1),
       n_rcs_symbols(_("RCS symbols"), "s", 1),
       unnamed_branch_counter(0),
       step_no(0),
       deps_sorted(false),
-      upper_time_limit(0)
+      upper_time_limit(0),
+      max_neg_dependency_time_diff(60 * 100)
     { };
 
   void set_filename(string const & file,
@@ -630,9 +634,11 @@ cvs_history
 
 #ifdef DEBUG_BLOB_SPLITTER
     if (dep->adj_time > ev->adj_time)           // log if there is more than
-      if ((dep->adj_time - ev->adj_time) > 60)  // one minute difference?
-        L(FL("ATTENTION: adding dependency with huge time gap: %d")
-          % (dep->adj_time - ev->adj_time));
+      if ((dep->adj_time - ev->adj_time) > max_neg_dependency_time_diff)
+        {
+          max_neg_dependency_time_diff = dep->adj_time - ev->adj_time;
+          L(FL("increased max_neg_dependency_time_diff to: %d sec")
+            % (max_neg_dependency_time_diff / 100));
 #endif
   }
 
@@ -2106,8 +2112,7 @@ dijkstra_shortest_path(cvs_history &cvs,
 
 void
 calculate_age_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
-                    cvs_history & cvs, time_i age_limit,
-                    const time_i safety_margin)
+                    cvs_history & cvs, time_i age_limit)
 {
     time_i ala(cvs.blobs[bi_a].get_oldest_event_time()),
            alb(cvs.blobs[bi_b].get_oldest_event_time());
@@ -2115,6 +2120,7 @@ calculate_age_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
     age_limit = (ala < alb ? ala : alb);
 
     // subtract a safety margin, if necessary
+    time_i safety_margin = max_neg_dependency_time_diff * 3;
     if (age_limit > safety_margin)
       age_limit -= safety_margin;
     else
@@ -2434,7 +2440,7 @@ public:
 
       time_i age_limit;
       calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
-                          cvs, age_limit, 0);
+                          cvs, age_limit);
       dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
                              ity_c,
                              true, true, true,    // follow all colors
@@ -2546,7 +2552,7 @@ public:
 
           time_i age_limit;
           calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
-                              cvs, age_limit, 0);
+                              cvs, age_limit);
           dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
                                  ity_c,
                                  true, true, true,    // follow all colors
@@ -2903,7 +2909,7 @@ public:
 
               time_i age_limit;
               calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
-                                  cvs, age_limit, 0);
+                                  cvs, age_limit);
               dijkstra_shortest_path(cvs, *ity_b, *ity_a, back_ity,
                                      true, true, true,   // follow all
                                      false,
