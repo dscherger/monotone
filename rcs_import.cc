@@ -639,6 +639,7 @@ cvs_history
           max_neg_dependency_time_diff = dep->adj_time - ev->adj_time;
           L(FL("increased max_neg_dependency_time_diff to: %d sec")
             % (max_neg_dependency_time_diff / 100));
+        }
 #endif
   }
 
@@ -2120,7 +2121,7 @@ calculate_age_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
     age_limit = (ala < alb ? ala : alb);
 
     // subtract a safety margin, if necessary
-    time_i safety_margin = max_neg_dependency_time_diff * 3;
+    time_i safety_margin = cvs.max_neg_dependency_time_diff * 3;
     if (age_limit > safety_margin)
       age_limit -= safety_margin;
     else
