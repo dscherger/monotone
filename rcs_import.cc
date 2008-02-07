@@ -2121,7 +2121,7 @@ calculate_age_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
     age_limit = (ala < alb ? ala : alb);
 
     // subtract a safety margin, if necessary
-    time_i safety_margin = cvs.max_neg_dependency_time_diff * 3;
+    time_i safety_margin = cvs.max_neg_dependency_time_diff * 10;
     if (age_limit > safety_margin)
       age_limit -= safety_margin;
     else
@@ -2944,6 +2944,18 @@ public:
       L(FL("branch_sanitizer: back edge from blob %d (%s) to blob %d (%s) - ABORTING!")
         % e.first % get_event_repr(cvs, *cvs.blobs[e.first].begin())
         % e.second % get_event_repr(cvs, *cvs.blobs[e.second].begin()));
+
+      vector<cvs_blob_index> cycle_members;
+      insert_iterator< vector< cvs_blob_index > >
+        ity(cycle_members, cycle_members.begin());
+      dijkstra_shortest_path(cvs, e.first, e.second, ity,
+                             true, true, false, // follow white and grey
+                             false,
+                             make_pair(invalid_blob, invalid_blob),
+                             0);
+      I(!cycle_members.empty());
+      log_path(cvs, "created back edge: ",
+               cycle_members.begin(), cycle_members.end());
 
       I(false);
     }
