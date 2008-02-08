@@ -53,6 +53,9 @@ public:
   project_t(branch_prefix const & project_name,
             data const & project_spec,
             database & db);
+  project_t(branch_prefix const & project_name,
+            revision_id const & policy_rev,
+            database & db);
   explicit project_t(database & db);
 
   void get_branch_list(std::set<branch_name> & names,
@@ -129,7 +132,7 @@ private:
 
 public:
   explicit project_set(database & db);
-  void initialize(lua_hooks & lua);
+  void initialize(lua_hooks & lua, options & opts);
 
   // Get a named project.
   project_t & get_project(branch_prefix const & name);

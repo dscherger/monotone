@@ -55,7 +55,7 @@ app_state::allow_workspace()
     }
   lua.load_rcfiles(opts);
 
-  projects.initialize(lua);
+  projects.initialize(lua, opts);
 }
 
 void
