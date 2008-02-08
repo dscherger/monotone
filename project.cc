@@ -31,6 +31,7 @@ namespace basic_io
   {
     symbol const branch_uid("branch_uid");
     symbol const committer("committer");
+    symbol const revision_id("revision_id");
   }
 }
 
@@ -59,37 +60,16 @@ class policy_branch
 
   database & db;
   shared_ptr<policy_revision> rev;
-  void init(data const & spec)
+  void init(data const & spec);
+  policy_branch(database & db)
+    : db(db)
   {
-    basic_io::input_source src(spec(), "policy spec");
-    basic_io::tokenizer tok(src);
-    basic_io::parser pa(tok);
-
-    while (pa.symp())
-      {
-        if(pa.symp(basic_io::syms::branch_uid))
-          {
-            pa.sym();
-            string branch;
-            pa.str(branch);
-            my_branch_cert_value = branch_uid(branch);
-          }
-        else if (pa.symp(basic_io::syms::committer))
-          {
-            pa.sym();
-            string key;
-            pa.str(key);
-            my_committers.insert(rsa_keypair_id(key));
-          }
-        else
-          {
-            N(false, F("Unable to understand policy spec file"));
-          }
-      }
-
-    I(src.lookahead == EOF);
   }
 public:
+  static policy_branch empty_policy(database & db)
+  {
+    return policy_branch(db);
+  }
   policy_branch(data const & spec,
                 branch_prefix const & prefix,
                 database & db)
@@ -97,6 +77,9 @@ public:
   {
     init(spec);
   }
+  policy_branch(revision_id const & rid,
+                branch_prefix const & prefix,
+                database & db);
   shared_ptr<policy_revision> get_policy();
   map<branch_name, branch_policy> branches();
 
@@ -219,6 +202,72 @@ public:
     return out;
   }
 };
+
+policy_branch::policy_branch(revision_id const & rid,
+                             branch_prefix const & prefix,
+                             database & db)
+  : prefix(prefix), db(db)
+{
+  rev.reset(new policy_revision(db, rid, prefix));
+}
+
+void
+policy_branch::init(data const & spec)
+{
+  bool seen_revid = false;
+  bool seen_branchspec = false;
+  revision_id rev_id;
+
+  basic_io::input_source src(spec(), "policy spec");
+  basic_io::tokenizer tok(src);
+  basic_io::parser pa(tok);
+
+  while (pa.symp())
+    {
+      if(pa.symp(basic_io::syms::branch_uid))
+        {
+          seen_branchspec = true;
+          pa.sym();
+          string branch;
+          pa.str(branch);
+          my_branch_cert_value = branch_uid(branch);
+        }
+      else if (pa.symp(basic_io::syms::committer))
+        {
+          seen_branchspec = true;
+          pa.sym();
+          string key;
+          pa.str(key);
+          my_committers.insert(rsa_keypair_id(key));
+        }
+      else if (pa.symp(basic_io::syms::revision_id))
+        {
+          seen_revid = true;
+          pa.sym();
+          string rid;
+          pa.hex(rid);
+          rev_id = revision_id(rid);
+        }
+      else
+        {
+          N(false, F("Unable to understand policy spec file for %s") % prefix);
+        }
+    }
+
+  I(src.lookahead == EOF);
+
+  E(seen_revid || seen_branchspec,
+    F("Policy spec file for %s seems to be empty") % prefix);
+
+  E(seen_revid != seen_branchspec,
+    F("Policy spec file for %s contains both a revision id and a branch spec")
+    % prefix);
+
+  if (!null_id(rev_id))
+    {
+      rev.reset(new policy_revision(db, rev_id, prefix));
+    }
+}
 
 namespace
 {
@@ -371,8 +420,14 @@ public:
     : policy(spec, prefix, db), passthru(false)
   {
   }
+  policy_info(revision_id const & rev,
+              branch_prefix const & prefix,
+              database & db)
+    : policy(rev, prefix, db), passthru(false)
+  {
+  }
   explicit policy_info(database & db)
-    : policy(data(""), branch_prefix(""), db), passthru(true)
+    : policy(policy_branch::empty_policy(db)), passthru(true)
   {
   }
 };
@@ -381,6 +436,12 @@ project_t::project_t(branch_prefix const & project_name,
                      data const & project_spec,
                      database & db)
   : db(db), project_policy(new policy_info(project_spec, project_name, db))
+{}
+
+project_t::project_t(branch_prefix const & project_name,
+                     revision_id const & policy_rev,
+                     database & db)
+  : db(db), project_policy(new policy_info(policy_rev, project_name, db))
 {}
 
 project_t::project_t(database & db)
@@ -901,17 +962,30 @@ project_set::project_set(database & db)
 }
 
 void
-project_set::initialize(lua_hooks & lua)
+project_set::initialize(lua_hooks & lua, options & opts)
 {
   map<string, data> project_definitions;
   lua.hook_get_projects(project_definitions);
   for (map<string, data>::const_iterator i = project_definitions.begin();
        i != project_definitions.end(); ++i)
     {
-      projects.insert(make_pair(branch_prefix(i->first),
-                                project_t(branch_prefix(i->first),
-                                          i->second,
-                                          db)));
+      if (opts.policy_revisions.find(branch_prefix(i->first))
+          == opts.policy_revisions.end())
+        {
+          projects.insert(make_pair(branch_prefix(i->first),
+                                    project_t(branch_prefix(i->first),
+                                              i->second,
+                                              db)));
+        }
+    }
+  for (map<branch_prefix, revision_id>::const_iterator
+         i = opts.policy_revisions.begin();
+       i != opts.policy_revisions.end(); ++i)
+    {
+          projects.insert(make_pair(i->first,
+                                    project_t(i->first,
+                                              i->second,
+                                              db)));
     }
   if (projects.empty())
     {
