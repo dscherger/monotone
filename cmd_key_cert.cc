@@ -162,7 +162,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
       val = cert_value(dat());
     }
 
-  project.put_cert(app.keys, rid, cname, val);
+  put_simple_revision_cert(rid, cname, val, app.db, app.keys);
   guard.commit();
 }
 
@@ -233,7 +233,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   complete(app, project, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, app.keys, app.db);
-  project.put_tag(app.keys, r, idx(args, 1)());
+  projects.put_tag(app.keys, r, idx(args, 1)());
 }
 
 
@@ -270,7 +270,9 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   N(app.opts.branchname() != "", F("need --branch argument for approval"));
 
   cache_user_key(app.opts, app.lua, app.keys, app.db);
-  project.put_revision_in_branch(app.keys, r, app.opts.branchname);
+  projects
+    .get_project_of_branch(app.opts.branchname)
+    .put_revision_in_branch(app.keys, r, app.opts.branchname);
 }
 
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
@@ -284,11 +286,12 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   project_t project(app.db);
   revision_id r;
   complete(app, project, idx(args, 0)(), r);
-  guess_branch(r, app.opts, project);
+  guess_branch(r, app.opts, projects);
   N(app.opts.branchname() != "", F("need --branch argument to suspend"));
-
   cache_user_key(app.opts, app.lua, app.keys, app.db);
-  project.suspend_revision_in_branch(app.keys, r, app.opts.branchname);
+  projects
+    .get_project_of_branch(app.opts.branchname)
+    .suspend_revision_in_branch(app.keys, r, app.opts.branchname);
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),

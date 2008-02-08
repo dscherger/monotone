@@ -30,6 +30,7 @@ using std::vector;
 
 app_state::app_state()
   : lua(this), keys(*this), db(lua), work(lua),
+    projects(db),
     branch_is_sticky(false),
     mtn_automate_allowed(false)
 {}
@@ -53,6 +54,8 @@ app_state::allow_workspace()
       global_sanity.set_dump_path(system_path(dump_path, false).as_external());
     }
   lua.load_rcfiles(opts);
+
+  projects.initialize(lua, opts);
 }
 
 void

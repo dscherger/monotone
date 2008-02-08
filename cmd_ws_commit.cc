@@ -351,7 +351,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
   N(rev.edges.size() == 1,
     F("revision %s has %d changesets, cannot invert") % r % rev.edges.size());
 
-  guess_branch(r, app.opts, project);
+  guess_branch(r, app.opts, projects);
   N(app.opts.branchname() != "", F("need --branch argument for disapproval"));
 
   process_commit_message_args(log_message_given, log_message, app,
@@ -380,9 +380,13 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
     calculate_ident(rdat, inv_id);
     app.db.put_revision(inv_id, rdat);
 
-    project.put_standard_certs_from_options(app.opts, app.lua, app.keys,
-                                            inv_id, app.opts.branchname,
-                                            log_message);
+    projects
+      .get_project_of_branch(app.opts.branchname)
+      .put_standard_certs_from_options(app.opts, app.lua,
+                                       app.keys,
+                                       inv_id,
+                                       app.opts.branchname,
+                                       log_message);
     guard.commit();
   }
 }
@@ -599,8 +603,10 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
         F("use --revision or --branch to specify what to checkout"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
-                               app.opts.ignore_suspend_certs);
+      projects
+        .get_project_of_branch(app.opts.branchname)
+        .get_branch_heads(app.opts.branchname, heads,
+                          app.opts.ignore_suspend_certs);
       N(heads.size() > 0,
         F("branch '%s' is empty") % app.opts.branchname);
       if (heads.size() > 1)
@@ -608,7 +614,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
           P(F("branch %s has multiple heads:") % app.opts.branchname);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(projects, *i));
           P(F("choose one with '%s checkout -r<id>'") % ui.prog_name);
           E(false, F("branch %s has multiple heads") % app.opts.branchname);
         }
@@ -619,11 +625,13 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
       // use specified revision
       complete(app, project, idx(app.opts.revision_selectors, 0)(), revid);
 
-      guess_branch(revid, app.opts, project);
+      guess_branch(revid, app.opts, projects);
 
       I(!app.opts.branchname().empty());
 
-      N(project.revision_is_in_branch(revid, app.opts.branchname),
+      N(projects
+        .get_project_of_branch(app.opts.branchname)
+        .revision_is_in_branch(revid, app.opts.branchname),
         F("revision %s is not a member of branch %s")
         % revid % app.opts.branchname);
     }
@@ -1089,7 +1097,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
            i++)
         {
           // this will prefer --branch if it was set
-          guess_branch(edge_old_revision(i), app.opts, project,
+          guess_branch(edge_old_revision(i), app.opts, projects,
                        bn_candidate);
           N(branchname() == "" || branchname == bn_candidate,
             F("parent revisions of this commit are in different branches:\n"
@@ -1155,8 +1163,10 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   // for the divergence check, below
   set<revision_id> heads;
-  project.get_branch_heads(app.opts.branchname, heads,
-                           app.opts.ignore_suspend_certs);
+  projects
+    .get_project_of_branch(app.opts.branchname)
+    .get_branch_heads(app.opts.branchname, heads,
+                      app.opts.ignore_suspend_certs);
   unsigned int old_head_size = heads.size();
 
   {
@@ -1241,10 +1251,13 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
         app.db.put_revision(restricted_rev_id, rdat);
       }
 
-    project.put_standard_certs_from_options(app.opts, app.lua, app.keys,
-                                            restricted_rev_id,
-                                            app.opts.branchname,
-                                            log_message);
+    projects
+      .get_project_of_branch(app.opts.branchname)
+      .put_standard_certs_from_options(app.opts, app.lua,
+                                       app.keys,
+                                       restricted_rev_id,
+                                       app.opts.branchname,
+                                       log_message);
     guard.commit();
   }
 
@@ -1259,8 +1272,10 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   app.work.blank_user_log();
 
-  project.get_branch_heads(app.opts.branchname, heads,
-                           app.opts.ignore_suspend_certs);
+  projects
+    .get_project_of_branch(app.opts.branchname)
+    .get_branch_heads(app.opts.branchname, heads,
+                      app.opts.ignore_suspend_certs);
   if (heads.size() > old_head_size && old_head_size > 0) {
     P(F("note: this revision creates divergence\n"
         "note: you may (or may not) wish to run '%s merge'")
@@ -1278,7 +1293,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     // later.
     map<cert_name, cert_value> certs;
     vector< revision<cert> > ctmp;
-    project.get_revision_certs(restricted_rev_id, ctmp);
+    projects.get_revision_certs(restricted_rev_id, ctmp);
     for (vector< revision<cert> >::const_iterator i = ctmp.begin();
          i != ctmp.end(); ++i)
       {
@@ -1337,11 +1352,13 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
       // use specified revision
       complete(app, project, idx(app.opts.revision_selectors, 0)(), ident);
 
-      guess_branch(ident, app.opts, project);
+      guess_branch(ident, app.opts, projects);
 
       I(!app.opts.branchname().empty());
 
-      N(project.revision_is_in_branch(ident, app.opts.branchname),
+      N(projects
+        .get_project_of_branch(app.opts.branchname)
+        .revision_is_in_branch(ident, app.opts.branchname),
         F("revision %s is not a member of branch %s")
         % ident % app.opts.branchname);
     }
@@ -1352,14 +1369,16 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
         F("use --revision or --branch to specify what to checkout"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
-                               app.opts.ignore_suspend_certs);
+      projects
+        .get_project_of_branch(app.opts.branchname)
+        .get_branch_heads(app.opts.branchname, heads,
+                          app.opts.ignore_suspend_certs);
       if (heads.size() > 1)
         {
           P(F("branch %s has multiple heads:") % app.opts.branchname);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(projects, *i));
           P(F("choose one with '%s checkout -r<id>'") % ui.prog_name);
           E(false, F("branch %s has multiple heads") % app.opts.branchname);
         }

@@ -89,6 +89,10 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
 
   set<revision_id> heads;
   project.get_branch_heads(branch, heads, app.opts.ignore_suspend_certs);
+  app.projects
+    .get_project_of_branch(branch_option)
+    .get_branch_heads(branch_option, heads,
+                      app.opts.ignore_suspend_certs);
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
     output << (*i).inner()() << '\n';

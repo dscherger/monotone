@@ -625,7 +625,7 @@ process_branch(string const & begin_version,
         {
           string branch;
           data branch_data;
-          hexenc<id> branch_id;
+          hexenc<id> branch_uid;
           vector< piece > branch_lines;
           bool priv = false;
           map<string, string>::const_iterator be = cvs.branch_first_entries.find(*i);
@@ -639,10 +639,10 @@ process_branch(string const & begin_version,
 
           construct_version(*curr_lines, *i, branch_lines, r);
           insert_into_db(curr_data, curr_id,
-                         branch_lines, branch_data, branch_id, db);
+                         branch_lines, branch_data, branch_uid, db);
 
           cvs.push_branch(branch, priv);
-          process_branch(*i, branch_lines, branch_data, branch_id, r, db, cvs);
+          process_branch(*i, branch_lines, branch_data, branch_uid, r, db, cvs);
           cvs.pop_branch();
 
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);

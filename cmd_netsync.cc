@@ -162,7 +162,7 @@ CMD(push, "push", "", CMD_REF(network),
   project_t project(app.db);
   run_netsync_protocol(client_voice, source_role, uris,
                        include_pattern, exclude_pattern,
-                       project, app.keys, app.lua, app.opts);
+                       projects, app.keys, app.lua, app.opts);
 }
 
 CMD(pull, "pull", "", CMD_REF(network),
@@ -187,7 +187,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   project_t project(app.db);
   run_netsync_protocol(client_voice, sink_role, uris,
                        include_pattern, exclude_pattern,
-                       project, app.keys, app.lua, app.opts);
+                       projects, app.keys, app.lua, app.opts);
 }
 
 CMD(sync, "sync", "", CMD_REF(network),
@@ -210,7 +210,7 @@ CMD(sync, "sync", "", CMD_REF(network),
   project_t project(app.db);
   run_netsync_protocol(client_voice, source_and_sink_role, uris,
                        include_pattern, exclude_pattern,
-                       project, app.keys, app.lua, app.opts);
+                       projects, app.keys, app.lua, app.opts);
 }
 
 class dir_cleanup_helper
@@ -331,7 +331,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   project_t project(app.db);
   run_netsync_protocol(client_voice, sink_role, uris,
                        include_pattern, exclude_pattern,
-                       project, app.keys, app.lua, app.opts);
+                       projects, app.keys, app.lua, app.opts);
 
   change_current_working_dir(workspace_dir);
 
@@ -344,8 +344,10 @@ CMD(clone, "clone", "", CMD_REF(network),
         F("use --revision or --branch to specify what to checkout"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
-                               app.opts.ignore_suspend_certs);
+      projects
+        .get_project_of_branch(app.opts.branchname)
+        .get_branch_heads(app.opts.branchname, heads,
+                          app.opts.ignore_suspend_certs);
       N(heads.size() > 0,
         F("branch '%s' is empty") % app.opts.branchname);
       if (heads.size() > 1)
@@ -353,7 +355,7 @@ CMD(clone, "clone", "", CMD_REF(network),
           P(F("branch %s has multiple heads:") % app.opts.branchname);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(projects, *i));
           P(F("choose one with '%s checkout -r<id>'") % ui.prog_name);
           E(false, F("branch %s has multiple heads") % app.opts.branchname);
         }
@@ -364,10 +366,12 @@ CMD(clone, "clone", "", CMD_REF(network),
       // use specified revision
       complete(app, project, idx(app.opts.revision_selectors, 0)(), ident);
 
-      guess_branch(ident, app.opts, project);
+      guess_branch(ident, app.opts, projects);
       I(!app.opts.branchname().empty());
 
-      N(project.revision_is_in_branch(ident, app.opts.branchname),
+      N(projects
+        .get_project_of_branch(app.opts.branchname)
+        .revision_is_in_branch(ident, app.opts.branchname),
         F("revision %s is not a member of branch %s")
         % ident % app.opts.branchname);
     }
@@ -457,7 +461,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
   project_t project(app.db);
   run_netsync_protocol(server_voice, source_and_sink_role, app.opts.bind_uris,
                        globish("*"), globish(""),
-                       project, app.keys, app.lua, app.opts);
+                       projects, app.keys, app.lua, app.opts);
 }
 
 // Local Variables:
