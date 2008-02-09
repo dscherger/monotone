@@ -21,6 +21,7 @@
 class app_state;
 class database;
 class project_t;
+class project_set;
 struct workspace;
 
 namespace commands
@@ -156,7 +157,7 @@ args_to_paths(args_vector const & args)
 }
 
 std::string
-describe_revision(project_t & project, revision_id const & id);
+describe_revision(project_set & projects, revision_id const & id);
 
 void
 notify_if_multiple_heads(project_t & project, branch_name const & branchname,

@@ -157,7 +157,7 @@ CMD(push, "push", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   utf8 addr;
   globish include_pattern, exclude_pattern;
@@ -169,7 +169,7 @@ CMD(push, "push", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, source_role, uris,
                        include_pattern, exclude_pattern);
 }
@@ -183,7 +183,7 @@ CMD(pull, "pull", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set project(db, app.lua, app.opts);
 
   utf8 addr;
   globish include_pattern, exclude_pattern;
@@ -198,7 +198,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, sink_role, uris,
                        include_pattern, exclude_pattern);
 }
@@ -213,7 +213,7 @@ CMD(sync, "sync", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   utf8 addr;
   globish include_pattern, exclude_pattern;
@@ -225,7 +225,7 @@ CMD(sync, "sync", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, source_and_sink_role, uris,
                        include_pattern, exclude_pattern);
 }
@@ -320,7 +320,7 @@ CMD(clone, "clone", "", CMD_REF(network),
     }
 
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   globish include_pattern(app.opts.branchname());
   globish exclude_pattern(app.opts.exclude_patterns);
 
@@ -353,7 +353,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, sink_role, uris,
                        include_pattern, exclude_pattern);
 
@@ -368,8 +368,10 @@ CMD(clone, "clone", "", CMD_REF(network),
         F("use --revision or --branch to specify what to checkout"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
-                               app.opts.ignore_suspend_certs);
+      projects
+        .get_project_of_branch(app.opts.branchname)
+        .get_branch_heads(app.opts.branchname, heads,
+                          app.opts.ignore_suspend_certs);
       N(heads.size() > 0,
         F("branch '%s' is empty") % app.opts.branchname);
       if (heads.size() > 1)
@@ -377,7 +379,7 @@ CMD(clone, "clone", "", CMD_REF(network),
           P(F("branch %s has multiple heads:") % app.opts.branchname);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(projects, *i));
           P(F("choose one with '%s checkout -r<id>'") % ui.prog_name);
           E(false, F("branch %s has multiple heads") % app.opts.branchname);
         }
@@ -386,12 +388,14 @@ CMD(clone, "clone", "", CMD_REF(network),
   else if (app.opts.revision_selectors.size() == 1)
     {
       // use specified revision
-      complete(app, project, idx(app.opts.revision_selectors, 0)(), ident);
+      complete(app, projects, idx(app.opts.revision_selectors, 0)(), ident);
 
-      guess_branch(app.opts, project, ident);
+      guess_branch(app.opts, projects, ident);
       I(!app.opts.branchname().empty());
 
-      N(project.revision_is_in_branch(ident, app.opts.branchname),
+      N(projects
+        .get_project_of_branch(app.opts.branchname)
+        .revision_is_in_branch(ident, app.opts.branchname),
         F("revision %s is not a member of branch %s")
         % ident % app.opts.branchname);
     }
@@ -461,7 +465,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   pid_file pid(app.opts.pidfile);
 
   db.ensure_open();
@@ -483,7 +487,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        server_voice, source_and_sink_role, app.opts.bind_uris,
                        globish("*"), globish(""));
 }

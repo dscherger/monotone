@@ -208,47 +208,59 @@ parse_selector(app_state & app, string const & str, selector_list & sels)
 }
 
 static void
-complete_one_selector(project_t & project,
+complete_one_selector(project_set & projects,
                       selector_type ty, string const & value,
                       set<revision_id> & completions)
 {
   switch (ty)
     {
     case sel_ident:
-      project.db.complete(value, completions);
+      projects.db.complete(value, completions);
       break;
 
     case sel_parent:
-      project.db.select_parent(value, completions);
+      projects.db.select_parent(value, completions);
       break;
         
     case sel_author:
-      project.db.select_cert(author_cert_name(), value, completions);
+      projects.db.select_cert(author_cert_name(), value, completions);
       break;
 
     case sel_tag:
-      project.db.select_cert(tag_cert_name(), value, completions);
+      projects.db.select_cert(tag_cert_name(), value, completions);
       break;
 
     case sel_branch:
       I(!value.empty());
-      project.db.select_cert(branch_cert_name(), value, completions);
+      {
+        set<branch_name> branches;
+        projects.get_branch_list(globish(value), branches);
+        for (set<branch_name>::const_iterator i = branches.begin();
+             i != branches.end(); ++i)
+          {
+            set<revision_id> in_this_branch;
+            projects.db.select_cert(branch_cert_name(), (*i)(), in_this_branch);
+            std::copy(in_this_branch.begin(),
+                      in_this_branch.end(),
+                      std::inserter(completions, completions.end()));
+          }
+      }
       break;
 
     case sel_unknown:
-      project.db.select_author_tag_or_branch(value, completions);
+      projects.db.select_author_tag_or_branch(value, completions);
       break;
 
     case sel_date:
-      project.db.select_date(value, "GLOB", completions);
+      projects.db.select_date(value, "GLOB", completions);
       break;
 
     case sel_earlier:
-      project.db.select_date(value, "<=", completions);
+      projects.db.select_date(value, "<=", completions);
       break;
 
     case sel_later:
-      project.db.select_date(value, ">", completions);
+      projects.db.select_date(value, ">", completions);
       break;
 
     case sel_cert:
@@ -265,10 +277,10 @@ complete_one_selector(project_t & project,
             spot++;
             certvalue = value.substr(spot);
 
-            project.db.select_cert(certname, certvalue, completions);
+            projects.db.select_cert(certname, certvalue, completions);
           }
         else
-          project.db.select_cert(value, completions);
+          projects.db.select_cert(value, completions);
       }
       break;
 
@@ -278,7 +290,7 @@ complete_one_selector(project_t & project,
         // get branch names
         set<branch_name> branch_names;
         I(!value.empty());
-        project.get_branch_list(globish(value), branch_names);
+        projects.get_branch_list(globish(value), branch_names);
 
         L(FL("found %d matching branches") % branch_names.size());
 
@@ -287,7 +299,9 @@ complete_one_selector(project_t & project,
              bn != branch_names.end(); bn++)
           {
             set<revision_id> branch_heads;
-            project.get_branch_heads(*bn, branch_heads, ty == sel_any_head);
+            projects
+              .get_project_of_branch(*bn)
+              .get_branch_heads(*bn, branch_heads, ty == sel_any_head);
             completions.insert(branch_heads.begin(), branch_heads.end());
             L(FL("after get_branch_heads for %s, heads has %d entries")
               % (*bn) % completions.size());
@@ -298,25 +312,25 @@ complete_one_selector(project_t & project,
 }
 
 static void
-complete_selector(project_t & project,
+complete_selector(project_set & projects,
                   selector_list const & limit,
                   set<revision_id> & completions)
 {
   if (limit.empty()) // all the ids in the database
     {
-      project.db.complete("", completions);
+      projects.db.complete("", completions);
       return;
     }
 
   selector_list::const_iterator i = limit.begin();
-  complete_one_selector(project, i->first, i->second, completions);
+  complete_one_selector(projects, i->first, i->second, completions);
   i++;
 
   while (i != limit.end())
     {
       set<revision_id> candidates;
       set<revision_id> intersection;
-      complete_one_selector(project, i->first, i->second, candidates);
+      complete_one_selector(projects, i->first, i->second, candidates);
 
       intersection.clear();
       set_intersection(completions.begin(), completions.end(),
@@ -330,7 +344,7 @@ complete_selector(project_t & project,
 
 void
 complete(app_state & app,
-         project_t & project,
+         project_set & projects,
          string const & str,
          set<revision_id> & completions)
 {
@@ -343,13 +357,13 @@ complete(app_state & app,
       && sels[0].second.size() == constants::idlen)
     {
       completions.insert(revision_id(sels[0].second));
-      N(project.db.revision_exists(*completions.begin()),
+      N(projects.db.revision_exists(*completions.begin()),
         F("no such revision '%s'") % *completions.begin());
       return;
     }
 
   P(F("expanding selection '%s'") % str);
-  complete_selector(project, sels, completions);
+  complete_selector(projects, sels, completions);
 
   N(completions.size() != 0,
     F("no match for selection '%s'") % str);
@@ -361,23 +375,23 @@ complete(app_state & app,
 
       // This may be impossible, but let's make sure.
       // All the callers used to do it.
-      N(project.db.revision_exists(*i),
+      N(projects.db.revision_exists(*i),
         F("no such revision '%s'") % *i);
     }
 }
 
 void
 complete(app_state & app,
-         project_t & project,
+         project_set & projects,
          string const & str,
          revision_id & completion)
 {
   set<revision_id> completions;
 
-  complete(app, project, str, completions);
+  complete(app, projects, str, completions);
 
   I(completions.size() > 0);
-  diagnose_ambiguous_expansion(project, str, completions);
+  diagnose_ambiguous_expansion(projects, str, completions);
 
   completion = *completions.begin();
 }
@@ -385,7 +399,7 @@ complete(app_state & app,
 
 void
 expand_selector(app_state & app,
-                project_t & project,
+                project_set & projects,
                 string const & str,
                 set<revision_id> & completions)
 {
@@ -401,11 +415,11 @@ expand_selector(app_state & app,
       return;
     }
 
-  complete_selector(project, sels, completions);
+  complete_selector(projects, sels, completions);
 }
 
 void
-diagnose_ambiguous_expansion(project_t & project,
+diagnose_ambiguous_expansion(project_set & projects,
                              string const & str,
                              set<revision_id> const & completions)
 {
@@ -416,7 +430,7 @@ diagnose_ambiguous_expansion(project_t & project,
                 % str).str();
   for (set<revision_id>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
-    err += ("\n" + describe_revision(project, *i));
+    err += ("\n" + describe_revision(projects, *i));
 
   N(false, i18n_format(err));
 }

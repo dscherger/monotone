@@ -377,8 +377,8 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
 
   set<revision_id> revs;
   database db(app);
-  project_t project(db);
-  complete(app, project, idx(args, 0)(), revs);
+  project_set projects(db, app.lua, app.opts);
+  complete(app, projects, idx(args, 0)(), revs);
 
   vector<revision_id> sorted;
   toposort(db, revs, sorted);

@@ -17,6 +17,9 @@
 #include "vocab.hh"
 #include "dates.hh"
 
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+
 // Certs associate an opaque name/value pair with a revision ID, and
 // are accompanied by an RSA public-key signature attesting to the
 // association. Users can write as much extra meta-data as they like
@@ -25,7 +28,7 @@
 
 class key_store;
 class database;
-class project_t;
+class project_set;
 struct options;
 
 struct cert
@@ -72,6 +75,15 @@ bool put_simple_revision_cert(database & db,
                               revision_id const & id,
                               cert_name const & nm,
                               cert_value const & val);
+typedef boost::function<bool (std::set<rsa_keypair_id> const &,
+                              hexenc<id> const &,
+                              cert_name const &,
+                              cert_value const &)> trust_function;
+
+void erase_bogus_certs(std::vector< revision<cert> > & certs,
+                       trust_function trust_fn,
+                       database & db);
+
 
 void erase_bogus_certs(database & db, std::vector< revision<cert> > & certs);
 void erase_bogus_certs(database & db, std::vector< manifest<cert> > & certs);
@@ -83,7 +95,7 @@ void erase_bogus_certs(database & db, std::vector< manifest<cert> > & certs);
 void
 cert_revision_in_branch(database & db, key_store & keys,
                         revision_id const & rev,
-                        branch_name const & branchname);
+                        branch_uid const & branchname);
 
 
 // We also define some common cert types, to help establish useful
@@ -91,10 +103,10 @@ cert_revision_in_branch(database & db, key_store & keys,
 // reason not to.
 
 void
-guess_branch(options & opts, project_t & project, revision_id const & rev,
+guess_branch(options & opts, project_set & projects, revision_id const & rev,
              branch_name & branchname);
 void
-guess_branch(options & opts, project_t & project, revision_id const & rev);
+guess_branch(options & opts, project_set & projects, revision_id const & rev);
 
 #define date_cert_name cert_name("date")
 #define author_cert_name cert_name("author")
@@ -107,7 +119,7 @@ guess_branch(options & opts, project_t & project, revision_id const & rev);
 void
 cert_revision_suspended_in_branch(database & db, key_store & keys,
                                   revision_id const & rev,
-                                  branch_name const & branchname);
+                                  branch_uid const & branchname);
 
 void
 cert_revision_date_time(database & db, key_store & keys,
