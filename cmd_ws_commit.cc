@@ -338,14 +338,14 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
   if (args.size() != 1)
     throw usage(execid);
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
 
   utf8 log_message("");
   bool log_message_given;
   revision_id r;
   revision_t rev, rev_inverse;
   shared_ptr<cset> cs_inverse(new cset());
-  complete(app, project, idx(args, 0)(), r);
+  complete(app, projects, idx(args, 0)(), r);
   app.db.get_revision(r, rev);
 
   N(rev.edges.size() == 1,
@@ -590,7 +590,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   revision_id revid;
   system_path dir;
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
   transaction_guard guard(app.db, false);
 
   if (args.size() > 1 || app.opts.revision_selectors.size() > 1)
@@ -623,7 +623,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   else if (app.opts.revision_selectors.size() == 1)
     {
       // use specified revision
-      complete(app, project, idx(app.opts.revision_selectors, 0)(), revid);
+      complete(app, projects, idx(app.opts.revision_selectors, 0)(), revid);
 
       guess_branch(revid, app.opts, projects);
 
@@ -1066,7 +1066,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   temp_node_id_source nis;
   cset excluded;
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
   app.require_workspace();
 
   app.make_branch_sticky();
@@ -1342,7 +1342,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 {
   revision_id ident;
   system_path dir;
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
 
   N(args.size() == 1,
     F("you must specify a directory to import"));
@@ -1350,7 +1350,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   if (app.opts.revision_selectors.size() == 1)
     {
       // use specified revision
-      complete(app, project, idx(app.opts.revision_selectors, 0)(), ident);
+      complete(app, projects, idx(app.opts.revision_selectors, 0)(), ident);
 
       guess_branch(ident, app.opts, projects);
 

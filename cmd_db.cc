@@ -123,8 +123,8 @@ CMD(db_kill_rev_locally, "kill_rev_locally", "", CMD_REF(db), "ID",
 
   revision_id revid;
 
-  project_t project(app.db);
-  complete(app, project, idx(args, 0)(), revid);
+  project_set projects(app.db, app.lua, app.opts);
+  complete(app, projects, idx(args, 0)(), revid);
 
   // Check that the revision does not have any children
   std::set<revision_id> children;
@@ -271,8 +271,9 @@ CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
     throw usage(execid);
 
   branch_name name(idx(args, 0)());
-  branch_uid branch = app.projects.translate_branch(name);
-  app.db.clear_epoch(branch);
+  project_set projects(app.db, app.lua, app.opts);
+  branch_uid branch = projects.translate_branch(name);
+  projects.db.clear_epoch(branch);
 }
 
 CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
@@ -287,8 +288,9 @@ CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
   N(ed.inner()().size() == constants::epochlen,
     F("The epoch must be %s characters") % constants::epochlen);
   branch_name name(idx(args, 0)());
-  branch_uid branch = app.projects.translate_branch(name);
-  app.db.set_epoch(branch, ed);
+  project_set projects(app.db, app.lua, app.opts);
+  branch_uid branch = projects.translate_branch(name);
+  projects.db.set_epoch(branch, ed);
 }
 
 CMD(set, "set", "", CMD_REF(variables), N_("DOMAIN NAME VALUE"),
@@ -338,7 +340,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
   if (args.size() != 2)
     throw usage(execid);
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
 
   bool verbose = app.opts.verbose;
 
@@ -353,7 +355,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
            i != completions.end(); ++i)
         {
           if (!verbose) cout << i->inner()() << '\n';
-          else cout << describe_revision(project, *i) << '\n';
+          else cout << describe_revision(projects, *i) << '\n';
         }
     }
   else if (idx(args, 0)() == "file")

@@ -30,6 +30,8 @@ typedef bool suspended_indicator;
 
 class policy_info;
 
+class project_set;
+
 class project_t
 {
   // In the hypothetical future situation where one monotone process is
@@ -49,6 +51,8 @@ private:
   std::set<branch_name> branches;
   outdated_indicator indicator;
 
+  explicit project_t(database & db);
+  friend class project_set;
 public:
   project_t(branch_prefix const & project_name,
             data const & project_spec,
@@ -56,7 +60,6 @@ public:
   project_t(branch_prefix const & project_name,
             revision_id const & policy_rev,
             database & db);
-  explicit project_t(database & db);
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);
@@ -131,8 +134,9 @@ private:
   project_map projects;
 
 public:
-  explicit project_set(database & db);
-  void initialize(lua_hooks & lua, options & opts);
+  project_set(database & db,
+              lua_hooks & lua,
+              options & opts);
 
   // Get a named project.
   project_t & get_project(branch_prefix const & name);

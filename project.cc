@@ -956,13 +956,10 @@ project_t::put_cert(key_store & keys,
 
 ////////////////////////////////////////////////////////////////////////
 
-project_set::project_set(database & db)
+project_set::project_set(database & db,
+                         lua_hooks & lua,
+                         options & opts)
   : db(db)
-{
-}
-
-void
-project_set::initialize(lua_hooks & lua, options & opts)
 {
   map<string, data> project_definitions;
   lua.hook_get_projects(project_definitions);

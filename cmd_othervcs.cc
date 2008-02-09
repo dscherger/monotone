@@ -49,7 +49,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
                             F("path %s does not exist") % cvsroot,
                             F("'%s' is not a directory") % cvsroot);
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
 
   // make sure we can sign certs using the selected key; also requests
   // the password (if necessary) up front rather than after some arbitrary

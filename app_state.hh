@@ -31,7 +31,6 @@ public:
   key_store keys;
   database db;
   workspace work;
-  project_set projects;
 
   bool found_workspace;
   bool branch_is_sticky;

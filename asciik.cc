@@ -376,8 +376,8 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
     F("wrong argument count"));
 
   set<revision_id> revs; 
-  project_t project(app.db);
-  complete(app, project, idx(args, 0)(), revs);
+  project_set projects(app.db, app.lua, app.opts);
+  complete(app, projects, idx(args, 0)(), revs);
 
   vector<revision_id> sorted;
   toposort(revs, sorted, app.db);

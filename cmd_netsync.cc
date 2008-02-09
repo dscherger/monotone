@@ -159,7 +159,7 @@ CMD(push, "push", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
   run_netsync_protocol(client_voice, source_role, uris,
                        include_pattern, exclude_pattern,
                        projects, app.keys, app.lua, app.opts);
@@ -184,7 +184,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
   run_netsync_protocol(client_voice, sink_role, uris,
                        include_pattern, exclude_pattern,
                        projects, app.keys, app.lua, app.opts);
@@ -207,7 +207,7 @@ CMD(sync, "sync", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
   run_netsync_protocol(client_voice, source_and_sink_role, uris,
                        include_pattern, exclude_pattern,
                        projects, app.keys, app.lua, app.opts);
@@ -328,7 +328,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   std::list<utf8> uris;
   uris.push_back(addr);
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
   run_netsync_protocol(client_voice, sink_role, uris,
                        include_pattern, exclude_pattern,
                        projects, app.keys, app.lua, app.opts);
@@ -364,7 +364,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   else if (app.opts.revision_selectors.size() == 1)
     {
       // use specified revision
-      complete(app, project, idx(app.opts.revision_selectors, 0)(), ident);
+      complete(app, projects, idx(app.opts.revision_selectors, 0)(), ident);
 
       guess_branch(ident, app.opts, projects);
       I(!app.opts.branchname().empty());
@@ -458,7 +458,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
 
-  project_t project(app.db);
+  project_set projects(app.db, app.lua, app.opts);
   run_netsync_protocol(server_voice, source_and_sink_role, app.opts.bind_uris,
                        globish("*"), globish(""),
                        projects, app.keys, app.lua, app.opts);
