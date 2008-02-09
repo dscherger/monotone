@@ -27,9 +27,9 @@ using std::pair;
 using std::set;
 using std::vector;
 
-revision_enumerator::revision_enumerator(project_t & project,
-                                         database & db)
-  : cb(cb), db(db)
+revision_enumerator::revision_enumerator(database & db,
+                                         enumerator_callbacks & cb)
+  : db(db), cb(cb)
 {
   revision_id root;
   revs.push_back(root);

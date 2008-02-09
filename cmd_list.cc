@@ -699,7 +699,7 @@ CMD_AUTOMATE(certs, N_("REV"),
     F("wrong argument count"));
 
   database db(app);
-  project_set projects(app.db, app.lua, app.opts);
+  project_set projects(db, app.lua, app.opts);
 
   vector<cert> certs;
 

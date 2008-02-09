@@ -423,7 +423,7 @@ session:
 
   session(options & opts,
           lua_hooks & lua,
-          project_t & project,
+          project_set & projects,
           key_store & keys,
           protocol_role role,
           protocol_voice voice,
@@ -594,7 +594,7 @@ session::session(options & opts,
   key_refiner(key_item, voice, *this),
   cert_refiner(cert_item, voice, *this),
   rev_refiner(revision_item, voice, *this),
-  rev_enumerator(projects, *this),
+  rev_enumerator(projects.db, *this),
   initiated_by_server(initiated_by_server)
 {}
 
@@ -3317,7 +3317,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
 
 void
 run_netsync_protocol(options & opts, lua_hooks & lua,
-                     project_tse & projects, key_store & keys,
+                     project_set & projects, key_store & keys,
                      protocol_voice voice,
                      protocol_role role,
                      std::list<utf8> const & addrs,

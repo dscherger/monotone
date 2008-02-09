@@ -53,12 +53,12 @@ using std::vector;
 using boost::lexical_cast;
 
 static void
-get_test_results_for_revision(project_t & project,
+get_test_results_for_revision(project_set & projects,
                               revision_id const & id,
                               map<rsa_keypair_id, bool> & results)
 {
   vector< revision<cert> > certs;
-  project.get_revision_certs_by_name(id, cert_name(testresult_cert_name),
+  projects.get_revision_certs_by_name(id, cert_name(testresult_cert_name),
                                      certs);
   for (vector< revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
@@ -79,7 +79,7 @@ get_test_results_for_revision(project_t & project,
 
 static bool
 acceptable_descendent(lua_hooks & lua,
-                      project_t & project,
+                      project_set & projects,
                       branch_name const & branch,
                       revision_id const & base,
                       map<rsa_keypair_id, bool> & base_results,
@@ -88,7 +88,9 @@ acceptable_descendent(lua_hooks & lua,
   L(FL("Considering update target %s") % target);
 
   // step 1: check the branch
-  if (!project.revision_is_in_branch(target, branch))
+  if (!projects
+      .get_project_of_branch(branch)
+      .revision_is_in_branch(target, branch))
     {
       L(FL("%s not in branch %s") % target % branch);
       return false;
@@ -96,7 +98,7 @@ acceptable_descendent(lua_hooks & lua,
 
   // step 2: check the testresults
   map<rsa_keypair_id, bool> target_results;
-  get_test_results_for_revision(project, target, target_results);
+  get_test_results_for_revision(projects, target, target_results);
   if (lua.hook_accept_testresult_change(base_results, target_results))
     {
       L(FL("%s is acceptable update candidate") % target);
@@ -111,7 +113,7 @@ acceptable_descendent(lua_hooks & lua,
 
 void
 pick_update_candidates(lua_hooks & lua,
-                       project_t & project,
+                       project_set & projects,
                        set<revision_id> & candidates,
                        revision_id const & base,
                        branch_name const & branch,
@@ -121,13 +123,13 @@ pick_update_candidates(lua_hooks & lua,
   I(!branch().empty());
 
   map<rsa_keypair_id, bool> base_results;
-  get_test_results_for_revision(project, base, base_results);
+  get_test_results_for_revision(projects, base, base_results);
 
   candidates.clear();
   // we possibly insert base into the candidate set as well; returning a set
   // containing just it means that we are up to date; returning an empty set
   // means that there is no acceptable update.
-  if (acceptable_descendent(lua, project, branch, base, base_results, base))
+  if (acceptable_descendent(lua, projects, branch, base, base_results, base))
     candidates.insert(base);
 
   // keep a visited set to avoid repeating work
@@ -135,7 +137,7 @@ pick_update_candidates(lua_hooks & lua,
   set<revision_id> children;
   vector<revision_id> to_traverse;
 
-  project.db.get_revision_children(base, children);
+  projects.db.get_revision_children(base, children);
   copy(children.begin(), children.end(), back_inserter(to_traverse));
 
   while (!to_traverse.empty())
@@ -149,16 +151,16 @@ pick_update_candidates(lua_hooks & lua,
       visited.insert(target);
 
       // then, possibly insert this revision as a candidate
-      if (acceptable_descendent(lua, project, branch, base, base_results,
+      if (acceptable_descendent(lua, projects, branch, base, base_results,
                                 target))
         candidates.insert(target);
 
       // and traverse its children as well
-      project.db.get_revision_children(target, children);
+      projects.db.get_revision_children(target, children);
       copy(children.begin(), children.end(), back_inserter(to_traverse));
     }
 
-  erase_ancestors(project.db, candidates);
+  erase_ancestors(projects.db, candidates);
 
   if (ignore_suspend_certs)
     return;
@@ -166,7 +168,9 @@ pick_update_candidates(lua_hooks & lua,
    set<revision_id> active_candidates;
    for (set<revision_id>::const_iterator i = candidates.begin();
         i != candidates.end(); i++)
-     if (!project.revision_is_suspended_in_branch(*i, branch))
+     if (!projects
+         .get_project_of_branch(branch)
+         .revision_is_suspended_in_branch(*i, branch))
        safe_insert(active_candidates, *i);
 
    if (!active_candidates.empty())

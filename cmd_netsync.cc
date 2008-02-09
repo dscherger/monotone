@@ -183,7 +183,7 @@ CMD(pull, "pull", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_set project(db, app.lua, app.opts);
+  project_set projects(db, app.lua, app.opts);
 
   utf8 addr;
   globish include_pattern, exclude_pattern;

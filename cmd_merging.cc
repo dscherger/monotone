@@ -86,13 +86,15 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
 }
 
 static bool
-pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
+pick_branch_for_update(lua_hooks & lua,
+                       options & opts, database & db,
+                       revision_id chosen_rid)
 {
   bool switched_branch = false;
 
   // figure out which branches the target is in
   set< branch_name > branches;
-  project_set projects(db, app.lua, app.opts);
+  project_set projects(db, lua, opts);
   projects.get_revision_branches(chosen_rid, branches);
 
   if (branches.find(opts.branchname) != branches.end())
@@ -213,7 +215,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   // Fiddle around with branches, in an attempt to guess what the user
   // wants.
-  bool switched_branch = pick_branch_for_update(app.opts, db, chosen_rid);
+  bool switched_branch = pick_branch_for_update(app.lua, app.opts, db,
+                                                chosen_rid);
   if (switched_branch)
     P(F("switching to branch %s") % app.opts.branchname());
 

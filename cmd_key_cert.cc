@@ -154,13 +154,12 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if ((args.size() != 3) && (args.size() != 2))
     throw usage(execid);
 
-  project_set projects(db, app.lua, app.opts);
-  transaction_guard guard(app.db);
+  transaction_guard guard(db);
 
   revision_id rid;
   complete(app,  projects, idx(args, 0)(), rid);
@@ -180,7 +179,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
       val = cert_value(dat());
     }
 
-  put_simple_revision_cert(rid, cname, val, db, app.keys);
+  put_simple_revision_cert(db, keys, rid, cname, val);
   guard.commit();
 }
 

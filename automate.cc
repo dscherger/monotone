@@ -76,7 +76,7 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
     F("wrong argument count"));
 
   database db(app);
-  project_set projects(app.db, app.lua, app.opts);
+  project_set projects(db, app.lua, app.opts);
 
   branch_name branch;
   if (args.size() == 1)
@@ -1421,7 +1421,7 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
     F("wrong argument count"));
 
   database db(app);
-  project_set projects(app.db, app.lua, app.opts);
+  project_set projects(db, app.lua, app.opts);
   packet_writer pw(output);
 
   revision_id r_id(idx(args, 0)());
@@ -1593,7 +1593,7 @@ CMD_AUTOMATE(branches, "",
     F("no arguments needed"));
 
   database db(app);
-  project_set projects(app.db, app.lua, app.opts);
+  project_set projects(db, app.lua, app.opts);
   set<branch_name> names;
 
   projects.get_branch_list(names, !app.opts.ignore_suspend_certs);
@@ -1645,7 +1645,7 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
     F("wrong argument count"));
 
   database db(app);
-  project_set projects(app.db, app.lua, app.opts);
+  project_set projects(db, app.lua, app.opts);
   globish incl("*");
   bool filtering(false);
 

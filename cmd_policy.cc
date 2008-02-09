@@ -11,6 +11,7 @@
 #include "dates.hh"
 #include "file_io.hh"
 #include "keys.hh"
+#include "key_store.hh"
 #include "revision.hh"
 #include "roster.hh"
 #include "transforms.hh"
@@ -74,7 +75,7 @@ namespace {
 		       std::set<rsa_keypair_id> const & administrators,
 		       std::string & policy_uid, data & spec)
   {
-    cache_user_key(opts, lua, keys, db);
+    cache_user_key(opts, lua, db, keys);
 
     policy_uid = generate_uid();
     transaction_guard guard(db);
@@ -126,10 +127,10 @@ namespace {
       }
     utf8 changelog(N_("Create new policy branch."));
 
-    cert_revision_in_branch(rev_id, branch_uid(policy_uid), db, keys);
-    cert_revision_changelog(rev_id, changelog, db, keys);
-    cert_revision_date_time(rev_id, date, db, keys);
-    cert_revision_author(rev_id, author, db, keys);
+    cert_revision_in_branch(db, keys, rev_id, branch_uid(policy_uid));
+    cert_revision_changelog(db, keys, rev_id, changelog);
+    cert_revision_date_time(db, keys, rev_id, date);
+    cert_revision_author(db, keys, rev_id, author);
 
 
     guard.commit();
@@ -145,6 +146,10 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 {
   N(args.size() == 1,
     F("Wrong argument count."));
+
+  database db(app);
+  key_store keys(app);
+
   std::string project_name = idx(args, 0)();
   system_path project_dir = app.opts.conf_dir / "projects";
   system_path project_file = project_dir / path_component(project_name);
@@ -156,13 +161,13 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 			      F("You already have a project with that name."));
   mkdir_p(project_dir);
 
-  cache_user_key(app.opts, app.lua, app.keys, app.db);
+  cache_user_key(app.opts, app.lua, db, keys);
   std::set<rsa_keypair_id> admin_keys;
-  admin_keys.insert(app.keys.signing_key);
+  admin_keys.insert(keys.signing_key);
 
   std::string policy_uid;
   data policy_spec;
-  create_policy_branch(app.db, app.keys, app.lua, app.opts,
+  create_policy_branch(db, keys, app.lua, app.opts,
 		       branch_prefix(project_name), admin_keys,
 		       policy_uid, policy_spec);
 

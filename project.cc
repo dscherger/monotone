@@ -302,10 +302,10 @@ namespace
                             cert_name(branch_cert_name),
                             branch_encoded,
                             certs);
-      erase_bogus_certs(certs,
+      erase_bogus_certs(db,
                         boost::bind(&not_in_managed_branch::is_trusted,
                                     this, _1, _2, _3, _4),
-                        db);
+                        certs);
       return certs.empty();
     }
   };
@@ -341,10 +341,10 @@ namespace
                             cert_name(suspend_cert_name),
                             branch_encoded,
                             certs);
-      erase_bogus_certs(certs,
+      erase_bogus_certs(db,
                         boost::bind(&suspended_in_managed_branch::is_trusted,
                                     this, _1, _2, _3, _4),
-                        db);
+                        certs);
       return !certs.empty();
     }
   };
@@ -365,7 +365,7 @@ namespace
                                 heads);
 
      not_in_managed_branch p(db, branch_encoded, trusted_signers);
-     erase_ancestors_and_failures(heads, p, db, NULL);
+     erase_ancestors_and_failures(db, heads, p, NULL);
 
      if (heads.size() != 1)
        {
@@ -662,7 +662,7 @@ project_t::get_branch_heads(branch_name const & name,
       else
         {
           not_in_managed_branch p(db, branch_encoded, bp->committers);
-          erase_ancestors_and_failures(branch.second, p, db,
+          erase_ancestors_and_failures(db, branch.second, p,
                                        inverse_graph_cache_ptr);
         }
 
@@ -1110,7 +1110,7 @@ project_set::put_tag(key_store & keys,
                      revision_id const & id,
                      string const & name)
 {
-  cert_revision_tag(id, name, db, keys);
+  cert_revision_tag(db, keys, id, name);
 }
 
 outdated_indicator
@@ -1148,7 +1148,7 @@ project_set::get_revision_certs_by_name(revision_id const & id,
                                         std::vector<revision<cert> > & certs)
 {
   outdated_indicator i = db.get_revision_certs(id, name, certs);
-  erase_bogus_certs(certs, db);
+  erase_bogus_certs(db, certs);
   return i;
 }
 

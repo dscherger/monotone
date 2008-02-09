@@ -160,13 +160,13 @@ erase_bogus_certs(database & db,
   certs = tmp_certs;
 }
 
-void erase_bogus_certs(std::vector< revision<cert> > & certs,
-                       database & db)
+void erase_bogus_certs(database & db,
+                       std::vector< revision<cert> > & certs)
 {
-  erase_bogus_certs(certs,
+  erase_bogus_certs(db,
                     boost::bind(&database::hook_get_revision_cert_trust,
                                 &db, _1, _2, _3, _4),
-                    db);
+                    certs);
 }
 void
 erase_bogus_certs(database & db,
