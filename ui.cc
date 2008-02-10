@@ -97,7 +97,7 @@ ticker::operator++()
   I(ui.imp);
   I(ui.imp->tickers.find(keyname) != ui.imp->tickers.end());
   ticks++;
-  ui.some_tick_is_dirty = true;
+  ui.imp->some_tick_is_dirty = true;
   if (ticks % mod == 0)
     ui.write_ticks();
 }
@@ -105,7 +105,8 @@ ticker::operator++()
 void 
 ticker::operator--()
 {
-  I(ui.tickers.find(name) != ui.tickers.end());
+  I(ui.imp);
+  I(ui.imp->tickers.find(keyname) != ui.imp->tickers.end());
   I(ticks);
   ticks--;
   ui.imp->some_tick_is_dirty = true;
