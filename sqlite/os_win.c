@@ -408,6 +408,12 @@ static void winceDestroyLock(winFile *pFile){
     UnmapViewOfFile(pFile->shared);
     CloseHandle(pFile->hShared);
 
+    if( pFile->zDeleteOnClose ){
+      DeleteFileW(pFile->zDeleteOnClose);
+      sqliteFree(pFile->zDeleteOnClose);
+      pFile->zDeleteOnClose = 0;
+    }
+
     /* Done with the mutex */
     winceMutexRelease(pFile->hMutex);    
     CloseHandle(pFile->hMutex);
@@ -940,7 +946,8 @@ int sqlite3WinTempFileName(char *zBuf){
   for(i=strlen(zTempPath); i>0 && zTempPath[i-1]=='\\'; i--){}
   zTempPath[i] = 0;
   for(;;){
-    sprintf(zBuf, "%s\\"TEMP_FILE_PREFIX, zTempPath);
+    sqlite3_snprintf(SQLITE_TEMPNAME_SIZE, zBuf,
+                     "%s\\"TEMP_FILE_PREFIX, zTempPath);
     j = strlen(zBuf);
     sqlite3Randomness(15, &zBuf[j]);
     for(i=0; i<15; i++, j++){
@@ -975,10 +982,6 @@ static int winClose(OsFile **pId){
     }while( rc==0 && cnt++ < MX_CLOSE_ATTEMPT && (Sleep(100), 1) );
 #if OS_WINCE
     winceDestroyLock(pFile);
-    if( pFile->zDeleteOnClose ){
-      DeleteFileW(pFile->zDeleteOnClose);
-      sqliteFree(pFile->zDeleteOnClose);
-    }
 #endif
     OpenCounter(-1);
     sqliteFree(pFile);
@@ -1287,6 +1290,7 @@ static int winLock(OsFile *id, int locktype){
       newLocktype = EXCLUSIVE_LOCK;
     }else{
       OSTRACE2("error-code = %d\n", GetLastError());
+      getReadLock(pFile);
     }
   }
 

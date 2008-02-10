@@ -12,7 +12,8 @@
    are subject to copyright (C) 2003 graydon hoare, licensed to the public
    under the GPL v2+. see the file COPYING for details. if you want to see
    more of the original file jaffer's work came from, see the SLIB
-   repository on savannah.nongnu.org, or look in the journal of
+   repository on savannah.nongnu.org, his website at 
+   http://www.swiss.ai.mit.edu/~jaffer/, or look in the journal of
    computational biology. apparantly it's submitted for publication there
    too.
 
@@ -38,8 +39,9 @@
 
 */
 
+#include "base.hh"
 #include <algorithm>
-#include <vector>
+#include "vector.hh"
 
 #include "lcs.hh"
 #include "sanity.hh"
@@ -286,7 +288,7 @@ struct jaffer_edit_calculator
     sort(sedits.begin(), sedits.end());
 
     long idx0;
-    for (idx0 = 0; idx0 < cost && sedits[idx0] < 0; ++idx0);
+    for (idx0 = 0; idx0 < cost && sedits[idx0] < 0; ++idx0) ;
     long len_a = max(0L, -sedits[0]);
     long len_b = sedits[cost-1];
 
@@ -350,11 +352,11 @@ struct jaffer_edit_calculator
 
     for (bdx = end_b - 1, adx = end_a - 1;
          (start_b <= bdx) && (start_a <= adx) && (a[adx] == b[bdx]);
-         --bdx, --adx);
+         --bdx, --adx) ;
 
     for (bsx = start_b, asx = start_a;
          (bsx < bdx) && (asx < adx) && (a[asx] == b[bsx]);
-         ++bsx, ++asx);
+         ++bsx, ++asx) ;
 
     // we've trimmed; now call diff_to_ez.
 

@@ -7,10 +7,11 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <set>
 #include <map>
-#include <vector>
-#include <boost/lexical_cast.hpp>
+#include "vector.hh"
+#include "lexical_cast.hh"
 
 #include "app_state.hh"
 #include "database.hh"
@@ -34,8 +35,9 @@
 //     and add it to the candidate set if so
 //   - this gives a set containing every descendent that we might want to
 //     update to.
-//   - run erase_ancestors on that set, to get just the heads; this is our
-//     real candidate set.
+//   - run erase_ancestors on that set, to get just the heads
+//   - If there are any non-suspended revisions in the set, then remove the
+//     suspended revisions.
 // the idea is that this should be correct even in the presence of
 // discontinuous branches, test results that go from good to bad to good to
 // bad to good, etc.
@@ -104,7 +106,6 @@ acceptable_descendent(branch_name const & branch,
     }
 }
 
-
 static void
 calculate_update_set(revision_id const & base,
                      branch_name const & branch,
@@ -149,8 +150,19 @@ calculate_update_set(revision_id const & base,
     }
 
   erase_ancestors(candidates, app);
-}
+  
+  if (app.opts.ignore_suspend_certs)
+     return;
 
+   set<revision_id> active_candidates;
+   for (set<revision_id>::const_iterator i = candidates.begin();
+        i != candidates.end(); i++)
+     if (!app.get_project().revision_is_suspended_in_branch(*i, branch))
+       safe_insert(active_candidates, *i);
+
+   if (!active_candidates.empty())
+     candidates = active_candidates;
+}
 
 void pick_update_candidates(revision_id const & base_ident,
                             app_state & app,

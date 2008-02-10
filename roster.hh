@@ -15,9 +15,11 @@
 #include <boost/shared_ptr.hpp>
 
 #include "cset.hh"
+#include "hybrid_map.hh"
 #include "numeric_vocab.hh"
 #include "paths.hh"
 #include "sanity.hh"
+
 #include "vocab.hh"
 
 struct node_id_source
@@ -49,8 +51,9 @@ null_node(node_id n)
 // "undefined" value).
 typedef std::map<attr_key, std::pair<bool, attr_value> > full_attr_map_t;
 typedef std::map<path_component, node_t> dir_map;
-typedef std::map<node_id, node_t> node_map;
+typedef hybrid_map<node_id, node_t> node_map;
 
+template <> void dump(node_id const & val, std::string & out);
 template <> void dump(full_attr_map_t const & val, std::string & out);
 
 
@@ -115,7 +118,7 @@ is_file_t(node_t n)
 inline bool
 is_root_dir_t(node_t n)
 {
-  if (is_dir_t(n) && null_name(n->name))
+  if (is_dir_t(n) && n->name.empty())
     {
       I(null_node(n->parent));
       return true;
@@ -178,16 +181,17 @@ public:
   roster_t(roster_t const & other);
   roster_t & operator=(roster_t const & other);
   bool has_root() const;
-  bool has_node(split_path const & sp) const;
+  bool has_node(file_path const & sp) const;
   bool has_node(node_id nid) const;
   bool is_root(node_id nid) const;
-  node_t get_node(split_path const & sp) const;
+  bool is_attached(node_id nid) const;
+  node_t get_node(file_path const & sp) const;
   node_t get_node(node_id nid) const;
-  void get_name(node_id nid, split_path & sp) const;
+  void get_name(node_id nid, file_path & sp) const;
   void replace_node_id(node_id from, node_id to);
 
   // editable_tree operations
-  node_id detach_node(split_path const & src);
+  node_id detach_node(file_path const & src);
   void drop_detached_node(node_id nid);
   node_id create_dir_node(node_id_source & nis);
   void create_dir_node(node_id nid);
@@ -195,18 +199,17 @@ public:
                            node_id_source & nis);
   void create_file_node(file_id const & content,
                         node_id nid);
-  void insert_node(node_t n);
-  void attach_node(node_id nid, split_path const & dst);
+  void attach_node(node_id nid, file_path const & dst);
   void attach_node(node_id nid, node_id parent, path_component name);
-  void apply_delta(split_path const & pth,
+  void apply_delta(file_path const & pth,
                    file_id const & old_id,
                    file_id const & new_id);
-  void clear_attr(split_path const & pth,
+  void clear_attr(file_path const & pth,
                   attr_key const & name);
-  void set_attr(split_path const & pth,
+  void set_attr(file_path const & pth,
                 attr_key const & name,
                 attr_value const & val);
-  void set_attr(split_path const & pth,
+  void set_attr(file_path const & pth,
                 attr_key const & name,
                 std::pair<bool, attr_value> const & val);
 
@@ -222,11 +225,11 @@ public:
 
   // misc.
 
-  bool get_attr(split_path const & pth,
+  bool get_attr(file_path const & pth,
                 attr_key const & key,
                 attr_value & val) const;
 
-  void extract_path_set(path_set & paths) const;
+  void extract_path_set(std::set<file_path> & paths) const;
 
   node_map const & all_nodes() const
   {
@@ -250,7 +253,10 @@ public:
   void parse_from(basic_io::parser & pa,
                   marking_map & mm);
 
-  dir_t const & root() { return root_dir; }
+  dir_t const & root() const
+  {
+    return root_dir;
+  }
 
 private:
   void do_deep_copy_from(roster_t const & other);
@@ -326,17 +332,17 @@ class editable_roster_base
 {
 public:
   editable_roster_base(roster_t & r, node_id_source & nis);
-  virtual node_id detach_node(split_path const & src);
+  virtual node_id detach_node(file_path const & src);
   virtual void drop_detached_node(node_id nid);
   virtual node_id create_dir_node();
   virtual node_id create_file_node(file_id const & content);
-  virtual void attach_node(node_id nid, split_path const & dst);
-  virtual void apply_delta(split_path const & pth,
+  virtual void attach_node(node_id nid, file_path const & dst);
+  virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
-  virtual void clear_attr(split_path const & pth,
+  virtual void clear_attr(file_path const & pth,
                           attr_key const & name);
-  virtual void set_attr(split_path const & pth,
+  virtual void set_attr(file_path const & pth,
                         attr_key const & name,
                         attr_value const & val);
   virtual void commit();
@@ -360,12 +366,9 @@ equal_up_to_renumbering(roster_t const & a, marking_map const & a_markings,
 class node_restriction;
 
 void
-make_restricted_csets(roster_t const & from, roster_t const & to,
-                      cset & included, cset & excluded,
-                      node_restriction const & mask);
-
-void
-check_restricted_cset(roster_t const & roster, cset const & cs);
+make_restricted_roster(roster_t const & from, roster_t const & to,
+                       roster_t & restricted,
+                       node_restriction const & mask);
 
 void
 select_nodes_modified_by_cset(cset const & cs,
@@ -374,7 +377,7 @@ select_nodes_modified_by_cset(cset const & cs,
                               std::set<node_id> & nodes_modified);
 
 void
-get_content_paths(roster_t const & roster, 
+get_content_paths(roster_t const & roster,
                   std::map<file_id, file_path> & paths);
 
 // These functions are for the use of things like 'update' or 'pluck', that
@@ -470,4 +473,3 @@ struct testing_node_id_source
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif
-

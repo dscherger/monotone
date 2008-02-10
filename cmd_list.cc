@@ -7,10 +7,12 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <algorithm>
 #include <map>
 #include <utility>
 #include <iostream>
+#include <iterator>
 
 #include <boost/tuple/tuple.hpp>
 
@@ -36,14 +38,24 @@ using std::ostream_iterator;
 using std::pair;
 using std::set;
 using std::sort;
+using std::copy;
 using std::string;
 using std::vector;
 
-static void
-ls_certs(string const & name, app_state & app, vector<utf8> const & args)
+CMD_GROUP(list, "list", "ls", CMD_REF(informative),
+          N_("Shows database objects"),
+          N_("This command is used to query information from the database.  "
+             "It shows database objects, or the current workspace manifest, "
+             "or known, unknown, intentionally ignored, missing, or "
+             "changed-state files."));
+
+CMD(certs, "certs", "", CMD_REF(list), "ID",
+    N_("Lists certificates attached to an identifier"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   if (args.size() != 1)
-    throw usage(name);
+    throw usage(execid);
 
   vector<cert> certs;
 
@@ -121,14 +133,14 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
 
       vector<string> lines;
       split_into_lines(washed, lines);
-      I(lines.size() > 0);
+      std::string value_first_line = lines.size() > 0 ? idx(lines, 0) : "";
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
                % idx(certs, i).key()
                % stat
                % idx(certs, i).name()
-               % idx(lines, 0));
+               % value_first_line);
 
       for (size_t i = 1; i < lines.size(); ++i)
         cout << (i18n_format(extra_str) % idx(lines, i));
@@ -140,17 +152,18 @@ ls_certs(string const & name, app_state & app, vector<utf8> const & args)
   guard.commit();
 }
 
-static void
-ls_keys(string const & name, app_state & app,
-        vector<utf8> const & args)
+CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
+    N_("Lists keys that match a pattern"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   vector<rsa_keypair_id> pubs;
   vector<rsa_keypair_id> privkeys;
-  string pattern;
+  globish pattern("*");
   if (args.size() == 1)
-    pattern = idx(args, 0)();
+    pattern = globish(idx(args, 0)());
   else if (args.size() > 1)
-    throw usage(name);
+    throw usage(execid);
 
   if (app.db.database_specified())
     {
@@ -166,6 +179,8 @@ ls_keys(string const & name, app_state & app,
        i != pubs.end(); i++)
     pubkeys[*i] = true;
 
+  set<rsa_keypair_id> bad_keys;
+
   bool all_in_db = true;
   for (vector<rsa_keypair_id>::const_iterator i = privkeys.begin();
        i != privkeys.end(); i++)
@@ -174,6 +189,16 @@ ls_keys(string const & name, app_state & app,
         {
           pubkeys[*i] = false;
           all_in_db = false;
+        }
+      else if (app.db.database_specified())
+        {
+          // we've found a key that should have both a public and a private version
+          base64<rsa_pub_key> pub_key;
+          keypair priv_key;
+          app.db.get_key(*i, pub_key);
+          app.keys.get_key_pair(*i, priv_key);
+          if (!keys_match(*i, pub_key, *i, priv_key.pub))
+            bad_keys.insert(*i);
         }
     }
 
@@ -223,6 +248,16 @@ ls_keys(string const & name, app_state & app,
       cout << '\n';
     }
 
+  if (!bad_keys.empty())
+    {
+      W(F("Some keys in the database have the same ID as, "
+          "but different hashes to, keys in your local key store!"));
+      for (set<rsa_keypair_id>::const_iterator i = bad_keys.begin(); i != bad_keys.end(); i++)
+        {
+          W(F("Mismatched Key: %s") % *i);
+        }
+    }
+
   if (pubkeys.size() == 0 &&
       privkeys.size() == 0)
     {
@@ -233,34 +268,31 @@ ls_keys(string const & name, app_state & app,
     }
 }
 
-static void
-ls_branches(string name, app_state & app, vector<utf8> const & args)
+CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
+    N_("Lists branches in the database that match a pattern"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   globish inc("*");
-  globish exc;
   if (args.size() == 1)
     inc = globish(idx(args,0)());
   else if (args.size() > 1)
-    throw usage(name);
-  vector<globish> excludes;
-  typecast_vocab_container(app.opts.exclude_patterns, excludes);
-  combine_and_check_globish(excludes, exc);
-  globish_matcher match(inc, exc);
+    throw usage(execid);
+
+  globish exc(app.opts.exclude_patterns);
   set<branch_name> names;
-  app.get_project().get_branch_list(names);
+  app.get_project().get_branch_list(inc, names, !app.opts.ignore_suspend_certs);
 
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
-    {
-      if (match((*i)()) && !app.lua.hook_ignore_branch(*i))
-        {
-          cout << *i << '\n';
-        }
-    }
+    if (!exc.matches((*i)()) && !app.lua.hook_ignore_branch(*i))
+      cout << *i << '\n';
 }
 
-static void
-ls_epochs(string name, app_state & app, vector<utf8> const & args)
+CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
+    N_("Lists the current epoch of branches that match a pattern"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   map<branch_name, epoch_data> epochs;
   app.db.get_epochs(epochs);
@@ -276,7 +308,7 @@ ls_epochs(string name, app_state & app, vector<utf8> const & args)
     }
   else
     {
-      for (vector<utf8>::const_iterator i = args.begin();
+      for (args_vector::const_iterator i = args.begin();
            i != args.end();
            ++i)
         {
@@ -287,8 +319,10 @@ ls_epochs(string name, app_state & app, vector<utf8> const & args)
     }
 }
 
-static void
-ls_tags(string name, app_state & app, vector<utf8> const & args)
+CMD(tags, "tags", "", CMD_REF(list), "",
+    N_("Lists all tags in the database"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   set<tag_t> tags;
   app.get_project().get_tags(tags);
@@ -301,8 +335,10 @@ ls_tags(string name, app_state & app, vector<utf8> const & args)
     }
 }
 
-static void
-ls_vars(string name, app_state & app, vector<utf8> const & args)
+CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
+    N_("Lists variables in the whole database or a domain"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   bool filterp;
   var_domain filter;
@@ -316,7 +352,7 @@ ls_vars(string name, app_state & app, vector<utf8> const & args)
       internalize_var_domain(idx(args, 0), filter);
     }
   else
-    throw usage(name);
+    throw usage(execid);
 
   map<var_key, var_value> vars;
   app.db.get_vars(vars);
@@ -333,8 +369,10 @@ ls_vars(string name, app_state & app, vector<utf8> const & args)
     }
 }
 
-static void
-ls_known(app_state & app, vector<utf8> const & args)
+CMD(known, "known", "", CMD_REF(list), "",
+    N_("Lists workspace files that belong to the current branch"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   roster_t new_roster;
   temp_node_id_source nis;
@@ -348,7 +386,7 @@ ls_known(app_state & app, vector<utf8> const & args)
                         new_roster, app);
 
   // to be printed sorted
-  vector<split_path> print_paths;
+  vector<file_path> print_paths;
 
   node_map const & nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
@@ -359,30 +397,28 @@ ls_known(app_state & app, vector<utf8> const & args)
       if (!new_roster.is_root(nid)
           && mask.includes(new_roster, nid))
         {
-          split_path sp;
-          new_roster.get_name(nid, sp);
-          print_paths.push_back(sp);
+          file_path p;
+          new_roster.get_name(nid, p);
+          print_paths.push_back(p);
         }
     }
     
   sort(print_paths.begin(), print_paths.end());
-  for (vector<split_path>::const_iterator sp = print_paths.begin();
-       sp != print_paths.end(); sp++)
-  {
-    cout << *sp << '\n';
-  }
+  copy(print_paths.begin(), print_paths.end(),
+       ostream_iterator<file_path>(cout, "\n"));
 }
 
-static void
-ls_unknown_or_ignored(app_state & app, bool want_ignored,
-                      vector<utf8> const & args)
+CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
+    N_("Lists workspace files that do not belong to the current branch"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   app.require_workspace();
 
   vector<file_path> roots = args_to_paths(args);
   path_restriction mask(roots, args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth, app);
-  path_set unknown, ignored;
+  set<file_path> unknown, ignored;
 
   // if no starting paths have been specified use the workspace root
   if (roots.empty())
@@ -390,18 +426,22 @@ ls_unknown_or_ignored(app_state & app, bool want_ignored,
 
   app.work.find_unknown_and_ignored(mask, roots, unknown, ignored);
 
-  if (want_ignored)
-    for (path_set::const_iterator i = ignored.begin();
-         i != ignored.end(); ++i)
-      cout << file_path(*i) << '\n';
+  utf8 const & realname = execid[execid.size() - 1];
+  if (realname() == "ignored")
+    copy(ignored.begin(), ignored.end(),
+         ostream_iterator<file_path>(cout, "\n"));
   else
-    for (path_set::const_iterator i = unknown.begin();
-         i != unknown.end(); ++i)
-      cout << file_path(*i) << '\n';
+    {
+      I(realname() == "unknown");
+      copy(unknown.begin(), unknown.end(),
+           ostream_iterator<file_path>(cout, "\n"));
+    }
 }
 
-static void
-ls_missing(app_state & app, vector<utf8> const & args)
+CMD(missing, "missing", "", CMD_REF(list), "",
+    N_("Lists files that belong to the branch but are not in the workspace"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   temp_node_id_source nis;
   roster_t current_roster_shape;
@@ -411,19 +451,18 @@ ls_missing(app_state & app, vector<utf8> const & args)
                         app.opts.depth,
                         current_roster_shape, app);
 
-  path_set missing;
+  set<file_path> missing;
   app.work.find_missing(current_roster_shape, mask, missing);
 
-  for (path_set::const_iterator i = missing.begin();
-       i != missing.end(); ++i)
-    {
-      cout << file_path(*i) << '\n';
-    }
+  copy(missing.begin(), missing.end(),
+       ostream_iterator<file_path>(cout, "\n"));
 }
 
 
-static void
-ls_changed(app_state & app, vector<utf8> const & args)
+CMD(changed, "changed", "", CMD_REF(list), "",
+    N_("Lists files that have changed with respect to the current revision"),
+    "",
+    options::opts::depth | options::opts::exclude)
 {
   parent_map parents;
   roster_t new_roster;
@@ -445,7 +484,7 @@ ls_changed(app_state & app, vector<utf8> const & args)
   make_restricted_revision(parents, new_roster, mask, rrev);
 
   // to be printed sorted, with duplicates removed
-  set<split_path> print_paths;
+  set<file_path> print_paths;
 
   for (edge_map::const_iterator i = rrev.edges.begin();
        i != rrev.edges.end(); i++)
@@ -459,74 +498,18 @@ ls_changed(app_state & app, vector<utf8> const & args)
       for (set<node_id>::const_iterator i = nodes.begin(); i != nodes.end();
            ++i)
         {
-          split_path sp;
-          if (old_roster.has_node(*i))
-            old_roster.get_name(*i, sp);
+          file_path p;
+          if (new_roster.has_node(*i))
+            new_roster.get_name(*i, p);
           else
-            new_roster.get_name(*i, sp);
-          print_paths.insert(sp);
+            old_roster.get_name(*i, p);
+          print_paths.insert(p);
         }
     }
 
-    for (set<split_path>::const_iterator sp = print_paths.begin();
-         sp != print_paths.end(); sp++)
-    {
-      cout << *sp << '\n';
-    }
-
+  copy(print_paths.begin(), print_paths.end(),
+       ostream_iterator<file_path>(cout, "\n"));
 }
-
-
-CMD(list, N_("informative"),
-    N_("certs ID\n"
-       "keys [PATTERN]\n"
-       "branches [PATTERN]\n"
-       "epochs [BRANCH [...]]\n"
-       "tags\n"
-       "vars [DOMAIN]\n"
-       "known\n"
-       "unknown\n"
-       "ignored\n"
-       "missing\n"
-       "changed"),
-    N_("show database objects, or the current workspace manifest, \n"
-       "or known, unknown, intentionally ignored, missing, or \n"
-       "changed-state files"),
-    options::opts::depth | options::opts::exclude)
-{
-  if (args.size() == 0)
-    throw usage(name);
-
-  vector<utf8>::const_iterator i = args.begin();
-  ++i;
-  vector<utf8> removed (i, args.end());
-  if (idx(args, 0)() == "certs")
-    ls_certs(name, app, removed);
-  else if (idx(args, 0)() == "keys")
-    ls_keys(name, app, removed);
-  else if (idx(args, 0)() == "branches")
-    ls_branches(name, app, removed);
-  else if (idx(args, 0)() == "epochs")
-    ls_epochs(name, app, removed);
-  else if (idx(args, 0)() == "tags")
-    ls_tags(name, app, removed);
-  else if (idx(args, 0)() == "vars")
-    ls_vars(name, app, removed);
-  else if (idx(args, 0)() == "known")
-    ls_known(app, removed);
-  else if (idx(args, 0)() == "unknown")
-    ls_unknown_or_ignored(app, false, removed);
-  else if (idx(args, 0)() == "ignored")
-    ls_unknown_or_ignored(app, true, removed);
-  else if (idx(args, 0)() == "missing")
-    ls_missing(app, removed);
-  else if (idx(args, 0)() == "changed")
-    ls_changed(app, removed);
-  else
-    throw usage(name);
-}
-
-ALIAS(ls, list);
 
 namespace
 {
@@ -580,7 +563,10 @@ namespace
 //   private_location "keystore"
 //
 // Error conditions: None.
-AUTOMATE(keys, "", options::opts::none)
+CMD_AUTOMATE(keys, "",
+             N_("Lists all keys in the keystore"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 0,
     F("no arguments needed"));
@@ -594,10 +580,10 @@ AUTOMATE(keys, "", options::opts::none)
   if (app.db.database_specified())
     {
       transaction_guard guard(app.db, false);
-      app.db.get_key_ids("", dbkeys);
+      app.db.get_key_ids(dbkeys);
       guard.commit();
     }
-  app.keys.get_key_ids("", kskeys);
+  app.keys.get_key_ids(kskeys);
 
   for (vector<rsa_keypair_id>::iterator i = dbkeys.begin();
        i != dbkeys.end(); i++)
@@ -672,7 +658,10 @@ AUTOMATE(keys, "", options::opts::none)
 // key, a warning message is printed to stderr. If the revision
 // specified is unknown or invalid prints an error message to stderr
 // and exits with status 1.
-AUTOMATE(certs, N_("REV"), options::opts::none)
+CMD_AUTOMATE(certs, N_("REV"),
+             N_("Prints all certificates attached to a revision"),
+             "",
+             options::opts::none)
 {
   N(args.size() == 1,
     F("wrong argument count"));

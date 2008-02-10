@@ -7,6 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <cctype>
 #include <cstdlib>
 #include <map>
@@ -14,12 +15,11 @@
 #include <set>
 #include <sstream>
 #include <stack>
-#include <string>
 #include <iterator>
 #include <functional>
 #include <list>
 
-#include <boost/lexical_cast.hpp>
+#include "lexical_cast.hh"
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -34,7 +34,7 @@
 #include "keys.hh"
 #include "numeric_vocab.hh"
 #include "revision.hh"
-#include "mtn-sanity.hh"
+#include "sanity.hh"
 #include "transforms.hh"
 #include "simplestring_xform.hh"
 #include "ui.hh"
@@ -414,15 +414,16 @@ toposort(set<revision_id> const & revisions,
 
 static void
 accumulate_strict_ancestors(revision_id const & start,
-                            set<revision_id> & new_ancestors,
                             set<revision_id> & all_ancestors,
-                            multimap<revision_id, revision_id> const & inverse_graph)
+                            multimap<revision_id, revision_id> const & inverse_graph,
+                            app_state & app,
+                            rev_height const & min_height)
 {
   typedef multimap<revision_id, revision_id>::const_iterator gi;
-  new_ancestors.clear();
 
   vector<revision_id> frontier;
   frontier.push_back(start);
+
   while (!frontier.empty())
     {
       revision_id rid = frontier.back();
@@ -433,45 +434,61 @@ accumulate_strict_ancestors(revision_id const & start,
           revision_id const & parent = i->second;
           if (all_ancestors.find(parent) == all_ancestors.end())
             {
-              new_ancestors.insert(parent);
-              all_ancestors.insert(parent);
-              frontier.push_back(i->second);
+              // prune if we're below min_height
+              rev_height h;
+              app.db.get_rev_height(parent, h);
+              if (h >= min_height)
+                {
+                  all_ancestors.insert(parent);
+                  frontier.push_back(parent);
+                }
             }
         }
     }
 }
 
 // this call is equivalent to running:
-//   remove_if(candidates.begin(), candidates.end(), p);
+//   erase(remove_if(candidates.begin(), candidates.end(), p));
 //   erase_ancestors(candidates, app);
 // however, by interleaving the two operations, it can in common cases make
 // many fewer calls to the predicate, which can be a significant speed win.
-//
-// FIXME: once we have heights, we should use them here.  The strategy will
-// be, to calculate the minimum height of all the candidates, and teach
-// accumulate_ancestors to stop at a certain height, and teach the code that
-// removes items from the candidate set to occasionally rescan the candidate
-// set to get a new minimum height (perhaps, whenever we remove the minimum
-// height candidate).
+
 void
 erase_ancestors_and_failures(std::set<revision_id> & candidates,
                              is_failure & p,
-                             app_state & app)
+                             app_state & app,
+                             multimap<revision_id, revision_id> *inverse_graph_cache_ptr)
 {
   // Load up the ancestry graph
   multimap<revision_id, revision_id> inverse_graph;
   
+  if (candidates.empty())
+    return;
+  
+  if (inverse_graph_cache_ptr == NULL)
+    inverse_graph_cache_ptr = &inverse_graph;
+  if (inverse_graph_cache_ptr->empty())
   {
     multimap<revision_id, revision_id> graph;
     app.db.get_revision_ancestry(graph);
     for (multimap<revision_id, revision_id>::const_iterator i = graph.begin();
          i != graph.end(); ++i)
-      inverse_graph.insert(make_pair(i->second, i->first));
+      inverse_graph_cache_ptr->insert(make_pair(i->second, i->first));
   }
 
   // Keep a set of all ancestors that we've traversed -- to avoid
   // combinatorial explosion.
   set<revision_id> all_ancestors;
+
+  rev_height min_height;
+  app.db.get_rev_height(*candidates.begin(), min_height);
+  for (std::set<revision_id>::const_iterator it = candidates.begin(); it != candidates.end(); it++)
+    {
+      rev_height h;
+      app.db.get_rev_height(*it, h);
+      if (h < min_height)
+        min_height = h;
+    }
 
   vector<revision_id> todo(candidates.begin(), candidates.end());
   std::random_shuffle(todo.begin(), todo.end());
@@ -492,16 +509,15 @@ erase_ancestors_and_failures(std::set<revision_id> & candidates,
           continue;
         }
       // okay, it is good enough that all its ancestors should be
-      // eliminated; do that now.
-      {
-        set<revision_id> new_ancestors;
-        accumulate_strict_ancestors(rid, new_ancestors, all_ancestors, inverse_graph);
-        I(new_ancestors.find(rid) == new_ancestors.end());
-        for (set<revision_id>::const_iterator i = new_ancestors.begin();
-             i != new_ancestors.end(); ++i)
-          candidates.erase(*i);
-      }
+      // eliminated
+      accumulate_strict_ancestors(rid, all_ancestors, *inverse_graph_cache_ptr, app, min_height);
     }
+
+  // now go and eliminate the ancestors
+  for (set<revision_id>::const_iterator i = all_ancestors.begin();
+       i != all_ancestors.end(); ++i)
+    candidates.erase(*i);
+
   L(FL("called predicate %s times") % predicates);
 }
 
@@ -698,15 +714,16 @@ make_restricted_revision(parent_map const & old_rosters,
                          revision_t & rev)
 {
   edge_map edges;
-  cset dummy;
   for (parent_map::const_iterator i = old_rosters.begin();
        i != old_rosters.end();
        i++)
     {
       shared_ptr<cset> included(new cset());
-      make_restricted_csets(parent_roster(i), new_roster,
-                            *included, dummy, mask);
-      check_restricted_cset(parent_roster(i), *included);
+      roster_t restricted_roster;
+
+      make_restricted_roster(parent_roster(i), new_roster, 
+                             restricted_roster, mask);
+      make_cset(parent_roster(i), restricted_roster, *included);
       safe_insert(edges, make_pair(parent_id(i), included));
     }
 
@@ -719,7 +736,7 @@ make_restricted_revision(parent_map const & old_rosters,
                          node_restriction const & mask,
                          revision_t & rev,
                          cset & excluded,
-                         string const & cmd_name)
+                         commands::command_id const & cmd_name)
 {
   edge_map edges;
   bool no_excludes = true;
@@ -728,9 +745,12 @@ make_restricted_revision(parent_map const & old_rosters,
        i++)
     {
       shared_ptr<cset> included(new cset());
-      make_restricted_csets(parent_roster(i), new_roster,
-                            *included, excluded, mask);
-      check_restricted_cset(parent_roster(i), *included);
+      roster_t restricted_roster;
+
+      make_restricted_roster(parent_roster(i), new_roster, 
+                             restricted_roster, mask);
+      make_cset(parent_roster(i), restricted_roster, *included);
+      make_cset(restricted_roster, new_roster, excluded);
       safe_insert(edges, make_pair(parent_id(i), included));
       if (!excluded.empty())
         no_excludes = false;
@@ -738,7 +758,7 @@ make_restricted_revision(parent_map const & old_rosters,
 
   N(old_rosters.size() == 1 || no_excludes,
     F("the command '%s %s' cannot be restricted in a two-parent workspace")
-    % ui.prog_name % cmd_name);
+    % ui.prog_name % join_words(cmd_name)());
 
   recalculate_manifest_id_for_restricted_rev(old_rosters, edges, rev);
 }
@@ -1174,39 +1194,56 @@ not_dead_yet(node_id nid, u64 birth_rev,
 }
 
 
-static split_path
-find_old_path_for(map<split_path, split_path> const & renames,
-                  split_path const & new_path)
+static file_path
+find_old_path_for(map<file_path, file_path> const & renames,
+                  file_path const & new_path)
 {
-  split_path leader, trailer;
-  leader = new_path;
-  while (!leader.empty())
-    {
-      if (renames.find(leader) != renames.end())
-        {
-          leader = safe_get(renames, leader);
-          break;
-        }
-      path_component pc = leader.back();
-      leader.pop_back();
-      trailer.insert(trailer.begin(), pc);
-    }
-  split_path result;
-  copy(leader.begin(), leader.end(), back_inserter(result));
-  copy(trailer.begin(), trailer.end(), back_inserter(result));
-  return result;
+  map<file_path, file_path>::const_iterator i = renames.find(new_path);
+  if (i != renames.end())
+    return i->second;
+
+  // ??? root directory rename possible in the old schema?
+  // if not, do this first.
+  if (new_path.empty())
+    return new_path;
+
+  file_path dir;
+  path_component base;
+  new_path.dirname_basename(dir, base);
+  return find_old_path_for(renames, dir) / base;
 }
 
-static split_path
-find_new_path_for(map<split_path, split_path> const & renames,
-                  split_path const & old_path)
+static file_path
+find_new_path_for(map<file_path, file_path> const & renames,
+                  file_path const & old_path)
 {
-  map<split_path, split_path> reversed;
-  for (map<split_path, split_path>::const_iterator i = renames.begin();
+  map<file_path, file_path> reversed;
+  for (map<file_path, file_path>::const_iterator i = renames.begin();
        i != renames.end(); ++i)
     reversed.insert(make_pair(i->second, i->first));
   // this is a hackish kluge.  seems to work, though.
   return find_old_path_for(reversed, old_path);
+}
+
+// Recursive helper function for insert_into_roster.
+static void
+insert_parents_into_roster(roster_t & child_roster,
+                           temp_node_id_source & nis,
+                           file_path const & pth,
+                           file_path const & full)
+{
+  if (child_roster.has_node(pth))
+    {
+      E(is_dir_t(child_roster.get_node(pth)),
+        F("Directory %s for path %s cannot be added, "
+          "as there is a file in the way") % pth % full);
+      return;
+    }
+
+  if (!pth.empty())
+    insert_parents_into_roster(child_roster, nis, pth.dirname(), full);
+
+  child_roster.attach_node(child_roster.create_dir_node(nis), pth);
 }
 
 static void
@@ -1215,42 +1252,19 @@ insert_into_roster(roster_t & child_roster,
                    file_path const & pth,
                    file_id const & fid)
 {
-  split_path sp, dirname;
-  path_component basename;
-  pth.split(sp);
-
-  E(!child_roster.has_node(sp),
-    F("Path %s added to child roster multiple times") % pth);
-
-  dirname_basename(sp, dirname, basename);
-
-  {
-    split_path tmp_pth;
-    for (split_path::const_iterator i = dirname.begin(); i != dirname.end();
-         ++i)
-      {
-        tmp_pth.push_back(*i);
-        if (child_roster.has_node(tmp_pth))
-          {
-            E(is_dir_t(child_roster.get_node(tmp_pth)),
-              F("Directory for path %s cannot be added, as there is a file in the way") % pth);
-          }
-        else
-          child_roster.attach_node(child_roster.create_dir_node(nis), tmp_pth);
-      }
-  }
-
-  if (child_roster.has_node(sp))
+  if (child_roster.has_node(pth))
     {
-      node_t n = child_roster.get_node(sp);
+      node_t n = child_roster.get_node(pth);
       E(is_file_t(n),
-        F("Path %s cannot be added, as there is a directory in the way") % sp);
+        F("Path %s cannot be added, as there is a directory in the way") % pth);
       file_t f = downcast_to_file_t(n);
       E(f->content == fid,
-        F("Path %s added twice with differing content") % sp);
+        F("Path %s added twice with differing content") % pth);
+      return;
     }
-  else
-    child_roster.attach_node(child_roster.create_file_node(fid, nis), sp);
+
+  insert_parents_into_roster(child_roster, nis, pth.dirname(), pth);
+  child_roster.attach_node(child_roster.create_file_node(fid, nis), pth);
 }
 
 void
@@ -1317,8 +1331,8 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
               if (!parent_roster->has_node(n))
                 continue;
 
-              split_path sp;
-              parent_roster->get_name(n, sp);
+              file_path fp;
+              parent_roster->get_name(n, fp);
 
               // Try remapping the name.
               if (node_to_old_rev.find(j->first) != node_to_old_rev.end())
@@ -1327,15 +1341,15 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
                   revision_id parent_rid = safe_get(node_to_old_rev, j->first);
                   rmap = renames.find(parent_rid);
                   if (rmap != renames.end())
-                    sp = find_new_path_for(rmap->second, sp);
+                    fp = find_new_path_for(rmap->second, fp);
                 }
 
               // See if we can match this node against a child.
               if ((!child_roster.has_node(n))
-                  && child_roster.has_node(sp))
+                  && child_roster.has_node(fp))
                 {
                   node_t pn = parent_roster->get_node(n);
-                  node_t cn = child_roster.get_node(sp);
+                  node_t cn = child_roster.get_node(fp);
                   if (is_file_t(pn) == is_file_t(cn))
                     {
                       child_roster.replace_node_id(cn->self, n);
@@ -1482,11 +1496,8 @@ anc_graph::construct_revisions_from_ancestry()
           temp_node_id_source nis;
 
           // all rosters shall have a root node.
-          {
-            split_path root_pth;
-            file_path().split(root_pth);
-            child_roster.attach_node(child_roster.create_dir_node(nis), root_pth);
-          }
+          child_roster.attach_node(child_roster.create_dir_node(nis),
+                                   file_path_internal(""));
 
           for (legacy::manifest_map::const_iterator i = old_child_man.begin();
                i != old_child_man.end(); ++i)
@@ -1514,9 +1525,7 @@ anc_graph::construct_revisions_from_ancestry()
                 for (legacy::dot_mt_attrs_map::const_iterator j = attrs.begin();
                      j != attrs.end(); ++j)
                   {
-                    split_path sp;
-                    j->first.split(sp);
-                    if (child_roster.has_node(sp))
+                    if (child_roster.has_node(j->first))
                       {
                         map<string, string> const &
                           fattrs = j->second;
@@ -1530,7 +1539,7 @@ anc_graph::construct_revisions_from_ancestry()
                                 // ignore it
                               }
                             else if (key == "execute" || key == "manual_merge")
-                              child_roster.set_attr(sp,
+                              child_roster.set_attr(j->first,
                                                     attr_key("mtn:" + key),
                                                     attr_value(k->second));
                             else
@@ -1538,7 +1547,7 @@ anc_graph::construct_revisions_from_ancestry()
                                          "please contact %s so we can work out the right way to migrate this\n"
                                          "(if you just want it to go away, see the switch --drop-attr, but\n"
                                          "seriously, if you'd like to keep it, we're happy to figure out how)")
-                                % key % file_path(sp) % PACKAGE_BUGREPORT);
+                                % key % j->first % PACKAGE_BUGREPORT);
                           }
                       }
                   }
@@ -1637,7 +1646,6 @@ build_roster_style_revs_from_manifest_style_revs(app_state & app)
   app.db.ensure_open_for_format_changes();
   app.db.check_is_not_rosterified();
 
-  real_sanity.set_relaxed(true);
   anc_graph graph(true, app);
 
   P(F("converting existing revision graph to new roster-style revisions"));
@@ -1682,7 +1690,6 @@ build_roster_style_revs_from_manifest_style_revs(app_state & app)
       graph.add_node_for_oldstyle_revision(*i);
     }
 
-  real_sanity.set_relaxed(false);
   graph.rebuild_ancestry();
 }
 
@@ -1773,11 +1780,13 @@ regenerate_caches(app_state & app)
   P(F("finished regenerating cached rosters and heights"));
 }
 
-CMD(rev_height, hidden_group(), N_("REV"), "show the height for REV",
-    options::opts::none)
+CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
+           N_("Shows a revision's height"),
+           "",
+           options::opts::none)
 {
   if (args.size() != 1)
-    throw usage(name);
+    throw usage(execid);
   revision_id rid(idx(args, 0)());
   N(app.db.revision_exists(rid), F("No such revision %s") % rid);
   rev_height height;
@@ -1947,13 +1956,12 @@ void calculate_ident(revision_t const & cs,
 
 UNIT_TEST(revision, find_old_new_path_for)
 {
-  map<split_path, split_path> renames;
-  split_path foo, foo_bar, foo_baz, quux, quux_baz;
-  file_path_internal("foo").split(foo);
-  file_path_internal("foo/bar").split(foo_bar);
-  file_path_internal("foo/baz").split(foo_baz);
-  file_path_internal("quux").split(quux);
-  file_path_internal("quux/baz").split(quux_baz);
+  map<file_path, file_path> renames;
+  file_path foo = file_path_internal("foo");
+  file_path foo_bar = file_path_internal("foo/bar");
+  file_path foo_baz = file_path_internal("foo/baz");
+  file_path quux = file_path_internal("quux");
+  file_path quux_baz = file_path_internal("quux/baz");
   I(foo == find_old_path_for(renames, foo));
   I(foo == find_new_path_for(renames, foo));
   I(foo_bar == find_old_path_for(renames, foo_bar));

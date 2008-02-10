@@ -15,10 +15,9 @@ struct sqlite3_stmt;
 struct cert;
 int sqlite3_finalize(sqlite3_stmt *);
 
-#include <vector>
+#include "vector.hh"
 #include <set>
 #include <map>
-#include <string>
 
 #include "numeric_vocab.hh"
 #include "vocab.hh"
@@ -76,6 +75,7 @@ class app_state;
 struct revision_t;
 struct query;
 class rev_height;
+struct globish;
 
 class database
 {
@@ -187,6 +187,7 @@ private:
   bool have_delayed_file(file_id const & id);
   void load_delayed_file(file_id const & id, file_data & dat);
   void cancel_delayed_file(file_id const & id);
+  void drop_or_cancel_file(file_id const & id);
   void schedule_delayed_file(file_id const & id, file_data const & dat);
 
   std::map<file_id, file_data> delayed_files;
@@ -213,6 +214,10 @@ private:
   
   // "do we have any entry for 'ident' that is a delta"
   bool delta_exists(std::string const & ident,
+                    std::string const & table);
+
+  bool delta_exists(std::string const & ident,
+                    std::string const & base,
                     std::string const & table);
 
   void get_file_or_manifest_base_unchecked(hexenc<id> const & new_id,
@@ -296,6 +301,8 @@ public:
   void get_revision_children(revision_id const & ident,
                              std::set<revision_id> & children);
 
+  void get_leaves(std::set<revision_id> & leaves);
+
   void get_revision_manifest(revision_id const & cid,
                              manifest_id & mid);
 private:
@@ -367,7 +374,8 @@ private:
 private:
   void get_keys(std::string const & table, std::vector<rsa_keypair_id> & keys);
 public:
-  void get_key_ids(std::string const & pattern,
+  void get_key_ids(std::vector<rsa_keypair_id> & pubkeys);
+  void get_key_ids(globish const & pattern,
                    std::vector<rsa_keypair_id> & pubkeys);
 
   void get_public_keys(std::vector<rsa_keypair_id> & pubkeys);
@@ -556,7 +564,7 @@ private:
 public:
     // branches
   outdated_indicator get_branches(std::vector<std::string> & names);
-  outdated_indicator get_branches(std::string const & glob,
+  outdated_indicator get_branches(globish const & glob,
                                   std::vector<std::string> & names);
 
   bool check_integrity();

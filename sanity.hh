@@ -10,27 +10,14 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "config.h" // Required for ENABLE_NLS
-
-#include <iosfwd>
 #include <stdexcept>
-#include <string>
+#include <ostream>
 #include <vector>
 
-#include "boost/circular_buffer.hpp"
 #include "boost/current_function.hpp"
 
 #include "i18n.h"
-#include "mt-stdint.h"
-#include "quick_alloc.hh" // to get the QA() macro
-
-#if defined(__GNUC__)
-#define NORETURN(x) x __attribute__((noreturn))
-#elif defined(_MSC_VER)
-#define NORETURN(x) __declspec(noreturn) x
-#else
-#define NORETURN(x) x
-#endif
+#include "numeric_vocab.hh"
 
 // our assertion / sanity / error logging system *was* based on GNU Nana,
 // but we're only using a small section of it, and have anyways rewritten
@@ -55,22 +42,23 @@ struct plain_format;
 struct i18n_format;
 
 struct sanity {
-  sanity();
   virtual ~sanity();
   virtual void initialize(int, char **, char const *);
   void dump_buffer();
   void set_debug();
   void set_quiet();
   void set_reallyquiet();
+  // This takes a bare std::string because we don't want to expose vocab.hh
+  // or paths.hh here.
+  void set_dump_path(std::string const & path);
 
-  bool debug;
-  bool quiet;
-  bool reallyquiet;
-  boost::circular_buffer<char> logbuf;
-  std::string filename;
-  std::string gasp_dump;
-  bool already_dumping;
-  std::vector<MusingI const *> musings;
+  // A couple of places need to look at the debug flag to avoid doing
+  // expensive logging if it's off.
+  bool debug_p();
+
+  // ??? --quiet overrides any --ticker= setting if both are on the
+  // command line (and needs to look at this to do so).
+  bool quiet_p();
 
   void log(plain_format const & fmt,
            char const * file, int line);
@@ -90,6 +78,8 @@ struct sanity {
                      unsigned long idx,
                      char const * file, int line));
   void gasp();
+  void push_musing(MusingI const *musing);
+  void pop_musing(MusingI const *musing);
 
 private:
   std::string do_format(format_base const & fmt,
@@ -98,6 +88,9 @@ private:
   virtual void inform_message(std::string const &msg) = 0;
   virtual void inform_warning(std::string const &msg) = 0;
   virtual void inform_error(std::string const &msg) = 0;
+
+  struct impl;
+  impl * imp;
 };
 
 extern sanity & global_sanity;
@@ -118,23 +111,22 @@ protected:
   ~format_base();
   format_base(format_base const & other);
   format_base & operator=(format_base const & other);
-  explicit format_base(char const * pattern);
-  explicit format_base(std::string const & pattern);
-  explicit format_base(char const * pattern, std::locale const & loc);
-  explicit format_base(std::string const & pattern, std::locale const & loc);
+
+  explicit format_base(char const * pattern, bool use_locale);
+  explicit format_base(std::string const & pattern, bool use_locale);
 public:
   // It is a lie that these are const; but then, everything about this
   // class is a lie.
   std::ostream & get_stream() const;
   void flush_stream() const;
-  void put_and_flush_signed(int64_t const & s) const;
-  void put_and_flush_signed(int32_t const & s) const;
-  void put_and_flush_signed(int16_t const & s) const;
-  void put_and_flush_signed(int8_t const & s) const;
-  void put_and_flush_unsigned(uint64_t const & u) const;
-  void put_and_flush_unsigned(uint32_t const & u) const;
-  void put_and_flush_unsigned(uint16_t const & u) const;
-  void put_and_flush_unsigned(uint8_t const & u) const;
+  void put_and_flush_signed(s64 const & s) const;
+  void put_and_flush_signed(s32 const & s) const;
+  void put_and_flush_signed(s16 const & s) const;
+  void put_and_flush_signed(s8  const & s) const;
+  void put_and_flush_unsigned(u64 const & u) const;
+  void put_and_flush_unsigned(u32 const & u) const;
+  void put_and_flush_unsigned(u16 const & u) const;
+  void put_and_flush_unsigned(u8  const & u) const;
   void put_and_flush_float(float const & f) const;
   void put_and_flush_double(double const & d) const;
 
@@ -150,15 +142,15 @@ plain_format
   {}
 
   explicit plain_format(char const * pattern)
-    : format_base(pattern)
+    : format_base(pattern, false)
   {}
 
   explicit plain_format(std::string const & pattern)
-    : format_base(pattern)
+    : format_base(pattern, false)
   {}
 };
 
-template<typename T> inline plain_format const & 
+template<typename T> inline plain_format const &
 operator %(plain_format const & f, T const & t)
 {
   f.get_stream() << t;
@@ -166,7 +158,7 @@ operator %(plain_format const & f, T const & t)
   return f;
 }
 
-template<typename T> inline plain_format const & 
+template<typename T> inline plain_format const &
 operator %(const plain_format & f, T & t)
 {
   f.get_stream() << t;
@@ -174,7 +166,7 @@ operator %(const plain_format & f, T & t)
   return f;
 }
 
-template<typename T> inline plain_format & 
+template<typename T> inline plain_format &
 operator %(plain_format & f, T const & t)
 {
   f.get_stream() << t;
@@ -182,7 +174,7 @@ operator %(plain_format & f, T const & t)
   return f;
 }
 
-template<typename T> inline plain_format & 
+template<typename T> inline plain_format &
 operator %(plain_format & f, T & t)
 {
   f.get_stream() << t;
@@ -204,15 +196,15 @@ SPECIALIZED_OP(      fmt_ty, arg_ty, const arg_ty, stem) \
 SPECIALIZED_OP(const fmt_ty, arg_ty,       arg_ty, stem) \
 SPECIALIZED_OP(const fmt_ty, arg_ty, const arg_ty, stem)
 
-ALL_CONST_VARIANTS(plain_format, int64_t, signed)
-ALL_CONST_VARIANTS(plain_format, int32_t, signed)
-ALL_CONST_VARIANTS(plain_format, int16_t, signed)
-ALL_CONST_VARIANTS(plain_format, int8_t, signed)
+ALL_CONST_VARIANTS(plain_format, s64, signed)
+ALL_CONST_VARIANTS(plain_format, s32, signed)
+ALL_CONST_VARIANTS(plain_format, s16, signed)
+ALL_CONST_VARIANTS(plain_format, s8, signed)
 
-ALL_CONST_VARIANTS(plain_format, uint64_t, unsigned)
-ALL_CONST_VARIANTS(plain_format, uint32_t, unsigned)
-ALL_CONST_VARIANTS(plain_format, uint16_t, unsigned)
-ALL_CONST_VARIANTS(plain_format, uint8_t, unsigned)
+ALL_CONST_VARIANTS(plain_format, u64, unsigned)
+ALL_CONST_VARIANTS(plain_format, u32, unsigned)
+ALL_CONST_VARIANTS(plain_format, u16, unsigned)
+ALL_CONST_VARIANTS(plain_format, u8, unsigned)
 
 ALL_CONST_VARIANTS(plain_format, float, float)
 ALL_CONST_VARIANTS(plain_format, double, double)
@@ -222,12 +214,19 @@ struct
 i18n_format
   : public format_base
 {
-  i18n_format() {}
-  explicit i18n_format(const char * localized_pattern);
-  explicit i18n_format(std::string const & localized_pattern);
+  i18n_format()
+  {}
+
+  explicit i18n_format(const char * localized_pattern)
+    : format_base(localized_pattern, true)
+  {}
+
+  explicit i18n_format(std::string const & localized_pattern)
+    : format_base(localized_pattern, true)
+  {}
 };
 
-template<typename T> inline i18n_format const & 
+template<typename T> inline i18n_format const &
 operator %(i18n_format const & f, T const & t)
 {
   f.get_stream() << t;
@@ -235,7 +234,7 @@ operator %(i18n_format const & f, T const & t)
   return f;
 }
 
-template<typename T> inline i18n_format const & 
+template<typename T> inline i18n_format const &
 operator %(i18n_format const & f, T & t)
 {
   f.get_stream() << t;
@@ -243,7 +242,7 @@ operator %(i18n_format const & f, T & t)
   return f;
 }
 
-template<typename T> inline i18n_format & 
+template<typename T> inline i18n_format &
 operator %(i18n_format & f, T const & t)
 {
   f.get_stream() << t;
@@ -251,7 +250,7 @@ operator %(i18n_format & f, T const & t)
   return f;
 }
 
-template<typename T> inline i18n_format & 
+template<typename T> inline i18n_format &
 operator %(i18n_format & f, T & t)
 {
   f.get_stream() << t;
@@ -259,15 +258,15 @@ operator %(i18n_format & f, T & t)
   return f;
 }
 
-ALL_CONST_VARIANTS(i18n_format, int64_t, signed)
-ALL_CONST_VARIANTS(i18n_format, int32_t, signed)
-ALL_CONST_VARIANTS(i18n_format, int16_t, signed)
-ALL_CONST_VARIANTS(i18n_format, int8_t, signed)
+ALL_CONST_VARIANTS(i18n_format, s64, signed)
+ALL_CONST_VARIANTS(i18n_format, s32, signed)
+ALL_CONST_VARIANTS(i18n_format, s16, signed)
+ALL_CONST_VARIANTS(i18n_format, s8, signed)
 
-ALL_CONST_VARIANTS(i18n_format, uint64_t, unsigned)
-ALL_CONST_VARIANTS(i18n_format, uint32_t, unsigned)
-ALL_CONST_VARIANTS(i18n_format, uint16_t, unsigned)
-ALL_CONST_VARIANTS(i18n_format, uint8_t, unsigned)
+ALL_CONST_VARIANTS(i18n_format, u64, unsigned)
+ALL_CONST_VARIANTS(i18n_format, u32, unsigned)
+ALL_CONST_VARIANTS(i18n_format, u16, unsigned)
+ALL_CONST_VARIANTS(i18n_format, u8, unsigned)
 
 ALL_CONST_VARIANTS(i18n_format, float, float)
 ALL_CONST_VARIANTS(i18n_format, double, double)
@@ -336,78 +335,13 @@ do { \
   } \
 } while(0)
 
-
-// we're interested in trapping index overflows early and precisely,
-// because they usually represent *very significant* logic errors.  we use
-// an inline template function because the idx(...) needs to be used as an
-// expression, not as a statement.
-
-template <typename T>
-inline T & checked_index(std::vector<T> & v,
-                         typename std::vector<T>::size_type i,
-                         char const * vec,
-                         char const * index,
-                         char const * file,
-                         int line)
-{
-  if (UNLIKELY(i >= v.size()))
-    global_sanity.index_failure(vec, index, v.size(), i, file, line);
-  return v[i];
-}
-
-template <typename T>
-inline T const & checked_index(std::vector<T> const & v,
-                               typename std::vector<T>::size_type i,
-                               char const * vec,
-                               char const * index,
-                               char const * file,
-                               int line)
-{
-  if (UNLIKELY(i >= v.size()))
-    global_sanity.index_failure(vec, index, v.size(), i, file, line);
-  return v[i];
-}
-
-#ifdef QA_SUPPORTED
-template <typename T>
-inline T & checked_index(std::vector<T, QA(T)> & v,
-                         typename std::vector<T>::size_type i,
-                         char const * vec,
-                         char const * index,
-                         char const * file,
-                         int line)
-{
-  if (UNLIKELY(i >= v.size()))
-    global_sanity.index_failure(vec, index, v.size(), i, file, line);
-  return v[i];
-}
-
-template <typename T>
-inline T const & checked_index(std::vector<T, QA(T)> const & v,
-                               typename std::vector<T>::size_type i,
-                               char const * vec,
-                               char const * index,
-                               char const * file,
-                               int line)
-{
-  if (UNLIKELY(i >= v.size()))
-    global_sanity.index_failure(vec, index, v.size(), i, file, line);
-  return v[i];
-}
-#endif // QA_SUPPORTED
-
-
-#define idx(v, i) checked_index((v), (i), #v, #i, __FILE__, __LINE__)
-
-
-
 // Last gasp dumps
 
 class MusingI
 {
 public:
-  MusingI();
-  virtual ~MusingI();
+  MusingI() { global_sanity.push_musing(this); }
+  virtual ~MusingI() { global_sanity.pop_musing(this); }
   virtual void gasp(std::string & out) const = 0;
 };
 
@@ -502,10 +436,22 @@ void dump(T const &, std::string &);
 
 template <> void dump(std::string const & obj, std::string & out);
 
+template <typename T> void
+dump(std::vector<T> const & vec, std::string & out)
+{
+  for (size_t i = 0; i < vec.size(); ++i)
+    {
+      T const & val = vec[i];
+      std::string msg;
+      dump(val, msg);
+      out += msg;
+    }
+};
+
 // debugging utility to dump out vars like MM but without requiring a crash
 
 extern void print_var(std::string const & value,
-                      std::string const & var,
+                      char const * var,
                       char const * file,
                       int const line,
                       char const * func);

@@ -7,8 +7,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <map>
-#include <string>
 #include <cstdlib>
 #include <memory>
 #include <list>
@@ -17,17 +17,17 @@
 
 #include <time.h>
 
-#include <boost/lexical_cast.hpp>
+#include "lexical_cast.hh"
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
-#include <boost/regex.hpp>
 
 #include "app_state.hh"
 #include "cert.hh"
 #include "constants.hh"
 #include "enumerator.hh"
 #include "keys.hh"
+#include "lua.hh"
 #include "merkle_tree.hh"
 #include "netcmd.hh"
 #include "netio.hh"
@@ -249,6 +249,29 @@ using std::vector;
 using boost::shared_ptr;
 using boost::lexical_cast;
 
+struct server_initiated_sync_request
+{
+  string what;
+  string address;
+  string include;
+  string exclude;
+};
+deque<server_initiated_sync_request> server_initiated_sync_requests;
+LUAEXT(server_request_sync, )
+{
+  char const * w = luaL_checkstring(L, 1);
+  char const * a = luaL_checkstring(L, 2);
+  char const * i = luaL_checkstring(L, 3);
+  char const * e = luaL_checkstring(L, 4);
+  server_initiated_sync_request request;
+  request.what = string(w);
+  request.address = string(a);
+  request.include = string(i);
+  request.exclude = string(e);
+  server_initiated_sync_requests.push_back(request);
+  return 0;
+}
+
 static inline void
 require(bool check, string const & context)
 {
@@ -269,8 +292,8 @@ session:
 {
   protocol_role role;
   protocol_voice const voice;
-  globish const & our_include_pattern;
-  globish const & our_exclude_pattern;
+  globish our_include_pattern;
+  globish our_exclude_pattern;
   globish_matcher our_matcher;
   app_state & app;
 
@@ -372,7 +395,8 @@ session:
           globish const & our_exclude_pattern,
           app_state & app,
           string const & peer,
-          shared_ptr<Netxx::StreamBase> sock);
+          shared_ptr<Netxx::StreamBase> sock,
+          bool initiated_by_server = false);
 
   virtual ~session();
 
@@ -477,6 +501,8 @@ session:
   void send_all_data(netcmd_item_type ty, set<id> const & items);
   void begin_service();
   bool process(transaction_guard & guard);
+
+  bool initiated_by_server;
 };
 size_t session::session_count = 0;
 
@@ -486,7 +512,8 @@ session::session(protocol_role role,
                  globish const & our_exclude_pattern,
                  app_state & app,
                  string const & peer,
-                 shared_ptr<Netxx::StreamBase> sock) :
+                 shared_ptr<Netxx::StreamBase> sock,
+                 bool initiated_by_server) :
   role(role),
   voice(voice),
   our_include_pattern(our_include_pattern),
@@ -501,8 +528,10 @@ session::session(protocol_role role,
   remote_peer_key_hash(""),
   remote_peer_key_name(""),
   session_key(constants::netsync_key_initializer),
-  read_hmac(constants::netsync_key_initializer, app.opts.use_transport_auth),
-  write_hmac(constants::netsync_key_initializer, app.opts.use_transport_auth),
+  read_hmac(netsync_session_key(constants::netsync_key_initializer),
+            app.opts.use_transport_auth),
+  write_hmac(netsync_session_key(constants::netsync_key_initializer),
+             app.opts.use_transport_auth),
   authenticated(false),
   last_io_time(::time(NULL)),
   byte_in_ticker(NULL),
@@ -525,7 +554,8 @@ session::session(protocol_role role,
   key_refiner(key_item, voice, *this),
   cert_refiner(cert_item, voice, *this),
   rev_refiner(revision_item, voice, *this),
-  rev_enumerator(*this, app)
+  rev_enumerator(*this, app),
+  initiated_by_server(initiated_by_server)
 {}
 
 session::~session()
@@ -1304,7 +1334,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
   // clients always include in the synchronization set, every branch that the
   // user requested
   set<branch_name> all_branches, ok_branches;
-  app.get_project().get_branch_list(all_branches);
+  app.get_project().get_branch_list(all_branches, false);
   for (set<branch_name>::const_iterator i = all_branches.begin();
       i != all_branches.end(); i++)
     {
@@ -1313,7 +1343,8 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
     }
   rebuild_merkle_trees(app, ok_branches);
 
-  setup_client_tickers();
+  if (!initiated_by_server)
+    setup_client_tickers();
 
   if (app.opts.use_transport_auth &&
       app.opts.signing_key() != "")
@@ -1397,20 +1428,23 @@ session::process_anonymous_cmd(protocol_role their_role,
     }
 
   set<branch_name> all_branches, ok_branches;
-  app.get_project().get_branch_list(all_branches);
+  app.get_project().get_branch_list(all_branches, false);
   globish_matcher their_matcher(their_include_pattern, their_exclude_pattern);
   for (set<branch_name>::const_iterator i = all_branches.begin();
       i != all_branches.end(); i++)
     {
       if (their_matcher((*i)()))
-        if (app.opts.use_transport_auth &&
-            !app.lua.hook_get_netsync_read_permitted((*i)()))
-          {
-            error(not_permitted,
-                  (F("anonymous access to branch '%s' denied by server") % *i).str());
-          }
-        else
-          ok_branches.insert(*i);
+        {
+          if (app.opts.use_transport_auth &&
+              !app.lua.hook_get_netsync_read_permitted((*i)()))
+            {
+              error(not_permitted,
+                    (F("anonymous access to branch '%s' denied by server")
+                     % *i).str());
+            }
+          else
+            ok_branches.insert(*i);
+        }
     }
 
   if (app.opts.use_transport_auth)
@@ -1530,7 +1564,7 @@ session::process_auth_cmd(protocol_role their_role,
     }
 
   set<branch_name> all_branches, ok_branches;
-  app.get_project().get_branch_list(all_branches);
+  app.get_project().get_branch_list(all_branches, false);
   for (set<branch_name>::const_iterator i = all_branches.begin();
        i != all_branches.end(); i++)
     {
@@ -1923,6 +1957,9 @@ session::process_data_cmd(netcmd_item_type type,
                            % hitem % keyid % hitem % tmp);
         if (app.db.put_key(keyid, pub))
           written_keys.push_back(keyid);
+        else
+          error(partial_transfer,
+                (F("Received duplicate key %s") % keyid).str());
       }
       break;
 
@@ -2307,12 +2344,13 @@ build_stream_to_server(app_state & app,
   shared_ptr<Netxx::StreamBase> server;
   uri u;
   vector<string> argv;
-  if (parse_uri(address(), u)
-      && app.lua.hook_get_netsync_connect_command(u,
-                                                  include_pattern,
-                                                  exclude_pattern,
-                                                  global_sanity.debug,
-                                                  argv))
+
+  parse_uri(address(), u);
+  if (app.lua.hook_get_netsync_connect_command(u,
+                                               include_pattern,
+                                               exclude_pattern,
+                                               global_sanity.debug_p(),
+                                               argv))
     {
       I(argv.size() > 0);
       string cmd = argv[0];
@@ -2341,18 +2379,18 @@ call_server(protocol_role role,
             globish const & include_pattern,
             globish const & exclude_pattern,
             app_state & app,
-            utf8 const & address,
+            std::list<utf8> const & addresses,
             Netxx::port_type default_port,
             unsigned long timeout_seconds)
 {
   Netxx::PipeCompatibleProbe probe;
   transaction_guard guard(app.db);
+  I(addresses.size() == 1);
+  utf8 address(*addresses.begin());
 
   Netxx::Timeout timeout(static_cast<long>(timeout_seconds)), instant(0,1);
 
-  // FIXME: split into labels and convert to ace here.
-
-  P(F("connecting to %s") % address());
+  P(F("connecting to %s") % address);
 
   shared_ptr<Netxx::StreamBase> server
     = build_stream_to_server(app,
@@ -2494,7 +2532,8 @@ drop_session_associated_with_fd(map<Netxx::socket_type, shared_ptr<session> > & 
 static void
 arm_sessions_and_calculate_probe(Netxx::PipeCompatibleProbe & probe,
                                  map<Netxx::socket_type, shared_ptr<session> > & sessions,
-                                 set<Netxx::socket_type> & armed_sessions)
+                                 set<Netxx::socket_type> & armed_sessions,
+                                 transaction_guard & guard)
 {
   set<Netxx::socket_type> arm_failed;
   for (map<Netxx::socket_type,
@@ -2502,6 +2541,7 @@ arm_sessions_and_calculate_probe(Netxx::PipeCompatibleProbe & probe,
        i != sessions.end(); ++i)
     {
       i->second->maybe_step();
+      i->second->maybe_say_goodbye(guard);
       try
         {
           if (i->second->arm())
@@ -2702,7 +2742,7 @@ serve_connections(protocol_role role,
                   globish const & include_pattern,
                   globish const & exclude_pattern,
                   app_state & app,
-                  utf8 const & address,
+                  std::list<utf8> const & addresses,
                   Netxx::port_type default_port,
                   unsigned long timeout_seconds,
                   unsigned long session_limit)
@@ -2714,8 +2754,6 @@ serve_connections(protocol_role role,
     timeout(static_cast<long>(timeout_seconds)),
     instant(0,1);
 
-  if (!app.opts.bind_port().empty())
-    default_port = std::atoi(app.opts.bind_port().c_str());
 #ifdef USE_IPV6
   bool use_ipv6=true;
 #else
@@ -2733,10 +2771,30 @@ serve_connections(protocol_role role,
 
           Netxx::Address addr(use_ipv6);
 
-          if (!app.opts.bind_address().empty())
-            addr.add_address(app.opts.bind_address().c_str(), default_port);
+          if (addresses.empty())
+            addr.add_all_addresses(default_port);
           else
-            addr.add_all_addresses (default_port);
+            {
+              for (std::list<utf8>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
+                {
+                  const utf8 & address = *it;
+                  if (!address().empty())
+                    {
+                      size_t l_colon = address().find(':');
+                      size_t r_colon = address().rfind(':');
+              
+                      if (l_colon == r_colon && l_colon == 0)
+                        {
+                          // can't be an IPv6 address as there is only one colon
+                          // must be a : followed by a port
+                          string port_str = address().substr(1);
+                          addr.add_all_addresses(std::atoi(port_str.c_str()));
+                        }
+                      else
+                        addr.add_address(address().c_str(), default_port);
+                    }
+                }
+            }
 
           // If se use IPv6 and the initialisation of server fails, we want
           // to try again with IPv4.  The reason is that someone may have
@@ -2773,7 +2831,55 @@ serve_connections(protocol_role role,
               else
                 probe.add(server);
 
-              arm_sessions_and_calculate_probe(probe, sessions, armed_sessions);
+              if (!guard)
+                guard = shared_ptr<transaction_guard>(new transaction_guard(app.db));
+
+              I(guard);
+
+              while (!server_initiated_sync_requests.empty())
+                {
+                  server_initiated_sync_request request
+                    = server_initiated_sync_requests.front();
+                  server_initiated_sync_requests.pop_front();
+
+                  utf8 addr(request.address);
+                  globish inc(request.include);
+                  globish exc(request.exclude);
+
+                  try
+                    {
+                      P(F("connecting to %s") % addr());
+                      shared_ptr<Netxx::StreamBase> server
+                        = build_stream_to_server(app, inc, exc,
+                                                 addr, default_port,
+                                                 timeout);
+
+                      // 'false' here means not to revert changes when
+                      // the SockOpt goes out of scope.
+                      Netxx::SockOpt socket_options(server->get_socketfd(), false);
+                      socket_options.set_non_blocking();
+
+                      protocol_role role = source_and_sink_role;
+                      if (request.what == "sync")
+                        role = source_and_sink_role;
+                      else if (request.what == "push")
+                        role = source_role;
+                      else if (request.what == "pull")
+                        role = sink_role;
+
+                      shared_ptr<session> sess(new session(role, client_voice,
+                                                           inc, exc,
+                                                           app, addr(), server, true));
+
+                      sessions.insert(make_pair(server->get_socketfd(), sess));
+                    }
+                  catch (Netxx::NetworkException & e)
+                    {
+                      P(F("Network error: %s") % e.what());
+                    }
+                }
+
+              arm_sessions_and_calculate_probe(probe, sessions, armed_sessions, *guard);
 
               L(FL("i/o probe with %d armed") % armed_sessions.size());
               Netxx::socket_type fd;
@@ -2790,11 +2896,6 @@ serve_connections(protocol_role role,
                   how_long = instant;
                   Netxx::Probe::ready_type event = res.second;
                   fd = res.first;
-
-                  if (!guard)
-                    guard = shared_ptr<transaction_guard>(new transaction_guard(app.db));
-
-                  I(guard);
 
                   if (fd == -1)
                     {
@@ -2927,7 +3028,7 @@ serve_single_connection(shared_ptr<session> sess,
       probe.clear();
       armed_sessions.clear();
 
-      arm_sessions_and_calculate_probe(probe, sessions, armed_sessions);
+      arm_sessions_and_calculate_probe(probe, sessions, armed_sessions, guard);
 
       L(FL("i/o probe with %d armed") % armed_sessions.size());
       Netxx::Probe::result_type res = probe.ready((armed_sessions.empty() ? timeout
@@ -3163,7 +3264,7 @@ session::rebuild_merkle_trees(app_state & app,
 void
 run_netsync_protocol(protocol_voice voice,
                      protocol_role role,
-                     utf8 const & addr,
+                     std::list<utf8> const & addrs,
                      globish const & include_pattern,
                      globish const & exclude_pattern,
                      app_state & app)
@@ -3197,7 +3298,7 @@ run_netsync_protocol(protocol_voice voice,
             }
           else
             serve_connections(role, include_pattern, exclude_pattern, app,
-                              addr, static_cast<Netxx::port_type>(constants::netsync_default_port),
+                              addrs, static_cast<Netxx::port_type>(constants::netsync_default_port),
                               static_cast<unsigned long>(constants::netsync_timeout_seconds),
                               static_cast<unsigned long>(constants::netsync_connection_limit));
         }
@@ -3205,7 +3306,7 @@ run_netsync_protocol(protocol_voice voice,
         {
           I(voice == client_voice);
           call_server(role, include_pattern, exclude_pattern, app,
-                      addr, static_cast<Netxx::port_type>(constants::netsync_default_port),
+                      addrs, static_cast<Netxx::port_type>(constants::netsync_default_port),
                       static_cast<unsigned long>(constants::netsync_timeout_seconds));
         }
     }

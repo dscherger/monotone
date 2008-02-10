@@ -36,8 +36,8 @@
 unsigned int sqlite3_pending_byte = 0x40000000;
 #endif
 
-int sqlite3_os_trace = 0;
 #ifdef SQLITE_DEBUG
+int sqlite3_os_trace = 0;
 #define OSTRACE1(X)         if( sqlite3_os_trace ) sqlite3DebugPrintf(X)
 #define OSTRACE2(X,Y)       if( sqlite3_os_trace ) sqlite3DebugPrintf(X,Y)
 #define OSTRACE3(X,Y,Z)     if( sqlite3_os_trace ) sqlite3DebugPrintf(X,Y,Z)
@@ -97,6 +97,7 @@ int sqlite3_diskfull = 0;
          || (sqlite3_io_error_persist && sqlite3_io_error_hit) ) \
                 { local_ioerr(); CODE; }
 static void local_ioerr(){
+  IOTRACE(("IOERR\n"));
   sqlite3_io_error_hit = 1;
 }
 #define SimulateDiskfullError(CODE) \

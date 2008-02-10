@@ -7,19 +7,16 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "config.h"
 
+#include "base.hh"
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include <boost/lexical_cast.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
-
 #include <set>
 #include <map>
 #include <fstream>
+#include <iostream>
 
 #include "lua.hh"
 
@@ -31,6 +28,9 @@
 #include "transforms.hh"
 #include "paths.hh"
 #include "uri.hh"
+#include "cmd.hh"
+#include "commands.hh"
+#include "globish.hh"
 
 // defined in {std,test}_hooks.lua, converted to {std,test}_hooks.c respectively
 extern char const std_hooks_constant[];
@@ -45,8 +45,6 @@ using std::set;
 using std::sort;
 using std::string;
 using std::vector;
-
-using boost::lexical_cast;
 
 static int panic_thrower(lua_State * st)
 {
@@ -79,6 +77,16 @@ extern "C"
   }
 }
 
+app_state*
+get_app_state(lua_State *L)
+{
+  map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(L);
+  if (i != map_of_lua_to_app.end())
+    return i->second;
+  else
+    return NULL;
+}
+
 lua_hooks::lua_hooks()
 {
   st = luaL_newstate();
@@ -93,12 +101,16 @@ lua_hooks::lua_hooks()
 
   // Disable any functions we don't want. This is easiest
   // to do just by running a lua string.
-  if (!run_string(st,
-                  // "os.unsafeexecute = os.execute "
-                  // "io.unsafepopen = io.popen "
-                  "os.execute = function(c) error(\"os.execute disabled for security reasons.  Try spawn().\") end "
-                  "io.popen = function(c,t) error(\"io.popen disabled for security reasons.  Try spawn_pipe().\") end ",
-                  string("<disabled dangerous functions>")))
+  static char const disable_dangerous[] =
+    "os.execute = function(c) "
+    " error(\"os.execute disabled for security reasons.  Try spawn().\") "
+    "end "
+    "io.popen = function(c,t) "
+    " error(\"io.popen disabled for security reasons.  Try spawn_pipe().\") "
+    "end ";
+  
+    if (!run_string(st, disable_dangerous,
+                    "<disabled dangerous functions>"))
     throw oops("lua error while disabling existing functions");
 }
 
@@ -117,13 +129,17 @@ lua_hooks::set_app(app_state *_app)
   map_of_lua_to_app.insert(make_pair(st, _app));
 }
 
-
+bool
+lua_hooks::check_lua_state(lua_State * p_st) const
+{
+  return (p_st == st);
+}
 
 #ifdef BUILD_UNIT_TESTS
 void
 lua_hooks::add_test_hooks()
 {
-  if (!run_string(st, test_hooks_constant, string("<test hooks>")))
+  if (!run_string(st, test_hooks_constant, "<test hooks>"))
     throw oops("lua error while setting up testing hooks");
 }
 #endif
@@ -131,7 +147,7 @@ lua_hooks::add_test_hooks()
 void
 lua_hooks::add_std_hooks()
 {
-  if (!run_string(st, std_hooks_constant, string("<std hooks>")))
+  if (!run_string(st, std_hooks_constant, "<std hooks>"))
     throw oops("lua error while setting up standard hooks");
 }
 
@@ -154,45 +170,43 @@ void
 lua_hooks::load_rcfile(utf8 const & rc)
 {
   I(st);
-  if (rc() != "-")
+  if (rc() != "-" && directory_exists(system_path(rc)))
+    run_directory(st, system_path(rc).as_external().c_str(), "*");
+  else
     {
-      fs::path locpath(system_path(rc).as_external(), fs::native);
-      if (fs::exists(locpath) && fs::is_directory(locpath))
-        {
-          // directory, iterate over it, skipping subdirs, taking every filename,
-          // sorting them and loading in sorted order
-          fs::directory_iterator it(locpath);
-          vector<fs::path> arr;
-          while (it != fs::directory_iterator())
-            {
-              if (!fs::is_directory(*it))
-                arr.push_back(*it);
-              ++it;
-            }
-          sort(arr.begin(), arr.end());
-          for (vector<fs::path>::iterator i= arr.begin(); i != arr.end(); ++i)
-            {
-              load_rcfile(system_path(i->native_directory_string()), true);
-            }
-          return; // directory read, skip the rest ...
-        }
+      data dat;
+      L(FL("opening rcfile '%s'") % rc);
+      read_data_for_command_line(rc, dat);
+      N(run_string(st, dat().c_str(), rc().c_str()),
+        F("lua error while loading rcfile '%s'") % rc);
+      L(FL("'%s' is ok") % rc);
     }
-  data dat;
-  L(FL("opening rcfile '%s'") % rc);
-  read_data_for_command_line(rc, dat);
-  N(run_string(st, dat(), rc().c_str()),
-    F("lua error while loading rcfile '%s'") % rc);
-  L(FL("'%s' is ok") % rc);
 }
 
 void
 lua_hooks::load_rcfile(any_path const & rc, bool required)
 {
   I(st);
-  if (path_exists(rc))
+  bool exists;
+  try
+    {
+      exists = path_exists(rc);
+    }
+  catch (informative_failure & e)
+    {
+      if (!required)
+        {
+          L(FL("skipping rcfile '%s': %s") % rc % e.what());
+          return;
+        }
+      else
+        throw;
+    }
+
+  if (exists)
     {
       L(FL("opening rcfile '%s'") % rc);
-      N(run_file(st, rc.as_external()),
+      N(run_file(st, rc.as_external().c_str()),
         F("lua error while loading '%s'") % rc);
       L(FL("'%s' is ok") % rc);
     }
@@ -201,6 +215,14 @@ lua_hooks::load_rcfile(any_path const & rc, bool required)
       N(!required, F("rcfile '%s' does not exist") % rc);
       L(FL("skipping nonexistent rcfile '%s'") % rc);
     }
+}
+
+bool
+lua_hooks::hook_exists(std::string const & func_name)
+{
+  return Lua(st)
+    .func(func_name)
+    .ok();
 }
 
 // concrete hooks
@@ -513,6 +535,29 @@ lua_hooks::hook_use_inodeprints()
     .extract_bool(use)
     .ok();
   return use && exec_ok;
+}
+
+bool
+lua_hooks::hook_get_netsync_key(utf8 const & server_address,
+                                globish const & include,
+                                globish const & exclude,
+                                rsa_keypair_id & k)
+{
+  string key_id;
+  bool exec_ok
+    = Lua(st)
+    .func("get_netsync_key")
+    .push_str(server_address())
+    .push_str(include())
+    .push_str(exclude())
+    .call(3, 1)
+    .extract_str(key_id)
+    .ok();
+
+  if (!exec_ok)
+    key_id = "";
+  k = rsa_keypair_id(key_id);
+  return exec_ok;
 }
 
 static void
@@ -920,20 +965,103 @@ lua_hooks::hook_note_netsync_end(size_t session_id, int status,
 }
 
 bool
-lua_hooks::hook_note_mtn_startup(vector<string> const & args)
+lua_hooks::hook_note_mtn_startup(args_vector const & args)
 {
   Lua ll(st);
 
   ll.func("note_mtn_startup");
 
-  int n=0;
-  for (vector<string>::const_iterator i = args.begin(); i != args.end(); ++i, ++n)
-    ll.push_str(*i);
+  for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
+    ll.push_str((*i)());
 
-  ll.call(n, 0);
+  ll.call(args.size(), 0);
   return ll.ok();
 }
 
+namespace commands {
+  class cmd_lua : public command
+  {
+    lua_State *st;
+    std::string const f_name;
+  public:
+    cmd_lua(std::string const & primary_name,
+                   std::string const & params,
+                   std::string const & abstract,
+                   std::string const & desc,
+                   lua_State *L_st,
+                   std::string const & func_name) :
+         command(primary_name, "", CMD_REF(user), false, false, params,
+                 abstract, desc, true, options::options_type() | options::opts::none, true),
+                 st(L_st), f_name(func_name)
+    {
+      // because user commands are inserted after the normal initialisation process
+      CMD_REF(user)->children().insert(this);
+    }
+
+    void exec(app_state & app, command_id const & execid, args_vector const & args) const;
+  };
+}
+
+void commands::cmd_lua::exec(app_state & app,
+                               command_id const & execid,
+                               args_vector const & args) const
+{
+  I(st);
+  I(app.lua.check_lua_state(st));
+  
+  app_state* app_p = get_app_state(st);
+  I(app_p == & app);
+
+  Lua ll(st);
+  ll.func(f_name);
+  
+  for (args_vector::const_iterator it = args.begin(); it != args.end(); ++it)
+    ll.push_str((*it)());
+
+  app.mtn_automate_allowed = true;
+
+  ll.call(args.size(),0);
+
+  app.mtn_automate_allowed = false;
+
+  E(ll.ok(), F("Call to user command %s (lua command: %s) failed.") % primary_name() % f_name);
+}
+
+LUAEXT(alias_command, )
+{
+  const char *old_cmd = luaL_checkstring(L, -2);
+  const char *new_cmd = luaL_checkstring(L, -1);
+  N(old_cmd && new_cmd,
+    F("%s called with an invalid parameter") % "alias_command");
+
+  args_vector args;
+  args.push_back(arg_type(old_cmd));
+  commands::command_id id = commands::complete_command(args);
+  commands::command *old_cmd_p = CMD_REF(__root__)->find_command(id);
+
+  old_cmd_p->add_alias(utf8(new_cmd));
+
+  lua_pushboolean(L, true);
+  return 1;
+}
+
+
+LUAEXT(register_command, )
+{
+  const char *cmd_name = luaL_checkstring(L, -5);
+  const char *cmd_params = luaL_checkstring(L, -4);
+  const char *cmd_abstract = luaL_checkstring(L, -3);
+  const char *cmd_desc = luaL_checkstring(L, -2);
+  const char *cmd_func = luaL_checkstring(L, -1);
+  
+  N(cmd_name && cmd_params && cmd_abstract && cmd_desc && cmd_func,
+    F("%s called with an invalid parameter") % "register_command");
+  
+  new commands::cmd_lua(cmd_name, cmd_params, cmd_abstract, cmd_desc, L, cmd_func);  // leak this - commands can't be removed anyway
+  
+  lua_pushboolean(L, true);
+  return 1;
+}
 
 // Local Variables:
 // mode: C++

@@ -12,7 +12,7 @@
 ** This file contains C code routines that are called by the parser
 ** to handle INSERT statements in SQLite.
 **
-** $Id: insert.c,v 1.183 2007/04/01 23:49:52 drh Exp $
+** $Id: insert.c,v 1.188 2007/07/23 19:39:47 drh Exp $
 */
 #include "sqliteInt.h"
 
@@ -349,6 +349,8 @@ void sqlite3Insert(
   int appendFlag = 0;   /* True if the insert is likely to be an append */
   int iDb;
 
+  int nHidden = 0;
+
 #ifndef SQLITE_OMIT_TRIGGER
   int isView;                 /* True if attempting to insert into a view */
   int triggers_exist = 0;     /* True if there are FOR EACH ROW triggers */
@@ -525,7 +527,12 @@ void sqlite3Insert(
   /* Make sure the number of columns in the source data matches the number
   ** of columns to be inserted into the table.
   */
-  if( pColumn==0 && nColumn && nColumn!=pTab->nCol ){
+  if( IsVirtual(pTab) ){
+    for(i=0; i<pTab->nCol; i++){
+      nHidden += (IsHiddenColumn(&pTab->aCol[i]) ? 1 : 0);
+    }
+  }
+  if( pColumn==0 && nColumn && nColumn!=(pTab->nCol-nHidden) ){
     sqlite3ErrorMsg(pParse, 
        "table %S has %d columns but %d values were supplied",
        pTabList, 0, pTab->nCol, nColumn);
@@ -640,6 +647,11 @@ void sqlite3Insert(
       sqlite3VdbeAddOp(v, OP_MustBeInt, 0, 0);
     }
 
+    /* Cannot have triggers on a virtual table. If it were possible,
+    ** this block would have to account for hidden column.
+    */
+    assert(!IsVirtual(pTab));
+
     /* Create the new column data
     */
     for(i=0; i<pTab->nCol; i++){
@@ -705,7 +717,7 @@ void sqlite3Insert(
         VdbeOp *pOp;
         sqlite3ExprCode(pParse, pList->a[keyColumn].pExpr);
         pOp = sqlite3VdbeGetOp(v, sqlite3VdbeCurrentAddr(v) - 1);
-        if( pOp->opcode==OP_Null ){
+        if( pOp && pOp->opcode==OP_Null ){
           appendFlag = 1;
           pOp->opcode = OP_NewRowid;
           pOp->p1 = base;
@@ -732,6 +744,7 @@ void sqlite3Insert(
     /* Push onto the stack, data for all columns of the new entry, beginning
     ** with the first column.
     */
+    nHidden = 0;
     for(i=0; i<pTab->nCol; i++){
       if( i==pTab->iPKey ){
         /* The value of the INTEGER PRIMARY KEY column is always a NULL.
@@ -742,13 +755,19 @@ void sqlite3Insert(
         continue;
       }
       if( pColumn==0 ){
-        j = i;
+        if( IsHiddenColumn(&pTab->aCol[i]) ){
+          assert( IsVirtual(pTab) );
+          j = -1;
+          nHidden++;
+        }else{
+          j = i - nHidden;
+        }
       }else{
         for(j=0; j<pColumn->nId; j++){
           if( pColumn->a[j].idx==i ) break;
         }
       }
-      if( nColumn==0 || (pColumn && j>=pColumn->nId) ){
+      if( j<0 || nColumn==0 || (pColumn && j>=pColumn->nId) ){
         sqlite3ExprCode(pParse, pTab->aCol[i].pDflt);
       }else if( useTempTable ){
         sqlite3VdbeAddOp(v, OP_Column, srcTab, j); 
@@ -1008,7 +1027,7 @@ void sqlite3GenerateConstraintChecks(
     assert( pParse->ckOffset==nCol );
     pParse->ckOffset = 0;
     onError = overrideError!=OE_Default ? overrideError : OE_Abort;
-    if( onError==OE_Ignore || onError==OE_Replace ){
+    if( onError==OE_Ignore ){
       sqlite3VdbeAddOp(v, OP_Pop, nCol+1+hasTwoRowids, 0);
       sqlite3VdbeAddOp(v, OP_Goto, 0, ignoreDest);
     }else{
@@ -1122,25 +1141,26 @@ void sqlite3GenerateConstraintChecks(
       case OE_Fail: {
         int j, n1, n2;
         char zErrMsg[200];
-        strcpy(zErrMsg, pIdx->nColumn>1 ? "columns " : "column ");
+        sqlite3_snprintf(sizeof(zErrMsg), zErrMsg,
+                         pIdx->nColumn>1 ? "columns " : "column ");
         n1 = strlen(zErrMsg);
         for(j=0; j<pIdx->nColumn && n1<sizeof(zErrMsg)-30; j++){
           char *zCol = pTab->aCol[pIdx->aiColumn[j]].zName;
           n2 = strlen(zCol);
           if( j>0 ){
-            strcpy(&zErrMsg[n1], ", ");
+            sqlite3_snprintf(sizeof(zErrMsg)-n1, &zErrMsg[n1], ", ");
             n1 += 2;
           }
           if( n1+n2>sizeof(zErrMsg)-30 ){
-            strcpy(&zErrMsg[n1], "...");
+            sqlite3_snprintf(sizeof(zErrMsg)-n1, &zErrMsg[n1], "...");
             n1 += 3;
             break;
           }else{
-            strcpy(&zErrMsg[n1], zCol);
+            sqlite3_snprintf(sizeof(zErrMsg)-n1, &zErrMsg[n1], "%s", zCol);
             n1 += n2;
           }
         }
-        strcpy(&zErrMsg[n1], 
+        sqlite3_snprintf(sizeof(zErrMsg)-n1, &zErrMsg[n1], 
             pIdx->nColumn>1 ? " are not unique" : " is not unique");
         sqlite3VdbeOp3(v, OP_Halt, SQLITE_CONSTRAINT, onError, zErrMsg, 0);
         break;
@@ -1374,10 +1394,10 @@ static int xferOptimization(
   int addr1, addr2;                /* Loop addresses */
   int emptyDestTest;               /* Address of test for empty pDest */
   int emptySrcTest;                /* Address of test for empty pSrc */
-  int memRowid = 0;                /* A memcell containing a rowid from pSrc */
   Vdbe *v;                         /* The VDBE we are building */
   KeyInfo *pKey;                   /* Key information for an index */
   int counterMem;                  /* Memory register used by AUTOINC */
+  int destHasUniqueIdx = 0;        /* True if pDest has a UNIQUE index */
 
   if( pSelect==0 ){
     return 0;   /* Must be of the form  INSERT INTO ... SELECT ... */
@@ -1474,6 +1494,9 @@ static int xferOptimization(
     }
   }
   for(pDestIdx=pDest->pIndex; pDestIdx; pDestIdx=pDestIdx->pNext){
+    if( pDestIdx->onError!=OE_None ){
+      destHasUniqueIdx = 1;
+    }
     for(pSrcIdx=pSrc->pIndex; pSrcIdx; pSrcIdx=pSrcIdx->pNext){
       if( xferCompatibleIndex(pDestIdx, pSrcIdx) ) break;
     }
@@ -1504,11 +1527,16 @@ static int xferOptimization(
   iDest = pParse->nTab++;
   counterMem = autoIncBegin(pParse, iDbDest, pDest);
   sqlite3OpenTable(pParse, iDest, iDbDest, pDest, OP_OpenWrite);
-  if( pDest->iPKey<0 && pDest->pIndex!=0 ){
+  if( (pDest->iPKey<0 && pDest->pIndex!=0) || destHasUniqueIdx ){
     /* If tables do not have an INTEGER PRIMARY KEY and there
     ** are indices to be copied and the destination is not empty,
     ** we have to disallow the transfer optimization because the
     ** the rowids might change which will mess up indexing.
+    **
+    ** Or if the destination has a UNIQUE index and is not empty,
+    ** we also disallow the transfer optimization because we cannot
+    ** insure that all entries in the union of DEST and SRC will be
+    ** unique.
     */
     addr1 = sqlite3VdbeAddOp(v, OP_Rewind, iDest, 0);
     emptyDestTest = sqlite3VdbeAddOp(v, OP_Goto, 0, 0);
@@ -1518,11 +1546,6 @@ static int xferOptimization(
   }
   sqlite3OpenTable(pParse, iSrc, iDbSrc, pSrc, OP_OpenRead);
   emptySrcTest = sqlite3VdbeAddOp(v, OP_Rewind, iSrc, 0);
-  if( pDest->pIndex!=0 ){
-    sqlite3VdbeAddOp(v, OP_Rowid, iSrc, 0);
-    memRowid = pParse->nMem++;
-    sqlite3VdbeAddOp(v, OP_MemStore, memRowid, pDest->iPKey>=0);
-  }
   if( pDest->iPKey>=0 ){
     addr1 = sqlite3VdbeAddOp(v, OP_Rowid, iSrc, 0);
     sqlite3VdbeAddOp(v, OP_Dup, 0, 0);
@@ -1562,13 +1585,6 @@ static int xferOptimization(
                    (char*)pKey, P3_KEYINFO_HANDOFF);
     addr1 = sqlite3VdbeAddOp(v, OP_Rewind, iSrc, 0);
     sqlite3VdbeAddOp(v, OP_RowKey, iSrc, 0);
-    if( pDestIdx->onError!=OE_None ){
-      sqlite3VdbeAddOp(v, OP_MemLoad, memRowid, 0);
-      addr2 = sqlite3VdbeAddOp(v, OP_IsUnique, iDest, 0);
-      sqlite3VdbeOp3(v, OP_Halt, SQLITE_CONSTRAINT, onError, 
-                    "UNIQUE constraint failed", P3_STATIC);
-      sqlite3VdbeJumpHere(v, addr2);
-    }
     sqlite3VdbeAddOp(v, OP_IdxInsert, iDest, 1);
     sqlite3VdbeAddOp(v, OP_Next, iSrc, addr1+1);
     sqlite3VdbeJumpHere(v, addr1);

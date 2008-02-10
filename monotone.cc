@@ -7,24 +7,17 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "config.h"
 
+#include "base.hh"
 #include <iterator>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <locale.h>
-
 #include <stdlib.h>
 
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include "botan/botan.h"
-
 #include "i18n.h"
-
 #include "app_state.hh"
 #include "commands.hh"
 #include "sanity.hh"
@@ -37,6 +30,8 @@
 #include "paths.hh"
 #include "sha1.hh"
 #include "simplestring_xform.hh"
+#include "platform.hh"
+
 
 using std::cout;
 using std::cerr;
@@ -47,7 +42,6 @@ using std::set;
 using std::string;
 using std::vector;
 using std::ios_base;
-using boost::shared_ptr;
 
 // main option processing and exception handling code
 
@@ -80,34 +74,14 @@ using boost::shared_ptr;
 // will be dumped out.  if the fatal condition is only caught in the lower-
 // level handlers in main.cc, at least we'll get a friendly error message.
 
-
-// Wrapper class to ensure Botan is properly initialized and deinitialized.
-struct botan_library
-{
-  botan_library() {
-    Botan::InitializerOptions options("thread_safe=0 selftest=0 seed_rng=1 "
-                                      "use_engines=0 secure_memory=1 "
-                                      "fips140=0");
-    Botan::LibraryInitializer::initialize(options);
-  }
-  ~botan_library() {
-    Botan::LibraryInitializer::deinitialize();
-  }
-};
-
-// Similarly, for the global ui object.  (We do not want to use global
-// con/destructors for this, as they execute outside the protection of
-// main.cc's signal handlers.)
+// Wrapper class which ensures proper setup and teardown of the global ui
+// object.  (We do not want to use global con/destructors for this, as they
+// execute outside the protection of main.cc's signal handlers.)
 struct ui_library
 {
-  ui_library() {
-    ui.initialize();
-  }
-  ~ui_library() {
-    ui.deinitialize();
-  }
+  ui_library() { ui.initialize(); }
+  ~ui_library() { ui.deinitialize(); }
 };
-
 
 // This is in a separate procedure so it can be called from code that's called
 // before cpp_main(), such as program option object creation code.  It's made
@@ -118,35 +92,51 @@ void localize_monotone()
   if (!init)
     {
       setlocale(LC_ALL, "");
-      bindtextdomain(PACKAGE, LOCALEDIR);
+      bindtextdomain(PACKAGE, get_locale_dir().c_str());
       textdomain(PACKAGE);
       init = 1;
     }
 }
 
-// read command-line options and return the command name
-string read_options(options & opts, vector<string> args)
+option::concrete_option_set
+read_global_options(options & opts, args_vector & args)
 {
   option::concrete_option_set optset =
     options::opts::all_options().instantiate(&opts);
   optset.from_command_line(args);
+  
+  return optset;
+}
 
-  // consume the command, and perform completion if necessary
-  string cmd;
-  if (!opts.args.empty())
-    cmd = commands::complete_command(idx(opts.args, 0)());
-
-  // reparse options, now that we know what command-specific
-  // options are allowed.
-
-  options::options_type cmdopts = commands::command_options(opts.args);
-  optset.reset();
-
-  optset = (options::opts::globals() | cmdopts).instantiate(&opts);
-  optset.from_command_line(args, false);
+// read command-line options and return the command name
+commands::command_id read_options(option::concrete_option_set & optset, options & opts, args_vector & args)
+{
+  commands::command_id cmd;
 
   if (!opts.args.empty())
-    opts.args.erase(opts.args.begin());
+    {
+      // There are some arguments remaining in the command line.  Try first
+      // to see if they are a command.
+      cmd = commands::complete_command(opts.args);
+      I(!cmd.empty());
+
+      // Reparse options now that we know what command-specific options
+      // are allowed.
+      options::options_type cmdopts = commands::command_options(cmd);
+      optset.reset();
+      optset = (options::opts::globals() | cmdopts).instantiate(&opts);
+      optset.from_command_line(args, false);
+
+      // Remove the command name from the arguments.  Rember that the group
+      // is not taken into account.
+      I(opts.args.size() >= cmd.size() - 1);
+
+      for (args_vector::size_type i = 1; i < cmd.size(); i++)
+        {
+          I(cmd[i]().find(opts.args[0]()) == 0);
+          opts.args.erase(opts.args.begin());
+        }
+    }
 
   return cmd;
 }
@@ -172,48 +162,47 @@ cpp_main(int argc, char ** argv)
       global_sanity.initialize(argc, argv, setlocale(LC_ALL, 0));
       
       // Set up secure memory allocation etc
-      botan_library acquire_botan;
+      Botan::LibraryInitializer acquire_botan("thread_safe=0 selftest=0 "
+                                              "seed_rng=1 use_engines=0 "
+                                              "secure_memory=1 fips140=0");
       
       // Record where we are.  This has to happen before any use of
       // boost::filesystem.
       save_initial_path();
       
       // decode all argv values into a UTF-8 array
-      vector<string> args;
+      args_vector args;
       for (int i = 1; i < argc; ++i)
         {
           external ex(argv[i]);
           utf8 ut;
           system_to_utf8(ex, ut);
-          args.push_back(ut());
+          args.push_back(arg_type(ut));
         }
 
       // find base name of executable, convert to utf8, and save it in the
       // global ui object
       {
-        string prog_name = fs::path(argv[0]).leaf();
+        utf8 argv0_u;
+        system_to_utf8(external(argv[0]), argv0_u);
+        string prog_name = system_path(argv0_u).basename()();
         if (prog_name.rfind(".exe") == prog_name.size() - 4)
           prog_name = prog_name.substr(0, prog_name.size() - 4);
-        utf8 prog_name_u;
-        system_to_utf8(external(prog_name), prog_name_u);
-        ui.prog_name = prog_name_u();
+        ui.prog_name = prog_name;
         I(!ui.prog_name.empty());
       }
 
       app_state app;
       try
         {
-          string cmd = read_options(app.opts, args);
+          // read global options first
+          // command specific options will be read below
+          args_vector opt_args(args);
+          option::concrete_option_set optset = read_global_options(app.opts, opt_args);
 
           if (app.opts.version_given)
             {
               print_version();
-              return 0;
-            }
-
-          if (app.opts.full_version_given)
-            {
-              print_full_version();
               return 0;
             }
 
@@ -223,16 +212,10 @@ cpp_main(int argc, char ** argv)
                 app.db.set_filename(app.opts.dbname);
             }
 
-          if (app.opts.key_dir_given)
+          if (app.opts.key_dir_given || app.opts.conf_dir_given)
             {
               if (!app.opts.key_dir.empty())
                 app.keys.set_key_dir(app.opts.key_dir);
-            }
-
-          // stop here if they asked for help
-          if (app.opts.help)
-            {
-              throw usage(cmd);     // cmd may be empty, and that's fine.
             }
 
           // at this point we allow a workspace (meaning search for it
@@ -243,21 +226,35 @@ cpp_main(int argc, char ** argv)
           // if we didn't find one at this point.
           app.allow_workspace();
 
-          if (!app.found_workspace && global_sanity.filename.empty())
-            global_sanity.filename = (app.opts.conf_dir / "dump").as_external();
+          // now grab any command specific options and parse the command
+          // this needs to happen after the monotonercs have been read
+          commands::command_id cmd = read_options(optset, app.opts, opt_args);
+
+          if (!app.found_workspace)
+            global_sanity.set_dump_path((app.opts.conf_dir / "dump")
+                                        .as_external());
 
           app.lua.hook_note_mtn_startup(args);
+
+          // stop here if they asked for help
+          if (app.opts.help)
+            {
+              throw usage(cmd);
+            }
 
           // main options processed, now invoke the
           // sub-command w/ remaining args
           if (cmd.empty())
             {
-              throw usage("");
+              throw usage(commands::command_id());
             }
           else
             {
-              vector<utf8> args(app.opts.args.begin(), app.opts.args.end());
-              return commands::process(app, cmd, args);
+              commands::process(app, cmd, app.opts.args);
+              // The command will raise any problems itself through
+              // exceptions.  If we reach this point, it is because it
+              // worked correctly.
+              return 0;
             }
         }
       catch (option::option_error const & e)
@@ -272,16 +269,26 @@ cpp_main(int argc, char ** argv)
           // merrily down your pipes.
           std::ostream & usage_stream = (app.opts.help ? cout : cerr);
 
-          usage_stream << F("Usage: %s [OPTION...] command [ARG...]") % ui.prog_name << "\n\n";
-          usage_stream << options::opts::globals().instantiate(&app.opts).get_usage_str() << '\n';
+          string visibleid;
+          if (!u.which.empty())
+            visibleid = join_words(vector< utf8 >(u.which.begin() + 1,
+                                                  u.which.end()))();
+
+          usage_stream << F("Usage: %s [OPTION...] command [ARG...]") %
+                          ui.prog_name << "\n\n";
+          usage_stream << options::opts::globals().instantiate(&app.opts).
+                          get_usage_str() << '\n';
 
           // Make sure to hide documentation that's not part of
           // the current command.
-          options::options_type cmd_options = commands::toplevel_command_options(u.which);
+          options::options_type cmd_options =
+            commands::command_options(u.which);
           if (!cmd_options.empty())
             {
-              usage_stream << F("Options specific to '%s %s':") % ui.prog_name % u.which << "\n\n";
-              usage_stream << cmd_options.instantiate(&app.opts).get_usage_str() << '\n';
+              usage_stream << F("Options specific to '%s %s':") %
+                              ui.prog_name % visibleid << "\n\n";
+              usage_stream << cmd_options.instantiate(&app.opts).
+                              get_usage_str() << '\n';
             }
 
           commands::explain_usage(u.which, usage_stream);

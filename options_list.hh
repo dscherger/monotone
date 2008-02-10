@@ -8,11 +8,11 @@
 
 OPTSET(globals)
 
-OPTVAR(globals, std::vector<utf8>, args, )
+OPTVAR(globals, args_vector, args, )
 OPTION(globals, positionals, true, "--", "")
 #ifdef option_bodies
 {
-  args.push_back(utf8(arg));
+  args.push_back(arg_type(arg));
 }
 #endif
 
@@ -34,46 +34,16 @@ OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
 #endif
 
 OPTSET(bind_opts)
-OPTVAR(bind, utf8, bind_address, )
-OPTVAR(bind, utf8, bind_port, )
-OPTVAR(bind, bool, bind_stdio, false)
-OPTVAR(bind, bool, use_transport_auth, true)
+OPTVAR(bind_opts, std::list<utf8>, bind_uris, )
+OPTVAR(bind_opts, bool, bind_stdio, false)
+OPTVAR(bind_opts, bool, use_transport_auth, true)
 
 OPTION(bind_opts, bind, true, "bind",
        gettext_noop("address:port to listen on (default :4691)"))
 #ifdef option_bodies
 {
-  string addr_part, port_part;
-  size_t l_colon = arg.find(':');
-  size_t r_colon = arg.rfind(':');
-
-  // not an ipv6 address, as that would have at least two colons
-  if (l_colon == r_colon)
-    {
-      addr_part = (r_colon == string::npos ? arg : arg.substr(0, r_colon));
-      port_part = (r_colon == string::npos ? "" :  arg.substr(r_colon+1, arg.size() - r_colon));
-    }
-  else
-    {
-      // IPv6 addresses have a port specified in the style: [2001:388:0:13::]:80
-      size_t squareb = arg.rfind(']');
-      if ((arg.find('[') == 0) && (squareb != string::npos))
-        {
-          if (squareb < r_colon)
-            port_part = (r_colon == string::npos ? "" :  arg.substr(r_colon+1, arg.size() - r_colon));
-          else
-            port_part = "";
-          addr_part = (squareb == string::npos ? arg.substr(1, arg.size()) : arg.substr(1, squareb-1));
-        }
-      else
-        {
-          addr_part = arg;
-          port_part = "";
-        }
-    }
+  bind_uris.push_back(utf8(arg));
   bind_stdio = false;
-  bind_address = utf8(addr_part);
-  bind_port = utf8(port_part);
 }
 #endif
 OPTION(bind_opts, no_transport_auth, false, "no-transport-auth",
@@ -105,6 +75,14 @@ OPT(brief, "brief", bool, false,
 #ifdef option_bodies
 {
   brief = true;
+}
+#endif
+
+OPT(revs_only, "revs-only", bool, false,
+     gettext_noop("annotate using full revision ids only"))
+#ifdef option_bodies
+{
+  revs_only = true;
 }
 #endif
 
@@ -229,16 +207,16 @@ OPTION(globals, dump, true, "dump",
         gettext_noop("file to dump debugging log to, on failure"))
 #ifdef option_bodies
 {
-  global_sanity.filename = system_path(arg).as_external();
+  global_sanity.set_dump_path(system_path(arg).as_external());
 }
 #endif
 
-OPTVAR(exclude, std::vector<utf8>, exclude_patterns, )
+OPTVAR(exclude, args_vector, exclude_patterns, )
 OPTION(exclude, exclude, true, "exclude",
         gettext_noop("leave out anything described by its argument"))
 #ifdef option_bodies
 {
-  exclude_patterns.push_back(utf8(arg));
+  exclude_patterns.push_back(arg_type(arg));
 }
 #endif
 
@@ -258,11 +236,11 @@ GOPT(ssh_sign, "ssh-sign", std::string, "yes",
 }
 #endif
 
-GOPT(full_version, "full-version", bool, false,
-     gettext_noop("print detailed version number, then exit"))
+OPT(full, "full", bool, false,
+     gettext_noop("print detailed version number"))
 #ifdef option_bodies
 {
-  full_version = true;
+  full = true;
 }
 #endif
 
@@ -273,14 +251,23 @@ GOPT(help, "help,h", bool, false, gettext_noop("display help message"))
 }
 #endif
 
-OPTVAR(include, std::vector<utf8>, include_patterns, )
+OPTVAR(include, args_vector, include_patterns, )
 OPTION(include, include, true, "include",
         gettext_noop("include anything described by its argument"))
 #ifdef option_bodies
 {
-  include_patterns.push_back(utf8(arg));
+  include_patterns.push_back(arg_type(arg));
 }
 #endif
+
+GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
+     gettext_noop("do not ignore revisions marked as suspended"))
+#ifdef option_bodies
+{
+  ignore_suspend_certs = true;
+}
+#endif
+
 
 OPTVAR(key, rsa_keypair_id, signing_key, )
 OPTION(globals, key, true, "key,k", gettext_noop("set key for signatures"))
@@ -409,7 +396,7 @@ GOPT(nostd, "nostd", bool, false,
   nostd = true;
 }
 #endif
- 
+
 OPT(pidfile, "pid-file", system_path, ,
      gettext_noop("record process id of server"))
 #ifdef option_bodies
@@ -424,15 +411,15 @@ GOPT(quiet, "quiet", bool, false,
 {
   quiet = true;
   global_sanity.set_quiet();
-  ui.set_tick_writer(new tick_write_nothing);
+  ui.set_tick_write_nothing();
 }
 #endif
 
-GOPT(extra_rcfiles, "rcfile", std::vector<utf8>, ,
+GOPT(extra_rcfiles, "rcfile", args_vector, ,
      gettext_noop("load extra rc file"))
 #ifdef option_bodies
 {
-  extra_rcfiles.push_back(utf8(arg));
+  extra_rcfiles.push_back(arg_type(arg));
 }
 #endif
 
@@ -442,7 +429,7 @@ gettext_noop("suppress warning, verbose, informational and progress messages"))
 {
   reallyquiet = true;
   global_sanity.set_reallyquiet();
-  ui.set_tick_writer(new tick_write_nothing);
+  ui.set_tick_write_nothing();
 }
 #endif
 
@@ -454,20 +441,20 @@ OPT(recursive, "recursive,R", bool, false,
 }
 #endif
 
-OPTVAR(revision, std::vector<utf8>, revision_selectors, )
+OPTVAR(revision, args_vector, revision_selectors, )
 OPTION(revision, revision, true, "revision,r",
      gettext_noop("select revision id for operation"))
 #ifdef option_bodies
 {
-  revision_selectors.push_back(utf8(arg));
+  revision_selectors.push_back(arg_type(arg));
 }
 #endif
 
-GOPT(root, "root", system_path, current_root_path(),
+GOPT(root, "root", std::string, ,
      gettext_noop("limit search for workspace to specified root"))
 #ifdef option_bodies
 {
-  root = system_path(arg);
+  root = arg;
 }
 #endif
 
@@ -484,28 +471,28 @@ GOPT(ticker, "ticker", std::string, ,
 #ifdef option_bodies
 {
   ticker = arg;
-  if (ticker == "none" || global_sanity.quiet)
-    ui.set_tick_writer(new tick_write_nothing);
+  if (ticker == "none" || global_sanity.quiet_p())
+    ui.set_tick_write_nothing();
   else if (ticker == "dot")
-    ui.set_tick_writer(new tick_write_dot);
+    ui.set_tick_write_dot();
   else if (ticker == "count")
-    ui.set_tick_writer(new tick_write_count);
+    ui.set_tick_write_count();
   else
     throw bad_arg_internal(F("argument must be 'none', 'dot', or 'count'").str());
 }
 #endif
 
-OPT(from, "from", std::vector<utf8>, , gettext_noop("revision(s) to start logging at"))
+OPT(from, "from", args_vector, , gettext_noop("revision(s) to start logging at"))
 #ifdef option_bodies
 {
-  from.push_back(utf8(arg));
+  from.push_back(arg_type(arg));
 }
 #endif
 
-OPT(to, "to", std::vector<utf8>, , gettext_noop("revision(s) to stop logging at"))
+OPT(to, "to", args_vector, , gettext_noop("revision(s) to stop logging at"))
 #ifdef option_bodies
 {
-  to.push_back(utf8(arg));
+  to.push_back(arg_type(arg));
 }
 #endif
 
@@ -541,6 +528,43 @@ OPTION(globals, xargs, true, "xargs,@",
 }
 #endif
 
+OPTSET(automate_inventory_opts)
+OPTVAR(automate_inventory_opts, bool, no_ignored, false)
+OPTVAR(automate_inventory_opts, bool, no_unknown, false)
+OPTVAR(automate_inventory_opts, bool, no_unchanged, false)
+OPTVAR(automate_inventory_opts, bool, no_corresponding_renames, false)
+
+OPTION(automate_inventory_opts, no_ignored, false, "no-ignored",
+       gettext_noop("don't output ignored files"))
+#ifdef option_bodies
+{
+  no_ignored = true;
+}
+#endif
+
+OPTION(automate_inventory_opts, no_unknown, false, "no-unknown",
+       gettext_noop("don't output unknown files"))
+#ifdef option_bodies
+{
+  no_unknown = true;
+}
+#endif
+
+OPTION(automate_inventory_opts, no_unchanged, false, "no-unchanged",
+       gettext_noop("don't output unchanged files"))
+#ifdef option_bodies
+{
+  no_unchanged = true;
+}
+#endif
+
+OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-corresponding-renames",
+       gettext_noop("don't output corresponding renames if restricted on such nodes"))
+#ifdef option_bodies
+{
+  no_corresponding_renames = true;
+}
+#endif
 
 // Local Variables:
 // mode: C++

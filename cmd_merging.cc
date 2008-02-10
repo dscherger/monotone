@@ -7,6 +7,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "base.hh"
 #include <cstring>
 #include <iostream>
 #include <iomanip>
@@ -23,6 +24,8 @@
 #include "safe_map.hh"
 #include "ui.hh"
 #include "app_state.hh"
+#include "simplestring_xform.hh"
+#include "keys.hh"
 
 using std::cout;
 using std::make_pair;
@@ -35,30 +38,34 @@ using std::strlen;
 using boost::shared_ptr;
 
 static void
-three_way_merge(roster_t const & ancestor_roster,
-                roster_t const & left_roster, roster_t const & right_roster,
-                roster_merge_result & result)
+three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_roster,
+                revision_id const & left_rid, roster_t const & left_roster,
+                revision_id const & right_rid, roster_t const & right_roster,
+                roster_merge_result & result,
+                marking_map & left_markings,
+                marking_map & right_markings)
 {
   MM(ancestor_roster);
   MM(left_roster);
   MM(right_roster);
 
-  // Make some fake rids
-  revision_id ancestor_rid(fake_id()); MM(ancestor_rid);
-  revision_id left_rid(fake_id()); MM(left_rid);
-  revision_id right_rid(fake_id()); MM(right_rid);
-  
+  MM(ancestor_rid);
+  MM(left_rid);
+  MM(right_rid);
+
   // Mark up the ANCESTOR
   marking_map ancestor_markings; MM(ancestor_markings);
   mark_roster_with_no_parents(ancestor_rid, ancestor_roster, ancestor_markings);
 
   // Mark up the LEFT roster
-  marking_map left_markings; MM(left_markings);
+  left_markings.clear();
+  MM(left_markings);
   mark_roster_with_one_parent(ancestor_roster, ancestor_markings,
                               left_rid, left_roster, left_markings);
-  
+
   // Mark up the RIGHT roster
-  marking_map right_markings; MM(right_markings);
+  right_markings.clear();
+  MM(right_markings);
   mark_roster_with_one_parent(ancestor_roster, ancestor_markings,
                               right_rid, right_roster, right_markings);
 
@@ -66,6 +73,9 @@ three_way_merge(roster_t const & ancestor_roster,
   std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
   safe_insert(left_uncommon_ancestors, left_rid);
   safe_insert(right_uncommon_ancestors, right_rid);
+
+  P(F("[left]  %s") % left_rid);
+  P(F("[right] %s") % right_rid);
 
   // And do the merge
   roster_merge(left_roster, left_markings, left_uncommon_ancestors,
@@ -126,19 +136,19 @@ pick_branch_for_update(revision_id chosen_rid, app_state & app)
   return switched_branch;
 }
 
-CMD(update, N_("workspace"), "",
-    N_("update workspace.\n"
-       "This command modifies your workspace to be based off of a\n"
-       "different revision, preserving uncommitted changes as it does so.\n"
-       "If a revision is given, update the workspace to that revision.\n"
+CMD(update, "update", "", CMD_REF(workspace), "",
+    N_("Updates the workspace"),
+    N_("This command modifies your workspace to be based off of a "
+       "different revision, preserving uncommitted changes as it does so.  "
+       "If a revision is given, update the workspace to that revision.  "
        "If not, update the workspace to the head of the branch."),
     options::opts::branch | options::opts::revision)
 {
   if (args.size() > 0)
-    throw usage(name);
+    throw usage(execid);
 
   if (app.opts.revision_selectors.size() > 1)
-    throw usage(name);
+    throw usage(execid);
 
   app.require_workspace();
 
@@ -225,32 +235,47 @@ CMD(update, N_("workspace"), "",
   //
   // we apply the working to merged cset to the workspace
   // and write the cset from chosen to merged changeset in _MTN/work
-  
+
   temp_node_id_source nis;
 
   // Get the OLD and WORKING rosters
   database::roster_t_cp old_roster
     = parent_cached_roster(parents.begin()).first;
   MM(*old_roster);
-  roster_t working_roster; MM(working_roster);
-  app.work.get_current_roster_shape(working_roster, nis);
-  app.work.update_current_roster_from_filesystem(working_roster);
+
+  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+
+  MM(*working_roster);
+  app.work.get_current_roster_shape(*working_roster, nis);
+  app.work.update_current_roster_from_filesystem(*working_roster);
+
+  revision_t working_rev;
+  revision_id working_rid;
+  make_revision_for_workspace(parents, *working_roster, working_rev);
+  calculate_ident(working_rev, working_rid);
 
   // Get the CHOSEN roster
   roster_t chosen_roster; MM(chosen_roster);
   app.db.get_roster(chosen_rid, chosen_roster);
-  
+
+
   // And finally do the merge
   roster_merge_result result;
-  three_way_merge(*old_roster, working_roster, chosen_roster, result);
+  marking_map left_markings, right_markings;
+  three_way_merge(old_rid, *old_roster,
+                  working_rid, *working_roster,
+                  chosen_rid, chosen_roster,
+                  result, left_markings, right_markings);
 
   roster_t & merged_roster = result.roster;
 
   map<file_id, file_path> paths;
-  get_content_paths(working_roster, paths);
+  get_content_paths(*working_roster, paths);
 
-  content_merge_workspace_adaptor wca(app, old_roster, paths);
-  resolve_merge_conflicts(working_roster, chosen_roster,
+  content_merge_workspace_adaptor wca(app, old_rid, old_roster,
+                                      left_markings, right_markings, paths);
+  wca.cache_roster(working_rid, working_roster);
+  resolve_merge_conflicts(*working_roster, chosen_roster,
                           result, wca, app);
 
   // Make sure it worked...
@@ -259,7 +284,7 @@ CMD(update, N_("workspace"), "",
 
   // Now finally modify the workspace
   cset update;
-  make_cset(working_roster, merged_roster, update);
+  make_cset(*working_roster, merged_roster, update);
   app.work.perform_content_update(update, wca);
 
   revision_t remaining;
@@ -283,7 +308,8 @@ CMD(update, N_("workspace"), "",
 // bomb out, and therefore so may this.
 static void
 merge_two(revision_id const & left, revision_id const & right,
-          branch_name const & branch, string const & caller, app_state & app)
+          branch_name const & branch, string const & caller, app_state & app,
+          std::ostream & output, bool automate)
 {
   // The following mess constructs a neatly formatted log message that looks
   // like this:
@@ -310,9 +336,22 @@ merge_two(revision_id const & left, revision_id const & right,
     log << setw(fieldwidth) << "to branch '" << branch << "'\n";
 
   // Now it's time for the real work.
-  P(F("[left]  %s") % left);
-  P(F("[right] %s") % right);
-  
+  if (automate)
+    {
+      output << left << " " << right << " ";
+    }
+  else
+    {
+      P(F("[left]  %s") % left);
+      P(F("[right] %s") % right);
+    }
+
+  {
+    // early short-circuit to avoid failure after lots of work
+    rsa_keypair_id key;
+    get_user_key(key,app);
+  }
+
   revision_id merged;
   transaction_guard guard(app.db);
   interactive_merge_and_store(left, right, merged, app);
@@ -322,21 +361,26 @@ merge_two(revision_id const & left, revision_id const & right,
                                                     utf8(log.str()));
 
   guard.commit();
-  P(F("[merged] %s") % merged);
+  if (automate)
+    output << merged << "\n";
+  else
+    P(F("[merged] %s") % merged);
 }
 
 // should merge support --message, --message-file?  It seems somewhat weird,
 // since a single 'merge' command may perform arbitrarily many actual merges.
 // (Possibility: append the --message/--message-file text to the synthetic
 // log message constructed in merge_two().)
-CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
+CMD(merge, "merge", "", CMD_REF(tree), "",
+    N_("Merges unmerged heads of a branch"),
+    "",
     options::opts::branch | options::opts::date | options::opts::author)
 {
   typedef std::pair<revision_id, revision_id> revpair;
   typedef set<revision_id>::const_iterator rid_set_iter;
 
   if (args.size() != 0)
-    throw usage(name);
+    throw usage(execid);
 
   N(app.opts.branchname() != "",
     F("please specify a branch, with --branch=BRANCH"));
@@ -352,7 +396,7 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
     }
 
   P(FP("%d head on branch '%s'", "%d heads on branch '%s'", heads.size())
-    % heads.size() % app.opts.branchname);
+      % heads.size() % app.opts.branchname);
 
   map<revision_id, revpair> heads_for_ancestor;
   set<revision_id> ancestors;
@@ -376,7 +420,7 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
       P(F("calculating best pair of heads to merge next"));
 
       // For every pair of heads, determine their merge ancestor, and
-      // remember the ancestor->head mapping. 
+      // remember the ancestor->head mapping.
       for (rid_set_iter i = heads.begin(); i != heads.end(); ++i)
         for (rid_set_iter j = i; j != heads.end(); ++j)
           {
@@ -387,7 +431,7 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
 
             revision_id ancestor;
             find_common_ancestor_for_merge(*i, *j, ancestor, app);
-            
+
             // More than one pair might have the same ancestor (e.g. if we
             // have three heads all with the same parent); as this table
             // will be recalculated on every pass, we just take the first
@@ -395,7 +439,7 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
             if (ancestors.insert(ancestor).second)
               safe_insert(heads_for_ancestor, std::make_pair(ancestor, revpair(*i, *j)));
           }
-    
+
       // Erasing ancestors from ANCESTORS will now produce a set of merge
       // ancestors each of which is not itself an ancestor of any other
       // merge ancestor.
@@ -405,8 +449,8 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
       // Take the first ancestor from the above set and merge its
       // corresponding pair of heads.
       revpair p = heads_for_ancestor[*ancestors.begin()];
-      
-      merge_two(p.first, p.second, app.opts.branchname, string("merge"), app);
+
+      merge_two(p.first, p.second, app.opts.branchname, string("merge"), app, std::cout, false);
 
       ancestors.clear();
       heads_for_ancestor.clear();
@@ -423,24 +467,28 @@ CMD(merge, N_("tree"), "", N_("merge unmerged heads of branch"),
   revision_id left = *i++;
   revision_id right = *i++;
   I(i == heads.end());
-  
-  merge_two(left, right, app.opts.branchname, string("merge"), app);
+
+  merge_two(left, right, app.opts.branchname, string("merge"), app, std::cout, false);
   P(F("note: your workspaces have not been updated"));
 }
 
-CMD(propagate, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH"),
-    N_("merge from one branch to another asymmetrically"),
+CMD(propagate, "propagate", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH"),
+    N_("Merges from one branch to another asymmetrically"),
+    "",
     options::opts::date | options::opts::author | options::opts::message | options::opts::msgfile)
 {
   if (args.size() != 2)
-    throw usage(name);
-  vector<utf8> a = args;
-  a.push_back(utf8());
-  process(app, "merge_into_dir", a);
+    throw usage(execid);
+  args_vector a = args;
+  a.push_back(arg_type());
+  process(app, make_command_id("tree merge_into_dir"), a);
 }
 
-CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
-    N_("merge one branch into a subdirectory in another branch"),
+CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
+    N_("SOURCE-BRANCH DEST-BRANCH DIR"),
+    N_("Merges one branch into a subdirectory in another branch"),
+    "",
     options::opts::date | options::opts::author | options::opts::message | options::opts::msgfile)
 {
   //   This is a special merge operator, but very useful for people
@@ -473,7 +521,7 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
   set<revision_id> src_heads, dst_heads;
 
   if (args.size() != 3)
-    throw usage(name);
+    throw usage(execid);
 
   app.get_project().get_branch_heads(branch_name(idx(args, 0)()), src_heads);
   app.get_project().get_branch_heads(branch_name(idx(args, 1)()), dst_heads);
@@ -488,8 +536,8 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
   set<revision_id>::const_iterator dst_i = dst_heads.begin();
 
   P(F("propagating %s -> %s") % idx(args,0) % idx(args,1));
-  P(F("[source] %s") % *src_i);
-  P(F("[target] %s") % *dst_i);
+  P(F("[left]  %s") % *src_i);
+  P(F("[right] %s") % *dst_i);
 
   // check for special cases
   if (*src_i == *dst_i || is_ancestor(*src_i, *dst_i, app))
@@ -518,8 +566,8 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
         MM(left_roster);
         MM(right_roster);
         marking_map left_marking_map, right_marking_map;
-        set<revision_id> 
-          left_uncommon_ancestors, 
+        set<revision_id>
+          left_uncommon_ancestors,
           right_uncommon_ancestors;
 
         app.db.get_roster(left_rid, left_roster, left_marking_map);
@@ -528,47 +576,50 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
                                       left_uncommon_ancestors,
                                       right_uncommon_ancestors);
 
-        {
-          dir_t moved_root = left_roster.root();
-          split_path sp, dirname;
-          path_component basename;
-          MM(dirname);
-          if (!idx(args,2)().empty())
-            {
-              file_path_external(idx(args,2)).split(sp);
-              dirname_basename(sp, dirname, basename);
-              N(right_roster.has_node(dirname),
-                F("Path %s not found in destination tree.") % sp);
-              node_t parent = right_roster.get_node(dirname);
-              moved_root->parent = parent->self;
-              moved_root->name = basename;
-              marking_map::iterator 
-                i = left_marking_map.find(moved_root->self);
-              I(i != left_marking_map.end());
-              i->second.parent_name.clear();
-              i->second.parent_name.insert(left_rid);
-            }
-        }
+        if (!idx(args,2)().empty())
+          {
+            dir_t moved_root = left_roster.root();
+            file_path pth = file_path_external(idx(args, 2));
+            file_path dir;
+            path_component base;
+            MM(dir);
+            pth.dirname_basename(dir, base);
+
+            N(right_roster.has_node(dir),
+              F("Path %s not found in destination tree.") % pth);
+            node_t parent = right_roster.get_node(dir);
+            moved_root->parent = parent->self;
+            moved_root->name = base;
+            marking_map::iterator
+              i = left_marking_map.find(moved_root->self);
+            I(i != left_marking_map.end());
+            i->second.parent_name.clear();
+            i->second.parent_name.insert(left_rid);
+          }
 
         roster_merge_result result;
-        roster_merge(left_roster, 
-                     left_marking_map, 
+        roster_merge(left_roster,
+                     left_marking_map,
                      left_uncommon_ancestors,
-                     right_roster, 
-                     right_marking_map, 
+                     right_roster,
+                     right_marking_map,
                      right_uncommon_ancestors,
                      result);
 
-        content_merge_database_adaptor 
-          dba(app, left_rid, right_rid, left_marking_map);
+        content_merge_database_adaptor
+          dba(app, left_rid, right_rid, left_marking_map, right_marking_map);
 
+        {
+          rsa_keypair_id key;
+          get_user_key(key, app);
+        }
         resolve_merge_conflicts(left_roster, right_roster,
                                 result, dba, app);
 
         {
           dir_t moved_root = left_roster.root();
           moved_root->parent = the_null_node;
-          moved_root->name = the_null_component;
+          moved_root->name = path_component();
         }
 
         // Write new files into the db.
@@ -595,9 +646,10 @@ CMD(merge_into_dir, N_("tree"), N_("SOURCE-BRANCH DEST-BRANCH DIR"),
     }
 }
 
-CMD(merge_into_workspace, N_("tree"),
+CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
     N_("OTHER-REVISION"),
-    N_("Merge OTHER-REVISION into the current workspace's base revision, "
+    N_("Merges a revision into the current workspace's base revision"),
+    N_("Merges OTHER-REVISION into the current workspace's base revision, "
        "and update the current workspace with the result.  There can be no "
        "pending changes in the current workspace.  Both OTHER-REVISION and "
        "the workspace's base revision will be recorded as parents on commit.  "
@@ -606,10 +658,10 @@ CMD(merge_into_workspace, N_("tree"),
 {
   revision_id left_id, right_id;
   database::cached_roster left, right;
-  roster_t working_roster;
+  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
 
   if (args.size() != 1)
-    throw usage(name);
+    throw usage(execid);
 
   app.require_workspace();
 
@@ -617,6 +669,8 @@ CMD(merge_into_workspace, N_("tree"),
 
   // This command cannot be applied to a workspace with more than one parent
   // (revs can have no more than two parents).
+  revision_id working_rid;
+
   {
     parent_map parents;
     app.work.get_parent_rosters(parents);
@@ -624,19 +678,27 @@ CMD(merge_into_workspace, N_("tree"),
       F("this command can only be used in a single-parent workspace"));
 
     temp_node_id_source nis;
-    app.work.get_current_roster_shape(working_roster, nis);
-    app.work.update_current_roster_from_filesystem(working_roster);
+    app.work.get_current_roster_shape(*working_roster, nis);
+    app.work.update_current_roster_from_filesystem(*working_roster);
 
-    N(parent_roster(parents.begin()) == working_roster,
-      F("'%s' can only be used in a workspace with no pending changes") % name);
+    N(parent_roster(parents.begin()) == *working_roster,
+      F("'%s' can only be used in a workspace with no pending changes") %
+        join_words(execid)());
 
     left_id = parent_id(parents.begin());
     left = parent_cached_roster(parents.begin());
+
+    revision_t working_rev;
+    make_revision_for_workspace(parents, *working_roster, working_rev);
+    calculate_ident(working_rev, working_rid);
   }
 
   complete(app, idx(args, 0)(), right_id);
   app.db.get_roster(right_id, right);
   N(!(left_id == right_id), F("workspace is already at revision %s") % left_id);
+
+  P(F("[left]  %s") % left_id);
+  P(F("[right] %s") % right_id);
 
   set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
   app.db.get_uncommon_ancestors(left_id, right_id,
@@ -655,9 +717,11 @@ CMD(merge_into_workspace, N_("tree"),
   app.db.get_roster(lca_id, lca);
 
   map<file_id, file_path> paths;
-  get_content_paths(working_roster, paths);
+  get_content_paths(*working_roster, paths);
 
-  content_merge_workspace_adaptor wca(app, lca.first, paths);
+  content_merge_workspace_adaptor wca(app, lca_id, lca.first,
+                                      *left.second, *right.second, paths);
+  wca.cache_roster(working_rid, working_roster);
   resolve_merge_conflicts(*left.first, *right.first, merge_result, wca, app);
 
   // Make sure it worked...
@@ -688,17 +752,18 @@ CMD(merge_into_workspace, N_("tree"),
       "[right] %s\n") % left_id % right_id);
 }
 
-CMD(explicit_merge, N_("tree"),
+CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     N_("LEFT-REVISION RIGHT-REVISION DEST-BRANCH"),
-    N_("merge two explicitly given revisions, "
-       "placing result in given branch"),
+    N_("Merges two explicitly given revisions"),
+    N_("The results of the merge are placed on the branch specified by "
+       "DEST-BRANCH."),
     options::opts::date | options::opts::author)
 {
   revision_id left, right;
   branch_name branch;
 
   if (args.size() != 3)
-    throw usage(name);
+    throw usage(execid);
 
   complete(app, idx(args, 0)(), left);
   complete(app, idx(args, 1)(), right);
@@ -711,19 +776,20 @@ CMD(explicit_merge, N_("tree"),
   N(!is_ancestor(right, left, app),
     F("%s is already an ancestor of %s") % right % left);
 
-  merge_two(left, right, branch, string("explicit merge"), app);
+  merge_two(left, right, branch, string("explicit merge"), app, std::cout, false);
 }
 
-CMD(show_conflicts, N_("informative"), N_("REV REV"), 
-    N_("Show what conflicts would need to be resolved "
-       "to merge the given revisions."),
+CMD(show_conflicts, "show_conflicts", "", CMD_REF(informative), N_("REV REV"),
+    N_("Shows what conflicts need resolution between two revisions"),
+    N_("The conflicts are calculated based on the two revisions given in "
+       "the REV parameters."),
     options::opts::branch | options::opts::date | options::opts::author)
 {
   if (args.size() != 2)
-    throw usage(name);
+    throw usage(execid);
   revision_id l_id, r_id;
   complete(app, idx(args,0)(), l_id);
-  complete(app, idx(args,1)(), r_id);                                                                    
+  complete(app, idx(args,1)(), r_id);
   N(!is_ancestor(l_id, r_id, app),
     F("%s is an ancestor of %s; no merge is needed.") % l_id % r_id);
   N(!is_ancestor(r_id, l_id, app),
@@ -741,32 +807,46 @@ CMD(show_conflicts, N_("informative"), N_("REV REV"),
                r_roster, r_marking, r_uncommon_ancestors,
                result);
 
-  P(F("There are %s node_name_conflicts.") 
-    % result.node_name_conflicts.size());
-  P(F("There are %s file_content_conflicts.") 
-    % result.file_content_conflicts.size());
-  P(F("There are %s node_attr_conflicts.") 
-    % result.node_attr_conflicts.size());
-  P(F("There are %s orphaned_node_conflicts.") 
-    % result.orphaned_node_conflicts.size());
-  P(F("There are %s rename_target_conflicts.") 
-    % result.rename_target_conflicts.size());
-  P(F("There are %s directory_loop_conflicts.") 
-    % result.directory_loop_conflicts.size());
+  // note that left and right are in the order specified on the command line
+  // they are not in lexical order as they are with other merge commands
+  // so they may appear swapped here. perhaps we should sort left and right
+  // before using them?
+
+  P(F("[left]  %s") % l_id);
+  P(F("[right] %s") % r_id);
+
+  if (result.is_clean())
+    {
+      P(F("no conflicts detected"));
+    }
+  else
+    {
+      content_merge_database_adaptor adaptor(app, l_id, r_id,
+                                             l_marking, r_marking);
+
+      result.report_missing_root_conflicts(l_roster, r_roster, adaptor);
+      result.report_invalid_name_conflicts(l_roster, r_roster, adaptor);
+      result.report_directory_loop_conflicts(l_roster, r_roster, adaptor);
+
+      result.report_orphaned_node_conflicts(l_roster, r_roster, adaptor);
+      result.report_multiple_name_conflicts(l_roster, r_roster, adaptor);
+      result.report_duplicate_name_conflicts(l_roster, r_roster, adaptor);
+
+      result.report_attribute_conflicts(l_roster, r_roster, adaptor);
+      result.report_file_content_conflicts(l_roster, r_roster, adaptor);
+    }
 }
 
-CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
-    N_("Apply changes made at arbitrary places in history to current workspace.\n"
-       "This command takes changes made at any point in history, and\n"
-       "edits your current workspace to include those changes.  The end result\n"
-       "is identical to 'mtn diff -r FROM -r TO | patch -p0', except that\n"
-       "this command uses monotone's merger, and thus intelligently handles\n"
+CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
+    N_("Applies changes made at arbitrary places in history"),
+    N_("This command takes changes made at any point in history, and "
+       "edits your current workspace to include those changes.  The end result "
+       "is identical to 'mtn diff -r FROM -r TO | patch -p0', except that "
+       "this command uses monotone's merger, and thus intelligently handles "
        "renames, conflicts, and so on.\n"
-       "\n"
-       "If one revision is given, applies the changes made in that revision\n"
+       "If one revision is given, applies the changes made in that revision "
        "compared to its parent.\n"
-       "\n"
-       "If two revisions are given, applies the changes made to get from the\n"  
+       "If two revisions are given, applies the changes made to get from the "
        "first revision to the second."),
     options::opts::revision | options::opts::depth | options::opts::exclude)
 {
@@ -798,8 +878,8 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
         F("no such revision '%s'") % to_rid);
     }
   else
-    throw usage(name);
-  
+    throw usage(execid);
+
   app.require_workspace();
 
   N(!(from_rid == to_rid), F("no changes to apply"));
@@ -807,7 +887,7 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
   // notionally, we have the situation
   //
   // from --> working
-  //   |         | 
+  //   |         |
   //   V         V
   //   to --> merged
   //
@@ -839,10 +919,11 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
   app.db.get_roster(from_rid, *from_roster);
 
   // Get the WORKING roster
-  roster_t working_roster; MM(working_roster);
-  app.work.get_current_roster_shape(working_roster, nis);
+  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  MM(*working_roster);
+  app.work.get_current_roster_shape(*working_roster, nis);
 
-  app.work.update_current_roster_from_filesystem(working_roster);
+  app.work.update_current_roster_from_filesystem(*working_roster);
 
   // Get the FROM->TO cset...
   cset from_to_to; MM(from_to_to);
@@ -854,57 +935,78 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
                           args_to_paths(app.opts.exclude_patterns),
                           app.opts.depth,
                           *from_roster, to_true_roster, app);
-    make_restricted_csets(*from_roster, to_true_roster,
-                          from_to_to, from_to_to_excluded,
-                          mask);
-    check_restricted_cset(*from_roster, from_to_to);
+
+    roster_t restricted_roster;
+    make_restricted_roster(*from_roster, to_true_roster,
+                           restricted_roster, mask);
+
+    make_cset(*from_roster, restricted_roster, from_to_to);
+    make_cset(restricted_roster, to_true_roster, from_to_to_excluded);
   }
   N(!from_to_to.empty(), F("no changes to be applied"));
   // ...and use it to create the TO roster
-  roster_t to_roster; MM(to_roster);
+  shared_ptr<roster_t> to_roster = shared_ptr<roster_t>(new roster_t());
+  MM(*to_roster);
   {
-    to_roster = *from_roster;
-    editable_roster_base editable_to_roster(to_roster, nis);
+    *to_roster = *from_roster;
+    editable_roster_base editable_to_roster(*to_roster, nis);
     from_to_to.apply_to(editable_to_roster);
   }
 
+  parent_map parents;
+  app.work.get_parent_rosters(parents);
+
+  revision_t working_rev;
+  revision_id working_rid;
+  make_revision_for_workspace(parents, *working_roster, working_rev);
+  calculate_ident(working_rev, working_rid);
+
   // Now do the merge
   roster_merge_result result;
-  three_way_merge(*from_roster, working_roster, to_roster, result);
+  marking_map left_markings, right_markings;
+  three_way_merge(from_rid, *from_roster,
+                  working_rid, *working_roster,
+                  to_rid, *to_roster,
+                  result, left_markings, right_markings);
 
   roster_t & merged_roster = result.roster;
 
   map<file_id, file_path> paths;
-  get_content_paths(working_roster, paths);
+  get_content_paths(*working_roster, paths);
 
-  content_merge_workspace_adaptor wca(app, from_roster, paths);
-  resolve_merge_conflicts(working_roster, to_roster,
+  content_merge_workspace_adaptor wca(app, from_rid, from_roster,
+                                      left_markings, right_markings, paths);
+
+  wca.cache_roster(working_rid, working_roster);
+  // cache the synthetic to_roster under the to_rid so that the real
+  // to_roster is not fetched from the db which does not have temporary nids
+  wca.cache_roster(to_rid, to_roster);
+
+  resolve_merge_conflicts(*working_roster, *to_roster,
                           result, wca, app);
 
   I(result.is_clean());
   // temporary node ids may appear
   merged_roster.check_sane(true);
 
-  // we apply the working to merged cset to the workspace 
+  // we apply the working to merged cset to the workspace
   cset update;
   MM(update);
-  make_cset(working_roster, merged_roster, update);
+  make_cset(*working_roster, merged_roster, update);
   E(!update.empty(), F("no changes were applied"));
   app.work.perform_content_update(update, wca);
 
   P(F("applied changes to workspace"));
 
   // and record any remaining changes in _MTN/revision
-  parent_map parents;
   revision_t remaining;
   MM(remaining);
-  app.work.get_parent_rosters(parents);
   make_revision_for_workspace(parents, merged_roster, remaining);
 
   // small race condition here...
   app.work.put_work_rev(remaining);
   app.work.update_any_attrs();
-  
+
   // add a note to the user log file about what we did
   {
     utf8 log;
@@ -924,12 +1026,14 @@ CMD(pluck, N_("workspace"), N_("[-r FROM] -r TO [PATH...]"),
   }
 }
 
-CMD(heads, N_("tree"), "", N_("show unmerged head revisions of branch"),
+CMD(heads, "heads", "", CMD_REF(tree), "",
+    N_("Shows unmerged head revisions of a branch"),
+    "",
     options::opts::branch)
 {
   set<revision_id> heads;
   if (args.size() != 0)
-    throw usage(name);
+    throw usage(execid);
 
   N(app.opts.branchname() != "",
     F("please specify a branch, with --branch=BRANCH"));
@@ -948,20 +1052,20 @@ CMD(heads, N_("tree"), "", N_("show unmerged head revisions of branch"),
     cout << describe_revision(app, *i) << '\n';
 }
 
-CMD(get_roster, N_("debug"), N_("[REVID]"),
-    N_("dump the roster associated with the given REVID, "
-       "or the workspace if no REVID is given"),
+CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
+    N_("Dumps the roster associated with a given identifier"),
+    N_("If no REVID is given, the workspace is used."),
     options::opts::none)
 {
   roster_t roster;
   marking_map mm;
-  
+
   if (args.size() == 0)
     {
       parent_map parents;
       temp_node_id_source nis;
       revision_id rid(fake_id());
-      
+
       app.require_workspace();
       app.work.get_parent_rosters(parents);
       app.work.get_current_roster_shape(roster, nis);
@@ -1011,7 +1115,7 @@ CMD(get_roster, N_("debug"), N_("[REVID]"),
       app.db.get_roster(rid, roster, mm);
     }
   else
-    throw usage(name);
+    throw usage(execid);
 
   roster_data dat;
   write_roster_and_marking(roster, mm, dat);

@@ -51,7 +51,7 @@ class app_state;
 //
 // revision A ... included ... revision X ... excluded ... revision B
 
-namespace restricted_path 
+namespace restricted_path
 {
   enum status { included, excluded };
 }
@@ -68,7 +68,7 @@ class restriction
               std::vector<file_path> const & excludes,
               long depth);
 
-  path_set included_paths, excluded_paths;
+  std::set<file_path> included_paths, excluded_paths;
   long depth;
 };
 
@@ -110,24 +110,27 @@ class node_restriction : public restriction
   }
 
  private:
-  path_set known_paths;
+  std::set<file_path> known_paths;
   std::map<node_id, restricted_path::status> node_map;
 };
 
 class path_restriction : public restriction
 {
  public:
+  enum validity_check { check_paths = 0, skip_check };
+
   path_restriction() : restriction() {}
 
   path_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
-                   app_state & a);
+                   app_state & a,
+                   validity_check vc = check_paths);
 
-  bool includes(split_path const & sp) const;
+  bool includes(file_path const & sp) const;
 
  private:
-  std::map<split_path, restricted_path::status> path_map;
+  std::map<file_path, restricted_path::status> path_map;
 };
 
 // Local Variables:

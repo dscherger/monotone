@@ -3,6 +3,7 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
+#include "base.hh"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -12,6 +13,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include <iostream>
 #include <sstream>
 
 #include "sanity.hh"
@@ -21,7 +23,7 @@ int existsonpath(const char *exe)
 {
   L(FL("checking for program '%s'\n") % exe);
   // this is horribly ugly, but at least it is rather portable
-  std::string cmd_str = (F("command -v '%s' >/dev/null 2>&1") % exe).str();
+  std::string cmd_str = (FL("command -v '%s' >/dev/null 2>&1") % exe).str();
   const char * const args[] = {"sh", "-c", cmd_str.c_str(), NULL};
   int pid;
   int res;
@@ -50,7 +52,11 @@ bool is_executable(const char *path)
   struct stat s;
 
   int rc = stat(path, &s);
-  N(rc != -1, F("error getting status of file %s: %s") % path % os_strerror(errno));
+  if (rc == -1)
+    {
+      const int err = errno;
+      N(false, F("error getting status of file %s: %s") % path % os_strerror(err));
+    }
 
   return (s.st_mode & S_IXUSR) && !(s.st_mode & S_IFDIR);
 }
@@ -69,13 +75,21 @@ int make_executable(const char *path)
   mode_t mode;
   struct stat s;
   int fd = open(path, O_RDONLY);
-  N(fd != -1, F("error opening file %s: %s") % path % os_strerror(errno));
+  if (fd == -1)
+    {
+      const int err = errno;
+      N(false, F("error opening file %s: %s") % path % os_strerror(err));
+    }
   if (fstat(fd, &s))
     return -1;
   mode = s.st_mode;
   mode |= ((S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
   int ret = fchmod(fd, mode);
-  N(close(fd) == 0, F("error closing file %s: %s") % path % os_strerror(errno));
+  if (close(fd) != 0)
+    {
+      const int err = errno;
+      N(false, F("error closing file %s: %s") % path % os_strerror(err));
+    }
   return ret;
 }
 
@@ -90,9 +104,9 @@ pid_t process_spawn(const char * const argv[])
         cmdline_ss << "'" << *i << "'";
       }
     L(FL("spawning command: %s\n") % cmdline_ss.str());
-  }       
-  pid_t pid;
-  pid = fork();
+  }
+  std::cout.flush();
+  pid_t pid = fork();
   switch (pid)
     {
     case -1: /* Error */
@@ -225,11 +239,26 @@ int process_wait(pid_t pid, int *res, int timeout)
   for (r = 0; r == 0 && timeout >= 0; --timeout)
     {
       r = waitpid(pid, &status, flags);
+      if (r == -1)
+        {
+          *res = errno;
+          if (errno == EINTR)
+            {
+              timeout++;
+              r = 0;
+              continue;
+            }
+          else
+            return -1;
+        }
       if (r == 0 && timeout > 0)
         process_sleep(1);
     }
   if (r == 0)
-    return -1;
+    {
+      *res = 0;
+      return -1;
+    }
   if (WIFEXITED(status))    
     *res = WEXITSTATUS(status);
   else

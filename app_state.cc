@@ -7,14 +7,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <cstdlib>              // for strtoul()
-#include <string>
-#include <vector>
-
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/exception.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+#include "base.hh"
+#include "vector.hh"
 
 #include "botan/pubkey.h"
 #include "botan/rsa.h"
@@ -37,9 +31,8 @@ using std::vector;
 app_state::app_state()
   : db(system_path()),
     keys(*this), work(db, lua),
-//    search_root(current_root_path()),
-//    diff_format(unified_diff),
     branch_is_sticky(false),
+    mtn_automate_allowed(false),
     project(*this)
 {
   db.set_app(this);
@@ -55,21 +48,17 @@ app_state::~app_state()
 void
 app_state::allow_workspace()
 {
-  L(FL("initializing from directory %s") % fs::initial_path().string());
   found_workspace = find_and_go_to_workspace(opts.root);
 
   if (found_workspace)
     {
-      if (global_sanity.filename.empty())
-        {
-          bookkeeping_path dump_path;
-          work.get_local_dump_path(dump_path);
-          L(FL("setting dump path to %s") % dump_path);
-          // The 'true' means that, e.g., if we're running checkout,
-          // then it's okay for dumps to go into our starting working
-          // dir's _MTN rather than the new workspace dir's _MTN.
-          global_sanity.filename = system_path(dump_path, false).as_external();
-        }
+      bookkeeping_path dump_path;
+      work.get_local_dump_path(dump_path);
+
+      // The 'false' means that, e.g., if we're running checkout,
+      // then it's okay for dumps to go into our starting working
+      // dir's _MTN rather than the new workspace dir's _MTN.
+      global_sanity.set_dump_path(system_path(dump_path, false).as_external());
     }
   load_rcfiles();
 }
@@ -169,16 +158,13 @@ app_state::create_workspace(system_path const & new_dir)
     work.enable_inodeprints();
 
   found_workspace = true;
-  if (global_sanity.filename.empty())
-    {
-      bookkeeping_path dump_path;
-      work.get_local_dump_path(dump_path);
-      L(FL("setting dump path to %s") % dump_path);
-      // The 'true' means that, e.g., if we're running checkout,
-      // then it's okay for dumps to go into our starting working
-      // dir's _MTN rather than the new workspace dir's _MTN.
-      global_sanity.filename = system_path(dump_path, false).as_external();
-    }
+
+  bookkeeping_path dump_path;
+  work.get_local_dump_path(dump_path);
+  // The 'false' means that, e.g., if we're running checkout,
+  // then it's okay for dumps to go into our starting working
+  // dir's _MTN rather than the new workspace dir's _MTN.
+  global_sanity.set_dump_path(system_path(dump_path, false).as_external());
 
   load_rcfiles();
 }
@@ -232,17 +218,6 @@ app_state::get_project()
   return project;
 }
 
-void
-app_state::set_root(system_path const & path)
-{
-  require_path_is_directory
-    (path,
-     F("search root '%s' does not exist") % path,
-     F("search root '%s' is not a directory") % path);
-  opts.root = path;
-  L(FL("set search root to %s") % opts.root);
-}
-
 // rc files are loaded after we've changed to the workspace so that
 // _MTN/monotonerc can be loaded between ~/.monotone/monotonerc and other
 // rcfiles.
@@ -270,7 +245,7 @@ app_state::load_rcfiles()
 
   // Command-line rcfiles override even that.
 
-  for (vector<utf8>::const_iterator i = opts.extra_rcfiles.begin();
+  for (args_vector::const_iterator i = opts.extra_rcfiles.begin();
        i != opts.extra_rcfiles.end(); ++i)
     {
       lua.load_rcfile(*i);

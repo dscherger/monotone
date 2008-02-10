@@ -13,10 +13,7 @@
 
 ATOMIC_NOVERIFY(external);    // "external" string in unknown system charset
 ATOMIC_NOVERIFY(utf8);        // unknown string in UTF8 charset
-ATOMIC(ace);                  // unknown string in ACE form
 ATOMIC(symbol);               // valid basic io symbol (alphanumeric or _ chars)
-
-ATOMIC(path_component);       // piece of a path (see paths.hh)
 
 ATOMIC_NOVERIFY(id);          // hash of data
 ATOMIC_NOVERIFY(data);        // meaningless blob
@@ -24,7 +21,6 @@ ATOMIC_NOVERIFY(delta);       // xdelta between 2 datas
 ATOMIC_NOVERIFY(inodeprint);  // fingerprint of an inode
 
 ATOMIC_NOVERIFY(branch_name); // utf-8
-ATOMIC_NOVERIFY(globish);     // kinda like a glob, see globish.hh (also, utf-8)
 
 ATOMIC(cert_name);            // symbol-of-your-choosing
 ATOMIC_NOVERIFY(cert_value);  // symbol-of-your-choosing

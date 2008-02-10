@@ -13,9 +13,6 @@
 // to look at monotone.cc for cpp_main(), where the real program logic
 // begins.  The purpose of this file is to hide all the nastiness involved
 // in trapping and responding to operating-system-level hard error reports.
-// It is also responsible for a last-ditch catch(...) clause (which is not
-// _that_ different from what std::terminate() would do, but does get our
-// bug-report message printed.)
 //
 // On Win32, hard error reports come via SEH ("structured exception
 // handling", which is, alas, not the same thing as C++ runtime exception
@@ -28,9 +25,9 @@
 // data structures, so we use the lowest-level API that appears to be
 // available (GetStdHandle()/WriteFile()).
 
-#include "config.h"
 
 #define WIN32_LEAN_AND_MEAN
+#include "base.hh"
 #include <windows.h>
 #include <string.h>
 
@@ -66,7 +63,7 @@ bug_report_message()
   write_str_to_stderr("\nthis is almost certainly a bug in monotone."
                       "\nplease send this error message, the output of '");
   write_str_to_stderr(argv0);
-  write_str_to_stderr(" --full-version',"
+  write_str_to_stderr(" version --full',"
                       "\nand a description of what you were doing to "
                       PACKAGE_BUGREPORT "\n");
 }
@@ -183,6 +180,17 @@ cpp_main(int argc, char ** argv);
 int
 main(int argc, char ** argv)
 {
+  // Have to get fully qualified path to mtn.exe into argv0 before anything
+  // might try to report an error.
+  char name[MAX_PATH];
+  int len = 0;
+  len = (int)GetModuleFileName(0, name, MAX_PATH);
+  if(len != 0) {
+    argv0 = strdup(name);
+  } else {
+    argv0 = argv[0];
+  }
+  
   SetUnhandledExceptionFilter(&seh_reporting_function);
 
 #ifdef MS_CRT_DEBUG_HOOK
