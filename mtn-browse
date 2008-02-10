@@ -164,17 +164,22 @@ my @text_mime_types =
 # A boolean to signal whether this process has received a SIGCHLD signal or
 # not.
 
-# List of browser instances.
+# List of window instances.
 
-my @browsers;
+my @windows;
 
 # The advanced find window management record.
 
 my $advanced_find;
 
-# The pixmap for the application's icon.
+# Assorted pixmaps.
 
-my $app_icon;
+my($app_icon,
+   $line_image);
+
+# The busy cursor to use for the mouse.
+
+my $busy_cursor;
 
 # The tooltips widget.
 
@@ -193,10 +198,14 @@ sub create_format_tags($);
 sub delete_event_cb($$$);
 sub destroy_event_cb($$;$);
 sub directory_up_button_clicked_cb($$);
-sub display_change_log($);
+sub file_change_log_button_clicked_cb($$);
+sub file_history_button_clicked_cb($$);
 sub generate_revision_report($$$$);
+sub get_change_log_window();
 sub get_completion($$$$;$);
 sub get_dir_contents($$$);
+sub get_file_history_helper($$$);
+sub get_file_history_window();
 sub get_revision_ids($$);
 sub gtk2_update();
 sub make_busy($$);
@@ -211,7 +220,7 @@ sub set_label_value($$);
 sub setup_sigchld_handler($);
 sub sigchld_handler();
 sub simple_query_radiobutton_toggled_cb($$);
-sub revision_information_button_clicked_cb($$);
+sub revision_change_log_button_clicked_cb($$);
 sub term_combobox_changed_cb($$);
 sub update_advanced_find_state($$);
 sub update_browser_state($$);
@@ -239,7 +248,8 @@ sub update_browser_state($$);
     setup_sigchld_handler(\&sigchld_handler);
     $tooltips = Gtk2::Tooltips->new();
     $app_icon = Gtk2::Gdk::Pixbuf->new_from_file("../mtn-browse.png");
-    push(@browsers, new_browser_instance());
+    $line_image = Gtk2::Gdk::Pixbuf->new_from_file("../line.png");
+    new_browser_instance();
 
     # Hand control over to Gtk2.
 
@@ -252,237 +262,15 @@ sub update_browser_state($$);
 	$advanced_find->{window}->destroy();
 	$advanced_find = undef;
     }
-    foreach my $browser (@browsers)
+    foreach my $window (@windows)
     {
-	$browser->{window}->destroy();
+	$window->{window}->destroy();
     }
     Gnome2::VFS->shutdown();
     $SIG{CHLD} = "IGNORE";
-    @browsers = ();
+    @windows = ();
 
     exit(0);
-
-}
-#
-##############################################################################
-#
-#   Routine      - new_browser_instance
-#
-#   Description  - Construct a new browser instance record. This creates a new
-#                  main window, a new connection to Monotone and initialising
-#                  sensible defaults.
-#
-#   Data         - Return Value : A reference to the newly created browser
-#                                 instance record.
-#
-##############################################################################
-
-
-
-sub new_browser_instance()
-{
-
-    my($browser,
-       $font,
-       $image,
-       $renderer,
-       $tv_column,
-       $div);
-
-    $browser = {};
-    $browser->{mtn} = Monotone::AutomateStdio->new();
-    $browser->{glade} =
-	Gtk2::GladeXML->new("../mtn-browse.glade", "main_window");
-
-    # Flag to stop recursive calling of callbacks.
-
-    $browser->{in_cb} = 0;
-
-    # Connect Glade registered signal handlers.
-
-    $browser->{glade}->signal_autoconnect
-	(sub {
-	     my($callback_name, $widget, $signal_name, $signal_data,
-		$connect_object, $after, $user_data) = @_;
-	     my $func = $after ? "signal_connect_after" : "signal_connect";
-	     $widget->$func($signal_name,
-			    $callback_name,
-			    $connect_object ? $connect_object : $user_data); },
-	 $browser);
-
-    # Link in the update handler for the browser.
-
-    $browser->{update_handler} = \&update_browser_state;
-
-    # Get the widgets that we are interested in.
-
-    $browser->{window} = $browser->{glade}->get_widget("main_window");
-    $browser->{window}->set_icon($app_icon);
-    $browser->{appbar} = $browser->{glade}->get_widget("appbar");
-    $browser->{branch_combo} =
-	$browser->{glade}->get_widget("branch_comboboxentry");
-    $browser->{revision_combo} =
-	$browser->{glade}->get_widget("revision_comboboxentry");
-    $browser->{tagged_tick} =
-	$browser->{glade}->get_widget("tagged_checkbutton");
-    $browser->{directory_combo} =
-	$browser->{glade}->get_widget("directory_comboboxentry");
-    $browser->{directory_up_button} =
-	$browser->{glade}->get_widget("directory_up_button");
-    $browser->{manifest_treeview} =
-	$browser->{glade}->get_widget("manifest_browser_treeview");
-    $browser->{file_view_scrolledwindow} =
-	$browser->{glade}->get_widget("file_view_scrolledwindow");
-    $browser->{file_name_label} =
-	$browser->{glade}->get_widget("file_name_value_label");
-    $browser->{file_id_label} =
-	$browser->{glade}->get_widget("file_id_value_label");
-    $browser->{last_update_label} =
-	$browser->{glade}->get_widget("last_update_value_label");
-    $browser->{file_revision_id_label} =
-	$browser->{glade}->get_widget("file_revision_id_value_label");
-    $browser->{file_button_vbox} =
-	$browser->{glade}->get_widget("file_button_vbox");
-    $browser->{database_name_label} =
-	$browser->{glade}->get_widget("database_name_value_label");
-    $browser->{revision_id_label} =
-	$browser->{glade}->get_widget("revision_id_value_label");
-    $browser->{author_label} =
-	$browser->{glade}->get_widget("author_value_label");
-    $browser->{change_log_label} =
-	$browser->{glade}->get_widget("change_log_value_label");
-
-    # Setup button sensitivity groups.
-
-    $browser->{text_file_sensitive_group} = ();
-    foreach my $item ("search_text", "annotate", "file_compare")
-    {
-	push(@{$browser->{text_file_sensitive_group}}, 
-	     $browser->{glade}->get_widget($item . "_button"));
-    }
-    $browser->{revision_sensitive_group} = ();
-    foreach my $item ("revision_information", "revision_compare")
-    {
-	push(@{$browser->{revision_sensitive_group}}, 
-	     $browser->{glade}->get_widget($item . "_button"));
-    }
-
-    # Setup the comboboxentry key release signal handlers.
-
-    $browser->{branch_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $browser);
-    $browser->{directory_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $browser);
-    $browser->{revision_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $browser);
-
-    # Move the pane separator to a sensible position.
-
-    # $div = $browser->{glade}->get_widget("browser_hpaned");
-    # $div->set_position(300);
-
-    # Setup the comboboxes.
-
-    $browser->{branch_combo}->set_model(Gtk2::ListStore->new("Glib::String"));
-    $browser->{branch_combo}->set_text_column(0);
-    $browser->{branch_combo}->set_wrap_width(2);
-    $browser->{directory_combo}->
-	set_model(Gtk2::ListStore->new("Glib::String"));
-    $browser->{directory_combo}->set_text_column(0);
-    $browser->{directory_combo}->set_wrap_width(2);
-    $browser->{revision_combo}->
-	set_model(Gtk2::ListStore->new("Glib::String"));
-    $browser->{revision_combo}->set_text_column(0);
-    $browser->{revision_combo}->set_wrap_width(2);
-
-    # Setup the tree view manifest file browser.
-
-    $browser->{manifest_liststore} = Gtk2::ListStore->new("Glib::String",
-							  "Glib::String",
-							  "Glib::String",
-							  "Glib::String",
-							  "Glib::Scalar");
-    $browser->{manifest_treeview}->set_model($browser->{manifest_liststore});
-
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $image = Gtk2::Image->new_from_stock("gtk-file", "menu");
-    $image->show_all();
-    $tv_column->set_widget($image);
-    $tv_column->set_resizable(FALSE);
-    $tv_column->set_sizing("fixed");
-    $tv_column->set_fixed_width(25);
-    $tv_column->set_sort_column_id(MLS_ICON_COLUMN);
-    $renderer = Gtk2::CellRendererPixbuf->new();
-    $tv_column->pack_start($renderer, TRUE);
-    $tv_column->set_attributes($renderer, "stock-id" => MLS_ICON_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
-
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("File Name");
-    $tv_column->set_resizable(TRUE);
-    $tv_column->set_sizing("fixed");
-    $tv_column->set_fixed_width(180);
-    $tv_column->set_sort_column_id(MLS_NAME_COLUMN);
-    $renderer = Gtk2::CellRendererText->new();
-    $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => MLS_NAME_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
-
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("Last Update");
-    $tv_column->set_resizable(TRUE);
-    $tv_column->set_sizing("grow-only");
-    $tv_column->set_sort_column_id(MLS_DATE_COLUMN);
-    $renderer = Gtk2::CellRendererText->new();
-    $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
-
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("Author");
-    $tv_column->set_resizable(TRUE);
-    $tv_column->set_sizing("grow-only");
-    $tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
-    $renderer = Gtk2::CellRendererText->new();
-    $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
-
-    $browser->{manifest_treeview}->set_search_column(MLS_NAME_COLUMN);
-
-    # $tv_column = $browser->{manifest_treeview}->get_column(MLS_DATE_COLUMN);
-    # $browser->{manifest_treeview}->remove_column($tv_column);
-
-    # Setup the file file viewer (with syntax highlighting).
-
-    $browser->{file_view_svbuffer} = Gtk2::SourceView::Buffer->new(undef);
-    $browser->{file_view_svbuffer}->set_max_undo_levels(0);
-    $browser->{file_view_svbuffer}->begin_not_undoable_action();
-    $browser->{file_view_svlangmgr} =
-	Gtk2::SourceView::LanguagesManager->new();
-    $browser->{file_view_sv} = Gtk2::SourceView::View->
-	new_with_buffer($browser->{file_view_svbuffer});
-    $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-    $browser->{file_view_sv}->modify_font($font) if (defined($font));
-    $browser->{file_view_sv}->set_cursor_visible(FALSE);
-    $browser->{file_view_sv}->set_editable(FALSE);
-    $browser->{glade}->get_widget("file_view_scrolledwindow")->
-	add($browser->{file_view_sv});
-    $browser->{file_view_sv}->show_all();
-
-    # Update the browser's internal state.
-
-    $browser->{branch_combo_details}->{preset} = 0;
-    $browser->{revision_combo_details}->{preset} = 0;
-    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
-
-    return $browser;
 
 }
 #
@@ -795,10 +583,10 @@ sub advanced_find_button_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - revision_information_button_clicked_cb
+#   Routine      - revision_change_log_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the
-#                  revision information button.
+#                  revision change log button.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -808,15 +596,42 @@ sub advanced_find_button_clicked_cb($$)
 
 
 
-sub revision_information_button_clicked_cb($$)
+sub revision_change_log_button_clicked_cb($$)
 {
 
     my($widget, $browser) = @_;
 
+    my (@certs_list,
+	$instance,
+	@revision_details,
+	@revision_ids);
+
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    display_change_log($browser);
+    $instance = get_change_log_window();
+
+    # Get the currently selected revision id.
+
+    get_revision_ids($browser, \@revision_ids);
+
+    # Put the details into the text view and display it.
+
+    $instance->{changelog_buffer}->set_text("");
+    $instance->{window}->set_title
+	("Revision " . $browser->{revision_combo_details}->{value});
+    $browser->{mtn}->certs(\@certs_list, $revision_ids[0]);
+    $browser->{mtn}->get_revision(\@revision_details, $revision_ids[0]);
+    generate_revision_report($instance->{changelog_buffer},
+			     $revision_ids[0],
+			     \@certs_list,
+			     \@revision_details);
+    if ($instance->{changelog_scrolledwindow}->realized())
+    {
+	$instance->{changelog_scrolledwindow}->get_vadjustment()->set_value(0);
+	$instance->{changelog_scrolledwindow}->get_hadjustment()->set_value(0);
+    }
+    $instance->{window}->show_all();
 
 }
 #
@@ -883,6 +698,277 @@ sub directory_up_button_clicked_cb($$)
 	$browser->{directory_combo}->child()->set_text($value);
 	$browser->{appbar}->clear_stack();
 	&{$browser->{update_handler}}($browser, DIRECTORY_CHANGED);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - file_change_log_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the file
+#                  change log button.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub file_change_log_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    my ($button,
+	@certs_list,
+	$counter,
+	$file_name,
+	%history_hash,
+	$instance,
+	@revision_ids);
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    $instance = get_file_history_window();
+    local $instance->{in_cb} = 1;
+
+    $instance->{mtn} = $browser->{mtn};
+    $instance->{file_name} =
+	$browser->{file_being_viewed}->{manifest_entry}->{name};
+    $instance->{first_revision_id} = "";
+    $instance->{second_revision_id} = "";
+    $instance->{window}->set_title
+	("File History For " . $instance->{file_name});
+    $instance->{window}->show_all();
+
+    make_busy($instance, 1);
+    $instance->{appbar}->push("");
+    gtk2_update();
+
+    # Get the list of file change revisions. Remember that a warning is
+    # generated when one goes back beyond a file's addition revision, so
+    # temporarily disable the warning handler.
+
+    $instance->{appbar}->set_progress_percentage(0);
+    $instance->{appbar}->set_status("Fetching revision list");
+    $instance->{stop_button}->set_sensitive(TRUE);
+    gtk2_update();
+    Monotone::AutomateStdio->register_error_handler("warning", undef);
+    get_revision_ids($browser, \@revision_ids);
+    get_file_history_helper($instance, \%history_hash, $revision_ids[0]);
+    Monotone::AutomateStdio->register_error_handler
+	("both", \&mtn_error_handler);
+    $instance->{stop_button}->set_sensitive(FALSE);
+
+    # Sort the list.
+
+    $instance->{appbar}->set_status("Sorting revision list");
+    gtk2_update();
+    $instance->{history} = [];
+    $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
+    %history_hash = ();
+    @{$instance->{history}} = reverse(@{$instance->{history}});
+
+    # Display the file's history.
+
+    $instance->{appbar}->set_progress_percentage(0);
+    $instance->{appbar}->set_status("Displaying file history");
+    gtk2_update();
+    $counter = 1;
+    $instance->{history_buffer}->set_text("");
+    for my $revision_id (@{$instance->{history}})
+    {
+
+	# Print out the revision summary.
+
+	$instance->{mtn}->certs(\@certs_list, $revision_id);
+	generate_revision_report($instance->{history_buffer},
+				 $revision_id,
+				 \@certs_list,
+				 undef);
+	$instance->{history_buffer}->
+	    insert($instance->{history_buffer}->get_end_iter(), "\n\n ");
+
+	# Add the buttons.
+
+	$button = Gtk2::Button->new("Select As File 1");
+	$button->signal_connect("clicked",
+				\&file_history_button_clicked_cb,
+				{instance    => $instance,
+				 revision_id => $revision_id,
+				 button_type => "file-1"});
+	$tooltips->set_tip($button,
+			   "Select this file revision for\n"
+			       . "comparison as the first file");
+	$instance->{history_textview}->add_child_at_anchor
+	    ($button,
+	     $instance->{history_buffer}->
+	         create_child_anchor($instance->{history_buffer}->
+				     get_end_iter()));
+	$button->show_all();
+	$instance->{history_buffer}->
+	    insert($instance->{history_buffer}->get_end_iter(), " ");
+
+	$button = Gtk2::Button->new("Select As File 2");
+	$button->signal_connect("clicked",
+				\&file_history_button_clicked_cb,
+				{instance    => $instance,
+				 revision_id => $revision_id,
+				 button_type => "file-2"});
+	$tooltips->set_tip($button,
+			   "Select this file revision for\n"
+			       . "comparison as the second file");
+	$instance->{history_textview}->add_child_at_anchor
+	    ($button,
+	     $instance->{history_buffer}->
+	         create_child_anchor($instance->{history_buffer}->
+				     get_end_iter()));
+	$button->show_all();
+	$instance->{history_buffer}->
+	    insert($instance->{history_buffer}->get_end_iter(), " ");
+
+	$button = Gtk2::Button->new("Full Revision Information");
+	$button->signal_connect("clicked",
+				\&file_history_button_clicked_cb,
+				{instance    => $instance,
+				 revision_id => $revision_id,
+				 button_type => "revision-info"});
+	$tooltips->set_tip($button, "View the revision's change log");
+	$instance->{history_textview}->add_child_at_anchor
+	    ($button,
+	     $instance->{history_buffer}->
+	         create_child_anchor($instance->{history_buffer}->
+				     get_end_iter()));
+	$button->show_all();
+
+	# If we aren't at the end, print out the revision separator.
+
+	if ($counter < scalar(@{$instance->{history}}))
+	{
+	    $instance->{history_buffer}->
+		insert($instance->{history_buffer}->get_end_iter(), "\n");
+	    $instance->{history_buffer}->
+		insert_pixbuf($instance->{history_buffer}->get_end_iter(),
+			      $line_image);
+	    $instance->{history_buffer}->
+		insert($instance->{history_buffer}->get_end_iter(), "\n");
+	}
+
+	$instance->{appbar}->set_progress_percentage
+	    ($counter ++ / scalar(@{$instance->{history}}));
+	gtk2_update();
+
+    }
+
+    # Make sure we are at the top.
+
+    $instance->{history_scrolledwindow}->get_vadjustment()->set_value(0);
+    $instance->{history_scrolledwindow}->get_hadjustment()->set_value(0);
+    $instance->{appbar}->set_progress_percentage(0);
+    $instance->{appbar}->set_status("");
+    gtk2_update();
+
+    $instance->{appbar}->pop();
+    make_busy($instance, 0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - file_history_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on any of the
+#                  buttons displayed in a file's history list.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance, revision and action that is
+#                             associated with this widget.
+#
+##############################################################################
+
+
+
+sub file_history_button_clicked_cb($$)
+{
+
+    my($widget, $details) = @_;
+
+    my($cl_instance,
+       $instance,
+       $revision_id);
+
+    $instance = $details->{instance};
+    $revision_id = $details->{revision_id};
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    if ($details->{button_type} eq "file-1"
+	|| $details->{button_type} eq "file-2")
+    {
+	if ($details->{button_type} eq "file-1")
+	{
+	    $instance->{first_revision_id} = $revision_id;
+	    set_label_value($instance->{revision_id_1_label}, $revision_id);
+	    if ($instance->{first_revision_id}
+		eq $instance->{second_revision_id})
+	    {
+		$instance->{second_revision_id} = "";
+		set_label_value($instance->{revision_id_2_label}, "");
+	    }
+	}
+	else
+	{
+	    $instance->{second_revision_id} = $revision_id;
+	    set_label_value($instance->{revision_id_2_label}, $revision_id);
+	    if ($instance->{second_revision_id}
+		eq $instance->{first_revision_id})
+	    {
+		$instance->{first_revision_id} = "";
+		set_label_value($instance->{revision_id_1_label}, "");
+	    }
+	}
+	if ($instance->{first_revision_id} ne ""
+	    && $instance->{second_revision_id} ne "")
+	{
+	    $instance->{compare_button}->set_sensitive(TRUE);
+	}
+	else
+	{
+	    $instance->{compare_button}->set_sensitive(FALSE);
+	}
+    }
+    else
+    {
+
+	my(@certs_list,
+	   @revision_details);
+
+	# Display the full revision change log.
+
+	$cl_instance = get_change_log_window();
+	$cl_instance->{changelog_buffer}->set_text("");
+	$cl_instance->{window}->set_title("Revision " . $revision_id);
+	$instance->{mtn}->certs(\@certs_list, $revision_id);
+	$instance->{mtn}->get_revision(\@revision_details, $revision_id);
+	generate_revision_report($cl_instance->{changelog_buffer},
+				 $revision_id,
+				 \@certs_list,
+				 \@revision_details);
+	if ($cl_instance->{changelog_scrolledwindow}->realized())
+	{
+	    $cl_instance->{changelog_scrolledwindow}->get_vadjustment()->
+		set_value(0);
+	    $cl_instance->{changelog_scrolledwindow}->get_hadjustment()->
+		set_value(0);
+	}
+	$cl_instance->{window}->show_all();
+
     }
 
 }
@@ -1375,6 +1461,233 @@ sub destroy_event_cb($$;$)
 #
 ##############################################################################
 #
+#   Routine      - new_browser_instance
+#
+#   Description  - Construct a new browser instance record. This creates a new
+#                  main window, a new connection to Monotone and initialising
+#                  sensible defaults.
+#
+#   Data         - Return Value : A reference to the newly created browser
+#                                 instance record.
+#
+##############################################################################
+
+
+
+sub new_browser_instance()
+{
+
+    my($browser,
+       $font,
+       $image,
+       $renderer,
+       $tv_column,
+       $div);
+
+    $browser = {};
+    $browser->{type} = "browser_window";
+    $browser->{mtn} = Monotone::AutomateStdio->new();
+    $browser->{glade} =
+	Gtk2::GladeXML->new("../mtn-browse.glade", "main_window");
+
+    # Flag to stop recursive calling of callbacks.
+
+    $browser->{in_cb} = 0;
+
+    # Connect Glade registered signal handlers.
+
+    $browser->{glade}->signal_autoconnect
+	(sub {
+	     my($callback_name, $widget, $signal_name, $signal_data,
+		$connect_object, $after, $user_data) = @_;
+	     my $func = $after ? "signal_connect_after" : "signal_connect";
+	     $widget->$func($signal_name,
+			    $callback_name,
+			    $connect_object ? $connect_object : $user_data); },
+	 $browser);
+
+    # Link in the update handler for the browser.
+
+    $browser->{update_handler} = \&update_browser_state;
+
+    # Get the widgets that we are interested in.
+
+    $browser->{window} = $browser->{glade}->get_widget("main_window");
+    $browser->{window}->set_icon($app_icon);
+    $browser->{appbar} = $browser->{glade}->get_widget("appbar");
+    $browser->{branch_combo} =
+	$browser->{glade}->get_widget("branch_comboboxentry");
+    $browser->{revision_combo} =
+	$browser->{glade}->get_widget("revision_comboboxentry");
+    $browser->{tagged_tick} =
+	$browser->{glade}->get_widget("tagged_checkbutton");
+    $browser->{directory_combo} =
+	$browser->{glade}->get_widget("directory_comboboxentry");
+    $browser->{directory_up_button} =
+	$browser->{glade}->get_widget("directory_up_button");
+    $browser->{manifest_treeview} =
+	$browser->{glade}->get_widget("manifest_browser_treeview");
+    $browser->{file_view_scrolledwindow} =
+	$browser->{glade}->get_widget("file_view_scrolledwindow");
+    $browser->{file_name_label} =
+	$browser->{glade}->get_widget("file_name_value_label");
+    $browser->{file_id_label} =
+	$browser->{glade}->get_widget("file_id_value_label");
+    $browser->{last_update_label} =
+	$browser->{glade}->get_widget("last_update_value_label");
+    $browser->{file_revision_id_label} =
+	$browser->{glade}->get_widget("file_revision_id_value_label");
+    $browser->{file_button_vbox} =
+	$browser->{glade}->get_widget("file_button_vbox");
+    $browser->{database_name_label} =
+	$browser->{glade}->get_widget("database_name_value_label");
+    $browser->{revision_id_label} =
+	$browser->{glade}->get_widget("revision_id_value_label");
+    $browser->{author_label} =
+	$browser->{glade}->get_widget("author_value_label");
+    $browser->{change_log_label} =
+	$browser->{glade}->get_widget("change_log_value_label");
+
+    # Setup button sensitivity groups.
+
+    $browser->{text_file_sensitive_group} = ();
+    foreach my $item ("search_text", "annotate")
+    {
+	push(@{$browser->{text_file_sensitive_group}}, 
+	     $browser->{glade}->get_widget($item . "_button"));
+    }
+    $browser->{revision_sensitive_group} = ();
+    foreach my $item ("revision_change_log", "revision_compare")
+    {
+	push(@{$browser->{revision_sensitive_group}}, 
+	     $browser->{glade}->get_widget($item . "_button"));
+    }
+
+    # Setup the comboboxentry key release signal handlers.
+
+    $browser->{branch_combo}->child()->
+	signal_connect("key_release_event",
+		       \&combo_key_release_event_cb,
+		       $browser);
+    $browser->{directory_combo}->child()->
+	signal_connect("key_release_event",
+		       \&combo_key_release_event_cb,
+		       $browser);
+    $browser->{revision_combo}->child()->
+	signal_connect("key_release_event",
+		       \&combo_key_release_event_cb,
+		       $browser);
+
+    # Move the pane separator to a sensible position.
+
+    # $div = $browser->{glade}->get_widget("browser_hpaned");
+    # $div->set_position(300);
+
+    # Setup the comboboxes.
+
+    $browser->{branch_combo}->set_model(Gtk2::ListStore->new("Glib::String"));
+    $browser->{branch_combo}->set_text_column(0);
+    $browser->{branch_combo}->set_wrap_width(2);
+    $browser->{directory_combo}->
+	set_model(Gtk2::ListStore->new("Glib::String"));
+    $browser->{directory_combo}->set_text_column(0);
+    $browser->{directory_combo}->set_wrap_width(2);
+    $browser->{revision_combo}->
+	set_model(Gtk2::ListStore->new("Glib::String"));
+    $browser->{revision_combo}->set_text_column(0);
+    $browser->{revision_combo}->set_wrap_width(2);
+
+    # Setup the tree view manifest file browser.
+
+    $browser->{manifest_liststore} = Gtk2::ListStore->new("Glib::String",
+							  "Glib::String",
+							  "Glib::String",
+							  "Glib::String",
+							  "Glib::Scalar");
+    $browser->{manifest_treeview}->set_model($browser->{manifest_liststore});
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $image = Gtk2::Image->new_from_stock("gtk-file", "menu");
+    $image->show_all();
+    $tv_column->set_widget($image);
+    $tv_column->set_resizable(FALSE);
+    $tv_column->set_sizing("fixed");
+    $tv_column->set_fixed_width(25);
+    $tv_column->set_sort_column_id(MLS_ICON_COLUMN);
+    $renderer = Gtk2::CellRendererPixbuf->new();
+    $tv_column->pack_start($renderer, TRUE);
+    $tv_column->set_attributes($renderer, "stock-id" => MLS_ICON_COLUMN);
+    $browser->{manifest_treeview}->append_column($tv_column);
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_title("File Name");
+    $tv_column->set_resizable(TRUE);
+    $tv_column->set_sizing("fixed");
+    $tv_column->set_fixed_width(180);
+    $tv_column->set_sort_column_id(MLS_NAME_COLUMN);
+    $renderer = Gtk2::CellRendererText->new();
+    $tv_column->pack_start($renderer, FALSE);
+    $tv_column->set_attributes($renderer, "text" => MLS_NAME_COLUMN);
+    $browser->{manifest_treeview}->append_column($tv_column);
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_title("Last Update");
+    $tv_column->set_resizable(TRUE);
+    $tv_column->set_sizing("grow-only");
+    $tv_column->set_sort_column_id(MLS_DATE_COLUMN);
+    $renderer = Gtk2::CellRendererText->new();
+    $tv_column->pack_start($renderer, FALSE);
+    $tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
+    $browser->{manifest_treeview}->append_column($tv_column);
+
+    $tv_column = Gtk2::TreeViewColumn->new();
+    $tv_column->set_title("Author");
+    $tv_column->set_resizable(TRUE);
+    $tv_column->set_sizing("grow-only");
+    $tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
+    $renderer = Gtk2::CellRendererText->new();
+    $tv_column->pack_start($renderer, FALSE);
+    $tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
+    $browser->{manifest_treeview}->append_column($tv_column);
+
+    $browser->{manifest_treeview}->set_search_column(MLS_NAME_COLUMN);
+
+    # $tv_column = $browser->{manifest_treeview}->get_column(MLS_DATE_COLUMN);
+    # $browser->{manifest_treeview}->remove_column($tv_column);
+
+    # Setup the file file viewer (with syntax highlighting).
+
+    $browser->{file_view_svbuffer} = Gtk2::SourceView::Buffer->new(undef);
+    $browser->{file_view_svbuffer}->set_max_undo_levels(0);
+    $browser->{file_view_svbuffer}->begin_not_undoable_action();
+    $browser->{file_view_svlangmgr} =
+	Gtk2::SourceView::LanguagesManager->new();
+    $browser->{file_view_sv} = Gtk2::SourceView::View->
+	new_with_buffer($browser->{file_view_svbuffer});
+    $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+    $browser->{file_view_sv}->modify_font($font) if (defined($font));
+    $browser->{file_view_sv}->set_cursor_visible(FALSE);
+    $browser->{file_view_sv}->set_editable(FALSE);
+    $browser->{glade}->get_widget("file_view_scrolledwindow")->
+	add($browser->{file_view_sv});
+    $browser->{file_view_sv}->show_all();
+
+    $browser->{window}->show_all();
+
+    # Update the browser's internal state.
+
+    $browser->{branch_combo_details}->{preset} = 0;
+    $browser->{revision_combo_details}->{preset} = 0;
+    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+
+    push(@windows, $browser);
+
+    return $browser;
+
+}
+#
+##############################################################################
+#
 #   Routine      - advanced_find
 #
 #   Description  - Displays the advanced find dialog window and then gets the
@@ -1399,6 +1712,9 @@ sub advanced_find($$$)
 
     my($browser, $revision_id, $branches) = @_;
 
+    my($height,
+       $width);
+
     $advanced_find = create_advanced_find_window()
 	unless (defined($advanced_find));
 
@@ -1417,7 +1733,9 @@ sub advanced_find($$$)
 	$advanced_find->{revision_combo_details}->{preset} = 0;
 	$advanced_find->{appbar}->clear_stack();
 	&{$advanced_find->{update_handler}}($advanced_find, NEW_FIND);
-	$advanced_find->{window}->show();
+	($width, $height) = $advanced_find->{window}->get_default_size();
+	$advanced_find->{window}->resize($width, $height);
+	$advanced_find->{window}->show_all();
 
 	# Now actually update it with any preset values.
 
@@ -1640,89 +1958,277 @@ sub create_advanced_find_window()
 #
 ##############################################################################
 #
-#   Routine      - display_change_log
+#   Routine      - get_change_log_window
 #
-#   Description  - Displays the change log dialog window for the specified
-#                  revision.
+#   Description  - Creates or prepares an existing a change log window for
+#                  use.
 #
-#   Data         - $browser     : The browser instance that started the
-#                                 advanced find.
+#   Data         - Return Value : A reference to the newly created or unused
+#                                 change log instance record.
 #
 ##############################################################################
 
 
 
-sub display_change_log($)
+sub get_change_log_window()
 {
 
-    my($browser) = @_;
-
-    my (@certs_list,
-	$font,
+    my ($font,
+	$height,
 	$instance,
-	@revision_details,
-	@revision_ids);
+	$width);
 
-    $instance = {};
-    $instance->{glade} =
-	Gtk2::GladeXML->new("../mtn-browse.glade", "changelog_window");
+    foreach my $window (@windows)
+    {
+	if ($window->{type} eq "change_log_window"
+	    && ! $window->{window}->mapped())
+	{
+	    $instance = $window;
+	    last;
+	}
+    }
 
-    # Connect Glade registered signal handlers.
+    # Create a new change log window if an unused one wasn't found, otherwise
+    # reuse an existing unused one.
 
-    $instance->{glade}->signal_autoconnect
-	(sub {
-	     my($callback_name, $widget, $signal_name, $signal_data,
-		$connect_object, $after, $user_data) = @_;
-	     my $func = $after ? "signal_connect_after" : "signal_connect";
-	     $widget->$func($signal_name,
-			    $callback_name,
-			    $connect_object ? $connect_object : $user_data); },
-	 $instance);
+    if (! defined($instance))
+    {
+	$instance = {};
+	$instance->{type} = "change_log_window";
+	$instance->{glade} =
+	    Gtk2::GladeXML->new("../mtn-browse.glade", "changelog_window");
 
-    # Get the widgets that we are interested in.
+	# Flag to stop recursive calling of callbacks.
 
-    $instance->{window} =
-	$instance->{glade}->get_widget("changelog_window");
-    $instance->{window}->set_icon($app_icon);
-    $instance->{window}->set_title
-	("Revision " . $browser->{revision_combo_details}->{value});
-    $instance->{changelog_textview} =
-	$instance->{glade}->get_widget("changelog_textview");
-    $instance->{changelog_scrolledwindow} =
-	$instance->{glade}->get_widget("changelog_scrolledwindow");
+	$instance->{in_cb} = 0;
 
-    # Setup the changelog window deletion handler.
+	# Connect Glade registered signal handlers.
 
-    $instance->{window}->signal_connect
-	("delete_event", sub { $_[0]->destroy(); return TRUE; });
+	$instance->{glade}->signal_autoconnect
+	    (sub {
+		 my($callback_name, $widget, $signal_name, $signal_data,
+		    $connect_object, $after, $user_data) = @_;
+		 my $func = $after ? "signal_connect_after" : "signal_connect";
+		 $widget->$func($signal_name,
+				$callback_name,
+				$connect_object ?
+				    $connect_object : $user_data); },
+	     $instance);
 
-    # Setup the revision changelog viewer.
+	# Get the widgets that we are interested in.
 
-    $instance->{changelog_buffer} =
-	$instance->{changelog_textview}->get_buffer();
-    create_format_tags($instance->{changelog_buffer});
-    $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-    $instance->{changelog_textview}->modify_font($font) if (defined($font));
+	$instance->{window} =
+	    $instance->{glade}->get_widget("changelog_window");
+	$instance->{window}->set_icon($app_icon);
+	$instance->{changelog_textview} =
+	    $instance->{glade}->get_widget("changelog_textview");
+	$instance->{changelog_scrolledwindow} =
+	    $instance->{glade}->get_widget("changelog_scrolledwindow");
 
-    # Get the currently selected revision id.
+	# Setup the changelog window deletion handler.
 
-    get_revision_ids($browser, \@revision_ids);
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub { $_[0]->hide() unless ($_[2]->{in_cb}); return TRUE; },
+	     $instance);
 
-    # Put the details into the text view and display it.
+	# Setup the revision changelog viewer.
+
+	$instance->{changelog_buffer} =
+	    $instance->{changelog_textview}->get_buffer();
+	create_format_tags($instance->{changelog_buffer});
+	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+	$instance->{changelog_textview}->modify_font($font)
+	    if (defined($font));
+
+	$instance->{grab_widget} = $instance->{window};
+
+	push(@windows, $instance);
+    }
+    else
+    {
+	($width, $height) = $instance->{window}->get_default_size();
+	$instance->{window}->resize($width, $height);
+    }
+
+    # Empty out the contents.
 
     $instance->{changelog_buffer}->set_text("");
-    $browser->{mtn}->certs(\@certs_list, $revision_ids[0]);
-    $browser->{mtn}->get_revision(\@revision_details, $revision_ids[0]);
-    generate_revision_report($instance->{changelog_buffer},
-			     $revision_ids[0],
-			     \@certs_list,
-			     \@revision_details);
-    if ($instance->{changelog_scrolledwindow}->realized())
+
+    return $instance;
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_file_history_window
+#
+#   Description  - Creates or prepares an existing a change log window for
+#                  use.
+#
+#   Data         - Return Value : A reference to the newly created or unused
+#                                 change log instance record.
+#
+##############################################################################
+
+
+
+sub get_file_history_window()
+{
+
+    my ($font,
+	$height,
+	$instance,
+	$width);
+
+    foreach my $window (@windows)
     {
-	$instance->{changelog_scrolledwindow}->get_vadjustment()->set_value(0);
-	$instance->{changelog_scrolledwindow}->get_hadjustment()->set_value(0);
+	if ($window->{type} eq "file_history_window"
+	    && ! $window->{window}->mapped())
+	{
+	    $instance = $window;
+	    last;
+	}
     }
-    $instance->{window}->show_all();
+
+    # Create a new file history window if an unused one wasn't found, otherwise
+    # reuse an existing unused one.
+
+    if (! defined($instance))
+    {
+	$instance = {};
+	$instance->{type} = "file_history_window";
+	$instance->{glade} =
+	    Gtk2::GladeXML->new("../mtn-browse.glade", "file_history_window");
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+
+	# Connect Glade registered signal handlers.
+
+	$instance->{glade}->signal_autoconnect
+	    (sub {
+		 my($callback_name, $widget, $signal_name, $signal_data,
+		    $connect_object, $after, $user_data) = @_;
+		 my $func = $after ? "signal_connect_after" : "signal_connect";
+		 $widget->$func($signal_name,
+				$callback_name,
+				$connect_object ?
+				    $connect_object : $user_data); },
+	     $instance);
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} =
+	    $instance->{glade}->get_widget("file_history_window");
+	$instance->{window}->set_icon($app_icon);
+	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
+	$instance->{history_textview} =
+	    $instance->{glade}->get_widget("history_textview");
+	$instance->{history_scrolledwindow} =
+	    $instance->{glade}->get_widget("history_scrolledwindow");
+	$instance->{stop_button} =
+	    $instance->{glade}->get_widget("stop_button");
+	$instance->{compare_button} =
+	    $instance->{glade}->get_widget("compare_button");
+	$instance->{numbers_label} =
+	    $instance->{glade}->get_widget("numbers_value_label");
+	$instance->{revision_id_1_label} =
+	    $instance->{glade}->get_widget("revision_id_1_value_label");
+	$instance->{revision_id_2_label} =
+	    $instance->{glade}->get_widget("revision_id_2_value_label");
+
+	# Setup the file history callbacks.
+
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub { $_[0]->hide() unless ($_[2]->{in_cb}); return TRUE; },
+	     $instance);
+	$instance->{stop_button}->signal_connect
+	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
+
+	# Setup the file history viewer.
+
+	$instance->{history_buffer} =
+	    $instance->{history_textview}->get_buffer();
+	create_format_tags($instance->{history_buffer});
+	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+	$instance->{history_textview}->modify_font($font) if (defined($font));
+
+	# Make the stop button the grab widget when busy, this is so the user
+	# can interrupt the history gathering process.
+
+	$instance->{grab_widget} = $instance->{stop_button};
+
+	push(@windows, $instance);
+    }
+    else
+    {
+	($width, $height) = $instance->{window}->get_default_size();
+	$instance->{window}->resize($width, $height);
+	$instance->{stop_button}->set_sensitive(FALSE);
+	$instance->{compare_button}->set_sensitive(FALSE);
+	set_label_value($instance->{numbers_label}, "");
+	set_label_value($instance->{revision_id_1_label}, "");
+	set_label_value($instance->{revision_id_2_label}, "");
+    }
+
+    $instance->{stop} = 0;
+
+    # Empty out the contents.
+
+    $instance->{history_buffer}->set_text("");
+
+    return $instance;
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_file_history_helper
+#
+#   Description  - Recursive routine for getting the revisions in a file's
+#                  change history.
+#
+#   Data         - $instance    : The file history window instance.
+#                  $hash        : A reference to a hash that is to contain the
+#                                 list of revision ids.
+#                  $revision_id : The revision id from where the search is to
+#                                 commence.
+#
+##############################################################################
+
+
+
+sub get_file_history_helper($$$)
+{
+
+    my($instance, $hash, $revision_id) = @_;
+
+    my(@change_parents,
+       @parents);
+
+    return if ($instance->{stop});
+
+    $instance->{mtn}->get_content_changed(\@change_parents,
+					  $revision_id,
+					  $instance->{file_name});
+    foreach my $revision (@change_parents)
+    {
+	if (! exists($hash->{$revision}))
+	{
+	    $hash->{$revision} = 1;
+	    set_label_value($instance->{numbers_label}, scalar(keys(%$hash)));
+	    gtk2_update();
+	    @parents = ();
+	    $instance->{mtn}->parents(\@parents, $revision);
+	    foreach my $parent (@parents)
+	    {
+		get_file_history_helper($instance, $hash, $parent);
+	    }
+	}
+    }
 
 }
 #
@@ -2697,8 +3203,11 @@ sub update_advanced_find_state($$)
 #                                      on.
 #                  $certs_list       : A reference to a certs list as returned
 #                                      by $mtn->certs().
-#                  $revision_details : A reference to a revision details list
-#                                      as returned by $mtn->get_revision().
+#                  $revision_details : Either a reference to a revision
+#                                      details list as returned by
+#                                      $mtn->get_revision() if a detailed
+#                                      report is to be generated or undef if
+#                                      the report is to just be a summary.
 #
 ##############################################################################
 
@@ -2752,92 +3261,99 @@ sub generate_revision_report($$$$)
     $text_buffer->insert_with_tags_by_name
 	($text_buffer->get_end_iter(), "\nChange Log:\n", "bold");
     $text_buffer->insert($text_buffer->get_end_iter(),
-			 sprintf("%s\n", $change_log));
+			 sprintf("%s", $change_log));
 
-    # Revision details.
+    # The rest is only provided if it is a detailed report.
 
-    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   "\nChanges Made:\n", "bold");
-    foreach my $type (@types)
+    if (defined($revision_details))
     {
-	$revision_data{$type} = [];
-    }
-    foreach my $change (@$revision_details)
-    {
-	if ($change->{type} eq "add_dir")
+
+	# Revision details.
+
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       "\n\nChanges Made:\n", "bold");
+	foreach my $type (@types)
 	{
-	    push(@{$revision_data{"Added"}}, $change->{name} . "/");
+	    $revision_data{$type} = [];
 	}
-	elsif ($change->{type} eq "add_file")
+	foreach my $change (@$revision_details)
 	{
-	    push(@{$revision_data{"Added"}}, $change->{name});
-	}
-	elsif ($change->{type} eq "delete")
-	{
-	    push(@{$revision_data{"Removed"}}, $change->{name});
-	}
-	elsif ($change->{type} eq "patch")
-	{
-	    push(@{$revision_data{"Changed"}}, $change->{name});
-	}
-	elsif ($change->{type} eq "rename")
-	{
-	    push(@{$revision_data{"Renamed"}},
-		 $change->{from_name} . " -> " . $change->{to_name});
-	}
-	elsif ($change->{type} eq "clear")
-	{
-	    push(@{$revision_data{"Attributes"}},
-		 sprintf("%s: %s was cleared",
-			 $change->{name},
-			 $change->{attribute}));
-	}
-	elsif ($change->{type} eq "clear" || $change->{type} eq "set")
-	{
-	    push(@{$revision_data{"Attributes"}},
-		 sprintf("%s: %s = %s",
-			 $change->{name},
-			 $change->{attribute},
-			 $change->{value}));
-	}
-	elsif ($change->{type} eq "old_revision")
-	{
-	    push(@parent_revision_ids, $change->{revision_id});
-	}
-	elsif ($change->{type} eq "new_manifest")
-	{
-	    $manifest_id = $change->{manifest_id};
-	}
-    }
-    foreach my $type (@types)
-    {
-	if (scalar(@{$revision_data{$type}}) > 0)
-	{
-	    $text_buffer->insert_with_tags_by_name
-		($text_buffer->get_end_iter(),
-		 "    " . $type . ":\n", "italics");
-	    %seen = ();
-	    @unique = sort(grep { ! $seen{$_} ++ }
-			   @{$revision_data{$type}});
-	    foreach my $line (@unique)
+	    if ($change->{type} eq "add_dir")
 	    {
-		$text_buffer->insert($text_buffer->get_end_iter(),
-				     "\t" . $line . "\n");
+		push(@{$revision_data{"Added"}}, $change->{name} . "/");
+	    }
+	    elsif ($change->{type} eq "add_file")
+	    {
+		push(@{$revision_data{"Added"}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "delete")
+	    {
+		push(@{$revision_data{"Removed"}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "patch")
+	    {
+		push(@{$revision_data{"Changed"}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "rename")
+	    {
+		push(@{$revision_data{"Renamed"}},
+		     $change->{from_name} . " -> " . $change->{to_name});
+	    }
+	    elsif ($change->{type} eq "clear")
+	    {
+		push(@{$revision_data{"Attributes"}},
+		     sprintf("%s: %s was cleared",
+			     $change->{name},
+			     $change->{attribute}));
+	    }
+	    elsif ($change->{type} eq "clear" || $change->{type} eq "set")
+	    {
+		push(@{$revision_data{"Attributes"}},
+		     sprintf("%s: %s = %s",
+			     $change->{name},
+			     $change->{attribute},
+			     $change->{value}));
+	    }
+	    elsif ($change->{type} eq "old_revision")
+	    {
+		push(@parent_revision_ids, $change->{revision_id});
+	    }
+	    elsif ($change->{type} eq "new_manifest")
+	    {
+		$manifest_id = $change->{manifest_id};
 	    }
 	}
+	foreach my $type (@types)
+	{
+	    if (scalar(@{$revision_data{$type}}) > 0)
+	    {
+		$text_buffer->insert_with_tags_by_name
+		    ($text_buffer->get_end_iter(),
+		     "    " . $type . ":\n", "italics");
+		%seen = ();
+		@unique = sort(grep { ! $seen{$_} ++ }
+			       @{$revision_data{$type}});
+		foreach my $line (@unique)
+		{
+		    $text_buffer->insert($text_buffer->get_end_iter(),
+					 "\t" . $line . "\n");
+		}
+	    }
+	}
+
+	# Parent revision and manifest ids.
+
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       "\nParent revision id(s):\t",
+					       "bold");
+	$text_buffer->insert($text_buffer->get_end_iter(),
+			     join(" ", @parent_revision_ids) . "\n");
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       "Manifest id:\t\t",
+					       "bold");
+	$text_buffer->insert($text_buffer->get_end_iter(), $manifest_id);
+
     }
-
-    # Parent revision and manifest ids.
-
-    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   "\nParent revision id(s):\t",
-					   "bold");
-    $text_buffer->insert($text_buffer->get_end_iter(),
-			 join(" ", @parent_revision_ids) . "\n");
-    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   "Manifest id:\t\t",
-					   "bold");
-    $text_buffer->insert($text_buffer->get_end_iter(), $manifest_id);
 
 }
 #
@@ -3091,12 +3607,12 @@ sub sigchld_handler()
 	    # If it is an mtn process then close down the relevant object so
 	    # that it will automatically restart when needed.
 
-	    foreach my $browser (@browsers)
+	    foreach my $window (@windows)
 	    {
-		if (exists($browser->{mtn})
-		    && $browser->{mtn}->get_pid() == $pid)
+		if (exists($window->{mtn})
+		    && $window->{mtn}->get_pid() == $pid)
 		{
-		    $browser->{mtn}->closedown();
+		    $window->{mtn}->closedown();
 		    my $dialog = Gtk2::MessageDialog->new
 			(undef,
 			 ["modal"],
@@ -3221,10 +3737,8 @@ sub make_busy($$)
 
     # Create and store the cursors if we haven't done so already.
 
-    if (! exists($instance->{busy_cursor}))
-    {
-	$instance->{busy_cursor} = Gtk2::Gdk::Cursor->new("watch");
-    }
+    $busy_cursor = Gtk2::Gdk::Cursor->new("watch")
+	unless (defined($busy_cursor));
 
     # Do it. Make the application bar grab the input when the window is busy,
     # that way we gobble up keyboard and mouse events that could muck up the
@@ -3232,13 +3746,33 @@ sub make_busy($$)
 
     if ($busy)
     {
-	$instance->{window}->window()->set_cursor($instance->{busy_cursor});
-	Gtk2->grab_add($instance->{appbar});
+	if (exists($instance->{grab_widget}))
+	{
+	    Gtk2->grab_add($instance->{grab_widget});
+	}
+	else
+	{
+	    Gtk2->grab_add($instance->{appbar});
+	}
+	foreach my $window (@windows)
+	{
+	    $window->{window}->window()->set_cursor($busy_cursor);
+	}
     }
     else
     {
-	$instance->{window}->window()->set_cursor(undef);
-	Gtk2->grab_remove($instance->{appbar});
+	if (exists($instance->{grab_widget}))
+	{
+	    Gtk2->grab_remove($instance->{grab_widget});
+	}
+	else
+	{
+	    Gtk2->grab_remove($instance->{appbar});
+	}
+	foreach my $window (@windows)
+	{
+	    $window->{window}->window()->set_cursor(undef);
+	}
     }
 
 }
