@@ -1156,9 +1156,9 @@ parse_time(const char * dp)
   return time;
 }
 
-typedef pair< cvs_event_ptr, cvs_event_ptr> t_violation;
+typedef pair<cvs_event_ptr, cvs_event_ptr> t_violation;
 typedef list<t_violation>::iterator violation_iter;
-typedef pair< violation_iter, int > t_solution;
+typedef pair<violation_iter, int> t_solution;
 
 // returns the number of the violation which is cheapest to solve and
 // wether it should be solved downwards or upwards. The return value
@@ -3746,69 +3746,6 @@ void cvs_history::depth_first_search(Visitor & vis,
       }
   }
 
-
-//
-// After stuffing all cvs_events into blobs of events with the same
-// author and changelog, we have to make sure their dependencies are
-// respected.
-//
-void
-resolve_blob_dependencies(cvs_history & cvs, ticker & n_splits)
-{
-  L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
-
-#ifdef DEBUG_GRAPHVIZ
-    write_graphviz_complete(cvs, "all");
-#endif
-
-  while (1)
-  {
-    // this set will be filled with the blobs in a cycle
-    set< cvs_blob_index > cycle_members;
-
-    cvs.import_order.clear();
-    blob_splitter vis(cvs, cycle_members);
-    cvs.depth_first_search(vis, back_inserter(cvs.import_order));
-
-    // If we have a cycle, go split it. Otherwise we don't have any
-    // cycles left and can proceed.
-    if (!cycle_members.empty())
-      split_cycle(cvs, cycle_members);
-    else
-      break;
-
-    ++n_splits;
-  };
-
-  // remove all weak dependencies
-  cvs.remove_weak_dependencies();
-
-#ifdef DEBUG_GRAPHVIZ
-  write_graphviz_complete(cvs, "no-weak");
-#endif
-
-  // After a depth-first-search-run without any cycles, we have a possible
-  // import order which satisfies all the dependencies (topologically
-  // sorted).
-  //
-  // Now we inspect forward or cross edges to make sure no blob ends up in
-  // two branches.
-  while (1)
-    {
-      bool dfs_restart_needed = false;
-      cvs.import_order.clear();
-      branch_sanitizer vis(cvs, dfs_restart_needed);
-      cvs.depth_first_search(vis, back_inserter(cvs.import_order));
-
-      if (!dfs_restart_needed)
-        break;
-    }
-
-#ifdef DEBUG_GRAPHVIZ
-    write_graphviz_complete(cvs, "all");
-#endif
-}
-
 void
 number_unnamed_branches(cvs_history & cvs)
 {
@@ -3888,7 +3825,62 @@ import_cvs_repo(system_path const & cvsroot,
   {
     ticker n_splits(_("blob splits"), "p", 1);
     resolve_intra_blob_conflicts(cvs, n_splits);
-    resolve_blob_dependencies(cvs, n_splits);
+
+    // After stuffing all cvs_events into blobs of events with the same
+    // author and changelog, we have to make sure their dependencies are
+    // respected.
+    L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
+
+#ifdef DEBUG_GRAPHVIZ
+    write_graphviz_complete(cvs, "all");
+#endif
+
+    while (1)
+    {
+      // this set will be filled with the blobs in a cycle
+      set< cvs_blob_index > cycle_members;
+
+      cvs.import_order.clear();
+      blob_splitter vis(cvs, cycle_members);
+      cvs.depth_first_search(vis, back_inserter(cvs.import_order));
+
+      // If we have a cycle, go split it. Otherwise we don't have any
+      // cycles left and can proceed.
+      if (!cycle_members.empty())
+        split_cycle(cvs, cycle_members);
+      else
+        break;
+
+      ++n_splits;
+    };
+
+    // remove all weak dependencies
+    cvs.remove_weak_dependencies();
+
+#ifdef DEBUG_GRAPHVIZ
+    write_graphviz_complete(cvs, "no-weak");
+#endif
+
+    // After a depth-first-search-run without any cycles, we have a possible
+    // import order which satisfies all the dependencies (topologically
+    // sorted).
+    //
+    // Now we inspect forward or cross edges to make sure no blob ends up in
+    // two branches.
+    while (1)
+      {
+        bool dfs_restart_needed = false;
+        cvs.import_order.clear();
+        branch_sanitizer vis(cvs, dfs_restart_needed);
+        cvs.depth_first_search(vis, back_inserter(cvs.import_order));
+
+        if (!dfs_restart_needed)
+          break;
+      }
+
+#ifdef DEBUG_GRAPHVIZ
+    write_graphviz_complete(cvs, "all");
+#endif
   }
 
   // number through all unnamed branches
