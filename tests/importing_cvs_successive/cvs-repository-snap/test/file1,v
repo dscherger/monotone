@@ -1,0 +1,26 @@
+head	1.1;
+access;
+symbols
+	A:1.1.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2008.01.07.13.03.58;	author markus;	state Exp;
+branches;
+next	;
+commitid	rxV61Wehxcpx1uMs;
+
+
+desc
+@@
+
+
+1.1
+log
+@initial import
+@
+text
+@version 1.1 of test file1
+@

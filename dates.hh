@@ -37,6 +37,9 @@ struct date_t
   // Write out date as a string.
   std::string const & as_iso_8601_extended() const;
 
+  // Write out date as an unsigned 64-bit count of seconds.
+  u64 as_unix_epoch() const;
+
 private:
   // For what we do with dates, it is most convenient to store them as
   // strings in the ISO 8601 extended time format.

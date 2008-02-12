@@ -331,6 +331,13 @@ date_t::from_string(string const & s)
     }
 }
 
+u64
+date_t::as_unix_epoch() const
+{
+  return 100;
+}
+
+
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
