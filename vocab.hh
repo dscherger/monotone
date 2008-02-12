@@ -110,6 +110,7 @@ typedef    epoch< hexenc<id> >     epoch_id;
 typedef    epoch< hexenc<data> > epoch_data;
 
 typedef revision< data >   revision_data;
+typedef sentinel< data >   sentinel_data;
 typedef   roster< data >     roster_data;
 typedef manifest< data >   manifest_data;
 typedef     file< data >       file_data;
