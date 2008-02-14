@@ -77,6 +77,21 @@ def getDefaultDatabase():
             fh.close()
     return None
 
+def getWorkspaceBranch():
+    workspaceRoot = getWorkspaceRoot()
+    if not workspaceRoot: return None
+    
+    optionsFN = os.path.join(workspaceRoot,"_MTN","options")
+    if os.path.exists(optionsFN):
+        fh = file(optionsFN,"r")
+        try:
+            for stanza in monotone.basic_io_parser(fh.read()):
+                for k,v in stanza:
+                    if k == "branch": 
+                        return v[0]
+        finally:
+            fh.close()
+    return None
 def getDefaultConfigFile():
     try:
         homeDir = os.environ['HOME']
@@ -122,6 +137,8 @@ def parseOpt():
          When used with --dsskey or --rsakey the optional password argument 
          is used to decrypt the private key file.""")
     
+    par.add_option("-b","--workspace-branch", 
+        help="use workspace branch as push pattern", action="store_true")   
     par.add_option("-d","--db", help="monotone db to use", metavar="STRING")
     par.add_option("--dsskey", 
         help="optional, sftp only. DSS private key file. Can't be specified with --rsakey", metavar="FILE")
@@ -148,7 +165,8 @@ def parseOpt():
         'rsskey': None,
         'dsskey': None,
         'verbose': 0,
-        'storeconfig': False
+        'storeconfig': False,
+        'workspace_branch': False
     }
     par.set_defaults(**hardCodedDefaults)
     (options, args) = par.parse_args()
@@ -177,6 +195,10 @@ def parseOpt():
         par.error("invalid operation specified")
         
     branch_pattern = None
+    if options.workspace_branch:
+        branch_pattern = getWorkspaceBranch()
+        if branch_pattern is None:
+            par.error("unable to find branch of workspace, are you in monotone workspace")
     if len(args) == 1:
         url = config.get(options.db, "repository")
         if not url:
