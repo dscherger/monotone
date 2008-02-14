@@ -1,5 +1,26 @@
 Mini-mantis (tm) ;)
 
+  4. Exception on linux after successfull pull.
+  
+    On linux, after successfull feed of monotone (mtn read) there is following exception:
+    ------------------
+    Traceback (most recent call last):
+      File "/usr/bin/mtndumb", line 12, in ?
+        plain.main()
+      File "/usr/lib/python2.4/site-packages/monotone_dumb/plain.py", line 225, in main
+        mtn.do_pull(url, branch_pattern, **optdict)
+      File "/usr/lib/python2.4/site-packages/monotone_dumb/dumb.py", line 256, in do_pull
+        fc.finish()
+      File "/usr/lib/python2.4/site-packages/monotone_dumb/dumb.py", line 221, in finish
+        self.feeder.close()
+      File "/usr/lib/python2.4/site-packages/monotone_dumb/monotone.py", line 70, in close
+        stdout, stderr = self.process.communicate()
+      File "/usr/lib/python2.4/subprocess.py", line 1028, in communicate
+        self.stdin.flush()
+    ValueError: I/O operation on closed file
+    ------------------
+    However pull is finished correctly so it's only an annoying finalization bug.
+
   3. Sometimes bad packets are returned by monotone. Examples:
   
        error: sqlite error: database is locked
