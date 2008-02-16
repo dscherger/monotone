@@ -1312,172 +1312,172 @@ public:
   // cheapest violation found, as well as a direction indicator. That one
   // is zero for adjusting downwards (i.e. adjusting the dependent) or one
   // for adjusting upwards (i.e. adjusting the dependency).
-void
-get_cheapest_violation_to_solve(list<violation_type> const & violations,
-                                solution_type & best_solution)
-{
-  unsigned int best_solution_price = (unsigned int) -1;
+  void
+  get_cheapest_violation_to_solve(list<violation_type> const & violations,
+                                  solution_type & best_solution)
+  {
+    unsigned int best_solution_price = (unsigned int) -1;
 
-  for (violation_iter_type i = violations.begin();
-       i != violations.end(); ++i)
-    {
-      unsigned int price = 0;
+    for (violation_iter_type i = violations.begin();
+         i != violations.end(); ++i)
+      {
+        unsigned int price = 0;
 
-      stack< pair<base_type, time_i> > stack;
-      set<base_type> done;
-      base_type dep = i->first;
-      base_type ev = i->second;
+        stack< pair<base_type, time_i> > stack;
+        set<base_type> done;
+        base_type dep = i->first;
+        base_type ev = i->second;
 
-      // property of violation: an event ev has a lower timestamp
-      // (i.e. is said to come before) than another event dep, on which
-      // ev depends.
-      I(h.get_time(ev) <= h.get_time(dep));
+        // property of violation: an event ev has a lower timestamp
+        // (i.e. is said to come before) than another event dep, on which
+        // ev depends.
+        I(h.get_time(ev) <= h.get_time(dep));
 
-      // check price of downward adjustment, i.e. adjusting all dependents
-      // until we hit a dependent which has a timestamp higher that the
-      // event dep.
-      stack.push(make_pair(ev, h.get_time(dep) + 1));
-      while (!stack.empty())
-        {
-          base_type e = stack.top().first;
-          time_i time_goal = stack.top().second;
-          stack.pop();
+        // check price of downward adjustment, i.e. adjusting all dependents
+        // until we hit a dependent which has a timestamp higher that the
+        // event dep.
+        stack.push(make_pair(ev, h.get_time(dep) + 1));
+        while (!stack.empty())
+          {
+            base_type e = stack.top().first;
+            time_i time_goal = stack.top().second;
+            stack.pop();
 
-          typename set<base_type>::const_iterator ity = done.find(e);
-          if (ity != done.end())
-            continue;
-          done.insert(ity, e);
+            typename set<base_type>::const_iterator ity = done.find(e);
+            if (ity != done.end())
+              continue;
+            done.insert(ity, e);
 
-          if (h.get_time(e) <= time_goal)
-            {
-              price++;
+            if (h.get_time(e) <= time_goal)
+              {
+                price++;
 
-              pair<iter_type, iter_type> range;
-              h.get_dependents(ev, range);
-              for (iter_type j = range.first; j != range.second; ++j)
-                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
-            }
-        }
+                pair<iter_type, iter_type> range;
+                h.get_dependents(ev, range);
+                for (iter_type j = range.first; j != range.second; ++j)
+                  stack.push(make_pair(h.get_base_of(j), time_goal + 1));
+              }
+          }
 
-      if (price < best_solution_price)
-        {
-          best_solution_price = price;
-          best_solution = make_pair(i, 0);
-        }
+        if (price < best_solution_price)
+          {
+            best_solution_price = price;
+            best_solution = make_pair(i, 0);
+          }
 
-      // check price of upward adjustment, i.e. adjusting all dependencies
-      // until we hit a dependency which has a timestamp lower that the
-      // event ev.
-      price = 0;
-      done.clear();
-      stack.push(make_pair(dep, h.get_time(ev) - 1));
-      while (!stack.empty())
-        {
-          base_type e = stack.top().first;
-          time_i time_goal = stack.top().second;
-          stack.pop();
+        // check price of upward adjustment, i.e. adjusting all dependencies
+        // until we hit a dependency which has a timestamp lower that the
+        // event ev.
+        price = 0;
+        done.clear();
+        stack.push(make_pair(dep, h.get_time(ev) - 1));
+        while (!stack.empty())
+          {
+            base_type e = stack.top().first;
+            time_i time_goal = stack.top().second;
+            stack.pop();
 
-          typename set<base_type>::const_iterator ity = done.find(e);
-          if (ity != done.end())
-            continue;
-          done.insert(ity, e);
+            typename set<base_type>::const_iterator ity = done.find(e);
+            if (ity != done.end())
+              continue;
+            done.insert(ity, e);
 
-          if (h.get_time(e) >= time_goal)
-            {
-              price++;
+            if (h.get_time(e) >= time_goal)
+              {
+                price++;
 
-              pair<iter_type, iter_type> range;
-              h.get_dependencies(ev, range);
-              for (iter_type j = range.first; j != range.second; ++j)
-                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
-            }
-        }
+                pair<iter_type, iter_type> range;
+                h.get_dependencies(ev, range);
+                for (iter_type j = range.first; j != range.second; ++j)
+                  stack.push(make_pair(h.get_base_of(j), time_goal + 1));
+              }
+          }
 
-      if (price < best_solution_price)
-        {
-          best_solution_price = price;
-          best_solution = make_pair(i, 1);
-        }
+        if (price < best_solution_price)
+          {
+            best_solution_price = price;
+            best_solution = make_pair(i, 1);
+          }
 
-    }
-}
+      }
+  }
 
   // After having found the cheapest violation to solve, this method does
   // the actual adjustment of the timestamps, towards the direction
   // indicated, either following the dependencies or the dependents.
-void
-solve_violation(solution_type const & solution)
-{
-  stack< pair<base_type, time_i> > stack;
-  set<base_type> done;
-  base_type dep = solution.first->first;
-  base_type ev = solution.first->second;
-  int direction = solution.second;
+  void
+  solve_violation(solution_type const & solution)
+  {
+    stack< pair<base_type, time_i> > stack;
+    set<base_type> done;
+    base_type dep = solution.first->first;
+    base_type ev = solution.first->second;
+    int direction = solution.second;
 
-  L(FL("Resolving conflicting timestamps of: %s and %s")
-    % h.get_repr(dep) % h.get_repr(ev));
+    L(FL("Resolving conflicting timestamps of: %s and %s")
+      % h.get_repr(dep) % h.get_repr(ev));
 
-  if (direction == 0)
-    {
-      // downward adjustment, i.e. adjusting all dependents
-      stack.push(make_pair(ev, h.get_time(dep) + 1));
-      while (!stack.empty())
-        {
-          base_type e = stack.top().first;
-          time_i time_goal = stack.top().second;
-          stack.pop();
+    if (direction == 0)
+      {
+        // downward adjustment, i.e. adjusting all dependents
+        stack.push(make_pair(ev, h.get_time(dep) + 1));
+        while (!stack.empty())
+          {
+            base_type e = stack.top().first;
+            time_i time_goal = stack.top().second;
+            stack.pop();
 
-          typename set<base_type>::const_iterator ity = done.find(e);
-          if (ity != done.end())
-            continue;
-          done.insert(ity, e);
+            typename set<base_type>::const_iterator ity = done.find(e);
+            if (ity != done.end())
+              continue;
+            done.insert(ity, e);
 
-          if (h.get_time(e) <= time_goal)
-            {
-              L(FL("  adjusting %s by %0.0f seconds.")
-                % h.get_repr(e)
-                % ((float) (time_goal - h.get_time(e)) / 100));
+            if (h.get_time(e) <= time_goal)
+              {
+                L(FL("  adjusting %s by %0.0f seconds.")
+                  % h.get_repr(e)
+                  % ((float) (time_goal - h.get_time(e)) / 100));
 
-              h.set_time(e, time_goal);
+                h.set_time(e, time_goal);
 
-              pair<iter_type, iter_type> range;
-              h.get_dependents(e, range);
-              for (iter_type j = range.first; j != range.second; ++j)
-                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
-            }
-        }
-    }
-  else
-    {
-      // adjustmest, i.e. adjusting all dependencies
-      stack.push(make_pair(dep, h.get_time(ev) - 1));
-      while (!stack.empty())
-        {
-          base_type e = stack.top().first;
-          time_i time_goal = stack.top().second;
-          stack.pop();
+                pair<iter_type, iter_type> range;
+                h.get_dependents(e, range);
+                for (iter_type j = range.first; j != range.second; ++j)
+                  stack.push(make_pair(h.get_base_of(j), time_goal + 1));
+              }
+          }
+      }
+    else
+      {
+        // adjustmest, i.e. adjusting all dependencies
+        stack.push(make_pair(dep, h.get_time(ev) - 1));
+        while (!stack.empty())
+          {
+            base_type e = stack.top().first;
+            time_i time_goal = stack.top().second;
+            stack.pop();
 
-          typename set<base_type>::const_iterator ity = done.find(e);
-          if (ity != done.end())
-            continue;
-          done.insert(ity, e);
+            typename set<base_type>::const_iterator ity = done.find(e);
+            if (ity != done.end())
+              continue;
+            done.insert(ity, e);
 
-          if (h.get_time(e) >= time_goal)
-            {
-              L(FL("  adjusting %s by %0.0f seconds.")
-                % h.get_repr(e)
-                % ((float) (h.get_time(e) - time_goal) / 100));
+            if (h.get_time(e) >= time_goal)
+              {
+                L(FL("  adjusting %s by %0.0f seconds.")
+                  % h.get_repr(e)
+                  % ((float) (h.get_time(e) - time_goal) / 100));
 
-              h.set_time(e, time_goal);
+                h.set_time(e, time_goal);
 
-              pair<iter_type, iter_type> range;
-              h.get_dependencies(e, range);
-              for (iter_type j = range.first; j != range.second; ++j)
-                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
-            }
-        }
-    }
-}
+                pair<iter_type, iter_type> range;
+                h.get_dependencies(e, range);
+                for (iter_type j = range.first; j != range.second; ++j)
+                  stack.push(make_pair(h.get_base_of(j), time_goal + 1));
+              }
+          }
+      }
+  }
 
   // The main entry point to the timestamp sanitizer, which does the first
   // step: enumerating all timestamp violations. After having resolved the
@@ -1485,53 +1485,53 @@ solve_violation(solution_type const & solution)
   // hopefully other violations were solved as well.
   timestamp_sanitizer(HELPER & h, const base_type root_event)
     : h(h)
-{
-  while (1)
-    {
-      // we start at the root event for the current file and scan for
-      // timestamp pairs which violate the corresponding dependency.
-      stack<base_type> stack;
-      set<base_type> done;
-      stack.push(root_event);
+  {
+    while (1)
+      {
+        // we start at the root event for the current file and scan for
+        // timestamp pairs which violate the corresponding dependency.
+        stack<base_type> stack;
+        set<base_type> done;
+        stack.push(root_event);
 
-      list<violation_type> violations;
+        list<violation_type> violations;
 
-      while (!stack.empty())
-        {
-          base_type ev = stack.top();
-          stack.pop();
+        while (!stack.empty())
+          {
+            base_type ev = stack.top();
+            stack.pop();
 
-          typename set<base_type>::const_iterator ity = done.find(ev);
-          if (ity != done.end())
-            continue;
-          done.insert(ity, ev);
+            typename set<base_type>::const_iterator ity = done.find(ev);
+            if (ity != done.end())
+              continue;
+            done.insert(ity, ev);
 
-          pair<iter_type, iter_type> range;
-          h.get_dependents(ev, range);
-          for (iter_type i = range.first; i != range.second; ++i)
-            {
-              base_type dep_ev(h.get_base_of(i));
+            pair<iter_type, iter_type> range;
+            h.get_dependents(ev, range);
+            for (iter_type i = range.first; i != range.second; ++i)
+              {
+                base_type dep_ev(h.get_base_of(i));
 
-              // blobs might have dependencies on them selves, simply
-              // skip those here.
-              if (dep_ev == ev)
-                continue;
+                // blobs might have dependencies on them selves, simply
+                // skip those here.
+                if (dep_ev == ev)
+                  continue;
 
-              if (h.get_time(ev) >= h.get_time(dep_ev))
-                violations.push_back(make_pair(ev, dep_ev));
+                if (h.get_time(ev) >= h.get_time(dep_ev))
+                  violations.push_back(make_pair(ev, dep_ev));
 
-              stack.push(dep_ev);
-            }
-        }
+                stack.push(dep_ev);
+              }
+          }
 
-      if (violations.empty())
-        break;
+        if (violations.empty())
+          break;
 
-      solution_type solution;
-      get_cheapest_violation_to_solve(violations, solution);
-      solve_violation(solution);
-    }
-}
+        solution_type solution;
+        get_cheapest_violation_to_solve(violations, solution);
+        solve_violation(solution);
+      }
+  }
 };
 
 static cvs_event_ptr
