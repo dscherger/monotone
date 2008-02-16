@@ -217,6 +217,7 @@ cvs_blob
 {
 private:
   vector< cvs_event_ptr > events;
+  time_i avg_time;
 
   bool has_cached_deps;
   bool events_are_sorted;
@@ -237,7 +238,8 @@ public:
   dfs_color color;
 
   cvs_blob(const event_type t, const u32 no)
-    : has_cached_deps(false),
+    : avg_time(0),
+      has_cached_deps(false),
       events_are_sorted(true),
       cached_deps_are_sorted(false),
       etype(t),
@@ -246,6 +248,7 @@ public:
 
   cvs_blob(const cvs_blob & b)
     : events(b.events),
+      avg_time(0),
       has_cached_deps(false),
       events_are_sorted(false),
       cached_deps_are_sorted(false),
@@ -312,13 +315,22 @@ public:
       cached_deps_are_sorted = false;
     }
 
-  time_i get_avg_time(void) const
+  time_i get_avg_time(void)
     {
-      time_i avg = 0;
-      for (blob_event_iter i = events.begin(); i != events.end(); ++i)
-        avg += (*i)->adj_time;
-      avg /= events.size();
-      return avg;
+      if (avg_time == 0)
+        {
+          for (blob_event_iter i = events.begin(); i != events.end(); ++i)
+            avg_time += (*i)->adj_time;
+          avg_time /= events.size();
+          return avg_time;
+        }
+      else
+        return avg_time;
+    }
+
+  void set_avg_time(const time_i t)
+    {
+      avg_time = t;
     }
 
   void sort_events(void);
@@ -329,15 +341,6 @@ public:
 
   void add_missing_parents(file_path const & path,
                            roster_t & base_ros, cset & cs);
-
-  time_i get_youngest_event_time(void)
-    {
-      time_i youngest_event_in_blob = 0;
-      for (blob_event_iter ity = begin(); ity != end(); ++ity)
-        if ((*ity)->adj_time > youngest_event_in_blob)
-          youngest_event_in_blob = (*ity)->adj_time;
-      return youngest_event_in_blob;
-    }
 
   time_i get_oldest_event_time(void)
     {
@@ -504,17 +507,13 @@ cvs_history
   // the upper limit of what to import
   time_t upper_time_limit;
 
-  // max dependency
-  time_i max_neg_dependency_time_diff;
-
   cvs_history(void)
     : n_rcs_revisions(_("RCS revisions"), "r", 1),
       n_rcs_symbols(_("RCS symbols"), "s", 1),
       unnamed_branch_counter(0),
       step_no(0),
       deps_sorted(false),
-      upper_time_limit(0),
-      max_neg_dependency_time_diff(60 * 100)
+      upper_time_limit(0)
     { };
 
   void set_filename(string const & file,
@@ -631,16 +630,6 @@ cvs_history
     dependencies.push_back(make_pair(ev, dep));
     dependents.push_back(make_pair(dep, ev));
     deps_sorted = false;
-
-#ifdef DEBUG_BLOB_SPLITTER
-    if (dep->adj_time > ev->adj_time)           // log if there is more than
-      if ((dep->adj_time - ev->adj_time) > max_neg_dependency_time_diff)
-        {
-          max_neg_dependency_time_diff = dep->adj_time - ev->adj_time;
-          L(FL("increased max_neg_dependency_time_diff to: %d sec")
-            % (max_neg_dependency_time_diff / 100));
-        }
-#endif
   }
 
   void add_weak_dependency(cvs_event_ptr ev, cvs_event_ptr dep)
@@ -651,6 +640,10 @@ cvs_history
 
   void add_dependency(cvs_blob_index & bi, cvs_blob_index & dep_bi)
   {
+    // Be sure this dependeny doesn't violate the timestamps of the
+    // two blobs in the graph.
+    I(blobs[bi].get_avg_time() > blobs[dep_bi].get_avg_time());
+
     // try to add dependencies between events on the
     // same files.
     int deps_added = 0;
@@ -894,8 +887,8 @@ log_path(cvs_history & cvs, const string & msg,
   for (T i = begin; i != end; ++i)
     L(FL("  blob: %d\n        %s\n        %s\n        %s")
       % *i
-      % date_t::from_unix_epoch(cvs.blobs[*i].get_oldest_event_time() / 100)
-      % date_t::from_unix_epoch(cvs.blobs[*i].get_youngest_event_time() / 100)
+      % date_t::from_unix_epoch(cvs.blobs[*i].get_avg_time() / 100)
+      % date_t::from_unix_epoch(cvs.blobs[*i].get_avg_time() / 100)
       % get_event_repr(cvs, *cvs.blobs[*i].begin()));
 }
 
@@ -1163,9 +1156,9 @@ parse_time(const char * dp)
   return time;
 }
 
-typedef pair< cvs_event_ptr, cvs_event_ptr> t_violation;
+typedef pair<cvs_event_ptr, cvs_event_ptr> t_violation;
 typedef list<t_violation>::iterator violation_iter;
-typedef pair< violation_iter, int > t_solution;
+typedef pair<violation_iter, int> t_solution;
 
 // returns the number of the violation which is cheapest to solve and
 // wether it should be solved downwards or upwards. The return value
@@ -1994,7 +1987,6 @@ blob_consumer
 
 struct dij_context
 {
-  int age_violations;
   cvs_blob_index prev;
 
   // My STL's map implementation insists on having this constructor, but
@@ -2004,9 +1996,8 @@ struct dij_context
       I(false);
     };
 
-  dij_context(int av, cvs_blob_index p)
-    : age_violations(av),
-      prev(p)
+  dij_context(cvs_blob_index p)
+    : prev(p)
     { };
 };
 
@@ -2037,7 +2028,7 @@ dijkstra_shortest_path(cvs_history &cvs,
   stack< cvs_blob_index > stack;
 
   stack.push(from);
-  distances.insert(make_pair(from, dij_context(0, invalid_blob)));
+  distances.insert(make_pair(from, dij_context(invalid_blob)));
 
   if (break_on_grey)
     I(follow_grey);
@@ -2055,21 +2046,15 @@ dijkstra_shortest_path(cvs_history &cvs,
         break;
 
       I(distances.count(bi) > 0);
-      int curr_age_violations = distances[bi].age_violations;
 
       if (age_limit)
         {
-          // check the age limit, but abort only after the 10th violation,
-          // just to be extra sure.
-          time_i t(cvs.blobs[bi].get_youngest_event_time());
+          // check the age limit and stop tracking this
+          // blob's dependencies if it is older than our
+          // age_limit.
+          time_i t(cvs.blobs[bi].get_avg_time());
           if (t < age_limit)
-            {
-              curr_age_violations++;
-              if (curr_age_violations > 10)
-                continue;
-            }
-          else
-            curr_age_violations = 0;
+            continue;
         }
 
       for (blob_event_iter i = cvs.blobs[bi].begin();
@@ -2084,8 +2069,7 @@ dijkstra_shortest_path(cvs_history &cvs,
               if (distances.count(dep_bi) == 0 &&
                   make_pair(bi, dep_bi) != edge_to_ignore)
                 {
-                  distances.insert(make_pair(dep_bi, dij_context(curr_age_violations,
-                                                                 bi)));
+                  distances.insert(make_pair(dep_bi, dij_context(bi)));
                   stack.push(dep_bi);
                 }
           }
@@ -2111,21 +2095,14 @@ dijkstra_shortest_path(cvs_history &cvs,
     }
 }
 
-void
+inline void
 calculate_age_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
                     cvs_history & cvs, time_i age_limit)
 {
-    time_i ala(cvs.blobs[bi_a].get_oldest_event_time()),
-           alb(cvs.blobs[bi_b].get_oldest_event_time());
+    time_i ala(cvs.blobs[bi_a].get_avg_time()),
+           alb(cvs.blobs[bi_b].get_avg_time());
 
     age_limit = (ala < alb ? ala : alb);
-
-    // subtract a safety margin, if necessary
-    time_i safety_margin = cvs.max_neg_dependency_time_diff * 10;
-    if (age_limit > safety_margin)
-      age_limit -= safety_margin;
-    else
-      age_limit = 0;
 
     L(FL("age limit: %s")
       % date_t::from_unix_epoch(age_limit / 100));
@@ -3769,69 +3746,6 @@ void cvs_history::depth_first_search(Visitor & vis,
       }
   }
 
-
-//
-// After stuffing all cvs_events into blobs of events with the same
-// author and changelog, we have to make sure their dependencies are
-// respected.
-//
-void
-resolve_blob_dependencies(cvs_history & cvs, ticker & n_splits)
-{
-  L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
-
-#ifdef DEBUG_GRAPHVIZ
-    write_graphviz_complete(cvs, "all");
-#endif
-
-  while (1)
-  {
-    // this set will be filled with the blobs in a cycle
-    set< cvs_blob_index > cycle_members;
-
-    cvs.import_order.clear();
-    blob_splitter vis(cvs, cycle_members);
-    cvs.depth_first_search(vis, back_inserter(cvs.import_order));
-
-    // If we have a cycle, go split it. Otherwise we don't have any
-    // cycles left and can proceed.
-    if (!cycle_members.empty())
-      split_cycle(cvs, cycle_members);
-    else
-      break;
-
-    ++n_splits;
-  };
-
-  // remove all weak dependencies
-  cvs.remove_weak_dependencies();
-
-#ifdef DEBUG_GRAPHVIZ
-  write_graphviz_complete(cvs, "no-weak");
-#endif
-
-  // After a depth-first-search-run without any cycles, we have a possible
-  // import order which satisfies all the dependencies (topologically
-  // sorted).
-  //
-  // Now we inspect forward or cross edges to make sure no blob ends up in
-  // two branches.
-  while (1)
-    {
-      bool dfs_restart_needed = false;
-      cvs.import_order.clear();
-      branch_sanitizer vis(cvs, dfs_restart_needed);
-      cvs.depth_first_search(vis, back_inserter(cvs.import_order));
-
-      if (!dfs_restart_needed)
-        break;
-    }
-
-#ifdef DEBUG_GRAPHVIZ
-    write_graphviz_complete(cvs, "all");
-#endif
-}
-
 void
 number_unnamed_branches(cvs_history & cvs)
 {
@@ -3911,7 +3825,62 @@ import_cvs_repo(system_path const & cvsroot,
   {
     ticker n_splits(_("blob splits"), "p", 1);
     resolve_intra_blob_conflicts(cvs, n_splits);
-    resolve_blob_dependencies(cvs, n_splits);
+
+    // After stuffing all cvs_events into blobs of events with the same
+    // author and changelog, we have to make sure their dependencies are
+    // respected.
+    L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
+
+#ifdef DEBUG_GRAPHVIZ
+    write_graphviz_complete(cvs, "all");
+#endif
+
+    while (1)
+    {
+      // this set will be filled with the blobs in a cycle
+      set< cvs_blob_index > cycle_members;
+
+      cvs.import_order.clear();
+      blob_splitter vis(cvs, cycle_members);
+      cvs.depth_first_search(vis, back_inserter(cvs.import_order));
+
+      // If we have a cycle, go split it. Otherwise we don't have any
+      // cycles left and can proceed.
+      if (!cycle_members.empty())
+        split_cycle(cvs, cycle_members);
+      else
+        break;
+
+      ++n_splits;
+    };
+
+    // remove all weak dependencies
+    cvs.remove_weak_dependencies();
+
+#ifdef DEBUG_GRAPHVIZ
+    write_graphviz_complete(cvs, "no-weak");
+#endif
+
+    // After a depth-first-search-run without any cycles, we have a possible
+    // import order which satisfies all the dependencies (topologically
+    // sorted).
+    //
+    // Now we inspect forward or cross edges to make sure no blob ends up in
+    // two branches.
+    while (1)
+      {
+        bool dfs_restart_needed = false;
+        cvs.import_order.clear();
+        branch_sanitizer vis(cvs, dfs_restart_needed);
+        cvs.depth_first_search(vis, back_inserter(cvs.import_order));
+
+        if (!dfs_restart_needed)
+          break;
+      }
+
+#ifdef DEBUG_GRAPHVIZ
+    write_graphviz_complete(cvs, "all");
+#endif
   }
 
   // number through all unnamed branches
