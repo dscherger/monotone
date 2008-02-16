@@ -3485,6 +3485,10 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
 
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
+
+  // make sure the average time is recalculated
+  cvs.blobs[bi].set_avg_time(0);
+  cvs.blobs[new_bi].set_avg_time(0);
 }
 
 bool
