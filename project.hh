@@ -16,6 +16,8 @@ class key_store;
 class options;
 class lua_hooks;
 
+class branch_policy;
+
 class tag_t
 {
 public:
@@ -60,6 +62,10 @@ public:
   project_t(branch_prefix const & project_name,
             revision_id const & policy_rev,
             database & db);
+
+  bool get_policy_branch_policy_of(branch_name const & name,
+                                   branch_policy & policy_branch_policy,
+                                   branch_prefix & policy_prefix);
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);

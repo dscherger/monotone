@@ -12,6 +12,8 @@
 #include "file_io.hh"
 #include "keys.hh"
 #include "key_store.hh"
+#include "policy.hh"
+#include "project.hh"
 #include "revision.hh"
 #include "roster.hh"
 #include "transforms.hh"
@@ -176,8 +178,85 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 }
 
 CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
-    N_("NAME"),
+    N_("BRANCH_PREFIX"),
     N_("Create a policy for a new subtree of an existing project."),
+    "",
+    options::opts::none)
+{
+  N(args.size() == 1,
+    F("Wrong argument count."));
+
+  database db(app);
+  key_store keys(app);
+  project_set projects(db, app.lua, app.opts);
+  branch_prefix prefix(idx(args, 0)());
+  branch_name name(prefix() + ".__policy__");
+
+  branch_policy policy_policy;
+  branch_prefix parent_prefix;
+  E(projects.get_project_of_branch(name)
+    .get_policy_branch_policy_of(name, policy_policy, parent_prefix),
+    F("Cannot find parent policy for %s") % prefix);
+
+  std::string subprefix;
+  E(prefix() != parent_prefix(),
+    F("A policy for %s already exists.") % prefix);
+  I(prefix().find(parent_prefix() + ".") == 0);
+  subprefix = prefix().substr(parent_prefix().size()+1);
+
+  std::set<revision_id> policy_heads;
+  get_branch_heads(policy_policy, false, db, policy_heads, NULL);
+  E(policy_heads.size() == 1,
+    F("Parent policy branch has %n heads, should have 1") % policy_heads.size());
+
+  revision_id policy_old_rev_id(*policy_heads.begin());
+
+  roster_t policy_old_roster;
+  db.get_roster(policy_old_rev_id, policy_old_roster);
+  file_path delegation_dir = file_path_internal("delegations");
+  file_path delegation_file = delegation_dir / path_component(subprefix);
+  E(!policy_old_roster.has_node(delegation_file),
+    F("A policy for %s already exists.") % prefix);
+
+  cset policy_changes;
+
+  if (!policy_old_roster.has_node(delegation_dir))
+    {
+      policy_changes.dirs_added.insert(delegation_dir);
+    }
+
+  transaction_guard guard(db);
+
+  cache_user_key(app.opts, app.lua, db, keys);
+  std::set<rsa_keypair_id> admin_keys;
+  admin_keys.insert(keys.signing_key);
+
+  std::string child_uid;
+  data child_spec;
+  create_policy_branch(db, keys, app.lua, app.opts,
+		       prefix, admin_keys, child_uid, child_spec);
+  file_id child_spec_id;
+  {
+    file_data child_file_dat(child_spec);
+    calculate_ident(child_file_dat, child_spec_id);
+  }
+
+  policy_changes.files_added.insert(std::make_pair(delegation_file,
+						   child_spec_id));
+
+  revision_t policy_new_revision;
+  make_revision(policy_old_rev_id,
+		policy_old_roster,
+		policy_changes,
+		policy_new_revision);
+  
+
+  guard.commit();
+}
+
+CMD(create_branch, "create_branch", "", CMD_REF(policy),
+    N_("NAME"),
+    N_("Create a new branch."),
     "",
     options::opts::none)
 {
