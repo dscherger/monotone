@@ -2840,7 +2840,8 @@ serve_connections(options & opts,
                       parse_uri(addr(), u);
                       P(F("connecting to %s") % addr());
                       shared_ptr<Netxx::StreamBase> server
-                        = build_stream_to_server(opts, lua, u, inc, exc,
+                        = build_stream_to_server(opts, lua, u,
+                                                 inc, exc,
                                                  default_port,
                                                  timeout);
 
