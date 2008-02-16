@@ -222,6 +222,7 @@ private:
   bool has_cached_deps;
   bool events_are_sorted;
   bool cached_deps_are_sorted;
+  vector<cvs_blob_index> dependencies_cache;
   vector<cvs_blob_index> dependents_cache;
 
 public:
@@ -303,6 +304,9 @@ public:
     }
 
   vector<cvs_blob_index> & get_dependents(cvs_history & cvs);
+  vector<cvs_blob_index> & get_dependencies(cvs_history & cvs);
+
+  void fill_deps_caches(cvs_history & cvs);
   void sort_deps_cache(cvs_history & cvs);
 
   void reset_deps_cache(void)
@@ -740,36 +744,50 @@ cvs_history
     I(y == deps.end());
   };
 
-  dep_loop
-  get_dependencies(const cvs_event_ptr e)
+  void
+  get_dependencies(const cvs_event_ptr e,
+                   event_dep_iter & lower, event_dep_iter & upper)
   {
     if (!deps_sorted)
       sort_dependencies();
 
-    event_dep_iter lower = lower_bound(dependencies.begin(),
-                                       dependencies.end(),
-                                       make_pair(e, (cvs_event_ptr) NULL));
-    event_dep_iter upper = upper_bound(dependencies.begin(),
-                                       dependencies.end(),
-                                       make_pair(e + 1, (cvs_event_ptr) NULL));
+    lower = lower_bound(dependencies.begin(),
+                        dependencies.end(),
+                        make_pair(e, (cvs_event_ptr) NULL));
+    upper = upper_bound(dependencies.begin(),
+                        dependencies.end(),
+                        make_pair(e + 1, (cvs_event_ptr) NULL));
+  };
 
+  dep_loop
+  get_dependencies(const cvs_event_ptr e)
+  {
+    event_dep_iter lower, upper;
+    get_dependencies(e, lower, upper);
     dep_loop i(lower, upper);
     return i;
   };
 
-  dep_loop
-  get_dependents(const cvs_event_ptr e)
+  void
+  get_dependents(const cvs_event_ptr e,
+                 event_dep_iter & lower, event_dep_iter & upper)
   {
     if (!deps_sorted)
       sort_dependencies();
 
-    event_dep_iter lower = lower_bound(dependents.begin(),
-                                       dependents.end(),
-                                       make_pair(e, (cvs_event_ptr) NULL));
-    event_dep_iter upper = upper_bound(dependents.begin(),
-                                       dependents.end(),
-                                       make_pair(e, (cvs_event_ptr) -1));
+    lower = lower_bound(dependents.begin(),
+                        dependents.end(),
+                        make_pair(e, (cvs_event_ptr) NULL));
+    upper = upper_bound(dependents.begin(),
+                        dependents.end(),
+                        make_pair(e + 1, (cvs_event_ptr) NULL));
+  }
 
+  dep_loop
+  get_dependents(const cvs_event_ptr e)
+  {
+    event_dep_iter lower, upper;
+    get_dependents(e, lower, upper);
     dep_loop i(lower, upper);
     return i;
   };
@@ -1156,56 +1174,188 @@ parse_time(const char * dp)
   return time;
 }
 
-typedef pair<cvs_event_ptr, cvs_event_ptr> t_violation;
-typedef list<t_violation>::iterator violation_iter;
-typedef pair<violation_iter, int> t_solution;
+// the timestamp sanitizer helper for RCS file events
+class event_tss_helper
+{
+  cvs_history & cvs;
+public:
 
-// returns the number of the violation which is cheapest to solve and
-// wether it should be solved downwards or upwards. The return value
-// consists of the index into the violations vector plus a direction
-// indicator. That one is zero for adjusting downwards (i.e. adjusting
-// the dependent) or one for adjusting upwards (i.e. adjusting the
-// dependency).
-static t_solution
-get_cheapest_violation_to_solve(cvs_history & cvs, list<t_violation> & violations)
+  typedef cvs_event_ptr base_type;
+  typedef vector<event_dep>::const_iterator iter_type;
+
+  typedef pair<base_type, base_type> violation_type;
+  typedef list<violation_type>::iterator violation_iter_type;
+  typedef pair<violation_iter_type, int> solution_type;
+
+  event_tss_helper(cvs_history & cvs)
+    : cvs(cvs)
+    { };
+
+  base_type const & get_base_of(iter_type const & i) const
+    {
+      return i->second;
+    }
+
+  void get_dependents(base_type const & i, pair<iter_type, iter_type> & range) const
+    {
+      event_dep_iter lower, upper;
+      cvs.get_dependents(i, lower, upper);
+      range = make_pair(lower, upper);
+    }
+
+  void get_dependencies(base_type const & i,
+                        pair<iter_type, iter_type> & range) const
+    {
+      event_dep_iter lower, upper;
+      cvs.get_dependencies(i, lower, upper);
+      range = make_pair(lower, upper);
+    }
+
+  time_i const get_time(base_type const & i) const
+    {
+      return i->adj_time;
+    }
+
+  void set_time(base_type & i, time_i const t)
+    {
+      i->adj_time = t;
+    }
+
+  string get_repr(base_type const & i) const
+    {
+      return (F("event %s") % get_event_repr(cvs, i)).str();
+    }
+};
+
+// the timestamp sanitizer helper for blobs
+class blob_tss_helper
+{
+  cvs_history & cvs;
+public:
+
+  typedef cvs_blob_index base_type;
+  typedef vector<cvs_blob_index>::const_iterator iter_type;
+
+  blob_tss_helper(cvs_history & cvs)
+    : cvs(cvs)
+    { };
+
+  base_type const & get_base_of(iter_type const & i) const
+    {
+      return *i;
+    };
+
+  void get_dependents(base_type const & i,
+                      pair<iter_type, iter_type> & range) const
+    {
+      vector<cvs_blob_index> & deps(cvs.blobs[i].get_dependents(cvs));
+      range = make_pair(deps.begin(), deps.end());
+    }
+
+  void get_dependencies(base_type const & i,
+                        pair<iter_type, iter_type> & range) const
+    {
+      vector<cvs_blob_index> & deps(cvs.blobs[i].get_dependencies(cvs));
+      range = make_pair(deps.begin(), deps.end());
+    }
+
+  time_i const get_time(base_type const & i) const
+    {
+      I(i < cvs.blobs.size());
+      return cvs.blobs[i].get_avg_time();
+    }
+
+  void set_time(base_type & i, time_i const t)
+    {
+      cvs.blobs[i].set_avg_time(t);
+    }
+
+  string get_repr(base_type const & i) const
+    {
+      return (F("blob %d: %s")
+               % i
+               % get_event_repr(cvs, *cvs.blobs[i].begin())).str();
+    }
+};
+
+
+// the timestamp sanitizer
+//
+// This beast takes a couple of blobs or events and compares their
+// timestamps with their dependencies. A dependency is expected to be
+// younger than it's dependent.
+//
+// After collecting all violations, we try to solve the cheapest violations
+// first, in the hope that solving those might solve other violations as
+// well, which would have been more expensive to solve (in terms of amount
+// of adjustments needed).
+//
+template <typename HELPER>
+class timestamp_sanitizer
+{
+  HELPER & h;
+
+public:
+  typedef typename HELPER::base_type base_type;
+  typedef typename HELPER::iter_type iter_type;
+
+  typedef pair<base_type, base_type> violation_type;
+  typedef typename list<violation_type>::const_iterator violation_iter_type;
+  typedef pair<violation_iter_type, int> solution_type;
+
+  // given a list of violations, we try to find out for which one we would
+  // need to do the least adjustments. We can resolve such violations in
+  // two ways: either we adjust the dependencies, or the dependents. We
+  // try both ways so as to be sure to catch every possible solution.
+  //
+  // The return value of type solution_type contains an iterator to the
+  // cheapest violation found, as well as a direction indicator. That one
+  // is zero for adjusting downwards (i.e. adjusting the dependent) or one
+  // for adjusting upwards (i.e. adjusting the dependency).
+void
+get_cheapest_violation_to_solve(list<violation_type> const & violations,
+                                solution_type & best_solution)
 {
   unsigned int best_solution_price = (unsigned int) -1;
-  t_solution best_solution;
 
-  for (violation_iter i = violations.begin(); i != violations.end(); ++i)
+  for (violation_iter_type i = violations.begin();
+       i != violations.end(); ++i)
     {
       unsigned int price = 0;
 
-      stack< pair< cvs_event_ptr, time_i > > stack;
-      set< cvs_event_ptr > done;
-      cvs_event_ptr dep = i->first;
-      cvs_event_ptr ev = i->second;
+      stack< pair<base_type, time_i> > stack;
+      set<base_type> done;
+      base_type dep = i->first;
+      base_type ev = i->second;
 
       // property of violation: an event ev has a lower timestamp
       // (i.e. is said to come before) than another event dep, on which
       // ev depends.
-      I(ev->adj_time <= dep->adj_time);
+      I(h.get_time(ev) <= h.get_time(dep));
 
       // check price of downward adjustment, i.e. adjusting all dependents
       // until we hit a dependent which has a timestamp higher that the
       // event dep.
-      stack.push(make_pair(ev, dep->adj_time + 1));
+      stack.push(make_pair(ev, h.get_time(dep) + 1));
       while (!stack.empty())
         {
-          cvs_event_ptr e = stack.top().first;
+          base_type e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
 
-          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          typename set<base_type>::const_iterator ity = done.find(e);
           if (ity != done.end())
             continue;
           done.insert(ity, e);
 
-          if (e->adj_time <= time_goal)
+          if (h.get_time(e) <= time_goal)
             {
               price++;
-              for (dep_loop j = cvs.get_dependents(e); !j.ended(); ++j)
-                stack.push(make_pair(*j, time_goal + 1));
+
+              pair<iter_type, iter_type> range;
+              h.get_dependents(ev, range);
+              for (iter_type j = range.first; j != range.second; ++j)
+                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
             }
         }
 
@@ -1220,23 +1370,26 @@ get_cheapest_violation_to_solve(cvs_history & cvs, list<t_violation> & violation
       // event ev.
       price = 0;
       done.clear();
-      stack.push(make_pair(dep, ev->adj_time - 1));
+      stack.push(make_pair(dep, h.get_time(ev) - 1));
       while (!stack.empty())
         {
-          cvs_event_ptr e = stack.top().first;
+          base_type e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
 
-          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          typename set<base_type>::const_iterator ity = done.find(e);
           if (ity != done.end())
             continue;
           done.insert(ity, e);
 
-          if (e->adj_time >= time_goal)
+          if (h.get_time(e) >= time_goal)
             {
               price++;
-              for (dep_loop j = cvs.get_dependencies(e); !j.ended(); ++j)
-                stack.push(make_pair(*j, time_goal - 1));
+
+              pair<iter_type, iter_type> range;
+              h.get_dependencies(ev, range);
+              for (iter_type j = range.first; j != range.second; ++j)
+                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
             }
         }
 
@@ -1247,116 +1400,139 @@ get_cheapest_violation_to_solve(cvs_history & cvs, list<t_violation> & violation
         }
 
     }
-
-  return best_solution;
 }
 
-static void
-solve_violation(cvs_history & cvs, t_solution & solution)
+  // After having found the cheapest violation to solve, this method does
+  // the actual adjustment of the timestamps, towards the direction
+  // indicated, either following the dependencies or the dependents.
+void
+solve_violation(solution_type const & solution)
 {
-  stack< pair< cvs_event_ptr, time_i > > stack;
-  set< cvs_event_ptr > done;
-  cvs_event_ptr dep = solution.first->first;
-  cvs_event_ptr ev = solution.first->second;
+  stack< pair<base_type, time_i> > stack;
+  set<base_type> done;
+  base_type dep = solution.first->first;
+  base_type ev = solution.first->second;
   int direction = solution.second;
 
   L(FL("Resolving conflicting timestamps of: %s and %s")
-    % get_event_repr(cvs, dep) % get_event_repr(cvs, ev));
+    % h.get_repr(dep) % h.get_repr(ev));
 
   if (direction == 0)
     {
       // downward adjustment, i.e. adjusting all dependents
-      stack.push(make_pair(ev, dep->adj_time + 1));
+      stack.push(make_pair(ev, h.get_time(dep) + 1));
       while (!stack.empty())
         {
-          cvs_event_ptr e = stack.top().first;
+          base_type e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
 
-          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          typename set<base_type>::const_iterator ity = done.find(e);
           if (ity != done.end())
             continue;
           done.insert(ity, e);
 
-          if (e->adj_time <= time_goal)
+          if (h.get_time(e) <= time_goal)
             {
-              L(FL("  adjusting event %s by %d seconds.")
-                % get_event_repr(cvs, e)
-                % (time_goal - e->adj_time));
-              e->adj_time = time_goal;
-              for (dep_loop j = cvs.get_dependents(e); !j.ended(); ++j)
-                stack.push(make_pair(*j, time_goal + 1));
+              L(FL("  adjusting %s by %0.0f seconds.")
+                % h.get_repr(e)
+                % ((float) (time_goal - h.get_time(e)) / 100));
+
+              h.set_time(e, time_goal);
+
+              pair<iter_type, iter_type> range;
+              h.get_dependents(e, range);
+              for (iter_type j = range.first; j != range.second; ++j)
+                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
             }
         }
     }
   else
     {
       // adjustmest, i.e. adjusting all dependencies
-      stack.push(make_pair(dep, ev->adj_time - 1));
+      stack.push(make_pair(dep, h.get_time(ev) - 1));
       while (!stack.empty())
         {
-          cvs_event_ptr e = stack.top().first;
+          base_type e = stack.top().first;
           time_i time_goal = stack.top().second;
           stack.pop();
 
-          set<cvs_event_ptr>::const_iterator ity = done.find(e);
+          typename set<base_type>::const_iterator ity = done.find(e);
           if (ity != done.end())
             continue;
           done.insert(ity, e);
 
-          if (e->adj_time >= time_goal)
+          if (h.get_time(e) >= time_goal)
             {
-              L(FL("  adjusting event %s by %d seconds.")
-                % get_event_repr(cvs, e)
-                % (e->adj_time - time_goal));
-              e->adj_time = time_goal;
-              for (dep_loop j = cvs.get_dependencies(e); !j.ended(); ++j)
-                stack.push(make_pair(*j, time_goal - 1));
+              L(FL("  adjusting %s by %0.0f seconds.")
+                % h.get_repr(e)
+                % ((float) (h.get_time(e) - time_goal) / 100));
+
+              h.set_time(e, time_goal);
+
+              pair<iter_type, iter_type> range;
+              h.get_dependencies(e, range);
+              for (iter_type j = range.first; j != range.second; ++j)
+                stack.push(make_pair(h.get_base_of(j), time_goal + 1));
             }
         }
     }
 }
 
-static void
-sanitize_rcs_file_timestamps(cvs_history & cvs,
-                             const cvs_event_ptr root_event)
+  // The main entry point to the timestamp sanitizer, which does the first
+  // step: enumerating all timestamp violations. After having resolved the
+  // cheapest violation to solve, we restart collecting the violations, as
+  // hopefully other violations were solved as well.
+  timestamp_sanitizer(HELPER & h, const base_type root_event)
+    : h(h)
 {
   while (1)
     {
       // we start at the root event for the current file and scan for
       // timestamp pairs which violate the corresponding dependency.
-      stack< cvs_event_ptr > stack;
-      set< cvs_event_ptr > done;
+      stack<base_type> stack;
+      set<base_type> done;
       stack.push(root_event);
 
-      list<t_violation> violations;
+      list<violation_type> violations;
 
       while (!stack.empty())
         {
-          cvs_event_ptr ev = stack.top();
+          base_type ev = stack.top();
           stack.pop();
 
-          set<cvs_event_ptr>::const_iterator ity = done.find(ev);
+          typename set<base_type>::const_iterator ity = done.find(ev);
           if (ity != done.end())
             continue;
           done.insert(ity, ev);
 
-          for (dep_loop i = cvs.get_dependents(ev); !i.ended(); ++i)
+          pair<iter_type, iter_type> range;
+          h.get_dependents(ev, range);
+          for (iter_type i = range.first; i != range.second; ++i)
             {
-              if (ev->adj_time >= (*i)->adj_time)
-                violations.push_back(make_pair(ev, *i));
+              base_type dep_ev(h.get_base_of(i));
 
-              stack.push(*i);
+              // blobs might have dependencies on them selves, simply
+              // skip those here.
+              if (dep_ev == ev)
+                continue;
+
+              if (h.get_time(ev) >= h.get_time(dep_ev))
+                violations.push_back(make_pair(ev, dep_ev));
+
+              stack.push(dep_ev);
             }
         }
 
       if (violations.empty())
         break;
 
-      t_solution x = get_cheapest_violation_to_solve(cvs, violations);
-      solve_violation(cvs, x);
+      solution_type solution;
+      get_cheapest_violation_to_solve(violations, solution);
+      solve_violation(solution);
     }
 }
+};
 
 static cvs_event_ptr
 process_rcs_branch(cvs_symbol_no const & current_branchname,
@@ -2416,7 +2592,7 @@ public:
       insert_iterator< vector< cvs_blob_index > >
         ity_c(cross_path, cross_path.end());
 
-      time_i age_limit;
+      time_i age_limit(0);
       calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
                           cvs, age_limit);
       dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
@@ -2528,7 +2704,7 @@ public:
           insert_iterator< vector< cvs_blob_index > >
             ity_c(cross_path, cross_path.end());
 
-          time_i age_limit;
+          time_i age_limit(0);
           calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
                               cvs, age_limit);
           dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
@@ -2885,7 +3061,7 @@ public:
               insert_iterator< vector< cvs_blob_index > >
                 back_ity(back_path, back_path.end());
 
-              time_i age_limit;
+              time_i age_limit(0);
               calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
                                   cvs, age_limit);
               dijkstra_shortest_path(cvs, *ity_b, *ity_a, back_ity,
@@ -3630,7 +3806,8 @@ write_graphviz_partial(cvs_history & cvs, string const & desc,
 #endif
 
 
-vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
+vector<cvs_blob_index> &
+cvs_blob::get_dependents(cvs_history & cvs)
 {
   if (has_cached_deps)
     {
@@ -3640,10 +3817,44 @@ vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
       return dependents_cache;
     }
 
-  // clear the cache
+  fill_deps_caches(cvs);
+  return dependents_cache;
+}
+
+vector<cvs_blob_index> &
+cvs_blob::get_dependencies(cvs_history & cvs)
+{
+  if (has_cached_deps)
+    {
+      if (!cached_deps_are_sorted)
+        sort_deps_cache(cvs);
+
+      return dependencies_cache;
+    }
+
+  fill_deps_caches(cvs);
+  return dependencies_cache;
+}
+
+void
+cvs_blob::fill_deps_caches(cvs_history & cvs)
+{
+  // clear the caches
+  dependencies_cache.clear();
   dependents_cache.clear();
 
-  // fill the dependency cache from the single event deps
+  // fill the dependencies cache from the single event deps
+  for (blob_event_iter i = begin(); i != end(); ++i)
+    {
+      for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
+        {
+          cvs_blob_index dep_bi = (*j)->bi;
+          if (find(dependencies_cache.begin(), dependencies_cache.end(), dep_bi) == dependencies_cache.end())
+            dependencies_cache.push_back(dep_bi);
+        }
+    }
+
+  // fill the dependents cache from the single event deps
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
       for (dep_loop j = cvs.get_dependents(*i); !j.ended(); ++j)
@@ -3656,8 +3867,6 @@ vector<cvs_blob_index> & cvs_blob::get_dependents(cvs_history & cvs)
 
   has_cached_deps = true;
   sort_deps_cache(cvs);
-
-  return dependents_cache;
 }
 
 void cvs_blob::sort_deps_cache(cvs_history & cvs)
@@ -3666,6 +3875,7 @@ void cvs_blob::sort_deps_cache(cvs_history & cvs)
   I(has_cached_deps);
   blob_index_time_cmp cmp(cvs);
   sort(dependents_cache.begin(), dependents_cache.end(), cmp);
+  sort(dependencies_cache.begin(), dependencies_cache.end(), cmp);
   cached_deps_are_sorted = true;
 }
 
@@ -3817,7 +4027,10 @@ import_cvs_repo(system_path const & cvsroot,
   {
     for (blob_event_iter i = cvs.blobs[cvs.root_blob].begin();
          i != cvs.blobs[cvs.root_blob].end(); ++i)
-      sanitize_rcs_file_timestamps(cvs, *i);
+      {
+        event_tss_helper helper(cvs);
+        timestamp_sanitizer<event_tss_helper> s(helper, *i);
+      }
   }
 
   // then we use algorithms from graph theory to get the blobs into
@@ -3856,6 +4069,12 @@ import_cvs_repo(system_path const & cvsroot,
 
     // remove all weak dependencies
     cvs.remove_weak_dependencies();
+
+    // then sanitize the blobs timestamps with regard to their dependencies.
+    {
+      blob_tss_helper helper(cvs);
+      timestamp_sanitizer<blob_tss_helper> s(helper, cvs.root_blob);
+    }
 
 #ifdef DEBUG_GRAPHVIZ
     write_graphviz_complete(cvs, "no-weak");
