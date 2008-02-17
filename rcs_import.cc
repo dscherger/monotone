@@ -1533,6 +1533,9 @@ public:
 
         ++n_violations;
       }
+
+    // make sure n_violations doesn't imply we didn't solve all violations
+    n_violations.set_total(n_violations.ticks);
   }
 };
 
@@ -4052,7 +4055,7 @@ import_cvs_repo(system_path const & cvsroot,
 
     ticker n_files(_("files"), "f");
     ticker n_violations(_("violations"), "v");
-    ticker n_adjustments(_("adjustments"), "v");
+    ticker n_adjustments(_("adjustments"), "a");
 
     n_files.set_total(cvs.blobs[cvs.root_blob].get_events().size());
     for (blob_event_iter i = cvs.blobs[cvs.root_blob].begin();
@@ -4061,7 +4064,6 @@ import_cvs_repo(system_path const & cvsroot,
         event_tss_helper helper(cvs);
         timestamp_sanitizer<event_tss_helper> s(helper, *i, n_violations,
                                                 n_adjustments);
-
         ++n_files;
       }
   }
@@ -4138,11 +4140,9 @@ import_cvs_repo(system_path const & cvsroot,
   }
 
   {
-    P(F("creating monotone revisions from blobs"));
-    ticker n_blobs(_("blobs"), "b");
-    ticker n_revs(_("revisions"), "r");
+    P(F("branch sanitizing"));
 
-    n_blobs.set_total(cvs.blobs.size());
+    ticker n_blobs(_("blobs"), "b");
 
     // After a depth-first-search-run without any cycles, we have a possible
     // import order which satisfies all the dependencies (topologically
@@ -4157,6 +4157,9 @@ import_cvs_repo(system_path const & cvsroot,
         branch_sanitizer vis(cvs, dfs_restart_needed);
         cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
+        n_blobs.set_total(cvs.blobs.size());
+        n_blobs += cvs.import_order.size() - n_blobs.ticks;
+
         if (!dfs_restart_needed)
           break;
       }
@@ -4164,9 +4167,17 @@ import_cvs_repo(system_path const & cvsroot,
 #ifdef DEBUG_GRAPHVIZ
     write_graphviz_complete(cvs, "all");
 #endif
+  }
 
-    // number through all unnamed branches
-    number_unnamed_branches(cvs);
+  // number through all unnamed branches
+  number_unnamed_branches(cvs);
+
+  {
+    P(F("creating monotone revisions from blobs"));
+    ticker n_blobs(_("blobs"), "b");
+    ticker n_revs(_("revisions"), "r");
+
+    n_blobs.set_total(cvs.blobs.size());
 
     transaction_guard guard(app.db);
     blob_consumer cons(cvs, app, n_blobs, n_revs);
