@@ -498,9 +498,6 @@ cvs_history
   cvs_blob_index root_blob;
   cvs_event_ptr root_event;
 
-  ticker n_rcs_revisions;
-  ticker n_rcs_symbols;
-
   int unnamed_branch_counter;
 
   // step number of graphviz output, when enabled.
@@ -512,9 +509,7 @@ cvs_history
   time_t upper_time_limit;
 
   cvs_history(void)
-    : n_rcs_revisions(_("RCS revisions"), "r", 1),
-      n_rcs_symbols(_("RCS symbols"), "s", 1),
-      unnamed_branch_counter(0),
+    : unnamed_branch_counter(0),
       step_no(0),
       deps_sorted(false),
       upper_time_limit(0)
@@ -1406,7 +1401,7 @@ public:
   // the actual adjustment of the timestamps, towards the direction
   // indicated, either following the dependencies or the dependents.
   void
-  solve_violation(solution_type const & solution)
+  solve_violation(solution_type const & solution, ticker & n_adjustments)
   {
     stack< pair<base_type, time_i> > stack;
     set<base_type> done;
@@ -1439,6 +1434,7 @@ public:
                   % ((float) (time_goal - h.get_time(e)) / 100));
 
                 h.set_time(e, time_goal);
+                ++n_adjustments;
 
                 pair<iter_type, iter_type> range;
                 h.get_dependents(e, range);
@@ -1469,6 +1465,7 @@ public:
                   % ((float) (h.get_time(e) - time_goal) / 100));
 
                 h.set_time(e, time_goal);
+                ++n_adjustments;
 
                 pair<iter_type, iter_type> range;
                 h.get_dependencies(e, range);
@@ -1483,7 +1480,8 @@ public:
   // step: enumerating all timestamp violations. After having resolved the
   // cheapest violation to solve, we restart collecting the violations, as
   // hopefully other violations were solved as well.
-  timestamp_sanitizer(HELPER & h, const base_type root_event)
+  timestamp_sanitizer(HELPER & h, const base_type root_event,
+                      ticker & n_violations, ticker & n_adjustments)
     : h(h)
   {
     while (1)
@@ -1524,12 +1522,16 @@ public:
               }
           }
 
+        n_violations.set_total(violations.size() + n_violations.ticks);
+
         if (violations.empty())
           break;
 
         solution_type solution;
         get_cheapest_violation_to_solve(violations, solution);
-        solve_violation(solution);
+        solve_violation(solution, n_adjustments);
+
+        ++n_violations;
       }
   }
 };
@@ -1544,7 +1546,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
                database & db,
                cvs_history & cvs,
                app_state & app,
-               bool reverse_import)
+               bool reverse_import,
+               ticker & n_rev, ticker & n_sym)
 {
   cvs_event_ptr curr_commit = NULL,
                 first_commit = NULL;
@@ -1620,7 +1623,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
       // add the commit to the cvs history
       cvs_blob_index bi = cvs.get_or_create_blob(ET_COMMIT, ac);
       cvs.append_event_to(bi, curr_commit);
-      ++cvs.n_rcs_revisions;
+      ++n_rev;
 
       curr_events.push_back(curr_commit);
 
@@ -1679,7 +1682,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
               bi = cvs.get_or_create_blob(ET_TAG_POINT, tag);
               cvs.append_event_to(bi, tag_event);
-              ++cvs.n_rcs_symbols;
+              ++n_sym;
             }
         }
 
@@ -1730,7 +1733,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           // recursively process child branches
           cvs_event_ptr first_event_in_branch =
             process_rcs_branch(bname, *i, branch_lines, branch_data,
-                               branch_id, r, db, cvs, app, false);
+                               branch_id, r, db, cvs, app, false,
+                               n_rev, n_sym);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
@@ -1798,7 +1802,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           if (!is_vendor_branch)
             cvs.add_weak_dependencies(branch_point, last_events, reverse_import);
 
-          ++cvs.n_rcs_symbols;
+          ++n_sym;
         }
 
       string next_version = r.deltas.find(curr_version)->second->next;
@@ -1884,7 +1888,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
 static void
 import_rcs_file_with_cvs(string const & filename, app_state & app,
-                         cvs_history & cvs)
+                         cvs_history & cvs, ticker & n_rev, ticker & n_sym)
 {
   rcs_file r;
   L(FL("parsing RCS file %s") % filename);
@@ -1918,7 +1922,7 @@ import_rcs_file_with_cvs(string const & filename, app_state & app,
 
     cvs_event_ptr first_event =
       process_rcs_branch(cvs.base_branch, r.admin.head, head_lines,
-                         dat, id, r, app.db, cvs, app, true);
+                         dat, id, r, app.db, cvs, app, true, n_rev, n_sym);
 
     // link the pseudo trunk branch to the first event in the branch
     cvs.add_dependency(first_event, cvs.root_event);
@@ -2104,9 +2108,12 @@ cvs_tree_walker
 {
   cvs_history & cvs;
   app_state & app;
+  ticker & n_rev;
+  ticker & n_sym;
 public:
-  cvs_tree_walker(cvs_history & c, app_state & a) : 
-    cvs(c), app(a)
+  cvs_tree_walker(cvs_history & c, app_state & a,
+                  ticker & n_rev, ticker & n_sym)
+    : cvs(c), app(a), n_rev(n_rev), n_sym(n_sym)
   {
   }
   virtual void visit_file(file_path const & path)
@@ -2117,7 +2124,7 @@ public:
         try
           {
             transaction_guard guard(app.db);
-            import_rcs_file_with_cvs(file, app, cvs);
+            import_rcs_file_with_cvs(file, app, cvs, n_rev, n_sym);
             guard.commit();
           }
         catch (oops const & o)
@@ -2137,15 +2144,18 @@ blob_consumer
 {
   cvs_history & cvs;
   app_state & app;
+  ticker & n_blobs;
   ticker & n_revisions;
 
   temp_node_id_source nis;
 
   blob_consumer(cvs_history & cvs,
                 app_state & app,
+                ticker & n_blobs,
                 ticker & n_revs)
   : cvs(cvs),
     app(app),
+    n_blobs(n_blobs),
     n_revisions(n_revs)
   { };
 
@@ -3568,12 +3578,16 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
 // simply makes sure that no blob contains multiple events for a single
 // path. Otherwise, the blob gets split.
 void
-resolve_intra_blob_conflicts(cvs_history & cvs, ticker & n_splits)
+resolve_intra_blob_conflicts(cvs_history & cvs, ticker & n_blobs,
+                             ticker & n_splits)
 {
   for (cvs_blob_index bi = 0; bi < cvs.blobs.size(); ++bi)
     {
       while (!resolve_intra_blob_conflicts_for_blob(cvs, bi))
         ++n_splits;
+
+      n_blobs.set_total(cvs.blobs.size());
+      n_blobs += bi - n_blobs.ticks + 1;
     }
 }
 
@@ -4017,7 +4031,12 @@ import_cvs_repo(system_path const & cvsroot,
   // of all files we know. This already creates file deltas and
   // hashes. We end up with a DAG of blobs.
   {
-    cvs_tree_walker walker(cvs, app);
+    P(F("parsing rcs files"));
+
+    ticker n_rcs_revisions(_("revisions"), "r");
+    ticker n_rcs_symbols(_("symbols"), "s");
+
+    cvs_tree_walker walker(cvs, app, n_rcs_revisions, n_rcs_symbols);
     require_path_is_directory(cvsroot,
                               F("path %s does not exist") % cvsroot,
                               F("'%s' is not a directory") % cvsroot);
@@ -4029,19 +4048,43 @@ import_cvs_repo(system_path const & cvsroot,
   // try to sanitize the timestamps within all RCS files with
   // respect to the dependencies given.
   {
+    P(F("correcting timestamps within rcs files"));
+
+    ticker n_files(_("files"), "f");
+    ticker n_violations(_("violations"), "v");
+    ticker n_adjustments(_("adjustments"), "v");
+
+    n_files.set_total(cvs.blobs[cvs.root_blob].get_events().size());
     for (blob_event_iter i = cvs.blobs[cvs.root_blob].begin();
          i != cvs.blobs[cvs.root_blob].end(); ++i)
       {
         event_tss_helper helper(cvs);
-        timestamp_sanitizer<event_tss_helper> s(helper, *i);
+        timestamp_sanitizer<event_tss_helper> s(helper, *i, n_violations,
+                                                n_adjustments);
+
+        ++n_files;
       }
   }
 
   // then we use algorithms from graph theory to get the blobs into
   // a logically meaningful ordering.
   {
-    ticker n_splits(_("blob splits"), "p", 1);
-    resolve_intra_blob_conflicts(cvs, n_splits);
+    P(F("resolving intra blob dependencies"));
+
+    ticker n_blobs(_("blobs"), "b");
+    ticker n_splits(_("splits"), "s");
+
+    resolve_intra_blob_conflicts(cvs, n_blobs, n_splits);
+  }
+
+  {
+    P(F("resolving cyclic dependencies between blobs"));
+
+    ticker n_blobs(_("blobs"), "b");
+    ticker n_splits(_("splits"), "s");
+
+    n_blobs.set_total(cvs.blobs.size());
+    ++n_blobs;
 
     // After stuffing all cvs_events into blobs of events with the same
     // author and changelog, we have to make sure their dependencies are
@@ -4061,6 +4104,9 @@ import_cvs_repo(system_path const & cvsroot,
       blob_splitter vis(cvs, cycle_members);
       cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
+      n_blobs.set_total(cvs.blobs.size());
+      n_blobs += cvs.import_order.size() - n_blobs.ticks;
+
       // If we have a cycle, go split it. Otherwise we don't have any
       // cycles left and can proceed.
       if (!cycle_members.empty())
@@ -4070,19 +4116,33 @@ import_cvs_repo(system_path const & cvsroot,
 
       ++n_splits;
     };
+  }
 
-    // remove all weak dependencies
-    cvs.remove_weak_dependencies();
-
-    // then sanitize the blobs timestamps with regard to their dependencies.
-    {
-      blob_tss_helper helper(cvs);
-      timestamp_sanitizer<blob_tss_helper> s(helper, cvs.root_blob);
-    }
+  // remove all weak dependencies, those are no longer needed
+  cvs.remove_weak_dependencies();
 
 #ifdef DEBUG_GRAPHVIZ
-    write_graphviz_complete(cvs, "no-weak");
+  write_graphviz_complete(cvs, "no-weak");
 #endif
+
+  // then sanitize the blobs timestamps with regard to their dependencies.
+  {
+    P(F("correcting timestamps between blobs"));
+
+    ticker n_violations(_("violations"), "v");
+    ticker n_adjustments(_("adjustments"), "v");
+
+    blob_tss_helper helper(cvs);
+    timestamp_sanitizer<blob_tss_helper> s(helper, cvs.root_blob,
+                                           n_violations, n_adjustments);
+  }
+
+  {
+    P(F("creating monotone revisions from blobs"));
+    ticker n_blobs(_("blobs"), "b");
+    ticker n_revs(_("revisions"), "r");
+
+    n_blobs.set_total(cvs.blobs.size());
 
     // After a depth-first-search-run without any cycles, we have a possible
     // import order which satisfies all the dependencies (topologically
@@ -4104,14 +4164,12 @@ import_cvs_repo(system_path const & cvsroot,
 #ifdef DEBUG_GRAPHVIZ
     write_graphviz_complete(cvs, "all");
 #endif
-  }
 
-  // number through all unnamed branches
-  number_unnamed_branches(cvs);
-  ticker n_revs(_("revisions"), "r", 1);
-  {
+    // number through all unnamed branches
+    number_unnamed_branches(cvs);
+
     transaction_guard guard(app.db);
-    blob_consumer cons(cvs, app, n_revs);
+    blob_consumer cons(cvs, app, n_blobs, n_revs);
     for_each(cvs.import_order.rbegin(), cvs.import_order.rend(), cons);
     guard.commit();
   }
@@ -4702,6 +4760,7 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       if (app.opts.dryrun)
         {
+          ++n_blobs;
           ++n_revisions;
           blob.assigned_rid = revision_id("deadbeef00000000000000000000000000000000");
           return;
@@ -4723,7 +4782,10 @@ blob_consumer::operator()(cvs_blob_index bi)
       // anything. Such a dead blob can be created when files are
       // added on a branch in CVS.
       if (blob.build_cset(cvs, ros, *cs) == 0)
-        return;
+        {
+          ++n_blobs;
+          return;
+        }
 
       editable_roster_base editable_ros(ros, nis);
       cs->apply_to(editable_ros);
@@ -4807,6 +4869,8 @@ blob_consumer::operator()(cvs_blob_index bi)
     }
   else
     I(false);
+
+  ++n_blobs;
 }
 
 // Local Variables:
