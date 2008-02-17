@@ -503,6 +503,7 @@ if WIN32_PLATFORM
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
+  lib3rdparty_a_SOURCES += botan/es_dev.cpp
   tester_SOURCES += unix/tester-plaf.cc
 endif
 
