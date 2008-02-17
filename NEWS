@@ -24,6 +24,11 @@
 	  will insist on this version and no other.  See m4/pcre.m4
 	  for further discussion.
 
+        - The internal copy of botan has been updated to version 1.7.3.
+          A new configure switch '--with-system-botan' allows you to
+          compile motonone against a system provided botan library, which
+          might contain optimizations for amd64 and ia32.
+
         Bugs fixed
 
         - for changes near the beginning of a file, mtn's unified diff

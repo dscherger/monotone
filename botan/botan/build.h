@@ -6,6 +6,14 @@
 #ifndef BOTAN_BUILD_CONFIG_H__
 #define BOTAN_BUILD_CONFIG_H__
 
+#include <config.h>
+
+#ifndef BOTAN_STATIC
+#error This is an include file from botan shipped with \
+  monotone. Please make sure not to include it when \
+  specifying --with-system-botan.
+#endif
+
 #define BOTAN_VERSION_MAJOR 1
 #define BOTAN_VERSION_MINOR 7
 #define BOTAN_VERSION_PATCH 3

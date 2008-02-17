@@ -17,6 +17,9 @@ typedef unsigned int os_err_t;
 /* Define if using bundled pcre */
 #define PCRE_STATIC 1
 
+/* Define if using bundled botan */
+#define BOTAN_STATIC 1
+
 /* Type to use for `s16'. */
 #define TYPE_S16 short
 
