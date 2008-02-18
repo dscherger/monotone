@@ -488,6 +488,30 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                        globish("*"), globish(""));
 }
 
+void 
+run_gsync_protocol(utf8 const & addr,
+                   globish const & include_pattern,
+                   globish const & exclude_pattern,
+                   app_state & app);
+
+CMD(gsync, "gsync", "", CMD_REF(network),
+    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("Synchronizes branches with a netsync server"),
+    N_("This synchronizes branches that match the pattern given in PATTERN "
+       "with the gsync server at the address ADDRESS."),
+    options::opts::set_default | options::opts::exclude |
+    options::opts::key_to_push)
+{
+  utf8 addr;
+  globish include_pattern, exclude_pattern;
+  extract_address(args, addr, app);
+  extract_patterns(args, include_pattern, exclude_pattern, app);
+  find_key_if_needed(addr, include_pattern, exclude_pattern, app);
+
+  run_gsync_protocol(addr, include_pattern, exclude_pattern, app);
+}
+
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
