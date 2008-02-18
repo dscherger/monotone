@@ -238,6 +238,9 @@ public:
   // helper field for Depth First Search algorithm
   dfs_color color;
 
+  // helper field for the branch sanitizer;
+  int height;
+
   cvs_blob(const event_type t, const u32 no)
     : avg_time(0),
       has_cached_deps(false),
@@ -639,10 +642,6 @@ cvs_history
 
   void add_dependency(cvs_blob_index & bi, cvs_blob_index & dep_bi)
   {
-    // Be sure this dependeny doesn't violate the timestamps of the
-    // two blobs in the graph.
-    I(blobs[bi].get_avg_time() > blobs[dep_bi].get_avg_time());
-
     // try to add dependencies between events on the
     // same files.
     int deps_added = 0;
@@ -898,10 +897,10 @@ log_path(cvs_history & cvs, const string & msg,
 {
   L(FL("%s") % msg);
   for (T i = begin; i != end; ++i)
-    L(FL("  blob: %d\n        %s\n        %s\n        %s")
+    L(FL("  blob: %d\n        %s\n        h:%d\n        %s")
       % *i
       % date_t::from_unix_epoch(cvs.blobs[*i].get_avg_time() / 100)
-      % date_t::from_unix_epoch(cvs.blobs[*i].get_avg_time() / 100)
+      % cvs.blobs[*i].height
       % get_event_repr(cvs, *cvs.blobs[*i].begin()));
 }
 
@@ -2211,7 +2210,7 @@ dijkstra_shortest_path(cvs_history &cvs,
                        bool follow_black,
                        bool break_on_grey,
                        pair< cvs_blob_index, cvs_blob_index > edge_to_ignore,
-                       time_i age_limit)
+                       int height_limit)
 {
   map< cvs_blob_index, dij_context > distances;
   stack< cvs_blob_index > stack;
@@ -2236,13 +2235,11 @@ dijkstra_shortest_path(cvs_history &cvs,
 
       I(distances.count(bi) > 0);
 
-      if (age_limit)
+      if (height_limit)
         {
-          // check the age limit and stop tracking this
-          // blob's dependencies if it is older than our
-          // age_limit.
-          time_i t(cvs.blobs[bi].get_avg_time());
-          if (t < age_limit)
+          // check the height limit and stop tracking this blob's
+          // dependencies if it is older (lower) than our height_limit.
+          if (cvs.blobs[bi].height < height_limit)
             continue;
         }
 
@@ -2285,16 +2282,15 @@ dijkstra_shortest_path(cvs_history &cvs,
 }
 
 inline void
-calculate_age_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
-                    cvs_history & cvs, time_i age_limit)
+calculate_height_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
+                       cvs_history & cvs, int height_limit)
 {
-    time_i ala(cvs.blobs[bi_a].get_avg_time()),
-           alb(cvs.blobs[bi_b].get_avg_time());
+  int ha(cvs.blobs[bi_a].height),
+      hb(cvs.blobs[bi_b].height);
 
-    age_limit = (ala < alb ? ala : alb);
+  height_limit = (ha < hb ? ha : hb);
 
-    L(FL("age limit: %s")
-      % date_t::from_unix_epoch(age_limit / 100));
+  L(FL("height_limit: %d") % height_limit);
 }
 
 #ifdef DEBUG_GRAPHVIZ
@@ -2477,11 +2473,13 @@ struct branch_sanitizer
 protected:
   cvs_history & cvs;
   bool & dfs_restart_needed;
+  bool & height_recalculation_needed;
 
 public:
-  branch_sanitizer(cvs_history & c, bool & r)
+  branch_sanitizer(cvs_history & c, bool & r, bool & h)
     : cvs(c),
-      dfs_restart_needed(r)
+      dfs_restart_needed(r),
+      height_recalculation_needed(h)
     { }
 
   bool abort()
@@ -2523,7 +2521,7 @@ public:
                              false, true, true,   // follow grey and black, but
                              true,                // break on first grey
                              make_pair(e.second, e.first), // igndirect path
-                             0);                  // no age limit
+                             0);                  // no height limit
       I(!path_a.empty());
 
       // From that common ancestor, we now follow the grey blobs downwards,
@@ -2605,15 +2603,15 @@ public:
       insert_iterator< vector< cvs_blob_index > >
         ity_c(cross_path, cross_path.end());
 
-      time_i age_limit(0);
-      calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
-                          cvs, age_limit);
+      int height_limit(0);
+      calculate_height_limit(*(++path_a.begin()), *(++path_b.begin()),
+                             cvs, height_limit);
       dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
                              ity_c,
                              true, true, true,    // follow all colors
                              false,
                              make_pair(invalid_blob, invalid_blob),
-                             age_limit);
+                             height_limit);
 
       if (!cross_path.empty())
         {
@@ -2717,15 +2715,15 @@ public:
           insert_iterator< vector< cvs_blob_index > >
             ity_c(cross_path, cross_path.end());
 
-          time_i age_limit(0);
-          calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
-                              cvs, age_limit);
+          int height_limit(0);
+          calculate_height_limit(*(++path_a.begin()), *(++path_b.begin()),
+                                 cvs, height_limit);
           dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
                                  ity_c,
                                  true, true, true,    // follow all colors
                                  false,
                                  make_pair(invalid_blob, invalid_blob),
-                                 age_limit);
+                                 height_limit);
           I(cross_path.empty());
 
           handle_paths_of_cross_edge(path_a, path_b);
@@ -3074,21 +3072,25 @@ public:
               insert_iterator< vector< cvs_blob_index > >
                 back_ity(back_path, back_path.end());
 
-              time_i age_limit(0);
-              calculate_age_limit(*(++path_a.begin()), *(++path_b.begin()),
-                                  cvs, age_limit);
+              int height_limit(0);
+              calculate_height_limit(*(++path_a.begin()), *(++path_b.begin()),
+                                     cvs, height_limit);
               dijkstra_shortest_path(cvs, *ity_b, *ity_a, back_ity,
                                      true, true, true,   // follow all
                                      false,
                                      make_pair(invalid_blob, invalid_blob),
-                                     age_limit);
+                                     height_limit);
               if (back_path.empty())
                 {
-                  L(FL("  adding dependency from blob %d to blob %d") % *ity_a % *ity_b);
+                  L(FL("  adding dependency from blob %d to blob %d")
+                    % *ity_a % *ity_b);
                   cvs.add_dependency(*ity_b, *ity_a);
+                  if (cvs.blobs[*ity_a].height >= cvs.blobs[*ity_b].height)
+                    height_recalculation_needed = true;
                 }
               else
-                L(FL("  no need to add a dependency, there already exists one."));
+                L(FL("  no need to add a dependency, "
+                     "there already exists one."));
 
               ity_anc = ity_a;
               ity_a++;
@@ -3107,7 +3109,8 @@ public:
       write_graphviz_partial(cvs, "invalid_back_edge", blobs_to_show, 5);
 #endif
 
-      L(FL("branch_sanitizer: back edge from blob %d (%s) to blob %d (%s) - ABORTING!")
+      L(FL("branch_sanitizer: back edge from blob %d (%s) to blob %d (%s) "
+           "- ABORTING!")
         % e.first % get_event_repr(cvs, *cvs.blobs[e.first].begin())
         % e.second % get_event_repr(cvs, *cvs.blobs[e.second].begin()));
 
@@ -3499,9 +3502,12 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
   I(!cvs.blobs[bi].empty());
   I(!cvs.blobs[new_bi].empty());
 
-  // make sure the average time is recalculated
+  // make sure the average time is recalculated for both blobs
   cvs.blobs[bi].set_avg_time(0);
   cvs.blobs[new_bi].set_avg_time(0);
+
+  // copy blob height
+  cvs.blobs[new_bi].height = cvs.blobs[bi].height;
 }
 
 bool
@@ -4003,6 +4009,58 @@ number_unnamed_branches(cvs_history & cvs)
     }
 }
 
+struct height_calculator
+{
+protected:
+  cvs_history & cvs;
+
+public:
+  height_calculator(cvs_history & c)
+    : cvs(c)
+    { }
+
+  bool abort()
+    {
+      return false;
+    }
+
+  void tree_edge(Edge e)
+    {
+    }
+
+  void forward_or_cross_edge(Edge e)
+    {
+    }
+
+  void back_edge(Edge e)
+    {
+      I(false);
+    }
+};
+
+void
+recalculate_blob_heights(cvs_history & cvs)
+{
+  for (vector<cvs_blob>::iterator i = cvs.blobs.begin();
+       i != cvs.blobs.end(); ++i)
+    i->height = 0;
+
+  vector<cvs_blob_index> topo_ordering;
+
+  height_calculator vis(cvs);
+  cvs.depth_first_search(vis, back_inserter(topo_ordering));
+
+  int height = 1;
+  for (vector<cvs_blob_index>::reverse_iterator i = topo_ordering.rbegin();
+       i != topo_ordering.rend(); ++i)
+    {
+      L(FL("setting blob %d to height %d") % *i % height);
+      cvs.blobs[*i].height = height;
+
+      height += 10;
+    }
+}
+
 void
 import_cvs_repo(system_path const & cvsroot,
                 app_state & app)
@@ -4127,18 +4185,6 @@ import_cvs_repo(system_path const & cvsroot,
   write_graphviz_complete(cvs, "no-weak");
 #endif
 
-  // then sanitize the blobs timestamps with regard to their dependencies.
-  {
-    P(F("correcting timestamps between blobs"));
-
-    ticker n_violations(_("violations"), "v");
-    ticker n_adjustments(_("adjustments"), "v");
-
-    blob_tss_helper helper(cvs);
-    timestamp_sanitizer<blob_tss_helper> s(helper, cvs.root_blob,
-                                           n_violations, n_adjustments);
-  }
-
   {
     P(F("branch sanitizing"));
 
@@ -4150,11 +4196,17 @@ import_cvs_repo(system_path const & cvsroot,
     //
     // Now we inspect forward or cross edges to make sure no blob ends up in
     // two branches.
+    bool height_recalculation_needed = true;
     while (1)
       {
         bool dfs_restart_needed = false;
+
+        if (height_recalculation_needed)
+          recalculate_blob_heights(cvs);
+
         cvs.import_order.clear();
-        branch_sanitizer vis(cvs, dfs_restart_needed);
+        branch_sanitizer vis(cvs, dfs_restart_needed,
+                             height_recalculation_needed);
         cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
         n_blobs.set_total(cvs.blobs.size());
@@ -4167,6 +4219,18 @@ import_cvs_repo(system_path const & cvsroot,
 #ifdef DEBUG_GRAPHVIZ
     write_graphviz_complete(cvs, "all");
 #endif
+  }
+
+  // then sanitize the blobs timestamps with regard to their dependencies.
+  {
+    P(F("correcting timestamps between blobs"));
+
+    ticker n_violations(_("violations"), "v");
+    ticker n_adjustments(_("adjustments"), "v");
+
+    blob_tss_helper helper(cvs);
+    timestamp_sanitizer<blob_tss_helper> s(helper, cvs.root_blob,
+                                           n_violations, n_adjustments);
   }
 
   // number through all unnamed branches
