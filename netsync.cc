@@ -692,7 +692,8 @@ session::note_rev(revision_id const & rev)
   revision_t rs;
   id item;
   decode_hexenc(rev.inner(), item);
-  app.db.get_revision(rev, rs);
+  app.db.get_revision_or_sentinel(rev, rs);
+  I(!rs.is_sentinel);
   data tmp;
   write_revision(rs, tmp);
   queue_data_cmd(revision_item, item, tmp());

@@ -46,6 +46,7 @@ ATOMIC_NOVERIFY(attr_key);
 ATOMIC_NOVERIFY(attr_value);
 
 DECORATE(revision);           // thing associated with a revision
+DECORATE(sentinel);           // thing associated with a sentinel
 DECORATE(roster);             // thing associated with a roster
 DECORATE(manifest);           // thing associated with a manifest
 DECORATE(file);               // thing associated with a file
@@ -79,6 +80,7 @@ EXTERN template class                   gzip<data>;
 EXTERN template class           base64< gzip<data> >;
 
 EXTERN template class revision< data >;
+EXTERN template class sentinel< data >;
 EXTERN template class   roster< data >;
 EXTERN template class manifest< data >;
 EXTERN template class     file< data >;
