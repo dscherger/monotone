@@ -1095,7 +1095,8 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 // Arguments:
 //   1: a revision id
 // Added in: 1.0
-
+// Changed in: ?.? (REVID argument is now mandatory)
+//
 // Purpose: Prints change information for the specified revision id.
 //   There are several changes that are described; each of these is
 //   described by a different basic_io stanza. The first string pair
@@ -1161,7 +1162,6 @@ CMD_AUTOMATE(get_revision, N_("REVID"),
   N(args.size() == 1,
     F("wrong argument count"));
 
-  temp_node_id_source nis;
   revision_data dat;
   revision_id ident;
 
@@ -1177,16 +1177,19 @@ CMD_AUTOMATE(get_revision, N_("REVID"),
 // Name: get_current_revision
 // Arguments:
 //   1: zero or more path names
-// Added in: 5.0
-
+// Added in: ?.?
+//
 // Purpose: Prints change information of the current workspace revision,
 //          restricted by the given Path(s).
 //
 // Error conditions: If there are no changes in the current workspace or the
-// restriction is invalid or has no recorded changes, prints an error message 
+// restriction is invalid or has no recorded changes, prints an error message
 // to stderr and exits with status 1. A workspace is required.
-AUTOMATE(get_current_revision, N_("[PATHNAME...]"),
-    options::opts::exclude | options::opts::depth)
+CMD_AUTOMATE(get_current_revision,
+             N_("[PATHNAME...]"),
+             N_("prints the current workspace revision text"),
+             "",
+             options::opts::exclude | options::opts::depth)
 {
   app.require_workspace();
 
@@ -1194,7 +1197,6 @@ AUTOMATE(get_current_revision, N_("[PATHNAME...]"),
   parent_map old_rosters;
   roster_t new_roster;
   temp_node_id_source nis;
-  cset excluded;
 
   app.work.get_parent_rosters(old_rosters);
   app.work.get_current_roster_shape(new_roster, nis);
@@ -1205,8 +1207,8 @@ AUTOMATE(get_current_revision, N_("[PATHNAME...]"),
                         old_rosters, new_roster, app);
 
   app.work.update_current_roster_from_filesystem(new_roster, mask);
-  make_restricted_revision(old_rosters, new_roster, mask, restricted_rev,
-                           excluded, name);
+  make_restricted_revision(old_rosters, new_roster, mask, restricted_rev);
+
   restricted_rev.check_sane();
   N(restricted_rev.is_nontrivial(), F("no changes to commit"));
 
