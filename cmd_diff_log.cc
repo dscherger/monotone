@@ -15,6 +15,7 @@
 #include <queue>
 
 #include "asciik.hh"
+#include "basic_io.hh"
 #include "charset.hh"
 #include "cmd.hh"
 #include "diff_patch.hh"
@@ -335,14 +336,14 @@ dump_diffs(cset const & cs,
   dump_diffs(cs, app, new_is_archived, output, dummy);
 }
 
-// common functionality for diff and automate content_diff to determine
+// common functionality for diff and automate diff to determine
 // revisions and rosters which should be diffed
 static void
 prepare_diff(cset & included,
              app_state & app,
              args_vector args,
              bool & new_is_archived,
-             std::string & revheader)
+             revision_id & old_revision)
 {
   temp_node_id_source nis;
   ostringstream header;
@@ -389,7 +390,7 @@ prepare_diff(cset & included,
       make_cset(restricted_roster, new_roster, excluded);
 
       new_is_archived = false;
-      header << "# old_revision [" << old_rid << "]\n";
+      old_revision = old_rid;
     }
   else if (app.opts.revision_selectors.size() == 1)
     {
@@ -417,7 +418,7 @@ prepare_diff(cset & included,
       make_cset(restricted_roster, new_roster, excluded);
 
       new_is_archived = false;
-      header << "# old_revision [" << r_old_id << "]\n";
+      old_revision = r_old_id;
     }
   else if (app.opts.revision_selectors.size() == 2)
     {
@@ -469,13 +470,12 @@ prepare_diff(cset & included,
       make_cset(restricted_roster, new_roster, excluded);
 
       new_is_archived = true;
+      old_revision = r_old_id;
     }
   else
     {
       I(false);
     }
-
-    revheader = header.str();
 }
 
 CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
@@ -495,10 +495,10 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
         "try adding --external or removing --diff-args?"));
 
   cset included;
-  std::string revs;
+  revision_id old_rev;
   bool new_is_archived;
 
-  prepare_diff(included, app, args, new_is_archived, revs);
+  prepare_diff(included, app, args, new_is_archived, old_rev);
 
   data summary;
   write_cset(included, summary);
@@ -508,7 +508,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   cout << "#\n";
   if (summary().size() > 0)
     {
-      cout << revs << "#\n";
+      cout << "# base_revision [" << old_rev << "]\n" << "#\n";
       for (vector<string>::iterator i = lines.begin();
            i != lines.end(); ++i)
         cout << "# " << *i << '\n';
@@ -519,42 +519,156 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
     }
   cout << "#\n";
 
-  if (app.opts.diff_format == external_diff)
+  if (app.opts.diff_format == external_diff) {
+    do_external_diff(included, app, new_is_archived);
+  } else
+    dump_diffs(included, app, new_is_archived, cout);
+}
+
+void
+dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & cs, bool new_is_archived)
+{
+    for (map<split_path, file_id>::const_iterator
+         i = cs.files_added.begin(); i != cs.files_added.end(); ++i)
     {
-      do_external_diff(included, app, new_is_archived);
+      data unpacked;
+      vector<string> lines;
+
+      if (new_is_archived)
+        {
+          file_data dat;
+          app.db.get_file_version(i->second, dat);
+          unpacked = dat.inner();
+        }
+      else
+        {
+          read_data(file_path(i->first), unpacked);
+        }
+
+        // FIXME: if this should _ever_ become a transferrable format
+        // we need to express binary data here, otherwise we can't re-create
+        // a full and valid revision
+      if (guess_binary(unpacked()))
+        {
+          continue;
+        }
+
+      basic_io::stanza st;
+      st.push_hex_pair(symbol("diff"), i->second.inner());
+      st.push_hex_pair(symbol("to"), i->second.inner());
+      
+      std::stringstream diff_out;
+      std::string pattern("");
+      bool omit_header = true;
+      
+      make_diff(file_path(i->first).as_internal(),
+                file_path(i->first).as_internal(),
+                i->second,
+                i->second,
+                data(), unpacked,
+                diff_out, unified_diff, pattern, omit_header);
+      
+      st.push_str_pair(symbol("data"), diff_out.str());
+
+      printer.print_stanza(st);
     }
-  else
+    
+    map<split_path, split_path> reverse_rename_map;
+
+    for (map<split_path, split_path>::const_iterator
+         i = cs.nodes_renamed.begin();
+       i != cs.nodes_renamed.end(); ++i)
     {
-      dump_diffs(included, app, new_is_archived, cout);
+      reverse_rename_map.insert(make_pair(i->second, i->first));
+    }
+    
+    for (map<split_path, pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
+       i != cs.deltas_applied.end(); ++i)
+    {
+     
+
+      file_data f_old;
+      data data_old, data_new;
+      app.db.get_file_version(i->second.first, f_old);
+      data_old = f_old.inner();
+
+      if (new_is_archived)
+        {
+          file_data f_new;
+          app.db.get_file_version(delta_entry_dst(i), f_new);
+          data_new = f_new.inner();
+        }
+      else
+        {
+          read_data(file_path(delta_entry_path(i)), data_new);
+        }   
+
+        // FIXME: if this should _ever_ become a transferrable format
+        // we need to express binary data here, otherwise we can't re-create
+        // a full and valid revision
+      if (guess_binary(data_old()) || guess_binary(data_new()))
+        {
+          continue;
+        }
+        
+      basic_io::stanza st;
+      st.push_hex_pair(symbol("diff"), i->second.first.inner());
+      st.push_hex_pair(symbol("to"), i->second.second.inner());
+      
+      split_path dst_path = delta_entry_path(i);
+      split_path src_path = dst_path;
+      map<split_path, split_path>::const_iterator re;
+      re = reverse_rename_map.find(dst_path);
+      if (re != reverse_rename_map.end())
+        src_path = re->second;
+    
+      std::stringstream diff_out;
+      std::string pattern("");
+      bool omit_header = true;
+      
+      make_diff(file_path(src_path).as_internal(),
+                file_path(dst_path).as_internal(),
+                delta_entry_src(i),
+                delta_entry_dst(i),
+                data_old, data_new,
+                diff_out, unified_diff, pattern, omit_header);
+      
+      st.push_str_pair(symbol("data"), diff_out.str());
+
+      printer.print_stanza(st);
     }
 }
 
-
-// Name: content_diff
+// Name: diff
 // Arguments:
-//   (optional) one or more files to include
+//   (optional) one or more paths to restrict the output on
 // Added in: 4.0
 // Purpose: Availability of mtn diff as automate command.
 //
-// Output format: Like mtn diff, but with the header part omitted (as this is
-// doubles the output of automate get_revision). If no content changes happened,
-// the output is empty. All file operations beside mtn add are omitted,
-// as they don't change the content of the file.
-CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
-             N_("Calculates diffs of files"),
+// Output format: basic_io changesets and diffs
+AUTOMATE(diff, N_("[FILE [...]]"), options::opts::revision)
              "",
              options::opts::revision | options::opts::depth |
              options::opts::exclude)
 {
   cset included;
-  std::string dummy_header;
   bool new_is_archived;
+  revision_id old_rev;
 
-  prepare_diff(included, app, args, new_is_archived, dummy_header);
+  prepare_diff(included, app, args, new_is_archived, old_rev);
 
-  dump_diffs(included, app, new_is_archived, output);
+  basic_io::printer pr;
+  
+  basic_io::stanza st;
+  st.push_hex_pair(symbol("base_revision"), old_rev.inner());
+  pr.print_stanza(st);
+  
+  print_cset(pr, included);
+  dump_diffs_basic_io(app, pr, included, new_is_archived);
+  
+  data dat = data(pr.buf); 
+  output << dat;
 }
-
 
 static void
 log_certs(ostream & os, app_state & app, revision_id id, cert_name name,

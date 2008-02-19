@@ -1484,7 +1484,7 @@ he runs a command which prints out the status @emph{and} a GNU
 @group
 $ mtn diff
 #
-# old_revision []
+# base_revision []
 #
 # add_file "include/jb.h"
 #  content [3b12b2d0b31439bd50976633db1895cff8b19da0]
@@ -1820,7 +1820,7 @@ forgotten what he changed. He can ask monotone for details:
 @group
 $ mtn diff
 #
-# old_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
+# base_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
 #
 # patch "src/apple.c"
 #  from [2650ffc660dd00a08b659b883b65a060cac7e560]
@@ -2050,7 +2050,7 @@ Beth finishes and examines her changes:
 @group
 $ mtn diff
 #
-# old_revision [80ef9c9d251d39074d37e72abf4897e0bbae1cfb]
+# base_revision [80ef9c9d251d39074d37e72abf4897e0bbae1cfb]
 #
 # patch "src/banana.c"
 #  from [7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a]
@@ -7457,7 +7457,7 @@ status 1.
 @end table
 
 
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
+@item mtn automate diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
 
 @table @strong
 @item Arguments:
@@ -7482,35 +7482,47 @@ workspace is needed in this case.
 
 @item Added in:
 
-4.0
+5.0
 
 @item Purpose:
 
-Prints the content changes between two revisions or a revision and the current
-workspace. This command differs from @command{mtn diff} in that way that it only
-outputs content changes and keeps quite on renames or drops, as the header of
-@command{mtn diff} is omitted (this is what @command{mtn automate get_revision}
-already provides).
+Prints the changeset between two revisions or a revision and the current
+workspace. This command differs from @command{mtn diff} in that way that it 
+outputs the actual diff data in a complete basic_io format (including the cset)
+and omits diff stanzas for binary files.
 
 @item Sample output:
 
 @verbatim
-============================================================
---- guitone/res/i18n/guitone_de.ts      9857927823e1d6a0339b531c120dcaadd22d25e9
-+++ guitone/res/i18n/guitone_de.ts      0b4715dc296b1955b0707923d45d79ca7769dd3f
-@@ -1,6 +1,14 @@
- <?xml version="1.0" encoding="utf-8"?>
- <!DOCTYPE TS><TS version="1.1">
- <context>
-+    <name>AncestryGraph</name>
-+    <message>
-[...]
+base_revision []
+
+add_dir ""
+
+add_file "foo"
+ content [3432945fed45564841c38b75277b3205bbe96966]
+
+diff [3432945fed45564841c38b75277b3205bbe96966]
+  to [3432945fed45564841c38b75277b3205bbe96966]
+data "@@ -0,0 +1 @@
++Hello, I'm the foo file!
+"
 @end verbatim
 
 @item Output format:
 
-The GNU unified diff format. If there have been no content changes, the output
-is empty.
+The output format are basic_io stanzas, formatted just like the output of 
+@command{mtn automate get_revision} and ordered equally by type. However, the
+stanzas 'format_version' and 'new_manifest' are not (yet) part of automate diff.
+
+An additional stanza, named 'diff' is introduced. A 'diff' is identified by the
+content ids of the added or changed file. The format is always unified diff and
+does not contain the diff separator and header which are present in the normal 
+diff output. If either the old or the new contents of the file are recognized as
+binary, the diff stanza will be omitted for the patch.
+
+All diff stanzas are outputted at the very end of the cset.
+
+If there are no changes recorded, the output is empty.
 
 @item Error conditions:
 

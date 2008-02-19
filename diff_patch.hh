@@ -33,7 +33,8 @@ void make_diff(std::string const & filename1,
                data const & data2,
                std::ostream & ost,
                diff_type type,
-               std::string const & pattern);
+               std::string const & pattern,
+               bool omit_header = false);
 
 bool merge3(std::vector<std::string> const & ancestor,
             std::vector<std::string> const & left,

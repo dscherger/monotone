@@ -1353,7 +1353,8 @@ make_diff(string const & filename1,
           data const & data2,
           ostream & ost,
           diff_type type,
-          string const & pattern)
+          string const & pattern,
+          bool omit_header)
 {
   if (guess_binary(data1()) || guess_binary(data2()))
     {
@@ -1448,18 +1449,24 @@ make_diff(string const & filename1,
     {
       case unified_diff:
       {
-        ost << "--- " << filename1 << '\t' << id1 << '\n';
-        ost << "+++ " << filename2 << '\t' << id2 << '\n';
+        if (!omit_header)
+          {
+            ost << "--- " << filename1 << "\t" << id1 << '\n';
+            ost << "+++ " << filename2 << "\t" << id2 << '\n';
+          }
 
-        unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
+          unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
         walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
         break;
       }
       case context_diff:
       {
-        ost << "*** " << filename1 << '\t' << id1 << '\n';
-        ost << "--- " << filename2 << '\t' << id2 << '\n';
-
+        if (!omit_header)
+          {
+            ost << "*** " << filename1 << "\t" << id1 << '\n';
+            ost << "--- " << filename2 << "\t" << id2 << '\n';
+          }
+        
         cxtdiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
         walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
         break;
