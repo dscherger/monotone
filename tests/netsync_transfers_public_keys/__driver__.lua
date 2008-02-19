@@ -31,8 +31,8 @@ check(mtn2("dropkey", "foo@test.example.com"), 0, false, false)
 -- Now commit a version that does use the new key, and make sure that
 -- now it does get transferred.
 writefile("testfile", "version 1 of test file")
-check(mtn("--branch=testbranch", "--message=blah-blah",
-          "--key=foo@test.example.com", "commit"), 0, false, false)
+check(mtn("--message=blah-blah", "--key=foo@test.example.com",
+          "commit"), 0, false, false)
 
 netsync.pull("testbranch")
 
