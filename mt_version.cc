@@ -19,6 +19,8 @@
 #include <boost/version.hpp>
 #include <boost/config.hpp>
 
+#include <botan/build.h>
+
 #include "app_state.hh"
 #include "cmd.hh"
 #include "platform.hh"
@@ -74,12 +76,14 @@ get_full_version(string & out)
            "C++ compiler        : %s\n"
            "C++ standard library: %s\n"
            "Boost version       : %s\n"
+           "Botan version       : %d.%d.%d\n"
            "Changes since base revision:\n"
            "%s")
     % s
     % BOOST_COMPILER
     % BOOST_STDLIB
     % BOOST_LIB_VERSION
+    % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
     % string(package_full_revision_constant);
   out = oss.str();
 }
