@@ -383,9 +383,9 @@ prepare_diff(cset & included,
 
       app.work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -411,9 +411,9 @@ prepare_diff(cset & included,
 
       app.work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -463,9 +463,9 @@ prepare_diff(cset & included,
       //   (which fails for paths with @'s in them) or possibly //rev/file
       //   since versioned paths are required to be relative.
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -528,7 +528,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
 void
 dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & cs, bool new_is_archived)
 {
-    for (map<split_path, file_id>::const_iterator
+    for (map<file_path, file_id>::const_iterator
          i = cs.files_added.begin(); i != cs.files_added.end(); ++i)
     {
       data unpacked;
@@ -542,7 +542,7 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
         }
       else
         {
-          read_data(file_path(i->first), unpacked);
+          read_data(i->first, unpacked);
         }
 
         // FIXME: if this should _ever_ become a transferrable format
@@ -556,40 +556,40 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
       basic_io::stanza st;
       st.push_hex_pair(symbol("diff"), i->second.inner());
       st.push_hex_pair(symbol("to"), i->second.inner());
-      
+
       std::stringstream diff_out;
       std::string pattern("");
       bool omit_header = true;
-      
-      make_diff(file_path(i->first).as_internal(),
-                file_path(i->first).as_internal(),
+
+      make_diff(i->first.as_internal(),
+                i->first.as_internal(),
                 i->second,
                 i->second,
                 data(), unpacked,
                 diff_out, unified_diff, pattern, omit_header);
-      
+
       st.push_str_pair(symbol("data"), diff_out.str());
 
       printer.print_stanza(st);
     }
-    
-    map<split_path, split_path> reverse_rename_map;
 
-    for (map<split_path, split_path>::const_iterator
+    map<file_path, file_path> reverse_rename_map;
+
+    for (map<file_path, file_path>::const_iterator
          i = cs.nodes_renamed.begin();
        i != cs.nodes_renamed.end(); ++i)
     {
       reverse_rename_map.insert(make_pair(i->second, i->first));
     }
-    
-    for (map<split_path, pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
+
+    for (map<file_path, pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
        i != cs.deltas_applied.end(); ++i)
     {
-     
+
 
       file_data f_old;
       data data_old, data_new;
-      app.db.get_file_version(i->second.first, f_old);
+      app.db.get_file_version(delta_entry_src(i), f_old);
       data_old = f_old.inner();
 
       if (new_is_archived)
@@ -600,8 +600,8 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
         }
       else
         {
-          read_data(file_path(delta_entry_path(i)), data_new);
-        }   
+          read_data(delta_entry_path(i), data_new);
+        }
 
         // FIXME: if this should _ever_ become a transferrable format
         // we need to express binary data here, otherwise we can't re-create
@@ -610,29 +610,29 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
         {
           continue;
         }
-        
+
       basic_io::stanza st;
       st.push_hex_pair(symbol("diff"), i->second.first.inner());
       st.push_hex_pair(symbol("to"), i->second.second.inner());
-      
-      split_path dst_path = delta_entry_path(i);
-      split_path src_path = dst_path;
-      map<split_path, split_path>::const_iterator re;
+
+      file_path dst_path = delta_entry_path(i);
+      file_path src_path = dst_path;
+      map<file_path, file_path>::const_iterator re;
       re = reverse_rename_map.find(dst_path);
       if (re != reverse_rename_map.end())
         src_path = re->second;
-    
+
       std::stringstream diff_out;
       std::string pattern("");
       bool omit_header = true;
-      
-      make_diff(file_path(src_path).as_internal(),
-                file_path(dst_path).as_internal(),
+
+      make_diff(src_path.as_internal(),
+                dst_path.as_internal(),
                 delta_entry_src(i),
                 delta_entry_dst(i),
                 data_old, data_new,
                 diff_out, unified_diff, pattern, omit_header);
-      
+
       st.push_str_pair(symbol("data"), diff_out.str());
 
       printer.print_stanza(st);
@@ -642,11 +642,14 @@ dump_diffs_basic_io(app_state & app, basic_io::printer & printer, const cset & c
 // Name: diff
 // Arguments:
 //   (optional) one or more paths to restrict the output on
-// Added in: 4.0
+// Added in: ?.?
 // Purpose: Availability of mtn diff as automate command.
 //
 // Output format: basic_io changesets and diffs
-AUTOMATE(diff, N_("[FILE [...]]"), options::opts::revision)
+
+CMD_AUTOMATE(diff, N_("[FILE [...]]"),
+             N_("prints a changeset including the content "
+                "differences between two arbitrary revisions"),
              "",
              options::opts::revision | options::opts::depth |
              options::opts::exclude)
@@ -658,15 +661,15 @@ AUTOMATE(diff, N_("[FILE [...]]"), options::opts::revision)
   prepare_diff(included, app, args, new_is_archived, old_rev);
 
   basic_io::printer pr;
-  
+
   basic_io::stanza st;
   st.push_hex_pair(symbol("base_revision"), old_rev.inner());
   pr.print_stanza(st);
-  
+
   print_cset(pr, included);
   dump_diffs_basic_io(app, pr, included, new_is_archived);
-  
-  data dat = data(pr.buf); 
+
+  data dat = data(pr.buf);
   output << dat;
 }
 
@@ -800,7 +803,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           app.work.get_current_roster_shape(new_roster, nis);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
+                                  args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, parents, new_roster, app);
         }
       else
@@ -811,7 +814,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           app.db.get_roster(first_rid, roster);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
+                                  args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, roster, app);
         }
     }
