@@ -6989,15 +6989,16 @@ whatever error message would have been given.
 
 @end table
 
-@item mtn automate get_revision
 @item mtn automate get_revision @var{id}
 
 @table @strong
 @item Arguments:
 
 Specifying the option @var{id} argument outputs the changeset
-information for the specified @var{id}. Otherwise, @var{id} is
-determined from the workspace.
+information for the specified @var{id}. Before interface version ?.? the
+@var{id} argument was optional and defaulted to the workspace revision.
+This functionality is now served by 
+@command{mtn automate get_current_revision}.
 
 @item Added in:
 
@@ -7094,6 +7095,54 @@ to stderr and exits with status 1.
 @end table
 
 
+@item mtn automate get_current_revision [--exclude=@var{pathname} ...] [@var{pathname} ...]
+
+@table @strong
+@item Arguments:
+
+Zero or more workspace paths.
+
+@item Added in:
+
+5.0
+
+@item Purpose:
+
+Prints change information of the current workspace, optionally restricted by
+one or more workspace paths. This command is useful in conjunction with
+@command{mtn automate put_revision} to programmatically create a restricted 
+revision from an existing workspace for a later commit.
+
+@item Sample output:
+
+@verbatim
+format_version "1"
+
+new_manifest [bfe2df785c07bebeb369e537116ab9bb7a4b5e19]
+
+old_revision [429fea55e9e819a046843f618d90674486695745]
+
+patch "ChangeLog"
+ from [7dc21d3a46c6ecd94685ab21e67b131b32002f12]
+   to [234513e3838d423b24d5d6c98f70ce995c8bab6e]
+
+patch "std_hooks.lua"
+ from [0408707bb6b97eae7f8da61af7b35364dbd5a189]
+   to [d7bd0756c48ace573926197709e53eb24dae5f5f]
+@end verbatim
+
+@item Output format:
+
+The output is a revision formatted with basic_io stanzas. For a full description
+of the format, please check the @command{mtn automate get_revision} command.
+
+@item Error conditions:
+
+If the command is executed outside of a workspace, there are no changes in the 
+current workspace or the restriction is invalid or has no recorded changes,
+prints an error message to stderr and exits with status 1.
+
+@end table
 
 @item mtn automate get_base_revision_id
 

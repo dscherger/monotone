@@ -1093,8 +1093,7 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 
 // Name: get_revision
 // Arguments:
-//   1: a revision id (optional, determined from the workspace if
-//      non-existant)
+//   1: a revision id
 // Added in: 1.0
 
 // Purpose: Prints change information for the specified revision id.
@@ -1154,44 +1153,73 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 //   the same type will be sorted by the filename they refer to.
 // Error conditions: If the revision specified is unknown or invalid
 // prints an error message to stderr and exits with status 1.
-CMD_AUTOMATE(get_revision, N_("[REVID]"),
+CMD_AUTOMATE(get_revision, N_("REVID"),
              N_("Shows change information for a revision"),
              "",
              options::opts::none)
 {
-  N(args.size() < 2,
+  N(args.size() == 1,
     F("wrong argument count"));
 
   temp_node_id_source nis;
   revision_data dat;
   revision_id ident;
 
-  if (args.size() == 0)
-    {
-      roster_t new_roster;
-      parent_map old_rosters;
-      revision_t rev;
-
-      app.require_workspace();
-      app.work.get_parent_rosters(old_rosters);
-      app.work.get_current_roster_shape(new_roster, nis);
-      app.work.update_current_roster_from_filesystem(new_roster);
-
-      make_revision(old_rosters, new_roster, rev);
-      calculate_ident(rev, ident);
-      write_revision(rev, dat);
-    }
-  else
-    {
-      ident = revision_id(idx(args, 0)());
-      N(app.db.revision_exists(ident),
-        F("no revision %s found in database") % ident);
-      app.db.get_revision(ident, dat);
-    }
+  ident = revision_id(idx(args, 0)());
+  N(app.db.revision_exists(ident),
+    F("no revision %s found in database") % ident);
+  app.db.get_revision(ident, dat);
 
   L(FL("dumping revision %s") % ident);
   output.write(dat.inner()().data(), dat.inner()().size());
 }
+
+// Name: get_current_revision
+// Arguments:
+//   1: zero or more path names
+// Added in: 5.0
+
+// Purpose: Prints change information of the current workspace revision,
+//          restricted by the given Path(s).
+//
+// Error conditions: If there are no changes in the current workspace or the
+// restriction is invalid or has no recorded changes, prints an error message 
+// to stderr and exits with status 1. A workspace is required.
+AUTOMATE(get_current_revision, N_("[PATHNAME...]"),
+    options::opts::exclude | options::opts::depth)
+{
+  app.require_workspace();
+
+  revision_t restricted_rev;
+  parent_map old_rosters;
+  roster_t new_roster;
+  temp_node_id_source nis;
+  cset excluded;
+
+  app.work.get_parent_rosters(old_rosters);
+  app.work.get_current_roster_shape(new_roster, nis);
+
+  node_restriction mask(args_to_paths(args),
+                        args_to_paths(app.opts.exclude_patterns),
+                        app.opts.depth,
+                        old_rosters, new_roster, app);
+
+  app.work.update_current_roster_from_filesystem(new_roster, mask);
+  make_restricted_revision(old_rosters, new_roster, mask, restricted_rev,
+                           excluded, name);
+  restricted_rev.check_sane();
+  N(restricted_rev.is_nontrivial(), F("no changes to commit"));
+
+  revision_id restricted_rev_id;
+  revision_data dat;
+
+  calculate_ident(restricted_rev, restricted_rev_id);
+  write_revision(restricted_rev, dat);
+
+  L(FL("dumping revision %s") % restricted_rev_id);
+  output.write(dat.inner()().data(), dat.inner()().size());
+}
+
 
 // Name: get_base_revision_id
 // Arguments: none
