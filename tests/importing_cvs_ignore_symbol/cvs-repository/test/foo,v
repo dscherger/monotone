@@ -1,0 +1,27 @@
+head	1.1;
+access;
+symbols
+	TAG_TO_RESPECT:1.1
+	TAG_TO_IGNORE:1.1;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2008.01.04.22.09.47;	author markus;	state Exp;
+branches;
+next	;
+commitid	wQ3xKAMPGDyL89Ms;
+
+
+desc
+@@
+
+
+1.1
+log
+@commit 0
+@
+text
+@version 0 of test file foo
+@
