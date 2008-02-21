@@ -38,6 +38,14 @@ public:
       branch_cert_value(_branch_cert_value),
       committers(_committers)
   { }
+  branch_policy(branch_policy const & rhs)
+    : _visible_name(rhs._visible_name),
+      _branch_cert_value(rhs._branch_cert_value),
+      _committers(rhs._committers),
+      visible_name(_visible_name),
+      branch_cert_value(_branch_cert_value),
+      committers(_committers)
+  { }
   branch_policy const &
   operator=(branch_policy const & rhs)
   {
