@@ -336,7 +336,7 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-ssh_agent.$(OBJEXT) mtn-std_hooks.$(OBJEXT)			\
 	mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)				\
 	mtn-work_migration.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-gzip.$(OBJEXT)
+	mtn-gzip.$(OBJEXT) mtn-policy.$(OBJEXT)
 
 # primaries
 
