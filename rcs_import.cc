@@ -4221,6 +4221,7 @@ import_cvs_repo(system_path const & cvsroot,
 #endif
   }
 
+#if 0
   // then sanitize the blobs timestamps with regard to their dependencies.
   {
     P(F("correcting timestamps between blobs"));
@@ -4232,6 +4233,7 @@ import_cvs_repo(system_path const & cvsroot,
     timestamp_sanitizer<blob_tss_helper> s(helper, cvs.root_blob,
                                            n_violations, n_adjustments);
   }
+#endif
 
   // number through all unnamed branches
   number_unnamed_branches(cvs);
