@@ -62,6 +62,8 @@ use IPC::Open3;
 use Monotone::AutomateStdio;
 use POSIX qw(:errno_h :sys_wait_h);
 use POSIX qw(strftime);
+use Symbol qw(gensym);
+use Text::Tabs;
 
 # Temporary debug stuff.
 
@@ -110,6 +112,11 @@ use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 use constant DLS_ICON_COLUMN  => 0;
 use constant DLS_NAME_COLUMN  => 1;
 use constant DLS_VALUE_COLUMN => 2;
+
+# Constants for the columns within the comparison files ListStore widget.
+
+use constant CLS_NAME_COLUMN    => 0;
+use constant CLS_LINE_NR_COLUMN => 1;
 
 # Text viewable application mime types.
 
@@ -191,31 +198,38 @@ my $tooltips;
 
 sub advanced_find($$$);
 sub advanced_find_button_clicked_cb($$);
+sub coloured_revision_change_log_button_clicked_cb($$);
 sub combo_changed_cb($$);
 sub combo_key_release_event_cb($$$);
+sub compare_button_clicked_cb($$);
+sub compare_revisions($$$;$);
 sub create_advanced_find_window();
 sub create_format_tags($);
 sub delete_event_cb($$$);
 sub destroy_event_cb($$;$);
 sub directory_up_button_clicked_cb($$);
 sub file_change_log_button_clicked_cb($$);
-sub file_history_button_clicked_cb($$);
-sub generate_revision_report($$$$);
+sub file_comparison_combobox_changed_cb($$);
+sub generate_revision_report($$$;$);
 sub get_change_log_window();
 sub get_completion($$$$;$);
 sub get_dir_contents($$$);
 sub get_file_history_helper($$$);
-sub get_file_history_window();
+sub get_history_window();
+sub get_revision_comparison_window();
 sub get_revision_ids($$);
 sub gtk2_update();
+sub history_list_button_clicked_cb($$);
 sub make_busy($$);
 sub manifest_browser_treeview_cursor_changed_cb($$);
 sub manifest_browser_treeview_row_activated_cb($$$$);
+sub mtn_diff($$$$;$);
 sub mtn_error_handler($$);
 sub new_browser_instance();
 sub populate_button_clicked_cb($$);
 sub revisions_treeview_cursor_changed_cb($$);
 sub revisions_treeview_row_activated_cb($$$$);
+sub run_command($@);
 sub set_label_value($$);
 sub setup_sigchld_handler($);
 sub sigchld_handler();
@@ -279,8 +293,8 @@ sub update_browser_state($$);
 #   Routine      - combo_changed_cb
 #
 #   Description  - Callback routine called when the user changes the value of
-#                  a ComboBoxEntry by selecting an entry from its pulldown
-#                  list.
+#                  a branch or revision comboboxentry by selecting an entry
+#                  from its pulldown list.
 #
 #   Data         - $widget   : The widget object that received the signal.
 #                  $instance : The window instance that is associated with
@@ -295,13 +309,13 @@ sub combo_changed_cb($$)
 
     my($widget, $instance) = @_;
 
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
     my ($change_state,
 	$combo_details,
 	$item,
 	$value);
-
-    return if ($instance->{in_cb});
-    local $instance->{in_cb} = 1;
 
     if ($widget == $instance->{branch_combo})
     {
@@ -350,8 +364,8 @@ sub combo_changed_cb($$)
 #   Routine      - combo_key_release_event_cb
 #
 #   Description  - Callback routine called when the user changes the value of
-#                  a ComboBoxEntry by entering a character (key release
-#                  event).
+#                  a branch or revision comboboxentry by entering a character
+#                  (key release event).
 #
 #   Data         - $widget      : The widget object that received the signal.
 #                  $event       : A Gtk2::Gdk::Event object describing the
@@ -372,6 +386,9 @@ sub combo_key_release_event_cb($$$)
 
     my($widget, $event, $instance) = @_;
 
+    return FALSE if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
     my ($change_state,
 	$combo,
 	$combo_details,
@@ -383,9 +400,6 @@ sub combo_key_release_event_cb($$$)
 	$old_completed,
 	$old_value,
 	$value);
-
-    return FALSE if ($instance->{in_cb});
-    local $instance->{in_cb} = 1;
 
     if ($widget == $instance->{branch_combo}->child())
     {
@@ -485,8 +499,7 @@ sub combo_key_release_event_cb($$$)
 #   Routine      - tagged_checkbutton_toggled_cb
 #
 #   Description  - Callback routine called when the user changes the value of
-#                  the tagged_checkbutton.
-#                  list.
+#                  the tagged check button.
 #
 #   Data         - $widget   : The widget object that received the signal.
 #                  $instance : The window instance that is associated with
@@ -514,7 +527,7 @@ sub tagged_checkbutton_toggled_cb($$)
 #   Routine      - advanced_find_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the
-#                  advanced find button.
+#                  advanced find button in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -529,13 +542,13 @@ sub advanced_find_button_clicked_cb($$)
 
     my($widget, $browser) = @_;
 
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
     my(@branches,
        $preset_branch,
        $revision_id,
        $state);
-
-    return if ($browser->{in_cb});
-    local $browser->{in_cb} = 1;
 
     if (advanced_find($browser, \$revision_id, \@branches))
     {
@@ -586,7 +599,7 @@ sub advanced_find_button_clicked_cb($$)
 #   Routine      - revision_change_log_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the
-#                  revision change log button.
+#                  revision change log button in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -601,13 +614,13 @@ sub revision_change_log_button_clicked_cb($$)
 
     my($widget, $browser) = @_;
 
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
     my (@certs_list,
 	$instance,
 	@revision_details,
 	@revision_ids);
-
-    return if ($browser->{in_cb});
-    local $browser->{in_cb} = 1;
 
     $instance = get_change_log_window();
 
@@ -640,7 +653,7 @@ sub revision_change_log_button_clicked_cb($$)
 #   Routine      - directory_up_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the up
-#                  directory button.
+#                  directory button in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -655,11 +668,11 @@ sub directory_up_button_clicked_cb($$)
 
     my($widget, $browser) = @_;
 
-    my($len,
-       $value);
-
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
+
+    my($len,
+       $value);
 
     # Simply go up one directory level in the manifest if we aren't already at
     # the top.
@@ -707,7 +720,7 @@ sub directory_up_button_clicked_cb($$)
 #   Routine      - file_change_log_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the file
-#                  change log button.
+#                  change log button in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -722,6 +735,9 @@ sub file_change_log_button_clicked_cb($$)
 
     my($widget, $browser) = @_;
 
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
     my ($button,
 	@certs_list,
 	$counter,
@@ -730,10 +746,7 @@ sub file_change_log_button_clicked_cb($$)
 	$instance,
 	@revision_ids);
 
-    return if ($browser->{in_cb});
-    local $browser->{in_cb} = 1;
-
-    $instance = get_file_history_window();
+    $instance = get_history_window();
     local $instance->{in_cb} = 1;
 
     $instance->{mtn} = $browser->{mtn};
@@ -743,6 +756,7 @@ sub file_change_log_button_clicked_cb($$)
     $instance->{second_revision_id} = "";
     $instance->{window}->set_title
 	("File History For " . $instance->{file_name});
+    $instance->{history_label}->set_markup("<b>File History</b>");
     $instance->{window}->show_all();
 
     make_busy($instance, 1);
@@ -757,11 +771,11 @@ sub file_change_log_button_clicked_cb($$)
     $instance->{appbar}->set_status("Fetching revision list");
     $instance->{stop_button}->set_sensitive(TRUE);
     gtk2_update();
-    Monotone::AutomateStdio->register_error_handler("warning", undef);
+    Monotone::AutomateStdio->register_error_handler("warning");
     get_revision_ids($browser, \@revision_ids);
     get_file_history_helper($instance, \%history_hash, $revision_ids[0]);
-    Monotone::AutomateStdio->register_error_handler
-	("both", \&mtn_error_handler);
+    Monotone::AutomateStdio->register_error_handler("both",
+						    \&mtn_error_handler);
     $instance->{stop_button}->set_sensitive(FALSE);
 
     # Sort the list.
@@ -788,8 +802,7 @@ sub file_change_log_button_clicked_cb($$)
 	$instance->{mtn}->certs(\@certs_list, $revision_id);
 	generate_revision_report($instance->{history_buffer},
 				 $revision_id,
-				 \@certs_list,
-				 undef);
+				 \@certs_list);
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), "\n\n ");
 
@@ -797,7 +810,7 @@ sub file_change_log_button_clicked_cb($$)
 
 	$button = Gtk2::Button->new("Select As File 1");
 	$button->signal_connect("clicked",
-				\&file_history_button_clicked_cb,
+				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "file-1"});
@@ -815,7 +828,7 @@ sub file_change_log_button_clicked_cb($$)
 
 	$button = Gtk2::Button->new("Select As File 2");
 	$button->signal_connect("clicked",
-				\&file_history_button_clicked_cb,
+				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "file-2"});
@@ -831,12 +844,12 @@ sub file_change_log_button_clicked_cb($$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Full Revision Information");
+	$button = Gtk2::Button->new("Full Revision Change Log");
 	$button->signal_connect("clicked",
-				\&file_history_button_clicked_cb,
+				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
-				 button_type => "revision-info"});
+				 button_type => "revision-changelog"});
 	$tooltips->set_tip($button, "View the revision's change log");
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
@@ -879,10 +892,427 @@ sub file_change_log_button_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - file_history_button_clicked_cb
+#   Routine      - manifest_browser_treeview_cursor_changed_cb
+#
+#   Description  - Callback routine called when the user selects an entry in
+#                  the manifest treeview in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub manifest_browser_treeview_cursor_changed_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my($manifest_entry,
+       $short_name);
+
+    # Get the manifest entry details for the item that was selected.
+
+    $widget->get_selection()->selected_foreach
+	(sub {
+	     my($model, $path, $iter) = @_;
+	     $short_name = $model->get($iter, MLS_NAME_COLUMN);
+	     $manifest_entry = $model->get($iter, MLS_MANIFEST_ENTRY_COLUMN);
+	 });
+
+    # If the item is a file then display its contents, otherwise if it is a
+    # directory then just ignore it.
+
+    if (defined($manifest_entry) && $manifest_entry->{type} eq "file")
+    {
+	$browser->{file_being_viewed} = {short_name     => $short_name,
+					 manifest_entry => $manifest_entry};
+	$browser->{appbar}->clear_stack();
+	&{$browser->{update_handler}}($browser, FILE_CHANGED);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - manifest_browser_treeview_row_activated_cb
+#
+#   Description  - Callback routine called when the user double clicks on an
+#                  entry in the manifest treeview in a main browser window.
+#
+#   Data         - $widget           : The widget object that received the
+#                                      signal.
+#                  $tree_path        : A Gtk2::TreePath object for the
+#                                      selected item.
+#                  $tree_view_column : A Gtk2::TreeViewColumn object for the
+#                                      selected item.
+#                  $browser          : The browser instance that is associated
+#                                      with this widget.
+#
+##############################################################################
+
+
+
+sub manifest_browser_treeview_row_activated_cb($$$$)
+{
+
+    my($widget, $tree_path, $tree_view_column, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my($manifest_entry,
+       $short_name);
+
+    # Get the manifest entry details for the item that was double-clicked.
+
+    $widget->get_selection()->selected_foreach
+	(sub {
+	     my($model, $path, $iter) = @_;
+	     $short_name = $model->get($iter, MLS_NAME_COLUMN);
+	     $manifest_entry = $model->get($iter, MLS_MANIFEST_ENTRY_COLUMN);
+	 });
+
+    # If the item is a directory then change to it, otherwise if it is a file
+    # then just ignore it.
+
+    if (defined($manifest_entry) && $manifest_entry->{type} eq "directory")
+    {
+	$browser->{directory_combo_details}->{value} = $manifest_entry->{name};
+	$browser->{directory_combo_details}->{completed} = 1;
+	$browser->{directory_combo}->child()->
+	    set_text($manifest_entry->{name});
+	$browser->{appbar}->clear_stack();
+	&{$browser->{update_handler}}($browser, DIRECTORY_CHANGED);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - simple_query_radiobutton_toggled_cb
+#
+#   Description  - Callback routine called when the user changes the advanced
+#                  find mode radio button.
+#
+#   Data         - $widget        : The widget object that received the
+#                                   signal.
+#                  $advanced_find : The advanced find dialog window instance
+#                                   that is associated with this widget.
+#
+##############################################################################
+
+
+
+sub simple_query_radiobutton_toggled_cb($$)
+{
+
+    my($widget, $advanced_find) = @_;
+
+    return if ($advanced_find->{in_cb});
+    local $advanced_find->{in_cb} = 1;
+
+    my($len,
+       $value);
+
+    # Simply enable the relevant find widgets depending upon whether simple or
+    # advanced mode is selected.
+
+    if ($advanced_find->{simple_query_radiobutton}->get_active())
+    {
+	$advanced_find->{simple_frame}->set_sensitive(TRUE);
+	$advanced_find->{advanced_frame}->set_sensitive(FALSE);
+    }
+    else
+    {
+	$advanced_find->{simple_frame}->set_sensitive(FALSE);
+	$advanced_find->{advanced_frame}->set_sensitive(TRUE);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - execute_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the execute
+#                  query button in the advanced find window.
+#
+#   Data         - $widget        : The widget object that received the
+#                                   signal.
+#                  $advanced_find : The advanced find dialog window instance
+#                                   that is associated with this widget.
+#
+##############################################################################
+
+
+
+sub execute_button_clicked_cb($$)
+{
+
+    my($widget, $advanced_find) = @_;
+
+    return if ($advanced_find->{in_cb});
+    local $advanced_find->{in_cb} = 1;
+
+    # Simply let the update handler deal with it.
+
+    &{$advanced_find->{update_handler}}($advanced_find, REVISION_CHANGED);
+
+}
+#
+##############################################################################
+#
+#   Routine      - populate_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  populate selector button in the advanved find window.
+#
+#   Data         - $widget        : The widget object that received the
+#                                   signal.
+#                  $advanced_find : The advanced find dialog window instance
+#                                   that is associated with this widget.
+#
+##############################################################################
+
+
+
+sub populate_button_clicked_cb($$)
+{
+
+    my($widget, $advanced_find) = @_;
+
+    return if ($advanced_find->{in_cb});
+    local $advanced_find->{in_cb} = 1;
+
+    my($arg,
+       $pos,
+       $selector,
+       $time_val,
+       $to_insert);
+
+    # Simply get the currently selected selector and then insert it into the
+    # user's query string.
+
+    $selector = $advanced_find->{term_combo}->get_model()->get
+	($advanced_find->{term_combo}->get_active_iter(), 0);
+    $arg = $advanced_find->{argument_entry}->get_text();
+    $time_val = strftime("%Y-%m-%dT%H:%M:%S",
+			 localtime($advanced_find->{date_dateedit}->
+				   get_time()));
+    $to_insert = "";
+    if ($selector eq "Author")
+    {
+	$to_insert = "a:" . (($arg eq "") ? "<Author>" : $arg);
+    }
+    elsif ($selector eq "Branch")
+    {
+	$to_insert = "b:" . (($arg eq "") ? "<Branch>" : $arg);
+    }
+    elsif ($selector eq "Cert")
+    {
+	$to_insert = "c:" . (($arg eq "") ? "<Cert Expression>" : $arg);
+    }
+    elsif ($selector eq "Date (=)")
+    {
+	$to_insert = "d:" . $time_val;
+    }
+    elsif ($selector eq "Date (<=)")
+    {
+	$to_insert = "e:" . $time_val;
+    }
+    elsif ($selector eq "Date (>)")
+    {
+	$to_insert = "l:" . $time_val;
+    }
+    elsif ($selector eq "Head Revision")
+    {
+	$to_insert = "h:";
+    }
+    elsif ($selector eq "Identifier")
+    {
+	$to_insert = "i:" . (($arg eq "") ? "<Revision Id>" : $arg);
+    }
+    elsif ($selector eq "Parent")
+    {
+	$to_insert = "p:" . (($arg eq "") ? "<Revision Id>" : $arg);
+    }
+    elsif ($selector eq "Separator")
+    {
+	$to_insert = "/";
+    }
+    elsif ($selector eq "Tag")
+    {
+	$to_insert = "t:" . (($arg eq "") ? "<Tag Name>" : $arg);
+    }
+
+    $pos = $advanced_find->{search_term_combo}->child()->get_position();
+    $advanced_find->{search_term_combo}->child()->insert_text
+	($to_insert, $pos);
+    $advanced_find->{search_term_combo}->child()->set_position
+	($pos + length($to_insert));
+
+}
+#
+##############################################################################
+#
+#   Routine      - term_combobox_changed_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the term combobox by selecting an entry from its pulldown
+#                  list in the advanced find window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub term_combobox_changed_cb($$)
+{
+
+    my($widget, $advanced_find) = @_;
+
+    return if ($advanced_find->{in_cb});
+    local $advanced_find->{in_cb} = 1;
+
+    my($arg,
+       $pos,
+       $selector,
+       $time_val,
+       $to_insert);
+
+    # Simply get the currently selected term and then enable/disable the text
+    # entry and date entry widgets accordingly.
+
+    $selector = $advanced_find->{term_combo}->get_model()->get
+	($advanced_find->{term_combo}->get_active_iter(), 0);
+
+    if ($selector =~ m/^Date .*$/o)
+    {
+	$advanced_find->{argument_entry}->set_sensitive(FALSE);
+	$advanced_find->{date_dateedit}->set_sensitive(TRUE);
+    }
+    elsif ($selector eq "Head" || $selector eq "Separator")
+    {
+	$advanced_find->{argument_entry}->set_sensitive(FALSE);
+	$advanced_find->{date_dateedit}->set_sensitive(FALSE);
+    }
+    else
+    {
+	$advanced_find->{argument_entry}->set_sensitive(TRUE);
+	$advanced_find->{date_dateedit}->set_sensitive(FALSE);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - revisions_treeview_cursor_changed_cb
+#
+#   Description  - Callback routine called when the user selects an entry in
+#                  the revisions treeview in the advanced find window.
+#
+#   Data         - $widget        : The widget object that received the
+#                                   signal.
+#                  $advanced_find : The advanced find dialog window instance
+#                                   that is associated with this widget.
+#
+##############################################################################
+
+
+
+sub revisions_treeview_cursor_changed_cb($$)
+{
+
+    my($widget, $advanced_find) = @_;
+
+    return if ($advanced_find->{in_cb});
+    local $advanced_find->{in_cb} = 1;
+
+    my $revision_id;
+
+    # Get the selected revision id.
+
+    $widget->get_selection()->selected_foreach
+	(sub {
+	     my($model, $path, $iter) = @_;
+	     $revision_id = $model->get($iter, 0); });
+
+    if (defined($revision_id)
+	&& $revision_id
+	    ne $advanced_find->{revisions_treeview_details}->{value})
+    {
+	$advanced_find->{revisions_treeview_details}->{value} = $revision_id;
+	$advanced_find->{appbar}->clear_stack();
+	&{$advanced_find->{update_handler}}($advanced_find,
+					    SELECTED_REVISION_CHANGED);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - revisions_treeview_row_activated_cb
+#
+#   Description  - Callback routine called when the user double clicks on an
+#                  entry in the revisions treeview in the advanced find
+#                  window.
+#
+#   Data         - $widget           : The widget object that received the
+#                                      signal.
+#                  $tree_path        : A Gtk2::TreePath object for the
+#                                      selected item.
+#                  $tree_view_column : A Gtk2::TreeViewColumn object for the
+#                                      selected item.
+#                  $advanced_find    : The advanced find dialog window
+#                                      instance that is associated with this
+#                                      widget.
+#
+##############################################################################
+
+
+
+sub revisions_treeview_row_activated_cb($$$$)
+{
+
+    my($widget, $tree_path, $tree_view_column, $advanced_find) = @_;
+
+    return if ($advanced_find->{in_cb});
+    local $advanced_find->{in_cb} = 1;
+
+    my $revision_id;
+
+    # Get the selected revision id.
+
+    $widget->get_selection()->selected_foreach
+	(sub {
+	     my($model, $path, $iter) = @_;
+	     $revision_id = $model->get($iter, 0); });
+
+    if (defined($revision_id))
+    {
+	$advanced_find->{revisions_treeview_details}->{value} = $revision_id;
+	$advanced_find->{appbar}->clear_stack();
+	$advanced_find->{selected} = 1;
+	$advanced_find->{done} = 1;
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - history_list_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on any of the
-#                  buttons displayed in a file's history list.
+#                  buttons displayed in the history list in a history window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $details : A reference to an anonymous hash containing the
@@ -893,7 +1323,7 @@ sub file_change_log_button_clicked_cb($$)
 
 
 
-sub file_history_button_clicked_cb($$)
+sub history_list_button_clicked_cb($$)
 {
 
     my($widget, $details) = @_;
@@ -975,280 +1405,10 @@ sub file_history_button_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - manifest_browser_treeview_cursor_changed_cb
-#
-#   Description  - Callback routine called when the user selects an entry in
-#                  the manifest treeview.
-#
-#   Data         - $widget  : The widget object that received the signal.
-#                  $browser : The browser instance that is associated with
-#                             this widget.
-#
-##############################################################################
-
-
-
-sub manifest_browser_treeview_cursor_changed_cb($$)
-{
-
-    my($widget, $browser) = @_;
-
-    my($manifest_entry,
-       $short_name);
-
-    return if ($browser->{in_cb});
-    local $browser->{in_cb} = 1;
-
-    # Get the manifest entry details for the item that was selected.
-
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $short_name = $model->get($iter, MLS_NAME_COLUMN);
-	     $manifest_entry = $model->get($iter, MLS_MANIFEST_ENTRY_COLUMN);
-	 });
-
-    # If the item is a file then display its contents, otherwise if it is a
-    # directory then just ignore it.
-
-    if (defined($manifest_entry) && $manifest_entry->{type} eq "file")
-    {
-	$browser->{file_being_viewed} = {short_name     => $short_name,
-					 manifest_entry => $manifest_entry};
-	$browser->{appbar}->clear_stack();
-	&{$browser->{update_handler}}($browser, FILE_CHANGED);
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - manifest_browser_treeview_row_activated_cb
-#
-#   Description  - Callback routine called when the user double clicks on an
-#                  entry in the manifest treeview.
-#
-#   Data         - $widget           : The widget object that received the
-#                                      signal.
-#                  $tree_path        : A Gtk2::TreePath object for the
-#                                      selected item.
-#                  $tree_view_column : A Gtk2::TreeViewColumn object for the
-#                                      selected item.
-#                  $browser          : The browser instance that is associated
-#                                      with this widget.
-#
-##############################################################################
-
-
-
-sub manifest_browser_treeview_row_activated_cb($$$$)
-{
-
-    my($widget, $tree_path, $tree_view_column, $browser) = @_;
-
-    my($manifest_entry,
-       $short_name);
-
-    return if ($browser->{in_cb});
-    local $browser->{in_cb} = 1;
-
-    # Get the manifest entry details for the item that was double-clicked.
-
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $short_name = $model->get($iter, MLS_NAME_COLUMN);
-	     $manifest_entry = $model->get($iter, MLS_MANIFEST_ENTRY_COLUMN);
-	 });
-
-    # If the item is a directory then change to it, otherwise if it is a file
-    # then just ignore it.
-
-    if (defined($manifest_entry) && $manifest_entry->{type} eq "directory")
-    {
-	$browser->{directory_combo_details}->{value} = $manifest_entry->{name};
-	$browser->{directory_combo_details}->{completed} = 1;
-	$browser->{directory_combo}->child()->
-	    set_text($manifest_entry->{name});
-	$browser->{appbar}->clear_stack();
-	&{$browser->{update_handler}}($browser, DIRECTORY_CHANGED);
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - simple_query_radiobutton_toggled_cb
-#
-#   Description  - Callback routine called when the user changes the advanced
-#                  find mode radio button.
-#
-#   Data         - $widget        : The widget object that received the
-#                                   signal.
-#                  $advanced_find : The advanced find dialog window instance
-#                                   that is associated with this widget.
-#
-##############################################################################
-
-
-
-sub simple_query_radiobutton_toggled_cb($$)
-{
-
-    my($widget, $advanced_find) = @_;
-
-    my($len,
-       $value);
-
-    return if ($advanced_find->{in_cb});
-    local $advanced_find->{in_cb} = 1;
-
-    # Simply enable the relevant find widgets depending upon whether simple or
-    # advanced mode is selected.
-
-    if ($advanced_find->{simple_query_radiobutton}->get_active())
-    {
-	$advanced_find->{simple_frame}->set_sensitive(TRUE);
-	$advanced_find->{advanced_frame}->set_sensitive(FALSE);
-    }
-    else
-    {
-	$advanced_find->{simple_frame}->set_sensitive(FALSE);
-	$advanced_find->{advanced_frame}->set_sensitive(TRUE);
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - execute_button_clicked_cb
+#   Routine      - compare_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the
-#                  advanced find execute query button.
-#
-#   Data         - $widget        : The widget object that received the
-#                                   signal.
-#                  $advanced_find : The advanced find dialog window instance
-#                                   that is associated with this widget.
-#
-##############################################################################
-
-
-
-sub execute_button_clicked_cb($$)
-{
-
-    my($widget, $advanced_find) = @_;
-
-    return if ($advanced_find->{in_cb});
-    local $advanced_find->{in_cb} = 1;
-
-    # Simply let the update handler deal with it.
-
-    &{$advanced_find->{update_handler}}($advanced_find, REVISION_CHANGED);
-
-}
-#
-##############################################################################
-#
-#   Routine      - populate_button_clicked_cb
-#
-#   Description  - Callback routine called when the user clicks on the
-#                  advanced find populate selector button.
-#
-#   Data         - $widget        : The widget object that received the
-#                                   signal.
-#                  $advanced_find : The advanced find dialog window instance
-#                                   that is associated with this widget.
-#
-##############################################################################
-
-
-
-sub populate_button_clicked_cb($$)
-{
-
-    my($widget, $advanced_find) = @_;
-
-    my($arg,
-       $pos,
-       $selector,
-       $time_val,
-       $to_insert);
-
-    return if ($advanced_find->{in_cb});
-    local $advanced_find->{in_cb} = 1;
-
-    # Simply get the currently selected selector and then insert it into the
-    # user's query string.
-
-    $selector = $advanced_find->{term_combo}->get_model()->get
-	($advanced_find->{term_combo}->get_active_iter(), 0);
-    $arg = $advanced_find->{argument_entry}->get_text();
-    $time_val = strftime("%Y-%m-%dT%H:%M:%S",
-			 localtime($advanced_find->{date_dateedit}->
-				   get_time()));
-    $to_insert = "";
-    if ($selector eq "Author")
-    {
-	$to_insert = "a:" . (($arg eq "") ? "<Author>" : $arg);
-    }
-    elsif ($selector eq "Branch")
-    {
-	$to_insert = "b:" . (($arg eq "") ? "<Branch>" : $arg);
-    }
-    elsif ($selector eq "Cert")
-    {
-	$to_insert = "c:" . (($arg eq "") ? "<Cert Expression>" : $arg);
-    }
-    elsif ($selector eq "Date (=)")
-    {
-	$to_insert = "d:" . $time_val;
-    }
-    elsif ($selector eq "Date (<=)")
-    {
-	$to_insert = "e:" . $time_val;
-    }
-    elsif ($selector eq "Date (>)")
-    {
-	$to_insert = "l:" . $time_val;
-    }
-    elsif ($selector eq "Head Revision")
-    {
-	$to_insert = "h:";
-    }
-    elsif ($selector eq "Identifier")
-    {
-	$to_insert = "i:" . (($arg eq "") ? "<Revision Id>" : $arg);
-    }
-    elsif ($selector eq "Parent")
-    {
-	$to_insert = "p:" . (($arg eq "") ? "<Revision Id>" : $arg);
-    }
-    elsif ($selector eq "Separator")
-    {
-	$to_insert = "/";
-    }
-    elsif ($selector eq "Tag")
-    {
-	$to_insert = "t:" . (($arg eq "") ? "<Tag Name>" : $arg);
-    }
-
-    $pos = $advanced_find->{search_term_combo}->child()->get_position();
-    $advanced_find->{search_term_combo}->child()->insert_text
-	($to_insert, $pos);
-    $advanced_find->{search_term_combo}->child()->set_position
-	($pos + length($to_insert));
-
-}
-#
-##############################################################################
-#
-#   Routine      - term_combobox_changed_cb
-#
-#   Description  - Callback routine called when the user changes the value of
-#                  the term ComboBox by selecting an entry from its pulldown
-#                  list.
+#                  revision comparison button in a history window.
 #
 #   Data         - $widget   : The widget object that received the signal.
 #                  $instance : The window instance that is associated with
@@ -1258,134 +1418,128 @@ sub populate_button_clicked_cb($$)
 
 
 
-sub term_combobox_changed_cb($$)
+sub compare_button_clicked_cb($$)
 {
 
-    my($widget, $advanced_find) = @_;
+    my($widget, $instance) = @_;
 
-    my($arg,
-       $pos,
-       $selector,
-       $time_val,
-       $to_insert);
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
 
-    return if ($advanced_find->{in_cb});
-    local $advanced_find->{in_cb} = 1;
+    my @revision_ids;
+
+    # Sort the revisions by date, oldest first.
+
+    @revision_ids = ($instance->{first_revision_id},
+		     $instance->{second_revision_id});
+    $instance->{mtn}->toposort(\@revision_ids, @revision_ids);
+
+    # Now compare them.
+
+    compare_revisions($instance->{mtn},
+		      $revision_ids[0],
+		      $revision_ids[1],
+		      $instance->{file_name});
+
+}
+#
+##############################################################################
+#
+#   Routine      - file_comparison_combobox_changed_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the file combobox by selecting an entry from its pulldown
+#                  list in a revision comparison window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub file_comparison_combobox_changed_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($iter,
+       $line_nr);
 
     # Simply get the currently selected term and then enable/disable the text
     # entry and date entry widgets accordingly.
 
-    $selector = $advanced_find->{term_combo}->get_model()->get
-	($advanced_find->{term_combo}->get_active_iter(), 0);
+    $line_nr = $instance->{file_combo}->get_model()->get
+	($instance->{file_combo}->get_active_iter(), CLS_LINE_NR_COLUMN);
+    $iter = $instance->{comparison_buffer}->get_iter_at_line($line_nr);
+    $instance->{comparison_textview}->scroll_to_iter($iter, 0, TRUE, 0, 0);
 
-    if ($selector =~ m/^Date .*$/o)
+}
+#
+##############################################################################
+#
+#   Routine      - coloured_revision_change_log_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on either of
+#                  the two coloured revision change log buttons in a revision
+#                  comparison window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance, revision and action that is
+#                             associated with this widget.
+#
+##############################################################################
+
+
+
+sub coloured_revision_change_log_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my(@certs_list,
+       $cl_instance,
+       @revision_details,
+       $revision_id);
+
+    # Work out what revision id to use.
+
+    if ($widget == $instance->{red_revision_button})
     {
-	$advanced_find->{argument_entry}->set_sensitive(FALSE);
-	$advanced_find->{date_dateedit}->set_sensitive(TRUE);
-    }
-    elsif ($selector eq "Head" || $selector eq "Separator")
-    {
-	$advanced_find->{argument_entry}->set_sensitive(FALSE);
-	$advanced_find->{date_dateedit}->set_sensitive(FALSE);
+	$revision_id = $instance->{red_revision_id};
     }
     else
     {
-	$advanced_find->{argument_entry}->set_sensitive(TRUE);
-	$advanced_find->{date_dateedit}->set_sensitive(FALSE);
+	$revision_id = $instance->{green_revision_id};
     }
 
-}
-#
-##############################################################################
-#
-#   Routine      - revisions_treeview_cursor_changed_cb
-#
-#   Description  - Callback routine called when the user selects an entry in
-#                  the advanced find's revisions treeview.
-#
-#   Data         - $widget        : The widget object that received the
-#                                   signal.
-#                  $advanced_find : The advanced find dialog window instance
-#                                   that is associated with this widget.
-#
-##############################################################################
+    # Display the full revision change log.
 
-
-
-sub revisions_treeview_cursor_changed_cb($$)
-{
-
-    my($widget, $advanced_find) = @_;
-
-    my $revision_id;
-
-    return if ($advanced_find->{in_cb});
-    local $advanced_find->{in_cb} = 1;
-
-    # Get the selected revision id.
-
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $revision_id = $model->get($iter, 0); });
-
-    if (defined($revision_id)
-	&& $revision_id
-	    ne $advanced_find->{revisions_treeview_details}->{value})
+    $cl_instance = get_change_log_window();
+    $cl_instance->{changelog_buffer}->set_text("");
+    $cl_instance->{window}->set_title("Revision " . $revision_id);
+    $instance->{mtn}->certs(\@certs_list, $revision_id);
+    $instance->{mtn}->get_revision(\@revision_details, $revision_id);
+    generate_revision_report($cl_instance->{changelog_buffer},
+			     $revision_id,
+			     \@certs_list,
+			     \@revision_details);
+    if ($cl_instance->{changelog_scrolledwindow}->realized())
     {
-	$advanced_find->{revisions_treeview_details}->{value} = $revision_id;
-	$advanced_find->{appbar}->clear_stack();
-	&{$advanced_find->{update_handler}}($advanced_find,
-					    SELECTED_REVISION_CHANGED);
+	$cl_instance->{changelog_scrolledwindow}->get_vadjustment()->
+	    set_value(0);
+	$cl_instance->{changelog_scrolledwindow}->get_hadjustment()->
+	    set_value(0);
     }
-
-}
-#
-##############################################################################
-#
-#   Routine      - revisions_treeview_row_activated_cb
-#
-#   Description  - Callback routine called when the user double clicks on an
-#                  entry in the advanced find's revisions treeview.
-#
-#   Data         - $widget           : The widget object that received the
-#                                      signal.
-#                  $tree_path        : A Gtk2::TreePath object for the
-#                                      selected item.
-#                  $tree_view_column : A Gtk2::TreeViewColumn object for the
-#                                      selected item.
-#                  $advanced_find    : The advanced find dialog window
-#                                      instance that is associated with this
-#                                      widget.
-#
-##############################################################################
-
-
-
-sub revisions_treeview_row_activated_cb($$$$)
-{
-
-    my($widget, $tree_path, $tree_view_column, $advanced_find) = @_;
-
-    my $revision_id;
-
-    return if ($advanced_find->{in_cb});
-    local $advanced_find->{in_cb} = 1;
-
-    # Get the selected revision id.
-
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $revision_id = $model->get($iter, 0); });
-
-    if (defined($revision_id))
-    {
-	$advanced_find->{revisions_treeview_details}->{value} = $revision_id;
-	$advanced_find->{appbar}->clear_stack();
-	$advanced_find->{selected} = 1;
-	$advanced_find->{done} = 1;
-    }
+    $cl_instance->{window}->show_all();
 
 }
 #
@@ -1553,13 +1707,13 @@ sub new_browser_instance()
     $browser->{text_file_sensitive_group} = ();
     foreach my $item ("search_text", "annotate")
     {
-	push(@{$browser->{text_file_sensitive_group}}, 
+	push(@{$browser->{text_file_sensitive_group}},
 	     $browser->{glade}->get_widget($item . "_button"));
     }
     $browser->{revision_sensitive_group} = ();
     foreach my $item ("revision_change_log", "revision_compare")
     {
-	push(@{$browser->{revision_sensitive_group}}, 
+	push(@{$browser->{revision_sensitive_group}},
 	     $browser->{glade}->get_widget($item . "_button"));
     }
 
@@ -1680,6 +1834,14 @@ sub new_browser_instance()
     $browser->{revision_combo_details}->{preset} = 0;
     &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
 
+    # Setup the list of windows that can be made busy for this application
+    # window.
+
+    $browser->{busy_windows} = [];
+    push(@{$browser->{busy_windows}}, $browser->{window}->window());
+    push(@{$browser->{busy_windows}},
+	 $browser->{file_view_sv}->get_window("text"));
+
     push(@windows, $browser);
 
     return $browser;
@@ -1731,6 +1893,7 @@ sub advanced_find($$$)
 	$advanced_find->{window}->set_transient_for($browser->{window});
 	$advanced_find->{branch_combo_details}->{preset} = 0;
 	$advanced_find->{revision_combo_details}->{preset} = 0;
+	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->clear_stack();
 	&{$advanced_find->{update_handler}}($advanced_find, NEW_FIND);
 	($width, $height) = $advanced_find->{window}->get_default_size();
@@ -1952,6 +2115,14 @@ sub create_advanced_find_window()
     $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
     $instance->{details_textview}->modify_font($font) if (defined($font));
 
+    # Setup the list of windows that can be made busy for this application
+    # window.
+
+    $instance->{busy_windows} = [];
+    push(@{$instance->{busy_windows}}, $instance->{window}->window());
+    push(@{$instance->{busy_windows}},
+	 $instance->{details_textview}->get_window("text"));
+
     return $instance;
 
 }
@@ -2029,7 +2200,14 @@ sub get_change_log_window()
 
 	$instance->{window}->signal_connect
 	    ("delete_event",
-	     sub { $_[0]->hide() unless ($_[2]->{in_cb}); return TRUE; },
+	     sub {
+		 my($widget, $event, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $widget->hide();
+		 $instance->{changelog_buffer}->set_text("");
+		 return TRUE;
+	     },
 	     $instance);
 
 	# Setup the revision changelog viewer.
@@ -2043,10 +2221,19 @@ sub get_change_log_window()
 
 	$instance->{grab_widget} = $instance->{window};
 
+	# Setup the list of windows that can be made busy for this application
+	# window.
+
+	$instance->{busy_windows} = [];
+	push(@{$instance->{busy_windows}}, $instance->{window}->window());
+	push(@{$instance->{busy_windows}},
+	     $instance->{changelog_textview}->get_window("text"));
+
 	push(@windows, $instance);
     }
     else
     {
+	$instance->{in_cb} = 0;
 	($width, $height) = $instance->{window}->get_default_size();
 	$instance->{window}->resize($width, $height);
     }
@@ -2061,10 +2248,9 @@ sub get_change_log_window()
 #
 ##############################################################################
 #
-#   Routine      - get_file_history_window
+#   Routine      - get_history_window
 #
-#   Description  - Creates or prepares an existing a change log window for
-#                  use.
+#   Description  - Creates or prepares an existing change log window for use.
 #
 #   Data         - Return Value : A reference to the newly created or unused
 #                                 change log instance record.
@@ -2073,7 +2259,7 @@ sub get_change_log_window()
 
 
 
-sub get_file_history_window()
+sub get_history_window()
 {
 
     my ($font,
@@ -2081,9 +2267,11 @@ sub get_file_history_window()
 	$instance,
 	$width);
 
+    # Look for an unused window first.
+
     foreach my $window (@windows)
     {
-	if ($window->{type} eq "file_history_window"
+	if ($window->{type} eq "history_window"
 	    && ! $window->{window}->mapped())
 	{
 	    $instance = $window;
@@ -2097,9 +2285,9 @@ sub get_file_history_window()
     if (! defined($instance))
     {
 	$instance = {};
-	$instance->{type} = "file_history_window";
+	$instance->{type} = "history_window";
 	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", "file_history_window");
+	    Gtk2::GladeXML->new("../mtn-browse.glade", "history_window");
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -2120,10 +2308,11 @@ sub get_file_history_window()
 
 	# Get the widgets that we are interested in.
 
-	$instance->{window} =
-	    $instance->{glade}->get_widget("file_history_window");
+	$instance->{window} = $instance->{glade}->get_widget("history_window");
 	$instance->{window}->set_icon($app_icon);
 	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
+	$instance->{history_label} =
+	    $instance->{glade}->get_widget("history_label");
 	$instance->{history_textview} =
 	    $instance->{glade}->get_widget("history_textview");
 	$instance->{history_scrolledwindow} =
@@ -2143,7 +2332,14 @@ sub get_file_history_window()
 
 	$instance->{window}->signal_connect
 	    ("delete_event",
-	     sub { $_[0]->hide() unless ($_[2]->{in_cb}); return TRUE; },
+	     sub {
+		 my($widget, $event, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $widget->hide();
+		 $instance->{history_buffer}->set_text("");
+		 return TRUE;
+	     },
 	     $instance);
 	$instance->{stop_button}->signal_connect
 	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
@@ -2161,10 +2357,19 @@ sub get_file_history_window()
 
 	$instance->{grab_widget} = $instance->{stop_button};
 
+	# Setup the list of windows that can be made busy for this application
+	# window.
+
+	$instance->{busy_windows} = [];
+	push(@{$instance->{busy_windows}}, $instance->{window}->window());
+	push(@{$instance->{busy_windows}},
+	     $instance->{history_textview}->get_window("text"));
+
 	push(@windows, $instance);
     }
     else
     {
+	$instance->{in_cb} = 0;
 	($width, $height) = $instance->{window}->get_default_size();
 	$instance->{window}->resize($width, $height);
 	$instance->{stop_button}->set_sensitive(FALSE);
@@ -2228,6 +2433,586 @@ sub get_file_history_helper($$$)
 		get_file_history_helper($instance, $hash, $parent);
 	    }
 	}
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_revision_comparison_window
+#
+#   Description  - Creates or prepares an existing revision comparison window
+#                  for use.
+#
+#   Data         - Return Value : A reference to the newly created or unused
+#                                 change log instance record.
+#
+##############################################################################
+
+
+
+sub get_revision_comparison_window()
+{
+
+    my ($font,
+	$height,
+	$instance,
+	$renderer,
+	$width);
+
+    # Look for an unused window first.
+
+    foreach my $window (@windows)
+    {
+	if ($window->{type} eq "revision_comparison_window"
+	    && ! $window->{window}->mapped())
+	{
+	    $instance = $window;
+	    last;
+	}
+    }
+
+    # Create a new revision comparison window if an unused one wasn't found,
+    # otherwise reuse an existing unused one.
+
+    if (! defined($instance))
+    {
+	$instance = {};
+	$instance->{type} = "revision_comparison_window";
+	$instance->{glade} = Gtk2::GladeXML->new("../mtn-browse.glade",
+						 "revision_comparison_window");
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+
+	# Connect Glade registered signal handlers.
+
+	$instance->{glade}->signal_autoconnect
+	    (sub {
+		 my($callback_name, $widget, $signal_name, $signal_data,
+		    $connect_object, $after, $user_data) = @_;
+		 my $func = $after ? "signal_connect_after" : "signal_connect";
+		 $widget->$func($signal_name,
+				$callback_name,
+				$connect_object ?
+				    $connect_object : $user_data); },
+	     $instance);
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} =
+	    $instance->{glade}->get_widget("revision_comparison_window");
+	$instance->{window}->set_icon($app_icon);
+	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
+	$instance->{comparison_label} =
+	    $instance->{glade}->get_widget("comparison_label");
+	$instance->{file_combo} =
+	    $instance->{glade}->get_widget("file_comparison_combobox");
+	$instance->{comparison_textview} =
+	    $instance->{glade}->get_widget("comparison_textview");
+	$instance->{comparison_scrolledwindow} =
+	    $instance->{glade}->get_widget("comparison_scrolledwindow");
+	$instance->{red_revision_button} =
+	    $instance->{glade}->get_widget("red_revision_change_log_button");
+	$instance->{green_revision_button} =
+	    $instance->{glade}->get_widget("green_revision_change_log_button");
+
+	# Setup the file history callbacks.
+
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub {
+		 my($widget, $event, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $widget->hide();
+		 $instance->{file_combo}->get_model()->clear();
+		 $instance->{comparison_buffer}->set_text("");
+		 return TRUE;
+	     },
+	     $instance);
+
+	# Setup the file combobox.
+
+	$instance->{file_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String", "Glib::Int"));
+	$renderer = Gtk2::CellRendererText->new();
+	$instance->{file_combo}->pack_start($renderer, TRUE);
+	$instance->{file_combo}->add_attribute($renderer, "text" => 0);
+	$instance->{file_combo}->get_model()->set
+	    ($instance->{file_combo}->get_model()->append(),
+	     CLS_NAME_COLUMN, " ",
+	     CLS_LINE_NR_COLUMN, 0);
+
+	# Setup the revision comparison viewer.
+
+	$instance->{comparison_buffer} =
+	    $instance->{comparison_textview}->get_buffer();
+	create_format_tags($instance->{comparison_buffer});
+	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+	$instance->{comparison_textview}->modify_font($font)
+	    if (defined($font));
+
+	# Setup the list of windows that can be made busy for this application
+	# window.
+
+	$instance->{busy_windows} = [];
+	push(@{$instance->{busy_windows}}, $instance->{window}->window());
+	push(@{$instance->{busy_windows}},
+	     $instance->{comparison_textview}->get_window("text"));
+
+	push(@windows, $instance);
+    }
+    else
+    {
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+	($width, $height) = $instance->{window}->get_default_size();
+	$instance->{window}->resize($width, $height);
+	$instance->{file_combo}->get_model()->clear();
+	$instance->{appbar}->set_progress_percentage(0);
+	$instance->{appbar}->clear_stack();
+    }
+
+    # Empty out the contents.
+
+    $instance->{comparison_buffer}->set_text("");
+
+    return $instance;
+
+}
+#
+##############################################################################
+#
+#   Routine      - compare_revisions
+#
+#   Description  - Compares and then displays the differenece between the two
+#                  specified revisions, optionally restricting it to the
+#                  specified file.
+#
+#   Data         - $mtn           : The Monotone instance handle that is to be
+#                                   used to do the comparison.
+#                  $revision_id_1 : The first revision id that is to be
+#                                   compared.
+#                  $revision_id_2 : The second revision id that is to be
+#                                   compared.
+#                  $file_name     : Either the name of the file that the
+#                                   revision comparison should be restricted
+#                                   to or undef for a full revision
+#                                   comparison.
+#
+##############################################################################
+
+
+
+sub compare_revisions($$$;$)
+{
+
+    my($mtn, $revision_id_1, $revision_id_2, $file_name) = @_;
+
+    my ($char,
+	@files,
+	$i,
+	$instance,
+	$is_binary,
+	$iter,
+	$len,
+	$line,
+	@lines,
+	$max_len,
+	$name,
+	$padding,
+	$rest);
+
+    $instance = get_revision_comparison_window();
+    local $instance->{in_cb} = 1;
+
+    $instance->{window}->set_title("Differences Between Revisions "
+				   . $revision_id_1
+				   . " And "
+				   . $revision_id_2);
+    if (defined($file_name))
+    {
+	$instance->{comparison_label}->set_markup("<b>File Comparison</b>");
+    }
+    else
+    {
+	$instance->{comparison_label}->
+	    set_markup("<b>Revision Comparison</b>");
+    }
+    $instance->{window}->show_all();
+    gtk2_update();
+
+    make_busy($instance, 1);
+    $instance->{appbar}->push("");
+    gtk2_update();
+
+    $instance->{mtn} = $mtn;
+    $instance->{red_revision_id} = $revision_id_1;
+    $instance->{green_revision_id} = $revision_id_2;
+
+    # Get Monotone to do the comparison.
+
+    $instance->{appbar}->set_status("Calculating differences");
+    gtk2_update();
+    mtn_diff(\@lines,
+	     $mtn->get_db_name(),
+	     $revision_id_1,
+	     $revision_id_2,
+	     $file_name);
+
+    # Find the longest line for future padding.
+
+    $max_len = 0;
+    foreach my $line (@lines)
+    {
+	($char, $rest) = unpack("a1a*", $line);
+	$rest =~ s/\s+$//o;
+	$rest = expand($rest);
+	$max_len = $len if (($len = length($rest)) > $max_len);
+	$line = $char . $rest;
+    }
+
+    # Display the result, highlighting according to the diff output. Remember
+    # the first two lines are just empty comment lines.
+
+    $instance->{appbar}->set_status("Formatting and displaying differences");
+    gtk2_update();
+    $padding = " " x $max_len;
+    $line = substr(" Summary" . $padding, 0, $max_len);
+    $instance->{comparison_buffer}->insert_with_tags_by_name
+	($instance->{comparison_buffer}->get_end_iter(),
+	 $line . "\n",
+	 "compare-info");
+    for ($i = 1; $i <= $#lines; ++ $i)
+    {
+
+	# Deal with the initial comment lines that summarise the entire set of
+	# differences between the revisions.
+
+	if ($lines[$i] =~ m/^\#/o)
+	{
+	    $line = substr($lines[$i], 1);
+	    $instance->{comparison_buffer}->insert
+		($instance->{comparison_buffer}->get_end_iter(),
+		 $line . "\n");
+	}
+
+	# Deal with lines that introduces a new file comparison.
+
+	elsif ($lines[$i] =~ m/^==/o)
+	{
+
+	    # Print separator.
+
+	    $instance->{comparison_buffer}->
+		insert_pixbuf($instance->{comparison_buffer}->get_end_iter(),
+			      $line_image);
+	    $instance->{comparison_buffer}->
+		insert($instance->{comparison_buffer}->get_end_iter(),
+		       "\n");
+
+	    # Extract the file name, if this doesn't work then it is probably a
+	    # comment stating that the file is binary.
+
+	    ++ $i;
+	    ($name) = ($lines[$i] =~ m/^--- (.+)\s+[0-9a-f]{40}$/o);
+	    if (defined($name))
+	    {
+		$is_binary = 0;
+	    }
+	    else
+	    {
+		($name) = ($lines[$i] =~ m/^\# (.+) is binary$/o);
+		$is_binary = 1;
+	    }
+
+	    # Print out the details for the first file.
+
+	    $line = substr(substr($lines[$i], $is_binary ? 1 : 3) . $padding,
+			   0,
+			   $max_len);
+	    $instance->{comparison_buffer}->insert_with_tags_by_name
+		($instance->{comparison_buffer}->get_end_iter(),
+		 $line . "\n",
+		 "compare-first-file-info");
+
+	    # Store the file name and the starting line number so that the user
+	    # can later jump straight to it using the file combobox.
+
+	    $iter = $instance->{comparison_buffer}->get_end_iter();
+	    $iter->backward_line();
+	    $instance->{comparison_buffer}->create_mark($name, $iter, FALSE);
+	    push(@files, {file_name => $name, line_nr => $iter->get_line()});
+
+	    # Print out the details for the second file if there is one.
+
+	    if (! $is_binary)
+	    {
+		++ $i;
+		$line = substr(substr($lines[$i], 3) . $padding, 0, $max_len);
+		$instance->{comparison_buffer}->insert_with_tags_by_name
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $line . "\n",
+		     "compare-second-file-info");
+	    }
+
+	}
+
+	# Deal with difference context lines.
+
+	elsif ($lines[$i] =~ m/^@@/o)
+	{
+	    $line = substr(substr($lines[$i], 2) . $padding, 0, $max_len);
+	    $instance->{comparison_buffer}->insert_with_tags_by_name
+		($instance->{comparison_buffer}->get_end_iter(),
+		 $line . "\n",
+		 "compare-info");
+	}
+
+	# Deal with - change lines.
+
+	elsif ($lines[$i] =~ m/^-/o)
+	{
+	    $line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
+	    $instance->{comparison_buffer}->insert_with_tags_by_name
+		($instance->{comparison_buffer}->get_end_iter(),
+		 $line . "\n",
+		 "compare-first-file");
+	}
+
+	# Deal with + change lines.
+
+	elsif ($lines[$i] =~ m/^\+/o)
+	{
+	    $line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
+	    $instance->{comparison_buffer}->insert_with_tags_by_name
+		($instance->{comparison_buffer}->get_end_iter(),
+		 $line . "\n",
+		 "compare-second-file");
+	}
+
+	# Print out the rest.
+
+	else
+	{
+	    $line = substr($lines[$i], 1);
+	    $instance->{comparison_buffer}->insert
+		($instance->{comparison_buffer}->get_end_iter(),
+		 $line . "\n");
+	}
+
+	if (($i % 100) == 0)
+	{
+	    $instance->{appbar}->set_progress_percentage
+		(($i + 1) / scalar(@lines));
+	    gtk2_update();
+	}
+
+    }
+
+    # Delete the trailing newline.
+
+    $iter = $instance->{comparison_buffer}->get_end_iter();
+    $instance->{comparison_buffer}->delete
+	($iter, $instance->{comparison_buffer}->get_end_iter())
+	if ($iter->backward_char());
+
+    # Populate the file combobox.
+
+    $instance->{appbar}->set_progress_percentage(0);
+    $instance->{appbar}->set_status("Populating file list");
+    gtk2_update();
+    @files = sort({ $a->{file_name} cmp $b->{file_name} } @files);
+    $i = 1;
+    $instance->{file_combo}->get_model()->clear();
+    foreach my $file (@files)
+    {
+	$instance->{file_combo}->get_model()->set
+	    ($instance->{file_combo}->get_model()->append(),
+	     CLS_NAME_COLUMN, $file->{file_name},
+	     CLS_LINE_NR_COLUMN, $file->{line_nr});
+	$instance->{appbar}->set_progress_percentage($i ++ / scalar(@files));
+	gtk2_update();
+    }
+    $instance->{appbar}->set_progress_percentage(0);
+    $instance->{appbar}->set_status("");
+    gtk2_update();
+
+    # Make sure we are at the top.
+
+    $instance->{comparison_scrolledwindow}->get_vadjustment()->set_value(0);
+    $instance->{comparison_scrolledwindow}->get_hadjustment()->set_value(0);
+
+    $instance->{appbar}->pop();
+    make_busy($instance, 0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - generate_revision_report
+#
+#   Description  - Populate the specified Gtk2::TextBuffer with a pretty
+#                  printed report on the specified revision.
+#
+#   Data         - $text_buffer      : The Gtk2::TextBuffer that is to be
+#                                      populated.
+#                  $revision_id      : The id of the revision being reported
+#                                      on.
+#                  $certs_list       : A reference to a certs list as returned
+#                                      by $mtn->certs().
+#                  $revision_details : Either a reference to a revision
+#                                      details list as returned by
+#                                      $mtn->get_revision() if a detailed
+#                                      report is to be generated or undef if
+#                                      the report is to just be a summary.
+#
+##############################################################################
+
+
+
+sub generate_revision_report($$$;$)
+{
+
+    my($text_buffer, $revision_id, $certs_list, $revision_details) = @_;
+
+    my($change_log,
+       $manifest_id,
+       @parent_revision_ids,
+       %revision_data,
+       %seen,
+       @unique);
+    my @types =
+	("Added", "Removed", "Changed", "Renamed", "Attributes");
+
+    # Revision id.
+
+    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					   "Revision id: ",
+					   "bold");
+    $text_buffer->insert($text_buffer->get_end_iter(),
+			 $revision_id . "\n\n");
+
+    # Certs.
+
+    foreach my $cert (@$certs_list)
+    {
+	if ($cert->{name} eq "changelog")
+	{
+	    $change_log = $cert->{value};
+	    $change_log =~ s/\s+$//os;
+	}
+	else
+	{
+	    $cert->{value} =~ s/T/ /o if ($cert->{name} eq "date");
+	    $text_buffer->insert_with_tags_by_name
+		($text_buffer->get_end_iter(),
+		 sprintf("%s:\t", ucfirst($cert->{name})),
+		 "bold");
+	    $text_buffer->insert($text_buffer->get_end_iter(),
+				 sprintf("%s\n", $cert->{value}));
+	}
+    }
+
+    # Change log.
+
+    $text_buffer->insert_with_tags_by_name
+	($text_buffer->get_end_iter(), "\nChange Log:\n", "bold");
+    $text_buffer->insert($text_buffer->get_end_iter(),
+			 sprintf("%s", $change_log));
+
+    # The rest is only provided if it is a detailed report.
+
+    if (defined($revision_details))
+    {
+
+	# Revision details.
+
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       "\n\nChanges Made:\n", "bold");
+	foreach my $type (@types)
+	{
+	    $revision_data{$type} = [];
+	}
+	foreach my $change (@$revision_details)
+	{
+	    if ($change->{type} eq "add_dir")
+	    {
+		push(@{$revision_data{"Added"}}, $change->{name} . "/");
+	    }
+	    elsif ($change->{type} eq "add_file")
+	    {
+		push(@{$revision_data{"Added"}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "delete")
+	    {
+		push(@{$revision_data{"Removed"}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "patch")
+	    {
+		push(@{$revision_data{"Changed"}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "rename")
+	    {
+		push(@{$revision_data{"Renamed"}},
+		     $change->{from_name} . " -> " . $change->{to_name});
+	    }
+	    elsif ($change->{type} eq "clear")
+	    {
+		push(@{$revision_data{"Attributes"}},
+		     sprintf("%s: %s was cleared",
+			     $change->{name},
+			     $change->{attribute}));
+	    }
+	    elsif ($change->{type} eq "clear" || $change->{type} eq "set")
+	    {
+		push(@{$revision_data{"Attributes"}},
+		     sprintf("%s: %s = %s",
+			     $change->{name},
+			     $change->{attribute},
+			     $change->{value}));
+	    }
+	    elsif ($change->{type} eq "old_revision")
+	    {
+		push(@parent_revision_ids, $change->{revision_id});
+	    }
+	    elsif ($change->{type} eq "new_manifest")
+	    {
+		$manifest_id = $change->{manifest_id};
+	    }
+	}
+	foreach my $type (@types)
+	{
+	    if (scalar(@{$revision_data{$type}}) > 0)
+	    {
+		$text_buffer->insert_with_tags_by_name
+		    ($text_buffer->get_end_iter(),
+		     "    " . $type . ":\n", "italics");
+		%seen = ();
+		@unique = sort(grep { ! $seen{$_} ++ }
+			       @{$revision_data{$type}});
+		foreach my $line (@unique)
+		{
+		    $text_buffer->insert($text_buffer->get_end_iter(),
+					 "\t" . $line . "\n");
+		}
+	    }
+	}
+
+	# Parent revision and manifest ids.
+
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       "\nParent revision id(s):\t",
+					       "bold");
+	$text_buffer->insert($text_buffer->get_end_iter(),
+			     join(" ", @parent_revision_ids) . "\n");
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       "Manifest id:\t\t",
+					       "bold");
+	$text_buffer->insert($text_buffer->get_end_iter(), $manifest_id);
+
     }
 
 }
@@ -3095,6 +3880,8 @@ sub update_advanced_find_state($$)
 		("both", \&mtn_error_handler);
 
 	}
+	$advanced_find->{mtn}->toposort(\@revision_ids, @revision_ids);
+	@revision_ids = reverse(@revision_ids);
 
 	# Update the revisions tree view.
 
@@ -3187,173 +3974,6 @@ sub update_advanced_find_state($$)
 
     $advanced_find->{appbar}->pop();
     make_busy($advanced_find, 0) if ($made_busy);
-
-}
-#
-##############################################################################
-#
-#   Routine      - generate_revision_report
-#
-#   Description  - Populate the specified Gtk2::TextBuffer with a pretty
-#                  printed report on the specified revision.
-#
-#   Data         - $text_buffer      : The Gtk2::TextBuffer that is to be
-#                                      populated.
-#                  $revision_id      : The id of the revision being reported
-#                                      on.
-#                  $certs_list       : A reference to a certs list as returned
-#                                      by $mtn->certs().
-#                  $revision_details : Either a reference to a revision
-#                                      details list as returned by
-#                                      $mtn->get_revision() if a detailed
-#                                      report is to be generated or undef if
-#                                      the report is to just be a summary.
-#
-##############################################################################
-
-
-
-sub generate_revision_report($$$$)
-{
-
-    my($text_buffer, $revision_id, $certs_list, $revision_details) = @_;
-
-    my($change_log,
-       $manifest_id,
-       @parent_revision_ids,
-       %revision_data,
-       %seen,
-       @unique);
-    my @types =
-	("Added", "Removed", "Changed", "Renamed", "Attributes");
-
-    # Revision id.
-
-    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   "Revision id: ",
-					   "bold");
-    $text_buffer->insert($text_buffer->get_end_iter(),
-			 $revision_id . "\n\n");
-
-    # Certs.
-
-    foreach my $cert (@$certs_list)
-    {
-	if ($cert->{name} eq "changelog")
-	{
-	    $change_log = $cert->{value};
-	    $change_log =~ s/\s+$//os;
-	}
-	else
-	{
-	    $cert->{value} =~ s/T/ /o if ($cert->{name} eq "date");
-	    $text_buffer->insert_with_tags_by_name
-		($text_buffer->get_end_iter(),
-		 sprintf("%s:\t", ucfirst($cert->{name})),
-		 "bold");
-	    $text_buffer->insert($text_buffer->get_end_iter(),
-				 sprintf("%s\n", $cert->{value}));
-	}
-    }
-
-    # Change log.
-
-    $text_buffer->insert_with_tags_by_name
-	($text_buffer->get_end_iter(), "\nChange Log:\n", "bold");
-    $text_buffer->insert($text_buffer->get_end_iter(),
-			 sprintf("%s", $change_log));
-
-    # The rest is only provided if it is a detailed report.
-
-    if (defined($revision_details))
-    {
-
-	# Revision details.
-
-	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					       "\n\nChanges Made:\n", "bold");
-	foreach my $type (@types)
-	{
-	    $revision_data{$type} = [];
-	}
-	foreach my $change (@$revision_details)
-	{
-	    if ($change->{type} eq "add_dir")
-	    {
-		push(@{$revision_data{"Added"}}, $change->{name} . "/");
-	    }
-	    elsif ($change->{type} eq "add_file")
-	    {
-		push(@{$revision_data{"Added"}}, $change->{name});
-	    }
-	    elsif ($change->{type} eq "delete")
-	    {
-		push(@{$revision_data{"Removed"}}, $change->{name});
-	    }
-	    elsif ($change->{type} eq "patch")
-	    {
-		push(@{$revision_data{"Changed"}}, $change->{name});
-	    }
-	    elsif ($change->{type} eq "rename")
-	    {
-		push(@{$revision_data{"Renamed"}},
-		     $change->{from_name} . " -> " . $change->{to_name});
-	    }
-	    elsif ($change->{type} eq "clear")
-	    {
-		push(@{$revision_data{"Attributes"}},
-		     sprintf("%s: %s was cleared",
-			     $change->{name},
-			     $change->{attribute}));
-	    }
-	    elsif ($change->{type} eq "clear" || $change->{type} eq "set")
-	    {
-		push(@{$revision_data{"Attributes"}},
-		     sprintf("%s: %s = %s",
-			     $change->{name},
-			     $change->{attribute},
-			     $change->{value}));
-	    }
-	    elsif ($change->{type} eq "old_revision")
-	    {
-		push(@parent_revision_ids, $change->{revision_id});
-	    }
-	    elsif ($change->{type} eq "new_manifest")
-	    {
-		$manifest_id = $change->{manifest_id};
-	    }
-	}
-	foreach my $type (@types)
-	{
-	    if (scalar(@{$revision_data{$type}}) > 0)
-	    {
-		$text_buffer->insert_with_tags_by_name
-		    ($text_buffer->get_end_iter(),
-		     "    " . $type . ":\n", "italics");
-		%seen = ();
-		@unique = sort(grep { ! $seen{$_} ++ }
-			       @{$revision_data{$type}});
-		foreach my $line (@unique)
-		{
-		    $text_buffer->insert($text_buffer->get_end_iter(),
-					 "\t" . $line . "\n");
-		}
-	    }
-	}
-
-	# Parent revision and manifest ids.
-
-	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					       "\nParent revision id(s):\t",
-					       "bold");
-	$text_buffer->insert($text_buffer->get_end_iter(),
-			     join(" ", @parent_revision_ids) . "\n");
-	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					       "Manifest id:\t\t",
-					       "bold");
-	$text_buffer->insert($text_buffer->get_end_iter(), $manifest_id);
-
-    }
 
 }
 #
@@ -3465,6 +4085,210 @@ sub get_completion($$$$;$)
     else
     {
 	$$complete = 0;
+    }
+
+    return 1;
+
+}
+#
+##############################################################################
+#
+#   Routine      - mtn_diff
+#
+#   Description  - Compare two the specified two revisions, optionally
+#                  restricting the comparison to the specified file.
+#
+#   Data         - $list          : A reference to the list that is to contain
+#                                   the output from the diff command.
+#                  $mtn           : The Monotone database that is to be used
+#                                   or undef if the database associated with
+#                                   the current workspace is to be used.
+#                  $revision_id_1 : The first revision id that is to be
+#                                   compared.
+#                  $revision_id_2 : The second revision id that is to be
+#                                   compared.
+#                  $file_name     : Either the name of the file that the
+#                                   revision comparison should be restricted
+#                                   to or undef for a full revision
+#                                   comparison.
+#                  Return Value   : True if the comparison worked, otherwise
+#                                   false if something went wrong.
+#
+##############################################################################
+
+
+
+sub mtn_diff($$$$;$)
+{
+
+    my($list, $mtn_db, $revision_id_1, $revision_id_2, $file_name) = @_;
+
+    my($buffer,
+       @cmd);
+
+    # Run mtn diff.
+
+    @$list = ();
+    push(@cmd, "mtn");
+    push(@cmd, "--db=" . $mtn_db) if (defined($mtn_db));
+    push(@cmd, "diff");
+    push(@cmd, "-r");
+    push(@cmd, "i:" . $revision_id_1);
+    push(@cmd, "-r");
+    push(@cmd, "i:" . $revision_id_2);
+    push(@cmd, $file_name) if (defined($file_name));
+    run_command(\$buffer, @cmd) or return;
+
+    # Break up the input into a list of lines.
+
+    @$list = split(/\n/o, $buffer);
+
+    return 1;
+
+}
+#
+##############################################################################
+#
+#   Routine      - run_command
+#
+#   Description  - Run the specified command and return its output.
+#
+#   Data         - $buffer      : A reference to the buffer that is to contain
+#                                 the output from the command.
+#                  $args        : A list containing the command to run and its
+#                                 arguments.
+#                  Return Value : True if the command worked, otherwise false
+#                                 if something went wrong.
+#
+##############################################################################
+
+
+
+sub run_command($@)
+{
+
+    my($buffer, @args) = @_;
+
+    my(@err,
+       $fd_err,
+       $fd_in,
+       $fd_out,
+       $pid,
+       $ret_val,
+       $status,
+       $stop,
+       $total_bytes,
+       $watcher);
+
+    # Run the command.
+
+    $fd_err = gensym();
+    eval
+    {
+	$pid = open3($fd_in, $fd_out, $fd_err, @args);
+    };
+    if ($@ ne "")
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    (undef,
+	     ["modal"],
+	     "warning",
+	     "close",
+	     sprintf("The %s subprocess could not start,\n"
+		         . "the system gave:\n<b><i>%s</b></i>",
+		     Glib::Markup::escape_text($args[0]),
+		     Glib::Markup::escape_text($@)));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+
+    # Setup a watch handler to get read our data and handle GTK2 events whilst
+    # the command is running.
+
+    $stop = $total_bytes = 0;
+    $$buffer = "";
+    $watcher = Gtk2::Helper->add_watch
+	(fileno($fd_out), "in",
+	 sub {
+	     my $bytes_read;
+	     if (($bytes_read = sysread($fd_out,
+					$$buffer,
+					32768,
+					$total_bytes))
+		 == 0)
+	     {
+		 $stop = 1;
+	     }
+	     else
+	     {
+		 $total_bytes += $bytes_read;
+	     }
+	     return TRUE;
+	 });
+    while (! $stop)
+    {
+	Gtk2->main_iteration();
+    }
+    Gtk2::Helper->remove_watch($watcher);
+
+    # Get any error output.
+
+    @err = readline($fd_err);
+
+    close($fd_in);
+    close($fd_out);
+    close($fd_err);
+
+    # Reap the process and deal with any errors.
+
+    if (($ret_val = waitpid($pid, 0)) == -1)
+    {
+	if ($! != ECHILD)
+	{
+	    my $dialog = Gtk2::MessageDialog->new_with_markup
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 sprintf("waitpid failed with:\n<b><i>%s</i></b>",
+			 Glib::Markup::escape_text($!)));
+	    $dialog->run();
+	    $dialog->destroy();
+	    return;
+	}
+    }
+    $status = $?;
+    if (WIFEXITED($status) && WEXITSTATUS($status) != 0)
+    {
+	my $dialog = Gtk2::MessageDialog->new_with_markup
+	    (undef,
+	     ["modal"],
+	     "warning",
+	     "close",
+	     sprintf("The %s subprocess failed with an exit status\n"
+		         . "of %d and printed the following on stderr:\n"
+		         . "<b><i>%s</i></b>",
+		     Glib::Markup::escape_text($args[0]),
+		     WEXITSTATUS($status),
+		     Glib::Markup::escape_text(join("", @err))));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+    elsif (WIFSIGNALED($status))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    (undef,
+	     ["modal"],
+	     "warning",
+	     "close",
+	     sprintf("The %s subprocess was terminated by signal %d",
+		     Glib::Markup::escape_text($args[0]),
+		     WTERMSIG($status)));
+	$dialog->run();
+	$dialog->destroy();
+	return;
     }
 
     return 1;
@@ -3754,9 +4578,12 @@ sub make_busy($$)
 	{
 	    Gtk2->grab_add($instance->{appbar});
 	}
-	foreach my $window (@windows)
+	foreach my $instance (@windows)
 	{
-	    $window->{window}->window()->set_cursor($busy_cursor);
+	    foreach my $window (@{$instance->{busy_windows}})
+	    {
+		$window->set_cursor($busy_cursor);
+	    }
 	}
     }
     else
@@ -3769,9 +4596,12 @@ sub make_busy($$)
 	{
 	    Gtk2->grab_remove($instance->{appbar});
 	}
-	foreach my $window (@windows)
+	foreach my $instance (@windows)
 	{
-	    $window->{window}->window()->set_cursor(undef);
+	    foreach my $window (@{$instance->{busy_windows}})
+	    {
+		$window->set_cursor(undef);
+	    }
 	}
     }
 
@@ -3821,11 +4651,28 @@ sub create_format_tags($)
 
     my ($text_buffer) = @_;
 
-    $text_buffer->create_tag("bold", weight => PANGO_WEIGHT_BOLD);
-    $text_buffer->create_tag("italics", style => "italic");
+    $text_buffer->create_tag("bold", "weight" => PANGO_WEIGHT_BOLD);
+    $text_buffer->create_tag("italics", "style" => "italic");
     $text_buffer->create_tag("bold-italics",
-			     weight => PANGO_WEIGHT_BOLD,
-			     style => "italic");
+			     "weight" => PANGO_WEIGHT_BOLD,
+			     "style" => "italic");
+    $text_buffer->create_tag("compare-info",
+			     "foreground" => "Yellow",
+			     "background" => "LightSlateGrey");
+    $text_buffer->create_tag("compare-first-file",
+			     "foreground" => "DarkRed",
+			     "background" => "MistyRose1");
+    $text_buffer->create_tag("compare-first-file-info",
+			     "weight" => PANGO_WEIGHT_BOLD,
+			     "foreground" => "IndianRed1",
+			     "background" => "DarkSlateGrey");
+    $text_buffer->create_tag("compare-second-file",
+			     "foreground" => "DarkGreen",
+			     "background" => "DarkSeaGreen1");
+    $text_buffer->create_tag("compare-second-file-info",
+			     "weight" => PANGO_WEIGHT_BOLD,
+			     "foreground" => "SpringGreen1",
+			     "background" => "DarkSlateGrey");
 
 }
 #
