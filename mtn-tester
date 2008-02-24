@@ -26,10 +26,10 @@ Monotone::AutomateStdio->register_error_handler
 	 printf(STDERR "PROBLEM (%s): %s\n", $severity, $message);
 	 die() if ($severity eq "error");
      });
-# Monotone::AutomateStdio::register_error_handler("both", undef);
+# Monotone::AutomateStdio::register_error_handler("both");
 
 $mtn = Monotone::AutomateStdio->new("/home/aecoope/perl/test.mtn");
-# $mtn = Monotone->new();
+# $mtn = Monotone::AutomateStdio->new();
 if (0)
 {
     if (! $mtn->branches(\@list))

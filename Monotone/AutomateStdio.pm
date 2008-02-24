@@ -140,6 +140,7 @@ sub get_base_revision_id($\$);
 sub get_content_changed($\@$$);
 sub get_corresponding_path($\$$$$);
 sub get_current_revision_id($\$);
+sub get_db_name($);
 sub get_error_message($);
 sub get_file($\$$);
 sub get_file_of($\$$;$);
@@ -156,7 +157,7 @@ sub keys($$);
 sub leaves($\@);
 sub new($;$);
 sub parents($\@$);
-sub register_error_handler($$);
+sub register_error_handler($;$$);
 sub roots($\@);
 sub select($\@$);
 sub tags($$;$);
@@ -183,8 +184,9 @@ sub warning_handler_wrapper($);
 #                                 class or the name of the class to be
 #                                 created.
 #                  $db_name     : The full path of the Monotone database. If
-#                                 not provided then the database associated
-#                                 with the current workspace is used.
+#                                 this is not provided then the database
+#                                 associated with the current workspace is
+#                                 used.
 #                  Return Value : A reference to the newly created object.
 #
 ##############################################################################
@@ -2015,18 +2017,18 @@ sub toposort($\@@)
 #                              registered for. One of "error", "warning" or
 #                              "both".
 #                  $callback : A reference to the error handler routine. If
-#                              this is undef then the existing error handler
-#                              routine is unregistered and errors are raised
-#                              in the default way.
+#                              this is not provided then the existing error
+#                              handler routine is unregistered and errors are
+#                              handled in the default way.
 #
 ##############################################################################
 
 
 
-sub register_error_handler($$)
+sub register_error_handler($;$$)
 {
 
-    shift() if ($#_ > 1);
+    shift() if ($_[0] eq __PACKAGE__ || ref($_[0]) eq __PACKAGE__);
     my($severity, $handler) = @_;
 
     if ($severity eq "error")
@@ -2072,6 +2074,31 @@ sub register_error_handler($$)
     {
 	croak("Unknown error handler severity `" . $severity . "'");
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_db_name
+#
+#   Description  - Return the the file name of the Monotone database as given
+#                  to the constructor.
+#
+#   Data         - $this        : The object.
+#                  Return Value : The file name of the database as given to
+#                                 the constructor or undef if no database was
+#                                 given.
+#
+##############################################################################
+
+
+
+sub get_db_name($)
+{
+
+    my Monotone::AutomateStdio $this = $_[0];
+
+    return $this->{db_name};
 
 }
 #
@@ -2582,7 +2609,7 @@ sub error_handler_wrapper($)
     my $message = $_[0];
 
     &$error_handler("error", $message);
-    die();
+    croak(__PACKAGE__ . ": Fatal error.");
 
 }
 #
