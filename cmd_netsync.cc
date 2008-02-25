@@ -491,6 +491,33 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                        globish("*"), globish(""));
 }
 
+void 
+run_gsync_protocol(options & opts, lua_hooks & lua, database & db, utf8 const & addr,
+                   globish const & include_pattern,
+                   globish const & exclude_pattern);
+
+CMD(gsync, "gsync", "", CMD_REF(network),
+    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("Synchronizes branches with a netsync server"),
+    N_("This synchronizes branches that match the pattern given in PATTERN "
+       "with the gsync server at the address ADDRESS."),
+    options::opts::set_default | options::opts::exclude |
+    options::opts::key_to_push)
+{
+  utf8 addr;
+
+  database db(app);
+  key_store keys(app);
+
+  globish include_pattern, exclude_pattern;
+  extract_address(app.opts, db, args, addr);
+  extract_patterns(app.opts, db, args, include_pattern, exclude_pattern);
+  find_key_if_needed(app.opts, app.lua, db, keys, addr, include_pattern, exclude_pattern);
+
+  run_gsync_protocol(app.opts, app.lua, db, addr, include_pattern, exclude_pattern);
+}
+
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
