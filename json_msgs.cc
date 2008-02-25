@@ -11,6 +11,7 @@
 #include "base.hh"
 #include "json_io.hh"
 #include "json_msgs.hh"
+#include "cset.hh"
 
 #include <map>
 #include <set>

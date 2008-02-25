@@ -9,9 +9,10 @@
 
 #include "base.hh"
 
-#include "app_state.hh"
 #include "globish.hh"
+#include "lua_hooks.hh"
 #include "net_common.hh"
+#include "options.hh"
 #include "uri.hh"
 #include "vocab.hh"
 
@@ -65,7 +66,8 @@ add_address_names(Netxx::Address & addr,
 }
 
 shared_ptr<Netxx::StreamBase>
-build_stream_to_server(app_state & app,
+build_stream_to_server(options & opts,
+                       lua_hooks & lua,
                        uri const & u,
                        globish const & include_pattern,
                        globish const & exclude_pattern,                       
@@ -75,16 +77,16 @@ build_stream_to_server(app_state & app,
   shared_ptr<Netxx::StreamBase> server;
   vector<string> argv;
 
-  if (app.lua.hook_get_netsync_connect_command(u,
-                                               include_pattern,
-                                               exclude_pattern,
-                                               global_sanity.debug_p(),
-                                               argv))
+  if (lua.hook_get_netsync_connect_command(u,
+                                           include_pattern,
+                                           exclude_pattern,
+                                           global_sanity.debug_p(),
+                                           argv))
     {
       I(argv.size() > 0);
       string cmd = argv[0];
       argv.erase(argv.begin());
-      app.opts.use_transport_auth = app.lua.hook_use_transport_auth(u);
+      opts.use_transport_auth = lua.hook_use_transport_auth(u);
       return shared_ptr<Netxx::StreamBase>
         (new Netxx::PipeStream(cmd, argv));
     }

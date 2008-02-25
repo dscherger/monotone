@@ -14,7 +14,6 @@
 #include <set>
 #include <string>
 
-#include "app_state.hh"
 #include "database.hh"
 #include "globish.hh"
 #include "http_client.hh"
@@ -196,8 +195,8 @@ invert_ancestry(rev_ancestry_map const & in,
 }
 
 static void
-do_missing_playback(http_client & h,
-                    app_state & app, 
+do_missing_playback(database & db,
+                    http_client & h,
                     set<revision_id> & core_frontier, 
                     set<revision_id> & revs_to_push,
                     rev_ancestry_map const & parent_to_child_map)
@@ -250,27 +249,27 @@ do_missing_playback(http_client & h,
 
 
 static void 
-request_missing_playback(http_client & h,
-                         app_state & app,
+request_missing_playback(database & db,
+                         http_client & h,
                          set<revision_id> const & core_frontier)
 {
 
 }
 
 void
-run_gsync_protocol(utf8 const & addr,
+run_gsync_protocol(options & opts, lua_hooks & lua, database & db,
+                   utf8 const & addr,
                    globish const & include_pattern,
-                   globish const & exclude_pattern,
-                   app_state & app)
+                   globish const & exclude_pattern)
 {
   uri u;
   parse_uri(addr(), u);
-  http_client h(app, u, include_pattern, exclude_pattern);
+  http_client h(opts, lua, u, include_pattern, exclude_pattern);
 
   bool pushing = true, pulling = true;
 
   rev_ancestry_map parent_to_child_map, child_to_parent_map;
-  app.db.get_revision_ancestry(parent_to_child_map);
+  db.get_revision_ancestry(parent_to_child_map);
   invert_ancestry(parent_to_child_map, child_to_parent_map);
 
   set<revision_id> our_revs;
@@ -291,14 +290,14 @@ run_gsync_protocol(utf8 const & addr,
   P(F("revs to send: %d") % ours_alone.size());
 
   set<revision_id> core_frontier = common_core;
-  erase_ancestors(core_frontier, app);
+  erase_ancestors(db, core_frontier);
 
   if (pushing)
-    do_missing_playback(h, app, core_frontier, ours_alone,
+    do_missing_playback(db, h, core_frontier, ours_alone,
                         parent_to_child_map);
 
   if (pulling)
-    request_missing_playback(h, app, core_frontier);
+    request_missing_playback(db, h, core_frontier);
 }
 
 

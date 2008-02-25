@@ -15,10 +15,12 @@
 #include "app_state.hh"
 #include "cmd.hh"
 #include "constants.hh"
+#include "database.hh"
 #include "globish.hh"
 #include "json_io.hh"
 #include "json_msgs.hh"
 #include "keys.hh"
+#include "key_store.hh"
 #include "lexical_cast.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
@@ -153,18 +155,18 @@ parse_scgi(istream & in, string & data)
 }
 
 static json_io::json_value_t
-do_cmd(app_state & app, json_io::json_object_t cmd_obj)
+do_cmd(database & db, json_io::json_object_t cmd_obj)
 {
   set<revision_id> revs;
 
   if (decode_msg_inquire(cmd_obj, revs))
     {
       L(FL("inquiring %d revisions") % revs.size());
-      app.db.ensure_open();
+      db.ensure_open();
       set<revision_id> confirmed;
       for (set<revision_id>::const_iterator i = revs.begin();
            i != revs.end(); ++i)
-        if (app.db.revision_exists(*i))
+        if (db.revision_exists(*i))
           confirmed.insert(*i);
       return encode_msg_confirm(confirmed);
     }
@@ -176,7 +178,7 @@ do_cmd(app_state & app, json_io::json_object_t cmd_obj)
 
 
 void
-process_scgi_transaction(app_state & app, 
+process_scgi_transaction(database & db,
                          std::istream & in,
                          std::ostream & out)
 {
@@ -196,10 +198,10 @@ process_scgi_transaction(app_state & app,
 
       if (static_cast<bool>(obj)) 
         {
-          transaction_guard guard(app.db);
+          transaction_guard guard(db);
           L(FL("read JSON object"));
 
-          json_io::json_value_t res = do_cmd(app, obj);
+          json_io::json_value_t res = do_cmd(db, obj);
           if (static_cast<bool>(res))
             {
               json_io::printer out_data;
@@ -251,24 +253,28 @@ CMD_NO_WORKSPACE(scgi,             // C
   if (!args.empty())
     throw usage(execid);
 
+  database db(app);
+  key_store keys(app);
+
   if (app.opts.signing_key() == "")
     {
       rsa_keypair_id key;
-      get_user_key(key, app);
+      get_user_key(app.opts, app.lua, db, keys, key);
       app.opts.signing_key = key;
     }
 
+  rsa_keypair_id key;  // still unused...
   if (app.opts.use_transport_auth)
     {
       N(app.lua.hook_persist_phrase_ok(),
         F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
-      require_password(app.opts.signing_key, app);
+      get_user_key(app.opts, app.lua, db, keys, key);
     }
   else if (!app.opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
 
   if (app.opts.bind_stdio)
-    process_scgi_transaction(app, std::cin, std::cout);
+    process_scgi_transaction(db, std::cin, std::cout);
   else
     {    
 
@@ -313,7 +319,7 @@ CMD_NO_WORKSPACE(scgi,             // C
                       Netxx::Stream stream(peer.get_socketfd());
                       Netxx::Netbuf<constants::bufsz>  buf(stream);
                       std::iostream io(&buf);
-                      process_scgi_transaction(app, io, io);
+                      process_scgi_transaction(db, io, io);
                     }
                   else
                     break;

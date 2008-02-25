@@ -25,7 +25,8 @@ namespace Netxx {
 struct globish;
 struct utf8;
 struct uri;
-struct app_state;
+struct options;
+class lua_hooks;
 
 
 // This just covers helper routines that are shared across networking
@@ -38,7 +39,8 @@ add_address_names(Netxx::Address & addr,
                   Netxx::port_type default_port);
 
 boost::shared_ptr<Netxx::StreamBase>
-build_stream_to_server(app_state & app,
+build_stream_to_server(options & opts,
+                       lua_hooks & lua,
                        uri const & u,
                        globish const & include_pattern,
                        globish const & exclude_pattern,

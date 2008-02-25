@@ -10,7 +10,6 @@
 
 // micro http client implementation
 #include "base.hh"
-#include "app_state.hh"
 #include "globish.hh"
 #include "http_client.hh"
 #include "json_io.hh"
@@ -46,15 +45,16 @@ using Netxx::Stream;
 using Netxx::PipeStream;
 
 
-http_client::http_client(app_state & app,
+http_client::http_client(options & opts, lua_hooks & lua,
                          uri const & u,               
                          globish const & include_pattern,
                          globish const & exclude_pattern)
-  : app(app), 
+  : opts(opts),
+    lua(lua),
     u(u), 
     include_pattern(include_pattern), 
     exclude_pattern(exclude_pattern),
-    stream(build_stream_to_server(app, u, include_pattern, exclude_pattern,
+    stream(build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern,
                                   (u.port.empty() ? constants::default_http_port
                                                   : lexical_cast<size_t,string>(u.port)),
                                   Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)))), 
@@ -69,7 +69,7 @@ http_client::transact_json(json_value_t v)
   if (!open)
     {
       L(FL("reopening connection"));
-      stream = build_stream_to_server(app, u, include_pattern, exclude_pattern, 
+      stream = build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern, 
                                       constants::default_http_port,
                                       Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)));
       nb = shared_ptr< Netbuf<constants::bufsz> >(new Netbuf<constants::bufsz>(*stream));

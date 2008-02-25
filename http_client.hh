@@ -21,15 +21,16 @@
 
 #include <boost/shared_ptr.hpp>
 
-struct app_state;
 struct uri;
 struct globish;
-
+struct options;
+class lua_hooks;
 
 struct
 http_client
 {
-  app_state & app;
+  options & opts;
+  lua_hooks & lua;
   uri const & u;
   globish const & include_pattern;
   globish const & exclude_pattern;
@@ -39,7 +40,7 @@ http_client
   boost::shared_ptr<std::iostream> io;
   bool open;
 
-  http_client(app_state & app,
+  http_client(options & opts, lua_hooks & lua,
               uri const & u,          
               globish const & include_pattern,
               globish const & exclude_pattern); 

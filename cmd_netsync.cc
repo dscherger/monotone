@@ -492,10 +492,9 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 }
 
 void 
-run_gsync_protocol(utf8 const & addr,
+run_gsync_protocol(options & opts, lua_hooks & lua, database & db, utf8 const & addr,
                    globish const & include_pattern,
-                   globish const & exclude_pattern,
-                   app_state & app);
+                   globish const & exclude_pattern);
 
 CMD(gsync, "gsync", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
@@ -506,12 +505,16 @@ CMD(gsync, "gsync", "", CMD_REF(network),
     options::opts::key_to_push)
 {
   utf8 addr;
-  globish include_pattern, exclude_pattern;
-  extract_address(args, addr, app);
-  extract_patterns(args, include_pattern, exclude_pattern, app);
-  find_key_if_needed(addr, include_pattern, exclude_pattern, app);
 
-  run_gsync_protocol(addr, include_pattern, exclude_pattern, app);
+  database db(app);
+  key_store keys(app);
+
+  globish include_pattern, exclude_pattern;
+  extract_address(app.opts, db, args, addr);
+  extract_patterns(app.opts, db, args, include_pattern, exclude_pattern);
+  find_key_if_needed(app.opts, app.lua, db, keys, addr, include_pattern, exclude_pattern);
+
+  run_gsync_protocol(app.opts, app.lua, db, addr, include_pattern, exclude_pattern);
 }
 
 
