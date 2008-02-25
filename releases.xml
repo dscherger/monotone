@@ -5,8 +5,86 @@
         <link>http://monotone.ca/releases.xml</link> 
         <description>monotone releases with links to the sources.</description> 
         <language>en</language> 
-        <pubDate>Wed, 12 Dec 2007 21:21:15 +0000</pubDate>
+        <pubDate>Mon, 25 Feb 2008 15:55:36 +0000</pubDate>
         
+	<item>
+            <title>monotone 0.39 released</title> 
+            <description>
+<![CDATA[
+<h2>Changes</h2>
+
+<ul>
+<li>'mtn di' is now an alias for 'mtn diff'.</li>
+
+<li>'automate db_set' has been renamed to 'automate set_db_variable'.</li>
+
+<li>'automate db_get' has been replaced by 'automate get_db_variables'
+which returns all database variables similar to 'list vars' in
+basic_io format, optionally restricted by domain.</li>
+
+<li>The REVID argument of 'automate get_revision' is now mandatory;
+to retrieve the current workspace revision, use the new command
+'automate get_current_revision'</li>
+
+<li>messages describing conflicts from all of the various merge commands
+have been reworked and should be much more informative.</li>
+
+<li>mtn show_conflicts now outputs much more detailed and descriptive
+messages, however it may report content conflicts that will be
+resolved automatically by the line merger.</li>
+
+<li>The internal copy of PCRE has been updated to version 7.6.
+If you use the '--with-system-pcre' configure switch, it
+will insist on at least this version.</li>
+
+<li>"emacs" has been removed from the list of dumb terminal types; 
+tickers should now default to --ticker=count with emacs terminals</li>
+
+<li>extensive section on merge conflicts and ways to resolve them
+added to the manual.</li>
+</ul>
+
+<h2>Bugs fixed</h2>
+
+<ul>
+<li>for changes near the beginning of a file, mtn's unified diff
+output sometimes contained too many leading context lines.</li>
+
+<li>the path handling of 'mtn revert' was improved and fixed two bugs:
+now a restricted revert on a node "dir1/file1" reverts only the
+content changes in "file1", but leaves renames of any of its
+ancestor nodes untouched; furthermore, if "dir0/" was renamed to 
+"dir1" and "dir1/file1" was dropped, mtn now re-creates file1 at the
+proper place ("dir1/") and leaves no missing files around because
+of the non-existing "dir0/".</li>
+
+<li>a few changes needed to build with gcc 4.3.</li>
+</ul>
+     
+<h2>New features</h2>
+
+<ul>
+<li>'automate drop_db_variables' which drops one database variable
+(like the 'unset' command) or all variables within a given domain.</li>
+
+<li>'automate inventory' now accepts the options '--no-ignored',
+'--no-unknown', '--no-unchanged' and '--no-corresponding-renames'.
+Please consult the monotone documentation for more information about
+these new options.
+In addition, 'automate inventory' no longer recurses into ignored
+directories. The typical case of listing files that need attention
+now runs at least four times faster.</li>
+
+<li>'automate get_current_revision' which outputs the revision text of 
+changes in the current workspace</li>
+</ul>
+]]>
+            </description>
+            <pubDate>Mon, 25 Feb 2008 15:55:36 +0000</pubDate>
+            <enclosure url="http://monotone.ca/downloads/0.39/monotone-0.39.tar.gz" length="5332200" type="application/octet-stream"/>
+
+	</item>
+
 	<item>
             <title>monotone 0.38 released</title> 
             <description>
