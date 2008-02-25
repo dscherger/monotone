@@ -59,12 +59,12 @@ from the default ones. Since Lua is a lexically scoped language with closures,
 this can be achieved with the following code:
 
 <pre class="smallexample">     do
-     	local old_hook = default_hook
-     	function default_hook(arg)
-     		if not old_hook(arg) then
-     			-- do other stuff
-     		end
-     	end
+         local old_hook = default_hook
+         function default_hook(arg)
+             if not old_hook(arg) then
+                 -- do other stuff
+             end
+         end
      end
 </pre>
    <p>Now the default hook is trapped in a variable local to this block, and can

@@ -604,19 +604,35 @@ marker.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate inventory [</span><var>files...</var><span class="command">]</span></samp><a name="index-mtn-automate-inventory-_005b_0040var_007bfiles_002e_002e_002e_007d_005d-156"></a><dd>
+     <br><dt><samp><span class="command">mtn automate inventory [</span><samp><span class="option">options...</span></samp><span class="command">] [</span><var>files...</var><span class="command">]</span></samp><a name="index-mtn-automate-inventory-_005b_0040option_007boptions_002e_002e_002e_007d_005d-_005b_0040var_007bfiles_002e_002e_002e_007d_005d-156"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
-One or more file paths (optional). If present, only show inventory for the given
-files or directories (and their sub-directories). You can use <samp><span class="option">--depth</span></samp>
-and <samp><span class="option">--exclude</span></samp> to control what is selected through this restriction.
+One or more file paths (optional). If present, only show an inventory for the
+given files or directories (and their sub-directories).
+
+               <dl>
+<dt><samp><span class="option">--depth=</span><var>n</var></samp><dd>Maximum number of directories to descend.
+
+               <br><dt><samp><span class="option">--exclude=</span><var>exclude-glob</var></samp><dd>File or directory to exclude.
+
+               <br><dt><samp><span class="option">--no-ignored</span></samp><dd>Don't output ignored files or directories.
+
+               <br><dt><samp><span class="option">--no-unknown</span></samp><dd>Don't output unknown directories.
+
+               <br><dt><samp><span class="option">--no-unchanged</span></samp><dd>Don't output files that are known but not changed in any way.
+
+               <br><dt><samp><span class="option">--no-corresponding-renames</span></samp><dd>If restricted to a renamed path, do not output the corresponding old / new
+paths for this restriction.
+
+          </dl>
 
           <br><dt><strong>Changes:</strong><dd>
                <ul>
+<li>7.0 &ndash; added options <samp><span class="option">--no-ignored</span></samp>, <samp><span class="option">--no-unknown</span></samp>,
+<samp><span class="option">--no-unchanged</span></samp> and <samp><span class="option">--no-corresponding-renames</span></samp>
 <li>6.0 &ndash; converted to basic_io format (restriction support, various fixes)
 <li>1.0 &ndash; initial, line-based format
 </ul>
-          <!-- FIXME: check this number when merge to main branch -->
 
           <br><dt><strong>Purpose:</strong><dd>
 Prints the inventory of every file found in the workspace or its
@@ -631,6 +647,13 @@ All basic status cases:
            fs_type "file"
             status "added" "known"
            changes "content"
+          
+              path "attributes_altered"
+          old_type "file"
+          new_type "file"
+           fs_type "file"
+            status "known"
+           changes "attrs"
           
               path "dropped"
           old_type "file"
@@ -659,6 +682,13 @@ All basic status cases:
            fs_type "file"
             status "known"
            changes "content"
+          
+              path "patched_and_attributes_altered"
+          old_type "file"
+          new_type "file"
+           fs_type "file"
+            status "known"
+           changes "content" "attrs"
           
               path "renamed"
           new_type "file"
@@ -861,6 +891,88 @@ thus missing source and unknown target:
            changes "content"
      </pre>
 
+          <p>Renamed and restricted to <samp><span class="file">original</span></samp> or <samp><span class="file">renamed</span></samp>:
+<pre class="verbatim">          
+              path "original"
+          old_type "file"
+          new_path "renamed"
+           fs_type "none"
+            status "rename_source"
+          
+              path "renamed"
+          new_type "file"
+          old_path "original"
+           fs_type "file"
+            status "rename_target" "known"
+           changes "content"
+     </pre>
+
+          <p>Renamed and restricted to <samp><span class="file">original</span></samp> with the <samp><span class="option">--no-corresponding-renames</span></samp> option:
+<pre class="verbatim">          
+              path "original"
+          old_type "file"
+          new_path "renamed"
+           fs_type "none"
+            status "rename_source"
+     </pre>
+
+          <p>Renamed and restricted to <samp><span class="file">renamed</span></samp> with the <samp><span class="option">--no-corresponding-renames</span></samp> option:
+<pre class="verbatim">          
+              path "renamed"
+          new_type "file"
+          old_path "original"
+           fs_type "file"
+            status "rename_target" "known"
+           changes "content"
+     </pre>
+
+          <p>File is missing, an unversioned directory is in the way:
+<pre class="verbatim">          
+              path "missing_file"
+          old_type "file"
+          new_type "file"
+           fs_type "directory"
+            status "invalid"
+           changes "content"
+     </pre>
+
+          <p>Directory is missing, an unversioned file is in the way:
+<pre class="verbatim">          
+              path "missing_directory"
+          old_type "directory"
+          new_type "directory"
+           fs_type "file"
+            status "invalid"
+     </pre>
+
+          <p>Directory <samp><span class="file">source</span></samp> renamed to <samp><span class="file">target</span></samp>, <samp><span class="file">target</span></samp> is missing, an
+unversioned file is in the way:
+<pre class="verbatim">          
+              path "source"
+          old_type "directory"
+          new_path "target"
+           fs_type "none"
+            status "rename_source"
+          
+              path "source/a"
+          old_type "file"
+          new_path "target/a"
+           fs_type "none"
+            status "rename_source"
+          
+              path "target"
+          new_type "directory"
+          old_path "source"
+           fs_type "file"
+            status "rename_target" "invalid"
+          
+              path "target/a"
+          new_type "file"
+          old_path "source/a"
+           fs_type "none"
+            status "rename_target" "missing"
+     </pre>
+
           <br><dt><strong>Output format:</strong><dd>
 Each path is printed in one basic_io stanza. Stanzas are separated by
 a blank line. Each stanza starts with a <code>path</code> line, and contains
@@ -869,58 +981,66 @@ change in future revisions, except that the first line will always be
 <code>path</code>.
 
                <dl>
-<dt><samp><span class="option">'path'</span></samp><dd>the file or directory path, relative to the workspace root. The file
+<dt><samp><span class="option">path</span></samp><dd>The file or directory path, relative to the workspace root. The file
 either exists in the workspace, or is listed in the base or revision
-manifest.
+manifest. 
+<samp><span class="option">path</span></samp> is always output.
 
-               <br><dt><samp><span class="option">old_type</span></samp><dd>gives the type of the file in the base manifest. &ldquo;type&rdquo; is
-either <samp><span class="option">file</span></samp>, <samp><span class="option">directory</span></samp>, or <samp><span class="option">none</span></samp>. 
-<samp><span class="option">old_type</span></samp> is output only if it is different from the type in
-the revision manifest or workspace.
+               <br><dt><samp><span class="option">old_type</span></samp><dd>The type of the node in the base manifest. 
+&ldquo;type&rdquo; is either <samp><span class="option">file</span></samp> or <samp><span class="option">directory</span></samp>. 
+<samp><span class="option">old_type</span></samp> is output for all old nodes (i.e. unchanged or dropped paths
+and rename sources).
 
-               <br><dt><samp><span class="option">new_type</span></samp><dd>the type of the file in the revision manifest. <samp><span class="option">new_type</span></samp> is
-output only if it is different from the type in the base manifest or
-workspace.
+               <br><dt><samp><span class="option">new_type</span></samp><dd>The type of the node in the revision manifest. 
+&ldquo;type&rdquo; is either <samp><span class="option">file</span></samp> or <samp><span class="option">directory</span></samp>. 
+<samp><span class="option">new_type</span></samp> is output for all new nodes (i.e. unchanged or added paths
+and rename targets).
 
-               <br><dt><samp><span class="option">fs_type</span></samp><dd>the type of the file in the workspace (also called the filesystem). 
+               <br><dt><samp><span class="option">fs_type</span></samp><dd>The type of the node in the workspace (also called the filesystem). 
+&ldquo;type&rdquo; is either <samp><span class="option">file</span></samp>, <samp><span class="option">directory</span></samp> or <samp><span class="option">none</span></samp>
+(if the path does not exist in the file system). 
 <samp><span class="option">fs_type</span></samp> is always output.
 
-               <br><dt><samp><span class="option">old_path</span></samp><dd>the old path for the file, if it has been renamed in the revision
-manifest.
+               <br><dt><samp><span class="option">old_path</span></samp><dd>The old path for the node, if it has been renamed in the revision
+manifest. 
+<samp><span class="option">old_path</span></samp> is only output for rename targets.
 
-               <br><dt><samp><span class="option">new_path</span></samp><dd>the new path for the file, if it has been renamed in the revision
-manifest.
+               <br><dt><samp><span class="option">new_path</span></samp><dd>The new path for the node, if it has been renamed in the revision
+manifest. 
+<samp><span class="option">new_path</span></samp> is only output for rename sources.
 
                <br><dt><samp><span class="option">status</span></samp><dd><samp><span class="option">status</span></samp> is always output. Its value is one or more of:
 
                     <dl>
-<dt><samp><span class="option">rename_source</span></samp><dd>the old name of a file that has been renamed.
+<dt><samp><span class="option">rename_source</span></samp><dd><var>path</var> is part of a rename and denotes the old name of a renamed node.
 
-                    <br><dt><samp><span class="option">rename_target</span></samp><dd>the new name of a file that has been renamed.
+                    <br><dt><samp><span class="option">rename_target</span></samp><dd><var>path</var> is part of a rename and denotes the new name of a renamed node.
 
-                    <br><dt><samp><span class="option">added</span></samp><dd>the file is new in the revision manifest (not in the base
-manifest).
+                    <br><dt><samp><span class="option">added</span></samp><dd><var>path</var> has been added in the revision manifest, but not existent in the
+base manifest.
 
-                    <br><dt><samp><span class="option">dropped</span></samp><dd>the file is deleted in the revision manifest and the workspace.
+                    <br><dt><samp><span class="option">dropped</span></samp><dd><var>path</var> has been deleted in the revision manifest and the workspace.
 
-                    <br><dt><samp><span class="option">missing</span></samp><dd>the file is deleted in the workspace but not the revision manifest.
+                    <br><dt><samp><span class="option">missing</span></samp><dd><var>path</var> has been deleted in the workspace, but still exists in the revision
+manifest.
 
-                    <br><dt><samp><span class="option">ignored</span></samp><dd>the file is ignored by monotone.
+                    <br><dt><samp><span class="option">ignored</span></samp><dd><var>path</var> is ignored by monotone.
 
-                    <br><dt><samp><span class="option">known</span></samp><dd>the file exists in the workspace, and in the revision manifest.
+                    <br><dt><samp><span class="option">known</span></samp><dd><var>path</var> exists in the workspace, and in the revision manifest.
 
-                    <br><dt><samp><span class="option">unknown</span></samp><dd>the file exists in the workspace, but not in the revision manifest.
+                    <br><dt><samp><span class="option">unknown</span></samp><dd><var>path</var> exists in the workspace, but not in the revision manifest, i.e. 
+is unversioned.
 
-                    <br><dt><samp><span class="option">invalid</span></samp><dd>the file exists in the workspace and revision manifest, but with
-different types (one is a directory, the other a file). 
-<!-- FIXME: not shown in examples or tests -->
+                    <br><dt><samp><span class="option">invalid</span></samp><dd><var>path</var> is versioned and exists in the workspace and revision manifest, but
+with incompatible types (a versioned missing file is replaced by an
+unversioned directory and vice versa). 
 </dl>
 
                <br><dt><samp><span class="option">changes</span></samp><dd>
                     <dl>
-   <dt><samp><span class="option">content</span></samp><dd>   the file contents have changed.
+   <dt><samp><span class="option">content</span></samp><dd>   The contents of a file have been changed.
 
-                    <br><dt><samp><span class="option">attrs</span></samp><dd>   the file attributes have changed.
+                    <br><dt><samp><span class="option">attrs</span></samp><dd>   The attributes of a path (file or directory) have been changed.
 
                </dl>
                </dl>
@@ -1009,16 +1129,12 @@ or invalid prints an error message to stderr and exits with status 1.
 <dt><strong>Arguments:</strong><dd>
 none
 
-          <br><dt><strong>Added in:</strong><dd>
-1.0
-
-          <br><dt><strong>Modifications:</strong><dd>
-               <dl>
-<dt><strong>3.1</strong><dd>
-Added the 'o' item to the recognized input. This change should not
-break anything.
-
-          </dl>
+          <br><dt><strong>Changes:</strong><dd>
+               <ul>
+<li>3.1 &ndash; Added the 'o' item to the recognized input. This change should not
+break anything. 
+<li>1.0 &ndash; Initial version. 
+</ul>
 
           <br><dt><strong>Purpose:</strong><dd>
 Allow multiple automate commands to be run from one instance of monotone.
@@ -1040,7 +1156,8 @@ Allow multiple automate commands to be run from one instance of monotone.
 provided as 'l' &lt;string&gt; [&lt;string&gt; ...] 'e', where &lt;string&gt; = &lt;size&gt; colon
 &lt;data&gt; . This may optionally be preceded by a set of key=value pairs
 (command options) as 'o' &lt;string&gt; &lt;string&gt; [&lt;string&gt; &lt;string&gt; ...] 'e', where
-strings come in pairs, key followed by value.
+strings come in pairs, key followed by value. For flag options that
+don't take values, specify the second string as zero length; <code>0:</code>.
 
           <p>The space between the ending 'e' of one group of strings and the beginning
 'l' or 'o' of the next is reserved. Any characters other than whitespace
@@ -1087,15 +1204,17 @@ whatever error message would have been given.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_revision</span></samp><a name="index-mtn-automate-get_005frevision-159"></a><br><dt><samp><span class="command">mtn automate get_revision </span><var>id</var></samp><a name="index-mtn-automate-get_005frevision-_0040var_007bid_007d-160"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_revision </span><var>id</var></samp><a name="index-mtn-automate-get_005frevision-_0040var_007bid_007d-159"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
-Specifying the option <var>id</var> argument outputs the changeset
-information for the specified <var>id</var>. Otherwise, <var>id</var> is
-determined from the workspace.
+The argument <var>id</var> specifies the revision id for which the changeset
+information should be printed.
 
           <br><dt><strong>Added in:</strong><dd>
 1.0
+
+          <br><dt><strong>Changed in:</strong><dd>
+7.0 (<var>id</var> is now mandatory)
 
           <br><dt><strong>Purpose:</strong><dd>
 Prints change information for the specified revision id.
@@ -1180,6 +1299,34 @@ one.
           <br><dt><strong>Error conditions:</strong><dd>
 If the revision specified is unknown or invalid prints an error message
 to stderr and exits with status 1.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate get_current_revision [--exclude </span><var>excl</var><span class="command">] [--depth=</span><var>depth</var><span class="command">] [</span><var>path</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision-_005b_002d_002dexclude-_0040var_007bexcl_007d_005d-_005b_002d_002ddepth_003d_0040var_007bdepth_007d_005d-_005b_0040var_007bpath_007d-_002e_002e_002e_005d-160"></a><dd>
+          <dl>
+<dt><strong>Arguments:</strong><dd>
+One or more <var>path</var> arguments restrict the revision to these paths,
+otherwise all changes in workspace are taken into account.
+
+          <p>Options <var>excl</var> and <var>depth</var> work just like in <var>mtn commit</var>.
+
+          <br><dt><strong>Added in:</strong><dd>
+7.0
+
+          <br><dt><strong>Purpose:</strong><dd>
+Prints change information for the current workspace, optionally restricted by
+one or more paths.
+
+          <br><dt><strong>Sample output:</strong><dd>
+See <var>automate get_revision</var>
+
+          <br><dt><strong>Output format:</strong><dd>
+See <var>automate get_revision</var>
+
+          <br><dt><strong>Error conditions:</strong><dd>
+If the command is executed outside of a workspace, there are no changes in the
+current workspace or the restriction is invalid or has no recorded changes,
+prints an error message to stderr and exits with status 1.
 
      </dl>
 
@@ -1898,48 +2045,64 @@ revision <var>source_id</var> or is invalid, prints an error message to stderr a
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate db_get </span><var>domain</var> <var>name</var></samp><a name="index-mtn-automate-db_005fget-_0040var_007bdomain_007d-_0040var_007bname_007d-179"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_db_variables [</span><var>domain</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005fdb_005fvariables-_005b_0040var_007bdomain_007d_005d-179"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
-The <var>domain</var> and <var>name</var> specify the database variable
-which is returned.
+The optional <var>domain</var> restricts the output to variables only within
+this domain.
 
-          <br><dt><strong>Added in:</strong><dd>
-4.1
+          <br><dt><strong>Changes:</strong><dd>
+               <ul>
+<li>7.0 &ndash; converted output to basic_io, renamed to 'get_db_variables'
+<li>4.1 &ndash; added as 'db_get'
+</ul>
 
           <br><dt><strong>Purpose:</strong><dd>
-Read a database variable, see also <a href="Vars.html#Vars">Vars</a>.
+Reads and outputs database variables. For more information about variables,
+see <a href="Vars.html#Vars">Vars</a>.
 
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
-          off.net
+          domain "database"
+           entry "default-exclude-pattern" ""
+           entry "default-include-pattern" "net.venge.monotone*"
+           entry "default-server" "monotone.ca"
+          
+          domain "known-servers"
+           entry "monotone.ca" "3e6f5225bc2fffacbc20c9de37ff2dae1e20892e"
+           entry "monotone.mtn-host.prjek.net" "a52f85615cb2445989f525bf17a603250381a751"
+           entry "venge.net" "70a0f283898a18815a83df37c902e5f1492e9aa2"
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
-Exactly the variable's content. Since this command is mainly intended for
-<samp><span class="command">automate stdio</span></samp> it will not add a trailing newline.
+basic_io-formatted stanzas. Each stanza starts with a 'domain', followed by one
+or more 'entry' lines. Each 'entry' contains the <var>name</var> and the <var>value</var>
+of the respective database variable.
 
           <br><dt><strong>Error conditions:</strong><dd>
-If the variable is unknown prints an error message to stderr and exits with
-status 1.
+If the domain is unknown or no variables where found, prints an error message
+to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate db_put </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-db_005fput-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-180"></a><dd>
+     <br><dt><samp><span class="command">mtn automate set_db_variable </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-set_005fdb_005fvariable-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-180"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>domain</var> and <var>name</var> specify the database variable
 which is changed to <var>value</var>.
 
-          <br><dt><strong>Added in:</strong><dd>
-4.1
+          <br><dt><strong>Changes:</strong><dd>
+               <ul>
+<li>7.0 &ndash; renamed to 'set_db_variable'
+<li>4.1 &ndash; added as 'db_set'
+</ul>
 
           <br><dt><strong>Purpose:</strong><dd>
 Change a database variable, see also <a href="Vars.html#Vars">Vars</a>.
 
           <br><dt><strong>Sample usage:</strong><dd>
 <pre class="verbatim">          
-          mtn automate db_set database default-server off.net
+          mtn automate set_db_variable database default-server off.net
      </pre>
 
           <br><dt><strong>Output format:</strong><dd>
@@ -1950,7 +2113,34 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-181"></a><dd>
+     <br><dt><samp><span class="command">mtn automate drop_db_variables </span><var>domain</var><span class="command"> [</span><var>name</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fdb_005fvariables-_0040var_007bdomain_007d-_005b_0040var_007bname_007d_005d-181"></a><dd>
+          <dl>
+<dt><strong>Arguments:</strong><dd>
+The <var>domain</var> and <var>name</var> specify the database variable
+which should be dropped. If <var>name</var> is ommitted, all database
+variables in the <var>domain</var> are dropped.
+
+          <br><dt><strong>Added in:</strong><dd>
+7.0
+
+          <br><dt><strong>Purpose:</strong><dd>
+Drops one or more database variables, see also <a href="Vars.html#Vars">Vars</a>.
+
+          <br><dt><strong>Sample usage:</strong><dd>
+<pre class="verbatim">          
+          mtn automate drop_db_variables known-servers
+     </pre>
+
+          <br><dt><strong>Output format:</strong><dd>
+No output.
+
+          <br><dt><strong>Error conditions:</strong><dd>
+If the specific variable or any variables in the given domain are not found,
+prints to stderr and exits with status 1.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-182"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The optional <var>base-id</var> specifies a file-id on which the contents are
@@ -1979,7 +2169,7 @@ exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-182"></a><dd>
+     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-183"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision-data</var> is the new revision. See example below.  Note that
@@ -2026,7 +2216,7 @@ this fact, but otherwise works as normal.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-183"></a><dd>
+     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-184"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision</var> is an existing revision, <var>name</var> is the certificate name

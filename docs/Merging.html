@@ -32,7 +32,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advan
 <hr>
 </div>
 
-<h3 class="section">3.13 Merging</h3>
+<h3 class="section">3.14 Merging</h3>
 
 <p>Monotone has two merging modes, controlled by the <code>manual_merge</code>
 attribute. 
@@ -40,7 +40,7 @@ By default all files are merged in automatic mode, unless the
 <code>manual_merge</code> attribute for that file is present and
 <code>true</code>. 
 In automatic mode files are merged without user intervention, using
-monotone internal three-way merging algorithm. 
+monotone's internal three-way merging algorithm. 
 Only if there are conflicts or an ancestor is not available monotone
 switches to manual mode, essentially escalating the merging to the user. 
 When working in manual mode, monotone invokes the <code>merge3</code> hook
