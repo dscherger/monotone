@@ -23,7 +23,7 @@ LUAEXT_SOURCES = 							\
 
 MOST_SOURCES = 								\
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) platform-wrapped.hh	\
-	mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh				\
+	rev_types.hh mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh		\
 	app_state.cc app_state.hh					\
 	commands.cc commands.hh $(CMD_SOURCES)				\
 	diff_patch.cc diff_patch.hh					\
@@ -123,12 +123,12 @@ BOTAN_SOURCES = 							\
 	botan/dlies.cpp botan/eax.cpp botan/ecb.cpp botan/eme1.cpp  \
 	botan/eme_pkcs.cpp botan/emsa1.cpp botan/emsa2.cpp      \
 	botan/emsa3.cpp botan/emsa4.cpp botan/emsa_raw.cpp      \
-	botan/eng_base.cpp botan/engine.cpp botan/es_file.cpp       \
+	botan/eng_base.cpp botan/engine.cpp		\
 	botan/exceptn.cpp botan/filter.cpp botan/filters.cpp        \
 	botan/fips140.cpp \
 	botan/get_algo.cpp botan/get_enc.cpp botan/get_pbe.cpp      \
 	botan/hash_id.cpp botan/hex.cpp botan/hmac.cpp   \
-	botan/if_algo.cpp botan/inifile.cpp botan/init_def.cpp      \
+	botan/if_algo.cpp botan/init_def.cpp      \
 	botan/kdf.cpp botan/keypair.cpp botan/look_pk.cpp       \
 	botan/make_prm.cpp botan/mdx_hash.cpp       \
 	botan/mem_pool.cpp botan/mgf1.cpp botan/mlock.cpp       \
@@ -182,7 +182,7 @@ BOTAN_SOURCES = 							\
 	botan/hmac.h botan/mp_core.h botan/pkcs10.h botan/sha160.h  \
 	botan/crl_ent.h botan/emsa.h botan/eng_def.h \
 	botan/if_algo.h botan/pkcs8.h \
-	botan/basefilt.h botan/ctr.h botan/engine.h    \
+	botan/basefilt.h botan/ctr.h botan/engine.h botan/es_dev.h	\
 	botan/init.h botan/mp_types.h botan/pk_filts.h botan/symkey.h   \
 	botan/base.h botan/cts.h botan/enums.h botan/kdf.h      \
 	botan/mutex.h botan/pk_keys.h botan/timers.h botan/ber_dec.h    \
@@ -190,7 +190,7 @@ BOTAN_SOURCES = 							\
 	botan/numthry.h botan/pk_ops.h botan/types.h botan/bigint.h \
 	botan/data_src.h botan/es_egd.h botan/look_add.h botan/ofb.h    \
 	botan/pk_util.h botan/ui.h botan/blinding.h botan/defalloc.h    \
-	botan/es_file.h botan/look_pk.h botan/oids.h botan/pubkey.h \
+	botan/look_pk.h botan/oids.h botan/pubkey.h \
 	botan/util.h botan/charset.h botan/hash_id.h            \
 	botan/des.h botan/pkcs5.h                   \
 	botan/x931_rng.h botan/sha256.h \
@@ -303,7 +303,7 @@ WIN32_PLATFORM_SOURCES =						\
 # these files contain unit tests
 UNIT_TEST_SOURCES =							\
 	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
-	dates.cc diff_patch.cc globish.cc graph.cc keys.cc netcmd.cc	\
+	dates.cc diff_patch.cc globish.cc graph.cc netcmd.cc		\
 	netxx_pipe.cc numeric_vocab.cc option.cc outdated_indicator.cc	\
 	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
 	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
@@ -313,7 +313,7 @@ UNIT_TEST_SOURCES =							\
 # these files do not contain unit tests, but are required for unit testing
 # and must be recompiled for that purpose
 UNIT_TEST_SRC_SUPPORT =							\
-	lua_hooks.cc roster_delta.cc
+	roster_delta.cc
 
 # these files do not contain unit tests; they are required for unit
 # testing, but can be used "as is" from the main build.  (many of
@@ -321,20 +321,20 @@ UNIT_TEST_SRC_SUPPORT =							\
 UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-app_state.$(OBJEXT) mtn-cert.$(OBJEXT)			\
 	mtn-constants.$(OBJEXT) mtn-database.$(OBJEXT)			\
-	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-hmac.$(OBJEXT)	\
-	mtn-inodeprint.$(OBJEXT) mtn-key_store.$(OBJEXT)		\
-	mtn-lcs.$(OBJEXT) mtn-legacy.$(OBJEXT) mtn-lua.$(OBJEXT)	\
+	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
+	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
+	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
+	mtn-legacy.$(OBJEXT) mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)	\
 	mtn-merkle_tree.$(OBJEXT) mtn-mt_version.$(OBJEXT)		\
 	mtn-mtn-sanity.$(OBJEXT) mtn-options.$(OBJEXT)			\
 	mtn-package_full_revision.$(OBJEXT)				\
-	mtn-package_revision.$(OBJEXT) mtn-project.$(OBJEXT)		\
-	mtn-randomizer.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
-	mtn-schema.$(OBJEXT) mtn-schema_migration.$(OBJEXT)		\
-	mtn-selectors.$(OBJEXT) mtn-specialized_lexical_cast.$(OBJEXT)	\
-	mtn-ssh_agent.$(OBJEXT) mtn-std_hooks.$(OBJEXT)			\
-	mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)				\
-	mtn-work_migration.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-gzip.$(OBJEXT)
+	mtn-package_revision.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
+	mtn-project.$(OBJEXT) mtn-randomizer.$(OBJEXT)			\
+	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
+	mtn-schema_migration.$(OBJEXT)					\
+	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
+	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
+	mtn-work_migration.$(OBJEXT)
 
 # primaries
 
@@ -346,7 +346,6 @@ mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 nodist_mtn_SOURCES = std_hooks.c schema.c
 
 unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
-nodist_unit_tester_SOURCES = test_hooks.c
 unit_tester_LDADD = $(UNIT_TEST_OBJ_SUPPORT)
 
 tester_SOURCES = tester.cc
@@ -448,12 +447,13 @@ if WIN32_PLATFORM
   mtn_SOURCES += win32/main.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  lib3rdparty_a_CPPFLAGS += -DWIN32 -DBOTAN_EXT_ENTROPY_SRC_CAPI -DBOTAN_EXT_ENTROPY_SRC_WIN32
+  lib3rdparty_a_CPPFLAGS += -DWIN32
   lib3rdparty_a_SOURCES += botan/es_capi.cpp botan/es_win32.cpp
   tester_SOURCES += win32/tester-plaf.cc
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
+  lib3rdparty_a_SOURCES += botan/es_dev.cpp
   tester_SOURCES += unix/tester-plaf.cc
 endif
 
@@ -505,8 +505,8 @@ TEXI_FRAGMENTS = pcre/pcrepattern.texi pcre/pcresyntax.texi
 info_TEXINFOS = monotone.texi
 EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
 	UPGRADE monotone.spec monotone.html texinfo.css schema.sql	\
-	std_hooks.lua test_hooks.lua testlib.lua lua-testsuite.lua	\
-	$(srcdir)/tests tester-testsuite.lua $(srcdir)/tester-tests	\
+	std_hooks.lua testlib.lua lua-testsuite.lua$(srcdir)/tests	\
+	tester-testsuite.lua $(srcdir)/tester-tests			\
 	unit-testsuite.lua package.m4 package_revision.txt		\
 	package_full_revision_dist.txt $(wildcard $(srcdir)/m4/*.m4)	\
 	sqlite/keywordhash.h contrib/README contrib/monoprof.sh		\
@@ -687,7 +687,7 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 # that need to be generated early on 'make all'; this is _not_ true of
 # generated source files, but it is true for the PCH if used.
 
-CLEAN_SOURCES = std_hooks.c test_hooks.c testlib.c schema.c \
+CLEAN_SOURCES = std_hooks.c testlib.c schema.c \
 	package_revision.c package_full_revision.txt \
 	package_full_revision_raw.txt package_full_revision.c
 
