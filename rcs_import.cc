@@ -2346,13 +2346,19 @@ public:
       // We run Dijkstra's algorithm to find the shortest path from e.second
       // to e.first. All vertices in that path are part of the smallest
       // cycle which includes this back edge. To speed things up a bit, we
-      // do not take blobs into account, which have already been completely
-      // processed by the proceeding depth first search run (thus only
-      // considering blobs marked grey or white).
+      // do not take blobs into account, which have not been seen by the
+      // proceeding depth first search run, because those cannot possibly be
+      // part of the cycle (thus we only consider blobs marked grey or black).
       insert_iterator< set< cvs_blob_index > >
         ity(cycle_members, cycle_members.begin());
+
+      // to be extra sure...
+      I((cvs.blobs[e.second].color == grey) ||
+        (cvs.blobs[e.second].color == black));
+      I(cvs.blobs[e.first].color == grey);
+
       dijkstra_shortest_path(cvs, e.first, e.second, ity,
-                             true, true, false, // follow white and grey
+                             false, true, true, // follow grey and black
                              false,
                              make_pair(invalid_blob, invalid_blob),
                              0);
@@ -3337,9 +3343,9 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       I(!cvs.blobs[largest_gap_blob].get_digest().is_tag());
 
       split_by_time func(largest_gap_at);
-      L(FL("splitting blob %d by time %d")
+      L(FL("splitting blob %d by time %s")
         % largest_gap_blob
-        % largest_gap_at);
+        % date_t::from_unix_epoch(largest_gap_at));
       split_blob_at(cvs, largest_gap_blob, func);
       return;
     }

@@ -191,7 +191,6 @@ date_t::from_unix_epoch(u64 t)
 
       t -= this_month;
       month++;
-      L(FL("from_unix_epoch: month >= %u, t now %llu") % month % t);
       I(month < 12);
     }
 
