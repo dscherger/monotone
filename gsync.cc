@@ -300,6 +300,14 @@ run_gsync_protocol(options & opts, lua_hooks & lua, database & db,
     request_missing_playback(db, h, core_frontier);
 }
 
+#ifdef BUILD_UNIT_TESTS
+#include "unit_tests.hh"
+
+UNIT_TEST(gsync, gsync)
+{
+}
+
+#endif
 
 // Local Variables:
 // mode: C++

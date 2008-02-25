@@ -312,12 +312,12 @@ UNIT_TEST_SOURCES =							\
 	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
 	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
 	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
-	xdelta.cc json_io.cc
+	xdelta.cc json_io.cc gsync.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # and must be recompiled for that purpose
 UNIT_TEST_SRC_SUPPORT =							\
-	roster_delta.cc
+	roster_delta.cc json_msgs.cc http_client.cc net_common.cc
 
 # these files do not contain unit tests; they are required for unit
 # testing, but can be used "as is" from the main build.  (many of
