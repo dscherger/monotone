@@ -96,6 +96,8 @@ private:
 public:
   bool file_version_exists(file_id const & ident);
   bool revision_exists(revision_id const & ident);
+  bool sentinel_exists(revision_id const & ident);
+  bool revision_or_sentinel_exists(revision_id const & ident);
   bool roster_link_exists_for_revision(revision_id const & ident);
   bool roster_exists_for_revision(revision_id const & ident);
 
@@ -154,7 +156,13 @@ public:
 
   void get_revision_manifest(revision_id const & cid,
                              manifest_id & mid);
+
+  void get_sentinels_of(std::set<revision_id> const & revs,
+					    std::set<revision_id> & sentinels);
+
   void get_revision_ids(std::set<revision_id> & ids);
+  void get_revision_and_sentinel_ids(std::set<revision_id> & ids);
+
   // this is exposed for 'db check':
   void get_file_ids(std::set<file_id> & ids);
 
@@ -162,11 +170,14 @@ public:
   // --== Revision reading/writing ==--
   //
 public:
-  void get_revision(revision_id const & ident,
-                    revision_t & cs);
+  void get_revision_or_sentinel(revision_id const & ident,
+                                revision_t & cs);
 
   void get_revision(revision_id const & ident,
                     revision_data & dat);
+
+  void get_sentinel(revision_id const & ident,
+                    sentinel_data & dat);
 
   bool put_revision(revision_id const & new_id,
                     revision_t const & rev);
