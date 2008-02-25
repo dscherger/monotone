@@ -34,7 +34,9 @@
 #include "database.hh"
 #include "file_io.hh"
 #include "interner.hh"
+#include "lua_hooks.hh"
 #include "merge.hh"
+#include "options.hh"
 #include "paths.hh"
 #include "platform-wrapped.hh"
 #include "project.hh"
@@ -1119,7 +1121,6 @@ insert_into_db(database & db, data const & curr_data,
                vector< piece > const & next_lines,
                data & next_data,
                hexenc<id> & next_id,
-               database & db,
                bool dryrun)
 {
   // inserting into the DB
@@ -1136,7 +1137,7 @@ insert_into_db(database & db, data const & curr_data,
   calculate_ident(next_data, next_id);
 
   if (!dryrun)
-    rcs_put_raw_file_edge(next_id, curr_id, del, db);
+    rcs_put_raw_file_edge(db, next_id, curr_id, del);
 }
 
 
@@ -1538,17 +1539,16 @@ public:
 };
 
 static cvs_event_ptr
-process_rcs_branch(cvs_symbol_no const & current_branchname,
+process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
+                   cvs_symbol_no const & current_branchname,
                    string const & begin_version,
-               vector< piece > const & begin_lines,
-               data const & begin_data,
-               hexenc<id> const & begin_id,
-               rcs_file const & r,
-               database & db,
-               cvs_history & cvs,
-               app_state & app,
-               bool reverse_import,
-               ticker & n_rev, ticker & n_sym)
+                   vector< piece > const & begin_lines,
+                   data const & begin_data,
+                   hexenc<id> const & begin_id,
+                   rcs_file const & r,
+                   bool reverse_import,
+                   ticker & n_rev, ticker & n_sym,
+                   bool dryrun)
 {
   cvs_event_ptr curr_commit = NULL,
                 first_commit = NULL;
@@ -1643,7 +1643,7 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
               // allow the user to ignore tag symbols depending on their
               // name.
-              if (app.lua.hook_ignore_cvs_symbol(i->second))
+              if (lua.hook_ignore_cvs_symbol(i->second))
                 continue;
 
               cvs_symbol_no tag = cvs.symbol_interner.intern(i->second);
@@ -1724,18 +1724,18 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           if (r.deltas.find(*i) != r.deltas.end())
             {
               construct_version(*curr_lines, *i, branch_lines, r);
-              insert_into_db(curr_data, curr_id, 
-                             branch_lines, branch_data, branch_id, db,
-                             app.opts.dryrun);
+              insert_into_db(db, curr_data, curr_id, 
+                             branch_lines, branch_data, branch_id,
+                             dryrun);
             }
 
           cvs_symbol_no bname = cvs.symbol_interner.intern(branchname);
 
           // recursively process child branches
           cvs_event_ptr first_event_in_branch =
-            process_rcs_branch(bname, *i, branch_lines, branch_data,
-                               branch_id, r, db, cvs, app, false,
-                               n_rev, n_sym);
+            process_rcs_branch(lua, db, cvs, bname, *i, branch_lines, branch_data,
+                               branch_id, r, false,
+                               n_rev, n_sym, dryrun);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
           else
@@ -1816,9 +1816,8 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
           L(FL("constructed RCS version %s, inserting into database") %
             next_version);
 
-          insert_into_db(curr_data, curr_id,
-                         *next_lines, next_data, next_id, db,
-                         app.opts.dryrun);
+          insert_into_db(db, curr_data, curr_id,
+                         *next_lines, next_data, next_id, dryrun);
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -1888,8 +1887,9 @@ process_rcs_branch(cvs_symbol_no const & current_branchname,
 
 
 static void
-import_rcs_file_with_cvs(database & db, string const & filename,
-                         cvs_history & cvs, ticker & n_rev, ticker & n_sym)
+import_rcs_file_with_cvs(lua_hooks & lua, database & db,
+                         cvs_history & cvs, string const & filename,
+                         ticker & n_rev, ticker & n_sym, bool dryrun)
 {
   rcs_file r;
   L(FL("parsing RCS file %s") % filename);
@@ -1908,8 +1908,8 @@ import_rcs_file_with_cvs(database & db, string const & filename,
 
     cvs.set_filename(filename, fid);
     cvs.index_branchpoint_symbols (r);
-    if (!app.opts.dryrun)
-      app.db.put_file(fid, file_data(dat));
+    if (!dryrun)
+      db.put_file(fid, file_data(dat));
 
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,
@@ -1922,8 +1922,8 @@ import_rcs_file_with_cvs(database & db, string const & filename,
     cvs.append_event_to(cvs.root_blob, cvs.root_event);
 
     cvs_event_ptr first_event =
-      process_rcs_branch(cvs.base_branch, r.admin.head, head_lines,
-                         dat, id, r, app.db, cvs, app, true, n_rev, n_sym);
+      process_rcs_branch(lua, db, cvs, cvs.base_branch, r.admin.head, head_lines,
+                         dat, id, r, true, n_rev, n_sym, dryrun);
 
     // link the pseudo trunk branch to the first event in the branch
     cvs.add_dependency(first_event, cvs.root_event);
@@ -2106,14 +2106,16 @@ class
 cvs_tree_walker
   : public tree_walker
 {
+  lua_hooks & lua;
+  database & db;
   cvs_history & cvs;
-  app_state & app;
+  bool dryrun;
   ticker & n_rev;
   ticker & n_sym;
 public:
-  cvs_tree_walker(cvs_history & c, app_state & a,
-                  ticker & n_rev, ticker & n_sym)
-    : cvs(c), app(a), n_rev(n_rev), n_sym(n_sym)
+  cvs_tree_walker(lua_hooks & lua, database & db, cvs_history & cvs,
+                  bool const dryrun, ticker & n_rev, ticker & n_sym)
+    : lua(lua), db(db), cvs(cvs), dryrun(dryrun), n_rev(n_rev), n_sym(n_sym)
   {
   }
   virtual void visit_file(file_path const & path)
@@ -2123,8 +2125,8 @@ public:
       {
         try
           {
-            transaction_guard guard(app.db);
-            import_rcs_file_with_cvs(file, app, cvs, n_rev, n_sym);
+            transaction_guard guard(db);
+            import_rcs_file_with_cvs(lua, db, cvs, file, n_rev, n_sym, dryrun);
             guard.commit();
           }
         catch (oops const & o)
@@ -2142,19 +2144,25 @@ public:
 struct
 blob_consumer
 {
+  options & opts;
+  project_t & project;
+  key_store & keys;
   cvs_history & cvs;
-  app_state & app;
   ticker & n_blobs;
   ticker & n_revisions;
 
   temp_node_id_source nis;
 
-  blob_consumer(cvs_history & cvs,
-                app_state & app,
+  blob_consumer(options & opts,
+                project_t & project,
+                key_store & keys,
+                cvs_history & cvs,
                 ticker & n_blobs,
                 ticker & n_revs)
-  : cvs(cvs),
-    app(app),
+  : opts(opts),
+    project(project),
+    keys(keys),
+    cvs(cvs),
     n_blobs(n_blobs),
     n_revisions(n_revs)
   { };
@@ -4064,6 +4072,14 @@ recalculate_blob_heights(cvs_history & cvs)
 
       height += 10;
     }
+}
+
+void
+import_cvs_repo(options & opts,
+                lua_hooks & lua,
+                project_t & project,
+                key_store & keys,
+                system_path const & cvsroot)
 {
   N(!directory_exists(cvsroot / "CVSROOT"),
     F("%s appears to be a CVS repository root directory\n"
@@ -4071,13 +4087,13 @@ recalculate_blob_heights(cvs_history & cvs)
     % cvsroot % cvsroot);
 
   cvs_history cvs;
-  N(app.opts.branchname() != "", F("need base --branch argument for importing"));
+  N(opts.branchname() != "", F("need base --branch argument for importing"));
 
-  if (app.opts.until_given)
-    cvs.upper_time_limit = app.opts.until.as_unix_epoch();
+  if (opts.until_given)
+    cvs.upper_time_limit = opts.until.as_unix_epoch();
 
   // add the trunk branch name
-  string bn = app.opts.branchname();
+  string bn = opts.branchname();
   cvs.base_branch = cvs.symbol_interner.intern(bn);
 
 
@@ -4090,7 +4106,8 @@ recalculate_blob_heights(cvs_history & cvs)
     ticker n_rcs_revisions(_("revisions"), "r");
     ticker n_rcs_symbols(_("symbols"), "s");
 
-    cvs_tree_walker walker(cvs, app, n_rcs_revisions, n_rcs_symbols);
+    cvs_tree_walker walker(lua, project.db, cvs, opts.dryrun,
+                           n_rcs_revisions, n_rcs_symbols);
     change_current_working_dir(cvsroot);
     walk_tree(file_path(), walker);
   }
@@ -4234,8 +4251,8 @@ recalculate_blob_heights(cvs_history & cvs)
 
     n_blobs.set_total(cvs.blobs.size());
 
-    transaction_guard guard(app.db);
-    blob_consumer cons(cvs, app, n_blobs, n_revs);
+    transaction_guard guard(project.db);
+    blob_consumer cons(opts, project, keys, cvs, n_blobs, n_revs);
     for_each(cvs.import_order.rbegin(), cvs.import_order.rend(), cons);
     guard.commit();
   }
@@ -4361,6 +4378,8 @@ blob_consumer::merge_parents_for_artificial_rev(
   set<revision_id> & parent_rids,
   map<cvs_event_ptr, revision_id> & event_parent_rids)
 {
+  database & db = project.db;
+
   revision_id left_rid, right_rid, merged_rid;
 
   if (parent_rids.size() > 2)
@@ -4377,8 +4396,8 @@ blob_consumer::merge_parents_for_artificial_rev(
   // the right one, where necessary.
   roster_t left_roster, right_roster, merged_roster;
 
-  app.db.get_roster(left_rid, left_roster);
-  app.db.get_roster(right_rid, right_roster);
+  db.get_roster(left_rid, left_roster);
+  db.get_roster(right_rid, right_roster);
 
   // copy the left roster, we start from that one and apply changes
   // from the right roster where necessary.
@@ -4485,8 +4504,8 @@ blob_consumer::merge_parents_for_artificial_rev(
     // don't even need to add an artificial revision for these
     // two parents.
     revision_t left_rev, right_rev;
-    app.db.get_revision(left_rid, left_rev);
-    app.db.get_revision(right_rid, right_rev);
+    db.get_revision(left_rid, left_rev);
+    db.get_revision(right_rid, right_rev);
 
     if (merged_rev.new_manifest == left_rev.new_manifest)
       merged_rid = left_rid;
@@ -4506,10 +4525,8 @@ blob_consumer::merge_parents_for_artificial_rev(
         write_revision(merged_rev, merged_data);
         calculate_ident(merged_data, merged_rid);
         {
-          transaction_guard guard(app.db);
-
-          app.db.put_revision(merged_rid, merged_rev);
-
+          transaction_guard guard(db);
+          db.put_revision(merged_rid, merged_rev);
           guard.commit();
         }
 
@@ -4570,7 +4587,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
   // then erase the ancestors, because we cannot merge with a
   // descendent.
   I(parent_rids.size() >= 2);
-  erase_ancestors(parent_rids, app);
+  erase_ancestors(project.db, parent_rids);
 
   // loop over all events in the blob, to find the most recent ancestor,
   // from which we inherit - and possibly back patch.
@@ -4607,7 +4624,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
           // to find that and inherit from that, but back patch.
           set<revision_id>::iterator j;
           for (j = parent_rids.begin(); j != parent_rids.end(); ++j)
-            if (is_ancestor(event_parent.assigned_rid, *j, app))
+            if (is_ancestor(project.db, event_parent.assigned_rid, *j))
               break;
           I(j != parent_rids.end());
 
@@ -4644,7 +4661,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
   shared_ptr<cset> cs(new cset());
 
   I(!null_id(parent_rid));
-  app.db.get_roster(parent_rid, ros);
+  project.db.get_roster(parent_rid, ros);
 
   int changes = 0;
 
@@ -4674,7 +4691,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
           if (!null_id(ev_parent_rid))
             {
               // event needs reverting patch
-              app.db.get_roster(ev_parent_rid, e_ros);
+              project.db.get_roster(ev_parent_rid, e_ros);
 
               file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
 
@@ -4752,18 +4769,19 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
 
       L(FL("creating new revision %s") % new_rid);
 
-      if (app.db.put_revision(new_rid, rev))
+      if (project.db.put_revision(new_rid, rev))
       {
         time_i avg_time = cvs.blobs[bi].get_avg_time();
         time_t commit_time = avg_time / 100;
         string author("mtn:cvs_import"), changelog("artificial revision");
         string bn = cvs.get_branchname(cvs.blobs[bi].in_branch);
         I(!bn.empty());
-        app.get_project().put_standard_certs(new_rid,
+        project.put_standard_certs(keys,
+              new_rid,
               branch_name(bn),
               utf8(changelog),
               date_t::from_unix_epoch(commit_time),
-              utf8(author));
+              author);
 
         ++n_revisions;
       }
@@ -4822,7 +4840,7 @@ blob_consumer::operator()(cvs_blob_index bi)
       L(FL("consuming blob %d: commit") % bi);
       I(!blob.empty());
 
-      if (app.opts.dryrun)
+      if (opts.dryrun)
         {
           ++n_blobs;
           ++n_revisions;
@@ -4839,7 +4857,7 @@ blob_consumer::operator()(cvs_blob_index bi)
       // even when having a parent_blob, that blob might not
       // have produced a revision id, yet.
       if (!null_id(parent_rid))
-        app.db.get_roster(parent_rid, ros);
+        project.db.get_roster(parent_rid, ros);
 
       // applies the blob to the roster. Returns the number of
       // nodes changed. In case of a 'dead' blob, we don't commit
@@ -4866,7 +4884,7 @@ blob_consumer::operator()(cvs_blob_index bi)
 
       L(FL("creating new revision %s") % new_rid);
 
-      I(app.db.put_revision(new_rid, rev));
+      I(project.db.put_revision(new_rid, rev));
 
       {
         time_i avg_time = blob.get_avg_time();
@@ -4876,11 +4894,12 @@ blob_consumer::operator()(cvs_blob_index bi)
         cvs.split_authorclog(blob.authorclog, author, changelog);
         string bn = cvs.get_branchname(blob.in_branch);
         I(!bn.empty());
-        app.get_project().put_standard_certs(new_rid,
+        project.put_standard_certs(keys,
+                new_rid,
                 branch_name(bn),
                 utf8(changelog),
                 date_t::from_unix_epoch(commit_time),
-                utf8(author));
+                author);
 
         ++n_revisions;
       }
@@ -4928,8 +4947,8 @@ blob_consumer::operator()(cvs_blob_index bi)
       L(FL("consuming blob %d: tag %s")
         % bi % cvs.symbol_interner.lookup(blob.symbol));
 
-      if (!app.opts.dryrun)
-        app.get_project().put_tag(parent_rid, cvs.symbol_interner.lookup(blob.symbol));
+      if (!opts.dryrun)
+        project.put_tag(keys, parent_rid, cvs.symbol_interner.lookup(blob.symbol));
     }
   else
     I(false);
