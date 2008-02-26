@@ -47,7 +47,7 @@ MOST_SOURCES = 								\
 	enumerator.cc enumerator.hh					\
 	net_common.cc net_common.hh					\
 	netsync.cc            						\
-	gsync.cc            						\
+	gsync.cc gsync.hh            					\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\
@@ -317,7 +317,7 @@ UNIT_TEST_SOURCES =							\
 # these files do not contain unit tests, but are required for unit testing
 # and must be recompiled for that purpose
 UNIT_TEST_SRC_SUPPORT =							\
-	roster_delta.cc json_msgs.cc http_client.cc net_common.cc
+	roster_delta.cc
 
 # these files do not contain unit tests; they are required for unit
 # testing, but can be used "as is" from the main build.  (many of
