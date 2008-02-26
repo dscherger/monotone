@@ -1,4 +1,5 @@
 // Copyright (C) 2004, 2007 Nathaniel Smith <njs@pobox.com>
+// Copyright (C) 2007 - 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -545,7 +546,8 @@ typedef std::map<file_path, inventory_item> inventory_map;
 static void
 inventory_rosters(roster_t const & old_roster,
                   roster_t const & new_roster,
-                  node_restriction const & mask,
+                  node_restriction const & nmask,
+                  path_restriction const & pmask,
                   inventory_map & inventory)
 {
   std::map<int, file_path> old_paths;
@@ -554,24 +556,30 @@ inventory_rosters(roster_t const & old_roster,
   node_map const & old_nodes = old_roster.all_nodes();
   for (node_map::const_iterator i = old_nodes.begin(); i != old_nodes.end(); ++i)
     {
-      if (mask.includes(old_roster, i->first))
+      if (nmask.includes(old_roster, i->first))
         {
           file_path fp;
           old_roster.get_name(i->first, fp);
-          get_node_info(old_roster.get_node(i->first), inventory[fp].old_node);
-          old_paths[inventory[fp].old_node.id] = fp;
+          if (pmask.includes(fp))
+            {
+              get_node_info(old_roster.get_node(i->first), inventory[fp].old_node);
+              old_paths[inventory[fp].old_node.id] = fp;
+            }
         }
     }
 
   node_map const & new_nodes = new_roster.all_nodes();
   for (node_map::const_iterator i = new_nodes.begin(); i != new_nodes.end(); ++i)
     {
-      if (mask.includes(new_roster, i->first))
+      if (nmask.includes(new_roster, i->first))
         {
           file_path fp;
           new_roster.get_name(i->first, fp);
-          get_node_info(new_roster.get_node(i->first), inventory[fp].new_node);
-          new_paths[inventory[fp].new_node.id] = fp;
+          if (pmask.includes(fp))
+            {
+              get_node_info(new_roster.get_node(i->first), inventory[fp].new_node);
+              new_paths[inventory[fp].new_node.id] = fp;
+            }
         }
     }
 
@@ -583,10 +591,10 @@ inventory_rosters(roster_t const & old_roster,
           // There is no new node available; this is either a drop or a
           // rename to outside the current path restriction.
 
-          if (new_roster.has_node (i->first))
+          if (new_roster.has_node(i->first))
             {
               // record rename to outside restriction
-              new_roster.get_name (i->first, inventory[i->second].new_path);
+              new_roster.get_name(i->first, inventory[i->second].new_path);
               continue;
             }
           else
@@ -616,14 +624,100 @@ inventory_rosters(roster_t const & old_roster,
           // There is no old node available; this is either added or a
           // rename from outside the current path restriction.
 
-          if (old_roster.has_node (i->first))
+          if (old_roster.has_node(i->first))
             {
               // record rename from outside restriction
-              old_roster.get_name (i->first, inventory[i->second].old_path);
+              old_roster.get_name(i->first, inventory[i->second].old_path);
             }
           else
             // added; no old path
             continue;
+        }
+    }
+}
+
+// check if the include/exclude paths contains paths to renamed nodes
+// if yes, add the corresponding old/new name of these nodes to the
+// paths as well, so the tree walker code will correctly identify them later
+// on or skips them if they should be excluded
+static void
+inventory_determine_corresponding_paths(roster_t const & old_roster,
+                                        roster_t const & new_roster,
+                                        vector<file_path> const & includes,
+                                        vector<file_path> const & excludes,
+                                        vector<file_path> & additional_includes,
+                                        vector<file_path> & additional_excludes)
+{
+  // at first check the includes vector
+  for (int i=0, s=includes.size(); i<s; i++)
+    {
+      file_path fp = includes.at(i);
+
+      if (old_roster.has_node(fp))
+        {
+          node_t node = old_roster.get_node(fp);
+          if (new_roster.has_node(node->self))
+            {
+              file_path new_path;
+              new_roster.get_name(node->self, new_path);
+              if (fp != new_path &&
+                  find(includes.begin(), includes.end(), new_path) == includes.end())
+                {
+                  additional_includes.push_back(new_path);
+                }
+            }
+        }
+
+      if (new_roster.has_node(fp))
+        {
+          node_t node = new_roster.get_node(fp);
+          if (old_roster.has_node(node->self))
+            {
+              file_path old_path;
+              old_roster.get_name(node->self, old_path);
+              if (fp != old_path &&
+                  find(includes.begin(), includes.end(), old_path) == includes.end())
+                {
+                  additional_includes.push_back(old_path);
+                }
+            }
+        }
+    }
+
+  // and now the excludes vector
+  vector<file_path> new_excludes;
+  for (int i=0, s=excludes.size(); i<s; i++)
+    {
+      file_path fp = excludes.at(i);
+
+      if (old_roster.has_node(fp))
+        {
+          node_t node = old_roster.get_node(fp);
+          if (new_roster.has_node(node->self))
+            {
+              file_path new_path;
+              new_roster.get_name(node->self, new_path);
+              if (fp != new_path &&
+                  find(excludes.begin(), excludes.end(), new_path) == excludes.end())
+                {
+                  additional_excludes.push_back(new_path);
+                }
+            }
+        }
+
+      if (new_roster.has_node(fp))
+        {
+          node_t node = new_roster.get_node(fp);
+          if (old_roster.has_node(node->self))
+            {
+              file_path old_path;
+              old_roster.get_name(node->self, old_path);
+              if (fp != old_path &&
+                  find(excludes.begin(), excludes.end(), old_path) == excludes.end())
+                {
+                  additional_excludes.push_back(old_path);
+                }
+            }
         }
     }
 }
@@ -656,8 +750,8 @@ inventory_itemizer::visit_dir(file_path const & path)
     {
       inventory[path].fs_type = path::directory;
     }
-  // always recurse into subdirectories
-  return true;
+  // don't recurse into ignored subdirectories
+  return !app.lua.hook_ignore_file(path);
 }
 
 void
@@ -710,12 +804,10 @@ namespace
 }
 
 static void
-inventory_print_states(app_state & app, file_path const & fs_path,
-                       inventory_item const & item, roster_t const & old_roster,
-                       roster_t const & new_roster, basic_io::stanza & st)
+inventory_determine_states(app_state & app, file_path const & fs_path,
+                           inventory_item const & item, roster_t const & old_roster,
+                           roster_t const & new_roster, vector<string> & states)
 {
-  std::vector<std::string> states;
-
   // if both nodes exist, the only interesting case is
   // when the node ids aren't equal (so we have different nodes
   // with one and the same path in the old and the new roster)
@@ -763,28 +855,33 @@ inventory_print_states(app_state & app, file_path const & fs_path,
       if (!item.new_node.exists)
         {
           if (app.lua.hook_ignore_file(fs_path))
-            states.push_back("ignored");
+            {
+              states.push_back("ignored");
+            }
           else
-            states.push_back("unknown");
+            {
+              states.push_back("unknown");
+            }
         }
       else if (item.new_node.type != item.fs_type)
-        states.push_back("invalid");
+        {
+          states.push_back("invalid");
+        }
       else
-        states.push_back("known");
+        {
+          states.push_back("known");
+        }
     }
-
-  st.push_str_multi(syms::status, states);
 }
 
 static void
-inventory_print_changes(inventory_item const & item, roster_t const & old_roster,
-                        basic_io::stanza & st)
+inventory_determine_changes(inventory_item const & item, roster_t const & old_roster,
+                            vector<string> & changes)
 {
   // old nodes do not have any recorded content changes and attributes,
   // so we can't print anything for them here
-  if (!item.new_node.exists) return;
-
-  std::vector<string> changes;
+  if (!item.new_node.exists)
+    return;
 
   // this is an existing item
   if (old_roster.has_node(item.new_node.id))
@@ -830,9 +927,6 @@ inventory_print_changes(inventory_item const & item, roster_t const & old_roster
       if (item.new_node.attrs.size() > 0)
         changes.push_back("attrs");
     }
-
-  if (!changes.empty())
-    st.push_str_multi(syms::changes, changes);
 }
 
 // Name: inventory
@@ -851,7 +945,12 @@ inventory_print_changes(inventory_item const & item, roster_t const & old_roster
 CMD_AUTOMATE(inventory,  N_("[PATH]..."),
              N_("Prints a summary of files found in the workspace"),
              "",
-             options::opts::depth | options::opts::exclude)
+             options::opts::depth |
+             options::opts::exclude |
+             options::opts::no_ignored |
+             options::opts::no_unknown |
+             options::opts::no_unchanged |
+             options::opts::no_corresponding_renames)
 {
   app.require_workspace();
 
@@ -872,10 +971,27 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
   vector<file_path> includes = args_to_paths(args);
   vector<file_path> excludes = args_to_paths(app.opts.exclude_patterns);
 
-  node_restriction nmask(includes, excludes, app.opts.depth, old_roster, new_roster, app);
-  inventory_rosters(old_roster, new_roster, nmask, inventory);
+  if (!app.opts.no_corresponding_renames)
+    {
+      vector<file_path> add_includes, add_excludes;
+      inventory_determine_corresponding_paths(old_roster, new_roster,
+                                              includes, excludes,
+                                              add_includes, add_excludes);
 
-  path_restriction pmask(includes, excludes, app.opts.depth, app);
+      copy(add_includes.begin(), add_includes.end(),
+           inserter(includes, includes.end()));
+
+      copy(add_excludes.begin(), add_excludes.end(),
+           inserter(excludes, excludes.end()));
+    }
+
+  node_restriction nmask(includes, excludes, app.opts.depth, old_roster, new_roster, app);
+  // skip the check of the workspace paths because some of them might
+  // be missing and the user might want to query the recorded structure
+  // of them anyways
+  path_restriction pmask(includes, excludes, app.opts.depth, app, path_restriction::skip_check);
+
+  inventory_rosters(old_roster, new_roster, nmask, pmask, inventory);
   inventory_filesystem(pmask, inventory, app);
 
   basic_io::printer pr;
@@ -883,10 +999,46 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
   for (inventory_map::const_iterator i = inventory.begin(); i != inventory.end();
        ++i)
     {
-      basic_io::stanza st;
+      file_path const & fp = i->first;
       inventory_item const & item = i->second;
 
-      st.push_file_pair(syms::path, i->first);
+      //
+      // check if we should output this element at all
+      //
+      vector<string> states;
+      inventory_determine_states(app, fp, item, old_roster, new_roster, states);
+
+      if (find(states.begin(), states.end(), "ignored") != states.end() &&
+          app.opts.no_ignored)
+        continue;
+
+      if (find(states.begin(), states.end(), "unknown") != states.end() &&
+          app.opts.no_unknown)
+        continue;
+
+      vector<string> changes;
+      inventory_determine_changes(item, old_roster, changes);
+
+      bool is_tracked =
+        find(states.begin(), states.end(), "unknown") == states.end() &&
+        find(states.begin(), states.end(), "ignored") == states.end();
+
+      bool has_changed =
+        find(states.begin(), states.end(), "rename_source") != states.end() ||
+        find(states.begin(), states.end(), "rename_target") != states.end() ||
+        find(states.begin(), states.end(), "added")         != states.end() ||
+        find(states.begin(), states.end(), "dropped")       != states.end() ||
+        find(states.begin(), states.end(), "missing")       != states.end() ||
+        !changes.empty();
+
+      if (is_tracked && !has_changed && app.opts.no_unchanged)
+        continue;
+
+      //
+      // begin building the output stanza
+      //
+      basic_io::stanza st;
+      st.push_file_pair(syms::path, fp);
 
       if (item.old_node.exists)
         {
@@ -898,8 +1050,9 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
             }
 
           if (item.new_path.as_internal().length() > 0)
-            // new_path is only present if different from either inventory map path or old_path
-            st.push_file_pair(syms::new_path, item.new_path);
+            {
+              st.push_file_pair(syms::new_path, item.new_path);
+            }
         }
 
       if (item.new_node.exists)
@@ -912,7 +1065,9 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
             }
 
           if (item.old_path.as_internal().length() > 0)
-            st.push_file_pair(syms::old_path, item.old_path);
+            {
+              st.push_file_pair(syms::old_path, item.old_path);
+            }
         }
 
       switch (item.fs_type)
@@ -922,8 +1077,14 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
         case path::nonexistent: st.push_str_pair(syms::fs_type, "none"); break;
         }
 
-      inventory_print_states(app, i->first, item, old_roster, new_roster, st);
-      inventory_print_changes(item, old_roster, st);
+      //
+      // finally output the previously recorded states and changes
+      //
+      I(!states.empty());
+      st.push_str_multi(syms::status, states);
+
+      if (!changes.empty())
+        st.push_str_multi(syms::changes, changes);
 
       pr.print_stanza(st);
     }
@@ -933,9 +1094,9 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 
 // Name: get_revision
 // Arguments:
-//   1: a revision id (optional, determined from the workspace if
-//      non-existant)
+//   1: a revision id
 // Added in: 1.0
+// Changed in: 7.0 (REVID argument is now mandatory)
 
 // Purpose: Prints change information for the specified revision id.
 //   There are several changes that are described; each of these is
@@ -994,44 +1155,73 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
 //   the same type will be sorted by the filename they refer to.
 // Error conditions: If the revision specified is unknown or invalid
 // prints an error message to stderr and exits with status 1.
-CMD_AUTOMATE(get_revision, N_("[REVID]"),
+CMD_AUTOMATE(get_revision, N_("REVID"),
              N_("Shows change information for a revision"),
              "",
              options::opts::none)
 {
-  N(args.size() < 2,
+  N(args.size() == 1,
     F("wrong argument count"));
 
-  temp_node_id_source nis;
   revision_data dat;
   revision_id ident;
 
-  if (args.size() == 0)
-    {
-      roster_t new_roster;
-      parent_map old_rosters;
-      revision_t rev;
-
-      app.require_workspace();
-      app.work.get_parent_rosters(old_rosters);
-      app.work.get_current_roster_shape(new_roster, nis);
-      app.work.update_current_roster_from_filesystem(new_roster);
-
-      make_revision(old_rosters, new_roster, rev);
-      calculate_ident(rev, ident);
-      write_revision(rev, dat);
-    }
-  else
-    {
-      ident = revision_id(idx(args, 0)());
-      N(app.db.revision_exists(ident),
-        F("no revision %s found in database") % ident);
-      app.db.get_revision(ident, dat);
-    }
+  ident = revision_id(idx(args, 0)());
+  N(app.db.revision_exists(ident),
+    F("no revision %s found in database") % ident);
+  app.db.get_revision(ident, dat);
 
   L(FL("dumping revision %s") % ident);
   output.write(dat.inner()().data(), dat.inner()().size());
 }
+
+// Name: get_current_revision
+// Arguments:
+//   1: zero or more path names
+// Added in: 7.0
+// Purpose: Outputs (an optionally restricted) revision based on
+//          changes in the current workspace
+// Error conditions: If there are no changes in the current workspace or the
+// restriction is invalid or has no recorded changes, prints an error message
+// to stderr and exits with status 1. A workspace is required.
+CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
+             N_("Shows change information for a workspace"),
+             "",
+             options::opts::exclude | options::opts::depth)
+{
+  temp_node_id_source nis;
+  revision_data dat;
+  revision_id ident;
+
+  roster_t new_roster;
+  parent_map old_rosters;
+  revision_t rev;
+  cset excluded;
+
+  app.require_workspace();
+  app.work.get_parent_rosters(old_rosters);
+  app.work.get_current_roster_shape(new_roster, nis);
+
+  node_restriction mask(args_to_paths(args),
+                        args_to_paths(app.opts.exclude_patterns),
+                        app.opts.depth,
+                        old_rosters, new_roster, app);
+
+  app.work.update_current_roster_from_filesystem(new_roster, mask);
+
+  make_revision(old_rosters, new_roster, rev);
+  make_restricted_revision(old_rosters, new_roster, mask, rev,
+                           excluded, execid);
+  rev.check_sane();
+  N(rev.is_nontrivial(), F("no changes to commit"));
+  
+  calculate_ident(rev, ident);
+  write_revision(rev, dat);
+
+  L(FL("dumping revision %s") % ident);
+  output.write(dat.inner()().data(), dat.inner()().size());
+}
+
 
 // Name: get_base_revision_id
 // Arguments: none
@@ -1386,7 +1576,7 @@ CMD_AUTOMATE(branches, "",
 
   set<branch_name> names;
 
-  app.get_project().get_branch_list(names);
+  app.get_project().get_branch_list(names, !app.opts.ignore_suspend_certs);
 
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
@@ -1499,6 +1689,9 @@ namespace
     symbol const private_hash("private_hash");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
+
+    symbol const domain("domain");
+    symbol const entry("entry");
   }
 };
 
@@ -1875,19 +2068,88 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
   guard.commit();
 }
 
-// Name: db_set
+// Name: get_db_variables
+// Arguments:
+//   variable domain
+// Changes:
+//  4.1 (added as 'db_get')
+//  7.0 (changed to 'get_db_variables', output is now basic_io)
+// Purpose:
+//   Retrieves db variables, optionally filtered by DOMAIN
+// Output format:
+//   basic_io, see the mtn docs for details
+// Error conditions:
+//   none
+CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
+             N_("Retrieve database variables"),
+             "",
+             options::opts::none)
+{
+  N(args.size() < 2,
+    F("wrong argument count"));
+
+  bool filter_by_domain = false;
+  var_domain filter;
+  if (args.size() == 1)
+    {
+      filter_by_domain = true;
+      filter = var_domain(idx(args, 0)());
+    }
+
+  map<var_key, var_value> vars;
+  app.db.get_vars(vars);
+
+  var_domain cur_domain;
+  basic_io::stanza st;
+  basic_io::printer pr;
+  bool found_something = false;
+
+  for (map<var_key, var_value>::const_iterator i = vars.begin();
+       i != vars.end(); ++i)
+    {
+      if (filter_by_domain && !(i->first.first == filter))
+        continue;
+
+      found_something = true;
+
+      if (cur_domain != i->first.first)
+        {
+          // check if we need to print a previous stanza
+          if (st.entries.size() > 0)
+            {
+              pr.print_stanza(st);
+              st.entries.clear();
+            }
+          cur_domain = i->first.first;
+          st.push_str_pair(syms::domain, cur_domain());
+        }
+
+      st.push_str_triple(syms::entry, i->first.second(), i->second());
+    }
+
+    N(found_something,
+      F("No variables found or invalid domain specified"));
+
+    // print the last stanza
+    pr.print_stanza(st);
+    output.write(pr.buf.data(), pr.buf.size());
+}
+
+// Name: set_db_variable
 // Arguments:
 //   variable domain
 //   variable name
 //   veriable value
-// Added in: 4.1
+// Changes:
+//   4.1 (added as 'db_set')
+//   7.0 (renamed to 'set_db_variable')
 // Purpose:
 //   Set a database variable (like mtn database set)
 // Output format:
 //   nothing
 // Error conditions:
 //   none
-CMD_AUTOMATE(db_set, N_("DOMAIN NAME VALUE"),
+CMD_AUTOMATE(set_db_variable, N_("DOMAIN NAME VALUE"),
              N_("Sets a database variable"),
              "",
              options::opts::none)
@@ -1902,38 +2164,56 @@ CMD_AUTOMATE(db_set, N_("DOMAIN NAME VALUE"),
   app.db.set_var(key, var_value(value()));
 }
 
-// Name: db_get
+// Name: drop_db_variables
 // Arguments:
 //   variable domain
 //   variable name
-// Added in: 4.1
+// Changes:
+//  7.0 (added)
 // Purpose:
-//   Get a database variable (like mtn database ls vars | grep NAME)
+//   Drops a database variable (like mtn unset DOMAIN NAME) or all variables
+//   within a domain
 // Output format:
-//   variable value
+//   none
 // Error conditions:
-//   a runtime exception is thrown if the variable is not set
-CMD_AUTOMATE(db_get, N_("DOMAIN NAME"),
-             N_("Gets a database variable"),
+//   a runtime exception is thrown if the variable was not found
+CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
+             N_("Drops a database variable"),
              "",
              options::opts::none)
 {
-  N(args.size() == 2,
+  N(args.size() == 1 || args.size() == 2,
     F("wrong argument count"));
 
-  var_domain domain = var_domain(idx(args, 0)());
-  utf8 name = idx(args, 1);
-  var_key key(domain, var_name(name()));
-  var_value value;
-  try
+  var_domain domain(idx(args, 0)());
+
+  if (args.size() == 2)
     {
-      app.db.get_var(key, value);
+      var_name name(idx(args, 1)());
+      var_key  key(domain, name);
+      N(app.db.var_exists(key),
+        F("no var with name %s in domain %s") % name % domain);
+      app.db.clear_var(key);
     }
-  catch (std::logic_error)
+  else
     {
-      N(false, F("variable not found"));
+      map<var_key, var_value> vars;
+      app.db.get_vars(vars);
+      bool found_something = false;
+
+      for (map<var_key, var_value>::const_iterator i = vars.begin();
+           i != vars.end(); ++i)
+        {
+          if (i->first.first == domain)
+            {
+              found_something = true;
+              app.db.clear_var(i->first);
+            }
+        }
+
+      N(found_something,
+        F("no variables found in domain %s") % domain);
     }
-  output << value();
 }
 
 // Local Variables:

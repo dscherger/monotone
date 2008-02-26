@@ -102,7 +102,7 @@ get_log_message_interactively(revision_t const & cs,
   revision_summary(cs, app.opts.branchname, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
-  
+
   utf8 branch_comment = utf8((F("branch \"%s\"\n\n") % app.opts.branchname).str());
   external branch_external;
   utf8_to_system_best_effort(branch_comment, branch_external);
@@ -167,7 +167,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
     temp_node_id_source nis;
     app.work.get_current_roster_shape(new_roster, nis);
   }
-    
+
   node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
@@ -205,19 +205,31 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // from the new roster *back* to the restricted roster
 
   roster_t restricted_roster;
-  make_restricted_roster(new_roster, old_roster, restricted_roster, 
+  make_restricted_roster(new_roster, old_roster, restricted_roster,
                          mask);
- 
+
   make_cset(old_roster, restricted_roster, preserved);
-  
-  // The preserved cset will be left pending in MTN/revision 
+
+  // The preserved cset will be left pending in MTN/revision
 
   // if/when reverting through the editable_tree interface use
-  // make_cset(new_roster, restricted_roster, reverted); 
+  // make_cset(new_roster, restricted_roster, reverted);
   // to get a cset that gets us back to the restricted roster
   // from the current workspace roster
 
+  // the intermediate paths record the paths of all directory nodes
+  // paths we reverted on the fly for descendant nodes below them.
+  // if a children of such a directory node should be recreated, we use
+  // this recorded path here instead of just
+  //  a) the node's old name, which could eventually be wrong if the parent
+  //     path is a rename_target (i.e. a new path), see the
+  //     "revert_drop_not_rename" test
+  //  b) the parent node's new name + the basename of the old name,
+  //     which may be wrong as well in case of a more complex pivot_rename
+
+  std::map<node_id, file_path> intermediate_paths;
   node_map const & nodes = old_roster.all_nodes();
+
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
@@ -230,40 +242,73 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
       if (!mask.includes(old_roster, nid))
         continue;
 
-      file_path fp;
-      old_roster.get_name(nid, fp);
+      file_path old_path, new_path, old_parent, new_parent;;
+      path_component base;
+
+      old_roster.get_name(nid, old_path);
+      old_path.dirname_basename(old_parent, base);
+
+      // if we recorded the parent node in this rename already
+      // use the intermediate path (i.e. the new new_path after this
+      // action) as target path for the reverted item)
+      const std::map<node_id, file_path>::iterator it =
+        intermediate_paths.find(node->parent);
+      if (it != intermediate_paths.end())
+      {
+          new_path = it->second / base;
+      }
+      else
+      {
+          if (old_roster.is_root(node->parent))
+          {
+            new_path = file_path() / base;
+          }
+          else
+          {
+            new_roster.get_name(node->parent, new_parent);
+            new_path = new_parent / base;
+          }
+      }
 
       if (is_file_t(node))
         {
           file_t f = downcast_to_file_t(node);
-          if (file_exists(fp))
+          if (file_exists(new_path))
             {
               hexenc<id> ident;
-              calculate_ident(fp, ident);
+              calculate_ident(new_path, ident);
               // don't touch unchanged files
               if (ident == f->content.inner())
                 continue;
+              else
+                L(FL("skipping unchanged %s") % new_path);
             }
 
-          P(F("reverting %s") % fp);
-          L(FL("reverting %s to [%s]") % fp % f->content);
+          P(F("reverting %s") % new_path);
+          L(FL("reverting %s to [%s]") % new_path % f->content);
 
           N(app.db.file_version_exists(f->content),
             F("no file version %s found in database for %s")
-            % f->content % fp);
+            % f->content % new_path);
 
           file_data dat;
           L(FL("writing file %s to %s")
-            % f->content % fp);
+            % f->content % new_path);
           app.db.get_file_version(f->content, dat);
-          write_data(fp, dat.inner());
+          write_data(new_path, dat.inner());
         }
       else
         {
-          if (!directory_exists(fp))
+          intermediate_paths.insert(std::pair<node_id, file_path>(nid, new_path));
+
+          if (!directory_exists(new_path))
             {
-              P(F("recreating %s/") % fp);
-              mkdir_p(fp);
+              P(F("recreating %s/") % new_path);
+              mkdir_p(new_path);
+            }
+          else
+            {
+              L(FL("skipping existing %s/") % new_path);
             }
         }
     }
@@ -467,8 +512,8 @@ CMD(rename, "rename", "mv", CMD_REF(workspace),
   //cases for more than one source item.
   if (src_paths.size() == 1 && dstr()[dstr().size() -1] == '/')
     if (get_path_status(*src_paths.begin()) != path::directory)
-	    N(get_path_status(dst_path) == path::directory,
-	      F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
+        N(get_path_status(dst_path) == path::directory,
+          F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
 
   app.work.perform_rename(src_paths, dst_path, app.opts.bookkeep_only);
 }
@@ -604,8 +649,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
 
   app.create_workspace(dir);
 
-  shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
-  roster_t current_roster;
+  roster_t empty_roster, current_roster;
 
   L(FL("checking out revision %s to directory %s") % revid % dir);
   app.db.get_roster(revid, current_roster);
@@ -615,12 +659,9 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   app.work.put_work_rev(workrev);
 
   cset checkout;
-  make_cset(*empty_roster, current_roster, checkout);
+  make_cset(empty_roster, current_roster, checkout);
 
-  map<file_id, file_path> paths;
-  get_content_paths(*empty_roster, paths);
-
-  content_merge_workspace_adaptor wca(app, empty_roster, paths);
+  content_merge_checkout_adaptor wca(app);
 
   app.work.perform_content_update(checkout, wca, false);
 
@@ -782,7 +823,7 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
 //         format: ('attr', name, value), ('state', [unchanged|changed|added|dropped])
 //         occurs: zero or more times
 //
-// Error conditions: If the path has no attributes, prints only the 
+// Error conditions: If the path has no attributes, prints only the
 //                   format version, if the file is unknown, escalates
 CMD_AUTOMATE(get_attributes, N_("PATH"),
              N_("Prints all attributes for the specified path"),
@@ -813,20 +854,20 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
 
   // create the printer
   basic_io::printer pr;
-  
+
   // print the format version
   basic_io::stanza st;
   st.push_str_pair(basic_io::syms::format_version, "1");
   pr.print_stanza(st);
-    
+
   // the current node holds all current attributes (unchanged and new ones)
   node_t n = current.get_node(path);
-  for (full_attr_map_t::const_iterator i = n->attrs.begin(); 
+  for (full_attr_map_t::const_iterator i = n->attrs.begin();
        i != n->attrs.end(); ++i)
   {
     std::string value(i->second.second());
     std::string state;
-    
+
     // if if the first value of the value pair is false this marks a
     // dropped attribute
     if (!i->second.first)
@@ -836,16 +877,16 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         // because if it is dropped there as well it was already deleted
         // in any previous revision
         I(base.has_node(path));
-        
+
         node_t prev_node = base.get_node(path);
-        
+
         // find the attribute in there
         full_attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
         I(j != prev_node->attrs.end());
-        
+
         // was this dropped before? then ignore it
         if (!j->second.first) { continue; }
-        
+
         state = "dropped";
         // output the previous (dropped) value later
         value = j->second.second();
@@ -856,16 +897,16 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         if (base.has_node(path))
           {
             node_t prev_node = base.get_node(path);
-            full_attr_map_t::const_iterator j = 
+            full_attr_map_t::const_iterator j =
               prev_node->attrs.find(i->first);
-            
+
             // the attribute is new if it either hasn't been found
             // in the previous roster or has been deleted there
             if (j == prev_node->attrs.end() || !j->second.first)
               {
                 state = "added";
               }
-            // check if the attribute's value has been changed 
+            // check if the attribute's value has been changed
             else if (i->second.second() != j->second.second())
               {
                 state = "changed";
@@ -881,14 +922,14 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
             state = "added";
           }
       }
-      
+
     basic_io::stanza st;
     st.push_str_triple(basic_io::syms::attr, i->first(), value);
     st.push_str_pair(symbol("state"), state);
     pr.print_stanza(st);
   }
-  
-  // print the output  
+
+  // print the output
   output.write(pr.buf.data(), pr.buf.size());
 }
 
@@ -940,7 +981,7 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
 //   1: file / directory name
 //   2: attribute key (optional)
 // Added in: 5.0
-// Purpose: Edits the workspace revision and drops an attribute or all 
+// Purpose: Edits the workspace revision and drops an attribute or all
 //          attributes of the specified path
 //
 // Error conditions: If PATH is unknown in the new roster or the specified
@@ -1106,7 +1147,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   set<revision_id> heads;
   app.get_project().get_branch_heads(app.opts.branchname, heads);
   unsigned int old_head_size = heads.size();
-  
+
   {
     transaction_guard guard(app.db);
 
@@ -1115,7 +1156,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     else
       {
         L(FL("inserting new revision %s") % restricted_rev_id);
-  
+
         for (edge_map::const_iterator edge = restricted_rev.edges.begin();
              edge != restricted_rev.edges.end();
              edge++)

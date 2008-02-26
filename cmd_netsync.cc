@@ -307,7 +307,7 @@ CMD(clone, "clone", "", CMD_REF(network),
       P(F("setting default branch include pattern to '%s'") % include_pattern);
       app.db.set_var(default_include_pattern_key, var_value(include_pattern()));
     }
-  
+
   if (app.opts.exclude_given)
     {
       if (!app.db.var_exists(default_exclude_pattern_key)
@@ -317,10 +317,10 @@ CMD(clone, "clone", "", CMD_REF(network),
           app.db.set_var(default_exclude_pattern_key, var_value(exclude_pattern()));
         }
     }
-  
+
   // make sure we're back in the original dir so that file: URIs work
   change_current_working_dir(start_dir);
-  
+
   std::list<utf8> uris;
   uris.push_back(addr);
 
@@ -367,8 +367,7 @@ CMD(clone, "clone", "", CMD_REF(network),
         % ident % app.opts.branchname);
     }
 
-  shared_ptr<roster_t> empty_roster = shared_ptr<roster_t>(new roster_t());
-  roster_t current_roster;
+  roster_t empty_roster, current_roster;
 
   L(FL("checking out revision %s to directory %s") % ident % workspace_dir);
   app.db.get_roster(ident, current_roster);
@@ -378,12 +377,9 @@ CMD(clone, "clone", "", CMD_REF(network),
   app.work.put_work_rev(workrev);
 
   cset checkout;
-  make_cset(*empty_roster, current_roster, checkout);
+  make_cset(empty_roster, current_roster, checkout);
 
-  map<file_id, file_path> paths;
-  get_content_paths(*empty_roster, paths);
-
-  content_merge_workspace_adaptor wca(app, empty_roster, paths);
+  content_merge_checkout_adaptor wca(app);
 
   app.work.perform_content_update(checkout, wca, false);
 

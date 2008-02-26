@@ -1,3 +1,12 @@
+monotone (0.39-1) unstable; urgency=low
+
+  [ Zack Weinberg ]
+  * New upstream release.
+    - Can now be built with gcc 4.3 snapshots.  (Closes: #455646)
+  * Enable use of system libpcre, set appropriate Build-Depends.
+
+ -- Richard Levitte <richard@levitte.org>  Mon, 25 Feb 2008 10:55:36 -0500
+
 monotone (0.38-1) unstable; urgency=low
 
   [ Richard Levitte ]
@@ -98,7 +107,7 @@ monotone (0.36-1) unstable; urgency=low
      - if not asked to manage the database, do not delete it.
      - if deleting the database and there is a hot journal, delete that too.
      - delete editor backups of ucf-managed conffiles.
-     - expunge the auto-generated key's passphrase from 
+     - expunge the auto-generated key's passphrase from
        /etc/monotone/passphrases and if that leaves the file empty,
        delete it.
      - do not delete the monotone user or group if leaving /var/lib/monotone

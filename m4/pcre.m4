@@ -1,4 +1,11 @@
-# Detect libpcre or fall back to our bundled version.
+# Set up to use either a bundled or a system-provided version of libpcre.
+#
+# If --with-system-pcre is specified and the library cannot be found
+# or is unsuitable, the configure script will error out rather than
+# falling back to the bundled version.  This is to avoid surprising a
+# user who expected their system libpcre to be used. "Unsuitable" is
+# defined as "any version older than the bundled one".
+
 AC_DEFUN([MTN_LIB_PCRE],
 [AC_ARG_WITH([system-pcre],
     AC_HELP_STRING([--with-system-pcre],
@@ -6,15 +13,14 @@ AC_DEFUN([MTN_LIB_PCRE],
       copy. (To use a specific installed version, use the environment
       variables PCRE_CFLAGS and/or PCRE_LIBS.)]),
    [case "$withval" in
-      (""|yes) with_system_pcre=yes ;;
-      (no)     with_system_pcre=no  ;;
-      (*)      AC_MSG_ERROR([--with(out)-system-pcre takes no argument]) ;;
+      ""|yes) with_system_pcre=yes ;;
+      no)     with_system_pcre=no  ;;
+      *)      AC_MSG_ERROR([--with(out)-system-pcre takes no argument]) ;;
     esac],
    [with_system_pcre=no])
  if test "$with_system_pcre" = yes; then
    MTN_FIND_PCRE
- fi
- if test $with_system_pcre = no; then
+ else
    AC_DEFINE([PCRE_STATIC],[1],[Define if using bundled pcre])
    AC_MSG_NOTICE([using the bundled copy of PCRE])
  fi
@@ -75,11 +81,37 @@ AC_DEFUN([MTN_FIND_PCRE],
      AC_LINK_IFELSE([AC_LANG_PROGRAM(
       [#include <pcre.h>],
       [const char *e;
+       int dummy;
        int o;
+       /* Make sure some definitions are present. */
+       dummy = PCRE_NEWLINE_CR;
+       dummy = PCRE_DUPNAMES;
        pcre *re = pcre_compile("foo", 0, &e, &o, 0);])],
       [ac_cv_lib_pcre_works=yes], [ac_cv_lib_pcre_works=no])
      LIBS="$save_LIBS"
      CFLAGS="$save_CFLAGS"])
    if test $ac_cv_lib_pcre_works = no; then
-      with_system_pcre=no
-   fi])
+      AC_MSG_ERROR([system-provided libpcre is not usable.  Correct your settings or use --with-system-pcre=no.])
+   fi
+
+   # This is deliberately not cached.
+   AC_MSG_CHECKING([whether the system libpcre is new enough])
+   sed -n -e 's/#define PCRE_MAJOR[ 	]*/#define BUNDLED_PCRE_MAJOR /p' \
+          -e 's/#define PCRE_MINOR[ 	]*/#define BUNDLED_PCRE_MINOR /p' \
+          $srcdir/pcre/pcre.h > conftest.h
+   save_CFLAGS="$CFLAGS"
+   CFLAGS="$CFLAGS $PCRE_CFLAGS"
+   AC_PREPROC_IFELSE([
+#include "conftest.h"
+#include "pcre.h"
+#if PCRE_MAJOR < BUNDLED_PCRE_MAJOR || \
+    (PCRE_MAJOR == BUNDLED_PCRE_MAJOR && PCRE_MINOR < BUNDLED_PCRE_MINOR)
+#error out of date
+#endif],
+   [pcre_version_match=yes],
+   [pcre_version_match=no])
+   AC_MSG_RESULT($pcre_version_match)
+   if test $pcre_version_match = no; then
+     AC_MSG_ERROR([system-provided libpcre is too old.  Upgrade it, correct your settings, or use --with-system-pcre=no.])
+   fi
+])

@@ -12,6 +12,7 @@
 #include <map>
 #include <utility>
 #include <iostream>
+#include <iterator>
 
 #include <boost/tuple/tuple.hpp>
 
@@ -280,7 +281,7 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
 
   globish exc(app.opts.exclude_patterns);
   set<branch_name> names;
-  app.get_project().get_branch_list(inc, names);
+  app.get_project().get_branch_list(inc, names, !app.opts.ignore_suspend_certs);
 
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
