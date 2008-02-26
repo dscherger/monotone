@@ -14,14 +14,13 @@
 #include <set>
 #include <string>
 
+#include "constants.hh"
 #include "database.hh"
 #include "globish.hh"
-#include "http_client.hh"
-#include "json_io.hh"
-#include "json_msgs.hh"
+#include "graph.hh"
+#include "gsync.hh"
 #include "revision.hh"
 #include "sanity.hh"
-#include "lexical_cast.hh"
 #include "uri.hh"
 
 //
@@ -81,9 +80,6 @@ using std::vector;
 using std::string;
 using std::pair;
 
-using json_io::json_value_t;
-using boost::lexical_cast;
-
 /////////////////////////////////////////////////////////////////////
 // core logic of gsync algorithm
 /////////////////////////////////////////////////////////////////////
@@ -107,20 +103,8 @@ do_set_difference(set<revision_id> const & a,
 }
 
 
-static void 
-inquire_about_revs(http_client & h,
-                   set<revision_id> const & query_set,
-                   set<revision_id> & theirs)
-{
-  theirs.clear();  
-  json_value_t query = encode_msg_inquire(query_set);  
-  json_value_t response = h.transact_json(query);
-  E(decode_msg_confirm(response, theirs),
-    F("received unexpected reply to 'inquire' message"));
-}
-
 static void
-determine_common_core(http_client & h,
+determine_common_core(channel const & ch,
                       set<revision_id> const & our_revs,
                       rev_ancestry_map const & child_to_parent_map,
                       rev_ancestry_map const & parent_to_child_map,
@@ -149,7 +133,7 @@ determine_common_core(http_client & h,
       set<revision_id> revs_present, present_ancs, present_closure;
       set<revision_id> revs_absent, absent_descs, absent_closure;
 
-      inquire_about_revs(h, query_revs, revs_present);
+      ch.inquire_about_revs(query_revs, revs_present);
       do_set_difference(query_revs, revs_present, revs_absent);
 
       L(FL("pass #%d: inquired about %d revs, they have %d of them, missing %d of them") 
@@ -196,7 +180,7 @@ invert_ancestry(rev_ancestry_map const & in,
 
 static void
 do_missing_playback(database & db,
-                    http_client & h,
+                    channel const & ch,
                     set<revision_id> & core_frontier, 
                     set<revision_id> & revs_to_push,
                     rev_ancestry_map const & parent_to_child_map)
@@ -237,6 +221,8 @@ do_missing_playback(database & db,
           L(FL("  pushing revision %s (child of rev %s)")
             % i->second % i->first);
 
+          ch.push_rev(i->second);
+
           revs_to_push.erase(i->second);
           core_frontier.erase(i->first);
           core_frontier.insert(i->second);
@@ -250,22 +236,17 @@ do_missing_playback(database & db,
 
 static void 
 request_missing_playback(database & db,
-                         http_client & h,
+                         channel const & ch,
                          set<revision_id> const & core_frontier)
 {
 
 }
 
 void
-run_gsync_protocol(options & opts, lua_hooks & lua, database & db,
-                   utf8 const & addr,
+run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
                    globish const & include_pattern,
                    globish const & exclude_pattern)
 {
-  uri u;
-  parse_uri(addr(), u);
-  http_client h(opts, lua, u, include_pattern, exclude_pattern);
-
   bool pushing = true, pulling = true;
 
   rev_ancestry_map parent_to_child_map, child_to_parent_map;
@@ -283,7 +264,7 @@ run_gsync_protocol(options & opts, lua_hooks & lua, database & db,
     }
 
   set<revision_id> common_core;
-  determine_common_core(h, our_revs, child_to_parent_map, parent_to_child_map, common_core);
+  determine_common_core(ch, our_revs, child_to_parent_map, parent_to_child_map, common_core);
 
   set<revision_id> ours_alone;
   do_set_difference(our_revs, common_core, ours_alone);
@@ -293,18 +274,88 @@ run_gsync_protocol(options & opts, lua_hooks & lua, database & db,
   erase_ancestors(db, core_frontier);
 
   if (pushing)
-    do_missing_playback(db, h, core_frontier, ours_alone,
+    do_missing_playback(db, ch, core_frontier, ours_alone,
                         parent_to_child_map);
 
   if (pulling)
-    request_missing_playback(db, h, core_frontier);
+    request_missing_playback(db, ch, core_frontier);
 }
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
-UNIT_TEST(gsync, gsync)
+class test_channel
+  : public channel
 {
+  set<revision_id> & theirs;
+public:
+  test_channel(set<revision_id> & theirs)
+    : theirs(theirs)
+    { };
+
+  void inquire_about_revs(set<revision_id> const & query_set,
+                          set<revision_id> & result) const
+    {
+      result.clear();
+      for (set<revision_id>::const_iterator i = query_set.begin();
+           i != query_set.end(); ++i)
+        if (theirs.find(*i) != theirs.end())
+          result.insert(*i);
+    };
+
+  void push_rev(revision_id const & rid) const
+    {
+      I(false);
+    }
+};
+
+UNIT_TEST(gsync, gsync_common_core)
+{
+  L(FL("TEST: begin checking gsync protocol functions"));
+
+  revision_id rid1("0000000000000000000000000000000000000001");
+  revision_id rid2("0000000000000000000000000000000000000002");
+  revision_id rid3("0000000000000000000000000000000000000003");
+  revision_id rid4("0000000000000000000000000000000000000004");
+  revision_id rid5("0000000000000000000000000000000000000005");
+  revision_id rid6("0000000000000000000000000000000000000006");
+  revision_id rid7("0000000000000000000000000000000000000007");
+  revision_id rid8("0000000000000000000000000000000000000008");
+
+  // simulate having revisions 1, 2, 3, 5, 6 and 8 locally
+  set<revision_id> ours;
+  ours.insert(rid1);
+  ours.insert(rid2);
+  ours.insert(rid3);
+  ours.insert(rid5);
+  ours.insert(rid6);
+  ours.insert(rid8);
+
+  // prepaire an ancestry map
+  rev_ancestry_map parent_to_child_map, child_to_parent_map;
+  parent_to_child_map.insert(make_pair(rid1, rid2));
+  parent_to_child_map.insert(make_pair(rid1, rid3));
+  parent_to_child_map.insert(make_pair(rid2, rid5));
+  parent_to_child_map.insert(make_pair(rid3, rid5));
+  parent_to_child_map.insert(make_pair(rid5, rid6));
+  parent_to_child_map.insert(make_pair(rid5, rid8));
+  invert_ancestry(parent_to_child_map, child_to_parent_map);
+
+  // the other side has revisions 1, 2, 4 and 7
+  set<revision_id> theirs;
+  theirs.insert(rid1);
+  theirs.insert(rid2);
+  theirs.insert(rid4);
+  theirs.insert(rid7);
+
+  // setup the test channel and determine the common core
+  test_channel ch(theirs);
+  set<revision_id> common_core;
+  determine_common_core(ch, ours, child_to_parent_map, parent_to_child_map, common_core);
+
+  I(common_core.size() == 2);
+  I(common_core.find(rid1) != common_core.end());
+  I(common_core.find(rid2) != common_core.end());
 }
 
 #endif

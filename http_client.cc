@@ -13,6 +13,7 @@
 #include "globish.hh"
 #include "http_client.hh"
 #include "json_io.hh"
+#include "json_msgs.hh"
 #include "net_common.hh"
 #include "sanity.hh"
 #include "lexical_cast.hh"
@@ -26,6 +27,7 @@
 #include "netxx_pipe.hh"
 
 #include <vector>
+#include <set>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -34,9 +36,9 @@ using json_io::json_value_t;
 using boost::shared_ptr;
 using boost::lexical_cast;
 using std::vector;
+using std::set;
 using std::string;
 using std::iostream;
-
 
 using Netxx::Netbuf;
 using Netxx::Timeout;
@@ -188,6 +190,23 @@ http_client::parse_http_response(std::string & data)
       stream.reset();
       open = false;
     }
+}
+
+
+
+/////////////////////////////////////////////////////////////////////
+// http_channel adaptor
+/////////////////////////////////////////////////////////////////////
+
+void
+http_channel::inquire_about_revs(set<revision_id> const & query_set,
+                                 set<revision_id> & theirs) const
+{
+  theirs.clear();
+  json_value_t query = encode_msg_inquire(query_set);  
+  json_value_t response = client.transact_json(query);
+  E(decode_msg_confirm(response, theirs),
+    F("received unexpected reply to 'inquire' message"));
 }
 
 

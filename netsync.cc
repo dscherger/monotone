@@ -27,6 +27,7 @@
 #include "cert.hh"
 #include "constants.hh"
 #include "enumerator.hh"
+#include "gsync.hh"
 #include "keys.hh"
 #include "lua.hh"
 #include "merkle_tree.hh"

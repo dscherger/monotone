@@ -15,6 +15,7 @@
 
 #include "base.hh"
 #include "constants.hh"
+#include "gsync.hh"
 #include "json_io.hh"
 
 #include <iostream>
@@ -51,6 +52,19 @@ http_client
                               bool & keepalive);
   void parse_http_response(std::string & data);
   void crlf();  
+};
+
+class http_channel
+  : public channel
+{
+  http_client & client;
+public:
+  http_channel(http_client & c)
+    : client(c)
+    { };
+  virtual void inquire_about_revs(std::set<revision_id> const & query_set,
+                                    std::set<revision_id> & theirs) const;
+  virtual void push_rev(revision_id const & rid) const;
 };
 
 // Local Variables:

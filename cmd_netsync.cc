@@ -4,6 +4,8 @@
 #include "diff_patch.hh"
 #include "netcmd.hh"
 #include "globish.hh"
+#include "gsync.hh"
+#include "http_client.hh"
 #include "keys.hh"
 #include "key_store.hh"
 #include "cert.hh"
@@ -491,11 +493,6 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                        globish("*"), globish(""));
 }
 
-void 
-run_gsync_protocol(options & opts, lua_hooks & lua, database & db, utf8 const & addr,
-                   globish const & include_pattern,
-                   globish const & exclude_pattern);
-
 CMD(gsync, "gsync", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Synchronizes branches with a netsync server"),
@@ -514,7 +511,11 @@ CMD(gsync, "gsync", "", CMD_REF(network),
   extract_patterns(app.opts, db, args, include_pattern, exclude_pattern);
   find_key_if_needed(app.opts, app.lua, db, keys, addr, include_pattern, exclude_pattern);
 
-  run_gsync_protocol(app.opts, app.lua, db, addr, include_pattern, exclude_pattern);
+  uri u;
+  parse_uri(addr(), u);
+  http_client h(app.opts, app.lua, u, include_pattern, exclude_pattern);
+  run_gsync_protocol(app.lua, db, http_channel(h),
+                     include_pattern, exclude_pattern);
 }
 
 
