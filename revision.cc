@@ -1068,11 +1068,9 @@ anc_graph::add_node_for_old_manifest(manifest_id const & man)
           i != mcerts.end(); ++i)
         {
           L(FL("loaded '%s' manifest cert for node %s") % i->inner().name % node);
-          cert_value tv;
-          decode_base64(i->inner().value, tv);
           ++n_certs_in;
-          certs.insert(make_pair(node,
-                                      make_pair(i->inner().name, tv)));
+          certs.insert(make_pair(node, make_pair(i->inner().name,
+                                                 i->inner().value)));
         }
     }
   else
@@ -1110,14 +1108,12 @@ u64 anc_graph::add_node_for_oldstyle_revision(revision_id const & rev)
           i != rcerts.end(); ++i)
         {
           L(FL("loaded '%s' revision cert for node %s") % i->inner().name % node);
-          cert_value tv;
-          decode_base64(i->inner().value, tv);
           ++n_certs_in;
-          certs.insert(make_pair(node,
-                                      make_pair(i->inner().name, tv)));
+          certs.insert(make_pair(node, make_pair(i->inner().name,
+                                                 i->inner().value)));
 
           if (i->inner().name == branch_cert_name)
-            branches.insert(tv());
+            branches.insert(i->inner().value());
         }
     }
   else
@@ -1699,11 +1695,9 @@ build_changesets_from_manifest_ancestry(database & db, key_store & keys,
   for (vector< manifest<cert> >::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
     {
-      cert_value tv;
-      decode_base64(i->inner().value, tv);
       manifest_id child, parent;
       child = manifest_id(i->inner().ident);
-      parent = manifest_id(tv());
+      parent = manifest_id(i->inner().value());
 
       u64 parent_node = graph.add_node_for_old_manifest(parent);
       u64 child_node = graph.add_node_for_old_manifest(child);
