@@ -37,18 +37,18 @@ struct cert
 
   cert(hexenc<id> const & ident,
       cert_name const & name,
-      base64<cert_value> const & value,
+      cert_value const & value,
       rsa_keypair_id const & key);
   cert(hexenc<id> const & ident,
       cert_name const & name,
-      base64<cert_value> const & value,
+      cert_value const & value,
       rsa_keypair_id const & key,
-      base64<rsa_sha1_signature> const & sig);
+      rsa_sha1_signature const & sig);
   hexenc<id> ident;
   cert_name name;
-  base64<cert_value> value;
+  cert_value value;
   rsa_keypair_id key;
-  base64<rsa_sha1_signature> sig;
+  rsa_sha1_signature sig;
   bool operator<(cert const & other) const;
   bool operator==(cert const & other) const;
 };
