@@ -44,7 +44,7 @@ endif
 
 CFLAGS ?= $(DEFAULT_CFLAGS)
 
-include /usr/share/dpatch/dpatch.make
+#include /usr/share/dpatch/dpatch.make
 
 # put this up top so it's the default rule.
 #
