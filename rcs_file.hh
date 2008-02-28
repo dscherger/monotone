@@ -12,6 +12,7 @@
 
 #include "vector.hh"
 #include <map>
+#include <set>
 #include <boost/shared_ptr.hpp>
 
 struct rcs_admin
@@ -26,7 +27,7 @@ struct rcs_delta
   std::string num;
   std::string date;
   std::string author;
-  std::vector<std::string> branches;
+  std::set<std::string> branches;
   std::string next;
   std::string state; // dead, Exp  (or Stab, Rel)
 };
@@ -43,10 +44,11 @@ struct rcs_file
   rcs_admin admin;
   std::map<std::string, boost::shared_ptr<rcs_delta> > deltas;
   std::map<std::string, boost::shared_ptr<rcs_deltatext> > deltatexts;
+  std::set<std::string> vendor_branches;
   void push_delta(rcs_delta const & d)
   {
     boost::shared_ptr<rcs_delta> dp(new rcs_delta(d));
-    deltas.insert(make_pair(dp->num,dp));
+    deltas.insert(make_pair(dp->num, dp));
   }
   void push_deltatext(rcs_deltatext const & dt)
   {

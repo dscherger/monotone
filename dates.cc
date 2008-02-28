@@ -191,7 +191,6 @@ date_t::from_unix_epoch(u64 t)
 
       t -= this_month;
       month++;
-      L(FL("from_unix_epoch: month >= %u, t now %llu") % month % t);
       I(month < 12);
     }
 
@@ -330,6 +329,13 @@ date_t::from_string(string const & s)
         F("unrecognized date (monotone only understands ISO 8601 format)"));
     }
 }
+
+u64
+date_t::as_unix_epoch() const
+{
+  return 100;
+}
+
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
