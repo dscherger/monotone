@@ -549,13 +549,13 @@ criteria for selecting a revision</property>
 		      </child>
 
 		      <child>
-			<widget class="GtkButton" id="revision_change_log_button">
+			<widget class="GtkButton" id="revision_change_history_button">
 			  <property name="visible">True</property>
-			  <property name="tooltip" translatable="yes">View the revision's change log</property>
+			  <property name="tooltip" translatable="yes">View revision's change history</property>
 			  <property name="can_focus">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
-			  <signal name="clicked" handler="revision_change_log_button_clicked_cb" last_modification_time="Sat, 09 Feb 2008 16:21:36 GMT"/>
+			  <signal name="clicked" handler="revision_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:52:45 GMT"/>
 
 			  <child>
 			    <widget class="GtkImage" id="image3">
@@ -577,18 +577,18 @@ criteria for selecting a revision</property>
 		      </child>
 
 		      <child>
-			<widget class="GtkButton" id="revision_compare_button">
+			<widget class="GtkButton" id="revision_change_log_button">
 			  <property name="visible">True</property>
-			  <property name="tooltip" translatable="yes">Compare revision contents
-with another revision</property>
+			  <property name="tooltip" translatable="yes">View revision's change log</property>
 			  <property name="can_focus">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
+			  <signal name="clicked" handler="revision_change_log_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:47:54 GMT"/>
 
 			  <child>
-			    <widget class="GtkImage" id="image13">
+			    <widget class="GtkImage" id="image31">
 			      <property name="visible">True</property>
-			      <property name="stock">gnome-stock-multiple-file</property>
+			      <property name="stock">gtk-dnd</property>
 			      <property name="icon_size">4</property>
 			      <property name="xalign">0.5</property>
 			      <property name="yalign">0.5</property>
@@ -1422,13 +1422,13 @@ into a viewer</property>
 				  </child>
 
 				  <child>
-				    <widget class="GtkButton" id="file_change_log_button">
+				    <widget class="GtkButton" id="file_change_history_button">
 				      <property name="visible">True</property>
-				      <property name="tooltip" translatable="yes">View file's change log</property>
+				      <property name="tooltip" translatable="yes">View file's change history</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NORMAL</property>
 				      <property name="focus_on_click">True</property>
-				      <signal name="clicked" handler="file_change_log_button_clicked_cb" last_modification_time="Sat, 09 Feb 2008 16:21:51 GMT"/>
+				      <signal name="clicked" handler="file_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:43:13 GMT"/>
 
 				      <child>
 					<widget class="GtkImage" id="image12">
@@ -3354,7 +3354,7 @@ Tag</property>
 				      <property name="visible">True</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 327 10 294.3 327</property>
+				      <property name="hadjustment">0 0 356 10 320.4 356</property>
 				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
@@ -3445,12 +3445,22 @@ Tag</property>
 			    <widget class="GtkButton" id="stop_button">
 			      <property name="visible">True</property>
 			      <property name="sensitive">False</property>
-			      <property name="tooltip" translatable="yes">Stop gathering the file history</property>
+			      <property name="tooltip" translatable="yes">Stop gathering history details</property>
 			      <property name="can_focus">True</property>
-			      <property name="label">gtk-stop</property>
-			      <property name="use_stock">True</property>
 			      <property name="relief">GTK_RELIEF_NORMAL</property>
 			      <property name="focus_on_click">True</property>
+
+			      <child>
+				<widget class="GtkImage" id="image32">
+				  <property name="visible">True</property>
+				  <property name="stock">gtk-stop</property>
+				  <property name="icon_size">4</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
 			    </widget>
 			    <packing>
 			      <property name="padding">0</property>
