@@ -4,6 +4,8 @@
 #include "diff_patch.hh"
 #include "netcmd.hh"
 #include "globish.hh"
+#include "gsync.hh"
+#include "http_client.hh"
 #include "keys.hh"
 #include "key_store.hh"
 #include "cert.hh"
@@ -490,6 +492,32 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                        server_voice, source_and_sink_role, app.opts.bind_uris,
                        globish("*"), globish(""));
 }
+
+CMD(gsync, "gsync", "", CMD_REF(network),
+    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("Synchronizes branches with a netsync server"),
+    N_("This synchronizes branches that match the pattern given in PATTERN "
+       "with the gsync server at the address ADDRESS."),
+    options::opts::set_default | options::opts::exclude |
+    options::opts::key_to_push)
+{
+  utf8 addr;
+
+  database db(app);
+  key_store keys(app);
+
+  globish include_pattern, exclude_pattern;
+  extract_address(app.opts, db, args, addr);
+  extract_patterns(app.opts, db, args, include_pattern, exclude_pattern);
+  find_key_if_needed(app.opts, app.lua, db, keys, addr, include_pattern, exclude_pattern);
+
+  uri u;
+  parse_uri(addr(), u);
+  http_client h(app.opts, app.lua, u, include_pattern, exclude_pattern);
+  run_gsync_protocol(app.lua, db, http_channel(h),
+                     include_pattern, exclude_pattern);
+}
+
 
 // Local Variables:
 // mode: C++
