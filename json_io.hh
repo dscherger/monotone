@@ -16,6 +16,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "char_classifiers.hh"
 #include "paths.hh"
 #include "sanity.hh"
 #include "vocab.hh"
@@ -31,7 +32,7 @@ namespace json_io
 
   struct printer;
 
-  struct json_value 
+  struct json_value
   {
     virtual void write(printer &pr) = 0;
     virtual ~json_value() {}
@@ -39,11 +40,11 @@ namespace json_io
 
   typedef boost::shared_ptr<json_value> json_value_t;
 
-  struct json_object 
+  struct json_object
     : public json_value
   {
     std::map<std::string, json_value_t> fields;
-    void add(std::string const &str, json_value_t v) 
+    void add(std::string const &str, json_value_t v)
     { fields.insert(std::make_pair(str, v)); }
     virtual void write(printer &pr);
     virtual ~json_object() {}
@@ -51,19 +52,19 @@ namespace json_io
 
   typedef boost::shared_ptr<json_object> json_object_t;
 
-  struct json_array 
+  struct json_array
     : public json_value
   {
     std::vector<json_value_t> fields;
-    void add(json_value_t v) 
+    void add(json_value_t v)
     { fields.push_back(v); }
-    virtual void write(printer &pr);        
+    virtual void write(printer &pr);
     virtual ~json_array() {}
   };
 
   typedef boost::shared_ptr<json_array> json_array_t;
 
-  struct json_string  
+  struct json_string
     : public json_value
   {
     json_string(std::string const &s) : data(s) {}
@@ -108,7 +109,7 @@ namespace json_io
     inline void peek()
     {
       if (LIKELY(curr != in.end()))
-        // we do want to distinguish between EOF and '\xff', 
+        // we do want to distinguish between EOF and '\xff',
         // so we translate '\xff' to 255u
         lookahead = widen<unsigned int,char>(*curr);
       else
@@ -163,7 +164,7 @@ namespace json_io
     inline void
     read_escape(std::string & val, char c)
     {
-      switch (c) 
+      switch (c)
         {
         case '/':
         case '\\':
@@ -351,12 +352,12 @@ namespace json_io
 
 
     inline json_object_t
-    parse_object() 
+    parse_object()
     {
       bool first = true;
       json_object_t obj(new json_object());
       lbrace();
-      while (ttype != TOK_RBRACE) 
+      while (ttype != TOK_RBRACE)
         {
           if (!first)
             comma();
@@ -372,12 +373,12 @@ namespace json_io
     }
 
     inline json_array_t
-    parse_array() 
+    parse_array()
     {
       bool first = true;
       json_array_t arr(new json_array());
       lbracket();
-      while (ttype != TOK_RBRACKET) 
+      while (ttype != TOK_RBRACKET)
         {
           if (!first)
             comma();
@@ -406,7 +407,7 @@ namespace json_io
         return parse_array();
       else if (ttype == TOK_STRING)
         return parse_string();
-      else 
+      else
         return json_value_t();
     }
 
@@ -430,7 +431,7 @@ namespace json_io
 
   std::string escape(std::string const & s);
 
-  // Note: printer uses a static buffer; thus only one buffer 
+  // Note: printer uses a static buffer; thus only one buffer
   // may be referenced (globally). An invariant will be triggered
   // if more than one json_io::printer is instantiated.
   struct
@@ -445,7 +446,7 @@ namespace json_io
     {
       buf.append(s);
     }
-    void append_indent() 
+    void append_indent()
     {
       for (size_t i = 0; i < indent; ++i)
         buf += '\t';
@@ -465,21 +466,21 @@ namespace json_io
     builder(json_value_t v) : v(v), key("") {}
     builder() : v(new json_object()), key("") {}
 
-    json_object_t as_obj() 
+    json_object_t as_obj()
     {
       json_object_t ob = boost::dynamic_pointer_cast<json_object, json_value>(v);
       I(static_cast<bool>(ob));
       return ob;
     }
 
-    json_array_t as_arr() 
+    json_array_t as_arr()
     {
       json_array_t a = boost::dynamic_pointer_cast<json_array, json_value>(v);
       I(static_cast<bool>(a));
       return a;
     }
 
-    json_string_t as_str() 
+    json_string_t as_str()
     {
       json_string_t s = boost::dynamic_pointer_cast<json_string, json_value>(v);
       I(static_cast<bool>(s));
@@ -498,7 +499,7 @@ namespace json_io
     }
 
     void add_str(std::string const &s)
-    {      
+    {
       I(key.empty());
       as_arr()->add(json_string_t(new json_string(s)));
     }
@@ -514,7 +515,7 @@ namespace json_io
 
     builder add_arr()
     {
-      I(key.empty()); 
+      I(key.empty());
       json_array_t a = as_arr();
       json_array_t a2(new json_array());
       a->add(a2);
@@ -527,25 +528,25 @@ namespace json_io
       as_arr()->add(val);
     }
 
-    void set(json_value_t v) 
+    void set(json_value_t v)
     {
       I(!key.empty());
       as_obj()->add(key, v);
     }
 
-    void str(std::string const &s) 
+    void str(std::string const &s)
     {
       set(json_string_t(new json_string(s)));
     }
 
-    builder obj() 
+    builder obj()
     {
       json_object_t ob(new json_object());
       set(ob);
       return builder(ob);
     }
 
-    builder arr() 
+    builder arr()
     {
       json_array_t a(new json_array());
       set(a);
@@ -557,23 +558,23 @@ namespace json_io
   ///////////////////////   query  //////////////////////////
   ///////////////////////////////////////////////////////////
 
-  struct 
+  struct
   query
   {
     json_value_t v;
     query(json_value_t v) : v(v) {}
 
-    json_object_t as_obj() 
+    json_object_t as_obj()
     {
       return boost::dynamic_pointer_cast<json_object, json_value>(v);
     }
 
-    json_array_t as_arr() 
+    json_array_t as_arr()
     {
       return boost::dynamic_pointer_cast<json_array, json_value>(v);
     }
 
-    json_string_t as_str() 
+    json_string_t as_str()
     {
       return boost::dynamic_pointer_cast<json_string, json_value>(v);
     }
@@ -584,7 +585,7 @@ namespace json_io
     }
 
 
-    query operator[](symbol const &key) 
+    query operator[](symbol const &key)
     {
       json_object_t ob = as_obj();
       if (static_cast<bool>(ob))
@@ -596,15 +597,15 @@ namespace json_io
       return bad();
     }
 
-    query operator[](size_t &idx) 
+    query operator[](size_t &idx)
     {
       json_array_t a = as_arr();
-      if (static_cast<bool>(a) && idx < a->fields.size()) 
+      if (static_cast<bool>(a) && idx < a->fields.size())
         return query(a->fields.at(idx));
       return bad();
     }
 
-    bool len(size_t & length) { 
+    bool len(size_t & length) {
       json_array_t a = as_arr();
       if (static_cast<bool>(a)) {
         length = a->fields.size();
@@ -613,20 +614,20 @@ namespace json_io
       return false;
     }
 
-    json_value_t get() 
+    json_value_t get()
     {
       return v;
     }
 
-    bool get(std::string & str) { 
+    bool get(std::string & str) {
       json_string_t s = as_str();
-      if (static_cast<bool>(s)) 
+      if (static_cast<bool>(s))
         {
           str = s->data;
           return true;
         }
       return false;
-    }    
+    }
   };
 }
 

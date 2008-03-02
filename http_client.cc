@@ -48,19 +48,19 @@ using Netxx::PipeStream;
 
 
 http_client::http_client(options & opts, lua_hooks & lua,
-                         uri const & u,               
+                         uri const & u,
                          globish const & include_pattern,
                          globish const & exclude_pattern)
   : opts(opts),
     lua(lua),
-    u(u), 
-    include_pattern(include_pattern), 
+    u(u),
+    include_pattern(include_pattern),
     exclude_pattern(exclude_pattern),
     stream(build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern,
                                   (u.port.empty() ? constants::default_http_port
                                                   : lexical_cast<size_t,string>(u.port)),
-                                  Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)))), 
-    nb(new Netbuf<constants::bufsz>(*stream)), 
+                                  Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)))),
+    nb(new Netbuf<constants::bufsz>(*stream)),
     io(new iostream(&(*nb))),
     open(true)
 {}
@@ -71,7 +71,7 @@ http_client::transact_json(json_value_t v)
   if (!open)
     {
       L(FL("reopening connection"));
-      stream = build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern, 
+      stream = build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern,
                                       constants::default_http_port,
                                       Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)));
       nb = shared_ptr< Netbuf<constants::bufsz> >(new Netbuf<constants::bufsz>(*stream));
@@ -93,12 +93,12 @@ http_client::transact_json(json_value_t v)
                      "Accept: application/jsonrequest\r\n"
                      "Accept-Encoding: identity\r\n"
                      "Connection: Keep-Alive\r\n"
-                     "\r\n") 
+                     "\r\n")
                    % (u.path.empty() ? "/" : u.path)
-                   % u.host 
+                   % u.host
                    % lexical_cast<string>(out.buf.size())).str();
 
-  L(FL("http_client: sending request [[POST %s HTTP/1.0]]") 
+  L(FL("http_client: sending request [[POST %s HTTP/1.0]]")
     % (u.path.empty() ? "/" : u.path));
   L(FL("http_client: to [[Host: %s]]") % u.host);
   L(FL("http_client: sending %d-byte body") % out.buf.size());
@@ -118,7 +118,7 @@ http_client::transact_json(json_value_t v)
 }
 
 
-void 
+void
 http_client::parse_http_status_line()
 {
   // We're only interested in 200-series responses
@@ -131,8 +131,8 @@ http_client::parse_http_status_line()
   E(tmp.substr(0,pat.size()) == pat, F("HTTP status line: %s") % tmp);
 }
 
-void 
-http_client::parse_http_header_line(size_t & content_length, 
+void
+http_client::parse_http_header_line(size_t & content_length,
                                     bool & keepalive)
 {
   string k, v, rest;
@@ -140,19 +140,14 @@ http_client::parse_http_header_line(size_t & content_length,
   L(FL("http_client: header: [[%s %s]]") % k % v);
   std::getline(*io, rest);
 
-  if (k == "Content-Length:" 
-      || k == "Content-length:"
-      || k == "content-length:")
+  if (k == "Content-Length:" || k == "Content-length:" || k == "content-length:")
     content_length = lexical_cast<size_t>(v);
-  else if (k == "Connection:" 
-           || k == "connection:")
-    keepalive = (v == "Keep-Alive" 
-                 || v == "Keep-alive" 
-                 || v == "keep-alive");
+  else if (k == "Connection:" || k == "connection:")
+    keepalive = (v == "Keep-Alive" || v == "Keep-alive" || v == "keep-alive");
 }
 
 
-void 
+void
 http_client::crlf()
 {
   E(io->get() == '\r', F("expected CR in HTTP response"));
@@ -160,7 +155,7 @@ http_client::crlf()
 }
 
 
-void 
+void
 http_client::parse_http_response(std::string & data)
 {
   size_t content_length = 0;
@@ -181,7 +176,7 @@ http_client::parse_http_response(std::string & data)
 
   io->flush();
 
-  if (!keepalive) 
+  if (!keepalive)
     {
       L(FL("http_client: closing connection"));
       stream->close();
@@ -203,12 +198,16 @@ http_channel::inquire_about_revs(set<revision_id> const & query_set,
                                  set<revision_id> & theirs) const
 {
   theirs.clear();
-  json_value_t query = encode_msg_inquire(query_set);  
+  json_value_t query = encode_msg_inquire(query_set);
   json_value_t response = client.transact_json(query);
   E(decode_msg_confirm(response, theirs),
     F("received unexpected reply to 'inquire' message"));
 }
 
+void
+http_channel::push_rev(revision_id const & rid) const
+{
+}
 
 // Local Variables:
 // mode: C++

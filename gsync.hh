@@ -30,6 +30,7 @@ public:
                           std::set<revision_id> & theirs) const = 0;
   virtual
   void push_rev(revision_id const & rid) const = 0;
+  virtual ~channel() {}
 };
 
 extern void

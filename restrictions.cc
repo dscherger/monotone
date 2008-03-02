@@ -95,6 +95,7 @@ namespace
     virtual bool operator()(file_path const &) const = 0;
   protected:
     unknown_p() {}
+    virtual ~unknown_p() {}
   };
 
   struct unknown_node : public unknown_p
@@ -106,7 +107,7 @@ namespace
     {
       return known_paths.find(p) == known_paths.end();
     }
-    
+
   private:
     set<file_path> const & known_paths;
   };
@@ -134,7 +135,7 @@ namespace
       return (known_paths.find(p) == known_paths.end()
               && !work.ignore_file(p));
     }
-    
+
   private:
     set<file_path> const & known_paths;
     workspace & work;
