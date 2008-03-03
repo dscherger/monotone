@@ -1,0 +1,101 @@
+head	1.1;
+access;
+symbols
+	BRANCH_FROM_UNNAMED_BRANCH_B:1.1.2.1.2.1.2.1.0.2
+	BRANCH_FROM_UNNAMED_BRANCH_A:1.1.2.1.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2006.12.13.19.12.21;	author markus;	state Exp;
+branches
+	1.1.2.1;
+next	;
+commitid	Wsa2fgIB3bZ8BoYr;
+
+1.1.2.1
+date	2006.12.13.19.12.22;	author markus;	state Exp;
+branches
+	1.1.2.1.2.1;
+next	;
+commitid	oEj0XhV2lyy9BoYr;
+
+1.1.2.1.2.1
+date	2006.12.13.19.12.23;	author markus;	state Exp;
+branches
+	1.1.2.1.2.1.2.1;
+next	;
+commitid	WpRjzOJTXPQ9BoYr;
+
+1.1.2.1.2.1.2.1
+date	2006.12.13.19.12.24;	author markus;	state Exp;
+branches
+	1.1.2.1.2.1.2.1.2.1;
+next	;
+commitid	TTp9SPnJULcaBoYr;
+
+1.1.2.1.2.1.2.1.2.1
+date	2006.12.13.19.12.25;	author markus;	state Exp;
+branches;
+next	;
+commitid	AE70kVJxSEqaBoYr;
+
+
+desc
+@@
+
+
+1.1
+log
+@initial versions
+@
+text
+@initial revision of fileA
+@
+
+
+1.1.2.1
+log
+@revision 2 of fileA
+@
+text
+@d1 1
+a1 1
+revision 2 of fileA
+@
+
+
+1.1.2.1.2.1
+log
+@revision 3 of fileA
+@
+text
+@d1 1
+a1 1
+revision 3 of fileA
+@
+
+
+1.1.2.1.2.1.2.1
+log
+@revision 4 of fileA
+@
+text
+@d1 1
+a1 1
+revision 4 of fileA
+@
+
+
+1.1.2.1.2.1.2.1.2.1
+log
+@revision 5 of fileA
+@
+text
+@d1 1
+a1 1
+revision 5 of fileA
+@
+
+
