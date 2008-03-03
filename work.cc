@@ -378,7 +378,7 @@ read_options_file(any_path const & optspath,
       string opt, val;
       parser.sym(opt);
       parser.str(val);
-      
+
       if (opt == "database")
         database_option = system_path(val);
       else if (opt == "branch")

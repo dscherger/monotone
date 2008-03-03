@@ -63,11 +63,11 @@ namespace
     symbol const revs("revs");
     symbol const error("error");
 
-    symbol const inquire("inquire");
-    symbol const confirm("confirm");
+    symbol const inquire_request("inquire_request");
+    symbol const inquire_response("inquire_response");
 
-    symbol const get_descendants("get_descendants");
-    symbol const descendants("descendants");
+    symbol const descendants_request("descendants_request");
+    symbol const descendants_response("descendants_response");
 
     symbol const get_rev("get_rev");
     symbol const get_full_rev("get_full_rev");
@@ -82,10 +82,10 @@ namespace
 }
 
 /////////////////////////////////////////////////////////////////////
-// message type 'error' 
+// message type 'error'
 /////////////////////////////////////////////////////////////////////
 
-json_value_t 
+json_value_t
 encode_msg_error(string const & note)
 {
   json_io::builder b;
@@ -93,8 +93,8 @@ encode_msg_error(string const & note)
   return b.v;
 }
 
-bool 
-decode_msg_error(json_value_t val, 
+bool
+decode_msg_error(json_value_t val,
                  std::string & note)
 {
   json_io::query q(val);
@@ -104,14 +104,14 @@ decode_msg_error(json_value_t val,
 
 
 /////////////////////////////////////////////////////////////////////
-// message type 'inquire' 
+// message type 'inquire_request'
 /////////////////////////////////////////////////////////////////////
 
-json_value_t 
-encode_msg_inquire(set<revision_id> const & revs)
+json_value_t
+encode_msg_inquire_request(set<revision_id> const & revs)
 {
   json_io::builder b;
-  b[syms::type].str(syms::inquire());
+  b[syms::type].str(syms::inquire_request());
   b[syms::vers].str("1");
   json_io::builder r = b[syms::revs].arr();
   for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
@@ -119,23 +119,21 @@ encode_msg_inquire(set<revision_id> const & revs)
   return b.v;
 }
 
-bool 
-decode_msg_inquire(json_value_t val, 
-                   set<revision_id> & revs)
+bool
+decode_msg_inquire_request(json_value_t val,
+                           set<revision_id> & revs)
 {
   string type, vers;
-  json_io::query q(val);  
-  if (q[syms::type].get(type) && 
-      type == syms::inquire() && 
-      q[syms::vers].get(vers) && 
-      vers == "1")
-    {      
+  json_io::query q(val);
+  if (q[syms::type].get(type) && type == syms::inquire_request() &&
+      q[syms::vers].get(vers) && vers == "1")
+    {
       size_t nargs = 0;
-      if (q[syms::revs].len(nargs)) 
+      if (q[syms::revs].len(nargs))
         {
           std::string s;
           for (size_t i = 0; i < nargs; ++i)
-            if (q[syms::revs][i].get(s)) 
+            if (q[syms::revs][i].get(s))
               revs.insert(revision_id(s));
           return true;
         }
@@ -145,14 +143,14 @@ decode_msg_inquire(json_value_t val,
 
 
 /////////////////////////////////////////////////////////////////////
-// message type 'confirm' 
+// message type 'inquire_response'
 /////////////////////////////////////////////////////////////////////
 
-json_value_t 
-encode_msg_confirm(set<revision_id> const & revs)
+json_value_t
+encode_msg_inquire_response(set<revision_id> const & revs)
 {
   json_io::builder b;
-  b[syms::type].str(syms::confirm());
+  b[syms::type].str(syms::inquire_response());
   b[syms::vers].str("1");
   json_io::builder r = b[syms::revs].arr();
   for (set<revision_id>::const_iterator i = revs.begin();
@@ -163,22 +161,20 @@ encode_msg_confirm(set<revision_id> const & revs)
   return b.v;
 }
 
-bool 
-decode_msg_confirm(json_value_t val, 
-                   set<revision_id> & revs)
+bool
+decode_msg_inquire_response(json_value_t val,
+                            set<revision_id> & revs)
 {
   string type, vers;
-  json_io::query q(val);  
-  if (q[syms::type].get(type) &&
-      type == syms::confirm() &&
-      q[syms::vers].get(vers) &&
-      vers == "1")
+  json_io::query q(val);
+  if (q[syms::type].get(type) && type == syms::inquire_response() &&
+      q[syms::vers].get(vers) && vers == "1")
     {
       size_t nrevs = 0;
       string tmp;
       json_io::query r = q[syms::revs];
       if (r.len(nrevs))
-        for (size_t i = 0; i < nrevs; ++i) 
+        for (size_t i = 0; i < nrevs; ++i)
           if (r[i].get(tmp))
             revs.insert(revision_id(tmp));
       return true;
@@ -187,29 +183,29 @@ decode_msg_confirm(json_value_t val,
 }
 
 /////////////////////////////////////////////////////////////////////
-// message type 'get_descendants' 
+// message type 'descendants_request'
 /////////////////////////////////////////////////////////////////////
 
-json_value_t 
-encode_msg_get_descendants(set<revision_id> const & revs);
-bool 
-decode_msg_get_descendants(json_value_t val, 
-                           set<revision_id> & revs);
-
-
-/////////////////////////////////////////////////////////////////////
-// message type 'descendants' 
-/////////////////////////////////////////////////////////////////////
-
-json_value_t 
-encode_msg_descendants(rev_ancestry_map const & parent_to_child_map);
-bool 
-decode_msg_descendants(json_value_t val, 
-                       rev_ancestry_map & parent_to_child_map);
+json_value_t
+encode_msg_descendants_request(set<revision_id> const & revs);
+bool
+decode_msg_descendants_response(json_value_t val,
+                               set<revision_id> & revs);
 
 
 /////////////////////////////////////////////////////////////////////
-// message type 'rev' 
+// message type 'descendants_response'
+/////////////////////////////////////////////////////////////////////
+
+json_value_t
+encode_descendants_response(rev_ancestry_map const & parent_to_child_map);
+bool
+decode_descendants_response(json_value_t val,
+                            rev_ancestry_map & parent_to_child_map);
+
+
+/////////////////////////////////////////////////////////////////////
+// message type 'rev'
 /////////////////////////////////////////////////////////////////////
 
 
@@ -274,12 +270,12 @@ cset_to_json(json_io::builder b, cset const & cs)
 json_value_t
 encode_msg_rev(revision_t const & rev)
 {
-  json_io::builder b;  
+  json_io::builder b;
   b[syms::type].str(syms::rev());
   b[syms::vers].str("1");
   b[syms::new_manifest].str(rev.new_manifest.inner()());
   json_io::builder edges = b[syms::edges].arr();
-  for (edge_map::const_iterator e = rev.edges.begin(); 
+  for (edge_map::const_iterator e = rev.edges.begin();
        e != rev.edges.end(); ++e)
     {
       json_io::builder edge = edges.add_obj();
@@ -291,22 +287,21 @@ encode_msg_rev(revision_t const & rev)
 
 
 
-
-json_value_t 
+json_value_t
 encode_msg_full_rev(revision_id const & rid,
                     revision_t const & rev,
                     set<file_delta_record> const & deltas,
                     set<file_data_record> const & datas)
 {
-  json_io::builder b;  
+  json_io::builder b;
   b[syms::type].str(syms::full_rev());
   b[syms::vers].str("1");
-  json_io::builder rev_builder = b[syms::rev];  
+  json_io::builder rev_builder = b[syms::rev];
   return b.v;
 }
 
-bool 
-decode_msg_full_rev(json_value_t val, 
+bool
+decode_msg_full_rev(json_value_t val,
                     revision_id & rid,
                     revision_t & rev,
                     set<file_delta_record> & deltas,
@@ -318,9 +313,6 @@ decode_msg_full_rev(json_value_t val,
   b[syms::rev] = encode_msg_rev(rev);
   return b.v;
 }
-
-
-
 
 // Local Variables:
 // mode: C++

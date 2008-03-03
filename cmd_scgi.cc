@@ -55,7 +55,7 @@ using boost::lexical_cast;
 //
 //        headers ::= header*
 //        header ::= name NUL value NUL
-//        name ::= notnull+                
+//        name ::= notnull+
 //        value ::= notnull+
 //        notnull ::= <01> | <02> | <03> | ... | <ff>
 //        NUL = <00>
@@ -81,10 +81,10 @@ struct scgi_error
 };
 
 // Consume string until null or EOF. Consumes trailing null.
-static string 
+static string
 parse_str(istream & in)
 {
-  string s; 
+  string s;
   while (in.good())
     {
       char ch = static_cast<char>(in.get());
@@ -95,7 +95,7 @@ parse_str(istream & in)
   return s;
 }
 
-static inline bool 
+static inline bool
 eat(istream & in, char c)
 {
   if (!in.good())
@@ -104,7 +104,7 @@ eat(istream & in, char c)
   return c == static_cast<char>(i);
 }
 
-static bool 
+static bool
 parse_scgi(istream & in, string & data)
 {
 
@@ -117,6 +117,15 @@ parse_scgi(istream & in, string & data)
   L(FL("scgi: netstring length: %d") % netstring_len);
   if (!eat(in, ':')) return false;
 
+  // although requirements of the scgi spec,
+  // the code below will allow requests that:
+  // - don't have CONTENT_LENGTH as the first header
+  // - don't have a CONTENT_LENGTH header at all
+  // - don't have an SCGI header
+  // perhaps this is just to "be liberal in what you accept"
+  // but we may want to tighten it up a bit. at the very least
+  // this is relying on the CONTENT_LENGTH header.
+
   size_t content_length = 0;
   while (netstring_len > 0)
     {
@@ -125,7 +134,7 @@ parse_scgi(istream & in, string & data)
 
       L(FL("scgi: got header: %s -> %s") % key % val);
       if (key == "CONTENT_LENGTH")
-        { 
+        {
           content_length = lexical_cast<size_t,string>(val);
           L(FL("scgi: content length: %d") % content_length);
         }
@@ -157,18 +166,18 @@ parse_scgi(istream & in, string & data)
 static json_io::json_value_t
 do_cmd(database & db, json_io::json_object_t cmd_obj)
 {
-  set<revision_id> revs;
+  set<revision_id> request_revs;
 
-  if (decode_msg_inquire(cmd_obj, revs))
+  if (decode_msg_inquire_request(cmd_obj, request_revs))
     {
-      L(FL("inquiring %d revisions") % revs.size());
+      L(FL("inquiring %d revisions") % request_revs.size());
       db.ensure_open();
-      set<revision_id> confirmed;
-      for (set<revision_id>::const_iterator i = revs.begin();
-           i != revs.end(); ++i)
+      set<revision_id> response_revs;
+      for (set<revision_id>::const_iterator i = request_revs.begin();
+           i != request_revs.end(); ++i)
         if (db.revision_exists(*i))
-          confirmed.insert(*i);
-      return encode_msg_confirm(confirmed);
+          response_revs.insert(*i);
+      return encode_msg_inquire_response(response_revs);
     }
   else
     {
@@ -196,7 +205,7 @@ process_scgi_transaction(database & db,
       json_io::parser p(tok);
       json_io::json_object_t obj = p.parse_object();
 
-      if (static_cast<bool>(obj)) 
+      if (static_cast<bool>(obj))
         {
           transaction_guard guard(db);
           L(FL("read JSON object"));
@@ -213,7 +222,7 @@ process_scgi_transaction(database & db,
                   << "Content-Type: application/jsonrequest\r\n"
                   << "\r\n";
 
-              out.write(out_data.buf.data(), out_data.buf.size());              
+              out.write(out_data.buf.data(), out_data.buf.size());
               out << "\n";
               out.flush();
               return;
@@ -234,6 +243,7 @@ process_scgi_transaction(database & db,
           << "\r\n";
       out.flush();
     }
+
 }
 
 
@@ -244,9 +254,9 @@ CMD_NO_WORKSPACE(scgi,             // C
                  N_(""),                              // params
                  N_("Serves SCGI+JSON connections"),  // abstract
                  "",                                  // desc
-                 options::opts::scgi_bind | 
+                 options::opts::scgi_bind |
                  options::opts::pidfile |
-                 options::opts::bind_stdio | 
+                 options::opts::bind_stdio |
                  options::opts::no_transport_auth
                  )
 {
@@ -276,7 +286,7 @@ CMD_NO_WORKSPACE(scgi,             // C
   if (app.opts.bind_stdio)
     process_scgi_transaction(db, std::cin, std::cout);
   else
-    {    
+    {
 
 #ifdef USE_IPV6
       bool use_ipv6=true;
@@ -288,8 +298,8 @@ CMD_NO_WORKSPACE(scgi,             // C
       bool try_again=false;
 
       do
-        {  
-          try 
+        {
+          try
             {
               try_again = false;
 
@@ -323,10 +333,10 @@ CMD_NO_WORKSPACE(scgi,             // C
                     }
                   else
                     break;
-                } 
+                }
             }
-          // Possibly loop around if we get exceptions from Netxx and we're 
-          // attempting to use ipv6, or have some other reason to try again. 
+          // Possibly loop around if we get exceptions from Netxx and we're
+          // attempting to use ipv6, or have some other reason to try again.
           catch (Netxx::NetworkException &)
             {
               if (try_again)
@@ -341,7 +351,7 @@ CMD_NO_WORKSPACE(scgi,             // C
               else
                 throw;
             }
-        } while (try_again);      
+        } while (try_again);
     }
 }
 

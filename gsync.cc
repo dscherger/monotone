@@ -44,7 +44,7 @@
 //
 // In the introduction step, the client asks the server to describe
 // its public key, branches, etc. such that the client knows what sort
-// of material it can ask for in an authenticated fashion. 
+// of material it can ask for in an authenticated fashion.
 //
 // In the inquiry step, the client sends a set of revids to the server
 // and asks which of them the server has. The server responds with the
@@ -59,7 +59,7 @@
 // hash). This is a quasi-randomized-ish algorithm and it converges
 // very fast. Once the client determines a shared historical core DAG,
 // it calculates the graph frontier of that core.
-// 
+//
 // Depending on the mode (push, pull, or sync) the playback phase
 // then involves one or both of the following:
 //
@@ -121,8 +121,8 @@ determine_common_core(channel const & ch,
 
       // Bite off a chunk of the remaining unknowns to ask about.
       set<revision_id>::const_iterator r = unknown_revs.begin();
-      for (size_t i = 0; 
-           i < constants::gsync_max_probe_set_size && r != unknown_revs.end(); 
+      for (size_t i = 0;
+           i < constants::gsync_max_probe_set_size && r != unknown_revs.end();
            ++i, ++r)
         {
           query_revs.insert(*r);
@@ -136,16 +136,17 @@ determine_common_core(channel const & ch,
       ch.inquire_about_revs(query_revs, revs_present);
       do_set_difference(query_revs, revs_present, revs_absent);
 
-      L(FL("pass #%d: inquired about %d revs, they have %d of them, missing %d of them") 
+      L(FL("pass #%d: inquired about %d revs, they have %d of them, missing %d of them")
         % pass
-        % query_revs.size() 
+        % query_revs.size()
         % revs_present.size()
         % revs_absent.size());
+
+      // FIXME: "ancestors" is a misnomer; it's a graph-closure calculation...
 
       get_all_ancestors(revs_present, child_to_parent_map, present_ancs);
       do_set_union(revs_present, present_ancs, present_closure);
 
-      // FIXME: "ancestors" is a misnomer; it's a graph-closure calculation...
       get_all_ancestors(revs_absent, parent_to_child_map, absent_descs);
       do_set_union(revs_absent, absent_descs, absent_closure);
 
@@ -155,12 +156,12 @@ determine_common_core(channel const & ch,
 
       do_set_difference(unknown_revs, present_closure, new_unknown);
       unknown_revs = new_unknown;
-      L(FL("pass #%d: unknown set after removing %d-entry present closure: %d nodes") 
+      L(FL("pass #%d: unknown set after removing %d-entry present closure: %d nodes")
         % pass % present_closure.size() % unknown_revs.size());
 
       do_set_difference(unknown_revs, absent_closure, new_unknown);
       unknown_revs = new_unknown;
-      L(FL("pass #%d: unknown set after removing %d-entry absent closure: %d nodes") 
+      L(FL("pass #%d: unknown set after removing %d-entry absent closure: %d nodes")
         % pass % absent_closure.size() % unknown_revs.size());
 
       // Update our total knowledge about them.
@@ -181,7 +182,7 @@ invert_ancestry(rev_ancestry_map const & in,
 static void
 do_missing_playback(database & db,
                     channel const & ch,
-                    set<revision_id> & core_frontier, 
+                    set<revision_id> & core_frontier,
                     set<revision_id> & revs_to_push,
                     rev_ancestry_map const & parent_to_child_map)
 {
@@ -234,7 +235,7 @@ do_missing_playback(database & db,
 }
 
 
-static void 
+static void
 request_missing_playback(database & db,
                          channel const & ch,
                          set<revision_id> const & core_frontier)
@@ -254,7 +255,7 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
   invert_ancestry(parent_to_child_map, child_to_parent_map);
 
   set<revision_id> our_revs;
-  for (rev_ancestry_map::const_iterator i = child_to_parent_map.begin(); 
+  for (rev_ancestry_map::const_iterator i = child_to_parent_map.begin();
        i != child_to_parent_map.end(); ++i)
     {
       if (!i->first.inner()().empty())
@@ -279,6 +280,7 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
 
   if (pulling)
     request_missing_playback(db, ch, core_frontier);
+
 }
 
 #ifdef BUILD_UNIT_TESTS

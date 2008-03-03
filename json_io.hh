@@ -214,11 +214,11 @@ namespace json_io
           return json_io::TOK_SYMBOL;
         }
 
-      else if (in.lookahead == '"')
+      else if (in.lookahead == '"') // no static_cast here ...
         {
           in.advance();
           mark();
-          while (static_cast<char>(in.lookahead) != '"')
+          while (static_cast<char>(in.lookahead) != '"') // ... is there a real reason for one here?
             {
               if (UNLIKELY(in.lookahead == EOF))
                 in.err("input stream ended in string");

@@ -107,7 +107,6 @@ http_client::transact_json(json_value_t v)
   io->flush();
   L(FL("http_client: sent %d-byte body") % out.buf.size());
 
-
   // Now read back the result
   string data;
   parse_http_response(data);
@@ -170,12 +169,15 @@ http_client::parse_http_response(std::string & data)
 
   while (io->good() && content_length > 0)
     {
-      data += static_cast<char>(io->get());;
+      data += static_cast<char>(io->get());
       content_length--;
     }
 
   io->flush();
 
+  // if we keep the connection alive, and we're limited to a single active
+  // connection (as in the sample lighttpd.conf and required by the sqlite
+  // database locking scheme) this will probably block all other clients.
   if (!keepalive)
     {
       L(FL("http_client: closing connection"));
@@ -198,10 +200,10 @@ http_channel::inquire_about_revs(set<revision_id> const & query_set,
                                  set<revision_id> & theirs) const
 {
   theirs.clear();
-  json_value_t query = encode_msg_inquire(query_set);
-  json_value_t response = client.transact_json(query);
-  E(decode_msg_confirm(response, theirs),
-    F("received unexpected reply to 'inquire' message"));
+  json_value_t request = encode_msg_inquire_request(query_set);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_inquire_response(response, theirs),
+    F("received unexpected reply to 'inquire_request' message"));
 }
 
 void
