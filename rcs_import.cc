@@ -219,9 +219,11 @@ private:
   vector< cvs_event_ptr > events;
   time_i avg_time;
 
-  bool has_cached_deps;
+  bool has_cached_dependencies;
+  bool has_cached_dependents;
   bool events_are_sorted;
-  bool cached_deps_are_sorted;
+  bool cached_dependencies_are_sorted;
+  bool cached_dependents_are_sorted;
   vector<cvs_blob_index> dependencies_cache;
   vector<cvs_blob_index> dependents_cache;
 
@@ -243,9 +245,11 @@ public:
 
   cvs_blob(const event_type t, const u32 no)
     : avg_time(0),
-      has_cached_deps(false),
+      has_cached_dependencies(false),
+      has_cached_dependents(false),
       events_are_sorted(true),
-      cached_deps_are_sorted(false),
+      cached_dependencies_are_sorted(false),
+      cached_dependents_are_sorted(false),
       etype(t),
       symbol(no)
     { };
@@ -253,9 +257,11 @@ public:
   cvs_blob(const cvs_blob & b)
     : events(b.events),
       avg_time(0),
-      has_cached_deps(false),
+      has_cached_dependencies(false),
+      has_cached_dependents(false),
       events_are_sorted(false),
-      cached_deps_are_sorted(false),
+      cached_dependencies_are_sorted(false),
+      cached_dependents_are_sorted(false),
       etype(b.etype),
       symbol(b.symbol)
     { };
@@ -309,17 +315,29 @@ public:
   vector<cvs_blob_index> & get_dependents(cvs_history & cvs);
   vector<cvs_blob_index> & get_dependencies(cvs_history & cvs);
 
-  void fill_deps_caches(cvs_history & cvs);
-  void sort_deps_cache(cvs_history & cvs);
+  void fill_dependencies_cache(cvs_history & cvs);
+  void fill_dependents_cache(cvs_history & cvs);
+  void sort_dependencies_cache(cvs_history & cvs);
+  void sort_dependents_cache(cvs_history & cvs);
 
-  void reset_deps_cache(void)
+  void reset_dependencies_cache(void)
     {
-      has_cached_deps = false;
+      has_cached_dependencies = false;
     }
 
-  void resort_deps_cache(void)
+  void reset_dependents_cache(void)
     {
-      cached_deps_are_sorted = false;
+      has_cached_dependents = false;
+    }
+
+  void resort_dependencies_cache(void)
+    {
+      cached_dependencies_are_sorted = false;
+    }
+
+  void resort_dependents_cache(void)
+    {
+      cached_dependents_are_sorted = false;
     }
 
   time_i get_avg_time(void)
@@ -662,9 +680,10 @@ cvs_history
     if (deps_added == 0)
       add_dependency(*blobs[bi].begin(), *blobs[dep_bi].begin());
 
-    // make sure the dependents cache of the other blob gets
-    // an update.
-    blobs[dep_bi].reset_deps_cache();
+    // make sure the dependency and dependents caches of both
+    // blobs get updated.
+    blobs[bi].reset_dependencies_cache();
+    blobs[dep_bi].reset_dependents_cache();
   };
 
   void
@@ -732,10 +751,13 @@ cvs_history
                      dependents.end());
 
     // blob 'bi' is no longer a dependent of 'dep_bi', so update it's cache
-    blobs[dep_bi].reset_deps_cache();
+    blobs[dep_bi].reset_dependents_cache();
     vector<cvs_blob_index> deps = blobs[dep_bi].get_dependents(*this);
     blob_index_iter y = find(deps.begin(), deps.end(), bi);
     I(y == deps.end());
+
+    // and update the dependencies cache of blob 'bi'
+    blobs[bi].reset_dependencies_cache();
   };
 
   void
@@ -789,8 +811,12 @@ cvs_history
   void
   remove_weak_dependencies(void)
   {
+    // reset all blobs dependencies and dependents caches.
     for (cvs_blob_index bi = 0; bi < blobs.size(); ++bi)
-      blobs[bi].reset_deps_cache();
+      {
+        blobs[bi].reset_dependents_cache();
+        blobs[bi].reset_dependencies_cache();
+      }
 
     if (!deps_sorted)
       sort_dependencies();
@@ -3037,13 +3063,6 @@ public:
 
           while ((*ity_a != target_bi) || (*ity_b != target_bi))
             {
-              // Just to be extra sure, we reset the dependents
-              // caches of all the tree blobs involved. This can
-              // certainly be optimized.
-              cvs.blobs[*ity_anc].reset_deps_cache();
-              cvs.blobs[*ity_b].reset_deps_cache();
-              cvs.blobs[*ity_a].reset_deps_cache();
-
               I(ity_a != path_a.end());
               I(ity_b != path_b.end());
 
@@ -3454,8 +3473,9 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
   cvs_blob_index bi = blob_to_split;
   cvs.blobs[bi].sort_events();
 
-  // Reset the dependents cache of the origin blob.
-  cvs.blobs[bi].reset_deps_cache();
+  // Reset the dependents both caches of the origin blob.
+  cvs.blobs[bi].reset_dependencies_cache();
+  cvs.blobs[bi].reset_dependents_cache();
 
   // some short cuts
   cvs_event_digest d = cvs.blobs[bi].get_digest();
@@ -3479,14 +3499,21 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
           cvs.blobs[new_bi].get_events().push_back(*i);
           (*i)->bi = new_bi;
 
-          // Reset the dependents cache of all dependencies of this event
+          // Reset the dependents caches of all dependencies of this event
           for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
             {
               cvs_blob_index dep_bi = (*j)->bi;
-              cvs.blobs[dep_bi].reset_deps_cache();
+              cvs.blobs[dep_bi].reset_dependents_cache();
             }
 
-          // delete from old bolb and advance
+          // Reset the dependency caches of all dependents of this event
+          for (dep_loop j = cvs.get_dependents(*i); !j.ended(); ++j)
+            {
+              cvs_blob_index dep_bi = (*j)->bi;
+              cvs.blobs[dep_bi].reset_dependencies_cache();
+            }
+
+          // delete from old blob and advance
           i = cvs.blobs[bi].get_events().erase(i);
         }
       else
@@ -3497,7 +3524,13 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
           for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
             {
               cvs_blob_index dep_bi = (*j)->bi;
-              cvs.blobs[dep_bi].resort_deps_cache();
+              cvs.blobs[dep_bi].resort_dependents_cache();
+            }
+
+          for (dep_loop j = cvs.get_dependents(*i); !j.ended(); ++j)
+            {
+              cvs_blob_index dep_bi = (*j)->bi;
+              cvs.blobs[dep_bi].resort_dependencies_cache();
             }
 
           // advance
@@ -3532,7 +3565,9 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
             // different changelog texts. Most probably they originate
             // from duplicate RCS files in Attic and alive.
 
-            L(FL("merging events %s and %s") % get_event_repr(cvs, *i) % get_event_repr(cvs, *j));
+            L(FL("merging events %s and %s")
+              % get_event_repr(cvs, *i)
+              % get_event_repr(cvs, *j));
 
             if (blob.etype == ET_COMMIT)
               {
@@ -3542,21 +3577,23 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
               }
 
             // let the first take over its dependencies...
+            cvs.blobs[(*i)->bi].reset_dependencies_cache();
             for (dep_loop k = cvs.get_dependencies(*j); !k.ended(); ++k)
               {
                 event_dep_iter ep(k.get_pos());
                 I(ep->first == *j);
                 ep->first = *i;
+                cvs.blobs[ep->second->bi].reset_dependents_cache();
               }
-            cvs.blobs[(*i)->bi].reset_deps_cache();
 
             // ..and correct dependents
+            cvs.blobs[(*i)->bi].reset_dependents_cache();
             for (dep_loop k = cvs.get_dependents(*j); !k.ended(); ++k)
               {
                 event_dep_iter ep(k.get_pos());
                 I(ep->first == *j);
                 ep->first = *i;
-                cvs.blobs[ep->second->bi].reset_deps_cache();
+                cvs.blobs[ep->second->bi].reset_dependencies_cache();
               }
 
             cvs.sort_dependencies();
@@ -3841,41 +3878,40 @@ write_graphviz_partial(cvs_history & cvs, string const & desc,
 
 
 vector<cvs_blob_index> &
-cvs_blob::get_dependents(cvs_history & cvs)
-{
-  if (has_cached_deps)
-    {
-      if (!cached_deps_are_sorted)
-        sort_deps_cache(cvs);
-
-      return dependents_cache;
-    }
-
-  fill_deps_caches(cvs);
-  return dependents_cache;
-}
-
-vector<cvs_blob_index> &
 cvs_blob::get_dependencies(cvs_history & cvs)
 {
-  if (has_cached_deps)
+  if (has_cached_dependencies)
     {
-      if (!cached_deps_are_sorted)
-        sort_deps_cache(cvs);
+      if (!cached_dependencies_are_sorted)
+        sort_dependencies_cache(cvs);
 
       return dependencies_cache;
     }
 
-  fill_deps_caches(cvs);
+  fill_dependencies_cache(cvs);
   return dependencies_cache;
 }
 
+vector<cvs_blob_index> &
+cvs_blob::get_dependents(cvs_history & cvs)
+{
+  if (has_cached_dependents)
+    {
+      if (!cached_dependents_are_sorted)
+        sort_dependents_cache(cvs);
+
+      return dependents_cache;
+    }
+
+  fill_dependents_cache(cvs);
+  return dependents_cache;
+}
+
 void
-cvs_blob::fill_deps_caches(cvs_history & cvs)
+cvs_blob::fill_dependencies_cache(cvs_history & cvs)
 {
   // clear the caches
   dependencies_cache.clear();
-  dependents_cache.clear();
 
   // fill the dependencies cache from the single event deps
   for (blob_event_iter i = begin(); i != end(); ++i)
@@ -3888,6 +3924,16 @@ cvs_blob::fill_deps_caches(cvs_history & cvs)
         }
     }
 
+  has_cached_dependencies = true;
+  sort_dependencies_cache(cvs);
+}
+
+void
+cvs_blob::fill_dependents_cache(cvs_history & cvs)
+{
+  // clear the caches
+  dependents_cache.clear();
+
   // fill the dependents cache from the single event deps
   for (blob_event_iter i = begin(); i != end(); ++i)
     {
@@ -3899,18 +3945,26 @@ cvs_blob::fill_deps_caches(cvs_history & cvs)
         }
     }
 
-  has_cached_deps = true;
-  sort_deps_cache(cvs);
+  has_cached_dependents = true;
+  sort_dependents_cache(cvs);
 }
 
-void cvs_blob::sort_deps_cache(cvs_history & cvs)
+void cvs_blob::sort_dependencies_cache(cvs_history & cvs)
 {
   // sort by timestamp
-  I(has_cached_deps);
+  I(has_cached_dependencies);
+  blob_index_time_cmp cmp(cvs);
+  sort(dependencies_cache.begin(), dependencies_cache.end(), cmp);
+  cached_dependencies_are_sorted = true;
+}
+
+void cvs_blob::sort_dependents_cache(cvs_history & cvs)
+{
+  // sort by timestamp
+  I(has_cached_dependents);
   blob_index_time_cmp cmp(cvs);
   sort(dependents_cache.begin(), dependents_cache.end(), cmp);
-  sort(dependencies_cache.begin(), dependencies_cache.end(), cmp);
-  cached_deps_are_sorted = true;
+  cached_dependents_are_sorted = true;
 }
 
 void cvs_blob::sort_events(void)
