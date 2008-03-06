@@ -3843,6 +3843,7 @@ write_graphviz_partial(cvs_history & cvs, string const & desc,
 vector<cvs_blob_index> &
 cvs_blob::get_dependents(cvs_history & cvs)
 {
+#if 0
   if (has_cached_deps)
     {
       if (!cached_deps_are_sorted)
@@ -3850,6 +3851,7 @@ cvs_blob::get_dependents(cvs_history & cvs)
 
       return dependents_cache;
     }
+#endif
 
   fill_deps_caches(cvs);
   return dependents_cache;
@@ -3858,6 +3860,7 @@ cvs_blob::get_dependents(cvs_history & cvs)
 vector<cvs_blob_index> &
 cvs_blob::get_dependencies(cvs_history & cvs)
 {
+#if 0
   if (has_cached_deps)
     {
       if (!cached_deps_are_sorted)
@@ -3865,6 +3868,7 @@ cvs_blob::get_dependencies(cvs_history & cvs)
 
       return dependencies_cache;
     }
+#endif
 
   fill_deps_caches(cvs);
   return dependencies_cache;
