@@ -17,6 +17,7 @@
 #include "constants.hh"
 #include "database.hh"
 #include "globish.hh"
+#include "graph.hh"
 #include "json_io.hh"
 #include "json_msgs.hh"
 #include "keys.hh"
@@ -179,9 +180,31 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
           response_revs.insert(*i);
       return encode_msg_inquire_response(response_revs);
     }
+  else if (decode_msg_descendants_request(cmd_obj, request_revs))
+    {
+      L(FL("descendants %d revisions") % request_revs.size());
+      db.ensure_open();
+      rev_ancestry_map parent_to_child_map;
+      db.get_revision_ancestry(parent_to_child_map);
+
+      set<revision_id> descendant_set, response_set;
+      // get_all_ancestors can be used as get_all_descendants if used with
+      // the normal parent-to-child order ancestry map.  the resulting
+      // ancestors include all those in the frontier we started from which
+      // we don't want so remove these to arrive at the set of revs this
+      // server has the the attached client does not.
+      get_all_ancestors(request_revs, parent_to_child_map, descendant_set);
+      set_difference(descendant_set.begin(), descendant_set.end(),
+                     request_revs.begin(), request_revs.end(),
+                     inserter(response_set, response_set.begin()));
+
+      vector<revision_id> response_revs;
+      toposort(db, response_set, response_revs);
+      return encode_msg_descendants_response(response_revs);
+    }
   else
     {
-      return encode_msg_error("request not understood");
+      return encode_msg_error("unknown request");
     }
 }
 
@@ -228,9 +251,15 @@ process_scgi_transaction(database & db,
               return;
             }
         }
+      else
+        {
+          // FIXME: do something better for reporting errors from the server
+          std::cerr << "parse error" << std::endl;
+        }
     }
   catch (scgi_error & e)
     {
+      std::cerr << "scgi error -- " << e.msg << std::endl;
       out << "Status: 400 Bad request\r\n"
           << "Content-Type: application/jsonrequest\r\n"
           << "\r\n";
@@ -238,6 +267,7 @@ process_scgi_transaction(database & db,
     }
   catch (informative_failure & e)
     {
+      std::cerr << "informative failure -- " << e.what() << std::endl;
       out << "Status: 400 Bad request\r\n"
           << "Content-Type: application/jsonrequest\r\n"
           << "\r\n";

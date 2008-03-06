@@ -42,16 +42,16 @@ http_client
   bool open;
 
   http_client(options & opts, lua_hooks & lua,
-              uri const & u,          
+              uri const & u,
               globish const & include_pattern,
-              globish const & exclude_pattern); 
+              globish const & exclude_pattern);
 
   json_io::json_value_t transact_json(json_io::json_value_t v);
   void parse_http_status_line();
   void parse_http_header_line(size_t & content_length,
                               bool & keepalive);
   void parse_http_response(std::string & data);
-  void crlf();  
+  void crlf();
 };
 
 class http_channel
@@ -64,7 +64,11 @@ public:
     { };
   virtual void inquire_about_revs(std::set<revision_id> const & query_set,
                                     std::set<revision_id> & theirs) const;
+  virtual void get_descendants(std::set<revision_id> const & common_revs,
+                               std::vector<revision_id> & inbound_revs) const;
+
   virtual void push_rev(revision_id const & rid) const;
+  virtual void pull_rev(revision_id const & rid) const;
 };
 
 // Local Variables:

@@ -25,11 +25,14 @@ class
 channel
 {
 public:
-  virtual
-  void inquire_about_revs(std::set<revision_id> const & query_set,
-                          std::set<revision_id> & theirs) const = 0;
-  virtual
-  void push_rev(revision_id const & rid) const = 0;
+  virtual void inquire_about_revs(std::set<revision_id> const & query_set,
+                                  std::set<revision_id> & theirs) const = 0;
+  virtual void get_descendants(std::set<revision_id> const & common_revs,
+                               std::vector<revision_id> & inbound_revs) const = 0;
+
+  virtual void push_rev(revision_id const & rid) const = 0;
+  virtual void pull_rev(revision_id const & rid) const = 0;
+
   virtual ~channel() {}
 };
 

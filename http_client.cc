@@ -110,6 +110,7 @@ http_client::transact_json(json_value_t v)
   // Now read back the result
   string data;
   parse_http_response(data);
+
   json_io::input_source in(data, "scgi");
   json_io::tokenizer tok(in);
   json_io::parser p(tok);
@@ -207,7 +208,23 @@ http_channel::inquire_about_revs(set<revision_id> const & query_set,
 }
 
 void
+http_channel::get_descendants(set<revision_id> const & common_revs,
+                              vector<revision_id> & inbound_revs) const
+{
+  inbound_revs.clear();
+  json_value_t request = encode_msg_descendants_request(common_revs);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_descendants_response(response, inbound_revs),
+    F("received unexpected reply to 'descendants_request' message"));
+}
+
+void
 http_channel::push_rev(revision_id const & rid) const
+{
+}
+
+void
+http_channel::pull_rev(revision_id const & rid) const
 {
 }
 

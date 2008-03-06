@@ -180,73 +180,33 @@ invert_ancestry(rev_ancestry_map const & in,
 }
 
 static void
-do_missing_playback(database & db,
-                    channel const & ch,
-                    set<revision_id> & core_frontier,
-                    set<revision_id> & revs_to_push,
-                    rev_ancestry_map const & parent_to_child_map)
+push_revs(database & db,
+          channel const & ch,
+          vector<revision_id> const & outbound_revs)
 {
-  // add the root revision to the frontier, so we also push
-  // initial revisions.
-  core_frontier.insert(revision_id(""));
-  while (1)
+  for (vector<revision_id>::const_iterator i = outbound_revs.begin();
+       i != outbound_revs.end(); ++i)
     {
-      // collect a set of revisions we can push immediately, i.e. for
-      // which the other peer has the necessary ancestor revision(s).
-      vector< pair<revision_id, revision_id> > pushable_revs;
-      for (set<revision_id>::const_iterator i = core_frontier.begin();
-           i != core_frontier.end(); ++i)
-        {
-          typedef rev_ancestry_map::const_iterator ci;
-          pair<ci,ci> range = parent_to_child_map.equal_range(*i);
-
-          for (ci j = range.first; j != range.second; ++j)
-            if ((!j->second.inner()().empty())
-                && (revs_to_push.find(j->second) != revs_to_push.end()))
-              pushable_revs.push_back(*j);
-        }
-
-      // abort condition and some invariants
-      if (revs_to_push.empty())
-        {
-          I(pushable_revs.empty());
-          break;
-        }
-      else
-        I(!pushable_revs.empty());
-
-      // push that set of revisions and advance the frontier.
-      for (vector< pair<revision_id, revision_id> >::const_iterator i = pushable_revs.begin();
-           i != pushable_revs.end(); ++i)
-        {
-          L(FL("  pushing revision %s (child of rev %s)")
-            % i->second % i->first);
-
-          ch.push_rev(i->second);
-
-          revs_to_push.erase(i->second);
-          core_frontier.erase(i->first);
-          core_frontier.insert(i->second);
-        }
+      ch.push_rev(*i);
     }
-
-  // remove that root revision again.
-  core_frontier.erase(revision_id(""));
 }
 
-
 static void
-request_missing_playback(database & db,
-                         channel const & ch,
-                         set<revision_id> const & core_frontier)
+pull_revs(database & db,
+          channel const & ch,
+          vector<revision_id> const & inbound_revs)
 {
-
+  for (vector<revision_id>::const_iterator i = inbound_revs.begin();
+       i != inbound_revs.end(); ++i)
+    {
+      ch.pull_rev(*i);
+    }
 }
 
 void
 run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
-                   globish const & include_pattern,
-                   globish const & exclude_pattern)
+                   globish const & include_pattern, // FIXME: use this pattern
+                   globish const & exclude_pattern) // FIXME: use this pattern
 {
   bool pushing = true, pulling = true;
 
@@ -264,22 +224,39 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
         our_revs.insert(i->second);
     }
 
-  set<revision_id> common_core;
-  determine_common_core(ch, our_revs, child_to_parent_map, parent_to_child_map, common_core);
+  set<revision_id> common_revs;
+  determine_common_core(ch, our_revs, child_to_parent_map, parent_to_child_map, common_revs);
 
-  set<revision_id> ours_alone;
-  do_set_difference(our_revs, common_core, ours_alone);
-  P(F("revs to send: %d") % ours_alone.size());
+  P(F("%d common revisions") % common_revs.size());
 
-  set<revision_id> core_frontier = common_core;
+  set<revision_id> core_frontier = common_revs;
   erase_ancestors(db, core_frontier);
 
+  P(F("%d frontier revisions") % core_frontier.size());
+
+  set<revision_id> outbound_set;
+  do_set_difference(our_revs, common_revs, outbound_set);
+  vector<revision_id> outbound_revs, inbound_revs;
+  toposort(db, outbound_set, outbound_revs);
+
+  P(F("%d outbound revisions") % outbound_revs.size());
+
+  ch.get_descendants(core_frontier, inbound_revs);
+
+  P(F("%d inbound revisions") % inbound_revs.size());
+
+  // gsync is a request/response protocol where a "client" sends requests to
+  // a "server" and then receives responses from the "server".  the client
+  // will first push any unique revs that only it has and the server will
+  // then push back any unique revs that only it has. both sides push revs
+  // from the core frontier in ancestry order, so that parent revisions are
+  // always received before child revisions.
+
   if (pushing)
-    do_missing_playback(db, ch, core_frontier, ours_alone,
-                        parent_to_child_map);
+    push_revs(db, ch, outbound_revs);
 
   if (pulling)
-    request_missing_playback(db, ch, core_frontier);
+    pull_revs(db, ch, inbound_revs);
 
 }
 

@@ -33,13 +33,14 @@ json_io::json_value_t encode_msg_inquire_response(std::set<revision_id> const & 
 bool decode_msg_inquire_response(json_io::json_value_t val,
                                  std::set<revision_id> & revs);
 
-json_io::json_value_t encode_msg_descendants_request(std::set<revision_id> const & start);
+json_io::json_value_t encode_msg_descendants_request(std::set<revision_id> const & revs);
 bool decode_msg_descendants_request(json_io::json_value_t val,
-                                std::set<revision_id> & start);
-
-json_io::json_value_t encode_msg_descendants_response(rev_ancestry_map const & parent_to_child_map);
+                                    std::set<revision_id> & revs);
+json_io::json_value_t encode_msg_descendants_response(std::vector<revision_id> const & revs);
 bool decode_msg_descendants_response(json_io::json_value_t val,
-                                     rev_ancestry_map & parent_to_child_map);
+                                     std::vector<revision_id> & revs);
+
+
 
 json_io::json_value_t encode_msg_get_file_data(file_id const & fid);
 bool decode_msg_get_file_data(json_io::json_value_t val, file_id & fid);

@@ -21,6 +21,7 @@ using std::map;
 using std::set;
 using std::string;
 using std::pair;
+using std::vector;
 
 using json_io::json_value_t;
 using json_io::json_array_t;
@@ -187,10 +188,38 @@ decode_msg_inquire_response(json_value_t val,
 /////////////////////////////////////////////////////////////////////
 
 json_value_t
-encode_msg_descendants_request(set<revision_id> const & revs);
+encode_msg_descendants_request(set<revision_id> const & revs)
+{
+  json_io::builder b;
+  b[syms::type].str(syms::descendants_request());
+  b[syms::vers].str("1");
+  json_io::builder r = b[syms::revs].arr();
+  for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    r.add_str(i->inner()());
+  return b.v;
+}
+
 bool
-decode_msg_descendants_response(json_value_t val,
-                               set<revision_id> & revs);
+decode_msg_descendants_request(json_value_t val,
+                               set<revision_id> & revs)
+{
+  string type, vers;
+  json_io::query q(val);
+  if (q[syms::type].get(type) && type == syms::descendants_request() &&
+      q[syms::vers].get(vers) && vers == "1")
+    {
+      size_t nargs = 0;
+      if (q[syms::revs].len(nargs))
+        {
+          std::string s;
+          for (size_t i = 0; i < nargs; ++i)
+            if (q[syms::revs][i].get(s))
+              revs.insert(revision_id(s));
+          return true;
+        }
+    }
+  return false;
+}
 
 
 /////////////////////////////////////////////////////////////////////
@@ -198,10 +227,38 @@ decode_msg_descendants_response(json_value_t val,
 /////////////////////////////////////////////////////////////////////
 
 json_value_t
-encode_descendants_response(rev_ancestry_map const & parent_to_child_map);
+encode_msg_descendants_response(vector<revision_id> const & revs)
+{
+  json_io::builder b;
+  b[syms::type].str(syms::descendants_response());
+  b[syms::vers].str("1");
+  json_io::builder r = b[syms::revs].arr();
+  for (vector<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    r.add_str(i->inner()());
+  return b.v;
+}
+
 bool
-decode_descendants_response(json_value_t val,
-                            rev_ancestry_map & parent_to_child_map);
+decode_msg_descendants_response(json_value_t val,
+                                vector<revision_id> & revs)
+{
+  string type, vers;
+  json_io::query q(val);
+  if (q[syms::type].get(type) && type == syms::descendants_response() &&
+      q[syms::vers].get(vers) && vers == "1")
+    {
+      size_t nargs = 0;
+      if (q[syms::revs].len(nargs))
+        {
+          std::string s;
+          for (size_t i = 0; i < nargs; ++i)
+            if (q[syms::revs][i].get(s))
+              revs.push_back(revision_id(s));
+          return true;
+        }
+    }
+  return false;
+}
 
 
 /////////////////////////////////////////////////////////////////////
@@ -284,7 +341,6 @@ encode_msg_rev(revision_t const & rev)
     }
   return b.v;
 }
-
 
 
 json_value_t
