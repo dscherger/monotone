@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I m4
 CMD_SOURCES =								\
 	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \
 	cmd_merging.cc cmd_db.cc cmd_diff_log.cc cmd_ws_commit.cc 	\
-	cmd_othervcs.cc cmd_automate.cc cmd_files.cc
+	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_scgi.cc
 
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
@@ -19,7 +19,8 @@ LUAEXT_SOURCES = 							\
 	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
 	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
-	globish.cc globish.hh basic_io.cc basic_io.hh
+	globish.cc globish.hh basic_io.cc basic_io.hh json_io.cc        \
+        json_io.hh json_msgs.cc json_msgs.hh
 
 MOST_SOURCES = 								\
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) platform-wrapped.hh	\
@@ -44,7 +45,9 @@ MOST_SOURCES = 								\
 	schema_migration.cc schema_migration.hh				\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
+	net_common.cc net_common.hh					\
 	netsync.cc            						\
+	gsync.cc gsync.hh            					\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\
@@ -74,6 +77,7 @@ MOST_SOURCES = 								\
 	rev_height.cc rev_height.hh					\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
+	http_client.cc http_client.hh                                   \
 									\
 	lru_writeback_cache.hh hybrid_map.hh				\
 									\
@@ -308,7 +312,7 @@ UNIT_TEST_SOURCES =							\
 	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
 	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
 	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
-	xdelta.cc
+	xdelta.cc json_io.cc gsync.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # and must be recompiled for that purpose
