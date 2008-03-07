@@ -35,6 +35,7 @@ struct ticker
   void set_count_size(size_t csiz) { count_size = csiz; }
   void operator++();
   void operator+=(size_t t);
+  void operator--();
   ~ticker();
 };
 
