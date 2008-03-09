@@ -22,7 +22,7 @@
 
 struct globish;
 class database;
-class project_t;
+class project_set;
 class key_store;
 class lua_hooks;
 class options;
@@ -177,7 +177,7 @@ public:
 };
 
 void run_netsync_protocol(options & opts, lua_hooks & lua,
-                          project_t & project, key_store & keys,
+                          project_set & projects, key_store & keys,
                           protocol_voice voice,
                           protocol_role role,
                           std::list<utf8> const & addrs,

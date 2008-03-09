@@ -26,7 +26,7 @@ class lua_hooks;
 // revision, then 'candidates' will contain exactly the current revision.
 
 void pick_update_candidates(lua_hooks & lua,
-                            project_t & project,
+                            project_set & projects,
                             std::set<revision_id> & candidates,
                             revision_id const & base_ident,
                             branch_name const & branchname,

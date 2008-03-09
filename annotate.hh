@@ -13,10 +13,10 @@
 #include "vocab.hh"
 #include "rev_types.hh"
 
-class project_t;
+class project_set;
 
 void
-do_annotate(project_t & project, file_t file_node, revision_id rid,
+do_annotate(project_set & projects, file_t file_node, revision_id rid,
             bool just_revs);
 
 // Local Variables:

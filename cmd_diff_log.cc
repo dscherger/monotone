@@ -360,7 +360,7 @@ prepare_diff(app_state & app,
   cset excluded;
 
   // initialize before transaction so we have a database to work with.
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   N(app.opts.revision_selectors.size() <= 2,
     F("more than two revisions given"));
@@ -405,7 +405,7 @@ prepare_diff(app_state & app,
       revision_id r_old_id;
       workspace work(app);
 
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), r_old_id);
+      complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 0)(), r_old_id);
 
       db.get_roster(r_old_id, old_roster);
       work.get_current_roster_shape(db, nis, new_roster);
@@ -431,8 +431,8 @@ prepare_diff(app_state & app,
       roster_t old_roster, restricted_roster, new_roster;
       revision_id r_old_id, r_new_id;
 
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), r_old_id);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 1)(), r_new_id);
+      complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 0)(), r_old_id);
+      complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 1)(), r_new_id);
 
       db.get_roster(r_old_id, old_roster);
       db.get_roster(r_new_id, new_roster);
@@ -564,7 +564,7 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
 
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
+log_certs(project_set & projects, ostream & os, revision_id id, cert_name name,
           string label, string separator, bool multiline, bool newline)
 {
   vector< revision<cert> > certs;
@@ -573,7 +573,7 @@ log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
   if (multiline)
     newline = true;
 
-  project.get_revision_certs_by_name(id, name, certs);
+  projects.get_revision_certs_by_name(id, name, certs);
   for (vector< revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
@@ -593,16 +593,16 @@ log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
 }
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
+log_certs(project_set & projects, ostream & os, revision_id id, cert_name name,
           string label, bool multiline)
 {
-  log_certs(project, os, id, name, label, label, multiline, true);
+  log_certs(projects, os, id, name, label, label, multiline, true);
 }
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name)
+log_certs(project_set & projects, ostream & os, revision_id id, cert_name name)
 {
-  log_certs(project, os, id, name, " ", ",", false, false);
+  log_certs(projects, os, id, name, " ", ",", false, false);
 }
 
 
@@ -633,7 +633,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
     | options::opts::no_graph)
 {
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   long last = app.opts.last;
   long next = app.opts.next;
@@ -665,7 +665,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
            i != app.opts.from.end(); i++)
         {
           set<revision_id> rids;
-          complete(app.opts, app.lua, project, (*i)(), rids);
+          complete(app.opts, app.lua, projects, (*i)(), rids);
           for (set<revision_id>::const_iterator j = rids.begin();
                j != rids.end(); ++j)
             {
@@ -721,7 +721,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         {
           MM(*i);
           set<revision_id> rids;
-          complete(app.opts, app.lua, project, (*i)(), rids);
+          complete(app.opts, app.lua, projects, (*i)(), rids);
           for (set<revision_id>::const_iterator j = rids.begin();
                j != rids.end(); ++j)
             {
@@ -874,16 +874,16 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           if (app.opts.brief)
             {
               out << rid;
-              log_certs(project, out, rid, author_name);
+              log_certs(projects, out, rid, author_name);
               if (app.opts.no_graph)
-                log_certs(project, out, rid, date_name);
+                log_certs(projects, out, rid, date_name);
               else
                 {
                   out << '\n';
-                  log_certs(project, out, rid, date_name,
+                  log_certs(projects, out, rid, date_name,
                             string(), string(), false, false);
                 }
-              log_certs(project, out, rid, branch_name);
+              log_certs(projects, out, rid, branch_name);
               out << '\n';
             }
           else
@@ -906,10 +906,10 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                    anc != ancestors.end(); ++anc)
                 out << "Ancestor: " << *anc << '\n';
 
-              log_certs(project, out, rid, author_name, "Author: ", false);
-              log_certs(project, out, rid, date_name,   "Date: ",   false);
-              log_certs(project, out, rid, branch_name, "Branch: ", false);
-              log_certs(project, out, rid, tag_name,    "Tag: ",    false);
+              log_certs(projects, out, rid, author_name, "Author: ", false);
+              log_certs(projects, out, rid, date_name,   "Date: ",   false);
+              log_certs(projects, out, rid, branch_name, "Branch: ", false);
+              log_certs(projects, out, rid, tag_name,    "Tag: ",    false);
 
               if (!app.opts.no_files && !csum.cs.empty())
                 {
@@ -918,8 +918,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                   out << '\n';
                 }
 
-              log_certs(project, out, rid, changelog_name, "ChangeLog: ", true);
-              log_certs(project, out, rid, comment_name,   "Comments: ",  true);
+              log_certs(projects, out, rid, changelog_name, "ChangeLog: ", true);
+              log_certs(projects, out, rid, comment_name,   "Comments: ",  true);
             }
 
           if (app.opts.diffs)
