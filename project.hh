@@ -146,11 +146,11 @@ public:
 
   // Get a named project.
   project_t & get_project(branch_prefix const & name);
-  project_t * const maybe_get_project(branch_prefix const & name);
+  project_t * maybe_get_project(branch_prefix const & name);
 
   // Get the project containing a named branch.
   project_t & get_project_of_branch(branch_name const & branch);
-  project_t * const maybe_get_project_of_branch(branch_name const & branch);
+  project_t * maybe_get_project_of_branch(branch_name const & branch);
 
   // All branches in all projects.
   void get_branch_list(std::set<branch_name> & names,

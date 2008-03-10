@@ -417,17 +417,17 @@ project_t::get_revision_branches(revision_id const & id,
   branches.clear();
   for (std::vector<revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
-    branches.insert(branch_name(i->inner().value()));
-
+    {
       if (project_policy->passthru)
-        branches.insert(branch_name(b()));
+        branches.insert(branch_name(i->inner().value()));
       else
         {
           std::set<branch_uid> branchids;
           get_branch_list(branchids);
-          if (branchids.find(branch_uid(b())) != branchids.end())
-            branches.insert(translate_branch(branch_uid(b())));
+          if (branchids.find(branch_uid(i->inner().value())) != branchids.end())
+            branches.insert(translate_branch(branch_uid(i->inner().value())));
         }
+    }
   return i;
 }
 
@@ -597,7 +597,7 @@ project_set::get_project(branch_prefix const & name)
   return *project;
 }
 
-project_t * const
+project_t *
 project_set::maybe_get_project(branch_prefix const & name)
 {
   map<branch_prefix, project_t>::iterator i = projects.find(name);
@@ -615,7 +615,7 @@ project_set::get_project_of_branch(branch_name const & branch)
   return *project;
 }
 
-project_t * const
+project_t *
 project_set::maybe_get_project_of_branch(branch_name const & branch)
 {
   for (map<branch_prefix, project_t>::iterator i = projects.begin();
@@ -722,9 +722,7 @@ project_set::get_revision_branches(revision_id const & id,
   for (std::vector<revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
-      cert_value b;
-      decode_base64(i->inner().value, b);
-      branch_uid uid(b());
+      branch_uid uid(i->inner().value());
 
       for (project_map::iterator i = projects.begin();
            i != projects.end(); ++i)

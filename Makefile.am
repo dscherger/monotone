@@ -330,13 +330,13 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-mtn-sanity.$(OBJEXT) mtn-options.$(OBJEXT)			\
 	mtn-package_full_revision.$(OBJEXT)				\
 	mtn-package_revision.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-project.$(OBJEXT) mtn-randomizer.$(OBJEXT)			\
+	mtn-policy.$(OBJEXT) mtn-project.$(OBJEXT)			\
+	mtn-randomizer.$(OBJEXT)					\
 	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
 	mtn-schema_migration.$(OBJEXT)					\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
 	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
 	mtn-work_migration.$(OBJEXT)
-	mtn-policy.$(OBJEXT)
 
 # primaries
 

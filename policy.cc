@@ -9,6 +9,7 @@
 #include "policy.hh"
 #include "project.hh"
 #include "revision.hh"
+#include "roster.hh"
 #include "transforms.hh"
 
 using boost::shared_ptr;
@@ -236,7 +237,7 @@ namespace
   struct not_in_managed_branch : public is_failure
   {
     database & db;
-    base64<cert_value > const & branch_encoded;
+    cert_value const & branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
 		    hexenc<id> const & rid,
@@ -253,16 +254,16 @@ namespace
       return false;
     }
     not_in_managed_branch(database & db,
-			  base64<cert_value> const & branch_encoded,
+			  cert_value const & branch,
 			  set<rsa_keypair_id> const & trusted)
-      : db(db), branch_encoded(branch_encoded), trusted_signers(trusted)
+      : db(db), branch(branch), trusted_signers(trusted)
     {}
     virtual bool operator()(revision_id const & rid)
     {
       vector< revision<cert> > certs;
       db.get_revision_certs(rid,
 			    cert_name(branch_cert_name),
-			    branch_encoded,
+			    branch,
 			    certs);
       erase_bogus_certs(db,
 			boost::bind(&not_in_managed_branch::is_trusted,
@@ -275,7 +276,7 @@ namespace
   struct suspended_in_managed_branch : public is_failure
   {
     database & db;
-    base64<cert_value > const & branch_encoded;
+    cert_value const & branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
 		    hexenc<id> const & rid,
@@ -292,16 +293,16 @@ namespace
       return false;
     }
     suspended_in_managed_branch(database & db,
-				base64<cert_value> const & branch_encoded,
+				cert_value const & branch,
 				set<rsa_keypair_id> const & trusted)
-      : db(db), branch_encoded(branch_encoded), trusted_signers(trusted)
+      : db(db), branch(branch), trusted_signers(trusted)
     {}
     virtual bool operator()(revision_id const & rid)
     {
       vector< revision<cert> > certs;
       db.get_revision_certs(rid,
 			    cert_name(suspend_cert_name),
-			    branch_encoded,
+			    branch,
 			    certs);
       erase_bogus_certs(db,
 			boost::bind(&suspended_in_managed_branch::is_trusted,
@@ -321,18 +322,18 @@ get_branch_heads(branch_policy const & pol,
 		 * inverse_graph_cache_ptr)
 {
   outdated_indicator ret;
-  base64<cert_value> branch_encoded;
-  encode_base64(cert_value(pol.branch_cert_value()), branch_encoded);
 
   ret = db.get_revisions_with_cert(cert_name(branch_cert_name),
-				   branch_encoded, heads);
+				   cert_value(pol.branch_cert_value()), heads);
 
-  not_in_managed_branch p(db, branch_encoded, pol.committers);
+  not_in_managed_branch p(db, cert_value(pol.branch_cert_value()),
+                          pol.committers);
   erase_ancestors_and_failures(db, heads, p, inverse_graph_cache_ptr);
 
   if (!ignore_suspend_certs)
     {
-      suspended_in_managed_branch s(db, branch_encoded, pol.committers);
+      suspended_in_managed_branch s(db, cert_value(pol.branch_cert_value()),
+                                    pol.committers);
       std::set<revision_id>::iterator it = heads.begin();
       while (it != heads.end())
 	{
@@ -352,15 +353,13 @@ bool maybe_get_policy_branch_head(branch_uid const & name,
 				  revision_id & rid)
 {
   L(FL("getting heads of policy branch %s") % name);
-  base64<cert_value> branch_encoded;
-  encode_base64(cert_value(name()), branch_encoded);
   set<revision_id> heads;
 
   db.get_revisions_with_cert(cert_name(branch_cert_name),
-			     branch_encoded,
+			     cert_value(name()),
 			     heads);
 
-  not_in_managed_branch p(db, branch_encoded, trusted_signers);
+  not_in_managed_branch p(db, cert_value(name()), trusted_signers);
   erase_ancestors_and_failures(db, heads, p, NULL);
 
   if (heads.size() != 1)
