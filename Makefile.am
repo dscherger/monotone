@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I m4
 CMD_SOURCES =								\
 	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \
 	cmd_merging.cc cmd_db.cc cmd_diff_log.cc cmd_ws_commit.cc 	\
-	cmd_othervcs.cc cmd_automate.cc cmd_files.cc
+	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_policy.cc
 
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
@@ -32,6 +32,7 @@ MOST_SOURCES = 								\
 	update.cc update.hh						\
 	work.cc work_migration.cc work.hh				\
 	cert.cc cert.hh							\
+	policy.cc policy.hh						\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
 	database.cc database.hh						\
@@ -329,7 +330,8 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-mtn-sanity.$(OBJEXT) mtn-options.$(OBJEXT)			\
 	mtn-package_full_revision.$(OBJEXT)				\
 	mtn-package_revision.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-project.$(OBJEXT) mtn-randomizer.$(OBJEXT)			\
+	mtn-policy.$(OBJEXT) mtn-project.$(OBJEXT)			\
+	mtn-randomizer.$(OBJEXT)					\
 	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
 	mtn-schema_migration.$(OBJEXT)					\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\

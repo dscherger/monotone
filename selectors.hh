@@ -15,7 +15,7 @@
 
 class options;
 class lua_hooks;
-class project_t;
+class project_set;
 
 // In the normal case, to expand a selector on the command line, use one of
 // these functions: the former if the selector can legitimately expand to
@@ -24,11 +24,11 @@ class project_t;
 // usage error, and generate progress messages when expanding selectors.
 
 void complete(options const & opts, lua_hooks & lua,
-              project_t & project, std::string const & str,
+              project_set & project, std::string const & str,
               std::set<revision_id> & completions);
 
 void complete(options const & opts, lua_hooks & lua,
-              project_t & project, std::string const & str,
+              project_set & project, std::string const & str,
               revision_id & completion);
 
 // For extra control, use these functions.  expand_selector is just like the
@@ -37,10 +37,11 @@ void complete(options const & opts, lua_hooks & lua,
 // usage error if the set it is handed has more than one element.
 
 void expand_selector(options const & opts, lua_hooks & lua,
-                     project_t & project, std::string const & str,
+                     project_set & project, std::string const & str,
                      std::set<revision_id> & completions);
 
-void diagnose_ambiguous_expansion(project_t & project, std::string const & str,
+void diagnose_ambiguous_expansion(project_set & projects,
+                                  std::string const & str,
                                   std::set<revision_id> const & completions);
 
 

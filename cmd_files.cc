@@ -136,7 +136,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
 {
   revision_id rid;
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if ((args.size() != 1) || (app.opts.revision_selectors.size() > 1))
     throw usage(execid);
@@ -174,7 +174,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
     }
   else
     {
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 0)(), rid);
       db.get_roster(rid, roster);
     }
 
@@ -187,7 +187,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
 
   file_t file_node = downcast_to_file_t(node);
   L(FL("annotate for file_id %s") % file_node->self);
-  do_annotate(project, file_node, rid, app.opts.revs_only);
+  do_annotate(projects, file_node, rid, app.opts.revs_only);
 }
 
 CMD(identify, "identify", "", CMD_REF(debug), N_("[PATH]"),
@@ -306,8 +306,8 @@ CMD(cat, "cat", "", CMD_REF(informative),
     }
   else
     {
-      project_t project(db);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      project_set projects(db, app.lua, app.opts);
+      complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 0)(), rid);
     }
 
   dump_file(db, cout, rid, idx(args, 0));
@@ -373,8 +373,8 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
     }
   else
     {
-      project_t project(db);
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
+      project_set projects(db, app.lua, app.opts);
+      complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 0)(), rid);
     }
 
   dump_file(db, output, rid, idx(args, 0));
