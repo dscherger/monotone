@@ -59,6 +59,7 @@ function netsync.start(opts, n, min)
   local addr = "localhost:" .. math.random(1024, 65535)
   table.insert(args, "--dump=_MTN/server_dump")
   table.insert(args, "--bind="..addr)
+  table.insert(args, "--confdir="..test.root)
   if min then
     fn = minhooks_mtn
   else
