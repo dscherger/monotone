@@ -406,6 +406,8 @@ prepare_diff(app_state & app,
       workspace work(app);
 
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), r_old_id);
+      E(!app.db.sentinel_exists(r_old_id),
+        F("missing revision '%s'") % r_old_id);
 
       db.get_roster(r_old_id, old_roster);
       work.get_current_roster_shape(db, nis, new_roster);
@@ -433,6 +435,15 @@ prepare_diff(app_state & app,
 
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), r_old_id);
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 1)(), r_new_id);
+
+      E(!db.sentinel_exists(r_old_id),
+        F("missing revision '%s'") % r_old_id);
+      N(db.revision_exists(r_old_id),
+        F("no such revision '%s'") % r_old_id);
+      E(!db.sentinel_exists(r_old_id),
+        F("missing revision '%s'") % r_new_id);
+      N(db.revision_exists(r_new_id),
+        F("no such revision '%s'") % r_new_id);
 
       db.get_roster(r_old_id, old_roster);
       db.get_roster(r_new_id, new_roster);
@@ -795,7 +806,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         }
 
       seen.insert(rid);
-      db.get_revision(rid, rev);
+      db.get_revision_or_sentinel(rid, rev);
 
       set<revision_id> marked_revs;
 
@@ -873,6 +884,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           ostringstream out;
           if (app.opts.brief)
             {
+              if (!rev.is_sentinel)
+                {
               out << rid;
               log_certs(project, out, rid, author_name);
               if (app.opts.no_graph)
@@ -885,15 +898,24 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                 }
               log_certs(project, out, rid, branch_name);
               out << '\n';
+                }
+              else
+                {
+                  out << "Missing revisions starting from " << rid;
+                  out << '\n';
+                }
             }
           else
             {
               out << string(65, '-') << '\n';
+
+              if (!rev.is_sentinel)
+                {
               out << "Revision: " << rid << '\n';
 
               changes_summary csum;
 
-              set<revision_id> ancestors;
+              set<revision_id> ancestors, sentinel_ancestors;
 
               for (edge_map::const_iterator e = rev.edges.begin();
                    e != rev.edges.end(); ++e)
@@ -920,15 +942,26 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
 
               log_certs(project, out, rid, changelog_name, "ChangeLog: ", true);
               log_certs(project, out, rid, comment_name,   "Comments: ",  true);
+                }
+              else
+                {
+                  out << "Missing revisions starting from " << rid;
+                  out << '\n';
+                }
             }
 
-          if (app.opts.diffs)
+          if (app.opts.diffs && !rev.is_sentinel)
             {
               for (edge_map::const_iterator e = rev.edges.begin();
                    e != rev.edges.end(); ++e)
-                dump_diffs(app.lua, db, edge_changes(e), diff_paths, out,
-                           app.opts.diff_format, true,
-                           !app.opts.no_show_encloser, !mask.empty());
+                if (!db.sentinel_exists(edge_old_revision(e)))
+                  dump_diffs(app.lua, edge_changes(e), diff_paths, out,
+                             app.opts.diff_format, true,
+                             !app.opts.no_show_encloser, !mask.empty());
+                else
+                  out << string(60, '=') << '\n'
+                      << "# Unable to diff against sentinel "
+                      << edge_old_revision(e) << '\n';
             }
 
           if (next > 0)
