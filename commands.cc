@@ -857,6 +857,7 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
 #undef maybe_throw_bare
 }
 
+#ifndef LIBMTN_COMPILE
 string
 describe_revision(project_t & project, revision_id const & id)
 {
@@ -1209,7 +1210,7 @@ UNIT_TEST(commands, command_find_command)
   }
 }
 #endif // BUILD_UNIT_TESTS
-
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76
