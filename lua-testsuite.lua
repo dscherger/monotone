@@ -16,9 +16,9 @@ function safe_mtn(...)
 
   if testsuite_use_ws then
     --  FIXME: need to store confdir in _MTN/options
-    return {monotone_path, "--norc", unpack(arg)}
+    return {monotone_path, "--ssh-sign=no", "--norc", unpack(arg)}
   else
-    return {monotone_path, "--norc", "--root=" .. test.root,
+    return {monotone_path, "--ssh-sign=no", "--norc", "--root=" .. test.root,
             "--confdir="..test.root, unpack(arg)}
   end
 end

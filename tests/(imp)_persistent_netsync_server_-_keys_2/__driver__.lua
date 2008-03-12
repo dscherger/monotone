@@ -24,8 +24,8 @@ check(mtn2("status"), 0, false, false)
 check(mtn2("commit", "--key=foo@bar", "--branch=testbranch", "-m", 'commit foo'), 0, false, false)
 
 srv = netsync.start()
-srv:push("testbranch", 2)
-srv:pull("testbranch", 3)
+srv:push({"testbranch", "--ticker=dot"}, 2)
+srv:pull({"testbranch", "--key=tester@test.net", "--ticker=dot"}, 3)
 srv:finish()
 
 check(mtn3("ls", "keys"), 0, true, false)
