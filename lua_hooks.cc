@@ -970,6 +970,19 @@ lua_hooks::hook_note_mtn_startup(args_vector const & args)
   return ll.ok();
 }
 
+bool
+lua_hooks::hook_ignore_cvs_symbol(string const & symbol_name)
+{
+  bool ignore_it = false;
+  bool exec_ok = Lua(st)
+    .func("ignore_cvs_symbol")
+    .push_str(symbol_name)
+    .call(1,1)
+    .extract_bool(ignore_it)
+    .ok();
+  return exec_ok && ignore_it;
+}
+
 namespace commands {
   class cmd_lua : public command
   {
