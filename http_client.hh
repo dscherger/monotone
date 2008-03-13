@@ -67,8 +67,20 @@ public:
   virtual void get_descendants(std::set<revision_id> const & common_revs,
                                std::vector<revision_id> & inbound_revs) const;
 
-  virtual void push_rev(revision_id const & rid) const;
-  virtual void pull_rev(revision_id const & rid) const;
+  virtual void push_file_data(file_id const & id,
+                              file_data const & data) const;
+  virtual void push_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta const & delta) const;
+
+  virtual void push_rev(revision_id const & rid, revision_t const & rev) const;
+  virtual void pull_rev(revision_id const & rid, revision_t & rev) const;
+
+  virtual void pull_file_data(file_id const & id,
+                              file_data & data) const;
+  virtual void pull_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta & delta) const;
 };
 
 // Local Variables:

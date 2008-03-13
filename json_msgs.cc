@@ -17,6 +17,9 @@
 #include <set>
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
+using std::make_pair;
 using std::map;
 using std::set;
 using std::string;
@@ -27,6 +30,7 @@ using json_io::json_value_t;
 using json_io::json_array_t;
 using json_io::json_object_t;
 
+using boost::shared_ptr;
 
 namespace
 {
@@ -46,6 +50,8 @@ namespace
     symbol const attr("attr");
     symbol const value("value");
 
+    symbol const changes("changes");
+
     // revision symbols
     symbol const old_revision("old_revision");
     symbol const new_manifest("new_manifest");
@@ -64,19 +70,24 @@ namespace
     symbol const revs("revs");
     symbol const error("error");
 
+    // request/response pairs
     symbol const inquire_request("inquire_request");
     symbol const inquire_response("inquire_response");
 
     symbol const descendants_request("descendants_request");
     symbol const descendants_response("descendants_response");
 
-    symbol const get_rev("get_rev");
-    symbol const get_full_rev("get_full_rev");
+    symbol const put_rev_request("put_rev_request");
+    symbol const put_rev_response("put_rev_response");
+    symbol const get_rev_request("get_rev_request");
+    symbol const get_rev_response("get_rev_request");
+
+    symbol const status("status");
+
     symbol const get_file_data("get_file_data");
     symbol const get_file_delta("get_file_delta");
 
     symbol const rev("rev");
-    symbol const full_rev("full_rev");
     symbol const file_data("file_data");
     symbol const file_delta("file_delta");
   }
@@ -267,38 +278,38 @@ decode_msg_descendants_response(json_value_t val,
 
 
 static void
-cset_to_json(json_io::builder b, cset const & cs)
+encode_cset(json_io::builder b, cset const & cs)
 {
-    for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
-       i != cs.nodes_deleted.end(); ++i)
+  for (set<file_path>::const_iterator
+         i = cs.nodes_deleted.begin(); i != cs.nodes_deleted.end(); ++i)
     {
       b.add_obj()[syms::delete_node].str(i->as_internal());
     }
 
-  for (map<file_path, file_path>::const_iterator i = cs.nodes_renamed.begin();
-       i != cs.nodes_renamed.end(); ++i)
+  for (map<file_path, file_path>::const_iterator
+         i = cs.nodes_renamed.begin(); i != cs.nodes_renamed.end(); ++i)
     {
       json_io::builder tmp = b.add_obj();
       tmp[syms::rename].str(i->first.as_internal());
       tmp[syms::to].str(i->second.as_internal());
     }
 
-  for (set<file_path>::const_iterator i = cs.dirs_added.begin();
-       i != cs.dirs_added.end(); ++i)
+  for (set<file_path>::const_iterator
+         i = cs.dirs_added.begin(); i != cs.dirs_added.end(); ++i)
     {
       b.add_obj()[syms::add_dir].str(i->as_internal());
     }
 
-  for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
-       i != cs.files_added.end(); ++i)
+  for (map<file_path, file_id>::const_iterator
+         i = cs.files_added.begin(); i != cs.files_added.end(); ++i)
     {
       json_io::builder tmp = b.add_obj();
       tmp[syms::add_file].str(i->first.as_internal());
       tmp[syms::content].str(i->second.inner()());
     }
 
-  for (map<file_path, pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
-       i != cs.deltas_applied.end(); ++i)
+  for (map<file_path, pair<file_id, file_id> >::const_iterator
+         i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
     {
       json_io::builder tmp = b.add_obj();
       tmp[syms::patch].str(i->first.as_internal());
@@ -306,16 +317,16 @@ cset_to_json(json_io::builder b, cset const & cs)
       tmp[syms::to].str(i->second.second.inner()());
     }
 
-  for (set<pair<file_path, attr_key> >::const_iterator i = cs.attrs_cleared.begin();
-       i != cs.attrs_cleared.end(); ++i)
+  for (set<pair<file_path, attr_key> >::const_iterator
+         i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
     {
       json_io::builder tmp = b.add_obj();
       tmp[syms::clear].str(i->first.as_internal());
       tmp[syms::attr].str(i->second());
     }
 
-  for (map<pair<file_path, attr_key>, attr_value>::const_iterator i = cs.attrs_set.begin();
-       i != cs.attrs_set.end(); ++i)
+  for (map<pair<file_path, attr_key>, attr_value>::const_iterator
+         i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
     {
       json_io::builder tmp = b.add_obj();
       tmp[syms::set].str(i->first.first.as_internal());
@@ -324,11 +335,71 @@ cset_to_json(json_io::builder b, cset const & cs)
     }
 }
 
-json_value_t
-encode_msg_rev(revision_t const & rev)
+static void
+decode_cset(json_io::query q, cset & cs)
 {
-  json_io::builder b;
-  b[syms::type].str(syms::rev());
+  size_t nargs = 0;
+  I(q.len(nargs));
+  for (size_t i = 0; i < nargs; ++i)
+    {
+      json_io::query change = q[i];
+      string path;
+      if (change[syms::delete_node].get(path))
+        {
+          cs.nodes_deleted.insert(file_path_external(utf8(path)));
+        }
+      else if (change[syms::rename].get(path))
+        {
+          string to;
+          I(change[syms::to].get(to));
+          cs.nodes_renamed.insert(make_pair(file_path_external(utf8(path)),
+                                            file_path_external(utf8(to))));
+        }
+      else if (change[syms::add_dir].get(path))
+        {
+          cs.dirs_added.insert(file_path_external(utf8(path)));
+        }
+      else if (change[syms::add_file].get(path))
+        {
+          string content;
+          I(change[syms::content].get(content));
+          cs.files_added.insert(make_pair(file_path_external(utf8(path)),
+                                          file_id(content)));
+        }
+      else if (change[syms::patch].get(path))
+        {
+          string from, to;
+          I(change[syms::from].get(from));
+          I(change[syms::to].get(to));
+          cs.deltas_applied.insert(make_pair(file_path_external(utf8(path)),
+                                             make_pair(file_id(from),
+                                                       file_id(to))));
+        }
+      else if (change[syms::clear].get(path))
+        {
+          string key;
+          I(change[syms::attr].get(key));
+          cs.attrs_cleared.insert(make_pair(file_path_external(utf8(path)),
+                                            attr_key(key)));
+        }
+      else if (change[syms::set].get(path))
+        {
+          string key, val;
+          I(change[syms::attr].get(key));
+          I(change[syms::value].get(val));
+          cs.attrs_set.insert(make_pair(make_pair(file_path_external(utf8(path)),
+                                                  attr_key(key)),
+                                        attr_value(val)));
+        }
+      else
+        I(false);
+
+    }
+}
+
+static void
+encode_rev(json_io::builder b, revision_t const & rev)
+{
   b[syms::vers].str("1");
   b[syms::new_manifest].str(rev.new_manifest.inner()());
   json_io::builder edges = b[syms::edges].arr();
@@ -337,37 +408,87 @@ encode_msg_rev(revision_t const & rev)
     {
       json_io::builder edge = edges.add_obj();
       edge[syms::old_revision].str(edge_old_revision(e).inner()());
-      cset_to_json(edge, edge_changes(e));
+      json_io::builder changes = edge[syms::changes].arr();
+      encode_cset(changes, edge_changes(e));
     }
-  return b.v;
 }
 
+static void
+decode_rev(json_io::query q, revision_t & rev)
+{
+  string new_manifest, vers;
+  I(q[syms::new_manifest].get(new_manifest));
+  I(q[syms::vers].get(vers));
+  I(vers == "1");
+
+  rev.new_manifest = manifest_id(new_manifest);
+  size_t nargs = 0;
+  json_io::query edges = q[syms::edges];
+  I(edges.len(nargs));
+
+  for (size_t i = 0; i < nargs; ++i)
+    {
+      json_io::query edge = edges[i];
+      string old_revision;
+      I(edge[syms::old_revision].get(old_revision));
+      json_io::query changes = edge[syms::changes];
+      shared_ptr<cset> cs(new cset());
+      decode_cset(changes, *cs);
+      rev.edges.insert(make_pair(revision_id(old_revision), cs));
+    }
+}
 
 json_value_t
-encode_msg_full_rev(revision_id const & rid,
-                    revision_t const & rev,
-                    set<file_delta_record> const & deltas,
-                    set<file_data_record> const & datas)
+encode_msg_put_rev_request(revision_id const & rid, revision_t const & rev)
 {
   json_io::builder b;
-  b[syms::type].str(syms::full_rev());
+  b[syms::type].str(syms::put_rev_request());
   b[syms::vers].str("1");
-  json_io::builder rev_builder = b[syms::rev];
+  b[syms::id].str(rid.inner()());
+  json_io::builder rb = b[syms::rev].obj();
+  encode_rev(rb, rev);
   return b.v;
 }
 
 bool
-decode_msg_full_rev(json_value_t val,
-                    revision_id & rid,
-                    revision_t & rev,
-                    set<file_delta_record> & deltas,
-                    set<file_data_record> & datas)
+decode_msg_put_rev_request(json_value_t val, revision_id & rid, revision_t & rev)
+{
+  string type, vers, id;
+  json_io::query q(val);
+  if (q[syms::type].get(type) && type == syms::put_rev_request() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::id].get(id))
+    {
+      rid = revision_id(id);
+      json_io::query rq = q[syms::rev];
+      decode_rev(rq, rev);
+      return true;
+    }
+  return false;
+}
+
+json_value_t
+encode_msg_put_rev_response()
 {
   json_io::builder b;
-  b[syms::type].str(syms::full_rev());
+  b[syms::type].str(syms::put_rev_response());
   b[syms::vers].str("1");
-  b[syms::rev] = encode_msg_rev(rev);
+  b[syms::status].str("received");
   return b.v;
+}
+
+bool
+decode_msg_put_rev_response(json_value_t val)
+{
+  string type, vers, status;
+  json_io::query q(val);
+  if (q[syms::type].get(type) && type == syms::put_rev_response() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::status].get(status))
+    {
+      return true;
+    }
+  return false;
 }
 
 // Local Variables:

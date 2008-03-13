@@ -107,9 +107,15 @@ http_client::transact_json(json_value_t v)
   io->flush();
   L(FL("http_client: sent %d-byte body") % out.buf.size());
 
+//   std::cerr << "json request" << std::endl
+//             << out.buf.data() << std::endl;
+
   // Now read back the result
   string data;
   parse_http_response(data);
+
+//   std::cerr << "json response" << std::endl
+//             << data << std::endl;
 
   json_io::input_source in(data, "scgi");
   json_io::tokenizer tok(in);
@@ -219,14 +225,45 @@ http_channel::get_descendants(set<revision_id> const & common_revs,
 }
 
 void
-http_channel::push_rev(revision_id const & rid) const
+http_channel::push_file_data(file_id const & id,
+                             file_data const & data) const
 {
 }
 
 void
-http_channel::pull_rev(revision_id const & rid) const
+http_channel::push_file_delta(file_id const & old_id,
+                              file_id const & new_id,
+                              file_delta const & delta) const
 {
 }
+
+void
+http_channel::push_rev(revision_id const & rid, revision_t const & rev) const
+{
+  json_value_t request = encode_msg_put_rev_request(rid, rev);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_put_rev_response(response),
+    F("received unexpected reply to 'put_rev_request' message"));
+}
+
+void
+http_channel::pull_rev(revision_id const & rid, revision_t & rev) const
+{
+}
+
+void
+http_channel::pull_file_data(file_id const & id,
+                              file_data & data) const
+{
+}
+
+void
+http_channel::pull_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta & delta) const
+{
+}
+
 
 // Local Variables:
 // mode: C++

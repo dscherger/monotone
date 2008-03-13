@@ -20,6 +20,7 @@ struct uri;
 struct globish;
 class lua_hooks;
 class database;
+class revision_t;
 
 class
 channel
@@ -30,8 +31,20 @@ public:
   virtual void get_descendants(std::set<revision_id> const & common_revs,
                                std::vector<revision_id> & inbound_revs) const = 0;
 
-  virtual void push_rev(revision_id const & rid) const = 0;
-  virtual void pull_rev(revision_id const & rid) const = 0;
+  virtual void push_file_data(file_id const & id,
+                              file_data const & data) const = 0;
+  virtual void push_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta const & delta) const = 0;
+
+  virtual void push_rev(revision_id const & rid, revision_t const & rev) const = 0;
+  virtual void pull_rev(revision_id const & rid, revision_t & rev) const = 0;
+
+  virtual void pull_file_data(file_id const & id,
+                              file_data & data) const = 0;
+  virtual void pull_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta & delta) const = 0;
 
   virtual ~channel() {}
 };

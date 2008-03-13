@@ -15,6 +15,7 @@
 #include <string>
 
 #include "constants.hh"
+#include "cset.hh"
 #include "database.hh"
 #include "globish.hh"
 #include "graph.hh"
@@ -187,7 +188,31 @@ push_revs(database & db,
   for (vector<revision_id>::const_iterator i = outbound_revs.begin();
        i != outbound_revs.end(); ++i)
     {
-      ch.push_rev(*i);
+      revision_t rev;
+      db.get_revision(*i, rev);
+
+      for (edge_map::const_iterator e = rev.edges.begin();
+           e != rev.edges.end(); ++e)
+        {
+          cset const & cs = edge_changes(e);
+          for (map<file_path, file_id>::const_iterator
+                 f = cs.files_added.begin(); f != cs.files_added.end(); ++f)
+            {
+              file_data data;
+              db.get_file_version(f->second, data);
+              ch.push_file_data(f->second, data);
+            }
+
+          for (map<file_path, pair<file_id, file_id> >::const_iterator
+                 f = cs.deltas_applied.begin(); f != cs.deltas_applied.end(); ++f)
+            {
+              file_delta delta;
+              db.get_arbitrary_file_delta(f->second.first, f->second.second, delta);
+              ch.push_file_delta(f->second.first, f->second.second, delta);
+            }
+        }
+
+      ch.push_rev(*i, rev);
     }
 }
 
@@ -199,7 +224,31 @@ pull_revs(database & db,
   for (vector<revision_id>::const_iterator i = inbound_revs.begin();
        i != inbound_revs.end(); ++i)
     {
-      ch.pull_rev(*i);
+      revision_t rev;
+      ch.pull_rev(*i, rev);
+
+      for (edge_map::const_iterator e = rev.edges.begin();
+           e != rev.edges.end(); ++e)
+        {
+          cset const & cs = edge_changes(e);
+          for (map<file_path, file_id>::const_iterator
+                 f = cs.files_added.begin(); f != cs.files_added.end(); ++f)
+            {
+              file_data data;
+              ch.pull_file_data(f->second, data);
+              //db.put_file(f->second, data);
+            }
+
+          for (map<file_path, pair<file_id, file_id> >::const_iterator
+                 f = cs.deltas_applied.begin(); f != cs.deltas_applied.end(); ++f)
+            {
+              file_delta delta;
+              ch.pull_file_delta(f->second.first, f->second.second, delta);
+              //db.put_file_version(f->second.first, f->second.second, delta);
+            }
+        }
+
+      //db.put_revsion(*i, rev);
     }
 }
 
@@ -257,7 +306,6 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
 
   if (pulling)
     pull_revs(db, ch, inbound_revs);
-
 }
 
 #ifdef BUILD_UNIT_TESTS
@@ -270,22 +318,54 @@ class test_channel
 public:
   test_channel(set<revision_id> & theirs)
     : theirs(theirs)
-    { };
+  { };
 
   void inquire_about_revs(set<revision_id> const & query_set,
                           set<revision_id> & result) const
-    {
-      result.clear();
-      for (set<revision_id>::const_iterator i = query_set.begin();
-           i != query_set.end(); ++i)
-        if (theirs.find(*i) != theirs.end())
-          result.insert(*i);
-    };
+  {
+    result.clear();
+    for (set<revision_id>::const_iterator i = query_set.begin();
+         i != query_set.end(); ++i)
+      if (theirs.find(*i) != theirs.end())
+        result.insert(*i);
+  };
 
-  void push_rev(revision_id const & rid) const
-    {
-      I(false);
-    }
+  void get_descendants(std::set<revision_id> const & common_revs,
+                       std::vector<revision_id> & inbound_revs) const
+  {
+    I(false);
+  }
+
+  void push_file_data(file_id const & id,
+                              file_data const & data) const
+  {
+  }
+
+  void push_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta const & delta) const
+  {
+  }
+
+  void push_rev(revision_id const & rid, revision_t const & rev) const
+  {
+  }
+
+  void pull_rev(revision_id const & rid, revision_t & rev) const
+  {
+  }
+
+  void pull_file_data(file_id const & id,
+                              file_data & data) const
+  {
+  }
+
+  void pull_file_delta(file_id const & old_id,
+                       file_id const & new_id,
+                       file_delta & delta) const
+  {
+  }
+
 };
 
 UNIT_TEST(gsync, gsync_common_core)

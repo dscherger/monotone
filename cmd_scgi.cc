@@ -169,6 +169,9 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
 {
   set<revision_id> request_revs;
 
+  revision_id rid;
+  revision_t rev;
+
   if (decode_msg_inquire_request(cmd_obj, request_revs))
     {
       L(FL("inquiring %d revisions") % request_revs.size());
@@ -201,6 +204,13 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
       vector<revision_id> response_revs;
       toposort(db, response_set, response_revs);
       return encode_msg_descendants_response(response_revs);
+    }
+  else if (decode_msg_put_rev_request(cmd_obj, rid, rev))
+    {
+      revision_id check;
+      calculate_ident(rev, check);
+      I(rid == check);
+      return encode_msg_put_rev_response();
     }
   else
     {
