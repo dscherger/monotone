@@ -141,6 +141,8 @@ AC_SEARCH_LIBS([deflate], [z], , AC_MSG_FAILURE([zlib is required]))
 
 MTN_LIB_PCRE
 
+MTN_LIB_BOTAN
+
 # check for all things boost-related
 BOOST_VERSION_CHECK
 BOOST_VERSION_SPECIFIC_BUGS
