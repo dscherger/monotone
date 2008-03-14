@@ -7,14 +7,14 @@ remove("_MTN/options")
 check(nodb_mtn("genkey", "foo@bar.com"),
       0, false, false, string.rep("foo@bar.com\n", 2))
 remove("_MTN/options")
-check(mtn("genkey", "foo@baz.com"),
+check(mtn_no_ws("genkey", "foo@baz.com"),
       0, false, false, string.rep("foo@baz.com\n", 2))
 remove("_MTN/options")
 check(nodb_mtn("dropkey", "foo@baz.com"), 0, false, false)
 
 -- we now have foo@bar.com in the keystore, tester@test.net in both keystore
--- and database, and foo@baz.com in only the database
-check(mtn("automate", "keys"), 0, true, false)
+-- and database, and foo@baz.com in only the database, and no _MTN/options
+check(mtn_no_ws("automate", "keys"), 0, true, false)
 parsed = parse_basic_io(readfile("stdout"))
 locs = {}
 for _,line in pairs(parsed) do

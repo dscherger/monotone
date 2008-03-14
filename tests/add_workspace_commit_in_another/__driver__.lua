@@ -16,7 +16,7 @@ check(get("foo.bob"))
 -- Alice does her add
 mkdir("alicewd")
 copy("initial", "alicewd/initial")
-check(mtn("--branch=testbranch", "setup", "alicewd"), 0, false, false)
+check(mtn_no_ws("--branch=testbranch", "setup", "alicewd"), 0, false, false)
 check(indir("alicewd", mtn("--root=.", "add", "initial")), 0, false, false)
 check(indir("alicewd", mtn("--root=.", "commit", "-m", 'initial commit')), 0, false, false)
 copy("foo.alice", "alicewd/foo")

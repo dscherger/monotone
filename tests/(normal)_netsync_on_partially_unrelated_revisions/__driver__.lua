@@ -31,7 +31,7 @@ for _,i in pairs{{"automate", "graph"}, {"ls", "certs", base}} do
 end
 
 remove("_MTN")
-check(mtn("setup", "--branch=testbranch", "."), 0, false, false)
+check(mtn_no_ws("setup", "--branch=testbranch", "."), 0, false, false)
 
 addfile("testfile2", "This is test file 2")
 commit("testbranch")

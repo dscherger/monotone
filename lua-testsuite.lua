@@ -2,9 +2,11 @@
 
 monotone_path = nil
 
-testsuite_use_ws = false
--- If true, get as many options as possible from the workspace
--- _MTN/options; don't specify on command line
+-- The following set of functions return command lines for running
+-- monotone. The "_no_ws" variants are for use when no workspace is
+-- setup; they specify all options on the command line. The other
+-- variants get as many options as possible from the workspace
+-- _MTN/options
 
 function safe_mtn(...)
   if monotone_path == nil then
@@ -14,13 +16,20 @@ function safe_mtn(...)
     end
   end
 
-  if testsuite_use_ws then
-    --  FIXME: need to store confdir in _MTN/options
-    return {monotone_path, "--ssh-sign=no", "--norc", unpack(arg)}
-  else
-    return {monotone_path, "--ssh-sign=no", "--norc", "--root=" .. test.root,
-            "--confdir="..test.root, unpack(arg)}
+  --  FIXME: need to store confdir in _MTN/options
+  return {monotone_path, "--ssh-sign=no", "--norc", unpack(arg)}
+end
+
+function safe_mtn_no_ws(...)
+  if monotone_path == nil then
+    monotone_path = os.getenv("mtn")
+    if monotone_path == nil then
+      err("'mtn' environment variable not set")
+    end
   end
+
+  return {monotone_path, "--ssh-sign=no", "--norc", "--root=" .. test.root,
+            "--confdir="..test.root, unpack(arg)}
 end
 
 -- function preexecute(x)
@@ -35,16 +44,24 @@ function raw_mtn(...)
   end
 end
 
-function mtn(...)
-  if testsuite_use_ws then
-    return raw_mtn ("--rcfile", test.root .. "/test_hooks.lua", unpack(arg))
+function raw_mtn_no_ws(...)
+  if preexecute ~= nil then
+    return preexecute(safe_mtn_no_ws(unpack(arg)))
   else
-    return raw_mtn("--rcfile",
-     test.root .. "/test_hooks.lua",
-     "--db=" .. test.root .. "/test.db",
-     "--keydir", test.root .. "/keys",
-     "--key=tester@test.net", unpack(arg))
+    return safe_mtn_no_ws(unpack(arg))
   end
+end
+
+function mtn(...)
+  return raw_mtn ("--rcfile", test.root .. "/test_hooks.lua", unpack(arg))
+end
+
+function mtn_no_ws(...)
+  return raw_mtn_no_ws("--rcfile",
+    test.root .. "/test_hooks.lua",
+    "--db=" .. test.root .. "/test.db",
+    "--keydir", test.root .. "/keys",
+    "--key=tester@test.net", unpack(arg))
 end
 
 function nodb_mtn(...)
@@ -93,11 +110,9 @@ function mtn_setup()
   check(getstd("test_hooks.lua"))
   check(getstd("min_hooks.lua"))
 
-  testsuite_use_ws = false
-  check(mtn("db", "init"), 0, false, false)
-  check(mtn("read", "test_keys"), 0, false, false)
-  check(mtn("setup", "--branch=testbranch", "."), 0, false, false)
-  testsuite_use_ws = true
+  check(mtn_no_ws("db", "init"), 0, false, false)
+  check(mtn_no_ws("read", "test_keys"), 0, false, false)
+  check(mtn_no_ws("setup", "--branch=testbranch", "."), 0, false, false)
   remove("test_keys")
 end
 

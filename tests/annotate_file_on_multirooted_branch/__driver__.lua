@@ -20,7 +20,7 @@ left = base_revision()
 
 remove("foo")
 remove("_MTN")
-check(mtn("setup", "--branch=testbranch", "."))
+check(mtn_no_ws("setup", "--branch=testbranch", "."))
 
 copy("foo.right", "foo")
 check(mtn("add", "foo"), 0, false, false)

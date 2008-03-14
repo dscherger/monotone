@@ -19,7 +19,7 @@ check(grep("-qi", "_mtn", "stdout"), 1)
 for _,i in pairs(names) do remove(i) end
 
 -- run setup again, because we've removed our bookkeeping dir.
-check(mtn("--branch=testbranch", "setup", "."))
+check(mtn_no_ws("--branch=testbranch", "setup", "."))
 
 -- files in bookkeeping dirs are also ignored by add
 -- (mkdir -p used because the directories already exist on case-folding FSes)
@@ -39,7 +39,7 @@ for _,i in pairs(names) do remove(i) end
 -- just to make sure, check that it's not only add that fails, if it somehow
 -- sneaks into an internal format then that fails too
 remove("_MTN")
-check(mtn("--branch=testbranch", "setup", "."))
+check(mtn_no_ws("--branch=testbranch", "setup", "."))
 mkdir("_mTn")
 writefile("_MTN/revision",
              'format_version "1"\n'

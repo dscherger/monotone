@@ -8,7 +8,7 @@ check(get("aaa.rc", "gongolo/aaa.rc"))
 check(get("bbb.rc", "gongolo/bbb.rc"))
 
 -- note: rcfile is placed outside workdir
-check(mtn("setup", "--branch=testbranch", "alt_wrk"), 0, false, false)
+check(mtn_no_ws("setup", "--branch=testbranch", "alt_wrk"), 0, false, false)
 check(indir("alt_wrk", mtn("--root=.", "--rcfile=../gongolo", "status")), 0, true, false)
 check(qgrep("BOOGA BOOGACICCA CICCA", "stdout"))
 
