@@ -176,7 +176,6 @@ function revert_to(rev, branch, mt)
 
   remove("_MTN.old")
   rename("_MTN", "_MTN.old")
-  testsuite_use_ws = false
 
   check(mt("automate", "get_manifest_of", rev), 0, true, false)
   rename("stdout", "paths-old")
@@ -222,7 +221,6 @@ function revert_to(rev, branch, mt)
     check(mt("checkout", "--branch", branch, "--revision", rev, "."), 0, false, true)
   end
   check(base_revision() == rev)
-  testsuite_use_ws = true
 end
 
 function canonicalize(filename)
