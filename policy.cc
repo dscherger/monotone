@@ -237,7 +237,7 @@ namespace
   struct not_in_managed_branch : public is_failure
   {
     database & db;
-    cert_value const & branch;
+    cert_value branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
 		    hexenc<id> const & rid,
@@ -276,7 +276,7 @@ namespace
   struct suspended_in_managed_branch : public is_failure
   {
     database & db;
-    cert_value const & branch;
+    cert_value branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
 		    hexenc<id> const & rid,
