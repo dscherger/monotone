@@ -1,9 +1,8 @@
-#!/usr/bin/perl -w
 ##############################################################################
 #
-#   File Name    - Monontone.pm
+#   File Name    - AutomateStdio.pm
 #
-#   Description  - Perl class module that provides an interface to Monotone's
+#   Description  - Class module that provides an interface to Monotone's
 #                  automate stdio interface.
 #
 #   Author       - A.E.Cooper.
@@ -32,7 +31,9 @@
 #
 ##############################################################################
 #
-#   GLOBAL DATA FOR THIS MODULE
+#   Package      - Monotone::AutomateStdio
+#
+#   Description  - See above.
 #
 ##############################################################################
 
@@ -42,14 +43,17 @@
 
 package Monotone::AutomateStdio;
 
-# ***** REQUIRED VERSION OF PERL *****
+# ***** DIRECTIVES *****
 
 require 5.008;
 
-# ***** REQUIRED PACKAGES *****
-
 use strict;
 use integer;
+
+# ***** REQUIRED PACKAGES *****
+
+# Standard Perl and CPAN modules.
+
 use Carp;
 use IPC::Open3;
 use POSIX qw(:errno_h);
@@ -83,40 +87,15 @@ my $carper = undef;
 my($error_handler,
    $warning_handler);
 
-# ***** CLASS DEFINITIONS *****
+# ***** PACKAGE INFORMATION *****
 
-# Class inheritance and declaration.
+# We are just a base class.
 
 use base qw(Exporter);
 
-our(@EXPORT, @EXPORT_OK, $VERSION);
-BEGIN
-{
-    @EXPORT = qw();
-    @EXPORT_OK = qw();
-    $VERSION = 0.1;
-}
-
-# Class attributes:
-#     db_name       - The name of the Monotone database if specified.
-#     mtn_pid       - The process id of the subordinate mtn process.
-#     mtn_in        - The input into the mtn subprocess.
-#     mtn_out       - The output from the mtn subprocess.
-#     mtn_err       - The error output from the mtn subprocess.
-#     mtn_err_msg   - The last error message returned from the mtn subprocess.
-#     mtn_aif_major - The major version number for the mtn automate interface.
-#     mtn_aif_minor - The minor version number for the mtn automate interface.
-#     cmd_cnt       - The number of the current command.
-
-use fields qw(db_name
-	      mtn_pid
-	      mtn_in
-	      mtn_out
-	      mtn_err
-	      mtn_err_msg
-	      mtn_aif_major
-	      mtn_aif_minor
-	      cmd_cnt);
+our @EXPORT = qw();
+our @EXPORT_OK = qw();
+our $VERSION = 0.1;
 
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
@@ -163,7 +142,7 @@ sub select($\@$);
 sub tags($$;$);
 sub toposort($\@@);
 
-# Private routines.
+# Private methods and routines.
 
 sub error_handler_wrapper($);
 sub get_quoted_value(\@\$\$);
@@ -180,9 +159,8 @@ sub warning_handler_wrapper($);
 #
 #   Description  - Class constructor.
 #
-#   Data         - $invocant    : Either a reference to an object of the same
-#                                 class or the name of the class to be
-#                                 created.
+#   Data         - $class       : Either the name of the class that is to be
+#                                 created or an object of that class.
 #                  $db_name     : The full path of the Monotone database. If
 #                                 this is not provided then the database
 #                                 associated with the current workspace is
@@ -196,24 +174,20 @@ sub warning_handler_wrapper($);
 sub new($;$)
 {
 
-    my ($invocant, $db_name) = @_;
+    my $class = ref($_[0]) ? ref($_[0]) : $_[0];
+    my $db_name = $_[1];
 
-    my Monotone::AutomateStdio $this;
+    my $this;
 
-    $this = fields::new($invocant);
+    $this = {};
     $this->{db_name} = $db_name;
     $this->{mtn_pid} = 0;
     $this->{cmd_cnt} = 0;
     $this->{mtn_err_msg} = "";
 
-    if ($this->{mtn_pid} == 0)
-    {
-	startup($this);
-    }
+    startup($this);
 
-    $this->SUPER::new() if $this->can("SUPER::new");
-
-    return $this;
+    return bless($this, $class);
 
 }
 #
@@ -232,10 +206,9 @@ sub new($;$)
 sub DESTROY
 {
 
-    my Monotone::AutomateStdio $this = shift();
+    my $this = shift();
 
     closedown($this);
-    $this->SUPER::DESTROY() if $this->can("SUPER::DESTROY");
 
 }
 #
@@ -260,8 +233,7 @@ sub DESTROY
 sub ancestors($\@@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, @revision_ids) = @_;
+    my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "ancestors", $list, @revision_ids);
 
@@ -291,8 +263,7 @@ sub ancestors($\@@)
 sub ancestry_difference($\@$;@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, $new_revision_id, @old_revision_ids) = @_;
+    my($this, $list, $new_revision_id, @old_revision_ids) = @_;
 
     return mtn_command($this,
 		       "ancestry_difference",
@@ -320,8 +291,7 @@ sub ancestry_difference($\@$;@)
 sub branches($\@)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $list = $_[1];
+    my($this, $list) = @_;
 
     return mtn_command($this, "branches", $list);
 
@@ -347,8 +317,7 @@ sub branches($\@)
 sub cert($$$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($revision_id, $name, $value) = @_;
+    my($this, $revision_id, $name, $value) = @_;
 
     my @dummy;
 
@@ -376,8 +345,7 @@ sub cert($$$$)
 sub certs($$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($ref, $revision_id) = @_;
+    my($this, $ref, $revision_id) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -481,8 +449,7 @@ sub certs($$$)
 sub children($\@$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, @revision_ids) = @_;
+    my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "children", $list, @revision_ids);
 
@@ -510,8 +477,7 @@ sub children($\@$)
 sub common_ancestors($\@@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, @revision_ids) = @_;
+    my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "common_ancestors", $list, @revision_ids);
 
@@ -546,8 +512,7 @@ sub common_ancestors($\@@)
 sub content_diff($\$$$;@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $revision_id1, $revision_id2, @file_names) = @_;
+    my($this, $buffer, $revision_id1, $revision_id2, @file_names) = @_;
 
     my @options;
 
@@ -584,8 +549,7 @@ sub content_diff($\$$$;@)
 sub db_get($\$$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $domain, $name) = @_;
+    my($this, $buffer, $domain, $name) = @_;
 
     return mtn_command($this, "db_get", $buffer, $domain, $name);
 
@@ -610,8 +574,7 @@ sub db_get($\$$$)
 sub db_set($$$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($domain, $name, $value) = @_;
+    my($this, $domain, $name, $value) = @_;
 
     my $dummy;
 
@@ -640,8 +603,7 @@ sub db_set($$$$)
 sub descendents($\@@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, @revision_ids) = @_;
+    my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "descendents", $list, @revision_ids);
 
@@ -669,8 +631,7 @@ sub descendents($\@@)
 sub erase_ancestors($\@@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, @revision_ids) = @_;
+    my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "erase_ancestors", $list, @revision_ids);
 
@@ -696,8 +657,7 @@ sub erase_ancestors($\@@)
 sub get_attributes($\$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($ref, $file_name) = @_;
+    my($this, $ref, $file_name) = @_;
 
     my $cmd;
 
@@ -782,8 +742,7 @@ sub get_attributes($\$$)
 sub get_base_revision_id($\$)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $buffer = $_[1];
+    my($this, $buffer) = @_;
 
     my @list;
 
@@ -821,8 +780,7 @@ sub get_base_revision_id($\$)
 sub get_content_changed($\@$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, $revision_id, $file_name) = @_;
+    my($this, $list, $revision_id, $file_name) = @_;
 
     my($i,
        $j,
@@ -878,8 +836,8 @@ sub get_content_changed($\@$$)
 sub get_corresponding_path($\$$$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $source_revision_id, $file_name, $target_revision_id) = @_;
+    my($this, $buffer, $source_revision_id, $file_name, $target_revision_id)
+	= @_;
 
     my($i,
        @lines);
@@ -929,8 +887,7 @@ sub get_corresponding_path($\$$$$)
 sub get_current_revision_id($\$)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $buffer = $_[1];
+    my($this, $buffer) = @_;
 
     my @list;
 
@@ -966,8 +923,7 @@ sub get_current_revision_id($\$)
 sub get_file($\$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $file_id) = @_;
+    my($this, $buffer, $file_id) = @_;
 
     return mtn_command($this, "get_file", $buffer, $file_id);
 
@@ -996,8 +952,7 @@ sub get_file($\$$)
 sub get_file_of($\$$;$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $file_name, $revision_id) = @_;
+    my($this, $buffer, $file_name, $revision_id) = @_;
 
     my @options;
 
@@ -1032,8 +987,7 @@ sub get_file_of($\$$;$)
 sub get_manifest_of($$;$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($ref, $revision_id) = @_;
+    my($this, $ref, $revision_id) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -1123,8 +1077,7 @@ sub get_manifest_of($$;$)
 sub get_option($\$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $option_name) = @_;
+    my($this, $buffer, $option_name) = @_;
 
     if (! mtn_command($this, "get_option", $buffer, $option_name))
     {
@@ -1157,8 +1110,7 @@ sub get_option($\$$)
 sub get_revision($\$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($ref, $revision_id) = @_;
+    my($this, $ref, $revision_id) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -1341,8 +1293,7 @@ sub get_revision($\$$)
 sub graph($$)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $ref = $_[1];
+    my($this, $ref) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -1399,8 +1350,7 @@ sub graph($$)
 sub heads($\@;$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, $branch_name) = @_;
+    my($this, $list, $branch_name) = @_;
 
     return mtn_command($this, "heads", $list, $branch_name);
 
@@ -1426,8 +1376,7 @@ sub heads($\@;$)
 sub identify($\$$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($buffer, $file_name) = @_;
+    my($this, $buffer, $file_name) = @_;
 
     my @list;
 
@@ -1460,8 +1409,7 @@ sub identify($\$$)
 sub interface_version($\$)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $buffer = $_[1];
+    my($this, $buffer) = @_;
 
     my @list;
 
@@ -1494,8 +1442,7 @@ sub interface_version($\$)
 sub inventory($$)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $ref = $_[1];
+    my($this, $ref) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -1661,8 +1608,7 @@ sub inventory($$)
 sub keys($$)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $ref = $_[1];
+    my($this, $ref) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -1778,8 +1724,7 @@ sub keys($$)
 sub leaves($\@)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $list = $_[1];
+    my($this, $list) = @_;
 
     return mtn_command($this, "leaves", $list);
 
@@ -1805,8 +1750,7 @@ sub leaves($\@)
 sub parents($\@$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, $revision_id) = @_;
+    my($this, $list, $revision_id) = @_;
 
     return mtn_command($this, "parents", $list, $revision_id);
 
@@ -1831,8 +1775,7 @@ sub parents($\@$)
 sub roots($\@)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $list = $_[1];
+    my($this, $list) = @_;
 
     return mtn_command($this, "roots", $list);
 
@@ -1858,8 +1801,7 @@ sub roots($\@)
 sub select($\@$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, $selector) = @_;
+    my($this, $list, $selector) = @_;
 
     return mtn_command($this, "select", $list, $selector);
 
@@ -1889,8 +1831,7 @@ sub select($\@$)
 sub tags($$;$)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($ref, $branch_pattern) = @_;
+    my($this, $ref, $branch_pattern) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
@@ -1995,8 +1936,7 @@ sub tags($$;$)
 sub toposort($\@@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($list, @revision_ids) = @_;
+    my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "toposort", $list, @revision_ids);
 
@@ -2096,7 +2036,7 @@ sub register_error_handler($;$$)
 sub get_db_name($)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
+    my $this = $_[0];
 
     return $this->{db_name};
 
@@ -2120,7 +2060,7 @@ sub get_db_name($)
 sub get_error_message($)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
+    my $this = $_[0];
 
     return $this->{mtn_err_msg};
 
@@ -2144,7 +2084,7 @@ sub get_error_message($)
 sub get_pid($)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
+    my $this = $_[0];
 
     return $this->{mtn_pid};
 
@@ -2165,7 +2105,7 @@ sub get_pid($)
 sub closedown($)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
+    my $this = $_[0];
 
     my($err_msg,
        $i,
@@ -2240,8 +2180,7 @@ sub closedown($)
 sub mtn_command($$$@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($cmd, $ref, @parameters) = @_;
+    my($this, $cmd, $ref, @parameters) = @_;
 
     my @dummy;
 
@@ -2275,18 +2214,14 @@ sub mtn_command($$$@)
 sub mtn_command_with_options($$$\@@)
 {
 
-    my Monotone::AutomateStdio $this = shift();
-    my($cmd, $ref, $options, @parameters) = @_;
+    my($this, $cmd, $ref, $options, @parameters) = @_;
 
     my($buffer,
        $in,
        $opt,
        $param);
 
-    if ($this->{mtn_pid} == 0)
-    {
-	startup($this);
-    }
+    startup($this) if ($this->{mtn_pid} == 0);
 
     # Run the command and get the data, the unless below is required just in
     # case undef is passed as the only parameter (which can happen when a
@@ -2348,8 +2283,7 @@ sub mtn_command_with_options($$$\@@)
 sub mtn_read_output($\$)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
-    my $buffer = $_[1];
+    my($this, $buffer) = @_;
 
     my($bytes_read,
        $char,
@@ -2486,7 +2420,7 @@ sub mtn_read_output($\$)
 sub startup($)
 {
 
-    my Monotone::AutomateStdio $this = $_[0];
+    my $this = $_[0];
 
     my $version;
 
