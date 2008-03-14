@@ -33,7 +33,7 @@
 #
 #   Package      - Completion
 #
-#   Description  - A class for using Monotone's automate stdio interface.
+#   Description  - See above.
 #
 ##############################################################################
 
