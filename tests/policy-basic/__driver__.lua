@@ -39,6 +39,7 @@ check(mtn("merge", "--branch=test_project.__policy__"), 1, false, false)
 check(mtn("merge", "--branch=test_project.__policy__",
 	  "--policy-revision=test_project@" .. base), 0, false, false)
 
+check(mtn("update", "-r", base), 0, false, false)
 check(mtn("up"), 0, false, false)
 
 check(base ~= base_revision())

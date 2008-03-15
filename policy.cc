@@ -346,6 +346,17 @@ get_branch_heads(branch_policy const & pol,
   return ret;
 }
 
+bool
+revision_is_in_branch(branch_policy const & pol,
+                      revision_id const & rid,
+                      database & db)
+{
+  not_in_managed_branch p(db,
+                          cert_value(pol.branch_cert_value()),
+                          pol.committers);
+  return !p(rid);
+}
+
 
 bool maybe_get_policy_branch_head(branch_uid const & name,
 				  set<rsa_keypair_id> const & trusted_signers,

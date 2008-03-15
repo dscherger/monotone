@@ -311,25 +311,31 @@ bool
 project_t::revision_is_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
-  branch_uid bid;
   if (project_policy->passthru)
-    bid = branch_uid(branch());
+    {
+      branch_uid bid = branch_uid(branch());
+      vector<revision<cert> > certs;
+      db.get_revision_certs(id, branch_cert_name, cert_value(bid()), certs);
+
+      int num = certs.size();
+
+      erase_bogus_certs(db, certs);
+
+      L(FL("found %d (%d valid) %s branch certs on revision %s")
+        % num
+        % certs.size()
+        % branch
+        % id);
+
+      return !certs.empty();
+    }
   else
-    bid = translate_branch(branch);
-  vector<revision<cert> > certs;
-  db.get_revision_certs(id, branch_cert_name, cert_value(branch()), certs);
-
-  int num = certs.size();
-
-  erase_bogus_certs(db, certs);
-
-  L(FL("found %d (%d valid) %s branch certs on revision %s")
-    % num
-    % certs.size()
-    % branch
-    % id);
-
-  return !certs.empty();
+    {
+      shared_ptr<branch_policy> bp;
+      bp  = project_policy->policy.maybe_get_branch_policy(branch);
+      E(bp, F("Cannot find policy for branch %s.") % branch);
+      return ::revision_is_in_branch(*bp, id, db);
+    }
 }
 
 void

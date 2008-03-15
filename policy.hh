@@ -64,6 +64,10 @@ get_branch_heads(branch_policy const & pol,
                  std::multimap<revision_id, revision_id>
                  * inverse_graph_cache_ptr);
 
+bool
+revision_is_in_branch(branch_policy const & pol,
+                      revision_id const & rid,
+                      database & db);
 
 class policy_revision;
 
