@@ -6,7 +6,7 @@ commit()
 rev = base_revision()
 
 mkdir("foo")
-check(indir("foo", mtn("setup", "--branch=testbranch", "")), 1, false, false)
+check(indir("foo", mtn_no_ws("setup", "--branch=testbranch", "")), 1, false, false)
 check(indir("foo", mtn("checkout", "--revision", rev, "")), 1, false, false)
 check(indir("foo", mtn("checkout", "--branch=testbranch", "")), 1, false, false)
 

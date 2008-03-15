@@ -9,7 +9,7 @@ mkdir("subdir/testdir1")
 writefile("subdir/testdir1/subfile1", "baz")
 writefile("subdir/testdir1/subfile2", "quux")
 
-check(mtn("setup", "--branch=testbranch", "subdir"), 0, false, false)
+check(mtn_no_ws("setup", "--branch=testbranch", "subdir"), 0, false, false)
 
 -- Make sure that "add ." works, even at the root of the tree
 chdir("subdir")

@@ -7,7 +7,7 @@ commit()
 -- okay, now wd is on testbranch
 
 -- setup a dir on otherbranch and make sure we stay on testbranch
-check(mtn("setup", "setupdir", "--branch=otherbranch"), 0, false, false)
+check(mtn_no_ws("setup", "setupdir", "--branch=otherbranch"), 0, false, false)
 writefile("foo", "stuff stuff")
 check(mtn("commit", "--message=foo"), 0, false, false)
 check(mtn("automate", "heads", "testbranch"), 0, true, false)

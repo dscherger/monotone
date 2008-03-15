@@ -99,7 +99,7 @@ function probe_node(filename, rsha, fsha)
   remove("_MTN.old")
   rename("_MTN", "_MTN.old")
   remove(filename)
-  check(mtn("checkout", "--revision", rsha, "."), 0, false, true)
+  check(mtn_no_ws("checkout", "--revision", rsha, "."), 0, false, true)
   rename("_MTN.old/options", "_MTN")
   check(base_revision() == rsha)
   check(sha1(filename) == fsha)
@@ -164,12 +164,15 @@ function adddir(dirname, mt)
   check(mt("add", dirname), 0, false, false)
 end
 
-function revert_to(rev, branch, mt)
+function revert_to(rev, branch, mt, mt_no_ws)
   if type(branch) == "function" then
+    -- allow calling as (rev, mt, mt_no_ws)
     mt = branch
+    mt_no_ws = mt
     branch = nil
   end
   if mt == nil then mt = mtn end
+  if mt_no_ws == nil then mt_no_ws = mtn_no_ws end
 
   check(mt("automate", "get_manifest_of", base_revision()), 0, true, false)
   rename("stdout", "paths-new")
@@ -177,7 +180,7 @@ function revert_to(rev, branch, mt)
   remove("_MTN.old")
   rename("_MTN", "_MTN.old")
 
-  check(mt("automate", "get_manifest_of", rev), 0, true, false)
+  check(mt_no_ws("automate", "get_manifest_of", rev), 0, true, false)
   rename("stdout", "paths-old")
 
   -- remove all of the files and dirs in this
@@ -216,9 +219,9 @@ function revert_to(rev, branch, mt)
   end
 
   if branch == nil then
-    check(mt("checkout", "--revision", rev, "."), 0, false, true)
+    check(mt_no_ws("checkout", "--revision", rev, "."), 0, false, true)
   else
-    check(mt("checkout", "--branch", branch, "--revision", rev, "."), 0, false, true)
+    check(mt_no_ws("checkout", "--branch", branch, "--revision", rev, "."), 0, false, true)
   end
   check(base_revision() == rev)
 end

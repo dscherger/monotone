@@ -17,4 +17,5 @@ check(mtn2("commit", "--message=foo", "--branch=testbranch.subbranch"), 0, false
 
 netsync.pull("testbranch.*")
 
-check_different_stdout{"list", "epochs"}
+-- _MTN/options now has database test2.db, so need to specify dbs explicitly here
+check_different_stdout(mtn("--db=test.db", "list", "epochs"), mtn2("list", "epochs"))

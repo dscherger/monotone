@@ -36,8 +36,8 @@ check(samefile("stdout", "subfile"))
 
 remove("_MTN")
 
-check(mtn("cat", "-r", revs[0], "testfile"), 0, true, false)
+check(mtn_no_ws("cat", "-r", revs[0], "testfile"), 0, true, false)
 check(samefile("stdout", "r0testfile"))
 
-check(mtn("cat", "-r", revs[0], "no_such_file"), 1, false, false)
-check(mtn("cat", "-r", revs[0], ""), 1, false, false)
+check(mtn_no_ws("cat", "-r", revs[0], "no_such_file"), 1, false, false)
+check(mtn_no_ws("cat", "-r", revs[0], ""), 1, false, false)

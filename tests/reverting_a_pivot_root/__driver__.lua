@@ -6,7 +6,7 @@ mtn_setup()
 -- job cleaning up after renames?
 
 mkdir("workspace")
-check(indir("workspace", mtn("setup", ".", "-b", "testbranch")), 0, false, false)
+check(indir("workspace", mtn_no_ws("setup", ".", "-b", "testbranch")), 0, false, false)
 
 mkdir("workspace/dir1")
 mkdir("workspace/dir1/dir2")

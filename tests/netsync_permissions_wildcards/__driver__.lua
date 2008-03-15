@@ -20,8 +20,10 @@ check(mtn2("update"), 0, false, false)
 srv = netsync.start({"--confdir=."}, 2, false)
 
 -- Try pushing just branches matching a wild card
-addfile("testfile2", "test file 2")
-commit("testbranch", "testfile")
+
+-- 'mtn2("update") has set _MTN/options database to test2.db, but we want to add and commit to test.db
+addfile("testfile2", "test file 2", mtn_no_ws)
+commit("testbranch", "testfile", mtn_no_ws)
 srv:push("testbra*", 1)
 
 srv:stop()

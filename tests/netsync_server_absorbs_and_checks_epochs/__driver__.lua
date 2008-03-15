@@ -26,10 +26,12 @@ srv:sync("otherbranch", 3)
 srv:finish()
 -- Run the real netsync
 netsync.push("testbranch")
-check(mtn("list", "epochs"), 0, true, false)
+
+-- _MTN/options has database test2.db; we need to check test.db
+check(mtn("--db=test.db", "list", "epochs"), 0, true, false)
 rename("stdout", "new-epochs")
 check(samefile("orig-epochs", "new-epochs"))
-check_different_stdout{"list", "epochs"}
+check_different_stdout(mtn("--db=test.db", "list", "epochs"), mtn2("list", "epochs"))
 
 writefile("testfile", "new version of data")
 check(mtn2("commit", "--message=foo", "--branch=testbranch"), 0, false, false)
@@ -39,7 +41,7 @@ revs[1] = base_revision()
 check(mtn("db", "set_epoch", "testbranch", string.rep("a", 40)), 0, false, false)
 check(mtn("db", "set_epoch", "otherbranch", string.rep("a", 40)), 0, false, false)
 
--- this should *fail* to sync 
+-- this should *fail* to sync
 srv = netsync.start()
 -- This should probably expect an exit value of 1, but ATM the netsync
 -- client doesn't report errors in its exit value.
@@ -51,7 +53,7 @@ check(mtn("list", "epochs"), 0, true)
 check(qgrep("testbranch", "stdout"))
 check(mtn2("list", "epochs"), 0, true)
 check(qgrep("testbranch", "stdout"))
-check_different_stdout{"list", "epochs"}
+check_different_stdout(mtn("--db=test.db", "list", "epochs"), mtn2("list", "epochs"))
 
 -- confirm, we did not get the new revision
-check(mtn("automate", "get_revision", revs[1]), 1, false, false)
+check(mtn("--db=test.db", "automate", "get_revision", revs[1]), 1, false, false)

@@ -14,7 +14,8 @@ check(mtn("read"), 0, false, false, true)
 addfile("testfile", "version 0 of test file")
 commit("testbranch")
 
-netsync.pull("testbranch")
+-- We have multiple keys, so we need to specify one for authorization
+netsync.pull({"testbranch"}, {"--key=tester@test.net"})
 
 check(mtn2("ls", "keys"), 0, true, false)
 check(not qgrep(pubkey, "stdout"))
@@ -34,7 +35,7 @@ writefile("testfile", "version 1 of test file")
 check(mtn("--branch=testbranch", "--message=blah-blah",
           "--key=foo@test.example.com", "commit"), 0, false, false)
 
-netsync.pull("testbranch")
+netsync.pull({"testbranch"}, {"--key=tester@test.net"})
 
 check(mtn2("ls", "keys"), 0, true, false)
 check(qgrep(pubkey, "stdout"))

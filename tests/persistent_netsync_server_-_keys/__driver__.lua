@@ -20,8 +20,9 @@ check(not qgrep("foo@foo", "stdout"))
 writefile("testfile", "stuffty stuffty")
 check(mtn2("commit", "--branch=testbranch", "--message=foo", "--key=foo@foo"), 0, false, false)
 
-srv:push("testbranch", 2)
-srv:pull("testbranch", 3)
+-- _MTN/options has key "foo@foo"
+srv:push({"--key=tester@test.net", "testbranch"}, 2)
+srv:pull({"--key=tester@test.net", "testbranch"}, 3)
 
 srv:finish()
 

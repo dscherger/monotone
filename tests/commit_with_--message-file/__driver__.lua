@@ -20,7 +20,7 @@ check(qgrep('this commit uses the --message-file option', "stdout"))
 ----------------------
 --also with a file coming outside the workspace
 ----------------------
-check(mtn("setup", "--branch=testbranch", "alt_wrk"), 0, false, false)
+check(mtn_no_ws("setup", "--branch=testbranch", "alt_wrk"), 0, false, false)
 
 writefile("alt_wrk/input1.txt", "files... files...")
 

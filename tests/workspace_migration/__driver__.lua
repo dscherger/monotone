@@ -7,7 +7,7 @@
 -- run this test with the -d option, like so:
 --   $ ./testsuite.lua -d workspace_migration
 -- this will cause the test to leave behind its temporary files.
--- Copy all the directories named 
+-- Copy all the directories named
 --   tester_dir/workspace_migration/<thing>-current/
 -- to this directory, rename them <thing>-<old format version>, and update
 -- the 'current_workspace_format' variable at the top of this file.
@@ -16,7 +16,7 @@
 -- workspace can represent, you may need to write a new workspace set,
 -- which goes in its own little lua file.  Pick a <thing>, name the
 -- file <thing>.lua, and add <thing> to the workspace_sets array below.
--- The file should return a table with three entries.  
+-- The file should return a table with three entries.
 --
 -- 'creator' is a function of no arguments that creates a live
 -- workspace named '<thing>-current' which makes use of the new
@@ -40,7 +40,7 @@
 
 local current_workspace_format = 2
 
-local workspace_sets = { 
+local workspace_sets = {
    "basic",
    "inodeprints",
    "twoparent"
@@ -48,9 +48,9 @@ local workspace_sets = {
 
 function check_workspace_matches_current(dir, refdir)
    check(samefile("nonsense-options", dir.."/_MTN/options"))
-   check(indir(refdir, mtn("automate", "get_current_revision")), 0, true, false)
+   check(indir(refdir, mtn_no_ws("automate", "get_current_revision")), 0, true, false)
    rename("stdout", "current-rev")
-   check(indir(dir, mtn("automate", "get_current_revision")), 0, true, false)
+   check(indir(dir, mtn_no_ws("automate", "get_current_revision")), 0, true, false)
    check(samefile("stdout", "current-rev"))
    -- and the log file
    check(samefile(dir .. "/_MTN/log", refdir .. "/_MTN/log"))
@@ -66,7 +66,7 @@ end
 
 function check_migrate_from(thing, version, checker)
    L(locheader(),
-     "checking migration of ", thing, "workspace from format version ", 
+     "checking migration of ", thing, "workspace from format version ",
      version, "\n")
    local ws = thing .. "-" .. version
    get(ws, ws)

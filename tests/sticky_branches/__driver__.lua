@@ -2,7 +2,7 @@
 mtn_setup()
 
 -- setup saves given branch
-check(mtn("setup", "setupdir", "--branch=testbranch"), 0, false, false)
+check(mtn_no_ws("setup", "setupdir", "--branch=testbranch"), 0, false, false)
 writefile("setupdir/foo", "blah blah")
 check(indir("setupdir", mtn("add", "foo")), 0, false, false)
 check(indir("setupdir", mtn("commit", "--message=foo")), 0, false, false)

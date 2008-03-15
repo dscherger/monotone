@@ -2,7 +2,7 @@
 mtn_setup()
 
 mkdir("workspace")
-check(indir("workspace", mtn("setup", "-b", "testbranch")), 0, false, false)
+check(indir("workspace", mtn_no_ws("setup", "-b", "testbranch")), 0, false, false)
 
 mkdir("workspace/dir1")
 writefile("workspace/old_root_file", "I'm in the root to start off with!")

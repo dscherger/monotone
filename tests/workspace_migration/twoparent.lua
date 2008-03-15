@@ -5,7 +5,7 @@ return {
    min_format = 2,
    creator =
       function ()
-	 check(mtn("setup", "-b", "twoparent-branch", "twoparent-current"))
+	 check(mtn_no_ws("setup", "-b", "twoparent-branch", "twoparent-current"))
 	 chdir("twoparent-current")
 	 addfile("testfile", "ancestor\nancestor")
 	 addfile("attrfile", "this file has attributes")

@@ -9,7 +9,7 @@ commit()
 left = base_revision()
 
 remove("_MTN")
-check(mtn("setup", "--branch=testbranch", "."), 0, false, false)
+check(mtn_no_ws("setup", "--branch=testbranch", "."), 0, false, false)
 
 check(get("right", "testfile"))
 addfile("testfile")

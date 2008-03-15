@@ -14,7 +14,7 @@ check(get("aaa.rc", "gongolo/aaa.rc"))
 check(get("bbb.zz", "gongolo/bbb.zz"))
 
 -- setup a wrk dir
-check(mtn("setup", "--branch=testbranch", "alt_wrk"), 0, false, false)
+check(mtn_no_ws("setup", "--branch=testbranch", "alt_wrk"), 0, false, false)
 
 -- include directly a single file
 check(indir("alt_wrk", mtn("--root=.", "--rcfile=../include.lua", "status")), 0, true, false)

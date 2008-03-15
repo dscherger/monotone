@@ -14,7 +14,7 @@ check(mtn("ci", "-mx", "-k", "committer@test.net"), 0, false, false)
 
 check(mtn("au", "select", "b:testbranch"), 0, true)
 
-srv:push("testbranch", 1)
+srv:push({"--key=tester@test.net", "testbranch"}, 1)
 
 
 check(mtn("dropkey", "committer@test.net"), 0, false, false)

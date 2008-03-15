@@ -3,6 +3,10 @@ function mtn2(...)
   return mtn("--db=test2.db", "--keydir=keys2", unpack(arg))
 end
 
+function mtn2_no_ws(...)
+  return mtn_no_ws("--db=test2.db", "--keydir=keys2", unpack(arg))
+end
+
 function mtn3(...)
   return mtn("--db=test3.db", "--keydir=keys3", unpack(arg))
 end
@@ -65,7 +69,10 @@ function netsync.start(opts, n, min)
   else
     table.insert(args, "--rcfile=netsync.lua")
   end
-  if n ~= nil then
+  if n == nil then
+    table.insert(args, "--keydir=keys")
+    table.insert(args, "--db=test.db")
+  else
     table.insert(args, "--keydir=keys"..n)
     table.insert(args, "--db=test"..n..".db")
   end
@@ -112,6 +119,9 @@ end
 function netsync.internal.run(oper, pat, opts)
   local srv = netsync.start(opts)
   if type(opts) == "table" then
+    if type(pat) ~= "table" then
+       err("first argument to netsync."..oper.." should be a table when second argument is present")
+    end
     for k, v in pairs(opts) do
       table.insert(pat, v)
     end

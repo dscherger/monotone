@@ -19,8 +19,9 @@ revs[2] = base_revision()
 
 srv = netsync.start()
 
-srv:sync("testbranch", 2)
-srv:sync("testbranch", 3)
+-- _MTN/options has no key
+srv:sync({"--key=tester@test.net", "testbranch"}, 2)
+srv:sync({"--key=tester@test.net", "testbranch"}, 3)
 
 function chksy(n, co_mtn)
   check_same_stdout(mtn2("automate", "get_revision", revs[n]),
@@ -33,7 +34,7 @@ end
 
 chksy(1, mtn3)
 
-srv:sync("testbranch", 2)
+srv:sync({"--key=tester@test.net", "testbranch"}, 2)
 chksy(2, mtn2)
 
 -- And now make sure it works for children, where there are diffs and all
@@ -52,8 +53,8 @@ revs[4] = base_revision()
 -- And add a cert on an old revision
 check(mtn3("comment", revs[1], 'sorry dave'), 0, false, false)
 
-srv:sync("testbranch", 3)
-srv:sync("testbranch", 2)
+srv:sync({"--key=tester@test.net", "testbranch"}, 3)
+srv:sync({"--key=tester@test.net", "testbranch"}, 2)
 
 chksy(3, mtn2)
 
@@ -61,7 +62,7 @@ chksy(3, mtn2)
 check_same_stdout(mtn2("ls", "certs", revs[1]),
                   mtn3("ls", "certs", revs[1]))
 
-srv:sync("testbranch", 3)
+srv:sync({"--key=tester@test.net", "testbranch"}, 3)
 
 chksy(4, mtn3)
 

@@ -17,7 +17,7 @@ mtn_setup()
 mkdir("alice")
 
 -- Alice starts a projectand creates foo
-check(mtn("--branch=testbranch", "setup", "alice"), 0, false, false)
+check(mtn_no_ws("--branch=testbranch", "setup", "alice"), 0, false, false)
 for i = 1,10 do
   writefile("alice/file."..i, "file "..i)
   check(indir("alice", mtn("add", "file."..i)), 0, false, false)

@@ -5,7 +5,7 @@ return {
    min_format = 1,
    creator =
       function ()
-	 check(mtn("setup", "-b", "inodeprints-branch", "inodeprints-current"))
+	 check(mtn_no_ws("setup", "-b", "inodeprints-branch", "inodeprints-current"))
 	 chdir("inodeprints-current")
 	 writefile("_MTN/inodeprints")
 	 addfile("testfile1", "blah blah\n")

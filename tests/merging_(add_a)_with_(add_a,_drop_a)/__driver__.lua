@@ -11,9 +11,9 @@ mtn_setup()
 --               B
 
 -- B and D are heads of branch.main and branch.fork respectively, we want to
--- "propagate branch.main branch.fork". 
+-- "propagate branch.main branch.fork".
 
--- The revs F, C, and D are members of branch.fork. 
+-- The revs F, C, and D are members of branch.fork.
 -- A, C, E, G, and B are members of branch.main (C is shared)
 
 -- C is "add bar", E is "drop bar", other revisions involve non-conflicting
@@ -69,7 +69,7 @@ remove("_MTN")
 remove("foo")
 remove("iced")
 remove("quux")
-check(mtn("--branch=branch.fork", "checkout", "."), 0, false, true)
+check(mtn_no_ws("--branch=branch.fork", "checkout", "."), 0, false, true)
 
 check(mtn("automate", "get_manifest_of"), 0, true)
 rename("stdout", "manifest")

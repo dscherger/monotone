@@ -16,8 +16,8 @@ check(mtn("cert", rev, "branch", "otherbranch"))
 -- but, now we can't checkout without a --branch...
 -- need to make sure don't pick up branch from our local _MTN dir...
 remove("_MTN")
-check(mtn("checkout", "--revision", rev, "codir2"), 1, false, false)
-check(mtn("checkout", "--revision", rev, "--branch=testbranch", "codir3"), 0, false, false)
+check(mtn_no_ws("checkout", "--revision", rev, "codir2"), 1, false, false)
+check(mtn_no_ws("checkout", "--revision", rev, "--branch=testbranch", "codir3"), 0, false, false)
 check(samefile("foo", "codir3/foo"))
-check(mtn("checkout", "--revision", rev, "--branch=otherbranch", "codir4"), 0, false, false)
+check(mtn_no_ws("checkout", "--revision", rev, "--branch=otherbranch", "codir4"), 0, false, false)
 check(samefile("foo", "codir4/foo"))

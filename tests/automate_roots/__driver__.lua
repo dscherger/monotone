@@ -24,7 +24,7 @@ revs.b = base_revision()
 -- now, make a new branch
 remove("testfile")
 remove("_MTN")
-check(mtn("setup", "--branch=otherbranch", "."), 0, false, false)
+check(mtn_no_ws("setup", "--branch=otherbranch", "."), 0, false, false)
 
 -- and add something there
 addfile("otherfile", "blah blah")

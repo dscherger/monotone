@@ -53,8 +53,8 @@ for i,x in pairs({{true, false, false},
   remove("file1")
   remove("file2")
   remove("file3")
-  
-  check(mtn("co", "--revision=tag"..i, "."), 0, false, false)
+
+  check(mtn_no_ws("co", "--revision=tag"..i, "."), 0, false, false)
   check(base_revision() == revs[i])
   for j = 1,3 do
     check(exists("file"..j) == x[j])

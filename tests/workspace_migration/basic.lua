@@ -5,7 +5,7 @@ return {
    min_format = 1,
    creator =
       function ()
-	 check(mtn("setup", "-b", "basicbranch", "basic-current"))
+	 check(mtn_no_ws("setup", "-b", "basicbranch", "basic-current"))
 	 chdir("basic-current")
 	 addfile("testfile1", "blah blah\n")
 	 addfile("testfile2", "asdfas dfsa\n")

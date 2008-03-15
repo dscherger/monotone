@@ -18,7 +18,7 @@ writefile("foo.bob", "foo checked into project")
 -- Alice make project, writes foo, but doesn't check it in
 mkdir("alicewd")
 copy("initial", "alicewd/initial")
-check(mtn("--branch=testbranch", "setup", "alicewd"), 0, false, false)
+check(mtn_no_ws("--branch=testbranch", "setup", "alicewd"), 0, false, false)
 check(indir("alicewd", mtn("--root=.", "add", "initial")), 0, false, false)
 check(indir("alicewd", mtn("--branch=testbranch", "--root=.", "commit", "-m", 'initial commit')), 0, false, false)
 copy("foo.alice", "alicewd/foo")

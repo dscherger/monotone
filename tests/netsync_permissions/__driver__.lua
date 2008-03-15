@@ -36,7 +36,7 @@ revs.base = base_revision()
 
 srv = netsync.start({"--confdir=open"}, nil, true)
 
--- anonymous pull 
+-- anonymous pull
 
 clean(2)
 
@@ -71,41 +71,42 @@ check(mtn2("automate", "get_revision", revs.base), 1, true, true)
 copy("test.db", "test2.db")
 remove("keys2")
 copy("keys", "keys2")
-revert_to(revs.base, mtn2)
+revert_to(revs.base, mtn2, mtn2_no_ws)
 addfile("default", "default", mtn2)
-check(mtn2("commit", "--message", "default"), 0, false, false)
+check(mtn2("commit", "--key=tester@test.net", "--message", "default"), 0, false, false)
 revs.default = base_revision()
 srv:push("testbranch")
 
 -- push with other key
 
-revert_to(revs.base, mtn2)
+revert_to(revs.base, mtn2, mtn2_no_ws)
 addfile("other", "other", mtn2)
-check(mtn2("commit", "--message", "other"), 0, false, false)
+check(mtn2("commit", "--key=tester@test.net", "--message", "other"), 0, false, false)
 revs.other = base_revision()
 srv:push({"testbranch", "--key", keys.other})
 
 -- push with unknown key fails
 
-revert_to(revs.base, mtn2)
+revert_to(revs.base, mtn2, mtn2_no_ws)
 addfile("unknown", "unknown", mtn2)
-check(mtn2("commit", "--message", "unknown"), 0, false, false)
+check(mtn2("commit", "--key=tester@test.net", "--message", "unknown"), 0, false, false)
 revs.unknown = base_revision()
 genkey(keys.unknown, mtn2)
 srv:push({"testbranch", "--key", keys.unknown}, nil, 1)
 
 srv:stop()
 
-check(mtn("automate", "get_revision", revs.default), 0, true, true)
-check(mtn("automate", "get_revision", revs.other), 0, true, true)
-check(mtn("automate", "get_revision", revs.unknown), 1, true, true)
+-- _MTN/options has database = test2.db; we want to check test.db
+check(mtn("--db=test.db", "automate", "get_revision", revs.default), 0, true, true)
+check(mtn("--db=test.db", "automate", "get_revision", revs.other), 0, true, true)
+check(mtn("--db=test.db", "automate", "get_revision", revs.unknown), 1, true, true)
 
 
 -- test with closed security settings
 check(get("closed"))
 
 clean()
-writefile("_MTN/revision", 
+writefile("_MTN/revision",
 	  "format_version \"1\"\n\n"..
 	  "new_manifest []\n\n"..
 	  "old_revision []\n")
@@ -157,7 +158,7 @@ check(mtn2("automate", "get_revision", revs.base), 1, true, true)
 copy("test.db", "test2.db")
 remove("keys2")
 copy("keys", "keys2")
-revert_to(revs.base, mtn2)
+revert_to(revs.base, mtn2, mtn2_no_ws)
 addfile("default", "default", mtn2)
 check(mtn2("commit", "--message", "default"), 0, false, false)
 revs.default = base_revision()
@@ -165,7 +166,7 @@ srv:push("testbranch")
 
 -- push with other key
 
-revert_to(revs.base, mtn2)
+revert_to(revs.base, mtn2, mtn2_no_ws)
 addfile("other", "other", mtn2)
 check(mtn2("commit", "--message", "other"), 0, false, false)
 revs.other = base_revision()
@@ -173,7 +174,7 @@ srv:push({"testbranch", "--key", keys.other}, nil, 1)
 
 -- push with unknown key fails
 
-revert_to(revs.base, mtn2)
+revert_to(revs.base, mtn2, mtn2_no_ws)
 addfile("unknown", "unknown", mtn2)
 check(mtn2("commit", "--message", "unknown"), 0, false, false)
 revs.unknown = base_revision()

@@ -10,7 +10,7 @@ function setup(branch)
     remove("bar")
     remove("baz")
     remove(branch)
-    check(mtn("setup", ".", "--branch", branch), 0, false, false)
+    check(mtn_no_ws("setup", ".", "--branch", branch), 0, false, false)
 end
 
 

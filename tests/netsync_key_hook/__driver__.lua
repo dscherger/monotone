@@ -13,7 +13,7 @@ check(mtn("genkey", "badkey@test.net"), 0,
 get("read-permissions")
 get("client-hooks.lua")
 
-srv = netsync.start(2)
+srv = netsync.start({"--key=tester@test.net"}, 2)
 
 -- We don't want the --key argument, so we have to do this ourselves.
 function client(what, ret)

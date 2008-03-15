@@ -3,7 +3,7 @@ mtn_setup()
 -- pivot_root to a directory that hasn't been commited yet should work
 
 mkdir("workspace")
-check(indir("workspace", mtn("setup", ".", "-b", "testbranch")),
+check(indir("workspace", mtn_no_ws("setup", ".", "-b", "testbranch")),
       0, false, false)
 
 writefile("workspace/file1", "blah blah")

@@ -20,7 +20,7 @@ for _,x in pairs{{revs.a, true, false},
                  {revs.b, false, true},
                  {revs.null, false, false}} do
   remove("_MTN")
-  check(mtn("checkout", "--revision", x[1], "co-dir"), 0, false, false)
+  check(mtn_no_ws("checkout", "--revision", x[1], "co-dir"), 0, false, false)
   check(exists("co-dir/a") == x[2])
   check(exists("co-dir/b") == x[3])
   remove("co-dir")

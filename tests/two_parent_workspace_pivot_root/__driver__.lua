@@ -2,7 +2,7 @@ mtn_setup()
 
 mkdir("w1")
 
-check(indir("w1", mtn("setup", ".", "-b", "testbranch")), 0, false, false)
+check(indir("w1", mtn_no_ws("setup", ".", "-b", "testbranch")), 0, false, false)
 
 writefile("w1/testfile", "ancestor\nancestor")
 mkdir("w1/newroot")

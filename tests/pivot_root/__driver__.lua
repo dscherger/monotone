@@ -12,7 +12,7 @@ mtn_setup()
 -- then make sure --execute puts things in the right place...
 
 mkdir("workspace")
-check(indir("workspace", mtn("setup", ".", "-b", "testbranch")), 0, false, false)
+check(indir("workspace", mtn_no_ws("setup", ".", "-b", "testbranch")), 0, false, false)
 
 mkdir("workspace/dir1")
 mkdir("workspace/dir1/dir2")

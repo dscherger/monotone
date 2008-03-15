@@ -10,13 +10,15 @@ check(mtn("genkey", "foo@bar"), 0, false, false, "foo@bar\nfoo@bar\n")
 -- started it picks a new random port.
 seed = get_pid()
 math.randomseed(seed)
-netsync.pull("testbranch")
+
+-- We have multiple keys, so we need to specify one for authorization
+netsync.pull({"testbranch"}, {"--key=tester@test.net"})
 
 -- Then again with a different key; should fail.
 math.randomseed(seed)
 srv = netsync.start{"--key=foo@bar"}
 
-srv:pull("testbranch", nil, 1)
+srv:pull({"testbranch", "--key=tester@test.net"}, 2, 1) -- {pattern, opts}, n, result
 -- It shouldn't have absorbed the key, either.
 check(mtn2("pubkey", "foo@bar"), 1, true, false)
 
@@ -24,7 +26,7 @@ check(mtn2("pubkey", "foo@bar"), 1, true, false)
 check(mtn2("unset", "known-servers", srv.address), 0, false, false)
 
 -- Now it should succeed
-srv:pull("testbranch")
+srv:pull({"testbranch", "--key=tester@test.net"}, 2) -- {pattern, opts}, n
 -- And have absorbed the key
 check(mtn2("pubkey", "foo@bar"), 0, true, false)
 

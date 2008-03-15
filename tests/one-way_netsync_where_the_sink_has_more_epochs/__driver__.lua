@@ -27,6 +27,7 @@ cli = bg(mtn2("--rcfile=netsync.lua", "push", srv.address, "*branch"), 0, false,
 check(cli:wait(20)) -- give it 20 seconds.
 srv:stop()
 
-check(mtn("ls", "branches"), 0, true, false)
+-- _MTN/options has database test2.db
+check(mtn("--db=test.db", "ls", "branches"), 0, true, false)
 check(qgrep("testbranch", "stdout"), 0, false, false)
 check(qgrep("otherbranch", "stdout"), 0, false, false)
