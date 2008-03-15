@@ -32,7 +32,7 @@
 #
 ##############################################################################
 #
-#   GLOBAL DATA FOR THIS MODULE
+#   Global Data For This Module
 #
 ##############################################################################
 
@@ -49,14 +49,66 @@ use strict;
 
 # Public routines.
 
+sub display_change_log($$;$$);
+
+# Private routines.
+
 sub get_change_log_window();
+#
+##############################################################################
+#
+#   Routine      - display_change_log
+#
+#   Description  - Display a revision's change log in a window.
+#
+#   Data         - $mtn         : The Monotone instance handle that is to be
+#                                 used to display the change log.
+#                  $revision_id : The revision id that is to have its change
+#                                 log displayed.
+#                  $text_colour : Either the colour of the text or undef or ""
+#                                 if the colour should be black.
+#                  $tag         : Either a tag name for the specified revision
+#                                 that is to be used in the window title
+#                                 instead of the revision id or undef if the
+#                                 revision id should be used.
+#
+##############################################################################
+
+
+
+sub display_change_log($$;$$)
+{
+
+    my($mtn, $revision_id, $text_colour, $tag) = @_;
+
+    my(@certs_list,
+       $instance,
+       @revision_details);
+
+    $instance = get_change_log_window();
+    $instance->{changelog_buffer}->set_text("");
+    $instance->{window}->set_title("Revision " . ($tag ? $tag : $revision_id));
+    $mtn->certs(\@certs_list, $revision_id);
+    $mtn->get_revision(\@revision_details, $revision_id);
+    generate_revision_report($instance->{changelog_buffer},
+			     $revision_id,
+			     \@certs_list,
+			     $text_colour ? $text_colour : "",
+			     \@revision_details);
+    if ($instance->{changelog_scrolledwindow}->realized())
+    {
+	$instance->{changelog_scrolledwindow}->get_vadjustment()->set_value(0);
+	$instance->{changelog_scrolledwindow}->get_hadjustment()->set_value(0);
+    }
+    $instance->{window}->show_all();
+
+}
 #
 ##############################################################################
 #
 #   Routine      - get_change_log_window
 #
-#   Description  - Creates or prepares an existing a change log window for
-#                  use.
+#   Description  - Creates or prepares an existing change log window for use.
 #
 #   Data         - Return Value : A reference to the newly created or unused
 #                                 change log instance record.
@@ -68,10 +120,10 @@ sub get_change_log_window();
 sub get_change_log_window()
 {
 
-    my ($font,
-	$height,
-	$instance,
-	$width);
+    my($font,
+       $height,
+       $instance,
+       $width);
 
     foreach my $window (@windows)
     {
@@ -99,16 +151,7 @@ sub get_change_log_window()
 
 	# Connect Glade registered signal handlers.
 
-	$instance->{glade}->signal_autoconnect
-	    (sub {
-		 my($callback_name, $widget, $signal_name, $signal_data,
-		    $connect_object, $after, $user_data) = @_;
-		 my $func = $after ? "signal_connect_after" : "signal_connect";
-		 $widget->$func($signal_name,
-				$callback_name,
-				$connect_object ?
-				    $connect_object : $user_data); },
-	     $instance);
+	glade_signal_autoconnect($instance->{glade}, $instance);
 
 	# Get the widgets that we are interested in.
 

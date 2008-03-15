@@ -33,7 +33,7 @@
 #
 ##############################################################################
 #
-#   GLOBAL DATA FOR THIS MODULE
+#   Global Data For This Module
 #
 ##############################################################################
 
@@ -76,10 +76,10 @@ sub combo_changed_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my ($change_state,
-	$combo_details,
-	$item,
-	$value);
+    my($change_state,
+       $combo_details,
+       $item,
+       $value);
 
     if ($widget == $instance->{branch_combo})
     {
@@ -153,17 +153,17 @@ sub combo_key_release_event_cb($$$)
     return FALSE if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my ($change_state,
-	$combo,
-	$combo_details,
-	$completed,
-	$completion,
-	$item,
-	$len,
-	$name,
-	$old_completed,
-	$old_value,
-	$value);
+    my($change_state,
+       $combo,
+       $combo_details,
+       $completed,
+       $completion,
+       $item,
+       $len,
+       $name,
+       $old_completed,
+       $old_value,
+       $value);
 
     if ($widget == $instance->{branch_combo}->child())
     {

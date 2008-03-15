@@ -32,7 +32,7 @@
 #
 ##############################################################################
 #
-#   GLOBAL DATA FOR THIS MODULE
+#   Global Data For This Module
 #
 ##############################################################################
 
@@ -259,15 +259,7 @@ sub create_advanced_find_window()
 
     # Connect Glade registered signal handlers.
 
-    $instance->{glade}->signal_autoconnect
-	(sub {
-	     my($callback_name, $widget, $signal_name, $signal_data,
-		$connect_object, $after, $user_data) = @_;
-	     my $func = $after ? "signal_connect_after" : "signal_connect";
-	     $widget->$func($signal_name,
-			    $callback_name,
-			    $connect_object ? $connect_object : $user_data); },
-	 $instance);
+    glade_signal_autoconnect($instance->{glade}, $instance);
 
     # Link in the update handler for the advanced find window.
 
@@ -987,9 +979,9 @@ sub update_advanced_find_state($$)
 	    if ($advanced_find->{selected_revision_label}->get_text()
 		ne $advanced_find->{revisions_treeview_details}->{value})
 	    {
-		my ($branch,
-		    @certs_list,
-		    @revision_details);
+		my($branch,
+		   @certs_list,
+		   @revision_details);
 
 		$advanced_find->{details_buffer}->set_text("");
 		$advanced_find->{mtn}->certs

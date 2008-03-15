@@ -32,7 +32,7 @@
 #
 ##############################################################################
 #
-#   GLOBAL DATA FOR THIS MODULE
+#   Global Data For This Module
 #
 ##############################################################################
 
@@ -52,6 +52,7 @@ sub create_format_tags($);
 sub generate_revision_report($$$$;$);
 sub get_dir_contents($$$);
 sub get_revision_ids($$);
+sub glade_signal_autoconnect($$);
 sub gtk2_update();
 sub make_busy($$);
 sub run_command($@);
@@ -500,6 +501,40 @@ sub get_revision_ids($$)
 #
 ##############################################################################
 #
+#   Routine      - glade_signal_autoconnect
+#
+#   Description  - This routine uses the Glade library to connect up all the
+#                  registered signal handlers to their related widgets.
+#
+#   Data         - $glade       : The Glade object describing the widgets that
+#                                 are to have their signal handlers
+#                                 registered.
+#                  $client_data : The client data that is to be passed into
+#                                 each callback routine when it is called.
+#
+##############################################################################
+
+
+
+sub glade_signal_autoconnect($$)
+{
+
+    my($glade, $client_data) = @_;
+
+    $glade->signal_autoconnect
+	(sub {
+	     my($callback_name, $widget, $signal_name, $signal_data,
+		$connect_object, $after, $user_data) = @_;
+	     my $func = $after ? "signal_connect_after" : "signal_connect";
+	     $widget->$func($signal_name,
+			    $callback_name,
+			    $connect_object ? $connect_object : $user_data); },
+	 $client_data);
+
+}
+#
+##############################################################################
+#
 #   Routine      - make_busy
 #
 #   Description  - This routine simply makes the main window busy or active.
@@ -608,7 +643,9 @@ sub gtk2_update()
 sub create_format_tags($)
 {
 
-    my ($text_buffer) = @_;
+    my($text_buffer) = @_;
+
+    # Normal Black text, assorted styles, on a white background.
 
     $text_buffer->create_tag("normal", "weight" => PANGO_WEIGHT_NORMAL);
 
@@ -617,6 +654,8 @@ sub create_format_tags($)
     $text_buffer->create_tag("bold-italics",
 			     "weight" => PANGO_WEIGHT_BOLD,
 			     "style" => "italic");
+
+    # Green text, assorted styles, on a white background.
 
     $text_buffer->create_tag("green", "foreground" => "DarkGreen");
     $text_buffer->create_tag("bold-green",
@@ -630,6 +669,8 @@ sub create_format_tags($)
 			     "style" => "italic",
 			     "foreground" => "DarkGreen");
 
+    # Red text, assorted styles, on a white background.
+
     $text_buffer->create_tag("red", "foreground" => "DarkRed");
     $text_buffer->create_tag("bold-red",
 			     "weight" => PANGO_WEIGHT_BOLD,
@@ -642,9 +683,13 @@ sub create_format_tags($)
 			     "style" => "italic",
 			     "foreground" => "DarkRed");
 
+    # Yellow text on a grey background.
+
     $text_buffer->create_tag("compare-info",
 			     "foreground" => "Yellow",
 			     "background" => "LightSlateGrey");
+
+    # Red text, assorted styles, on pink and grey backgrounds.
 
     $text_buffer->create_tag("compare-first-file",
 			     "foreground" => "DarkRed",
@@ -654,6 +699,8 @@ sub create_format_tags($)
 			     "foreground" => "IndianRed1",
 			     "background" => "DarkSlateGrey");
 
+    # Green text, assorted styles, on light green and grey backgrounds.
+
     $text_buffer->create_tag("compare-second-file",
 			     "foreground" => "DarkGreen",
 			     "background" => "DarkSeaGreen1");
@@ -661,6 +708,25 @@ sub create_format_tags($)
 			     "weight" => PANGO_WEIGHT_BOLD,
 			     "foreground" => "SpringGreen1",
 			     "background" => "DarkSlateGrey");
+
+    # Blue text, assorted shades, on assorted blue backgrounds.
+
+    $text_buffer->create_tag("annotate-prefix-1",
+			     "foreground" => "AliceBlue",
+			     "background" => "CadetBlue");
+    $text_buffer->create_tag("annotate-text-1",
+			     "foreground" => "MidnightBlue",
+			     "background" => "PaleTurquoise");
+
+    # Blue text, assorted shades, on assorted blue backgrounds (slightly darker
+    # than the previous group).
+
+    $text_buffer->create_tag("annotate-prefix-2",
+			     "foreground" => "AliceBlue",
+			     "background" => "SteelBlue");
+    $text_buffer->create_tag("annotate-text-2",
+			     "foreground" => "MidnightBlue",
+			     "background" => "SkyBlue");
 
 }
 #

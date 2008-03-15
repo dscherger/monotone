@@ -86,7 +86,7 @@ sub new($@);
 sub new($@)
 {
 
-    my ($class, $list) = @_;
+    my($class, $list) = @_;
     $class = ref($class) if ref($class);
 
     my($char,

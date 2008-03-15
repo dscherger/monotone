@@ -32,7 +32,7 @@
 #
 ##############################################################################
 #
-#   GLOBAL DATA FOR THIS MODULE
+#   Global Data For This Module
 #
 ##############################################################################
 
@@ -55,8 +55,8 @@ use constant CLS_LINE_NR_COLUMN => 1;
 
 # Public routines.
 
-sub display_file_change_history($);
-sub display_revision_change_history($);
+sub display_file_change_history($$$);
+sub display_revision_change_history($$);
 
 # Private routines.
 
@@ -78,35 +78,34 @@ sub mtn_diff($$$$;$);
 #   Description  - Display a revision's change history, complete with
 #                  selection and comparison buttons.
 #
-#   Data         - $browser : The browser instance that is associated with
-#                             this widget.
+#   Data         - $mtn         : The Monotone instance handle that is to be
+#                                 used to get the change history.
+#                  $revision_id : The if of the revision that is to have its
+#                                 change log displayed.
 #
 ##############################################################################
 
 
 
-sub display_revision_change_history($)
+sub display_revision_change_history($$)
 {
 
-    my $browser = $_[0];
+    my($mtn, $revision_id) = @_;
 
-    my ($button,
-	@certs_list,
-	$counter,
-	$file_name,
-	%history_hash,
-	$instance,
-	@revision_ids);
+    my($button,
+       @certs_list,
+       $counter,
+       %history_hash,
+       $instance);
 
     $instance = get_history_window();
     local $instance->{in_cb} = 1;
 
-    $instance->{mtn} = $browser->{mtn};
+    $instance->{mtn} = $mtn;
     $instance->{file_name} = undef;
-    get_revision_ids($browser, \@revision_ids);
     $instance->{first_revision_id} = "";
     $instance->{second_revision_id} = "";
-    $instance->{window}->set_title("Revision History For " . $revision_ids[0]);
+    $instance->{window}->set_title("Revision History For " . $revision_id);
     $instance->{history_label}->set_markup("<b>Revision History</b>");
     $instance->{window}->show_all();
 
@@ -122,8 +121,8 @@ sub display_revision_change_history($)
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status("Fetching revision list");
     gtk2_update();
-    $history_hash{$revision_ids[0]} = 1;
-    get_revision_history_helper($instance, \%history_hash, $revision_ids[0]);
+    $history_hash{$revision_id} = 1;
+    get_revision_history_helper($instance, \%history_hash, $revision_id);
 
     # Sort the list.
 
@@ -258,32 +257,33 @@ sub display_revision_change_history($)
 #   Description  - Display a file's change history, complete with selection
 #                  and comparison buttons.
 #
-#   Data         - $browser : The browser instance that is associated with
-#                             this widget.
+#   Data         - $mtn         : The Monotone instance handle that is to be
+#                                 used to get the change history.
+#                  $revision_id : The revision id in which the desired version
+#                                 of the file resides.
+#                  $file_name   : The name of the file that is to have its
+#                                 change log displayed.
 #
 ##############################################################################
 
 
 
-sub display_file_change_history($)
+sub display_file_change_history($$$)
 {
 
-    my $browser = $_[0];
+    my($mtn, $revision_id, $file_name) = @_;
 
-    my ($button,
-	@certs_list,
-	$counter,
-	$file_name,
-	%history_hash,
-	$instance,
-	@revision_ids);
+    my($button,
+       @certs_list,
+       $counter,
+       %history_hash,
+       $instance);
 
     $instance = get_history_window();
     local $instance->{in_cb} = 1;
 
-    $instance->{mtn} = $browser->{mtn};
-    $instance->{file_name} =
-	$browser->{file_being_viewed}->{manifest_entry}->{name};
+    $instance->{mtn} = $mtn;
+    $instance->{file_name} = $file_name;
     $instance->{first_revision_id} = "";
     $instance->{second_revision_id} = "";
     $instance->{window}->set_title
@@ -304,8 +304,7 @@ sub display_file_change_history($)
     $instance->{stop_button}->set_sensitive(TRUE);
     gtk2_update();
     Monotone::AutomateStdio->register_error_handler("warning");
-    get_revision_ids($browser, \@revision_ids);
-    get_file_history_helper($instance, \%history_hash, $revision_ids[0]);
+    get_file_history_helper($instance, \%history_hash, $revision_id);
     Monotone::AutomateStdio->register_error_handler("both",
 						    \&mtn_error_handler);
     $instance->{stop_button}->set_sensitive(FALSE);
@@ -444,8 +443,7 @@ sub history_list_button_clicked_cb($$)
 
     my($widget, $details) = @_;
 
-    my($cl_instance,
-       $instance,
+    my($instance,
        $revision_id);
 
     $instance = $details->{instance};
@@ -491,29 +489,9 @@ sub history_list_button_clicked_cb($$)
     else
     {
 
-	my(@certs_list,
-	   @revision_details);
-
 	# Display the full revision change log.
 
-	$cl_instance = get_change_log_window();
-	$cl_instance->{changelog_buffer}->set_text("");
-	$cl_instance->{window}->set_title("Revision " . $revision_id);
-	$instance->{mtn}->certs(\@certs_list, $revision_id);
-	$instance->{mtn}->get_revision(\@revision_details, $revision_id);
-	generate_revision_report($cl_instance->{changelog_buffer},
-				 $revision_id,
-				 \@certs_list,
-				 "",
-				 \@revision_details);
-	if ($cl_instance->{changelog_scrolledwindow}->realized())
-	{
-	    $cl_instance->{changelog_scrolledwindow}->get_vadjustment()->
-		set_value(0);
-	    $cl_instance->{changelog_scrolledwindow}->get_hadjustment()->
-		set_value(0);
-	}
-	$cl_instance->{window}->show_all();
+	display_change_log($instance->{mtn}, $revision_id);
 
     }
 
@@ -621,10 +599,7 @@ sub coloured_revision_change_log_button_clicked_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my(@certs_list,
-       $cl_instance,
-       $colour,
-       @revision_details,
+    my($colour,
        $revision_id);
 
     # Work out what revision id to use.
@@ -642,24 +617,7 @@ sub coloured_revision_change_log_button_clicked_cb($$)
 
     # Display the full revision change log.
 
-    $cl_instance = get_change_log_window();
-    $cl_instance->{changelog_buffer}->set_text("");
-    $cl_instance->{window}->set_title("Revision " . $revision_id);
-    $instance->{mtn}->certs(\@certs_list, $revision_id);
-    $instance->{mtn}->get_revision(\@revision_details, $revision_id);
-    generate_revision_report($cl_instance->{changelog_buffer},
-			     $revision_id,
-			     \@certs_list,
-			     $colour,
-			     \@revision_details);
-    if ($cl_instance->{changelog_scrolledwindow}->realized())
-    {
-	$cl_instance->{changelog_scrolledwindow}->get_vadjustment()->
-	    set_value(0);
-	$cl_instance->{changelog_scrolledwindow}->get_hadjustment()->
-	    set_value(0);
-    }
-    $cl_instance->{window}->show_all();
+    display_change_log($instance->{mtn}, $revision_id, $colour);
 
 }
 #
@@ -679,10 +637,10 @@ sub coloured_revision_change_log_button_clicked_cb($$)
 sub get_history_window()
 {
 
-    my ($font,
-	$height,
-	$instance,
-	$width);
+    my($font,
+       $height,
+       $instance,
+       $width);
 
     # Look for an unused window first.
 
@@ -712,16 +670,7 @@ sub get_history_window()
 
 	# Connect Glade registered signal handlers.
 
-	$instance->{glade}->signal_autoconnect
-	    (sub {
-		 my($callback_name, $widget, $signal_name, $signal_data,
-		    $connect_object, $after, $user_data) = @_;
-		 my $func = $after ? "signal_connect_after" : "signal_connect";
-		 $widget->$func($signal_name,
-				$callback_name,
-				$connect_object ?
-				    $connect_object : $user_data); },
-	     $instance);
+	glade_signal_autoconnect($instance->{glade}, $instance);
 
 	# Get the widgets that we are interested in.
 
@@ -911,11 +860,11 @@ sub get_revision_history_helper($$$)
 sub get_revision_comparison_window()
 {
 
-    my ($font,
-	$height,
-	$instance,
-	$renderer,
-	$width);
+    my($font,
+       $height,
+       $instance,
+       $renderer,
+       $width);
 
     # Look for an unused window first.
 
@@ -1068,19 +1017,19 @@ sub compare_revisions($$$;$)
 
     my($mtn, $revision_id_1, $revision_id_2, $file_name) = @_;
 
-    my ($char,
-	@files,
-	$i,
-	$instance,
-	$is_binary,
-	$iter,
-	$len,
-	$line,
-	@lines,
-	$max_len,
-	$name,
-	$padding,
-	$rest);
+    my($char,
+       @files,
+       $i,
+       $instance,
+       $is_binary,
+       $iter,
+       $len,
+       $line,
+       @lines,
+       $max_len,
+       $name,
+       $padding,
+       $rest);
 
     $instance = get_revision_comparison_window();
     local $instance->{in_cb} = 1;
@@ -1099,7 +1048,6 @@ sub compare_revisions($$$;$)
 	    set_markup("<b>Revision Comparison</b>");
     }
     $instance->{window}->show_all();
-    gtk2_update();
 
     make_busy($instance, 1);
     $instance->{appbar}->push("");

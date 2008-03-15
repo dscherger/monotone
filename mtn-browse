@@ -33,7 +33,7 @@
 #
 ##############################################################################
 #
-#   GLOBAL DATA FOR THIS MODULE
+#   Global Data For This Module
 #
 ##############################################################################
 
@@ -75,6 +75,7 @@ use Data::Dumper;
 
 use Globals qw(:constants :variables);
 use AdvancedFind;
+use Annotate;
 use ChangeLog;
 use ComboAutoCompletion;
 use Completion;
@@ -96,6 +97,7 @@ use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 # Private routines.
 
 sub advanced_find_button_clicked_cb($$);
+sub annotate_button_clicked_cb($$);
 sub delete_event_cb($$$);
 sub destroy_event_cb($$;$);
 sub directory_up_button_clicked_cb($$);
@@ -277,7 +279,10 @@ sub revision_change_history_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    display_revision_change_history($browser);
+    my @revision_ids;
+
+    get_revision_ids($browser, \@revision_ids);
+    display_revision_change_history($browser->{mtn}, $revision_ids[0]);
 
 }
 #
@@ -304,35 +309,15 @@ sub revision_change_log_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my (@certs_list,
-	$instance,
-	@revision_details,
-	@revision_ids);
+    my @revision_ids;
 
-    $instance = get_change_log_window();
-
-    # Get the currently selected revision id.
+    # Get the currently selected revision id and then display its change log.
 
     get_revision_ids($browser, \@revision_ids);
-
-    # Put the details into the text view and display it.
-
-    $instance->{changelog_buffer}->set_text("");
-    $instance->{window}->set_title
-	("Revision " . $browser->{revision_combo_details}->{value});
-    $browser->{mtn}->certs(\@certs_list, $revision_ids[0]);
-    $browser->{mtn}->get_revision(\@revision_details, $revision_ids[0]);
-    generate_revision_report($instance->{changelog_buffer},
-			     $revision_ids[0],
-			     \@certs_list,
-			     "",
-			     \@revision_details);
-    if ($instance->{changelog_scrolledwindow}->realized())
-    {
-	$instance->{changelog_scrolledwindow}->get_vadjustment()->set_value(0);
-	$instance->{changelog_scrolledwindow}->get_hadjustment()->set_value(0);
-    }
-    $instance->{window}->show_all();
+    display_change_log($browser->{mtn},
+		       $revision_ids[0],
+		       "",
+		       $browser->{revision_combo_details}->{value});
 
 }
 #
@@ -405,6 +390,39 @@ sub directory_up_button_clicked_cb($$)
 #
 ##############################################################################
 #
+#   Routine      - annotate_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  annotate button in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub annotate_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my @revision_ids;
+
+    get_revision_ids($browser, \@revision_ids);
+    display_annotation($browser->{mtn},
+		       $revision_ids[0],
+		       $browser->{file_being_viewed}->{manifest_entry}->
+		           {name});
+
+}
+#
+##############################################################################
+#
 #   Routine      - file_change_history_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the file
@@ -426,7 +444,13 @@ sub file_change_history_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    display_file_change_history($browser);
+    my @revision_ids;
+
+    get_revision_ids($browser, \@revision_ids);
+    display_file_change_history($browser->{mtn},
+				$revision_ids[0],
+				$browser->{file_being_viewed}->
+				    {manifest_entry}->{name});
 
 }
 #
@@ -640,15 +664,7 @@ sub new_browser_instance()
 
     # Connect Glade registered signal handlers.
 
-    $browser->{glade}->signal_autoconnect
-	(sub {
-	     my($callback_name, $widget, $signal_name, $signal_data,
-		$connect_object, $after, $user_data) = @_;
-	     my $func = $after ? "signal_connect_after" : "signal_connect";
-	     $widget->$func($signal_name,
-			    $callback_name,
-			    $connect_object ? $connect_object : $user_data); },
-	 $browser);
+    glade_signal_autoconnect($browser->{glade}, $browser);
 
     # Link in the update handler for the browser.
 
