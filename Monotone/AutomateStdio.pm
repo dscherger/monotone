@@ -182,8 +182,13 @@ sub new($;$)
     $this = {};
     $this->{db_name} = $db_name;
     $this->{mtn_pid} = 0;
-    $this->{cmd_cnt} = 0;
+    $this->{mtn_in} = undef;
+    $this->{mtn_out} = undef;
+    $this->{mtn_err} = undef;
     $this->{mtn_err_msg} = "";
+    $this->{mtn_aif_major} = 0;
+    $this->{mtn_aif_minor} = 0;
+    $this->{cmd_cnt} = 0;
 
     startup($this);
 
