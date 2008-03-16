@@ -480,7 +480,7 @@ endif
 
 # i18n support
 
-SUBDIRS = po
+SUBDIRS = po . mtn_cvs
 datadir = @datadir@
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@

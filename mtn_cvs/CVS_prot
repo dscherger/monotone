@@ -1,0 +1,212 @@
+commands with a capital letter do not give a response
+first command must be Root (only as first command)
+
+Interesting commands:
+ Checkin-time Gzip-stream 
+ list status history annotate 
+
+history -c -l -a -w ?
+
+rlist -e christof/mf
+[-de]
+cvs rls: Listing module: `christof/mf'
+/slantsl.mf/1.1.1.1/Mon Nov 18 14:03:17 1996//
+/steno.mf/1.1.1.1/Mon Nov 18 14:03:17 1996//
+
+rlist -l christof/mf
+cvs rls: Listing module: `christof/mf'
+---- 1996-11-18 14:03:17 +0000 1.1.1.1    slantsl.mf
+---- 1996-11-18 14:03:17 +0000 1.1.1.1    steno.mf
+
+Root /usr/local/cvsroot
+Valid-responses ok error Valid-requests Checked-in New-entry Checksum Copy-file Updated Created Update-existing Merged Patched Rcs-diff Mode Mod-time Removed Remove-entry Set-static-directory Clear-static-directory Set-sticky Clear-sticky Template Clear-template Notified Module-expansion Wrapper-rcsOption M Mbinary E F MT
+valid-requests
+UseUnchanged
+Argument -d
+Argument -P
+Argument -u
+Argument --
+Directory .
+/usr/local/cvsroot/christof/tex
+Entry /.cvsignore/1.1.1.1///
+Unchanged .cvsignore
+Entry /c....tgz/1.1//-ko/
+Unchanged c...s.tgz
+Directory a...um
+/usr/local/cvsroot/christof/tex/a...um
+Entry /te....tex/1.21///
+Modified te....tex
+u=rw,g=rw,o=r
+1762
+...
+Questionable F...nst.txt
+update
+
+
+---- how
+
+Root
+...
+rlist -Red
+...
+feststellen, welche Versionen vermutlich importiert sind und welche fehlen
+(nur timestamp)
+
+fehlende revisions/cmanifests mittels
+rlog -d 'Jun 20 09:38:29 1997<Jun 20 09:38:29 2000' christof/localsrc/indent2.c
+aufbauen [cmanifest= (path,version)*]
+
+(log optionen -b? -N -r1.7::)
+
+fehlende manifests inkrementell durch patch request besorgen 
+(evtl. bekannte Version mitnehmen)
+
+Option: letztes erkanntes manifest prüfen
+
+----- Update mit Checksum
+Directory .
+/usr/local/cvsroot/christof/tex/alptraum
+Entry /alptraum.tex/1.1///
+Unchanged alptraum.tex
+update
+
+Clear-static-directory ./
+/usr/local/cvsroot/christof/tex/alptraum/
+Clear-sticky ./
+MT text P 
+MT fname alptraum.tex
+E cvs update: Updating .
+MT text P 
+MT fname alptraum.tex
+MT newline
+Checksum 35a9f38ba4c2f329d8b840adbe41e169
+Rcs-diff ./
+/usr/local/cvsroot/christof/tex/alptraum/alptraum.tex
+/alptraum.tex/1.2///
+u=rw,g=r,o=r
+66
+a0 1
+% $Id: alptraum.tex,v 1.2 1997/03/27 08:52:56 christof Exp $
+Clear-sticky ./
+/usr/local/cvsroot/christof/tex/alptraum/
+ok
+
+
+----- syntax
+monotone pull [--branch foo] cvs://localhost/usr/local/cvsroot module[:branch]
+
+----- push
+find the last available revision
+for each unique(!) successor commit each changed file (with timestamp)
+
+---- thoughts
+changed changelogs/dates will result in ugly fork forests 
+
+we might use update with all files to check which files are dead
+ "Removed name\n"
+
+-----
+rls -lRPd scheint geeigneter zu sein:
+d--- 2005-01-08 23:57:35 +0000                 WWW
+-kb  1998-05-28 08:18:53 +0000 1.1             cpcline-1.0.tgz
+---- 1998-07-17 13:52:32 +0000 1.2        dead glademm-010-011.patch.gz
+---- 1996-11-18 14:27:15 +0000 1.1.1.1         beowulf.asc
+---- 2005-01-09 00:05:39 +0000 1.1.2.1.2+      XX
+dann cvs -d /tmp/y rls -r b3 -edR test
+/XX/1.1.2.1.2.1.2.1/Sun Jan  9 00:05:39 2005//Tb3
+ohne -d
+---- 2005-01-09 00:05:39 +0000 1.1.2.1.2+ XX
+
+------------------- cvs co . ----------------------
+Command-prep checkout
+Argument .
+Directory .
+
+expand-modules     | Module-expansion . \n ok
+Argument -N
+Argument -P
+Argument --
+Argument .
+Directory .
+
+co  | Clear-static-directory ./ \n ./ \n Clear-template ./ \n ./ \n 
+	E cvs checkout: Updating . \n Clear-sticky CVSROOT/ \n CVSROOT/ \n 
+	Clear-static-directory CVSROOT/ \n CVSROOT/ \n 
+	Clear-template CVSROOT/ \n CVSROOT/ \n 
+	E cvs checkout: Updating CVSROOT \n Mod-time 9 Dec 2006 13:37:44 -0000 \n
+	MT +updated \n MT text U  \n MT fname CVSROOT/checkoutlist \n 
+	MT newline \n MT -updated \n Created CVSROOT/ \n CVSROOT/checkoutlist \n
+	/checkoutlist/1.1/// \n u=rw,g=rw,o=rw \n 495 \n ...
+	Clear-sticky CVSROOT/ \n CVSROOT/ \n ok
+
+------------------ cvs add directory -----------------------------------
+Command-prep add
+wrapper-sendme-rcsOptions	| ok \n
+Argument --
+Directory x
+x
+Directory .
+
+Argument x
+add   | Clear-template x/ \n x/ \n 
+	M Directory /tmp/X/x added to the repository \n ok
+
+(does not harm twice)
+--------------------------------------------------------------------------
+
+------ Problems:
+what about the time zone offset when communicating with a CVS server
+
+--------------------------------------------------------
+branch update:
+
+we need to store the branch inside the CVS tag, once non-HEAD revisions occur
+we can use log -r NAME. to get the latest revision info
+we can use log -r NAME to get the radix for the branch
+
+-N -S? 
+
+-------------------- TODO ------------------------------
+
+migrate .cvsignore and attributes
+
+correct < when calculating manifests
+faster initial db-access (multimap? without timestamp access?)
+
+tests: md5sum failure
+  merge+commit without changes
+
+	use interner for cvs_revisions, author and changelog
+
+tests: time jump import
+  takeover modified, cvs commit changed (conflict), pull (MD5 sum failure)
+  pull, repull, merge, commit, push
+  takeover modified, repull, merge+push (two contents for one revision)
+
+pull since future (two hours), push/commit, pull again (gives dismonotoneous
+time)
+
+binary files, execution permission
+
+-------------------------- refactor ---------------------------------
+
+perhaps?
+- find a root for a side branch (find the revision which matches a
+specified cvs manifest, git id, svn revision number)
+[find_sync DOMAIN VALUE]
+
+==============================
+revision kann später "(1.2)" sein (= lokal geändert)
+
+=========== attributes ==============
+"" "cvs:root" "cvs.gnome.org:/cvs/gnome" (Root)
+"" "cvs:module" "glade--" (?Repository)
+["" "cvs:path" "glade--" (only if different from module)]
+"" "cvs:branch" "STABLE" (tag)
+
+["po" "cvs:path" "glade--/po"]
+
+"README" "cvs:revision" "1.15"
+["README" "cvs:keywords" "-kb" (only if different from -kk)]
+"README" "cvs:sha1" "da39a3ee5e6b4b0d3255bfef95601890afd80709" 
+	(or only first 4/6 chars)

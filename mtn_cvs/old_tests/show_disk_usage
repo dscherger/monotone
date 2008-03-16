@@ -1,0 +1,42 @@
+#!/bin/sh
+if [ -z "$1" ]
+then
+  echo "USAGE: $0 <database>"
+  exit 1
+fi
+
+sqlite3 $1 <<EOF
+select 'file_deltas',count(*),sum(length(id)+length(base)+length(delta)) 
+from file_deltas;
+
+select 'files',count(*),sum(length(id)+length(data)) from files;
+
+select 'manifest_deltas',count(*),sum(length(id)+length(base)+length(delta)) 
+from manifest_deltas;
+
+select 'manifests',count(*),sum(length(id)+length(data)) from manifests;
+
+select 'merkle_nodes',count(*),sum(length(type)+length(collection)
+	+length(level)+length(prefix)+length(body)) 
+from merkle_nodes;
+
+select 'private_keys',count(*),sum(length(hash)+length(id)+length(keydata)) 
+from private_keys;
+
+select 'public_keys',count(*),sum(length(hash)+length(id)+length(keydata)) 
+from public_keys;
+
+select 'revision_ancestry',count(*),sum(length(parent)+length(child)) 
+from revision_ancestry;
+
+select 'revision_certs',count(*),sum(length(hash)+length(id)+length(name)
+	+length(value)+length(keypair)+length(signature)) 
+from revision_certs;
+
+select 'revisions',count(*),sum(length(id)+length(data))
+from revisions;
+
+select 'revision_certs',name,count(*),sum(length(hash)+length(id)+length(name)
+	+length(value)+length(keypair)+length(signature)) 
+from revision_certs group by name;
+EOF
