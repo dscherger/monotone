@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <map>
 #include <stdarg.h>
 #include <zlib.h>
 #include "ui.hh"

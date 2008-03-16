@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <base.hh>
 #include "sanity.hh"
 #include "cvs_client.hh"
 #include <boost/lexical_cast.hpp>
