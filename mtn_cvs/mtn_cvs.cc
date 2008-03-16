@@ -8,6 +8,7 @@
 /* this file contains modified parts of monotone.cc, */
 
 #include <config.h>
+#include "base.hh"
 #include "options.hh"
 #include <i18n.h>
 #include <sanity.hh>
@@ -24,6 +25,7 @@
 #include "mtncvs_state.hh"
 #include <cvs_sync.hh>
 #include <constants.hh>
+#include <database.hh>
 
 // options are split into two categories.  the first covers global options,
 // which globally affect program behaviour.  the second covers options
@@ -83,24 +85,25 @@ struct ui_library
 };
 
 // fake app_state ctor/dtor, we do not use this class at all
-app_state::app_state() : db(system_path()), keys(*this), work(db,lua), branch_is_sticky(), project(*this) {}
-void app_state::process_options() {}
+app_state::app_state() : lua(this), mtn_automate_allowed(false) {}
 app_state::~app_state() {}
-lua_hooks::lua_hooks() {}
+lua_hooks::lua_hooks(app_state * app) {}
 lua_hooks::~lua_hooks() {}
-key_store::key_store(app_state&a) : app(a) {}
-database::database(system_path const&) : roster_cache(constants::db_roster_cache_sz,roster_writeback_manager(*this)) {}
+database::database(app_state &app) : imp(), lua(app.lua) {}
 database::~database() {}
-outdated_indicator_factory::outdated_indicator_factory() {}
-outdated_indicator_factory::~outdated_indicator_factory() {}
-outdated_indicator::outdated_indicator() {}
-project_t::project_t(app_state&a) : app(a) {}
-ssh_agent::ssh_agent() {}
-ssh_agent::~ssh_agent() {}
+//ssh_agent::ssh_agent() {}
+//ssh_agent::~ssh_agent() {}
+
+CMD_GROUP(__root__, "__root__", "", NULL, "", "");
+
+CMD_GROUP(network, "network", "", CMD_REF(__root__),
+          N_("Commands that access the network"),
+          "");
 
 // missing: compression level (-z), cvs-branch (-r), since (-D)
-CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
-    N_("(re-)import a module from a remote cvs repository"), 
+CMD(pull, "pull", "", CMD_REF(network), 
+    N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
+    N_("(re-)import a module from a remote cvs repository"), "",
     options::opts::branch | options::opts::since | options::opts::full)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
@@ -118,8 +121,9 @@ CMD(pull, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
   cvs_sync::pull(repository,module,branch,myapp);
 }
 
-CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
-    N_("commit changes in local database to a remote cvs repository"), 
+CMD(push, "push", "", CMD_REF(network), 
+    N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
+    N_("commit changes in local database to a remote cvs repository"), "",
     options::opts::branch | options::opts::revision | options::opts::first)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(name);
@@ -135,8 +139,13 @@ CMD(push, N_("network"), N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
   cvs_sync::push(repository,module,branch,myapp);
 }
 
-CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"), 
-      N_("put a CVS working directory under monotone's control"), 
+CMD_GROUP(workspace, "workspace", "", CMD_REF(__root__),
+          N_("Commands that deal with the workspace"),
+          "");
+
+CMD(takeover, "takeover", "", CMD_REF(workspace), 
+      N_("[CVS-MODULE]"), 
+      N_("put a CVS working directory under monotone's control"), "",
       options::opts::branch)
 {
   if (args.size() > 1) throw usage(name);
@@ -147,8 +156,12 @@ CMD(takeover, N_("working copy"), N_("[CVS-MODULE]"),
   cvs_sync::takeover(myapp, module);
 }
 
-CMD(test, N_("debug"), "", 
-      N_("attempt to parse certs"), 
+CMD_GROUP(debug, "debug", "", CMD_REF(__root__),
+          N_("Commands that aid in program debugging"),
+          "");
+
+CMD(test, "test", "", CMD_REF(debug), "", 
+      N_("attempt to parse certs"), "",
       options::opts::revision)
 {
   if (args.size()) throw usage(name);
