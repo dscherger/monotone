@@ -7,6 +7,7 @@
 #include <list>
 #include <iostream>
 #include <stdexcept>
+#include "base.hh"
 #include "sanity.hh"
 #include "cvs_client.hh"
 #include "mtn_automate.hh"

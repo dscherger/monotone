@@ -70,11 +70,11 @@ namespace
 }
 
 static inline void
-parse_path(basic_io::parser & parser, split_path & sp)
+parse_path(basic_io::parser & parser, file_path & sp)
 {
   std::string s;
   parser.str(s);
-  file_path_internal(s).split(sp);
+  sp=file_path_internal(s);
 }
 
 file_id mtn_automate::put_file(file_data const& d, file_id const& base)
@@ -136,7 +136,7 @@ std::vector<revision_id> mtn_automate::heads(std::string const& branch)
 }
 
 static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
-{ for (path_set::const_iterator i = cs.nodes_deleted.begin();
+{ for (mtn_automate::path_set::const_iterator i = cs.nodes_deleted.begin();
        i != cs.nodes_deleted.end(); ++i)
     {
       basic_io::stanza st;
@@ -144,7 +144,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<split_path, split_path>::const_iterator i = cs.nodes_renamed.begin();
+  for (std::map<file_path, file_path>::const_iterator i = cs.nodes_renamed.begin();
        i != cs.nodes_renamed.end(); ++i)
     {
       basic_io::stanza st;
@@ -153,7 +153,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (path_set::const_iterator i = cs.dirs_added.begin();
+  for (mtn_automate::path_set::const_iterator i = cs.dirs_added.begin();
        i != cs.dirs_added.end(); ++i)
     {
       basic_io::stanza st;
@@ -161,7 +161,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<split_path, file_id>::const_iterator i = cs.files_added.begin();
+  for (std::map<file_path, file_id>::const_iterator i = cs.files_added.begin();
        i != cs.files_added.end(); ++i)
     {
       basic_io::stanza st;
@@ -170,7 +170,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<split_path, std::pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
+  for (std::map<file_path, std::pair<file_id, file_id> >::const_iterator i = cs.deltas_applied.begin();
        i != cs.deltas_applied.end(); ++i)
     {
       basic_io::stanza st;
@@ -180,7 +180,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::set<std::pair<split_path, attr_key> >::const_iterator i = cs.attrs_cleared.begin();
+  for (std::set<std::pair<file_path, attr_key> >::const_iterator i = cs.attrs_cleared.begin();
        i != cs.attrs_cleared.end(); ++i)
     {
       basic_io::stanza st;
@@ -189,7 +189,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
       printer.print_stanza(st);
     }
 
-  for (std::map<std::pair<split_path, attr_key>, attr_value>::const_iterator i = cs.attrs_set.begin();
+  for (std::map<std::pair<file_path, attr_key>, attr_value>::const_iterator i = cs.attrs_set.begin();
        i != cs.attrs_set.end(); ++i)
     {
       basic_io::stanza st;
@@ -352,17 +352,17 @@ parse_cset(basic_io::parser & parser,
   string t1, t2;
   MM(t1);
   MM(t2);
-  split_path p1, p2;
+  file_path p1, p2;
   MM(p1);
   MM(p2);
 
-//  split_path prev_path;
+//  file_path prev_path;
 //  MM(prev_path);
-//  pair<split_path, attr_key> prev_pair;
+//  pair<file_path, attr_key> prev_pair;
 //  MM(prev_pair.first);
 //  MM(prev_pair.second);
 
-  // we make use of the fact that a valid split_path is never empty
+  // we make use of the fact that a valid file_path is never empty
 //  prev_path.clear();
   while (parser.symp(syms::delete_node))
     {
@@ -429,7 +429,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<split_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
@@ -442,7 +442,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<split_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       parser.esym(syms::value);
@@ -518,7 +518,7 @@ static std::string print_sync_info(mtn_automate::sync_map_t const& data)
 
 // needed by find_newest_sync: check whether a revision has up to date synch information
 static const char *const sync_prefix="x-sync-attr-";
-typedef std::map<std::pair<split_path, attr_key>, attr_value> sync_map_t;
+typedef std::map<std::pair<file_path, attr_key>, attr_value> sync_map_t;
 
 static bool begins_with(const std::string &s, const std::string &sub)
 { std::string::size_type len=sub.size();
@@ -535,7 +535,7 @@ bool mtn_automate::is_synchronized(revision_id const& rid,
   {
     L(FL("is_synch: rev %s testing changeset\n") % rid);
     boost::shared_ptr<mtn_automate::cset> cs=rev.edges.begin()->second;
-    for (std::map<std::pair<split_path, attr_key>, attr_value>::const_iterator i=cs->attrs_set.begin();
+    for (std::map<std::pair<file_path, attr_key>, attr_value>::const_iterator i=cs->attrs_set.begin();
           i!=cs->attrs_set.end();++i)
     { if (begins_with(i->first.second(),prefix)) // TODO: omit some attribute changes (repository, keyword, directory)
         return true;
@@ -619,14 +619,14 @@ static void parse_attributes(std::string const& in, sync_map_t& result)
   basic_io::parser parser(tokenizer);
   
   std::string t1, t2;
-  split_path p1;
+  file_path p1;
   while (parser.symp(syms::clear))
   {
     parser.sym();
     parse_path(parser, p1);
     parser.esym(syms::attr);
     parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
+    pair<file_path, attr_key> new_pair(p1, attr_key(t1));
     safe_erase(result, new_pair);
   }
   while (parser.symp(syms::set))
@@ -635,7 +635,7 @@ static void parse_attributes(std::string const& in, sync_map_t& result)
     parse_path(parser, p1);
     parser.esym(syms::attr);
     parser.str(t1);
-    pair<split_path, attr_key> new_pair(p1, attr_key(t1));
+    pair<file_path, attr_key> new_pair(p1, attr_key(t1));
     parser.esym(syms::value);
     parser.str(t2);
     safe_insert(result, make_pair(new_pair, attr_value(t2)));
@@ -684,9 +684,7 @@ sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& dom
       {
         if (begins_with(j->first(),prefix))
         { 
-          split_path sp;
-          i->first.split(sp);
-          result[std::make_pair(sp,j->first)]=j->second;
+          result[std::make_pair(i->first,j->first)]=j->second;
           // else W(F("undefined value of %s %s\n") % sp % j->first());
         }
       }

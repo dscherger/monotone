@@ -164,16 +164,16 @@ void cvs_repository::parse_cvs_cert_header(
       std::string &repository, std::string& module, std::string& branch)
 { 
 //  MM(value);
-  split_path sp(1,the_null_component);
-  repository=const_map_access(value,std::make_pair(sp,attr_key(domain+":root")))();
-  module=const_map_access(value,std::make_pair(sp,attr_key(domain+":module")))();
-  branch=const_map_access(value,std::make_pair(sp,attr_key(domain+":branch")))();
+  file_path sp=file_path_internal("");
+  repository=const_map_access(value,std::make_pair(sp,attr_key(domain+":root")));
+  module=const_map_access(value,std::make_pair(sp,attr_key(domain+":module")));
+  branch=const_map_access(value,std::make_pair(sp,attr_key(domain+":branch")));
 }
 
 mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
 { 
   mtn_automate::sync_map_t result;
-  split_path sp(1,the_null_component);
+  file_path sp=file_path_internal("");
   result[std::make_pair(sp,attr_key(app.opts.domain()+":root"))]= attr_value(host+":"+root);
   result[std::make_pair(sp,attr_key(app.opts.domain()+":module"))]= attr_value(module);
   if (!branch.empty())
@@ -310,12 +310,12 @@ void cvs_repository::store_delta(file_data const& new_contents,
 
 static
 void add_missing_parents(mtn_automate::manifest_map const& oldr, 
-              split_path const & sp, mtn_automate::cset & cs)
-{ split_path tmp;
+              file_path const & sp, mtn_automate::cset & cs)
+{ file_path tmp;
   std::string log;
   dump(sp,log);
   L(FL("add_missing_parents(,%s,)\n") % log);
-  for (split_path::const_iterator i=sp.begin();i!=sp.end() && i!=--sp.end();++i)
+  for (file_path::const_iterator i=sp.begin();i!=sp.end() && i!=--sp.end();++i)
   { L(FL("path comp '%s'/%d\n") % *i % sp.size());
     tmp.push_back(*i);
     // already added?
@@ -345,7 +345,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
       if (fn==newm.end())
       {  
         L(FL("deleting file '%s'\n") % f->first);
-        split_path sp;
+        file_path sp;
         f->first.split(sp);
         safe_insert(cs.nodes_deleted, sp);
 //        cvs_delta[path.as_internal()]=remove_state;
@@ -361,7 +361,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
               L(FL("applying state delta on '%s' : '%s' -> '%s'\n") 
                 % f->first % f->second.first % fn->second->sha1sum);
               I(!fn->second->sha1sum.inner()().empty());
-              split_path sp;
+              file_path sp;
               f->first.split(sp);
               safe_insert(cs.deltas_applied, std::make_pair(sp, std::make_pair(f->second.first,fn->second->sha1sum)));
 //              cvs_delta[path.as_internal()]=fn->second;
@@ -376,7 +376,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
       {  
         L(FL("adding file '%s' as '%s'\n") % f->second->sha1sum % f->first);
         I(!f->second->sha1sum.inner()().empty());
-        split_path sp;
+        file_path sp;
         file_path_internal(f->first).split(sp);
         add_missing_parents(oldr, sp, cs);
         safe_insert(cs.files_added, make_pair(sp, f->second->sha1sum));
@@ -634,7 +634,7 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
   for (mtn_automate::manifest_map::const_iterator i=oldmanifest.begin(); 
         i!=oldmanifest.end(); ++i)
   {
-    split_path sp;
+    file_path sp;
     i->first.split(sp);
     for (mtn_automate::attr_map_t::const_iterator a=i->second.second.begin();
               a!=i->second.second.end(); ++a)
@@ -652,12 +652,12 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
   // delete old dummy attribute if present
   { mtn_automate::manifest_map::const_iterator f=oldmanifest.find(file_path_internal(""));
     if (f!=oldmanifest.end() && f->second.second.find(attr_key(app.opts.domain()+":touch"))!=f->second.second.end())
-    { cs.attrs_cleared.insert(std::make_pair(split_path(1,the_null_component),attr_key(app.opts.domain()+":touch")));
+    { cs.attrs_cleared.insert(std::make_pair(file_path_internal(""),attr_key(app.opts.domain()+":touch")));
       any_change=true;
     }
   }
   if (!any_change) // this happens if only deletions happened
-  { cs.attrs_set[std::make_pair(split_path(1,the_null_component),attr_key(app.opts.domain()+":touch"))]
+  { cs.attrs_set[std::make_pair(file_path_internal(""),attr_key(app.opts.domain()+":touch"))]
         =attr_value("synchronized");
   }
 }
@@ -667,7 +667,7 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
   const std::map<std::string,std::string> &sd=GetServerDir();
   for (std::map<std::string,std::string>::const_iterator i=sd.begin();
         i!=sd.end();++i)
-  { split_path sp;
+  { file_path sp;
     std::string dirname=i->first;
     if (!dirname.empty())
     { I(dirname[dirname.size()-1]=='/');
@@ -695,7 +695,7 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
 #else
     I(!i->second->cvs_version.empty());
 #endif
-    split_path sp;
+    file_path sp;
     file_path_internal(i->first).split(sp);
     state[std::make_pair(sp,attr_key(app.opts.domain()+":revision"))]
         =attr_value(i->second->cvs_version);
@@ -931,7 +931,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     boost::shared_ptr<mtn_automate::cset> cs=j->second;
     cvs_manifest parent_manifest;
     if (parent!=edges.end()) parent_manifest=get_files(*parent);
-    std::map<split_path, file_id> renamed_ids;
+    std::map<file_path, file_id> renamed_ids;
 
     for (path_set::const_iterator i=cs->nodes_deleted.begin();
             i!=cs->nodes_deleted.end(); ++i)
@@ -947,7 +947,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       L(FL("delete %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
     }
 
-    for (std::map<split_path,split_path>::const_iterator i
+    for (std::map<file_path,file_path>::const_iterator i
                             =cs->nodes_renamed.begin();
             i!=cs->nodes_renamed.end(); ++i)
     { commit_arg a; // remove
@@ -963,7 +963,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       a=commit_arg(); // add
       a.file=file_path(i->second).as_internal();
       I(!old->second->sha1sum.inner()().empty());
-      std::map<split_path, std::pair<file_id, file_id> >::const_iterator change_ent =
+      std::map<file_path, std::pair<file_id, file_id> >::const_iterator change_ent =
           cs->deltas_applied.find(i->second);
       if (change_ent != cs->deltas_applied.end())
         // the file content is going to change - handle that little detail now...
@@ -989,7 +989,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       AddDirectory(dir,parent);
     }
 
-    for (std::map<split_path, file_id>::const_iterator 
+    for (std::map<file_path, file_id>::const_iterator 
             i=cs->files_added.begin();
             i!=cs->files_added.end(); ++i)
     { 
@@ -1001,7 +1001,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       L(FL("add %s %d\n") % a.file % a.new_content.size());
     }
 
-    for (std::map<split_path, std::pair<file_id, file_id> >::const_iterator 
+    for (std::map<file_path, std::pair<file_id, file_id> >::const_iterator 
             i=cs->deltas_applied.begin();
             i!=cs->deltas_applied.end(); ++i)
     { 
@@ -1053,19 +1053,19 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
         fs.log_msg=e.changelog;
         fs.author=e.author;
         fs.keyword_substitution=i->second.second;
-        split_path sp;
+        file_path sp;
         file_path_internal(i->first).split(sp);
-        std::map<split_path, std::pair<file_id, file_id> >::const_iterator mydelta=cs->deltas_applied.find(sp);
+        std::map<file_path, std::pair<file_id, file_id> >::const_iterator mydelta=cs->deltas_applied.find(sp);
         if (mydelta!=cs->deltas_applied.end())
         { fs.sha1sum=mydelta->second.second;
         }
         else // newly added?
-        { std::map<split_path, file_id>::const_iterator myadd=cs->files_added.find(sp);
+        { std::map<file_path, file_id>::const_iterator myadd=cs->files_added.find(sp);
           if (myadd!=cs->files_added.end())
           { fs.sha1sum=myadd->second;
           }
           else  // renamed?
-          { std::map<split_path, file_id>::const_iterator myrename=renamed_ids.find(sp);
+          { std::map<file_path, file_id>::const_iterator myrename=renamed_ids.find(sp);
             I(myrename!=renamed_ids.end());
             fs.sha1sum=myrename->second;
           }
@@ -1380,7 +1380,7 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
               i!=manifest.end();++i)
       {
         // populate the file info
-        split_path sp;
+        file_path sp;
         i->first.split(sp);
         
         file_state fs;

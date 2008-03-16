@@ -10,6 +10,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include <base.hh>
 #include "mtn_pipe.hh"
 #include <vocab.hh>
 #include <paths.hh>
@@ -22,15 +23,16 @@ struct mtn_automate : mtn_pipe
 { typedef std::map<attr_key, attr_value> attr_map_t;
   // (directories have a null file_id)
   typedef std::map<file_path,std::pair<file_id,attr_map_t> > manifest_map;
+  typedef std::set<file_path> path_set;
 
   struct cset
   { path_set nodes_deleted;
     path_set dirs_added;
-    std::map<split_path,file_id> files_added;
-    std::map<split_path,split_path> nodes_renamed;
-    std::map<split_path,std::pair<file_id,file_id> > deltas_applied;
-    std::set<std::pair<split_path, attr_key> > attrs_cleared;
-    std::map<std::pair<split_path, attr_key>, attr_value> attrs_set;
+    std::map<file_path,file_id> files_added;
+    std::map<file_path,file_path> nodes_renamed;
+    std::map<file_path,std::pair<file_id,file_id> > deltas_applied;
+    std::set<std::pair<file_path, attr_key> > attrs_cleared;
+    std::map<std::pair<file_path, attr_key>, attr_value> attrs_set;
     
     bool is_nontrivial() const 
     { return !nodes_deleted.empty() || !files_added.empty() || !deltas_applied.empty()
@@ -48,7 +50,7 @@ struct mtn_automate : mtn_pipe
     bool trusted; 
     certificate() : signature(unknown), trusted() {}
   };
-  typedef std::map<std::pair<split_path, attr_key>, attr_value> sync_map_t;
+  typedef std::map<std::pair<file_path, attr_key>, attr_value> sync_map_t;
 
 // methods
   void check_interface_revision(std::string const&minimum);
