@@ -1,9 +1,10 @@
 /*************************************************
 * MD5 Source File                                *
-* (C) 1999-2005 The Botan Project                *
+* (C) 1999-2007 The Botan Project                *
 *************************************************/
 
 #include <botan/md5.h>
+#include <botan/loadstor.h>
 #include <botan/bit_ops.h>
 
 namespace Botan {
@@ -57,8 +58,8 @@ inline void II(u32bit& A, u32bit B, u32bit C, u32bit D, u32bit msg,
 *************************************************/
 void MD5::hash(const byte input[])
    {
-   for(u32bit j = 0; j != 16; j++)
-      M[j] = make_u32bit(input[4*j+3], input[4*j+2], input[4*j+1], input[4*j]);
+   for(u32bit j = 0; j != 16; ++j)
+      M[j] = load_le<u32bit>(input, j);
 
    u32bit A = digest[0], B = digest[1], C = digest[2], D = digest[3];
 
@@ -106,8 +107,8 @@ void MD5::hash(const byte input[])
 *************************************************/
 void MD5::copy_out(byte output[])
    {
-   for(u32bit j = 0; j != OUTPUT_LENGTH; j++)
-      output[j] = get_byte(3 - (j % 4), digest[j/4]);
+   for(u32bit j = 0; j != OUTPUT_LENGTH; j += 4)
+      store_le(digest[j/4], output + j);
    }
 
 /*************************************************
