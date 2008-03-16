@@ -6,7 +6,9 @@
 // see the file COPYING for details
 
 #include "piece_table.hh"
+#include "base.hh"
 #include "sanity.hh"
+#include <cassert>
 
 using namespace std;
 
