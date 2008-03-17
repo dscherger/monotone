@@ -57,6 +57,11 @@ public:
 #define ATOMIC_HOOKED(ty,hook) hh_ATOMIC_HOOKED(ty,hook)
 #define ATOMIC_NOVERIFY(ty) hh_ATOMIC_NOVERIFY(ty)
 
+inline bool is_num(char x)
+{
+  return (x >= '0' && x <= '9');
+}
+
 #ifdef HAVE_EXTERN_TEMPLATE
 #define EXTERN extern
 #else
