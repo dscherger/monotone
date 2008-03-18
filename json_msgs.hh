@@ -61,7 +61,7 @@ json_io::json_value_t encode_msg_put_rev_response();
 bool decode_msg_put_rev_response(json_io::json_value_t val);
 
 
-// files
+// file data
 
 json_io::json_value_t encode_msg_get_file_data(file_id const & fid);
 bool decode_msg_get_file_data(json_io::json_value_t val, file_id & fid);
@@ -71,6 +71,28 @@ json_io::json_value_t encode_msg_get_file_delta(file_id const & src_id,
 bool decode_msg_get_file_delta(json_io::json_value_t val,
                                file_id & src_id,
                                file_id & dst_id);
+
+json_io::json_value_t encode_msg_put_file_data_request(file_id const & fid,
+                                                       file_data const & data);
+bool decode_msg_put_file_data_request(json_io::json_value_t val,
+                                      file_id & fid,
+                                      file_data & data);
+
+json_io::json_value_t encode_msg_put_file_data_response();
+bool decode_msg_put_file_data_response(json_io::json_value_t val);
+
+// file delta
+
+json_io::json_value_t encode_msg_put_file_delta_request(file_id const & src_id,
+                                                        file_id const & dst_fid,
+                                                        file_delta const & delta);
+bool decode_msg_put_file_delta_request(json_io::json_value_t val,
+                                      file_id & src_id,
+                                      file_id & dst_id,
+                                      file_delta & delta);
+
+json_io::json_value_t encode_msg_put_file_delta_response();
+bool decode_msg_put_file_delta_response(json_io::json_value_t val);
 
 // Local Variables:
 // mode: C++

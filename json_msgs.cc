@@ -12,6 +12,7 @@
 #include "json_io.hh"
 #include "json_msgs.hh"
 #include "cset.hh"
+#include "transforms.hh"
 
 #include <map>
 #include <set>
@@ -53,12 +54,11 @@ namespace
     symbol const attr("attr");
     symbol const value("value");
 
-    symbol const changes("changes");
-
     // revision symbols
     symbol const old_revision("old_revision");
     symbol const new_manifest("new_manifest");
     symbol const edges("edges");
+    symbol const changes("changes");
 
     // file delta / data symbols
     symbol const id("id");
@@ -72,6 +72,8 @@ namespace
     symbol const vers("vers");
     symbol const revs("revs");
     symbol const error("error");
+    symbol const status("status");
+    symbol const rev("rev");
 
     // request/response pairs
     symbol const inquire_request("inquire_request");
@@ -82,17 +84,15 @@ namespace
 
     symbol const put_rev_request("put_rev_request");
     symbol const put_rev_response("put_rev_response");
+
     symbol const get_rev_request("get_rev_request");
     symbol const get_rev_response("get_rev_request");
 
-    symbol const status("status");
+    symbol const put_file_data_request("put_file_data_request");
+    symbol const put_file_data_response("put_file_data_response");
 
-    symbol const get_file_data("get_file_data");
-    symbol const get_file_delta("get_file_delta");
-
-    symbol const rev("rev");
-    symbol const file_data("file_data");
-    symbol const file_delta("file_delta");
+    symbol const put_file_delta_request("put_file_delta_request");
+    symbol const put_file_delta_response("put_file_delta_response");
   }
 }
 
@@ -493,6 +493,130 @@ decode_msg_put_rev_response(json_value_t val)
     }
   return false;
 }
+
+/////////////////////////////////////////////////////////////////////
+// file data
+/////////////////////////////////////////////////////////////////////
+
+json_value_t
+encode_msg_put_file_data_request(file_id const & fid,
+                                 file_data const & data)
+{
+  builder b;
+  b[syms::type].str(syms::put_file_data_request());
+  b[syms::vers].str("1");
+  b[syms::id].str(fid.inner()());
+  b[syms::data].str(encode_base64(data.inner())());
+  return b.v;
+}
+
+bool
+decode_msg_put_file_data_request(json_value_t val,
+                                 file_id & fid,
+                                 file_data & data)
+{
+  string type, vers, id, dat;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::put_file_data_request() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::id].get(id) &&
+      q[syms::data].get(dat))
+    {
+      fid = file_id(id);
+      data = file_data(decode_base64_as<string>(dat));
+      return true;
+    }
+  return false;
+}
+
+json_value_t
+encode_msg_put_file_data_response()
+{
+  builder b;
+  b[syms::type].str(syms::put_file_data_response());
+  b[syms::vers].str("1");
+  b[syms::status].str("received");
+  return b.v;
+}
+
+bool
+decode_msg_put_file_data_response(json_value_t val)
+{
+  string type, vers, status;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::put_file_data_response() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::status].get(status))
+    {
+      return true;
+    }
+  return false;
+}
+
+/////////////////////////////////////////////////////////////////////
+// file delta
+/////////////////////////////////////////////////////////////////////
+
+json_value_t
+encode_msg_put_file_delta_request(file_id const & src_id,
+                                  file_id const & dst_id,
+                                  file_delta const & delta)
+{
+  builder b;
+  b[syms::type].str(syms::put_file_delta_request());
+  b[syms::vers].str("1");
+  b[syms::src_id].str(src_id.inner()());
+  b[syms::dst_id].str(dst_id.inner()());
+  b[syms::delta].str(encode_base64(delta.inner())());
+  return b.v;
+}
+
+bool
+decode_msg_put_file_delta_request(json_value_t val,
+                                  file_id & src_id,
+                                  file_id & dst_id,
+                                  file_delta & delta)
+{
+  string type, vers, src, dst, del;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::put_file_delta_request() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::src_id].get(src) &&
+      q[syms::src_id].get(src) &&
+      q[syms::delta].get(del))
+    {
+      src_id = file_id(src);
+      dst_id = file_id(dst);
+      delta = file_delta(decode_base64_as<string>(del));
+      return true;
+    }
+  return false;
+}
+
+json_value_t
+encode_msg_put_file_delta_response()
+{
+  builder b;
+  b[syms::type].str(syms::put_file_delta_response());
+  b[syms::vers].str("1");
+  b[syms::status].str("received");
+  return b.v;
+}
+
+bool
+decode_msg_put_file_delta_response(json_value_t val)
+{
+  string type, vers, status;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::put_file_delta_response() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::status].get(status))
+    {
+      return true;
+    }
+  return false;
+}
+
 
 // Local Variables:
 // mode: C++

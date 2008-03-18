@@ -26,6 +26,7 @@
 #include "lua.hh"
 #include "lua_hooks.hh"
 #include "net_common.hh"
+#include "transforms.hh"
 #include "ui.hh"
 
 #include "netxx/address.h"
@@ -171,6 +172,9 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
 
   revision_id rid;
   revision_t rev;
+  file_id fid, old_id, new_id;
+  file_data data;
+  file_delta delta;
 
   if (decode_msg_inquire_request(cmd_obj, request_revs))
     {
@@ -211,6 +215,20 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
       calculate_ident(rev, check);
       I(rid == check);
       return encode_msg_put_rev_response();
+    }
+  else if (decode_msg_put_file_data_request(cmd_obj, fid, data))
+    {
+      // this will check that the id is correct
+      // db.put_file(fid, data);
+      return encode_msg_put_file_data_response();
+    }
+  else if (decode_msg_put_file_delta_request(cmd_obj, old_id, new_id, delta))
+    {
+      // this should also check that the delta applied to the data with old_id
+      // produces data that matches the new_id. currently it looks like the database
+      // does not enforce this though, so FIXME!
+      // db.put_file_version(old_id, new_id, delta);
+      return encode_msg_put_file_delta_response();
     }
   else
     {

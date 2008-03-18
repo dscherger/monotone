@@ -103,6 +103,7 @@ EXTERN template class base64< var_value >;
 EXTERN template class hexenc<prefix>;
 EXTERN template class base64<merkle>;
 EXTERN template class base64<data>;
+EXTERN template class base64<delta>;
 
 // instantiate those bits of the stream operator vocab (again) actually in
 // use. "again" since stream operators are friends, not members.
@@ -151,4 +152,3 @@ EXTERN template std::ostream & operator<< <>(std::ostream &, base64<merkle> cons
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

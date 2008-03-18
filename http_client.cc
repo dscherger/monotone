@@ -228,6 +228,10 @@ void
 http_channel::push_file_data(file_id const & id,
                              file_data const & data) const
 {
+  json_value_t request = encode_msg_put_file_data_request(id, data);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_put_file_data_response(response),
+    F("received unexpected reply to 'put_file_data_request' message"));
 }
 
 void
@@ -235,6 +239,10 @@ http_channel::push_file_delta(file_id const & old_id,
                               file_id const & new_id,
                               file_delta const & delta) const
 {
+  json_value_t request = encode_msg_put_file_delta_request(old_id, new_id, delta);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_put_file_delta_response(response),
+    F("received unexpected reply to 'put_file_delta_request' message"));
 }
 
 void
