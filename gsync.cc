@@ -22,6 +22,7 @@
 #include "gsync.hh"
 #include "revision.hh"
 #include "sanity.hh"
+#include "ui.hh"
 #include "uri.hh"
 
 //
@@ -185,11 +186,17 @@ push_revs(database & db,
           channel const & ch,
           vector<revision_id> const & outbound_revs)
 {
+  ticker rev_ticker(N_("revisions"), "R", 1);
+  ticker file_ticker(N_("files"), "f", 1);
+
+  rev_ticker.set_total(outbound_revs.size());
+
   for (vector<revision_id>::const_iterator i = outbound_revs.begin();
        i != outbound_revs.end(); ++i)
     {
       revision_t rev;
       db.get_revision(*i, rev);
+      ++rev_ticker;
 
       for (edge_map::const_iterator e = rev.edges.begin();
            e != rev.edges.end(); ++e)
@@ -201,6 +208,7 @@ push_revs(database & db,
               file_data data;
               db.get_file_version(f->second, data);
               ch.push_file_data(f->second, data);
+              ++file_ticker;
             }
 
           for (map<file_path, pair<file_id, file_id> >::const_iterator
@@ -209,6 +217,7 @@ push_revs(database & db,
               file_delta delta;
               db.get_arbitrary_file_delta(f->second.first, f->second.second, delta);
               ch.push_file_delta(f->second.first, f->second.second, delta);
+              ++file_ticker;
             }
         }
 
@@ -221,11 +230,17 @@ pull_revs(database & db,
           channel const & ch,
           vector<revision_id> const & inbound_revs)
 {
+  ticker rev_ticker(N_("revisions"), "R", 1);
+  ticker file_ticker(N_("files"), "f", 1);
+
+  rev_ticker.set_total(inbound_revs.size());
+
   for (vector<revision_id>::const_iterator i = inbound_revs.begin();
        i != inbound_revs.end(); ++i)
     {
       revision_t rev;
       ch.pull_rev(*i, rev);
+      ++rev_ticker;
 
       for (edge_map::const_iterator e = rev.edges.begin();
            e != rev.edges.end(); ++e)
@@ -237,6 +252,7 @@ pull_revs(database & db,
               file_data data;
               ch.pull_file_data(f->second, data);
               //db.put_file(f->second, data);
+              ++file_ticker;
             }
 
           for (map<file_path, pair<file_id, file_id> >::const_iterator
@@ -245,6 +261,7 @@ pull_revs(database & db,
               file_delta delta;
               ch.pull_file_delta(f->second.first, f->second.second, delta);
               //db.put_file_version(f->second.first, f->second.second, delta);
+              ++file_ticker;
             }
         }
 
