@@ -176,10 +176,10 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
   file_data data;
   file_delta delta;
 
+  db.ensure_open();
   if (decode_msg_inquire_request(cmd_obj, request_revs))
     {
       L(FL("inquiring %d revisions") % request_revs.size());
-      db.ensure_open();
       set<revision_id> response_revs;
       for (set<revision_id>::const_iterator i = request_revs.begin();
            i != request_revs.end(); ++i)
@@ -190,7 +190,6 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
   else if (decode_msg_descendants_request(cmd_obj, request_revs))
     {
       L(FL("descendants %d revisions") % request_revs.size());
-      db.ensure_open();
       rev_ancestry_map parent_to_child_map;
       db.get_revision_ancestry(parent_to_child_map);
 
@@ -209,18 +208,35 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
       toposort(db, response_set, response_revs);
       return encode_msg_descendants_response(response_revs);
     }
+  else if (decode_msg_get_rev_request(cmd_obj, rid))
+    {
+      db.get_revision(rid, rev);
+      return encode_msg_get_rev_response(rev);
+    }
   else if (decode_msg_put_rev_request(cmd_obj, rid, rev))
     {
       revision_id check;
       calculate_ident(rev, check);
       I(rid == check);
+      //db.put_revision(rid, rev);
+      // if put fails, encode the reason in the response
       return encode_msg_put_rev_response();
+    }
+  else if (decode_msg_get_file_data_request(cmd_obj, fid))
+    {
+      db.get_file_version(fid, data);
+      return encode_msg_get_file_data_response(data);
     }
   else if (decode_msg_put_file_data_request(cmd_obj, fid, data))
     {
       // this will check that the id is correct
       // db.put_file(fid, data);
       return encode_msg_put_file_data_response();
+    }
+  else if (decode_msg_get_file_delta_request(cmd_obj, old_id, new_id))
+    {
+      db.get_arbitrary_file_delta(old_id, new_id, delta);
+      return encode_msg_get_file_delta_response(delta);
     }
   else if (decode_msg_put_file_delta_request(cmd_obj, old_id, new_id, delta))
     {
@@ -232,6 +248,11 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
     }
   else
     {
+      string type, vers;
+      decode_msg_header(cmd_obj, type, vers);
+      std::cerr << "unknown request type: " << type
+                << " version: " << vers
+                << std::endl;
       return encode_msg_error("unknown request");
     }
 }
@@ -251,6 +272,8 @@ process_scgi_transaction(database & db,
 
       L(FL("read %d-byte SCGI request") % data.size());
 
+      // std::cerr << "request" << std::endl << data << std::endl;
+
       json_io::input_source in(data, "scgi");
       json_io::tokenizer tok(in);
       json_io::parser p(tok);
@@ -266,6 +289,9 @@ process_scgi_transaction(database & db,
             {
               json_io::printer out_data;
               res->write(out_data);
+
+              // std::cerr << "response" << std::endl << out_data.buf.data() << std::endl;
+
               L(FL("sending JSON %d-byte response") % (out_data.buf.size() + 1));
 
               out << "Status: 200 OK\r\n"

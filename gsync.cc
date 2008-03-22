@@ -279,7 +279,11 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
   P(F("%d common revisions") % common_revs.size());
 
   set<revision_id> core_frontier = common_revs;
-  erase_ancestors(db, core_frontier);
+
+  if (core_frontier.empty())
+    core_frontier.insert(revision_id());
+  else
+    erase_ancestors(db, core_frontier);
 
   P(F("%d frontier revisions") % core_frontier.size());
 

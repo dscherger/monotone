@@ -246,7 +246,8 @@ http_channel::push_file_delta(file_id const & old_id,
 }
 
 void
-http_channel::push_rev(revision_id const & rid, revision_t const & rev) const
+http_channel::push_rev(revision_id const & rid,
+                       revision_t const & rev) const
 {
   json_value_t request = encode_msg_put_rev_request(rid, rev);
   json_value_t response = client.transact_json(request);
@@ -257,19 +258,31 @@ http_channel::push_rev(revision_id const & rid, revision_t const & rev) const
 void
 http_channel::pull_rev(revision_id const & rid, revision_t & rev) const
 {
+  json_value_t request = encode_msg_get_rev_request(rid);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_get_rev_response(response, rev),
+    F("received unexpected reply to 'get_rev_request' message"));
 }
 
 void
 http_channel::pull_file_data(file_id const & id,
-                              file_data & data) const
+                             file_data & data) const
 {
+  json_value_t request = encode_msg_get_file_data_request(id);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_get_file_data_response(response, data),
+    F("received unexpected reply to 'get_file_data_request' message"));
 }
 
 void
 http_channel::pull_file_delta(file_id const & old_id,
-                               file_id const & new_id,
-                               file_delta & delta) const
+                              file_id const & new_id,
+                              file_delta & delta) const
 {
+  json_value_t request = encode_msg_get_file_delta_request(old_id, new_id);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_get_file_delta_response(response, delta),
+    F("received unexpected reply to 'get_file_delta_request' message"));
 }
 
 
