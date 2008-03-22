@@ -52,7 +52,8 @@ public:
 extern void
 run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
                    globish const & include_pattern,
-                   globish const & exclude_pattern);
+                   globish const & exclude_pattern,
+                   bool const dryrun);
 
 // Local Variables:
 // mode: C++

@@ -499,7 +499,7 @@ CMD(gsync, "gsync", "", CMD_REF(network),
     N_("This synchronizes branches that match the pattern given in PATTERN "
        "with the gsync server at the address ADDRESS."),
     options::opts::set_default | options::opts::exclude |
-    options::opts::key_to_push)
+    options::opts::key_to_push | options::opts::dryrun)
 {
   utf8 addr;
 
@@ -515,7 +515,7 @@ CMD(gsync, "gsync", "", CMD_REF(network),
   parse_uri(addr(), u);
   http_client h(app.opts, app.lua, u, include_pattern, exclude_pattern);
   run_gsync_protocol(app.lua, db, http_channel(h),
-                     include_pattern, exclude_pattern);
+                     include_pattern, exclude_pattern, app.opts.dryrun);
 }
 
 

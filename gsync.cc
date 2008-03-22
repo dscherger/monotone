@@ -184,12 +184,15 @@ invert_ancestry(rev_ancestry_map const & in,
 static void
 push_revs(database & db,
           channel const & ch,
-          vector<revision_id> const & outbound_revs)
+          vector<revision_id> const & outbound_revs,
+          bool const dryrun)
 {
   ticker rev_ticker(N_("revisions"), "R", 1);
   ticker file_ticker(N_("files"), "f", 1);
 
   rev_ticker.set_total(outbound_revs.size());
+
+  transaction_guard guard(db);
 
   for (vector<revision_id>::const_iterator i = outbound_revs.begin();
        i != outbound_revs.end(); ++i)
@@ -207,7 +210,8 @@ push_revs(database & db,
             {
               file_data data;
               db.get_file_version(f->second, data);
-              ch.push_file_data(f->second, data);
+              if (!dryrun)
+                ch.push_file_data(f->second, data);
               ++file_ticker;
             }
 
@@ -216,29 +220,38 @@ push_revs(database & db,
             {
               file_delta delta;
               db.get_arbitrary_file_delta(f->second.first, f->second.second, delta);
-              ch.push_file_delta(f->second.first, f->second.second, delta);
+              if (!dryrun)
+                ch.push_file_delta(f->second.first, f->second.second, delta);
               ++file_ticker;
             }
         }
 
-      ch.push_rev(*i, rev);
+      if (!dryrun)
+        ch.push_rev(*i, rev);
     }
+
+  if (!dryrun)
+    guard.commit();
 }
 
 static void
 pull_revs(database & db,
           channel const & ch,
-          vector<revision_id> const & inbound_revs)
+          vector<revision_id> const & inbound_revs,
+          bool const dryrun)
 {
   ticker rev_ticker(N_("revisions"), "R", 1);
   ticker file_ticker(N_("files"), "f", 1);
 
   rev_ticker.set_total(inbound_revs.size());
 
+  transaction_guard guard(db);
+
   for (vector<revision_id>::const_iterator i = inbound_revs.begin();
        i != inbound_revs.end(); ++i)
     {
       revision_t rev;
+      rev.made_for = made_for_database;
       ch.pull_rev(*i, rev);
       ++rev_ticker;
 
@@ -251,7 +264,8 @@ pull_revs(database & db,
             {
               file_data data;
               ch.pull_file_data(f->second, data);
-              //db.put_file(f->second, data);
+              if (!dryrun)
+                db.put_file(f->second, data);
               ++file_ticker;
             }
 
@@ -260,19 +274,25 @@ pull_revs(database & db,
             {
               file_delta delta;
               ch.pull_file_delta(f->second.first, f->second.second, delta);
-              //db.put_file_version(f->second.first, f->second.second, delta);
+              if (!dryrun)
+                db.put_file_version(f->second.first, f->second.second, delta);
               ++file_ticker;
             }
         }
 
-      //db.put_revsion(*i, rev);
+      if (!dryrun)
+        db.put_revision(*i, rev);
     }
+
+  if (!dryrun)
+    guard.commit();
 }
 
 void
 run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
                    globish const & include_pattern, // FIXME: use this pattern
-                   globish const & exclude_pattern) // FIXME: use this pattern
+                   globish const & exclude_pattern, // FIXME: use this pattern
+                   bool const dryrun)
 {
   bool pushing = true, pulling = true;
 
@@ -323,10 +343,10 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
   // always received before child revisions.
 
   if (pushing)
-    push_revs(db, ch, outbound_revs);
+    push_revs(db, ch, outbound_revs, dryrun);
 
   if (pulling)
-    pull_revs(db, ch, inbound_revs);
+    pull_revs(db, ch, inbound_revs, dryrun);
 }
 
 #ifdef BUILD_UNIT_TESTS
