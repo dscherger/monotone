@@ -72,7 +72,8 @@ http_client::transact_json(json_value_t v)
     {
       L(FL("reopening connection"));
       stream = build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern,
-                                      constants::default_http_port,
+                                      (u.port.empty() ? constants::default_http_port
+                                                      : lexical_cast<size_t,string>(u.port)),
                                       Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)));
       nb = shared_ptr< Netbuf<constants::bufsz> >(new Netbuf<constants::bufsz>(*stream));
       io = shared_ptr<iostream>(new iostream(&(*nb)));
