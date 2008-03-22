@@ -56,10 +56,11 @@ http_client::http_client(options & opts, lua_hooks & lua,
     u(u),
     include_pattern(include_pattern),
     exclude_pattern(exclude_pattern),
-    stream(build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern,
-                                  (u.port.empty() ? constants::default_http_port
-                                                  : lexical_cast<size_t,string>(u.port)),
-                                  Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)))),
+    stream(build_stream_to_server(opts, lua, u,
+              include_pattern, exclude_pattern,
+              u.parse_port(constants::default_http_port),
+              Netxx::Timeout(static_cast<long>(
+                  constants::netsync_timeout_seconds)))),
     nb(new Netbuf<constants::bufsz>(*stream)),
     io(new iostream(&(*nb))),
     open(true)
@@ -71,11 +72,13 @@ http_client::transact_json(json_value_t v)
   if (!open)
     {
       L(FL("reopening connection"));
-      stream = build_stream_to_server(opts, lua, u, include_pattern, exclude_pattern,
-                                      (u.port.empty() ? constants::default_http_port
-                                                      : lexical_cast<size_t,string>(u.port)),
-                                      Netxx::Timeout(static_cast<long>(constants::netsync_timeout_seconds)));
-      nb = shared_ptr< Netbuf<constants::bufsz> >(new Netbuf<constants::bufsz>(*stream));
+      stream(build_stream_to_server(opts, lua, u,
+                include_pattern, exclude_pattern,
+                u.parse_port(constants::default_http_port),
+                Netxx::Timeout(static_cast<long>(
+                    constants::netsync_timeout_seconds)))),
+      nb = shared_ptr< Netbuf<constants::bufsz> >(
+                            new Netbuf<constants::bufsz>(*stream));
       io = shared_ptr<iostream>(new iostream(&(*nb)));
       open = true;
     }
@@ -147,10 +150,12 @@ http_client::parse_http_header_line(size_t & content_length,
   L(FL("http_client: header: [[%s %s]]") % k % v);
   std::getline(*io, rest);
 
-  if (k == "Content-Length:" || k == "Content-length:" || k == "content-length:")
+  if (k == "Content-Length:" || k == "Content-length:" ||
+      k == "content-length:")
     content_length = lexical_cast<size_t>(v);
   else if (k == "Connection:" || k == "connection:")
-    keepalive = (v == "Keep-Alive" || v == "Keep-alive" || v == "keep-alive");
+    keepalive = (v == "Keep-Alive" || v == "Keep-alive" ||
+                 v == "keep-alive");
 }
 
 
@@ -240,7 +245,8 @@ http_channel::push_file_delta(file_id const & old_id,
                               file_id const & new_id,
                               file_delta const & delta) const
 {
-  json_value_t request = encode_msg_put_file_delta_request(old_id, new_id, delta);
+  json_value_t request = encode_msg_put_file_delta_request(
+                                                  old_id, new_id, delta);
   json_value_t response = client.transact_json(request);
   E(decode_msg_put_file_delta_response(response),
     F("received unexpected reply to 'put_file_delta_request' message"));

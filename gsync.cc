@@ -411,7 +411,7 @@ UNIT_TEST(gsync, gsync_common_core)
   ours.insert(rid6);
   ours.insert(rid8);
 
-  // prepaire an ancestry map
+  // prepare an ancestry map
   rev_ancestry_map parent_to_child_map, child_to_parent_map;
   parent_to_child_map.insert(make_pair(rid1, rid2));
   parent_to_child_map.insert(make_pair(rid1, rid3));
