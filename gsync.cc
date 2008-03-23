@@ -251,9 +251,10 @@ pull_revs(database & db,
        i != inbound_revs.end(); ++i)
     {
       revision_t rev;
-      rev.made_for = made_for_database;
       ch.pull_rev(*i, rev);
       ++rev_ticker;
+
+      transaction_guard guard(db);
 
       for (edge_map::const_iterator e = rev.edges.begin();
            e != rev.edges.end(); ++e)

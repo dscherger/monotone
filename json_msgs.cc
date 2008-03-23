@@ -460,6 +460,7 @@ decode_rev(query q, revision_t & rev)
       decode_cset(changes, *cs);
       rev.edges.insert(make_pair(revision_id(old_revision), cs));
     }
+  rev.made_for = made_for_database;
 }
 
 /////////////////////////////////////////////////////////////////////

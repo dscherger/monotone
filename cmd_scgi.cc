@@ -218,8 +218,7 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
       revision_id check;
       calculate_ident(rev, check);
       I(rid == check);
-      //db.put_revision(rid, rev);
-      // if put fails, encode the reason in the response
+      db.put_revision(rid, rev); // FIXME: handle various return values
       return encode_msg_put_rev_response();
     }
   else if (decode_msg_get_file_data_request(cmd_obj, fid))
@@ -230,7 +229,7 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
   else if (decode_msg_put_file_data_request(cmd_obj, fid, data))
     {
       // this will check that the id is correct
-      // db.put_file(fid, data);
+      db.put_file(fid, data);
       return encode_msg_put_file_data_response();
     }
   else if (decode_msg_get_file_delta_request(cmd_obj, old_id, new_id))
@@ -243,7 +242,7 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
       // this should also check that the delta applied to the data with old_id
       // produces data that matches the new_id. currently it looks like the database
       // does not enforce this though, so FIXME!
-      // db.put_file_version(old_id, new_id, delta);
+      db.put_file_version(old_id, new_id, delta);
       return encode_msg_put_file_delta_response();
     }
   else
