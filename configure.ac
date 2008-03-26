@@ -157,4 +157,11 @@ AC_SUBST(MONOTONE_CXXFLAGS)
 AC_SUBST(LIB3RDPARTY_CFLAGS)
 AC_SUBST(LIB3RDPARTY_CXXFLAGS)
 
+AC_CONFIG_COMMANDS([botan],
+[(
+	mkdir -p botan
+	cd botan
+	../$srcdir/botan/configure.pl
+)])
+
 AC_OUTPUT
