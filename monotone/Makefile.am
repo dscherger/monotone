@@ -217,42 +217,6 @@ SQLITE_SOURCES =							\
 	sqlite/vdbe.h sqlite/vdbeInt.h					\
 	sqlite/pager.h sqlite/btreeInt.h sqlite/sqliteLimit.h
 
-LUA_SOURCES =								\
-	lua/lapi.cc lua/lapi.h						\
-	lua/lcode.cc lua/lcode.h					\
-	lua/ldebug.cc lua/ldebug.h					\
-	lua/ldo.cc lua/ldo.h						\
-	lua/ldump.cc							\
-	lua/lfunc.cc lua/lfunc.h					\
-	lua/lgc.cc lua/lgc.h						\
-	lua/linit.cc							\
-	lua/llex.cc lua/llex.h						\
-	lua/lmem.cc lua/lmem.h						\
-	lua/lobject.cc lua/lobject.h					\
-	lua/lopcodes.cc lua/lopcodes.h					\
-	lua/lparser.cc lua/lparser.h					\
-	lua/lstate.cc lua/lstate.h					\
-	lua/lstring.cc lua/lstring.h					\
-	lua/ltable.cc lua/ltable.h					\
-	lua/ltests.cc							\
-	lua/ltm.cc lua/ltm.h						\
-	lua/lundump.cc lua/lundump.h					\
-	lua/lvm.cc lua/lvm.h						\
-	lua/lzio.cc lua/lzio.h						\
-									\
-	lua/luaconf.h lua/llimits.h					\
-	lua/lua.h lua/lauxlib.h	lua/lualib.h				\
-									\
-	lua/lauxlib.cc							\
-	lua/lbaselib.cc							\
-	lua/ldblib.cc							\
-	lua/liolib.cc							\
-	lua/lmathlib.cc							\
-	lua/loadlib.cc							\
-	lua/lstrlib.cc							\
-	lua/ltablib.cc							\
-	lua/loslib.cc
-
 IDNA_SOURCES =								\
 	idna/gunibreak.h idna/gunidecomp.h idna/idna.h idna/nfkc.c	\
 	idna/punycode.c idna/rfc3454.c idna/stringprep.h idna/version.c	\
@@ -346,7 +310,6 @@ libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(BOTAN_SOURCES) \
 			$(IDNA_SOURCES) \
-			$(LUA_SOURCES) \
 			$(SQLITE_SOURCES)
 
 if INCLUDED_PCRE
