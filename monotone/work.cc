@@ -179,6 +179,14 @@ workspace::workspace(app_state & app, i18n_format const & explanation,
     set_ws_options(app.opts, false);
 }
 
+workspace::workspace(options const & opts, lua_hooks & lua, 
+                     i18n_format const & explanation, bool writeback_options)
+  : lua(lua)
+{
+  require_workspace(explanation);
+  if (writeback_options)
+    set_ws_options(opts, false);
+}
 
 // routines for manipulating the bookkeeping directory
 
@@ -445,7 +453,6 @@ workspace::get_ws_options(options & opts)
   // Workspace options are not to override the command line.
   if (!opts.dbname_given)
     {
-      I(opts.dbname.empty());
       opts.dbname = database_option;
     }
 
