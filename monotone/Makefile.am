@@ -88,22 +88,6 @@ MOST_SOURCES = 								\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	i18n.h parallel_iter.hh safe_map.hh pch.hh current_exception.hh
 
-NETXX_SOURCES =								\
-	netxx/accept.cxx netxx/accept.h netxx/address.cxx		\
-	netxx/common.h netxx/compat.h netxx/datagram.cxx		\
-	netxx/datagramserver.cxx netxx/osutil.cxx netxx/osutil.h	\
-	netxx/peer.cxx netxx/probe.cxx netxx/probe_impl.h		\
-	netxx/probe_select.cxx netxx/recvfrom.cxx netxx/recvfrom.h	\
-	netxx/resolve.h netxx/serverbase.cxx netxx/serverbase.h		\
-	netxx/sockaddr.cxx netxx/sockaddr.h netxx/socket.cxx 		\
-	netxx/socket.h netxx/sockopt.cxx netxx/stream.cxx		\
-	netxx/streambase.cxx netxx/streamserver.cxx			\
-	netxx/address.h netxx/datagram.h netxx/datagramserver.h		\
-	netxx/netbuf.h netxx/netxx.h netxx/peer.h netxx/probe.h 	\
-	netxx/probeinfo.h netxx/sockopt.h netxx/stream.h		\
-	netxx/streambase.h netxx/streamserver.h netxx/timeout.h		\
-	netxx/types.h
-
 BOTAN_SOURCES = 							\
 	botan/aes.cpp botan/aes_tab.cpp \
 	botan/arc4.cpp botan/alg_id.cpp        \
@@ -362,7 +346,6 @@ libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(BOTAN_SOURCES) \
 			$(IDNA_SOURCES) \
-			$(NETXX_SOURCES) \
 			$(LUA_SOURCES) \
 			$(SQLITE_SOURCES)
 
@@ -458,29 +441,8 @@ else
   tester_SOURCES += unix/tester-plaf.cc
 endif
 
-if MISSING_INET_PTON
-  lib3rdparty_a_SOURCES += netxx/inet_pton.cxx netxx/inet_pton.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_PTON
-endif
-
-if MISSING_INET_NTOP
-  lib3rdparty_a_SOURCES += netxx/inet_ntop.cxx netxx/inet_ntop.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_NTOP
-endif
-
-if MISSING_GETADDRINFO
-  lib3rdparty_a_SOURCES += netxx/resolve_gethostbyname.cxx netxx/resolve_getservbyname.cxx
-else
-  lib3rdparty_a_SOURCES += netxx/resolve_getaddrinfo.cxx
-endif
-
-if MISSING_INET6
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_INET6
-endif
-
 # i18n support
 
-SUBDIRS = po
 datadir = @datadir@
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@

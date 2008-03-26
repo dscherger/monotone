@@ -4,9 +4,9 @@
 AC_PREREQ(2.58)
 AC_INIT(monotone, 0.39, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
-AC_CONFIG_SRCDIR([app_state.cc])
+AC_CONFIG_SRCDIR([monotone/app_state.cc])
 AM_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile netxx/Makefile monotone/Makefile])
 
 # Checks for programs.
 dnl Note: AC_PROG_CC is implied by AM_PROG_CC_C_O and in any case has
