@@ -6,7 +6,8 @@ AC_INIT(monotone, 0.39, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_SRCDIR([monotone/app_state.cc])
 AM_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile netxx/Makefile lua/Makefile monotone/Makefile])
+AC_CONFIG_FILES([Makefile netxx/Makefile lua/Makefile idna/Makefile
+		 pcre/Makefile sqlite/Makefile monotone/Makefile])
 
 # Checks for programs.
 dnl Note: AC_PROG_CC is implied by AM_PROG_CC_C_O and in any case has

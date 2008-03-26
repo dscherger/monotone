@@ -94,49 +94,6 @@ BOOST_SANDBOX_SOURCES =							\
 	boost/circular_buffer_fwd.hpp					\
 	boost/circular_buffer.hpp
 
-SQLITE_SOURCES =							\
-	sqlite/alter.c sqlite/attach.c sqlite/auth.c sqlite/btree.c	\
-	sqlite/build.c sqlite/date.c sqlite/delete.c sqlite/expr.c	\
-	sqlite/func.c sqlite/hash.c sqlite/insert.c			\
-	sqlite/legacy.c	sqlite/main.c sqlite/opcodes.c			\
-	sqlite/os.c sqlite/os_unix.c sqlite/os_win.c sqlite/os_os2.c	\
-	sqlite/pager.c sqlite/parse.c sqlite/pragma.c sqlite/printf.c	\
-	sqlite/random.c sqlite/select.c					\
-	sqlite/table.c sqlite/tokenize.c				\
-	sqlite/trigger.c sqlite/update.c sqlite/utf.c			\
-	sqlite/util.c sqlite/vacuum.c					\
-	sqlite/vdbe.c sqlite/vdbeapi.c sqlite/vdbeaux.c			\
-	sqlite/vdbemem.c sqlite/where.c					\
-	sqlite/prepare.c sqlite/callback.c				\
-	sqlite/analyze.c sqlite/vdbefifo.c				\
-	sqlite/complete.c sqlite/malloc.c sqlite/vdbeblob.c		\
-	sqlite/loadext.c sqlite/vtab.c					\
-									\
-	sqlite/btree.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h	\
-	sqlite/os_common.h sqlite/os_os2.h				\
-	sqlite/parse.h sqlite/sqlite3.h	sqlite/sqlite3ext.h		\
-	sqlite/sqliteInt.h						\
-	sqlite/vdbe.h sqlite/vdbeInt.h					\
-	sqlite/pager.h sqlite/btreeInt.h sqlite/sqliteLimit.h
-
-IDNA_SOURCES =								\
-	idna/gunibreak.h idna/gunidecomp.h idna/idna.h idna/nfkc.c	\
-	idna/punycode.c idna/rfc3454.c idna/stringprep.h idna/version.c	\
-	idna/gunicomp.h idna/idna.c idna/idn-int.h idna/profiles.c	\
-	idna/punycode.h idna/stringprep.c idna/toutf8.c
-
-PCRE_SOURCES =								\
-	pcre/pcre_chartables.c pcre/pcre_compile.c pcre/pcre_config.c	\
-	pcre/pcre_dfa_exec.c pcre/pcre_exec.c pcre/pcre_fullinfo.c	\
-	pcre/pcre_get.c pcre/pcre_globals.c pcre/pcre_info.c		\
-	pcre/pcre_maketables.c pcre/pcre_newline.c			\
-	pcre/pcre_ord2utf8.c pcre/pcre_refcount.c pcre/pcre_study.c	\
-	pcre/pcre_tables.c pcre/pcre_try_flipped.c			\
-	pcre/pcre_ucp_searchfuncs.c pcre/pcre_valid_utf8.c		\
-	pcre/pcre_version.c pcre/pcre_xclass.c pcre/pcre_config.h	\
-	pcre/pcre.h pcre/pcre_internal.h pcre/ucp.h pcre/ucpinternal.h	\
-	pcre/ucptable.h
-
 UNIX_PLATFORM_SOURCES =							\
 	unix/read_password.cc unix/get_system_flavour.cc		\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
@@ -207,15 +164,8 @@ tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
 
 txt2c_SOURCES = txt2c.cc
 
-noinst_LIBRARIES = libplatform.a lib3rdparty.a
+noinst_LIBRARIES = libplatform.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
-lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
-			$(IDNA_SOURCES) \
-			$(SQLITE_SOURCES)
-
-if INCLUDED_PCRE
-lib3rdparty_a_SOURCES += $(PCRE_SOURCES)
-endif
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
@@ -254,48 +204,28 @@ AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DSQLITE_OMIT_CURSOR -DSQLITE
 AM_CXXFLAGS = $(AM_CPPFLAGS)
 AM_LDFLAGS =
 
-lib3rdparty_a_CPPFLAGS =
-lib3rdparty_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
-lib3rdparty_a_CXXFLAGS = $(AM_CXXFLAGS) $(LIB3RDPARTY_CXXFLAGS)
-
 mtn_LDFLAGS =
 mtn_CPPFLAGS = -I$(top_srcdir)/lua
 mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
 mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
-mtn_LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
+mtn_LDADD = libplatform.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 unit_tester_LDFLAGS =
 unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua
 unit_tester_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a lib3rdparty.a \
+unit_tester_LDADD += libplatform.a \
 		     $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 tester_LDFLAGS =
 tester_CPPFLAGS = -I$(top_srcdir)/lua
 tester_CXXFLAGS = $(AM_CXXFLAGS)
-tester_LDADD += libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-if INCLUDED_PCRE
-  lib3rdparty_a_CPPFLAGS += -I$(top_srcdir)/pcre
-  mtn_CPPFLAGS += -I$(top_srcdir)/pcre
-  unit_tester_CPPFLAGS += -I$(top_srcdir)/pcre
-  tester_CPPFLAGS += -I$(top_srcdir)/pcre
-else
-  mtn_CPPFLAGS += $(PCRE_CFLAGS)
-  unit_tester_CPPFLAGS += $(PCRE_CFLAGS)
-  tester_CPPFLAGS += $(PCRE_CFLAGS)
-
-  mtn_LDADD += $(PCRE_LIBS)
-  unit_tester_LDADD += $(PCRE_LIBS)
-  tester_LDADD += $(PCRE_LIBS)
-endif
+tester_LDADD += libplatform.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += win32/main.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  lib3rdparty_a_CPPFLAGS += -DWIN32
   tester_SOURCES += win32/tester-plaf.cc
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)

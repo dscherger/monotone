@@ -1,2 +1,2 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = po netxx lua botan monotone
+SUBDIRS = po netxx lua idna botan pcre sqlite monotone
