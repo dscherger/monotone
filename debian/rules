@@ -64,7 +64,7 @@ CFLAGS ?= $(DEFAULT_CFLAGS)
 # binary-indep phase rather than the build phase, which works fine (as
 # long as you are being sensible and using fakeroot, anyway; I haven't
 # tried it with actual root privileges and don't propose to).
-build: patch-stamp build-arch
+build: build-arch
 
 config.status: configure
 	dh_testdir
@@ -101,7 +101,7 @@ build-indep-stamp: config.status
 	make -j$(CPUS) info html monotone.pdf
 	touch $@
 
-clean: clean1 unpatch
+clean: clean1
 clean1:
 	dh_testdir
 	dh_testroot
