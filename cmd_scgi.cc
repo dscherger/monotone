@@ -18,6 +18,7 @@
 #include "database.hh"
 #include "globish.hh"
 #include "graph.hh"
+#include "gsync.hh"
 #include "json_io.hh"
 #include "json_msgs.hh"
 #include "keys.hh"
@@ -175,6 +176,8 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
   file_id fid, old_id, new_id;
   file_data data;
   file_delta delta;
+  vector<file_data_record> data_records;
+  vector<file_delta_record> delta_records;
 
   db.ensure_open();
   if (decode_msg_inquire_request(cmd_obj, request_revs))
@@ -207,6 +210,20 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
       vector<revision_id> response_revs;
       toposort(db, response_set, response_revs);
       return encode_msg_descendants_response(response_revs);
+    }
+  else if (decode_msg_get_full_rev_request(cmd_obj, rid))
+    {
+      load_full_rev(db, rid, rev, data_records, delta_records);
+      return encode_msg_get_full_rev_response(rev, data_records, delta_records);
+    }
+  else if (decode_msg_put_full_rev_request(cmd_obj, rid, rev,
+                                           data_records, delta_records))
+    {
+      revision_id check;
+      calculate_ident(rev, check);
+      I(rid == check);
+      store_full_rev(db, rid, rev, data_records, delta_records);
+      return encode_msg_put_full_rev_response();
     }
   else if (decode_msg_get_rev_request(cmd_obj, rid))
     {

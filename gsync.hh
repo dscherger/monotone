@@ -18,6 +18,9 @@
 
 struct uri;
 struct globish;
+struct file_data_record;
+struct file_delta_record;
+
 class lua_hooks;
 class database;
 class revision_t;
@@ -30,6 +33,16 @@ public:
                                   std::set<revision_id> & theirs) const = 0;
   virtual void get_descendants(std::set<revision_id> const & common_revs,
                                std::vector<revision_id> & inbound_revs) const = 0;
+
+  virtual void push_full_rev(revision_id const & rid,
+                             revision_t const & rev,
+                             std::vector<file_data_record> const & data_records,
+                             std::vector<file_delta_record> const & delta_records) const = 0;
+
+  virtual void pull_full_rev(revision_id const & rid,
+                             revision_t & rev,
+                             std::vector<file_data_record> & data_records,
+                             std::vector<file_delta_record> & delta_records) const = 0;
 
   virtual void push_file_data(file_id const & id,
                               file_data const & data) const = 0;
@@ -54,6 +67,20 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
                    globish const & include_pattern,
                    globish const & exclude_pattern,
                    bool const dryrun);
+
+void
+load_full_rev(database & db,
+              revision_id const rid,
+              revision_t & rev,
+              std::vector<file_data_record> & data_records,
+              std::vector<file_delta_record> & delta_records);
+
+void
+store_full_rev(database & db,
+               revision_id const rid,
+               revision_t const & rev,
+               std::vector<file_data_record> const & data_records,
+               std::vector<file_delta_record> const & delta_records);
 
 // Local Variables:
 // mode: C++

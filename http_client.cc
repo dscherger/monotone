@@ -230,6 +230,34 @@ http_channel::get_descendants(set<revision_id> const & common_revs,
     F("received unexpected reply to 'descendants_request' message"));
 }
 
+
+void
+http_channel::push_full_rev(revision_id const & rid,
+                            revision_t const & rev,
+                            vector<file_data_record> const & data_records,
+                            vector<file_delta_record> const & delta_records) const
+{
+  json_value_t request = encode_msg_put_full_rev_request(rid, rev,
+                                                         data_records,
+                                                         delta_records);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_put_full_rev_response(response),
+    F("received unexpected reply to 'put_full_rev_request' message"));
+}
+
+void
+http_channel::pull_full_rev(revision_id const & rid,
+                            revision_t & rev,
+                            vector<file_data_record> & data_records,
+                            vector<file_delta_record> & delta_records) const
+{
+  json_value_t request = encode_msg_get_full_rev_request(rid);
+  json_value_t response = client.transact_json(request);
+  E(decode_msg_get_full_rev_response(response, rev,
+                                     data_records, delta_records),
+    F("received unexpected reply to 'get_full_rev_request' message"));
+}
+
 void
 http_channel::push_file_data(file_id const & id,
                              file_data const & data) const

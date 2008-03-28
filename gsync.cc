@@ -20,6 +20,7 @@
 #include "globish.hh"
 #include "graph.hh"
 #include "gsync.hh"
+#include "json_msgs.hh"
 #include "revision.hh"
 #include "sanity.hh"
 #include "ui.hh"
@@ -181,6 +182,111 @@ invert_ancestry(rev_ancestry_map const & in,
     out.insert(make_pair(i->second, i->first));
 }
 
+void
+load_full_rev(database & db,
+              revision_id const rid,
+              revision_t & rev,
+              vector<file_data_record> & data_records,
+              vector<file_delta_record> & delta_records)
+{
+  db.get_revision(rid, rev);
+
+  for (edge_map::const_iterator e = rev.edges.begin();
+       e != rev.edges.end(); ++e)
+    {
+      cset const & cs = edge_changes(e);
+      for (map<file_path, file_id>::const_iterator
+             f = cs.files_added.begin(); f != cs.files_added.end(); ++f)
+        {
+          file_data data;
+          db.get_file_version(f->second, data);
+          data_records.push_back(file_data_record(f->second, data));
+        }
+
+      for (map<file_path, pair<file_id, file_id> >::const_iterator
+             f = cs.deltas_applied.begin(); f != cs.deltas_applied.end(); ++f)
+        {
+          file_delta delta;
+          db.get_arbitrary_file_delta(f->second.first, f->second.second, delta);
+          delta_records.push_back(file_delta_record(f->second.first,
+                                                    f->second.second,
+                                                    delta));
+        }
+    }
+}
+
+void
+store_full_rev(database & db,
+               revision_id const rid,
+               revision_t const & rev,
+               vector<file_data_record> const & data_records,
+               vector<file_delta_record> const & delta_records)
+{
+  for (vector<file_data_record>::const_iterator
+         f = data_records.begin(); f != data_records.end(); ++f)
+    db.put_file(f->id, f->dat);
+
+  for (vector<file_delta_record>::const_iterator
+         f = delta_records.begin(); f != delta_records.end(); ++f)
+    db.put_file_version(f->src_id, f->dst_id, f->del);
+
+  db.put_revision(rid, rev);
+}
+
+static void
+push_full_revs(database & db,
+               channel const & ch,
+               vector<revision_id> const & outbound_revs,
+               bool const dryrun)
+{
+  ticker rev_ticker(N_("pushing revisions"), "R", 1);
+  rev_ticker.set_total(outbound_revs.size());
+
+  for (vector<revision_id>::const_iterator i = outbound_revs.begin();
+       i != outbound_revs.end(); ++i)
+    {
+      revision_t rev;
+      vector<file_data_record> data_records;
+      vector<file_delta_record> delta_records;
+
+      load_full_rev(db, *i, rev, data_records, delta_records);
+
+      if (!dryrun)
+        ch.push_full_rev(*i, rev, data_records, delta_records);
+
+      ++rev_ticker;
+    }
+}
+
+static void
+pull_full_revs(database & db,
+               channel const & ch,
+               vector<revision_id> const & inbound_revs,
+               bool const dryrun)
+{
+  ticker rev_ticker(N_("pulling revisions"), "R", 1);
+  rev_ticker.set_total(inbound_revs.size());
+
+  for (vector<revision_id>::const_iterator i = inbound_revs.begin();
+       i != inbound_revs.end(); ++i)
+    {
+      revision_t rev;
+      vector<file_data_record> data_records;
+      vector<file_delta_record> delta_records;
+
+      ch.pull_full_rev(*i, rev, data_records, delta_records);
+
+      if (!dryrun)
+        {
+          transaction_guard guard(db);
+          store_full_rev(db, *i, rev, data_records, delta_records);
+          guard.commit();
+        }
+
+      ++rev_ticker;
+    }
+}
+
 static void
 push_revs(database & db,
           channel const & ch,
@@ -191,8 +297,6 @@ push_revs(database & db,
   ticker file_ticker(N_("files"), "f", 1);
 
   rev_ticker.set_total(outbound_revs.size());
-
-  transaction_guard guard(db);
 
   for (vector<revision_id>::const_iterator i = outbound_revs.begin();
        i != outbound_revs.end(); ++i)
@@ -229,9 +333,6 @@ push_revs(database & db,
       if (!dryrun)
         ch.push_rev(*i, rev);
     }
-
-  if (!dryrun)
-    guard.commit();
 }
 
 static void
@@ -253,8 +354,6 @@ pull_revs(database & db,
       revision_t rev;
       ch.pull_rev(*i, rev);
       ++rev_ticker;
-
-      transaction_guard guard(db);
 
       for (edge_map::const_iterator e = rev.edges.begin();
            e != rev.edges.end(); ++e)
@@ -344,10 +443,10 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
   // always received before child revisions.
 
   if (pushing)
-    push_revs(db, ch, outbound_revs, dryrun);
+    push_full_revs(db, ch, outbound_revs, dryrun);
 
   if (pulling)
-    pull_revs(db, ch, inbound_revs, dryrun);
+    pull_full_revs(db, ch, inbound_revs, dryrun);
 }
 
 #ifdef BUILD_UNIT_TESTS

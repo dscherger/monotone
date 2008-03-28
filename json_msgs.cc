@@ -66,6 +66,8 @@ namespace
     symbol const dst_id("dst_id");
     symbol const delta("delta");
     symbol const data("data");
+    symbol const data_records("data_records");
+    symbol const delta_records("delta_records");
 
     // command symbols
     symbol const type("type");
@@ -81,6 +83,12 @@ namespace
 
     symbol const descendants_request("descendants_request");
     symbol const descendants_response("descendants_response");
+
+    symbol const get_full_rev_request("get_full_rev_request");
+    symbol const get_full_rev_response("get_full_rev_response");
+
+    symbol const put_full_rev_request("put_full_rev_request");
+    symbol const put_full_rev_response("put_full_rev_response");
 
     symbol const get_rev_request("get_rev_request");
     symbol const get_rev_response("get_rev_response");
@@ -461,6 +469,224 @@ decode_rev(query q, revision_t & rev)
       rev.edges.insert(make_pair(revision_id(old_revision), cs));
     }
   rev.made_for = made_for_database;
+}
+
+/////////////////////////////////////////////////////////////////////
+// encode/decode file data records
+/////////////////////////////////////////////////////////////////////
+
+static void
+encode_data_records(builder b, vector<file_data_record> const & data_records)
+{
+  for (vector<file_data_record>::const_iterator
+         i = data_records.begin(); i != data_records.end(); ++i)
+    {
+      builder tmp = b.add_obj();
+      tmp[syms::id].str(i->id.inner()());
+      tmp[syms::data].str(encode_base64(i->dat.inner())());
+    }
+}
+
+static void
+decode_data_records(query q, vector<file_data_record> & data_records)
+{
+  size_t nargs = 0;
+  I(q.len(nargs));
+
+  for (size_t i = 0; i < nargs; ++i)
+    {
+      query d = q[i];
+      string id, dat;
+      d[syms::id].get(id);
+      d[syms::data].get(dat);
+      file_data data(decode_base64_as<string>(dat));
+      data_records.push_back(file_data_record(file_id(id),
+                                              data));
+    }
+}
+
+/////////////////////////////////////////////////////////////////////
+// encode/decode file delta records
+/////////////////////////////////////////////////////////////////////
+
+static void
+encode_delta_records(builder b, vector<file_delta_record> const & delta_records)
+{
+  for (vector<file_delta_record>::const_iterator
+         i = delta_records.begin(); i != delta_records.end(); ++i)
+    {
+      builder tmp = b.add_obj();
+      tmp[syms::src_id].str(i->src_id.inner()());
+      tmp[syms::dst_id].str(i->dst_id.inner()());
+      tmp[syms::delta].str(encode_base64(i->del.inner())());
+    }
+}
+
+static void
+decode_delta_records(query q, vector<file_delta_record> & delta_records)
+{
+  size_t nargs = 0;
+  I(q.len(nargs));
+
+  for (size_t i = 0; i < nargs; ++i)
+    {
+      query d = q[i];
+      string src_id, dst_id, del;
+      d[syms::src_id].get(src_id);
+      d[syms::dst_id].get(dst_id);
+      d[syms::delta].get(del);
+      file_delta delta(decode_base64_as<string>(del));
+      delta_records.push_back(file_delta_record(file_id(src_id),
+                                                file_id(dst_id),
+                                                delta));
+    }
+}
+
+/////////////////////////////////////////////////////////////////////
+// message type 'get_full_rev_request'
+/////////////////////////////////////////////////////////////////////
+
+json_value_t
+encode_msg_get_full_rev_request(revision_id const & rid)
+{
+  builder b;
+  b[syms::type].str(syms::get_full_rev_request());
+  b[syms::vers].str("1");
+  b[syms::id].str(rid.inner()());
+  return b.v;
+}
+
+bool
+decode_msg_get_full_rev_request(json_value_t val,
+                                revision_id & rid)
+{
+  string type, vers, id;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::get_full_rev_request() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::id].get(id))
+    {
+      rid = revision_id(id);
+      return true;
+    }
+  return false;
+}
+
+/////////////////////////////////////////////////////////////////////
+// message type 'get_full_rev_response'
+/////////////////////////////////////////////////////////////////////
+
+json_value_t
+encode_msg_get_full_rev_response(revision_t const & rev,
+                                 vector<file_data_record> const & data_records,
+                                 vector<file_delta_record> const & delta_records)
+{
+  builder b;
+  b[syms::type].str(syms::get_full_rev_response());
+  b[syms::vers].str("1");
+  builder rb = b[syms::rev].obj();
+  encode_rev(rb, rev);
+  builder dat = b[syms::data_records].arr();
+  encode_data_records(dat, data_records);
+  builder del = b[syms::delta_records].arr();
+  encode_delta_records(del, delta_records);
+  return b.v;
+}
+
+bool
+decode_msg_get_full_rev_response(json_value_t val,
+                                 revision_t & rev,
+                                 vector<file_data_record> & data_records,
+                                 vector<file_delta_record> & delta_records)
+{
+  string type, vers;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::get_full_rev_response() &&
+      q[syms::vers].get(vers) && vers == "1")
+    {
+      query rq = q[syms::rev];
+      decode_rev(rq, rev);
+      query dat = q[syms::data_records];
+      decode_data_records(dat, data_records);
+      query del = q[syms::delta_records];
+      decode_delta_records(del, delta_records);
+      return true;
+    }
+  return false;
+}
+
+/////////////////////////////////////////////////////////////////////
+// message type 'put_full_rev_request'
+/////////////////////////////////////////////////////////////////////
+
+json_value_t encode_msg_put_full_rev_request(revision_id const & rid,
+                                             revision_t const & rev,
+                                             vector<file_data_record> const & data_records,
+                                             vector<file_delta_record> const & delta_records)
+{
+  builder b;
+  b[syms::type].str(syms::put_full_rev_request());
+  b[syms::vers].str("1");
+  b[syms::id].str(rid.inner()());
+  builder rb = b[syms::rev].obj();
+  encode_rev(rb, rev);
+  builder dat = b[syms::data_records].arr();
+  encode_data_records(dat, data_records);
+  builder del = b[syms::delta_records].arr();
+  encode_delta_records(del, delta_records);
+  return b.v;
+}
+
+bool
+decode_msg_put_full_rev_request(json_value_t val,
+                                revision_id & rid,
+                                revision_t & rev,
+                                vector<file_data_record> & data_records,
+                                vector<file_delta_record> & delta_records)
+{
+  string type, vers, id;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::put_full_rev_request() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::id].get(id))
+    {
+      rid = revision_id(id);
+      query rq = q[syms::rev];
+      decode_rev(rq, rev);
+      query dat = q[syms::data_records];
+      decode_data_records(dat, data_records);
+      query del = q[syms::delta_records];
+      decode_delta_records(del, delta_records);
+      return true;
+    }
+  return false;
+}
+
+/////////////////////////////////////////////////////////////////////
+// message type 'put_full_rev_response'
+/////////////////////////////////////////////////////////////////////
+
+json_value_t encode_msg_put_full_rev_response()
+{
+  builder b;
+  b[syms::type].str(syms::put_full_rev_response());
+  b[syms::vers].str("1");
+  b[syms::status].str("received");
+  return b.v;
+}
+
+bool
+decode_msg_put_full_rev_response(json_value_t val)
+{
+  string type, vers, status;
+  query q(val);
+  if (q[syms::type].get(type) && type == syms::put_full_rev_response() &&
+      q[syms::vers].get(vers) && vers == "1" &&
+      q[syms::status].get(status))
+    {
+      return true;
+    }
+  return false;
 }
 
 /////////////////////////////////////////////////////////////////////
