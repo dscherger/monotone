@@ -19,4 +19,3 @@
 	* foo.cc (function): change this to foo more efficiently
 	* cmd_bar.cc: use the more efficient foo
 	* NEWS: tell the users that the bar command is now so much faster.
-	

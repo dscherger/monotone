@@ -1,0 +1,8 @@
+realname "Linux"
+
+os_type unix
+
+# Is this correct?
+<supports_shared>
+all
+</supports_shared>
