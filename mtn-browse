@@ -79,6 +79,7 @@ use Annotate;
 use ChangeLog;
 use ComboAutoCompletion;
 use Completion;
+use FindText;
 use History;
 use Utilities;
 
@@ -108,6 +109,7 @@ sub mtn_error_handler($$);
 sub new_browser_instance();
 sub revision_change_history_button_clicked_cb($$);
 sub revision_change_log_button_clicked_cb($$);
+sub search_text_button_clicked_cb($$);
 sub setup_sigchld_handler($);
 sub sigchld_handler();
 sub update_browser_state($$);
@@ -390,6 +392,33 @@ sub directory_up_button_clicked_cb($$)
 #
 ##############################################################################
 #
+#   Routine      - search_text_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the search
+#                  text button in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub search_text_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    find_text($browser->{window}, $browser->{file_view_sv});
+
+}
+#
+##############################################################################
+#
 #   Routine      - annotate_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the
@@ -650,13 +679,16 @@ sub new_browser_instance()
        $image,
        $renderer,
        $tv_column,
-       $div);
+       $div,
+       $window_type);
+
+    $window_type = "main_window";
 
     $browser = {};
-    $browser->{type} = "browser_window";
+    $browser->{type} = $window_type;
     $browser->{mtn} = Monotone::AutomateStdio->new();
     $browser->{glade} =
-	Gtk2::GladeXML->new("../mtn-browse.glade", "main_window");
+	Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
 
     # Flag to stop recursive calling of callbacks.
 
@@ -672,7 +704,7 @@ sub new_browser_instance()
 
     # Get the widgets that we are interested in.
 
-    $browser->{window} = $browser->{glade}->get_widget("main_window");
+    $browser->{window} = $browser->{glade}->get_widget($window_type);
     $browser->{window}->set_icon($app_icon);
     $browser->{appbar} = $browser->{glade}->get_widget("appbar");
     $browser->{branch_combo} =
@@ -1268,7 +1300,8 @@ sub update_browser_state($$)
 		   $mime_type,
 		   $scrolled_window);
 
-		# Reset the file view buffer.
+		# Reset the file view buffer and the associated find text
+		# window.
 
 		$browser->{file_button_vbox}->set_sensitive(TRUE);
 		foreach my $widget (@{$browser->{text_file_sensitive_group}})
@@ -1277,6 +1310,8 @@ sub update_browser_state($$)
 		}
 		$browser->{file_view_svbuffer}->set_text("");
 		$browser->{file_view_svbuffer}->set("highlight", FALSE);
+		reset_find_text($browser->{file_view_sv});
+		disable_find_text($browser->{file_view_sv}, 1);
 
 		# Get contents.
 
@@ -1349,6 +1384,11 @@ sub update_browser_state($$)
 
 		    if ($mime_type =~ m/^text\/.+$/o || $ok_to_render)
 		    {
+
+			my $iter;
+
+			# Display text file with possible syntax highlighting.
+
 			if (defined($lang = $browser->{file_view_svlangmgr}->
 				    get_language_from_mime_type($mime_type)))
 			{
@@ -1358,21 +1398,40 @@ sub update_browser_state($$)
 				set_language($lang);
 			}
 
-			# Load in the contents.
+			# Load in the contents and then delete the trailing
+			# newline.
 
 			$browser->{file_view_svbuffer}->set_text($contents);
+			$iter = $browser->{file_view_svbuffer}->get_end_iter();
+			$browser->{file_view_svbuffer}->delete
+			    ($iter,
+			     $browser->{file_view_svbuffer}->get_end_iter())
+			    if ($iter->backward_char());
+
+			# Enable the file buttons applicable to text files.
+
 			foreach my $widget
 			    (@{$browser->{text_file_sensitive_group}})
 			{
 			    $widget->set_sensitive(TRUE);
 			}
+
+			# Enable any associated find text window that may be
+			# displayed.
+
+			disable_find_text($browser->{file_view_sv}, 0);
+
 		    }
 		    else
 		    {
+
+			# Display mime type for undisplayable file contents.
+
 			$browser->{file_view_svbuffer}->
 			    set("highlight", FALSE);
 			$browser->{file_view_svbuffer}->
 			    set_text("<" . $mime_type . ">\n");
+
 		    }
 
 		}
@@ -1427,7 +1486,7 @@ sub update_browser_state($$)
 	else
 	{
 
-	    # Reset the file view buffer.
+	    # Reset the file view buffer and the associated find text window.
 
 	    $browser->{file_button_vbox}->set_sensitive(FALSE);
 	    $browser->{file_view_svbuffer}->set_text("");
@@ -1436,6 +1495,7 @@ sub update_browser_state($$)
 	    set_label_value($browser->{file_id_label}, "");
 	    set_label_value($browser->{last_update_label}, "");
 	    set_label_value($browser->{file_revision_id_label}, "");
+	    disable_find_text($browser->{file_view_sv}, 1);
 
 	}
 

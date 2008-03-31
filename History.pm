@@ -640,14 +640,16 @@ sub get_history_window()
     my($font,
        $height,
        $instance,
-       $width);
+       $width,
+       $window_type);
+
+    $window_type = "history_window";
 
     # Look for an unused window first.
 
     foreach my $window (@windows)
     {
-	if ($window->{type} eq "history_window"
-	    && ! $window->{window}->mapped())
+	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
 	{
 	    $instance = $window;
 	    last;
@@ -660,9 +662,9 @@ sub get_history_window()
     if (! defined($instance))
     {
 	$instance = {};
-	$instance->{type} = "history_window";
+	$instance->{type} = $window_type;
 	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", "history_window");
+	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -674,7 +676,7 @@ sub get_history_window()
 
 	# Get the widgets that we are interested in.
 
-	$instance->{window} = $instance->{glade}->get_widget("history_window");
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
 	$instance->{window}->set_icon($app_icon);
 	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
 	$instance->{history_label} =
@@ -864,14 +866,16 @@ sub get_revision_comparison_window()
        $height,
        $instance,
        $renderer,
-       $width);
+       $width,
+       $window_type);
+
+    $window_type = "revision_comparison_window";
 
     # Look for an unused window first.
 
     foreach my $window (@windows)
     {
-	if ($window->{type} eq "revision_comparison_window"
-	    && ! $window->{window}->mapped())
+	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
 	{
 	    $instance = $window;
 	    last;
@@ -884,9 +888,9 @@ sub get_revision_comparison_window()
     if (! defined($instance))
     {
 	$instance = {};
-	$instance->{type} = "revision_comparison_window";
-	$instance->{glade} = Gtk2::GladeXML->new("../mtn-browse.glade",
-						 "revision_comparison_window");
+	$instance->{type} = $window_type;
+	$instance->{glade} =
+	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -907,8 +911,7 @@ sub get_revision_comparison_window()
 
 	# Get the widgets that we are interested in.
 
-	$instance->{window} =
-	    $instance->{glade}->get_widget("revision_comparison_window");
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
 	$instance->{window}->set_icon($app_icon);
 	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
 	$instance->{comparison_label} =

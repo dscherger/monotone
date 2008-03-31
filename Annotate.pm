@@ -42,7 +42,6 @@
 
 require 5.008;
 
-use lib "/home/aecoope/perl";
 use strict;
 
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
@@ -207,12 +206,14 @@ sub get_annotation_window()
     my($font,
        $height,
        $instance,
-       $width);
+       $width,
+       $window_type);
+
+    $window_type = "annotation_window";
 
     foreach my $window (@windows)
     {
-	if ($window->{type} eq "annotation_window"
-	    && ! $window->{window}->mapped())
+	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
 	{
 	    $instance = $window;
 	    last;
@@ -225,9 +226,9 @@ sub get_annotation_window()
     if (! defined($instance))
     {
 	$instance = {};
-	$instance->{type} = "annotation_window";
+	$instance->{type} = $window_type;
 	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", "annotation_window");
+	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -239,8 +240,7 @@ sub get_annotation_window()
 
 	# Get the widgets that we are interested in.
 
-	$instance->{window} =
-	    $instance->{glade}->get_widget("annotation_window");
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
 	$instance->{window}->set_icon($app_icon);
 	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
 	$instance->{annotation_textview} =

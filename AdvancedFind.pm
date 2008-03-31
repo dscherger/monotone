@@ -44,6 +44,12 @@ require 5.008;
 
 use strict;
 
+# ***** GLOBAL DATA DECLARATIONS *****
+
+# The type of window that is going to be managed by this module.
+
+my $window_type = "advanced_find_window";
+
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Public routines.
@@ -96,8 +102,7 @@ sub advanced_find($$$)
 
     foreach my $window (@windows)
     {
-	if ($window->{type} eq "advanced_find_window"
-	    && ! $window->{window}->mapped())
+	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
 	{
 	    $advanced_find = $window;
 	    last;
@@ -123,6 +128,7 @@ sub advanced_find($$$)
 
     {
 	local $advanced_find->{in_cb} = 1;
+
 	$advanced_find->{selected} = 0;
 
 	# Reset the window contents, then show it.
@@ -249,9 +255,9 @@ sub create_advanced_find_window()
        $tv_column);
 
     $instance = {};
-    $instance->{type} = "advanced_find_window";
+    $instance->{type} = $window_type;
     $instance->{glade} =
-	Gtk2::GladeXML->new("../mtn-browse.glade", "advanced_find_window");
+	Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
 
     # Flag to stop recursive calling of callbacks.
 
@@ -267,8 +273,7 @@ sub create_advanced_find_window()
 
     # Get the widgets that we are interested in.
 
-    $instance->{window} =
-	$instance->{glade}->get_widget("advanced_find_window");
+    $instance->{window} = $instance->{glade}->get_widget($window_type);
     $instance->{window}->set_icon($app_icon);
     $instance->{appbar} = $instance->{glade}->get_widget("appbar");
     $instance->{simple_query_radiobutton} =
