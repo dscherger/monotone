@@ -18,6 +18,9 @@
 # FIXME: The AC_INIT line has to be kept in sync with monotone/configure.ac.
 AC_PREREQ(2.58)
 AC_INIT(monotone, 0.39, monotone-devel@nongnu.org)
+AC_CONFIG_AUX_DIR([.])
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_CONFIG_SRCDIR([monotone/monotone.cc])
 
 CONFIGARGS="$ac_configure_args"

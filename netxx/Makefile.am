@@ -1,6 +1,3 @@
-AUTOMAKE_OPTIONS=subdir-objects no-dist 1.7.1
-ACLOCAL_AMFLAGS = -I m4
-
 lib_LIBRARIES = libnetxx.a
 include_HEADERS = 
 libnetxx_a_SOURCES =							\
@@ -15,18 +12,12 @@ libnetxx_a_SOURCES =							\
 	sockopt.h streambase.cxx streambase.h stream.cxx stream.h	\
 	streamserver.cxx streamserver.h timeout.h types.h
 
-libnetxx_a_CPPFLAGS =
-libnetxx_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
-libnetxx_a_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir) $(LIB3RDPARTY_CXXFLAGS)
-
 if MISSING_INET_PTON
-  libnetxx_a_SOURCES += netxx/inet_pton.cxx netxx/inet_pton.h
-  libnetxx_a_CPPFLAGS += -DNETXX_NO_PTON
+  libnetxx_a_SOURCES += inet_pton.cxx inet_pton.h
 endif
 
 if MISSING_INET_NTOP
-  libnetxx_a_SOURCES += netxx/inet_ntop.cxx netxx/inet_ntop.h
-  libnetxx_a_CPPFLAGS += -DNETXX_NO_NTOP
+  libnetxx_a_SOURCES += inet_ntop.cxx inet_ntop.h
 endif
 
 if MISSING_GETADDRINFO
@@ -35,7 +26,6 @@ else
   libnetxx_a_SOURCES += resolve_getaddrinfo.cxx
 endif
 
-if MISSING_INET6
-  libnetxx_a_CPPFLAGS += -DNETXX_NO_INET6
-endif
-
+# This is necessary because autoreconf doesn't pay attention to
+# AC_CONFIG_MACRO_DIR.
+ACLOCAL_AMFLAGS = -I ../m4

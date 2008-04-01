@@ -18,9 +18,41 @@
 
 AC_PREREQ(2.58)
 AC_INIT(netxx, XX, monotone-devel@nongnu.org)
-AM_INIT_AUTOMAKE
 AC_CONFIG_AUX_DIR([..])
 AC_CONFIG_MACRO_DIR([../m4])
+
+AM_INIT_AUTOMAKE([1.7.1 foreign no-dist no-define])
 AC_CONFIG_SRCDIR([netxx.h])
 AC_CONFIG_FILES([Makefile])
+
+AC_PROG_CXX
+AC_PROG_RANLIB
+
+AC_LANG_PUSH([C++])
+AC_NET_IPV6
+if test $enable_ipv6 = no; then
+   AC_DEFINE(NETXX_NO_INET6, 1, [Define to suppress IPv6 support.])
+fi
+
+AC_CHECK_FUNC(inet_pton,
+  [AM_CONDITIONAL(MISSING_INET_PTON, false)],
+  [AM_CONDITIONAL(MISSING_INET_PTON, true)
+   AC_DEFINE(NETXX_NO_PTON, 1, [Define if inet_pton is not available.])
+  ])
+
+AC_CHECK_FUNC(inet_ntop,
+  [AM_CONDITIONAL(MISSING_INET_NTOP, false)],
+  [AM_CONDITIONAL(MISSING_INET_NTOP, true)
+   AC_DEFINE(NETXX_NO_PTON, 1, [Define if inet_pton is not available.])
+  ])
+
+AC_CHECK_FUNC(getaddrinfo,
+  [AM_CONDITIONAL(MISSING_GETADDRINFO, false)], 
+  [AM_CONDITIONAL(MISSING_GETADDRINFO, true)])
+
+AC_CHECK_TYPES([socklen_t],,,[
+ #include <sys/types.h>
+ #include <sys/socket.h>
+])
+
 AC_OUTPUT

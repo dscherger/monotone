@@ -18,9 +18,14 @@
 
 AC_PREREQ(2.58)
 AC_INIT(idna, XX, monotone-devel@nongnu.org)
-AM_INIT_AUTOMAKE
 AC_CONFIG_AUX_DIR([..])
 AC_CONFIG_MACRO_DIR([../m4])
+
+AM_INIT_AUTOMAKE([1.7.1 foreign no-dist no-define])
 AC_CONFIG_SRCDIR([idna.h])
 AC_CONFIG_FILES([Makefile])
+
+AC_PROG_CC
+AC_PROG_RANLIB
+
 AC_OUTPUT

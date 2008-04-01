@@ -3,7 +3,8 @@
 # Check for IPv6.  Let the user enable or disable it manually using a
 # three-state (yes|no|auto) --enable argument.
 AC_DEFUN([AC_NET_IPV6],
-[AC_ARG_ENABLE(ipv6,
+[AC_LANG_ASSERT([C++])
+ AC_ARG_ENABLE(ipv6,
    AS_HELP_STRING([--enable-ipv6],[enable IPv6 support (default=auto)]), ,
    enable_ipv6=auto)
  if test x"${enable_ipv6}" = xauto || test x"${enable_ipv6}" = xyes; then
@@ -22,31 +23,14 @@ AC_DEFUN([AC_NET_IPV6],
                      #include <arpa/inet.h>
                      #endif])
  fi
- # Control cannot reach this point without $enable_ipv6 being either
- # "yes" or "no".
- if test $enable_ipv6 = yes; then
-   AC_DEFINE(USE_IPV6, 1, [Define if IPv6 support should be included.])
- fi
 ])
 
 AC_DEFUN([MTN_NETXX_DEPENDENCIES],
 [AC_NET_IPV6
- AM_CONDITIONAL(MISSING_INET6, [test $enable_ipv6 = no])
+ if test $enable_ipv6 = yes; then
+   AC_DEFINE(USE_IPV6, 1, [Define if IPv6 support should be included.])
+ fi
  AC_SEARCH_LIBS([gethostbyname], [nsl])
  AC_SEARCH_LIBS([accept], [socket])
  AC_SEARCH_LIBS([inet_aton], [resolv])
- AC_CHECK_FUNCS([gethostbyaddr inet_ntoa socket])
- AC_CHECK_FUNC(inet_pton, [AM_CONDITIONAL(MISSING_INET_PTON, false)], 
-			  [AM_CONDITIONAL(MISSING_INET_PTON, true)])
-
- AC_CHECK_FUNC(inet_ntop, [AM_CONDITIONAL(MISSING_INET_NTOP, false)], 
-			  [AM_CONDITIONAL(MISSING_INET_NTOP, true)])
-
- AC_CHECK_FUNC(getaddrinfo, [AM_CONDITIONAL(MISSING_GETADDRINFO, false)], 
-			    [AM_CONDITIONAL(MISSING_GETADDRINFO, true)])
- AC_HAVE_INADDR_NONE
- AC_CHECK_TYPES([socklen_t],,,[
-  #include <sys/types.h>
-  #include <sys/socket.h>
- ])
 ])

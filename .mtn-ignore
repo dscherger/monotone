@@ -1,11 +1,13 @@
 \.dirstamp$
 ^ABOUT-NLS$
 /Makefile(\.in)?$
+/aclocal\.m4$
 ^aclocal\.m4$
 ^build-arch-stamp$
 ^build-indep-stamp$
 ^compile$
 ^config\.(guess|h(\.in)?|log|rpath|status|sub)$
+/configure$
 ^configure$
 ^debian/files$
 ^debian/monotone

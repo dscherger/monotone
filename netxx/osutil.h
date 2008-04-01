@@ -80,7 +80,6 @@
 #endif
 
 #include <string>
-#include "config.h"
 
 namespace Netxx 
 {
