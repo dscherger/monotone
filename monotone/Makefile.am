@@ -1,5 +1,5 @@
-AUTOMAKE_OPTIONS=subdir-objects 1.7.1
-ACLOCAL_AMFLAGS = -I m4
+AUTOMAKE_OPTIONS=subdir-objects no-dist 1.7.1
+ACLOCAL_AMFLAGS = -I ../m4
 
 CMD_SOURCES =								\
 	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \

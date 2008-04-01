@@ -1,7 +1,8 @@
-AUTOMAKE_OPTIONS=subdir-objects 1.7.1
+AUTOMAKE_OPTIONS=subdir-objects no-dist 1.7.1
 ACLOCAL_AMFLAGS = -I m4
 
-noinst_LIBRARIES = libnetxx.a
+lib_LIBRARIES = libnetxx.a
+include_HEADERS = 
 libnetxx_a_SOURCES =							\
 	accept.cxx accept.h address.cxx address.h common.h compat.h	\
 	datagram.cxx datagram.h datagramserver.cxx datagramserver.h	\

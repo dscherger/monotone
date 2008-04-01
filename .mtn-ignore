@@ -1,6 +1,6 @@
 \.dirstamp$
 ^ABOUT-NLS$
-^Makefile(\.in)?$
+/Makefile(\.in)?$
 ^aclocal\.m4$
 ^build-arch-stamp$
 ^build-indep-stamp$
