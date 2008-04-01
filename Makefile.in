@@ -1,0 +1,127 @@
+# Top-level driver makefile for Monotone.
+# Copyright 2008 Zachary Weinberg  <zackw@panix.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
+# The build process for monotone proceeds in two phases.  We first
+# recurse into all the library directories, invoking their configure
+# scripts with options specified on a per-library basis, shared
+# libraries disabled, and --prefix set to a staging directory within
+# the build tree.  We then build all said libraries, and install them
+# into that staging directory.
+#
+# Then we recurse into the program directory and invoke its configure
+# script with compiler options set to search the staging directory for
+# headers and libraries.  The program is then built.
+#
+# "make check" runs all the libraries' testsuites as well as the
+# program's; "make install" installs only the program.
+#
+# Note that it is necessary to this scheme that we run the
+# subdirectory configures from this Makefile rather than with
+# AC_CONFIG_SUBDIRS, because we have to manipulate the configure
+# arguments to the libraries, and we have to delay running the program
+# configure until the libraries are all built and stage-installed.
+#
+# Support for use of system-provided shared libraries is TODO.
+
+default: all
+
+# Autoconf substitution variables - we don't need to know most of the
+# standard ones.
+CONFIGARGS := @CONFIGARGS@
+LIBRARIES  := @LIBRARIES@
+srcdir     := @srcdir@
+subsrcdir  := @subsrcdir@
+blddir     := $(shell pwd)
+subdirs    := $(LIBRARIES) monotone
+
+# Most of the "standard targets for users" only recurse into the
+# monotone subdirectory.
+cmdtgts     := all install install-exec install-strip uninstall
+doctgts     := info dvi pdf ps html
+docinsttgts := $(doctgts:%=install-%) $(doctgts:%=uninstall-%)
+
+$(cmdtgts) $(doctgts) $(docinsttgts): monotone/Makefile
+	$(MAKE) -C monotone $@
+
+# The clean targets recurse into all active libraries as well as the
+# monotone subdir.  This is, alas, harder than it ought to be.
+
+cleantgts := clean distclean mostlyclean maintainer-clean
+subcleantgts := $(foreach d,$(subdirs),$(patsubst %,$(d)/%,$(cleantgts)))
+
+$(cleantgts):: %: $(foreach d,$(subdirs),$(d)/%)
+
+# If there's no Makefile in a build subdirectory, skip it when cleaning.
+$(subcleantgts):
+	[ ! -f $(@D)/Makefile ] \
+	  || $(MAKE) -C $(@D) $(@F)
+
+# Cleanout rules have a little extra work to do at top level.
+# (This is why double-colon rules are in use.)
+$(cleantgts)::
+	rm -rf libinst
+
+# I don't agree with the GNU standard that says maintainer-clean
+# shouldn't delete the configure script, but consistency is more
+# important than principle.  This target should delete the build
+# subdirectories (which are created by config.status) only if they are
+# empty (which they should be if and only if the build directory does
+# not match the source directory).  We cannot count on the GNU rmdir
+# extension --ignore-fail-on-non-empty, so just ignore its results.
+distclean maintainer-clean::
+	rm -rf Makefile config.log config.status config.cache \
+	       autom4te.cache configure.lineno config.status.lineno
+	-rmdir $(LIBRARIES) monotone
+
+# The check target also recurses, but should not ignore the absence of a
+# subdirectory Makefile.
+
+subchecktgts := $(foreach d,$(subdirs),$(d)/check)
+check: $(subchecktgts)
+$(subchecktgts):
+	$(MAKE) -C $(@D) $(@F)
+
+# TODO: write 'dist' and 'distcheck' rules.
+# I cannot be bothered to support TAGS.
+
+# This is where the magic happens.  All the building targets depend on
+# monotone/Makefile, the rule for which runs the configure script in
+# the monotone subdirectory.  That target in turn depends on
+# installation stamp-files for all the active libraries.  We do not
+# need to mention monotone/config.h in these rules because nothing in
+# this Makefile has a direct dependency on them.  We also do not
+# attempt to put rules for regenerating configure scripts in this
+# Makefile.
+
+LIBSTAMPS := $(foreach d,$(LIBRARIES),libinst/$(d)-stamp)
+
+monotone/Makefile: $(srcdir)/monotone/configure $(srcdir)/monotone/Makefile.in \
+                   $(LIBSTAMPS)
+	cd monotone && $(subsrcdir)/monotone/configure $(CONFIGARGS) \
+	  CPPFLAGS="-I$(blddir)/libinst/include" \
+	  LDFLAGS="-L$(blddir)/lib"
+
+$(LIBSTAMPS): %-stamp: %/Makefile
+	$(MAKE) -C $(notdir $*) install
+	touch $@
+
+$(patsubst %,%/Makefile, $(filter-out botan,$(LIBRARIES))):
+	cd $(@D) && $(subsrcdir)/$(@D)/configure --prefix=$(blddir)/libinst \
+	  --disable-shared --enable-static $(LIBCONFIGARGS)
+
+# botan is special
+botan/Makefile:
+	cd $(@D) && perl $(subsrcdir)/$(@D)/configure.pl \
+	  --prefix=$(blddir)/libinst --no-shared
+
+# Make directives
+.SUFFIXES:
+.PHONY: default $(cmdtgts) $(doctgts) $(docinsttgts) \
+        $(cleantgts) $(subcleantgts) check $(subchecktgts)
