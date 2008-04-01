@@ -44,8 +44,6 @@ endif
 
 CFLAGS ?= $(DEFAULT_CFLAGS)
 
-#include /usr/share/dpatch/dpatch.make
-
 # put this up top so it's the default rule.
 #
 # Policy (section 4.9) says that build should depend on build-indep.
@@ -101,8 +99,7 @@ build-indep-stamp: config.status
 	make -j$(CPUS) info html monotone.pdf
 	touch $@
 
-clean: clean1
-clean1:
+clean:
 	dh_testdir
 	dh_testroot
 	[ ! -f Makefile ] || $(MAKE) distclean

@@ -1,9 +1,21 @@
+monotone (0.39-2) unstable; urgency=low
+
+  * Build-dependency on patch (not dpatch) restored; it was accidentally
+    removed in 0.39-1 along with dpatch.  The test suite uses it.
+  * Various vestiges of dpatch use removed from debian/rules.
+
+ -- Zack Weinberg <zackw@panix.com>  Mon, 31 Mar 2008 20:47:30 -0400
+
 monotone (0.39-1) unstable; urgency=low
 
   [ Zack Weinberg ]
   * New upstream release.  Closes: #473252.
     - Can now be built with gcc 4.3 snapshots.  (Closes: #455646)
   * Enable use of system libpcre, set appropriate Build-Depends.
+
+  [ Richard Levitte ]
+  * The patch to disable the SIGPIPE test isn't needed any more.
+  * Build-dependency on dpatch dropped again, as it is unused.
 
  -- Richard Levitte <richard@levitte.org>  Mon, 25 Feb 2008 10:55:36 -0500
 
