@@ -42,7 +42,9 @@ POSSIBILITY OF SUCH DAMAGE.
 supporting internal functions that are not used by other modules. */
 
 
-#include "pcre_config.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #define NLBLOCK cd             /* Block containing newline information */
 #define PSSTART start_pattern  /* Field containing processed string start */

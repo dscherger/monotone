@@ -1,0 +1,20 @@
+This is the library component of pcre 7.6, downloaded from
+<ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/>.  
+
+This is not the entire tarball available from that site:
+
+ - Only the native C interface has been imported; not the POSIX shim,
+   C++ wrapper, or Pascal wrapper.
+ - The documentation has not been imported (but see monotone/pcre*.texi).
+ - No generated files nor files potentially created by 'autoreconf -i'
+   have been imported.  (Note that pcre_chartables.c only *appears* to
+   be a generated file.)
+ - The CMake-based alternative build system has not been imported.
+
+However, the various utility programs (pcregrep etc) *have* been imported.
+They are not installed when built as part of monotone, but they're handy
+to have around for debugging.  Also, we do include and run the testsuite.
+
+The configure script has been modified to look for autoconf helper scripts
+in the parent directory, and the Makefile has been modified not to try to
+build any of the things that were left out of the import.
