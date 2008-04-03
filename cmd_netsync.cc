@@ -145,9 +145,9 @@ build_client_connection_info(options & opts,
             }
           
           if (is_exclude)
-            excludes.push_back(arg_type(item));
+            excludes.push_back(arg_type(urldecode(item)));
           else
-            includes.push_back(arg_type(item));
+            includes.push_back(arg_type(urldecode(item)));
         }
       info.client.include_pattern = globish(includes);
       info.client.exclude_pattern = globish(excludes);
@@ -422,12 +422,13 @@ CMD(clone, "clone", "", CMD_REF(network),
 
       N(project.revision_is_in_branch(ident, app.opts.branchname),
         F("revision %s is not a member of branch %s")
-        % ident % app.opts.branchname);
+          % ident % app.opts.branchname);
     }
 
   roster_t empty_roster, current_roster;
 
-  L(FL("checking out revision %s to directory %s") % ident % workspace_dir);
+  L(FL("checking out revision %s to directory %s")
+    % ident % workspace_dir);
   db.get_roster(ident, current_roster);
 
   workspace work(app);

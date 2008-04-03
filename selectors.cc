@@ -17,6 +17,7 @@
 #include "globish.hh"
 #include "cmd.hh"
 #include "work.hh"
+#include "transforms.hh"
 #include "revision.hh"
 
 #include <algorithm>
@@ -229,6 +230,8 @@ decode_selector(project_t & project,
               diagnose_ambiguous_expansion(project, "p:", parent_ids);
               sel = (* parent_ids.begin()).inner()();
             }
+          else
+            sel = decode_hexenc(sel);
           break;
         default: break;
         }
@@ -287,6 +290,7 @@ complete_one_selector(project_t & project,
       break;
 
     case sel_parent:
+      I(!value.empty());
       project.db.select_parent(value, completions);
       break;
         
@@ -419,7 +423,7 @@ complete(options const & opts, lua_hooks & lua,
       && seldata.selections[0].first == sel_ident
       && seldata.selections[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(seldata.selections[0].second));
+      completions.insert(revision_id(decode_hexenc(seldata.selections[0].second)));
       N(project.db.revision_exists(*completions.begin()),
         F("no such revision '%s'") % *completions.begin());
       return;
@@ -474,7 +478,7 @@ expand_selector(options const & opts, lua_hooks & lua,
       && seldata.selections[0].first == sel_ident
       && seldata.selections[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(seldata.selections[0].second));
+      completions.insert(revision_id(decode_hexenc(seldata.selections[0].second)));
       return;
     }
 
