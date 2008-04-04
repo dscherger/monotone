@@ -6,6 +6,11 @@ dnl PCRE_PRERELEASE feature is for identifying release candidates. It might
 dnl be defined as -RC2, for example. For real releases, it should be defined
 dnl empty.
 
+dnl MONOTONE: Much irrelevant or outright undesirable functionality
+dnl MONOTONE: has been removed from this file.  However, harmless
+dnl MONOTONE: configure options have been left alone, even when we
+dnl MONOTONE: don't use them.
+
 m4_define(pcre_major, [7])
 m4_define(pcre_minor, [6])
 m4_define(pcre_prerelease, [])
@@ -19,57 +24,14 @@ m4_define(libpcrecpp_version, [0:0:0])
 AC_PREREQ(2.57)
 AC_INIT(PCRE, pcre_major.pcre_minor[]pcre_prerelease, , pcre)
 AC_CONFIG_SRCDIR([pcre.h.in])
-dnl MONOTONE: look for helper files in parent directory; disable
-dnl MONOTONE: automake's sanity checking and "make dist".
 AC_CONFIG_AUX_DIR([..])
 AC_CONFIG_MACRO_DIR([../m4])
-AM_INIT_AUTOMAKE([foreign no-dist])
-dnl MONOTONE: end modifications.
+AM_INIT_AUTOMAKE([1.7.1 foreign no-dist no-define])
 AC_CONFIG_HEADERS(config.h)
 
-# The default CFLAGS and CXXFLAGS in Autoconf are "-g -O2" for gcc and just
-# "-g" for any other compiler. There doesn't seem to be a standard way of
-# getting rid of the -g (which I don't think is needed for a production
-# library). This fudge seems to achieve the necessary. First, we remember the
-# externally set values of CFLAGS and CXXFLAGS. Then call the AC_PROG_CC and
-# AC_PROG_CXX macros to find the compilers - if CFLAGS and CXXFLAGS are not
-# set, they will be set to Autoconf's defaults. Afterwards, if the original
-# values were not set, remove the -g from the Autoconf defaults.
-# (PH 02-May-07)
-
-remember_set_CFLAGS="$CFLAGS"
-remember_set_CXXFLAGS="$CXXFLAGS"
-
 AC_PROG_CC
-AC_PROG_CXX
-
-if test "x$remember_set_CFLAGS" = "x"
-then
-  if test "$CFLAGS" = "-g -O2"
-  then
-    CFLAGS="-O2"
-  elif test "$CFLAGS" = "-g"
-  then
-    CFLAGS=""
-  fi
-fi
-
-if test "x$remember_set_CXXFLAGS" = "x"
-then
-  if test "$CXXFLAGS" = "-g -O2"
-  then
-    CXXFLAGS="-O2"
-  elif test "$CXXFLAGS" = "-g"
-  then
-    CXXFLAGS=""
-  fi
-fi
-
-
 AC_PROG_INSTALL
-AC_LIBTOOL_WIN32_DLL
-AC_PROG_LIBTOOL
-AC_PROG_LN_S
+AC_PROG_RANLIB
 
 PCRE_MAJOR="pcre_major"
 PCRE_MINOR="pcre_minor"
@@ -81,47 +43,23 @@ AC_SUBST(PCRE_MINOR)
 AC_SUBST(PCRE_PRERELEASE)
 AC_SUBST(PCRE_DATE)
 
-# Set a more sensible default value for $(htmldir).
-if test "x$htmldir" = 'x${docdir}'
-then
-  htmldir='${docdir}/html'
-fi
-
 # Handle --disable-cpp
-dnl MONOTONE: C++ support left out of import.
-dnl AC_ARG_ENABLE(cpp,
-dnl               AS_HELP_STRING([--disable-cpp],
-dnl                              [disable C++ support]),
-dnl               , enable_cpp=yes)
 enable_cpp=no
 
 # Handle --enable-rebuild-chartables
-dnl MONOTONE: rebuild-chartables not allowed.
-dnl AC_ARG_ENABLE(rebuild-chartables,
-dnl              AS_HELP_STRING([--enable-rebuild-chartables],
-dnl                             [rebuild character tables in current locale]),
-dnl              , enable_rebuild_chartables=no)
 enable_rebuild_chartables=no
 
 # Handle --enable-utf8 (disabled by default)
-# MONOTONE: we flip the sign of this.
 AC_ARG_ENABLE(utf8,
               AS_HELP_STRING([--enable-utf8],
                              [enable UTF-8 support]),
               , enable_utf8=yes)
 
 # Handle --enable-unicode-properties
-# MONOTONE: we flip the sign of this.
 AC_ARG_ENABLE(unicode-properties,
               AS_HELP_STRING([--enable-unicode-properties],
                              [enable Unicode properties support (implies --enable-utf8)]),
               , enable_unicode_properties=yes)
-
-# Handle --enable-newline=NL
-dnl AC_ARG_ENABLE(newline,
-dnl               AS_HELP_STRING([--enable-newline=NL],
-dnl                              [use NL as newline (lf, cr, crlf, anycrlf, any; default=lf)]),
-dnl               , enable_newline=lf)
 
 # Separate newline options
 ac_pcre_newline=lf
@@ -154,10 +92,7 @@ AC_ARG_ENABLE(bsr-anycrlf,
               , enable_bsr_anycrlf=no)
 
 # Handle --enable-ebcdic
-AC_ARG_ENABLE(ebcdic,
-              AS_HELP_STRING([--enable-ebcdic],
-                             [assume EBCDIC coding rather than ASCII; use this only in (uncommon) EBCDIC environments; it implies --enable-rebuild-chartables]),
-              , enable_ebcdic=no)
+enable_ebcdic=no
 
 # Handle --disable-stack-for-recursion
 AC_ARG_ENABLE(stack-for-recursion,
@@ -166,22 +101,13 @@ AC_ARG_ENABLE(stack-for-recursion,
               , enable_stack_for_recursion=yes)
 
 # Handle --enable-pcregrep-libz
-AC_ARG_ENABLE(pcregrep-libz,
-              AS_HELP_STRING([--enable-pcregrep-libz],
-                             [link pcregrep with libz to handle .gz files]),
-              , enable_pcregrep_libz=no)
+enable_pcregrep_libz=no
 
 # Handle --enable-pcregrep-libbz2
-AC_ARG_ENABLE(pcregrep-libbz2,
-              AS_HELP_STRING([--enable-pcregrep-libbz2],
-                             [link pcregrep with libbz2 to handle .bz2 files]),
-              , enable_pcregrep_libbz2=no)
+enable_pcregrep_libbz2=no
 
 # Handle --enable-pcretest-libreadline
-AC_ARG_ENABLE(pcretest-libreadline,
-              AS_HELP_STRING([--enable-pcretest-libreadline],
-                             [link pcretest with libreadline]),
-              , enable_pcretest_libreadline=no)
+enable_pcretest_libreadline=no
 
 # Handle --with-posix-malloc-threshold=NBYTES
 AC_ARG_WITH(posix-malloc-threshold,
@@ -281,33 +207,6 @@ them both to 0; an emulation function will be used. */])
 AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h sys/types.h sys/stat.h dirent.h windows.h)
 
-# The files below are C++ header files.
-pcre_have_type_traits="0"
-pcre_have_bits_type_traits="0"
-if test "x$enable_cpp" = "xyes" -a -n "$CXX"
-then
-AC_LANG_PUSH(C++)
-
-# We could be more clever here, given we're doing AC_SUBST with this
-# (eg set a var to be the name of the include file we want). But we're not
-# so it's easy to change back to 'regular' autoconf vars if we needed to.
-AC_CHECK_HEADERS(string, [pcre_have_cpp_headers="1"],
-                         [pcre_have_cpp_headers="0"])
-AC_CHECK_HEADERS(bits/type_traits.h, [pcre_have_bits_type_traits="1"],
-                                     [pcre_have_bits_type_traits="0"])
-AC_CHECK_HEADERS(type_traits.h, [pcre_have_type_traits="1"],
-                                [pcre_have_type_traits="0"])
-AC_LANG_POP
-fi
-# Using AC_SUBST eliminates the need to include config.h in a public .h file
-AC_SUBST(pcre_have_type_traits)
-AC_SUBST(pcre_have_bits_type_traits)
-
-# Conditional compilation
-# MONOTONE: Not actually in Makefile anymore.
-#AM_CONDITIONAL(WITH_PCRE_CPP, test "x$enable_cpp" = "xyes")
-#AM_CONDITIONAL(WITH_REBUILD_CHARTABLES, test "x$enable_rebuild_chartables" = "xyes")
-
 # Checks for typedefs, structures, and compiler characteristics.
 
 AC_C_CONST
@@ -325,25 +224,6 @@ AC_SUBST(pcre_have_ulong_long)
 # Checks for library functions.
 
 AC_CHECK_FUNCS(bcopy memmove strerror strtoq strtoll _strtoi64)
-
-# Check for the availability of libz (aka zlib)
-
-AC_CHECK_HEADERS([zlib.h], [HAVE_ZLIB_H=1])
-AC_CHECK_LIB([z], [gzopen], [HAVE_LIBZ=1])
-
-# Check for the availability of libbz2
-
-AC_CHECK_HEADERS([bzlib.h], [HAVE_BZLIB_H=1])
-AC_CHECK_LIB([bz2], [BZ2_bzopen], [HAVE_LIBBZ2=1])
-
-# Check for the availabiity of libreadline
-
-AC_CHECK_HEADERS([readline/readline.h], [HAVE_READLINE_H=1])
-AC_CHECK_HEADERS([readline/history.h], [HAVE_HISTORY_H=1])
-AC_CHECK_LIB([readline], [readline], [HAVE_LIB_READLINE=1])
-
-# This facilitates -ansi builds under Linux
-dnl AC_DEFINE([_GNU_SOURCE], [], [Enable GNU extensions in glibc])
 
 if test "x$enable_shared" = "xno" ; then
   AC_DEFINE([PCRE_STATIC], [1], [
@@ -478,95 +358,16 @@ if test "$enable_ebcdic" = "yes"; then
     "configure", this can be done via --enable-ebcdic.])
 fi
 
-# Platform specific issues
-NO_UNDEFINED=
-EXPORT_ALL_SYMBOLS=
-case $host_os in
-  cygwin* | mingw* )
-    if test X"$enable_shared" = Xyes; then
-      NO_UNDEFINED="-no-undefined"
-      EXPORT_ALL_SYMBOLS="-Wl,--export-all-symbols"
-    fi
-    ;;
-esac
-
-# The extra LDFLAGS for each particular library
-# (Note: The libpcre*_version bits are m4 variables, assigned above)
-
-EXTRA_LIBPCRE_LDFLAGS="$NO_UNDEFINED -version-info libpcre_version"
-
-EXTRA_LIBPCREPOSIX_LDFLAGS="$NO_UNDEFINED -version-info libpcreposix_version"
-
-EXTRA_LIBPCRECPP_LDFLAGS="$NO_UNDEFINED $EXPORT_ALL_SYMBOLS -version-info libpcrecpp_version"
-
-AC_SUBST(EXTRA_LIBPCRE_LDFLAGS)
-AC_SUBST(EXTRA_LIBPCREPOSIX_LDFLAGS)
-AC_SUBST(EXTRA_LIBPCRECPP_LDFLAGS)
-
-# When we run 'make distcheck', use these arguments.
-DISTCHECK_CONFIGURE_FLAGS="--enable-cpp --enable-unicode-properties"
-AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
-
-# Check that, if --enable-pcregrep-libz or --enable-pcregrep-libbz2 is
-# specified, the relevant library is available. If so, add it to LIBS.
-
-if test "$enable_pcregrep_libz" = "yes"; then
-  if test "$HAVE_ZLIB_H" != "1"; then
-    echo "** Cannot --enable-pcregrep-libz because zlib.h was not found"
-    exit 1
-  fi
-  if test "$HAVE_LIBZ" != "1"; then
-    echo "** Cannot --enable-pcregrep-libz because libz was not found"
-    exit 1
-  fi
-  if test "$LIBS" = ""; then LIBS=-lz; else LIBS="$LIBS -lz"; fi
-fi
-
-if test "$enable_pcregrep_libbz2" = "yes"; then
-  if test "$HAVE_BZLIB_H" != "1"; then
-    echo "** Cannot --enable-pcregrep-libbz2 because bzlib.h was not found"
-    exit 1
-  fi
-  if test "$HAVE_LIBBZ2" != "1"; then
-    echo "** Cannot --enable-pcregrep-libbz2 because libbz2 was not found"
-    exit 1
-  fi
-  if test "$LIBS" = ""; then LIBS=-lbz2; else LIBS="$LIBS -lbz2"; fi
-fi
-
-# Similarly for --enable-pcretest-readline
-
-if test "$enable_pcretest_libreadline" = "yes"; then
-  if test "$HAVE_READLINE_H" != "1"; then
-    echo "** Cannot --enable-pcretest-readline because readline/readline.h was not found."
-    exit 1
-  fi
-  if test "$HAVE_HISTORY_H" != "1"; then
-    echo "** Cannot --enable-pcretest-readline because readline/history.h was not found."
-    exit 1
-  fi
-  if test "$LIBS" = ""; then LIBS=-lreadline; else LIBS="$LIBS -lreadline"; fi
-fi
-
 # Produce these files, in addition to config.h.
-# MONOTONE: C++-only generated files removed from this list.
 AC_CONFIG_FILES(
 	Makefile
 	libpcre.pc
 	pcre-config
 	pcre.h
 )
-#	libpcrecpp.pc
-#	pcre_stringpiece.h
-#	pcrecpparg.h
 
 # Make the generated script files executable.
 AC_CONFIG_COMMANDS([script-chmod], [chmod a+x pcre-config])
-
-# Make sure that pcre_chartables.c is removed in case the method for
-# creating it was changed by reconfiguration.
-# MONOTONE: Don't! The file is never regenerated.
-#AC_CONFIG_COMMANDS([delete-old-chartables], [rm -f pcre_chartables.c])
 
 AC_OUTPUT
 
