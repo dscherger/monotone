@@ -29,7 +29,7 @@ TESTS = RunTest RunGrepTest
 noinst_SCRIPTS = RunTest RunGrepTest
 bin_PROGRAMS = pcretest pcregrep
 
-pcretest_SOURCES = pcretest.c
+pcretest_SOURCES = pcretest.c pcreposix.c pcreposix.h
 pcretest_LDADD = libpcre.a
 
 pcregrep_SOURCES = pcregrep.c

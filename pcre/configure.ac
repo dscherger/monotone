@@ -203,8 +203,11 @@ HAVE_BCOPY is set to 1. If your system has neither bcopy() nor memmove(), set
 them both to 0; an emulation function will be used. */])
 
 # Checks for header files.
+dnl Explicitly specifying AC_INCLUDES_DEFAULT gets autoconf not to do
+dnl all the tests twice.  AC_HEADER_STDC gets us sys/types.h and
+dnl sys/stat.h for free.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(limits.h sys/types.h sys/stat.h dirent.h windows.h)
+AC_CHECK_HEADERS([limits.h dirent.h windows.h],,, [AC_INCLUDES_DEFAULT()])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
@@ -369,44 +372,3 @@ AC_CONFIG_FILES(
 AC_CONFIG_COMMANDS([script-chmod], [chmod a+x pcre-config])
 
 AC_OUTPUT
-
-# Print out a nice little message after configure is run displaying your
-# chosen options.
-
-cat <<EOF
-
-$PACKAGE-$VERSION configuration summary:
-
-    Install prefix .................. : ${prefix}
-    C preprocessor .................. : ${CPP}
-    C compiler ...................... : ${CC}
-    C++ preprocessor ................ : ${CXXCPP}
-    C++ compiler .................... : ${CXX}
-    Linker .......................... : ${LD}
-    C preprocessor flags ............ : ${CPPFLAGS}
-    C compiler flags ................ : ${CFLAGS}
-    C++ compiler flags .............. : ${CXXFLAGS}
-    Linker flags .................... : ${LDFLAGS}
-    Extra libraries ................. : ${LIBS}
-
-    Build C++ library ............... : ${enable_cpp}
-    Enable UTF-8 support ............ : ${enable_utf8}
-    Unicode properties .............. : ${enable_unicode_properties}
-    Newline char/sequence ........... : ${enable_newline}
-    \R matches only ANYCRLF ......... : ${enable_bsr_anycrlf}
-    EBCDIC coding ................... : ${enable_ebcdic}
-    Rebuild char tables ............. : ${enable_rebuild_chartables}
-    Use stack recursion ............. : ${enable_stack_for_recursion}
-    POSIX mem threshold ............. : ${with_posix_malloc_threshold}
-    Internal link size .............. : ${with_link_size}
-    Match limit ..................... : ${with_match_limit}
-    Match limit recursion ........... : ${with_match_limit_recursion}
-    Build shared libs ............... : ${enable_shared}
-    Build static libs ............... : ${enable_static}
-    Link pcregrep with libz ......... : ${enable_pcregrep_libz}
-    Link pcregrep with libbz2 ....... : ${enable_pcregrep_libbz2}
-    Link pcretest with libreadline .. : ${enable_pcretest_libreadline}
-
-EOF
-
-dnl end configure.ac

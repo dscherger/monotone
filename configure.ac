@@ -43,7 +43,8 @@ AC_SUBST(subsrcdir)
 # It is much easier to create the build subdirectories in the same
 # breath as the top level Makefile than to deal with Make's bizarro
 # behavior when directories are goals.
-AC_CONFIG_FILES([Makefile],
-	        [mkdir -p $needed_dirs],
-		[needed_dirs="$LIBRARIES monotone"])
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_COMMANDS([build-dirs],
+	           [mkdir -p $needed_dirs],
+		   [needed_dirs="$LIBRARIES monotone"])
 AC_OUTPUT
