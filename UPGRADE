@@ -1,4 +1,4 @@
-upgrading monotone to 0.39
+upgrading monotone to 0.40
 ==========================
 
 How to read this file:
@@ -16,6 +16,15 @@ How to read this file:
     will be described there, not here.
 
 If you are upgrading from:
+  - 0.39 or earlier: The database format has changed.  You must run
+    (after remembering to take a backup copy):
+       $ mtn -d mydb.mtn db migrate
+    on each of your databases.
+    Also, for each database, you will have to remove each known server:
+       $ mtn -d mydb.mtn unset known-servers $SERVER
+    To find out exactly what servers your database knows, do the following
+    and look fot the entries in the domain "known-servers":
+       $ mtn -d mydb.mtn automate get_db_variables
   - 0.33 or earlier: The database format has changed.  You must run
     (after remembering to take a backup copy):
        $ mtn -d mydb.mtn db migrate
