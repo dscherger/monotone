@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS=subdir-objects no-dist 1.7.1
-
 lib_LIBRARIES = libsqlite.a
 include_HEADERS = sqlite3.h sqlite3ext.h
 libsqlite_a_SOURCES =							\
@@ -12,8 +10,3 @@ libsqlite_a_SOURCES =							\
 	sqliteLimit.h table.c tokenize.c trigger.c update.c utf.c	\
 	util.c vacuum.c vdbeapi.c vdbeaux.c vdbeblob.c vdbe.c		\
 	vdbefifo.c vdbe.h vdbeInt.h vdbemem.c vtab.c where.c
-
-libsqlite_a_CPPFLAGS =
-libsqlite_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
-libsqlite_a_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir) $(LIB3RDPARTY_CXXFLAGS)
-
