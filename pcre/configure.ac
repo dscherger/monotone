@@ -30,7 +30,6 @@ AM_INIT_AUTOMAKE([1.7.1 foreign no-dist no-define])
 AC_CONFIG_HEADERS(config.h)
 
 AC_PROG_CC
-AC_PROG_INSTALL
 AC_PROG_RANLIB
 
 PCRE_MAJOR="pcre_major"

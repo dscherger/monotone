@@ -108,8 +108,8 @@ monotone/Makefile: $(srcdir)/monotone/configure $(srcdir)/monotone/Makefile.in \
 	  CPPFLAGS="-I$(blddir)/libinst/include" \
 	  LDFLAGS="-L$(blddir)/lib"
 
-$(LIBSTAMPS): %-stamp: %/Makefile
-	$(MAKE) -C $(notdir $*) install
+$(LIBSTAMPS): libinst/%-stamp: %/Makefile
+	$(MAKE) -C $* install
 	touch $@
 
 $(patsubst %,%/Makefile, $(filter-out botan,$(LIBRARIES))):
