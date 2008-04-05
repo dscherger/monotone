@@ -9,3 +9,6 @@ liblua_a_SOURCES =							\
 	lparser.h lstate.cc lstate.h lstring.cc lstring.h lstrlib.cc	\
 	ltable.cc ltable.h ltablib.cc ltests.cc ltm.cc ltm.h		\
 	lundump.cc lundump.h lvm.cc lvm.h lzio.cc lzio.h
+
+# Autoconf's DEFS provides nothing useful for this directory, suppress it.
+DEFS =

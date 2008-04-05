@@ -11,9 +11,6 @@
 #include <limits.h>
 #include <stddef.h>
 
-/* Monotone local: Needs to see the application config.h.  */
-#include "config.h"
-
 /*
 ** ==================================================================
 ** Search for "@@" to find all configurable definitions.
