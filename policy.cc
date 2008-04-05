@@ -427,7 +427,7 @@ policy_branch::get_nearest_policy(branch_name const & name,
                                 my_branch_cert_value,
                                 my_committers);
   return policy->get_nearest_policy(name, policy_policy, policy_prefix,
-                                    accumulated_prefix);
+                                    prefix());
 }
 
 bool
@@ -439,13 +439,13 @@ policy_revision::get_nearest_policy(branch_name const & name,
   for (std::map<branch_prefix, policy_branch>::iterator
          i = delegations.begin(); i != delegations.end(); ++i)
     {
-      std::string mypref(accumulated_prefix + "." + i->first());
+      std::string mypref(i->first());
       if (name().find(mypref) == 0)
         {
           return i->second.get_nearest_policy(name,
                                               policy_policy,
                                               policy_prefix,
-                                              mypref);
+                                              "");
         }
     }
   policy_prefix = branch_prefix(accumulated_prefix);

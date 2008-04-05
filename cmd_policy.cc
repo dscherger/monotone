@@ -197,6 +197,7 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   E(projects.get_project_of_branch(name)
     .get_policy_branch_policy_of(name, policy_policy, parent_prefix),
     F("Cannot find parent policy for %s") % prefix);
+  P(F("Parent policy: %s") % parent_prefix);
 
   std::string subprefix;
   E(prefix() != parent_prefix(),
@@ -233,14 +234,14 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
 
   std::string child_uid;
   data child_spec;
+  // Create the new policy branch.
   create_policy_branch(db, keys, app.lua, app.opts,
 		       prefix, admin_keys, child_uid, child_spec);
   file_id child_spec_id;
-  {
-    file_data child_file_dat(child_spec);
-    calculate_ident(child_file_dat, child_spec_id);
-  }
+  file_data child_file_dat(child_spec);
+  calculate_ident(child_file_dat, child_spec_id);
 
+  // Delegate to it in the parent policy branch.
   policy_changes.files_added.insert(std::make_pair(delegation_file,
 						   child_spec_id));
 
@@ -249,7 +250,45 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
 		policy_old_roster,
 		policy_changes,
 		policy_new_revision);
-  
+
+  {
+    revision_id rev_id;
+    calculate_ident(policy_new_revision, rev_id);
+    revision_data rdat;
+    write_revision(policy_new_revision, rdat);
+
+
+    // write to the db
+    if (!db.file_version_exists(child_spec_id))
+      {
+	db.put_file(child_spec_id, child_file_dat);
+      }
+    db.put_revision(rev_id, rdat);
+
+
+    // add certs
+    // Do not use project_t::put_standard_certs here, we don't want the
+    // branch name to be translated!
+    date_t date;
+    if (app.opts.date_given)
+      date = app.opts.date;
+    else
+      date = date_t::now();
+
+    std::string author = app.opts.author();
+    if (author.empty())
+      {
+	if (!app.lua.hook_get_author(branch_name(prefix() + ".__policy__"),
+				 keys.signing_key, author))
+	  author = keys.signing_key();
+      }
+    utf8 changelog(N_("Create new policy branch."));
+
+    cert_revision_in_branch(db, keys, rev_id, branch_uid(policy_policy.branch_cert_value));
+    cert_revision_changelog(db, keys, rev_id, changelog);
+    cert_revision_date_time(db, keys, rev_id, date);
+    cert_revision_author(db, keys, rev_id, author);
+  }
 
   guard.commit();
 }
