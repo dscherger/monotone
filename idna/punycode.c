@@ -1,5 +1,5 @@
-/* punycode.c	Implementation of punycode used to ASCII encode IDN's.
- * Copyright (C) 2002, 2003  Simon Josefsson
+/* punycode.c --- Implementation of punycode used to ASCII encode IDN's.
+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007  Simon Josefsson
  *
  * This file is part of GNU Libidn.
  *
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GNU Libidn; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  *
  */
 
@@ -61,7 +61,7 @@
 
 #include <string.h>
 
-#include "idna/punycode.h"
+#include "punycode.h"
 
 /*** Bootstring parameters for Punycode ***/
 
@@ -148,7 +148,7 @@ adapt (punycode_uint delta, punycode_uint numpoints, int firsttime)
 /*** Main encode function ***/
 
 /**
- * punycode_encode:
+ * punycode_encode - encode Unicode to Punycode
  * @input_length: The number of code points in the @input array and
  *   the number of flags in the @case_flags array.
  * @input: An array of code points.  They are presumed to be Unicode
@@ -179,16 +179,16 @@ adapt (punycode_uint delta, punycode_uint numpoints, int firsttime)
  * Converts a sequence of code points (presumed to be Unicode code
  * points) to Punycode.
  *
- * Return value: The return value can be any of the punycode_status
- *   values defined above except %punycode_bad_input.  If not
- *   %punycode_success, then @output_size and @output might contain
+ * Return value: The return value can be any of the #Punycode_status
+ *   values defined above except %PUNYCODE_BAD_INPUT.  If not
+ *   %PUNYCODE_SUCCESS, then @output_size and @output might contain
  *   garbage.
  **/
 int
 punycode_encode (size_t input_length,
 		 const punycode_uint input[],
 		 const unsigned char case_flags[],
-		 size_t *output_length, char output[])
+		 size_t * output_length, char output[])
 {
   punycode_uint input_len, n, delta, h, b, bias, j, m, q, k, t;
   size_t out, max_out;
@@ -299,7 +299,7 @@ punycode_encode (size_t input_length,
 /*** Main decode function ***/
 
 /**
- * punycode_decode:
+ * punycode_decode - decode Punycode to Unicode
  * @input_length: The number of ASCII code points in the @input array.
  * @input: An array of ASCII code points (0..7F).
  * @output_length: The caller passes in the maximum number of code
@@ -328,8 +328,8 @@ punycode_encode (size_t input_length,
  * Converts Punycode to a sequence of code points (presumed to be
  * Unicode code points).
  *
- * Return value: The return value can be any of the punycode_status
- *   values defined above.  If not %punycode_success, then
+ * Return value: The return value can be any of the #Punycode_status
+ *   values defined above.  If not %PUNYCODE_SUCCESS, then
  *   @output_length, @output, and @case_flags might contain garbage.
  *
  **/

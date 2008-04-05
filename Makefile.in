@@ -34,12 +34,21 @@ default: all
 
 # Autoconf substitution variables - we don't need to know most of the
 # standard ones.
-CONFIGARGS := @CONFIGARGS@
-LIBRARIES  := @LIBRARIES@
-srcdir     := @srcdir@
-subsrcdir  := @subsrcdir@
-blddir     := $(shell pwd)
-subdirs    := $(LIBRARIES) monotone
+
+CONFIGARGS    := @CONFIGARGS@
+LIBRARIES     := @LIBRARIES@
+srcdir        := @srcdir@
+subsrcdir     := @subsrcdir@
+blddir        := $(shell pwd)
+subdirs       := $(LIBRARIES) monotone
+
+# We want to pass different options to the subdirectory configures
+# depending on what they are.  LIBSWITCHES lists the patterns
+# acceptable to pass to the library directories. Everything in
+# CONFIGARGS is single-quoted by the top level configure.
+
+LIBSWITCHES   := '--enable%' '--disable%' '--with%' '-q' '-C' '--config-cache%'
+LIBCONFIGARGS := $(filter $(LIBSWITCHES),$(CONFIGARGS))
 
 # Most of the "standard targets for users" only recurse into the
 # monotone subdirectory.

@@ -1,5 +1,5 @@
-/* profiles.c	Definitions of stringprep profiles.
- * Copyright (C) 2002, 2003  Simon Josefsson
+/* profiles.c --- Definitions of stringprep profiles.
+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007  Simon Josefsson
  *
  * This file is part of GNU Libidn.
  *
@@ -15,21 +15,22 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GNU Libidn; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  *
  */
 
-#include "idna/stringprep.h"
+#include "stringprep.h"
 
 const Stringprep_profiles stringprep_profiles[] = {
   {"Nameprep", stringprep_nameprep},
-  {"KRBprep", stringprep_kerberos5},
+  {"KRBprep", stringprep_kerberos5},	/* Deprecate? */
   {"Nodeprep", stringprep_xmpp_nodeprep},
   {"Resourceprep", stringprep_xmpp_resourceprep},
-  {"plain", stringprep_plain},	/* sasl-anon-00 */
-  {"trace", stringprep_trace},	/* sasl-anon-01,02 */
+  {"plain", stringprep_plain},	/* sasl-anon-00. */
+  {"trace", stringprep_trace},	/* sasl-anon-01,02,03. */
   {"SASLprep", stringprep_saslprep},
-  {"ISCSIprep", stringprep_iscsi},
+  {"ISCSIprep", stringprep_iscsi},	/* Obsolete. */
+  {"iSCSI", stringprep_iscsi},	/* IANA. */
   {NULL, NULL}
 };
 
@@ -173,7 +174,9 @@ const Stringprep_profile stringprep_trace[] = {
 };
 
 const Stringprep_table_element stringprep_iscsi_prohibit[] = {
-  {0x0000},			/* [ASCII CONTROL CHARACTERS and SPACE through ,] */
+  /* NB, since start == 0, we must have that end != 0 for the
+     end-of-table logic to work. */
+  {0x0000, 1},			/* [ASCII CONTROL CHARACTERS and SPACE through ,] */
   {0x0001},
   {0x0002},
   {0x0003},
@@ -244,14 +247,15 @@ const Stringprep_profile stringprep_iscsi[] = {
   {STRINGPREP_MAP_TABLE, 0, stringprep_rfc3454_B_1},
   {STRINGPREP_MAP_TABLE, 0, stringprep_rfc3454_B_2},
   {STRINGPREP_NFKC, 0, 0},
-  {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_2_1},
-  {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_2_2},
+  {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_1_1},
+  {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_1_2},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_2_1},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_2_2},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_3},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_4},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_5},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_6},
+  {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_7},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_8},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_9},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_iscsi_prohibit},
@@ -289,7 +293,7 @@ const Stringprep_profile stringprep_saslprep[] = {
   {STRINGPREP_MAP_TABLE, 0, stringprep_saslprep_space_map},
   {STRINGPREP_MAP_TABLE, 0, stringprep_rfc3454_B_1},
   {STRINGPREP_NFKC, 0, 0},
-  {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_2_2},
+  {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_1_2},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_2_1},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_2_2},
   {STRINGPREP_PROHIBIT_TABLE, 0, stringprep_rfc3454_C_3},

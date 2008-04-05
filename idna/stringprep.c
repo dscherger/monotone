@@ -1,5 +1,5 @@
-/* stringprep.c		Core stringprep implementation.
- * Copyright (C) 2002, 2003  Simon Josefsson
+/* stringprep.c --- Core stringprep implementation.
+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007  Simon Josefsson
  *
  * This file is part of GNU Libidn.
  *
@@ -15,18 +15,18 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GNU Libidn; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  *
  */
 
-#if HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "idna/stringprep.h"
+#include "stringprep.h"
 
 static ssize_t
 stringprep_find_character_in_table (uint32_t ucs4,
@@ -34,10 +34,15 @@ stringprep_find_character_in_table (uint32_t ucs4,
 {
   ssize_t i;
 
-  /* During self tests, this is where it spends its CPU time and
-     causes most cache misses.  Do a binary search? */
+  /* This is where typical uses of Libidn spends very close to all CPU
+     time and causes most cache misses.  One could easily do a binary
+     search instead.  Before rewriting this, I want hard evidence this
+     slowness is at all relevant in typical applications.  (I don't
+     dispute optimization may improve matters significantly, I'm
+     mostly interested in having someone give real-world benchmark on
+     the impact of libidn.) */
 
-  for (i = 0; table[i].start; i++)
+  for (i = 0; table[i].start || table[i].end; i++)
     if (ucs4 >= table[i].start &&
 	ucs4 <= (table[i].end ? table[i].end : table[i].start))
       return i;
@@ -99,13 +104,13 @@ stringprep_apply_table_to_string (uint32_t * ucs4,
    ( INVERTED(profileflags) && (profileflags & flags)))
 
 /**
- * stringprep_4i:
+ * stringprep_4i - prepare internationalized string
  * @ucs4: input/output array with string to prepare.
  * @len: on input, length of input array with Unicode code points,
- *          on exit, length of output array with Unicode code points.
+ *   on exit, length of output array with Unicode code points.
  * @maxucs4len: maximum length of input/output array.
- * @flags: stringprep profile flags, or 0.
- * @profile: pointer to stringprep profile to use.
+ * @flags: a #Stringprep_profile_flags value, or 0.
+ * @profile: pointer to #Stringprep_profile to use.
  *
  * Prepare the input UCS-4 string according to the stringprep profile,
  * and write back the result to the input string.
@@ -119,14 +124,15 @@ stringprep_apply_table_to_string (uint32_t * ucs4,
  * indicate how large the buffer holding the string is.  This function
  * will not read or write to code points outside that size.
  *
- * The @flags are one of Stringprep_profile_flags, or 0.
+ * The @flags are one of #Stringprep_profile_flags values, or 0.
  *
- * The @profile contain the instructions to perform.  Your application
- * can define new profiles, possibly re-using the generic stringprep
- * tables that always will be part of the library, or use one of the
- * currently supported profiles.
+ * The @profile contain the #Stringprep_profile instructions to
+ * perform.  Your application can define new profiles, possibly
+ * re-using the generic stringprep tables that always will be part of
+ * the library, or use one of the currently supported profiles.
  *
- * Return value: Returns %STRINGPREP_OK iff successful, or an error code.
+ * Return value: Returns %STRINGPREP_OK iff successful, or an
+ *   #Stringprep_rc error code.
  **/
 int
 stringprep_4i (uint32_t * ucs4, size_t * len, size_t maxucs4len,
@@ -286,11 +292,11 @@ stringprep_4zi_1 (uint32_t * ucs4, size_t ucs4len, size_t maxucs4len,
 }
 
 /**
- * stringprep_4zi:
+ * stringprep_4zi - prepare internationalized string
  * @ucs4: input/output array with zero terminated string to prepare.
  * @maxucs4len: maximum length of input/output array.
- * @flags: stringprep profile flags, or 0.
- * @profile: pointer to stringprep profile to use.
+ * @flags: a #Stringprep_profile_flags value, or 0.
+ * @profile: pointer to #Stringprep_profile to use.
  *
  * Prepare the input zero terminated UCS-4 string according to the
  * stringprep profile, and write back the result to the input string.
@@ -299,14 +305,15 @@ stringprep_4zi_1 (uint32_t * ucs4, size_t ucs4len, size_t maxucs4len,
  * indicate how large the buffer holding the string is.  This function
  * will not read or write to code points outside that size.
  *
- * The @flags are one of Stringprep_profile_flags, or 0.
+ * The @flags are one of #Stringprep_profile_flags values, or 0.
  *
- * The @profile contain the instructions to perform.  Your application
- * can define new profiles, possibly re-using the generic stringprep
- * tables that always will be part of the library, or use one of the
- * currently supported profiles.
+ * The @profile contain the #Stringprep_profile instructions to
+ * perform.  Your application can define new profiles, possibly
+ * re-using the generic stringprep tables that always will be part of
+ * the library, or use one of the currently supported profiles.
  *
- * Return value: Returns %STRINGPREP_OK iff successful, or an error code.
+ * Return value: Returns %STRINGPREP_OK iff successful, or an
+ *   #Stringprep_rc error code.
  **/
 int
 stringprep_4zi (uint32_t * ucs4, size_t maxucs4len,
@@ -322,11 +329,11 @@ stringprep_4zi (uint32_t * ucs4, size_t maxucs4len,
 }
 
 /**
- * stringprep:
+ * stringprep - prepare internationalized string
  * @in: input/ouput array with string to prepare.
  * @maxlen: maximum length of input/output array.
- * @flags: stringprep profile flags, or 0.
- * @profile: pointer to stringprep profile to use.
+ * @flags: a #Stringprep_profile_flags value, or 0.
+ * @profile: pointer to #Stringprep_profile to use.
  *
  * Prepare the input zero terminated UTF-8 string according to the
  * stringprep profile, and write back the result to the input string.
@@ -339,12 +346,12 @@ stringprep_4zi (uint32_t * ucs4, size_t maxucs4len,
  * indicate how large the buffer holding the string is.  This function
  * will not read or write to characters outside that size.
  *
- * The @flags are one of Stringprep_profile_flags, or 0.
+ * The @flags are one of #Stringprep_profile_flags values, or 0.
  *
- * The @profile contain the instructions to perform.  Your application
- * can define new profiles, possibly re-using the generic stringprep
- * tables that always will be part of the library, or use one of the
- * currently supported profiles.
+ * The @profile contain the #Stringprep_profile instructions to
+ * perform.  Your application can define new profiles, possibly
+ * re-using the generic stringprep tables that always will be part of
+ * the library, or use one of the currently supported profiles.
  *
  * Return value: Returns %STRINGPREP_OK iff successful, or an error code.
  **/
@@ -361,13 +368,19 @@ stringprep (char *in,
 
   do
     {
+      uint32_t *newp;
+
       if (ucs4)
 	free (ucs4);
       ucs4 = stringprep_utf8_to_ucs4 (in, -1, &ucs4len);
       maxucs4len = ucs4len + adducs4len;
-      ucs4 = realloc (ucs4, maxucs4len * sizeof (uint32_t));
-      if (!ucs4)
-	return STRINGPREP_MALLOC_ERROR;
+      newp = realloc (ucs4, maxucs4len * sizeof (uint32_t));
+      if (!newp)
+	{
+	  free (ucs4);
+	  return STRINGPREP_MALLOC_ERROR;
+	}
+      ucs4 = newp;
 
       rc = stringprep_4i (ucs4, &ucs4len, maxucs4len, flags, profile);
       adducs4len += 50;
@@ -398,11 +411,11 @@ stringprep (char *in,
 }
 
 /**
- * stringprep_profile:
+ * stringprep_profile - prepare internationalized string
  * @in: input array with UTF-8 string to prepare.
  * @out: output variable with pointer to newly allocate string.
  * @profile: name of stringprep profile to use.
- * @flags: stringprep profile flags, or 0.
+ * @flags: a #Stringprep_profile_flags value, or 0.
  *
  * Prepare the input zero terminated UTF-8 string according to the
  * stringprep profile, and return the result in a newly allocated
@@ -414,7 +427,7 @@ stringprep (char *in,
  *
  * The output @out variable must be deallocated by the caller.
  *
- * The @flags are one of Stringprep_profile_flags, or 0.
+ * The @flags are one of #Stringprep_profile_flags values, or 0.
  *
  * The @profile specifies the name of the stringprep profile to use.
  * It must be one of the internally supported stringprep profiles.
@@ -424,8 +437,7 @@ stringprep (char *in,
 int
 stringprep_profile (const char *in,
 		    char **out,
-		    const char *profile,
-		    Stringprep_profile_flags flags)
+		    const char *profile, Stringprep_profile_flags flags)
 {
   const Stringprep_profiles *p;
   char *str = NULL;
@@ -473,18 +485,26 @@ stringprep_profile (const char *in,
  *
  * The library contains a generic Stringprep implementation that does
  * Unicode 3.2 NFKC normalization, mapping and prohibitation of
- * characters, and bidirectional character handling.  Profiles for iSCSI,
- * Kerberos 5, Nameprep, SASL and XMPP are included.  Punycode and ASCII
- * Compatible Encoding (ACE) via IDNA are supported.
+ * characters, and bidirectional character handling.  Profiles for
+ * Nameprep, iSCSI, SASL and XMPP are included.  Punycode and ASCII
+ * Compatible Encoding (ACE) via IDNA are supported.  A mechanism to
+ * define Top-Level Domain (TLD) specific validation tables, and to
+ * compare strings against those tables, is included.  Default tables
+ * for some TLDs are also included.
  *
- * The Stringprep API consists of two main functions, one for converting
- * data from the system's native representation into UTF-8, and one
- * function to perform the Stringprep processing.  Adding a new
- * Stringprep profile for your application within the API is
- * straightforward.  The Punycode API consists of one encoding function
- * and one decoding function.  The IDNA API consists of the ToASCII and
- * ToUnicode functions, as well as an high-level interface for converting
- * entire domain names to and from the ACE encoded form.
+ * The Stringprep API consists of two main functions, one for
+ * converting data from the system's native representation into UTF-8,
+ * and one function to perform the Stringprep processing.  Adding a
+ * new Stringprep profile for your application within the API is
+ * straightforward.  The Punycode API consists of one encoding
+ * function and one decoding function.  The IDNA API consists of the
+ * ToASCII and ToUnicode functions, as well as an high-level interface
+ * for converting entire domain names to and from the ACE encoded
+ * form.  The TLD API consists of one set of functions to extract the
+ * TLD name from a domain string, one set of functions to locate the
+ * proper TLD table to use based on the TLD name, and core functions
+ * to validate a string against a TLD table, and some utility wrappers
+ * to perform all the steps in one call.
  *
  * The library is used by, e.g., GNU SASL and Shishi to process user
  * names and passwords.  Libidn can be built into GNU Libc to enable a
@@ -522,6 +542,7 @@ stringprep_profile (const char *in,
  * \include example.c
  * \include example3.c
  * \include example4.c
+ * \include example5.c
  */
 
 /**
@@ -623,15 +644,6 @@ stringprep_profile (const char *in,
  * @maxlen: maximum length of input/output array.
  *
  * Prepare the input UTF-8 string according to the draft iSCSI
- * stringprep profile.  Returns 0 iff successful, or an error code.
- **/
-
-/**
- * stringprep_kerberos5:
- * @in: input/ouput array with string to prepare.
- * @maxlen: maximum length of input/output array.
- *
- * Prepare the input UTF-8 string according to the draft Kerberos5
  * stringprep profile.  Returns 0 iff successful, or an error code.
  **/
 

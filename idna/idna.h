@@ -1,5 +1,5 @@
-/* idna.h	Declarations for IDNA.
- * Copyright (C) 2002, 2003  Simon Josefsson
+/* idna.h --- Declarations for Internationalized Domain Name in Applications.
+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007  Simon Josefsson
  *
  * This file is part of GNU Libidn.
  *
@@ -15,20 +15,20 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GNU Libidn; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  *
  */
 
 #ifndef _IDNA_H
-#define _IDNA_H
+# define _IDNA_H
 
-#ifdef __cplusplus
+# ifdef __cplusplus
 extern "C"
 {
-#endif
+# endif
 
-#include <stddef.h>		/* size_t */
-#include "idna/idn-int.h"	/* uint32_t */
+# include <stddef.h>		/* size_t */
+# include <idn-int.h>		/* uint32_t */
 
   /* Error codes. */
   typedef enum
@@ -37,6 +37,8 @@ extern "C"
     IDNA_STRINGPREP_ERROR = 1,
     IDNA_PUNYCODE_ERROR = 2,
     IDNA_CONTAINS_NON_LDH = 3,
+    /* Workaround typo in earlier versions. */
+    IDNA_CONTAINS_LDH = IDNA_CONTAINS_NON_LDH,
     IDNA_CONTAINS_MINUS = 4,
     IDNA_INVALID_LENGTH = 5,
     IDNA_NO_ACE_PREFIX = 6,
@@ -44,7 +46,8 @@ extern "C"
     IDNA_CONTAINS_ACE_PREFIX = 8,
     IDNA_ICONV_ERROR = 9,
     /* Internal errors. */
-    IDNA_MALLOC_ERROR = 201
+    IDNA_MALLOC_ERROR = 201,
+    IDNA_DLOPEN_ERROR = 202
   } Idna_rc;
 
   /* IDNA flags */
@@ -54,9 +57,11 @@ extern "C"
     IDNA_USE_STD3_ASCII_RULES = 0x0002
   } Idna_flags;
 
-#ifndef IDNA_ACE_PREFIX
-#define IDNA_ACE_PREFIX "xn--"
-#endif
+# ifndef IDNA_ACE_PREFIX
+#  define IDNA_ACE_PREFIX "xn--"
+# endif
+
+  extern const char *idna_strerror (Idna_rc rc);
 
   /* Core functions */
   extern int idna_to_ascii_4i (const uint32_t * in, size_t inlen,
@@ -89,7 +94,7 @@ extern "C"
   extern int idna_to_unicode_lzlz (const char *input,
 				   char **output, int flags);
 
-#ifdef __cplusplus
+# ifdef __cplusplus
 }
-#endif
-#endif				/* _PUNYCODE_H */
+# endif
+#endif				/* _IDNA_H */

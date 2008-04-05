@@ -26,6 +26,11 @@ AC_CONFIG_SRCDIR([monotone/monotone.cc])
 CONFIGARGS="$ac_configure_args"
 AC_SUBST(CONFIGARGS)
 
+# Gettext is invoked here, and the po directory lives at top level,
+# primarily because autopoint is a horrid monster.
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.11.5])
+
 # --with-system-foo support goes here
 LIBRARIES="botan idna lua netxx pcre sqlite"
 AC_SUBST(LIBRARIES)

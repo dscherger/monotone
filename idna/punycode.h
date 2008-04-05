@@ -1,5 +1,5 @@
-/* punycode.h	Declarations for punycode functions.
- * Copyright (C) 2002, 2003  Simon Josefsson
+/* punycode.h --- Declarations for punycode functions.
+ * Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007  Simon Josefsson
  *
  * This file is part of GNU Libidn.
  *
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GNU Libidn; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  *
  */
 
@@ -68,7 +68,7 @@ extern "C"
 #endif
 
 #include <stddef.h>		/* size_t */
-#include "idna/idn-int.h"	/* uint32_t */
+#include <idn-int.h>		/* uint32_t */
 
   enum punycode_status
   {
@@ -85,6 +85,8 @@ extern "C"
     PUNYCODE_BIG_OUTPUT = punycode_big_output,
     PUNYCODE_OVERFLOW = punycode_overflow
   } Punycode_status;
+
+  extern const char *punycode_strerror (Punycode_status rc);
 
 /* punycode_uint needs to be unsigned and needs to be */
 /* at least 26 bits wide.                             */
