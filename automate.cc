@@ -81,7 +81,7 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   branch_name branch;
   if (args.size() == 1)
@@ -94,7 +94,10 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
     }
 
   set<revision_id> heads;
-  project.get_branch_heads(branch, heads, app.opts.ignore_suspend_certs);
+  projects
+    .get_project_of_branch(branch)
+    .get_branch_heads(branch, heads,
+                      app.opts.ignore_suspend_certs);
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
     output << *i << '\n';
@@ -508,9 +511,9 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   set<revision_id> completions;
-  expand_selector(app.opts, app.lua, project, idx(args, 0)(), completions);
+  expand_selector(app.opts, app.lua, projects, idx(args, 0)(), completions);
 
   for (set<revision_id>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
@@ -1450,14 +1453,14 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   packet_writer pw(output);
 
   revision_id r_id(decode_hexenc(idx(args, 0)()));
   vector< revision<cert> > certs;
 
   N(db.revision_exists(r_id), F("no such revision '%s'") % r_id);
-  project.get_revision_certs(r_id, certs);
+  projects.get_revision_certs(r_id, certs);
 
   for (vector< revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); i++)
@@ -1622,10 +1625,10 @@ CMD_AUTOMATE(branches, "",
     F("no arguments needed"));
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   set<branch_name> names;
 
-  project.get_branch_list(names, !app.opts.ignore_suspend_certs);
+  projects.get_branch_list(names, !app.opts.ignore_suspend_certs);
 
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
@@ -1674,7 +1677,7 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   globish incl("*");
   bool filtering(false);
 
@@ -1689,13 +1692,13 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
   prt.print_stanza(stz);
 
   set<tag_t> tags;
-  project.get_tags(tags);
+  projects.get_tags(tags);
 
   for (set<tag_t>::const_iterator tag = tags.begin();
        tag != tags.end(); ++tag)
     {
       set<branch_name> branches;
-      project.get_revision_branches(tag->ident, branches);
+      projects.get_revision_branches(tag->ident, branches);
 
       bool show(!filtering);
       vector<string> branch_names;

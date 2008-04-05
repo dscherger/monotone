@@ -62,15 +62,17 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
     throw usage(execid);
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   vector<cert> certs;
 
   transaction_guard guard(db, false);
 
   revision_id ident;
-  complete(app.opts, app.lua,  project, idx(args, 0)(), ident);
+  complete(app.opts, app.lua,  projects, idx(args, 0)(), ident);
   vector< revision<cert> > ts;
-  project.get_revision_certs(ident, ts);
+  // FIXME_PROJECTS: after projects are implemented,
+  // use the app.db version instead if no project is specified.
+  projects.get_revision_certs(ident, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
     certs.push_back(idx(ts, i).inner());
@@ -283,10 +285,11 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
     throw usage(execid);
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   globish exc(app.opts.exclude_patterns);
   set<branch_name> names;
-  project.get_branch_list(inc, names, !app.opts.ignore_suspend_certs);
+  projects.get_branch_list(inc, names,
+                           !app.opts.ignore_suspend_certs);
 
   for (set<branch_name>::const_iterator i = names.begin();
        i != names.end(); ++i)
@@ -300,25 +303,42 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     options::opts::none)
 {
   database db(app);
-  map<branch_name, epoch_data> epochs;
+  map<branch_uid, epoch_data> epochs;
   db.get_epochs(epochs);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() == 0)
     {
-      for (map<branch_name, epoch_data>::const_iterator
+      std::set<branch_uid> branches;
+      projects.get_branch_uids(branches);
+      for (map<branch_uid, epoch_data>::const_iterator
              i = epochs.begin();
            i != epochs.end(); ++i)
         {
-          cout << encode_hexenc(i->second.inner()()) << ' ' << i->first << '\n';
+          if (branches.find(i->first) == branches.end())
+            {
+              cout << encode_hexenc(i->second.inner()()) << ' ' << i->first << '\n';
+            }
+          else
+            {
+              branch_name branch = projects.translate_branch(i->first);
+              cout << i->second << ' ' << branch << '\n';
+            }
         }
     }
   else
     {
+      std::set<branch_name> branches;
+      projects.get_branch_list(branches, false);
       for (args_vector::const_iterator i = args.begin();
            i != args.end();
            ++i)
         {
-          map<branch_name, epoch_data>::const_iterator j = epochs.find(branch_name((*i)()));
+          branch_name branch((*i)());
+          N(branches.find(branch) != branches.end(),
+            F("Unknown branch %s") % branch);
+          branch_uid b = projects.translate_branch(branch);
+          map<branch_uid, epoch_data>::const_iterator j = epochs.find(b);
           N(j != epochs.end(), F("no epoch for branch %s") % *i);
           cout << encode_hexenc(j->second.inner()()) << ' ' << j->first << '\n';
         }
@@ -332,8 +352,8 @@ CMD(tags, "tags", "", CMD_REF(list), "",
 {
   database db(app);
   set<tag_t> tags;
-  project_t project(db);
-  project.get_tags(tags);
+  project_set projects(db, app.lua, app.opts);
+  projects.get_tags(tags);
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
     {
@@ -679,7 +699,7 @@ CMD_AUTOMATE(certs, N_("REV"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   vector<cert> certs;
 
@@ -693,7 +713,7 @@ CMD_AUTOMATE(certs, N_("REV"),
   vector< revision<cert> > ts;
   // FIXME_PROJECTS: after projects are implemented,
   // use the db version instead if no project is specified.
-  project.get_revision_certs(rid, ts);
+  projects.get_revision_certs(rid, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
     certs.push_back(idx(ts, i).inner());
