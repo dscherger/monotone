@@ -37,6 +37,7 @@
 #ifndef _netxx_common_h_
 #define _netxx_common_h_
 
+#include "config.h"
 #include "compat.h"
 #include "osutil.h"
 
