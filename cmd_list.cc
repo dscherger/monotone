@@ -322,7 +322,7 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
           else
             {
               branch_name branch = projects.translate_branch(i->first);
-              cout << i->second << ' ' << branch << '\n';
+              cout << encode_hexenc(i->second.inner()()) << ' ' << branch << '\n';
             }
         }
     }

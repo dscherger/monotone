@@ -104,7 +104,7 @@ policy_branch::init(data const & spec)
           pa.sym();
           string rid;
           pa.hex(rid);
-          rev_id = revision_id(rid);
+          rev_id = revision_id(decode_hexenc(rid));
         }
       else
         {
@@ -240,7 +240,7 @@ namespace
     cert_value branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
-		    hexenc<id> const & rid,
+		    revision_id const & rid,
 		    cert_name const & name,
 		    cert_value const & value)
     {
@@ -279,7 +279,7 @@ namespace
     cert_value branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
-		    hexenc<id> const & rid,
+		    revision_id const & rid,
 		    cert_name const & name,
 		    cert_value const & value)
     {

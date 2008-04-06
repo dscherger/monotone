@@ -580,14 +580,16 @@ project_set::project_set(database & db,
                                               db)));
         }
     }
-  for (map<branch_prefix, revision_id>::const_iterator
+  for (map<branch_prefix, hexenc<id> >::const_iterator
          i = opts.policy_revisions.begin();
        i != opts.policy_revisions.end(); ++i)
     {
-          projects.insert(make_pair(i->first,
-                                    project_t(i->first,
-                                              i->second,
-                                              db)));
+      id rid;
+      decode_hexenc(i->second, rid);
+      projects.insert(make_pair(i->first,
+                                project_t(i->first,
+                                          revision_id(rid),
+                                          db)));
     }
   if (projects.empty())
     {

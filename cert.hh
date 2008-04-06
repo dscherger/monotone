@@ -76,7 +76,7 @@ bool put_simple_revision_cert(database & db,
                               cert_name const & nm,
                               cert_value const & val);
 typedef boost::function<bool (std::set<rsa_keypair_id> const &,
-                              hexenc<id> const &,
+                              revision_id const &,
                               cert_name const &,
                               cert_value const &)> trust_function;
 

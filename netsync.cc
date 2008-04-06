@@ -1974,6 +1974,7 @@ session::process_data_cmd(netcmd_item_type type,
                                " wanted '%s' got '%s'")
                                % hitem() % keyid % hitem()
                                % encode_hexenc(tmp()));
+          }
         if (projects.db.put_key(keyid, pub))
           written_keys.push_back(keyid);
         else

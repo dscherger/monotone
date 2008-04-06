@@ -63,7 +63,7 @@ OPTION(globals, positionals, true, "--", "")
 }
 #endif
 
-typedef std::map<branch_prefix, revision_id> policy_revision_arg_map;
+typedef std::map<branch_prefix, hexenc<id> > policy_revision_arg_map;
 GOPT(policy_revisions, "policy-revision", policy_revision_arg_map, ,
      gettext_noop("prefix@REVISION_ID, use a specific policy revision"))
 #ifdef option_bodies
@@ -72,7 +72,7 @@ GOPT(policy_revisions, "policy-revision", policy_revision_arg_map, ,
   if (at == std::string::npos)
     throw bad_arg_internal(F("no '@' found").str());
   branch_prefix bp(arg.substr(0, at));
-  revision_id rid(arg.substr(at+1));
+  hexenc<id> rid(arg.substr(at+1));
   policy_revisions.insert(std::make_pair(bp, rid));
 }
 #endif

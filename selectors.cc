@@ -49,7 +49,7 @@ enum selector_type
 typedef vector<pair<selector_type, string> > selector_list;
 
 static void
-decode_selector(project_t & project,
+decode_selector(project_set & projects,
                 options const & opts,
                 lua_hooks & lua,
                 string const & orig_sel,
@@ -181,7 +181,7 @@ decode_selector(project_t & project,
               parent_map parents;
               set<revision_id> parent_ids;
 
-              work.get_parent_rosters(project.db, parents);
+              work.get_parent_rosters(projects.db, parents);
 
               for (parent_map::const_iterator i = parents.begin();
                 i != parents.end(); ++i)
@@ -189,7 +189,7 @@ decode_selector(project_t & project,
                   parent_ids.insert(i->first);
                 }
 
-              diagnose_ambiguous_expansion(project, "p:", parent_ids);
+              diagnose_ambiguous_expansion(projects, "p:", parent_ids);
               sel = (* parent_ids.begin()).inner()();
             }
           else
@@ -201,7 +201,7 @@ decode_selector(project_t & project,
 }
 
 static void 
-parse_selector(project_t & project,
+parse_selector(project_set & projects,
                options const & opts,
                lua_hooks & lua,
                string const & str, selector_list & sels)
@@ -230,7 +230,7 @@ parse_selector(project_t & project,
           string sel;
           selector_type type = sel_unknown;
 
-          decode_selector(project, opts, lua, *i, type, sel);
+          decode_selector(projects, opts, lua, *i, type, sel);
           sels.push_back(make_pair(type, sel));
         }
     }
@@ -379,7 +379,7 @@ complete(options const & opts, lua_hooks & lua,
          set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  parse_selector(projects, opts, lua, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1
@@ -434,7 +434,7 @@ expand_selector(options const & opts, lua_hooks & lua,
                 set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  parse_selector(projects, opts, lua, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1

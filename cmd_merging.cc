@@ -659,8 +659,6 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
                                "            to branch '%s' (head %s)\n")
                             % src_branch % (*src_i)
                             % dst_branch % (*dst_i)).str());
-                            % idx(args, 1)
-                            % *dst_i).str());
 
       dst_project.put_standard_certs_from_options(app.opts, app.lua,
                                                   keys,
