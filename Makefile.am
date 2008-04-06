@@ -19,6 +19,8 @@ LUAEXT_SOURCES = 							\
 	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
 	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
+	globish.cc globish.hh basic_io.cc basic_io.hh json_io.cc	\
+	json_io.hh json_msgs.cc json_msgs.hh				\
 	char_classifiers.hh
 
 MOST_SOURCES = 								\

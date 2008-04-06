@@ -2348,41 +2348,6 @@ bool session::process(transaction_guard & guard)
 }
 
 
-static shared_ptr<Netxx::StreamBase>
-build_stream_to_server(options & opts, lua_hooks & lua,
-                       netsync_connection_info info,
-                       Netxx::port_type default_port,
-                       Netxx::Timeout timeout)
-{
-  shared_ptr<Netxx::StreamBase> server;
-  
-  if (info.client.use_argv)
-    {
-      I(info.client.argv.size() > 0);
-      string cmd = info.client.argv[0];
-      info.client.argv.erase(info.client.argv.begin());
-      return shared_ptr<Netxx::StreamBase>
-        (new Netxx::PipeStream(cmd, info.client.argv));
-    }
-  else
-    {
-#ifdef USE_IPV6
-      bool use_ipv6=true;
-#else
-      bool use_ipv6=false;
-#endif
-      string host(info.client.u.host);
-      if (host.empty())
-        host = info.client.unparsed();
-      if (!info.client.u.port.empty())
-        default_port = lexical_cast<Netxx::port_type>(info.client.u.port);
-      Netxx::Address addr(info.client.unparsed().c_str(),
-                          default_port, use_ipv6);
-      return shared_ptr<Netxx::StreamBase>
-        (new Netxx::Stream(addr, timeout));
-    }
-}
-
 static void
 call_server(options & opts,
             lua_hooks & lua,
@@ -2399,17 +2364,10 @@ call_server(options & opts,
   Netxx::Timeout timeout(static_cast<long>(timeout_seconds)), instant(0,1);
 
   P(F("connecting to %s") % info.client.unparsed);
-  uri u;
-  parse_uri(address(), u);
-  P(F("connecting to %s") % address);  
 
   shared_ptr<Netxx::StreamBase> server
     = build_stream_to_server(opts, lua,
                              info, default_port,
-                             u,
-                             include_pattern,
-                             exclude_pattern,
-                             default_port,
                              timeout);
 
 
@@ -2841,19 +2799,13 @@ serve_connections(options & opts,
                   info.client.exclude_pattern = globish(request.exclude);
                   info.client.use_argv = false;
                   parse_uri(info.client.unparsed(), info.client.u);
-                  
+
                   try
                     {
                       P(F("connecting to %s") % info.client.unparsed);
-                      uri u;
-                      parse_uri(addr(), u);
-                      P(F("connecting to %s") % addr());
                       shared_ptr<Netxx::StreamBase> server
                         = build_stream_to_server(opts, lua,
                                                  info, default_port,
-                        = build_stream_to_server(opts, lua, u,
-                                                 inc, exc,
-                                                 default_port,
                                                  timeout);
 
                       // 'false' here means not to revert changes when
@@ -2967,8 +2919,8 @@ serve_connections(options & opts,
                 }
             }
         }
-      // Possibly loop around if we get exceptions from Netxx and we're 
-      // attempting to use ipv6, or have some other reason to try again. 
+      // Possibly loop around if we get exceptions from Netxx and we're
+      // attempting to use ipv6, or have some other reason to try again.
       catch (Netxx::NetworkException &)
         {
           if (try_again)

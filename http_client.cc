@@ -14,6 +14,7 @@
 #include "http_client.hh"
 #include "json_io.hh"
 #include "json_msgs.hh"
+#include "netcmd.hh"
 #include "net_common.hh"
 #include "sanity.hh"
 #include "lexical_cast.hh"
@@ -48,17 +49,12 @@ using Netxx::PipeStream;
 
 
 http_client::http_client(options & opts, lua_hooks & lua,
-                         uri const & u,
-                         globish const & include_pattern,
-                         globish const & exclude_pattern)
+                         netsync_connection_info const & info)
   : opts(opts),
     lua(lua),
-    u(u),
-    include_pattern(include_pattern),
-    exclude_pattern(exclude_pattern),
-    stream(build_stream_to_server(opts, lua, u,
-              include_pattern, exclude_pattern,
-              u.parse_port(constants::default_http_port),
+    info(info),
+    stream(build_stream_to_server(opts, lua, info,
+              info.client.u.parse_port(constants::default_http_port),
               Netxx::Timeout(static_cast<long>(
                   constants::netsync_timeout_seconds)))),
     nb(new Netbuf<constants::bufsz>(*stream)),
@@ -72,9 +68,8 @@ http_client::transact_json(json_value_t v)
   if (!open)
     {
       L(FL("reopening connection"));
-      stream = build_stream_to_server(opts, lua, u,
-                include_pattern, exclude_pattern,
-                u.parse_port(constants::default_http_port),
+      stream = build_stream_to_server(opts, lua, info,
+                info.client.u.parse_port(constants::default_http_port),
                 Netxx::Timeout(static_cast<long>(
                     constants::netsync_timeout_seconds)));
       nb = shared_ptr< Netbuf<constants::bufsz> >(
@@ -98,13 +93,13 @@ http_client::transact_json(json_value_t v)
                      "Accept-Encoding: identity\r\n"
                      "Connection: Keep-Alive\r\n"
                      "\r\n")
-                   % (u.path.empty() ? "/" : u.path)
-                   % u.host
+                   % (info.client.u.path.empty() ? "/" : info.client.u.path)
+                   % info.client.u.host
                    % lexical_cast<string>(out.buf.size())).str();
 
   L(FL("http_client: sending request [[POST %s HTTP/1.0]]")
-    % (u.path.empty() ? "/" : u.path));
-  L(FL("http_client: to [[Host: %s]]") % u.host);
+    % (info.client.u.path.empty() ? "/" : info.client.u.path));
+  L(FL("http_client: to [[Host: %s]]") % info.client.u.host);
   L(FL("http_client: sending %d-byte body") % out.buf.size());
   io->write(header.data(), header.size());
   io->write(out.buf.data(), out.buf.length());

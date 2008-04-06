@@ -11,6 +11,7 @@
 
 #include "globish.hh"
 #include "lua_hooks.hh"
+#include "netcmd.hh"
 #include "net_common.hh"
 #include "options.hh"
 #include "uri.hh"
@@ -20,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "netxx/address.h"
@@ -32,9 +34,10 @@
 using std::string;
 using std::list;
 using std::vector;
+using boost::lexical_cast;
 using boost::shared_ptr;
 
-void 
+void
 add_address_names(Netxx::Address & addr,
                   std::list<utf8> const & addresses,
                   Netxx::port_type default_port)
@@ -66,29 +69,20 @@ add_address_names(Netxx::Address & addr,
 }
 
 shared_ptr<Netxx::StreamBase>
-build_stream_to_server(options & opts,
-                       lua_hooks & lua,
-                       uri const & u,
-                       globish const & include_pattern,
-                       globish const & exclude_pattern,                       
+build_stream_to_server(options & opts, lua_hooks & lua,
+                       netsync_connection_info info,
                        Netxx::port_type default_port,
                        Netxx::Timeout timeout)
 {
   shared_ptr<Netxx::StreamBase> server;
-  vector<string> argv;
 
-  if (lua.hook_get_netsync_connect_command(u,
-                                           include_pattern,
-                                           exclude_pattern,
-                                           global_sanity.debug_p(),
-                                           argv))
+  if (info.client.use_argv)
     {
-      I(argv.size() > 0);
-      string cmd = argv[0];
-      argv.erase(argv.begin());
-      opts.use_transport_auth = lua.hook_use_transport_auth(u);
+      I(info.client.argv.size() > 0);
+      string cmd = info.client.argv[0];
+      info.client.argv.erase(info.client.argv.begin());
       return shared_ptr<Netxx::StreamBase>
-        (new Netxx::PipeStream(cmd, argv));
+        (new Netxx::PipeStream(cmd, info.client.argv));
     }
   else
     {
@@ -97,8 +91,15 @@ build_stream_to_server(options & opts,
 #else
       bool use_ipv6=false;
 #endif
-      Netxx::Address addr(u.host.c_str(), default_port, use_ipv6);
-      return shared_ptr<Netxx::StreamBase>(new Netxx::Stream(addr, timeout));
+      string host(info.client.u.host);
+      if (host.empty())
+        host = info.client.unparsed();
+      if (!info.client.u.port.empty())
+        default_port = lexical_cast<Netxx::port_type>(info.client.u.port);
+      Netxx::Address addr(info.client.unparsed().c_str(),
+                          default_port, use_ipv6);
+      return shared_ptr<Netxx::StreamBase>
+        (new Netxx::Stream(addr, timeout));
     }
 }
 

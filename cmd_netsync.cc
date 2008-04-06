@@ -52,7 +52,7 @@ find_key(options & opts,
     return;
 
   rsa_keypair_id key;
-  
+
   utf8 host(info.client.unparsed);
   if (!info.client.u.host.empty())
     host = utf8(info.client.u.host);
@@ -110,7 +110,7 @@ build_client_connection_info(options & opts,
     {
       N(!include_or_exclude_given,
         F("Include/exclude pattern was given both as part of the URL and as a separate argument."));
-      
+
       // Pull include/exclude from the query string
       char const separator = '/';
       char const negate = '-';
@@ -129,7 +129,7 @@ build_client_connection_info(options & opts,
               if (begin < query.size())
                 end = query.find(separator, begin);
             }
-          
+
           bool is_exclude = false;
           if (item.size() >= 1 && item.at(0) == negate)
             {
@@ -145,7 +145,7 @@ build_client_connection_info(options & opts,
               is_exclude = true;
               item.erase(0, string("exclude=").size());
             }
-          
+
           if (is_exclude)
             excludes.push_back(arg_type(urldecode(item)));
           else
@@ -154,7 +154,7 @@ build_client_connection_info(options & opts,
       info.client.include_pattern = globish(includes);
       info.client.exclude_pattern = globish(excludes);
     }
-  
+
   // Maybe set the default values.
   if (!db.var_exists(default_server_key) || opts.set_default)
     {
@@ -177,7 +177,7 @@ build_client_connection_info(options & opts,
         db.set_var(default_exclude_pattern_key,
                    var_value(info.client.exclude_pattern()));
       }
-  
+
   info.client.use_argv =
     lua.hook_get_netsync_connect_command(info.client.u,
                                          info.client.include_pattern,
@@ -497,7 +497,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
   pid_file pid(app.opts.pidfile);
 
   db.ensure_open();
-  
+
   netsync_connection_info info;
   info.server.addrs = app.opts.bind_uris;
 
@@ -529,21 +529,15 @@ CMD(gsync, "gsync", "", CMD_REF(network),
     options::opts::set_default | options::opts::exclude |
     options::opts::key_to_push | options::opts::dryrun)
 {
-  utf8 addr;
-
   database db(app);
   key_store keys(app);
 
-  globish include_pattern, exclude_pattern;
-  extract_address(app.opts, db, args, addr);
-  extract_patterns(app.opts, db, args, include_pattern, exclude_pattern);
-  find_key_if_needed(app.opts, app.lua, db, keys, addr, include_pattern, exclude_pattern);
+  netsync_connection_info info;
+  extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
 
-  uri u;
-  parse_uri(addr(), u);
-  http_client h(app.opts, app.lua, u, include_pattern, exclude_pattern);
+  http_client h(app.opts, app.lua, info);
   run_gsync_protocol(app.lua, db, http_channel(h),
-                     include_pattern, exclude_pattern, app.opts.dryrun);
+                     app.opts.dryrun);
 }
 
 

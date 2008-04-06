@@ -22,9 +22,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-struct uri;
-struct globish;
 struct options;
+struct netsync_connection_info;
 class lua_hooks;
 
 struct
@@ -32,9 +31,7 @@ http_client
 {
   options & opts;
   lua_hooks & lua;
-  uri const & u;
-  globish const & include_pattern;
-  globish const & exclude_pattern;
+  netsync_connection_info const & info;
 
   boost::shared_ptr<Netxx::StreamBase> stream;
   boost::shared_ptr< Netxx::Netbuf<constants::bufsz> > nb;
@@ -42,9 +39,7 @@ http_client
   bool open;
 
   http_client(options & opts, lua_hooks & lua,
-              uri const & u,
-              globish const & include_pattern,
-              globish const & exclude_pattern);
+              netsync_connection_info const & info);
 
   json_io::json_value_t transact_json(json_io::json_value_t v);
   void parse_http_status_line();

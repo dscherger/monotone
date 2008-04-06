@@ -390,8 +390,6 @@ pull_revs(database & db,
 
 void
 run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
-                   globish const & include_pattern, // FIXME: use this pattern
-                   globish const & exclude_pattern, // FIXME: use this pattern
                    bool const dryrun)
 {
   bool pushing = true, pulling = true;
