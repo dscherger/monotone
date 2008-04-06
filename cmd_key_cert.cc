@@ -156,7 +156,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if ((args.size() != 3) && (args.size() != 2))
     throw usage(execid);
@@ -164,7 +164,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
   transaction_guard guard(db);
 
   revision_id rid;
-  complete(app.opts, app.lua,  project, idx(args, 0)(), rid);
+  complete(app.opts, app.lua,  projects, idx(args, 0)(), rid);
 
   cert_name cname;
   internalize_cert_name(idx(args, 1), cname);
@@ -181,7 +181,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
       val = cert_value(dat());
     }
 
-  project.put_cert(keys, rid, cname, val);
+  put_simple_revision_cert(db, keys, rid, cname, val);
   guard.commit();
 }
 
@@ -192,14 +192,14 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     options::opts::none)
 {
   database db(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() < 4)
     throw usage(execid);
 
   set<revision_id> rids;
-  expand_selector(app.opts, app.lua, project, idx(args, 0)(), rids);
-  diagnose_ambiguous_expansion(project, idx(args, 0)(), rids);
+  expand_selector(app.opts, app.lua, projects, idx(args, 0)(), rids);
+  diagnose_ambiguous_expansion(projects, idx(args, 0)(), rids);
 
   revision_id ident;
   if (!rids.empty())
@@ -247,16 +247,16 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() != 2)
     throw usage(execid);
 
   revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
+  complete(app.opts, app.lua, projects, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  project.put_tag(keys, r, idx(args, 1)());
+  projects.put_tag(keys, r, idx(args, 1)());
 }
 
 
@@ -268,13 +268,13 @@ CMD(testresult, "testresult", "", CMD_REF(review),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() != 2)
     throw usage(execid);
 
   revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
+  complete(app.opts, app.lua, projects, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, db, keys);
   cert_revision_testresult(db, keys, r, idx(args, 1)());
@@ -288,18 +288,20 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
 
   revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
-  guess_branch(app.opts, project, r);
+  complete(app.opts, app.lua, projects, idx(args, 0)(), r);
+  guess_branch(app.opts, projects, r);
   N(app.opts.branchname() != "", F("need --branch argument for approval"));
 
   cache_user_key(app.opts, app.lua, db, keys);
-  project.put_revision_in_branch(keys, r, app.opts.branchname);
+  projects
+    .get_project_of_branch(app.opts.branchname)
+    .put_revision_in_branch(keys, r, app.opts.branchname);
 }
 
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
@@ -309,18 +311,19 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
 
   revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
-  guess_branch(app.opts, project, r);
+  complete(app.opts, app.lua, projects, idx(args, 0)(), r);
+  guess_branch(app.opts, projects, r);
   N(app.opts.branchname() != "", F("need --branch argument to suspend"));
-
   cache_user_key(app.opts, app.lua, db, keys);
-  project.suspend_revision_in_branch(keys, r, app.opts.branchname);
+  projects
+    .get_project_of_branch(app.opts.branchname)
+    .suspend_revision_in_branch(keys, r, app.opts.branchname);
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
@@ -330,7 +333,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() != 1 && args.size() != 2)
     throw usage(execid);
@@ -350,7 +353,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
     F("empty comment"));
 
   revision_id r;
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
+  complete(app.opts, app.lua, projects, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, db, keys);
   cert_revision_comment(db, keys, r, comment);

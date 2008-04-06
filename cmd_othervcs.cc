@@ -40,7 +40,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
@@ -58,7 +58,8 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   // amount of work
   cache_user_key(app.opts, app.lua, db, keys);
 
-  import_cvs_repo(project, keys, cvsroot, app.opts.branchname);
+  import_cvs_repo(projects.get_project_of_branch(app.opts.branchname),
+                  keys, cvsroot, app.opts.branchname);
 }
 
 

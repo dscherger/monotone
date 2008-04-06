@@ -625,7 +625,7 @@ process_branch(database & db,
         {
           string branch;
           data branch_data;
-          file_id branch_id;
+          file_id branch_uid;
           vector< piece > branch_lines;
           bool priv = false;
           map<string, string>::const_iterator be = cvs.branch_first_entries.find(*i);
@@ -639,10 +639,10 @@ process_branch(database & db,
 
           construct_version(*curr_lines, *i, branch_lines, r);
           insert_into_db(db, curr_data, curr_id,
-                         branch_lines, branch_data, branch_id);
+                         branch_lines, branch_data, branch_uid);
 
           cvs.push_branch(branch, priv);
-          process_branch(db, *i, branch_lines, branch_data, branch_id, r, cvs);
+          process_branch(db, *i, branch_lines, branch_data, branch_uid, r, cvs);
           cvs.pop_branch();
 
           L(FL("finished RCS branch %s = '%s'") % (*i) % branch);
