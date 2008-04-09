@@ -34,6 +34,12 @@
           query the parent(s) of the workspace' base revision. This is
           equivalent to "mtn au select p:`mtn au get_base_workspace_revision`".
 
+        - push, pull, and sync can be run with a single argument, which looks
+          like
+             mtn://hostname?include_pattenr/-exclude_pattern
+          or
+             mtn://hostname?include=include_pattern/exclude=exclude_pattern
+
         Internal
 
         - Update Botan to 1.7.4.
@@ -42,6 +48,20 @@
           are better encapsulated now. The database interface has been
           enhanced to ease reduction of locking contention in the future.
 
+        - Merged the two indexes on revision_certs into a single one.
+
+        - The database schema has been changed so that it now stores
+          binary SHA1 hashes rather than their hexadecimal encoding,
+          in most places where these are used.  This reduces the
+          database size and speeds up operations a little.
+
+          Users who like to fiddle with the database directly are
+          advised to use the sqlite functions hex() and quote() to
+          print columns that store hashes (including IDs), and the
+          hexadecimal literal notation x'DEADBEEF' to input them.
+
+        - Binary SHA1 hashes are also used for most in-memory
+          processing, avoiding conversions and saving memory.
 
 Mon Feb 25 15:55:36 UTC 2008
 

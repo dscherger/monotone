@@ -47,6 +47,7 @@
 #include "transforms.hh"
 #include "ui.hh"
 #include "roster.hh"
+#include "xdelta.hh"
 
 using std::make_pair;
 using std::map;
@@ -1115,8 +1116,8 @@ construct_version(vector< piece > const & source_lines,
 // DB itself. or is it? hmm.. encapsulation vs. usage guidance..
 void
 rcs_put_raw_file_edge(database & db,
-                      hexenc<id> const & old_id,
-                      hexenc<id> const & new_id,
+                      file_id const & old_id,
+                      file_id const & new_id,
                       delta const & del)
 {
   if (old_id == new_id)
@@ -1125,7 +1126,7 @@ rcs_put_raw_file_edge(database & db,
       return;
     }
 
-  if (db.file_version_exists(file_id(old_id)))
+  if (db.file_version_exists(old_id))
     {
       // we already have a way to get to this old version,
       // no need to insert another reconstruction path
@@ -1134,18 +1135,18 @@ rcs_put_raw_file_edge(database & db,
   else
     {
       I(db.file_or_manifest_base_exists(new_id, "files")
-        || db.delta_exists(new_id(), "file_deltas"));
-      db.put_file_delta(file_id(old_id), file_id(new_id), file_delta(del));
+        || db.delta_exists(new_id.inner(), "file_deltas"));
+      db.put_file_delta(old_id, new_id, file_delta(del));
     }
 }
 
 
 static void
 insert_into_db(database & db, data const & curr_data,
-               hexenc<id> const & curr_id,
+               file_id const & curr_id,
                vector< piece > const & next_lines,
                data & next_data,
-               hexenc<id> & next_id,
+               file_id & next_id,
                bool dryrun)
 {
   // inserting into the DB
@@ -1159,7 +1160,7 @@ insert_into_db(database & db, data const & curr_data,
   }
   delta del;
   diff(curr_data, next_data, del);
-  calculate_ident(next_data, next_id);
+  calculate_ident(file_data(next_data), next_id);
 
   if (!dryrun)
     rcs_put_raw_file_edge(db, next_id, curr_id, del);
@@ -1569,7 +1570,7 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
                    string const & begin_version,
                    vector< piece > const & begin_lines,
                    data const & begin_data,
-                   hexenc<id> const & begin_id,
+                   file_id const & begin_id,
                    rcs_file const & r,
                    bool reverse_import,
                    ticker & n_rev, ticker & n_sym,
@@ -1584,7 +1585,7 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
                                            (begin_lines.begin(),
                                             begin_lines.end()));
   data curr_data(begin_data), next_data;
-  hexenc<id> curr_id(begin_id), next_id;
+  file_id curr_id(begin_id), next_id;
 
   // a counter for commits which are above our limit. We abort
   // only after consecutive violations of the limit.
@@ -1719,7 +1720,7 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
         {
           string branchname;
           data branch_data;
-          hexenc<id> branch_id;
+          file_id branch_id;
           vector< piece > branch_lines;
           bool priv = false;
           bool is_vendor_branch = (r.vendor_branches.find(*i) !=
@@ -1926,15 +1927,14 @@ import_rcs_file_with_cvs(lua_hooks & lua, database & db,
     I(r.deltatexts.find(r.admin.head) != r.deltatexts.end());
     I(r.deltas.find(r.admin.head) != r.deltas.end());
 
-    hexenc<id> id;
-    data dat(r.deltatexts.find(r.admin.head)->second->text);
-    calculate_ident(dat, id);
-    file_id fid(id);
+    file_id fid;
+    file_data dat(r.deltatexts.find(r.admin.head)->second->text);
+    calculate_ident(dat, fid);
 
     cvs.set_filename(filename, fid);
     cvs.index_branchpoint_symbols (r);
     if (!dryrun)
-      db.put_file(fid, file_data(dat));
+      db.put_file(fid, dat);
 
     global_pieces.reset();
     global_pieces.index_deltatext(r.deltatexts.find(r.admin.head)->second,

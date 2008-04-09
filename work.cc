@@ -33,6 +33,7 @@
 #include "app_state.hh"
 #include "database.hh"
 #include "roster.hh"
+#include "transforms.hh"
 
 using std::deque;
 using std::exception;
@@ -459,6 +460,7 @@ workspace::get_ws_options(options & opts)
   if (!opts.key_dir_given && !opts.conf_dir_given)
     {
       opts.key_dir = keydir_option;
+      opts.key_dir_given = true;
     }
 
   if (opts.branchname().empty() && !branch_option().empty())
@@ -1067,9 +1069,8 @@ editable_working_tree::apply_delta(file_path const & pth,
   require_path_is_file(pth,
                        F("file '%s' does not exist") % pth,
                        F("file '%s' is a directory") % pth);
-  hexenc<id> curr_id_raw;
-  calculate_ident(pth, curr_id_raw);
-  file_id curr_id(curr_id_raw);
+  file_id curr_id;
+  calculate_ident(pth, curr_id);
   E(curr_id == old_id,
     F("content of file '%s' has changed, not overwriting") % pth);
   P(F("modifying %s") % pth);
