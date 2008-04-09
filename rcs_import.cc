@@ -1143,10 +1143,10 @@ rcs_put_raw_file_edge(database & db,
 
 
 static void
-insert_into_db(database & db, data const & curr_data,
+insert_into_db(database & db, file_data const & curr_data,
                file_id const & curr_id,
                vector< piece > const & next_lines,
-               data & next_data,
+               file_data & next_data,
                file_id & next_id,
                bool dryrun)
 {
@@ -1157,11 +1157,11 @@ insert_into_db(database & db, data const & curr_data,
   {
     string tmp;
     global_pieces.build_string(next_lines, tmp);
-    next_data = data(tmp);
+    next_data = file_data(tmp);
   }
   delta del;
-  diff(curr_data, next_data, del);
-  calculate_ident(file_data(next_data), next_id);
+  diff(curr_data.inner(), next_data.inner(), del);
+  calculate_ident(next_data, next_id);
 
   if (!dryrun)
     rcs_put_raw_file_edge(db, next_id, curr_id, del);
@@ -1570,7 +1570,7 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
                    cvs_symbol_no const & current_branchname,
                    string const & begin_version,
                    vector< piece > const & begin_lines,
-                   data const & begin_data,
+                   file_data const & begin_data,
                    file_id const & begin_id,
                    rcs_file const & r,
                    bool reverse_import,
@@ -1585,7 +1585,7 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
   scoped_ptr< vector< piece > > curr_lines(new vector<piece>
                                            (begin_lines.begin(),
                                             begin_lines.end()));
-  data curr_data(begin_data), next_data;
+  file_data curr_data(begin_data), next_data;
   file_id curr_id(begin_id), next_id;
 
   // a counter for commits which are above our limit. We abort
@@ -1720,7 +1720,7 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
           i != curr_delta->branches.end(); ++i)
         {
           string branchname;
-          data branch_data;
+          file_data branch_data;
           file_id branch_id;
           vector< piece > branch_lines;
           bool priv = false;
@@ -1949,7 +1949,7 @@ import_rcs_file_with_cvs(lua_hooks & lua, database & db,
 
     cvs_event_ptr first_event =
       process_rcs_branch(lua, db, cvs, cvs.base_branch, r.admin.head, head_lines,
-                         dat, id, r, true, n_rev, n_sym, dryrun);
+                         dat, fid, r, true, n_rev, n_sym, dryrun);
 
     // link the pseudo trunk branch to the first event in the branch
     cvs.add_dependency(first_event, cvs.root_event);
@@ -4907,7 +4907,7 @@ blob_consumer::operator()(cvs_blob_index bi)
         {
           ++n_blobs;
           ++n_revisions;
-          blob.assigned_rid = revision_id("deadbeef00000000000000000000000000000000");
+          blob.assigned_rid = revision_id(string(constants::idlen_bytes, '\x33'));
           return;
         }
 
