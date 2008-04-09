@@ -73,6 +73,7 @@ using boost::lexical_cast;
 // additional debugging information
 // not defined: DEBUG_BLOB_SPLITTER
 // not defined: DEBUG_GRAPHVIZ
+// not defined: DEBUG_DEP_CACHE_CHECKING
 
 // cvs history recording stuff
 
@@ -3880,15 +3881,20 @@ write_graphviz_partial(cvs_history & cvs, string const & desc,
 vector<cvs_blob_index> &
 cvs_blob::get_dependencies(cvs_history & cvs)
 {
-#if 0
   if (has_cached_dependencies)
     {
       if (!cached_dependencies_are_sorted)
         sort_dependencies_cache(cvs);
 
+#ifdef DEBUG_DEP_CACHE_CHECKING
+      vector<cvs_blob_index> old_cache;
+      old_cache = dependencies_cache;
+      fill_dependencies_cache(cvs);
+      I(old_cache == dependencies_cache);
+#endif
+
       return dependencies_cache;
     }
-#endif
 
   fill_dependencies_cache(cvs);
   return dependencies_cache;
@@ -3897,15 +3903,20 @@ cvs_blob::get_dependencies(cvs_history & cvs)
 vector<cvs_blob_index> &
 cvs_blob::get_dependents(cvs_history & cvs)
 {
-#if 0
   if (has_cached_dependents)
     {
       if (!cached_dependents_are_sorted)
         sort_dependents_cache(cvs);
 
+#ifdef DEBUG_DEP_CACHE_CHECKING
+      vector<cvs_blob_index> old_cache;
+      old_cache = dependents_cache;
+      fill_dependents_cache(cvs);
+      I(old_cache == dependents_cache);
+#endif
+
       return dependents_cache;
     }
-#endif
 
   fill_dependents_cache(cvs);
   return dependents_cache;
