@@ -1,3 +1,18 @@
+monotone (0.40-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Upstream "make distclean" now cleans up after "make html".
+      (Closes: #473402)
+
+ -- Zack Weinberg <zackw@panix.com>  Mon, 31 Mar 2008 20:47:30 -0400
+
+monotone (0.39-90) unstable; urgency=low
+
+  * monotone-server.postinst: update the trigger version for a db migrate,
+    since the schema has changed.
+
+ -- Richard Levitte <richard@levitte.org>  Mon, 31 Mar 2008 14:05:43 +0200
+
 monotone (0.39-2) unstable; urgency=low
 
   * Build-dependency on patch (not dpatch) restored; it was accidentally

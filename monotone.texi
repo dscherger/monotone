@@ -28,7 +28,7 @@ This edition documents version @value{VERSION}.
 
 Copyright @copyright{} 2003, 2004 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
-Copyright @copyright{} 2005 Derek Scherger @*
+Copyright @copyright{} 2005, 2008 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
@@ -2656,6 +2656,9 @@ By default, monotone understands two URI schemes:
   @code{file:@var{/path/to/db.mtn}}, to synchronize between local databases.
 @end enumerate
 
+@code{ssh:} and @code{file:} are currently not supported on the native
+Win32 platform; they are supported on Cygwin and all other platforms.
+
 In the case of SSH URIs, the @command{ssh} program must be in your
 command execution path, either @var{$PATH} on Unix-like systems or
 @var{%PATH%} on Windows systems. Monotone will execute @command{ssh}
@@ -2772,7 +2775,8 @@ revision IDs which begin with @code{0f3a}.
 @item Parent selection
 Uses selector type @code{p}. For example, @code{p:0f3a} matches the
 revision IDs which are the parent of the revision ID which begins with
-@code{0f3a}.
+@code{0f3a}. If you give a bare @code{p:}, monotone will require you to be in
+a workspace, and query the parent of the base workspace revision.
 @item Tag selection
 Uses selector type @code{t}. For example, @code{t:monotone-0.11} matches
 @code{tag} certs where the cert value begins with @code{monotone-0.11}.
@@ -5430,6 +5434,16 @@ automatically use a certain passphrase for a given key using the
 increases the risk of a key compromise on your local computer. Be
 careful using this hook.
 
+The public key is stored in the database; the public and private keys
+are stored in the keystore. This allows copying the database without
+copying the private key.
+
+The location of the keystore is specified by the @option{--keydir}
+option; it defaults to the value stored in @file{_MTN/options} for
+commands executed in a workspace, or to
+the system default (@file{~/.monotone/keys} on Unix and Cygwin,
+@file{%APPDATA%/monotone/keys} on native Win32).
+
 @item mtn dropkey @var{keyid}
 
 This command drops the public and/or private key. If both exist, both
@@ -6595,7 +6609,7 @@ A file path.
 
 @item Added in:
 
-4.2
+4.3
 
 @item Purpose:
 
@@ -8187,7 +8201,7 @@ and @var{file} specifies the file for which to calculate revisions in which it w
 
 @item Added in:
 
-3.2
+4.0
 
 @item Purpose:
 
@@ -8227,7 +8241,7 @@ and @var{file} specifies the file whose name in @var{target_id} is to be determi
 
 @item Added in:
 
-3.2
+4.0
 
 @item Purpose:
 
