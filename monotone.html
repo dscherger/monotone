@@ -1918,6 +1918,9 @@ host and port, and speaks netsync over the socket.
   <code>file:</code><var>/path/to/db.mtn</var>, to synchronize between local databases.
         </ol>
 
+   <p><code>ssh:</code> and <code>file:</code> are currently not supported on the native
+Win32 platform; they are supported on Cygwin and all other platforms.
+
    <p>In the case of SSH URIs, the <samp><span class="command">ssh</span></samp> program must be in your
 command execution path, either <var>$PATH</var> on Unix-like systems or
 <var>%PATH%</var> on Windows systems. Monotone will execute <samp><span class="command">ssh</span></samp>
@@ -2020,7 +2023,8 @@ syntax (see below)
 revision IDs which begin with <code>0f3a</code>. 
 <br><dt>Parent selection<dd>Uses selector type <code>p</code>. For example, <code>p:0f3a</code> matches the
 revision IDs which are the parent of the revision ID which begins with
-<code>0f3a</code>. 
+<code>0f3a</code>. If you give a bare <code>p:</code>, monotone will require you to be in
+a workspace, and query the parent of the base workspace revision. 
 <br><dt>Tag selection<dd>Uses selector type <code>t</code>. For example, <code>t:monotone-0.11</code> matches
 <code>tag</code> certs where the cert value begins with <code>monotone-0.11</code>. 
 Values to match for can have shell wildcards. 
@@ -4275,6 +4279,16 @@ automatically use a certain passphrase for a given key using the
 increases the risk of a key compromise on your local computer. Be
 careful using this hook.
 
+     <p>The public key is stored in the database; the public and private keys
+are stored in the keystore. This allows copying the database without
+copying the private key.
+
+     <p>The location of the keystore is specified by the <samp><span class="option">--keydir</span></samp>
+option; it defaults to the value stored in <samp><span class="file">_MTN/options</span></samp> for
+commands executed in a workspace, or to
+the system default (<samp><span class="file">~/.monotone/keys</span></samp> on Unix and Cygwin,
+<samp><span class="file">%APPDATA%/monotone/keys</span></samp> on native Win32).
+
      <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-104"></a><dd>
 This command drops the public and/or private key. If both exist, both
 are dropped, if only one exists, it is dropped. This command should
@@ -5246,7 +5260,7 @@ None.
 A file path.
 
           <br><dt><strong>Added in:</strong><dd>
-4.2
+4.3
 
           <br><dt><strong>Purpose:</strong><dd>
 Prints the file ID (aka hash) of the given file.
@@ -6645,7 +6659,7 @@ The <var>id</var> specifies a revision ID, from which content change calculation
 and <var>file</var> specifies the file for which to calculate revisions in which it was last changed.
 
           <br><dt><strong>Added in:</strong><dd>
-3.2
+4.0
 
           <br><dt><strong>Purpose:</strong><dd>
 Returns a list of revision IDs in which the content  was most recently changed, relative to the revision ID specified as <var>id</var>. This equates to a content mark following the *-merge algorithm.
@@ -6678,7 +6692,7 @@ and <var>file</var> specifies the file whose name in <var>target_id</var> is to 
 <var>target_id</var> specifies a revision ID.
 
           <br><dt><strong>Added in:</strong><dd>
-3.2
+4.0
 
           <br><dt><strong>Purpose:</strong><dd>
 Given a the file name <var>file</var> in the source revision <var>source_id</var>, a filename
@@ -12240,20 +12254,55 @@ mergers.tortoise = {
 
 mergers.vim = {
    cmd = function (tbl)
+      function execute_diff3(mine, yours, out)
+	 local diff3_args = {
+	    "diff3",
+	    "--merge",
+	    "--easy-only",
+	 }
+	 table.insert(diff3_args, string.gsub(mine, "\\", "/") .. "")
+	 table.insert(diff3_args, string.gsub(tbl.afile, "\\", "/") .. "")
+	 table.insert(diff3_args, string.gsub(yours, "\\", "/") .. "")
+      
+	 return execute_redirected("", string.gsub(out, "\\", "/"), "", unpack(diff3_args))
+      end
+
       io.write (string.format("\nWARNING: 'vim' was choosen to perform external 3-way merge.\n"..
           "You should merge all changes to *LEFT* file due to limitation of program\n"..
-          "arguments.  The order of the files is ancestor, left, right.\n\n"))
+          "arguments.\n\n"))
+      
       local vim
-      local exec
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
 	 vim = "gvim"
-	 exec = execute_confirm
       else
 	 vim = "vim"
-	 exec = execute
       end
-      local ret = exec(vim, "-f", "-d", "-c", string.format("file %s", tbl.outfile),
-                          tbl.afile, tbl.lfile, tbl.rfile)
+
+      local lfile_merged = tbl.lfile .. ".merged"
+      local rfile_merged = tbl.rfile .. ".merged"
+
+      -- first merge lfile using diff3
+      local ret = execute_diff3(tbl.lfile, tbl.rfile, lfile_merged)
+      if ret == 2 then
+         io.write(string.format(gettext("Error running diff3 for merger '%s'\n"), vim))
+         os.remove(lfile_merged)
+	 return false
+      end
+
+      -- now merge rfile using diff3
+      ret = execute_diff3(tbl.rfile, tbl.lfile, rfile_merged)
+      if ret == 2 then
+         io.write(string.format(gettext("Error running diff3 for merger '%s'\n"), vim))
+         os.remove(lfile_merged)
+         os.remove(rfile_merged)
+	 return false
+      end
+      
+      os.rename(lfile_merged, tbl.lfile)
+      os.rename(rfile_merged, tbl.rfile)
+      
+      local ret = execute(vim, "-f", "-d", "-c", string.format("file %s", tbl.outfile),
+                          tbl.lfile, tbl.rfile)
       if (ret ~= 0) then
          io.write(string.format(gettext("Error running merger '%s'\n"), vim))
          return false
@@ -12262,8 +12311,9 @@ mergers.vim = {
    end ,
    available =
       function ()
-	 return program_exists_in_path("vim") or
-	    program_exists_in_path("gvim")
+	 return program_exists_in_path("diff3") and
+            (program_exists_in_path("vim") or
+	    program_exists_in_path("gvim"))
       end ,
    wanted =
       function ()
@@ -13037,7 +13087,8 @@ do
    function push_netsync_notifier(notifier)
       return push_hook_functions(notifier)
    end
-end</pre>
+end
+</pre>
 <a name="General-Index"></a>
 
 <h2 class="unnumbered">General Index</h2>
