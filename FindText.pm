@@ -182,8 +182,21 @@ sub disable_find_text($$)
 
     # Simply disable/enable the found find text window.
 
-    $instance->{window}->set_sensitive($disable ? FALSE : TRUE)
-	if (defined($instance));
+    if (defined($instance))
+    {
+	if ($disable)
+	{
+	    $instance->{main_vbox}->set_sensitive(FALSE);
+	    $instance->{find_button}->set_sensitive(FALSE);
+	}
+	else
+	{
+	    $instance->{main_vbox}->set_sensitive(TRUE);
+	    $instance->{find_button}->set_sensitive
+		((length($instance->{find_combo}->child()->get_text()) > 0) ?
+		 TRUE : FALSE);
+	}
+    }
 
 }
 #
@@ -241,6 +254,7 @@ sub get_find_text_window($$)
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
 	$instance->{window}->set_icon($app_icon);
+	$instance->{main_vbox} = $instance->{glade}->get_widget("main_vbox");
 	$instance->{find_combo} =
 	    $instance->{glade}->get_widget("find_comboboxentry");
 	$instance->{case_sensitive_tick} =
@@ -283,12 +297,14 @@ sub get_find_text_window($$)
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$instance->{find_combo}->set_text_column(0);
 	$instance->{search_history} = [];
+
+	$instance->{grab_widget} = $instance->{window};
     }
     else
     {
 	$new = 0;
 	$instance->{in_cb} = 0;
-	$instance->{window}->set_sensitive(TRUE);
+	$instance->{main_vbox}->set_sensitive(TRUE);
     }
 
     # Reset the search context.

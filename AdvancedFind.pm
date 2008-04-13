@@ -728,12 +728,15 @@ sub update_advanced_find_state($$)
 	# Reset the branch selection.
 
 	$advanced_find->{branch_combo_details}->{completion} = undef;
-	if (! $advanced_find->{branch_combo_details}->{preset})
+	if ($advanced_find->{branch_combo_details}->{preset})
+	{
+	    $advanced_find->{branch_combo_details}->{preset} = 0;
+	}
+	else
 	{
 	    $advanced_find->{branch_combo_details}->{completed} = 0;
 	    $advanced_find->{branch_combo_details}->{value} = "";
 	}
-	$advanced_find->{branch_combo_details}->{preset} = 0;
 
 	# Get the new list of branches.
 
@@ -774,12 +777,15 @@ sub update_advanced_find_state($$)
 	# Reset the revision selection.
 
 	$advanced_find->{revision_combo_details}->{completion} = undef;
-	if (! $advanced_find->{revision_combo_details}->{preset})
+	if ($advanced_find->{revision_combo_details}->{preset})
+	{
+	    $advanced_find->{revision_combo_details}->{preset} = 0;
+	}
+	else
 	{
 	    $advanced_find->{revision_combo_details}->{completed} = 0;
 	    $advanced_find->{revision_combo_details}->{value} = "";
 	}
-	$advanced_find->{revision_combo_details}->{preset} = 0;
 
 	# Get the new list of revisions.
 

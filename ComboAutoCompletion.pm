@@ -235,7 +235,6 @@ sub combo_key_release_event_cb($$$)
 
 	}
 	$combo_details->{value} = $value;
-	$combo_details->{last_typed_len} = length($value);
 	$combo_details->{completed} = $completed;
 
 	# Update the pulldown choices.

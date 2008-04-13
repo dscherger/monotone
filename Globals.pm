@@ -66,6 +66,7 @@ use constant REVISION_DETAILS => 0x04;
 # Constants used to represent the different state changes. Read this as
 # `what has just been changed' => `what needs to be updated'.
 
+use constant ALL_CHANGED               => 0xff;
 use constant BRANCH_CHANGED            => (REVISION | DIRECTORY
 					   | DIRECTORY_VIEW | FILE
 					   | DISPLAY_OF_FILE);
@@ -151,8 +152,8 @@ our $tooltips;
 
 use base qw(Exporter);
 
-our %EXPORT_TAGS = (
-		    constants => [qw(BRANCH
+our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
+				     BRANCH
 				     BRANCH_CHANGED
 				     DATABASE_CHANGED
 				     DIRECTORY

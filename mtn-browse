@@ -50,6 +50,7 @@ use strict;
 
 # Standard Perl and CPAN modules.
 
+use File::Basename;
 use Glib qw(FALSE TRUE);
 use Gnome2;
 use Gnome2::VFS -init;
@@ -93,20 +94,23 @@ use constant MLS_DATE_COLUMN           => 2;
 use constant MLS_AUTHOR_COLUMN         => 3;
 use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 
+# The type of window that is going to be managed by this module.
+
+my $window_type = "main_window";
+
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Private routines.
 
 sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
-sub delete_event_cb($$$);
-sub destroy_event_cb($$;$);
 sub directory_up_button_clicked_cb($$);
 sub file_change_history_button_clicked_cb($$);
+sub get_browser_window(;$$$$$);
+sub main_window_delete_event_cb($$$);
 sub manifest_browser_treeview_cursor_changed_cb($$);
 sub manifest_browser_treeview_row_activated_cb($$$$);
 sub mtn_error_handler($$);
-sub new_browser_instance();
 sub revision_change_history_button_clicked_cb($$);
 sub revision_change_log_button_clicked_cb($$);
 sub search_text_button_clicked_cb($$);
@@ -138,7 +142,9 @@ sub update_browser_state($$);
     $tooltips = Gtk2::Tooltips->new();
     $app_icon = Gtk2::Gdk::Pixbuf->new_from_file("../mtn-browse.png");
     $line_image = Gtk2::Gdk::Pixbuf->new_from_file("../line.png");
-    new_browser_instance();
+    get_browser_window(Monotone::AutomateStdio->new());
+    # get_browser_window();
+    # get_browser_window();
 
     # Hand control over to Gtk2.
 
@@ -236,15 +242,13 @@ sub advanced_find_button_clicked_cb($$)
 	if ($preset_branch)
 	{
 	    $browser->{branch_combo_details}->{preset} = 1;
-	    $browser->{branch_combo_details}->{completed} = 1;
 	    $browser->{branch_combo_details}->{value} = $branches[0];
-	    $state = DATABASE_CHANGED;
+	    $state = ALL_CHANGED;
 	}
 
 	# Preset revision id.
 
 	$browser->{revision_combo_details}->{preset} = 1;
-	$browser->{revision_combo_details}->{completed} = 1;
 	$browser->{revision_combo_details}->{value} = $revision_id;
 
 	# A revision id is what is returned so switch off the listing of tag
@@ -347,6 +351,7 @@ sub directory_up_button_clicked_cb($$)
     local $browser->{in_cb} = 1;
 
     my($len,
+       $old_len,
        $value);
 
     # Simply go up one directory level in the manifest if we aren't already at
@@ -355,25 +360,13 @@ sub directory_up_button_clicked_cb($$)
     $value = $browser->{directory_combo_details}->{value};
     if ($value ne "")
     {
-	if ($value =~ m/^.+\/.+/o)
-	{
-	    if ($value =~ m/^(.+)\/[^\/]+$/o)
-	    {
-		($value) = ($value =~ m/^(.+)\/[^\/]+$/o);
-	    }
-	    else
-	    {
-		($value) = ($value =~ m/^(.+)\/$/o)
-	    }
-	}
-	else
-	{
-	    $value = "";
-	}
+	$old_len = length($value);
+	$value = dirname($value);
+	$value = "" if ($value eq ".");
 	$browser->{directory_combo_details}->{value} = $value;
 	$browser->{directory_combo_details}->{completed} = 1;
 	$len = length($value);
-	if ($len < $browser->{directory_combo_details}->{last_typed_len})
+	if ($len < $old_len)
 	{
 	    $browser->{directory_combo}->get_model()->clear();
 	    foreach my $item (@{$browser->{directory_combo_details}->{list}})
@@ -381,7 +374,6 @@ sub directory_up_button_clicked_cb($$)
 		$browser->{directory_combo}->append_text($item)
 		    if ($value eq substr($item, 0, $len));
 	    }
-	    $browser->{directory_combo_details}->{last_typed_len} = $len;
 	}
 	$browser->{directory_combo}->child()->set_text($value);
 	$browser->{appbar}->clear_stack();
@@ -588,47 +580,10 @@ sub manifest_browser_treeview_row_activated_cb($$$$)
 #
 ##############################################################################
 #
-#   Routine      - delete_event_cb
+#   Routine      - main_window_delete_event_cb
 #
-#   Description  - Callback routine called when the used has attempted to
-#                  close the main window.
-#
-#   Data         - $widget      : The widget object that received the signal.
-#                  $event       : A Gtk2::Gdk::Event object describing the
-#                                 event that has occurred.
-#                  $browser     : The browser instance that is associated with
-#                                 this widget.
-#                  Return Value : TRUE if the event has been handled and needs
-#                                 no further handling, otherwise false if the
-#                                 event should carry on through the remaining
-#                                 event handling.
-#
-##############################################################################
-
-
-
-sub delete_event_cb($$$)
-{
-
-    my($widget, $event, $browser) = @_;
-
-    if ($browser->{in_cb})
-    {
-	return TRUE;
-    }
-    else
-    {
-	return FALSE;
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - destroy_event_cb
-#
-#   Description  - Callback routine called when the main window is about to be
-#                  destroyed.
+#   Description  - Callback routine called when a main window is about to be
+#                  dismissed.
 #
 #   Data         - $widget      : The widget object that received the signal.
 #                  $event       : A Gtk2::Gdk::Event object describing the
@@ -643,244 +598,349 @@ sub delete_event_cb($$$)
 
 
 
-sub destroy_event_cb($$;$)
+sub main_window_delete_event_cb($$$)
 {
 
-    my($widget, $event, $client_data) = @_;
+    my($widget, $event, $browser) = @_;
 
-    my $browser = defined($client_data) ? $client_data : $event;
+    return TRUE if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
 
-    Gtk2->main_quit();
+    my $others_mapped;
 
-    return FALSE;
+    # Only exit if this is the only browser window currently being shown.
+
+    $others_mapped = 0;
+    foreach my $window (@windows)
+    {
+	if ($window->{type} eq $window_type
+	    && $window != $browser
+	    && $window->{window}->mapped())
+	{
+	    $others_mapped = 1;
+	    last;
+	}
+    }
+
+    $browser->{window}->hide();
+    $browser->{mtn} = undef;
+    $browser->{branch_combo_details}->{preset} = 0;
+    $browser->{revision_combo_details}->{preset} = 0;
+    $browser->{directory_combo_details}->{preset} = 0;
+    $browser->{file_being_viewed_preset_value} = "";
+    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+
+    Gtk2->main_quit() unless ($others_mapped);
+
+    return TRUE;
 
 }
 #
 ##############################################################################
 #
-#   Routine      - new_browser_instance
+#   Routine      - get_browser_window
 #
-#   Description  - Construct a new browser instance record. This creates a new
-#                  main window, a new connection to Monotone and initialising
-#                  sensible defaults.
+#   Description  - Creates or prepares an existing browser window for use.
 #
-#   Data         - Return Value : A reference to the newly created browser
-#                                 instance record.
+#   Data         - $mtn         : The Monotone instance handle that is to be
+#                                 used for the browser window. If it is undef
+#                                 then no database is used and a blank browser
+#                                 window is displayed.
+#                  $branch      : The branch name that is to be preselected in
+#                                 the browser window. This is optional unless
+#                                 any of the following arguments are
+#                                 specified.
+#                  $revision_id : The revision id that is to be preselected in
+#                                 the browser window. This is optional unless
+#                                 any of the following arguments are
+#                                 specified.
+#                  $directory   : The directory that is to be preselected in
+#                                 the browser window. This is optional unless
+#                                 the following argument is specified.
+#                  $file        : The file that is to be displayed in the
+#                                 browser window. This is optional.
+#                  Return Value : A reference to the newly created or unused
+#                                 browser instance record.
 #
 ##############################################################################
 
 
 
-sub new_browser_instance()
+sub get_browser_window(;$$$$$)
 {
 
-    my($browser,
-       $font,
-       $image,
-       $renderer,
-       $tv_column,
-       $div,
-       $window_type);
+    my($mtn, $branch, $revision_id, $directory, $file) = @_;
 
-    $window_type = "main_window";
+    my $browser;
 
-    $browser = {};
-    $browser->{type} = $window_type;
-    $browser->{mtn} = Monotone::AutomateStdio->new();
-    $browser->{glade} =
-	Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
+    # Look for an unused window first.
 
-    # Flag to stop recursive calling of callbacks.
-
-    $browser->{in_cb} = 0;
-
-    # Connect Glade registered signal handlers.
-
-    glade_signal_autoconnect($browser->{glade}, $browser);
-
-    # Link in the update handler for the browser.
-
-    $browser->{update_handler} = \&update_browser_state;
-
-    # Get the widgets that we are interested in.
-
-    $browser->{window} = $browser->{glade}->get_widget($window_type);
-    $browser->{window}->set_icon($app_icon);
-    $browser->{appbar} = $browser->{glade}->get_widget("appbar");
-    $browser->{branch_combo} =
-	$browser->{glade}->get_widget("branch_comboboxentry");
-    $browser->{revision_combo} =
-	$browser->{glade}->get_widget("revision_comboboxentry");
-    $browser->{tagged_tick} =
-	$browser->{glade}->get_widget("tagged_checkbutton");
-    $browser->{directory_combo} =
-	$browser->{glade}->get_widget("directory_comboboxentry");
-    $browser->{directory_up_button} =
-	$browser->{glade}->get_widget("directory_up_button");
-    $browser->{manifest_treeview} =
-	$browser->{glade}->get_widget("manifest_browser_treeview");
-    $browser->{file_view_scrolledwindow} =
-	$browser->{glade}->get_widget("file_view_scrolledwindow");
-    $browser->{file_name_label} =
-	$browser->{glade}->get_widget("file_name_value_label");
-    $browser->{file_id_label} =
-	$browser->{glade}->get_widget("file_id_value_label");
-    $browser->{last_update_label} =
-	$browser->{glade}->get_widget("last_update_value_label");
-    $browser->{file_revision_id_label} =
-	$browser->{glade}->get_widget("file_revision_id_value_label");
-    $browser->{file_button_vbox} =
-	$browser->{glade}->get_widget("file_button_vbox");
-    $browser->{database_name_label} =
-	$browser->{glade}->get_widget("database_name_value_label");
-    $browser->{revision_id_label} =
-	$browser->{glade}->get_widget("revision_id_value_label");
-    $browser->{author_label} =
-	$browser->{glade}->get_widget("author_value_label");
-    $browser->{change_log_label} =
-	$browser->{glade}->get_widget("change_log_value_label");
-
-    # Setup button sensitivity groups.
-
-    $browser->{text_file_sensitive_group} = ();
-    foreach my $item ("search_text", "annotate")
+    foreach my $window (@windows)
     {
-	push(@{$browser->{text_file_sensitive_group}},
-	     $browser->{glade}->get_widget($item . "_button"));
-    }
-    $browser->{revision_sensitive_group} = ();
-    foreach my $item ("revision_change_history", "revision_change_log")
-    {
-	push(@{$browser->{revision_sensitive_group}},
-	     $browser->{glade}->get_widget($item . "_button"));
+	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
+	{
+	    $browser = $window;
+	    last;
+	}
     }
 
-    # Setup the comboboxentry key release signal handlers.
+    # Create a new browser window if an unused one wasn't found, otherwise
+    # reuse an existing unused one.
 
-    $browser->{branch_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $browser);
-    $browser->{directory_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $browser);
-    $browser->{revision_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $browser);
+    if (! defined($browser))
+    {
+	my($font,
+	   $image,
+	   $renderer,
+	   $tv_column);
 
-    # Move the pane separator to a sensible position.
+	$browser = {};
+	$browser->{type} = $window_type;
+	$browser->{mtn} = $mtn;
+	$browser->{glade} =
+	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
 
-    # $div = $browser->{glade}->get_widget("browser_hpaned");
-    # $div->set_position(300);
+	# Flag to stop recursive calling of callbacks.
 
-    # Setup the comboboxes.
+	$browser->{in_cb} = 0;
 
-    $browser->{branch_combo}->set_model(Gtk2::ListStore->new("Glib::String"));
-    $browser->{branch_combo}->set_text_column(0);
-    $browser->{branch_combo}->set_wrap_width(2);
-    $browser->{directory_combo}->
-	set_model(Gtk2::ListStore->new("Glib::String"));
-    $browser->{directory_combo}->set_text_column(0);
-    $browser->{directory_combo}->set_wrap_width(2);
-    $browser->{revision_combo}->
-	set_model(Gtk2::ListStore->new("Glib::String"));
-    $browser->{revision_combo}->set_text_column(0);
-    $browser->{revision_combo}->set_wrap_width(2);
+	# Connect Glade registered signal handlers.
 
-    # Setup the tree view manifest file browser.
+	glade_signal_autoconnect($browser->{glade}, $browser);
 
-    $browser->{manifest_liststore} = Gtk2::ListStore->new("Glib::String",
-							  "Glib::String",
-							  "Glib::String",
-							  "Glib::String",
-							  "Glib::Scalar");
-    $browser->{manifest_treeview}->set_model($browser->{manifest_liststore});
+	# Link in the update handler for the browser.
 
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $image = Gtk2::Image->new_from_stock("gtk-file", "menu");
-    $image->show_all();
-    $tv_column->set_widget($image);
-    $tv_column->set_resizable(FALSE);
-    $tv_column->set_sizing("fixed");
-    $tv_column->set_fixed_width(25);
-    $tv_column->set_sort_column_id(MLS_ICON_COLUMN);
-    $renderer = Gtk2::CellRendererPixbuf->new();
-    $tv_column->pack_start($renderer, TRUE);
-    $tv_column->set_attributes($renderer, "stock-id" => MLS_ICON_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
+	$browser->{update_handler} = \&update_browser_state;
 
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("File Name");
-    $tv_column->set_resizable(TRUE);
-    $tv_column->set_sizing("fixed");
-    $tv_column->set_fixed_width(180);
-    $tv_column->set_sort_column_id(MLS_NAME_COLUMN);
-    $renderer = Gtk2::CellRendererText->new();
-    $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => MLS_NAME_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
+	# Get the widgets that we are interested in.
 
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("Last Update");
-    $tv_column->set_resizable(TRUE);
-    $tv_column->set_sizing("grow-only");
-    $tv_column->set_sort_column_id(MLS_DATE_COLUMN);
-    $renderer = Gtk2::CellRendererText->new();
-    $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
+	$browser->{window} = $browser->{glade}->get_widget($window_type);
+	$browser->{window}->set_icon($app_icon);
+	$browser->{appbar} = $browser->{glade}->get_widget("appbar");
+	$browser->{main_vbox} = $browser->{glade}->get_widget("main_vbox");
+	$browser->{branch_combo} =
+	    $browser->{glade}->get_widget("branch_comboboxentry");
+	$browser->{revision_combo} =
+	    $browser->{glade}->get_widget("revision_comboboxentry");
+	$browser->{tagged_tick} =
+	    $browser->{glade}->get_widget("tagged_checkbutton");
+	$browser->{directory_combo} =
+	    $browser->{glade}->get_widget("directory_comboboxentry");
+	$browser->{directory_up_button} =
+	    $browser->{glade}->get_widget("directory_up_button");
+	$browser->{manifest_treeview} =
+	    $browser->{glade}->get_widget("manifest_browser_treeview");
+	$browser->{file_view_scrolledwindow} =
+	    $browser->{glade}->get_widget("file_view_scrolledwindow");
+	$browser->{file_name_label} =
+	    $browser->{glade}->get_widget("file_name_value_label");
+	$browser->{file_id_label} =
+	    $browser->{glade}->get_widget("file_id_value_label");
+	$browser->{last_update_label} =
+	    $browser->{glade}->get_widget("last_update_value_label");
+	$browser->{file_revision_id_label} =
+	    $browser->{glade}->get_widget("file_revision_id_value_label");
+	$browser->{file_button_vbox} =
+	    $browser->{glade}->get_widget("file_button_vbox");
+	$browser->{database_name_label} =
+	    $browser->{glade}->get_widget("database_name_value_label");
+	$browser->{revision_id_label} =
+	    $browser->{glade}->get_widget("revision_id_value_label");
+	$browser->{author_label} =
+	    $browser->{glade}->get_widget("author_value_label");
+	$browser->{change_log_label} =
+	    $browser->{glade}->get_widget("change_log_value_label");
 
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("Author");
-    $tv_column->set_resizable(TRUE);
-    $tv_column->set_sizing("grow-only");
-    $tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
-    $renderer = Gtk2::CellRendererText->new();
-    $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
-    $browser->{manifest_treeview}->append_column($tv_column);
+	# Setup button sensitivity groups.
 
-    $browser->{manifest_treeview}->set_search_column(MLS_NAME_COLUMN);
+	$browser->{text_file_sensitive_group} = ();
+	foreach my $item ("search_text", "annotate")
+	{
+	    push(@{$browser->{text_file_sensitive_group}},
+		 $browser->{glade}->get_widget($item . "_button"));
+	}
+	$browser->{revision_sensitive_group} = ();
+	foreach my $item ("revision_change_history", "revision_change_log")
+	{
+	    push(@{$browser->{revision_sensitive_group}},
+		 $browser->{glade}->get_widget($item . "_button"));
+	}
 
-    # $tv_column = $browser->{manifest_treeview}->get_column(MLS_DATE_COLUMN);
-    # $browser->{manifest_treeview}->remove_column($tv_column);
+	# Setup the comboboxentry key release signal handlers.
 
-    # Setup the file file viewer (with syntax highlighting).
+	$browser->{branch_combo}->child()->
+	    signal_connect("key_release_event",
+			   \&combo_key_release_event_cb,
+			   $browser);
+	$browser->{directory_combo}->child()->
+	    signal_connect("key_release_event",
+			   \&combo_key_release_event_cb,
+			   $browser);
+	$browser->{revision_combo}->child()->
+	    signal_connect("key_release_event",
+			   \&combo_key_release_event_cb,
+			   $browser);
 
-    $browser->{file_view_svbuffer} = Gtk2::SourceView::Buffer->new(undef);
-    $browser->{file_view_svbuffer}->set_max_undo_levels(0);
-    $browser->{file_view_svbuffer}->begin_not_undoable_action();
-    $browser->{file_view_svlangmgr} =
-	Gtk2::SourceView::LanguagesManager->new();
-    $browser->{file_view_sv} = Gtk2::SourceView::View->
-	new_with_buffer($browser->{file_view_svbuffer});
-    $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-    $browser->{file_view_sv}->modify_font($font) if (defined($font));
-    $browser->{file_view_sv}->set_cursor_visible(FALSE);
-    $browser->{file_view_sv}->set_editable(FALSE);
-    $browser->{glade}->get_widget("file_view_scrolledwindow")->
-	add($browser->{file_view_sv});
-    $browser->{file_view_sv}->show_all();
+	# Setup the comboboxes.
 
-    $browser->{window}->show_all();
+	$browser->{branch_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$browser->{branch_combo}->set_text_column(0);
+	$browser->{branch_combo}->set_wrap_width(2);
+	$browser->{directory_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$browser->{directory_combo}->set_text_column(0);
+	$browser->{directory_combo}->set_wrap_width(2);
+	$browser->{revision_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$browser->{revision_combo}->set_text_column(0);
+	$browser->{revision_combo}->set_wrap_width(2);
 
-    # Update the browser's internal state.
+	# Setup the tree view manifest file browser.
 
-    $browser->{branch_combo_details}->{preset} = 0;
-    $browser->{revision_combo_details}->{preset} = 0;
-    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+	$browser->{manifest_liststore} = Gtk2::ListStore->new("Glib::String",
+							      "Glib::String",
+							      "Glib::String",
+							      "Glib::String",
+							      "Glib::Scalar");
+	$browser->{manifest_treeview}->
+	    set_model($browser->{manifest_liststore});
 
-    # Setup the list of windows that can be made busy for this application
-    # window.
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$image = Gtk2::Image->new_from_stock("gtk-file", "menu");
+	$image->show_all();
+	$tv_column->set_widget($image);
+	$tv_column->set_resizable(FALSE);
+	$tv_column->set_sizing("fixed");
+	$tv_column->set_fixed_width(25);
+	$tv_column->set_sort_column_id(MLS_ICON_COLUMN);
+	$renderer = Gtk2::CellRendererPixbuf->new();
+	$tv_column->pack_start($renderer, TRUE);
+	$tv_column->set_attributes($renderer, "stock-id" => MLS_ICON_COLUMN);
+	$browser->{manifest_treeview}->append_column($tv_column);
 
-    $browser->{busy_windows} = [];
-    push(@{$browser->{busy_windows}}, $browser->{window}->window());
-    push(@{$browser->{busy_windows}},
-	 $browser->{file_view_sv}->get_window("text"));
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title("File Name");
+	$tv_column->set_resizable(TRUE);
+	$tv_column->set_sizing("fixed");
+	$tv_column->set_fixed_width(180);
+	$tv_column->set_sort_column_id(MLS_NAME_COLUMN);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => MLS_NAME_COLUMN);
+	$browser->{manifest_treeview}->append_column($tv_column);
 
-    push(@windows, $browser);
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title("Last Update");
+	$tv_column->set_resizable(TRUE);
+	$tv_column->set_sizing("grow-only");
+	$tv_column->set_sort_column_id(MLS_DATE_COLUMN);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
+	$browser->{manifest_treeview}->append_column($tv_column);
+
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title("Author");
+	$tv_column->set_resizable(TRUE);
+	$tv_column->set_sizing("grow-only");
+	$tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
+	$browser->{manifest_treeview}->append_column($tv_column);
+
+	$browser->{manifest_treeview}->set_search_column(MLS_NAME_COLUMN);
+
+	# $tv_column =
+	#     $browser->{manifest_treeview}->get_column(MLS_DATE_COLUMN);
+	# $browser->{manifest_treeview}->remove_column($tv_column);
+
+	# Setup the file file viewer (with syntax highlighting).
+
+	$browser->{file_view_svbuffer} = Gtk2::SourceView::Buffer->new(undef);
+	$browser->{file_view_svbuffer}->set_max_undo_levels(0);
+	$browser->{file_view_svbuffer}->begin_not_undoable_action();
+	$browser->{file_view_svlangmgr} =
+	    Gtk2::SourceView::LanguagesManager->new();
+	$browser->{file_view_sv} = Gtk2::SourceView::View->
+	    new_with_buffer($browser->{file_view_svbuffer});
+	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+	$browser->{file_view_sv}->modify_font($font) if (defined($font));
+	$browser->{file_view_sv}->set_cursor_visible(FALSE);
+	$browser->{file_view_sv}->set_editable(FALSE);
+	$browser->{glade}->get_widget("file_view_scrolledwindow")->
+	    add($browser->{file_view_sv});
+	$browser->{file_view_sv}->show_all();
+
+	$browser->{window}->show_all();
+
+	# Update the browser's internal state.
+
+	$browser->{branch_combo_details}->{preset} = 0;
+	$browser->{revision_combo_details}->{preset} = 0;
+	$browser->{directory_combo_details}->{preset} = 0;
+	$browser->{file_being_viewed_preset_value} = "";
+	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+
+	# Setup the list of windows that can be made busy for this application
+	# window.
+
+	$browser->{busy_windows} = [];
+	push(@{$browser->{busy_windows}}, $browser->{window}->window());
+	push(@{$browser->{busy_windows}},
+	     $browser->{file_view_sv}->get_window("text"));
+
+	push(@windows, $browser);
+    }
+    else
+    {
+	my($height,
+	   $width);
+
+	$browser->{in_cb} = 0;
+	local $browser->{in_cb} = 1;
+
+	# Reset the browser's state.
+
+	($width, $height) = $browser->{window}->get_default_size();
+	$browser->{window}->resize($width, $height);
+	$browser->{glade}->get_widget("browser_hpaned")->set_position(300);
+	$browser->{tagged_tick}->set_active(FALSE);
+	$browser->{window}->show_all();
+
+	# Now update with the details of the specified database.
+
+	if (defined($mtn))
+	{
+	    $browser->{mtn} = $mtn;
+	    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+	}
+    }
+
+    # Now deal with any presetting that is required.
+
+    if (defined($branch))
+    {
+	local $browser->{in_cb} = 1;
+	$browser->{branch_combo_details}->{preset} = 1;
+	$browser->{branch_combo_details}->{value} = $branch;
+	if (defined($revision_id))
+	{
+	    $browser->{revision_combo_details}->{preset} = 1;
+	    $browser->{revision_combo_details}->{value} = $revision_id;
+	    if (defined($directory))
+	    {
+		$browser->{directory_combo_details}->{preset} = 1;
+		$browser->{directory_combo_details}->{value} = $directory;
+		if (defined($file))
+		{
+		    $browser->{file_being_viewed_preset_value} = $file;
+		}
+	    }
+	}
+	&{$browser->{update_handler}}($browser, ALL_CHANGED);
+    }
 
     return $browser;
 
@@ -910,6 +970,17 @@ sub update_browser_state($$)
     $browser->{appbar}->push("");
     gtk2_update();
 
+    # Disable the browser if no database is associated with it.
+
+    if (! defined($browser->{mtn}))
+    {
+	$browser->{main_vbox}->set_sensitive(FALSE);
+    }
+    else
+    {
+	$browser->{main_vbox}->set_sensitive(TRUE);
+    }
+
     # The list of available branches has changed.
 
     if ($changed & BRANCH)
@@ -920,13 +991,29 @@ sub update_browser_state($$)
 	# Reset the branch selection.
 
 	$browser->{branch_combo_details}->{completion} = undef;
-	if (! $browser->{branch_combo_details}->{preset})
+	if ($browser->{branch_combo_details}->{preset})
+	{
+	    $browser->{branch_combo_details}->{completed} = 1;
+	    $browser->{branch_combo_details}->{preset} = 0;
+	}
+	else
 	{
 	    $browser->{branch_combo_details}->{completed} = 0;
 	    $browser->{branch_combo_details}->{value} = "";
 	}
-	$browser->{branch_combo_details}->{preset} = 0;
-	set_label_value($browser->{database_name_label}, "<WorkSpace>");
+	if (! defined($browser->{mtn}))
+	{
+	    set_label_value($browser->{database_name_label}, "");
+	}
+	elsif (! defined($browser->{mtn}->get_db_name()))
+	{
+	    set_label_value($browser->{database_name_label}, "<WorkSpace>");
+	}
+	else
+	{
+	    set_label_value($browser->{database_name_label},
+			    $browser->{mtn}->get_db_name());
+	}
 
 	# Get the new list of branches.
 
@@ -966,12 +1053,16 @@ sub update_browser_state($$)
 	# Reset the revision selection.
 
 	$browser->{revision_combo_details}->{completion} = undef;
-	if (! $browser->{revision_combo_details}->{preset})
+	if ($browser->{revision_combo_details}->{preset})
+	{
+	    $browser->{revision_combo_details}->{completed} = 1;
+	    $browser->{revision_combo_details}->{preset} = 0;
+	}
+	else
 	{
 	    $browser->{revision_combo_details}->{completed} = 0;
 	    $browser->{revision_combo_details}->{value} = "";
 	}
-	$browser->{revision_combo_details}->{preset} = 0;
 
 	# Get the new list of revisions.
 
@@ -1051,9 +1142,16 @@ sub update_browser_state($$)
 	# Reset the directory combo.
 
 	$browser->{directory_combo_details}->{completion} = undef;
-	$browser->{directory_combo_details}->{completed} = 0;
-	$browser->{directory_combo_details}->{last_typed_len} = 0;
-	$browser->{directory_combo_details}->{value} = "";
+	if ($browser->{directory_combo_details}->{preset})
+	{
+	    $browser->{directory_combo_details}->{completed} = 1;
+	    $browser->{revision_combo_details}->{preset} = 0;
+	}
+	else
+	{
+	    $browser->{directory_combo_details}->{completed} = 0;
+	    $browser->{directory_combo_details}->{value} = "";
+	}
 	set_label_value($browser->{revision_id_label}, "");
 	set_label_value($browser->{author_label}, "");
 	set_label_value($browser->{change_log_label}, "");
@@ -1146,7 +1244,8 @@ sub update_browser_state($$)
 		($counter ++ / scalar(@directory_list));
 	    gtk2_update();
 	}
-	$browser->{directory_combo}->child()->set_text("");
+	$browser->{directory_combo}->child()->
+	    set_text($browser->{directory_combo_details}->{value});
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
 	foreach my $widget (@{$browser->{revision_sensitive_group}})
@@ -1260,6 +1359,15 @@ sub update_browser_state($$)
 		    MLS_AUTHOR_COLUMN, $author,
 		    MLS_MANIFEST_ENTRY_COLUMN, $item->{manifest_entry});
 
+	    if ($browser->{file_being_viewed_preset_value} ne ""
+		&& $browser->{file_being_viewed_preset_value} eq $item->{name})
+	    {
+		$browser->{file_being_viewed} =
+		    {short_name     => $item->{name},
+		     manifest_entry => $item->{manifest_entry}};
+		$browser->{file_being_viewed_preset_value} = "";
+	    }
+
 	    if ($taking_our_time)
 	    {
 		$browser->{appbar}->set_progress_percentage
@@ -1288,9 +1396,13 @@ sub update_browser_state($$)
 
 	if (exists($browser->{file_being_viewed}->{manifest_entry}))
 	{
+
 	    my $manifest_entry;
 	    $manifest_entry =
 		$browser->{file_being_viewed}->{manifest_entry};
+
+	    # Only do anything if the selected file has changed.
+
 	    if ($browser->{file_id_label}->get_text()
 		ne $manifest_entry->{file_id})
 	    {
@@ -1308,6 +1420,9 @@ sub update_browser_state($$)
 		{
 		    $widget->set_sensitive(FALSE);
 		}
+		$browser->{file_view_svbuffer}->
+		    place_cursor($browser->{file_view_svbuffer}->
+				 get_start_iter());
 		$browser->{file_view_svbuffer}->set_text("");
 		$browser->{file_view_svbuffer}->set("highlight", FALSE);
 		reset_find_text($browser->{file_view_sv});
@@ -1315,8 +1430,6 @@ sub update_browser_state($$)
 
 		# Get contents.
 
-		$manifest_entry =
-		    $browser->{file_being_viewed}->{manifest_entry};
 		$browser->{mtn}->get_file(\$contents,
 					  $manifest_entry->{file_id});
 
@@ -1324,7 +1437,7 @@ sub update_browser_state($$)
 		# then based on the file name extension.
 
 		if (! defined($mime_type =
-			       Gnome2::VFS->get_mime_type_for_data($contents))
+			      Gnome2::VFS->get_mime_type_for_data($contents))
 		    || $mime_type eq "text/plain")
 		{
 		    my $name = $browser->{file_being_viewed}->{short_name};
@@ -1349,6 +1462,9 @@ sub update_browser_state($$)
 
 		if ($mime_type =~ m/^image\/.+$/o)
 		{
+
+		    # Image data.
+
 		    eval
 		    {
 			my $loader = Gtk2::Gdk::PixbufLoader->new();
@@ -1359,10 +1475,13 @@ sub update_browser_state($$)
 			     $loader->get_pixbuf());
 		    };
 		    $browser->{file_view_svbuffer}->
-			set_text("<" . $mime_type . ">\n") if ($@ ne "");
+			set_text("<" . $mime_type . ">") if ($@ ne "");
+
 		}
 		else
 		{
+
+		    # Non-image data.
 
 		    my $ok_to_render = 0;
 
@@ -1385,9 +1504,12 @@ sub update_browser_state($$)
 		    if ($mime_type =~ m/^text\/.+$/o || $ok_to_render)
 		    {
 
+			# Contents is displayable text.
+
 			my $iter;
 
-			# Display text file with possible syntax highlighting.
+			# Enable syntax highlighting if it is available for
+			# this type of text file.
 
 			if (defined($lang = $browser->{file_view_svlangmgr}->
 				    get_language_from_mime_type($mime_type)))
@@ -1430,7 +1552,7 @@ sub update_browser_state($$)
 			$browser->{file_view_svbuffer}->
 			    set("highlight", FALSE);
 			$browser->{file_view_svbuffer}->
-			    set_text("<" . $mime_type . ">\n");
+			    set_text("<" . $mime_type . ">");
 
 		    }
 
@@ -1438,6 +1560,9 @@ sub update_browser_state($$)
 
 		# Scroll back up to the top left.
 
+		$browser->{file_view_svbuffer}->
+		    place_cursor($browser->{file_view_svbuffer}->
+				 get_start_iter());
 		if ($browser->{file_view_scrolledwindow}->realized())
 		{
 		    $browser->{file_view_scrolledwindow}->
@@ -1482,6 +1607,7 @@ sub update_browser_state($$)
 		set_label_value($browser->{file_revision_id_label},
 				$manifest_entry->{last_changed_revision});
 	    }
+
 	}
 	else
 	{
@@ -1489,6 +1615,8 @@ sub update_browser_state($$)
 	    # Reset the file view buffer and the associated find text window.
 
 	    $browser->{file_button_vbox}->set_sensitive(FALSE);
+	    $browser->{file_view_svbuffer}->
+		place_cursor($browser->{file_view_svbuffer}->get_start_iter());
 	    $browser->{file_view_svbuffer}->set_text("");
 	    $browser->{file_view_svbuffer}->set("highlight", FALSE);
 	    set_label_value($browser->{file_name_label}, "");

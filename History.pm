@@ -80,7 +80,7 @@ sub mtn_diff($$$$;$);
 #
 #   Data         - $mtn         : The Monotone instance handle that is to be
 #                                 used to get the change history.
-#                  $revision_id : The if of the revision that is to have its
+#                  $revision_id : The id of the revision that is to have its
 #                                 change log displayed.
 #
 ##############################################################################
@@ -156,7 +156,7 @@ sub display_revision_change_history($$)
 
 	# Add the buttons.
 
-	$button = Gtk2::Button->new("Select As Revision 1");
+	$button = Gtk2::Button->new("Select As Id 1");
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
@@ -174,7 +174,7 @@ sub display_revision_change_history($$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Select As Revision 2");
+	$button = Gtk2::Button->new("Select As Id 2");
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
@@ -192,7 +192,24 @@ sub display_revision_change_history($$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("View Full Revision Change Log");
+	$button = Gtk2::Button->new("Browse Revision");
+	$button->signal_connect("clicked",
+				\&history_list_button_clicked_cb,
+				{instance    => $instance,
+				 revision_id => $revision_id,
+				 button_type => "browse-revision"});
+	$tooltips->set_tip($button,
+			   "Browse the revision in\na new browser window");
+	$instance->{history_textview}->add_child_at_anchor
+	    ($button,
+	     $instance->{history_buffer}->
+	         create_child_anchor($instance->{history_buffer}->
+				     get_end_iter()));
+	$button->show_all();
+	$instance->{history_buffer}->
+	    insert($instance->{history_buffer}->get_end_iter(), " ");
+
+	$button = Gtk2::Button->new("Full Change Log");
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
@@ -340,7 +357,7 @@ sub display_file_change_history($$$)
 
 	# Add the buttons.
 
-	$button = Gtk2::Button->new("Select As File 1");
+	$button = Gtk2::Button->new("Select As Id 1");
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
@@ -358,7 +375,7 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Select As File 2");
+	$button = Gtk2::Button->new("Select As Id 2");
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
@@ -376,7 +393,24 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("View Full Revision Change Log");
+	$button = Gtk2::Button->new("Browse File");
+	$button->signal_connect("clicked",
+				\&history_list_button_clicked_cb,
+				{instance    => $instance,
+				 revision_id => $revision_id,
+				 button_type => "browse-file"});
+	$tooltips->set_tip($button,
+			   "Browse the file in\na new browser window");
+	$instance->{history_textview}->add_child_at_anchor
+	    ($button,
+	     $instance->{history_buffer}->
+	         create_child_anchor($instance->{history_buffer}->
+				     get_end_iter()));
+	$button->show_all();
+	$instance->{history_buffer}->
+	    insert($instance->{history_buffer}->get_end_iter(), " ");
+
+	$button = Gtk2::Button->new("Full Change Log");
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
@@ -486,6 +520,66 @@ sub history_list_button_clicked_cb($$)
 	    $instance->{compare_button}->set_sensitive(FALSE);
 	}
     }
+    elsif ($details->{button_type} eq "browse-revision")
+    {
+
+	my($branch,
+	   @certs_list);
+
+	# First find out what branch the revision is on (take the first one).
+
+	$instance->{mtn}->certs(\@certs_list, $revision_id);
+	$branch = "";
+	foreach my $cert (@certs_list)
+	{
+	    if ($cert->{name} eq "branch")
+	    {
+		$branch = $cert->{value};
+		last;
+	    }
+	}
+
+	# Get a new browser window preloaded with the desired file.
+
+	get_browser_window($instance->{mtn}, $branch, $revision_id);
+
+    }
+    elsif ($details->{button_type} eq "browse-file")
+    {
+
+	my($branch,
+	   @certs_list,
+	   $dir,
+	   $file);
+
+	# First find out what branch the revision is on (take the first one).
+
+	$instance->{mtn}->certs(\@certs_list, $revision_id);
+	$branch = "";
+	foreach my $cert (@certs_list)
+	{
+	    if ($cert->{name} eq "branch")
+	    {
+		$branch = $cert->{value};
+		last;
+	    }
+	}
+
+	# Split the file name into directory and file components.
+
+	$dir = dirname($instance->{file_name});
+	$dir = "" if ($dir eq ".");
+	$file = basename($instance->{file_name});
+
+	# Get a new browser window preloaded with the desired file.
+
+	get_browser_window($instance->{mtn},
+			   $branch,
+			   $revision_id,
+			   $dir,
+			   $file);
+
+    }
     else
     {
 
@@ -564,8 +658,7 @@ sub file_comparison_combobox_changed_cb($$)
     my($iter,
        $line_nr);
 
-    # Simply get the currently selected term and then enable/disable the text
-    # entry and date entry widgets accordingly.
+    # Get the line number related to the selected file and then jump to it.
 
     $line_nr = $instance->{file_combo}->get_model()->get
 	($instance->{file_combo}->get_active_iter(), CLS_LINE_NR_COLUMN);
