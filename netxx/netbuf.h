@@ -92,7 +92,7 @@ public:
     ~Netbuf (void);
 protected:
     // TODO streamsize xsputn (const char_type *s, streamsize n);
-    int_type overflow (int_type c=traits_type::eof());
+    int_type overflow (int_type c=traits::eof());
     int sync (void);
 
     int_type underflow (void);
@@ -127,11 +127,11 @@ Netbuf<bufsize, charT, traits>::~Netbuf (void) {
 template<std::streamsize bufsize, class charT, class traits>
 typename Netbuf<bufsize, charT, traits>::int_type Netbuf<bufsize, charT, traits>::overflow (int_type c) {
     if (buffer_out() < 0) {
-	return traits_type::eof();
-    } else if (!traits_type::eq_int_type(c, traits_type::eof())) {
+	return traits::eof();
+    } else if (!traits::eq_int_type(c, traits::eof())) {
 	return sputc(c);
     } else {
-	return traits_type::not_eof(c);
+	return traits::not_eof(c);
     }
 }
 //#############################################################################
@@ -142,47 +142,47 @@ int Netbuf<bufsize, charT, traits>::sync (void) {
 //#############################################################################
 template<std::streamsize bufsize, class charT, class traits>
 int Netbuf<bufsize, charT, traits>::buffer_out (void) {
-    int length = pptr() - pbase();
+    int length = this->pptr() - this->pbase();
     int rc = stream_.write(putbuf_, length);
-    pbump(-length);
+    this->pbump(-length);
     return rc;
 }
 //#############################################################################
 template<std::streamsize bufsize, class charT, class traits>
 typename Netbuf<bufsize, charT, traits>::int_type Netbuf<bufsize, charT, traits>::underflow (void) {
-    if (gptr() < egptr()) return traits_type::to_int_type(*gptr());
-    if (buffer_in() < 0) return traits_type::eof();
-    else return traits_type::to_int_type(*gptr());
+    if (this->gptr() < this->egptr()) return traits::to_int_type(*(this->gptr()));
+    if (buffer_in() < 0) return traits::eof();
+    else return traits::to_int_type(*(this->gptr()));
 }
 //#############################################################################
 template<std::streamsize bufsize, class charT, class traits>
 typename Netbuf<bufsize, charT, traits>::int_type Netbuf<bufsize, charT, traits>::pbackfail(int_type c) {
-    if (gptr() != eback()) {
-	gbump(-1);
+    if (this->gptr() != this->eback()) {
+	this->gbump(-1);
 
-	if (!traits_type::eq_int_type(c, traits_type::eof())) {
-	    *(gptr()) = traits_type::to_char_type(c);
+	if (!traits::eq_int_type(c, traits::eof())) {
+	    *(this->gptr()) = traits::to_char_type(c);
 	}
 
-	return traits_type::not_eof(c);
+	return traits::not_eof(c);
     } else {
-	return traits_type::eof();
+	return traits::eof();
     }
 }
 //#############################################################################
 template<std::streamsize bufsize, class charT, class traits>
 int Netbuf<bufsize, charT, traits>::buffer_in (void) {
-    std::streamsize number_putbacks = std::min(gptr() - eback(), PUTBACK_SIZE);
+    std::streamsize number_putbacks = std::min(this->gptr() - this->eback(), PUTBACK_SIZE);
     std::memcpy(getbuf_ + (PUTBACK_SIZE - number_putbacks) * sizeof(char_type),
-	    gptr() - number_putbacks * sizeof(char_type), number_putbacks * sizeof(char_type));
+	    this->gptr() - number_putbacks * sizeof(char_type), number_putbacks * sizeof(char_type));
 
     int rc = stream_.read(getbuf_ + PUTBACK_SIZE * sizeof(char_type), bufsize - PUTBACK_SIZE);
     
     if (rc <= 0) {
-	setg(0, 0, 0);
+	this->setg(0, 0, 0);
 	return -1;
     } else {
-	setg(getbuf_ + PUTBACK_SIZE - number_putbacks, getbuf_ + PUTBACK_SIZE, getbuf_ + PUTBACK_SIZE + rc);
+	this->setg(getbuf_ + PUTBACK_SIZE - number_putbacks, getbuf_ + PUTBACK_SIZE, getbuf_ + PUTBACK_SIZE + rc);
 	return rc;
     }
 }
