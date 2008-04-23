@@ -1,0 +1,77 @@
+head	1.4;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.4
+date	2007.08.11.10.37.40;	author markus;	state Exp;
+branches;
+next	1.3;
+commitid	QuORtiiv7H3i0kts;
+
+1.3
+date	2007.08.11.10.37.28;	author markus;	state Exp;
+branches;
+next	1.2;
+commitid	yHaH8SEu11Dd0kts;
+
+1.2
+date	2007.08.11.10.37.22;	author markus;	state Exp;
+branches;
+next	1.1;
+commitid	QoacUnbGy0Cb0kts;
+
+1.1
+date	2007.08.11.10.37.11;	author markus;	state Exp;
+branches;
+next	;
+commitid	5tM66v499rG70kts;
+
+
+desc
+@@
+
+
+1.4
+log
+@blob F
+@
+text
+@version 1.4 of test file bar
+@
+
+
+1.3
+log
+@blob D
+@
+text
+@d1 1
+a1 1
+version 1.3 of test file bar
+@
+
+
+1.2
+log
+@blob C
+@
+text
+@d1 1
+a1 1
+version 1.2 of test file bar
+@
+
+
+1.1
+log
+@blob A
+@
+text
+@d1 1
+a1 1
+version 1.1 of test file bar
+@
+
