@@ -88,6 +88,7 @@ sub display_annotation($$$)
        $prefix_tag,
        $template,
        $text_tag);
+    my $wm = WindowManager->instance();
 
     $instance = get_annotation_window();
     local $instance->{in_cb} = 1;
@@ -95,7 +96,7 @@ sub display_annotation($$$)
     $instance->{window}->set_title("Annotated Listing Of " . $file_name);
     $instance->{window}->show_all();
 
-    make_busy($instance, 1);
+    $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
     gtk2_update();
 
@@ -185,7 +186,7 @@ sub display_annotation($$$)
     gtk2_update();
 
     $instance->{appbar}->pop();
-    make_busy($instance, 0);
+    $wm->make_busy($instance, 0);
 
 }
 #
@@ -205,30 +206,18 @@ sub display_annotation($$$)
 sub get_annotation_window()
 {
 
-    my($font,
-       $height,
+    my($height,
        $instance,
-       $width,
-       $window_type);
-
-    $window_type = "annotation_window";
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
+       $width);
+    my $window_type = "annotation_window";
+    my $wm = WindowManager->instance();
 
     # Create a new annotation window if an unused one wasn't found, otherwise
     # reuse an existing unused one.
 
-    if (! defined($instance))
+    if (! defined($instance = $wm->find_unused($window_type)))
     {
 	$instance = {};
-	$instance->{type} = $window_type;
 	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
@@ -267,21 +256,14 @@ sub get_annotation_window()
 	$instance->{annotation_buffer} =
 	    $instance->{annotation_textview}->get_buffer();
 	create_format_tags($instance->{annotation_buffer});
-	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-	$instance->{annotation_textview}->modify_font($font)
-	    if (defined($font));
+	$instance->{annotation_textview}->modify_font($mono_font);
 
-	$instance->{grab_widget} = $instance->{window};
+	# Register the window for management.
 
-	# Setup the list of windows that can be made busy for this application
-	# window.
-
-	$instance->{busy_windows} = [];
-	push(@{$instance->{busy_windows}}, $instance->{window}->window());
-	push(@{$instance->{busy_windows}},
-	     $instance->{annotation_textview}->get_window("text"));
-
-	push(@windows, $instance);
+	$wm->manage($instance, $window_type, $instance->{window});
+	$wm->add_busy_widgets($instance,
+			      $instance->{annotation_textview}->
+			          get_window("text"));
     }
     else
     {

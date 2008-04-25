@@ -96,22 +96,12 @@ sub advanced_find($$$)
     my($advanced_find,
        $new,
        $ret_val);
-
-    # Look for an unused window first.
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $advanced_find = $window;
-	    last;
-	}
-    }
+    my $wm = WindowManager->instance();
 
     # Create a new advanced find window if an unused one wasn't found,
     # otherwise reuse the existing unused one.
 
-    if (defined($advanced_find))
+    if (defined($advanced_find = $wm->find_unused($window_type)))
     {
 	$new = 0;
     }
@@ -146,18 +136,16 @@ sub advanced_find($$$)
 	$advanced_find->{window}->resize($width, $height);
 	$advanced_find->{window}->show_all();
 
-	# If necessary, setup the list of windows that can be made busy for
-	# this application window.
+	# If necessary, register the window for management and setup the list
+	# of additional windows that can be made busy for this application
+	# window.
 
 	if ($new)
 	{
-	    $advanced_find->{busy_windows} = [];
-	    push(@{$advanced_find->{busy_windows}},
-		 $advanced_find->{window}->window());
-	    push(@{$advanced_find->{busy_windows}},
-		 $advanced_find->{details_textview}->get_window("text"));
-
-	    push(@windows, $advanced_find);
+	    $wm->manage($advanced_find, $window_type);
+	    $wm->add_busy_widgets($advanced_find,
+				  $advanced_find->{details_textview}->
+				      get_window("text"));
 	}
 
 	# Now actually update it with any preset values.
@@ -253,13 +241,11 @@ sub create_advanced_find_window()
 {
 
     my(@branch_list,
-       $font,
        $instance,
        $renderer,
        $tv_column);
 
     $instance = {};
-    $instance->{type} = $window_type;
     $instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
     # Flag to stop recursive calling of callbacks.
@@ -363,8 +349,7 @@ sub create_advanced_find_window()
 
     $instance->{details_buffer} = $instance->{details_textview}->get_buffer();
     create_format_tags($instance->{details_textview}->get_buffer());
-    $font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-    $instance->{details_textview}->modify_font($font) if (defined($font));
+    $instance->{details_textview}->modify_font($mono_font);
 
     return $instance;
 
@@ -705,11 +690,12 @@ sub update_advanced_find_state($$)
     my($advanced_find, $changed) = @_;
 
     my $made_busy = 0;
+    my $wm = WindowManager->instance();
 
     if ($advanced_find->{window}->realized())
     {
 	$made_busy = 1;
-	make_busy($advanced_find, 1);
+	$wm->make_busy($advanced_find, 1);
     }
     $advanced_find->{appbar}->push("");
     gtk2_update();
@@ -1056,7 +1042,7 @@ sub update_advanced_find_state($$)
     }
 
     $advanced_find->{appbar}->pop();
-    make_busy($advanced_find, 0) if ($made_busy);
+    $wm->make_busy($advanced_find, 0) if ($made_busy);
 
 }
 

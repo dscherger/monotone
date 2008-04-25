@@ -55,7 +55,6 @@ sub get_dir_contents($$$);
 sub get_revision_ids($$);
 sub glade_signal_autoconnect($$);
 sub gtk2_update();
-sub make_busy($$);
 sub run_command($@);
 sub set_label_value($$);
 #
@@ -578,74 +577,6 @@ sub glade_signal_autoconnect($$)
 			    $callback_name,
 			    $connect_object ? $connect_object : $user_data); },
 	 $client_data);
-
-}
-#
-##############################################################################
-#
-#   Routine      - make_busy
-#
-#   Description  - This routine simply makes the main window busy or active.
-#
-#   Data         - $instance : The window instance.
-#                  $busy     : True if the window is to be made busy,
-#                              otherwise false if the window is to be made
-#                              active.
-#
-##############################################################################
-
-
-
-sub make_busy($$)
-{
-
-    my($instance, $busy) = @_;
-
-    # Create and store the cursors if we haven't done so already.
-
-    $busy_cursor = Gtk2::Gdk::Cursor->new("watch")
-	unless (defined($busy_cursor));
-
-    # Do it. Make the application bar grab the input when the window is busy,
-    # that way we gobble up keyboard and mouse events that could muck up the
-    # application state.
-
-    if ($busy)
-    {
-	if (exists($instance->{grab_widget}))
-	{
-	    Gtk2->grab_add($instance->{grab_widget});
-	}
-	else
-	{
-	    Gtk2->grab_add($instance->{appbar});
-	}
-	foreach my $instance (@windows)
-	{
-	    foreach my $window (@{$instance->{busy_windows}})
-	    {
-		$window->set_cursor($busy_cursor);
-	    }
-	}
-    }
-    else
-    {
-	if (exists($instance->{grab_widget}))
-	{
-	    Gtk2->grab_remove($instance->{grab_widget});
-	}
-	else
-	{
-	    Gtk2->grab_remove($instance->{appbar});
-	}
-	foreach my $instance (@windows)
-	{
-	    foreach my $window (@{$instance->{busy_windows}})
-	    {
-		$window->set_cursor(undef);
-	    }
-	}
-    }
 
 }
 #

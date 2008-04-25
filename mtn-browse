@@ -89,6 +89,7 @@ use Completion;
 use FindText;
 use History;
 use Utilities;
+use WindowManager;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
@@ -160,6 +161,7 @@ sub view_button_clicked_cb($$);
     setup_sigchld_handler(\&sigchld_handler);
     $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
+    $mono_font = Gtk2::Pango::FontDescription->from_string("monospace 10");
     $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/UI/line.png");
 
     # Create the temporary working directory.
@@ -210,6 +212,9 @@ sub view_button_clicked_cb($$);
 	    (sub {
 		 my $browser = $_[0];
 
+		 return if ($browser->{in_cb});
+		 local $browser->{in_cb} = 1;
+
 		 $browser->{branch_combo_details}->{preset} = 1;
 		 $browser->{branch_combo_details}->{value} = $branch;
 		 $browser->{revision_combo_details}->{preset} = 1;
@@ -220,6 +225,7 @@ sub view_button_clicked_cb($$);
 		 return FALSE;
 	     },
 	     $browser);
+	$mtn = undef;
     }
 
     # Hand control over to Gtk2.
@@ -228,11 +234,7 @@ sub view_button_clicked_cb($$);
 
     # Cleanup.
 
-    foreach my $window (@windows)
-    {
-	$window->{window}->destroy();
-    }
-    @windows = ();
+    WindowManager->instance()->cleanup();
     Gnome2::VFS->shutdown();
     $SIG{CHLD} = "IGNORE";
 
@@ -937,8 +939,9 @@ sub view_button_clicked_cb($$)
        $fh,
        $file_name);
 
-    if (! ($file_name =
-	   generate_tmp_path($browser->{file_being_viewed}->{short_name})))
+    if (! defined($file_name =
+		  generate_tmp_path($browser->{file_being_viewed}->
+				    {short_name})))
     {
 	my $dialog = Gtk2::MessageDialog->new
 	    ($browser->{window},
@@ -1191,16 +1194,17 @@ sub main_window_delete_event_cb($$$)
     # Only exit if this is the only browser window currently being shown.
 
     $others_mapped = 0;
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type
-	    && $window != $browser
-	    && $window->{window}->mapped())
-	{
-	    $others_mapped = 1;
-	    last;
-	}
-    }
+    WindowManager->instance()->cond_find
+	($window_type,
+	 sub {
+	     my $instance = $_[0];
+	     if ($instance != $browser && $instance->{window}->mapped())
+	     {
+		 $others_mapped = 1;
+		 return 1;
+	     }
+	     return;
+	 });
 
     $browser->{window}->hide();
     $browser->{mtn} = undef;
@@ -1252,30 +1256,19 @@ sub get_browser_window(;$$$$$)
     my($mtn, $branch, $revision_id, $directory, $file) = @_;
 
     my $browser;
-
-    # Look for an unused window first.
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $browser = $window;
-	    last;
-	}
-    }
+    my $wm = WindowManager->instance();
 
     # Create a new browser window if an unused one wasn't found, otherwise
     # reuse an existing unused one.
 
-    if (! defined($browser))
+    if (! defined($browser = $wm->find_unused($window_type)))
     {
-	my($font,
-	   $image,
+
+	my($image,
 	   $renderer,
 	   $tv_column);
 
 	$browser = {};
-	$browser->{type} = $window_type;
 	$browser->{mtn} = $mtn;
 	$browser->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
@@ -1447,8 +1440,7 @@ sub get_browser_window(;$$$$$)
 	    Gtk2::SourceView::LanguagesManager->new();
 	$browser->{file_view_sv} = Gtk2::SourceView::View->
 	    new_with_buffer($browser->{file_view_svbuffer});
-	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-	$browser->{file_view_sv}->modify_font($font) if (defined($font));
+	$browser->{file_view_sv}->modify_font($mono_font);
 	$browser->{file_view_sv}->set_cursor_visible(FALSE);
 	$browser->{file_view_sv}->set_editable(FALSE);
 	$browser->{glade}->get_widget("file_view_scrolledwindow")->
@@ -1456,6 +1448,12 @@ sub get_browser_window(;$$$$$)
 	$browser->{file_view_sv}->show_all();
 
 	$browser->{window}->show_all();
+
+	# Register the window for management.
+
+	$wm->manage($browser, $window_type);
+	$wm->add_busy_widgets($browser,
+			      $browser->{file_view_sv}->get_window("text"));
 
 	# Update the browser's internal state.
 
@@ -1465,18 +1463,10 @@ sub get_browser_window(;$$$$$)
 	$browser->{file_being_viewed_preset_value} = "";
 	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
 
-	# Setup the list of windows that can be made busy for this application
-	# window.
-
-	$browser->{busy_windows} = [];
-	push(@{$browser->{busy_windows}}, $browser->{window}->window());
-	push(@{$browser->{busy_windows}},
-	     $browser->{file_view_sv}->get_window("text"));
-
-	push(@windows, $browser);
     }
     else
     {
+
 	my($height,
 	   $width);
 
@@ -1498,6 +1488,7 @@ sub get_browser_window(;$$$$$)
 	    $browser->{mtn} = $mtn;
 	    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
 	}
+
     }
 
     # Now deal with any presetting that is required.
@@ -1554,23 +1545,58 @@ sub update_browser_state($$)
 
     my($browser, $changed) = @_;
 
-    make_busy($browser, 1);
+    my $wm = WindowManager->instance();
+
+    $wm->make_busy($browser, 1);
     $browser->{appbar}->push("");
     gtk2_update();
 
-    # Disable the browser if no database is associated with it.
+    # The database has changed.
 
-    if (! defined($browser->{mtn}))
+    if ($changed & BRANCH)
     {
-	$browser->{close_toolbutton}->set_sensitive(FALSE);
-	$browser->{properties_toolbutton}->set_sensitive(FALSE);
-	$browser->{main_vbox}->set_sensitive(FALSE);
-    }
-    else
-    {
-	$browser->{close_toolbutton}->set_sensitive(TRUE);
-	$browser->{properties_toolbutton}->set_sensitive(TRUE);
-	$browser->{main_vbox}->set_sensitive(TRUE);
+
+	my $db_name;
+
+	if (! defined($browser->{mtn}))
+	{
+
+	    # Disable the browser as no database is associated with it.
+
+	    $browser->{close_toolbutton}->set_sensitive(FALSE);
+	    $browser->{properties_toolbutton}->set_sensitive(FALSE);
+	    $browser->{main_vbox}->set_sensitive(FALSE);
+	    set_label_value($browser->{database_name_label}, "");
+
+	}
+	else
+	{
+
+	    # Enable the browser as there is a database associated with it.
+
+	    $browser->{close_toolbutton}->set_sensitive(TRUE);
+	    $browser->{properties_toolbutton}->set_sensitive(TRUE);
+	    $browser->{main_vbox}->set_sensitive(TRUE);
+	    if (! defined($browser->{mtn}->get_db_name()))
+	    {
+		$browser->{mtn}->get_option(\$db_name, "database");
+		set_label_value($browser->{database_name_label},
+				sprintf("<WorkSpace> (%s)", $db_name));
+	    }
+	    else
+	    {
+		set_label_value($browser->{database_name_label},
+				$browser->{mtn}->get_db_name());
+	    }
+
+	    # Make sure that the branch comboboxentry has the focus and not the
+	    # bonobo dock.
+
+	    $browser->{branch_combo}->child()->grab_focus();
+	    $browser->{branch_combo}->child()->set_position(-1);
+
+	}
+
     }
 
     # The list of available branches has changed.
@@ -1592,19 +1618,6 @@ sub update_browser_state($$)
 	{
 	    $browser->{branch_combo_details}->{complete} = 0;
 	    $browser->{branch_combo_details}->{value} = "";
-	}
-	if (! defined($browser->{mtn}))
-	{
-	    set_label_value($browser->{database_name_label}, "");
-	}
-	elsif (! defined($browser->{mtn}->get_db_name()))
-	{
-	    set_label_value($browser->{database_name_label}, "<WorkSpace>");
-	}
-	else
-	{
-	    set_label_value($browser->{database_name_label},
-			    $browser->{mtn}->get_db_name());
 	}
 
 	# Get the new list of branches.
@@ -2221,12 +2234,8 @@ sub update_browser_state($$)
 
     }
 
-    if ($changed & FILE)
-    {
-    }
-
     $browser->{appbar}->pop();
-    make_busy($browser, 0);
+    $wm->make_busy($browser, 0);
 
 }
 #
@@ -2311,35 +2320,36 @@ sub sigchld_handler()
 	    # If it is an mtn process then close down the relevant object so
 	    # that it will automatically restart when needed.
 
-	    foreach my $window (@windows)
-	    {
-		if (exists($window->{mtn}) && defined($window->{mtn})
-		    && $window->{mtn}->get_pid() == $pid)
-		{
-		    $window->{mtn}->closedown();
-		    my $dialog = Gtk2::MessageDialog->new
-			(undef,
-			 ["modal"],
-			 "warning",
-			 "close",
-			 sprintf("The mtn subprocess just unexpectedly\n"
-				     . "exited (%s).\n"
-				     . "This shouldn't happen.\n"
-				     . "It will be restarted when needed.",
-				 WIFSIGNALED($status) ?
-				     sprintf("terminated by signal %d",
-					     WTERMSIG($status)) :
-				     sprintf("exited with status %d",
-					     WEXITSTATUS($status))));
-		    $dialog->run();
-		    $dialog->destroy();
-		    last;
-		}
-	    }
+	    WindowManager->instance()->cond_find
+		(undef,
+		 sub {
+		     my $instance = $_[0];
+		     if (exists($instance->{mtn}) && defined($instance->{mtn})
+			 && $instance->{mtn}->get_pid() == $pid)
+		     {
+			 $instance->{mtn}->closedown();
+			 my $dialog = Gtk2::MessageDialog->new
+			     (undef,
+			      ["modal"],
+			      "warning",
+			      "close",
+			      sprintf("The mtn subprocess just unexpectedly\n"
+				          . "exited (%s).\n"
+				          . "This shouldn't happen.\n"
+				          . "It will be restarted when "
+				          .  "needed.",
+				      WIFSIGNALED($status) ?
+				          sprintf("terminated by signal %d",
+						  WTERMSIG($status)) :
+				          sprintf("exited with status %d",
+						  WEXITSTATUS($status))));
+			 $dialog->run();
+			 $dialog->destroy();
+			 return 1;
+		     }
+		     return;
+		 });
 
-	    if (WIFSIGNALED($status))
-	    {
-	    }
 	}
     }
     warn("waitpid failed: $!") if ($pid < 0 && $! != ECHILD);

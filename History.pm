@@ -1,6 +1,6 @@
 ##############################################################################
 #
-#   File Name    - mtn-browse
+#   File Name    - History.pm
 #
 #   Description  - The history module for the mtn-browse application. This
 #                  module contains all the routines for implementing the
@@ -97,6 +97,7 @@ sub display_revision_change_history($$)
        $counter,
        %history_hash,
        $instance);
+    my $wm = WindowManager->instance();
 
     $instance = get_history_window();
     local $instance->{in_cb} = 1;
@@ -109,7 +110,7 @@ sub display_revision_change_history($$)
     $instance->{history_label}->set_markup("<b>Revision History</b>");
     $instance->{window}->show_all();
 
-    make_busy($instance, 1);
+    $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
     gtk2_update();
 
@@ -265,7 +266,7 @@ sub display_revision_change_history($$)
     gtk2_update();
 
     $instance->{appbar}->pop();
-    make_busy($instance, 0);
+    $wm->make_busy($instance, 0);
 
 }
 #
@@ -297,6 +298,7 @@ sub display_file_change_history($$$)
        $counter,
        %history_hash,
        $instance);
+    my $wm = WindowManager->instance();
 
     $instance = get_history_window();
     local $instance->{in_cb} = 1;
@@ -310,7 +312,7 @@ sub display_file_change_history($$$)
     $instance->{history_label}->set_markup("<b>File History</b>");
     $instance->{window}->show_all();
 
-    make_busy($instance, 1);
+    $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
     gtk2_update();
 
@@ -456,7 +458,7 @@ sub display_file_change_history($$$)
     gtk2_update();
 
     $instance->{appbar}->pop();
-    make_busy($instance, 0);
+    $wm->make_busy($instance, 0);
 
 }
 #
@@ -676,6 +678,7 @@ sub compare_revisions($$$;$)
        $name,
        $padding,
        $rest);
+    my $wm = WindowManager->instance();
 
     $instance = get_revision_comparison_window();
     local $instance->{in_cb} = 1;
@@ -695,7 +698,7 @@ sub compare_revisions($$$;$)
     }
     $instance->{window}->show_all();
 
-    make_busy($instance, 1);
+    $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
     gtk2_update();
 
@@ -899,7 +902,7 @@ sub compare_revisions($$$;$)
     $instance->{comparison_scrolledwindow}->get_hadjustment()->set_value(0);
 
     $instance->{appbar}->pop();
-    make_busy($instance, 0);
+    $wm->make_busy($instance, 0);
 
 }
 #
@@ -1002,32 +1005,18 @@ sub coloured_revision_change_log_button_clicked_cb($$)
 sub get_history_window()
 {
 
-    my($font,
-       $height,
+    my($height,
        $instance,
-       $width,
-       $window_type);
-
-    $window_type = "history_window";
-
-    # Look for an unused window first.
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
+       $width);
+    my $window_type = "history_window";
+    my $wm = WindowManager->instance();
 
     # Create a new file history window if an unused one wasn't found, otherwise
     # reuse an existing unused one.
 
-    if (! defined($instance))
+    if (! defined($instance = $wm->find_unused($window_type)))
     {
 	$instance = {};
-	$instance->{type} = $window_type;
 	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
@@ -1081,23 +1070,14 @@ sub get_history_window()
 	$instance->{history_buffer} =
 	    $instance->{history_textview}->get_buffer();
 	create_format_tags($instance->{history_buffer});
-	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-	$instance->{history_textview}->modify_font($font) if (defined($font));
+	$instance->{history_textview}->modify_font($mono_font);
 
-	# Make the stop button the grab widget when busy, this is so the user
-	# can interrupt the history gathering process.
+	# Register the window for management.
 
-	$instance->{grab_widget} = $instance->{stop_button};
-
-	# Setup the list of windows that can be made busy for this application
-	# window.
-
-	$instance->{busy_windows} = [];
-	push(@{$instance->{busy_windows}}, $instance->{window}->window());
-	push(@{$instance->{busy_windows}},
-	     $instance->{history_textview}->get_window("text"));
-
-	push(@windows, $instance);
+	$wm->manage($instance, $window_type, $instance->{stop_button});
+	$wm->add_busy_widgets($instance,
+			      $instance->{history_textview}->
+			          get_window("text"));
     }
     else
     {
@@ -1226,33 +1206,19 @@ sub get_revision_history_helper($$$)
 sub get_revision_comparison_window()
 {
 
-    my($font,
-       $height,
+    my($height,
        $instance,
        $renderer,
-       $width,
-       $window_type);
-
-    $window_type = "revision_comparison_window";
-
-    # Look for an unused window first.
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
+       $width);
+    my $window_type = "revision_comparison_window";
+    my $wm = WindowManager->instance();
 
     # Create a new revision comparison window if an unused one wasn't found,
     # otherwise reuse an existing unused one.
 
-    if (! defined($instance))
+    if (! defined($instance = $wm->find_unused($window_type)))
     {
 	$instance = {};
-	$instance->{type} = $window_type;
 	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
@@ -1322,19 +1288,14 @@ sub get_revision_comparison_window()
 	$instance->{comparison_buffer} =
 	    $instance->{comparison_textview}->get_buffer();
 	create_format_tags($instance->{comparison_buffer});
-	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-	$instance->{comparison_textview}->modify_font($font)
-	    if (defined($font));
+	$instance->{comparison_textview}->modify_font($mono_font);
 
-	# Setup the list of windows that can be made busy for this application
-	# window.
+	# Register the window for management.
 
-	$instance->{busy_windows} = [];
-	push(@{$instance->{busy_windows}}, $instance->{window}->window());
-	push(@{$instance->{busy_windows}},
-	     $instance->{comparison_textview}->get_window("text"));
-
-	push(@windows, $instance);
+	$wm->manage($instance, $window_type, $instance->{stop_button});
+	$wm->add_busy_widgets($instance,
+			      $instance->{comparison_textview}->
+			          get_window("text"));
     }
     else
     {

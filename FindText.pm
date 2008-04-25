@@ -61,6 +61,7 @@ sub reset_find_text($);
 # Private routines.
 
 sub find_combo_changed_cb($$);
+sub find_current_window($);
 sub get_find_text_window($$);
 #
 ##############################################################################
@@ -68,12 +69,12 @@ sub get_find_text_window($$);
 #   Routine      - find_text
 #
 #   Description  - Display the find text window associated with the specified
-#                  text view widget, creating one if necessary, and allow the
+#                  textview widget, creating one if necessary, and allow the
 #                  user to search through the related text buffer.
 #
 #   Data         - $parent    : The parent window widget for the find text
 #                               window.
-#                  $text_view : The text view widget that is to be searched.
+#                  $text_view : The textview widget that is to be searched.
 #
 ##############################################################################
 
@@ -84,26 +85,11 @@ sub find_text($$)
 
     my($parent, $text_view) = @_;
 
-    my $instance;
+    # Only go looking for a spare find text window, creating one if necessary,
+    # if there isn't one already mapped for the specified textview widget.
 
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type
-	    && $window->{window}->mapped()
-	    && $window->{text_view} == $text_view)
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
-
-    # A suitable mapped find text window cannot be found so reuse an unsued one
-    # or create a new one.
-
-    if (! defined($instance))
-    {
-	$instance = get_find_text_window($parent, $text_view);
-    }
+    get_find_text_window($parent, $text_view)
+	if (! defined(find_current_window($text_view)));
 
 }
 #
@@ -112,9 +98,9 @@ sub find_text($$)
 #   Routine      - reset_find_text
 #
 #   Description  - Resets the search context for the find text window
-#                  associated with the specified text view widget.
+#                  associated with the specified textview widget.
 #
-#   Data         - $text_view : The text view widget to which the find text
+#   Data         - $text_view : The textview widget to which the find text
 #                               window is associated.
 #
 ##############################################################################
@@ -128,21 +114,10 @@ sub reset_find_text($)
 
     my $instance;
 
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type
-	    && $window->{window}->mapped()
-	    && $window->{text_view} == $text_view)
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
-
     # Simply reset the search context for the found find text window.
 
     $instance->{match_offset_start} = $instance->{match_offset_end} = -1
-	if (defined($instance));
+	if (defined(find_current_window($text_view)));
 
 }
 #
@@ -151,9 +126,9 @@ sub reset_find_text($)
 #   Routine      - disable_find_text
 #
 #   Description  - Disables or enables the find text window associated with
-#                  the specified text view widget.
+#                  the specified textview widget.
 #
-#   Data         - $text_view : The text view widget to which the find text
+#   Data         - $text_view : The textview widget to which the find text
 #                               window is associated.
 #                  $disable   : True if the window is to be disabled,
 #                               otherwise false if it is to be enabled.
@@ -169,20 +144,9 @@ sub disable_find_text($$)
 
     my $instance;
 
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type
-	    && $window->{window}->mapped()
-	    && $window->{text_view} == $text_view)
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
-
     # Simply disable/enable the found find text window.
 
-    if (defined($instance))
+    if (defined(find_current_window($text_view)))
     {
 	if ($disable)
 	{
@@ -197,149 +161,6 @@ sub disable_find_text($$)
 		 TRUE : FALSE);
 	}
     }
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_find_text_window
-#
-#   Description  - Creates or prepares an existing find text window for use.
-#
-#   Data         - $parent    : The parent window widget for the find text
-#                               window.
-#                  $text_view : The text view widget that is to be searched.
-#
-##############################################################################
-
-
-
-sub get_find_text_window($$)
-{
-
-    my($parent, $text_view) = @_;
-
-    my($instance,
-       $new);
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
-
-    # Create a new find text window if an unused one wasn't found, otherwise
-    # reuse an existing unused one.
-
-    if (! defined($instance))
-    {
-	$new = 1;
-	$instance = {};
-	$instance->{type} = $window_type;
-	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
-
-	# Flag to stop recursive calling of callbacks.
-
-	$instance->{in_cb} = 0;
-
-	# Connect Glade registered signal handlers.
-
-	glade_signal_autoconnect($instance->{glade}, $instance);
-
-	# Get the widgets that we are interested in.
-
-	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{main_vbox} = $instance->{glade}->get_widget("main_vbox");
-	$instance->{find_combo} =
-	    $instance->{glade}->get_widget("find_comboboxentry");
-	$instance->{case_sensitive_tick} =
-	    $instance->{glade}->get_widget("case_sensitive_checkbutton");
-	$instance->{search_backwards_tick} =
-	    $instance->{glade}->get_widget("search_backwards_checkbutton");
-	$instance->{find_button} =
-	    $instance->{glade}->get_widget("find_button");
-
-	# Setup the find text window deletion handlers.
-
-	$instance->{window}->signal_connect
-	    ("delete_event",
-	     sub {
-		 my($widget, $event, $instance) = @_;
-		 return TRUE if ($instance->{in_cb});
-		 local $instance->{in_cb} = 1;
-		 $instance->{window}->hide();
-		 return TRUE;
-	     },
-	     $instance);
-	$instance->{glade}->get_widget("close_button")->signal_connect
-	    ("clicked",
-	     sub {
-		 my($widget, $instance) = @_;
-		 return TRUE if ($instance->{in_cb});
-		 local $instance->{in_cb} = 1;
-		 $instance->{window}->hide();
-	     },
-	     $instance);
-
-	# Setup the comboboxentry changed signal handler.
-
-	$instance->{find_combo}->child()->
-	    signal_connect("changed", \&find_combo_changed_cb, $instance);
-
-	# Setup the combobox.
-
-	$instance->{find_combo}->
-	    set_model(Gtk2::ListStore->new("Glib::String"));
-	$instance->{find_combo}->set_text_column(0);
-	$instance->{search_history} = [];
-
-	$instance->{grab_widget} = $instance->{window};
-    }
-    else
-    {
-	$new = 0;
-	$instance->{in_cb} = 0;
-	$instance->{main_vbox}->set_sensitive(TRUE);
-    }
-
-    # Reset the search context.
-
-    $instance->{match_offset_start} = $instance->{match_offset_end} = -1;
-    $instance->{old_y} = 0;
-    $instance->{old_search_term} = "";
-
-    # Make sure the find button is only enabled when there is something entered
-    # into the comboboxentry widget.
-
-    $instance->{find_button}->set_sensitive
-	((length($instance->{find_combo}->child()->get_text()) > 0) ?
-	 TRUE : FALSE);
-
-    # Store the associated text view and text buffer.
-
-    $instance->{text_view} = $text_view;
-    $instance->{text_buffer} = $instance->{text_view}->get_buffer();
-
-    # Reparent window and display it.
-
-    $instance->{window}->set_transient_for($parent);
-    $instance->{window}->show_all();
-
-    # If necessary, setup the list of windows that can be made busy for this
-    # application window.
-
-    if ($new)
-    {
-	$instance->{busy_windows} = [];
-	push(@{$instance->{busy_windows}}, $instance->{window}->window());
-
-	push(@windows, $instance);
-    }
-
-    return $instance;
 
 }
 #
@@ -602,6 +423,161 @@ sub find_combo_changed_cb($$)
     $instance->{find_button}->set_sensitive
 	((length($instance->{find_combo}->child()->get_text()) > 0) ?
 	 TRUE : FALSE);
+
+}
+#
+##############################################################################
+#
+#   Routine      - find_current_window
+#
+#   Description  - Look for a find text window that is mapped and belongs to
+#                  the specified textview widget.
+#
+#   Data         - $text_view : The textview widget that is to be searched.
+#
+##############################################################################
+
+
+
+sub find_current_window($)
+{
+
+    my $text_view = $_[0];
+
+    return WindowManager->instance()->cond_find
+	($window_type,
+	 sub {
+	     my $instance = $_[0];
+	     return 1
+		 if ($instance->{window}->mapped()
+		     && $instance->{text_view} == $text_view);
+	     return;
+	 });
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_find_text_window
+#
+#   Description  - Creates or prepares an existing find text window for use.
+#
+#   Data         - $parent    : The parent window widget for the find text
+#                               window.
+#                  $text_view : The textview widget that is to be searched.
+#
+##############################################################################
+
+
+
+sub get_find_text_window($$)
+{
+
+    my($parent, $text_view) = @_;
+
+    my($instance,
+       $new);
+    my $wm = WindowManager->instance();
+
+    # Create a new find text window if an unused one wasn't found, otherwise
+    # reuse an existing unused one.
+
+    if (! defined($instance = $wm->find_unused($window_type)))
+    {
+	$new = 1;
+	$instance = {};
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+
+	# Connect Glade registered signal handlers.
+
+	glade_signal_autoconnect($instance->{glade}, $instance);
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
+	$instance->{main_vbox} = $instance->{glade}->get_widget("main_vbox");
+	$instance->{find_combo} =
+	    $instance->{glade}->get_widget("find_comboboxentry");
+	$instance->{case_sensitive_tick} =
+	    $instance->{glade}->get_widget("case_sensitive_checkbutton");
+	$instance->{search_backwards_tick} =
+	    $instance->{glade}->get_widget("search_backwards_checkbutton");
+	$instance->{find_button} =
+	    $instance->{glade}->get_widget("find_button");
+
+	# Setup the find text window deletion handlers.
+
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub {
+		 my($widget, $event, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $instance->{window}->hide();
+		 return TRUE;
+	     },
+	     $instance);
+	$instance->{glade}->get_widget("close_button")->signal_connect
+	    ("clicked",
+	     sub {
+		 my($widget, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $instance->{window}->hide();
+	     },
+	     $instance);
+
+	# Setup the comboboxentry changed signal handler.
+
+	$instance->{find_combo}->child()->
+	    signal_connect("changed", \&find_combo_changed_cb, $instance);
+
+	# Setup the combobox.
+
+	$instance->{find_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$instance->{find_combo}->set_text_column(0);
+	$instance->{search_history} = [];
+    }
+    else
+    {
+	$new = 0;
+	$instance->{in_cb} = 0;
+	$instance->{main_vbox}->set_sensitive(TRUE);
+    }
+
+    # Reset the search context.
+
+    $instance->{match_offset_start} = $instance->{match_offset_end} = -1;
+    $instance->{old_y} = 0;
+    $instance->{old_search_term} = "";
+
+    # Make sure the find button is only enabled when there is something entered
+    # into the comboboxentry widget.
+
+    $instance->{find_button}->set_sensitive
+	((length($instance->{find_combo}->child()->get_text()) > 0) ?
+	 TRUE : FALSE);
+
+    # Store the associated textview and text buffer.
+
+    $instance->{text_view} = $text_view;
+    $instance->{text_buffer} = $instance->{text_view}->get_buffer();
+
+    # Reparent window and display it.
+
+    $instance->{window}->set_transient_for($parent);
+    $instance->{window}->show_all();
+
+    # If necessary, register the window for management.
+
+    $wm->manage($instance, $window_type, $instance->{window}) if ($new);
+
+    return $instance;
 
 }
 

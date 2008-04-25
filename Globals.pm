@@ -58,8 +58,7 @@ use constant BRANCH           => 0x01;
 use constant DIRECTORY        => 0x02;
 use constant DIRECTORY_VIEW   => 0x04;
 use constant DISPLAY_OF_FILE  => 0x08;
-use constant FILE             => 0x10;
-use constant REVISION         => 0x20;
+use constant REVISION         => 0x10;
 use constant REVISION_LIST    => 0x02;
 use constant REVISION_DETAILS => 0x04;
 
@@ -68,42 +67,34 @@ use constant REVISION_DETAILS => 0x04;
 
 use constant ALL_CHANGED               => 0xff;
 use constant BRANCH_CHANGED            => (REVISION | DIRECTORY
-					   | DIRECTORY_VIEW | FILE
-					   | DISPLAY_OF_FILE);
+					   | DIRECTORY_VIEW | DISPLAY_OF_FILE);
 use constant DATABASE_CHANGED          => 0xff;
-use constant DIRECTORY_CHANGED         => (DIRECTORY_VIEW | FILE
-					   | DISPLAY_OF_FILE);
-use constant DISPLAY_OF_FILE_CHANGED   => 0x00;
+use constant DIRECTORY_CHANGED         => (DIRECTORY_VIEW | DISPLAY_OF_FILE);
 use constant FILE_CHANGED              => (DISPLAY_OF_FILE);
 use constant NEW_FIND                  => 0xff;
 use constant REVISION_CHANGED          => (DIRECTORY | REVISION_LIST
-					   | DIRECTORY_VIEW | FILE
-					   | DISPLAY_OF_FILE);
+					   | DIRECTORY_VIEW | DISPLAY_OF_FILE);
 use constant SELECTED_REVISION_CHANGED => (REVISION_DETAILS);
 
 # Location of the Glade UI XML file for mtn-browse.
 
 our $glade_file;
 
-# Location of the temporary working directory.
+# The tooltips widget.
 
-our $tmp_dir;
+our $tooltips;
 
-# List of window instances.
+# The mono-spaced font used for displaying text files.
 
-our @windows;
+our $mono_font;
 
 # Assorted pixmaps.
 
 our $line_image;
 
-# The busy cursor to use for the mouse.
+# Location of the temporary working directory.
 
-our $busy_cursor;
-
-# The tooltips widget.
-
-our $tooltips;
+our $tmp_dir;
 
 # Text viewable application mime types.
 
@@ -167,8 +158,6 @@ our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     DIRECTORY_CHANGED
 				     DIRECTORY_VIEW
 				     DISPLAY_OF_FILE
-				     DISPLAY_OF_FILE_CHANGED
-				     FILE
 				     FILE_CHANGED
 				     NEW_FIND
 				     REVISION
@@ -176,14 +165,13 @@ our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     REVISION_DETAILS
 				     REVISION_LIST
 				     SELECTED_REVISION_CHANGED)],
-		    variables => [qw($busy_cursor
-				     $glade_file
+		    variables => [qw($glade_file
 				     $line_image
+				     $mono_font
 				     @text_mime_types
 				     @text_viewable_app_mime_types
 				     $tmp_dir
-				     $tooltips
-				     @windows)]);
+				     $tooltips)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(constants variables));
 our $VERSION = 0.1;

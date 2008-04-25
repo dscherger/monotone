@@ -121,30 +121,18 @@ sub display_change_log($$;$$)
 sub get_change_log_window()
 {
 
-    my($font,
-       $height,
+    my($height,
        $instance,
-       $width,
-       $window_type);
-
-    $window_type = "changelog_window";
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
+       $width);
+    my $window_type = "changelog_window";
+    my $wm = WindowManager->instance();
 
     # Create a new change log window if an unused one wasn't found, otherwise
     # reuse an existing unused one.
 
-    if (! defined($instance))
+    if (! defined($instance = $wm->find_unused($window_type)))
     {
 	$instance = {};
-	$instance->{type} = $window_type;
 	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
@@ -182,21 +170,14 @@ sub get_change_log_window()
 	$instance->{changelog_buffer} =
 	    $instance->{changelog_textview}->get_buffer();
 	create_format_tags($instance->{changelog_buffer});
-	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-	$instance->{changelog_textview}->modify_font($font)
-	    if (defined($font));
+	$instance->{changelog_textview}->modify_font($mono_font);
 
-	$instance->{grab_widget} = $instance->{window};
+	# Register the window for management.
 
-	# Setup the list of windows that can be made busy for this application
-	# window.
-
-	$instance->{busy_windows} = [];
-	push(@{$instance->{busy_windows}}, $instance->{window}->window());
-	push(@{$instance->{busy_windows}},
-	     $instance->{changelog_textview}->get_window("text"));
-
-	push(@windows, $instance);
+	$wm->manage($instance, $window_type, $instance->{window});
+	$wm->add_busy_widgets($instance,
+			      $instance->{changelog_textview}->
+			          get_window("text"));
     }
     else
     {
