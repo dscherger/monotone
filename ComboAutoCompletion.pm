@@ -4,7 +4,7 @@
 #
 #   Description  - The combo box auto-completion utilities module for the
 #                  mtn-browse application. This module contains assorted
-#                  routines that implement auto-completion for alll branch and
+#                  routines that implement auto-completion for all branch and
 #                  revision combo boxes.
 #
 #   Author       - A.E.Cooper.

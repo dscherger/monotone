@@ -39,7 +39,7 @@
 	      <property name="visible">True</property>
 
 	      <child>
-		<widget class="GtkImageMenuItem" id="file1">
+		<widget class="GtkMenuItem" id="file1">
 		  <property name="visible">True</property>
 		  <property name="stock_item">GNOMEUIINFO_MENU_FILE_TREE</property>
 
@@ -52,7 +52,7 @@
 			  <property name="stock_item">GNOMEUIINFO_MENU_NEW_ITEM</property>
 			  <property name="label" translatable="yes">_New</property>
 			  <property name="use_underline">True</property>
-			  <signal name="activate" handler="on_new1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
+			  <signal name="activate" handler="new_toolbutton_clicked_cb" last_modification_time="Fri, 25 Apr 2008 16:17:14 GMT"/>
 			</widget>
 		      </child>
 
@@ -60,23 +60,15 @@
 			<widget class="GtkImageMenuItem" id="open1">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_OPEN_ITEM</property>
-			  <signal name="activate" handler="on_open1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
+			  <signal name="activate" handler="open_toolbutton_clicked_cb" last_modification_time="Fri, 25 Apr 2008 16:18:44 GMT"/>
 			</widget>
 		      </child>
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="save1">
+			<widget class="GtkImageMenuItem" id="close1">
 			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_SAVE_ITEM</property>
-			  <signal name="activate" handler="on_save1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="save_as1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_SAVE_AS_ITEM</property>
-			  <signal name="activate" handler="on_save_as1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
+			  <property name="stock_item">GNOMEUIINFO_MENU_CLOSE_ITEM</property>
+			  <signal name="activate" handler="close_toolbutton_clicked_cb" last_modification_time="Fri, 25 Apr 2008 16:18:44 GMT"/>
 			</widget>
 		      </child>
 
@@ -90,7 +82,7 @@
 			<widget class="GtkImageMenuItem" id="quit1">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_EXIT_ITEM</property>
-			  <signal name="activate" handler="on_quit1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
+			  <signal name="activate" handler="quit_activate_cb" last_modification_time="Fri, 25 Apr 2008 16:20:21 GMT"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -99,7 +91,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkImageMenuItem" id="edit1">
+		<widget class="GtkMenuItem" id="edit1">
 		  <property name="visible">True</property>
 		  <property name="stock_item">GNOMEUIINFO_MENU_EDIT_TREE</property>
 
@@ -107,62 +99,10 @@
 		    <widget class="GtkMenu" id="edit1_menu">
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="cut1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_CUT_ITEM</property>
-			  <signal name="activate" handler="on_cut1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="copy1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_COPY_ITEM</property>
-			  <signal name="activate" handler="on_copy1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="paste1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_PASTE_ITEM</property>
-			  <signal name="activate" handler="on_paste1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="clear1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_CLEAR_ITEM</property>
-			  <signal name="activate" handler="on_clear1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkSeparatorMenuItem" id="separator2">
-			  <property name="visible">True</property>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="properties1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_PROPERTIES_ITEM</property>
-			  <signal name="activate" handler="on_properties1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkSeparatorMenuItem" id="separator3">
-			  <property name="visible">True</property>
-			</widget>
-		      </child>
-
-		      <child>
 			<widget class="GtkImageMenuItem" id="preferences1">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_PREFERENCES_ITEM</property>
-			  <signal name="activate" handler="on_preferences1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
+			  <signal name="activate" handler="preferences_toolbutton_clicked_cb" last_modification_time="Fri, 25 Apr 2008 16:20:21 GMT"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -171,19 +111,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkImageMenuItem" id="view1">
-		  <property name="visible">True</property>
-		  <property name="stock_item">GNOMEUIINFO_MENU_VIEW_TREE</property>
-
-		  <child>
-		    <widget class="GtkMenu" id="view1_menu">
-		    </widget>
-		  </child>
-		</widget>
-	      </child>
-
-	      <child>
-		<widget class="GtkImageMenuItem" id="help1">
+		<widget class="GtkMenuItem" id="help1">
 		  <property name="visible">True</property>
 		  <property name="stock_item">GNOMEUIINFO_MENU_HELP_TREE</property>
 
@@ -194,7 +122,7 @@
 			<widget class="GtkImageMenuItem" id="about1">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_ABOUT_ITEM</property>
-			  <signal name="activate" handler="on_about1_activate" last_modification_time="Sat, 03 Nov 2007 10:03:07 GMT"/>
+			  <signal name="activate" handler="about_activate_cb" last_modification_time="Fri, 25 Apr 2008 16:20:21 GMT"/>
 			</widget>
 		      </child>
 		    </widget>

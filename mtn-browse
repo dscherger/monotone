@@ -105,10 +105,15 @@ use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 
 my $window_type = "main_window";
 
+# the large logo used for the about dialog window.
+
+my $large_logo;
+
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Private routines.
 
+sub about_activate_cb($$);
 sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
 sub close_toolbutton_clicked_cb($$);
@@ -125,6 +130,7 @@ sub new_toolbutton_clicked_cb($$);
 sub open_toolbutton_clicked_cb($$);
 sub preferences_toolbutton_clicked_cb($$);
 sub properties_toolbutton_clicked_cb($$);
+sub quit_activate_cb($$);
 sub revision_change_history_button_clicked_cb($$);
 sub revision_change_log_button_clicked_cb($$);
 sub save_as_button_clicked_cb($$);
@@ -239,6 +245,81 @@ sub view_button_clicked_cb($$);
     $SIG{CHLD} = "IGNORE";
 
     exit(0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - quit_activate_cb
+#
+#   Description  - Callback routine called when the user selects the quit file
+#                  menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub quit_activate_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    # Hide all the windows, close all the database handles and then exit Gtk2.
+
+    WindowManager->instance()->cond_find
+	(undef,
+	 sub {
+	     my $instance = $_[0];
+	     $instance->{window}->hide() if ($instance->{window}->mapped());
+	     $instance->{mtn} = undef if (exists($instance->{mtn}));
+	     return;
+	 });
+    Gtk2->main_quit();
+
+}
+#
+##############################################################################
+#
+#   Routine      - about_activate_cb
+#
+#   Description  - Callback routine called when the user selects the about
+#                  help menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub about_activate_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    $large_logo = Gtk2::Gdk::Pixbuf->new_from_file
+	(LIB_PATH . "/UI/mtn-browse-large.png")
+	if (! defined($large_logo));
+    Gnome2::About->new
+	("mtn-browse",
+	 "0.1b",
+	 "Copyright \xa9 2007-2009 Anthony Cooper",
+	 "A graphical front-end browser for Monotone VCS databases",
+	 ["Anthony Cooper <support\@coosoft.plus.com>"],
+	 "TBD",
+	 "TBD",
+	 $large_logo)->run();
 
 }
 #
